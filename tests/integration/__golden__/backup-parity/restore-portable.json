@@ -1517,7 +1517,8 @@
         "dayLogId": "<id:48>",
         "symptomId": "<id:49>",
         "severity": 3,
-        "createdAt": "<now>"
+        "createdAt": "<now>",
+        "source": "WITHINGS"
       }
     ],
     "CustomMetric": [
@@ -3262,6 +3263,12 @@
           {
             "key": "custom:round-trip-cramps",
             "severity": 3
+          }
+        ],
+        "symptomSources": [
+          {
+            "key": "custom:round-trip-cramps",
+            "source": "WITHINGS"
           }
         ]
       }

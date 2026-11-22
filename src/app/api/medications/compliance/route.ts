@@ -1,4 +1,3 @@
-import pLimit from "p-limit";
 import { z } from "zod/v4";
 
 import { COURSES_COMPLIANCE_SELECT } from "@/lib/analytics/compliance";
@@ -12,6 +11,7 @@ import {
 } from "@/lib/api-response";
 import {
   aggregateCompliance,
+  batchedComplianceEvents,
   buildCompliancePayload,
   complianceCacheKey,
   type CompliancePayload,
@@ -94,26 +94,22 @@ export const GET = apiHandler(async (request: Request) => {
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 
-  // Bounded fan-out: each cold cell costs one bounded intake read + one
-  // band-expansion pass. Three at a time keeps a many-meds account from
-  // stampeding the pool while bounding the cold wall-clock — the client
-  // reads this through the shared fetch wrapper's 15 s default timeout,
-  // and a strictly sequential walk over a large cabinet could outlive it
-  // on a cold cache. Warm / stale cells return without touching the
-  // database at all; `Promise.all` keeps the response in list order.
-  const limit = pLimit(3);
+  // Every cold cell's intake rows come from one batched read
+  // (`batchedComplianceEvents`), so the fan-out no longer stampedes the pool
+  // and needs no limit: warm and stale cells return without touching the
+  // database, and the cold ones share a single query. `Promise.all` keeps the
+  // response in list order.
+  const readEvents = batchedComplianceEvents(user.id);
   const results = await Promise.all(
-    medications.map((medication) =>
-      limit(async () => {
-        const payload = await cachedSwr(
-          caches.medicationCompliance as ServerCache<CompliancePayload>,
-          complianceCacheKey(user.id, medication.id, userTz),
-          () => buildCompliancePayload(medication, user.id, userTz),
-          annotate,
-        );
-        return { payload, medicationId: medication.id };
-      }),
-    ),
+    medications.map(async (medication) => {
+      const payload = await cachedSwr(
+        caches.medicationCompliance as ServerCache<CompliancePayload>,
+        complianceCacheKey(user.id, medication.id, userTz),
+        () => buildCompliancePayload(medication, user.id, userTz, readEvents),
+        annotate,
+      );
+      return { payload, medicationId: medication.id };
+    }),
   );
 
   // A cell cached before the report windows existed carries none; it reads

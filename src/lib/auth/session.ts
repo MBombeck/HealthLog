@@ -8,6 +8,7 @@ import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isInputRefusal, isP2025 } from "@/lib/prisma-errors";
 import { SessionStoreUnavailableError } from "@/lib/api-errors";
 import { credentialRevocations } from "@/lib/auth/credential-revocations";
+import { afterRefreshRevocation } from "@/lib/devices/signed-out-push";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
 import {
@@ -560,6 +561,8 @@ export async function destroySession(): Promise<void> {
  */
 export async function destroyAllSessions(userId: string): Promise<void> {
   await prisma.$transaction(credentialRevocations(prisma, userId));
+  // Every native sign-in ended: the account's devices take no more pushes.
+  await afterRefreshRevocation(userId);
 }
 
 /**
@@ -654,7 +657,7 @@ export async function destroyOtherSessions(
       : {};
   const revokedAt = new Date();
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const families = await tx.refreshToken.findMany({
       where: { userId, revokedAt: null, ...keptRefreshWhere },
       select: { accessTokenHash: true },
@@ -742,6 +745,9 @@ export async function destroyOtherSessions(
       pendingInvitesRevoked: invites.count,
     };
   });
+  // The devices signed out here lose their pushes; the caller's keeps them.
+  await afterRefreshRevocation(userId);
+  return result;
 }
 
 /**

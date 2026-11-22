@@ -191,7 +191,8 @@ describe("medication intake tracking — schedule readers honour the switch", ()
     for (const known of [
       "lib/jobs/reminder/medication-reminder-check.ts",
       "lib/medications/scheduling/project-today-intakes.ts",
-      "lib/dashboard/meds-today.ts",
+      // The dashboard tile and the today list read their schedules here.
+      "lib/medications/dose-state/ledger.ts",
       "lib/medications/list-read.ts",
       "lib/jobs/intake-auto-skip.ts",
     ]) {

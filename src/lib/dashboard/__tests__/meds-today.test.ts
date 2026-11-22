@@ -8,10 +8,11 @@
  *     user's local-day bounds;
  *   - the tally semantics match the summary route's compliance tile
  *     exactly (taken = `takenAt` set and not skipped);
- *   - the next-due pick is the EARLIEST display-due across active
- *     medications (real recurrence engine, no engine mocks);
- *   - an open overdue slot surfaces with `nextDueOverdue: true` and a
- *     resolved slot at the same anchor advances to the next future one;
+ *   - the next-due pick is each medication's next dose by the dose
+ *     resolver over its ledger (real ledger and band minter, no engine
+ *     mocks), the earliest across active medications;
+ *   - an open slot past its on-time window surfaces with
+ *     `nextDueOverdue: true`, and a recorded slot advances to the next one;
  *   - the today window is computed in the USER's timezone (asserted on
  *     the where-clause bounds for a non-European zone).
  */
@@ -22,6 +23,12 @@ const projectTodayIntakesAndRecompute = vi.fn();
 vi.mock("@/lib/medications/scheduling/project-today-intakes", () => ({
   projectTodayIntakesAndRecompute: (...a: unknown[]) =>
     projectTodayIntakesAndRecompute(...a),
+}));
+
+vi.mock("@/lib/db", () => ({
+  get prisma() {
+    return fakePrisma;
+  },
 }));
 
 import { buildMedsTodayBlock } from "../meds-today";
@@ -67,8 +74,12 @@ function medication(
     startsOn: null,
     endsOn: null,
     oneShot: false,
+    endedAt: null,
+    trackIntake: true,
     createdAt: new Date("2026-01-01T00:00:00.000Z"),
     schedules: [dailySchedule()],
+    scheduleRevisions: [],
+    courses: [],
     ...overrides,
   };
 }
@@ -82,14 +93,6 @@ let resolvedRows: Array<{
   scheduledFor: Date;
   takenAt: Date | null;
 }>;
-let latestIntakeGroups: Array<{
-  medicationId: string;
-  _max: { takenAt: Date | null };
-}>;
-let eraFloorGroups: Array<{
-  medicationId: string;
-  _max: { validUntil: Date | null };
-}>;
 let capturedTodayWhere: Record<string, unknown> | null;
 
 const fakePrisma = {
@@ -100,28 +103,34 @@ const fakePrisma = {
     }),
   },
   medicationIntakeEvent: {
+    // One medication's anchor read (the newest take before the window).
+    findFirst: vi.fn(async () => null),
     findMany: vi.fn(
       async (args: { where: { OR?: unknown; scheduledFor?: unknown } }) => {
         if (args.where.OR) {
-          callOrder.push("resolved.findMany");
-          return resolvedRows;
+          // The dose ledger's window read.
+          callOrder.push("ledger.findMany");
+          return resolvedRows.map((r, i) => ({
+            id: `intake-${i}`,
+            medicationId: r.medicationId,
+            scheduledFor: r.scheduledFor,
+            takenAt: r.takenAt,
+            skipped: false,
+            autoMissed: false,
+            attributionSource: null,
+            doseTaken: null,
+            source: "WEB",
+            autoRecorded: false,
+          }));
         }
         callOrder.push("today.findMany");
         capturedTodayWhere = args.where as Record<string, unknown>;
         return todayRows;
       },
     ),
-    groupBy: vi.fn(async () => {
-      callOrder.push("latest.groupBy");
-      return latestIntakeGroups;
-    }),
   },
-  medicationScheduleRevision: {
-    groupBy: vi.fn(async () => {
-      callOrder.push("era.groupBy");
-      return eraFloorGroups;
-    }),
-  },
+  // The dose ledger's anchor read (the newest take before the window).
+  $queryRaw: vi.fn(async () => []),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 
@@ -131,8 +140,6 @@ beforeEach(() => {
   medications = [];
   todayRows = [];
   resolvedRows = [];
-  latestIntakeGroups = [];
-  eraFloorGroups = [];
   capturedTodayWhere = null;
   projectTodayIntakesAndRecompute.mockImplementation(async () => {
     callOrder.push("project");
@@ -300,7 +307,7 @@ describe("buildMedsTodayBlock — tally", () => {
   });
 });
 
-describe("buildMedsTodayBlock — next due (real engine)", () => {
+describe("buildMedsTodayBlock — next due (dose resolver)", () => {
   it("picks the EARLIEST future slot across medications, with its name", async () => {
     // 18:00 Berlin = 16:00Z; 20:00 Berlin = 18:00Z. Yesterday's slots
     // are past their catch-up bands (daily tail 4 h), so the engine
@@ -343,17 +350,34 @@ describe("buildMedsTodayBlock — next due (real engine)", () => {
     expect(block.nextDueMedicationId).toBe("med-evening");
   });
 
-  it("surfaces an open overdue slot (anchor passed, band still open)", async () => {
-    // 11:00 Berlin anchor = 09:00Z; now is 12:00 Berlin — one hour past
-    // the anchor, well inside the daily 4 h catch-up band.
+  it("calls a dose due inside its on-time window, overdue past it", async () => {
+    // Now is 12:00 Berlin (10:00Z). The 11:00 dose (09:00Z) with its window
+    // to 12:00 is still due; the 09:00 dose (07:00Z) with its window to
+    // 10:00 is overdue, inside the daily catch-up band. The overdue one leads.
     medications = [
       medication({
+        id: "med-noon",
         name: "Mittagsmittel",
         schedules: [
           dailySchedule({
+            id: "sched-noon",
+            medicationId: "med-noon",
             windowStart: "11:00",
             windowEnd: "12:00",
             timesOfDay: ["11:00"],
+          }),
+        ],
+      }),
+      medication({
+        id: "med-morning",
+        name: "Morgenmittel",
+        schedules: [
+          dailySchedule({
+            id: "sched-morning",
+            medicationId: "med-morning",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            timesOfDay: ["09:00"],
           }),
         ],
       }),
@@ -361,10 +385,21 @@ describe("buildMedsTodayBlock — next due (real engine)", () => {
 
     const block = await buildMedsTodayBlock(fakePrisma, "user-1", BERLIN, NOW);
 
-    expect(block.nextDueAt).toBe("2026-06-10T09:00:00.000Z");
+    const byId = new Map(
+      (block.dueCandidates ?? []).map((c) => [c.medicationId, c]),
+    );
+    expect(byId.get("med-noon")).toMatchObject({
+      dueAt: "2026-06-10T09:00:00.000Z",
+      overdue: false,
+    });
+    expect(byId.get("med-morning")).toMatchObject({
+      dueAt: "2026-06-10T07:00:00.000Z",
+      overdue: true,
+    });
+    expect(block.nextDueAt).toBe("2026-06-10T07:00:00.000Z");
     expect(block.nextDueOverdue).toBe(true);
-    expect(block.nextDueMedicationName).toBe("Mittagsmittel");
-    expect(block.nextDueMedicationId).toBe("med-1");
+    expect(block.nextDueMedicationName).toBe("Morgenmittel");
+    expect(block.nextDueMedicationId).toBe("med-morning");
   });
 
   it("advances past a RESOLVED slot to the next future anchor", async () => {
@@ -397,7 +432,7 @@ describe("buildMedsTodayBlock — next due (real engine)", () => {
     expect(block.nextDueOverdue).toBe(false);
   });
 
-  it("preserves equal-time medications and orders the overdue candidate first", async () => {
+  it("preserves equal-time medications, ordered by when each turned due", async () => {
     medications = [
       medication({
         id: "med-mounjaro",
@@ -437,21 +472,22 @@ describe("buildMedsTodayBlock — next due (real engine)", () => {
         medicationId: "med-mounjaro",
         medicationName: "Mounjaro",
         dueAt: "2026-06-10T09:00:00.000Z",
-        overdue: true,
-        availableFrom: "2026-06-09T08:00:00.000Z",
+        // A rolling dose the ledger has not minted: the default weekly band.
+        overdue: false,
+        availableFrom: "2026-06-09T09:00:00.000Z",
         opensAt: "2026-06-10T09:00:00.000Z",
       },
       {
         medicationId: "med-ramipril",
         medicationName: "Ramipril",
         dueAt: "2026-06-10T09:00:00.000Z",
-        overdue: true,
-        availableFrom: "2026-06-10T07:00:00.000Z",
+        overdue: false,
+        availableFrom: "2026-06-10T08:00:00.000Z",
         opensAt: "2026-06-10T09:00:00.000Z",
       },
     ]);
     expect(block.nextDueAt).toBe("2026-06-10T09:00:00.000Z");
-    expect(block.nextDueOverdue).toBe(true);
+    expect(block.nextDueOverdue).toBe(false);
     expect(block.nextDueMedicationName).toBe("Mounjaro");
     expect(block.nextDueMedicationId).toBe("med-mounjaro");
   });

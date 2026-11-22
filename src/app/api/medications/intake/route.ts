@@ -30,6 +30,7 @@ import {
 } from "@/lib/validations/medication";
 import { refuseUntrackedIntake } from "@/lib/medications/route-guards";
 import { readTodayIntakes } from "@/lib/medications/intake-today";
+import { contentEtag, matchesEtag } from "@/lib/http/etag";
 import { readIntakeCompliance } from "@/lib/medications/intake-compliance";
 import { findIntakeForStatusUpdate } from "@/lib/medications/update-intake-status/admission";
 import { updateIntakeStatus } from "@/lib/medications/update-intake-status/update-intake-status";
@@ -79,7 +80,22 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const userTz = user.timezone ?? DEFAULT_TIMEZONE;
 
   if (scope === "today") {
-    return apiSuccess(await readTodayIntakes({ userId: user.id, userTz }));
+    // A content ETag over the exact body: any change to the rows (an edit,
+    // a new row, a tombstone, a dose whose state moved with the clock) moves
+    // it, so a cold start confirms its cached rows with a 304 before it
+    // shows a dose as due.
+    const rows = await readTodayIntakes({ userId: user.id, userTz });
+    const etag = contentEtag(JSON.stringify({ data: rows, error: null }));
+    const headers = { ETag: etag, "Cache-Control": "private, no-cache" };
+    if (matchesEtag(request, etag)) {
+      annotate({ meta: { "medications.intake.today.not_modified": true } });
+      return new Response(null, { status: 304, headers });
+    }
+    const response = apiSuccess(rows);
+    for (const [name, value] of Object.entries(headers)) {
+      response.headers.set(name, value);
+    }
+    return response;
   }
 
   return apiSuccess(

@@ -142,6 +142,7 @@ async function readSummaryInputs(
   const streakWindowStart = new Date(
     now.getTime() - STREAK_WINDOW_DAYS * 86_400_000,
   );
+  const profile = loadBaselineProfile(prisma, userId);
   // Derived from the canonical enum so a new measurement type is
   // auto-included. The card builders decide which types render as cards.
   const measurementTypes = [
@@ -156,6 +157,10 @@ async function readSummaryInputs(
     streakActivity,
     measurementStreakDays,
     sleepStageRows,
+    sleepPriorityJson,
+    sleepProfile,
+    moodSeries,
+    bmiDerived,
   ] = await Promise.all([
     // Both reads live in `@/lib/dashboard/summary-reads`: the SQL is a
     // contract the integration suite exercises directly against Postgres,
@@ -220,26 +225,21 @@ async function readSummaryInputs(
         },
       }),
     ),
-  ]);
-
-  // The user's sleep source-priority ladder collapses a dual-source night
-  // (e.g. WHOOP + Apple Health) to one canonical source before the per-night
-  // reconstruction sums it. The baseline profile rides along (one read) so
-  // the sleep-rhythm block resolves the age-based sleep need.
-  const [sleepPriorityJson, sleepProfile, moodSeries] = await Promise.all([
+    // The user's sleep source-priority ladder collapses a dual-source night
+    // (e.g. WHOOP + Apple Health) to one canonical source before the
+    // per-night reconstruction sums it.
     loadUserSourcePriority(userId),
-    loadBaselineProfile(prisma, userId),
+    // The baseline profile resolves the sleep-rhythm block's age-based
+    // sleep need.
+    profile,
     // The mood card reads the SAME canonical daily series the web mood
     // analytics and the dashboard snapshot read, rollup fast-path included:
     // never a second aggregation.
     time("moodSeries", () => buildMoodDailySeries(userId, prisma)),
+    // BMI is derived, not measured: it needs the profile height, so it
+    // starts as soon as the profile is in, inside the same round.
+    profile.then((p) => time("bmi", () => computeBmi(userId, p, { now }))),
   ]);
-
-  // BMI is derived, not measured: it needs the profile height loaded above,
-  // so it cannot join the round before it.
-  const bmiDerived = await time("bmi", () =>
-    computeBmi(userId, sleepProfile, { now }),
-  );
 
   return {
     latestEver,
@@ -277,19 +277,38 @@ export async function buildDashboardSummary(
     return result;
   };
 
-  const {
-    latestEver,
-    sparkBuckets,
-    allTimeAggregate,
-    medsToday,
-    streakActivity,
-    measurementStreakDays,
-    sleepStageRows,
-    sleepPriorityJson,
-    sleepProfile,
-    moodSeries,
-    bmiDerived,
-  } = await readSummaryInputs(userId, userTz, now, time);
+  // Every read that does not depend on another starts here, in one round:
+  // the free weekdays and the verdict profile used to wait for the inputs.
+  const inputs = readSummaryInputs(userId, userTz, now, time);
+  const freeWeekdays = loadFreeWeekdaySpans(userId);
+  // The record's profile and own targets, for the card verdicts.
+  const verdictProfileRead = prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      dateOfBirth: true,
+      gender: true,
+      heightCm: true,
+      thresholdsJson: true,
+    },
+  });
+  // Settle the side reads with the inputs so a rejection is never unhandled.
+  const [
+    {
+      latestEver,
+      sparkBuckets,
+      allTimeAggregate,
+      medsToday,
+      streakActivity,
+      measurementStreakDays,
+      sleepStageRows,
+      sleepPriorityJson,
+      sleepProfile,
+      moodSeries,
+      bmiDerived,
+    },
+    freeWeekdaySpans,
+    verdictProfile,
+  ] = await Promise.all([inputs, freeWeekdays, verdictProfileRead]);
 
   const lookups = summaryLookups({
     latestEver,
@@ -321,7 +340,7 @@ export async function buildDashboardSummary(
     reconstructNights(sleepRows, userTz, sleepPriorityJson),
     sleepNeedMinutes(sleepProfile.ageYears),
     "COMPUTED",
-    await loadFreeWeekdaySpans(userId),
+    freeWeekdaySpans,
   );
 
   const metrics = measurementCards(lookups, {
@@ -336,17 +355,6 @@ export async function buildDashboardSummary(
   if (bmi) metrics.push(bmi);
 
   const t = getServerTranslator(ctx.locale).t;
-
-  // The record's profile and own targets, for the card verdicts.
-  const verdictProfile = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      dateOfBirth: true,
-      gender: true,
-      heightCm: true,
-      thresholdsJson: true,
-    },
-  });
 
   const monthTrended = await time("monthTrend", () =>
     withMonthTrends(

@@ -24,6 +24,7 @@ import {
   type BatchState,
   type BulkIntakeEntry,
 } from "./batch-state";
+import { TOMBSTONED_ENTRY } from "@/lib/sync/tombstone-repost";
 import { attributeEntry } from "./entry-attribution";
 import { writeEntry } from "./entry-write";
 
@@ -105,6 +106,14 @@ function screenEntry(
     if (existingRowId !== undefined) {
       state.duplicates += 1;
       state.results.push({ index: i, status: "duplicate", id: existingRowId });
+      return true;
+    }
+    // A dose deleted earlier stays deleted: the re-post of its Apple Health
+    // dose event (a fresh install reading the whole history, an outbox that
+    // had not drained) writes nothing.
+    if (state.tombstonedExternalIds.has(entry.externalId)) {
+      state.duplicates += 1;
+      state.results.push({ index: i, ...TOMBSTONED_ENTRY });
       return true;
     }
   }

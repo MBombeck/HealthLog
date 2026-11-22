@@ -27,6 +27,7 @@
  */
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { deleteDeviceRows } from "@/lib/devices/delete-devices";
 import { getEvent } from "@/lib/logging/context";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { isCircuitOpen } from "@/lib/push-relay/circuit";
@@ -458,5 +459,5 @@ async function releaseUnregistered(
     });
     return;
   }
-  await prisma.device.deleteMany({ where: { id: deviceId } });
+  await deleteDeviceRows({ id: deviceId });
 }

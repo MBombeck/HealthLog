@@ -22,10 +22,8 @@ export type SlotWriteClient = Pick<
 > &
   Partial<Pick<PrismaClient, "medicationInventoryItem">>;
 
-/** Whether a row holds a take that keeps its slot: recorded, not automatic. */
-export function holdsTake(row: MedicationIntakeEvent): boolean {
-  return row.takenAt !== null && !row.skipped && !row.autoRecorded;
-}
+// One rule for "this row holds a take": `./holds-take`.
+export { holdsTake } from "./holds-take";
 
 /**
  * Give back the stock of an automatic take a skip corrects. The refund is

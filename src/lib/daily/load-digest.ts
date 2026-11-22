@@ -549,6 +549,30 @@ export interface DailyDigestLoadOptions {
   locale?: Locale;
 }
 
+/**
+ * The reads the module map gates, started once it resolves, in the snapshot's
+ * round. Rest Mode is skipped when its module is off; the extras ride the
+ * cached, single-flight `loadDailyDigestExtrasCached` cell (see its docblock).
+ */
+function startGatedReads(user: SessionUser, todayLocalDate: string, now: Date) {
+  const modulesRead = resolveModuleMap(user.id);
+  return {
+    modulesRead,
+    restModeRead: modulesRead.then((m) =>
+      m.illness !== false ? resolveRestMode(user.id, now) : null,
+    ),
+    extrasRead: modulesRead.then((m) =>
+      loadDailyDigestExtrasCached(
+        user.id,
+        user.timezone,
+        todayLocalDate,
+        now,
+        m.cycle !== false,
+      ),
+    ),
+  };
+}
+
 export async function loadDailyDigest(
   user: SessionUser,
   now: Date = new Date(),
@@ -563,9 +587,13 @@ export async function loadDailyDigest(
   const todayBounds = getUserTodayBounds(now, user.timezone);
   const todayEndExclusive = new Date(todayBounds.end.getTime() + 1);
 
+  const gated = startGatedReads(user, todayLocalDate, now);
   const [
     { body: snapshot, locale },
     modules,
+    restModeContext,
+    { milestone, tensionWindow, sameTime, vitals, scoreDays, cycle: cycleRead },
+    reactionLanguage,
     syncRows,
     dueReminders,
     planRows,
@@ -579,7 +607,10 @@ export async function loadDailyDigest(
       locale: options.locale,
       now,
     }),
-    resolveModuleMap(user.id),
+    gated.modulesRead,
+    gated.restModeRead,
+    gated.extrasRead,
+    resolveJobLocale(user.locale),
     prisma.integrationStatus.findMany({
       where: { userId: user.id, state: { in: [...SYNC_ISSUE_STATES] } },
       select: { integration: true, state: true },
@@ -774,12 +805,6 @@ export async function loadDailyDigest(
     timeLabel: localTime(row.occurredAt),
   }));
 
-  // Rest Mode is read per request; today's cycle day rides the extras cell
-  // below, which every cycle write hard-evicts. The read is skipped outright
-  // when its module is off, and fault-isolated, because the digest is a
-  // must-not-fail path.
-  const restModeContext =
-    modules.illness !== false ? await resolveRestMode(user.id, now) : null;
   const restMode: TodayRestMode | null =
     restModeContext?.active && restModeContext.since
       ? {
@@ -837,31 +862,6 @@ export async function loadDailyDigest(
     ? planRows.map((row) => toCoachPlanCandidate(row as CoachPlanRow))
     : [];
 
-  // The calm reward layer. S11 — the day's elevated-at-rest window,
-  // computed on demand from raw for TODAY only (read-swap, one bounded
-  // day-read; never persisted), fault-isolated: a tension-read failure must
-  // never break the digest (a hot, must-not-fail path), it just omits the calm
-  // marker. Both are computations over the record's own data, so neither
-  // depends on the `insights` module, which is the AI analysis opt-out.
-  //
-  // Both ride the cached, single-flight `loadDailyDigestExtrasCached` cell so
-  // a 120 s poll of every open tab doesn't re-run the ~8.5k-row streak +
-  // per-sample tension reads on every request — see its docblock for the
-  // cache/invalidation contract.
-  const {
-    milestone,
-    tensionWindow,
-    sameTime,
-    vitals,
-    scoreDays,
-    cycle: cycleRead,
-  } = await loadDailyDigestExtrasCached(
-    user.id,
-    user.timezone,
-    todayLocalDate,
-    now,
-    modules.cycle !== false,
-  );
   const cycle: TodayCycle | null = cycleRead
     ? { dayOfCycle: cycleRead.dayOfCycle, phase: cycleRead.phase }
     : null;
@@ -950,7 +950,7 @@ export async function loadDailyDigest(
       briefingLanguage: snapshot.briefing
         ? (user.insightsCachedLocale ?? null)
         : null,
-      reactionLanguage: await resolveJobLocale(user.locale),
+      reactionLanguage,
       firstName: firstNameFromDisplayName(user.displayName),
       nextDoseTimeLabel: nextOpensAt ? localTime(new Date(nextOpensAt)) : null,
       sleepLastSeenDaysAgo,

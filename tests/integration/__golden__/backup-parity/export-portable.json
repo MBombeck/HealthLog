@@ -584,6 +584,12 @@
             "key": "custom:round-trip-cramps",
             "severity": 3
           }
+        ],
+        "symptomSources": [
+          {
+            "key": "custom:round-trip-cramps",
+            "source": "WITHINGS"
+          }
         ]
       }
     ],
@@ -2445,6 +2451,12 @@
           {
             "key": "custom:round-trip-cramps",
             "severity": 3
+          }
+        ],
+        "symptomSources": [
+          {
+            "key": "custom:round-trip-cramps",
+            "source": "WITHINGS"
           }
         ]
       }

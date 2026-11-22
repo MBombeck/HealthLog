@@ -22,7 +22,7 @@ import {
 } from "@/lib/medications/inventory/consumption";
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { recordedEventOf } from "@/lib/notifications/medication-intake-recorded";
 import { notifyDelegatedIntake } from "@/lib/notifications/delegated-intake";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
@@ -214,7 +214,8 @@ function startTails(
   // (#22) — silent cross-device intake sync: wake the user's OTHER iOS
   // devices so a running Live Activity / widget reconciles this dose.
   // Coalesced per user, best-effort — never affects the response.
-  queueMedicationIntakeSync({
+  afterDoseChange({
+    scope: "intakes",
     userId: user.id,
     originDeviceToken: ctx.originDeviceToken,
     recorded: recordedEventOf(

@@ -1701,7 +1701,8 @@
         "dayLogId": "<id:62>",
         "symptomId": "<id:64>",
         "severity": 3,
-        "createdAt": "2026-05-03T23:23:00.000Z"
+        "createdAt": "2026-05-03T23:23:00.000Z",
+        "source": "WITHINGS"
       }
     ],
     "CustomMetric": [
@@ -4142,6 +4143,12 @@
             "severity": 3
           }
         ],
+        "symptomSources": [
+          {
+            "key": "custom:round-trip-cramps",
+            "source": "WITHINGS"
+          }
+        ],
         "symptomLinkCreatedAt": [
           {
             "key": "custom:round-trip-cramps",
@@ -4178,6 +4185,7 @@
         "tz": null,
         "symptomKeys": [],
         "symptomSeverities": [],
+        "symptomSources": [],
         "symptomLinkCreatedAt": []
       }
     ],

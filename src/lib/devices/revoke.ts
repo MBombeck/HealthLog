@@ -21,8 +21,8 @@
  * isn't yours" would let an attacker enumerate device ids).
  */
 import { prisma } from "@/lib/db";
-import { getEvent } from "@/lib/logging/context";
-import { unbindToken } from "@/lib/push-relay/binding";
+import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
+import { deviceDeleteWrites } from "@/lib/devices/delete-devices";
 
 export interface RevokeDeviceCascadeResult {
   id: string;
@@ -43,10 +43,12 @@ export async function revokeDeviceCascade(
     select: {
       id: true,
       userId: true,
+      token: true,
       model: true,
       bundleId: true,
       apnsToken: true,
       relayState: true,
+      relayConsentAt: true,
     },
   });
 
@@ -54,8 +56,11 @@ export async function revokeDeviceCascade(
     return null;
   }
 
+  // `RefreshToken.deviceId` holds the `Device.token` the app sent as
+  // `X-Device-Id` at sign-in, never the row id. Matching the row id revoked
+  // nothing: the device row went and its sign-ins stayed live.
   const liveRefreshTokens = await prisma.refreshToken.findMany({
-    where: { userId, deviceId: device.id, revokedAt: null },
+    where: { userId, deviceId: device.token, revokedAt: null },
     select: { accessTokenHash: true },
   });
   const accessHashes = liveRefreshTokens
@@ -71,7 +76,7 @@ export async function revokeDeviceCascade(
   // operations are still strongly typed at construction.
   const writes: unknown[] = [
     prisma.refreshToken.updateMany({
-      where: { userId, deviceId: device.id, revokedAt: null },
+      where: { userId, deviceId: device.token, revokedAt: null },
       data: { revokedAt },
     }),
   ];
@@ -83,20 +88,16 @@ export async function revokeDeviceCascade(
       }),
     );
   }
-  writes.push(prisma.device.delete({ where: { id: device.id } }));
+  // A revoked device leaves the push relay too, so its token is not bound to
+  // this instance until the relay's own idle expiry. Queued with the delete
+  // (`delete-devices.ts`), so an unreachable relay is retried by the minute
+  // pass; the relay answers 204 whether or not the token was bound.
+  const removal = deviceDeleteWrites(device);
+  writes.push(...removal.writes);
 
   await prisma.$transaction(writes as never);
 
-  // A revoked device leaves the push relay too, so its token is not bound to
-  // this instance until the relay's own idle expiry. Best effort: the relay
-  // answers 204 whether or not the token was bound.
-  if (device.relayState !== "none") {
-    await unbindToken(device.apnsToken).catch((err: unknown) => {
-      getEvent()?.addWarning(
-        `push_relay_unbind_failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    });
-  }
+  await drainQueuedUnbinds(removal.unbinds);
 
   return {
     id: device.id,

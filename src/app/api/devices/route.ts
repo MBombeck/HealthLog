@@ -6,14 +6,18 @@
  * `application:didRegisterForRemoteNotificationsWithDeviceToken:`. Both the
  * legacy `token` and `apnsToken` resolve to one canonical device.
  *
- * Cross-user-hijack guard:
- *   * A device `token` belongs to exactly one user. Re-registering the
- *     same value under a different account returns 409. APNs tokens
- *     aren't secrets, so trusting wire input would let anyone who
- *     learns one redirect another user's pushes.
- *   * The same guard applies to `apnsToken` — supplying an `apnsToken`
- *     that's already registered to a different user returns 409 with
- *     reason `apns_token_owned_by_other_user`.
+ * Account switch on one device:
+ *   * A device `token` (the app's `X-Device-Id`) and an `apnsToken` name one
+ *     physical install, and that install is signed in to one account at a
+ *     time. A registration under account B for a token account A holds takes
+ *     it over: A's row goes, with its push key, relay binding (unbound at the
+ *     relay through the retrying queue before B's binding is forwarded) and
+ *     Live Activity state, in the registration's transaction. Nothing sealed
+ *     for A can reach the device under B. Both accounts get an audit row.
+ *   * This used to answer 409, which left B without any server push on a
+ *     phone A had signed out of, and A's reminders on B's lock screen.
+ *     An APNs token is not a secret, so a takeover moves pushes only to the
+ *     device that holds the token; it never shows A's data to B.
  *
  * APNs registration:
  *   * `apnsToken` and `apnsEnvironment` are paired — supplying one
@@ -30,10 +34,16 @@ import { apiError, apiSuccess, sanitiseZodIssues } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
+import { deleteDeviceRowsIn } from "@/lib/devices/delete-devices";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { endApnsNoDeviceRest } from "@/lib/notifications/channel-state";
+import {
+  LOCAL_RUNWAY_MAX_DAYS,
+  localRunwayInBounds,
+} from "@/lib/notifications/client-managed-apns";
+import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
 import {
   activityStatementSchema,
   applyPushFields,
@@ -70,6 +80,18 @@ const deviceSchema = z
     // server APNs for this device; "client" forces local. Stored +
     // echoed; cron suppression stays user-level.
     medicationDelivery: z.enum(["server", "client"]).nullable().optional(),
+    // How long the app has this device's medication reminders planned
+    // locally: the dispatcher sends the server's reminder push again once it
+    // passes (`client-managed-apns.ts`). Null clears it (back to the 3-day
+    // quiet rule), omitted keeps it. Bounded: not in the past beyond a few
+    // minutes of clock skew, at most 14 days ahead.
+    localRunwayUntil: isoDateTime()
+      .transform((v) => new Date(v))
+      .refine((at) => localRunwayInBounds(at, new Date()), {
+        message: `localRunwayUntil must lie between now and ${LOCAL_RUNWAY_MAX_DAYS} days ahead`,
+      })
+      .nullable()
+      .optional(),
     // v1.17.1 (#22) — ActivityKit issues a per-Activity push token distinct
     // from the device APNs token. The iOS client registers the current one
     // here so the server can address a Live Activity update / end push on a
@@ -215,37 +237,76 @@ async function replaceLiveActivityTokens(
   });
 }
 
-/** The 409 for a token another account holds, with its audit row. */
-async function denyConflict(
+const DEVICE_MERGE_SELECT = {
+  id: true,
+  userId: true,
+  token: true,
+  medicationDelivery: true,
+  liveActivityPushToken: true,
+  apnsToken: true,
+  relayState: true,
+  relayConsentAt: true,
+} satisfies Prisma.DeviceSelect;
+
+type MergeRow = Prisma.DeviceGetPayload<{ select: typeof DEVICE_MERGE_SELECT }>;
+
+/**
+ * Remove the rows of other accounts among the matches, queueing the relay
+ * unbind of each token the relay may hold for them, inside the registration's
+ * transaction. Returns the rows and the queued tokens.
+ */
+async function takeOver(
+  tx: Prisma.TransactionClient,
   userId: string,
-  {
-    conflict,
-    deviceId,
-  }: {
-    conflict: "apns_token_owned_by_other_user" | "token_owned_by_other_user";
-    deviceId: string;
-  },
+  rows: Array<MergeRow | null>,
 ) {
-  await auditLog("device.register.denied", {
+  const foreign = new Map<string, MergeRow>();
+  for (const row of rows) {
+    if (row && row.userId !== userId) foreign.set(row.id, row);
+  }
+  const takenOver = [...foreign.values()];
+  const { unbinds } =
+    takenOver.length > 0
+      ? await deleteDeviceRowsIn(tx, {
+          id: { in: takenOver.map((d) => d.id) },
+        })
+      : { unbinds: [] as string[] };
+  return { takenOver, unbinds };
+}
+
+/**
+ * After a takeover committed: the previous accounts' unbinds go out before
+ * this request's binding is forwarded (the relay refuses a second binding key
+ * for a token another binding still holds), and both sides get an audit row.
+ */
+async function afterTakeover(
+  userId: string,
+  deviceId: string,
+  { takenOver, unbinds }: Awaited<ReturnType<typeof takeOver>>,
+) {
+  await drainQueuedUnbinds(unbinds);
+  for (const previous of takenOver) {
+    await auditLog("devices.register.taken_over", {
+      userId: previous.userId,
+      details: { deviceId: previous.id },
+    });
+  }
+  if (takenOver.length === 0) return;
+  await auditLog("devices.register.takeover", {
     userId,
-    details: { reason: conflict, deviceId },
+    details: { deviceId, previousDeviceIds: takenOver.map((d) => d.id) },
   });
-  return conflict === "apns_token_owned_by_other_user"
-    ? apiError("APNs token already registered to another account", 409)
-    : apiError("Device token already registered to another account", 409);
+  annotate({ meta: { device_takeover: takenOver.length } });
 }
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
 
-  // Per-user rate cap on device registration. The handler returns a distinct
-  // 409 (`apns_token_owned_by_other_user` / `token_owned_by_other_user`) when
-  // an `apnsToken` is already bound to a different account — useful for the
-  // legitimate cross-user-hijack guard, but it also means an authenticated
-  // user could enumerate token ownership across accounts unboundedly. 20
-  // device-mutations per 15 minutes is well outside any realistic client
-  // behaviour (the iOS app registers once on login + on token rotation; not
-  // 20× / window) while capping enumeration cost.
+  // Per-user rate cap on device registration. A registration can take a
+  // token over from another account, so an unbounded rate would let one
+  // account churn another's device rows. 20 device-mutations per 15 minutes
+  // is well outside any realistic client behaviour (the iOS app registers
+  // once on login + on token rotation; not 20× / window).
   const rl = await checkRateLimit(
     `devices:register:${user.id}`,
     20,
@@ -294,6 +355,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     apnsToken,
     apnsEnvironment,
     medicationDelivery,
+    localRunwayUntil,
   } = parsed.data;
 
   // Refused push fields (`preparePushFields`) answer before anything is
@@ -322,47 +384,30 @@ export const POST = apiHandler(async (request: NextRequest) => {
     const [legacyDevice, apnsDevice] = await Promise.all([
       tx.device.findUnique({
         where: { token },
-        select: {
-          id: true,
-          userId: true,
-          token: true,
-          medicationDelivery: true,
-          liveActivityPushToken: true,
-        },
+        select: DEVICE_MERGE_SELECT,
       }),
       apnsToken
         ? tx.device.findFirst({
             where: { apnsToken },
-            select: {
-              id: true,
-              userId: true,
-              token: true,
-              medicationDelivery: true,
-              liveActivityPushToken: true,
-            },
+            select: DEVICE_MERGE_SELECT,
           })
         : null,
     ]);
 
-    if (apnsDevice && apnsDevice.userId !== user.id) {
-      return {
-        conflict: "apns_token_owned_by_other_user" as const,
-        deviceId: apnsDevice.id,
-      };
-    }
-    if (legacyDevice && legacyDevice.userId !== user.id) {
-      return {
-        conflict: "token_owned_by_other_user" as const,
-        deviceId: legacyDevice.id,
-      };
-    }
+    // Another account's row for this install: taken over (see the header).
+    const { takenOver, unbinds } = await takeOver(tx, user.id, [
+      apnsDevice,
+      legacyDevice,
+    ]);
+    const ownApns = apnsDevice?.userId === user.id ? apnsDevice : null;
+    const ownLegacy = legacyDevice?.userId === user.id ? legacyDevice : null;
 
     // RefreshToken.deviceId stores the client-supplied Device.token value,
     // not the database row id. Keep this user's token family aligned when
     // APNs identifies an existing device under a changed legacy token.
-    if (apnsDevice && apnsDevice.token !== token) {
+    if (ownApns && ownApns.token !== token) {
       await tx.refreshToken.updateMany({
-        where: { userId: user.id, deviceId: apnsDevice.token },
+        where: { userId: user.id, deviceId: ownApns.token },
         data: { deviceId: token },
       });
     }
@@ -371,14 +416,16 @@ export const POST = apiHandler(async (request: NextRequest) => {
     // presented legacy token already has a second same-user row, carry its
     // explicit per-device state (including null clears), remove it, and update
     // the APNs row with the newly presented metadata.
-    let canonicalDevice = apnsDevice ?? legacyDevice;
-    let duplicateDevice: typeof legacyDevice = null;
-    if (apnsDevice && legacyDevice && apnsDevice.id !== legacyDevice.id) {
-      duplicateDevice = legacyDevice;
-      await tx.device.deleteMany({
-        where: { id: legacyDevice.id, userId: user.id },
-      });
-      canonicalDevice = apnsDevice;
+    let canonicalDevice = ownApns ?? ownLegacy;
+    let duplicateDevice: typeof ownLegacy = null;
+    if (ownApns && ownLegacy && ownApns.id !== ownLegacy.id) {
+      duplicateDevice = ownLegacy;
+      // Its APNs token differs from the one presented (the partial unique
+      // index gives that one to the APNs row), so an unbind queued for it
+      // never touches the binding this request makes; the minute pass sends
+      // it.
+      await deleteDeviceRowsIn(tx, { id: ownLegacy.id, userId: user.id });
+      canonicalDevice = ownApns;
     }
 
     const deviceData = {
@@ -396,6 +443,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
           ? { medicationDelivery: duplicateDevice.medicationDelivery }
           : {}),
       ...liveActivityFields(parsed.data, duplicateDevice),
+      ...(localRunwayUntil !== undefined ? { localRunwayUntil } : {}),
     };
 
     const device = canonicalDevice
@@ -428,12 +476,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
       await endApnsNoDeviceRest(tx, user.id);
     }
 
-    return { id: device.id };
+    return { id: device.id, takenOver, unbinds };
   });
 
-  if (registration.conflict) return denyConflict(user.id, registration);
-
   const { id } = registration;
+  await afterTakeover(user.id, id, registration);
 
   await auditLog("devices.register", {
     userId: user.id,

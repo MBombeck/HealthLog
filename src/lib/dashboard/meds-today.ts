@@ -13,20 +13,12 @@
  *      `scheduledToday` / `takenToday` / `skippedToday` with the exact
  *      semantics the summary route's compliance tile always had
  *      (taken = `takenAt !== null && !skipped`; tombstones excluded).
- *   3. **Next due** — the same four feeder reads +
- *      `computeDisplayDue` loop the medications list route runs
- *      (`src/app/api/medications/route.ts`), restricted to ACTIVE
- *      medications: latest non-skipped intake per med (rolling cadences
- *      re-anchor on it), resolved slots over the overdue-lookback
- *      horizon, and the current-era floor per med. The block surfaces
- *      the EARLIEST display-due across medications — an open overdue
- *      slot sits in the past, so it naturally wins over any future slot.
- *
- * The feeder reads are not lifted out of the medications list route
- * because that route reuses the same rows for its own response fields
- * (`lastTakenAt`, `todayEventCount`, per-card next-due); the clean
- * shared seam is `computeDisplayDue` itself, which both call sites go
- * through.
+ *   3. **Next due** — every active medication's dose ledger, read in one
+ *      batch (`dose-state/ledger.ts`), and its next dose by the dose
+ *      resolver (`dose-state/resolve.ts`): the earliest open slot (`due` or
+ *      `overdue`), else the earliest `pending` one. The same answer the
+ *      today list and the card's current dose give. The block surfaces the
+ *      earliest candidate, an overdue one first.
  *
  * Consumer contract (snapshot caching): `nextDueAt` / `nextDueOverdue`
  * are computed at build time and may be served from a cache. A
@@ -35,32 +27,46 @@
  * summary, never an overdue state, until a fresh block arrives.
  */
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { medicationWindow } from "@/lib/medications/course-window";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
-import { loadAutoTakeRollingAnchors } from "@/lib/medications/auto-take";
 import {
-  computeDisplayDue,
+  computeNextDueAt,
   OVERDUE_LOOKBACK_MS,
   toResolvedSlotMark,
-  type ResolvedSlotMark,
 } from "@/lib/medications/scheduling/next-due";
+import { liveEraStart } from "@/lib/medications/scheduling/live-era";
+import {
+  DOSE_LEDGER_MEDICATION_INCLUDE,
+  loadDoseLedgers,
+  type DoseLedger,
+  type DoseLedgerMedication,
+} from "@/lib/medications/dose-state/ledger";
+import {
+  resolveDoseState,
+  resolveLedgerSlot,
+  type ResolvedDose,
+} from "@/lib/medications/dose-state/resolve";
+import {
+  defaultDoseBand,
+  doseCadenceFamily,
+} from "@/lib/analytics/compliance/dose-status";
+import { medicationWindow } from "@/lib/medications/course-window";
+import type { DoseHistoryRow } from "@/lib/medications/scheduling/dose-history";
 import { buildCanonicalSchedule } from "@/lib/medications/scheduling/worker-helpers";
 import type { WorkerScheduleRow } from "@/lib/medications/scheduling/worker-helpers";
 import { formatInUserTz } from "@/lib/tz/format";
 import { getUserTodayBounds, localHmAsUtc } from "@/lib/tz/local-day";
 import {
+  dueSchedules,
   TRACKED_INTAKE_EVENT_WHERE,
   TRACKED_INTAKE_WHERE,
 } from "@/lib/medications/intake-tracking";
-import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
-import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 export interface MedsTodayDueCandidate {
   medicationId: string;
   medicationName: string;
   dueAt: string;
   overdue: boolean;
-  /** Canonical attribution-band start for this slot (ISO8601). */
+  /** When the dose turns due by the resolver: its `dueAt` (ISO8601). */
   availableFrom: string;
   /**
    * When the dose's own window opens (ISO8601): the start of an explicit
@@ -165,74 +171,35 @@ export async function buildMedsTodayBlock(
     todayEnd: todayEndExclusive,
   });
 
-  // Resolved-slot window — same horizon the medications list route uses:
-  // back as far as the widest band tail (so a long-resolved past slot
-  // cannot resurface as overdue), forward two days for the lookahead.
-  const resolvedWindowStart = new Date(
-    todayStart.getTime() - OVERDUE_LOOKBACK_MS,
-  );
-  const resolvedWindowEnd = new Date(
-    todayEnd.getTime() + 2 * 24 * 60 * 60 * 1000,
-  );
+  // The ledger window: back as far as the widest band tail (so a
+  // long-resolved past slot cannot resurface as open), forward two days for
+  // the lookahead.
+  const ledgerFrom = new Date(todayStart.getTime() - OVERDUE_LOOKBACK_MS);
+  const ledgerTo = new Date(todayEnd.getTime() + 2 * 24 * 60 * 60 * 1000);
 
-  const [medications, todayEvents, latestIntakes, resolvedEvents, eraFloors] =
-    await Promise.all([
-      // v1.39.1 (#1033) — a medication with intake tracking off has no
-      // place on the doses card: not counted, never the next due dose.
-      prisma.medication.findMany({
-        where: { userId, active: true, ...TRACKED_INTAKE_WHERE },
-        include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      }),
-      prisma.medicationIntakeEvent.findMany({
-        where: {
-          userId,
-          deletedAt: null,
-          scheduledFor: { gte: todayStart, lt: todayEndExclusive },
-          ...SCHEDULED_DOSE_TODAY_WHERE,
-        },
-        select: {
-          medicationId: true,
-          takenAt: true,
-          skipped: true,
-          scheduledFor: true,
-        },
-      }),
-      prisma.medicationIntakeEvent.groupBy({
-        by: ["medicationId"],
-        where: {
-          userId,
-          deletedAt: null,
-          skipped: false,
-          takenAt: { not: null },
-        },
-        _max: { takenAt: true },
-      }),
-      prisma.medicationIntakeEvent.findMany({
-        where: {
-          userId,
-          deletedAt: null,
-          scheduledFor: { gte: resolvedWindowStart, lte: resolvedWindowEnd },
-          OR: [
-            { takenAt: { not: null } },
-            { skipped: true },
-            { autoMissed: true },
-          ],
-        },
-        // v1.16.9 — `takenAt` rides along so an ad-hoc row (`scheduledFor
-        // === takenAt`) cannot ±6h-resolve a different slot.
-        select: { medicationId: true, scheduledFor: true, takenAt: true },
-      }),
-      // Current-era floor per medication: the newest revision's
-      // `validUntil` is where the LIVE schedule rows became valid; the
-      // open-overdue search must not reach past it into a previous
-      // era's cadence.
-      prisma.medicationScheduleRevision.groupBy({
-        by: ["medicationId"],
-        where: { medication: { userId }, supersededByRevisionId: null },
-        _max: { validUntil: true },
-      }),
-    ]);
+  const [medications, todayEvents] = await Promise.all([
+    // v1.39.1 (#1033) — a medication with intake tracking off has no
+    // place on the doses card: not counted, never the next due dose.
+    prisma.medication.findMany({
+      where: { userId, active: true, ...TRACKED_INTAKE_WHERE },
+      include: DOSE_LEDGER_MEDICATION_INCLUDE,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    }),
+    prisma.medicationIntakeEvent.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        scheduledFor: { gte: todayStart, lt: todayEndExclusive },
+        ...SCHEDULED_DOSE_TODAY_WHERE,
+      },
+      select: {
+        medicationId: true,
+        takenAt: true,
+        skipped: true,
+        scheduledFor: true,
+      },
+    }),
+  ]);
 
   // The day's scheduled doses only: an ad-hoc take (stored on its own
   // instant, `scheduledFor = takenAt`, as an extra dose or one before its
@@ -250,56 +217,39 @@ export async function buildMedsTodayBlock(
   ).length;
   const skippedToday = slotEvents.filter((e) => e.skipped).length;
 
-  const lastTakenAtByMedId = new Map<string, Date | null>(
-    latestIntakes.map((entry) => [entry.medicationId, entry._max.takenAt]),
-  );
-  const resolvedSlotsByMedId = new Map<string, ResolvedSlotMark[]>();
-  for (const e of resolvedEvents) {
-    const mark = toResolvedSlotMark(e);
-    const list = resolvedSlotsByMedId.get(e.medicationId);
-    if (list) list.push(mark);
-    else resolvedSlotsByMedId.set(e.medicationId, [mark]);
-  }
-  // The live era start per medication (see `live-era.ts`).
-  const eraStartByMedId = liveEraStartsByMedication(eraFloors);
-
-  // v1.42.2 — under auto-take a rolling cadence stands where the job will
-  // record next (see `auto-take.ts`).
-  const engineLastIntakeAt = await loadAutoTakeRollingAnchors(prisma, {
+  // The next dose of each medication, from its dose ledger and the dose
+  // resolver: the one answer the today list, the card's current dose and
+  // every device read. The tile used to run a due computation of its own
+  // (a radius match over resolved slots), which could call a dose pinned or
+  // recorded early "overdue" while the list said "taken".
+  const ledgers = await loadDoseLedgers({
     userId,
-    medicationIds: medications.filter((m) => m.autoMarkTaken).map((m) => m.id),
-    now,
     userTz,
-    lastIntakeAt: (id) => lastTakenAtByMedId.get(id) ?? null,
+    now,
+    ledgers: medications.map((medication) => ({
+      medication,
+      from: ledgerFrom,
+      to: ledgerTo,
+    })),
   });
 
   const dueCandidates: MedsTodayDueCandidate[] = [];
   for (const m of medications) {
-    const display = computeDisplayDue({
-      medication: {
-        id: m.id,
-        ...medicationWindow(m),
-        oneShot: m.oneShot,
-        createdAt: m.createdAt,
-      },
-      schedules: m.schedules,
-      now,
-      userTz,
-      lastIntakeAt: engineLastIntakeAt(m.id),
-      resolvedSlots: resolvedSlotsByMedId.get(m.id) ?? [],
-      eraStart: eraStartByMedId.get(m.id) ?? null,
-    });
-    if (!display) continue;
+    const ledger = ledgers.get(m.id);
+    const dose =
+      nextDoseOf(ledger?.rows ?? [], now) ??
+      unmintedNextDose(m, ledger, userTz, now);
+    if (!dose) continue;
     dueCandidates.push({
       medicationId: m.id,
       medicationName: m.name,
-      dueAt: display.at.toISOString(),
-      overdue: display.overdue,
-      availableFrom: (display.availableFrom ?? display.at).toISOString(),
+      dueAt: dose.slotInstant.toISOString(),
+      overdue: dose.state === "overdue",
+      availableFrom: dose.dueAt.toISOString(),
       opensAt: doseWindowOpening(
         m.schedules,
-        display.scheduleId,
-        display.at,
+        dose.timeOfDay,
+        dose.slotInstant,
         userTz,
       ).toISOString(),
     });
@@ -339,19 +289,85 @@ export async function buildMedsTodayBlock(
  */
 function doseWindowOpening(
   schedules: readonly WorkerScheduleRow[],
-  scheduleId: string | undefined,
+  timeOfDay: string | null,
   at: Date,
   userTz: string,
 ): Date {
-  const schedule =
-    schedules.find((row) => row.id === scheduleId) ??
-    (scheduleId === undefined ? schedules[0] : undefined);
-  if (!schedule) return at;
-  const windows = buildCanonicalSchedule(schedule).doseWindows ?? [];
-  const timeOfDay = formatInUserTz(at, userTz, "wall-clock");
-  const entry = windows.find((w) => w.timeOfDay === timeOfDay);
-  if (!entry) return at;
-  const [hour, minute] = entry.start.split(":").map(Number);
-  const opens = localHmAsUtc(at, userTz, hour, minute);
-  return opens.getTime() < at.getTime() ? opens : at;
+  const wallClock = timeOfDay ?? formatInUserTz(at, userTz, "wall-clock");
+  for (const schedule of schedules) {
+    const windows = buildCanonicalSchedule(schedule).doseWindows ?? [];
+    const entry = windows.find((w) => w.timeOfDay === wallClock);
+    if (!entry) continue;
+    const [hour, minute] = entry.start.split(":").map(Number);
+    const opens = localHmAsUtc(at, userTz, hour, minute);
+    return opens.getTime() < at.getTime() ? opens : at;
+  }
+  return at;
+}
+
+/**
+ * The next dose of a medication whose ledger holds no open or pending slot:
+ * a rolling cadence's next occurrence, which the retrospective ledger does
+ * not mint until it is taken. Resolved on the default band for its cadence,
+ * the rule `complianceDisplay.currentDose` applies to the same dose.
+ */
+function unmintedNextDose(
+  m: DoseLedgerMedication,
+  ledger: DoseLedger | undefined,
+  userTz: string,
+  now: Date,
+): (ResolvedDose & { timeOfDay: string | null }) | null {
+  const schedules = dueSchedules(m).filter((s) => s.scheduleType !== "PRN");
+  if (schedules.length === 0) return null;
+  const at = computeNextDueAt({
+    medication: {
+      id: m.id,
+      ...medicationWindow(m),
+      oneShot: m.oneShot,
+      createdAt: m.createdAt,
+    },
+    schedules,
+    now,
+    userTz,
+    lastIntakeAt: ledger?.lastIntakeAt ?? null,
+    // An occurrence already answered (taken, skipped or closed by the
+    // auto-miss pass) is nobody's next dose: the search walks past it.
+    resolvedSlots: (ledger?.intakes ?? [])
+      .filter((i) => i.takenAt !== null || i.skipped || i.autoMissed)
+      .map(toResolvedSlotMark),
+    eraStart: liveEraStart(m.scheduleRevisions),
+  });
+  if (!at) return null;
+  const resolved = resolveDoseState(
+    defaultDoseBand(at, doseCadenceFamily(schedules[0])),
+    null,
+    now,
+  );
+  if (!["pending", "due", "overdue"].includes(resolved.state)) return null;
+  return { ...resolved, timeOfDay: null };
+}
+
+/**
+ * A medication's next dose by the resolver: its earliest open slot (`due`
+ * or `overdue`), else its earliest slot still `pending`. A slot already
+ * answered, or past its miss cutoff, is nobody's next dose.
+ */
+function nextDoseOf(
+  rows: readonly DoseHistoryRow[],
+  now: Date,
+): (ResolvedDose & { timeOfDay: string | null }) | null {
+  let open: (ResolvedDose & { timeOfDay: string | null }) | null = null;
+  let pending: (ResolvedDose & { timeOfDay: string | null }) | null = null;
+  for (const row of rows) {
+    const resolved = resolveLedgerSlot(row, now);
+    if (!resolved) continue;
+    const dose = { ...resolved, timeOfDay: row.timeOfDay };
+    const t = resolved.slotInstant.getTime();
+    if (resolved.state === "due" || resolved.state === "overdue") {
+      if (!open || t < open.slotInstant.getTime()) open = dose;
+    } else if (resolved.state === "pending") {
+      if (!pending || t < pending.slotInstant.getTime()) pending = dose;
+    }
+  }
+  return open ?? pending;
 }

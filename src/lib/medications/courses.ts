@@ -19,6 +19,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { prisma } from "@/lib/db";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import {
   canEndCourse,
   canStartCourse,
@@ -239,6 +240,16 @@ interface WriteContext {
   now?: Date;
 }
 
+/**
+ * Run a course write and, once it committed, tell the devices: a course
+ * decides which days expect a dose.
+ */
+async function notifyAfter<T>(userId: string, run: () => Promise<T>) {
+  const result = await run();
+  afterDoseChange({ userId, scope: "medication" });
+  return result;
+}
+
 export async function createCourse(
   args: WriteContext & {
     startsOn: Date;
@@ -247,64 +258,66 @@ export async function createCourse(
   },
 ): Promise<CourseRow> {
   const todayKey = userDayKey(args.now ?? new Date(), args.timeZone);
-  return prisma.$transaction(async (tx) => {
-    await lockMedication(tx, args.medicationId);
-    const { medication, courses } = await loadOwned(
-      tx,
-      args.userId,
-      args.medicationId,
-    );
-    // A medication without course rows is not empty history. With no window
-    // at all it has been taken continuously since creation and is running
-    // now, so a course cannot be added beside it (it ends its course first,
-    // "End course" writes one). With a window the rows never recorded (a
-    // file restored past the backfill), that window is its first course and
-    // is materialised before the new one is checked against it. Either way
-    // nothing the person already recorded can be cut off by the projection.
-    let existing: { startsOn: Date; endsOn: Date | null }[] = courses;
-    if (courses.length === 0) {
-      if (medication.startsOn === null && medication.endsOn === null) {
-        throw new CourseWriteError("currentOpen");
-      }
-      const implicit = windowAsCourse(
-        medication.startsOn,
-        medication.endsOn,
-        undefined,
-        medication.createdAt,
-        args.timeZone,
+  return notifyAfter(args.userId, () =>
+    prisma.$transaction(async (tx) => {
+      await lockMedication(tx, args.medicationId);
+      const { medication, courses } = await loadOwned(
+        tx,
+        args.userId,
+        args.medicationId,
       );
+      // A medication without course rows is not empty history. With no window
+      // at all it has been taken continuously since creation and is running
+      // now, so a course cannot be added beside it (it ends its course first,
+      // "End course" writes one). With a window the rows never recorded (a
+      // file restored past the backfill), that window is its first course and
+      // is materialised before the new one is checked against it. Either way
+      // nothing the person already recorded can be cut off by the projection.
+      let existing: { startsOn: Date; endsOn: Date | null }[] = courses;
+      if (courses.length === 0) {
+        if (medication.startsOn === null && medication.endsOn === null) {
+          throw new CourseWriteError("currentOpen");
+        }
+        const implicit = windowAsCourse(
+          medication.startsOn,
+          medication.endsOn,
+          undefined,
+          medication.createdAt,
+          args.timeZone,
+        );
+        refuseIfInvalid(
+          [implicit, { startsOn: args.startsOn, endsOn: args.endsOn }],
+          todayKey,
+          medication.oneShot,
+        );
+        await tx.medicationCourse.create({
+          data: {
+            medicationId: args.medicationId,
+            userId: args.userId,
+            ...implicit,
+          },
+        });
+        existing = [implicit];
+      }
       refuseIfInvalid(
-        [implicit, { startsOn: args.startsOn, endsOn: args.endsOn }],
+        [...existing, { startsOn: args.startsOn, endsOn: args.endsOn }],
         todayKey,
         medication.oneShot,
       );
-      await tx.medicationCourse.create({
+      const created = await tx.medicationCourse.create({
         data: {
           medicationId: args.medicationId,
           userId: args.userId,
-          ...implicit,
+          startsOn: args.startsOn,
+          endsOn: args.endsOn,
+          noteEncrypted: encryptNote(args.note) ?? null,
         },
+        select: COURSE_ROW_SELECT,
       });
-      existing = [implicit];
-    }
-    refuseIfInvalid(
-      [...existing, { startsOn: args.startsOn, endsOn: args.endsOn }],
-      todayKey,
-      medication.oneShot,
-    );
-    const created = await tx.medicationCourse.create({
-      data: {
-        medicationId: args.medicationId,
-        userId: args.userId,
-        startsOn: args.startsOn,
-        endsOn: args.endsOn,
-        noteEncrypted: encryptNote(args.note) ?? null,
-      },
-      select: COURSE_ROW_SELECT,
-    });
-    await project(tx, args.medicationId, args.timeZone);
-    return created;
-  });
+      await project(tx, args.medicationId, args.timeZone);
+      return created;
+    }),
+  );
 }
 
 export async function updateCourse(
@@ -316,40 +329,42 @@ export async function updateCourse(
   },
 ): Promise<CourseRow> {
   const todayKey = userDayKey(args.now ?? new Date(), args.timeZone);
-  return prisma.$transaction(async (tx) => {
-    await lockMedication(tx, args.medicationId);
-    const { medication, courses } = await loadOwned(
-      tx,
-      args.userId,
-      args.medicationId,
-    );
-    const current = courses.find((c) => c.id === args.courseId);
-    if (!current) throw new CourseWriteError("notFound");
-    const endsOn = args.endsOn === undefined ? current.endsOn : args.endsOn;
-    const next = {
-      startsOn: args.startsOn ?? current.startsOn,
-      endsOn,
-      endedAt: keptEndedAt(current, endsOn),
-    };
-    refuseIfInvalid(
-      courses.map((c) => (c.id === current.id ? next : c)),
-      todayKey,
-      medication.oneShot,
-    );
-    const noteEncrypted = encryptNote(args.note);
-    const updated = await tx.medicationCourse.update({
-      where: { id: current.id },
-      data: {
-        startsOn: next.startsOn,
-        endsOn: next.endsOn,
-        endedAt: next.endedAt,
-        ...(noteEncrypted !== undefined && { noteEncrypted }),
-      },
-      select: COURSE_ROW_SELECT,
-    });
-    await project(tx, args.medicationId, args.timeZone);
-    return updated;
-  });
+  return notifyAfter(args.userId, () =>
+    prisma.$transaction(async (tx) => {
+      await lockMedication(tx, args.medicationId);
+      const { medication, courses } = await loadOwned(
+        tx,
+        args.userId,
+        args.medicationId,
+      );
+      const current = courses.find((c) => c.id === args.courseId);
+      if (!current) throw new CourseWriteError("notFound");
+      const endsOn = args.endsOn === undefined ? current.endsOn : args.endsOn;
+      const next = {
+        startsOn: args.startsOn ?? current.startsOn,
+        endsOn,
+        endedAt: keptEndedAt(current, endsOn),
+      };
+      refuseIfInvalid(
+        courses.map((c) => (c.id === current.id ? next : c)),
+        todayKey,
+        medication.oneShot,
+      );
+      const noteEncrypted = encryptNote(args.note);
+      const updated = await tx.medicationCourse.update({
+        where: { id: current.id },
+        data: {
+          startsOn: next.startsOn,
+          endsOn: next.endsOn,
+          endedAt: next.endedAt,
+          ...(noteEncrypted !== undefined && { noteEncrypted }),
+        },
+        select: COURSE_ROW_SELECT,
+      });
+      await project(tx, args.medicationId, args.timeZone);
+      return updated;
+    }),
+  );
 }
 
 /**
@@ -359,15 +374,17 @@ export async function updateCourse(
 export async function deleteCourse(
   args: WriteContext & { courseId: string },
 ): Promise<void> {
-  await prisma.$transaction(async (tx) => {
-    await lockMedication(tx, args.medicationId);
-    const { courses } = await loadOwned(tx, args.userId, args.medicationId);
-    if (!courses.some((c) => c.id === args.courseId)) {
-      throw new CourseWriteError("notFound");
-    }
-    await tx.medicationCourse.delete({ where: { id: args.courseId } });
-    await project(tx, args.medicationId, args.timeZone);
-  });
+  await notifyAfter(args.userId, () =>
+    prisma.$transaction(async (tx) => {
+      await lockMedication(tx, args.medicationId);
+      const { courses } = await loadOwned(tx, args.userId, args.medicationId);
+      if (!courses.some((c) => c.id === args.courseId)) {
+        throw new CourseWriteError("notFound");
+      }
+      await tx.medicationCourse.delete({ where: { id: args.courseId } });
+      await project(tx, args.medicationId, args.timeZone);
+    }),
+  );
 }
 
 /**
@@ -410,9 +427,13 @@ export async function setCurrentWindow(
   args: WriteContext & { startsOn: Date | null; endsOn: Date | null },
   tx?: Tx,
 ): Promise<ProjectedWindow> {
+  // Inside the caller's transaction the caller tells the devices once it
+  // commits (`update-medication.ts`).
   return tx
     ? writeCurrentWindow(tx, args)
-    : prisma.$transaction((own) => writeCurrentWindow(own, args));
+    : notifyAfter(args.userId, () =>
+        prisma.$transaction((own) => writeCurrentWindow(own, args)),
+      );
 }
 
 async function writeCurrentWindow(
@@ -513,68 +534,70 @@ export async function endCurrentCourse(args: WriteContext): Promise<{
   const now = args.now ?? new Date();
   const todayKey = userDayKey(now, args.timeZone);
   const { endsOn: today, endedAt } = courseEndNow(now, args.timeZone);
-  return prisma.$transaction(async (tx) => {
-    await lockMedication(tx, args.medicationId);
-    const { medication, courses } = await loadOwned(
-      tx,
-      args.userId,
-      args.medicationId,
-    );
-    if (!canEndCourse(courseStatusAt(medication, now, args.timeZone))) {
-      throw new CourseWriteError("notRunning");
-    }
-    const latest = sortCourses(courses).at(-1);
-    if (latest) {
-      const ended = { startsOn: latest.startsOn, endsOn: today, endedAt };
-      refuseIfInvalid(
-        courses.map((c) => (c.id === latest.id ? ended : c)),
-        todayKey,
-        medication.oneShot,
+  return notifyAfter(args.userId, () =>
+    prisma.$transaction(async (tx) => {
+      await lockMedication(tx, args.medicationId);
+      const { medication, courses } = await loadOwned(
+        tx,
+        args.userId,
+        args.medicationId,
       );
-      await tx.medicationCourse.update({
-        where: { id: latest.id },
-        data: { endsOn: today, endedAt },
-      });
-    } else {
-      const implicit = windowAsCourse(
-        medication.startsOn,
-        today,
-        undefined,
-        medication.createdAt,
-        args.timeZone,
-      );
-      refuseIfInvalid([implicit], todayKey, medication.oneShot);
-      await tx.medicationCourse.create({
-        data: {
-          medicationId: args.medicationId,
+      if (!canEndCourse(courseStatusAt(medication, now, args.timeZone))) {
+        throw new CourseWriteError("notRunning");
+      }
+      const latest = sortCourses(courses).at(-1);
+      if (latest) {
+        const ended = { startsOn: latest.startsOn, endsOn: today, endedAt };
+        refuseIfInvalid(
+          courses.map((c) => (c.id === latest.id ? ended : c)),
+          todayKey,
+          medication.oneShot,
+        );
+        await tx.medicationCourse.update({
+          where: { id: latest.id },
+          data: { endsOn: today, endedAt },
+        });
+      } else {
+        const implicit = windowAsCourse(
+          medication.startsOn,
+          today,
+          undefined,
+          medication.createdAt,
+          args.timeZone,
+        );
+        refuseIfInvalid([implicit], todayKey, medication.oneShot);
+        await tx.medicationCourse.create({
+          data: {
+            medicationId: args.medicationId,
+            userId: args.userId,
+            ...implicit,
+            endedAt,
+          },
+        });
+      }
+      const dropped = await tx.medicationIntakeEvent.updateMany({
+        where: {
           userId: args.userId,
-          ...implicit,
-          endedAt,
+          medicationId: args.medicationId,
+          deletedAt: null,
+          takenAt: null,
+          skipped: false,
+          autoMissed: false,
+          scheduledFor: { gte: now },
         },
+        data: { deletedAt: now, syncVersion: { increment: 1 } },
       });
-    }
-    const dropped = await tx.medicationIntakeEvent.updateMany({
-      where: {
-        userId: args.userId,
-        medicationId: args.medicationId,
-        deletedAt: null,
-        takenAt: null,
-        skipped: false,
-        autoMissed: false,
-        scheduledFor: { gte: now },
-      },
-      data: { deletedAt: now, syncVersion: { increment: 1 } },
-    });
-    return {
-      window: await project(tx, args.medicationId, args.timeZone),
-      previous: {
-        startsOn: medication.startsOn,
-        endsOn: medication.endsOn,
-        endedAt: medication.endedAt,
-      },
-      droppedPlaceholders: dropped.count,
-    };
-  });
+      return {
+        window: await project(tx, args.medicationId, args.timeZone),
+        previous: {
+          startsOn: medication.startsOn,
+          endsOn: medication.endsOn,
+          endedAt: medication.endedAt,
+        },
+        droppedPlaceholders: dropped.count,
+      };
+    }),
+  );
 }
 
 /**

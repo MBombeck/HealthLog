@@ -174,7 +174,7 @@ const batchEntryResult = z
       .string()
       .optional()
       .describe(
-        "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`, `hour_bucket_unsupported_type`, `hour_bucket_too_old` (since v1.43): an hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent for the row as sent.",
+        "Why a row was `skipped` or a `duplicate`. `tombstoned` (since v1.49.0): an immutable sample whose `(type, source, externalId)` names a row deleted earlier (in HealthLog, or through `DELETE /api/measurements/by-external-ids`); it stays deleted and nothing is written. A `stats:` aggregate is a day's total, not a sample, and a re-post writes it again. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`, `hour_bucket_unsupported_type`, `hour_bucket_too_old` (since v1.43): an hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent for the row as sent.",
       ),
     convertedValue: z
       .number()

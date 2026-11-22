@@ -43,6 +43,7 @@ import type {
 } from "@/generated/prisma/client";
 import { lockAppleHealthTombstones } from "@/lib/sync/apple-health-tombstones";
 import { encryptWaveformToBytes } from "@/lib/withings/ecg-waveform-codec";
+import { TOMBSTONED_REASON } from "@/lib/sync/tombstone-repost";
 
 /**
  * What the write did.
@@ -77,6 +78,8 @@ export interface EcgRecordingWrite {
 
 export interface EcgPersistResult {
   outcome: EcgPersistOutcome;
+  /** On a refused re-post of a recording the phone reported deleted. */
+  reason?: typeof TOMBSTONED_REASON;
   /** The row holding this recording — the written one, or the twin. */
   id: string;
   sampleCount: number;
@@ -169,6 +172,7 @@ export async function persistEcgRecording(
         if (tombstone) {
           return {
             outcome: "duplicate" as const,
+            reason: TOMBSTONED_REASON,
             id: tombstone.id,
             sampleCount,
             durationSeconds,

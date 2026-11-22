@@ -129,6 +129,7 @@ describe("auth ledger cleanup", () => {
         mfa_challenges: 1,
         auth_challenges: 1,
       },
+      signedOutAccounts: 0,
       drained: true,
     });
     expect(

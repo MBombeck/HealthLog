@@ -39,6 +39,7 @@ import {
   type DroppedLinkKeys,
   type RatedFactorInput,
 } from "@/lib/mood/tag-links";
+import { TOMBSTONED_ENTRY } from "@/lib/sync/tombstone-repost";
 
 /** One entry as the route's batch schema parsed it. */
 export interface BulkMoodEntry {
@@ -396,7 +397,7 @@ async function ingestEntry(args: {
       tally.duplicates += 1;
       tally.results.push({
         index: i,
-        status: "duplicate",
+        ...TOMBSTONED_ENTRY,
         id: existing.id,
         ...echoExternalId(entry),
       });

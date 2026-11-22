@@ -22,7 +22,7 @@ import {
 import { getUserTodayBounds, localHmAsUtc } from "@/lib/tz/local-day";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { findTelegramDoseMedication } from "@/lib/telegram-dose-medications";
 
 /**
@@ -243,7 +243,8 @@ export async function markMedicationTaken(
     invalidateUserMedications(userId, { evict: true });
     // Wake the owner's iOS devices like a web take does, so a running Live
     // Activity and the widgets reconcile a dose confirmed in Telegram.
-    queueMedicationIntakeSync({
+    afterDoseChange({
+      scope: "intakes",
       userId,
       originDeviceToken: null,
       recorded: written.alreadyTaken
@@ -404,7 +405,8 @@ export async function markMedicationSkipped(input: {
       eventId: writtenSkip.eventId,
     });
     invalidateUserMedications(userId, { evict: true });
-    queueMedicationIntakeSync({
+    afterDoseChange({
+      scope: "intakes",
       userId,
       originDeviceToken: null,
       recorded: {

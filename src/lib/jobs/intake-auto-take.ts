@@ -83,7 +83,7 @@ import {
   buildRecurrenceContext,
 } from "@/lib/medications/scheduling/worker-helpers";
 import type { SlotBand } from "@/lib/medications/scheduling/attribution";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { isP2002 } from "@/lib/prisma-errors";
 import {
   dayKeyForScheduledFor,
@@ -320,7 +320,11 @@ export async function runIntakeAutoTakePass(
     invalidateUserMedications(userId, { evict: true });
     // Wakes the person's iOS devices so a widget or Live Activity showing
     // the dose as open reconciles. Coalesced per user, best-effort.
-    queueMedicationIntakeSync({ userId, originDeviceToken: null });
+    afterDoseChange({
+      scope: "intakes",
+      userId,
+      originDeviceToken: null,
+    });
   }
 
   return {

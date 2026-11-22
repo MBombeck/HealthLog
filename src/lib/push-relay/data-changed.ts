@@ -12,10 +12,9 @@
  * Coalescing, per device, across processes (`push_data_changes`): the first
  * change after a quiet spell goes out at once; every change inside the next
  * five minutes merges its domains into one pending wake, and the minute job
- * `push-data-changed` sends it when the window closes. At most
- * {@link SENDS_PER_HOUR} wakes an hour per device; past that the pending one
- * waits for the hour to free up, merged, never dropped. Every wake also
- * counts against the device's shared silent budget (`wakes.ts`).
+ * `push-data-changed` sends it when the window closes. The hourly limits are
+ * the device's one silent budget (`wakes.ts`): past them the pending wake
+ * waits for the hour to free up, merged, never dropped.
  *
  * Origin. A change caused by a device's own request (a "sync now" the app
  * started, `X-Device-Id` on the provider's sync route) is not added to that
@@ -31,21 +30,22 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { flushOwedIntakeSyncs } from "@/lib/push-relay/medication-pushes";
 import { pruneWakes, sendWake, wakeableDevices } from "@/lib/push-relay/wakes";
 
 export const DATA_DOMAINS = [
+  "intakes",
   "measurements",
+  "medications",
+  "nutrition",
   "sleep",
   "workouts",
-  "nutrition",
 ] as const;
 
 export type DataDomain = (typeof DATA_DOMAINS)[number];
 
 /** The quiet spell after one send. */
 export const COALESCE_WINDOW_MS = 5 * 60_000;
-/** Wakes per device and hour. */
-export const SENDS_PER_HOUR = 3;
 const origin = new AsyncLocalStorage<string | null>();
 
 /** The notes a batch holds back, by account and origin device. */
@@ -175,39 +175,39 @@ async function addPending(
 
 /**
  * Take the device's pending domains if its window is open: at least five
- * minutes since its last wake and fewer than three wakes in the last hour.
- * The row lock makes the claim exclusive, so two processes never both send.
+ * minutes since its last wake. The row lock makes the claim exclusive, so two
+ * processes never both send. The hourly limits are the silent budget's
+ * (`wakes.ts`), asked when the wake is sent; the send time is stamped only
+ * once a wake went out, so a claim that sent nothing costs no slot.
  */
 async function claim(deviceId: string, now: Date): Promise<string[] | null> {
   const at = sqlTime(now);
   const rows = await prisma.$queryRaw<Array<{ domains: string[] }>>`
     WITH due AS (
-      SELECT "device_id", "domains", "sent_at"
+      SELECT "device_id", "domains"
         FROM "push_data_changes"
        WHERE "device_id" = ${deviceId}
          AND cardinality("domains") > 0
          AND (cardinality("sent_at") = 0
               OR "sent_at"[cardinality("sent_at")]
                  <= ${at}::timestamp(3) - make_interval(secs => ${COALESCE_WINDOW_MS / 1000}))
-         AND (cardinality("sent_at") < ${SENDS_PER_HOUR}
-              OR "sent_at"[cardinality("sent_at") - ${SENDS_PER_HOUR - 1}]
-                 <= ${at}::timestamp(3) - interval '1 hour')
        FOR UPDATE
     )
     UPDATE "push_data_changes" AS p
        SET "domains" = ARRAY[]::text[],
-           "sent_at" = ARRAY(
-             SELECT s FROM (
-               SELECT s FROM unnest(array_append(due."sent_at", ${at}::timestamp(3))) AS s
-                ORDER BY s DESC
-                LIMIT ${SENDS_PER_HOUR}
-             ) AS kept ORDER BY s
-           ),
            "updated_at" = ${at}::timestamp(3)
       FROM due
      WHERE p."device_id" = due."device_id"
     RETURNING due."domains"`;
   return rows[0]?.domains ?? null;
+}
+
+/** Stamp the wake that went out: the start of the device's next window. */
+async function markSent(deviceId: string, now: Date): Promise<void> {
+  await prisma.$executeRaw`
+    UPDATE "push_data_changes"
+       SET "sent_at" = ARRAY[${sqlTime(now)}::timestamp(3)]
+     WHERE "device_id" = ${deviceId}`;
 }
 
 /**
@@ -250,17 +250,29 @@ export async function flushDataChange(
     if (result.overBudget.length > 0) {
       getEvent()?.addMeta("push_data_changed_over_budget", true);
     }
+    return false;
   }
-  return result.sent.length > 0;
+  await markSent(deviceId, now);
+  return true;
 }
 
 /**
- * The minute pass: send every pending wake whose window has opened, then
- * prune the wake ledger. Returns how many devices were woken.
+ * The minute pass: send every pending wake whose window has opened and every
+ * owed intake sync whose budget freed up (`medication-pushes.ts`), then prune
+ * the wake ledger. Returns how many devices were woken and synced.
  */
 export async function flushDueDataChanges(
   now: Date = new Date(),
-): Promise<{ flushed: number; pruned: number }> {
+): Promise<{ flushed: number; owedSynced: number; pruned: number }> {
+  // The owed intake syncs go first: a dose decision waits on them.
+  let owedSynced = 0;
+  try {
+    owedSynced = await flushOwedIntakeSyncs(now);
+  } catch (err) {
+    getEvent()?.addWarning(
+      `intake_sync_owed_flush_failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
   const pending = await prisma.pushDataChange.findMany({
     where: { NOT: { domains: { isEmpty: true } } },
     select: { deviceId: true },
@@ -277,5 +289,5 @@ export async function flushDueDataChanges(
       );
     }
   }
-  return { flushed, pruned: await pruneWakes(now) };
+  return { flushed, owedSynced, pruned: await pruneWakes(now) };
 }

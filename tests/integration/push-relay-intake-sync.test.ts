@@ -48,7 +48,8 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 import { callRoute } from "../kit/call-route";
 import { makeSession, makeToken, makeUser } from "../kit/factories";
 import { deviceBody, enableRelay, registerDevice } from "./push-relay-kit";
-import { tokenTagHex } from "@/lib/push-relay/encoding";
+import { fromBase64Url, tokenTagHex } from "@/lib/push-relay/encoding";
+import { openEnvelope } from "@/lib/push-relay/__tests__/envelope-open";
 import { activityText, signText } from "@/lib/push-relay/statements";
 import { RELAY_HOST } from "./push-relay-fake";
 
@@ -166,5 +167,222 @@ describe("a dose recorded elsewhere wakes a relay device", () => {
           where: { id: activity.id },
         })) === 0,
     );
+  });
+});
+
+/** The sender key `/api/auth/me` publishes for `session`. */
+async function senderKey(session: Awaited<ReturnType<typeof makeSession>>) {
+  const { GET } = await import("@/app/api/auth/me/route");
+  const me = await callRoute<{
+    push: { relay: { senderKeys: Array<{ publicKey: string }> } };
+  }>(GET, {
+    method: "GET",
+    route: "/api/auth/me",
+    auth: session,
+    contract: { skip: "only the sender key is read here" },
+  });
+  return me.data.push.relay.senderKeys[0]!.publicKey;
+}
+
+/** The silent pushes `token` got, opened. */
+function silentTypes(
+  token: string,
+  pushKey: { privateKey: Buffer },
+  sender: string,
+) {
+  return fake.apns
+    .filter((a) => a.token === token && a.pushClass === "silent")
+    .map((a) =>
+      openEnvelope({
+        recipientKeys: [pushKey.privateKey],
+        trustedSenders: [fromBase64Url(sender, 32) as Buffer],
+        apnsToken: Buffer.from(token, "hex"),
+        envelope: fromBase64Url(a.payload.e as string) as Buffer,
+        expectedClass: "silent",
+        now: Math.floor(Date.now() / 1000),
+      }),
+    );
+}
+
+const settle = () => new Promise((r) => setTimeout(r, 400));
+
+describe("the intake sync's budget, audience and triggers", () => {
+  it("lets the confirmation stand in for the silent sync when it is on", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const registeredKeys = deviceBody(instanceId, TOKEN);
+    const { body } = registeredKeys;
+    await registerDevice(session, body);
+    const prisma = getPrismaClient();
+    const channel = await prisma.notificationChannel.findUniqueOrThrow({
+      where: { userId_type: { userId: user.id, type: "APNS" } },
+    });
+    await prisma.notificationPreference.create({
+      data: {
+        channelId: channel.id,
+        eventType: "MEDICATION_INTAKE_RECORDED",
+        enabled: true,
+      },
+    });
+    const medication = await prisma.medication.create({
+      data: { userId: user.id, name: "Ramipril", dose: "5 mg" },
+    });
+    const pillBox = await makeToken(user, {
+      permissions: ["medication:ingest", `medication:${medication.id}:ingest`],
+    });
+    const { POST } = await import("@/app/api/ingest/medication/route");
+    const res = await callRoute(POST, {
+      method: "POST",
+      route: "/api/ingest/medication",
+      auth: pillBox,
+      body: { medicationName: "Ramipril", idempotencyKey: "box-2" },
+    });
+    expect(res.status).toBe(201);
+    await eventually(() => fake.apns.some((a) => a.pushClass === "alert"));
+    // The alert triggers the sync in the extension; a silent sync beside it
+    // would spend the relay's budget twice for one dose. The DATA_CHANGED
+    // wake that names `intakes` follows its own window.
+    await settle();
+    const sender = await senderKey(session);
+    const { pushKey } = registeredKeys;
+    expect(
+      silentTypes(TOKEN, pushKey, sender).filter(
+        (p) => p.t === "MEDICATION_INTAKE_SYNC",
+      ),
+    ).toHaveLength(0);
+    expect(
+      await prisma.pushWake.count({
+        where: { kind: "MEDICATION_INTAKE_SYNC" },
+      }),
+    ).toBe(0);
+  });
+
+  it("owes the sync past the silent budget and sends it once the hour frees up", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const { body } = deviceBody(instanceId, TOKEN);
+    const registered = await registerDevice(session, body);
+    const deviceId = registered.data.id;
+    const prisma = getPrismaClient();
+    const now = new Date();
+    await prisma.pushWake.createMany({
+      data: Array.from({ length: 6 }, (_, i) => ({
+        deviceId,
+        kind: i < 2 ? "DATA_CHANGED" : "MEDICATION_INTAKE_SYNC",
+        createdAt: new Date(now.getTime() - 30 * 60_000),
+      })),
+    });
+    const { queueMedicationIntakeSync } =
+      await import("@/lib/notifications/medication-intake-sync");
+    queueMedicationIntakeSync({ userId: user.id, originDeviceToken: null });
+    await eventually(
+      async () =>
+        (await prisma.pushDataChange.findUnique({ where: { deviceId } }))
+          ?.intakeSyncOwedAt != null,
+    );
+    expect(fake.apns.filter((a) => a.pushClass === "silent")).toHaveLength(0);
+    await eventually(
+      async () =>
+        (await prisma.pushAttempt.count({
+          where: {
+            userId: user.id,
+            eventType: "MEDICATION_INTAKE_SYNC",
+            reason: "intake_sync_deferred_budget",
+          },
+        })) === 1,
+    );
+
+    // Still inside the hour: the minute pass keeps it owed.
+    const { flushDueDataChanges } =
+      await import("@/lib/push-relay/data-changed");
+    expect(
+      (await flushDueDataChanges(new Date(now.getTime() + 60_000))).owedSynced,
+    ).toBe(0);
+    // Once the budget frees up it goes, once, and is settled.
+    const later = new Date(now.getTime() + 31 * 60_000);
+    expect((await flushDueDataChanges(later)).owedSynced).toBe(1);
+    await eventually(() =>
+      fake.apns.some((a) => a.pushClass === "silent" && a.token === TOKEN),
+    );
+    expect(
+      (await prisma.pushDataChange.findUniqueOrThrow({ where: { deviceId } }))
+        .intakeSyncOwedAt,
+    ).toBeNull();
+    expect((await flushDueDataChanges(later)).owedSynced).toBe(0);
+  });
+
+  it("wakes a Guardian's device for a change to the managed profile", async () => {
+    const { instanceId } = await enableRelay();
+    const guardian = await makeUser();
+    const guardianSession = await makeSession(guardian);
+    const { body } = deviceBody(instanceId, TOKEN);
+    await registerDevice(guardianSession, body);
+    const prisma = getPrismaClient();
+    const profile = await makeUser();
+    await prisma.user.update({
+      where: { id: profile.id },
+      data: { managedProfileAt: new Date() },
+    });
+    await prisma.accountGrant.create({
+      data: {
+        grantorId: profile.id,
+        granteeId: guardian.id,
+        access: "MANAGE",
+        acceptedAt: new Date(),
+      },
+    });
+    const { queueMedicationIntakeSync } =
+      await import("@/lib/notifications/medication-intake-sync");
+    queueMedicationIntakeSync({ userId: profile.id, originDeviceToken: null });
+    await eventually(() =>
+      fake.apns.some((a) => a.pushClass === "silent" && a.token === TOKEN),
+    );
+
+    // A revoked grant: nothing reaches the former Guardian.
+    fake.apns.length = 0;
+    await prisma.accountGrant.updateMany({
+      where: { grantorId: profile.id },
+      data: { revokedAt: new Date(), revokedBy: "GRANTOR" },
+    });
+    await new Promise((r) => setTimeout(r, 2200));
+    queueMedicationIntakeSync({ userId: profile.id, originDeviceToken: null });
+    await settle();
+    expect(fake.apns.filter((a) => a.pushClass === "silent")).toHaveLength(0);
+  });
+
+  it("wakes the devices on a medication change, with the dose domains on DATA_CHANGED", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const { body, pushKey } = deviceBody(instanceId, TOKEN);
+    await registerDevice(session, body);
+    const prisma = getPrismaClient();
+    const medication = await prisma.medication.create({
+      data: { userId: user.id, name: "Ramipril", dose: "5 mg" },
+    });
+    const { DELETE } = await import("@/app/api/medications/[id]/route");
+    const res = await callRoute(DELETE, {
+      method: "DELETE",
+      route: "/api/medications/{id}",
+      params: { id: medication.id },
+      auth: session,
+    });
+    expect(res.status).toBe(200);
+    const sender = await senderKey(session);
+    await eventually(() => {
+      const types = silentTypes(TOKEN, pushKey, sender).map((p) => p.t);
+      return (
+        types.includes("MEDICATION_INTAKE_SYNC") &&
+        types.includes("DATA_CHANGED")
+      );
+    });
+    const dataChanged = silentTypes(TOKEN, pushKey, sender).find(
+      (p) => p.t === "DATA_CHANGED",
+    );
+    expect(dataChanged?.d).toMatchObject({
+      domains: ["intakes", "medications"],
+    });
   });
 });

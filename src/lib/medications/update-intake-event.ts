@@ -21,7 +21,7 @@ import {
 } from "@/lib/medications/inventory/consumption";
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   applyCanonicalSlotWrite,
@@ -620,7 +620,8 @@ export async function updateIntakeEvent(
   // (#22) — silent cross-device intake sync: an edited dose must reconcile on
   // the user's other iOS devices too. Coalesced per user, best-effort — never
   // affects the response.
-  queueMedicationIntakeSync({
+  afterDoseChange({
+    scope: "intakes",
     userId: user.id,
     originDeviceToken: input.originDeviceToken,
   });

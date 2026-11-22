@@ -52,7 +52,13 @@ const deviceRegisterRequest = z
       .nullable()
       .optional()
       .describe(
-        'v1.7.0 per-device medication-delivery override; omitted keeps the stored value. "client" keeps the server\'s medication-reminder push off this device (the app reminds locally), "server" pushes it to this device whatever the account says, and null / no override follows the account-wide switch (`notificationPrefs.medication.clientManaged` or `deliveryDefault: "client"`). Since v1.48.0 the server honours it per device on the APNs send; before, it was stored and echoed only. Only the reminder that announces a dose is affected: follow-ups for a dose still open, every other push, and the Telegram, ntfy, webhook, email and Web Push channels are not.',
+        'v1.7.0 per-device medication-delivery override; omitted keeps the stored value. "client" keeps the server\'s medication-reminder push off this device (the app reminds locally) while its local plan can run (see `localRunwayUntil`; without one, for 3 days after its last authenticated request), "server" pushes it to this device whatever the account says, and null / no override follows the account-wide switch (`notificationPrefs.medication.clientManaged` or `deliveryDefault: "client"`). Since v1.48.0 the server honours it per device on the APNs send; before, it was stored and echoed only. Only the reminder that announces a dose is affected: follow-ups for a dose still open, every other push, and the Telegram, ntfy, webhook, email and Web Push channels are not.',
+      ),
+    localRunwayUntil: isoDateTime()
+      .nullable()
+      .optional()
+      .describe(
+        "Until when this device has its medication reminders planned locally (ISO 8601). Only read while the device delivers locally (`medicationDelivery: \"client\"`, or inheriting a client-managed account). Such a device keeps the server's reminder push off only while `now <= localRunwayUntil`; past it the server pushes the reminder that announces a dose to this device again. Without a runway the server allows 3 days after the device's last authenticated request. Must lie between now (5 minutes of clock skew allowed) and 14 days ahead, else 422. Null clears it (back to the 3-day rule); omitted keeps the stored value. Send it on every registration, since a request that does not register does not move it.",
       ),
     liveActivityPushToken: z
       .string()
@@ -103,7 +109,7 @@ const deviceRegisterRequest = z
   .meta({
     id: "DeviceRegisterRequest",
     description:
-      "Native device registration. Re-registering an APNs token belonging to another user returns 409 (cross-user-hijack guard).",
+      "Native device registration. A `token` or `apnsToken` another account holds is taken over (see `POST /api/devices`).",
   });
 
 export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
@@ -112,7 +118,7 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Devices"],
       summary: "Register native device + APNs token",
       description:
-        "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns 422. Cross-user re-registration of either identifier returns 409. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is the device's push state after the call.",
+        "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns 422. A `token` (the `X-Device-Id`) or `apnsToken` another account holds is taken over, not refused: that account's device row goes, with its push key, relay binding (unbound at the relay before this request's binding is forwarded) and Live Activity state, so nothing sealed for it reaches the device. Both accounts get an audit row. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is the device's push state after the call.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: deviceRegisterRequest } },
@@ -128,11 +134,6 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
               ),
             },
           },
-        },
-        "409": {
-          description:
-            "Device or APNs token already registered to another user.",
-          content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
       },

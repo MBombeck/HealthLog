@@ -7,9 +7,10 @@
  *   - the list shows the account's own devices, most recently seen first,
  *     with their delivery channels, and nothing that could be replayed to
  *     send a notification (no push token, no APNs identifier);
- *   - the "this device" badge follows `X-Device-Id` only when that device
- *     holds a live refresh token of this account, so a forged header cannot
- *     move it;
+ *   - the "this device" badge follows `X-Device-Id` (the device's `token`,
+ *     which a native sign-in stores as `RefreshToken.deviceId`) only when
+ *     that device holds a live refresh token of this account, so a forged
+ *     header cannot move it;
  *   - the revoke reaches only the caller's own devices, removes the row,
  *     revokes every live refresh token bound to it and the access tokens they
  *     pair with, and those access tokens stop authenticating at once.
@@ -161,9 +162,9 @@ describe("GET /api/auth/me/devices", () => {
     const phone = await makeDevice(owner);
     const tablet = await makeDevice(owner);
     const access = await makeToken(owner);
-    await makeRefresh(owner, tablet.id, { access });
+    await makeRefresh(owner, tablet.token, { access });
 
-    const res = await listDevices(access, tablet.id);
+    const res = await listDevices(access, tablet.token);
 
     expect(res.status).toBe(200);
     expect(res.data.devices.map((d) => [d.id, d.isCurrent]).sort()).toEqual(
@@ -180,12 +181,12 @@ describe("GET /api/auth/me/devices", () => {
     const forged = await makeDevice(owner);
     const revoked = await makeDevice(owner);
     const foreignAnchor = await makeDevice(owner);
-    await makeRefresh(owner, revoked.id, { revokedAt: new Date() });
+    await makeRefresh(owner, revoked.token, { revokedAt: new Date() });
     // Another account's refresh row naming this device id anchors nothing.
-    await makeRefresh(other, foreignAnchor.id);
+    await makeRefresh(other, foreignAnchor.token);
     const access = await makeToken(owner);
 
-    for (const header of [forged.id, revoked.id, foreignAnchor.id]) {
+    for (const header of [forged.token, revoked.token, foreignAnchor.token]) {
       const res = await listDevices(access, header);
       expect(res.status).toBe(200);
       expect(res.data.devices.some((d) => d.isCurrent)).toBe(false);
@@ -227,7 +228,7 @@ describe("DELETE /api/auth/me/devices/{id}", () => {
     const other = await makeUser();
     const theirs = await makeDevice(other);
     const theirAccess = await makeToken(other);
-    const theirRefresh = await makeRefresh(other, theirs.id, {
+    const theirRefresh = await makeRefresh(other, theirs.token, {
       access: theirAccess,
     });
 
@@ -255,14 +256,14 @@ describe("DELETE /api/auth/me/devices/{id}", () => {
     const accessA = await makeToken(owner);
     const accessB = await makeToken(owner);
     const tabletAccess = await makeToken(owner);
-    const refreshA = await makeRefresh(owner, phone.id, { access: accessA });
-    const refreshB = await makeRefresh(owner, phone.id, { access: accessB });
-    const unpaired = await makeRefresh(owner, phone.id, { access: null });
+    const refreshA = await makeRefresh(owner, phone.token, { access: accessA });
+    const refreshB = await makeRefresh(owner, phone.token, { access: accessB });
+    const unpaired = await makeRefresh(owner, phone.token, { access: null });
     const earlier = new Date("2026-01-01T00:00:00Z");
-    const alreadyRevoked = await makeRefresh(owner, phone.id, {
+    const alreadyRevoked = await makeRefresh(owner, phone.token, {
       revokedAt: earlier,
     });
-    const tabletRefresh = await makeRefresh(owner, tablet.id, {
+    const tabletRefresh = await makeRefresh(owner, tablet.token, {
       access: tabletAccess,
     });
 

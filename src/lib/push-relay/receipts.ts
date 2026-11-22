@@ -34,41 +34,82 @@ export function openedFromQuery(params: URLSearchParams): OpenedEnvelopes {
   return { alert: pick("openedAlert"), silent: pick("openedSilent") };
 }
 
-/** Record what the device opened and confirm the deliveries it covers. */
-export async function recordOpenedEnvelopes(
+/** The device a receipt report names, with the newest ids it reported. */
+export interface ReceiptDevice {
+  id: string;
+  envelopeOpenedAlertId: string | null;
+  envelopeOpenedSilentId: string | null;
+}
+
+/**
+ * The caller's device a receipt report is for, or null when the request
+ * names none or carries no valid id. A read: it runs beside the handshake's
+ * other reads, and the write (`confirmOpenedEnvelopes`) does not hold the
+ * answer up.
+ */
+export async function receiptDevice(
   userId: string,
   deviceToken: string | null,
   opened: OpenedEnvelopes,
-  now: Date = new Date(),
-): Promise<boolean> {
-  if (!deviceToken || (!opened.alert && !opened.silent)) return false;
-  const device = await prisma.device.findFirst({
+): Promise<ReceiptDevice | null> {
+  if (!deviceToken || (!opened.alert && !opened.silent)) return null;
+  return prisma.device.findFirst({
     where: { userId, token: deviceToken },
-    select: { id: true },
-  });
-  if (!device) return false;
-  await prisma.device.update({
-    where: { id: device.id },
-    data: {
-      ...(opened.alert ? { envelopeOpenedAlertId: opened.alert } : {}),
-      ...(opened.silent ? { envelopeOpenedSilentId: opened.silent } : {}),
-      envelopeReportedAt: now,
+    select: {
+      id: true,
+      envelopeOpenedAlertId: true,
+      envelopeOpenedSilentId: true,
     },
   });
-  for (const [pushClass, id] of Object.entries(opened)) {
-    if (!id) continue;
-    await prisma.pushRelayDelivery.updateMany({
-      where: {
-        deviceId: device.id,
-        pushClass,
-        status: "accepted",
-        confirmedAt: null,
-        ref: { lte: id },
+}
+
+/** The later of two ULIDs (they sort by the time they were sealed). */
+function newer(stored: string | null, reported: string | undefined) {
+  if (!reported) return stored ?? undefined;
+  return stored && stored > reported ? stored : reported;
+}
+
+/**
+ * Record what the device opened and confirm the deliveries it covers: one
+ * device write and one ledger write. The stored ids only move forward, so a
+ * report that arrives late, behind a newer one, cannot pull them back.
+ */
+export async function confirmOpenedEnvelopes(
+  device: ReceiptDevice,
+  opened: OpenedEnvelopes,
+  now: Date = new Date(),
+): Promise<void> {
+  const alert = newer(device.envelopeOpenedAlertId, opened.alert);
+  const silent = newer(device.envelopeOpenedSilentId, opened.silent);
+  const covered = [
+    ...(opened.alert && alert
+      ? [{ pushClass: "alert", ref: { lte: alert } }]
+      : []),
+    ...(opened.silent && silent
+      ? [{ pushClass: "silent", ref: { lte: silent } }]
+      : []),
+  ];
+  await Promise.all([
+    prisma.device.update({
+      where: { id: device.id },
+      data: {
+        ...(alert ? { envelopeOpenedAlertId: alert } : {}),
+        ...(silent ? { envelopeOpenedSilentId: silent } : {}),
+        envelopeReportedAt: now,
       },
-      data: { confirmedAt: now },
-    });
-  }
-  return true;
+    }),
+    covered.length === 0
+      ? null
+      : prisma.pushRelayDelivery.updateMany({
+          where: {
+            deviceId: device.id,
+            status: "accepted",
+            confirmedAt: null,
+            OR: covered,
+          },
+          data: { confirmedAt: now },
+        }),
+  ]);
 }
 
 /**

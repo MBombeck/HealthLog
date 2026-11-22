@@ -57,6 +57,7 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { callRoute } from "../kit/call-route";
+import { settleBackgroundTasks } from "@/lib/logging/background-tasks";
 import { makeAdmin, makeSession, makeUser } from "../kit/factories";
 import { generateX25519 } from "@/lib/push-relay/hpke";
 import { fromBase64Url, tokenTagHex } from "@/lib/push-relay/encoding";
@@ -278,8 +279,9 @@ describe("push relay end to end", () => {
       (plaintext.iat as number) + 7200,
     );
 
+    // The confirmation's delivery; the silent sync beside it has its own.
     const delivery = await prisma.pushRelayDelivery.findFirstOrThrow({
-      where: { deviceId },
+      where: { deviceId, pushClass: "alert" },
     });
     expect(delivery).toMatchObject({
       status: "accepted",
@@ -298,6 +300,8 @@ describe("push relay end to end", () => {
       },
     );
     expect(state.data.push.receiptsRecorded).toBe(true);
+    // The receipt write runs after the answer, detached.
+    await settleBackgroundTasks();
     const confirmed = await prisma.pushRelayDelivery.findUniqueOrThrow({
       where: { id: delivery.id },
     });

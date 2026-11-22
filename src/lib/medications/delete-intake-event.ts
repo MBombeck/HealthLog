@@ -13,7 +13,7 @@ import type { SessionUser } from "@/lib/auth/session-user";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   slotLockKey,
@@ -141,7 +141,8 @@ export async function deleteIntakeEvent(input: {
   // the user's other iOS devices (the widget count and a pending Live
   // Activity both change). Coalesced per user, best-effort — never affects
   // the response.
-  queueMedicationIntakeSync({
+  afterDoseChange({
+    scope: "intakes",
     userId: user.id,
     originDeviceToken: input.originDeviceToken,
   });

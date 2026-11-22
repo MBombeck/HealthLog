@@ -65,13 +65,16 @@
  */
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { prisma } from "@/lib/db";
-import { annotate, getEvent } from "@/lib/logging/context";
+import { deleteDeviceRows } from "@/lib/devices/delete-devices";
+import type { Prisma } from "@/generated/prisma/client";
+import { getEvent } from "@/lib/logging/context";
+import { withBackgroundEvent } from "@/lib/logging/background";
+import { activeGuardianWhere } from "@/lib/managed-profiles/guardian-where";
 import {
   loadApnsConfig,
   sendApnsRawPush,
 } from "@/lib/notifications/senders/apns";
 import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
-import { EVENT_DEFAULT_ENABLED } from "@/lib/notifications/types";
 import {
   endedMedicationContentState,
   type MedicationLiveActivityContentState,
@@ -85,10 +88,13 @@ import {
 import { loadPushContext, routeOf } from "@/lib/push-relay/route-device";
 import {
   endActivitiesOverRelay,
+  intakeSyncEnabled,
   sendSealedIntakeSync,
 } from "@/lib/push-relay/medication-pushes";
 
 const EVENT_TYPE = "MEDICATION_INTAKE_SYNC";
+/** The wide event every flush writes for itself. */
+const FLUSH_EVENT = "notification.intake_sync.flush";
 
 /**
  * Trailing-coalesce window. Long enough to fold a rapid-fire burst of
@@ -116,6 +122,8 @@ export interface IntakeSyncRequest {
 interface CoalesceWindow {
   /** Mutations that arrived AFTER the leading dispatch. */
   queued: number;
+  /** When the first of them arrived (the write the trailing flush answers). */
+  firstQueuedAt: number | null;
   /** Whether every queued mutation also recorded a take or a skip. */
   allRecorded: boolean;
   /** Distinct non-null origin tokens among the queued mutations. */
@@ -154,6 +162,7 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
   const existing = openWindows.get(input.userId);
   if (existing) {
     existing.queued += 1;
+    existing.firstQueuedAt ??= Date.now();
     existing.allRecorded &&= recordedHere;
     if (input.originDeviceToken) {
       existing.originTokens.add(input.originDeviceToken);
@@ -165,6 +174,7 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
 
   const window: CoalesceWindow = {
     queued: 0,
+    firstQueuedAt: null,
     allRecorded: true,
     originTokens: new Set(),
     sawNullOrigin: false,
@@ -181,6 +191,7 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
         ? [...window.originTokens][0]
         : null;
     void flushIntakeSync(input.userId, {
+      writtenAt: window.firstQueuedAt ?? Date.now(),
       coalesced: window.queued,
       recordedInFlush: window.allRecorded,
       originDeviceToken: origin,
@@ -192,162 +203,242 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
   // Leading dispatch — immediate, so the common single-mutation case
   // clears the other device at APNs latency, not after the window.
   void flushIntakeSync(input.userId, {
+    writtenAt: Date.now(),
     coalesced: 0,
     recordedInFlush: recordedHere,
     originDeviceToken: input.originDeviceToken ?? null,
   });
 }
 
-/**
- * Whether the user has explicitly opted the APNS channel out of
- * MEDICATION_INTAKE_SYNC. There is no second user-facing toggle — this is
- * coherence plumbing — but an explicit per-channel `NotificationPreference`
- * row (APNS / MEDICATION_INTAKE_SYNC / enabled=false) is still honoured so
- * an operator can disable the fan-out. Returns false (suppressed) only on
- * such an explicit opt-out.
- */
-async function apnsSyncEnabled(userId: string): Promise<boolean> {
-  const channel = await prisma.notificationChannel.findUnique({
-    where: { userId_type: { userId, type: "APNS" } },
+/** What the device read of the fan-out selects. */
+const SYNC_DEVICE_SELECT = {
+  id: true,
+  userId: true,
+  token: true,
+  apnsToken: true,
+  apnsEnvironment: true,
+  liveActivityPushToken: true,
+  pushKeyPublic: true,
+  relayState: true,
+  relayConsentAt: true,
+  relayBindingKey: true,
+  liveActivities: {
     select: {
-      enabled: true,
-      preferences: {
-        where: { eventType: EVENT_TYPE },
-        select: { enabled: true },
-      },
+      id: true,
+      pushToken: true,
+      medicationId: true,
+      slotInstant: true,
+      activityStatement: true,
+      activitySignature: true,
     },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  },
+} satisfies Prisma.DeviceSelect;
+
+/**
+ * The accounts whose devices hear of a change to `userId`'s doses: the
+ * record itself, and for a managed profile every active Guardian (an
+ * accepted, unexpired MANAGE grant), whose phone shows the profile's doses.
+ * Each one only while it takes the sync: not pending deletion, its APNs
+ * channel on, the sync not switched off. The push carries no data, so a
+ * Guardian's device learns nothing it could not read itself.
+ */
+async function syncCandidates(userId: string): Promise<string[]> {
+  const record = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { managedProfileAt: true },
   });
-  if (!channel || !channel.enabled) return false;
-  const pref = channel.preferences[0];
-  if (pref) return pref.enabled;
-  return EVENT_DEFAULT_ENABLED.MEDICATION_INTAKE_SYNC;
+  if (record?.managedProfileAt == null) return [userId];
+  const grants = await prisma.accountGrant.findMany({
+    where: {
+      grantorId: userId,
+      ...activeGuardianWhere(new Date()),
+      grantee: { managedProfileAt: null },
+    },
+    select: { granteeId: true },
+  });
+  return [
+    userId,
+    ...new Set(grants.map((g) => g.granteeId).filter((id) => id !== userId)),
+  ];
+}
+
+/** The candidates that take the sync now, and why the first one does not. */
+async function gateAccounts(
+  candidates: readonly string[],
+): Promise<{ accounts: Set<string>; skipped: string | null }> {
+  const accounts = new Set<string>();
+  let skipped: string | null = null;
+  for (const account of candidates) {
+    if (await pendingDeletionOf(account)) {
+      skipped ??= "deletion_pending";
+      continue;
+    }
+    if (!(await intakeSyncEnabled(account))) {
+      skipped ??= "intake_sync_disabled";
+      continue;
+    }
+    accounts.add(account);
+  }
+  return { accounts, skipped };
 }
 
 /**
  * One fan-out: silent sync push (+ Live Activity end) to every APNs
- * device except the origin. Records ONE `push_attempts` ledger row per
- * flush and annotates the wide event (best-effort — the trailing flush
- * runs after the triggering request closed, where the annotation is a
- * no-op by construction).
+ * device of the audience except the origin. Records ONE `push_attempts`
+ * ledger row per flush and its own wide event
+ * (`notification.intake_sync.flush`): it runs after the triggering request
+ * has answered, so the request's event is already written by then.
  */
-async function flushIntakeSync(
+function flushIntakeSync(
   userId: string,
   opts: {
+    /** When the change it answers was written (ms epoch). */
+    writtenAt: number;
     coalesced: number;
     originDeviceToken: string | null;
     recordedInFlush: boolean;
   },
 ): Promise<void> {
-  try {
-    const config = loadApnsConfig();
-    // Without an APNs key of its own the server reaches only sealed devices
-    // (over the relay). With none of those either there is nothing to do; no
-    // ledger row: the silent-sync channel is a no-op, not a delivery attempt.
-    if (
-      !config &&
-      (await prisma.device.count({
-        where: { userId, pushKeyPublic: { not: null } },
-      })) === 0
-    ) {
-      return;
-    }
-
-    // The dispatcher refuses every delivery for an account pending deletion;
-    // this push does not go through it, so it asks the same question.
-    if (await pendingDeletionOf(userId)) {
-      recordPushAttempt({
-        userId,
-        channel: "APNS",
-        eventType: EVENT_TYPE,
-        result: "skipped",
-        reason: "deletion_pending",
-      });
-      return;
-    }
-
-    if (!(await apnsSyncEnabled(userId))) {
-      recordPushAttempt({
-        userId,
-        channel: "APNS",
-        eventType: EVENT_TYPE,
-        result: "skipped",
-        reason: "intake_sync_disabled",
-      });
-      return;
-    }
-
-    const devices = await prisma.device.findMany({
-      where: { userId, apnsToken: { not: null } },
-      select: {
-        id: true,
-        token: true,
-        apnsToken: true,
-        apnsEnvironment: true,
-        liveActivityPushToken: true,
-        pushKeyPublic: true,
-        relayState: true,
-        relayConsentAt: true,
-        relayBindingKey: true,
-        liveActivities: {
-          select: {
-            id: true,
-            pushToken: true,
-            medicationId: true,
-            slotInstant: true,
-            activityStatement: true,
-            activitySignature: true,
-          },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        },
-      },
+  return (async () => {
+    // Nothing to reach (no APNs key of its own and no sealed device): no
+    // event either, or every write on such a server would log a no-op. A
+    // failing probe falls through to the flush, which records it.
+    if (!(await mayReachAnyDevice(userId).catch(() => true))) return;
+    await withBackgroundEvent(FLUSH_EVENT, async (evt) => {
+      const flushAt = Date.now();
+      evt.addMeta("intake_sync_write_to_flush_ms", flushAt - opts.writtenAt);
+      evt.addMeta("intake_sync_coalesced", opts.coalesced);
+      try {
+        const outcome = await flushIntakeSyncInner(userId, opts);
+        evt.addMeta("intake_sync_outcome", outcome.result);
+        if (outcome.recipients !== undefined) {
+          evt.addMeta("intake_sync_devices", outcome.recipients);
+          evt.addMeta("intake_sync_routes", outcome.routes ?? {});
+          evt.addMeta("intake_sync_deferred", outcome.deferred ?? 0);
+          evt.addMeta(
+            "intake_sync_guardian_devices",
+            outcome.guardianDevices ?? 0,
+          );
+          evt.addMeta("intake_sync_flush_to_handoff_ms", Date.now() - flushAt);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        evt.addWarning(`medication_intake_sync_dispatch_failed: ${message}`);
+      }
     });
+  })().catch(() => undefined);
+}
 
-    // Exclude the originating device — it already holds the new state.
-    const recipients = devices.filter(
-      (d) => !opts.originDeviceToken || d.token !== opts.originDeviceToken,
-    );
+/** Whether a flush for `userId` could reach any device at all. */
+async function mayReachAnyDevice(userId: string): Promise<boolean> {
+  if (loadApnsConfig()) return true;
+  const candidates = await syncCandidates(userId);
+  return (
+    (await prisma.device.count({
+      where: { userId: { in: candidates }, pushKeyPublic: { not: null } },
+    })) > 0
+  );
+}
 
-    annotate({
-      meta: {
-        medication_intake_sync_devices: recipients.length,
-        medication_intake_sync_coalesced: opts.coalesced,
-      },
-    });
+interface FlushOutcome {
+  result: string;
+  recipients?: number;
+  routes?: Record<string, number>;
+  deferred?: number;
+  guardianDevices?: number;
+}
 
-    if (recipients.length === 0) {
-      recordPushAttempt({
-        userId,
-        channel: "APNS",
-        eventType: EVENT_TYPE,
-        result: "skipped",
-        reason: "intake_sync_no_other_devices",
-      });
-      return;
-    }
-
-    // A relay device may skip the silent sync only when the confirmation that
-    // stands in for it actually goes out. It is opt-in (off by default), so a
-    // dose recorded on another surface would otherwise reach the device as
-    // neither.
-    const confirmationInFlush =
-      opts.recordedInFlush && (await recordedConfirmationEnabled(userId));
-    await fanOutIntakeSyncApns({
-      userId,
-      recipients,
-      bundleId: config?.bundleId ?? null,
-      liveActivityEnd: memoEndState(userId),
-      confirmationInFlush,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    getEvent()?.addWarning(
-      `medication_intake_sync_dispatch_failed: ${message}`,
-    );
+async function flushIntakeSyncInner(
+  userId: string,
+  opts: {
+    originDeviceToken: string | null;
+    recordedInFlush: boolean;
+  },
+): Promise<FlushOutcome> {
+  const config = loadApnsConfig();
+  const candidates = await syncCandidates(userId);
+  // Without an APNs key of its own the server reaches only sealed devices
+  // (over the relay). With none of those either there is nothing to do; no
+  // ledger row: the silent-sync channel is a no-op, not a delivery attempt.
+  if (
+    !config &&
+    (await prisma.device.count({
+      where: { userId: { in: candidates }, pushKeyPublic: { not: null } },
+    })) === 0
+  ) {
+    return { result: "no_route" };
   }
+
+  // The dispatcher refuses every delivery for an account pending deletion;
+  // this push does not go through it, so it asks the same question, per
+  // account, beside the account's own switch for the sync.
+  const { accounts, skipped } = await gateAccounts(candidates);
+  if (!accounts.has(userId) && skipped) {
+    recordPushAttempt({
+      userId,
+      channel: "APNS",
+      eventType: EVENT_TYPE,
+      result: "skipped",
+      reason: skipped,
+    });
+  }
+  if (accounts.size === 0) return { result: skipped ?? "skipped" };
+  const guardians = new Set([...accounts].filter((a) => a !== userId));
+
+  const devices = await prisma.device.findMany({
+    where: { userId: { in: [...accounts] }, apnsToken: { not: null } },
+    select: SYNC_DEVICE_SELECT,
+  });
+
+  // Exclude the originating device — it already holds the new state.
+  const recipients = devices.filter(
+    (d) => !opts.originDeviceToken || d.token !== opts.originDeviceToken,
+  );
+
+  if (recipients.length === 0) {
+    recordPushAttempt({
+      userId,
+      channel: "APNS",
+      eventType: EVENT_TYPE,
+      result: "skipped",
+      reason: "intake_sync_no_other_devices",
+    });
+    return { result: "no_other_devices", recipients: 0 };
+  }
+
+  // A relay device may skip the silent sync only when the confirmation that
+  // stands in for it actually goes out. It is opt-in (off by default), so a
+  // dose recorded on another surface would otherwise reach the device as
+  // neither. The confirmation goes to the record's own devices only, never
+  // to a Guardian's.
+  const confirmationInFlush =
+    opts.recordedInFlush && (await recordedConfirmationEnabled(userId));
+  const fanOut = await fanOutIntakeSyncApns({
+    userId,
+    recipients,
+    bundleId: config?.bundleId ?? null,
+    liveActivityEnd: memoEndState(userId),
+    guardians,
+    confirmationFor: new Set(
+      confirmationInFlush
+        ? recipients.filter((d) => !guardians.has(d.userId)).map((d) => d.id)
+        : [],
+    ),
+  });
+  return {
+    result: fanOut.anySuccess ? "ok" : "error",
+    recipients: recipients.length,
+    routes: fanOut.routes,
+    deferred: fanOut.deferred,
+    guardianDevices: recipients.filter((d) => guardians.has(d.userId)).length,
+  };
 }
 
 interface SyncRecipient {
   id: string;
+  /** The account the device belongs to: the record, or a Guardian. */
+  userId: string;
   token: string;
   apnsToken: string | null;
   apnsEnvironment: string | null;
@@ -382,11 +473,13 @@ async function fanOutIntakeSyncApns(args: {
   recipients: SyncRecipient[];
   /** This server's own APNs topic, or null when it has no APNs key. */
   bundleId: string | null;
+  /** The Guardian accounts among the recipients' owners. */
+  guardians: ReadonlySet<string>;
   /**
-   * The flush also sends the recorded-dose confirmation to these devices, so
-   * relay devices skip the silent sync (the alert triggers it).
+   * The devices the flush also sends the recorded-dose confirmation to: a
+   * relay device among them skips the silent sync (the alert triggers it).
    */
-  confirmationInFlush: boolean;
+  confirmationFor: ReadonlySet<string>;
   /**
    * The final content-state to end an Activity showing this dose with, or
    * null to leave it running.
@@ -394,7 +487,11 @@ async function fanOutIntakeSyncApns(args: {
   liveActivityEnd: (
     dose: ActivityDose,
   ) => Promise<MedicationLiveActivityContentState | null>;
-}): Promise<void> {
+}): Promise<{
+  anySuccess: boolean;
+  routes: Record<string, number>;
+  deferred: number;
+}> {
   // Pure sync trigger — deliberately NO medication id / name / dose
   // instant. The iOS reconcile re-reads the full state itself, and a
   // push payload travels through Apple's infrastructure, so it carries
@@ -415,22 +512,35 @@ async function fanOutIntakeSyncApns(args: {
   // server's own key; never the plaintext trigger below.
   const sealedDevices = args.recipients.filter((d) => d.pushKeyPublic);
   const ctx = sealedDevices.length > 0 ? await loadPushContext() : null;
+  const routes: Record<string, number> = {};
+  let deferred = 0;
   if (ctx) {
+    for (const device of sealedDevices) {
+      const route = routeOf(device, ctx);
+      routes[route] = (routes[route] ?? 0) + 1;
+    }
     const sealed = await sendSealedIntakeSync(sealedDevices, ctx, {
-      confirmationInFlush: args.confirmationInFlush,
+      confirmationFor: args.confirmationFor,
     });
-    if (sealed.anyAccepted) anySuccess = true;
+    deferred = sealed.deferred.length;
+    if (sealed.anyAccepted || sealed.waiting) anySuccess = true;
     else if (sealed.lastFailure) lastFailureReason = sealed.lastFailure;
+    else if (deferred > 0) lastFailureReason = "intake_sync_deferred_budget";
   }
 
   for (const device of args.recipients) {
     if (!device.apnsToken) continue;
     const environment: "sandbox" | "production" =
       device.apnsEnvironment === "production" ? "production" : "sandbox";
+    if (!device.pushKeyPublic) routes.legacy = (routes.legacy ?? 0) + 1;
+    // A Guardian's device gets the silent sync only: its Activities show
+    // its own account's doses, which this change did not touch.
+    const guardianDevice = args.guardians.has(device.userId);
 
     // A relay device's Activities end over the relay, with the statement the
     // device signed at their start.
     if (ctx && routeOf(device, ctx) === "relay") {
+      if (guardianDevice) continue;
       const due = [];
       for (const activity of device.liveActivities) {
         if (await args.liveActivityEnd(activity)) due.push(activity);
@@ -459,6 +569,8 @@ async function fanOutIntakeSyncApns(args: {
       lastFailureReason = silent.reason;
       if (silent.shouldDisable) deadDeviceIds.push(device.id);
     }
+
+    if (guardianDevice) continue;
 
     // 2) Live Activity end pushes. Each registered Activity ends once the
     // dose it shows is answered; the device-level token of a client that
@@ -511,20 +623,23 @@ async function fanOutIntakeSyncApns(args: {
 
   // Reap devices APNs reported as permanently dead on the silent send.
   if (deadDeviceIds.length > 0) {
-    await prisma.device
-      .deleteMany({ where: { id: { in: deadDeviceIds } } })
-      .catch(() => {
-        /* best-effort cleanup */
-      });
+    await deleteDeviceRows({ id: { in: deadDeviceIds } }).catch(() => {
+      /* best-effort cleanup */
+    });
   }
 
   recordPushAttempt({
     userId: args.userId,
     channel: "APNS",
     eventType: EVENT_TYPE,
-    result: anySuccess ? "ok" : "error",
-    reason: anySuccess ? null : (lastFailureReason ?? "intake_sync_failed"),
+    result: anySuccess ? "ok" : deferred > 0 ? "skipped" : "error",
+    reason: anySuccess
+      ? deferred > 0
+        ? "intake_sync_deferred_budget"
+        : null
+      : (lastFailureReason ?? "intake_sync_failed"),
   });
+  return { anySuccess, routes, deferred };
 }
 
 /**

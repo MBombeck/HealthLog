@@ -5,6 +5,7 @@
  * guard; the token revocation, the delete, its audit row and its tails run
  * here, in the order they always ran.
  */
+import { afterMedicationChange } from "@/lib/medications/after-dose-change";
 import { prisma } from "@/lib/db";
 import {
   enqueueSupplementNutrientRecompute,
@@ -12,7 +13,6 @@ import {
 } from "@/lib/medications/ingredients/recompute-job";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { deleteMedicationCategory } from "@/lib/medication-category";
 
 /**
@@ -70,7 +70,8 @@ export async function deleteMedication(input: {
 
   // Bust per-user medications + compliance + achievement
   // caches so the next read reflects the deletion.
-  invalidateUserMedications(userId, { evict: true });
+  // Its doses are no longer due anywhere.
+  afterMedicationChange(userId);
 
   // Its doses are gone with it, so the days they counted on are recomputed.
   if (hadComposition) await enqueueSupplementNutrientRecompute(userId);

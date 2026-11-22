@@ -7,6 +7,7 @@
  * everything after it run here, in the order they always ran. The outcome is
  * a refusal the route answers with `apiError`, or the edited medication.
  */
+import { afterMedicationChange } from "@/lib/medications/after-dose-change";
 import {
   medicationDetail,
   type ReadUser,
@@ -19,7 +20,6 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
   isAssignableCategory,
   resolveMedicationCategories,
@@ -359,7 +359,9 @@ export async function updateMedication(input: {
 
   // Bust per-user medications + compliance + achievement caches so the next
   // read reflects the schedule change.
-  invalidateUserMedications(user.id, { evict: true });
+  // A schedule, a pause, a course or intake tracking decides what is due on
+  // every device.
+  afterMedicationChange(user.id);
 
   // The read model, exactly as `GET /api/medications/{id}` answers it.
   const body = await medicationDetail({

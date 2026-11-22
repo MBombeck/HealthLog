@@ -12,18 +12,25 @@
  * runs an app that does not know these types; a wake would spend its silent
  * budget for nothing.
  *
- * Budget. Apple throttles background pushes it considers too frequent, and
- * the relay allows six silent pushes per device and hour. Every wake is
- * recorded in `push_wakes`; a device gets at most
- * {@link WAKES_PER_DEVICE_HOUR} wakes an hour, and a relay device is also
- * skipped while its relay silent budget (`silentBudgetLeft`, which counts the
- * medication sync too) is spent. A skipped device loses nothing that
- * matters: the app reloads everything the next time it opens.
+ * Budget. One budget for every silent push a sealed device gets, read from
+ * one ledger (`push_wakes`), in one function ({@link silentBudgetLeft}):
+ * the wakes and the medication intake sync (`MEDICATION_INTAKE_SYNC`) each
+ * leave a row there when they go out, and only when they go out.
+ *
+ * - A relay device takes at most {@link SILENT_PER_DEVICE_HOUR} silent
+ *   pushes an hour, every kind together: the relay's own limit. The last
+ *   {@link SYNC_RESERVE} of them are kept for the intake sync, which a dose
+ *   decision on the device waits on, so the wakes stop earlier.
+ * - Any device takes at most {@link WAKES_PER_DEVICE_HOUR} wakes an hour,
+ *   and of those at most {@link DATA_CHANGED_PER_HOUR} `DATA_CHANGED`.
+ *
+ * A wake over budget waits (`DATA_CHANGED` keeps its domains pending); an
+ * intake sync over budget is owed and sent by the minute pass once the
+ * budget frees up (`medication-pushes.ts`). Nothing is dropped unrecorded.
  */
 import { prisma } from "@/lib/db";
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
-import { silentBudgetLeft } from "@/lib/push-relay/medication-pushes";
 import {
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
@@ -36,8 +43,17 @@ import {
 
 export type WakeKind = "DATA_CHANGED" | "HEALTHKIT_CATCH_UP";
 
-/** Silent wakes per device and hour, all kinds together. */
+/** Every kind of silent push the budget counts. */
+export type SilentKind = WakeKind | "MEDICATION_INTAKE_SYNC";
+
+/** Silent pushes per relay device and hour, every kind: the relay's limit. */
+export const SILENT_PER_DEVICE_HOUR = 6;
+/** Of those, how many only the intake sync may take. */
+export const SYNC_RESERVE = 2;
+/** Silent wakes per device and hour, both wake kinds together. */
 export const WAKES_PER_DEVICE_HOUR = 4;
+/** `DATA_CHANGED` wakes per device and hour. */
+export const DATA_CHANGED_PER_HOUR = 3;
 
 const WAKE_LIFETIME_S = 3600;
 const HOUR_MS = 3600_000;
@@ -84,23 +100,55 @@ export async function wakeableDevices(userId: string): Promise<WakeDevice[]> {
   });
 }
 
-/** Whether `device` may take one more wake now. */
-export async function wakeBudgetLeft(
+/**
+ * Whether `device` may take one more silent push of `kind` now: the one
+ * budget every silent push asks (see the module doc).
+ */
+export async function silentBudgetLeft(
   device: RoutableDevice,
+  kind: SilentKind,
   ctx: PushContext,
   now: Date,
 ): Promise<boolean> {
-  const recent = await prisma.pushWake.count({
+  const rows = await prisma.pushWake.groupBy({
+    by: ["kind"],
     where: {
       deviceId: device.id,
       createdAt: { gte: new Date(now.getTime() - HOUR_MS) },
     },
+    _count: { _all: true },
   });
-  if (recent >= WAKES_PER_DEVICE_HOUR) return false;
+  const sent = (k: SilentKind) =>
+    rows.find((r) => r.kind === k)?._count._all ?? 0;
+  const total = rows.reduce((sum, r) => sum + r._count._all, 0);
+  const isSync = kind === "MEDICATION_INTAKE_SYNC";
   if (routeOf(device, ctx) === "relay") {
-    return silentBudgetLeft(device.id, now);
+    const cap = isSync
+      ? SILENT_PER_DEVICE_HOUR
+      : SILENT_PER_DEVICE_HOUR - SYNC_RESERVE;
+    if (total >= cap) return false;
   }
+  if (isSync) return true;
+  if (
+    sent("DATA_CHANGED") + sent("HEALTHKIT_CATCH_UP") >=
+    WAKES_PER_DEVICE_HOUR
+  )
+    return false;
+  if (kind === "DATA_CHANGED" && sent("DATA_CHANGED") >= DATA_CHANGED_PER_HOUR)
+    return false;
   return true;
+}
+
+/** Record the silent pushes that went out, for the budget. */
+export async function recordSilentPushes(
+  kind: SilentKind,
+  deviceIds: readonly string[],
+  now: Date,
+): Promise<void> {
+  if (deviceIds.length === 0) return;
+  await prisma.pushWake.createMany({
+    data: deviceIds.map((deviceId) => ({ deviceId, kind, createdAt: now })),
+  });
 }
 
 export interface WakeSendResult {
@@ -130,7 +178,7 @@ export async function sendWake(
   for (const device of devices) {
     const route = routeOf(device, ctx);
     if (route !== "relay" && route !== "direct") continue;
-    if (!(await wakeBudgetLeft(device, ctx, now))) {
+    if (!(await silentBudgetLeft(device, kind, ctx, now))) {
       overBudget.push(device.id);
       continue;
     }
@@ -138,15 +186,7 @@ export async function sendWake(
   }
   if (targets.length === 0) return { sent: [], overBudget, sealed: null };
   const sealed = await sendSealed(targets, ctx);
-  if (sealed.handled.length > 0) {
-    await prisma.pushWake.createMany({
-      data: sealed.handled.map((deviceId) => ({
-        deviceId,
-        kind,
-        createdAt: now,
-      })),
-    });
-  }
+  await recordSilentPushes(kind, sealed.handled, now);
   return { sent: sealed.handled, overBudget, sealed };
 }
 

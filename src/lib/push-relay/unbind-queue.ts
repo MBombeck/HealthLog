@@ -16,6 +16,7 @@
  */
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { queueRelayUnbindsWhere } from "@/lib/push-relay/unbind-rows";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { isCircuitOpen } from "@/lib/push-relay/circuit";
 import { loadRegistration, relayCall } from "@/lib/push-relay/registration";
@@ -29,30 +30,9 @@ export async function queueRelayUnbindsForAccount(
   tx: Prisma.TransactionClient,
   userId: string,
 ): Promise<number> {
-  const devices = await tx.device.findMany({
-    where: {
-      userId,
-      apnsToken: { not: null },
-      OR: [{ relayState: { not: "none" } }, { relayConsentAt: { not: null } }],
-    },
-    select: { apnsToken: true },
-  });
-  const tokens = devices
-    .map((d) => d.apnsToken?.toLowerCase())
-    .filter((t): t is string => Boolean(t));
-  if (tokens.length === 0) return 0;
-  await tx.pushRelayUnbind.createMany({
-    data: tokens.map((token) => ({ token })),
-    skipDuplicates: true,
-  });
-  return tokens.length;
+  return (await queueRelayUnbindsWhere(tx, { userId })).length;
 }
 
-/**
- * Queue the unbind of one device token (a revoked device, a withdrawn
- * consent or push key) and try it at once. A relay that is down leaves it
- * queued for the minute pass.
- */
 export async function queueRelayUnbind(
   apnsToken: string | null,
   config: RelayConfig = relayConfig(),

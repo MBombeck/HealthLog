@@ -3,10 +3,6 @@
 
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import type { ComplianceSchedule } from "./types";
-import {
-  legacyDoseStatus,
-  resolveDoseState,
-} from "@/lib/medications/dose-state/resolve";
 
 /**
  * v1.15.9 — cadence-aware per-dose grace/miss window model.
@@ -50,7 +46,7 @@ export { DOSE_WINDOW_DEFAULTS };
  *   - `upcoming`       — the on-time window has not opened yet.
  *
  * PRN doses are never scheduled and so never produce a status — callers
- * exclude them before calling {@link deriveDoseStatus}.
+ * exclude them before resolving a dose.
  */
 export type DoseStatus =
   | "upcoming"
@@ -66,42 +62,6 @@ export type DoseCadenceFamily = "daily" | "weekly";
 
 const HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * HOUR_MS;
-
-/**
- * v1.15.9 — derive a single dose's {@link DoseStatus} from its target
- * instant, the cadence family, `now`, and (optionally) when it was taken /
- * whether the user skipped it. Pure and deterministic.
- *
- * `nextDoseAt` (when supplied) caps a daily dose's miss cutoff at the next
- * dose's on-time window start, so two adjacent intraday doses never claim
- * overlapping overdue windows — the earlier dose flips to `missed` the
- * moment the later one comes due if that is sooner than its own cutoff.
- *
- * The defaults come from {@link DOSE_WINDOW_DEFAULTS}; callers may override
- * per-medication once that configurability lands.
- */
-export function deriveDoseStatus(
-  targetAt: Date,
-  cadence: DoseCadenceFamily,
-  now: Date,
-  options?: {
-    takenAt?: Date | null;
-    skipped?: boolean;
-    nextDoseAt?: Date | null;
-    windows?: Partial<typeof DOSE_WINDOW_DEFAULTS>;
-  },
-): DoseStatus {
-  return legacyDoseStatus(
-    resolveDoseState(
-      defaultDoseBand(targetAt, cadence, options),
-      {
-        takenAt: options?.takenAt ?? null,
-        skipped: options?.skipped ?? false,
-      },
-      now,
-    ).state,
-  );
-}
 
 /**
  * The default-window band of a dose at `targetAt`, for a dose the ledger has

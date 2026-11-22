@@ -70,8 +70,13 @@ const BUDGET = {
   // (one rollup read per card, the sleep card its nights), the same read
   // `GET /api/analytics/range` makes, so the card's arrow and the metric
   // page's agree. Bounded by the card count, not the data.
-  dashboardSummary: 36,
-  dashboardSnapshot: 99,
+  // 36 → 37, snapshot 99 → 101 (1.49.0): the medications tile takes each
+  // medication's next dose from the dose resolver over the batched dose
+  // ledger (the courses and schedule eras the ledger needs, its window and
+  // anchor reads) instead of the feeder reads of its own due computation.
+  // A fixed number, whatever the number of medications.
+  dashboardSummary: 37,
+  dashboardSnapshot: 101,
   series30: 6,
   series365: 5,
   series3650: 5,

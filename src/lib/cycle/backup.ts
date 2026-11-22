@@ -176,6 +176,8 @@ export interface CycleBackupSection {
      * the links stamped with the restore.
      */
     symptomLinkCreatedAt?: Array<{ key: string; createdAt: string }>;
+    /** The links an import wrote, by key (`CycleSymptomLink.source`), sparse. */
+    symptomSources?: Array<{ key: string; source: string }>;
   }>;
   /**
    * The account's OWN symptom definitions.
@@ -355,6 +357,9 @@ export async function buildCycleBackupSection(
       symptomSeverities: d.symptomLinks
         .filter((l): l is typeof l & { severity: number } => l.severity != null)
         .map((l) => ({ key: l.symptom.key, severity: l.severity })),
+      symptomSources: d.symptomLinks
+        .filter((l) => l.source !== "MANUAL")
+        .map((l) => ({ key: l.symptom.key, source: l.source })),
       ...(disasterRecovery
         ? {
             symptomLinkCreatedAt: d.symptomLinks.map((l) => ({
@@ -497,9 +502,15 @@ function dayLogSymptomLinks(
     symptomKeys?: string[];
     symptomSeverities?: Array<{ key: string; severity?: number | null }>;
     symptomLinkCreatedAt?: Array<{ key: string; createdAt: string }>;
+    symptomSources?: Array<{ key: string; source: string }>;
   },
   symptomIdByKey: ReadonlyMap<string, string>,
 ) {
+  const sourceByKey = new Map<string, MeasurementSource>();
+  for (const s of d.symptomSources ?? []) {
+    const source = enumOrNull(s.source, CYCLE_SOURCES);
+    if (source) sourceByKey.set(s.key, source);
+  }
   const severityByKey = new Map<string, number>();
   for (const s of d.symptomSeverities ?? []) {
     const severity = severityOrNull(s.severity);
@@ -516,6 +527,7 @@ function dayLogSymptomLinks(
           {
             symptomId: id,
             severity: severityByKey.get(k) ?? null,
+            source: sourceByKey.get(k) ?? "MANUAL",
             ...(createdAt ? { createdAt: new Date(createdAt) } : {}),
           },
         ]

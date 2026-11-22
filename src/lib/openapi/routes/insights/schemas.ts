@@ -1427,7 +1427,7 @@ export const dashboardSnapshotResponse = z
           .optional(),
       })
       .describe(
-        "Today's medication block: active-medication count, today-window tally (scheduled / taken / skipped), every active medication's current display-due candidate, and legacy scalar fields projected from candidate zero. `overdue: true` marks an OPEN overdue slot (anchor passed, still inside its catch-up band); `availableFrom` is the canonical cadence- and dose-window-derived attribution-band start. `dueCandidates` is optional so older cached snapshots remain valid. Medication ids let consumers deep-link straight to the relevant card.",
+        "Today's medication block: active-medication count, today-window tally (scheduled / taken / skipped), every active medication's next dose, and legacy scalar fields projected from candidate zero. Since v1.49.0 each candidate comes from the dose resolver, the same one behind the today rows and `complianceDisplay.currentDose`: the medication's earliest open dose (`due` or `overdue`), else its earliest `upcoming` one. `overdue: true` means the resolver's `overdue` state (past the on-time window, before the miss cutoff); `availableFrom` is the resolver's `dueAt`, when the dose turns due. For the state of a dose, read the today rows or `currentDose`. `dueCandidates` is optional so older cached snapshots remain valid. Medication ids let consumers deep-link straight to the relevant card.",
       ),
     // Dashboard hero health score. The additive metadata lets clients suppress
     // false change narratives when eligibility or the algorithm changes.
@@ -1880,6 +1880,12 @@ export const ecgIngestResponse = z
       .enum(["inserted", "updated", "duplicate"])
       .describe(
         "What the write did. `inserted` — a new recording landed (HTTP 201). `updated` — this `externalRecordingId` was already stored and the row was overwritten in place (HTTP 200); a retry is safe and creates nothing. `duplicate` — this exact recording is already stored under a DIFFERENT id, i.e. it arrived earlier through the `export.zip` importer (HTTP 200); nothing was written and `id` names the row that already holds it. A recording is the same recording when `(source, recordedAt, samplingFrequency)` match, which is enforced by a unique index rather than by convention. Since v1.48.2 `duplicate` is also the answer for an `APPLE_HEALTH` recording deleted through `DELETE /api/insights/ecg/by-external-ids`: it stays deleted, nothing is written, and `id` names the deletion record rather than a recording. All three statuses mean the client may advance its cursor.",
+      ),
+    reason: z
+      .literal("tombstoned")
+      .optional()
+      .describe(
+        "Since v1.49.0, only on a `duplicate` for an `APPLE_HEALTH` recording deleted earlier: it stays deleted and nothing was written. Absent otherwise.",
       ),
     recordedAt: isoDateTime().describe(
       "The `recordedAt` that was submitted, echoed back.",

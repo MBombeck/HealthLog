@@ -329,7 +329,7 @@ async function resolveRows(
   const resolved = await resolveDosesByRow({
     userId,
     userTz,
-    medicationIds: rows.map((r) => r.medicationId),
+    medications: rows.map((r) => r.medicationId),
     takenViaByRow: new Map(),
     from: new Date(Math.min(...times)),
     to: new Date(Math.max(...times) + 1),

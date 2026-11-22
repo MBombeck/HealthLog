@@ -30,6 +30,7 @@
  */
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { withBackgroundEvent } from "@/lib/logging/background";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { locales, type Locale } from "@/lib/i18n/config";
 import {
@@ -116,7 +117,13 @@ export function queueIntakeRecorded(input: {
     const timer = setTimeout(() => {
       const last = pending.get(key);
       pending.delete(key);
-      if (last) void sendIntakeRecorded(input.userId, last);
+      // Its own wide event: the request that queued it has answered by now,
+      // so what the send annotates would otherwise land nowhere.
+      if (last) {
+        void withBackgroundEvent("notification.intake_recorded.send", () =>
+          sendIntakeRecorded(input.userId, last),
+        ).catch(() => undefined);
+      }
     }, COALESCE_WINDOW_MS);
     timer.unref?.();
   } catch (err) {

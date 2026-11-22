@@ -36,7 +36,9 @@ describe("push relay transport guard", () => {
   it("deletes a device only on Unregistered", () => {
     const deletions: string[] = [];
     for (const [rel, code] of production()) {
-      for (const m of code.matchAll(/\bdevice\s*\.\s*delete(?:Many)?\s*\(/g)) {
+      for (const m of code.matchAll(
+        /\b(?:device\s*\.\s*delete(?:Many)?|deleteDeviceRows)\s*\(/g,
+      )) {
         const before = code.slice(0, m.index);
         const fn = [
           ...before.matchAll(/(?:async\s+)?function\s+(\w+)/g),
@@ -54,7 +56,7 @@ describe("push relay transport guard", () => {
       "sendSealed",
     );
     expect(direct).toMatch(
-      /direct\.reason\s*===\s*"Unregistered"\)\s*\{\s*await\s+prisma\.device\.deleteMany/,
+      /direct\.reason\s*===\s*"Unregistered"\)\s*\{\s*await\s+deleteDeviceRows\(/,
     );
     const relay = readSource(
       "src/lib/push-relay/relay-send.ts",

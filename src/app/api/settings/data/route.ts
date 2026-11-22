@@ -24,6 +24,7 @@ import {
   WIPE_MODELS,
 } from "@/lib/data-wipe/wipe-plan";
 import { resolveWipeDelegate } from "@/lib/data-wipe/wipe-delegates";
+import { queueRelayUnbindsForAccount } from "@/lib/push-relay/unbind-queue";
 import { stampSyncReset } from "@/lib/sync/reset";
 import {
   accountDeletionGraceDays,
@@ -31,7 +32,6 @@ import {
 } from "@/lib/account-deletion/grace";
 import { takePreWipeCopy } from "@/lib/account-deletion/pre-wipe-copy";
 import { logCaught } from "@/lib/logging/signal";
-import { queueRelayUnbindsForAccount } from "@/lib/push-relay/unbind-queue";
 
 export const dynamic = "force-dynamic";
 
@@ -128,12 +128,9 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
           userId,
         );
 
-        // The wipe deletes the account's devices; the push relay still holds
-        // their bindings to this instance. Queue the unbinds in the same
-        // transaction, as account deletion does, so the worker tells the
-        // relay even when it is down right now.
+        // The device rows go with the wipe: their relay unbinds are queued
+        // first, as account deletion does (`delete-devices.ts`).
         await queueRelayUnbindsForAccount(tx, userId);
-
         const perModel: Record<string, number> = {};
         for (const model of WIPE_MODELS) {
           const { count } = await resolveWipeDelegate(tx, model).deleteMany({

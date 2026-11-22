@@ -30,7 +30,7 @@ import {
 } from "@/lib/medications/scheduling/slot-upsert";
 import { consumeForIntake } from "@/lib/medications/inventory/consumption";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { recordedEventOf } from "@/lib/notifications/medication-intake-recorded";
 import { resolveNewTake } from "@/lib/medications/scheduling/nearest-open-slot";
 import { isP2002 } from "@/lib/prisma-errors";
@@ -96,7 +96,8 @@ async function afterIngestedDose(input: {
   event: MedicationIntakeEvent;
 }): Promise<void> {
   invalidateUserMedications(input.userId, { evict: true });
-  queueMedicationIntakeSync({
+  afterDoseChange({
+    scope: "intakes",
     userId: input.userId,
     originDeviceToken: null,
     recorded: recordedEventOf(input.event, "INTEGRATION"),

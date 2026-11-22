@@ -68,7 +68,7 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
   "profile.emergency-card":
     "GET /api/emergency-card returns the emergency card; /api/emergency-card/link mints, reads and revokes its read-only hlm_ link, served at /e/{token} with only the fields the owner ticked.",
   "push.data-changed":
-    "A device with a push key gets a sealed silent DATA_CHANGED (d.domains, d.changedAt) when a server-side sync stores readings; per device at most once per five minutes and three times an hour, never for a change the device started itself.",
+    "A device with a push key gets a sealed silent DATA_CHANGED (d.domains, d.changedAt) when a server-side sync stores readings, and since v1.49.0 when doses or schedules change (domains intakes, medications); per device at most once per five minutes and three times an hour, within one silent budget shared with MEDICATION_INTAKE_SYNC, never for a change the device started itself.",
   "push.healthkit-catch-up":
     "A device with a push key whose app registered in the last three days gets a sealed silent HEALTHKIT_CATCH_UP (d.requestedAt) when the account's Apple Health upload is six hours behind; at most three a day, four hours apart.",
   "push.security-alert-relay":

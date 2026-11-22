@@ -6548,6 +6548,15 @@ model Device {
   /// medication reminder that announces a dose; NULL there follows the
   /// account-wide client-managed flag (`deviceDeliversLocally`).
   medicationDelivery     String?             @map("medication_delivery")
+  /// Until when a device that delivers its own medication reminders has
+  /// them planned (`POST /api/devices` `localRunwayUntil`, at most 14 days
+  /// ahead; null clears it, omitted keeps it). A device delivers locally
+  /// only while `now <= localRunwayUntil`, or, without a runway, while it
+  /// was seen in the last 3 days (`lastSeen`, which every request on its
+  /// sign-in token moves): a quiet phone whose plan ran dry gets the
+  /// server's reminder push again until it shows up. Reader: the dispatcher's
+  /// APNs branch (`client-managed-apns.ts`, `deviceDeliversLocally`).
+  localRunwayUntil       DateTime?           @map("local_runway_until")
   /// v1.17.1 (#22) — APNs push token for the iOS Live Activity update/end
   /// channel. ActivityKit issues a per-Activity push token distinct from the
   /// device APNs token; the server stores the most recent one so the worker
@@ -6590,6 +6599,8 @@ model Device {
   /// Readers: the Live Activity relay sender (`push-relay/live-activity.ts`)
   /// and `/api/auth/me` `push.device.liveActivityConsent`.
   liveActivityConsentAt      DateTime? @map("live_activity_consent_at")
+  /// @internal: consent evidence, the text version the person agreed to;
+  /// kept as the record of that consent, never surfaced.
   liveActivityConsentVersion String?   @map("live_activity_consent_version")
   /// The ActivityKit push-to-start token and the device's `hl-la-start-v1`
   /// statement over it (`liveActivityStart`), handed to the relay only
@@ -6602,11 +6613,17 @@ model Device {
   /// its dose. Reader and writer: `push-relay/live-activity.ts`.
   laStartedMedicationId      String?   @map("la_started_medication_id")
   laStartedSlot              DateTime? @map("la_started_slot")
+  /// When the last relay start went out. Reader: the admin diagnostic
+  /// (`/api/admin/notifications/diagnostic`, `liveActivityStartedAt`).
   laStartedAt                DateTime? @map("la_started_at")
+  /// When the relay last confirmed the binding. Reader: the admin diagnostic
+  /// (`relayBoundAt`).
   relayBoundAt           DateTime?           @map("relay_bound_at")
   /// The newest envelope ids this device reports it opened, per class
-  /// (`GET /api/sync/state`), and when it reported them. Reader: the delivery
-  /// ledger, which marks earlier relay pushes confirmed (`receipts.ts`).
+  /// (`GET /api/sync/state`), and when it reported them. Reader: the receipt
+  /// write (`push-relay/receipts.ts`), which keeps the newer of the stored and
+  /// the reported id, so a late report cannot move them back; the time is
+  /// read by `intakeSync` (`capability.ts`) and the admin diagnostic.
   envelopeOpenedAlertId  String?             @map("envelope_opened_alert_id")
   envelopeOpenedSilentId String?             @map("envelope_opened_silent_id")
   envelopeReportedAt     DateTime?           @map("envelope_reported_at")
@@ -9094,6 +9111,13 @@ model CycleSymptomLink {
   /// CycleDayLogDTO so the log-day sheet can pre-fill the severity chips.
   severity  Int?     @map("severity")
   createdAt DateTime @default(now()) @map("created_at")
+  /// Which write the link came from: `MANUAL` for the log-day sheet and every
+  /// hand-made write, `APPLE_HEALTH` / `HEALTH_CONNECT` for an import. An
+  /// import's day write replaces only the links of its own source, so a
+  /// symptom logged by hand on the same day stays; a hand-made write sets the
+  /// day's whole set and keeps the source of the links it leaves in place
+  /// (`replaceSymptomLinks`). Carried by the backup (`symptomSources`).
+  source    MeasurementSource @default(MANUAL)
 
   dayLog  CycleDayLog  @relation(fields: [dayLogId], references: [id], onDelete: Cascade)
   symptom CycleSymptom @relation(fields: [symptomId], references: [id], onDelete: Cascade)
@@ -11513,8 +11537,13 @@ model PushRelayRegistration {
   receiptsSentAt               DateTime? @map("receipts_sent_at")
   lastSuccessAt                DateTime? @map("last_success_at")
   /// The operator's acceptance: terms version, household confirmation, who.
+  /// @internal: acceptance evidence, kept as the record of who accepted
+  /// which terms when; the admin view shows the current terms version, not
+  /// this row's.
   termsVersion                 String    @map("terms_version")
+  /// @internal: acceptance evidence, see `termsVersion`.
   householdConfirmedAt         DateTime  @map("household_confirmed_at")
+  /// @internal: acceptance evidence, see `termsVersion`.
   enabledByUserId              String?   @map("enabled_by_user_id")
   createdAt                    DateTime  @default(now()) @map("created_at")
   updatedAt                    DateTime  @updatedAt @map("updated_at")
@@ -11579,20 +11608,28 @@ model PushRelayDelivery {
   @@map("push_relay_deliveries")
 }
 
-/// The DATA_CHANGED wake owed to one device: the domains new readings from
-/// a server-side sync touched since its last wake, merged. A wake goes out at
-/// most once per five minutes and three times an hour per device; changes in
-/// between wait here and go out together. A change the device caused itself
-/// is never added to its own row. Writer and reader:
-/// `push-relay/data-changed.ts`; the minute job `push-data-changed` flushes
-/// what is due.
+/// The silent pushes owed to one device. `domains`: the DATA_CHANGED wake,
+/// the domains a server-side sync or a dose change touched since its last
+/// wake, merged. A wake goes out at most once per five minutes and within the
+/// device's one silent budget (`push-relay/wakes.ts`); changes in between
+/// wait here and go out together. A change the device caused itself is never
+/// added to its own row. Writer and reader: `push-relay/data-changed.ts`; the
+/// minute job `push-data-changed` flushes what is due.
 model PushDataChange {
-  deviceId  String     @id @map("device_id")
-  /// Sorted, distinct: `measurements`, `sleep`, `workouts`, `nutrition`.
-  domains   String[]   @default([])
-  /// The last three wakes, oldest first: the five-minute and hourly bounds.
-  sentAt    DateTime[] @default([]) @map("sent_at")
-  updatedAt DateTime   @default(now()) @map("updated_at")
+  deviceId         String     @id @map("device_id")
+  /// Sorted, distinct: `intakes`, `measurements`, `medications`,
+  /// `nutrition`, `sleep`, `workouts`.
+  domains          String[]   @default([])
+  /// When the last wake went out (one value): the start of the five-minute
+  /// window. Stamped only once a wake was sent, so a claim that sent nothing
+  /// costs no slot.
+  sentAt           DateTime[] @default([]) @map("sent_at")
+  updatedAt        DateTime   @default(now()) @map("updated_at")
+  /// An intake sync (`MEDICATION_INTAKE_SYNC`) the silent budget held back,
+  /// since when: owed, never dropped. The minute job sends it once the budget
+  /// frees up and clears it. Writer and reader:
+  /// `push-relay/medication-pushes.ts`.
+  intakeSyncOwedAt DateTime?  @map("intake_sync_owed_at")
 
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 

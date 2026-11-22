@@ -56,61 +56,193 @@ export interface DoseLedger {
   family: BandFamily;
   /** The read horizon: `to`, or later for a dose recorded ahead of its slot. */
   horizon: Date;
+  /** The latest take the cadence re-anchors on (a rolling grid), or null. */
+  lastIntakeAt: Date | null;
+  /** The window's intake rows the ledger placed (slot and ad-hoc alike). */
+  intakes: HistoryIntake[];
+}
+
+/** What the window read selects of each intake row. */
+const WINDOW_INTAKE_SELECT = {
+  id: true,
+  medicationId: true,
+  scheduledFor: true,
+  takenAt: true,
+  skipped: true,
+  autoMissed: true,
+  // USER_PIN rows bind by anchor in the read ledger.
+  attributionSource: true,
+  // Per-intake dose override for the ledger's deviation hint.
+  doseTaken: true,
+  // Write provenance so the client can label how
+  // each dose was recorded (Web / API / Reminder / Import / AppleHealth).
+  source: true,
+  // The history labels an automatically recorded dose.
+  autoRecorded: true,
+} satisfies Prisma.MedicationIntakeEventSelect;
+
+type WindowIntake = Prisma.MedicationIntakeEventGetPayload<{
+  select: typeof WINDOW_INTAKE_SELECT;
+}>;
+
+interface WindowIntakes {
+  events: WindowIntake[];
+  /** The latest take before the window, or null. */
+  anchorBefore: Date | null;
 }
 
 /**
- * The intakes a window needs: the rows anchored in it or taken in it (a late
- * take on an older slot is an intake instant of the window), and of all the
- * rows before it only the latest take, the anchor a rolling grid re-starts
- * from and the last intake when none falls in the window. Earlier takes place
- * no slot in the window. The whole history used to be read on every open, so
- * a medication taken for years read thousands of rows to show at most a year.
+ * The intakes each window needs, for many medications in two queries: the
+ * rows anchored in a window or taken in it (a late take on an older slot is
+ * an intake instant of the window), and of all the rows before it only the
+ * latest take, the anchor a rolling grid re-starts from and the last intake
+ * when none falls in the window. Earlier takes place no slot in the window.
+ * The whole history used to be read on every open, so a medication taken for
+ * years read thousands of rows to show at most a year.
+ *
+ * One read for every medication, from the earliest window start: the today
+ * list resolved fifteen medications in nineteen round trips one after the
+ * other. Each medication's own window is then cut from the shared rows, and
+ * its anchor is the later of the shared anchor (before the earliest start)
+ * and the latest take between the earliest start and its own.
  */
-async function readWindowIntakes(
-  medicationId: string,
+async function readWindowIntakesBatch(
   userId: string,
-  from: Date,
-) {
-  const [events, takenBefore] = await Promise.all([
+  windows: ReadonlyArray<{ medicationId: string; from: Date }>,
+): Promise<Map<string, WindowIntakes>> {
+  const out = new Map<string, WindowIntakes>();
+  if (windows.length === 0) return out;
+  const ids = [...new Set(windows.map((w) => w.medicationId))];
+  const earliest = new Date(Math.min(...windows.map((w) => w.from.getTime())));
+  const [events, anchors] = await Promise.all([
     prisma.medicationIntakeEvent.findMany({
       where: {
-        medicationId,
+        medicationId: ids.length === 1 ? ids[0] : { in: ids },
         userId,
         deletedAt: null,
-        OR: [{ scheduledFor: { gte: from } }, { takenAt: { gte: from } }],
+        OR: [
+          { scheduledFor: { gte: earliest } },
+          { takenAt: { gte: earliest } },
+        ],
       },
       orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
-      select: {
-        id: true,
-        scheduledFor: true,
-        takenAt: true,
-        skipped: true,
-        autoMissed: true,
-        // USER_PIN rows bind by anchor in the read ledger.
-        attributionSource: true,
-        // Per-intake dose override for the ledger's deviation hint.
-        doseTaken: true,
-        // Write provenance so the client can label how
-        // each dose was recorded (Web / API / Reminder / Import / AppleHealth).
-        source: true,
-        // The history labels an automatically recorded dose.
-        autoRecorded: true,
-      },
+      select: WINDOW_INTAKE_SELECT,
     }),
-    prisma.medicationIntakeEvent.findFirst({
-      where: {
-        medicationId,
-        userId,
-        deletedAt: null,
-        skipped: false,
-        scheduledFor: { lt: from },
-        takenAt: { lt: from },
-      },
-      orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-      select: { takenAt: true },
-    }),
+    // The newest take before the earliest start, per medication: one index
+    // probe each on `(user_id, medication_id, taken_at)`.
+    ids.length === 1
+      ? anchorOfOne(userId, ids[0]!, earliest)
+      : prisma.$queryRaw<Array<{ medicationId: string; takenAt: Date }>>`
+      SELECT m.id AS "medicationId", e.taken_at AS "takenAt"
+      FROM unnest(${ids}::text[]) AS m(id)
+      CROSS JOIN LATERAL (
+        SELECT taken_at
+        FROM medication_intake_events
+        WHERE user_id = ${userId}
+          AND medication_id = m.id
+          AND deleted_at IS NULL
+          AND skipped = false
+          AND scheduled_for < ${earliest}
+          AND taken_at < ${earliest}
+        ORDER BY taken_at DESC
+        LIMIT 1
+      ) e
+    `,
   ]);
-  return { events, anchorBefore: takenBefore?.takenAt ?? null };
+  const anchorByMedication = new Map(
+    anchors.map((a) => [a.medicationId, a.takenAt]),
+  );
+  const eventsByMedication = new Map<string, WindowIntake[]>();
+  for (const e of events) {
+    // One medication's read is keyed by it alone (`medicationId` equality).
+    const key = ids.length === 1 ? ids[0]! : e.medicationId;
+    const list = eventsByMedication.get(key);
+    if (list) list.push(e);
+    else eventsByMedication.set(key, [e]);
+  }
+  for (const { medicationId, from } of windows) {
+    const rows = eventsByMedication.get(medicationId) ?? [];
+    const f = from.getTime();
+    let anchor = anchorByMedication.get(medicationId)?.getTime() ?? null;
+    const inWindow: WindowIntake[] = [];
+    for (const e of rows) {
+      const t = e.takenAt?.getTime() ?? null;
+      if (e.scheduledFor.getTime() >= f || (t !== null && t >= f)) {
+        inWindow.push(e);
+      } else if (!e.skipped && t !== null && (anchor === null || t > anchor)) {
+        anchor = t;
+      }
+    }
+    out.set(medicationId, {
+      events: inWindow,
+      anchorBefore: anchor === null ? null : new Date(anchor),
+    });
+  }
+  return out;
+}
+
+/** The newest take of one medication before `from`, as the batch reads it. */
+async function anchorOfOne(
+  userId: string,
+  medicationId: string,
+  from: Date,
+): Promise<Array<{ medicationId: string; takenAt: Date }>> {
+  const row = await prisma.medicationIntakeEvent.findFirst({
+    where: {
+      medicationId,
+      userId,
+      deletedAt: null,
+      skipped: false,
+      scheduledFor: { lt: from },
+      takenAt: { lt: from },
+    },
+    orderBy: [{ takenAt: "desc" }, { id: "desc" }],
+    select: { takenAt: true },
+  });
+  return row?.takenAt ? [{ medicationId, takenAt: row.takenAt }] : [];
+}
+
+export interface DoseLedgerInput {
+  medication: DoseLedgerMedication;
+  from: Date;
+  to: Date;
+}
+
+/**
+ * The ledgers of many medications, by medication id, from two queries
+ * whatever their number. Every reader that needs the dose state of more
+ * than one medication goes through here, never through a loop of
+ * `loadDoseLedger`.
+ */
+export async function loadDoseLedgers(input: {
+  userId: string;
+  userTz: string;
+  now: Date;
+  ledgers: readonly DoseLedgerInput[];
+}): Promise<Map<string, DoseLedger>> {
+  const reads = await readWindowIntakesBatch(
+    input.userId,
+    input.ledgers.map((l) => ({ medicationId: l.medication.id, from: l.from })),
+  );
+  const out = new Map<string, DoseLedger>();
+  for (const l of input.ledgers) {
+    const read = reads.get(l.medication.id) ?? {
+      events: [],
+      anchorBefore: null,
+    };
+    out.set(
+      l.medication.id,
+      composeDoseLedger({
+        medication: l.medication,
+        userTz: input.userTz,
+        from: l.from,
+        to: l.to,
+        now: input.now,
+        ...read,
+      }),
+    );
+  }
+  return out;
 }
 
 /** The ledger of `medication` over `[from, to]`. */
@@ -122,12 +254,26 @@ export async function loadDoseLedger(input: {
   to: Date;
   now: Date;
 }): Promise<DoseLedger> {
-  const { medication, userId, userTz, from, to, now } = input;
-  const { events, anchorBefore } = await readWindowIntakes(
-    medication.id,
-    userId,
-    from,
-  );
+  const ledgers = await loadDoseLedgers({
+    userId: input.userId,
+    userTz: input.userTz,
+    now: input.now,
+    ledgers: [input],
+  });
+  return ledgers.get(input.medication.id) as DoseLedger;
+}
+
+/** The ledger from its intakes: pure, no database. */
+function composeDoseLedger(input: {
+  medication: DoseLedgerMedication;
+  userTz: string;
+  from: Date;
+  to: Date;
+  now: Date;
+  events: WindowIntake[];
+  anchorBefore: Date | null;
+}): DoseLedger {
+  const { medication, userTz, from, to, now, events, anchorBefore } = input;
 
   const mapped = events.map((e) => ({
     id: e.id,
@@ -254,5 +400,12 @@ export async function loadDoseLedger(input: {
     medication.createdAt,
   );
 
-  return { rows, bands, family, horizon };
+  return {
+    rows,
+    bands,
+    family,
+    horizon,
+    lastIntakeAt,
+    intakes: historyIntakes,
+  };
 }
