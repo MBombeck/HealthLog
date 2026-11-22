@@ -11,6 +11,7 @@
  * pairing) shares the one per-user tz resolved here.
  */
 import { prisma } from "@/lib/db";
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import { probeProviderPresence } from "@/lib/ai/provider";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { summarize } from "@/lib/analytics/trends";
@@ -57,10 +58,13 @@ function classifyProfile(
     gender: string | null;
     thresholdsJson: unknown;
   } | null,
+  pregnancy: boolean,
 ) {
   let bmi: number | null = null;
   let bmiClassification = null;
-  if (dbUser?.heightCm && summaries.WEIGHT?.latest) {
+  // During a pregnancy or its postpartum weeks weight is data, not a BMI
+  // category (`pregnancyContextActive`), and no alert grades it either.
+  if (dbUser?.heightCm && summaries.WEIGHT?.latest && !pregnancy) {
     bmi = roundTo(bmiOf(summaries.WEIGHT.latest, dbUser.heightCm), 1);
     bmiClassification = classifyBMI(bmi);
   }
@@ -110,7 +114,11 @@ export async function buildComprehensiveResponse(user: OverviewRecord) {
 
   const summaries: Record<string, DataSummary> = aggregate.summaries;
   const { bmi, bmiClassification, bpClassification, bpTargets } =
-    classifyProfile(summaries, dbUser);
+    classifyProfile(
+      summaries,
+      dbUser,
+      await pregnancyContextActive(prisma, userId, userTz),
+    );
 
   // BP target adherence over the trailing 90 days, through the canonical
   // `computeBpInTargetPct` so this figure shares ONE definition with the
@@ -160,11 +168,16 @@ export async function buildComprehensiveResponse(user: OverviewRecord) {
     weightSlope30: summaries.WEIGHT?.slope30?.slope ?? null,
     pulseAvg30: summaries.PULSE?.avg30 ?? null,
     pulseAnomalyCount: summaries.PULSE?.anomalyCount ?? 0,
-    medications: medCompliance.map((m) => ({
-      name: m.name,
-      compliance7: m.compliance7,
-      compliance30: m.compliance30,
-    })),
+    // A medication with no dose to score yet gets no adherence alert: "100 %
+    // over the last 7 days, keep it up" for a dose never due is a claim
+    // without data.
+    medications: medCompliance
+      .filter((m) => m.taken7 + m.missed7 > 0)
+      .map((m) => ({
+        name: m.name,
+        compliance7: m.compliance7,
+        compliance30: m.compliance30,
+      })),
   });
 
   // Data span — derived from the earliest 90-day measurement.

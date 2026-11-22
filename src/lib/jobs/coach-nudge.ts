@@ -107,6 +107,7 @@ import { resolveRestMode } from "@/lib/illness/rest-mode";
 import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
+import { weightFramingPaused } from "@/lib/cycle/pregnancy-context";
 import {
   DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
   type HealthProfileAiSection,
@@ -237,9 +238,8 @@ export interface CoachNudgeSummary {
 export function evaluateComplianceTrigger(
   rows: { takenAt: Date | null; skipped: boolean; autoMissed: boolean }[],
 ): boolean {
-  // Deliberate skips are a planned break, not a compliance problem —
-  // exclude them from both numerator and denominator (the compliance
-  // engine's own semantics).
+  // Deliberate skips are a planned break, not a compliance problem: out of
+  // both numerator and denominator (the compliance engine's semantics).
   //
   // v1.16.1 — only RESOLVED slots count toward the denominator: taken
   // rows and auto-missed rows (the hourly auto-miss cron flips a pending
@@ -601,9 +601,9 @@ export async function findTriggerForUser(
       .map((m) => m.value);
     if (evaluateScoreTrigger(recent, prior)) return "score";
 
-    // 4) Weight weekly mean drifting away from the effective range.
+    // 4) Weight weekly mean drifting away from the effective range; never in a pregnancy.
     const weightRange = effectiveRange("WEIGHT");
-    if (weightRange) {
+    if (weightRange && !(await weightFramingPaused(prisma, user, now))) {
       const weights = await prisma.measurement.findMany({
         where: {
           userId: user.id,

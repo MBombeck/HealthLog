@@ -142,6 +142,13 @@ export interface TrendVerdictContext {
    * there is nothing to place, which leaves the metric's default.
    */
   referenceValue: number | null;
+  /**
+   * The record is in a pregnancy or its postpartum weeks
+   * (`pregnancyContextActive`). Weight and BMI then judge no direction
+   * against the person's target: the body is supposed to change. Required,
+   * so no caller can judge weight without having read it.
+   */
+  pregnancy: boolean;
 }
 
 /**
@@ -267,7 +274,9 @@ export function resolveTrendVerdict(
   // own target counts (see the module comment). For `BMI` the reference is
   // the WEIGHT it is derived from, in kg, since the target is a weight.
   if (key === "WEIGHT" || key === "BMI") {
-    const target = resolveWeightTargetOverride(ctx.thresholdsJson);
+    const target = ctx.pregnancy
+      ? null
+      : resolveWeightTargetOverride(ctx.thresholdsJson);
     const judgement = resolveWeightTrend(target, reference);
     return {
       direction: judgement.direction,

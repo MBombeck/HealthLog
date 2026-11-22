@@ -893,3 +893,36 @@ describe("DELETE /api/cycle/all and the sync feed", () => {
     expect(pulled.cursorExpired).toBe(true);
   });
 });
+
+describe("DELETE /api/cycle/all and the pregnancy state", () => {
+  it("leaves no pregnancy or postpartum state behind", async () => {
+    await loginAs(FEMALE_USER_ID);
+    const prisma = getPrismaClient();
+    const { pregnancyWriteData } = await import("@/lib/cycle/pregnancy-store");
+    const pregnant = pregnancyWriteData({
+      reproductiveState: "PREGNANT",
+      pregnancyStartDate: "2026-01-05",
+      pregnancyDueDate: null,
+      deliveryDate: null,
+      postpartumWeeks: 20,
+    });
+    await prisma.cycleProfile.upsert({
+      where: { userId: FEMALE_USER_ID },
+      create: { userId: FEMALE_USER_ID, ...pregnant },
+      update: pregnant,
+    });
+
+    const { DELETE } = await import("@/app/api/cycle/all/route");
+    const purged = await DELETE(jsonRequest("/api/cycle/all", "DELETE"));
+    expect(purged.status).toBe(200);
+
+    // The emergency card, the report and the Coach read the state from here:
+    // after "delete all cycle data" there is nothing for them to say.
+    const profile = await prisma.cycleProfile.findUniqueOrThrow({
+      where: { userId: FEMALE_USER_ID },
+      select: { pregnancyEncrypted: true, postpartumWeeks: true },
+    });
+    expect(profile.pregnancyEncrypted).toBeNull();
+    expect(profile.postpartumWeeks).toBe(12);
+  });
+});
