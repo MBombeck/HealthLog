@@ -32,14 +32,9 @@ vi.mock("@/lib/db", () => ({
     },
     refreshToken: {
       updateMany: vi.fn(),
-      // The other account holds no sign-in on the device (`live-sign-in.ts`):
-      // plain functions, so the suite's mock resets keep the answer.
-      findFirst: async () => null,
-      findMany: async () => [],
     },
-    apiToken: {
-      findFirst: async () => null,
-    },
+    // Also answers the live sign-in check (`live-sign-in.ts`) with no row:
+    // the other account holds no sign-in on the device.
     $queryRaw: vi.fn(),
     $transaction: vi.fn(),
     notificationChannel: {

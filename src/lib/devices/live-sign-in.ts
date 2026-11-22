@@ -18,8 +18,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 type Db =
-  | Pick<PrismaClient, "refreshToken" | "apiToken">
-  | Pick<Prisma.TransactionClient, "refreshToken" | "apiToken">;
+  Pick<PrismaClient, "$queryRaw"> | Pick<Prisma.TransactionClient, "$queryRaw">;
 
 /** A refresh token that still signs its device in at `now`. */
 export function liveRefreshTokenWhere(now: Date) {
@@ -30,55 +29,37 @@ export function liveRefreshTokenWhere(now: Date) {
   } satisfies Prisma.RefreshTokenWhereInput;
 }
 
-/** How many consumed refresh tokens the access-token check looks at. */
-const SUNSET_PAIRS = 20;
-
 /**
  * True while the device row's account still has a live sign-in that is, or
- * may be, on this device. A sign-in that names no device (one made before
- * the app sent `X-Device-Id`) cannot be told apart from one on this device,
- * so it counts: the takeover fails closed.
+ * may be, on this device: a refresh token by {@link liveRefreshTokenWhere},
+ * or a live access token paired with one of the device's unrevoked refresh
+ * tokens (a rotation's sunset). A sign-in that names no device (one made
+ * before the app sent `X-Device-Id`) cannot be told apart from one on this
+ * device, so it counts: the takeover fails closed. One statement; it reads
+ * stored rows only and authenticates nothing.
  */
 export async function deviceHasLiveSignIn(
   db: Db,
   device: { userId: string; token: string },
   now: Date = new Date(),
 ): Promise<boolean> {
-  const onDevice = {
-    userId: device.userId,
-    OR: [{ deviceId: device.token }, { deviceId: null }],
-  } satisfies Prisma.RefreshTokenWhereInput;
-  const live = await db.refreshToken.findFirst({
-    where: { ...onDevice, ...liveRefreshTokenWhere(now) },
-    select: { id: true },
-  });
-  if (live) return true;
-  // The pairs a rotation consumed: their access tokens run out a few seconds
-  // after the rotation, unless the family was revoked with them.
-  const consumed = await db.refreshToken.findMany({
-    where: {
-      ...onDevice,
-      revokedAt: null,
-      usedAt: { not: null },
-      accessTokenHash: { not: null },
-      expiresAt: { gt: now },
-    },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    take: SUNSET_PAIRS,
-    select: { accessTokenHash: true },
-  });
-  const hashes = consumed.flatMap((r) =>
-    r.accessTokenHash ? [r.accessTokenHash] : [],
-  );
-  if (hashes.length === 0) return false;
-  const access = await db.apiToken.findFirst({
-    where: {
-      userId: device.userId,
-      tokenHash: { in: hashes },
-      revoked: false,
-      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-    },
-    select: { id: true },
-  });
-  return access !== null;
+  const at = now.toISOString();
+  const rows = await db.$queryRaw<Array<{ live: boolean }>>`
+    SELECT EXISTS (
+      SELECT 1
+        FROM refresh_tokens AS r
+        LEFT JOIN api_tokens AS t
+          ON t.token_hash = r.access_token_hash
+         AND t.user_id = r.user_id
+         AND t.revoked = false
+         AND (t.expires_at IS NULL
+              OR t.expires_at > (${at}::timestamptz AT TIME ZONE 'UTC'))
+       WHERE r.user_id = ${device.userId}
+         AND (r.device_id = ${device.token} OR r.device_id IS NULL)
+         AND r.revoked_at IS NULL
+         AND r.expires_at > (${at}::timestamptz AT TIME ZONE 'UTC')
+         AND (r.used_at IS NULL OR t.id IS NOT NULL)
+    ) AS live
+  `;
+  return rows[0]?.live === true;
 }
