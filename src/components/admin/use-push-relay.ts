@@ -29,6 +29,12 @@ export interface AdminPushRelayStatus {
     lastFailure: { reason: string | null; at: string } | null;
   };
   termsVersion: string;
+  /** The relay is on and its accepted terms text is older than `termsVersion`. */
+  termsConfirmationNeeded: boolean;
+  /** Device unbinds owed to the relay that it has not confirmed yet. */
+  unbindsPending: number;
+  /** Relay hosts still registered that the current settings cannot reach. */
+  unreachableRegistrations: string[];
   termsUrl: string | null;
   privacyUrl: string | null;
   docsUrl: string;

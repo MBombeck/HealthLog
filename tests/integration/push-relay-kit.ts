@@ -12,6 +12,7 @@ import {
   type SessionFixture,
 } from "../kit/factories";
 import { RELAY_HOST } from "./push-relay-fake";
+import { RELAY_CONSENT_TEXT_VERSION } from "@/lib/push-relay/config";
 import { generateX25519 } from "@/lib/push-relay/hpke";
 import { tokenTagHex } from "@/lib/push-relay/encoding";
 import {
@@ -63,7 +64,7 @@ export function deviceBody(
         suites: [1],
         publicKey: pushKey.publicKey.toString("base64url"),
       },
-      relayConsent: { granted: true, textVersion: "2026-11-21" },
+      relayConsent: { granted: true, textVersion: RELAY_CONSENT_TEXT_VERSION },
       relayBinding: {
         bindingKey: binding.publicKey.toString("base64url"),
         statement,

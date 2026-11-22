@@ -423,3 +423,125 @@ describe("a relay without pinned keys", () => {
     });
   });
 });
+
+describe("a newer relay terms text", () => {
+  it("asks the admin to confirm it once and keeps the relay running", async () => {
+    const { instanceId, adminSession } = await enableRelay();
+    const token = "b7".repeat(32);
+    await bindDevice(instanceId, token, adminSession);
+    const prisma = getPrismaClient();
+    // An acceptance of the text before the current one.
+    await prisma.pushRelayRegistration.updateMany({
+      data: { termsVersion: "2026-11-21" },
+    });
+    const route = await import("@/app/api/admin/push-relay/route");
+    type Status = {
+      offered: boolean;
+      state: string;
+      instanceId: string | null;
+      termsConfirmationNeeded: boolean;
+      devices: { bound: number };
+    };
+    const status = () =>
+      callRoute<Status>(route.GET, {
+        method: "GET",
+        route: "/api/admin/push-relay",
+        auth: adminSession,
+      });
+    expect((await status()).data).toMatchObject({
+      offered: true,
+      state: "ok",
+      instanceId,
+      termsConfirmationNeeded: true,
+      devices: { bound: 1 },
+    });
+
+    // Pushes keep going while the confirmation is open.
+    const { sendRelayTestPush } = await import("@/lib/push-relay/test-push");
+    expect((await sendRelayTestPush(adminSession.userId)).outcome).toBe(
+      "accepted",
+    );
+    await maintenance();
+    expect(fake.bindings.has(token)).toBe(true);
+
+    fake.calls.length = 0;
+    const confirmed = await callRoute<Status>(route.PUT, {
+      method: "PUT",
+      route: "/api/admin/push-relay",
+      auth: adminSession,
+      body: { enabled: true, acceptTerms: true, householdOnly: true },
+    });
+    expect(confirmed.data).toMatchObject({
+      offered: true,
+      state: "ok",
+      instanceId,
+      termsConfirmationNeeded: false,
+      devices: { bound: 1 },
+    });
+    // Confirming changed the record of the acceptance and nothing at the relay.
+    expect(fake.calls).toEqual([]);
+    expect(fake.bindings.has(token)).toBe(true);
+    const { RELAY_TERMS_VERSION } = await import("@/lib/push-relay/config");
+    const row = await prisma.pushRelayRegistration.findFirstOrThrow();
+    expect(row.termsVersion).toBe(RELAY_TERMS_VERSION);
+    expect(row.enabledByUserId).toBe(adminSession.userId);
+    const audit = await prisma.auditLog.findFirstOrThrow({
+      where: { action: "admin.push_relay.terms_confirmed" },
+    });
+    expect(JSON.parse(audit.details ?? "{}")).toMatchObject({
+      termsVersion: RELAY_TERMS_VERSION,
+      previousTermsVersion: "2026-11-21",
+    });
+  });
+});
+
+describe("unbinds while the relay cannot be reached", () => {
+  it("keeps them queued under PUSH_RELAY_MODE=off and shows them to the admin", async () => {
+    const { instanceId, adminSession } = await enableRelay();
+    const token = "b8".repeat(32);
+    const { session } = await bindDevice(instanceId, token);
+    const prisma = getPrismaClient();
+    vi.stubEnv("PUSH_RELAY_MODE", "off");
+    await deleteOwn(session.userId);
+    expect(await prisma.pushRelayUnbind.count({ where: { token } })).toBe(1);
+
+    const facts = await maintenance();
+    expect(facts).toMatchObject({ unbound: 0, unbinds_moot: 0 });
+    // Nothing reached the relay, so nothing counts as confirmed.
+    expect(fake.bindings.has(token)).toBe(true);
+    expect(await prisma.pushRelayUnbind.count({ where: { token } })).toBe(1);
+
+    const { GET } = await import("@/app/api/admin/push-relay/route");
+    const status = await callRoute<{
+      allowed: boolean;
+      unbindsPending: number;
+      unreachableRegistrations: string[];
+    }>(GET, {
+      method: "GET",
+      route: "/api/admin/push-relay",
+      auth: adminSession,
+    });
+    expect(status.data).toMatchObject({
+      allowed: false,
+      unbindsPending: 1,
+      unreachableRegistrations: [new URL(RELAY_URL).hostname],
+    });
+
+    // With the relay reachable again the queued unbind goes and is confirmed.
+    vi.stubEnv("PUSH_RELAY_MODE", "allowed");
+    await prisma.pushRelayUnbind.updateMany({
+      data: { nextAttemptAt: new Date(0) },
+    });
+    expect((await maintenance()).unbound).toBe(1);
+    expect(fake.bindings.has(token)).toBe(false);
+    expect(await prisma.pushRelayUnbind.count()).toBe(0);
+  });
+
+  it("drops them as moot, not confirmed, when no relay holds a binding", async () => {
+    const prisma = getPrismaClient();
+    await prisma.pushRelayUnbind.create({ data: { token: "b9".repeat(32) } });
+    const facts = await maintenance();
+    expect(facts).toMatchObject({ unbound: 0, unbinds_moot: 1 });
+    expect(await prisma.pushRelayUnbind.count()).toBe(0);
+  });
+});
