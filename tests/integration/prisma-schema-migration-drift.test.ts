@@ -12,8 +12,12 @@
  * prune it by hand shipped it.
  *
  * So this asks Prisma itself: the database the integration run migrated from
- * `prisma/migrations` (this worker's clone of the template), diffed against
- * the schema, must need no statement at all. Objects Prisma cannot express
+ * `prisma/migrations`, diffed against the schema, must need no statement at
+ * all. It diffs a fresh copy of the migrated template, not this worker's
+ * clone: the clone carries whatever earlier files in the worker did to it,
+ * and a migration test that replays an old migration whole (0515, in
+ * `dose-slot-merge.test.ts`) rebuilds an index a later migration (0538)
+ * dropped, so the check failed or passed on the order the files ran in. Objects Prisma cannot express
  * (expression and partial indexes, CHECK constraints, triggers) do not show
  * up in its diff; should one ever surface, it goes in `ALLOWED` with the reason.
  */
@@ -21,7 +25,14 @@ import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { Client } from "pg";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import {
+  cloneTemplateDatabase,
+  dropClonedDatabase,
+  workerDatabaseName,
+} from "./worker-database";
 
 const ROOT = process.cwd();
 const SCHEMA = join(ROOT, "prisma", "schema.prisma");
@@ -32,12 +43,25 @@ const SCHEMA = join(ROOT, "prisma", "schema.prisma");
  */
 const ALLOWED: ReadonlyArray<{ statement: RegExp; reason: string }> = [];
 
+/** The worker's clone, which earlier files in the worker may have changed. */
+const WORKER_URL = process.env.DATABASE_URL!;
+/** A copy of the template as the migrations left it, for this file alone. */
+const FRESH = `${workerDatabaseName()}_drift`;
+let freshUrl = "";
+
 const dirs: string[] = [];
-afterAll(() => {
+beforeAll(async () => {
+  freshUrl = await cloneTemplateDatabase(WORKER_URL, FRESH);
+});
+afterAll(async () => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true });
+  await dropClonedDatabase(WORKER_URL, FRESH);
 });
 
-function diff(schemaPath: string): Promise<{ code: number; output: string }> {
+function diff(
+  schemaPath: string,
+  databaseUrl = freshUrl,
+): Promise<{ code: number; output: string }> {
   return new Promise((resolve) => {
     const child = spawn(
       process.execPath,
@@ -50,7 +74,7 @@ function diff(schemaPath: string): Promise<{ code: number; output: string }> {
         schemaPath,
         "--script",
       ],
-      { cwd: ROOT, env: { ...process.env } },
+      { cwd: ROOT, env: { ...process.env, DATABASE_URL: databaseUrl } },
     );
     let output = "";
     let errors = "";
@@ -88,6 +112,29 @@ describe("prisma schema and migrations", () => {
       drift,
       `schema.prisma and prisma/migrations disagree. Fix the schema (or add a migration) until \`prisma migrate diff\` is empty:\n${drift.join(";\n")}`,
     ).toEqual([]);
+  });
+
+  it("does not see what an earlier file did to the worker's clone", async () => {
+    // The stray index a replayed migration leaves behind. The worker's clone
+    // shows it (so the probe is real); the fresh copy the check reads does not.
+    const worker = new Client({ connectionString: WORKER_URL });
+    await worker.connect();
+    try {
+      await worker.query(
+        `CREATE INDEX IF NOT EXISTS "drift_probe_stray_idx" ON "users" ("created_at")`,
+      );
+      const polluted = await diff(SCHEMA, WORKER_URL);
+      expect(polluted.code, polluted.output).toBe(0);
+      expect(unexplained(polluted.output)).toContain(
+        'DROP INDEX "drift_probe_stray_idx"',
+      );
+      const result = await diff(SCHEMA);
+      expect(result.code, result.output).toBe(0);
+      expect(unexplained(result.output)).toEqual([]);
+    } finally {
+      await worker.query(`DROP INDEX IF EXISTS "drift_probe_stray_idx"`);
+      await worker.end();
+    }
   });
 
   it("sees a drift when there is one", async () => {
