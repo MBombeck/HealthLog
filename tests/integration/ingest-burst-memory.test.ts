@@ -261,14 +261,23 @@ describe("a first-sync burst from one phone (real Postgres)", () => {
     ).toBe(ECGS);
   }, 240_000);
 
-  it("does not fit that budget with the gate opened wide", async () => {
-    __setIngestSlotsForTests(10_000, 10_000);
-    const result = await burst("ungated");
+  // The counterproof shows the budget is a real limit: without the gate the
+  // same burst outgrows it. How far it outgrows it depends on the machine
+  // (on the shared CI runners the ungated burst can outlast the timeout
+  // instead), so it runs as a benchmark: HEALTHLOG_BENCH=1, see
+  // docs/contributing/benchmarks.md. The gated test above runs everywhere.
+  it.skipIf(!process.env.HEALTHLOG_BENCH)(
+    "does not fit that budget with the gate opened wide",
+    async () => {
+      __setIngestSlotsForTests(10_000, 10_000);
+      const result = await burst("ungated");
 
-    process.stderr.write(
-      `ungated burst: ${(result.growthBytes / 1048576).toFixed(1)} MB held at most, ${result.maxRunning} running at most, ${result.statuses.filter((s) => s >= 500).length} answered 5xx\n`,
-    );
-    expect(result.maxRunning).toBeGreaterThan(INGEST_SLOTS_PER_CALLER);
-    expect(result.growthBytes).toBeGreaterThan(BUDGET_BYTES);
-  }, 240_000);
+      process.stderr.write(
+        `ungated burst: ${(result.growthBytes / 1048576).toFixed(1)} MB held at most, ${result.maxRunning} running at most, ${result.statuses.filter((s) => s >= 500).length} answered 5xx\n`,
+      );
+      expect(result.maxRunning).toBeGreaterThan(INGEST_SLOTS_PER_CALLER);
+      expect(result.growthBytes).toBeGreaterThan(BUDGET_BYTES);
+    },
+    240_000,
+  );
 });

@@ -108,6 +108,8 @@ Result on the same machine (`results/v1.45.0-boot.md`): the worker graph loads i
 
 `scripts/bench/ingest-burst.ts` replays what a phone sends right after it signs in to a fresh account, against the production build under the heap of a 1 GB container (`--max-old-space-size=524`), and reads the server's heap through the inspector while it runs.
 
+The integration test `tests/integration/ingest-burst-memory.test.ts` holds the gated burst under its budget on every CI run. Its counterproof, the same burst with the gate opened wide, depends on the machine and runs only with `HEALTHLOG_BENCH=1`; run it after touching the ingest gate, to see the budget is still a real limit.
+
 ```sh
 pnpm dlx tsx scripts/bench/ingest-burst.ts --out scripts/bench/results/<label>-burst
 ```
