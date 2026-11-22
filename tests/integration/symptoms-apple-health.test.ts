@@ -512,7 +512,9 @@ describe("DELETE /api/symptoms/events/by-external-ids", () => {
     await ingest([sample(id)]);
     await deleteByExternalIds([id]);
     const replay = await ingest([sample(id)]);
-    expect(replay.entries).toEqual([{ index: 0, status: "duplicate" }]);
+    expect(replay.entries).toEqual([
+      { index: 0, status: "duplicate", reason: "tombstoned" },
+    ]);
     expect(
       await getPrismaClient().symptomEvent.count({
         where: { externalId: id },
@@ -676,7 +678,9 @@ describe("purging a built-in definition", () => {
     // The phone re-sends the same sample: it stays deleted, and the
     // definition stays hidden.
     const replay = await ingest([sample(id)]);
-    expect(replay.entries).toEqual([{ index: 0, status: "duplicate" }]);
+    expect(replay.entries).toEqual([
+      { index: 0, status: "duplicate", reason: "tombstoned" },
+    ]);
     expect(
       (
         await prisma.symptomDefinition.findUniqueOrThrow({

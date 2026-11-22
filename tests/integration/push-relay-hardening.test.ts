@@ -364,7 +364,11 @@ describe("M7: token ownership ignores letter case", () => {
       method: "POST",
       route: "/api/devices",
       auth: await makeSession(firstOwner),
-      body: { ...base, token: "case-install-a", apnsToken: token.toUpperCase() },
+      body: {
+        ...base,
+        token: "case-install-a",
+        apnsToken: token.toUpperCase(),
+      },
     });
     expect(first.status).toBe(201);
     const stored = await getPrismaClient().device.findFirstOrThrow({
@@ -376,7 +380,11 @@ describe("M7: token ownership ignores letter case", () => {
       method: "POST",
       route: "/api/devices",
       auth: await makeSession(secondOwner),
-      body: { ...base, token: "case-install-b", apnsToken: token.toLowerCase() },
+      body: {
+        ...base,
+        token: "case-install-b",
+        apnsToken: token.toLowerCase(),
+      },
     });
     expect(second.status).toBe(201);
     const rows = await getPrismaClient().device.findMany({
@@ -407,9 +415,9 @@ describe("an account switch on one device (iOS #190)", () => {
     expect(unbind).toBeGreaterThanOrEqual(0);
     expect(bind).toBeGreaterThan(unbind);
     const prisma = getPrismaClient();
-    expect(await prisma.device.count({ where: { id: previous.deviceId } })).toBe(
-      0,
-    );
+    expect(
+      await prisma.device.count({ where: { id: previous.deviceId } }),
+    ).toBe(0);
     expect(await prisma.pushRelayUnbind.count()).toBe(0);
     const row = await prisma.device.findUniqueOrThrow({
       where: { id: res.data.id },
