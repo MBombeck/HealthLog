@@ -170,6 +170,9 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "intake_auto_skip_count",
   "intake_auto_take_medications",
   "intake_auto_take_recorded",
+  // The DATA_CHANGED minute pass: intake syncs the silent budget held back
+  // and this pass sent.
+  "intake_sync_owed_sent",
   "intakes_pruned",
   "inventory_expired_count",
   "inventory_items_migrated",
