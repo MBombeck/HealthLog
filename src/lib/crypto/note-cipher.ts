@@ -61,26 +61,48 @@ export function readNote(
 }
 
 /**
+ * The tombstone's origin (`appleHealthDeletedAt`) and a `stats:` total's
+ * `statsComputedAt` are the server's bookkeeping for the re-post rules
+ * (`src/lib/sync/tombstone-repost.ts`, the batch route): no response carries
+ * them, so the shapers every row response passes through drop them.
+ */
+type WriteBookkeeping = "appleHealthDeletedAt" | "statsComputedAt";
+
+/**
  * Shape a measurement row for a response/export: surface the decrypted note on
  * `notes` and strip the raw `notesEncrypted` ciphertext so it never leaves the
- * server. Keeps every other column untouched.
+ * server, and the write bookkeeping with it. Keeps every other column
+ * untouched.
  */
 export function shapeMeasurementNotes<
   T extends { notes: string | null; notesEncrypted: Uint8Array | null },
->(row: T): Omit<T, "notesEncrypted"> & { notes: string | null } {
-  const { notesEncrypted, ...rest } = row;
+>(
+  row: T,
+): Omit<T, "notesEncrypted" | WriteBookkeeping> & { notes: string | null } {
+  const {
+    notesEncrypted,
+    appleHealthDeletedAt: _origin,
+    statsComputedAt: _computed,
+    ...rest
+  } = row as T & Partial<Record<WriteBookkeeping, unknown>>;
   return { ...rest, notes: readNote(notesEncrypted, rest.notes) };
 }
 
 /**
  * Shape a mood row for a response/export: surface the decrypted note on `note`
- * and strip the raw `noteEncrypted` ciphertext. Keeps every other column
- * untouched.
+ * and strip the raw `noteEncrypted` ciphertext and the write bookkeeping.
+ * Keeps every other column untouched.
  */
 export function shapeMoodNote<
   T extends { note: string | null; noteEncrypted: Uint8Array | null },
->(row: T): Omit<T, "noteEncrypted"> & { note: string | null } {
-  const { noteEncrypted, ...rest } = row;
+>(
+  row: T,
+): Omit<T, "noteEncrypted" | "appleHealthDeletedAt"> & { note: string | null } {
+  const {
+    noteEncrypted,
+    appleHealthDeletedAt: _origin,
+    ...rest
+  } = row as T & { appleHealthDeletedAt?: unknown };
   return { ...rest, note: readNote(noteEncrypted, rest.note) };
 }
 
