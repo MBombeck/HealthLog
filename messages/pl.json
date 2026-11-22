@@ -10559,6 +10559,10 @@
     "unavailable": {
       "title": "Link wygasł lub jest nieprawidłowy",
       "description": "Ten link udostępniania wygasł, został cofnięty lub jest niekompletny. Poproś osobę, która go udostępniła, o nowy link."
+    },
+    "cookiesNeeded": {
+      "title": "Ten link wymaga plików cookie",
+      "description": "Przeglądarka nie przyjęła pliku cookie, którego ten link udostępniania używa do otwarcia udostępnionej dokumentacji zdrowotnej. Zezwól na pliki cookie dla tej strony i otwórz link ponownie."
     }
   },
   "cycle": {

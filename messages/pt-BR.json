@@ -10559,6 +10559,10 @@
     "unavailable": {
       "title": "Link expirado ou inválido",
       "description": "Este link de compartilhamento expirou, foi revogado ou está incompleto. Peça à pessoa que compartilhou um novo link."
+    },
+    "cookiesNeeded": {
+      "title": "Este link precisa de cookies",
+      "description": "Seu navegador não aceitou o cookie que este link de compartilhamento usa para abrir o registro de saúde compartilhado. Permita cookies para este site e abra o link de novo."
     }
   },
   "cycle": {

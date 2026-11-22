@@ -11,6 +11,11 @@
  *
  * The lookup is the gate check (`resolveShareGateState`): it bumps no access
  * counter, which the page does on a real record render.
+ *
+ * The hop carries the time it was made, so the proxy can tell a browser that
+ * refused the cookie from a later visit without one; it sends the first back
+ * with `?cookies=off`, and a live link then answers a short page saying the
+ * link needs cookies, instead of redirecting again.
  */
 import { apiHandler } from "@/lib/api-handler";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
@@ -19,10 +24,14 @@ import { resolveShareGateState } from "@/lib/clinician-share/resolve-share-token
 import {
   SHARE_VIEW_GATE_COOKIE,
   SHARE_VIEW_GATE_TTL_SECONDS,
+  SHARE_VIEW_HOP_PARAM,
+  SHARE_VIEW_NO_COOKIE_PARAM,
+  SHARE_VIEW_NO_COOKIE_VALUE,
 } from "@/lib/clinician-share/view-gate";
 import {
   URL_CREDENTIAL_HEADERS,
   urlCredentialMissPage,
+  urlCredentialNoticePage,
 } from "@/lib/http/url-credential";
 import { relativeRedirect } from "@/lib/http/relative-redirect";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -33,7 +42,7 @@ type RouteParams = { params: Promise<{ token: string }> };
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(
-  async (_request: Request, { params }: RouteParams) => {
+  async (request: Request, { params }: RouteParams) => {
     const { token } = await params;
     annotate({ action: { name: "clinician-share.link.open" } });
     const gate = await resolveShareGateState(token);
@@ -47,8 +56,23 @@ export const GET = apiHandler(
         body: t("clinicianView.unavailable.description"),
       });
     }
+    const refused =
+      new URL(request.url).searchParams.get(SHARE_VIEW_NO_COOKIE_PARAM) ===
+      SHARE_VIEW_NO_COOKIE_VALUE;
+    if (refused) {
+      annotate({ meta: { share_link_cookies_refused: true } });
+      const locale = await resolveShareViewLocale();
+      const { t } = getServerTranslator(locale);
+      return urlCredentialNoticePage({
+        locale,
+        title: t("clinicianView.cookiesNeeded.title"),
+        body: t("clinicianView.cookiesNeeded.description"),
+      });
+    }
     const view = `/c/${encodeURIComponent(token)}/view`;
-    const response = relativeRedirect(view);
+    const response = relativeRedirect(
+      `${view}?${SHARE_VIEW_HOP_PARAM}=${Date.now()}`,
+    );
     for (const [k, v] of Object.entries(URL_CREDENTIAL_HEADERS)) {
       response.headers.set(k, v);
     }

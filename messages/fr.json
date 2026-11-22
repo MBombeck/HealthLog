@@ -10559,6 +10559,10 @@
     "unavailable": {
       "title": "Lien expiré ou invalide",
       "description": "Ce lien de partage a expiré, a été révoqué ou est incomplet. Demandez un nouveau lien à la personne qui l’a partagé."
+    },
+    "cookiesNeeded": {
+      "title": "Ce lien a besoin des cookies",
+      "description": "Votre navigateur n’a pas accepté le cookie dont ce lien de partage a besoin pour ouvrir le dossier de santé partagé. Autorisez les cookies pour ce site, puis ouvrez de nouveau le lien."
     }
   },
   "cycle": {

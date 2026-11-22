@@ -21,9 +21,8 @@ export const GET = apiHandler(async () => {
     user.timezone ?? DEFAULT_TIMEZONE,
     new Date(),
   );
-  annotate({
-    action: { name: "nav.counts.read" },
-    meta: { doses_due: counts.dosesDue, checkups_due: counts.checkupsDue },
-  });
+  // The counts stay out of the wide event: how many doses and check-ups a
+  // person has due is health data, not an operational figure.
+  annotate({ action: { name: "nav.counts.read" } });
   return apiSuccess(counts);
 });

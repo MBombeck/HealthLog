@@ -12,6 +12,16 @@
  * route's 404 and never the page. The cookie carries no secret (the token in
  * the path is the credential, and the page resolves it again): it only says
  * that this browser came through the gate.
+ *
+ * A browser that takes no cookies would go round in circles: the route sets
+ * the cookie and sends it on, the proxy finds none and sends it back. So the
+ * route's hop carries the time it was made (`?via=<ms>`), and the proxy,
+ * finding no cookie on a hop younger than a minute, sends the browser to
+ * `/c/<token>?cookies=off` instead, where the route explains that the link
+ * needs cookies. The marker is not signed and needs no secret: all it can
+ * ever unlock is that explanation, never the page, so a forged one gains
+ * nothing. Rendering the page without the cookie would weaken the gate for
+ * every guess and still fail a protected link, whose unlock is a cookie too.
  */
 export const SHARE_VIEW_GATE_COOKIE = "hls_view";
 
@@ -23,4 +33,46 @@ const VIEW_PATH = /^\/c\/([^/]+)\/view\/?$/;
 /** The token segment of a `/c/<token>/view` path, or null for any other. */
 export function shareViewToken(pathname: string): string | null {
   return VIEW_PATH.exec(pathname)?.[1] ?? null;
+}
+
+/** The query parameter on the route's hop to the page: when it was made. */
+export const SHARE_VIEW_HOP_PARAM = "via";
+
+/** The query parameter that asks the route for the "needs cookies" page. */
+export const SHARE_VIEW_NO_COOKIE_PARAM = "cookies";
+export const SHARE_VIEW_NO_COOKIE_VALUE = "off";
+
+/** How old a hop may be and still count as coming straight from the route. */
+export const SHARE_VIEW_HOP_WINDOW_MS = 60_000;
+
+/** Clock skew between instances tolerated on a hop from the future. */
+const HOP_SKEW_MS = 5_000;
+
+/** Whether a `via` value is a hop the route made within the window. */
+export function isFreshShareViewHop(
+  value: string | null,
+  now: number,
+): boolean {
+  if (value === null || !/^\d{13}$/.test(value)) return false;
+  const age = now - Number(value);
+  return age >= -HOP_SKEW_MS && age <= SHARE_VIEW_HOP_WINDOW_MS;
+}
+
+/**
+ * Where the proxy sends a visit to the share page that came without the gate
+ * cookie, or null when the visit may go on: back to `/c/<token>`, with
+ * `?cookies=off` when it arrived on a fresh hop of the route.
+ */
+export function shareViewGateBounce(
+  pathname: string,
+  search: URLSearchParams,
+  hasGateCookie: boolean,
+  now: number = Date.now(),
+): string | null {
+  const token = shareViewToken(pathname);
+  if (!token || hasGateCookie) return null;
+  const back = `/c/${token}`;
+  return isFreshShareViewHop(search.get(SHARE_VIEW_HOP_PARAM), now)
+    ? `${back}?${SHARE_VIEW_NO_COOKIE_PARAM}=${SHARE_VIEW_NO_COOKIE_VALUE}`
+    : back;
 }

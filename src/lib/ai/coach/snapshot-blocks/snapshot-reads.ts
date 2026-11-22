@@ -383,12 +383,10 @@ async function startContextReads(ctx: Readonly<SnapshotReadsContext>) {
   // The seizure diary: counts, clusters and dates, module-gated inside. Like
   // illness it is context and not shed: a carer asking about seizures must
   // not get "no data" because a series ran long.
-  const seizuresBlockPromise = buildSeizuresSnapshotBlock(
-    userId,
-    userTz,
-    now,
+  const seizuresBlockPromise = buildSeizuresSnapshotBlock(userId, userTz, now, {
     reach,
-  );
+    excludesMedications: ctx.excludesMedications,
+  });
 
   // Doctor-visit context. Like illness/labs it is attempted always (a
   // visit is core, never module-gated) and short-circuits to null when there is

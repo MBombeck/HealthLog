@@ -49,7 +49,7 @@ type Handler = (
 
 const db = () => getPrismaClient();
 
-async function call(file: string, token: string) {
+async function call(file: string, token: string, query = "") {
   const route = CREDENTIAL_ROUTES[file];
   const mod = (await import(`@/app/${file.replace(/\.ts$/, "")}`)) as Record<
     string,
@@ -57,7 +57,7 @@ async function call(file: string, token: string) {
   >;
   const GET = mod.GET as Handler;
   const path = `/${file.replace(/\/route\.ts$/, "").replace(/\[token\]/, token)}`;
-  return GET(new NextRequest(`http://localhost${path}`), {
+  return GET(new NextRequest(`http://localhost${path}${query}`), {
     params: Promise.resolve({ token, ...(route.params ?? {}) }),
   });
 }
@@ -151,11 +151,34 @@ describe("the two pages a stranger opens: one 404 for every dead link", () => {
     const live = await make({});
     const ok = await call(file, live);
     expect(ok.status).toBe(307);
-    expect(ok.headers.get("location")).toBe(`/c/${live}/view`);
+    // The hop carries when it was made, so the proxy can tell a browser that
+    // refused the cookie from a later visit without one.
+    expect(ok.headers.get("location")).toMatch(
+      new RegExp(`^/c/${live}/view\\?via=\\d{13}$`),
+    );
     const cookie = ok.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("hls_view=1");
     expect(cookie).toContain(`Path=/c/${live}/view`);
     expect(cookie).toMatch(/HttpOnly/i);
+
+    // Sent back by the proxy because the cookie never arrived: a live link
+    // explains that it needs cookies, once, instead of redirecting again; a
+    // dead one is the same 404 as ever.
+    const refused = await call(file, live, "?cookies=off");
+    expect(refused.status).toBe(200);
+    expect(refused.headers.get("location")).toBeNull();
+    expect(refused.headers.get("cache-control")).toContain("no-store");
+    const notice = await refused.text();
+    expect(notice).toContain("This link needs cookies");
+    expect(notice).not.toMatch(/<script|href=/i);
+    expect(notice).not.toContain(live);
+    const deadRefused = await call(
+      file,
+      await make({ revokedAt: new Date() }),
+      "?cookies=off",
+    );
+    expect(deadRefused.status).toBe(404);
+    expect(await deadRefused.text()).toBe(body);
   });
 
   it("/e/<token>: unknown, revoked and expired answer the same 404", async () => {

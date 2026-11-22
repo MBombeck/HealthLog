@@ -6854,7 +6854,7 @@ paths:
         `invite_rejected`, `registration_paused`, or a transport code). Turning it off deletes the instance at the
         relay, every device binding with it, and the key. On a relay that is on and registered, turning it on again
         records the operator's acceptance of the current terms text and changes nothing else. Admin-only, cookie-only,
-        audit-logged."
+        audit-logged, 10 per 15 minutes (429 `admin.pushRelay.rateLimited`)."
       requestBody:
         required: true
         content:
@@ -6918,7 +6918,8 @@ paths:
       tags:
         - Admin
       summary: Rotate the instance signing key at the relay now
-      description: Outside the 30-day schedule. The relay allows one rotation per UTC day. Admin-only, cookie-only, audit-logged.
+      description: Outside the 30-day schedule. The relay allows one rotation per UTC day. Admin-only, cookie-only,
+        audit-logged, 5 per hour (429 `admin.pushRelay.rateLimited`).
       responses:
         "200":
           description: The rotation's outcome.
@@ -6943,7 +6944,9 @@ paths:
       summary: Emergency rotation of the envelope sender key
       description: "For a sender key known to be exposed: a new current key at once, without the 7-day announcement, and the
         previous key dropped. Devices that have not fetched the new key show the neutral placeholder until the app is
-        opened. Admin-only, cookie-only, fresh second factor, audit-logged."
+        opened. Admin-only, cookie-only, audit-logged, 5 per hour (429 `admin.pushRelay.rateLimited`). Needs a fresh
+        proof: a second factor confirmed in the last five minutes on an admin who has one, otherwise a password
+        re-entry, a passkey or a sign-in in the same window (401 `auth.reproof.required` with `meta.methods`)."
       responses:
         "200":
           description: Rotated.
@@ -44954,18 +44957,18 @@ components:
                 devices.push.relay_daily_limit, devices.push.relay_device_limit, devices.push.relay_not_offered,
                 devices.push.statement_stale, devices.push.token_mismatch, devices.push.unsupported_suite; admin —
                 admin.pushRelay.confirmationsRequired, admin.pushRelay.noSenderKey, admin.pushRelay.notRegistered,
-                admin.pushRelay.unavailable, admin.serverSetup.invalid, admin.serverSetup.notOffered,
-                admin.serverSetup.rateLimited, admin.users.delete.managed_profile, admin.users.delete.self; ai —
-                ai.budget.exceeded, ai.provider.none, ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling,
-                ai.usage.defaultAboveCeiling, ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider
-                — ai_provider.invalid, ai_provider.no_fields, ai_provider.private_host; aiRuns — aiRuns.failed,
-                aiRuns.notFound, aiRuns.readerBusy, aiRuns.timedOut, aiRuns.workerUnavailable; allergy —
-                allergy.invalid; analytics — analytics.invalid_query; anamnesis — anamnesis.auditC.invalid,
-                anamnesis.auditC.notFound, anamnesis.auditC.rateLimited, anamnesis.fact.conflict,
-                anamnesis.fact.currentExists, anamnesis.fact.invalidValue, anamnesis.lifeConfirm.invalid,
-                anamnesis.lifeSections.invalid; auth — auth.account.deletion_pending, auth.admin.required,
-                auth.already_authenticated, auth.mfa.already_active, auth.mfa.code_invalid, auth.missing,
-                auth.passkey.last_method, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
+                admin.pushRelay.rateLimited, admin.pushRelay.unavailable, admin.serverSetup.invalid,
+                admin.serverSetup.notOffered, admin.serverSetup.rateLimited, admin.users.delete.managed_profile,
+                admin.users.delete.self; ai — ai.budget.exceeded, ai.provider.none, ai.record.notPermitted,
+                ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling, ai.usage.invalid,
+                ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid, ai_provider.no_fields,
+                ai_provider.private_host; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.readerBusy, aiRuns.timedOut,
+                aiRuns.workerUnavailable; allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis —
+                anamnesis.auditC.invalid, anamnesis.auditC.notFound, anamnesis.auditC.rateLimited,
+                anamnesis.fact.conflict, anamnesis.fact.currentExists, anamnesis.fact.invalidValue,
+                anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.account.deletion_pending,
+                auth.admin.required, auth.already_authenticated, auth.mfa.already_active, auth.mfa.code_invalid,
+                auth.missing, auth.passkey.last_method, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
                 auth.refresh.superseded, auth.register.invite_invalid, auth.register.taken, auth.reproof.failed,
                 auth.reproof.required, auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
                 auth.session.unavailable, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —

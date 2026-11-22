@@ -296,7 +296,7 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Admin"],
       summary: "Offer the push relay to this server's users, or stop",
       description:
-        "Turning it on needs `acceptTerms` and `householdOnly`, registers the instance at the relay and creates its key; `invite` carries the relay's one-time code when the relay is invite-only. The answer is the state after the registration attempt: a refusal reads `offered: true`, `instanceId: null` and a `reason` (`invite_required`, `invite_rejected`, `registration_paused`, or a transport code). Turning it off deletes the instance at the relay, every device binding with it, and the key. On a relay that is on and registered, turning it on again records the operator's acceptance of the current terms text and changes nothing else. Admin-only, cookie-only, audit-logged.",
+        "Turning it on needs `acceptTerms` and `householdOnly`, registers the instance at the relay and creates its key; `invite` carries the relay's one-time code when the relay is invite-only. The answer is the state after the registration attempt: a refusal reads `offered: true`, `instanceId: null` and a `reason` (`invite_required`, `invite_rejected`, `registration_paused`, or a transport code). Turning it off deletes the instance at the relay, every device binding with it, and the key. On a relay that is on and registered, turning it on again records the operator's acceptance of the current terms text and changes nothing else. Admin-only, cookie-only, audit-logged, 10 per 15 minutes (429 `admin.pushRelay.rateLimited`).",
       requestBody: {
         required: true,
         content: {
@@ -409,7 +409,7 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Admin"],
       summary: "Rotate the instance signing key at the relay now",
       description:
-        "Outside the 30-day schedule. The relay allows one rotation per UTC day. Admin-only, cookie-only, audit-logged.",
+        "Outside the 30-day schedule. The relay allows one rotation per UTC day. Admin-only, cookie-only, audit-logged, 5 per hour (429 `admin.pushRelay.rateLimited`).",
       responses: {
         "200": {
           description: "The rotation's outcome.",
@@ -442,7 +442,7 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Admin"],
       summary: "Emergency rotation of the envelope sender key",
       description:
-        "For a sender key known to be exposed: a new current key at once, without the 7-day announcement, and the previous key dropped. Devices that have not fetched the new key show the neutral placeholder until the app is opened. Admin-only, cookie-only, fresh second factor, audit-logged.",
+        "For a sender key known to be exposed: a new current key at once, without the 7-day announcement, and the previous key dropped. Devices that have not fetched the new key show the neutral placeholder until the app is opened. Admin-only, cookie-only, audit-logged, 5 per hour (429 `admin.pushRelay.rateLimited`). Needs a fresh proof: a second factor confirmed in the last five minutes on an admin who has one, otherwise a password re-entry, a passkey or a sign-in in the same window (401 `auth.reproof.required` with `meta.methods`).",
       responses: {
         "200": {
           description: "Rotated.",

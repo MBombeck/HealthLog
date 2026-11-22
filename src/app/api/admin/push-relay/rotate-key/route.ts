@@ -3,7 +3,8 @@
  * at the relay now, outside the 30-day schedule (`push-relay/instance-key.ts`).
  * The relay allows one rotation per UTC day.
  *
- * Cookie-only (`requireAdmin()`), audit-logged.
+ * Cookie-only (`requireAdmin()`), audit-logged, rate limited to 5 per hour
+ * per admin.
  */
 import { NextRequest } from "next/server";
 
@@ -11,6 +12,7 @@ import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { relayConfig } from "@/lib/push-relay/config";
 import { loadRegistration } from "@/lib/push-relay/registration";
 import { rotateInstanceKey } from "@/lib/push-relay/instance-key";
@@ -19,6 +21,16 @@ export const dynamic = "force-dynamic";
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAdmin();
+  const rl = await checkRateLimit(
+    `admin-push-relay-rotate:${user.id}`,
+    5,
+    60 * 60 * 1000,
+  );
+  if (!rl.allowed) {
+    return apiError("Too many key rotations, try again later", 429, {
+      errorCode: "admin.pushRelay.rateLimited",
+    });
+  }
   const config = relayConfig();
   const row = config.available ? await loadRegistration(config) : null;
   if (!row?.instanceId) {

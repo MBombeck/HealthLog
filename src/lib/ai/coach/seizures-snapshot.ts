@@ -10,6 +10,11 @@
  * emergency care, and the month totals. No type names, notes or rescue plans
  * (the family's own words), so nothing in it needs fencing.
  *
+ * The rescue-dose count is a medication figure: with medications excluded
+ * from the Coach it is left out, like every other medication block, and
+ * the seizure counts stay. The caller must say which, so a new caller
+ * cannot forget the exclusion.
+ *
  * Gated on the `seizures` module and held to the Coach's history reach. The
  * Coach itself is behind the AI capability; this block adds no data surface.
  * The system prompt's seizure rule says how to word it: the record, never a
@@ -39,7 +44,8 @@ export interface CoachSeizuresBlock {
   clusterEpisodes: number;
   clusterEpisodesNice3In24h: number;
   recentClusters: Array<{ startAt: string; endAt: string; seizures: number }>;
-  rescueDoses: number;
+  /** Absent when medications are excluded from the Coach. */
+  rescueDoses?: number;
   emergencies: { emsCalled: number; edVisits: number; admissions: number };
   /** Seizures and seizure days per `YYYY-MM`, all types together. */
   monthly: {
@@ -54,8 +60,9 @@ export async function buildSeizuresSnapshotBlock(
   userId: string,
   userTz: string,
   now: Date,
-  reach: CoachHistoryReach = UNBOUNDED_REACH,
+  opts: { reach?: CoachHistoryReach; excludesMedications: boolean },
 ): Promise<CoachSeizuresBlock | null> {
+  const reach = opts.reach ?? UNBOUNDED_REACH;
   if (!(await isModuleEnabled(userId, "seizures"))) return null;
   const windowStart = new Date(
     now.getTime() - COACH_SEIZURE_WINDOW_DAYS * 86_400_000,
@@ -89,7 +96,7 @@ export async function buildSeizuresSnapshotBlock(
         endAt: c.endAt,
         seizures: c.seizureCount,
       })),
-    rescueDoses: s.rescueDoses,
+    ...(opts.excludesMedications ? {} : { rescueDoses: s.rescueDoses }),
     emergencies: s.emergencies,
     monthly: {
       months: s.monthly.months,

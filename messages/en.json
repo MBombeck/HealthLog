@@ -10559,6 +10559,10 @@
     "unavailable": {
       "title": "Link expired or invalid",
       "description": "This share link has expired, was revoked, or is incomplete. Ask the person who shared it for a new link."
+    },
+    "cookiesNeeded": {
+      "title": "This link needs cookies",
+      "description": "Your browser did not accept the cookie this share link uses to open the shared health record. Allow cookies for this site, then open the link again."
     }
   },
   "cycle": {

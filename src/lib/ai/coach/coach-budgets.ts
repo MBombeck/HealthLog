@@ -22,8 +22,10 @@
  *     of the chain, the one the turn is sized for.
  *   * A smaller snapshot set on any later provider of the chain wins, because
  *     the fallback hop must still fit the prompt it is handed.
- *   * A chain with an operator-funded fallback never gets a snapshot larger
- *     than the built-in one, for the same reason as the first rule.
+ *   * A chain with an operator-funded fallback never gets a snapshot or a
+ *     turn budget larger than the built-in one, for the same reason as the
+ *     first rule: the turn has one budget, and the fallback hop may be the
+ *     one that spends it. A smaller value the person set still holds.
  *
  * Pure: no database. The reader of the column is `readCoachBudgets`.
  */
@@ -209,15 +211,14 @@ export function resolveCoachLimits(args: {
     : undefined;
 
   let snapshotChars = primary?.snapshotChars ?? DEFAULT_SNAPSHOT_CHARS;
+  let operatorFallback = false;
   for (const entry of args.chain.slice(1)) {
     const own = budgetOf(entry.providerType)?.snapshotChars;
     if (own !== undefined) snapshotChars = Math.min(snapshotChars, own);
-    if (isOperatorFunded(entry.providerType)) {
-      snapshotChars = Math.min(snapshotChars, DEFAULT_SNAPSHOT_CHARS);
-    }
+    if (isOperatorFunded(entry.providerType)) operatorFallback = true;
   }
 
-  const turn: TurnLimits = {
+  let turn: TurnLimits = {
     tokens: primary?.turnTokens ?? builtIn.turn.tokens,
     maxRounds: primary?.maxRounds ?? builtIn.turn.maxRounds,
     wallMs:
@@ -225,6 +226,14 @@ export function resolveCoachLimits(args: {
         ? primary.turnSeconds * 1000
         : builtIn.turn.wallMs,
   };
+  if (operatorFallback) {
+    snapshotChars = Math.min(snapshotChars, DEFAULT_SNAPSHOT_CHARS);
+    turn = {
+      tokens: Math.min(turn.tokens, builtIn.turn.tokens),
+      maxRounds: Math.min(turn.maxRounds, builtIn.turn.maxRounds),
+      wallMs: Math.min(turn.wallMs, builtIn.turn.wallMs),
+    };
+  }
   const custom =
     snapshotChars !== DEFAULT_SNAPSHOT_CHARS ||
     turn.tokens !== builtIn.turn.tokens ||
@@ -233,8 +242,23 @@ export function resolveCoachLimits(args: {
   return { snapshotChars, turn, custom };
 }
 
-/** The longest a turn can run under any budget, for the turn slot. */
+/** The longest a turn can run under any budget. */
 export const COACH_MAX_TURN_MS = Math.max(
   TURN_LIMITS.user.wallMs,
   COACH_BUDGET_BOUNDS.turnSeconds.max * 1000,
 );
+
+/**
+ * The longest one person's turn can run under what they stored, read before
+ * the chain is known: the built-in wall time, or the longest `turnSeconds`
+ * of any provider when that is longer. The turn slot is held for this, so
+ * only an account that set a longer turn holds its slot longer.
+ */
+export function coachTurnWindowMs(budgets: CoachBudgets): number {
+  let longest = TURN_LIMITS.user.wallMs;
+  for (const provider of COACH_BUDGET_PROVIDERS) {
+    const seconds = budgets[provider]?.turnSeconds;
+    if (seconds !== undefined) longest = Math.max(longest, seconds * 1000);
+  }
+  return Math.min(longest, COACH_MAX_TURN_MS);
+}

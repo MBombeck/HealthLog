@@ -153,12 +153,33 @@ export function urlCredentialMissPage(input: {
   title: string;
   body: string;
 }): Response {
-  const html =
+  return urlCredentialHtml(noticeHtml(input), 404);
+}
+
+/**
+ * The same small document for a live link that cannot open here (a browser
+ * that refuses the cookie the link needs), with a 200 status: the link is
+ * not a miss.
+ */
+export function urlCredentialNoticePage(input: {
+  locale: string;
+  title: string;
+  body: string;
+}): Response {
+  return urlCredentialHtml(noticeHtml(input), 200);
+}
+
+function noticeHtml(input: {
+  locale: string;
+  title: string;
+  body: string;
+}): string {
+  return (
     `<!DOCTYPE html><html lang="${escapeHtml(input.locale)}"><head><meta charset="utf-8">` +
     '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
     '<meta name="robots" content="noindex,nofollow">' +
     '<meta name="referrer" content="no-referrer">' +
     `<title>${escapeHtml(input.title)}</title><style>${MISS_STYLE}</style></head>` +
-    `<body><main><h1>${escapeHtml(input.title)}</h1><p>${escapeHtml(input.body)}</p></main></body></html>`;
-  return urlCredentialHtml(html, 404);
+    `<body><main><h1>${escapeHtml(input.title)}</h1><p>${escapeHtml(input.body)}</p></main></body></html>`
+  );
 }

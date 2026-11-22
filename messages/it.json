@@ -10559,6 +10559,10 @@
     "unavailable": {
       "title": "Link scaduto o non valido",
       "description": "Questo link di condivisione è scaduto, è stato revocato o è incompleto. Chiedi un nuovo link alla persona che lo ha condiviso."
+    },
+    "cookiesNeeded": {
+      "title": "Questo link ha bisogno dei cookie",
+      "description": "Il browser non ha accettato il cookie che questo link di condivisione usa per aprire la cartella sanitaria condivisa. Consenti i cookie per questo sito, poi apri di nuovo il link."
     }
   },
   "cycle": {

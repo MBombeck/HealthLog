@@ -14,7 +14,7 @@ import {
 } from "@/lib/http/path-credential-headers";
 import {
   SHARE_VIEW_GATE_COOKIE,
-  shareViewToken,
+  shareViewGateBounce,
 } from "@/lib/clinician-share/view-gate";
 import {
   forwardAccountSeedPermission,
@@ -551,13 +551,13 @@ export function proxy(request: NextRequest) {
     return credentialRedirect(target);
   }
 
-  // The clinician share page opened without the entry route's gate cookie:
-  // back to `/c/<token>`, which answers an unknown or ended link with a real
-  // 404 (`src/lib/clinician-share/view-gate.ts`).
-  const shareToken = shareViewToken(pathname);
-  if (shareToken && !request.cookies.has(SHARE_VIEW_GATE_COOKIE)) {
-    return credentialRedirect(new URL(`/c/${shareToken}`, request.url));
-  }
+  // The share page without its gate cookie goes back to `/c/<token>`.
+  const shareBack = shareViewGateBounce(
+    pathname,
+    request.nextUrl.searchParams,
+    request.cookies.has(SHARE_VIEW_GATE_COOKIE),
+  );
+  if (shareBack) return credentialRedirect(new URL(shareBack, request.url));
 
   // Server-side route protection for pages (not API routes — those have their own getSession checks)
   const isApiRoute = pathname.startsWith("/api/");

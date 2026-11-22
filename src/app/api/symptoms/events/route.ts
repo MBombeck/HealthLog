@@ -109,7 +109,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   annotate({
     action: { name: "symptoms.event.list" },
-    meta: { count: rows.length, limit: q.limit, dose_offsets: offsets.size },
+    // Whether the dose offsets were read, not how many symptoms followed a
+    // dose: that count is health data, not an operational figure.
+    meta: {
+      count: rows.length,
+      limit: q.limit,
+      dose_offsets_read: access.readable.has("medications"),
+    },
   });
 
   return apiSuccess({

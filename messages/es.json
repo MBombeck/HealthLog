@@ -10559,6 +10559,10 @@
     "unavailable": {
       "title": "Enlace caducado o no válido",
       "description": "Este enlace para compartir ha caducado, se ha revocado o está incompleto. Pide un enlace nuevo a la persona que lo compartió."
+    },
+    "cookiesNeeded": {
+      "title": "Este enlace necesita cookies",
+      "description": "Su navegador no aceptó la cookie que este enlace para compartir usa para abrir el registro de salud compartido. Permita las cookies para este sitio y vuelva a abrir el enlace."
     }
   },
   "cycle": {

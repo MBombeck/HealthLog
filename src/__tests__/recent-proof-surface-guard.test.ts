@@ -131,6 +131,7 @@ const COOKIE_PROOF_ROUTES = [
   "app/api/admin/backups/[id]/restore/route.ts",
   "app/api/admin/backups/upload/route.ts",
   "app/api/admin/data/route.ts",
+  "app/api/admin/push-relay/rotate-sender-key/route.ts",
   "app/api/admin/users/[id]/reset-password/route.ts",
   "app/api/admin/users/[id]/route.ts",
   "app/api/auth/reproof/route.ts",

@@ -262,28 +262,88 @@ describe("H4: staged sender keys", () => {
     expect((await senderKeys(session)).length).toBe(2);
   });
 
-  it("keeps the emergency rotation behind a fresh second factor", async () => {
-    const { adminSession } = await enableRelay();
+  it("keeps the emergency rotation behind a fresh proof", async () => {
+    const { admin, adminSession } = await enableRelay();
+    const prisma = getPrismaClient();
     const { POST } =
       await import("@/app/api/admin/push-relay/rotate-sender-key/route");
-    const res = await callRoute(POST, {
-      method: "POST",
-      route: "/api/admin/push-relay/rotate-sender-key",
-      auth: adminSession,
-      contract: { skip: "a step-up refusal is the shared auth envelope" },
+    const rotate = () =>
+      callRoute<{ rotated: boolean }>(POST, {
+        method: "POST",
+        route: "/api/admin/push-relay/rotate-sender-key",
+        auth: adminSession,
+        contract: { skip: "a step-up refusal is the shared auth envelope" },
+      });
+    const senderKey = async () =>
+      (
+        await prisma.pushEnvelopeKeys.findUniqueOrThrow({
+          where: { id: "singleton" },
+        })
+      ).senderPublicKey;
+    const stale = new Date(Date.now() - 10 * 60_000);
+
+    // No second factor, a sign-in older than five minutes and no re-proof:
+    // a live session alone never rotates.
+    await prisma.session.update({
+      where: { id: adminSession.sessionId },
+      data: { createdAt: stale, reproofAt: null, mfaVerifiedAt: null },
     });
-    expect(res.status).toBe(401);
-    const { rotateSenderKey } = await import("@/lib/push-relay/sender-keys");
-    const before = await getPrismaClient().pushEnvelopeKeys.findUniqueOrThrow({
+    const original = await senderKey();
+    const refused = await rotate();
+    expect(refused.status).toBe(401);
+    expect(refused.meta?.errorCode).toBe("auth.reproof.required");
+    expect(await senderKey()).toBe(original);
+
+    // The same admin after re-entering the password: the rotation runs.
+    await prisma.session.update({
+      where: { id: adminSession.sessionId },
+      data: { reproofAt: new Date() },
+    });
+    const done = await rotate();
+    expect(done.status).toBe(200);
+    expect(done.data.rotated).toBe(true);
+    const rotated = await senderKey();
+    expect(rotated).not.toBe(original);
+    const after = await prisma.pushEnvelopeKeys.findUniqueOrThrow({
       where: { id: "singleton" },
     });
-    expect(await rotateSenderKey()).toBe(true);
-    const after = await getPrismaClient().pushEnvelopeKeys.findUniqueOrThrow({
-      where: { id: "singleton" },
-    });
-    expect(after.senderPublicKey).not.toBe(before.senderPublicKey);
     expect(after.previousSenderPublicKey).toBeNull();
     expect(after.nextSenderPublicKey).toBeNull();
+
+    // An admin with a second factor: the password re-proof is not enough,
+    // a fresh second factor is.
+    await prisma.user.update({
+      where: { id: admin.id },
+      data: { totpConfirmedAt: new Date() },
+    });
+    const password = await rotate();
+    expect(password.status).toBe(401);
+    expect(password.meta?.errorCode).toBe("auth.reproof.required");
+    expect(await senderKey()).toBe(rotated);
+    await prisma.session.update({
+      where: { id: adminSession.sessionId },
+      data: { mfaVerifiedAt: new Date() },
+    });
+    expect((await rotate()).status).toBe(200);
+    expect(await senderKey()).not.toBe(rotated);
+  });
+
+  it("rate limits the relay switch per admin", async () => {
+    const { adminSession } = await enableRelay();
+    const { PUT } = await import("@/app/api/admin/push-relay/route");
+    const statuses: number[] = [];
+    // `enableRelay` spent one of the ten.
+    for (let i = 0; i < 10; i += 1) {
+      const res = await callRoute(PUT, {
+        method: "PUT",
+        route: "/api/admin/push-relay",
+        auth: adminSession,
+        body: { enabled: false },
+      });
+      statuses.push(res.status);
+    }
+    expect(statuses.slice(0, 9).every((s) => s === 200)).toBe(true);
+    expect(statuses[9]).toBe(429);
   });
 });
 
