@@ -20,9 +20,18 @@ import { allMessages } from "@/lib/i18n/shared-resolve";
  * with it. Everything else needs a block or an entry in `STANDALONE` saying
  * why it does not.
  *
- * Once English has a block, every locale must have one, and every block must
- * parse with an `other` branch. Russian and Polish blocks carry `one`, `few`
- * and `many`, the three forms an integer can take there.
+ * The same holds for every other number that drives a noun: `{days} days`,
+ * `{hours} hours`, `{n} readings`. A placeholder that stands before one of
+ * the countable nouns in `COUNTED_NOUNS` (an adjective such as "more" or
+ * "paired" may sit between) needs a block on that placeholder, unless its
+ * name is in `NOT_A_NUMBER` because it carries a word ("{metric} readings",
+ * "the {time} dose"). Abbreviated units ("{value} mg", "{minutes} min") are
+ * not in the noun list, so they need nothing.
+ *
+ * Once English has a block on a parameter, every locale must have one on it,
+ * and every block must parse with an `other` branch. Russian and Polish
+ * blocks carry `one`, `few` and `many`, the three forms an integer can take
+ * there.
  */
 
 const STANDALONE: Record<string, string> = {
@@ -46,6 +55,78 @@ const STANDALONE: Record<string, string> = {
     "'N over D days': the noun agrees with the day count",
   "admin.section.encryption.columnsShow": "'N with rows' inside brackets",
 };
+
+/** Countable nouns a number has to agree with, singular and plural. */
+const COUNTED_NOUNS = [
+  ...["day", "hour", "minute", "second", "week", "month", "year", "night"],
+  ...["reading", "dose", "entry", "entries", "row", "time", "session"],
+  ...["point", "character", "document", "lane", "unit", "intake", "record"],
+  ...["copy", "copies", "symptom", "area", "input", "parameter", "seizure"],
+  ...["measurement", "token", "link", "account", "table", "field"],
+  ...["awakening", "cycle", "step", "item", "sample", "value", "file"],
+  ...["result", "event", "device", "user"],
+];
+const ADJECTIVES =
+  "more|new|other|full|complete|consecutive|stored|paired|clinical|lab|cycle|selected|recorded|previous";
+const NOUN_AFTER = new RegExp(
+  `\\{(\\w+)\\}(?:\\s+(?:${ADJECTIVES}))?[\\s\\u00a0]+(?:${COUNTED_NOUNS.map(
+    (noun) => (noun.endsWith("ies") ? noun : `${noun}s?`),
+  ).join("|")})\\b`,
+  "g",
+);
+
+/** Placeholders that carry a word, not a number. */
+const NOT_A_NUMBER: Record<string, string> = {
+  provider: "a provider name ('your {provider} account')",
+  nutrient: "a nutrient name ('{nutrient} intake')",
+  lab: "an analyte name ('{lab} readings')",
+  metric: "a metric name ('{metric} readings')",
+  symptom: "a symptom name ('this {symptom} entry')",
+  time: "a clock time ('the {time} dose')",
+  slot: "a clock time ('the {slot} dose')",
+  factor: "a factor name ('{factor} days')",
+  comparison: "a label ('{comparison} days')",
+};
+
+const ANY_BLOCK = /\{(\w+)\s*,\s*plural\s*,/g;
+
+/** Text outside every plural block. */
+function outsideBlocks(value: string): string {
+  let out = value;
+  for (;;) {
+    const head = /\{\w+\s*,\s*plural\s*,/.exec(out);
+    if (!head) return out;
+    let depth = 0;
+    let end = out.length - 1;
+    for (let i = head.index; i < out.length; i++) {
+      if (out[i] === "{") depth++;
+      else if (out[i] === "}" && --depth === 0) {
+        end = i;
+        break;
+      }
+    }
+    out = `${out.slice(0, head.index)} ${out.slice(end + 1)}`;
+  }
+}
+
+/** Parameters with a block in `value`. */
+function blockParams(value: string): Set<string> {
+  return new Set([...value.matchAll(ANY_BLOCK)].map((m) => m[1]!));
+}
+
+/** `key: param` for numbers before a noun that have no block. */
+function missingNounPlural(messages: ReadonlyMap<string, string>): string[] {
+  const out: string[] = [];
+  for (const [key, value] of messages) {
+    if (TIERED.test(key)) continue;
+    for (const match of outsideBlocks(value).matchAll(NOUN_AFTER)) {
+      const param = match[1]!;
+      if (param === "count" || param in NOT_A_NUMBER) continue;
+      out.push(`${key}: ${param}`);
+    }
+  }
+  return [...new Set(out)].sort();
+}
 
 function flatten(
   node: unknown,
@@ -90,10 +171,10 @@ function missingPlural(
   return out.sort();
 }
 
-/** The option selectors of each plural block on `count`, or null if broken. */
+/** The option selectors of each plural block, or null if broken. */
 function blockSelectors(value: string): string[][] | null {
   const out: string[][] = [];
-  const head = /\{count\s*,\s*plural\s*,/g;
+  const head = /\{\w+\s*,\s*plural\s*,/g;
   for (const match of value.matchAll(head)) {
     let depth = 0;
     let end = -1;
@@ -153,6 +234,34 @@ describe("count strings agree with their number", () => {
     ).toEqual([]);
   });
 
+  it("the noun rule catches a number before a noun and nothing else", () => {
+    const sample = new Map([
+      ["a.days", "Last {days} days"],
+      ["a.paired", "{n} paired readings"],
+      ["a.unit", "{value} mg, {minutes} min"],
+      ["a.word", "your {metric} readings"],
+      ["a.done", "{days, plural, one {# day} other {# days}}"],
+    ]);
+    expect(missingNounPlural(sample)).toEqual(["a.days: days", "a.paired: n"]);
+  });
+
+  it("every English number before a noun uses a plural block", () => {
+    const offenders = missingNounPlural(en);
+    expect(
+      offenders,
+      `Write these as {name, plural, one {…} other {…}} in every locale, or add the name to NOT_A_NUMBER with a reason:\n${offenders.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("every NOT_A_NUMBER name still occurs before a noun", () => {
+    const used = new Set<string>();
+    for (const value of en.values()) {
+      for (const m of outsideBlocks(value).matchAll(NOUN_AFTER))
+        used.add(m[1]!);
+    }
+    expect(Object.keys(NOT_A_NUMBER).filter((n) => !used.has(n))).toEqual([]);
+  });
+
   it("every STANDALONE entry is still a live, block-free count string", () => {
     const stale = Object.keys(STANDALONE).filter((key) => {
       const value = en.get(key);
@@ -165,11 +274,15 @@ describe("count strings agree with their number", () => {
     "%s has a plural block wherever English has one",
     (locale) => {
       const bundle = bundles.get(locale)!;
-      const blocks = [...en].filter(([, v]) => hasPluralBlock(v));
-      expect(blocks.length).toBeGreaterThan(100);
-      const missing = blocks
-        .filter(([key]) => !hasPluralBlock(bundle.get(key) ?? ""))
-        .map(([key]) => key);
+      const blocks = [...en].filter(([, v]) => blockParams(v).size > 0);
+      expect(blocks.length).toBeGreaterThan(300);
+      const missing: string[] = [];
+      for (const [key, value] of blocks) {
+        const theirs = blockParams(bundle.get(key) ?? "");
+        for (const param of blockParams(value)) {
+          if (!theirs.has(param)) missing.push(`${key}: ${param}`);
+        }
+      }
       expect(missing).toEqual([]);
     },
   );
@@ -179,7 +292,8 @@ describe("count strings agree with their number", () => {
     const required = REQUIRED[locale] ?? ["other"];
     const broken: string[] = [];
     for (const [key, value] of bundle) {
-      if (!hasPluralBlock(value)) continue;
+      const params = blockParams(value);
+      if (params.size === 0) continue;
       const blocks = blockSelectors(value);
       if (!blocks || blocks.length === 0) {
         broken.push(`${key}: unbalanced`);
@@ -193,12 +307,17 @@ describe("count strings agree with their number", () => {
       // 1 it names the number. A branch may say "once" for 1, but in French
       // and Portuguese "one" also holds 0 and in Russian 21 and 101, so a
       // branch without `#` would read "once" for those.
-      for (const n of [0, 1, 2, 3, 5, 11, 21, 22, 101]) {
-        const out = formatMessage(value, { count: n }, locale);
-        if (/plural\s*,|#/.test(out)) broken.push(`${key}: renders ${out}`);
-        const exact = new RegExp(`=${n}\\s*\\{`).test(value);
-        if (n !== 1 && !exact && !out.includes(String(n))) {
-          broken.push(`${key}: ${n} reads "${out}"`);
+      for (const param of params) {
+        for (const n of [0, 1, 2, 3, 5, 11, 21, 22, 101]) {
+          const values: Record<string, number> = {};
+          for (const other of params) values[other] = 7777;
+          values[param] = n;
+          const out = formatMessage(value, values, locale);
+          if (/plural\s*,|#/.test(out)) broken.push(`${key}: renders ${out}`);
+          const exact = new RegExp(`=${n}\\s*\\{`).test(value);
+          if (n !== 1 && !exact && !out.includes(String(n))) {
+            broken.push(`${key}: ${param}=${n} reads "${out}"`);
+          }
         }
       }
     }

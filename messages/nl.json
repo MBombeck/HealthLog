@@ -412,7 +412,7 @@
     "insurer": "Zorgverzekeraar",
     "insuranceNumber": "Verzekeringsnr.",
     "summaryTitle": "Klinische samenvatting",
-    "summaryReadings": "Vastgelegd over {days} dagen: {count, plural, one {# meting} other {# metingen}} van {params} parameters.",
+    "summaryReadings": "Vastgelegd over {days, plural, one {# dag} other {# dagen}}: {count, plural, one {# meting} other {# metingen}} van {params, plural, one {# parameter} other {# parameters}}.",
     "summaryTrend": "{label}: laatste {latest} {arrow}",
     "summaryAdherence": "Therapietrouw medicatie: {rate}% (gewogen gemiddelde).",
     "chartsTitle": "Trendgrafieken",
@@ -506,15 +506,15 @@
     "lifeAuditCBelow": "Onder de afkapwaarde van {cutoff} ({source}).",
     "lifeAuditCNoCutoff": "Geen geslachtsspecifieke afkapwaarde toegepast.",
     "lifeActivity": "Lichamelijke activiteit",
-    "lifeActivityValue": "{minutes} minuten per week, zelf opgegeven",
+    "lifeActivityValue": "{minutes, plural, one {# minuut} other {# minuten}} per week, zelf opgegeven",
     "lifeSitting": "Zitten op een werkdag",
-    "lifeSittingValue": "{hours} uur, zelf opgegeven",
+    "lifeSittingValue": "{hours, plural, one {# uur} other {# uur}}, zelf opgegeven",
     "lifeWork": "Werk",
     "lifeNightWork": "nachtwerk",
     "lifeExposures": "blootstellingen: {list}",
     "workouts": {
       "title": "Trainingen",
-      "summary": "{sessions} trainingen, {hours} u in totaal; gemiddeld {perWeek} trainingen en {minutesPerWeek} minuten per week.",
+      "summary": "{sessions, plural, one {# training} other {# trainingen}}, {hours} u in totaal; gemiddeld {perWeek, plural, one {# training} other {# trainingen}} en {minutesPerWeek, plural, one {# minuut} other {# minuten}} per week.",
       "colSport": "Sport",
       "colSessions": "Trainingen",
       "colTime": "Duur",
@@ -540,13 +540,13 @@
       "excludedNotTaking": "{count, plural, one {# dag} other {# dagen}} weggelaten (gepauzeerd of tussen kuren)",
       "notTracked": "inname niet bijgehouden, dus geen dagen weggelaten om gemiste doses",
       "endDoseChange": "periode eindigt op {date}, vóór de eerste dosiswijziging",
-      "days": "{before} dagen voor, {after} dagen na de start, {excluded} dagen weggelaten",
+      "days": "{before, plural, one {# dag} other {# dagen}} voor, {after, plural, one {# dag} other {# dagen}} na de start, {excluded, plural, one {# dag} other {# dagen}} weggelaten",
       "method": "Gesegmenteerde regressie op de dagwaarden van 90 dagen vóór tot hoogstens 180 dagen na de start, met Newey-West-intervallen. Dagen na de start waarop minder dan 80% van de doses van de 14 dagen ervoor is ingenomen, zijn weggelaten. Beschrijft een samenhang in de tijd, geen bewezen effect van het medicijn.",
       "autocorrelation": "sterke afhankelijkheid van de vorige dag, dus de bereiken kunnen nog te smal zijn",
       "window": "geanalyseerd van {from} tot {to}, dit kan buiten de rapportperiode vallen",
       "windowLine": "Geanalyseerd van {from} tot {to}. Deze periode kan buiten de rapportperiode vallen."
     },
-    "screenerUnvalidated": "{label}: {count} van {total} uitkomsten zijn beantwoord in een niet wetenschappelijk gevalideerde vertaling; zie ze als een indicatie.",
+    "screenerUnvalidated": "{label}: {count} van {total, plural, one {# uitkomst} other {# uitkomsten}} zijn beantwoord in een niet wetenschappelijk gevalideerde vertaling; zie ze als een indicatie.",
     "pregnancy": {
       "title": "Zwangerschap",
       "pregnantWeek": "Zwanger, week {weeks}+{days} op de rapportdatum",
@@ -669,7 +669,7 @@
     "backToPasskey": "Terug naar passkey",
     "passkeySetupLater": "Je kunt passkeys op elk moment instellen in Instellingen.",
     "passwordMinLength": "Min. 12 tekens",
-    "passwordTooShort": "Het wachtwoord moet minstens {minLength} tekens lang zijn.",
+    "passwordTooShort": "Het wachtwoord moet minstens {minLength, plural, one {# teken} other {# tekens}} lang zijn.",
     "privacyPolicy": "Privacybeleid",
     "passwordBreached": "Dit wachtwoord komt voor in bekende datalekken. Kies een ander wachtwoord.",
     "oidc": {
@@ -1582,7 +1582,7 @@
     },
     "withoutNotification": "Zonder melding",
     "pausedSince": "Gepauzeerd sinds",
-    "complianceWindow": "Therapietrouw ({days} dagen)",
+    "complianceWindow": "Therapietrouw ({days, plural, one {# dag} other {# dagen}})",
     "complianceUnavailable": "Therapietrouw kon niet worden geladen",
     "complianceNotApplicable": "Therapietrouw niet van toepassing",
     "complianceNoDoses": "Nog geen doses",
@@ -1604,7 +1604,7 @@
     "intakeAlreadyTaken": "{name} was al als ingenomen vastgelegd. Er is niets nieuws opgeslagen.",
     "intakeUndoFailed": "Ongedaan maken mislukt. Open de geschiedenis om het te corrigeren",
     "glp1LastInjection": "{label}",
-    "glp1NextInjectionDays": "{label} (over {days} dagen)",
+    "glp1NextInjectionDays": "{label} (over {days, plural, one {# dag} other {# dagen}})",
     "glp1NextInjectionToday": "vandaag",
     "glp1NextInjectionTomorrow": "morgen",
     "glp1RotationSuggested": "Volgende aanbevolen plek: {site}",
@@ -1955,11 +1955,11 @@
           "monthly": "Maandelijks",
           "quarterly": "Om de drie maanden",
           "yearly": "Eén keer per jaar",
-          "rolling": "Elke {n} dagen na je laatste inname",
+          "rolling": "Elke {n, plural, one {# dag} other {# dagen}} na je laatste inname",
           "oneShot": "Eenmalige dosis",
           "asNeeded": "Zo nodig",
-          "everyNWeeks": "Om de {n} weken",
-          "everyNMonths": "Om de {n} maanden"
+          "everyNWeeks": "Om de {n, plural, one {# week} other {# weken}}",
+          "everyNMonths": "Om de {n, plural, one {# maand} other {# maanden}}"
         },
         "weekdaysDetail": ", op {days}",
         "dayOfMonthDetail": ", op dag {day}.",
@@ -1968,7 +1968,7 @@
         "endsOn": "Eindigt: {date}",
         "noEndDate": "Geen einddatum",
         "windowLine": "{time}: op tijd tot {onTime}, te laat tot {late}, daarna gemist.",
-        "windowDays": "Een dosis telt op haar dag als op tijd, tot {days} dagen erna als te laat en daarna als gemist."
+        "windowDays": "Een dosis telt op haar dag als op tijd, tot {days, plural, one {# dag} other {# dagen}} erna als te laat en daarna als gemist."
       },
       "compose": {
         "scheduleIndex": "Schema {n} van {total}",
@@ -2297,7 +2297,7 @@
         "reminderOn": "Aan",
         "reminderOff": "Uit",
         "supplyLabel": "Voorraad",
-        "supplyRunway": "Nog genoeg voor ongeveer {days} dagen",
+        "supplyRunway": "Nog genoeg voor ongeveer {days, plural, one {# dag} other {# dagen}}",
         "jumpToZeitplan": "Schema openen",
         "jumpToBestand": "Voorraad openen",
         "complianceTitle": "Therapietrouw",
@@ -2305,9 +2305,9 @@
       },
       "bestand": {
         "title": "Voorraad",
-        "summary": "Nog {remaining} van {total} doses over",
+        "summary": "Nog {remaining} van {total, plural, one {# dosis} other {# doses}} over",
         "itemsTitle": "Verpakkingen en houders",
-        "doses": "{remaining} / {total} doses",
+        "doses": "{remaining} / {total, plural, one {# dosis} other {# doses}}",
         "unknown": "Onbekend",
         "state": {
           "ACTIVE": "Ongeopend",
@@ -2319,7 +2319,7 @@
         "emptyHelper": "Registreer een verpakking of houder om de resterende voorraad en hoelang die nog meegaat bij te houden.",
         "emptyCta": "Verpakking registreren",
         "addButton": "Registreren",
-        "lowStockLinkOn": "Melding bij lage voorraad: onder {days} dagen",
+        "lowStockLinkOn": "Melding bij lage voorraad: onder {days, plural, one {# dag} other {# dagen}}",
         "lowStockLinkOff": "Melding bij lage voorraad: uit",
         "addTitle": "Verpakking of houder registreren",
         "addDescription": "Registreer een nieuwe voorraad met het aantal eenheden; de vervaldatum is optioneel.",
@@ -2333,7 +2333,7 @@
         "adjustTitle": "Houder corrigeren",
         "adjustDescription": "Stel het resterende aantal eenheden in en corrigeer de datums die op deze houder staan of ervoor zijn vastgelegd. Bij 0 eenheden wordt hij als op gemarkeerd.",
         "adjustQuantityLabel": "Resterende eenheden",
-        "adjustHelper": "Capaciteit: {total} eenheden.",
+        "adjustHelper": "Capaciteit: {total, plural, one {# eenheid} other {# eenheden}}.",
         "adjustSubmit": "Opslaan",
         "adjustSuccess": "Voorraad bijgewerkt",
         "adjustFailed": "De voorraad kon niet worden bijgewerkt.",
@@ -2350,16 +2350,16 @@
           "BOTTLE": "Flacon",
           "OTHER": "Overig"
         },
-        "unitsDetail": "{remaining} / {total} eenheden",
+        "unitsDetail": "{remaining} / {total, plural, one {# eenheid} other {# eenheden}}",
         "quantityModeDoses": "Doses",
         "quantityModeUnits": "Eenheden",
-        "quantityInUnits": "= {units} eenheden",
-        "quantityInDoses": "≈ {doses} doses",
+        "quantityInUnits": "= {units, plural, one {# eenheid} other {# eenheden}}",
+        "quantityInDoses": "≈ {doses, plural, one {# dosis} other {# doses}}",
         "quantityUnderOneDose": "< 1 dosis",
-        "expiredSuffix": "+ {units} eenheden verlopen",
+        "expiredSuffix": "+ {units, plural, one {# eenheid} other {# eenheden}} verlopen",
         "packagingTitle": "Verpakking en dosis",
-        "packagingUnitsPerDose": "1 dosis = {units} eenheden",
-        "packagingDefaultPack": "Standaard verpakkingsgrootte: {units} eenheden",
+        "packagingUnitsPerDose": "1 dosis = {units, plural, one {# eenheid} other {# eenheden}}",
+        "packagingDefaultPack": "Standaard verpakkingsgrootte: {units, plural, one {# eenheid} other {# eenheden}}",
         "packagingNoDefaultPack": "Geen standaard verpakkingsgrootte ingesteld",
         "packagingEdit": "Bewerken",
         "packagingDescription": "Stel in hoeveel eenheden één dosis verbruikt en hoe groot een nieuwe verpakking meestal is, bijv. na een wissel van fabrikant met een andere stripgrootte.",
@@ -2374,7 +2374,7 @@
         "addDoseStrengthHint": "Zoals op de houder staat, bijv. 5 mg/0,5 ml.",
         "openedOn": "Geopend op {date}",
         "expiresOn": "Verloopt op {date}",
-        "summaryAllExpired": "Geen bruikbare voorraad: {units} eenheden gemarkeerd als verlopen",
+        "summaryAllExpired": "Geen bruikbare voorraad: {units, plural, one {# eenheid} other {# eenheden}} gemarkeerd als verlopen",
         "editExpiryLabel": "Gedrukte vervaldatum",
         "editExpiryHelper": "De datum die op de doos staat. Laat leeg als er geen is vastgelegd.",
         "editOpenedLabel": "Geopend op",
@@ -2400,7 +2400,7 @@
         "timesNote": "Pas per dosis het tijdstip en het venster voor op tijd aan. De frequentie (dagelijks, wekelijks…) bewerk je in de editor onder Geavanceerd.",
         "scheduleLabel": "Schema {index}",
         "fullEditNote": "Frequentie, behandelklasse en kuurperiode bewerk je in de editor onder Geavanceerd → Levenscyclus.",
-        "graceEcho": "Herinneringsduur: {minutes} minuten",
+        "graceEcho": "Herinneringsduur: {minutes, plural, one {# minuut} other {# minuten}}",
         "reminderTitle": "Herinnering",
         "manageChannels": "Meldingskanalen beheren",
         "history": {
@@ -2449,7 +2449,7 @@
           "endLabel": "Einde van tijdvenster",
           "onTimeBand": "Op tijd: {start}–{end}",
           "lateUntil": "te laat tot {time}",
-          "lateDays": "te laat tot {days} dagen erna",
+          "lateDays": "te laat tot {days, plural, one {# dag} other {# dagen}} erna",
           "orderError": "Het begin moet vóór het einde liggen.",
           "noTimes": "Nog geen innametijden ingesteld."
         }
@@ -2482,8 +2482,8 @@
     "tableComplianceDays": "{days} d",
     "tableStockDoseOne": "1 dosis",
     "tableStockDoses": "{count, plural, one {# dosis} other {# doses}}",
-    "tableStockRunway": "≈ {days} dagen over",
-    "cardLowStockRunway": "Voorraad: ≈ {days} dagen",
+    "tableStockRunway": "≈ {days, plural, one {# dag} other {# dagen}} over",
+    "cardLowStockRunway": "Voorraad: ≈ {days, plural, one {# dag} other {# dagen}}",
     "reorderDescription": "Bepaal de volgorde van je medicatie voor zowel de kaart- als de tabelweergave.",
     "reorderSaved": "Volgorde opgeslagen",
     "reorderSaveFailed": "De volgorde kan niet worden opgeslagen",
@@ -2503,7 +2503,7 @@
       "levelShift": "Rond {date} is een verschuiving in het niveau gedetecteerd.",
       "plateau": {
         "title": "Gewichtsplateau bij de huidige dosis",
-        "evidence": "Je gewicht is in de afgelopen {window} dagen met {delta} {unit} veranderd ({readings} metingen), na {days} dagen op {dose}."
+        "evidence": "Je gewicht is in de afgelopen {window, plural, one {# dag} other {# dagen}} met {delta} {unit} veranderd ({readings, plural, one {# meting} other {# metingen}}), na {days, plural, one {# dag} other {# dagen}} op {dose}."
       },
       "retarget": {
         "label": "Niet de juiste meting?",
@@ -2514,11 +2514,11 @@
       },
       "beforeAfter": {
         "summary": "Ø {before} ervoor → Ø {after} sindsdien, een verandering van {delta}.",
-        "counts": "Op basis van {beforeCount} metingen ervoor en {afterCount} sindsdien.",
-        "needBefore": "Nog niet genoeg metingen van vóór de start. Om te vergelijken zijn ongeveer {weeks} weken ervoor en erna nodig.",
-        "needAfter": "Nog niet genoeg metingen sinds de start. Om te vergelijken zijn ongeveer {weeks} weken ervoor en erna nodig.",
+        "counts": "Op basis van {beforeCount, plural, one {# meting} other {# metingen}} ervoor en {afterCount} sindsdien.",
+        "needBefore": "Nog niet genoeg metingen van vóór de start. Om te vergelijken zijn ongeveer {weeks, plural, one {# week} other {# weken}} ervoor en erna nodig.",
+        "needAfter": "Nog niet genoeg metingen sinds de start. Om te vergelijken zijn ongeveer {weeks, plural, one {# week} other {# weken}} ervoor en erna nodig.",
         "needStart": "Stel een startdatum in om de metingen van vóór en na de start te vergelijken.",
-        "needData": "Nog niet genoeg metingen. Om te vergelijken zijn ongeveer {weeks} weken vóór en na de start nodig."
+        "needData": "Nog niet genoeg metingen. Om te vergelijken zijn ongeveer {weeks, plural, one {# week} other {# weken}} vóór en na de start nodig."
       },
       "insights": {
         "title": "Effect van medicatie",
@@ -2535,8 +2535,8 @@
         "slope": "Na de start veranderde de weektrend met {value} {unit} per week (95%-bereik {low} tot {high}).",
         "preSlope": "Voor de start was de trend {value} {unit} per week.",
         "includesZero": "Waar een bereik nul omvat, passen deze waarden ook bij geen verandering.",
-        "basis": "Gebaseerd op {before} dagen voor en {after} dagen na de start ({from} tot {to}).",
-        "excludedAdherence": "{count, plural, one {# dag na de start is weggelaten} other {# dagen na de start zijn weggelaten}}, omdat in de {lookback} dagen ervoor minder dan {floor}% van de doses is ingenomen.",
+        "basis": "Gebaseerd op {before, plural, one {# dag} other {# dagen}} voor en {after, plural, one {# dag} other {# dagen}} na de start ({from} tot {to}).",
+        "excludedAdherence": "{count, plural, one {# dag na de start is weggelaten} other {# dagen na de start zijn weggelaten}}, omdat in de {lookback, plural, one {# dag} other {# dagen}} ervoor minder dan {floor}% van de doses is ingenomen.",
         "excludedNotTaking": "{count, plural, one {# dag is weggelaten} other {# dagen zijn weggelaten}}, omdat het medicijn gepauzeerd was of tussen twee kuren lag.",
         "notTracked": "De inname van dit medicijn wordt niet bijgehouden, dus er zijn geen dagen weggelaten om gemiste doses.",
         "endDoseChange": "De periode eindigt vóór de eerste dosiswijziging en beschrijft dus de startdosis.",
@@ -2548,17 +2548,17 @@
         "confounderResumed": "{name} hervat op {date}",
         "method": "Zo wordt het berekend: door de dagwaarden vóór de start wordt een lijn gelegd en een tweede door die erna. De sprong tussen beide bij de start is de niveauverandering, het verschil in hun helling de trendverandering. De bereiken houden er rekening mee dat waarden van de ene dag doorwerken in de volgende.",
         "needStart": "Stel een startdatum in om de verandering bij de start te zien.",
-        "needBefore": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen vóór de start.",
-        "needAfter": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen sinds de start en op dagen waarop de doses zijn ingenomen.",
+        "needBefore": "Voor de verandering bij de start zijn waarden op minstens {days, plural, one {# dag} other {# dagen}} nodig, verspreid over {span, plural, one {# dag} other {# dagen}} vóór de start.",
+        "needAfter": "Voor de verandering bij de start zijn waarden op minstens {days, plural, one {# dag} other {# dagen}} nodig, verspreid over {span, plural, one {# dag} other {# dagen}} sinds de start en op dagen waarop de doses zijn ingenomen.",
         "fitFailed": "Deze waarden konden niet worden verwerkt, dus er wordt geen verandering bij de start getoond.",
         "autocorrelation": "De dagwaarden hangen sterk af van de vorige dag, dus zelfs deze bereiken kunnen te smal zijn."
       }
     },
     "import": {
-      "resultSuccess": "{imported} innames geïmporteerd",
+      "resultSuccess": "{imported, plural, one {# inname} other {# innames}} geïmporteerd",
       "resultPartial": "{imported} geïmporteerd, {skipped} overgeslagen.",
-      "resultNothing": "Er is niets geïmporteerd: alle {skipped} registraties zijn overgeslagen.",
-      "resultAlreadyRecorded": "{recorded} innames zijn al vastgelegd. Er is niets nieuws toegevoegd.",
+      "resultNothing": "Er is niets geïmporteerd: {skipped, plural, one {de # registratie is overgeslagen} other {alle # registraties zijn overgeslagen}}.",
+      "resultAlreadyRecorded": "{recorded, plural, one {# inname is} other {# innames zijn}} al vastgelegd. Er is niets nieuws toegevoegd.",
       "resultEmpty": "Dat bestand bevatte geen innames.",
       "showSkipDetails": "Overgeslagen rijen tonen ({count})",
       "skipDetailLine": "Regel {line}: {reason}",
@@ -2631,7 +2631,7 @@
       "none": "Doorlopend ingenomen, geen afzonderlijke kuren.",
       "range": "{start} tot {end}",
       "since": "Sinds {start}",
-      "meta": "Kuur {n}, {status}, {taken} doses ingenomen",
+      "meta": "Kuur {n}, {status}, {taken, plural, one {# dosis} other {# doses}} ingenomen",
       "status": {
         "current": "lopend",
         "upcoming": "gepland",
@@ -2804,7 +2804,7 @@
     "days7Title": "Afgelopen 7 dagen",
     "days30Label": "30 d",
     "daysNLabel": "{days} d",
-    "daysNAria": "Laatste {days} dagen",
+    "daysNAria": "Laatste {days, plural, one {# dag} other {# dagen}}",
     "days30Title": "Afgelopen 30 dagen",
     "days90Label": "90 d",
     "days90Title": "Afgelopen 90 dagen",
@@ -2898,7 +2898,7 @@
       "trendFlat": "stabiel",
       "scatterSummary": "Correlatiegrafiek, {count, plural, one {# punt} other {# punten}} van {xLabel} uitgezet tegen {yLabel}.",
       "scatterNoData": "Correlatiegrafiek van {xLabel} tegen {yLabel}. Geen gegevens beschikbaar.",
-      "moodHeatmap": "Heatmap van stemming van {start} tot {end}, {days} dagen vastgelegd.",
+      "moodHeatmap": "Heatmap van stemming van {start} tot {end}, {days, plural, one {# dag} other {# dagen}} vastgelegd.",
       "moodHeatmapEmpty": "Heatmap van stemming, nog geen dagen vastgelegd.",
       "complianceHeatmap": "Heatmap van therapietrouw van {start} tot {end}, {days} actieve dagen.",
       "complianceHeatmapEmpty": "Heatmap van therapietrouw, nog geen actieve dagen."
@@ -3088,7 +3088,7 @@
         "red": "Een of meer pijlers liggen buiten het referentiebereik"
       },
       "insufficient": "Er zijn nog nergens genoeg recente gegevens om een score te berekenen. Eén gezondheidsgebied is genoeg om te beginnen, en de score geeft aan op welke gebieden hij is gebaseerd.",
-      "basis": "Gebaseerd op {count} van {recommended} gezondheidsgebieden.",
+      "basis": "Gebaseerd op {count} van {recommended, plural, one {# gezondheidsgebied} other {# gezondheidsgebieden}}.",
       "compositionNotice": {
         "item": "{pillar} ({reason})",
         "left": "Telt niet meer mee voor de score: {pillars}.",
@@ -3098,7 +3098,7 @@
       "notScored": "Nog niet gescoord ({count})",
       "method": "De score is het gelijk gewogen gemiddelde van de pijlers die meetellen, op een schaal van 0 tot 100. Elke pijler wordt beoordeeld aan de hand van een gepubliceerde referentieband, en de zwakste pijler kan de algemene band bepalen. Een pijler zonder genoeg recente gegevens wordt weggelaten in plaats van als nul meegeteld. De referentiebanden komen uit gepubliceerde bronnen; welke pijlers meetellen, kies je zelf, dus het gecombineerde getal is zelf geen klinische standaard.",
       "bandSetter": "Algemene band bepaald door {pillar}",
-      "versionAndNoise": "Methodeversie {version}. Ondergrens voor wekelijkse vergelijking: {noise} punten.",
+      "versionAndNoise": "Methodeversie {version}. Ondergrens voor wekelijkse vergelijking: {noise, plural, one {# punt} other {# punten}}.",
       "methodVersion": "Methodeversie {version}.",
       "configured": "Je hebt zelf gekozen welke pijlers meetellen voor deze score.",
       "none": "geen",
@@ -3131,13 +3131,13 @@
       "bpBasisBelowFloor": "{axis} bepaalt deze score: ongeveer {offset} mmHg onder de ondergrens voor lage bloeddruk van {boundary} mmHg.",
       "bpBasisInBand": "Beide waarden liggen op of onder hun referentiebovengrens.",
       "bpScale": "Op de bovengrens is de score 85; 100 betekent ongeveer 12 mmHg daaronder.",
-      "bpRepresentative": "Gebaseerd op een gemiddelde van de afgelopen {days} dagen waarin recente metingen zwaarder wegen, dus het komt mogelijk met geen enkele afzonderlijke meting overeen.",
+      "bpRepresentative": "Gebaseerd op een gemiddelde van de afgelopen {days, plural, one {# dag} other {# dagen}} waarin recente metingen zwaarder wegen, dus het komt mogelijk met geen enkele afzonderlijke meting overeen.",
       "source": "Bron: {source}, per {date}",
-      "observedActivity": "{value} stappen per dag",
-      "observedSleep": "{value} minuten per nacht",
+      "observedActivity": "{value, plural, one {# stap} other {# stappen}} per dag",
+      "observedSleep": "{value, plural, one {# minuut} other {# minuten}} per nacht",
       "observedAdiposity": "Taille-lengteratio {value}",
-      "referenceActivity": "Het voordeel vlakt af bij {high} stappen per dag",
-      "referenceSleep": "Minstens {low} minuten per nacht; langer slapen wordt niet bestraft",
+      "referenceActivity": "Het voordeel vlakt af bij {high, plural, one {# stap} other {# stappen}} per dag",
+      "referenceSleep": "Minstens {low, plural, one {# minuut} other {# minuten}} per nacht; langer slapen wordt niet bestraft",
       "referenceAdiposity": "Taille-lengteratio onder {high}",
       "referenceHba1c": "HbA1c {low} tot {high}%",
       "referenceDetail": "{label}: {low} tot {high} ({kind}, {source})",
@@ -3160,7 +3160,7 @@
         "unavailable": "Deze pijler komt momenteel niet in aanmerking"
       },
       "tension": "De signalen voor je paraatheid lopen uiteen. Ondersteunend: {positive}. Onder druk: {negative}.",
-      "returnToBand": "{metric} ligt al {days} dagen weer binnen je gebruikelijke bereik.",
+      "returnToBand": "{metric} ligt al {days, plural, one {# dag} other {# dagen}} weer binnen je gebruikelijke bereik.",
       "weightGoal": {
         "title": "Persoonlijk gewichtsdoel",
         "value": "Nu {current} {unit}. Doel {min} tot {max} {unit}. Afstand tot doel: {distance} {unit}.",
@@ -3175,7 +3175,7 @@
       "configureLink": "Kies wat meetelt voor je score",
       "coverage": {
         "recommendedMet": "Omvat de drie gebieden die de score aanbeveelt",
-        "areas": "{present} van {required} gezondheidsgebieden"
+        "areas": "{present} van {required, plural, one {# gezondheidsgebied} other {# gezondheidsgebieden}}"
       },
       "historyLink": "Geschiedenis"
     },
@@ -3234,7 +3234,7 @@
     "correlationRow": {
       "title": "Verbanden",
       "emptyTitle": "Meer gegevens nodig om dit verband te zien",
-      "sourceChip": "gebaseerd op {n} gekoppelde metingen ({window})",
+      "sourceChip": "gebaseerd op {n, plural, one {# gekoppelde meting} other {# gekoppelde metingen}} ({window})",
       "sourceWindowLast30": "afgelopen 30 dagen",
       "confidenceHigh": "Hoge betrouwbaarheid",
       "confidenceModerate": "Gemiddelde betrouwbaarheid",
@@ -3465,15 +3465,15 @@
       "lookback": {
         "label": "Hoe ver de Coach terug mag kijken",
         "option": {
-          "last7days": "{days} dagen",
-          "last30days": "{days} dagen",
-          "last90days": "{days} dagen",
-          "lastYear": "{months} maanden",
-          "allTime": "{months} maanden in detail, labuitslagen langer"
+          "last7days": "{days, plural, one {# dag} other {# dagen}}",
+          "last30days": "{days, plural, one {# dag} other {# dagen}}",
+          "last90days": "{days, plural, one {# dag} other {# dagen}}",
+          "lastYear": "{months, plural, one {# maand} other {# maanden}}",
+          "allTime": "{months, plural, one {# maand} other {# maanden}} in detail, labuitslagen langer"
         },
-        "detailDays": "De Coach leest in geen enkel antwoord iets dat ouder is dan {days} dagen.",
-        "detailMonths": "De Coach leest in geen enkel antwoord iets dat ouder is dan {months} maanden.",
-        "detailAll": "Zonder grens leest de Coach {dailyMonths} maanden aan metingen per dag en oudere metingen als maandwaarden tot {years} jaar terug. Van labuitslagen leest hij de laatste waarde van de meest recent gemeten markers en, voor een marker waar je naar vraagt, ook de {labRecent} vorige uitslagen; oudere worden per jaar samengevat tot {labYears} jaar terug, nog oudere jaren alleen geteld.",
+        "detailDays": "De Coach leest in geen enkel antwoord iets dat ouder is dan {days, plural, one {# dag} other {# dagen}}.",
+        "detailMonths": "De Coach leest in geen enkel antwoord iets dat ouder is dan {months, plural, one {# maand} other {# maanden}}.",
+        "detailAll": "Zonder grens leest de Coach {dailyMonths, plural, one {# maand} other {# maanden}} aan metingen per dag en oudere metingen als maandwaarden tot {years, plural, one {# jaar} other {# jaar}} terug. Van labuitslagen leest hij de laatste waarde van de meest recent gemeten markers en, voor een marker waar je naar vraagt, ook de {labRecent, plural, one {# vorige uitslag} other {# vorige uitslagen}}; oudere worden per jaar samengevat tot {labYears, plural, one {# jaar} other {# jaar}} terug, nog oudere jaren alleen geteld.",
         "note": "Je profiel, je huidige medicatie, een lopende ziekte en komende afspraken blijven zichtbaar; samenvattingen die meer geschiedenis nodig hebben, worden ingekort of weggelaten. Antwoorden die de Coach eerder in oudere gesprekken gaf, kunnen nog oudere waarden noemen."
       },
       "showConversations": "Gesprekken tonen",
@@ -3645,7 +3645,7 @@
       "plan": {
         "accept": "Dit plan volgen",
         "decline": "Niet nu",
-        "confirmed": "Genoteerd. Over {days} dagen kom ik bij je terug.",
+        "confirmed": "Genoteerd. Over {days, plural, one {# dag} other {# dagen}} kom ik bij je terug.",
         "declined": "Oké, niet nu."
       },
       "assumption": {
@@ -3907,8 +3907,8 @@
       "mainSleep": "Hoofdslaap",
       "totalSleep": "Totale slaap",
       "compositionTitle": "Samenstelling slaapfasen",
-      "compositionSubtitle": "Afgelopen {nights} nachten",
-      "compositionAriaLabel": "Samenstelling van slaapfasen over {nights} nachten",
+      "compositionSubtitle": "Afgelopen {nights, plural, one {# nacht} other {# nachten}}",
+      "compositionAriaLabel": "Samenstelling van slaapfasen over {nights, plural, one {# nacht} other {# nachten}}",
       "sourceDiscrepancy": {
         "tooltipTitle": "Bronnen spreken elkaar tegen"
       },
@@ -3926,14 +3926,14 @@
       "hypnogram": {
         "title": "Verloop van de nacht",
         "wokeOn": "Wakker op {date}",
-        "summary": "{asleep} slaap, {awakenings}× wakker",
+        "summary": "{asleep} slaap, {awakenings, plural, other {#×}} wakker",
         "source": "van {source}",
         "previous": "Vorige nacht",
         "next": "Volgende nacht",
         "empty": "Voor deze dag is geen nacht vastgelegd.",
         "estimateNote": "Deze bron levert fasetotalen zonder tijden, dus voor deze nacht is er geen verloop.",
         "noStages": "Deze nacht heeft geen fasetijden.",
-        "ariaLabel": "Slaapfasen door de nacht: {asleep} slaap, {awakenings}× wakker"
+        "ariaLabel": "Slaapfasen door de nacht: {asleep} slaap, {awakenings, plural, other {#×}} wakker"
       },
       "empty": {
         "title": "Nog geen slaapgegevens",
@@ -3943,17 +3943,17 @@
       "debt": {
         "title": "Slaaptekort",
         "value": "{hours} u {minutes} min tekort",
-        "caption": "Openstaand saldo over de afgelopen {nights} nachten",
+        "caption": "Openstaand saldo over de afgelopen {nights, plural, one {# nacht} other {# nachten}}",
         "clearValue": "Helemaal ingehaald",
-        "clearCaption": "Niets openstaand over de afgelopen {nights} nachten",
-        "learning": "Je slaap wordt nog in kaart gebracht: tot nu toe {counted} nachten, nog {remaining} nodig voor een betrouwbaar saldo.",
+        "clearCaption": "Niets openstaand over de afgelopen {nights, plural, one {# nacht} other {# nachten}}",
+        "learning": "Je slaap wordt nog in kaart gebracht: tot nu toe {counted, plural, one {# nacht} other {# nachten}}, nog {remaining} nodig voor een betrouwbaar saldo.",
         "computedInfo": "Dit is een eigen schatting van HealthLog: een doorlopend saldo van slaapbehoefte min slaap over de afgelopen nachten, waarbij inhaalslaap het tekort verkleint. Het kan afwijken van het slaaptekort dat een wearable zelf weergeeft, omdat die een eigen model voor slaapbehoefte gebruikt."
       },
       "average": {
         "title": "Gemiddeld per nacht",
         "value": "{hours} u {minutes} min",
-        "caption": "Gemiddelde slaap over de afgelopen {nights} nachten",
-        "learning": "Je slaap wordt nog in kaart gebracht: tot nu toe {counted} nachten, nog {remaining} nodig voor een betrouwbaar gemiddelde."
+        "caption": "Gemiddelde slaap over de afgelopen {nights, plural, one {# nacht} other {# nachten}}",
+        "learning": "Je slaap wordt nog in kaart gebracht: tot nu toe {counted, plural, one {# nacht} other {# nachten}}, nog {remaining} nodig voor een betrouwbaar gemiddelde."
       },
       "chronotype": {
         "title": "Chronotype",
@@ -4178,8 +4178,8 @@
         "fatigue": "Vermoeidheid",
         "form": "Vorm",
         "explainer": "Fitheid is je trainingsprikkel uit de hartslag, gemiddeld over ongeveer zes weken, vermoeidheid over ongeveer een week, en vorm is het verschil. De getallen zijn te vergelijken met je eigen verleden, niet met andere mensen of andere apps.",
-        "warmingUp": "Op basis van {days} dagen tot nu toe: tot zes weken gedekt zijn, valt de fitheid lager uit dan ze is.",
-        "coverage": "{rated} van de laatste {days} dagen konden worden beoordeeld. Een dag zonder activiteitsgegevens, of met een training die niet kon worden beoordeeld, wordt weggelaten in plaats van als rustdag te tellen.",
+        "warmingUp": "Op basis van {days, plural, one {# dag} other {# dagen}} tot nu toe: tot zes weken gedekt zijn, valt de fitheid lager uit dan ze is.",
+        "coverage": "{rated} van de laatste {days, plural, one {# dag} other {# dagen}} konden worden beoordeeld. Een dag zonder activiteitsgegevens, of met een training die niet kon worden beoordeeld, wordt weggelaten in plaats van als rustdag te tellen.",
         "asOf": "Stand van {date}, de laatste dag die kon worden beoordeeld."
       }
     },
@@ -4194,7 +4194,7 @@
       },
       "clinical": {
         "title": "Glucoseoverzicht",
-        "subtitle": "Een beeld van je afgelopen {days} dagen, op basis van {count, plural, one {# meting} other {# metingen}}.",
+        "subtitle": "Een beeld van je afgelopen {days, plural, one {# dag} other {# dagen}}, op basis van {count, plural, one {# meting} other {# metingen}}.",
         "spotCaveat": "Dit zijn schattingen op basis van losse metingen, geen profiel van een continue glucosemeter. Zie ze als een richting en niet als een klinisch oordeel.",
         "labsLink": "Labuitslagen? Leg een HbA1c of nuchtere glucose uit een bloedafname vast onder Labuitslagen.",
         "learningTitle": "Je glucose wordt nog in kaart gebracht",
@@ -4202,7 +4202,7 @@
         "learningBodyEmpty": "Zodra er een handvol metingen binnenkomt (door jou vastgelegd of gesynchroniseerd vanaf een apparaat), krijgen je tijd binnen bereik, gemiddelde en variabiliteit hier vorm.",
         "readingsCount": "{count, plural, one {# meting} other {# metingen}}",
         "readingsCountOne": "1 meting",
-        "daysCount": "{days} dagen",
+        "daysCount": "{days, plural, one {# dag} other {# dagen}}",
         "daysCountOne": "1 dag",
         "tir": {
           "title": "Tijd binnen bereik",
@@ -4547,13 +4547,13 @@
         "strengthModerate": "Matig",
         "strengthWeak": "Zwak",
         "strengthNone": "Geen",
-        "source": "{n} gekoppelde dagen, r = {r}",
+        "source": "{n, plural, one {# gekoppelde dag} other {# gekoppelde dagen}}, r = {r}",
         "sourceLabel": "Hoe dit is berekend",
         "emptyTitle": "Nog niet genoeg gekoppelde gegevens",
         "emptyDescription": "Leg je stemming en deze waarde op dezelfde dagen vast om een correlatie te zien.",
-        "pendingDescription": "Tot nu toe {n} van {needed} gekoppelde dagen. Een correlatie verschijnt zodra er genoeg dagen zijn om een patroon van toeval te onderscheiden.",
+        "pendingDescription": "Tot nu toe {n} van {needed, plural, one {# gekoppelde dag} other {# gekoppelde dagen}}. Een correlatie verschijnt zodra er genoeg dagen zijn om een patroon van toeval te onderscheiden.",
         "noLinkTitle": "Geen duidelijk verband",
-        "noLinkDescription": "{n} gekoppelde dagen, en niets valt op boven wat je door toeval zou verwachten.",
+        "noLinkDescription": "{n, plural, one {# gekoppelde dag} other {# gekoppelde dagen}}, en niets valt op boven wat je door toeval zou verwachten.",
         "weightTitle": "Stemming vs. gewicht",
         "bloodPressureTitle": "Stemming vs. bloeddruk",
         "weightAxis": "Gewicht",
@@ -4566,14 +4566,14 @@
         "title": "Wat opvalt",
         "weekdayDip": "Je stemming zakt het meest op {weekday}, {delta} onder je weekgemiddelde.",
         "weekdayPeak": "{weekday} is steeds je beste dag, met een gemiddelde van {value}.",
-        "trendUp": "Je stemming stijgt de afgelopen {days} dagen (+{delta} t.o.v. de vorige periode).",
-        "trendDown": "Je stemming daalt de afgelopen {days} dagen (-{delta} t.o.v. de vorige periode).",
+        "trendUp": "Je stemming stijgt de afgelopen {days, plural, one {# dag} other {# dagen}} (+{delta} t.o.v. de vorige periode).",
+        "trendDown": "Je stemming daalt de afgelopen {days, plural, one {# dag} other {# dagen}} (-{delta} t.o.v. de vorige periode).",
         "weekendUp": "Je voelt je beter in het weekend (+{delta} t.o.v. doordeweekse dagen).",
         "weekendDown": "Je stemming is lager in het weekend (-{delta} t.o.v. doordeweekse dagen).",
         "tagLift": "Dagen met de tag \"{tag}\" liggen gemiddeld {delta} boven je algemene stemming.",
         "tagDrop": "Dagen met de tag \"{tag}\" liggen {delta} onder je gemiddelde.",
         "inTarget": "Je zat {pct}% van de afgelopen 30 dagen binnen je bereik voor een goede stemming.",
-        "streak": "Je hebt je stemming {days} dagen op rij vastgelegd. Ga zo door.",
+        "streak": "Je hebt je stemming {days, plural, one {# dag} other {# dagen}} op rij vastgelegd. Ga zo door.",
         "timeOfDay": "Je voelt je het best in de {bucket}, met een gemiddelde van {value}."
       },
       "timeOfDay": {
@@ -4594,7 +4594,7 @@
       },
       "influence": {
         "title": "Invloed op stemming",
-        "detail": "Gemiddeld {withAvg} op de {withDays} dagen dat je dit hebt getagd, tegenover {withoutAvg} zonder.",
+        "detail": "Gemiddeld {withAvg} op de {withDays, plural, one {# dag} other {# dagen}} dat je dit hebt getagd, tegenover {withoutAvg} zonder.",
         "confidenceLow": "Lage betrouwbaarheid",
         "confidenceMedium": "Gemiddelde betrouwbaarheid",
         "confidenceHigh": "Hoge betrouwbaarheid"
@@ -4612,8 +4612,8 @@
         "metricNextDayRecovery": "Herstel de volgende dag",
         "metricNextDayRestingHr": "Rusthartslag de volgende dag",
         "metricNextDayHrv": "Hartslagvariabiliteit de volgende dag",
-        "detailSameDay": "Gemiddeld {withAvg} op de {withDays} dagen dat je dit hebt getagd, tegenover {withoutAvg} zonder.",
-        "detailNextDay": "Gemiddeld {withAvg} op de dag na de {withDays} dagen dat je dit hebt getagd, tegenover {withoutAvg} op andere dagen."
+        "detailSameDay": "Gemiddeld {withAvg} op de {withDays, plural, one {# dag} other {# dagen}} dat je dit hebt getagd, tegenover {withoutAvg} zonder.",
+        "detailNextDay": "Gemiddeld {withAvg} op de dag na de {withDays, plural, one {# dag} other {# dagen}} dat je dit hebt getagd, tegenover {withoutAvg} op andere dagen."
       },
       "factorCrosstab": {
         "title": "Je beoordeelde factoren en je vitale waarden",
@@ -4625,19 +4625,19 @@
         "metricHrv": "Hartslagvariabiliteit",
         "metricWeight": "Gewicht",
         "metricBloodPressureSys": "Systolisch",
-        "detail": "Gemiddeld {lowAvg} op de {lowDays} dagen dat je {factor} laag beoordeelde, tegenover {highAvg} op de dagen dat je die hoog beoordeelde.",
+        "detail": "Gemiddeld {lowAvg} op de {lowDays, plural, one {# dag} other {# dagen}} dat je {factor} laag beoordeelde, tegenover {highAvg} op de dagen dat je die hoog beoordeelde.",
         "detailInverse": "Gemiddeld {lowAvg} op je {lowDays} slechtere dagen voor {factor}, tegenover {highAvg} op je betere dagen."
       },
       "discovery": {
         "title": "Wat opvalt",
         "subheading": "Ontdekte verbanden",
-        "footer": "Naar voren gekomen uit {tested} geteste paren van dag op dag over al je waarden, na correctie voor fout-positieve ontdekkingen.",
+        "footer": "Naar voren gekomen uit {tested, plural, one {# geteste paar} other {# geteste paren}} van dag op dag over al je waarden, na correctie voor fout-positieve ontdekkingen.",
         "disclaimer": "Statistisch gefilterd, maar nog steeds observationeel: een patroon om in de gaten te houden, geen oorzaak.",
         "moodUp": "Hogere waarden voor {factor} gaan in je gegevens vaak samen met een hogere stemming de volgende dag.",
         "moodDown": "Hogere waarden voor {factor} gaan in je gegevens vaak samen met een lagere stemming de volgende dag.",
         "outcomeUp": "Een hogere stemming gaat in je gegevens vaak samen met hogere waarden voor {factor} de volgende dag.",
         "outcomeDown": "Een hogere stemming gaat in je gegevens vaak samen met lagere waarden voor {factor} de volgende dag.",
-        "stat": "{n} gekoppelde dagen, r = {r}, q = {q}",
+        "stat": "{n, plural, one {# gekoppelde dag} other {# gekoppelde dagen}}, r = {r}, q = {q}",
         "statLabel": "Hoe dit is berekend",
         "explainerLabel": "Hoe dit is berekend",
         "channel": {
@@ -4650,7 +4650,7 @@
       "dimensions": {
         "title": "Gemoedstoestand",
         "none": "Nog niets vastgelegd over je gemoedstoestand.",
-        "window": "{days} dagen",
+        "window": "{days, plural, one {# dag} other {# dagen}}",
         "noneInWindow": "niets in deze periode",
         "higherIsMore": "hoger = {anchor}",
         "notRecorded": "Niet vastgelegd: {list}."
@@ -4661,7 +4661,7 @@
         "lower": "lager",
         "higher": "hoger",
         "statement": "Op dagen met “{label}” lag de stemming gemiddeld {direction}: {withAvg} tegenover {withoutAvg}.",
-        "counts": "{withDays} dagen met, {withoutDays} dagen zonder",
+        "counts": "{withDays, plural, one {# dag} other {# dagen}} met, {withoutDays, plural, one {# dag} other {# dagen}} zonder",
         "caveat": "Dat toont een verband, geen oorzaak."
       },
       "prognosis": {
@@ -4673,14 +4673,14 @@
         "provisional": "Nog voorlopig: het patroon berust op een korte reeks dagen.",
         "notToday": "Dit gaat over {date}, niet over vandaag.",
         "deviationWithin": "Je eigen beoordeling valt binnen dat bereik.",
-        "deviationAbove": "Je eigen beoordeling ligt {amount} punten boven dat bereik.",
-        "deviationBelow": "Je eigen beoordeling ligt {amount} punten onder dat bereik.",
+        "deviationAbove": "Je eigen beoordeling ligt {amount, plural, one {# punt} other {# punten}} boven dat bereik.",
+        "deviationBelow": "Je eigen beoordeling ligt {amount, plural, one {# punt} other {# punten}} onder dat bereik.",
         "weightedTitle": "Wat het zwaarst woog in de vergelijking van deze dag",
         "weightedUp": "{label}: telde mee voor een hogere verwachte waarde",
         "weightedDown": "{label}: telde mee voor een lagere verwachte waarde",
         "caveat": "Dit is een vergelijking met je eigen eerdere dagen, geen uitspraak over waarom een dag verliep zoals hij verliep.",
-        "learning": "Leerfase: {entries} van {threshold} dagen vastgelegd. Een vergelijking verschijnt zodra er genoeg zijn.",
-        "noPattern": "Niets in de {entries} tot nu toe vastgelegde dagen is stabiel genoeg om een dag mee te vergelijken. Als je ook de context van een dag vastlegt, wordt meer ervan vergelijkbaar.",
+        "learning": "Leerfase: {entries} van {threshold, plural, one {# dag} other {# dagen}} vastgelegd. Een vergelijking verschijnt zodra er genoeg zijn.",
+        "noPattern": "Niets in de {entries, plural, one {# tot nu toe vastgelegde dag} other {# tot nu toe vastgelegde dagen}} is stabiel genoeg om een dag mee te vergelijken. Als je ook de context van een dag vastlegt, wordt meer ervan vergelijkbaar.",
         "featureValue": "{field}: {value}",
         "loadError": "De verwachte waarde volgens je eigen patroon kon niet worden geladen."
       },
@@ -4702,7 +4702,7 @@
     },
     "derived": {
       "coverage": {
-        "summary": "{present} van {required} invoerwaarden ({percent}%)",
+        "summary": "{present} van {required, plural, one {# invoerwaarde} other {# invoerwaarden}} ({percent}%)",
         "ratioLabel": "{present}/{required}",
         "historyDays": "Gebaseerd op {count, plural, one {# dag} other {# dagen}} geschiedenis",
         "missing": "Houd deze bij om dit nauwkeuriger te maken: {list}",
@@ -4724,7 +4724,7 @@
         "inputsLabel": "Invoergegevens",
         "noInputs": "Er zijn nog geen invoergegevens voor deze waarde.",
         "methodLabel": "Methode",
-        "window": "Op basis van je gegevens uit {source} van de afgelopen {days} dagen",
+        "window": "Op basis van je gegevens uit {source} van de afgelopen {days, plural, one {# dag} other {# dagen}}",
         "asOf": "stand op {date}",
         "standardLink": "Standaard: {name}"
       },
@@ -4734,7 +4734,7 @@
         "loadingLabel": "Je vitale waarden laden",
         "loadError": "Je vitale waarden kunnen nu niet worden geladen.",
         "infoLabel": "Hoe wordt dit berekend?",
-        "building": "Je typische bereik wordt opgebouwd: {count} van {target} dagen",
+        "building": "Je typische bereik wordt opgebouwd: {count} van {target, plural, one {# dag} other {# dagen}}",
         "typicalRange": "Typisch voor jou: {low}–{high}",
         "fitnessYounger": "Cardiofitheid van iemand die ~{years} jaar jonger is",
         "fitnessOlder": "Cardiofitheid ~{years} jaar boven je leeftijd",
@@ -4871,7 +4871,7 @@
         "stress": "Stress",
         "strain": "Belasting",
         "historyTitle": "Geschiedenis",
-        "historyWindow": "Afgelopen {days} dagen"
+        "historyWindow": "Afgelopen {days, plural, one {# dag} other {# dagen}}"
       },
       "coincident": {
         "label": "Meerdere vitale waarden wijken af van je basislijn",
@@ -4889,8 +4889,8 @@
       },
       "trajectory": {
         "cardTitle": "Projectie op korte termijn",
-        "headline": "Als dit patroon aanhoudt: de komende {days} dagen",
-        "range": "Verwacht rond {low}–{high} {unit} over {days} dagen.",
+        "headline": "Als dit patroon aanhoudt: de komende {days, plural, one {# dag} other {# dagen}}",
+        "range": "Verwacht rond {low}–{high} {unit} over {days, plural, one {# dag} other {# dagen}}.",
         "caveat": "Een projectie van je eigen recente trend, geen voorspelling. De gearceerde band wordt breder om te laten zien hoe snel de onzekerheid toeneemt.",
         "insufficient": "Nog geen duidelijke trend om door te trekken. Blijf bijhouden, dan verschijnt er een projectie zodra het recente patroon sterk genoeg is.",
         "daysNeeded": "Nog ongeveer {count, plural, one {# dag} other {# dagen}} bijhouden voordat er een projectie kan verschijnen."
@@ -4898,7 +4898,7 @@
       "sameTime": {
         "sectionTitle": "Vandaag tot nu toe",
         "sectionSubtitle": "Je lopende totalen vergeleken met wat op dit uur gebruikelijk is voor jou",
-        "learning": "Je gebruikelijke dag leren kennen: {count} van {target} dagen",
+        "learning": "Je gebruikelijke dag leren kennen: {count} van {target, plural, one {# dag} other {# dagen}}",
         "framing": "Gebruikelijk tot {time}: {typical} {unit}",
         "comparisonLabel": "Je gebruikelijke dag"
       }
@@ -5115,7 +5115,7 @@
       "rangeContext": "Nu {value}, meestal {low}–{high}.",
       "rangeContextTimeOfDay": "Nu {value}, op dit moment van de dag meestal {low}–{high}.",
       "shiftContext": "Eerst rond {before}, sindsdien {after}.",
-      "shiftDays": "Op basis van {before} dagen ervoor en {after} sindsdien."
+      "shiftDays": "Op basis van {before, plural, one {# dag} other {# dagen}} ervoor en {after} sindsdien."
     },
     "breathingScreening": {
       "sectionTitle": "Ademhaling tijdens de slaap",
@@ -5281,7 +5281,7 @@
       "notEnough": "Te weinig metingen",
       "pulse": "Hartslag {value} bpm",
       "difference": "Ochtend min avond: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Ochtend en avond worden vergeleken zodra elk minstens {min} metingen heeft.",
+      "differencePending": "Ochtend en avond worden vergeleken zodra elk minstens {min, plural, one {# meting} other {# metingen}} heeft.",
       "hours": "Ochtend {morning}, middag {midday}, avond {evening}, in je eigen tijdzone.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Geen volledige metingen in deze periode",
@@ -6098,10 +6098,10 @@
         "subtitle": "Bepaal welke bron voorrang krijgt als twee bronnen dezelfde meetwaarde melden.",
         "nutrients": {
           "title": "Gesynchroniseerde inname van voedingsstoffen",
-          "description": "Dagtotalen over de afgelopen {days} dagen: wat Apple Health of een voedingsapp heeft gesynchroniseerd plus de supplementen die je hebt ingenomen.",
+          "description": "Dagtotalen over de afgelopen {days, plural, one {# dag} other {# dagen}}: wat Apple Health of een voedingsapp heeft gesynchroniseerd plus de supplementen die je hebt ingenomen.",
           "empty": "Er zijn nog geen gegevens over voedingsstoffen gesynchroniseerd.",
           "latest": "{amount} {unit} op {date}",
-          "daysWithData": "{count} van {days} dagen",
+          "daysWithData": "{count} van {days, plural, one {# dag} other {# dagen}}",
           "moduleHint": "Synchronisatie wordt geregeld door de module Inname van voedingsstoffen.",
           "moduleHintLink": "Modules beheren",
           "detail": "Alleen-lezen: de bron-app beheert de cijfers."
@@ -6161,7 +6161,7 @@
         "import": {
           "heading": "Importeren",
           "description": "Breng gegevens naar HealthLog vanuit Apple Health, Health Connect, het activiteitsbestand van een horloge, een JSON-bestand of een CSV. Bij het importeren worden rijen die al bestaan overgeslagen, dus een import opnieuw uitvoeren is veilig.",
-          "charCount": "{used} / {max} tekens",
+          "charCount": "{used} / {max, plural, one {# teken} other {# tekens}}",
           "appleHealth": {
             "title": "Apple Health",
             "description": "Upload het bestand export.zip uit de Gezondheid-app op je iPhone (Profiel → Exporteer alle gezondheidsgegevens).",
@@ -6178,9 +6178,9 @@
             "failureInterrupted": "De import werd onderbroken voordat hij klaar was, meestal door een herstart van de server of een stop wegens geheugentekort. Je gegevens zijn veilig; upload de export opnieuw om het nog eens te proberen.",
             "failureInsufficientMemory": "De geheugenlimiet van de server is te laag voor een archief van deze grootte. Vraag de beheerder van de server om de heap-limiet van Node.js te verhogen (NODE_OPTIONS=--max-old-space-size) en upload de export daarna opnieuw.",
             "rowsImported": "Tot nu toe {count, plural, one {# rij} other {# rijen}} geïmporteerd",
-            "doneSummary": "Klaar: {imported} van {read} records geïmporteerd, {skipped} klinische records overgeslagen.",
-            "doneSummaryAuxOnly": "Klaar: niets nieuws in de {read} records, maar de labuitslagen of ECG's hieronder zijn geïmporteerd.",
-            "doneNothing": "Er is niets uit dat archief geïmporteerd: 0 van {read} records zijn opgeslagen.",
+            "doneSummary": "Klaar: {imported} van {read, plural, one {# record} other {# records}} geïmporteerd, {skipped, plural, one {# klinische record} other {# klinische records}} overgeslagen.",
+            "doneSummaryAuxOnly": "Klaar: niets nieuws in de {read, plural, one {# record} other {# records}}, maar de labuitslagen of ECG's hieronder zijn geïmporteerd.",
+            "doneNothing": "Er is niets uit dat archief geïmporteerd: 0 van {read, plural, one {# record} other {# records}} zijn opgeslagen.",
             "writtenByHealthLogOne": "{count} record dat HealthLog zelf naar Apple Health had geschreven, is weggelaten, omdat het al in je gegevens staat.",
             "writtenByHealthLogOther": "{count} records die HealthLog zelf naar Apple Health had geschreven, zijn weggelaten, omdat ze al in je gegevens staan.",
             "writtenByHealthLogFew": "{count} records die HealthLog zelf naar Apple Health had geschreven, zijn weggelaten, omdat ze al in je gegevens staan.",
@@ -6229,7 +6229,7 @@
             "skipRefused": "{count, plural, one {# sample kon niet worden opgeslagen} other {# samples konden niet worden opgeslagen}} (onleesbaar, buiten het bereik, of het opslaan mislukte).",
             "skipBreakdown": "Uitsplitsing tonen ({count, plural, one {# type} other {# typen}})",
             "skipBreakdownMore": "+ nog {count, plural, one {# type} other {# typen}}",
-            "cycleSummary": "{samples} cyclussamples samengevoegd in {days} dagregistraties.",
+            "cycleSummary": "{samples, plural, one {# cyclussample} other {# cyclussamples}} samengevoegd in {days, plural, one {# dagregistratie} other {# dagregistraties}}.",
             "cycleModuleOff": "{count, plural, one {# cyclussample overgeslagen} other {# cyclussamples overgeslagen}} omdat cyclusregistratie voor dit account uitstaat.",
             "cycleDaysFailed": "{count, plural, one {# cyclusdag kon niet worden opgeslagen} other {# cyclusdagen konden niet worden opgeslagen}}: {reason}"
           },
@@ -6248,13 +6248,13 @@
             "rateLimited": "Te veel imports dit uur (limiet 5). Probeer het later opnieuw.",
             "failed": "De import is mislukt. Probeer het opnieuw.",
             "readFailed": "Dat bestand kon niet worden gelezen.",
-            "resultSummary": "{measurements} metingen en {moods} stemmingsregistraties geïmporteerd, {skipped} overgeslagen.",
-            "resultSuccess": "{measurements} metingen en {moods} stemmingsregistraties geïmporteerd",
+            "resultSummary": "{measurements, plural, one {# meting} other {# metingen}} en {moods} stemmingsregistraties geïmporteerd, {skipped} overgeslagen.",
+            "resultSuccess": "{measurements, plural, one {# meting} other {# metingen}} en {moods} stemmingsregistraties geïmporteerd",
             "droppedLinks": "Geïmporteerd zonder deze tags, omdat dit account er geen met die naam heeft: {keys}",
             "keptLabels": "Dit account heeft al tags of groepen met deze sleutels onder een eigen naam, die zijn behouden: {keys}",
-            "resultNothing": "Er is niets geïmporteerd. Alle {skipped} registraties zijn overgeslagen.",
+            "resultNothing": "Er is niets geïmporteerd. {skipped, plural, one {De # registratie is overgeslagen} other {Alle # registraties zijn overgeslagen}}.",
             "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties.",
-            "limitsHint": "Tot {mb} MB en tot {rows} items per lijst. Het voegt items toe aan je dossier; het zet geen volledige back-up terug."
+            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst. Het voegt items toe aan je dossier; het zet geen volledige back-up terug."
           },
           "csv": {
             "title": "CSV-bestand",
@@ -6277,10 +6277,10 @@
             "resultSummary": "{inserted} nieuw geïmporteerd en {updated} bijgewerkt, {skipped} overgeslagen.",
             "rowError": "Regel {line}: {reason}",
             "resultSuccess": "{inserted} nieuw geïmporteerd en {updated} bijgewerkt",
-            "resultNothing": "Er is niets geïmporteerd. Alle {skipped} rijen zijn overgeslagen.",
+            "resultNothing": "Er is niets geïmporteerd. {skipped, plural, one {De # rij is overgeslagen} other {Alle # rijen zijn overgeslagen}}.",
             "resultEmpty": "Dat bestand heeft een kopregel maar geen gegevensrijen.",
             "previewSuccess": "Voorbeeld: {inserted} zouden worden geïmporteerd",
-            "previewNothing": "Voorbeeld: er zou niets worden geïmporteerd. Alle {skipped} rijen zouden worden overgeslagen.",
+            "previewNothing": "Voorbeeld: er zou niets worden geïmporteerd. {skipped, plural, one {De # rij zou worden overgeslagen} other {Alle # rijen zouden worden overgeslagen}}.",
             "skipGroupOne": "{count} rij overgeslagen: {reason}",
             "skipGroupFew": "{count} rijen overgeslagen: {reason}",
             "skipGroupOther": "{count} rijen overgeslagen: {reason}",
@@ -6319,8 +6319,8 @@
             "stillRunning": "De import duurt langer dan normaal en kan nog afronden. Kijk over een paar minuten opnieuw naar je innames.",
             "columnsHeading": "Wat elke kolom doet",
             "jsonOnly": "Alleen JSON",
-            "previewLine": "{rows} rijen gelezen, {queued} zouden worden geïmporteerd, {refused} geweigerd",
-            "submittedLine": "{rows} rijen gelezen, {queued} in de wachtrij voor import",
+            "previewLine": "{rows, plural, one {# rij} other {# rijen}} gelezen, {queued} zouden worden geïmporteerd, {refused} geweigerd",
+            "submittedLine": "{rows, plural, one {# rij} other {# rijen}} gelezen, {queued} in de wachtrij voor import",
             "unmatched": "Geen geregistreerd medicijn komt overeen met: {names}",
             "ambiguous": "Komt overeen met meer dan één medicijn: {names}",
             "mirrored": "Overgenomen uit een andere app, dus er kan geen dosis worden toegevoegd: {names}",
@@ -6680,8 +6680,8 @@
           "operatorDisabled": "Luchtkwaliteit is op deze server uitgeschakeld.",
           "coverage": "{count, plural, one {# dag} other {# dagen}} met gegevens over luchtkwaliteit",
           "pollenEuropeOnly": "Pollengegevens zijn alleen beschikbaar voor Europa.",
-          "historyProgress": "Luchtkwaliteit aanvullen: {done} van {total} dagen",
-          "historyComplete": "Luchtkwaliteit is ingevuld voor elke eerdere dag met registraties die de bron dekt ({total} dagen). Oudere dagen blijven leeg.",
+          "historyProgress": "Luchtkwaliteit aanvullen: {done} van {total, plural, one {# dag} other {# dagen}}",
+          "historyComplete": "Luchtkwaliteit is ingevuld voor elke eerdere dag met registraties die de bron dekt ({total, plural, one {# dag} other {# dagen}}). Oudere dagen blijven leeg.",
           "attribution": "Gegevensbronnen en licenties",
           "saveError": "De instelling kon niet worden opgeslagen.",
           "latest": "Nieuwste dag ({date})",
@@ -7119,7 +7119,7 @@
         "title": "Over mij",
         "description": "Persoonlijke context die de Coach en de dagelijkse briefing naast je gegevens lezen.",
         "placeholder": "Bijv. ploegendienst, vegetarisch dieet, knieblessure, training voor een halve marathon…",
-        "charCount": "{used} / {max} tekens",
+        "charCount": "{used} / {max, plural, one {# teken} other {# tekens}}",
         "clear": "Wissen",
         "clearTitle": "De notitie 'Over mij' wissen?",
         "clearBody": "Hiermee wordt alleen de vrije-tekstnotitie verwijderd. Je allergieën en intoleranties blijven precies zoals ze zijn.",
@@ -7234,8 +7234,8 @@
           }
         },
         "limited": "Beperkt door de serverbeheerder.",
-        "estimate": "ongeveer {tokens} tokens per dag, geschat",
-        "measured": "Gemeten: {tokens} tokens per dag over de afgelopen {days} dagen, inclusief de Coach. De cijfers per niveau zijn schattingen.",
+        "estimate": "ongeveer {tokens, plural, one {# token} other {# tokens}} per dag, geschat",
+        "measured": "Gemeten: {tokens, plural, one {# token} other {# tokens}} per dag over de afgelopen {days, plural, one {# dag} other {# dagen}}, inclusief de Coach. De cijfers per niveau zijn schattingen.",
         "noEstimate": "Na drie dagen AI-gebruik verschijnt er een schatting per niveau.",
         "capped": "Je hebt {choice} gekozen, maar dat staat de server op dit moment niet toe, dus geldt {level}. Je keuze blijft bewaard.",
         "followsDefault": "Je volgt de standaardinstelling van de server ({level}).",
@@ -7381,7 +7381,7 @@
     "googleHealthFullSyncDescription": "De volledige beschikbare Google Health-geschiedenis wordt gesynchroniseerd. Afhankelijk van je geschiedenis kan dit even duren.",
     "googleHealthSyncResult": "{count, plural, one {# meting gesynchroniseerd} other {# metingen gesynchroniseerd}}",
     "googleHealthSyncFailed": "Synchronisatie mislukt",
-    "googleHealthSyncInProgress": "Synchronisatie bezig: {count, plural, one {# meting} other {# metingen}} opgeslagen, {completed} van {total} onderdelen verwerkt.",
+    "googleHealthSyncInProgress": "Synchronisatie bezig: {count, plural, one {# meting} other {# metingen}} opgeslagen, {completed} van {total, plural, one {# onderdeel} other {# onderdelen}} verwerkt.",
     "googleHealthResourceFailuresTitle": "Deze onderdelen hebben nog aandacht nodig:",
     "googleHealthResource": {
       "workout": "Trainingen",
@@ -7678,8 +7678,8 @@
       "range": "Dagen geschiedenis",
       "rangeHint": "Hoe ver terug de gedeelde periode reikt.",
       "expiry": "Verloopt over (dagen)",
-      "expiryHint": "Maximaal {max} dagen.",
-      "expiryInvalid": "De geldigheidsduur moet tussen 1 en {max} dagen liggen.",
+      "expiryHint": "Maximaal {max, plural, one {# dag} other {# dagen}}.",
+      "expiryInvalid": "De geldigheidsduur moet tussen 1 en {max, plural, one {# dag} other {# dagen}} liggen.",
       "create": "Link aanmaken",
       "tokenCreated": "Deellink aangemaakt",
       "copied": "Gekopieerd naar klembord",
@@ -7717,7 +7717,7 @@
       "pickerEmpty": "Geen documenten gevonden.",
       "pickerDone": "Klaar",
       "pickerSelectedCount": "{count} van {max} geselecteerd",
-      "pickerMaxReached": "Je hebt het maximum van {max} documenten bereikt.",
+      "pickerMaxReached": "Je hebt het maximum van {max, plural, one {# document} other {# documenten}} bereikt.",
       "scopeTitle": "Wat deze link bevat",
       "scopeInsuranceExcluded": "Verzekeringsgegevens worden nooit via een link gedeeld.",
       "statusNeedsReselect": "Inhoud opnieuw kiezen",
@@ -7950,7 +7950,7 @@
     "privacy": {
       "encryption": {
         "title": "Versleuteld opgeslagen",
-        "summary": "Je gevoelige gegevens worden versleuteld opgeslagen met {algorithm}, verdeeld over {columns} velden in {models} soorten gegevens.",
+        "summary": "Je gevoelige gegevens worden versleuteld opgeslagen met {algorithm}, verdeeld over {columns, plural, one {# veld} other {# velden}} in {models, plural, one {# soort} other {# soorten}} gegevens.",
         "statement": "Je gevoelige gegevens worden versleuteld opgeslagen met AES-256-GCM."
       },
       "stored": {
@@ -7970,11 +7970,11 @@
       "retention": {
         "title": "Bewaartermijn",
         "description": "Hoe lang tijdgebonden gegevens worden bewaard voordat ze automatisch worden opgeschoond.",
-        "coach": "Coach-gesprekken: {days} dagen bewaard",
-        "audit": "Logboek van beveiligingsactiviteit: {days} dagen bewaard",
-        "delivery": "Logboek van bezorgde meldingen: {days} dagen bewaard",
+        "coach": "Coach-gesprekken: {days, plural, one {# dag} other {# dagen}} bewaard",
+        "audit": "Logboek van beveiligingsactiviteit: {days, plural, one {# dag} other {# dagen}} bewaard",
+        "delivery": "Logboek van bezorgde meldingen: {days, plural, one {# dag} other {# dagen}} bewaard",
         "unavailable": "Details over de bewaartermijn zijn op dit moment niet beschikbaar.",
-        "accountDeletion": "Je account, een beheerd profiel of alle gegevens verwijderen: voltooid na {days} dagen",
+        "accountDeletion": "Je account, een beheerd profiel of alle gegevens verwijderen: voltooid na {days, plural, one {# dag} other {# dagen}}",
         "accountDeletionImmediate": "Je account, een beheerd profiel of alle gegevens verwijderen: meteen voltooid"
       },
       "delete": {
@@ -7982,7 +7982,7 @@
         "description": "Verwijder je account volledig, of wis je gezondheidsgegevens en behoud je account.",
         "openAdvanced": "Verwijderen of wissen",
         "immediateNotice": "Bij verwijderen worden je gegevens direct gewist. Als deze server versleutelde back-ups buiten de host bewaart, worden de kopieën van je gegevens direct daarna uit die opslag verwijderd, of bij de volgende nachtelijke run als de opslag niet bereikbaar is. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
-        "graceNotice": "Als je je account verwijdert, wordt het meteen vergrendeld en na {days} dagen gewist, samen met elke kopie die deze server ervan bewaart, ook versleutelde kopieën buiten de server. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken. Alle gegevens verwijderen werkt net zo: een kopie van het dossier wordt {days} dagen bewaard, zodat een beheerder die kan terugzetten. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn."
+        "graceNotice": "Als je je account verwijdert, wordt het meteen vergrendeld en na {days, plural, one {# dag} other {# dagen}} gewist, samen met elke kopie die deze server ervan bewaart, ook versleutelde kopieën buiten de server. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken. Alle gegevens verwijderen werkt net zo: een kopie van het dossier wordt {days, plural, one {# dag} other {# dagen}} bewaard, zodat een beheerder die kan terugzetten. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn."
       },
       "posture": {
         "title": "Privacyniveau",
@@ -8324,9 +8324,9 @@
       "change": "Wijzigen in Modules"
     },
     "timezoneUseDevice": "Tijdzone van dit apparaat gebruiken ({zone})",
-    "dangerZoneConfirmDescriptionGrace": "Hiermee wordt alles in je dossier verwijderd: metingen, medicatie, stemmingsregistraties, labuitslagen, cyclusregistraties, documenten, AI-gesprekken en alle koppelingen, samen met alles wat daarvan is afgeleid en alles wat je eerder hebt verwijderd. Deellinks die je aan een arts hebt gegeven, werken direct niet meer. Je account blijft bestaan, net als de inloggegevens waarmee je inlogt en weergave-instellingen zoals taal, tijdzone en eenheden. Een kopie van je dossier wordt {days} dagen bewaard, zodat een beheerder van deze server die tot dan kan terugzetten. Daarna is de verwijdering definitief.",
-    "deleteAccountCardDetailGrace": "Je account wordt meteen vergrendeld en na {days} dagen gewist. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken.",
-    "deleteAccountConfirmDescriptionGrace": "Je wordt uitgelogd en je account wordt meteen vergrendeld. Na {days} dagen wordt het definitief gewist, met alle gezondheidsgegevens, passkeys, sessies en auditregels. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
+    "dangerZoneConfirmDescriptionGrace": "Hiermee wordt alles in je dossier verwijderd: metingen, medicatie, stemmingsregistraties, labuitslagen, cyclusregistraties, documenten, AI-gesprekken en alle koppelingen, samen met alles wat daarvan is afgeleid en alles wat je eerder hebt verwijderd. Deellinks die je aan een arts hebt gegeven, werken direct niet meer. Je account blijft bestaan, net als de inloggegevens waarmee je inlogt en weergave-instellingen zoals taal, tijdzone en eenheden. Een kopie van je dossier wordt {days, plural, one {# dag} other {# dagen}} bewaard, zodat een beheerder van deze server die tot dan kan terugzetten. Daarna is de verwijdering definitief.",
+    "deleteAccountCardDetailGrace": "Je account wordt meteen vergrendeld en na {days, plural, one {# dag} other {# dagen}} gewist. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken.",
+    "deleteAccountConfirmDescriptionGrace": "Je wordt uitgelogd en je account wordt meteen vergrendeld. Na {days, plural, one {# dag} other {# dagen}} wordt het definitief gewist, met alle gezondheidsgegevens, passkeys, sessies en auditregels. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
     "deleteAccountScheduled": "Je account is vergrendeld en wordt op {date} gewist. Je wordt uitgelogd.",
     "dangerZoneSuccessGrace": "Je gezondheidsdossier is verwijderd. Een beheerder van deze server kan het tot {date} terugzetten.",
     "dangerZoneRestoreLimits": "Ook toegang eindigt: wat je met anderen deelt, wat anderen met jou delen en elke rol als verzorger. Terugzetten brengt het dossier terug zoals het nu is. Wat na het verwijderen is toegevoegd, wordt vervangen, en koppelingen, delen, verzorgersrollen en deellinks komen niet terug; die moeten opnieuw worden ingesteld.",
@@ -8455,7 +8455,7 @@
       "typeCodex": "ChatGPT-login (persoonlijk)",
       "typeLocal": "Lokaal model (persoonlijk)",
       "typeGateway": "OpenAI-compatibele gateway (persoonlijk)",
-      "spendToday": "Vandaag, volgens de eigen kalenderdag van elk account: {total} tokens, waarvan {operator} op de eigen sleutel van de beheerder (accounts met verbruik: {accounts}).",
+      "spendToday": "Vandaag, volgens de eigen kalenderdag van elk account: {total, plural, one {# token} other {# tokens}}, waarvan {operator} op de eigen sleutel van de beheerder (accounts met verbruik: {accounts}).",
       "statusPaused": "Gepauzeerd",
       "pausedHint": "Gepauzeerd na herhaalde fouten voor {count, plural, one {# gebruiker} other {# gebruikers}} tot {at}. Daarna wordt het automatisch opnieuw geprobeerd.",
       "modelNotServed": "Het endpoint biedt het model {model} niet meer aan. Kies in de AI-instellingen een model dat het endpoint wel vermeldt.",
@@ -8466,7 +8466,7 @@
       "loading": "Feedbackoverzicht laden…",
       "loadError": "Kwaliteitsoverzicht van inzichten laden mislukt. Probeer de pagina te vernieuwen.",
       "empty": "Nog geen feedback. De aggregator draait dagelijks om 04:00. Zodra gebruikers aanbevelingen gaan beoordelen, verschijnen hier de percentages nuttige beoordelingen.",
-      "windowLabel": "Afgelopen {days} dagen",
+      "windowLabel": "Afgelopen {days, plural, one {# dag} other {# dagen}}",
       "generatedAtLabel": "Gegenereerd",
       "colSeverity": "Ernst",
       "colMetric": "Meetwaarde",
@@ -8481,7 +8481,7 @@
       "loading": "Overzicht van Coach-feedback laden…",
       "loadError": "Overzicht van Coach-feedback laden mislukt. Probeer de pagina te vernieuwen.",
       "empty": "Nog geen Coach-feedback. De aggregator draait dagelijks om 04:00. Zodra gebruikers antwoorden van de Coach beoordelen, verschijnen hier de percentages nuttige beoordelingen.",
-      "windowLabel": "Afgelopen {days} dagen",
+      "windowLabel": "Afgelopen {days, plural, one {# dag} other {# dagen}}",
       "generatedAtLabel": "Gegenereerd",
       "colPromptVersion": "Promptversie",
       "colTone": "Toon",
@@ -8603,7 +8603,7 @@
       "createTitle": "Uitnodiging maken",
       "createDescription": "Met de link kan iemand zich registreren, ook als de registratie gesloten is.",
       "ttlLegend": "Geldig voor",
-      "createDays": "{days} dagen",
+      "createDays": "{days, plural, one {# dag} other {# dagen}}",
       "maxUsesLabel": "Maximaal aantal keer te gebruiken",
       "maxUsesHint": "Hoeveel registraties deze link toestaat (1–50).",
       "createConfirm": "Uitnodiging maken",
@@ -8710,7 +8710,7 @@
     "deleteButton": "Alle gegevens verwijderen",
     "deleteAllPromptLabel": "Typ {token} om door te gaan",
     "finalDelete": "Definitief verwijderen",
-    "deletedResult": "{rows} rijen in {tables} tabellen verwijderd. Gebruikersaccounts en inloggegevens zijn behouden.",
+    "deletedResult": "{rows, plural, one {# rij} other {# rijen}} in {tables, plural, one {# tabel} other {# tabellen}} verwijderd. Gebruikersaccounts en inloggegevens zijn behouden.",
     "authRegister": "Registratie",
     "authClaim": "Profiel overgenomen",
     "authLogin": "Inloggen",
@@ -8927,7 +8927,7 @@
         "colCreatedAt": "Laatste snapshot",
         "colActions": "Acties",
         "scheduleStaleTitle": "De wekelijkse back-up is gestopt",
-        "scheduleStaleDescription": "De nieuwste geplande kopie is {days} dagen oud. Een goed werkende wekelijkse run laat nooit een kopie ouder worden dan {threshold} dagen.",
+        "scheduleStaleDescription": "De nieuwste geplande kopie is {days, plural, one {# dag} other {# dagen}} oud. Een goed werkende wekelijkse run laat nooit een kopie ouder worden dan {threshold, plural, one {# dag} other {# dagen}}.",
         "scheduleFailedTitle": "De laatste geplande back-uprun is mislukt",
         "scheduleFailedDescription": "{when}: {reason}",
         "scheduleFailedNoReason": "geen reden vastgelegd",
@@ -8977,8 +8977,8 @@
         "restoreInProgress": "Terugzetten…",
         "restoreSuccess": "Terugzetten voltooid",
         "restoreFailed": "Terugzetten mislukt",
-        "restoreSkippedToast": "Terugzetten voltooid, {links} symptoomkoppelingen konden niet worden hersteld",
-        "restoreSkippedTitle": "{links} koppelingen zijn niet hersteld",
+        "restoreSkippedToast": "Terugzetten voltooid, {links, plural, one {# symptoomkoppeling kon} other {# symptoomkoppelingen konden}} niet worden hersteld",
+        "restoreSkippedTitle": "{links, plural, one {# koppeling is} other {# koppelingen zijn}} niet hersteld",
         "restoreSkippedDescription": "Het bestand verwijst naar items die deze installatie niet kent. Al het andere is teruggezet. Dezelfde lijst staat in het auditlog.",
         "restoreSkippedLinks": "{count, plural, one {# koppeling} other {# koppelingen}}",
         "restoreSkippedCycleSymptom": "Cyclussymptoom",
@@ -9023,7 +9023,7 @@
           "unknownDetail": "Nog geen nachtelijke run heeft dit account vastgelegd.",
           "age": "{hours} u geleden",
           "scheduleNote": "De upload draait elke {hours} u. Actueel betekent binnen één run, achter betekent dat één run niets heeft opgeleverd, verouderd betekent dat twee runs niets hebben opgeleverd.",
-          "lifecycleConfigured": "De bucket verwijdert kopieën na {days} dagen via een eigen lifecycleregel.",
+          "lifecycleConfigured": "De bucket verwijdert kopieën na {days, plural, one {# dag} other {# dagen}} via een eigen lifecycleregel.",
           "lifecycleMissing": "De bucket heeft geen lifecycleregel, dus elke nachtelijke kopie blijft voor altijd bewaard. Voeg een regel toe die objecten laat verlopen na BACKUP_RETENTION_DAYS.",
           "lifecycleUnknown": "Kon niet worden gelezen of de bucket oude kopieën verwijdert: mogelijk mogen de toegangsgegevens de lifecycleregel niet lezen. Controleer of een regel objecten laat verlopen na BACKUP_RETENTION_DAYS.",
           "pendingDeletions": "{count, plural, one {Kopieën van # verwijderd of gewist account} other {Kopieën van # verwijderde of gewiste accounts}} staan nog in de bucket en worden verwijderd.",
@@ -9039,7 +9039,7 @@
         "restoreJobRunningTitle": "{username} wordt teruggezet",
         "restoreJobRunningNote": "Het account toont de huidige gegevens tot het terugzetten klaar is. Je kunt deze pagina verlaten; het terugzetten gaat op de server verder.",
         "restoreJobResumed": "Opnieuw gestart nadat de server is herstart.",
-        "restoreJobPhaseValidating": "Back-upbestand controleren: {checked} metingen gecontroleerd",
+        "restoreJobPhaseValidating": "Back-upbestand controleren: {checked, plural, one {# meting} other {# metingen}} gecontroleerd",
         "restoreJobPhaseClearing": "Huidige gegevens van het account wissen",
         "restoreJobPhaseMeasurements": "Metingen schrijven: {done} van {total}",
         "restoreJobPhaseSections": "Overige records schrijven: {done} van {total} secties",
@@ -9081,7 +9081,7 @@
         "restoreSkippedVaccinationCiphertext": "Vaccinatienotitie versleuteld met een sleutel die deze server niet heeft (dosis behouden zonder)",
         "restoreSkippedEnvironmentLocationCiphertext": "Locatie van een omgevingsperiode of -dag versleuteld met een sleutel die deze server niet heeft (versleuteld behouden, die dagen worden niet bijgewerkt)",
         "typePreWipe": "Voor het verwijderen van alle gegevens",
-        "retentionNote": "De wekelijkse kopie wordt elke zondag vervangen. Een kopie die vóór 'Alle gegevens verwijderen' is gemaakt, wordt na {days} dagen verwijderd. Geüploade kopieën blijven tot hun account gewist wordt.",
+        "retentionNote": "De wekelijkse kopie wordt elke zondag vervangen. Een kopie die vóór 'Alle gegevens verwijderen' is gemaakt, wordt na {days, plural, one {# dag} other {# dagen}} verwijderd. Geüploade kopieën blijven tot hun account gewist wordt.",
         "retentionNoteNoGrace": "De wekelijkse kopie wordt elke zondag vervangen. Geüploade kopieën blijven tot hun account gewist wordt.",
         "database": {
           "title": "Databasedump",
@@ -9096,7 +9096,7 @@
           "noDirectoryOffhost": "Deze server kan niet schrijven naar {dir}, dus dumps gaan alleen extern en hier wordt er geen bewaard. Koppel het back-upvolume.",
           "noDirectory": "Deze server kan niet schrijven naar {dir} en er is geen externe opslag ingesteld, dus er kan geen databasedump worden gemaakt. Koppel het back-upvolume.",
           "retentionLocal": "Verwijderde accounts blijven in de dumps tot die verlopen: op deze server blijven de nieuwste {nights} nachtelijke dumps bewaard, en de dump van vóór de laatste update blijft tot de volgende update.",
-          "retentionOffhost": "De levenscyclusregel van de bucket verwijdert externe kopieën na {days} dagen.",
+          "retentionOffhost": "De levenscyclusregel van de bucket verwijdert externe kopieën na {days, plural, one {# dag} other {# dagen}}.",
           "retentionOffhostMissing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe.",
           "notPersistentOffhost": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen), dus een dump die daar wordt geschreven gaat bij de volgende update verloren. Dumps gaan alleen extern: hier wordt er geen bewaard en vóór een migratie wordt er geen gemaakt. Koppel het back-upvolume.",
           "notPersistent": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen) en er is geen externe bucket ingesteld, dus nergens wordt een databasedump bewaard. Koppel het back-upvolume.",
@@ -9256,7 +9256,7 @@
           "maxValue": "{value} bpm",
           "bucket": "{range} bpm",
           "account": "Account {account}",
-          "accountDays": "{changed} van {days} dagen verschuiven"
+          "accountDays": "{changed} van {days, plural, one {# dag} other {# dagen}} verschuiven"
         },
         "appliedAt": "Gewogen methode toegepast op {at}.",
         "dryRun": "Proefrun",
@@ -9276,7 +9276,7 @@
         "rebuild": {
           "queued": "De herberekening wacht op de achtergrondworker.",
           "running": "De hartslagdagen worden opnieuw berekend.",
-          "done": "Hartslagdagen op {at} opnieuw berekend voor {accounts} accounts.",
+          "done": "Hartslagdagen op {at} opnieuw berekend voor {accounts, plural, one {# account} other {# accounts}}.",
           "failed": "De herberekening is gestopt. In het applog staat de oorzaak; voer hem opnieuw uit."
         },
         "rebuildAgain": "Opnieuw berekenen",
@@ -9320,7 +9320,7 @@
     "failingJobs": {
       "title": "Achtergrondtaken",
       "description": "Wachtrijen waarvan taken na alle pogingen opgaven, of waarvan een run voor elk geprobeerd account mislukte.",
-      "none": "Er is de afgelopen {hours} uur geen taak mislukt.",
+      "none": "Er is de afgelopen {hours, plural, one {# uur} other {# uur}} geen taak mislukt.",
       "unavailable": "Geen takenwachtrij om te lezen. Deze installatie draait zonder de achtergrondworker.",
       "countOne": "{count} fout",
       "countFew": "{count} fouten",
@@ -9478,22 +9478,22 @@
           "disabled": "De geplande databasedump staat uit, dus geen enkele kopie kan deze server opnieuw opbouwen. Verwijder DB_BACKUP_ENABLED of zet het op true en herstart HealthLog om hem weer aan te zetten.",
           "unreadable": "De status van de databasedump kon niet worden gelezen.",
           "never_succeeded": "Er is nog geen databasedump gelukt, en de laatste poging is mislukt.",
-          "never_ran": "In de {hours} uur sinds dumps zijn ingeschakeld, is er geen databasedump geschreven.",
+          "never_ran": "In de {hours, plural, one {# uur} other {# uur}} sinds dumps zijn ingeschakeld, is er geen databasedump geschreven.",
           "first_pending": "De eerste databasedump is nog niet uitgevoerd.",
-          "stale": "De nieuwste databasedump is {hours} uur oud.",
+          "stale": "De nieuwste databasedump is {hours, plural, one {# uur} other {# uur}} oud.",
           "last_failed": "De laatste databasedump is mislukt. De dump daarvoor is nog recent.",
           "fresh": "De nieuwste databasedump is recent.",
           "nowhere_to_write": "De dumpmap {directory} is niet beschrijfbaar en er is geen externe bucket ingesteld, dus er kan geen dump worden bewaard.",
           "not_persistent": "De dumpmap {directory} staat niet op blijvende opslag en er is geen externe bucket ingesteld, dus elke dump gaat bij de volgende update verloren. Koppel het back-upvolume.",
           "fresh_offhost_only": "De nieuwste databasedump is recent en staat in de externe bucket. Op deze server wordt er geen bewaard, omdat {directory} niet op blijvende opslag staat, en vóór een migratie wordt er geen gemaakt.",
           "offhost_failed": "De nieuwste databasedump staat op deze server, maar het uploaden naar de externe bucket is mislukt.",
-          "offhost_stale": "Al {hours} uur is er geen databasedump in de externe bucket aangekomen: het uploaden blijft mislukken. Gaat deze server verloren, dan is er geen recente dump om hem mee te herstellen.",
+          "offhost_stale": "Al {hours, plural, one {# uur} other {# uur}} is er geen databasedump in de externe bucket aangekomen: het uploaden blijft mislukken. Gaat deze server verloren, dan is er geen recente dump om hem mee te herstellen.",
           "offhost_never": "Er is nog nooit een databasedump in de externe bucket aangekomen: het uploaden mislukt. Gaat deze server verloren, dan is er geen dump om hem mee te herstellen."
         },
         "weekly_copy": {
           "no_accounts": "Er zijn nog geen accounts om te kopiëren.",
-          "stale": "De oudste wekelijkse kopie is {days} dagen oud. Achterlopende accounts: {accounts}.",
-          "never": "Een account heeft al {days} dagen geen wekelijkse kopie. Achterlopende accounts: {accounts}.",
+          "stale": "De oudste wekelijkse kopie is {days, plural, one {# dag} other {# dagen}} oud. Achterlopende accounts: {accounts}.",
+          "never": "Een account heeft al {days, plural, one {# dag} other {# dagen}} geen wekelijkse kopie. Achterlopende accounts: {accounts}.",
           "first_pending": "De eerste wekelijkse kopie wordt vroeg op zondag gemaakt.",
           "fresh": "Elk account heeft een kopie van de afgelopen week."
         },
@@ -9506,9 +9506,9 @@
         "restore_drill": {
           "not_configured": "De test leest de externe bucket, en die is niet ingesteld.",
           "not_run_yet": "De maandelijkse hersteltest is nog niet uitgevoerd.",
-          "failed": "De laatste hersteltest is mislukt: {failed} van {checked} kopieën konden niet worden teruggelezen.",
+          "failed": "De laatste hersteltest is mislukt: {failed} van {checked, plural, one {# kopie} other {# kopieën}} konden niet worden teruggelezen.",
           "failed_run": "De laatste hersteltest kon niet worden afgerond.",
-          "passed": "De laatste hersteltest heeft {checked} kopieën teruggelezen.",
+          "passed": "De laatste hersteltest heeft {checked, plural, one {# kopie} other {# kopieën}} teruggelezen.",
           "nothing_checked": "De laatste hersteltest stopte op zijn tijdslimiet voordat hij ook maar één kopie had teruggelezen, en heeft dus niets aangetoond."
         },
         "offhost_setup": {
@@ -9528,7 +9528,7 @@
           "not_configured": "Er is geen externe bucket ingesteld.",
           "no_offhost_dumps": "Er gaat geen databasedump naar de bucket.",
           "missing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe.",
-          "configured": "De bucket verwijdert dumps na {days} dagen.",
+          "configured": "De bucket verwijdert dumps na {days, plural, one {# dag} other {# dagen}}.",
           "unknown": "De bucket zegt niet of een regel oude dumps verwijdert. Controleer of een levenscyclusregel database/ dekt."
         }
       },
@@ -9628,7 +9628,7 @@
         "pending": "Wachtend",
         "dropped": "Verworpen",
         "failed": "Mislukt",
-        "window": "Pushberichten die deze server de afgelopen {days} dagen aan de relay gaf.",
+        "window": "Pushberichten die deze server de afgelopen {days, plural, one {# dag} other {# dagen}} aan de relay gaf.",
         "lastSuccess": "Laatst bezorgd {time}.",
         "lastFailure": "Laatste fout {time}: {reason}.",
         "noReason": "geen reden opgegeven"
@@ -9777,7 +9777,7 @@
     "goalReached": "Doel bereikt",
     "remainingUnlocks": "Nog {count} te ontgrendelen",
     "noneUnlockedYet": "Nog geen prestaties ontgrendeld.",
-    "pointsValue": "{points} punten",
+    "pointsValue": "{points, plural, one {# punt} other {# punten}}",
     "metricCount": "{count}",
     "metricDaysOne": "{count} dag",
     "metricDaysFew": "{count} dagen",
@@ -10072,7 +10072,7 @@
       "reminderCheckMissedTitle": "Herinnering gemist: {medication}",
       "reminderCheckMissedBody": "{medication} ({dose}) is niet geregistreerd binnen het tijdvenster {window}.",
       "reminderCheckOverdueTitle": "Dosis te laat: {medication}",
-      "reminderCheckOverdueBody": "{medication} ({dose}) in het tijdvenster {window} is {minutes} minuten te laat.",
+      "reminderCheckOverdueBody": "{medication} ({dose}) in het tijdvenster {window} is {minutes, plural, one {# minuut} other {# minuten}} te laat.",
       "offlineGeoUnavailableTitle": "Offline geolocatiedatabases niet geladen",
       "offlineGeoUnavailableBody": "HealthLog bepaalt inloglocaties via de online opzoekdienst op {host}, dus elk IP-adres waarmee wordt ingelogd, verlaat deze server. Wil je ze lokaal bepalen, download dan de databases GeoLite2-City en GeoLite2-ASN met een gratis MaxMind-account, koppel de map aan de container en laat GEOLITE2_DIR ernaar verwijzen. Stappen: {docsUrl}",
       "tlsPinChangedTitle": "TLS-leafcertificaat gewijzigd: {host}",
@@ -10255,7 +10255,7 @@
       "titleFailing": "Achtergrondtaak mislukt: {queue}",
       "titleReminder": "Achtergrondtaak mislukt nog steeds: {queue}",
       "titleRecovered": "Achtergrondtaak werkt weer: {queue}",
-      "bodyFailing": "De achtergrondtaak {queue} is {failures} keer achter elkaar mislukt en staat op de beheerstatuspagina. Laatste fout: {error}",
+      "bodyFailing": "De achtergrondtaak {queue} is {failures, plural, one {# keer} other {# keer}} achter elkaar mislukt en staat op de beheerstatuspagina. Laatste fout: {error}",
       "bodyRecovered": "De achtergrondtaak {queue} is weer met succes uitgevoerd."
     },
     "eventSeizureCluster": "Clusteraanvallen",
@@ -10454,11 +10454,11 @@
   },
   "lowStockReminders": {
     "title": "Lage voorraad: {medName}",
-    "bodyToday": "{medName}: nog {units} eenheden, minder dan één dag voorraad.",
-    "bodyReorder": "{medName}: nog {units} eenheden. De voorraad is rond {runsOutOn} op. Bestel uiterlijk {reorderBy} na.",
-    "bodyLastDose": "{medName}: nog {units} eenheden, ongeveer je laatste dosis. De voorraad is rond {runsOutOn} op.",
-    "bodyExpired": "{medName}: geen bruikbare voorraad meer. {units} eenheden zijn gemarkeerd als verlopen.",
-    "bodyAsNeeded": "{medName}: nog maar {units} eenheden. Bestel na voordat je de volgende dosis nodig hebt."
+    "bodyToday": "{medName}: nog {units, plural, one {# eenheid} other {# eenheden}}, minder dan één dag voorraad.",
+    "bodyReorder": "{medName}: nog {units, plural, one {# eenheid} other {# eenheden}}. De voorraad is rond {runsOutOn} op. Bestel uiterlijk {reorderBy} na.",
+    "bodyLastDose": "{medName}: nog {units, plural, one {# eenheid} other {# eenheden}}, ongeveer je laatste dosis. De voorraad is rond {runsOutOn} op.",
+    "bodyExpired": "{medName}: geen bruikbare voorraad meer. {units, plural, one {# eenheid is} other {# eenheden zijn}} gemarkeerd als verlopen.",
+    "bodyAsNeeded": "{medName}: nog maar {units, plural, one {# eenheid} other {# eenheden}}. Bestel na voordat je de volgende dosis nodig hebt."
   },
   "moodReminders": {
     "dailyTitle": "Leg je stemming vast",
@@ -10604,7 +10604,7 @@
       "crosstab": {
         "description": "Hoe elke meting zich verhoudt tussen je luteale en folliculaire fase, op basis van je eigen gegevens.",
         "pairLabel": "{metric}: luteaal vs. folliculair",
-        "detail": "Luteaal {lutealAvg} ({lutealDays} dagen) vs. folliculair {follicularAvg} ({follicularDays} dagen).",
+        "detail": "Luteaal {lutealAvg} ({lutealDays, plural, one {# dag} other {# dagen}}) vs. folliculair {follicularAvg} ({follicularDays, plural, one {# dag} other {# dagen}}).",
         "metricRestingHeartRate": "Rusthartslag",
         "metricHrv": "Hartslagvariabiliteit",
         "metricSleepDuration": "Slaapduur",
@@ -10619,7 +10619,7 @@
       "title": "Cyclusinzichten",
       "symptomPatternsTitle": "Symptoompatronen per fase",
       "symptomPatternsEmpty": "Leg symptomen vast gedurende een cyclus om te zien in welke fase ze zich concentreren.",
-      "symptomMostlyIn": "Vooral in {phase} ({count}/{total} dagen)"
+      "symptomMostlyIn": "Vooral in {phase} ({count}/{total, plural, one {# dag} other {# dagen}})"
     },
     "phaseEducation": {
       "title": "Wat er nu gebeurt",
@@ -10720,7 +10720,7 @@
       "caption": "van je cyclus",
       "firstPeriodCta": "Mijn eerste menstruatie registreren",
       "periodOverdue": "Je menstruatie is later dan normaal. De dagtelling pauzeert tot de volgende menstruatie is geregistreerd.",
-      "periodOverdueDays": "Je menstruatie is {days} dagen later dan normaal. De dagtelling pauzeert tot de volgende menstruatie is geregistreerd.",
+      "periodOverdueDays": "Je menstruatie is {days, plural, one {# dag} other {# dagen}} later dan normaal. De dagtelling pauzeert tot de volgende menstruatie is geregistreerd.",
       "logPeriodCta": "Menstruatie registreren"
     },
     "calendar": {
@@ -10776,7 +10776,7 @@
       "ovulationChip": "Ovulatie",
       "chartTitle": "Cycluslengte door de tijd",
       "chartCaption": "Elke balk is één cyclus: het roze onderste deel is je menstruatie, de rest is de cycluslengte.",
-      "chartAria": "{count, plural, one {Grafiek van de cycluslengte van je laatste cyclus} other {Grafiek van de cycluslengte van je laatste # cycli}}, gemiddeld {avg} dagen, geclassificeerd als {regularity}.",
+      "chartAria": "{count, plural, one {Grafiek van de cycluslengte van je laatste cyclus} other {Grafiek van de cycluslengte van je laatste # cycli}}, gemiddeld {avg, plural, one {# dag} other {# dagen}}, geclassificeerd als {regularity}.",
       "legendPeriodSegment": "Menstruatiedagen",
       "legendRestSegment": "Rest van de cyclus"
     },
@@ -11054,7 +11054,7 @@
       "menuItem": "Uitstellen…",
       "title": "Geplande datum uitstellen",
       "description": "Verschuift alleen de huidige geplande datum; het vaste ritme blijft ongewijzigd.",
-      "chip": "+{days} dagen",
+      "chip": "+{days, plural, one {# dag} other {# dagen}}",
       "dateLabel": "Nieuwe datum",
       "confirm": "Uitstellen"
     },
@@ -11072,12 +11072,12 @@
       "none": "Niet gepland",
       "today": "Vandaag gepland",
       "tomorrow": "Morgen gepland",
-      "inDays": "Over {days} dagen"
+      "inDays": "Over {days, plural, one {# dag} other {# dagen}}"
     },
-    "overdueByDays": "{days} dagen te laat",
+    "overdueByDays": "{days, plural, one {# dag} other {# dagen}} te laat",
     "overdueSinceYesterday": "Sinds gisteren te laat",
     "cadence": {
-      "everyNDays": "Elke {days} dagen",
+      "everyNDays": "Elke {days, plural, one {# dag} other {# dagen}}",
       "custom": "Aangepast schema",
       "customInterval": "Aangepast (elke N dagen)",
       "rruleOption": "Aangepaste regel (RRULE)"
@@ -11419,7 +11419,7 @@
       "bilirubin-total": "Totaal bilirubine"
     },
     "noteLoadFailed": "De notitie kon niet worden geladen; bij het opslaan blijft ze ongewijzigd.",
-    "showingLatestOf": "De laatste {shown} van {total} metingen worden getoond",
+    "showingLatestOf": "De laatste {shown} van {total, plural, one {# meting} other {# metingen}} worden getoond",
     "convertedFrom": "omgerekend van {value} {unit}",
     "ocr": {
       "scanButton": "Rapport scannen",
@@ -11445,9 +11445,9 @@
       "truncatedPages": "De AI-provider bereikte zijn uitvoerlimiet op deze pagina's: {pages}. Waarden verderop op die pagina's kunnen ontbreken, dus vergelijk ze met het rapport.",
       "unreadPages": "Deze pagina's konden niet worden gelezen en hun waarden staan niet in deze lijst: {pages}.",
       "unreadParts": "Een deel van het rapport kon niet worden gelezen en de waarden ervan staan niet in deze lijst.",
-      "rowsCapped": "Het rapport bevat {found} waarden. Eén scan neemt er {kept}, dus alleen de eerste {kept} worden getoond.",
+      "rowsCapped": "Het rapport bevat {found, plural, one {# waarde} other {# waarden}}. Eén scan neemt er {kept}, dus alleen de eerste {kept} worden getoond.",
       "outputLimit": "De AI-provider bereikte zijn uitvoerlimiet voordat hij één waarde teruggaf. Probeer een foto van één pagina, of een model dat langere antwoorden toestaat.",
-      "errorTooLong": "Kort dit in tot {max} tekens.",
+      "errorTooLong": "Kort dit in tot {max, plural, one {# teken} other {# tekens}}.",
       "confirmRow": "Deze meting opnemen",
       "analyteLabel": "Testnaam",
       "resultLabel": "Uitslag",
@@ -11466,7 +11466,7 @@
       "discardAll": "Alles verwerpen",
       "savedToast": "{count, plural, one {# labuitslag opgeslagen} other {# labuitslagen opgeslagen}}",
       "savedPartialToast": "{count, plural, one {# labuitslag opgeslagen} other {# labuitslagen opgeslagen}}, {skipped} overgeslagen als duplicaat",
-      "savedNothingToast": "Niets opgeslagen: {skipped} metingen waren al vastgelegd",
+      "savedNothingToast": "Niets opgeslagen: {skipped, plural, one {# meting was} other {# metingen waren}} al vastgelegd",
       "savedEmptyToast": "Niets om op te slaan",
       "noRows": "Er zijn geen metingen gevonden in dit rapport.",
       "nothingToSave": "Selecteer ten minste één meting om op te slaan.",
@@ -11575,17 +11575,17 @@
     "trend": {
       "title": "Verloop",
       "slope": {
-        "rising": "Stijgt met ongeveer {amount} {unit} per jaar over {n} waarden sinds {since}.",
-        "falling": "Daalt met ongeveer {amount} {unit} per jaar over {n} waarden sinds {since}.",
-        "flat": "Geen verandering over {n} waarden sinds {since}."
+        "rising": "Stijgt met ongeveer {amount} {unit} per jaar over {n, plural, one {# waarde} other {# waarden}} sinds {since}.",
+        "falling": "Daalt met ongeveer {amount} {unit} per jaar over {n, plural, one {# waarde} other {# waarden}} sinds {since}.",
+        "flat": "Geen verandering over {n, plural, one {# waarde} other {# waarden}} sinds {since}."
       },
       "projection": {
         "exits": {
           "high": "Als deze rechte lijn zo doorliep, zou ze rond {date} de bovengrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling.",
           "low": "Als deze rechte lijn zo doorliep, zou ze rond {date} de ondergrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling."
         },
-        "beyond_horizon": "In dit tempo blijft de lijn langer dan {years} jaar binnen je referentiebereik, de periode die je waarden beslaan.",
-        "beyond_horizon_capped": "In dit tempo blijft de lijn langer dan {years} jaar binnen je referentiebereik, zo ver kijkt de doortrekking vooruit.",
+        "beyond_horizon": "In dit tempo blijft de lijn langer dan {years, plural, one {# jaar} other {# jaar}} binnen je referentiebereik, de periode die je waarden beslaan.",
+        "beyond_horizon_capped": "In dit tempo blijft de lijn langer dan {years, plural, one {# jaar} other {# jaar}} binnen je referentiebereik, zo ver kijkt de doortrekking vooruit.",
         "no_exit": "De lijn loopt weg van de grenzen van je referentiebereik.",
         "already_outside": "De lijn ligt al buiten je referentiebereik.",
         "no_clear_trend": "Over deze waarden is de verandering niet duidelijk te onderscheiden van geen verandering, dus er wordt niets doorgetrokken.",
@@ -11975,10 +11975,10 @@
       "nadirTitle": "Wat er veranderde",
       "nadirBody": "Hoe ver elk bijgehouden signaal afweek van je gebruikelijke bereik.",
       "recoveryGapTitle": "Herstelkloof",
-      "recoveryGapLag": "Je waarden stabiliseerden {days} dagen nadat je je beter voelde.",
-      "recoveryGapLead": "Je waarden stabiliseerden {days} dagen voordat je je als hersteld markeerde.",
-      "recoveryGapLagSymptom": "Je voelde je {days} dagen beter voordat je vastgelegde symptomen afnamen.",
-      "recoveryGapLeadSymptom": "Je vastgelegde symptomen namen {days} dagen af voordat je je als hersteld markeerde.",
+      "recoveryGapLag": "Je waarden stabiliseerden {days, plural, one {# dag} other {# dagen}} nadat je je beter voelde.",
+      "recoveryGapLead": "Je waarden stabiliseerden {days, plural, one {# dag} other {# dagen}} voordat je je als hersteld markeerde.",
+      "recoveryGapLagSymptom": "Je voelde je {days, plural, one {# dag} other {# dagen}} beter voordat je vastgelegde symptomen afnamen.",
+      "recoveryGapLeadSymptom": "Je vastgelegde symptomen namen {days, plural, one {# dag} other {# dagen}} af voordat je je als hersteld markeerde.",
       "recoveryGapSame": "Je waarden stabiliseerden op dezelfde dag dat je je beter voelde.",
       "sleepContextMore": "Tijdens deze episode sliep je merkbaar meer dan normaal (ongeveer {hours} u per nacht).",
       "sleepContextLess": "Tijdens deze episode sliep je merkbaar minder dan normaal (ongeveer {hours} u per nacht).",
@@ -11995,8 +11995,8 @@
       "title": "Je ziektegeschiedenis",
       "countOne": "Je hebt in deze periode 1 episode vastgelegd.",
       "countOther": "Je hebt in deze periode {count} episodes vastgelegd.",
-      "typicalGap": "Gebruikelijke herstelkloof: {days} dagen tussen je beter voelen en het stabiliseren van je waarden.",
-      "typicalGapWithDriver": "Gebruikelijke herstelkloof: {days} dagen; je voelt je meestal beter voordat je {vital} stabiliseert.",
+      "typicalGap": "Gebruikelijke herstelkloof: {days, plural, one {# dag} other {# dagen}} tussen je beter voelen en het stabiliseren van je waarden.",
+      "typicalGapWithDriver": "Gebruikelijke herstelkloof: {days, plural, one {# dag} other {# dagen}}; je voelt je meestal beter voordat je {vital} stabiliseert.",
       "typicalGapLearning": "Na nog een paar afgesloten episodes verschijnt hier een gebruikelijke herstelkloof.",
       "none": "Geen episodes vastgelegd in deze periode.",
       "analyze": "Herstelkloof analyseren"
@@ -12231,7 +12231,7 @@
       "viewTable": "Tabel",
       "chartSummary": "{title}, weergegeven als grafiek. De tabelweergave toont elke waarde.",
       "dataUsed": "Gebruikte gegevens ({count})",
-      "truncated": "De laatste {shown} van {total} rijen worden getoond",
+      "truncated": "De laatste {shown} van {total, plural, one {# rij} other {# rijen}} worden getoond",
       "withheld": {
         "moduleDisabled": "Deze tabel is verborgen omdat de bijbehorende module is uitgeschakeld.",
         "unavailable": "Deze tabel kon niet worden geladen."
@@ -12482,8 +12482,8 @@
     "historyLoadErrorHint": "Dit betekent niet dat je geen resultaten hebt; de lijst kon niet worden opgehaald. Probeer het opnieuw.",
     "privacyNote": "Je antwoorden worden versleuteld opgeslagen en komen nooit bij de AI-coach terecht.",
     "trend": {
-      "sincePrevious": "Sinds je vorige check-in op {date}: {change} punten.",
-      "sinceFirst": "Sinds je eerste check-in op {date}: {change} punten.",
+      "sincePrevious": "Sinds je vorige check-in op {date}: {change, plural, one {# punt} other {# punten}}.",
+      "sinceFirst": "Sinds je eerste check-in op {date}: {change, plural, one {# punt} other {# punten}}.",
       "verdict": {
         "improved": "Dat bereikt de verandering van {threshold} punten die studies als betekenisvol zien, in de betere richting.",
         "worsened": "Dat bereikt de verandering van {threshold} punten die studies als betekenisvol zien, in de minder goede richting.",
@@ -12884,7 +12884,7 @@
       "derived": {
         "packYears": "{value} pakjaren",
         "packYearsMissing": "Voor pakjaren zijn het aantal sigaretten per dag en het jaar waarin je begon nodig.",
-        "activityMinutes": "{value} minuten per week.",
+        "activityMinutes": "{value, plural, one {# minuut} other {# minuten}} per week.",
         "meetsWho": "Dat voldoet aan het WHO-advies van 150 minuten per week.",
         "belowWho": "Dat is minder dan het WHO-advies van 150 minuten per week.",
         "measuredSteps": "Je gemeten stappen gaan voor; dit antwoord geeft extra context.",
@@ -13064,7 +13064,7 @@
       "duplicate": "Al opgeslagen. Het bestaande document is gemarkeerd.",
       "deleted": "Document verwijderd",
       "restoreFailed": "Het document kon niet worden hersteld.",
-      "deletedHint": "Verwijderde documenten blijven {days} dagen in Recent verwijderd."
+      "deletedHint": "Verwijderde documenten blijven {days, plural, one {# dag} other {# dagen}} in Recent verwijderd."
     },
     "timeline": {
       "loadingMore": "Meer laden…",
@@ -13160,7 +13160,7 @@
       "partialFailure": "{failed} van {total} konden niet worden bijgewerkt",
       "failed": "De actie kon niet worden voltooid",
       "share": "Delen",
-      "shareTooMany": "Een deellink kan maximaal {max} documenten bevatten. Deselecteer er een paar en probeer het opnieuw.",
+      "shareTooMany": "Een deellink kan maximaal {max, plural, one {# document} other {# documenten}} bevatten. Deselecteer er een paar en probeer het opnieuw.",
       "linkVisit": "Aan bezoek koppelen"
     },
     "episodeCard": {
@@ -13356,7 +13356,7 @@
       },
       "pickMore": "Meer kiezen",
       "finishedHint": "Zoek opnieuw of wijzig een filter om meer documenten te kiezen.",
-      "maxReached": "Je kunt maximaal {max} documenten tegelijk importeren.",
+      "maxReached": "Je kunt maximaal {max, plural, one {# document} other {# documenten}} tegelijk importeren.",
       "noMatchHint": "Probeer een deel van de naam, of wis het label en de datums."
     },
     "customize": "Weergave aanpassen",
@@ -13371,23 +13371,23 @@
     "deleteConfirm": {
       "titleOne": "Dit document verwijderen?",
       "titleMany": "{count, plural, one {# document verwijderen?} other {# documenten verwijderen?}}",
-      "body": "Verwijderde documenten blijven {days} dagen in Recent verwijderd en worden daarna definitief verwijderd.",
+      "body": "Verwijderde documenten blijven {days, plural, one {# dag} other {# dagen}} in Recent verwijderd en worden daarna definitief verwijderd.",
       "action": "Verwijderen"
     },
     "trash": {
       "title": "Recent verwijderd",
-      "subtitle": "Verwijderde documenten blijven hier {days} dagen en worden daarna definitief verwijderd.",
+      "subtitle": "Verwijderde documenten blijven hier {days, plural, one {# dag} other {# dagen}} en worden daarna definitief verwijderd.",
       "back": "Documenten",
       "entryLabel": "Recent verwijderd ({count})",
       "loadError": "Recent verwijderd kon niet worden geladen.",
       "emptyTitle": "Niets in Recent verwijderd",
-      "emptyDescription": "Wat je verwijdert, wacht hier {days} dagen voordat het definitief wordt verwijderd.",
+      "emptyDescription": "Wat je verwijdert, wacht hier {days, plural, one {# dag} other {# dagen}} voordat het definitief wordt verwijderd.",
       "count": "Verwijderde documenten ({count})",
       "restoreAll": "Alles herstellen",
       "restore": "Herstellen",
       "purge": "Nu verwijderen",
       "deletedOn": "Verwijderd op {date}.",
-      "removesIn": "Wordt over {days} dagen definitief verwijderd.",
+      "removesIn": "Wordt over {days, plural, one {# dag} other {# dagen}} definitief verwijderd.",
       "removesSoon": "Wordt binnen een dag definitief verwijderd.",
       "restored": "Document hersteld",
       "openRestored": "Openen",
@@ -13575,8 +13575,8 @@
         "mineral": "Mineralen",
         "omega3": "Omega-3-vetzuren"
       },
-      "rowMeta": "{days} van {window} dagen, ref. {value} {unit} ({authority})",
-      "rowMetaNoRef": "{days} van {window} dagen",
+      "rowMeta": "{days} van {window, plural, one {# dag} other {# dagen}}, ref. {value} {unit} ({authority})",
+      "rowMetaNoRef": "{days} van {window, plural, one {# dag} other {# dagen}}",
       "footer": "{tracked} van {total} gevolgde micronutriënten hebben gegevens in deze periode.",
       "emptyTitle": "Nog geen gegevens over micronutriënten gesynchroniseerd",
       "loadError": "Je gegevens over voedingsstoffen konden niet worden geladen",
@@ -13625,8 +13625,8 @@
       "loadError": "De energiebalans kon niet worden geladen.",
       "perDay": "{value} per dag",
       "trendMeta": "Gemiddelde van de laatste zeven dagen: wat je at min rust- en actieve energie.",
-      "meanMeta": "Gemiddelde over {days} dagen: wat je at min rust- en actieve energie.",
-      "means": "Over {days} dagen gemiddeld {intake} kcal gegeten en {used} kcal verbruikt.",
+      "meanMeta": "Gemiddelde over {days, plural, one {# dag} other {# dagen}}: wat je at min rust- en actieve energie.",
+      "means": "Over {days, plural, one {# dag} other {# dagen}} gemiddeld {intake} kcal gegeten en {used} kcal verbruikt.",
       "dayLine": "{intake} kcal gegeten, {used} kcal verbruikt",
       "estimated": "Op {days} van deze dagen is de rustenergie een schatting uit gewicht, lengte, leeftijd en geslacht (Mifflin-St Jeor), omdat er geen meting binnenkwam.",
       "needsProfile": "Je inname is er, maar er kwam geen rustenergie binnen. Vul lengte, geboortedatum en geslacht in je profiel in, met een gewichtsmeting, en de balans wordt geschat.",
@@ -13697,8 +13697,8 @@
           "above": "Voor op je gebruikelijke tempo"
         },
         "body": {
-          "below": "Om {time} sta je op {today} stappen. Op een gewone dag zit je nu rond de {typical}.",
-          "above": "Om {time} sta je op {today} stappen, meer dan de {typical} die je rond deze tijd normaal hebt."
+          "below": "Om {time} sta je op {today, plural, one {# stap} other {# stappen}}. Op een gewone dag zit je nu rond de {typical}.",
+          "above": "Om {time} sta je op {today, plural, one {# stap} other {# stappen}}, meer dan de {typical} die je rond deze tijd normaal hebt."
         }
       },
       "upcomingVisit": {
@@ -13889,7 +13889,7 @@
     "groupDisclosure": "Onderdelen in {group} tonen",
     "sensitiveHint": "Hier wordt nooit iets vooraf geselecteerd. Kies elk onderdeel zelf.",
     "scopeNone": "Nog niets geselecteerd. Kies wat je wilt opnemen of pas het standaardrapport toe.",
-    "scopeCount": "{count, plural, one {# onderdeel} other {# onderdelen}} uit {groups} rubrieken",
+    "scopeCount": "{count, plural, one {# onderdeel} other {# onderdelen}} uit {groups, plural, one {# rubriek} other {# rubrieken}}",
     "scopeSensitive": "incl. {names}",
     "leafVisits": "Bezoeken",
     "leafSurgicalHistory": "Operatiegeschiedenis",
@@ -13999,7 +13999,7 @@
       "revokeTitle": "Toegang van {name} beëindigen?",
       "revokeBody": "De ander verliest direct de toegang, ook in een browser waarin je dossier nog openstaat. Wat al is gezien, kan niet worden teruggedraaid. Je kunt de ander op elk moment opnieuw uitnodigen.",
       "revokeEntriesStay": "Alles wat de ander heeft ingevoerd, blijft in je dossier staan en je kunt daar zelf alles van verwijderen.",
-      "revokeAttribution": "Wie wat heeft ingevoerd, blijft {days} dagen zichtbaar in je activiteitenoverzicht.",
+      "revokeAttribution": "Wie wat heeft ingevoerd, blijft {days, plural, one {# dag} other {# dagen}} zichtbaar in je activiteitenoverzicht.",
       "revokeConfirm": "Toegang beëindigen"
     },
     "received": {
@@ -14022,7 +14022,7 @@
     "activity": {
       "title": "Wanneer mijn dossier is geopend",
       "description": "Elke keer dat iemand anders je dossier heeft geopend.",
-      "retention": "Dit beslaat de afgelopen {days} dagen. Oudere vermeldingen worden verwijderd.",
+      "retention": "Dit beslaat de afgelopen {days, plural, one {# dag} other {# dagen}}. Oudere vermeldingen worden verwijderd.",
       "emptyTitle": "Niemand heeft je dossier geopend",
       "emptyDescription": "Openingen door anderen dan jij verschijnen hier, één regel per persoon per dag.",
       "loadError": "De activiteit kon niet worden geladen.",
@@ -14156,7 +14156,7 @@
         "methodSso": "{name} logt via single sign-on in bij het gebruiken van de link.",
         "methodBoth": "{name} kan een wachtwoord instellen of inloggen via single sign-on."
       },
-      "deleteBodyGrace": "Alles wat voor {name} is vastgelegd, verdwijnt samen met het profiel: metingen, medicatie, documenten en notities. Het profiel wordt meteen vergrendeld en na {days} dagen gewist. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken."
+      "deleteBodyGrace": "Alles wat voor {name} is vastgelegd, verdwijnt samen met het profiel: metingen, medicatie, documenten en notities. Het profiel wordt meteen vergrendeld en na {days, plural, one {# dag} other {# dagen}} gewist. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken."
     },
     "toast": {
       "savedTo": "Opgeslagen in het dossier van {name}"
@@ -14497,7 +14497,7 @@
       "practitioner": "Sinds je laatste bezoek bij {name} op {date}",
       "specialty": "Sinds je laatste bezoek ({specialty}) op {date}",
       "kind": "Sinds je laatste bezoek van hetzelfde soort ({kind}) op {date}",
-      "default": "De afgelopen {days} dagen",
+      "default": "De afgelopen {days, plural, one {# dag} other {# dagen}}",
       "defaultReason": "Geen eerder bezoek bij dezelfde praktijk, in hetzelfde specialisme of van hetzelfde soort.",
       "capped": "De afgelopen twee jaar",
       "cappedReason": "Het laatste passende bezoek is meer dan twee jaar geleden, en een rapport beslaat hooguit twee jaar."
@@ -14680,7 +14680,7 @@
       "Thermometer": "Thermometer",
       "Stethoscope": "Stethoscoop"
     },
-    "limitReached": "Je hebt {limit} symptomen. Verberg er een om een nieuw symptoom toe te voegen.",
+    "limitReached": "Je hebt {limit, plural, one {# symptoom} other {# symptomen}}. Verberg er een om een nieuw symptoom toe te voegen.",
     "saveError": "Het symptoom kon niet worden opgeslagen. Probeer het opnieuw.",
     "nameRequired": "Geef het symptoom een naam.",
     "unreadableLabel": "Onleesbaar symptoom",
@@ -14701,7 +14701,7 @@
       "reset": "Formulier leegmaken",
       "emptyHint": "Voeg je eerste symptoom toe, bijvoorbeeld aura of hoofdpijn.",
       "emptyHintNoManage": "Voor dit dossier zijn nog geen symptomen ingesteld.",
-      "limitHint": "Maximaal {limit} symptomen. Verberg er een op de ziektepagina om een ander toe te voegen.",
+      "limitHint": "Maximaal {limit, plural, one {# symptoom} other {# symptomen}}. Verberg er een op de ziektepagina om een ander toe te voegen.",
       "intensityFor": "Intensiteit: {symptom}",
       "partlySaved": "{saved} van {total} opgeslagen, de rest is nog gekozen.",
       "severalHint": "Kies er meerdere als ze samen optraden.",
@@ -14823,7 +14823,7 @@
       "extremeHigh": "Hoogste dagwaarde sinds {since}",
       "extremeLow": "Laagste dagwaarde sinds {since}",
       "firstValue": "Eerste meting van deze soort",
-      "gap": "{days} dagen geen meting"
+      "gap": "{days, plural, one {# dag} other {# dagen}} geen meting"
     },
     "previousDayShortcut": "Vorige dag (Alt + pijl-links)",
     "nextDayShortcut": "Volgende dag (Alt + pijl-rechts)",
@@ -14947,12 +14947,12 @@
         "environment": "Omgeving",
         "life": "Levensgebeurtenissen"
       },
-      "meter": "{carrying} van {total} rijen voldoende gevuld",
-      "carriesDetail": "{carrying} van {total} rijen geven een overzicht vanaf {since}.",
+      "meter": "{carrying} van {total, plural, one {# rij} other {# rijen}} voldoende gevuld",
+      "carriesDetail": "{carrying} van {total, plural, one {# rij} other {# rijen}} geven een overzicht vanaf {since}.",
       "loadFailed": "De inventaris kon niet worden geladen.",
       "card": {
         "title": "Wat de tijdlijn al te bieden heeft",
-        "summary": "Hij reikt terug tot {since}; {carrying} van {total} rijen zijn al voldoende gevuld.",
+        "summary": "Hij reikt terug tot {since}; {carrying} van {total, plural, one {# rij} other {# rijen}} zijn al voldoende gevuld.",
         "dismiss": "Verbergen"
       },
       "detail": {
@@ -15128,7 +15128,7 @@
     "labs": {
       "menuTitle": "Labwaarden",
       "otherPanel": "Overig",
-      "full": "Maximaal {max} labwaarden tegelijk. Verwijder er een om een andere toe te voegen.",
+      "full": "Maximaal {max, plural, one {# labwaarde} other {# labwaarden}} tegelijk. Verwijder er een om een andere toe te voegen.",
       "above": "boven het bereik",
       "below": "onder het bereik",
       "reference": "referentie {range}",
@@ -15144,7 +15144,7 @@
     "legendSymptom": "Symptoomlijn: de hoogste intensiteit van elke vastgelegde dag (0 tot 10), gemiddeld over de vastgelegde dagen",
     "symptoms": {
       "menuTitle": "Symptomen",
-      "full": "Maximaal {max} symptomen tegelijk. Verwijder er een om een ander toe te voegen.",
+      "full": "Maximaal {max, plural, one {# symptoom} other {# symptomen}} tegelijk. Verwijder er een om een ander toe te voegen.",
       "hidden": "verborgen",
       "unnamed": "Symptoom",
       "daysOne": "op 1 dag",
@@ -15325,7 +15325,7 @@
     "weekGoalsMet": "Alle weekdoelen gehaald",
     "weekGoalsNotMet": "Niet alle weekdoelen gehaald",
     "cell": {
-      "steps": "{value} stappen",
+      "steps": "{value, plural, one {# stap} other {# stappen}}",
       "activeMinutes": "{value} actieve minuten",
       "workouts": "{value} trainingen: {sports}"
     },
@@ -15342,7 +15342,7 @@
     "legend": "Vergeleken met je 12 weken daarvoor:",
     "noBaseline": "Je gebruikelijke bereik verschijnt na 14 dagen met gegevens.",
     "summary": {
-      "steps": "{value} stappen",
+      "steps": "{value, plural, one {# stap} other {# stappen}}",
       "activeMinutes": "{value} actieve minuten",
       "workouts": "{value} trainingen",
       "load": "Gemiddelde trainingsbelasting {value}",
@@ -15400,7 +15400,7 @@
     "openSettings": "Volgorde wijzigen in Bronprioriteit",
     "compareTitle": "Twee bronnen vergelijken",
     "range": "Periode",
-    "rangeDays": "{days} dagen",
+    "rangeDays": "{days, plural, one {# dag} other {# dagen}}",
     "compareNeedsTwo": "In deze periode heeft maar één bron waarden van deze meting.",
     "side": {
       "a": "Eerste bron",
@@ -15463,8 +15463,8 @@
     "runIdle": "Importeren",
     "run": "{count, plural, one {# rij} other {# rijen}} importeren",
     "close": "Sluiten",
-    "summaryCheck": "{rows} rijen gelezen: {inserted} te importeren, {duplicates} al aanwezig, {failed} met een probleem.",
-    "summaryDone": "{inserted} rijen geïmporteerd. Overgeslagen: {duplicates} die er al waren en {failed} met een probleem.",
+    "summaryCheck": "{rows, plural, one {# rij} other {# rijen}} gelezen: {inserted} te importeren, {duplicates} al aanwezig, {failed} met een probleem.",
+    "summaryDone": "{inserted, plural, one {# rij} other {# rijen}} geïmporteerd. Overgeslagen: {duplicates} die er al waren en {failed} met een probleem.",
     "markersMatched": "Gekoppeld aan je markers:",
     "markersCreated": "Nieuwe markers:",
     "line": "Regel {line}",
@@ -15698,11 +15698,11 @@
       "triggersTitle": "Vermoedelijke uitlokkers",
       "triggersNote": "Genoemd door de persoon of verzorger bij het vastleggen; geen vastgestelde oorzaken.",
       "overlaysTitle": "Tegelijk vastgelegd",
-      "overlayMissedDose": "{followed} van {of} aanvallen volgden binnen de voorafgaande 48 uur op een vergeten of overgeslagen geplande dosis.",
-      "overlayIllness": "{during} aanvallen vonden plaats tijdens een van {episodes} vastgelegde ziekte-episodes.",
-      "overlaySleep": "Vastgelegde slaap in de nacht voor een aanvalsdag: gemiddeld {before} u ({nightsBefore} nachten); andere nachten: {other} u ({nightsOther} nachten).",
+      "overlayMissedDose": "{followed} van {of, plural, one {# aanval} other {# aanvallen}} volgden binnen de voorafgaande 48 uur op een vergeten of overgeslagen geplande dosis.",
+      "overlayIllness": "{during, plural, one {# aanval vond} other {# aanvallen vonden}} plaats tijdens een van {episodes} vastgelegde ziekte-episodes.",
+      "overlaySleep": "Vastgelegde slaap in de nacht voor een aanvalsdag: gemiddeld {before} u ({nightsBefore, plural, one {# nacht} other {# nachten}}); andere nachten: {other} u ({nightsOther, plural, one {# nacht} other {# nachten}}).",
       "overlayCycleDays": "Aanvallen per cyclusdag (dag: aantal): {list}.",
-      "overlayCycleRatio": "Over {cycles} volledig bijgehouden cycli was het aantal aanvallen per dag rond de menstruatie (dag −3 tot +3) {c1} keer zo hoog als op de andere dagen, en {c2} keer rond de ovulatie (dag 10 tot −13). Het catameniale criterium van Herzog is een verdubbeling of meer; dit is een referentie, geen bevinding.",
+      "overlayCycleRatio": "Over {cycles} volledig bijgehouden cycli was het aantal aanvallen per dag rond de menstruatie (dag −3 tot +3) {c1, plural, one {# keer} other {# keer}} zo hoog als op de andere dagen, en {c2, plural, one {# keer} other {# keer}} rond de ovulatie (dag 10 tot −13). Het catameniale criterium van Herzog is een verdubbeling of meer; dit is een referentie, geen bevinding.",
       "overlayCycleTooFew": "Aantallen per cyclusfase worden getoond vanaf drie volledig bijgehouden cycli (tot nu toe {cycles}).",
       "overlaysNote": "Dit zijn dingen die tegelijk zijn vastgelegd, geen oorzaken.",
       "eventsTitle": "Alle vastgelegde voorvallen",
@@ -15937,7 +15937,7 @@
     },
     "rule": {
       "title": "Clusterregel",
-      "explainer": "Een cluster is dit aantal aanvallen binnen dit aantal uur. Gebruik de regel uit het noodplan; NICE gebruikt {niceCount} in {niceHours} uur, en het overzicht telt clusters volgens beide regels.",
+      "explainer": "Een cluster is dit aantal aanvallen binnen dit aantal uur. Gebruik de regel uit het noodplan; NICE gebruikt {niceCount} in {niceHours, plural, one {# uur} other {# uur}}, en het overzicht telt clusters volgens beide regels.",
       "count": "Aanvallen",
       "hours": "Tijdvenster (uur)",
       "invalid": "Gebruik 2 tot 20 aanvallen binnen 1 tot 168 uur.",

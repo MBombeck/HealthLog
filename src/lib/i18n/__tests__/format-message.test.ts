@@ -33,6 +33,10 @@ describe("formatMessage", () => {
     const tpl = "{count, plural, one {# entry} other {# entries}}";
     expect(formatMessage(tpl, { count: "1" }, "en")).toBe("1 entry");
     expect(formatMessage(tpl, { count: "1,234" }, "en")).toBe("1,234 entries");
+    expect(formatMessage(tpl, { count: "1.5" }, "en")).toBe("1.5 entries");
+    const ru =
+      "{count, plural, one {# день} few {# дня} many {# дней} other {# дня}}";
+    expect(formatMessage(ru, { count: "28,5" }, "ru")).toBe("28,5 дня");
   });
 
   it("substitutes values literally and never re-reads them", () => {

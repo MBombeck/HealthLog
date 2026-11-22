@@ -412,7 +412,7 @@
     "insurer": "건강보험사",
     "insuranceNumber": "보험 번호",
     "summaryTitle": "임상 요약",
-    "summaryReadings": "{days}일간 기록: {params}개 항목에서 측정 {count, plural, other {#건}}.",
+    "summaryReadings": "{days, plural, other {#일간}} 기록: {params, plural, other {#개}} 항목에서 측정 {count, plural, other {#건}}.",
     "summaryTrend": "{label}: 최근 {latest} {arrow}",
     "summaryAdherence": "복약 순응도: {rate}% (가중 평균).",
     "chartsTitle": "추이 차트",
@@ -506,15 +506,15 @@
     "lifeAuditCBelow": "기준점 {cutoff}점 미만 ({source}).",
     "lifeAuditCNoCutoff": "성별 기준점을 적용하지 않음.",
     "lifeActivity": "신체 활동",
-    "lifeActivityValue": "주당 {minutes}분, 본인 응답",
+    "lifeActivityValue": "주당 {minutes, plural, other {#분}}, 본인 응답",
     "lifeSitting": "평일 앉아 있는 시간",
-    "lifeSittingValue": "{hours}시간, 본인 응답",
+    "lifeSittingValue": "{hours, plural, other {#시간}}, 본인 응답",
     "lifeWork": "일",
     "lifeNightWork": "야간 근무",
     "lifeExposures": "노출: {list}",
     "workouts": {
       "title": "운동",
-      "summary": "총 {sessions}회, {hours}시간; 주당 평균 {perWeek}회, {minutesPerWeek}분.",
+      "summary": "총 {sessions, plural, other {#회}}, {hours}시간; 주당 평균 {perWeek, plural, other {#회}}, {minutesPerWeek, plural, other {#분}}.",
       "colSport": "종목",
       "colSessions": "횟수",
       "colTime": "시간",
@@ -540,13 +540,13 @@
       "excludedNotTaking": "{count, plural, other {#일}} 제외(일시 중지 또는 복용 기간 사이)",
       "notTracked": "복용 미기록으로 놓친 용량에 따른 제외 없음",
       "endDoseChange": "기간은 첫 용량 변경 전인 {date}에 끝남",
-      "days": "시작 전 {before}일, 시작 후 {after}일, 제외 {excluded}일",
+      "days": "시작 전 {before, plural, other {#일}}, 시작 후 {after, plural, other {#일}}, 제외 {excluded, plural, other {#일}}",
       "method": "시작 90일 전부터 최대 180일 후까지의 일별 값에 대한 분절 회귀, Newey-West 구간. 직전 14일 복용률이 80% 미만인 시작 후 날짜는 제외했습니다. 시간에 따른 연관성을 보여 줄 뿐, 약의 효과를 입증하지 않습니다.",
       "autocorrelation": "전날 값에 크게 좌우되므로 범위가 여전히 너무 좁을 수 있음",
       "window": "{from}부터 {to}까지 분석, 보고 기간을 넘어설 수 있음",
       "windowLine": "{from}부터 {to}까지 분석했습니다. 이 기간은 보고 기간을 넘어설 수 있습니다."
     },
-    "screenerUnvalidated": "{label}: {total}개 결과 중 {count}개는 과학적으로 검증되지 않은 번역으로 응답했습니다. 참고용으로만 보십시오.",
+    "screenerUnvalidated": "{label}: {total, plural, other {#개}} 결과 중 {count}개는 과학적으로 검증되지 않은 번역으로 응답했습니다. 참고용으로만 보십시오.",
     "pregnancy": {
       "title": "임신",
       "pregnantWeek": "보고서 날짜 기준 임신 {weeks}주 {days}일",
@@ -669,7 +669,7 @@
     "backToPasskey": "패스키로 돌아가기",
     "passkeySetupLater": "패스키는 설정에서 언제든 등록할 수 있어요.",
     "passwordMinLength": "최소 12자",
-    "passwordTooShort": "비밀번호는 최소 {minLength}자여야 해요.",
+    "passwordTooShort": "비밀번호는 최소 {minLength, plural, other {#자여야}} 해요.",
     "privacyPolicy": "개인정보 처리방침",
     "passwordBreached": "이 비밀번호는 유출 사례에 등장한 적이 있어요. 다른 비밀번호를 골라 주세요.",
     "oidc": {
@@ -1582,7 +1582,7 @@
     },
     "withoutNotification": "알림 없음",
     "pausedSince": "일시중지 시작",
-    "complianceWindow": "복약 순응도 ({days}일)",
+    "complianceWindow": "복약 순응도 ({days, plural, other {#일}})",
     "complianceUnavailable": "복약 순응도를 불러오지 못했어요",
     "complianceNotApplicable": "복약 순응도 해당 없음",
     "complianceNoDoses": "아직 복용 기록 없음",
@@ -1604,7 +1604,7 @@
     "intakeAlreadyTaken": "{name}은(는) 이미 복용한 것으로 기록되어 있습니다. 새로 저장된 내용은 없습니다.",
     "intakeUndoFailed": "되돌리지 못했어요. 기록에서 수정해 주세요",
     "glp1LastInjection": "{label}",
-    "glp1NextInjectionDays": "{label} ({days}일 후)",
+    "glp1NextInjectionDays": "{label} ({days, plural, other {#일}} 후)",
     "glp1NextInjectionToday": "오늘",
     "glp1NextInjectionTomorrow": "내일",
     "glp1RotationSuggested": "다음 추천 부위: {site}",
@@ -1955,11 +1955,11 @@
           "monthly": "매월",
           "quarterly": "3개월마다",
           "yearly": "1년에 한 번",
-          "rolling": "마지막 복용 후 {n}일마다",
+          "rolling": "마지막 복용 후 {n, plural, other {#일마다}}",
           "oneShot": "1회 복용",
           "asNeeded": "필요시",
-          "everyNWeeks": "{n}주마다",
-          "everyNMonths": "{n}개월마다"
+          "everyNWeeks": "{n, plural, other {#주마다}}",
+          "everyNMonths": "{n, plural, other {#개월마다}}"
         },
         "weekdaysDetail": ", {days}에",
         "dayOfMonthDetail": ", 매월 {day}일에.",
@@ -1968,7 +1968,7 @@
         "endsOn": "종료: {date}",
         "noEndDate": "종료일 없음",
         "windowLine": "{time}: {onTime}까지 정시, {late}까지 늦음, 그 뒤에는 놓침.",
-        "windowDays": "복용은 해당 날짜에 정시, 그 뒤 {days}일까지 늦음, 그 뒤에는 놓침으로 기록돼요."
+        "windowDays": "복용은 해당 날짜에 정시, 그 뒤 {days, plural, other {#일까지}} 늦음, 그 뒤에는 놓침으로 기록돼요."
       },
       "compose": {
         "scheduleIndex": "일정 {n}/{total}",
@@ -2297,7 +2297,7 @@
         "reminderOn": "켜짐",
         "reminderOff": "꺼짐",
         "supplyLabel": "재고",
-        "supplyRunway": "약 {days}일 더 쓸 수 있어요",
+        "supplyRunway": "약 {days, plural, other {#일}} 더 쓸 수 있어요",
         "jumpToZeitplan": "일정 열기",
         "jumpToBestand": "재고 열기",
         "complianceTitle": "복약 순응도",
@@ -2305,9 +2305,9 @@
       },
       "bestand": {
         "title": "재고",
-        "summary": "총 {total}회분 중 {remaining}회분 남음",
+        "summary": "총 {total, plural, other {#회분}} 중 {remaining}회분 남음",
         "itemsTitle": "포장 및 용기",
-        "doses": "{remaining} / {total}회분",
+        "doses": "{remaining} / {total, plural, other {#회분}}",
         "unknown": "알 수 없음",
         "state": {
           "ACTIVE": "미개봉",
@@ -2319,7 +2319,7 @@
         "emptyHelper": "포장이나 용기를 등록하면 남은 재고와 소진 예상일을 볼 수 있어요.",
         "emptyCta": "포장 등록",
         "addButton": "등록",
-        "lowStockLinkOn": "재고 부족 알림: {days}일 미만",
+        "lowStockLinkOn": "재고 부족 알림: {days, plural, other {#일}} 미만",
         "lowStockLinkOff": "재고 부족 알림: 꺼짐",
         "addTitle": "포장 또는 용기 등록",
         "addDescription": "새 재고를 개수와 함께 기록해요. 유효기간은 선택 사항이에요.",
@@ -2333,7 +2333,7 @@
         "adjustTitle": "용기 정보 수정",
         "adjustDescription": "남은 개수를 설정하고, 이 용기에 적혔거나 기록해 둔 날짜를 바로잡아요. 0개로 두면 다 쓴 것으로 표시돼요.",
         "adjustQuantityLabel": "남은 개수",
-        "adjustHelper": "총 용량: {total}개.",
+        "adjustHelper": "총 용량: {total, plural, other {#개}}.",
         "adjustSubmit": "저장",
         "adjustSuccess": "재고를 수정했어요",
         "adjustFailed": "재고를 수정하지 못했어요.",
@@ -2350,16 +2350,16 @@
           "BOTTLE": "병",
           "OTHER": "기타"
         },
-        "unitsDetail": "{remaining} / {total}개",
+        "unitsDetail": "{remaining} / {total, plural, other {#개}}",
         "quantityModeDoses": "회분",
         "quantityModeUnits": "개수",
-        "quantityInUnits": "= {units}개",
-        "quantityInDoses": "≈ {doses}회분",
+        "quantityInUnits": "= {units, plural, other {#개}}",
+        "quantityInDoses": "≈ {doses, plural, other {#회분}}",
         "quantityUnderOneDose": "< 1회분",
-        "expiredSuffix": "+ 유효기간 지난 {units}개",
+        "expiredSuffix": "+ 유효기간 지난 {units, plural, other {#개}}",
         "packagingTitle": "포장 및 용량",
-        "packagingUnitsPerDose": "1회분 = {units}개",
-        "packagingDefaultPack": "기본 포장 크기: {units}개",
+        "packagingUnitsPerDose": "1회분 = {units, plural, other {#개}}",
+        "packagingDefaultPack": "기본 포장 크기: {units, plural, other {#개}}",
         "packagingNoDefaultPack": "기본 포장 크기가 설정되지 않았어요",
         "packagingEdit": "편집",
         "packagingDescription": "1회분에 몇 개를 쓰는지, 새 포장이 보통 몇 개인지 설정해요. 예를 들어 제조사가 바뀌어 포장 크기가 달라졌을 때요.",
@@ -2374,7 +2374,7 @@
         "addDoseStrengthHint": "용기에 적힌 그대로 적어 주세요. 예: 5mg/0.5ml.",
         "openedOn": "{date} 개봉",
         "expiresOn": "{date} 만료",
-        "summaryAllExpired": "쓸 수 있는 재고 없음: {units}개가 유효기간 지남",
+        "summaryAllExpired": "쓸 수 있는 재고 없음: {units, plural, other {#개가}} 유효기간 지남",
         "editExpiryLabel": "표기 유효기간",
         "editExpiryHelper": "포장에 인쇄된 날짜예요. 기록된 게 없으면 비워 두세요.",
         "editOpenedLabel": "개봉일",
@@ -2400,7 +2400,7 @@
         "timesNote": "복용마다 시각과 정시 범위를 조정해요. 주기(매일, 매주…)는 고급 탭의 편집기에서 바꿔요.",
         "scheduleLabel": "일정 {index}",
         "fullEditNote": "주기, 치료 분류, 복용 기간은 고급 → 수명 주기의 편집기에서 바꿔요.",
-        "graceEcho": "알림 유예 시간: {minutes}분",
+        "graceEcho": "알림 유예 시간: {minutes, plural, other {#분}}",
         "reminderTitle": "알림",
         "manageChannels": "알림 채널 관리",
         "history": {
@@ -2449,7 +2449,7 @@
           "endLabel": "범위 종료",
           "onTimeBand": "정시: {start}–{end}",
           "lateUntil": "{time}까지 늦음",
-          "lateDays": "{days}일 뒤까지 늦음",
+          "lateDays": "{days, plural, other {#일}} 뒤까지 늦음",
           "orderError": "시작이 종료보다 앞서야 해요.",
           "noTimes": "아직 설정된 복용 시각이 없어요."
         }
@@ -2482,8 +2482,8 @@
     "tableComplianceDays": "{days}일",
     "tableStockDoseOne": "1회분",
     "tableStockDoses": "{count, plural, other {#회분}}",
-    "tableStockRunway": "약 {days}일 남음",
-    "cardLowStockRunway": "재고: 약 {days}일",
+    "tableStockRunway": "약 {days, plural, other {#일}} 남음",
+    "cardLowStockRunway": "재고: 약 {days, plural, other {#일}}",
     "reorderDescription": "카드 보기와 표 보기 모두에 적용되는 약의 순서를 정하세요.",
     "reorderSaved": "순서를 저장했어요",
     "reorderSaveFailed": "순서를 저장하지 못했어요",
@@ -2503,7 +2503,7 @@
       "levelShift": "{date} 무렵에 수준 변화가 감지됐어요.",
       "plateau": {
         "title": "현재 용량에서 체중 정체",
-        "evidence": "최근 {window}일 동안 체중이 {delta}{unit} 움직였어요({readings}개 측정값). {dose}로 {days}일째예요."
+        "evidence": "최근 {window, plural, other {#일}} 동안 체중이 {delta}{unit} 움직였어요({readings, plural, other {#개}} 측정값). {dose}로 {days, plural, other {#일째예요}}."
       },
       "retarget": {
         "label": "맞는 측정값이 아닌가요?",
@@ -2514,11 +2514,11 @@
       },
       "beforeAfter": {
         "summary": "시작 전 평균 {before} → 이후 평균 {after}, {delta} 변화.",
-        "counts": "시작 전 {beforeCount}개, 이후 {afterCount}개 측정값을 기준으로 했어요.",
-        "needBefore": "시작 전 측정값이 아직 부족해요. 비교하려면 전후로 약 {weeks}주씩 필요해요.",
-        "needAfter": "시작 이후 측정값이 아직 부족해요. 비교하려면 전후로 약 {weeks}주씩 필요해요.",
+        "counts": "시작 전 {beforeCount, plural, other {#개}}, 이후 {afterCount}개 측정값을 기준으로 했어요.",
+        "needBefore": "시작 전 측정값이 아직 부족해요. 비교하려면 전후로 약 {weeks, plural, other {#주씩}} 필요해요.",
+        "needAfter": "시작 이후 측정값이 아직 부족해요. 비교하려면 전후로 약 {weeks, plural, other {#주씩}} 필요해요.",
         "needStart": "시작일을 설정하면 복용 전후 측정값을 비교할 수 있어요.",
-        "needData": "측정값이 아직 부족해요. 비교하려면 시작 전후로 약 {weeks}주씩 필요해요."
+        "needData": "측정값이 아직 부족해요. 비교하려면 시작 전후로 약 {weeks, plural, other {#주씩}} 필요해요."
       },
       "insights": {
         "title": "약 효과",
@@ -2535,8 +2535,8 @@
         "slope": "시작 후 주간 추세가 주당 {value} {unit} 변했습니다(95% 범위 {low}~{high}).",
         "preSlope": "시작 전 추세는 주당 {value} {unit}였습니다.",
         "includesZero": "범위에 0이 포함되면 이 측정값은 변화가 없다는 것과도 일치합니다.",
-        "basis": "시작 전 {before}일과 시작 후 {after}일 기준({from}~{to}).",
-        "excludedAdherence": "직전 {lookback}일 동안 복용한 용량이 {floor}% 미만이어서 시작 후 {count, plural, other {#일을}} 제외했습니다.",
+        "basis": "시작 전 {before, plural, other {#일과}} 시작 후 {after, plural, other {#일}} 기준({from}~{to}).",
+        "excludedAdherence": "직전 {lookback, plural, other {#일}} 동안 복용한 용량이 {floor}% 미만이어서 시작 후 {count, plural, other {#일을}} 제외했습니다.",
         "excludedNotTaking": "약을 일시 중지했거나 복용 기간 사이였던 {count, plural, other {#일을}} 제외했습니다.",
         "notTracked": "이 약은 복용을 기록하지 않으므로 놓친 용량 때문에 제외한 날이 없습니다.",
         "endDoseChange": "기간이 첫 용량 변경 전에 끝나므로 시작 용량을 나타냅니다.",
@@ -2548,17 +2548,17 @@
         "confounderResumed": "{name} {date} 재개",
         "method": "계산 방법: 시작 전 일별 값에 직선 하나를, 시작 후 값에 또 하나를 맞춥니다. 시작 시점의 두 직선 사이 간격이 수준 변화이고, 기울기 차이가 추세 변화입니다. 범위는 하루의 값이 다음 날로 이어지는 점을 반영합니다.",
         "needStart": "시작 시점의 변화를 보려면 시작일을 설정하세요.",
-        "needBefore": "시작 시점의 변화를 보려면 시작 전 {span}일에 걸쳐 최소 {days}일의 측정값이 필요합니다.",
-        "needAfter": "시작 시점의 변화를 보려면 시작 후 {span}일에 걸쳐, 용량을 복용한 날 기준으로 최소 {days}일의 측정값이 필요합니다.",
+        "needBefore": "시작 시점의 변화를 보려면 시작 전 {span, plural, other {#일에}} 걸쳐 최소 {days, plural, other {#일의}} 측정값이 필요합니다.",
+        "needAfter": "시작 시점의 변화를 보려면 시작 후 {span, plural, other {#일에}} 걸쳐, 용량을 복용한 날 기준으로 최소 {days, plural, other {#일의}} 측정값이 필요합니다.",
         "fitFailed": "이 측정값으로는 계산할 수 없어 시작 시점의 변화를 표시하지 않습니다.",
         "autocorrelation": "하루 값이 전날 값에 크게 좌우되므로 이 범위도 너무 좁을 수 있습니다."
       }
     },
     "import": {
-      "resultSuccess": "복용 {imported}건을 불러왔어요",
+      "resultSuccess": "복용 {imported, plural, other {#건을}} 불러왔어요",
       "resultPartial": "{imported}건 불러오고 {skipped}건 건너뛰었어요.",
-      "resultNothing": "불러온 게 없어요: {skipped}개 기록을 모두 건너뛰었어요.",
-      "resultAlreadyRecorded": "복용 {recorded}건은 이미 기록돼 있어요. 새로 추가된 건 없어요.",
+      "resultNothing": "불러온 게 없어요: {skipped, plural, other {#개}} 기록을 모두 건너뛰었어요.",
+      "resultAlreadyRecorded": "복용 {recorded, plural, other {#건은}} 이미 기록돼 있어요. 새로 추가된 건 없어요.",
       "resultEmpty": "그 파일에는 복용 기록이 없었어요.",
       "showSkipDetails": "건너뛴 행 보기({count})",
       "skipDetailLine": "{line}번째 줄: {reason}",
@@ -2631,7 +2631,7 @@
       "none": "계속 복용 중이고, 따로 나눈 기간은 없어요.",
       "range": "{start}부터 {end}까지",
       "since": "{start}부터",
-      "meta": "복용 기간 {n}, {status}, {taken}회 복용",
+      "meta": "복용 기간 {n}, {status}, {taken, plural, other {#회}} 복용",
       "status": {
         "current": "진행 중",
         "upcoming": "예정",
@@ -2888,7 +2888,7 @@
       "trendFlat": "유지",
       "scatterSummary": "상관관계 차트. {xLabel} 대비 {yLabel}, 점 {count, plural, other {#개}}.",
       "scatterNoData": "{xLabel} 대비 {yLabel} 상관관계 차트. 데이터가 없어요.",
-      "moodHeatmap": "기분 히트맵, {start}부터 {end}까지, {days}일 기록.",
+      "moodHeatmap": "기분 히트맵, {start}부터 {end}까지, {days, plural, other {#일}} 기록.",
       "moodHeatmapEmpty": "기분 히트맵, 아직 기록한 날이 없어요.",
       "complianceHeatmap": "복약 순응도 히트맵, {start}부터 {end}까지, 활동일 {days}일.",
       "complianceHeatmapEmpty": "복약 순응도 히트맵, 아직 활동일이 없어요."
@@ -2897,7 +2897,7 @@
     "days7Title": "최근 7일",
     "days30Label": "30일",
     "daysNLabel": "{days}일",
-    "daysNAria": "최근 {days}일",
+    "daysNAria": "최근 {days, plural, other {#일}}",
     "days30Title": "최근 30일",
     "days90Label": "90일",
     "days90Title": "최근 90일",
@@ -3088,7 +3088,7 @@
         "red": "참고 범위를 벗어난 항목이 하나 이상 있어요"
       },
       "insufficient": "아직 점수를 매길 만큼 최근 데이터가 쌓인 곳이 없어요. 건강 영역 하나면 시작할 수 있고, 점수가 어떤 영역을 바탕으로 하는지 알려 줘요.",
-      "basis": "건강 영역 {recommended}개 중 {count}개를 바탕으로 해요.",
+      "basis": "건강 영역 {recommended, plural, other {#개}} 중 {count}개를 바탕으로 해요.",
       "compositionNotice": {
         "item": "{pillar}({reason})",
         "left": "점수에 더 이상 반영하지 않아요: {pillars}.",
@@ -3098,7 +3098,7 @@
       "notScored": "아직 반영되지 않음 ({count})",
       "method": "점수는 반영 대상 항목을 같은 비중으로 평균 낸 값이고, 0에서 100까지예요. 각 항목은 공개된 참고 구간에 맞춰 채점되고, 가장 약한 항목이 전체 구간을 정할 수 있어요. 최근 데이터가 부족한 항목은 0점으로 세지 않고 빼 둬요. 참고 구간은 공개된 출처에서 가져왔고, 어떤 항목을 반영할지는 직접 고르는 값이라 합쳐진 숫자 자체가 임상 기준은 아니에요.",
       "bandSetter": "전체 구간을 정한 항목: {pillar}",
-      "versionAndNoise": "산출 방식 버전 {version}. 주간 비교 최소 변화폭: {noise}점.",
+      "versionAndNoise": "산출 방식 버전 {version}. 주간 비교 최소 변화폭: {noise, plural, other {#점}}.",
       "methodVersion": "산출 방식 버전 {version}.",
       "configured": "이 점수에 반영할 항목을 직접 골랐어요.",
       "none": "없음",
@@ -3131,13 +3131,13 @@
       "bpBasisBelowFloor": "{axis} 기준으로 정해진 점수예요. 저혈압 하한 {boundary}mmHg보다 약 {offset}mmHg 낮아요.",
       "bpBasisInBand": "두 값 모두 참고 상한 이하예요.",
       "bpScale": "상한에서는 85점이고, 100점은 그보다 약 12mmHg 낮다는 뜻이에요.",
-      "bpRepresentative": "최근 {days}일에 가중치를 둔 평균이라 개별 측정값과 다를 수 있어요.",
+      "bpRepresentative": "최근 {days, plural, other {#일에}} 가중치를 둔 평균이라 개별 측정값과 다를 수 있어요.",
       "source": "출처: {source}, {date} 기준",
-      "observedActivity": "하루 {value}걸음",
-      "observedSleep": "하룻밤 {value}분",
+      "observedActivity": "하루 {value, plural, other {#걸음}}",
+      "observedSleep": "하룻밤 {value, plural, other {#분}}",
       "observedAdiposity": "허리-키 비율 {value}",
-      "referenceActivity": "하루 {high}걸음쯤에서 이득이 평평해져요",
-      "referenceSleep": "하룻밤 최소 {low}분, 더 자는 건 감점하지 않아요",
+      "referenceActivity": "하루 {high, plural, other {#걸음쯤에서}} 이득이 평평해져요",
+      "referenceSleep": "하룻밤 최소 {low, plural, other {#분}}, 더 자는 건 감점하지 않아요",
       "referenceAdiposity": "허리-키 비율 {high} 미만",
       "referenceHba1c": "HbA1c {low}~{high}%",
       "referenceDetail": "{label}: {low}~{high} ({kind}, {source})",
@@ -3160,7 +3160,7 @@
         "unavailable": "이 항목은 지금 반영 대상이 아니에요"
       },
       "tension": "컨디션 신호가 엇갈려요. 좋은 쪽: {positive}. 부담이 큰 쪽: {negative}.",
-      "returnToBand": "{metric}: {days}일째 평소 범위 안으로 돌아와 있어요.",
+      "returnToBand": "{metric}: {days, plural, other {#일째}} 평소 범위 안으로 돌아와 있어요.",
       "weightGoal": {
         "title": "개인 체중 목표",
         "value": "지금 {current}{unit}. 목표 {min}~{max}{unit}. 목표까지 {distance}{unit}.",
@@ -3175,7 +3175,7 @@
       "configureLink": "점수에 반영할 항목 고르기",
       "coverage": {
         "recommendedMet": "점수가 권장하는 세 영역을 모두 채웠어요",
-        "areas": "건강 영역 {required}개 중 {present}개"
+        "areas": "건강 영역 {required, plural, other {#개}} 중 {present}개"
       },
       "historyLink": "추이"
     },
@@ -3234,7 +3234,7 @@
     "correlationRow": {
       "title": "관계",
       "emptyTitle": "이 관계를 보려면 데이터가 더 필요해요",
-      "sourceChip": "짝지은 측정값 {n}개 기준 ({window})",
+      "sourceChip": "짝지은 측정값 {n, plural, other {#개}} 기준 ({window})",
       "sourceWindowLast30": "최근 30일",
       "confidenceHigh": "신뢰도 높음",
       "confidenceModerate": "신뢰도 보통",
@@ -3465,15 +3465,15 @@
       "lookback": {
         "label": "코치가 돌아볼 수 있는 기간",
         "option": {
-          "last7days": "{days}일",
-          "last30days": "{days}일",
-          "last90days": "{days}일",
-          "lastYear": "{months}개월",
-          "allTime": "{months}개월 상세, 검사 결과는 더 길게"
+          "last7days": "{days, plural, other {#일}}",
+          "last30days": "{days, plural, other {#일}}",
+          "last90days": "{days, plural, other {#일}}",
+          "lastYear": "{months, plural, other {#개월}}",
+          "allTime": "{months, plural, other {#개월}} 상세, 검사 결과는 더 길게"
         },
-        "detailDays": "코치는 어떤 답변에서도 {days}일보다 오래된 기록은 읽지 않아요.",
-        "detailMonths": "코치는 어떤 답변에서도 {months}개월보다 오래된 기록은 읽지 않아요.",
-        "detailAll": "제한이 없으면 코치는 최근 {dailyMonths}개월은 하루 단위로, 그 이전 측정값은 최대 {years}년 전까지 월별 값으로 읽어요. 검사 결과는 가장 최근에 측정한 항목들의 최신 값을 읽고, 물어본 항목은 이전 결과 {labRecent}개도 읽어요. 더 오래된 결과는 최대 {labYears}년 전까지 연도별로 요약하고, 그보다 이전 연도는 개수만 세요.",
+        "detailDays": "코치는 어떤 답변에서도 {days, plural, other {#일보다}} 오래된 기록은 읽지 않아요.",
+        "detailMonths": "코치는 어떤 답변에서도 {months, plural, other {#개월보다}} 오래된 기록은 읽지 않아요.",
+        "detailAll": "제한이 없으면 코치는 최근 {dailyMonths, plural, other {#개월은}} 하루 단위로, 그 이전 측정값은 최대 {years, plural, other {#년}} 전까지 월별 값으로 읽어요. 검사 결과는 가장 최근에 측정한 항목들의 최신 값을 읽고, 물어본 항목은 이전 결과 {labRecent, plural, other {#개도}} 읽어요. 더 오래된 결과는 최대 {labYears, plural, other {#년}} 전까지 연도별로 요약하고, 그보다 이전 연도는 개수만 세요.",
         "note": "프로필, 현재 복용 중인 약, 진행 중인 질병, 예정된 진료는 계속 보여요. 더 긴 기록이 필요한 요약은 줄이거나 빼요. 예전 대화에서 코치가 이미 한 답변에는 더 오래된 값이 남아 있을 수 있어요."
       },
       "showConversations": "대화 보기",
@@ -3645,7 +3645,7 @@
       "plan": {
         "accept": "이 계획 시작하기",
         "decline": "나중에",
-        "confirmed": "기록했어요. {days}일 뒤에 함께 살펴볼게요.",
+        "confirmed": "기록했어요. {days, plural, other {#일}} 뒤에 함께 살펴볼게요.",
         "declined": "알겠어요, 지금은 하지 않을게요."
       },
       "assumption": {
@@ -3907,8 +3907,8 @@
       "mainSleep": "주 수면",
       "totalSleep": "총 수면",
       "compositionTitle": "단계 구성",
-      "compositionSubtitle": "최근 {nights}일 밤",
-      "compositionAriaLabel": "{nights}일 밤 동안의 수면 단계 구성",
+      "compositionSubtitle": "최근 {nights, plural, other {#일}} 밤",
+      "compositionAriaLabel": "{nights, plural, other {#일}} 밤 동안의 수면 단계 구성",
       "sourceDiscrepancy": {
         "tooltipTitle": "소스가 서로 달라요"
       },
@@ -3926,14 +3926,14 @@
       "hypnogram": {
         "title": "밤 수면 흐름",
         "wokeOn": "{date} 기상",
-        "summary": "수면 {asleep}, 깸 {awakenings}회",
+        "summary": "수면 {asleep}, 깸 {awakenings, plural, other {#회}}",
         "source": "{source} 기준",
         "previous": "이전 밤",
         "next": "다음 밤",
         "empty": "이 날에 기록된 밤이 없습니다.",
         "estimateNote": "이 소스는 시각 없이 단계별 합계만 제공하므로 이 밤의 흐름은 없습니다.",
         "noStages": "이 밤에는 단계별 시각이 없습니다.",
-        "ariaLabel": "밤 동안의 수면 단계: 수면 {asleep}, 깸 {awakenings}회"
+        "ariaLabel": "밤 동안의 수면 단계: 수면 {asleep}, 깸 {awakenings, plural, other {#회}}"
       },
       "empty": {
         "title": "아직 수면 데이터가 없어요",
@@ -3943,17 +3943,17 @@
       "debt": {
         "title": "수면 부채",
         "value": "{hours}시간 {minutes}분 부족",
-        "caption": "최근 {nights}일 밤 동안 부족한 수면",
+        "caption": "최근 {nights, plural, other {#일}} 밤 동안 부족한 수면",
         "clearValue": "모두 채웠어요",
-        "clearCaption": "최근 {nights}일 밤 동안 부족한 수면이 없어요",
-        "learning": "아직 수면을 익히는 중이에요. 지금까지 {counted}일 밤, 믿을 만한 부족분을 읽으려면 {remaining}일 밤이 더 필요해요.",
+        "clearCaption": "최근 {nights, plural, other {#일}} 밤 동안 부족한 수면이 없어요",
+        "learning": "아직 수면을 익히는 중이에요. 지금까지 {counted, plural, other {#일}} 밤, 믿을 만한 부족분을 읽으려면 {remaining}일 밤이 더 필요해요.",
         "computedInfo": "이건 HealthLog가 자체적으로 낸 추정치예요. 최근 밤들의 필요 수면에서 실제 수면을 뺀 누적 잔액이고, 보충 수면이 이를 갚아 나가요. 자체 필요 수면 모델을 쓰는 웨어러블의 수면 부채 수치와는 다를 수 있어요."
       },
       "average": {
         "title": "밤 평균",
         "value": "{hours}시간 {minutes}분",
-        "caption": "최근 {nights}일 밤의 평균 수면",
-        "learning": "아직 수면을 익히는 중이에요. 지금까지 {counted}일 밤, 믿을 만한 평균을 내려면 {remaining}일 밤이 더 필요해요."
+        "caption": "최근 {nights, plural, other {#일}} 밤의 평균 수면",
+        "learning": "아직 수면을 익히는 중이에요. 지금까지 {counted, plural, other {#일}} 밤, 믿을 만한 평균을 내려면 {remaining}일 밤이 더 필요해요."
       },
       "chronotype": {
         "title": "크로노타입",
@@ -4178,8 +4178,8 @@
         "fatigue": "피로",
         "form": "컨디션",
         "explainer": "체력은 심박 기반 훈련 자극을 약 6주 동안, 피로는 약 1주 동안 평균한 값이고, 컨디션은 그 차이입니다. 이 숫자는 다른 사람이나 다른 앱이 아니라 내 과거와 비교하는 값입니다.",
-        "warmingUp": "지금까지 {days}일 기준: 6주가 채워질 때까지는 체력이 실제보다 낮게 나옵니다.",
-        "coverage": "최근 {days}일 중 {rated}일을 평가할 수 있었습니다. 활동 데이터가 없는 날이나 평가할 수 없는 운동이 있는 날은 휴식일로 세지 않고 제외합니다.",
+        "warmingUp": "지금까지 {days, plural, other {#일}} 기준: 6주가 채워질 때까지는 체력이 실제보다 낮게 나옵니다.",
+        "coverage": "최근 {days, plural, other {#일}} 중 {rated}일을 평가할 수 있었습니다. 활동 데이터가 없는 날이나 평가할 수 없는 운동이 있는 날은 휴식일로 세지 않고 제외합니다.",
         "asOf": "{date} 기준, 평가할 수 있었던 마지막 날입니다."
       }
     },
@@ -4194,7 +4194,7 @@
       },
       "clinical": {
         "title": "혈당 개요",
-        "subtitle": "최근 {days}일, 측정값 {count, plural, other {#개를}} 바탕으로 읽은 결과예요.",
+        "subtitle": "최근 {days, plural, other {#일}}, 측정값 {count, plural, other {#개를}} 바탕으로 읽은 결과예요.",
         "spotCaveat": "연속 혈당 측정 프로필이 아니라 개별 측정에서 낸 단발 추정치예요. 임상적 판정이 아니라 흐름의 방향으로 읽어 주세요.",
         "labsLink": "검사 결과가 있나요? 채혈 HbA1c나 공복 혈당은 검사에 기록해 주세요.",
         "learningTitle": "아직 혈당을 익히는 중이에요",
@@ -4202,7 +4202,7 @@
         "learningBodyEmpty": "직접 기록하든 기기에서 동기화되든 측정값이 몇 개 들어오면, 목표 범위 내 시간·평균·변동성이 여기에 자리를 잡아요.",
         "readingsCount": "측정값 {count, plural, other {#개}}",
         "readingsCountOne": "측정값 1개",
-        "daysCount": "{days}일",
+        "daysCount": "{days, plural, other {#일}}",
         "daysCountOne": "1일",
         "tir": {
           "title": "목표 범위 내 시간",
@@ -4547,13 +4547,13 @@
         "strengthModerate": "보통",
         "strengthWeak": "약함",
         "strengthNone": "없음",
-        "source": "짝지은 {n}일, r = {r}",
+        "source": "짝지은 {n, plural, other {#일}}, r = {r}",
         "sourceLabel": "계산 방법",
         "emptyTitle": "아직 짝지을 데이터가 부족해요",
         "emptyDescription": "같은 날에 기분과 이 지표를 함께 기록하면 상관관계를 볼 수 있어요.",
-        "pendingDescription": "짝지은 {n}일 / {needed}일. 우연과 패턴을 구분할 만큼 날이 쌓이면 상관관계가 나타나요.",
+        "pendingDescription": "짝지은 {n}일 / {needed, plural, other {#일}}. 우연과 패턴을 구분할 만큼 날이 쌓이면 상관관계가 나타나요.",
         "noLinkTitle": "뚜렷한 관계 없음",
-        "noLinkDescription": "짝지은 {n}일 동안 우연으로 볼 수 있는 범위를 넘는 건 없었어요.",
+        "noLinkDescription": "짝지은 {n, plural, other {#일}} 동안 우연으로 볼 수 있는 범위를 넘는 건 없었어요.",
         "weightTitle": "기분 대 체중",
         "bloodPressureTitle": "기분 대 혈압",
         "weightAxis": "체중",
@@ -4566,14 +4566,14 @@
         "title": "눈에 띄는 점",
         "weekdayDip": "{weekday}에 기분이 가장 많이 떨어져요. 한 주 평균보다 {delta} 낮아요.",
         "weekdayPeak": "꾸준히 가장 좋은 요일은 {weekday}, 평균 {value}.",
-        "trendUp": "최근 {days}일 동안 기분이 올라가는 추세예요(이전 기간 대비 +{delta}).",
-        "trendDown": "최근 {days}일 동안 기분이 내려가는 추세예요(이전 기간 대비 -{delta}).",
+        "trendUp": "최근 {days, plural, other {#일}} 동안 기분이 올라가는 추세예요(이전 기간 대비 +{delta}).",
+        "trendDown": "최근 {days, plural, other {#일}} 동안 기분이 내려가는 추세예요(이전 기간 대비 -{delta}).",
         "weekendUp": "주말에 기분이 더 좋아요(평일 대비 +{delta}).",
         "weekendDown": "주말에 기분이 더 낮아요(평일 대비 -{delta}).",
         "tagLift": "'{tag}' 태그가 붙은 날은 전체 평균보다 {delta} 높아요.",
         "tagDrop": "'{tag}' 태그가 붙은 날은 평균보다 {delta} 낮아요.",
         "inTarget": "최근 30일 중 {pct}%는 기분 좋음 범위에 있었어요.",
-        "streak": "{days}일 연속으로 기분을 기록했어요. 계속 이어가 보세요.",
+        "streak": "{days, plural, other {#일}} 연속으로 기분을 기록했어요. 계속 이어가 보세요.",
         "timeOfDay": "기분이 가장 좋은 시간대는 {bucket}, 평균 {value}."
       },
       "timeOfDay": {
@@ -4594,7 +4594,7 @@
       },
       "influence": {
         "title": "기분에 미친 영향",
-        "detail": "이 태그를 붙인 {withDays}일의 평균은 {withAvg}, 붙이지 않은 날의 평균은 {withoutAvg}.",
+        "detail": "이 태그를 붙인 {withDays, plural, other {#일의}} 평균은 {withAvg}, 붙이지 않은 날의 평균은 {withoutAvg}.",
         "confidenceLow": "신뢰도 낮음",
         "confidenceMedium": "신뢰도 보통",
         "confidenceHigh": "신뢰도 높음"
@@ -4612,8 +4612,8 @@
         "metricNextDayRecovery": "다음 날 회복도",
         "metricNextDayRestingHr": "다음 날 안정 시 심박수",
         "metricNextDayHrv": "다음 날 심박변이도",
-        "detailSameDay": "이 태그를 붙인 {withDays}일의 평균은 {withAvg}, 붙이지 않은 날의 평균은 {withoutAvg}.",
-        "detailNextDay": "이 태그를 붙인 {withDays}일의 다음 날 평균은 {withAvg}, 그 외의 날은 {withoutAvg}."
+        "detailSameDay": "이 태그를 붙인 {withDays, plural, other {#일의}} 평균은 {withAvg}, 붙이지 않은 날의 평균은 {withoutAvg}.",
+        "detailNextDay": "이 태그를 붙인 {withDays, plural, other {#일의}} 다음 날 평균은 {withAvg}, 그 외의 날은 {withoutAvg}."
       },
       "factorCrosstab": {
         "title": "직접 평가한 요인과 생체 지표",
@@ -4625,19 +4625,19 @@
         "metricHrv": "심박변이도",
         "metricWeight": "체중",
         "metricBloodPressureSys": "수축기",
-        "detail": "{factor} 평가가 낮았던 {lowDays}일의 평균은 {lowAvg}, 높게 평가한 날의 평균은 {highAvg}.",
+        "detail": "{factor} 평가가 낮았던 {lowDays, plural, other {#일의}} 평균은 {lowAvg}, 높게 평가한 날의 평균은 {highAvg}.",
         "detailInverse": "{factor} 상태가 나빴던 {lowDays}일의 평균은 {lowAvg}, 좋았던 날의 평균은 {highAvg}."
       },
       "discovery": {
         "title": "눈에 띄는 점",
         "subheading": "발견된 관계",
-        "footer": "모든 지표에서 검정한 일자별 조합 {tested}개 중 허위 발견 보정을 거쳐 추려낸 결과예요.",
+        "footer": "모든 지표에서 검정한 일자별 조합 {tested, plural, other {#개}} 중 허위 발견 보정을 거쳐 추려낸 결과예요.",
         "disclaimer": "통계로 걸러냈지만 여전히 관찰 결과예요. 원인이 아니라 지켜볼 만한 패턴이에요.",
         "moodUp": "{factor} 값이 높으면 다음 날 기분도 높은 편이에요.",
         "moodDown": "{factor} 값이 높으면 다음 날 기분은 낮은 편이에요.",
         "outcomeUp": "기분이 좋으면 다음 날 {factor} 값도 높은 편이에요.",
         "outcomeDown": "기분이 좋으면 다음 날 {factor} 값은 낮은 편이에요.",
-        "stat": "짝지은 {n}일, r = {r}, q = {q}",
+        "stat": "짝지은 {n, plural, other {#일}}, r = {r}, q = {q}",
         "statLabel": "계산 방법",
         "explainerLabel": "계산 방법",
         "channel": {
@@ -4650,7 +4650,7 @@
       "dimensions": {
         "title": "마음 상태",
         "none": "아직 마음 상태로 기록된 게 없어요.",
-        "window": "{days}일",
+        "window": "{days, plural, other {#일}}",
         "noneInWindow": "이 기간에는 없음",
         "higherIsMore": "높을수록 {anchor}",
         "notRecorded": "기록 없음: {list}."
@@ -4661,7 +4661,7 @@
         "lower": "낮게",
         "higher": "높게",
         "statement": "'{label}' 항목이 있던 날의 기분은 평균적으로 더 {direction} 나왔어요: {withAvg} 대 {withoutAvg}.",
-        "counts": "있던 날 {withDays}일, 없던 날 {withoutDays}일",
+        "counts": "있던 날 {withDays, plural, other {#일}}, 없던 날 {withoutDays, plural, other {#일}}",
         "caveat": "이건 연관성일 뿐 원인은 아니에요."
       },
       "prognosis": {
@@ -4673,14 +4673,14 @@
         "provisional": "아직 잠정적이에요: 며칠 안 되는 기록에 기댄 패턴이에요.",
         "notToday": "오늘이 아니라 {date}에 대한 설명이에요.",
         "deviationWithin": "내 평가는 그 범위 안에 있어요.",
-        "deviationAbove": "내 평가는 그 범위보다 {amount}점 높아요.",
-        "deviationBelow": "내 평가는 그 범위보다 {amount}점 낮아요.",
+        "deviationAbove": "내 평가는 그 범위보다 {amount, plural, other {#점}} 높아요.",
+        "deviationBelow": "내 평가는 그 범위보다 {amount, plural, other {#점}} 낮아요.",
         "weightedTitle": "이날 비교에서 가장 크게 작용한 것",
         "weightedUp": "{label}: 예상값을 높이는 쪽으로 작용했어요",
         "weightedDown": "{label}: 예상값을 낮추는 쪽으로 작용했어요",
         "caveat": "이건 내 지난 날들과의 비교일 뿐, 그날이 왜 그렇게 흘러갔는지에 대한 설명은 아니에요.",
-        "learning": "학습 중이에요: {threshold}일 중 {entries}일 기록했어요. 충분히 모이면 비교가 나타나요.",
-        "noPattern": "지금까지 기록한 {entries}일 중에는 하루를 견줄 만큼 일정한 패턴이 없어요. 하루의 맥락까지 함께 남기면 비교할 수 있는 게 늘어나요.",
+        "learning": "학습 중이에요: {threshold, plural, other {#일}} 중 {entries}일 기록했어요. 충분히 모이면 비교가 나타나요.",
+        "noPattern": "지금까지 기록한 {entries, plural, other {#일}} 중에는 하루를 견줄 만큼 일정한 패턴이 없어요. 하루의 맥락까지 함께 남기면 비교할 수 있는 게 늘어나요.",
         "featureValue": "{field}: {value}",
         "loadError": "내 패턴상 예상값을 불러오지 못했어요."
       },
@@ -4702,7 +4702,7 @@
     },
     "derived": {
       "coverage": {
-        "summary": "입력 {required}개 중 {present}개 ({percent}%)",
+        "summary": "입력 {required, plural, other {#개}} 중 {present}개 ({percent}%)",
         "ratioLabel": "{present}/{required}",
         "historyDays": "최근 기록 {count, plural, other {#일}} 기준",
         "missing": "더 정확해지려면 기록해 보세요: {list}",
@@ -4724,7 +4724,7 @@
         "inputsLabel": "입력값",
         "noInputs": "아직 이 값을 뒷받침한 입력값이 없어요.",
         "methodLabel": "방법",
-        "window": "최근 {days}일간의 {source} 데이터 기준",
+        "window": "최근 {days, plural, other {#일간의}} {source} 데이터 기준",
         "asOf": "{date} 기준",
         "standardLink": "기준: {name}"
       },
@@ -4734,7 +4734,7 @@
         "loadingLabel": "생체 지표 불러오는 중",
         "loadError": "지금은 생체 지표를 불러오지 못했어요.",
         "infoLabel": "어떻게 계산하나요?",
-        "building": "내 일반 범위를 만드는 중: {target}일 중 {count}일",
+        "building": "내 일반 범위를 만드는 중: {target, plural, other {#일}} 중 {count}일",
         "typicalRange": "내 일반 범위: {low}–{high}",
         "fitnessYounger": "약 {years}세 젊은 사람 수준의 심폐 체력",
         "fitnessOlder": "실제 나이보다 약 {years}세 높은 심폐 체력",
@@ -4871,7 +4871,7 @@
         "stress": "스트레스",
         "strain": "부하",
         "historyTitle": "추이",
-        "historyWindow": "최근 {days}일"
+        "historyWindow": "최근 {days, plural, other {#일}}"
       },
       "coincident": {
         "label": "여러 지표가 기준값 밖",
@@ -4889,8 +4889,8 @@
       },
       "trajectory": {
         "cardTitle": "단기 전망",
-        "headline": "이 패턴이 이어진다면: 앞으로 {days}일",
-        "range": "{days}일 뒤 예상 범위: 약 {low}–{high} {unit}.",
+        "headline": "이 패턴이 이어진다면: 앞으로 {days, plural, other {#일}}",
+        "range": "{days, plural, other {#일}} 뒤 예상 범위: 약 {low}–{high} {unit}.",
         "caveat": "최근 추이를 그대로 이어 그린 것이고 예측이 아니에요. 음영 구간은 불확실성이 얼마나 빨리 커지는지 보여줘요.",
         "insufficient": "아직 전망을 그릴 만큼 추이가 뚜렷하지 않아요. 계속 기록해서 최근 패턴이 뚜렷해지면 전망이 표시돼요.",
         "daysNeeded": "전망이 나오려면 {count, plural, other {#일쯤}} 더 기록해야 해요."
@@ -4898,7 +4898,7 @@
       "sameTime": {
         "sectionTitle": "오늘 지금까지",
         "sectionSubtitle": "이 시각의 평소 수준과 비교한 오늘 누적값",
-        "learning": "평소 하루를 익히는 중: {target}일 중 {count}일",
+        "learning": "평소 하루를 익히는 중: {target, plural, other {#일}} 중 {count}일",
         "framing": "{time}까지 평소: {typical} {unit}",
         "comparisonLabel": "평소 하루"
       }
@@ -5115,7 +5115,7 @@
       "rangeContext": "지금 {value}, 평소 {low}–{high}.",
       "rangeContextTimeOfDay": "지금 {value}, 이 시간대 평소 {low}–{high}.",
       "shiftContext": "이전엔 약 {before}, 이후엔 {after}.",
-      "shiftDays": "이전 {before}일과 이후 {after}일 기준입니다."
+      "shiftDays": "이전 {before, plural, other {#일과}} 이후 {after}일 기준입니다."
     },
     "breathingScreening": {
       "sectionTitle": "수면 중 호흡",
@@ -5281,7 +5281,7 @@
       "notEnough": "측정 횟수 부족",
       "pulse": "맥박 {value} bpm",
       "difference": "아침 빼기 저녁: {systolic}/{diastolic} mmHg.",
-      "differencePending": "아침과 저녁에 각각 측정이 {min}회 이상 있으면 비교합니다.",
+      "differencePending": "아침과 저녁에 각각 측정이 {min, plural, other {#회}} 이상 있으면 비교합니다.",
       "hours": "아침 {morning}, 낮 {midday}, 저녁 {evening}, 내 시간대 기준.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "이 기간에 완전한 측정이 없습니다",
@@ -6098,10 +6098,10 @@
         "subtitle": "같은 지표를 두 소스가 보낼 때 어느 쪽을 쓸지 정해요.",
         "nutrients": {
           "title": "동기화된 영양 섭취",
-          "description": "최근 {days}일간의 하루 합계예요. Apple Health나 식단 기록 앱에서 동기화한 값에 복용한 보충제가 더해져요.",
+          "description": "최근 {days, plural, other {#일간의}} 하루 합계예요. Apple Health나 식단 기록 앱에서 동기화한 값에 복용한 보충제가 더해져요.",
           "empty": "아직 동기화된 영양 데이터가 없어요.",
           "latest": "{date}에 {amount} {unit}",
-          "daysWithData": "{days}일 중 {count}일",
+          "daysWithData": "{days, plural, other {#일}} 중 {count}일",
           "moduleHint": "동기화는 영양 섭취 모듈에서 조절해요.",
           "moduleHintLink": "모듈 관리",
           "detail": "읽기 전용이에요. 숫자는 원본 앱이 관리해요."
@@ -6161,7 +6161,7 @@
         "import": {
           "heading": "불러오기",
           "description": "Apple Health, Health Connect, 시계의 활동 파일, JSON 또는 CSV에서 HealthLog로 데이터를 가져와요. 이미 있는 행은 건너뛰니 다시 실행해도 안전해요.",
-          "charCount": "{used} / {max}자",
+          "charCount": "{used} / {max, plural, other {#자}}",
           "appleHealth": {
             "title": "Apple Health",
             "description": "iPhone 건강 앱에서 만든 export.zip을 올려 주세요 (프로필 → 모든 건강 데이터 내보내기).",
@@ -6178,9 +6178,9 @@
             "failureInterrupted": "불러오기가 끝나기 전에 중단됐어요. 보통 서버 재시작이나 메모리 부족 때문이에요. 데이터는 안전하니 내보내기 파일을 다시 올려 주세요.",
             "failureInsufficientMemory": "이 크기의 보관 파일을 처리하기엔 서버 메모리 한도가 낮아요. 서버 운영자에게 Node.js 힙 한도(NODE_OPTIONS=--max-old-space-size)를 올려 달라고 한 뒤 내보내기 파일을 다시 올려 주세요.",
             "rowsImported": "지금까지 {count, plural, other {#개}} 행을 불러왔어요",
-            "doneSummary": "완료: {read}개 중 {imported}개 기록을 불러왔고, 진료 기록 {skipped}개는 건너뛰었어요.",
-            "doneSummaryAuxOnly": "완료: {read}개 기록 중 새 기록은 없었지만, 아래 검사 결과나 심전도는 불러왔어요.",
-            "doneNothing": "그 보관 파일에서 불러온 게 없어요: {read}개 중 0개만 들어왔어요.",
+            "doneSummary": "완료: {read, plural, other {#개}} 중 {imported}개 기록을 불러왔고, 진료 기록 {skipped, plural, other {#개는}} 건너뛰었어요.",
+            "doneSummaryAuxOnly": "완료: {read, plural, other {#개}} 기록 중 새 기록은 없었지만, 아래 검사 결과나 심전도는 불러왔어요.",
+            "doneNothing": "그 보관 파일에서 불러온 게 없어요: {read, plural, other {#개}} 중 0개만 들어왔어요.",
             "writtenByHealthLogOne": "HealthLog가 직접 건강 앱에 기록한 {count}개 항목은 이미 데이터에 있으므로 제외했습니다.",
             "writtenByHealthLogOther": "HealthLog가 직접 건강 앱에 기록한 {count}개 항목은 이미 데이터에 있으므로 제외했습니다.",
             "writtenByHealthLogFew": "HealthLog가 직접 건강 앱에 기록한 {count}개 항목은 이미 데이터에 있으므로 제외했습니다.",
@@ -6229,7 +6229,7 @@
             "skipRefused": "{count, plural, other {#개}} 샘플을 쓰지 못했어요 (읽을 수 없거나, 범위를 벗어났거나, 저장에 실패했어요).",
             "skipBreakdown": "자세히 보기 ({count, plural, other {#개}} 유형)",
             "skipBreakdownMore": "+ {count, plural, other {#개}} 유형 더",
-            "cycleSummary": "생리 주기 샘플 {samples}개를 {days}일치 기록으로 합쳤어요.",
+            "cycleSummary": "생리 주기 샘플 {samples, plural, other {#개를}} {days, plural, other {#일치}} 기록으로 합쳤어요.",
             "cycleModuleOff": "이 계정은 주기 기록이 꺼져 있어서 생리 주기 샘플 {count, plural, other {#개를}} 건너뛰었어요.",
             "cycleDaysFailed": "생리 주기 {count, plural, other {#일치를}} 쓰지 못했어요: {reason}"
           },
@@ -6248,13 +6248,13 @@
             "rateLimited": "이번 시간에 너무 많이 불러왔어요 (최대 5회). 나중에 다시 시도해 주세요.",
             "failed": "불러오지 못했어요. 다시 시도해 주세요.",
             "readFailed": "파일을 읽지 못했어요.",
-            "resultSummary": "측정 {measurements}개와 기분 기록 {moods}개를 불러왔고, {skipped}개는 건너뛰었어요.",
-            "resultSuccess": "측정 {measurements}개와 기분 기록 {moods}개를 불러왔어요",
+            "resultSummary": "측정 {measurements, plural, other {#개와}} 기분 기록 {moods}개를 불러왔고, {skipped}개는 건너뛰었어요.",
+            "resultSuccess": "측정 {measurements, plural, other {#개와}} 기분 기록 {moods}개를 불러왔어요",
             "droppedLinks": "이 계정에 같은 이름의 태그가 없어 다음 태그 없이 가져왔습니다: {keys}",
             "keptLabels": "이 계정에는 이미 같은 키의 태그나 그룹이 자체 이름으로 있어서 그대로 유지했어요: {keys}",
-            "resultNothing": "불러온 게 없어요. {skipped}개 기록을 모두 건너뛰었어요.",
+            "resultNothing": "불러온 게 없어요. {skipped, plural, other {#개}} 기록을 모두 건너뛰었어요.",
             "resultEmpty": "그 파일에는 측정도 기분 기록도 없었어요.",
-            "limitsHint": "최대 {mb}MB, 목록마다 최대 {rows}개 항목까지 가능해요. 기록에 항목을 추가할 뿐이며, 전체 백업을 복원하지는 않아요."
+            "limitsHint": "최대 {mb}MB, 목록마다 최대 {rows, plural, other {#개}} 항목까지 가능해요. 기록에 항목을 추가할 뿐이며, 전체 백업을 복원하지는 않아요."
           },
           "csv": {
             "title": "CSV 파일",
@@ -6277,10 +6277,10 @@
             "resultSummary": "새로 {inserted}개를 불러오고 {updated}개를 갱신했으며, {skipped}개는 건너뛰었어요.",
             "rowError": "{line}번째 줄: {reason}",
             "resultSuccess": "새로 {inserted}개를 불러오고 {updated}개를 갱신했어요",
-            "resultNothing": "불러온 게 없어요. {skipped}개 행을 모두 건너뛰었어요.",
+            "resultNothing": "불러온 게 없어요. {skipped, plural, other {#개}} 행을 모두 건너뛰었어요.",
             "resultEmpty": "그 파일에는 머리글만 있고 데이터 행이 없어요.",
             "previewSuccess": "미리 보기: {inserted}개를 불러와요",
-            "previewNothing": "미리 보기: 불러올 게 없어요. {skipped}개 행을 모두 건너뛰어요.",
+            "previewNothing": "미리 보기: 불러올 게 없어요. {skipped, plural, other {#개}} 행을 모두 건너뛰어요.",
             "skipGroupOne": "{count}개 행을 건너뛰었어요: {reason}",
             "skipGroupFew": "{count}개 행을 건너뛰었어요: {reason}",
             "skipGroupOther": "{count}개 행을 건너뛰었어요: {reason}",
@@ -6319,8 +6319,8 @@
             "stillRunning": "불러오기가 평소보다 오래 걸리고 있어요. 아직 끝날 수 있으니 몇 분 뒤에 복용 기록을 다시 확인해 주세요.",
             "columnsHeading": "각 열의 역할",
             "jsonOnly": "JSON 전용",
-            "previewLine": "읽은 행 {rows}개, 불러올 행 {queued}개, 거부된 행 {refused}개",
-            "submittedLine": "읽은 행 {rows}개, 불러오기 대기 {queued}개",
+            "previewLine": "읽은 행 {rows, plural, other {#개}}, 불러올 행 {queued}개, 거부된 행 {refused}개",
+            "submittedLine": "읽은 행 {rows, plural, other {#개}}, 불러오기 대기 {queued}개",
             "unmatched": "기록에서 일치하는 약이 없어요: {names}",
             "ambiguous": "약이 둘 이상 일치해요: {names}",
             "mirrored": "다른 앱에서 미러링한 약이라 복용을 추가할 수 없어요: {names}",
@@ -6680,8 +6680,8 @@
           "operatorDisabled": "이 서버에서는 대기질 기능이 꺼져 있습니다.",
           "coverage": "대기질 데이터가 있는 날 {count, plural, other {#일}}",
           "pollenEuropeOnly": "꽃가루 데이터는 유럽만 제공됩니다.",
-          "historyProgress": "대기질 과거 데이터 채우는 중: {total}일 중 {done}일",
-          "historyComplete": "출처가 제공하는 기록이 있는 이전 날짜 모두에 대기질이 채워졌습니다({total}일). 그보다 오래된 날짜는 비어 있습니다.",
+          "historyProgress": "대기질 과거 데이터 채우는 중: {total, plural, other {#일}} 중 {done}일",
+          "historyComplete": "출처가 제공하는 기록이 있는 이전 날짜 모두에 대기질이 채워졌습니다({total, plural, other {#일}}). 그보다 오래된 날짜는 비어 있습니다.",
           "attribution": "데이터 출처와 라이선스",
           "saveError": "설정을 저장하지 못했습니다.",
           "latest": "가장 최근 날짜 ({date})",
@@ -7119,7 +7119,7 @@
         "title": "나에 대해",
         "description": "코치와 매일 브리핑이 내 데이터와 함께 참고하는 개인 맥락이에요.",
         "placeholder": "예: 교대 근무, 채식 식단, 무릎 부상, 하프 마라톤 준비 중…",
-        "charCount": "{used} / {max}자",
+        "charCount": "{used} / {max, plural, other {#자}}",
         "clear": "지우기",
         "clearTitle": "나에 대해 메모를 지울까요?",
         "clearBody": "자유 입력 메모만 지워져요. 알레르기와 불내성 정보는 그대로 남아요.",
@@ -7234,8 +7234,8 @@
           }
         },
         "limited": "서버 운영자가 제한했어요.",
-        "estimate": "하루 약 {tokens} 토큰, 추정치",
-        "measured": "측정값: 최근 {days}일 동안 하루 {tokens} 토큰이에요. 코치 사용량도 포함돼요. 단계별 수치는 추정치예요.",
+        "estimate": "하루 약 {tokens, plural, other {#}} 토큰, 추정치",
+        "measured": "측정값: 최근 {days, plural, other {#일}} 동안 하루 {tokens, plural, other {#}} 토큰이에요. 코치 사용량도 포함돼요. 단계별 수치는 추정치예요.",
         "noEstimate": "AI를 3일 사용하면 단계별 추정치가 표시돼요.",
         "capped": "{choice} 단계를 선택했지만 지금은 서버에서 허용하지 않아 {level} 단계가 적용돼요. 선택은 그대로 저장돼요.",
         "followsDefault": "서버 기본값({level})을 따르고 있어요.",
@@ -7381,7 +7381,7 @@
     "googleHealthFullSyncDescription": "Google Health에 있는 모든 기록을 전부 동기화해요. 기록이 많으면 시간이 걸릴 수 있어요.",
     "googleHealthSyncResult": "측정값 {count, plural, other {#개를}} 동기화했어요",
     "googleHealthSyncFailed": "동기화에 실패했어요",
-    "googleHealthSyncInProgress": "동기화 진행 중: 측정값 {count, plural, other {#개}} 저장, 영역 {total}개 중 {completed}개 처리했어요.",
+    "googleHealthSyncInProgress": "동기화 진행 중: 측정값 {count, plural, other {#개}} 저장, 영역 {total, plural, other {#개}} 중 {completed}개 처리했어요.",
     "googleHealthResourceFailuresTitle": "아직 확인이 필요한 영역이에요:",
     "googleHealthResource": {
       "workout": "운동",
@@ -7678,8 +7678,8 @@
       "range": "공유할 기록 기간(일)",
       "rangeHint": "공유 범위가 과거 며칠까지 포함될지 정해요.",
       "expiry": "만료까지(일)",
-      "expiryHint": "최대 {max}일이에요.",
-      "expiryInvalid": "만료 기간은 1일에서 {max}일 사이여야 해요.",
+      "expiryHint": "최대 {max, plural, other {#일이에요}}.",
+      "expiryInvalid": "만료 기간은 1일에서 {max, plural, other {#일}} 사이여야 해요.",
       "create": "링크 만들기",
       "tokenCreated": "공유 링크를 만들었어요",
       "copied": "클립보드에 복사했어요",
@@ -7717,7 +7717,7 @@
       "pickerEmpty": "문서를 찾지 못했어요.",
       "pickerDone": "완료",
       "pickerSelectedCount": "{max}개 중 {count}개 선택됨",
-      "pickerMaxReached": "최대 {max}개까지만 고를 수 있어요.",
+      "pickerMaxReached": "최대 {max, plural, other {#개까지만}} 고를 수 있어요.",
       "scopeTitle": "이 링크에 담기는 내용",
       "scopeInsuranceExcluded": "보험 정보는 링크로 공유되지 않아요.",
       "statusNeedsReselect": "내용 다시 선택",
@@ -7950,7 +7950,7 @@
     "privacy": {
       "encryption": {
         "title": "저장 시 암호화",
-        "summary": "민감한 데이터는 기록 유형 {models}종의 필드 {columns}개에 걸쳐 {algorithm} 방식으로 저장 시 암호화돼요.",
+        "summary": "민감한 데이터는 기록 유형 {models, plural, other {#종의}} 필드 {columns, plural, other {#개에}} 걸쳐 {algorithm} 방식으로 저장 시 암호화돼요.",
         "statement": "민감한 데이터는 AES-256-GCM으로 저장 시 암호화돼요."
       },
       "stored": {
@@ -7970,11 +7970,11 @@
       "retention": {
         "title": "보관 기간",
         "description": "자동 정리 전까지 기간이 정해진 기록을 얼마나 보관하는지예요.",
-        "coach": "코치 대화: {days}일 보관",
-        "audit": "보안 활동 기록: {days}일 보관",
-        "delivery": "알림 발송 기록: {days}일 보관",
+        "coach": "코치 대화: {days, plural, other {#일}} 보관",
+        "audit": "보안 활동 기록: {days, plural, other {#일}} 보관",
+        "delivery": "알림 발송 기록: {days, plural, other {#일}} 보관",
         "unavailable": "지금은 보관 기간 정보를 볼 수 없어요.",
-        "accountDeletion": "계정, 관리 프로필 또는 모든 데이터 삭제: {days}일 뒤에 완료",
+        "accountDeletion": "계정, 관리 프로필 또는 모든 데이터 삭제: {days, plural, other {#일}} 뒤에 완료",
         "accountDeletionImmediate": "계정, 관리 프로필 또는 모든 데이터 삭제: 즉시 완료"
       },
       "delete": {
@@ -7982,7 +7982,7 @@
         "description": "계정을 완전히 없애거나, 계정은 두고 건강 기록만 지워요.",
         "openAdvanced": "삭제 또는 초기화",
         "immediateNotice": "삭제하면 데이터는 즉시 지워져요. 이 서버가 암호화된 외부 백업을 보관한다면 그 저장소에 있는 데이터 사본도 곧바로 삭제되고, 저장소에 연결할 수 없으면 다음 야간 실행 때 삭제돼요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요.",
-        "graceNotice": "계정을 삭제하면 바로 잠기고 {days}일 뒤에 이 서버가 보관하는 모든 사본, 서버 밖에 암호화해 둔 사본까지 함께 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요. 모든 데이터 삭제도 같은 방식이에요. 기록의 사본이 {days}일 동안 보관되어 관리자가 복원할 수 있어요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요."
+        "graceNotice": "계정을 삭제하면 바로 잠기고 {days, plural, other {#일}} 뒤에 이 서버가 보관하는 모든 사본, 서버 밖에 암호화해 둔 사본까지 함께 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요. 모든 데이터 삭제도 같은 방식이에요. 기록의 사본이 {days, plural, other {#일}} 동안 보관되어 관리자가 복원할 수 있어요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요."
       },
       "posture": {
         "title": "개인정보 보호 수준",
@@ -8324,9 +8324,9 @@
       "change": "모듈에서 변경"
     },
     "timezoneUseDevice": "이 기기의 시간대 사용 ({zone})",
-    "dangerZoneConfirmDescriptionGrace": "기록에 있는 모든 것이 삭제돼요: 측정값, 약, 기분 기록, 검사 결과, 주기 기록, 문서, AI 대화, 모든 연동 연결과 여기서 파생된 데이터, 앞서 삭제한 데이터까지 전부요. 의사에게 준 공유 링크도 바로 작동을 멈춰요. 계정은 그대로 남고, 로그인에 쓰는 자격 증명과 언어·시간대·단위 같은 표시 설정도 유지돼요. 기록의 사본은 {days}일 동안 보관되므로, 그때까지는 이 서버의 관리자가 복원할 수 있어요. 그 후에는 삭제가 최종적으로 확정돼요.",
-    "deleteAccountCardDetailGrace": "계정은 바로 잠기고 {days}일 뒤에 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요.",
-    "deleteAccountConfirmDescriptionGrace": "바로 로그아웃되고 계정이 잠겨요. {days}일 뒤에는 모든 건강 데이터, 패스키, 세션, 감사 기록과 함께 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요.",
+    "dangerZoneConfirmDescriptionGrace": "기록에 있는 모든 것이 삭제돼요: 측정값, 약, 기분 기록, 검사 결과, 주기 기록, 문서, AI 대화, 모든 연동 연결과 여기서 파생된 데이터, 앞서 삭제한 데이터까지 전부요. 의사에게 준 공유 링크도 바로 작동을 멈춰요. 계정은 그대로 남고, 로그인에 쓰는 자격 증명과 언어·시간대·단위 같은 표시 설정도 유지돼요. 기록의 사본은 {days, plural, other {#일}} 동안 보관되므로, 그때까지는 이 서버의 관리자가 복원할 수 있어요. 그 후에는 삭제가 최종적으로 확정돼요.",
+    "deleteAccountCardDetailGrace": "계정은 바로 잠기고 {days, plural, other {#일}} 뒤에 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요.",
+    "deleteAccountConfirmDescriptionGrace": "바로 로그아웃되고 계정이 잠겨요. {days, plural, other {#일}} 뒤에는 모든 건강 데이터, 패스키, 세션, 감사 기록과 함께 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요.",
     "deleteAccountScheduled": "계정이 잠겼고 {date}에 완전히 지워져요. 로그아웃하는 중이에요.",
     "dangerZoneSuccessGrace": "건강 기록이 삭제됐어요. {date}까지는 이 서버의 관리자가 복원할 수 있어요.",
     "dangerZoneRestoreLimits": "접근 권한도 끝나요: 다른 사람과 공유한 것, 다른 사람이 나와 공유한 것, 보호자 역할 모두요. 복원하면 기록이 지금 상태로 돌아와요. 삭제 후에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 역할, 공유 링크는 돌아오지 않아서 다시 설정해야 해요.",
@@ -8441,7 +8441,7 @@
       "loading": "피드백 요약 불러오는 중…",
       "loadError": "인사이트 품질 요약을 불러오지 못했어요. 페이지를 새로고침해 보세요.",
       "empty": "아직 피드백이 없어요. 집계는 매일 04:00에 돌아요. 사용자가 추천을 평가하기 시작하면 도움됨 비율 구간이 여기에 나타나요.",
-      "windowLabel": "최근 {days}일",
+      "windowLabel": "최근 {days, plural, other {#일}}",
       "generatedAtLabel": "생성 시각",
       "colSeverity": "심각도",
       "colMetric": "지표",
@@ -8456,7 +8456,7 @@
       "loading": "코치 피드백 요약 불러오는 중…",
       "loadError": "코치 피드백 요약을 불러오지 못했어요. 페이지를 새로고침해 보세요.",
       "empty": "아직 코치 피드백이 없어요. 집계는 매일 04:00에 돌아요. 사용자가 코치 답변을 평가하면 도움됨 비율 구간이 여기에 나타나요.",
-      "windowLabel": "최근 {days}일",
+      "windowLabel": "최근 {days, plural, other {#일}}",
       "generatedAtLabel": "생성 시각",
       "colPromptVersion": "프롬프트 버전",
       "colTone": "말투",
@@ -8578,7 +8578,7 @@
       "createTitle": "초대 만들기",
       "createDescription": "회원가입이 닫혀 있어도 이 링크로는 가입할 수 있어요.",
       "ttlLegend": "유효 기간",
-      "createDays": "{days}일",
+      "createDays": "{days, plural, other {#일}}",
       "maxUsesLabel": "최대 사용 횟수",
       "maxUsesHint": "이 링크로 가입할 수 있는 인원이에요 (1–50).",
       "createConfirm": "초대 만들기",
@@ -8685,7 +8685,7 @@
     "deleteButton": "전체 데이터 삭제",
     "deleteAllPromptLabel": "계속하려면 {token} 입력",
     "finalDelete": "영구 삭제",
-    "deletedResult": "테이블 {tables}개에서 행 {rows}개를 삭제했어요. 사용자 계정과 로그인 자격 증명은 남겼어요.",
+    "deletedResult": "테이블 {tables, plural, other {#개에서}} 행 {rows, plural, other {#개를}} 삭제했어요. 사용자 계정과 로그인 자격 증명은 남겼어요.",
     "authRegister": "회원가입",
     "authClaim": "프로필 넘겨받음",
     "authLogin": "로그인",
@@ -8902,7 +8902,7 @@
         "colCreatedAt": "최근 스냅샷",
         "colActions": "동작",
         "scheduleStaleTitle": "주간 백업이 중단되었습니다",
-        "scheduleStaleDescription": "가장 최근의 예약 사본이 {days}일 전 것입니다. 정상적으로 도는 주간 실행은 {threshold}일보다 오래된 사본을 남기지 않습니다.",
+        "scheduleStaleDescription": "가장 최근의 예약 사본이 {days, plural, other {#일}} 전 것입니다. 정상적으로 도는 주간 실행은 {threshold, plural, other {#일보다}} 오래된 사본을 남기지 않습니다.",
         "scheduleFailedTitle": "마지막 예약 백업 실행이 실패했습니다",
         "scheduleFailedDescription": "{when}: {reason}",
         "scheduleFailedNoReason": "기록된 사유 없음",
@@ -8952,8 +8952,8 @@
         "restoreInProgress": "복원 중…",
         "restoreSuccess": "복원을 마쳤어요",
         "restoreFailed": "복원하지 못했어요",
-        "restoreSkippedToast": "복원을 마쳤어요. 되돌리지 못한 증상 연결: {links}",
-        "restoreSkippedTitle": "복원하지 못한 연결: {links}",
+        "restoreSkippedToast": "복원을 마쳤어요. 되돌리지 못한 증상 연결: {links, plural, other {#}}",
+        "restoreSkippedTitle": "복원하지 못한 연결: {links, plural, other {#}}",
         "restoreSkippedDescription": "파일이 이 설치본에 없는 기록을 가리키고 있어요. 나머지는 모두 복원했어요. 같은 목록이 감사 로그에도 남아 있어요.",
         "restoreSkippedLinks": "연결 {count, plural, other {#개}}",
         "restoreSkippedCycleSymptom": "생리 주기 증상",
@@ -8998,7 +8998,7 @@
           "unknownDetail": "아직 어떤 야간 실행도 이 계정을 기록하지 않았습니다.",
           "age": "{hours}시간 전",
           "scheduleNote": "업로드는 {hours}시간마다 실행됩니다. 최신은 한 번의 실행 이내, 지연은 한 번이 아무것도 만들지 못한 상태, 오래됨은 두 번이 그런 상태입니다.",
-          "lifecycleConfigured": "버킷의 수명 주기 규칙에 따라 복사본이 {days}일 후 삭제됩니다.",
+          "lifecycleConfigured": "버킷의 수명 주기 규칙에 따라 복사본이 {days, plural, other {#일}} 후 삭제됩니다.",
           "lifecycleMissing": "버킷에 수명 주기 규칙이 없어 매일 밤의 복사본이 영구히 보관됩니다. BACKUP_RETENTION_DAYS 후 객체를 만료시키는 규칙을 추가하세요.",
           "lifecycleUnknown": "버킷이 오래된 복사본을 삭제하는지 읽을 수 없었습니다. 자격 증명이 수명 주기 규칙을 읽지 못할 수 있습니다. BACKUP_RETENTION_DAYS 후 객체를 만료시키는 규칙이 있는지 확인하세요.",
           "pendingDeletions": "삭제되었거나 비워진 계정 {count, plural, other {#개의}} 복사본이 아직 버킷에 있으며 제거 중입니다.",
@@ -9014,7 +9014,7 @@
         "restoreJobRunningTitle": "{username} 복원 중",
         "restoreJobRunningNote": "복원이 끝날 때까지 계정에는 기존 데이터가 그대로 보여요. 이 페이지를 떠나도 복원은 서버에서 계속돼요.",
         "restoreJobResumed": "서버가 다시 시작된 뒤 복원을 다시 시작했어요.",
-        "restoreJobPhaseValidating": "백업 파일 확인 중: 측정값 {checked}개 확인",
+        "restoreJobPhaseValidating": "백업 파일 확인 중: 측정값 {checked, plural, other {#개}} 확인",
         "restoreJobPhaseClearing": "계정의 기존 데이터를 지우는 중",
         "restoreJobPhaseMeasurements": "측정값 기록 중: {total}개 중 {done}개",
         "restoreJobPhaseSections": "나머지 기록 작성 중: {total}개 항목 중 {done}개",
@@ -9056,7 +9056,7 @@
         "restoreSkippedVaccinationCiphertext": "이 서버에 없는 키로 암호화된 예방접종 메모(접종 기록은 메모 없이 유지됨)",
         "restoreSkippedEnvironmentLocationCiphertext": "이 서버에 없는 키로 암호화된 환경 기간 또는 날짜의 위치(암호화된 채 유지되며 해당 날짜는 새로 가져오지 않음)",
         "typePreWipe": "모든 데이터 삭제 전",
-        "retentionNote": "주간 사본은 매주 일요일에 교체돼요. \"모든 데이터 삭제\" 전에 만든 사본은 {days}일 뒤에 삭제돼요. 올린 사본은 해당 계정이 지워질 때까지 남아요.",
+        "retentionNote": "주간 사본은 매주 일요일에 교체돼요. \"모든 데이터 삭제\" 전에 만든 사본은 {days, plural, other {#일}} 뒤에 삭제돼요. 올린 사본은 해당 계정이 지워질 때까지 남아요.",
         "retentionNoteNoGrace": "주간 사본은 매주 일요일에 교체돼요. 올린 사본은 해당 계정이 지워질 때까지 남아요.",
         "database": {
           "title": "데이터베이스 덤프",
@@ -9071,7 +9071,7 @@
           "noDirectoryOffhost": "이 서버는 {dir}에 쓸 수 없어 덤프가 외부 저장소로만 가고 여기에는 보관되지 않습니다. 백업 볼륨을 마운트하세요.",
           "noDirectory": "이 서버는 {dir}에 쓸 수 없고 외부 저장소도 설정되지 않아 데이터베이스 덤프를 만들 수 없습니다. 백업 볼륨을 마운트하세요.",
           "retentionLocal": "삭제된 계정은 덤프가 만료될 때까지 덤프에 남습니다. 이 서버에는 최신 야간 덤프 {nights}개가 보관되고, 마지막 업데이트 전에 만든 덤프는 다음 업데이트까지 남습니다.",
-          "retentionOffhost": "버킷의 수명 주기 규칙이 외부 사본을 {days}일 후에 삭제합니다.",
+          "retentionOffhost": "버킷의 수명 주기 규칙이 외부 사본을 {days, plural, other {#일}} 후에 삭제합니다.",
           "retentionOffhostMissing": "버킷의 어떤 수명 주기 규칙도 database/를 다루지 않아 그곳의 덤프와 그 안의 삭제된 계정이 절대 삭제되지 않습니다. 이 접두사에 대한 규칙을 추가하세요.",
           "notPersistentOffhost": "{dir}은(는) 영구 저장소에 있지 않습니다(마운트된 볼륨이 아니라 컨테이너 안이나 메모리에 있음). 그래서 여기에 쓴 덤프는 다음 업데이트 때 사라집니다. 덤프는 외부 저장소로만 가며, 여기에는 보관되지 않고 마이그레이션 전에도 만들어지지 않습니다. 백업 볼륨을 마운트하세요.",
           "notPersistent": "{dir}은(는) 영구 저장소에 있지 않고(마운트된 볼륨이 아니라 컨테이너 안이나 메모리에 있음) 외부 버킷도 설정되지 않아, 데이터베이스 덤프가 어디에도 보관되지 않습니다. 백업 볼륨을 마운트하세요.",
@@ -9231,7 +9231,7 @@
           "maxValue": "{value} bpm",
           "bucket": "{range} bpm",
           "account": "계정 {account}",
-          "accountDays": "{days}일 중 {changed}일 변경"
+          "accountDays": "{days, plural, other {#일}} 중 {changed}일 변경"
         },
         "appliedAt": "{at}에 가중 방식이 적용되었습니다.",
         "dryRun": "시험 실행",
@@ -9251,7 +9251,7 @@
         "rebuild": {
           "queued": "재계산이 백그라운드 작업을 기다리고 있습니다.",
           "running": "맥박 일별 값을 재계산하고 있습니다.",
-          "done": "{at}에 계정 {accounts}개의 맥박 일별 값을 재계산했습니다.",
+          "done": "{at}에 계정 {accounts, plural, other {#개의}} 맥박 일별 값을 재계산했습니다.",
           "failed": "재계산이 중단되었습니다. 앱 로그에 원인이 있습니다. 다시 실행하세요."
         },
         "rebuildAgain": "다시 계산",
@@ -9295,7 +9295,7 @@
     "failingJobs": {
       "title": "백그라운드 작업",
       "description": "재시도를 다 쓰고 포기했거나, 실행에서 시도한 모든 계정이 실패한 큐예요.",
-      "none": "최근 {hours}시간 동안 실패한 작업이 없어요.",
+      "none": "최근 {hours, plural, other {#시간}} 동안 실패한 작업이 없어요.",
       "unavailable": "읽을 작업 큐가 없어요. 이 배포본은 백그라운드 워커 없이 돌고 있어요.",
       "countOne": "실패 {count}건",
       "countFew": "실패 {count}건",
@@ -9322,7 +9322,7 @@
       "typeCodex": "ChatGPT 로그인 (개인)",
       "typeLocal": "로컬 모델 (개인)",
       "typeGateway": "OpenAI 호환 게이트웨이 (개인)",
-      "spendToday": "오늘(각 계정의 현지 날짜 기준): 토큰 {total}개, 그중 {operator}개는 운영자 키에서 사용되었습니다(사용량이 있는 계정: {accounts}개).",
+      "spendToday": "오늘(각 계정의 현지 날짜 기준): 토큰 {total, plural, other {#개}}, 그중 {operator}개는 운영자 키에서 사용되었습니다(사용량이 있는 계정: {accounts}개).",
       "statusPaused": "일시 중지됨",
       "pausedHint": "반복된 오류로 사용자 {count, plural, other {#명에}} 대해 {at}까지 일시 중지되었습니다. 그 후 자동으로 다시 시도합니다.",
       "modelNotServed": "엔드포인트가 더 이상 {model} 모델을 제공하지 않습니다. AI 설정에서 제공되는 모델을 선택하세요.",
@@ -9478,22 +9478,22 @@
           "disabled": "예약된 데이터베이스 덤프가 꺼져 있어 이 서버를 다시 구축할 수 있는 사본이 없습니다. 다시 켜려면 DB_BACKUP_ENABLED를 제거하거나 true로 설정한 뒤 HealthLog를 다시 시작하십시오.",
           "unreadable": "데이터베이스 덤프 상태를 읽지 못했습니다.",
           "never_succeeded": "아직 성공한 데이터베이스 덤프가 없으며 마지막 시도도 실패했습니다.",
-          "never_ran": "덤프를 켠 뒤 {hours}시간 동안 데이터베이스 덤프가 기록되지 않았습니다.",
+          "never_ran": "덤프를 켠 뒤 {hours, plural, other {#시간}} 동안 데이터베이스 덤프가 기록되지 않았습니다.",
           "first_pending": "첫 데이터베이스 덤프가 아직 실행되지 않았습니다.",
-          "stale": "최신 데이터베이스 덤프가 {hours}시간 전 것입니다.",
+          "stale": "최신 데이터베이스 덤프가 {hours, plural, other {#시간}} 전 것입니다.",
           "last_failed": "마지막 데이터베이스 덤프가 실패했습니다. 그 전 덤프는 아직 최근 것입니다.",
           "fresh": "최신 데이터베이스 덤프가 최근 것입니다.",
           "nowhere_to_write": "덤프 디렉터리 {directory}에 쓸 수 없고 외부 버킷도 설정되어 있지 않아 덤프를 보관할 수 없습니다.",
           "not_persistent": "덤프 디렉터리 {directory}이(가) 영구 저장소에 있지 않고 외부 버킷도 설정되지 않아, 모든 덤프가 다음 업데이트 때 사라집니다. 백업 볼륨을 마운트하세요.",
           "fresh_offhost_only": "최신 데이터베이스 덤프는 최근 것이며 외부 버킷에 있습니다. {directory}이(가) 영구 저장소에 있지 않아 이 서버에는 보관되지 않으며, 마이그레이션 전에도 만들어지지 않습니다.",
           "offhost_failed": "최신 데이터베이스 덤프는 이 서버에 보관되어 있지만 외부 버킷으로의 업로드가 실패했습니다.",
-          "offhost_stale": "{hours}시간 동안 외부 버킷에 도달한 데이터베이스 덤프가 없습니다. 업로드가 계속 실패하고 있습니다. 이 서버를 잃으면 복구에 쓸 최근 덤프가 없습니다.",
+          "offhost_stale": "{hours, plural, other {#시간}} 동안 외부 버킷에 도달한 데이터베이스 덤프가 없습니다. 업로드가 계속 실패하고 있습니다. 이 서버를 잃으면 복구에 쓸 최근 덤프가 없습니다.",
           "offhost_never": "외부 버킷에 도달한 데이터베이스 덤프가 한 번도 없습니다. 업로드가 실패합니다. 이 서버를 잃으면 복구에 쓸 덤프가 없습니다."
         },
         "weekly_copy": {
           "no_accounts": "아직 복사할 계정이 없습니다.",
-          "stale": "가장 오래된 주간 사본이 {days}일 전 것입니다. 뒤처진 계정: {accounts}.",
-          "never": "{days}일 동안 주간 사본이 없는 계정이 있습니다. 뒤처진 계정: {accounts}.",
+          "stale": "가장 오래된 주간 사본이 {days, plural, other {#일}} 전 것입니다. 뒤처진 계정: {accounts}.",
+          "never": "{days, plural, other {#일}} 동안 주간 사본이 없는 계정이 있습니다. 뒤처진 계정: {accounts}.",
           "first_pending": "첫 주간 사본은 일요일 이른 시간에 만들어집니다.",
           "fresh": "모든 계정에 지난주 사본이 있습니다."
         },
@@ -9506,9 +9506,9 @@
         "restore_drill": {
           "not_configured": "훈련은 외부 보관 버킷을 읽는데, 버킷이 설정되지 않았습니다.",
           "not_run_yet": "월간 복원 훈련이 아직 실행되지 않았습니다.",
-          "failed": "마지막 복원 훈련이 실패했습니다: 사본 {checked}개 중 {failed}개를 다시 읽지 못했습니다.",
+          "failed": "마지막 복원 훈련이 실패했습니다: 사본 {checked, plural, other {#개}} 중 {failed}개를 다시 읽지 못했습니다.",
           "failed_run": "마지막 복원 훈련을 끝까지 마치지 못했습니다.",
-          "passed": "마지막 복원 훈련에서 사본 {checked}개를 다시 읽었습니다.",
+          "passed": "마지막 복원 훈련에서 사본 {checked, plural, other {#개를}} 다시 읽었습니다.",
           "nothing_checked": "마지막 복원 훈련이 사본을 하나도 다시 읽기 전에 시간 제한으로 멈췄기 때문에 아무것도 확인하지 못했습니다."
         },
         "offhost_setup": {
@@ -9528,7 +9528,7 @@
           "not_configured": "외부 버킷이 설정되지 않았습니다.",
           "no_offhost_dumps": "버킷으로 가는 데이터베이스 덤프가 없습니다.",
           "missing": "버킷의 어떤 수명 주기 규칙도 database/를 다루지 않아 그곳의 덤프와 그 안의 삭제된 계정이 절대 삭제되지 않습니다. 이 접두사에 대한 규칙을 추가하세요.",
-          "configured": "버킷은 {days}일 후에 덤프를 삭제합니다.",
+          "configured": "버킷은 {days, plural, other {#일}} 후에 덤프를 삭제합니다.",
           "unknown": "버킷이 오래된 덤프를 삭제하는 규칙이 있는지 알려 주지 않습니다. 수명 주기 규칙이 database/를 포함하는지 확인하세요."
         }
       },
@@ -9628,7 +9628,7 @@
         "pending": "대기 중",
         "dropped": "폐기됨",
         "failed": "실패",
-        "window": "최근 {days}일 동안 이 서버가 릴레이에 넘긴 푸시.",
+        "window": "최근 {days, plural, other {#일}} 동안 이 서버가 릴레이에 넘긴 푸시.",
         "lastSuccess": "마지막 전송 {time}.",
         "lastFailure": "마지막 실패 {time}: {reason}.",
         "noReason": "사유 없음"
@@ -9777,7 +9777,7 @@
     "goalReached": "목표 달성",
     "remainingUnlocks": "{count}개 더 달성 가능",
     "noneUnlockedYet": "아직 달성한 업적이 없어요.",
-    "pointsValue": "{points}포인트",
+    "pointsValue": "{points, plural, other {#포인트}}",
     "metricCount": "{count}",
     "metricDaysOne": "{count}일",
     "metricDaysFew": "{count}일",
@@ -10072,7 +10072,7 @@
       "reminderCheckMissedTitle": "알림 놓침: {medication}",
       "reminderCheckMissedBody": "{window} 구간에 {medication} ({dose}) 복용 기록이 없어요.",
       "reminderCheckOverdueTitle": "복용 지연: {medication}",
-      "reminderCheckOverdueBody": "{window} 구간의 {medication} ({dose}) 복용이 {minutes}분 지났어요.",
+      "reminderCheckOverdueBody": "{window} 구간의 {medication} ({dose}) 복용이 {minutes, plural, other {#분}} 지났어요.",
       "offlineGeoUnavailableTitle": "오프라인 위치 데이터베이스가 로드되지 않았어요",
       "offlineGeoUnavailableBody": "HealthLog가 {host}의 온라인 조회로 로그인 위치를 확인하고 있어서, 모든 로그인 IP 주소가 이 서버를 벗어나요. 로컬에서 확인하려면 무료 MaxMind 계정으로 GeoLite2-City와 GeoLite2-ASN 데이터베이스를 내려받아 그 디렉터리를 컨테이너에 마운트하고 GEOLITE2_DIR가 이를 가리키게 하세요. 절차: {docsUrl}",
       "tlsPinChangedTitle": "TLS 리프 인증서 변경: {host}",
@@ -10255,7 +10255,7 @@
       "titleFailing": "백그라운드 작업이 실패하고 있어요: {queue}",
       "titleReminder": "백그라운드 작업이 계속 실패하고 있어요: {queue}",
       "titleRecovered": "백그라운드 작업이 다시 작동해요: {queue}",
-      "bodyFailing": "백그라운드 작업 {queue}이(가) {failures}번 연속 실패했어요. 관리자 상태 페이지에서 확인할 수 있어요. 마지막 오류: {error}",
+      "bodyFailing": "백그라운드 작업 {queue}이(가) {failures, plural, other {#번}} 연속 실패했어요. 관리자 상태 페이지에서 확인할 수 있어요. 마지막 오류: {error}",
       "bodyRecovered": "백그라운드 작업 {queue}이(가) 다시 정상적으로 실행됐어요."
     },
     "eventSeizureCluster": "군집 발작",
@@ -10454,11 +10454,11 @@
   },
   "lowStockReminders": {
     "title": "재고 부족: {medName}",
-    "bodyToday": "{medName}: {units}개 남았어요. 하루치도 안 돼요.",
-    "bodyReorder": "{medName}: {units}개 남았어요. {runsOutOn}쯤 소진돼요. {reorderBy}까지 재주문하세요.",
-    "bodyLastDose": "{medName}: {units}개 남았어요. 마지막 복용분이에요. {runsOutOn}쯤 소진돼요.",
-    "bodyExpired": "{medName}: 쓸 수 있는 재고가 없어요. {units}개가 유효기간 만료로 표시돼 있어요.",
-    "bodyAsNeeded": "{medName}: {units}개만 남았어요. 다음에 필요하기 전에 재주문하세요."
+    "bodyToday": "{medName}: {units, plural, other {#개}} 남았어요. 하루치도 안 돼요.",
+    "bodyReorder": "{medName}: {units, plural, other {#개}} 남았어요. {runsOutOn}쯤 소진돼요. {reorderBy}까지 재주문하세요.",
+    "bodyLastDose": "{medName}: {units, plural, other {#개}} 남았어요. 마지막 복용분이에요. {runsOutOn}쯤 소진돼요.",
+    "bodyExpired": "{medName}: 쓸 수 있는 재고가 없어요. {units, plural, other {#개가}} 유효기간 만료로 표시돼 있어요.",
+    "bodyAsNeeded": "{medName}: {units, plural, other {#개만}} 남았어요. 다음에 필요하기 전에 재주문하세요."
   },
   "moodReminders": {
     "dailyTitle": "기분 기록하기",
@@ -10604,7 +10604,7 @@
       "crosstab": {
         "description": "내 데이터를 기준으로, 각 측정값이 황체기와 난포기에서 어떻게 다른지 비교했어요.",
         "pairLabel": "{metric}: 황체기와 난포기 비교",
-        "detail": "황체기 {lutealAvg} ({lutealDays}일), 난포기 {follicularAvg} ({follicularDays}일).",
+        "detail": "황체기 {lutealAvg} ({lutealDays, plural, other {#일}}), 난포기 {follicularAvg} ({follicularDays, plural, other {#일}}).",
         "metricRestingHeartRate": "안정 시 심박수",
         "metricHrv": "심박변이도",
         "metricSleepDuration": "수면 시간",
@@ -10619,7 +10619,7 @@
       "title": "주기 인사이트",
       "symptomPatternsTitle": "단계별 증상 패턴",
       "symptomPatternsEmpty": "한 주기 동안 증상을 기록하면 어느 단계에 몰리는지 볼 수 있어요.",
-      "symptomMostlyIn": "주로 {phase}에 ({count}/{total}일)"
+      "symptomMostlyIn": "주로 {phase}에 ({count}/{total, plural, other {#일}})"
     },
     "phaseEducation": {
       "title": "지금 일어나는 일",
@@ -10720,7 +10720,7 @@
       "caption": "주기 중",
       "firstPeriodCta": "첫 생리 기록하기",
       "periodOverdue": "생리가 평소보다 늦어지고 있어요. 다음 생리를 기록할 때까지 날짜 세기를 멈춰요.",
-      "periodOverdueDays": "생리가 평소보다 {days}일 늦어지고 있어요. 다음 생리를 기록할 때까지 날짜 세기를 멈춰요.",
+      "periodOverdueDays": "생리가 평소보다 {days, plural, other {#일}} 늦어지고 있어요. 다음 생리를 기록할 때까지 날짜 세기를 멈춰요.",
       "logPeriodCta": "생리 기록"
     },
     "calendar": {
@@ -10776,7 +10776,7 @@
       "ovulationChip": "배란",
       "chartTitle": "주기 길이 변화",
       "chartCaption": "막대 하나가 주기 하나예요. 아래쪽 분홍색은 생리 기간, 나머지는 주기 길이예요.",
-      "chartAria": "최근 주기 {count, plural, other {#개의}} 주기 길이 차트예요. 평균 {avg}일, 규칙성은 {regularity}.",
+      "chartAria": "최근 주기 {count, plural, other {#개의}} 주기 길이 차트예요. 평균 {avg, plural, other {#일}}, 규칙성은 {regularity}.",
       "legendPeriodSegment": "생리 일수",
       "legendRestSegment": "나머지 기간"
     },
@@ -11054,7 +11054,7 @@
       "menuItem": "미루기…",
       "title": "예정일 미루기",
       "description": "이번 예정일만 옮겨요. 반복 주기는 그대로예요.",
-      "chip": "+{days}일",
+      "chip": "+{days, plural, other {#일}}",
       "dateLabel": "새 날짜",
       "confirm": "미루기"
     },
@@ -11072,12 +11072,12 @@
       "none": "예정 없음",
       "today": "오늘 예정",
       "tomorrow": "내일 예정",
-      "inDays": "{days}일 후"
+      "inDays": "{days, plural, other {#일}} 후"
     },
-    "overdueByDays": "{days}일 지남",
+    "overdueByDays": "{days, plural, other {#일}} 지남",
     "overdueSinceYesterday": "어제부터 지남",
     "cadence": {
-      "everyNDays": "{days}일마다",
+      "everyNDays": "{days, plural, other {#일마다}}",
       "custom": "사용자 지정 일정",
       "customInterval": "사용자 지정(N일마다)",
       "rruleOption": "사용자 지정 규칙(RRULE)"
@@ -11419,7 +11419,7 @@
       "bilirubin-total": "총빌리루빈"
     },
     "noteLoadFailed": "메모를 불러오지 못했어요. 저장해도 메모는 그대로 유지돼요.",
-    "showingLatestOf": "측정값 {total}개 중 최근 {shown}개를 보여주고 있어요",
+    "showingLatestOf": "측정값 {total, plural, other {#개}} 중 최근 {shown}개를 보여주고 있어요",
     "convertedFrom": "{value} {unit}에서 변환됨",
     "ocr": {
       "scanButton": "결과지 스캔",
@@ -11445,9 +11445,9 @@
       "truncatedPages": "AI 제공자가 다음 페이지에서 출력 한도에 도달했어요: {pages}. 해당 페이지 아래쪽 수치가 빠졌을 수 있으니 결과지와 비교해 주세요.",
       "unreadPages": "다음 페이지를 읽지 못해서 해당 수치가 이 목록에 없어요: {pages}.",
       "unreadParts": "결과지 일부를 읽지 못해서 해당 수치가 이 목록에 없어요.",
-      "rowsCapped": "결과지에 수치가 {found}개 있어요. 한 번 스캔할 때 {kept}개까지 담을 수 있어서 처음 {kept}개만 보여 드려요.",
+      "rowsCapped": "결과지에 수치가 {found, plural, other {#개}} 있어요. 한 번 스캔할 때 {kept}개까지 담을 수 있어서 처음 {kept}개만 보여 드려요.",
       "outputLimit": "AI 제공자가 수치를 하나도 돌려주기 전에 출력 한도에 도달했어요. 한 페이지만 찍은 사진이나 더 긴 답변을 허용하는 모델로 다시 시도해 주세요.",
-      "errorTooLong": "{max}자 이내로 줄여 주세요.",
+      "errorTooLong": "{max, plural, other {#자}} 이내로 줄여 주세요.",
       "confirmRow": "이 측정값 포함",
       "analyteLabel": "검사 항목",
       "resultLabel": "결과",
@@ -11466,7 +11466,7 @@
       "discardAll": "모두 버리기",
       "savedToast": "검사 결과 {count, plural, other {#개를}} 저장했어요",
       "savedPartialToast": "검사 결과 {count, plural, other {#개를}} 저장하고, 중복 {skipped}개는 건너뛰었어요",
-      "savedNothingToast": "저장한 항목이 없어요: 측정값 {skipped}개는 이미 기록돼 있어요",
+      "savedNothingToast": "저장한 항목이 없어요: 측정값 {skipped, plural, other {#개는}} 이미 기록돼 있어요",
       "savedEmptyToast": "저장할 항목이 없어요",
       "noRows": "이 결과지에서 측정값을 찾지 못했어요.",
       "nothingToSave": "저장할 측정값을 하나 이상 선택해 주세요.",
@@ -11575,17 +11575,17 @@
     "trend": {
       "title": "추세",
       "slope": {
-        "rising": "{since} 이후 {n}개 값에서 1년에 약 {amount} {unit}씩 오르고 있습니다.",
-        "falling": "{since} 이후 {n}개 값에서 1년에 약 {amount} {unit}씩 내려가고 있습니다.",
-        "flat": "{since} 이후 {n}개 값에서 변화가 없습니다."
+        "rising": "{since} 이후 {n, plural, other {#개}} 값에서 1년에 약 {amount} {unit}씩 오르고 있습니다.",
+        "falling": "{since} 이후 {n, plural, other {#개}} 값에서 1년에 약 {amount} {unit}씩 내려가고 있습니다.",
+        "flat": "{since} 이후 {n, plural, other {#개}} 값에서 변화가 없습니다."
       },
       "projection": {
         "exits": {
           "high": "이 직선이 그대로 이어진다면 {date}쯤 참고 범위의 상한에 닿습니다. 이는 연장선일 뿐 예측이 아닙니다.",
           "low": "이 직선이 그대로 이어진다면 {date}쯤 참고 범위의 하한에 닿습니다. 이는 연장선일 뿐 예측이 아닙니다."
         },
-        "beyond_horizon": "이 속도라면 {years}년 넘게 참고 범위 안에 머뭅니다. 측정값이 다루는 기간입니다.",
-        "beyond_horizon_capped": "이 속도라면 {years}년 넘게 참고 범위 안에 머뭅니다. 연장선이 내다보는 최대 기간입니다.",
+        "beyond_horizon": "이 속도라면 {years, plural, other {#년}} 넘게 참고 범위 안에 머뭅니다. 측정값이 다루는 기간입니다.",
+        "beyond_horizon_capped": "이 속도라면 {years, plural, other {#년}} 넘게 참고 범위 안에 머뭅니다. 연장선이 내다보는 최대 기간입니다.",
         "no_exit": "직선이 참고 범위의 경계에서 멀어지고 있습니다.",
         "already_outside": "직선이 이미 참고 범위 밖에 있습니다.",
         "no_clear_trend": "이 값들에서는 변화가 '변화 없음'과 뚜렷이 구별되지 않아 연장선을 그리지 않습니다.",
@@ -11975,10 +11975,10 @@
       "nadirTitle": "무엇이 달라졌나",
       "nadirBody": "기록한 신호가 평소 범위에서 얼마나 벗어났는지 보여줘요.",
       "recoveryGapTitle": "회복 시차",
-      "recoveryGapLag": "몸이 나아진 뒤 {days}일 만에 수치가 안정됐어요.",
-      "recoveryGapLead": "회복으로 표시하기 {days}일 전에 수치가 안정됐어요.",
-      "recoveryGapLagSymptom": "기록한 증상이 가라앉기 {days}일 전에 몸이 먼저 나아졌어요.",
-      "recoveryGapLeadSymptom": "회복으로 표시하기 {days}일 전에 기록한 증상이 가라앉았어요.",
+      "recoveryGapLag": "몸이 나아진 뒤 {days, plural, other {#일}} 만에 수치가 안정됐어요.",
+      "recoveryGapLead": "회복으로 표시하기 {days, plural, other {#일}} 전에 수치가 안정됐어요.",
+      "recoveryGapLagSymptom": "기록한 증상이 가라앉기 {days, plural, other {#일}} 전에 몸이 먼저 나아졌어요.",
+      "recoveryGapLeadSymptom": "회복으로 표시하기 {days, plural, other {#일}} 전에 기록한 증상이 가라앉았어요.",
       "recoveryGapSame": "몸이 나아진 날 수치도 함께 안정됐어요.",
       "sleepContextMore": "이번 에피소드 동안 평소보다 눈에 띄게 많이 잤어요 (하룻밤 약 {hours}h).",
       "sleepContextLess": "이번 에피소드 동안 평소보다 눈에 띄게 적게 잤어요 (하룻밤 약 {hours}h).",
@@ -11995,8 +11995,8 @@
       "title": "지난 아픈 날 기록",
       "countOne": "이 기간에 에피소드를 1개 기록했어요.",
       "countOther": "이 기간에 에피소드를 {count}개 기록했어요.",
-      "typicalGap": "평균 회복 시차: 몸이 나아지고 수치가 안정되기까지 {days}일.",
-      "typicalGapWithDriver": "평균 회복 시차: {days}일, {vital} 안정보다 몸이 먼저 나아지는 편이에요.",
+      "typicalGap": "평균 회복 시차: 몸이 나아지고 수치가 안정되기까지 {days, plural, other {#일}}.",
+      "typicalGapWithDriver": "평균 회복 시차: {days, plural, other {#일}}, {vital} 안정보다 몸이 먼저 나아지는 편이에요.",
       "typicalGapLearning": "종료된 에피소드가 몇 개 더 쌓이면 평균 회복 시차가 나와요.",
       "none": "이 기간에 기록한 에피소드가 없어요.",
       "analyze": "회복 시차 분석"
@@ -12231,7 +12231,7 @@
       "viewTable": "표",
       "chartSummary": "{title}을(를) 차트로 표시해요. 표 보기에서 모든 값을 확인할 수 있어요.",
       "dataUsed": "사용한 데이터 ({count})",
-      "truncated": "전체 {total}행 중 최근 {shown}행 표시",
+      "truncated": "전체 {total, plural, other {#행}} 중 최근 {shown}행 표시",
       "withheld": {
         "moduleDisabled": "해당 모듈이 꺼져 있어 이 표를 숨겼어요.",
         "unavailable": "이 표를 불러오지 못했어요."
@@ -12482,8 +12482,8 @@
     "historyLoadErrorHint": "결과가 없다는 뜻은 아니에요. 목록을 가져오지 못했을 뿐이에요. 다시 시도해 주세요.",
     "privacyNote": "답변은 암호화되어 저장되고, AI 코치에게는 전달되지 않아요.",
     "trend": {
-      "sincePrevious": "{date} 이전 체크인 이후: {change}점.",
-      "sinceFirst": "{date} 첫 체크인 이후: {change}점.",
+      "sincePrevious": "{date} 이전 체크인 이후: {change, plural, other {#점}}.",
+      "sinceFirst": "{date} 첫 체크인 이후: {change, plural, other {#점}}.",
       "verdict": {
         "improved": "연구에서 의미 있다고 보는 {threshold}점 변화에 도달했고, 좋아지는 방향입니다.",
         "worsened": "연구에서 의미 있다고 보는 {threshold}점 변화에 도달했고, 덜 좋은 방향입니다.",
@@ -12884,7 +12884,7 @@
       "derived": {
         "packYears": "{value}갑년",
         "packYearsMissing": "갑년을 계산하려면 하루 개비 수와 흡연 시작 연도가 필요해요.",
-        "activityMinutes": "주당 {value}분.",
+        "activityMinutes": "주당 {value, plural, other {#분}}.",
         "meetsWho": "WHO 권장량인 주당 150분을 채워요.",
         "belowWho": "WHO 권장량인 주당 150분보다 적어요.",
         "measuredSteps": "측정된 걸음 수가 우선이고, 이 응답은 맥락을 더해요.",
@@ -13064,7 +13064,7 @@
       "duplicate": "이미 저장돼 있어요. 기존 문서를 표시해요.",
       "deleted": "문서를 삭제했어요",
       "restoreFailed": "문서를 복구하지 못했어요.",
-      "deletedHint": "삭제한 문서는 {days}일 동안 최근 삭제됨에 남아 있어요."
+      "deletedHint": "삭제한 문서는 {days, plural, other {#일}} 동안 최근 삭제됨에 남아 있어요."
     },
     "timeline": {
       "loadingMore": "더 불러오는 중…",
@@ -13160,7 +13160,7 @@
       "partialFailure": "{total}개 중 {failed}개를 수정하지 못했어요",
       "failed": "작업을 완료하지 못했어요",
       "share": "공유",
-      "shareTooMany": "공유 링크에는 문서를 최대 {max}개까지 담을 수 있어요. 일부를 선택 해제하고 다시 시도해 주세요.",
+      "shareTooMany": "공유 링크에는 문서를 최대 {max, plural, other {#개}}까지 담을 수 있어요. 일부를 선택 해제하고 다시 시도해 주세요.",
       "linkVisit": "진료에 연결"
     },
     "episodeCard": {
@@ -13356,7 +13356,7 @@
       },
       "pickMore": "더 고르기",
       "finishedHint": "다시 검색하거나 필터를 바꿔 문서를 더 고르세요.",
-      "maxReached": "한 번에 최대 {max}개 문서를 가져올 수 있습니다.",
+      "maxReached": "한 번에 최대 {max, plural, other {#개}} 문서를 가져올 수 있습니다.",
       "noMatchHint": "이름의 일부로 검색하거나 태그와 날짜를 지워 보세요."
     },
     "customize": "보기 사용자 지정",
@@ -13371,23 +13371,23 @@
     "deleteConfirm": {
       "titleOne": "이 문서를 삭제할까요?",
       "titleMany": "문서 {count, plural, other {#개를}} 삭제할까요?",
-      "body": "삭제한 문서는 {days}일 동안 최근 삭제됨에 남아 있다가 완전히 삭제됩니다.",
+      "body": "삭제한 문서는 {days, plural, other {#일}} 동안 최근 삭제됨에 남아 있다가 완전히 삭제됩니다.",
       "action": "삭제"
     },
     "trash": {
       "title": "최근 삭제됨",
-      "subtitle": "삭제한 문서는 {days}일 동안 여기 남아 있다가 완전히 삭제됩니다.",
+      "subtitle": "삭제한 문서는 {days, plural, other {#일}} 동안 여기 남아 있다가 완전히 삭제됩니다.",
       "back": "문서",
       "entryLabel": "최근 삭제됨 ({count})",
       "loadError": "최근 삭제됨을 불러오지 못했어요.",
       "emptyTitle": "최근 삭제됨이 비어 있어요",
-      "emptyDescription": "삭제한 문서는 완전히 삭제되기 전까지 {days}일 동안 여기서 기다려요.",
+      "emptyDescription": "삭제한 문서는 완전히 삭제되기 전까지 {days, plural, other {#일}} 동안 여기서 기다려요.",
       "count": "삭제한 문서 ({count})",
       "restoreAll": "모두 복구",
       "restore": "복구",
       "purge": "지금 삭제",
       "deletedOn": "{date}에 삭제함.",
-      "removesIn": "{days}일 후 완전히 삭제됩니다.",
+      "removesIn": "{days, plural, other {#일}} 후 완전히 삭제됩니다.",
       "removesSoon": "하루 안에 완전히 삭제됩니다.",
       "restored": "문서를 복구했어요",
       "openRestored": "열기",
@@ -13575,8 +13575,8 @@
         "mineral": "미네랄",
         "omega3": "오메가-3 지방산"
       },
-      "rowMeta": "{window}일 중 {days}일, 기준 {value} {unit} ({authority})",
-      "rowMetaNoRef": "{window}일 중 {days}일",
+      "rowMeta": "{window, plural, other {#일}} 중 {days}일, 기준 {value} {unit} ({authority})",
+      "rowMetaNoRef": "{window, plural, other {#일}} 중 {days}일",
       "footer": "이 기간에 데이터가 있는 미량영양소는 추적 중인 {total}개 중 {tracked}개예요.",
       "emptyTitle": "아직 동기화된 미량영양소 데이터가 없어요",
       "loadError": "영양소 데이터를 불러오지 못했어요",
@@ -13625,8 +13625,8 @@
       "loadError": "에너지 균형을 불러오지 못했습니다.",
       "perDay": "하루 {value}",
       "trendMeta": "최근 7일 평균: 섭취량에서 휴식 및 활동 에너지를 뺀 값입니다.",
-      "meanMeta": "{days}일 평균: 섭취량에서 휴식 및 활동 에너지를 뺀 값입니다.",
-      "means": "{days}일 동안 평균 {intake} kcal 섭취, {used} kcal 소모.",
+      "meanMeta": "{days, plural, other {#일}} 평균: 섭취량에서 휴식 및 활동 에너지를 뺀 값입니다.",
+      "means": "{days, plural, other {#일}} 동안 평균 {intake} kcal 섭취, {used} kcal 소모.",
       "dayLine": "{intake} kcal 섭취, {used} kcal 소모",
       "estimated": "이 중 {days}일은 측정값이 없어 휴식 에너지를 체중, 키, 나이, 성별로 추정했습니다(Mifflin-St Jeor).",
       "needsProfile": "섭취량은 있지만 휴식 에너지가 들어오지 않았습니다. 프로필에 키, 생년월일, 성별을 추가하고 체중을 기록하면 균형이 추정됩니다.",
@@ -13697,8 +13697,8 @@
           "above": "평소보다 빠른 속도"
         },
         "body": {
-          "below": "{time} 기준 {today}걸음이에요. 평소 이맘때면 {typical}걸음쯤이었어요.",
-          "above": "{time} 기준 {today}걸음으로, 평소 이맘때의 {typical}걸음보다 앞서 있어요."
+          "below": "{time} 기준 {today, plural, other {#걸음이에요}}. 평소 이맘때면 {typical}걸음쯤이었어요.",
+          "above": "{time} 기준 {today, plural, other {#걸음으로}}, 평소 이맘때의 {typical}걸음보다 앞서 있어요."
         }
       },
       "upcomingVisit": {
@@ -13889,7 +13889,7 @@
     "groupDisclosure": "{group} 항목 보기",
     "sensitiveHint": "여기 있는 항목은 미리 선택되지 않아요. 하나씩 직접 골라 주세요.",
     "scopeNone": "아직 선택한 항목이 없어요. 포함할 항목을 고르거나 기본 리포트를 적용해 주세요.",
-    "scopeCount": "{groups}개 영역에서 {count, plural, other {#개}} 항목",
+    "scopeCount": "{groups, plural, other {#개}} 영역에서 {count, plural, other {#개}} 항목",
     "scopeSensitive": "{names} 포함",
     "leafVisits": "진료",
     "leafSurgicalHistory": "수술 이력",
@@ -13999,7 +13999,7 @@
       "revokeTitle": "{name} 님의 권한을 끝낼까요?",
       "revokeBody": "곧바로 권한이 사라져요. 내 기록을 열어 둔 브라우저에서도요. 이미 본 내용은 되돌릴 수 없어요. 언제든 다시 초대할 수 있어요.",
       "revokeEntriesStay": "상대가 입력한 내용은 내 기록에 남고, 내가 직접 지울 수 있어요.",
-      "revokeAttribution": "누가 무엇을 입력했는지는 활동 내역에서 {days}일 동안 볼 수 있어요.",
+      "revokeAttribution": "누가 무엇을 입력했는지는 활동 내역에서 {days, plural, other {#일}} 동안 볼 수 있어요.",
       "revokeConfirm": "권한 종료"
     },
     "received": {
@@ -14022,7 +14022,7 @@
     "activity": {
       "title": "내 기록을 연 내역",
       "description": "다른 사람이 내 기록을 연 모든 순간이에요.",
-      "retention": "최근 {days}일치예요. 더 오래된 항목은 삭제돼요.",
+      "retention": "최근 {days, plural, other {#일치예요}}. 더 오래된 항목은 삭제돼요.",
       "emptyTitle": "내 기록을 연 사람이 없어요",
       "emptyDescription": "나 말고 다른 사람이 연 내역이 여기 나와요. 하루에 사람마다 한 줄씩이에요.",
       "loadError": "활동 내역을 불러오지 못했어요.",
@@ -14156,7 +14156,7 @@
         "methodSso": "{name}님은 링크를 사용할 때 통합 로그인(SSO)으로 로그인합니다.",
         "methodBoth": "{name}님은 비밀번호를 정하거나 통합 로그인(SSO)으로 로그인할 수 있습니다."
       },
-      "deleteBodyGrace": "{name} 님에 대해 기록한 모든 것이 프로필과 함께 사라져요. 측정값, 약, 문서, 메모 전부요. 프로필은 바로 잠기고 {days}일 뒤에 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요."
+      "deleteBodyGrace": "{name} 님에 대해 기록한 모든 것이 프로필과 함께 사라져요. 측정값, 약, 문서, 메모 전부요. 프로필은 바로 잠기고 {days, plural, other {#일}} 뒤에 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요."
     },
     "toast": {
       "savedTo": "{name} 님의 기록에 저장했어요"
@@ -14497,7 +14497,7 @@
       "practitioner": "{date} {name} 마지막 방문 이후",
       "specialty": "{date} 마지막 {specialty} 방문 이후",
       "kind": "{date} 같은 유형({kind})의 마지막 방문 이후",
-      "default": "최근 {days}일",
+      "default": "최근 {days, plural, other {#일}}",
       "defaultReason": "같은 병원, 진료과 또는 유형의 이전 방문이 없어요.",
       "capped": "최근 2년",
       "cappedReason": "마지막으로 일치하는 진료가 2년 이상 지났으며, 보고서는 최대 2년까지 다룹니다."
@@ -14680,7 +14680,7 @@
       "Thermometer": "체온계",
       "Stethoscope": "청진기"
     },
-    "limitReached": "증상이 {limit}개입니다. 하나를 숨기면 새로 추가할 수 있습니다.",
+    "limitReached": "증상이 {limit, plural, other {#개입니다}}. 하나를 숨기면 새로 추가할 수 있습니다.",
     "saveError": "증상을 저장하지 못했습니다. 다시 시도하세요.",
     "nameRequired": "증상 이름을 입력하세요.",
     "unreadableLabel": "읽을 수 없는 증상",
@@ -14701,7 +14701,7 @@
       "reset": "양식 초기화",
       "emptyHint": "첫 증상을 추가하세요. 예: 전조, 두통.",
       "emptyHintNoManage": "이 기록에는 아직 설정된 증상이 없습니다.",
-      "limitHint": "증상은 최대 {limit}개입니다. 질병 페이지에서 하나를 숨기면 새로 추가할 수 있습니다.",
+      "limitHint": "증상은 최대 {limit, plural, other {#개입니다}}. 질병 페이지에서 하나를 숨기면 새로 추가할 수 있습니다.",
       "intensityFor": "강도: {symptom}",
       "partlySaved": "{total}개 중 {saved}개 저장됨, 나머지는 아직 선택되어 있습니다.",
       "severalHint": "함께 나타났다면 여러 개를 선택하세요.",
@@ -14823,7 +14823,7 @@
       "extremeHigh": "{since} 이후 가장 높은 하루 값",
       "extremeLow": "{since} 이후 가장 낮은 하루 값",
       "firstValue": "이 종류의 첫 측정",
-      "gap": "{days}일 동안 측정 없음"
+      "gap": "{days, plural, other {#일}} 동안 측정 없음"
     },
     "previousDayShortcut": "전날 (Alt + 왼쪽 화살표)",
     "nextDayShortcut": "다음 날 (Alt + 오른쪽 화살표)",
@@ -14947,12 +14947,12 @@
         "environment": "환경",
         "life": "삶의 사건"
       },
-      "meter": "{total}개 중 {carrying}개 줄이 채워졌어요",
-      "carriesDetail": "{total}개 중 {carrying}개 줄로 {since}부터 한눈에 볼 수 있어요.",
+      "meter": "{total, plural, other {#개}} 중 {carrying}개 줄이 채워졌어요",
+      "carriesDetail": "{total, plural, other {#개}} 중 {carrying}개 줄로 {since}부터 한눈에 볼 수 있어요.",
       "loadFailed": "현황을 불러오지 못했어요.",
       "card": {
         "title": "타임라인에 이미 담긴 것",
-        "summary": "{since}까지 거슬러 올라가며, {total}개 중 {carrying}개 줄이 이미 채워졌어요.",
+        "summary": "{since}까지 거슬러 올라가며, {total, plural, other {#개}} 중 {carrying}개 줄이 이미 채워졌어요.",
         "dismiss": "숨기기"
       },
       "detail": {
@@ -15128,7 +15128,7 @@
     "labs": {
       "menuTitle": "검사 수치",
       "otherPanel": "기타",
-      "full": "검사 수치는 한 번에 최대 {max}개까지 표시할 수 있습니다. 다른 수치를 추가하려면 하나를 제거하세요.",
+      "full": "검사 수치는 한 번에 최대 {max, plural, other {#개까지}} 표시할 수 있습니다. 다른 수치를 추가하려면 하나를 제거하세요.",
       "above": "범위 초과",
       "below": "범위 미만",
       "reference": "참고 범위 {range}",
@@ -15144,7 +15144,7 @@
     "legendSymptom": "증상 선: 기록한 날마다의 가장 높은 강도(0~10)를 기록한 날 기준으로 평균한 값",
     "symptoms": {
       "menuTitle": "증상",
-      "full": "증상은 한 번에 최대 {max}개까지 표시할 수 있습니다. 다른 증상을 추가하려면 하나를 제거하세요.",
+      "full": "증상은 한 번에 최대 {max, plural, other {#개까지}} 표시할 수 있습니다. 다른 증상을 추가하려면 하나를 제거하세요.",
       "hidden": "숨김",
       "unnamed": "증상",
       "daysOne": "1일",
@@ -15325,7 +15325,7 @@
     "weekGoalsMet": "주간 목표를 모두 달성함",
     "weekGoalsNotMet": "주간 목표를 모두 달성하지는 못함",
     "cell": {
-      "steps": "{value}걸음",
+      "steps": "{value, plural, other {#걸음}}",
       "activeMinutes": "활동 {value}분",
       "workouts": "운동 {value}회: {sports}"
     },
@@ -15342,7 +15342,7 @@
     "legend": "이전 12주와 비교:",
     "noBaseline": "데이터가 있는 날이 14일이 되면 평소 범위가 표시됩니다.",
     "summary": {
-      "steps": "{value}걸음",
+      "steps": "{value, plural, other {#걸음}}",
       "activeMinutes": "활동 {value}분",
       "workouts": "운동 {value}회",
       "load": "평균 운동 부하 {value}",
@@ -15400,7 +15400,7 @@
     "openSettings": "소스 우선순위에서 순서 변경",
     "compareTitle": "두 소스 비교",
     "range": "기간",
-    "rangeDays": "{days}일",
+    "rangeDays": "{days, plural, other {#일}}",
     "compareNeedsTwo": "이 기간에는 한 소스에만 이 항목의 값이 있습니다.",
     "side": {
       "a": "첫 번째 소스",
@@ -15463,8 +15463,8 @@
     "runIdle": "가져오기",
     "run": "{count, plural, other {#행}} 가져오기",
     "close": "닫기",
-    "summaryCheck": "{rows}행 읽음: {inserted}행 가져오기 가능, {duplicates}행 이미 있음, {failed}행 문제 있음.",
-    "summaryDone": "{inserted}행을 가져왔습니다. 이미 있던 {duplicates}행과 문제가 있는 {failed}행은 건너뛰었습니다.",
+    "summaryCheck": "{rows, plural, other {#행}} 읽음: {inserted}행 가져오기 가능, {duplicates}행 이미 있음, {failed}행 문제 있음.",
+    "summaryDone": "{inserted, plural, other {#행을}} 가져왔습니다. 이미 있던 {duplicates}행과 문제가 있는 {failed}행은 건너뛰었습니다.",
     "markersMatched": "내 마커에 연결됨:",
     "markersCreated": "새 마커:",
     "line": "{line}행",
@@ -15698,11 +15698,11 @@
       "triggersTitle": "의심되는 유발 요인",
       "triggersNote": "기록할 때 본인이나 돌보는 사람이 적은 내용이며, 확인된 원인이 아니에요.",
       "overlaysTitle": "함께 기록된 내용",
-      "overlayMissedDose": "발작 {of}회 중 {followed}회는 직전 48시간 안에 예정된 약을 잊었거나 건너뛴 뒤에 일어났어요.",
-      "overlayIllness": "발작 {during}회가 기록된 아픈 기간 {episodes}건 중 하나에 일어났어요.",
-      "overlaySleep": "발작이 있던 날 전날 밤의 기록된 수면: 평균 {before}시간({nightsBefore}일 밤), 다른 밤: {other}시간({nightsOther}일 밤).",
+      "overlayMissedDose": "발작 {of, plural, other {#회}} 중 {followed}회는 직전 48시간 안에 예정된 약을 잊었거나 건너뛴 뒤에 일어났어요.",
+      "overlayIllness": "발작 {during, plural, other {#회가}} 기록된 아픈 기간 {episodes}건 중 하나에 일어났어요.",
+      "overlaySleep": "발작이 있던 날 전날 밤의 기록된 수면: 평균 {before}시간({nightsBefore, plural, other {#일}} 밤), 다른 밤: {other}시간({nightsOther, plural, other {#일}} 밤).",
       "overlayCycleDays": "주기 일차별 발작(일차: 횟수): {list}.",
-      "overlayCycleRatio": "완전히 기록된 {cycles}번의 주기 동안 생리 전후(−3일부터 +3일)의 하루 발작 빈도는 다른 날의 {c1}배, 배란 전후(10일부터 −13일)는 {c2}배였어요. Herzog의 월경 관련 뇌전증 기준은 2배 이상 증가이며, 이 값은 참고용일 뿐 판단 결과가 아니에요.",
+      "overlayCycleRatio": "완전히 기록된 {cycles}번의 주기 동안 생리 전후(−3일부터 +3일)의 하루 발작 빈도는 다른 날의 {c1, plural, other {#배}}, 배란 전후(10일부터 −13일)는 {c2, plural, other {#배였어요}}. Herzog의 월경 관련 뇌전증 기준은 2배 이상 증가이며, 이 값은 참고용일 뿐 판단 결과가 아니에요.",
       "overlayCycleTooFew": "주기 단계별 빈도는 완전히 기록된 주기가 3번 이상일 때 표시돼요(현재 {cycles}번).",
       "overlaysNote": "같은 시기에 기록된 내용일 뿐 원인이 아니에요.",
       "eventsTitle": "기록된 모든 사례",
@@ -15937,7 +15937,7 @@
     },
     "rule": {
       "title": "군집 발작 기준",
-      "explainer": "군집 발작은 정해진 시간 안에 정해진 횟수 이상 일어난 발작이에요. 응급 계획에 있는 기준을 사용하세요. NICE 기준은 {niceHours}시간 내 {niceCount}회이며, 요약에서는 두 기준으로 모두 세어요.",
+      "explainer": "군집 발작은 정해진 시간 안에 정해진 횟수 이상 일어난 발작이에요. 응급 계획에 있는 기준을 사용하세요. NICE 기준은 {niceHours, plural, other {#시간}} 내 {niceCount}회이며, 요약에서는 두 기준으로 모두 세어요.",
       "count": "발작 횟수",
       "hours": "시간 범위(시간)",
       "invalid": "1~168시간 안에 2~20회로 설정하세요.",

@@ -41,13 +41,19 @@ function rulesFor(locale: Locale): Intl.PluralRules | null {
 }
 
 /**
- * A count passed as a string ("1.234", "1 234") is a formatted integer: drop
- * the grouping so the plural category is taken from the number itself.
+ * A count passed as a string is a formatted number: "1,234" or "1 234" is a
+ * grouped integer, "28.5" or "28,5" a decimal, so the plural category is
+ * taken from the number itself.
  */
 function countValue(raw: string | number): number {
   if (typeof raw === "number") return raw;
-  const digits = raw.replace(/[\s  .,']/g, "");
-  return /^-?\d+$/.test(digits) ? Number(digits) : Number.NaN;
+  const text = raw.trim();
+  if (/^-?\d{1,3}([.,\s\u00a0\u202f']\d{3})+$/.test(text)) {
+    return Number(text.replace(/[^\d-]/g, ""));
+  }
+  return /^-?\d+([.,]\d+)?$/.test(text)
+    ? Number(text.replace(",", "."))
+    : Number.NaN;
 }
 
 /** Index of the brace that closes the one opened at `open`, or -1. */
