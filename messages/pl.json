@@ -6372,7 +6372,8 @@
               "httpsRequired": "Użyj adresu https://. Przez http:// hasło zostałoby wysłane bez szyfrowania.",
               "passwordRequired": "Wpisz hasło raz przy konfiguracji folderu.",
               "saveFailed": "Nie udało się zapisać folderu. Sprawdź adres i spróbuj ponownie.",
-              "fetchFailed": "Nie udało się rozpocząć pobierania. Spróbuj później."
+              "fetchFailed": "Nie udało się rozpocząć pobierania. Spróbuj później.",
+              "removeFailed": "Nie udało się usunąć folderu. Spróbuj ponownie."
             },
             "title": "Health Connect z folderu",
             "description": "HealthLog pobiera eksport, który Health Connect zapisuje według harmonogramu w folderze WebDAV lub Nextcloud, i importuje to, co nowe.",

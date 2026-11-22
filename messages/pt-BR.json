@@ -6372,7 +6372,8 @@
               "httpsRequired": "Use um endereço https://. Com http://, a senha seria enviada sem criptografia.",
               "passwordRequired": "Informe a senha uma vez ao configurar a pasta.",
               "saveFailed": "Não foi possível salvar a pasta. Confira o endereço e tente de novo.",
-              "fetchFailed": "Não foi possível iniciar a busca. Tente mais tarde."
+              "fetchFailed": "Não foi possível iniciar a busca. Tente mais tarde.",
+              "removeFailed": "Não foi possível remover a pasta. Tente de novo."
             },
             "title": "Health Connect de uma pasta",
             "description": "O HealthLog busca a exportação que o Health Connect salva de forma programada numa pasta WebDAV ou Nextcloud e importa o que for novo.",

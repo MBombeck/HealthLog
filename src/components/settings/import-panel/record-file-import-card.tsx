@@ -12,6 +12,7 @@ import { useCallback, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, FileHeart, Loader2, Upload, Watch } from "lucide-react";
 
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
@@ -170,6 +171,16 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
       <p className="text-muted-foreground text-xs">{copy.privacy}</p>
 
       <div aria-live="polite" className="space-y-2">
+        {statusQuery.isError && (
+          // The last import's state could not be read. Uploading stays
+          // possible (the server refuses a second run itself); the card says
+          // it does not know, rather than looking like nothing ever ran.
+          <QueryErrorRow
+            inset
+            error={statusQuery.error}
+            onRetry={() => void statusQuery.refetch()}
+          />
+        )}
         {(uploading || running) && (
           <p className="text-muted-foreground flex items-center gap-2 text-xs">
             <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />

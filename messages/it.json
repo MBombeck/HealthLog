@@ -6372,7 +6372,8 @@
               "httpsRequired": "Usa un indirizzo https://. Con http:// la password viaggerebbe in chiaro.",
               "passwordRequired": "Inserisci la password una volta quando configuri la cartella.",
               "saveFailed": "Non è stato possibile salvare la cartella. Controlla l'indirizzo e riprova.",
-              "fetchFailed": "Non è stato possibile avviare il prelievo. Riprova più tardi."
+              "fetchFailed": "Non è stato possibile avviare il prelievo. Riprova più tardi.",
+              "removeFailed": "Non è stato possibile rimuovere la cartella. Riprova."
             },
             "title": "Health Connect da una cartella",
             "description": "HealthLog preleva l'esportazione che Health Connect salva a orari programmati in una cartella WebDAV o Nextcloud e importa ciò che è nuovo.",

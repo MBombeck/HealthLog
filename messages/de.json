@@ -6372,7 +6372,8 @@
               "httpsRequired": "Verwende eine https://-Adresse. Über http:// ginge das Passwort unverschlüsselt durchs Netz.",
               "passwordRequired": "Gib das Passwort beim Einrichten des Ordners einmal ein.",
               "saveFailed": "Der Ordner konnte nicht gespeichert werden. Prüfe die Adresse und versuche es noch einmal.",
-              "fetchFailed": "Das Abholen konnte nicht gestartet werden. Versuche es später noch einmal."
+              "fetchFailed": "Das Abholen konnte nicht gestartet werden. Versuche es später noch einmal.",
+              "removeFailed": "Der Ordner konnte nicht entfernt werden. Versuche es noch einmal."
             },
             "title": "Health Connect aus einem Ordner",
             "description": "HealthLog holt den Export, den Health Connect nach Zeitplan speichert, aus einem WebDAV- oder Nextcloud-Ordner und übernimmt, was neu ist.",

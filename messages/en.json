@@ -6372,7 +6372,8 @@
               "httpsRequired": "Use an https:// address. Over plain http:// the password would travel unencrypted.",
               "passwordRequired": "Enter the password once when setting up the folder.",
               "saveFailed": "The folder could not be saved. Check the address and try again.",
-              "fetchFailed": "The fetch could not be started. Try again later."
+              "fetchFailed": "The fetch could not be started. Try again later.",
+              "removeFailed": "The folder could not be removed. Try again."
             },
             "title": "Health Connect from a folder",
             "description": "Let HealthLog fetch the export Health Connect saves on a schedule, from a WebDAV or Nextcloud folder, and import what is new.",

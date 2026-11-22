@@ -6372,7 +6372,8 @@
               "httpsRequired": "https:// 주소를 사용하세요. http:// 주소로는 비밀번호가 암호화되지 않은 채 전송됩니다.",
               "passwordRequired": "폴더를 설정할 때 비밀번호를 한 번 입력하세요.",
               "saveFailed": "폴더를 저장하지 못했어요. 주소를 확인하고 다시 시도하세요.",
-              "fetchFailed": "가져오기를 시작하지 못했어요. 나중에 다시 시도하세요."
+              "fetchFailed": "가져오기를 시작하지 못했어요. 나중에 다시 시도하세요.",
+              "removeFailed": "폴더를 제거하지 못했어요. 다시 시도하세요."
             },
             "title": "폴더에서 Health Connect 가져오기",
             "description": "Health Connect가 예약에 따라 WebDAV 또는 Nextcloud 폴더에 저장하는 내보내기 파일을 HealthLog가 직접 가져와 새 항목을 추가해요.",

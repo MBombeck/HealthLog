@@ -51,6 +51,11 @@ import { CoachMemorySection } from "../coach-memory-section";
 import { CoachRemindersSection } from "../coach-reminders-section";
 import { AboutMeNoteManager } from "@/components/records/about-me-note-manager";
 import { AllergyFreeTextNote } from "@/components/records/allergy-free-text-note";
+import { HealthConnectRemoteCard } from "../import-panel/health-connect-remote-card";
+import { RecordFileImportCard } from "../import-panel/record-file-import-card";
+import { FitImportCard } from "../import-panel/fit-import-card";
+import { HealthConnectImportCard } from "../import-panel/health-connect-import-card";
+import { DoseSnoozeCard } from "../dose-snooze-card";
 
 function renderCard(node: React.ReactNode) {
   return renderToStaticMarkup(
@@ -66,6 +71,16 @@ const cases: Array<[string, () => React.ReactNode]> = [
   ["CoachRemindersSection", () => <CoachRemindersSection isAuthenticated />],
   ["AboutMeNoteManager", () => <AboutMeNoteManager />],
   ["AllergyFreeTextNote", () => <AllergyFreeTextNote />],
+  // 1.49.0: the folder import showed an empty card, the file imports a
+  // silent status, and the snooze setting its default as if it were stored.
+  ["HealthConnectRemoteCard", () => <HealthConnectRemoteCard />],
+  [
+    "RecordFileImportCard (Gadgetbridge)",
+    () => <RecordFileImportCard kind="gadgetbridge" />,
+  ],
+  ["FitImportCard", () => <FitImportCard />],
+  ["HealthConnectImportCard", () => <HealthConnectImportCard />],
+  ["DoseSnoozeCard", () => <DoseSnoozeCard isAuthenticated />],
 ];
 
 describe("settings read-error family — a read failure is foreground and recoverable", () => {

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Loader2, Upload } from "lucide-react";
 
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Progress } from "@/components/ui/progress";
@@ -538,6 +539,15 @@ export function AppleHealthImportCard() {
 
       {/* Live progress / outcome — announced to assistive tech. */}
       <div aria-live="polite" className="space-y-2">
+        {statusQuery.isError && (
+          // The last import's state could not be read; say so rather than
+          // look like nothing ever ran. Uploading stays possible.
+          <QueryErrorRow
+            inset
+            error={statusQuery.error}
+            onRetry={() => void statusQuery.refetch()}
+          />
+        )}
         {uploading && (
           <p className="text-muted-foreground flex items-center gap-2 text-xs">
             <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />

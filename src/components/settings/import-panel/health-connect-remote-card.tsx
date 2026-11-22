@@ -33,6 +33,7 @@ import {
   recentProofErrorMessage,
   useRecentProof,
 } from "@/components/settings/security-section/use-recent-proof";
+import { CardQueryBody } from "@/components/settings/_card-query-body";
 import { ImportCardShell } from "./import-card-shell";
 
 interface RemoteState {
@@ -125,6 +126,7 @@ export function HealthConnectRemoteCard() {
   const remove = useMutation({
     mutationFn: () => apiDelete(ROUTE),
     onSuccess: done,
+    onError: () => setError(t(`${k}.error.removeFailed`)),
   });
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -150,7 +152,7 @@ export function HealthConnectRemoteCard() {
       description={t(`${k}.description`)}
     >
       {recentProof.dialog}
-      {state.data && (
+      <CardQueryBody query={state} slot="hc-remote-state">
         <form
           className="space-y-3"
           onSubmit={submit}
@@ -264,7 +266,7 @@ export function HealthConnectRemoteCard() {
             )}
           </SettingsCardActions>
         </form>
-      )}
+      </CardQueryBody>
     </ImportCardShell>
   );
 }

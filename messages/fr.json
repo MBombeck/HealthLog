@@ -6372,7 +6372,8 @@
               "httpsRequired": "Utilisez une adresse https://. Avec http://, le mot de passe circulerait en clair.",
               "passwordRequired": "Saisissez le mot de passe une fois lors de la configuration du dossier.",
               "saveFailed": "Le dossier n'a pas pu être enregistré. Vérifiez l'adresse et réessayez.",
-              "fetchFailed": "La récupération n'a pas pu être lancée. Réessayez plus tard."
+              "fetchFailed": "La récupération n'a pas pu être lancée. Réessayez plus tard.",
+              "removeFailed": "Le dossier n'a pas pu être retiré. Réessayez."
             },
             "title": "Health Connect depuis un dossier",
             "description": "HealthLog récupère l'export que Health Connect enregistre selon un calendrier dans un dossier WebDAV ou Nextcloud, et importe ce qui est nouveau.",
