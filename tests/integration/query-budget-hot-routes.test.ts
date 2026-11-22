@@ -76,7 +76,16 @@ const BUDGET = {
   // anchor reads) instead of the feeder reads of its own due computation.
   // A fixed number, whatever the number of medications.
   dashboardSummary: 37,
-  dashboardSnapshot: 101,
+  // 101 → 89 (1.49.0): the summaries slice reads the source ladder and the
+  // zone once instead of four and two times, and the year-ago baseline of
+  // every type in one statement instead of one per type.
+  dashboardSnapshot: 89,
+  // The digest composes the snapshot (its own cell, rebuilt here) and adds
+  // its rail's reads; 143 before the slice change above.
+  dailyDigest: 133,
+  // The target cards; their seven-day means come from the slice when a
+  // fresh one is cached, here (evicted) from their own aggregate.
+  insightsTargets: 21,
   series30: 6,
   series365: 5,
   series3650: 5,
@@ -378,6 +387,24 @@ describe("statement budgets on the hot routes (real Postgres)", () => {
       "http://localhost/api/dashboard/snapshot",
     );
     expectWithin("/api/dashboard/snapshot", m, BUDGET.dashboardSnapshot);
+  });
+
+  it("GET /api/daily/digest", async () => {
+    const { GET } = await import("@/app/api/daily/digest/route");
+    const m = await measureRead(
+      GET as unknown as Handler,
+      "http://localhost/api/daily/digest",
+    );
+    expectWithin("/api/daily/digest", m, BUDGET.dailyDigest);
+  });
+
+  it("GET /api/insights/targets", async () => {
+    const { GET } = await import("@/app/api/insights/targets/route");
+    const m = await measureRead(
+      GET as unknown as Handler,
+      "http://localhost/api/insights/targets",
+    );
+    expectWithin("/api/insights/targets", m, BUDGET.insightsTargets);
   });
 
   it.each([
