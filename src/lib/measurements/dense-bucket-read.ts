@@ -290,7 +290,8 @@ export async function readLocalDayExtremes(opts: {
  * With `plausibleOnly`, readings outside the metric's plausibility domain are
  * neither part of the value nor able to make a day the latest, so a day
  * holding only impossible values gives way to the day before it. `null` when
- * nothing qualifies. The day's readings arrive as one row per local hour.
+ * nothing qualifies. The day's readings arrive as one row per local hour,
+ * read from the newest reading back, never the whole window.
  */
 export async function readLatestLocalDayMean(opts: {
   userId: string;
@@ -307,19 +308,34 @@ export async function readLatestLocalDayMean(opts: {
   const valueFilter = range
     ? Prisma.sql`AND m."value" >= ${range.min} AND m."value" <= ${range.max}`
     : Prisma.empty;
+  // The latest local day holds the newest reading's day or a later one, and
+  // a reading's zone moves its day by at most `READING_ZONE_SLACK_MS` against
+  // another's, so every reading of the latest day lies within a day and two
+  // slacks of the newest reading: the read covers that tail, not the window.
+  const tailMs = 24 * 60 * 60 * 1000 + 2 * READING_ZONE_SLACK_MS;
   const hours = await (opts.db ?? prisma).$queryRaw<
     Array<{ day: string; n: number; sum: number; last_at: Date }>
   >(Prisma.sql`
-    WITH src AS (
-      SELECT
-        ${readingWallSql("m", timeZone)} AS local_at,
-        m."measured_at" AS measured_at,
-        m."value" AS value
+    WITH newest AS (
+      SELECT MAX(m."measured_at") AS at
       FROM measurements m
       WHERE m."user_id" = ${opts.userId}
         AND m."type" = ${opts.type}::measurement_type
         AND m."deleted_at" IS NULL
         AND m."measured_at" >= ${opts.since}
+        ${valueFilter}
+    ),
+    src AS (
+      SELECT
+        ${readingWallSql("m", timeZone)} AS local_at,
+        m."measured_at" AS measured_at,
+        m."value" AS value
+      FROM measurements m, newest
+      WHERE m."user_id" = ${opts.userId}
+        AND m."type" = ${opts.type}::measurement_type
+        AND m."deleted_at" IS NULL
+        AND m."measured_at" >= ${opts.since}
+        AND m."measured_at" >= newest.at - ${tailMs} * interval '1 millisecond'
         ${valueFilter}
     ),
     dayed AS (
