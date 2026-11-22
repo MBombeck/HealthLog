@@ -113,6 +113,20 @@ export function serverSetupResumeStep(
   return steps.find((step) => step.status === "pending")?.id ?? "accounts";
 }
 
+/**
+ * The server setup's counter, from the same list its bar is drawn from
+ * (`SERVER_SETUP_STEP_IDS`), so "Step 2 of 5" and the segments agree.
+ */
+export function serverSetupCounter(id: ServerSetupStepId): {
+  current: number;
+  total: number;
+} {
+  return {
+    current: SERVER_SETUP_STEP_IDS.indexOf(id) + 1,
+    total: SERVER_SETUP_STEP_IDS.length,
+  };
+}
+
 export function nextServerSetupStep(
   id: ServerSetupStepId,
 ): ServerSetupStepId | null {

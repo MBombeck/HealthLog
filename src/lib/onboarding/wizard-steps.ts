@@ -304,16 +304,28 @@ export function isOnboardingPathname(pathname: string): boolean {
 }
 
 /**
- * "2 of 6" — for the question screens only. The welcome, confirm, first
- * result and done screens carry no counter: the count is a promise about how
- * many questions are left, and those screens are not questions.
+ * The step track: the ordered screens the flow shows after the welcome. The
+ * one source for both the counter ("Step 3 of 9") and the bar of segments
+ * under it, so the two cannot disagree. They used to come from two lists (the
+ * counter from the questions, the bar from every screen), and a flow showed
+ * "Step 1 of 5" over nine segments.
+ */
+export function stepTrack(state: FlowState): OnboardingStepId[] {
+  return screenOrder(state).filter(
+    (id): id is OnboardingStepId => id !== "welcome",
+  );
+}
+
+/**
+ * "Step 3 of 9": the screen's place on the step track, or null on the
+ * welcome, which comes before the track.
  */
 export function stepCounter(
   state: FlowState,
   screen: OnboardingScreenId,
 ): { current: number; total: number } | null {
-  const questions = questionScreens(state);
-  const index = (questions as readonly string[]).indexOf(screen);
+  const track = stepTrack(state);
+  const index = (track as readonly string[]).indexOf(screen);
   if (index === -1) return null;
-  return { current: index + 1, total: questions.length };
+  return { current: index + 1, total: track.length };
 }

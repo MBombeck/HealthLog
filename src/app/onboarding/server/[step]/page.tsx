@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth/session";
 import {
   isServerSetupStepId,
   SERVER_SETUP_STEP_IDS,
+  serverSetupCounter,
 } from "@/lib/admin/server-setup";
 import { serverSetupOfferedHere } from "@/lib/admin/server-setup-store";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -54,16 +55,12 @@ export default async function ServerSetupStepPage({ params }: PageProps) {
     userLocale: session.user.locale ?? null,
   });
   const { t } = getServerTranslator(locale);
-  const index = SERVER_SETUP_STEP_IDS.indexOf(step);
 
   return (
     <SetupFrame
       screen={step}
       flow="server"
-      counter={t("onboarding.shell.stepOf", {
-        current: index + 1,
-        total: SERVER_SETUP_STEP_IDS.length,
-      })}
+      counter={t("onboarding.shell.stepOf", serverSetupCounter(step))}
       stepsLabel={t("admin.serverSetup.stepsLabel")}
       steps={SERVER_SETUP_STEP_IDS.map((id) => ({
         id,

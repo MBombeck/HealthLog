@@ -1,13 +1,10 @@
 import { SetupFrame } from "@/components/onboarding/setup-frame";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
-import type {
-  OnboardingStateDto,
-  OnboardingStepId,
-} from "@/lib/onboarding/needs";
+import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import {
-  screenOrder,
   stepCounter,
+  stepTrack,
   type OnboardingScreenId,
 } from "@/lib/onboarding/wizard-steps";
 
@@ -46,10 +43,9 @@ export async function OnboardingShell({
   const locale = await resolveServerLocale({ userLocale });
   const { t } = getServerTranslator(locale);
 
+  // Counter and bar from the same track, so they always agree.
   const counter = stepCounter(state, screen);
-  const steps = screenOrder(state).filter(
-    (id): id is OnboardingStepId => id !== "welcome",
-  );
+  const steps = stepTrack(state);
 
   return (
     <SetupFrame

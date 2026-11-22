@@ -5468,7 +5468,7 @@
     "flow": {
       "welcome": {
         "title": "Welcome to HealthLog",
-        "body": "Five short questions decide what HealthLog shows you first. It takes about two minutes.",
+        "body": "A few short questions decide what HealthLog shows you first. It takes about two minutes.",
         "changeLater": "Nothing is final: every choice can be changed later under Settings.",
         "setUp": "Set up",
         "skip": "Skip for now",

@@ -5468,7 +5468,7 @@
     "flow": {
       "welcome": {
         "title": "Welkom bij HealthLog",
-        "body": "Vijf korte vragen bepalen wat HealthLog je als eerste laat zien. Het duurt ongeveer twee minuten.",
+        "body": "Een paar korte vragen bepalen wat HealthLog je als eerste laat zien. Het duurt ongeveer twee minuten.",
         "changeLater": "Niets is definitief: elke keuze kun je later wijzigen onder Instellingen.",
         "setUp": "Instellen",
         "skip": "Nu overslaan",
