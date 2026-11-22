@@ -31,6 +31,7 @@ import { getEvent } from "@/lib/logging/context";
 import { clearedRelayFields } from "@/lib/push-relay/binding";
 import { relayConfig } from "@/lib/push-relay/config";
 import { drainRelayUnbinds } from "@/lib/push-relay/unbind-queue";
+import { mayHoldRelayBinding } from "@/lib/push-relay/unbind-rows";
 
 type DbModels =
   | "device"
@@ -52,18 +53,6 @@ export function clearedPushCredentials() {
     laStartedAt: null,
     ...clearedRelayFields({ pushKey: true }),
   };
-}
-
-/** Whether the relay may hold a binding for this device's token. */
-export function mayHoldRelayBinding(device: {
-  apnsToken: string | null;
-  relayState: string;
-  relayConsentAt: Date | null;
-}): boolean {
-  return (
-    Boolean(device.apnsToken) &&
-    (device.relayState !== "none" || device.relayConsentAt != null)
-  );
 }
 
 /**

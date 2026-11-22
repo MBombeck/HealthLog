@@ -65,6 +65,7 @@
  */
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { prisma } from "@/lib/db";
+import { deleteDeviceRows } from "@/lib/devices/delete-devices";
 import type { Prisma } from "@/generated/prisma/client";
 import { getEvent } from "@/lib/logging/context";
 import { withBackgroundEvent } from "@/lib/logging/background";
@@ -605,11 +606,9 @@ async function fanOutIntakeSyncApns(args: {
 
   // Reap devices APNs reported as permanently dead on the silent send.
   if (deadDeviceIds.length > 0) {
-    await prisma.device
-      .deleteMany({ where: { id: { in: deadDeviceIds } } })
-      .catch(() => {
-        /* best-effort cleanup */
-      });
+    await deleteDeviceRows({ id: { in: deadDeviceIds } }).catch(() => {
+      /* best-effort cleanup */
+    });
   }
 
   recordPushAttempt({

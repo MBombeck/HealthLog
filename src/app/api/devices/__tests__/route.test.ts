@@ -1,5 +1,23 @@
+import type { Prisma } from "@/generated/prisma/client";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+
+// The one device-delete path queues relay unbinds; here it is the plain
+// delete the assertions below read.
+vi.mock("@/lib/devices/delete-devices", async () => {
+  const { prisma } = await import("@/lib/db");
+  return {
+    deleteDeviceRows: async (where: Prisma.DeviceWhereInput) =>
+      (await prisma.device.deleteMany({ where }))?.count ?? 0,
+    deleteDeviceRowsIn: async (
+      tx: Prisma.TransactionClient,
+      where: Prisma.DeviceWhereInput,
+    ) => ({
+      count: (await tx.device.deleteMany({ where }))?.count ?? 0,
+      unbinds: [],
+    }),
+  };
+});
 
 vi.mock("@/lib/db", () => ({
   prisma: {

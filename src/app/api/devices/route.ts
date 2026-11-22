@@ -34,6 +34,7 @@ import { apiError, apiSuccess, sanitiseZodIssues } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
+import { deleteDeviceRowsIn } from "@/lib/devices/delete-devices";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -42,10 +43,7 @@ import {
   LOCAL_RUNWAY_MAX_DAYS,
   localRunwayInBounds,
 } from "@/lib/notifications/client-managed-apns";
-import {
-  drainQueuedUnbinds,
-  mayHoldRelayBinding,
-} from "@/lib/devices/signed-out-push";
+import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
 import {
   activityStatementSchema,
   applyPushFields,
@@ -267,20 +265,12 @@ async function takeOver(
     if (row && row.userId !== userId) foreign.set(row.id, row);
   }
   const takenOver = [...foreign.values()];
-  const unbinds = takenOver
-    .filter(mayHoldRelayBinding)
-    .map((d) => d.apnsToken!.toLowerCase());
-  if (unbinds.length > 0) {
-    await tx.pushRelayUnbind.createMany({
-      data: unbinds.map((t) => ({ token: t })),
-      skipDuplicates: true,
-    });
-  }
-  if (takenOver.length > 0) {
-    await tx.device.deleteMany({
-      where: { id: { in: takenOver.map((d) => d.id) } },
-    });
-  }
+  const { unbinds } =
+    takenOver.length > 0
+      ? await deleteDeviceRowsIn(tx, {
+          id: { in: takenOver.map((d) => d.id) },
+        })
+      : { unbinds: [] as string[] };
   return { takenOver, unbinds };
 }
 
@@ -430,9 +420,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     let duplicateDevice: typeof ownLegacy = null;
     if (ownApns && ownLegacy && ownApns.id !== ownLegacy.id) {
       duplicateDevice = ownLegacy;
-      await tx.device.deleteMany({
-        where: { id: ownLegacy.id, userId: user.id },
-      });
+      // Its APNs token differs from the one presented (the partial unique
+      // index gives that one to the APNs row), so an unbind queued for it
+      // never touches the binding this request makes; the minute pass sends
+      // it.
+      await deleteDeviceRowsIn(tx, { id: ownLegacy.id, userId: user.id });
       canonicalDevice = ownApns;
     }
 

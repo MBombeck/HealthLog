@@ -21,10 +21,8 @@
  * isn't yours" would let an attacker enumerate device ids).
  */
 import { prisma } from "@/lib/db";
-import {
-  drainQueuedUnbinds,
-  mayHoldRelayBinding,
-} from "@/lib/devices/signed-out-push";
+import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
+import { deviceDeleteWrites } from "@/lib/devices/delete-devices";
 
 export interface RevokeDeviceCascadeResult {
   id: string;
@@ -91,25 +89,15 @@ export async function revokeDeviceCascade(
     );
   }
   // A revoked device leaves the push relay too, so its token is not bound to
-  // this instance until the relay's own idle expiry. Queued with the delete,
-  // so an unreachable relay is retried by the minute pass; the relay answers
-  // 204 whether or not the token was bound.
-  const unbind = mayHoldRelayBinding(device)
-    ? device.apnsToken!.toLowerCase()
-    : null;
-  if (unbind) {
-    writes.push(
-      prisma.pushRelayUnbind.createMany({
-        data: [{ token: unbind }],
-        skipDuplicates: true,
-      }),
-    );
-  }
-  writes.push(prisma.device.delete({ where: { id: device.id } }));
+  // this instance until the relay's own idle expiry. Queued with the delete
+  // (`delete-devices.ts`), so an unreachable relay is retried by the minute
+  // pass; the relay answers 204 whether or not the token was bound.
+  const removal = deviceDeleteWrites(device);
+  writes.push(...removal.writes);
 
   await prisma.$transaction(writes as never);
 
-  if (unbind) await drainQueuedUnbinds([unbind]);
+  await drainQueuedUnbinds(removal.unbinds);
 
   return {
     id: device.id,

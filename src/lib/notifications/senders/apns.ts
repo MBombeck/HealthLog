@@ -27,6 +27,7 @@ import { readFileSync } from "node:fs";
 import apn from "@parse/node-apn";
 
 import { prisma } from "@/lib/db";
+import { deleteDeviceRows } from "@/lib/devices/delete-devices";
 import { getEvent } from "@/lib/logging/context";
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-attempt-record";
@@ -826,9 +827,7 @@ export async function sendViaApns(
   }
 
   if (deadDeviceIds.length > 0) {
-    await prisma.device.deleteMany({
-      where: { id: { in: deadDeviceIds } },
-    });
+    await deleteDeviceRows({ id: { in: deadDeviceIds } });
   }
 
   if (anySuccess) {

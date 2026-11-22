@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { queueRelayUnbindsWhere } from "@/lib/push-relay/unbind-rows";
 import {
   apiHandler,
   requireAdmin,
@@ -103,6 +104,9 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
 
   const counts = await prisma.$transaction(
     async (tx) => {
+      // Every device row goes: queue their relay unbinds first, as account
+      // deletion does (`delete-devices.ts`); the unbind queue is kept.
+      await queueRelayUnbindsWhere(tx, {});
       const perModel: Record<string, number> = {};
       for (const model of ADMIN_WIPE_MODELS) {
         const { count } = await resolveGlobalWipeDelegate(tx, model).deleteMany(

@@ -167,7 +167,8 @@ describe("refresh-token revocations strip the signed-out device's pushes", () =>
     const code = stripComments(
       readSource("src/lib/devices/revoke.ts", [/revokeDeviceCascade/]),
     );
-    expect(code).toMatch(/pushRelayUnbind\.createMany/);
+    // Through the one delete path, which queues the unbind with the row.
+    expect(code).toMatch(/\bdeviceDeleteWrites\s*\(/);
     expect(code).toMatch(/deviceId:\s*device\.token/);
   });
 });
