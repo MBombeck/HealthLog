@@ -112,6 +112,145 @@ const deviceRegisterRequest = z
       "Native device registration. A `token` or `apnsToken` another account holds is taken over (see `POST /api/devices`).",
   });
 
+const lastDelivery = z
+  .object({
+    at: isoDateTime().describe("When the push was handed on."),
+    eventType: z
+      .string()
+      .describe("The push type, e.g. `MEDICATION_REMINDER`, `DATA_CHANGED`."),
+    outcome: z
+      .enum([
+        "pending",
+        "accepted",
+        "opened",
+        "dropped",
+        "failed",
+        "sent",
+        "skipped",
+      ])
+      .describe(
+        "Over the relay: `pending` (waiting or retrying), `accepted` (the relay took it), `opened` (accepted and covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key: `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert.",
+      ),
+    reason: z
+      .string()
+      .nullable()
+      .describe("The relay's or Apple's reason on a failure, else null."),
+  })
+  .nullable();
+
+const devicePushDiagnostics = z
+  .object({
+    deviceId: z.string(),
+    transport: z
+      .enum(["relay", "direct", "none"])
+      .describe(
+        "The route the send takes, by the same rule as `push.device.transport`: this server's own APNs key (`direct`), the relay, or none.",
+      ),
+    sealed: z
+      .boolean()
+      .describe(
+        "Pushes to this device are sealed envelopes. False for a device without a push key, which gets plaintext pushes over this server's own key, or none.",
+      ),
+    apnsToken: z
+      .object({
+        prefix: z.string().nullable(),
+        suffix: z.string().nullable(),
+      })
+      .nullable()
+      .describe(
+        "The APNs token masked: its first and last 8 hex characters only, the same mask as the admin diagnostic. Null when the device registered no APNs token.",
+      ),
+    apnsEnvironment: z.enum(["sandbox", "production"]).nullable(),
+    relay: z
+      .object({
+        state: z.enum(["ok", "degraded", "down", "off"]),
+        since: isoDateTime().nullable(),
+        reason: z.string().nullable(),
+      })
+      .describe(
+        "The instance's relay registration, as `push.relay.state` reads it.",
+      ),
+    binding: z
+      .object({
+        state: z.enum(["none", "bound", "rebind_needed", "conflict"]),
+        consent: z
+          .boolean()
+          .describe("The person turned the relay on for this device."),
+        boundAt: isoDateTime()
+          .nullable()
+          .describe("When the relay last confirmed the binding."),
+      })
+      .describe("This device's relay binding."),
+    budget: z
+      .object({
+        windowMinutes: z
+          .number()
+          .int()
+          .describe("The rolling window every limit counts: 60."),
+        limit: z
+          .number()
+          .int()
+          .nullable()
+          .describe(
+            "Silent pushes of every kind per window over the relay: 6. Null over this server's own APNs key, where no overall cap applies.",
+          ),
+        wakeLimit: z
+          .number()
+          .int()
+          .describe(
+            "`DATA_CHANGED` and `HEALTHKIT_CATCH_UP` together per window: 4. Over the relay the last 2 of `limit` stay free for the intake sync.",
+          ),
+        usedInWindow: z
+          .number()
+          .int()
+          .describe("Silent pushes sent to this device in the window."),
+        wakesUsedInWindow: z.number().int().describe("Of those, wakes."),
+        owedSyncs: z
+          .number()
+          .int()
+          .describe(
+            "Intake syncs held back by the budget and waiting, coalesced: 0 or 1, however many changes arrived. Sent once the budget frees up, never dropped.",
+          ),
+        owedSince: isoDateTime()
+          .nullable()
+          .describe("Since when the sync is owed."),
+        nextFreeAt: isoDateTime()
+          .nullable()
+          .describe(
+            "When the next intake sync fits the budget again (an owed one goes then); null when one fits now.",
+          ),
+      })
+      .describe(
+        "The device's silent budget, from the rule the send asks (`src/lib/push-relay/wakes.ts`).",
+      ),
+    lastDelivery: z
+      .object({
+        alert: lastDelivery,
+        silentSync: lastDelivery.describe("`MEDICATION_INTAKE_SYNC`."),
+        wake: lastDelivery.describe("`DATA_CHANGED` or `HEALTHKIT_CATCH_UP`."),
+        liveActivity: lastDelivery,
+      })
+      .describe(
+        "The newest push of each kind to this device, from the ledger that knows the device. Over the relay, the relay outbox. Over this server's own APNs key, the silent ledger for the sync and the wakes; the alert comes from the account's delivery attempts only while this is the account's one APNs device, because that ledger names no device, and is null otherwise. A Live Activity push over this server's own key leaves no per-device record and stays null.",
+      ),
+    receipt: z
+      .object({
+        reportedAt: isoDateTime(),
+        openedAlert: z.string().nullable(),
+        openedSilent: z.string().nullable(),
+      })
+      .nullable()
+      .describe(
+        "The last envelope receipt this device posted (`GET /api/sync/state` `openedAlert` / `openedSilent`): the newest envelope ids it opened per class, kept forward only. Null before the first report.",
+      ),
+    serverTime: isoDateTime(),
+  })
+  .meta({
+    id: "DevicePushDiagnostics",
+    description:
+      "One device's push state for its diagnostics screen. Only this device: nothing about the account's other devices, no token in clear, no notification content.",
+  });
+
 export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/devices": {
     post: {
@@ -134,6 +273,41 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
               ),
             },
           },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/devices/me/push-diagnostics": {
+    get: {
+      tags: ["Devices"],
+      summary: "The calling device's push diagnostics",
+      description:
+        "v1.49.0. The push state of the device named by `X-Device-Id` (the same header `push.device` on `/api/auth/me` reads): route, relay binding, silent budget, owed sync, last delivery per kind, last receipt and the masked APNs token. A cookie session or a wildcard token; a narrow token is refused with 403. A header that is missing or names none of the caller's devices answers 404, the same for another account's device as for one that does not exist. 10 requests a minute per account. `Cache-Control: private, no-store`.",
+      parameters: [
+        {
+          name: "X-Device-Id",
+          in: "header",
+          required: true,
+          schema: { type: "string" },
+          description: "The device's registration `token`.",
+        },
+      ],
+      responses: {
+        "200": {
+          description: "The device's push diagnostics.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                devicePushDiagnostics,
+                "DevicePushDiagnosticsEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "The header names none of the caller's devices.",
+          content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
       },

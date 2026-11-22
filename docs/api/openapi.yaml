@@ -6734,6 +6734,40 @@ paths:
         "403": *a9
         "422": *a4
         "429": *a5
+  /api/devices/me/push-diagnostics:
+    get:
+      tags:
+        - Devices
+      summary: The calling device's push diagnostics
+      description: "v1.49.0. The push state of the device named by `X-Device-Id` (the same header `push.device` on
+        `/api/auth/me` reads): route, relay binding, silent budget, owed sync, last delivery per kind, last receipt and
+        the masked APNs token. A cookie session or a wildcard token; a narrow token is refused with 403. A header that
+        is missing or names none of the caller's devices answers 404, the same for another account's device as for one
+        that does not exist. 10 requests a minute per account. `Cache-Control: private, no-store`."
+      parameters:
+        - name: X-Device-Id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: The device's registration `token`.
+      responses:
+        "200":
+          description: The device's push diagnostics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DevicePushDiagnosticsEnvelope"
+        "401": *a1
+        "403": *a9
+        "404":
+          description: The header names none of the caller's devices.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/devices/{id}:
     delete:
       tags:
@@ -47621,6 +47655,7 @@ components:
               - push.live-activity-relay
               - push.live-activity-started
               - day.dose-offset
+              - push.device-diagnostics
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices.
@@ -47671,7 +47706,11 @@ components:
             ended, or nothing was started. `day.dose-offset`: GET /api/day/{date} symptom events and every GET
             /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest dose
             taken at or before it on the same local day of the record's zone, else the nearest after it (negative
-            minutes); absent without a timed dose that day or when medications are not readable."
+            minutes); absent without a timed dose that day or when medications are not readable.
+            `push.device-diagnostics`: GET /api/devices/me/push-diagnostics returns the X-Device-Id device's push state:
+            transport, relay and binding state, the silent budget (windowMinutes, limit, wakeLimit, usedInWindow,
+            wakesUsedInWindow, owedSyncs, nextFreeAt), the last delivery per kind, the last receipt and the masked APNs
+            token; 404 for a device that is not the caller's."
       required:
         - version
         - buildSha
@@ -61444,6 +61483,388 @@ components:
         - publicKey
         - status
       additionalProperties: false
+    DevicePushDiagnosticsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DevicePushDiagnostics"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DevicePushDiagnostics:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        transport:
+          type: string
+          enum:
+            - relay
+            - direct
+            - none
+          description: "The route the send takes, by the same rule as `push.device.transport`: this server's own APNs key
+            (`direct`), the relay, or none."
+        sealed:
+          type: boolean
+          description: Pushes to this device are sealed envelopes. False for a device without a push key, which gets plaintext
+            pushes over this server's own key, or none.
+        apnsToken:
+          anyOf:
+            - type: object
+              properties:
+                prefix:
+                  type:
+                    - string
+                    - "null"
+                suffix:
+                  type:
+                    - string
+                    - "null"
+              required:
+                - prefix
+                - suffix
+              additionalProperties: false
+            - type: "null"
+          description: "The APNs token masked: its first and last 8 hex characters only, the same mask as the admin diagnostic.
+            Null when the device registered no APNs token."
+        apnsEnvironment:
+          anyOf:
+            - type: string
+              enum:
+                - sandbox
+                - production
+            - type: "null"
+        relay:
+          type: object
+          properties:
+            state:
+              type: string
+              enum:
+                - ok
+                - degraded
+                - down
+                - off
+            since:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+            reason:
+              type:
+                - string
+                - "null"
+          required:
+            - state
+            - since
+            - reason
+          additionalProperties: false
+          description: The instance's relay registration, as `push.relay.state` reads it.
+        binding:
+          type: object
+          properties:
+            state:
+              type: string
+              enum:
+                - none
+                - bound
+                - rebind_needed
+                - conflict
+            consent:
+              type: boolean
+              description: The person turned the relay on for this device.
+            boundAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+              description: When the relay last confirmed the binding.
+          required:
+            - state
+            - consent
+            - boundAt
+          additionalProperties: false
+          description: This device's relay binding.
+        budget:
+          type: object
+          properties:
+            windowMinutes:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: "The rolling window every limit counts: 60."
+            limit:
+              anyOf:
+                - type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                - type: "null"
+              description: "Silent pushes of every kind per window over the relay: 6. Null over this server's own APNs key, where no
+                overall cap applies."
+            wakeLimit:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: "`DATA_CHANGED` and `HEALTHKIT_CATCH_UP` together per window: 4. Over the relay the last 2 of `limit` stay
+                free for the intake sync."
+            usedInWindow:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: Silent pushes sent to this device in the window.
+            wakesUsedInWindow:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: Of those, wakes.
+            owedSyncs:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: "Intake syncs held back by the budget and waiting, coalesced: 0 or 1, however many changes arrived. Sent
+                once the budget frees up, never dropped."
+            owedSince:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+              description: Since when the sync is owed.
+            nextFreeAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+              description: When the next intake sync fits the budget again (an owed one goes then); null when one fits now.
+          required:
+            - windowMinutes
+            - limit
+            - wakeLimit
+            - usedInWindow
+            - wakesUsedInWindow
+            - owedSyncs
+            - owedSince
+            - nextFreeAt
+          additionalProperties: false
+          description: The device's silent budget, from the rule the send asks (`src/lib/push-relay/wakes.ts`).
+        lastDelivery:
+          type: object
+          properties:
+            alert:
+              anyOf:
+                - type: object
+                  properties:
+                    at:
+                      type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                      description: When the push was handed on.
+                    eventType:
+                      type: string
+                      description: The push type, e.g. `MEDICATION_REMINDER`, `DATA_CHANGED`.
+                    outcome:
+                      type: string
+                      enum:
+                        - pending
+                        - accepted
+                        - opened
+                        - dropped
+                        - failed
+                        - sent
+                        - skipped
+                      description: "Over the relay: `pending` (waiting or retrying), `accepted` (the relay took it), `opened` (accepted and
+                        covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
+                        `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
+                    reason:
+                      description: The relay's or Apple's reason on a failure, else null.
+                      type:
+                        - string
+                        - "null"
+                  required:
+                    - at
+                    - eventType
+                    - outcome
+                    - reason
+                  additionalProperties: false
+                - type: "null"
+            silentSync:
+              anyOf:
+                - type: object
+                  properties:
+                    at:
+                      type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                      description: When the push was handed on.
+                    eventType:
+                      type: string
+                      description: The push type, e.g. `MEDICATION_REMINDER`, `DATA_CHANGED`.
+                    outcome:
+                      type: string
+                      enum:
+                        - pending
+                        - accepted
+                        - opened
+                        - dropped
+                        - failed
+                        - sent
+                        - skipped
+                      description: "Over the relay: `pending` (waiting or retrying), `accepted` (the relay took it), `opened` (accepted and
+                        covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
+                        `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
+                    reason:
+                      description: The relay's or Apple's reason on a failure, else null.
+                      type:
+                        - string
+                        - "null"
+                  required:
+                    - at
+                    - eventType
+                    - outcome
+                    - reason
+                  additionalProperties: false
+                - type: "null"
+              description: "`MEDICATION_INTAKE_SYNC`."
+            wake:
+              anyOf:
+                - type: object
+                  properties:
+                    at:
+                      type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                      description: When the push was handed on.
+                    eventType:
+                      type: string
+                      description: The push type, e.g. `MEDICATION_REMINDER`, `DATA_CHANGED`.
+                    outcome:
+                      type: string
+                      enum:
+                        - pending
+                        - accepted
+                        - opened
+                        - dropped
+                        - failed
+                        - sent
+                        - skipped
+                      description: "Over the relay: `pending` (waiting or retrying), `accepted` (the relay took it), `opened` (accepted and
+                        covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
+                        `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
+                    reason:
+                      description: The relay's or Apple's reason on a failure, else null.
+                      type:
+                        - string
+                        - "null"
+                  required:
+                    - at
+                    - eventType
+                    - outcome
+                    - reason
+                  additionalProperties: false
+                - type: "null"
+              description: "`DATA_CHANGED` or `HEALTHKIT_CATCH_UP`."
+            liveActivity:
+              anyOf:
+                - type: object
+                  properties:
+                    at:
+                      type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                      description: When the push was handed on.
+                    eventType:
+                      type: string
+                      description: The push type, e.g. `MEDICATION_REMINDER`, `DATA_CHANGED`.
+                    outcome:
+                      type: string
+                      enum:
+                        - pending
+                        - accepted
+                        - opened
+                        - dropped
+                        - failed
+                        - sent
+                        - skipped
+                      description: "Over the relay: `pending` (waiting or retrying), `accepted` (the relay took it), `opened` (accepted and
+                        covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
+                        `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
+                    reason:
+                      description: The relay's or Apple's reason on a failure, else null.
+                      type:
+                        - string
+                        - "null"
+                  required:
+                    - at
+                    - eventType
+                    - outcome
+                    - reason
+                  additionalProperties: false
+                - type: "null"
+          required:
+            - alert
+            - silentSync
+            - wake
+            - liveActivity
+          additionalProperties: false
+          description: The newest push of each kind to this device, from the ledger that knows the device. Over the relay, the
+            relay outbox. Over this server's own APNs key, the silent ledger for the sync and the wakes; the alert comes
+            from the account's delivery attempts only while this is the account's one APNs device, because that ledger
+            names no device, and is null otherwise. A Live Activity push over this server's own key leaves no per-device
+            record and stays null.
+        receipt:
+          anyOf:
+            - type: object
+              properties:
+                reportedAt:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                openedAlert:
+                  type:
+                    - string
+                    - "null"
+                openedSilent:
+                  type:
+                    - string
+                    - "null"
+              required:
+                - reportedAt
+                - openedAlert
+                - openedSilent
+              additionalProperties: false
+            - type: "null"
+          description: "The last envelope receipt this device posted (`GET /api/sync/state` `openedAlert` / `openedSilent`): the
+            newest envelope ids it opened per class, kept forward only. Null before the first report."
+        serverTime:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - deviceId
+        - transport
+        - sealed
+        - apnsToken
+        - apnsEnvironment
+        - relay
+        - binding
+        - budget
+        - lastDelivery
+        - receipt
+        - serverTime
+      additionalProperties: false
+      description: "One device's push state for its diagnostics screen. Only this device: nothing about the account's other
+        devices, no token in clear, no notification content."
     DeviceRevokeEnvelope:
       type: object
       properties:

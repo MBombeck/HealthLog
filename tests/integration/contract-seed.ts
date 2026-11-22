@@ -31,6 +31,8 @@ export interface ContractFixture {
 }
 
 export const CONTRACT_USER_ID = "user-openapi-get-contract";
+/** The seeded device's `token`, which reads name in `X-Device-Id`. */
+export const CONTRACT_DEVICE_TOKEN = "contract-device-token";
 const MANAGED_PROFILE_ID = "user-openapi-get-contract-managed";
 
 type Handler = (req: NextRequest, ctx: unknown) => Promise<Response>;
@@ -554,7 +556,7 @@ export async function seedContractAccount(
     });
   }
   await write("device", "POST", "api/devices", {
-    token: "contract-device-token",
+    token: CONTRACT_DEVICE_TOKEN,
     bundleId: "dev.healthlog.contract",
     apnsToken: "a".repeat(64),
     apnsEnvironment: "sandbox",

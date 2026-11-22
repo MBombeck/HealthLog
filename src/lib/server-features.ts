@@ -29,6 +29,7 @@ export const SERVER_FEATURES = [
   "push.live-activity-relay",
   "push.live-activity-started",
   "day.dose-offset",
+  "push.device-diagnostics",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -79,4 +80,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "push.device.liveActivityStarted on /api/auth/me and in the POST /api/devices answer names the dose ({ medicationId, slotInstant }) of the Live Activity the server started on the calling device; null once that slot is answered, its medication paused or ended, or nothing was started.",
   "day.dose-offset":
     "GET /api/day/{date} symptom events and every GET /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest dose taken at or before it on the same local day of the record's zone, else the nearest after it (negative minutes); absent without a timed dose that day or when medications are not readable.",
+  "push.device-diagnostics":
+    "GET /api/devices/me/push-diagnostics returns the X-Device-Id device's push state: transport, relay and binding state, the silent budget (windowMinutes, limit, wakeLimit, usedInWindow, wakesUsedInWindow, owedSyncs, nextFreeAt), the last delivery per kind, the last receipt and the masked APNs token; 404 for a device that is not the caller's.",
 };
