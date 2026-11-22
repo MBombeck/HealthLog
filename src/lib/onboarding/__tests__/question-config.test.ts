@@ -154,3 +154,53 @@ describe("units", () => {
     ).toEqual({ step: "units", units: { glucoseUnit: "mg/dL" } });
   });
 });
+
+describe("Region & units answers (1.49)", () => {
+  const asked = { glucose: true, weight: false, registry: true };
+
+  it("does not count a filled time zone or registry as a unit answer", () => {
+    expect(
+      unitsAnswerBody({
+        asked,
+        glucoseUnit: null,
+        unitPreference: null,
+        timezone: "Europe/Berlin",
+        medicineRegistry: "DE",
+      }),
+    ).toBeNull();
+  });
+
+  it("carries the zone and the registry beside a chosen unit", () => {
+    expect(
+      unitsAnswerBody({
+        asked,
+        glucoseUnit: "mg/dL",
+        unitPreference: null,
+        timezone: "Europe/Berlin",
+        medicineRegistry: "DE",
+      }),
+    ).toEqual({
+      step: "units",
+      units: {
+        glucoseUnit: "mg/dL",
+        timezone: "Europe/Berlin",
+        medicineRegistry: "DE",
+      },
+    });
+  });
+
+  it("is answered by the filled values when no unit is asked", () => {
+    expect(
+      unitsAnswerBody({
+        asked: { glucose: false, weight: false, registry: true },
+        glucoseUnit: null,
+        unitPreference: null,
+        timezone: "Europe/Warsaw",
+        medicineRegistry: "PL",
+      }),
+    ).toEqual({
+      step: "units",
+      units: { timezone: "Europe/Warsaw", medicineRegistry: "PL" },
+    });
+  });
+});

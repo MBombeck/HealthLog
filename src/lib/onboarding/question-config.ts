@@ -177,8 +177,14 @@ export function unitQuestionsFor(needs: OnboardingNeeds): {
 
 /**
  * The body "Continue" sends, or null while nothing is chosen. Only what the
- * screen asked rides the body; the time zone and the registry arrive already
- * filled (the account's own values), so confirming them is an answer too.
+ * screen asked rides the body.
+ *
+ * The time zone and the registry arrive already filled (the account's own
+ * values), so they never count as the answer on their own while a unit is
+ * asked: a screen that asks for a unit is answered by choosing one, and a
+ * prefilled zone beside an untouched unit question is still nothing chosen.
+ * Only a screen with no unit question at all (a medication schedule without a
+ * unit-bearing area) is answered by confirming the filled values.
  */
 export function unitsAnswerBody(input: {
   asked: { glucose: boolean; weight: boolean; registry: boolean };
@@ -199,6 +205,8 @@ export function unitsAnswerBody(input: {
   if (input.asked.weight && input.unitPreference) {
     units.unitPreference = input.unitPreference;
   }
+  const unitAsked = input.asked.glucose || input.asked.weight;
+  if (unitAsked && Object.keys(units).length === 0) return null;
   if (input.timezone) units.timezone = input.timezone;
   if (input.asked.registry && input.medicineRegistry) {
     units.medicineRegistry = input.medicineRegistry;

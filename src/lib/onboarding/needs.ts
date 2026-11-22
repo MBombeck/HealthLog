@@ -532,22 +532,33 @@ export function remindersFollowUpApplies(needs: OnboardingNeeds): boolean {
   );
 }
 
-/** Whether the `ai` follow-up applies: only when the server offers the Coach. */
+/**
+ * Whether the `ai` follow-up applies: when the server offers the Coach, or
+ * when the flow already answered it.
+ *
+ * The second arm is what keeps an answer in the order. "No" switches the Coach
+ * off, which turns the offer off with it; without this arm the answered step
+ * dropped out of the order under the person, "Continue" lost its place and
+ * "Back" could not reach the screen again.
+ */
 export function aiFollowUpApplies(
   needs: OnboardingNeeds,
   offers: OnboardingOffers,
+  status: OnboardingStepStatus = "pending",
 ): boolean {
-  return needs.recordTarget !== "someone-else" && offers.ai;
+  if (needs.recordTarget === "someone-else") return false;
+  return offers.ai || status === "done";
 }
 
 export function followUpApplies(
   id: OnboardingFollowUpStepId,
   needs: OnboardingNeeds,
   offers: OnboardingOffers,
+  status: OnboardingStepStatus = "pending",
 ): boolean {
   return id === "reminders"
     ? remindersFollowUpApplies(needs)
-    : aiFollowUpApplies(needs, offers);
+    : aiFollowUpApplies(needs, offers, status);
 }
 
 /**

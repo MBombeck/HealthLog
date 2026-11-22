@@ -22,6 +22,8 @@ import {
 import { toOnboardingStateDto } from "../needs-store";
 import {
   canVisitScreen,
+  nextScreen,
+  previousScreen,
   resumeScreen,
   screenOrder,
   unitsQuestionApplies,
@@ -105,6 +107,24 @@ describe("the AI follow-up", () => {
     const on = confirmedFlow({ areas: ["sleep"] }, { ai: true });
     expect(screenOrder(on)).toContain("ai");
     expect(resumeScreen(on)).toBe("ai");
+  });
+
+  it('keeps an answered step in the order after "No" switched the offer off', () => {
+    // "No" turns the Coach off, and the server then answers offers.ai false.
+    const answered = confirmedFlow({ medication: "yes" }, { ai: false });
+    const state = {
+      ...answered,
+      steps: answered.steps.map((s) =>
+        s.id === "ai" || s.id === "reminders"
+          ? { ...s, status: "done" as const }
+          : s,
+      ),
+    };
+    const order = screenOrder(state);
+    expect(order).toContain("ai");
+    expect(nextScreen(state, "ai")).toBe("first-result");
+    expect(previousScreen(state, "first-result")).toBe("ai");
+    expect(canVisitScreen(state, "ai")).toBe(true);
   });
 
   it("comes after the reminders and before the first result", () => {

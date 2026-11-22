@@ -8,8 +8,10 @@
  * ledger.
  *
  * Since 1.49 the screen is "Region & units" and always carries the time zone,
- * filled with the account's own; confirming it is an answer, so "Continue" is
- * live from the start and the body is never empty.
+ * filled with the account's own. The filled zone is never the answer to a
+ * unit question: while a unit is asked, "Continue" waits for one. Only a
+ * screen with no unit question (a medication schedule alone) is answered by
+ * confirming the filled values.
  *
  * Rendered server-side, this repo's component-test convention.
  */
@@ -69,11 +71,17 @@ function nextIsDisabled(html: string): boolean {
 }
 
 describe("<UnitsScreen>", () => {
-  it("offers Continue with the time zone already filled, and Skip beside it", () => {
+  it("does not take the filled time zone as the answer to a unit question", () => {
     const html = render({ areas: ["glucose"] });
-    expect(nextIsDisabled(html)).toBe(false);
     expect(html).toContain('data-slot="onboarding-question-timezone"');
+    expect(nextIsDisabled(html)).toBe(true);
+    // Skip is still there: it is the honest way past a question with no
+    // opinion, and it says "skipped" on the ledger.
     expect(html).toContain('data-slot="onboarding-skip"');
+  });
+
+  it("is answered by confirming the filled values when no unit is asked", () => {
+    expect(nextIsDisabled(render({ medication: "yes" }))).toBe(false);
   });
 
   it("asks for the medicine registry only when medication was chosen", () => {

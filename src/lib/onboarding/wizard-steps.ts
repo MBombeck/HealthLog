@@ -113,7 +113,7 @@ export function unitsQuestionApplies(state: FlowState): boolean {
 export function followUpScreens(state: FlowState): OnboardingFollowUpStepId[] {
   const offers = state.offers ?? NO_ONBOARDING_OFFERS;
   return ONBOARDING_FOLLOW_UP_STEP_IDS.filter((id) =>
-    followUpApplies(id, state.needs, offers),
+    followUpApplies(id, state.needs, offers, status(state, id)),
   );
 }
 

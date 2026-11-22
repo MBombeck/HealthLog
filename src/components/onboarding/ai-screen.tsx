@@ -130,7 +130,10 @@ export function AiScreen({ state }: { state: OnboardingStateDto }) {
           <p className="text-sm">
             {t("onboarding.flow.ai.whereNone")}{" "}
             <InlineAction asChild size="sm" className="underline">
-              <Link href="/settings/ai">{t("onboarding.flow.ai.setUp")}</Link>
+              {/* A new tab, so the setup stays where it is. */}
+              <Link href="/settings/ai" target="_blank" rel="noopener">
+                {t("onboarding.flow.ai.setUp")}
+              </Link>
             </InlineAction>
           </p>
         )}
