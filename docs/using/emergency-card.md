@@ -46,7 +46,9 @@ code.
 The QR link lets someone read the card without signing in. You decide:
 
 - **what it shows**: tick each item; nothing you leave unticked is ever read
-  for the link;
+  for the link. The form starts with blood type, allergies, conditions,
+  medications, pregnancy, implants and contacts ticked; the date of birth,
+  the note and the two declarations only appear when you tick them;
 - **when it ends**: never, or in 30 days, a year or two years;
 - **whether it lives**: revoke it at any time, and the code answers nothing
   from then on.
@@ -63,8 +65,9 @@ its hash, rate-limits every attempt before looking it up, answers every
 unknown, revoked or expired link with the same "not found", keeps it out of
 its own logs, and never caches the page. Changing your password, or an
 administrator resetting it, revokes it as well. It is not part of a backup: after a
-restore, make a new link. If the operator turns off external access for the
-instance, the link stops working too.
+restore, make a new link. If the operator turns off the **API** switch
+("Allow API endpoints and API tokens.") under **Admin > Services**, the link
+stops working too, as do the cycle and care calendar feed links.
 
 ## Wallet passes
 

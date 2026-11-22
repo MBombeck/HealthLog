@@ -18,7 +18,7 @@ exactly as they were.
 One account **shares**; the other is **given access**. In the code and in
 the settings copy these are the owner and the person they invited.
 
-- The owner opens **Settings → Shared access** and invites somebody by
+- The owner opens **Settings > Shared access** and invites somebody by
   the username or e-mail address that person signs in with. They need an
   account on this instance already; there is no invite-by-e-mail flow.
 - **The invitation confers nothing.** Until the other person accepts it,
@@ -190,7 +190,7 @@ in: a child, or an adult who is cared for. It is a real account row with
 no password, no passkey and no e-mail address, and it is never presented
 as something to log in as.
 
-- It is created from **Settings → Shared access**, under a fresh second
+- It is created from **Settings > Shared access**, under a fresh second
   factor. A passkey counts as one: a guardian who signs in with a passkey,
   or confirms it in the dialog the app opens, gets through. An account with
   neither a second factor nor a passkey is refused rather than waved
@@ -252,7 +252,7 @@ as something to log in as.
   provider source the guardian chose for the profile (below). Automatic reading
   is off on a new profile, so an upload alone is stored, thumbnailed and its
   text layer indexed on the server. A guardian turns it on for the profile
-  under **Settings → AI** while inside it; that switch is the profile's own,
+  under **Settings > AI** while inside it; that switch is the profile's own,
   and turning it on records the profile's consent to having its documents
   read, with the guardian named in the activity log. Asking about a document
   opens a chat on that document alone, the same conversation the owner has
@@ -261,12 +261,12 @@ as something to log in as.
   vault to themselves.
 
   **The guardian chooses where a managed profile's AI runs.** A profile has
-  no keys of its own, so under **Settings → AI** inside the profile a
+  no keys of its own, so under **Settings > AI** inside the profile a
   guardian picks its provider source:
 
   | Choice              | What serves the profile                                                                                                |
   | ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-  | The server's AI key | The operator's instance-wide key under **Admin → AI**, and nothing else. The default, and the only option before 1.49. |
+  | The server's AI key | The operator's instance-wide key under **Admin > AI**, and nothing else. The default, and the only option before 1.49. |
   | No AI provider      | Nothing. Every AI feature of the profile reports that no provider is set up.                                           |
   | Your default chain  | The default chain the guardian set up on their own account, with the guardian's own keys, sign-ins and local model.    |
   | Your chain "name"   | One named chain of the guardian's, exactly its entries in its order.                                                   |
@@ -367,7 +367,7 @@ own account.
 
 ## Seeing what happened
 
-**Settings → Shared access** answers three questions for the owner, at
+**Settings > Shared access** answers three questions for the owner, at
 any time: who can open this record, since when, and when they last did.
 Below that, a list of the days somebody else opened it and how many times
 — one line per person per day, rather than a line per request.

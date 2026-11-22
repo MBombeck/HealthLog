@@ -39,7 +39,7 @@ read in full.
 
 ## 2. Upload to HealthLog
 
-Open **Settings → Export & Import** in the app and drop the
+Open **Settings → Export & import** in the app and drop the
 `export.zip` onto the Apple Health upload control (or click to pick the
 file). The browser streams the body directly to the server; nothing is
 buffered into memory on either side. A progress indicator polls the

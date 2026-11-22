@@ -61,14 +61,20 @@ notes, and machine-readable specs that ship alongside the source:
   or year.
   [`using/lasting-change-notification.md`](./using/lasting-change-notification.md)
   covers the opt-in notification about a vital that settled at a new level.
+  [`using/seizure-diary.md`](./using/seizure-diary.md) covers the seizure
+  diary.
 - [`migration/`](./migration/) — migration notes. Currently only
   v1.3 to v1.4; later releases are covered by `CHANGELOG.md` and
   <https://docs.healthlog.dev>.
 - [`integrations/`](./integrations/) — per-integration reference:
   Withings, WHOOP, Google Health, Strava, Nightscout, Dawarich and Garmin;
-  the Apple Health, Health Connect, document and data imports; AI
-  providers; and Home Assistant with its blueprint. Oura and Polar are
-  covered on the docs site only.
+  the Apple Health, Health Connect (upload or a WebDAV folder), Gadgetbridge
+  ([`gadgetbridge.md`](./integrations/gadgetbridge.md)), FHIR R4 Bundle
+  ([`fhir-bundle-import.md`](./integrations/fhir-bundle-import.md)),
+  document and data imports; AI providers; the push relay for the App Store
+  iPhone app ([`push-relay.md`](./integrations/push-relay.md)); and Home
+  Assistant with its blueprint. Oura and Polar are covered on the docs site
+  only.
 - [`adr/`](./adr/) — architecture decision records.
 - [`security/`](./security/) — threat-model notes.
 - [`diagrams/`](./diagrams/) — architecture diagrams rendered through

@@ -78,5 +78,5 @@ Every state set this way is audited (`cycle.profile.pregnancy-imported`). See
 
 | HealthKit category type                                                                                                  | Status                                                |
 | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| `BleedingDuringPregnancy`, `BleedingAfterPregnancy`                                                                      | Deferred — pregnancy-mode.                            |
+| `BleedingDuringPregnancy`, `BleedingAfterPregnancy`                                                                      | Not read yet: the pregnancy state stores no bleeding. |
 | `IrregularMenstrualCycles`, `InfrequentMenstrualCycles`, `ProlongedMenstrualPeriods`, `PersistentIntermenstrualBleeding` | Server-derived from the cycle engine, never ingested. |
