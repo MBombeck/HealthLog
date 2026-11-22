@@ -77,7 +77,7 @@ export const OFFHOST_DATABASE_PREFIX = "database/";
 const STALE_LEFTOVER_MS = 12 * 60 * 60 * 1000;
 
 const NAME_PATTERN =
-  /^healthlog-(\d{8}T\d{6}Z)-(daily|pre-migration)\.(dump|manifest\.json)(\.partial|\.enc)?$/;
+  /^healthlog-(\d{8}T\d{6}Z)-(daily|pre-migration)\.(dump|manifest\.json|list)(\.partial|\.enc)?$/;
 
 /**
  * @typedef {"daily" | "pre-migration"} DumpKind
@@ -85,7 +85,7 @@ const NAME_PATTERN =
  *   base: string;
  *   kind: DumpKind;
  *   timestamp: Date;
- *   role: "dump" | "manifest";
+ *   role: "dump" | "manifest" | "list";
  *   variant: "final" | "partial" | "encrypted";
  * }} ParsedDumpName
  */
@@ -119,6 +119,17 @@ export function manifestFileName(base) {
 }
 
 /**
+ * Where a run writes the archive's table of contents while it checks it.
+ * Removed straight after; a run that dies in between leaves a `.partial`
+ * that retention sweeps like any other.
+ *
+ * @param {string} base
+ */
+export function listingFileName(base) {
+  return `${base}.list.partial`;
+}
+
+/**
  * Parse a file name this module writes. Anything else answers null, which is
  * what keeps retention away from files it did not write.
  *
@@ -129,6 +140,8 @@ export function parseDumpFileName(name) {
   const m = NAME_PATTERN.exec(name);
   if (!m) return null;
   const [, stamp, kind, role, suffix] = m;
+  // A listing only ever exists while a run checks its archive.
+  if (role === "list" && suffix !== ".partial") return null;
   const iso = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}T${stamp.slice(9, 11)}:${stamp.slice(11, 13)}:${stamp.slice(13, 15)}Z`;
   const timestamp = new Date(iso);
   if (Number.isNaN(timestamp.getTime())) return null;
@@ -136,7 +149,7 @@ export function parseDumpFileName(name) {
     base: `healthlog-${stamp}-${kind}`,
     kind: /** @type {DumpKind} */ (kind),
     timestamp,
-    role: role === "dump" ? "dump" : "manifest",
+    role: role === "dump" ? "dump" : role === "list" ? "list" : "manifest",
     variant:
       suffix === ".partial"
         ? "partial"
@@ -795,9 +808,17 @@ export async function serverVersion(client) {
 // ── Running the Postgres client tools ──────────────────────────────────────
 
 /**
- * Run one Postgres client tool. Standard output goes to `stdout` when given
- * (a file stream) and is collected otherwise. Rejects with the tool's own
- * last lines on a non-zero exit, and kills it at `deadline` (epoch ms).
+ * Run one Postgres client tool. Rejects with the tool's own last lines on a
+ * non-zero exit, and kills it at `deadline` (epoch ms).
+ *
+ * Nothing a tool produces in bulk travels through a pipe: the archive and
+ * its listing are written by the tool itself with `--file`, and standard
+ * output is discarded unless `capture` asks for it. Capture is for a line or
+ * two (`--version`) and is capped; a tool that writes more is stopped. A
+ * pipe is the fragile path: a reader that falls behind, a descriptor left
+ * non-blocking by whatever sits between (a wrapper, a container client)
+ * turns into a failed write, and the pre-migration dump gates every boot
+ * that migrates, so a spurious failure there stops a working install.
  *
  * A file the tool reads is named in `args`, never streamed to its standard
  * input: `pg_restore --list` reads an archive's table of contents and exits,
@@ -808,19 +829,21 @@ export async function serverVersion(client) {
  * @param {string[]} args
  * @param {{
  *   env?: Record<string, string>;
- *   stdout?: NodeJS.WritableStream;
+ *   capture?: boolean;
  *   deadline?: number;
  * }} [options]
- * @returns {Promise<string>}
+ * @returns {Promise<string>} the captured output, or "" without `capture`
  */
 export function runTool(tool, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(tool, args, {
       env: { ...process.env, ...(options.env ?? {}) },
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ["ignore", options.capture ? "pipe" : "ignore", "pipe"],
     });
     /** @type {Buffer[]} */
     const out = [];
+    let outBytes = 0;
+    let overflow = false;
     let err = "";
     let timedOut = false;
     const timer =
@@ -833,17 +856,15 @@ export function runTool(tool, args, options = {}) {
             Math.max(0, options.deadline - Date.now()),
           )
         : null;
-    if (options.stdout) {
-      // A destination that fails (a full disk) must stop the tool: unpiped,
-      // it would block on a full pipe until its deadline, or forever.
-      options.stdout.on("error", (e) => {
-        child.kill("SIGTERM");
-        reject(e);
-      });
-      child.stdout.pipe(options.stdout);
-    } else {
-      child.stdout.on("data", (c) => out.push(c));
-    }
+    child.stdout?.on("data", (c) => {
+      outBytes += c.length;
+      if (outBytes > MAX_CAPTURED_OUTPUT_BYTES) {
+        if (!overflow) child.kill("SIGTERM");
+        overflow = true;
+        return;
+      }
+      out.push(c);
+    });
     child.stderr.on("data", (c) => {
       err = (err + c.toString("utf8")).slice(-4000);
     });
@@ -861,6 +882,12 @@ export function runTool(tool, args, options = {}) {
       if (timer) clearTimeout(timer);
       if (timedOut) {
         reject(new Error(`${tool} ran past its time limit and was stopped`));
+      } else if (overflow) {
+        reject(
+          new Error(
+            `${tool} wrote more than ${MAX_CAPTURED_OUTPUT_BYTES} bytes to standard output and was stopped`,
+          ),
+        );
       } else if (code === 0) {
         resolve(Buffer.concat(out).toString("utf8"));
       } else {
@@ -875,10 +902,26 @@ export function runTool(tool, args, options = {}) {
   });
 }
 
+/** The most standard output `runTool` captures. */
+const MAX_CAPTURED_OUTPUT_BYTES = 64 * 1024;
+
+/**
+ * Create `path` empty, owner-only, and only if nothing is there yet. A tool
+ * then writes into it with `--file`: it truncates what exists and keeps the
+ * mode, so the archive is never readable by others, and a name that is
+ * already taken (or a link planted under it) fails here instead of being
+ * written through.
+ *
+ * @param {string} path
+ */
+async function createPrivateFile(path) {
+  await writeFile(path, "", { flag: "wx", mode: 0o600 });
+}
+
 /** `pg_dump (PostgreSQL) 18.6`, or null when it cannot be asked. */
 export async function pgDumpVersion() {
   try {
-    return (await runTool("pg_dump", ["--version"])).trim();
+    return (await runTool("pg_dump", ["--version"], { capture: true })).trim();
   } catch {
     return null;
   }
@@ -888,10 +931,22 @@ export async function pgDumpVersion() {
  * Read an archive's table of contents back. A file `pg_restore` cannot list
  * is not a dump, whatever its name. Answers the number of entries.
  *
+ * The listing is written by `pg_restore` to `listingPath` (beside the
+ * archive, so in the same private directory), read, and removed whether the
+ * listing worked or not.
+ *
  * @param {string} path
+ * @param {string} [listingPath]
  */
-export async function verifyArchive(path) {
-  const listing = await runTool("pg_restore", ["--list", path]);
+export async function verifyArchive(path, listingPath = `${path}.list`) {
+  await createPrivateFile(listingPath);
+  let listing;
+  try {
+    await runTool("pg_restore", ["--list", `--file=${listingPath}`, path]);
+    listing = await readFile(listingPath, "utf8");
+  } finally {
+    await rm(listingPath, { force: true });
+  }
   const entries = listing
     .split("\n")
     .filter((line) => line.trim() && !line.startsWith(";")).length;
@@ -1041,20 +1096,8 @@ export async function createDatabaseDump(options) {
     );
     const snapshot = String(rows[0].snapshot);
 
-    const out = createWriteStream(partialDump, { flags: "wx", mode: 0o600 });
-    const opened = new Promise((resolve, reject) => {
-      out.once("open", resolve);
-      out.once("error", reject);
-    });
-    await opened;
+    await createPrivateFile(partialDump);
     created.push(partialDump);
-    const closed = new Promise((resolve, reject) => {
-      out.once("close", resolve);
-      out.once("error", reject);
-    });
-    // Awaited below on success; on a failure the run is already rejecting
-    // and this must not surface a second time as unhandled.
-    closed.catch(() => {});
     // `pg_dump` reads the snapshot in its own session while this one counts
     // the rows of the same snapshot; the queries on this client run one
     // after another (a `pg` client does not overlap them).
@@ -1071,17 +1114,20 @@ export async function createDatabaseDump(options) {
           "--no-password",
           `--snapshot=${snapshot}`,
           "--lock-wait-timeout=120000",
+          `--file=${partialDump}`,
         ],
-        { env: connection.pgEnv, stdout: out, deadline: options.deadline },
+        { env: connection.pgEnv, deadline: options.deadline },
       ),
       facts(),
       pgDumpVersion(),
     ]);
-    await closed;
     await client.query("COMMIT");
 
     const { sha256, bytes } = await hashFile(partialDump);
-    const entries = await verifyArchive(partialDump);
+    const entries = await verifyArchive(
+      partialDump,
+      join(options.dir, listingFileName(base)),
+    );
     const manifest = buildManifest({
       kind: options.kind,
       file: dumpFileName(base),
