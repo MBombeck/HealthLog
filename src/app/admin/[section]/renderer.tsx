@@ -41,6 +41,7 @@ import { PushRelaySection } from "@/components/admin/push-relay-section";
 import { NotificationHealthCard } from "@/components/admin/notification-health-card";
 import { WebPushVapidSection } from "@/components/admin/web-push-vapid-section";
 import { SystemStatusSection } from "@/components/admin/system-status-section";
+import { SetupHealthCard } from "@/components/admin/setup-health-card";
 import { SupportReportCard } from "@/components/admin/support-report-card";
 import { VersionMigrationsCard } from "@/components/admin/version-migrations-card";
 import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
@@ -80,6 +81,9 @@ export function AdminSectionRenderer({
             {/* The running build, its image line, and whether the database
                 caught up with it. */}
             <VersionMigrationsCard />
+            {/* 1.49 — the setup health check list, with the way back into
+                the server setup. */}
+            <SetupHealthCard />
             {/* v1.43 — the redacted report for a bug report. */}
             <SupportReportCard />
             {/* v1.42 — the table maintenance after the tombstone purge. */}

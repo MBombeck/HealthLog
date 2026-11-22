@@ -5,8 +5,8 @@
  * The real module folds in Postgres. This fake asks the test's own row source
  * for the rows the statement would scan (the same `where` shape a row read of
  * that window would send) and folds them with the same rules in JavaScript:
- * raw rows only for the bucket reads, the account's wall clock for local
- * placement, the plausibility domain for the latest-day mean. A unit test
+ * raw rows only for the bucket reads, and the account's wall clock for local
+ * placement. A unit test
  * keeps its fixture of rows and still exercises the caller's logic; the SQL
  * itself is pinned against a real database in
  * `tests/integration/dense-day-readers.test.ts`.
@@ -16,11 +16,8 @@ import type {
   DenseBucket,
   ElapsedBucket,
   HourCell,
-  LocalDayExtremes,
   LocalMinuteBucket,
 } from "@/lib/measurements/dense-bucket-read";
-import { dayValue } from "@/lib/measurements/day-mean";
-import { isPlausibleMetricValue } from "@/lib/measurements/value-domain";
 import { formatInUserTz, userDayKey } from "@/lib/tz/format";
 import { localDayWindow } from "@/lib/tz/local-day";
 
@@ -128,61 +125,6 @@ export function makeFakeDenseBucketRead(source: RowSource) {
         buckets: [...buckets.entries()]
           .sort((a, b) => a[0] - b[0])
           .map(([index, b]) => ({ index, ...b })),
-      };
-    },
-
-    async readLocalDayExtremes(opts: {
-      userId: string;
-      type: MeasurementType;
-      from: Date;
-      to: Date;
-      timeZone: string;
-    }): Promise<LocalDayExtremes[]> {
-      const rows = await read({
-        userId: opts.userId,
-        type: opts.type,
-        deletedAt: null,
-        measuredAt: { gte: opts.from, lte: opts.to },
-      });
-      const days = fold(rows, (r) => userDayKey(r.measuredAt, opts.timeZone));
-      return [...days.entries()]
-        .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-        .map(([day, b]) => ({ day, n: b.n, min: b.min, max: b.max }));
-    },
-
-    async readLatestLocalDayMean(opts: {
-      userId: string;
-      type: MeasurementType;
-      since: Date;
-      timeZone: string;
-      plausibleOnly: boolean;
-    }): Promise<{ value: number; day: string; lastAt: Date } | null> {
-      const rows = (
-        await read({
-          userId: opts.userId,
-          type: opts.type,
-          deletedAt: null,
-          measuredAt: { gte: opts.since },
-        })
-      ).filter(
-        (r) =>
-          !opts.plausibleOnly || isPlausibleMetricValue(opts.type, r.value),
-      );
-      if (rows.length === 0) return null;
-      let day = "";
-      for (const r of rows) {
-        const d = userDayKey(r.measuredAt, opts.timeZone);
-        if (d > day) day = d;
-      }
-      const sameDay = rows.filter(
-        (r) => userDayKey(r.measuredAt, opts.timeZone) === day,
-      );
-      return {
-        value: dayValue(opts.type, sameDay, opts.timeZone)!,
-        day,
-        lastAt: new Date(
-          Math.max(...sameDay.map((r) => r.measuredAt.getTime())),
-        ),
       };
     },
 

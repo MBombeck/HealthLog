@@ -136,7 +136,7 @@ function makePen(
 
 /** Title and summary. */
 function drawSummary(p: Pen): void {
-  const { doc, t, num, margin } = p.ctx;
+  const { doc, t, num, margin, fmtDate } = p.ctx;
   const section = p.section;
   const { tableMargin } = p;
   doc.setFontSize(14);
@@ -151,6 +151,13 @@ function drawSummary(p: Pen): void {
     hours: section.rule.windowHours,
   });
   const summaryRows: Array<[string, string]> = [
+    // When the diary began inside the period, the figures count from then,
+    // and the report says so before the first of them.
+    ...(s.diaryFrom
+      ? ([[t("seizures.report.diarySince"), fmtDate(s.diaryFrom)]] as Array<
+          [string, string]
+        >)
+      : []),
     [t("seizures.report.recorded"), String(s.seizures)],
     [t("seizures.report.seizureDays"), String(s.seizureDays)],
     [t("seizures.report.seizureFreeDays"), String(s.seizureFreeDays)],

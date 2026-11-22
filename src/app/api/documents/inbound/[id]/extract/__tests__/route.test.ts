@@ -18,6 +18,10 @@ import { NextRequest } from "next/server";
  * approved-facts re-extraction refusal covers this mode too.
  */
 
+vi.mock("@/lib/ai/job-failure/read", () => ({
+  documentAiJobFailures: vi.fn(async () => []),
+}));
+
 vi.mock("@/lib/db", () => {
   // The staging transaction locks the document row and asks again whether
   // it may stage (a review can finish while a background read runs).

@@ -55,6 +55,7 @@ import { runStatusCompletion } from "@/lib/insights/status-provider";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { annotate } from "@/lib/logging/context";
 import { withBackgroundEvent } from "@/lib/logging/background";
+import { trackAiJob } from "@/lib/ai/job-failure/report";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
 import { userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
@@ -568,7 +569,11 @@ export async function handleWorkoutInsightGenerate(
     let generated = 0;
     let skipped = 0;
     for (const job of jobs) {
-      const outcome = await runWorkoutInsightGenerate(job.data);
+      // #1404 — why the note did not come is named under Settings, AI.
+      const outcome = await trackAiJob(
+        { userId: job.data.userId, job: "workoutInsight" },
+        () => runWorkoutInsightGenerate(job.data),
+      );
       if (outcome.status === "skipped") skipped++;
       else generated++;
       evt.addMeta(

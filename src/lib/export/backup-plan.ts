@@ -53,16 +53,14 @@ export const BACKED_UP_MODELS = [
   // ── Measurements ──────────────────────────────────────────────────────────
   "Measurement",
   // Not derived, despite looking it. The hourly shape of a cumulative day is
-  // folded out of the per-sample rows in the same transaction that deletes
-  // them, so past the 36-hour grace window there is nothing left to rebuild it
-  // from. A restore without it silently resets the same-time baseline to
-  // "still learning" for two weeks.
+  // folded out of the per-sample rows in the transaction that deletes them, so
+  // past the 36-hour grace window nothing is left to rebuild it from; without
+  // it a restore resets the same-time baseline to "still learning" for weeks.
   "IntradayCumulativeProfile",
 
   // ── Medications, and everything hanging off one ───────────────────────────
-  // The parent alone restores a drug list with no schedule, no history and no
-  // stock — a shape the app renders without complaint, which is why this was
-  // easy to miss.
+  // The parent alone restores a drug list with no schedule, history or stock,
+  // a shape the app renders without complaint, which is why it was missed.
   "Medication",
   "MedicationSchedule",
   "MedicationScheduleRevision",
@@ -765,6 +763,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "That this host's one-time fold repair has recomputed the account's hourly and daily means, which lets the compaction-tombstone purge delete the tombstones the repair reads. It describes this database, not the file: a restore of a file exported before the repair ran writes back the means and tombstones of that moment, so the restore removes the row and the repair runs again before anything is purged.",
   BackupPassAttempt:
     "When this host's backup passes last started and finished this account, kept so a pass the process died under is taken last next time and named on the backups page. It describes this deployment's own runs, so restoring it elsewhere would report an interrupted run that host never had, or hide one it did.",
+  AiJobFailure:
+    "Why this host's latest background AI work of one kind stopped for the account (a provider down, a chain with nowhere to go), kept until the next success. It describes this deployment's own runs and providers, so restoring it elsewhere would report a failure that host never had.",
   DocumentAiRun:
     "A ticket for one background read (a document read with AI, a lab scan), deleted an hour after it finishes. The document and the committed rows travel; the ticket does not, and a restored run would point at a worker job that does not exist on the receiving host.",
   DocumentSourceAlias:

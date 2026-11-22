@@ -96,6 +96,7 @@ import {
   buildSourceRankCase,
   canonicalMeasurementsCte,
 } from "@/lib/analytics/source-rank-sql";
+import { readCanonicalWindow } from "@/lib/analytics/canonical-window";
 import { readLatestCanonical } from "@/lib/measurements/latest-canonical";
 import {
   isFullyCovered,
@@ -399,29 +400,12 @@ async function computeFromRollups(
 
   const [narrows, latests, dayBuckets, accumulatorRows, preFoldRemainder] =
     await Promise.all([
-      // The FROM is restricted to the canonical-source rows per (type, day):
-      // the ladder-winning source for each day, and only that source's
-      // readings, so the 90-day AVG / median / slope never blend two devices
-      // that both reported the same vital.
-      // The window means weigh each day once for an hourly-mean type
-      // (`windowedMean`); the median stays over every reading.
-      prisma.$queryRawUnsafe<NarrowAggregateRow[]>(
-        `
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, { from: boundInstantSql(2), interval: "90 days" })}
-      )
-      SELECT
-        m."type"::text                                                AS type,
-        ${windowMeanColumnsSql(boundInstantSql(2))},
-        -- The canonical set above is already the 90-day window.
-        PERCENTILE_CONT(0.5) WITHIN GROUP (
-          ORDER BY m."value"
-        )::double precision                                           AS median
-      FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
-      GROUP BY m."type"
-    `,
-        userId,
-        now,
-      ),
+      // Over the canonical source per (type, day) only, so the 90-day means
+      // and median never blend two devices that both reported the same
+      // vital; the whole days before today come from a closed block
+      // (`canonical-window.ts`). The window means weigh each day once for an
+      // hourly-mean type; the median stays over every reading.
+      readCanonicalWindow(userId, now, priorityJson, rankUnqualified),
       passes.withLatests(readLatestCanonical(userId, priorityJson)),
       // v1.4.37.2 — the v1.4.35 implementation read EVERY DAY
       // rollup bucket for the user (`findMany` without a `bucketStart`

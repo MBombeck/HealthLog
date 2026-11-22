@@ -22,6 +22,7 @@ import { InlineAction } from "@/components/ui/inline-action";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Switch } from "@/components/ui/switch";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { CONFIRM_SAVED } from "@/lib/api/mutation-feedback";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { preferenceCellEnabled } from "@/lib/notifications/event-default-rule";
@@ -79,6 +80,7 @@ export function EventSwitchCard({
   );
 
   const write = useMutation({
+    meta: CONFIRM_SAVED,
     mutationFn: async (enabled: boolean) => {
       for (const ch of channels) {
         await apiPut("/api/notifications/preferences", {

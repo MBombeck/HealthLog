@@ -101,12 +101,10 @@ describe("MedicationLeafletSection", () => {
     expect(html).toContain("national medicine registry");
   });
 
-  it("builds the same link from the account when the read did not carry one", () => {
+  it("builds no search of its own when the read carried none", () => {
+    // The account has a registry; the server is still the one builder.
     const html = render(<MedicationLeafletSection medication={medication} />);
-    const link = anchor(html, "medication-leaflet-find-link");
-    expect(link).toContain(
-      'href="https://rejestry.ezdrowie.gov.pl/rpl/search?name=Ramipril"',
-    );
+    expect(html).not.toContain("medication-leaflet-find-link");
   });
 
   it("asks the person to search on a registry that takes nothing from the address", () => {
@@ -170,12 +168,17 @@ describe("MedicationLeafletSection", () => {
 
 describe("MedicationCardMenu leaflet items", () => {
   function menu(registry: MedicineRegistryChoice, leafletUrl: string | null) {
-    state.registry = registry;
     return render(
       <MedicationCardMenu
         onEdit={() => {}}
         onOpenHistory={() => {}}
-        leaflet={{ name: "Ramipril", dose: "5mg", leafletUrl }}
+        leaflet={{
+          leafletUrl,
+          leafletSearch: buildLeafletSearch(registry, {
+            name: "Ramipril",
+            dose: "5mg",
+          }),
+        }}
       />,
     );
   }
@@ -190,6 +193,17 @@ describe("MedicationCardMenu leaflet items", () => {
       'href="https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&amp;query=Ramipril"',
     );
     expect(find).toContain('target="_blank"');
+  });
+
+  it("reads the list row's search, not the account's registry", () => {
+    const html = render(
+      <MedicationCardMenu
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        leaflet={{ leafletUrl: null }}
+      />,
+    );
+    expect(html).not.toContain("medication-card-menu-leaflet-find");
   });
 
   it("offers neither without a saved link or a registry", () => {

@@ -273,7 +273,7 @@ const insightsLayoutResult = insightsLayoutSchema
     updatedAt: isoDateTime()
       .optional()
       .describe(
-        "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
+        "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
       ),
   })
   .meta({
@@ -1182,7 +1182,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Replace the calling user's Insights tile layout",
       description:
-        "Persists the full tile layout. The normalised layout plus the advanced `updatedAt` token is returned. Optimistic concurrency (v1.32.21): send `baseUpdatedAt` (the token from a prior read) and the write 409s if the stored row changed since; omit it for the legacy unconditional write. Invalid bodies return the multi-issue 422 envelope, matching the dashboard-widgets route.",
+        "Persists the full tile layout. The normalised layout plus the advanced `updatedAt` token is returned. Optimistic concurrency (v1.32.21): send `baseUpdatedAt` (the token from a prior read) and the write 409s if the stored layout changed since; omit it for the legacy unconditional write. Invalid bodies return the multi-issue 422 envelope, matching the dashboard-widgets route.",
       requestBody: {
         required: true,
         content: {
@@ -1478,7 +1478,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Write (or clear) the caller's self-context",
       description:
-        "v1.16.0 — persists the free text (4 000-char cap) and the three structured fields (500-char cap each) encrypted at rest; caps are enforced before encryption. Structured fields are optional: omitted leaves the stored value untouched, an empty string clears it. After a non-empty save the server derives up to 3 clarifying questions (AI when the `aboutMeQuestions` capability is available and the daily Coach token budget allows, deterministic completion hints otherwise, with no provider call) and returns them as `pendingQuestions`. Rate-limited per user. Optimistic concurrency (v1.32.21): send `baseUpdatedAt` (the `updatedAt` from a prior read) and the write 409s if the stored self-context changed since; omit it for the legacy unconditional write. The token is per-surface (`UserHealthProfile.updatedAt`), so it is not perturbed by unrelated account writes.",
+        "v1.16.0 — persists the free text (4 000-char cap) and the three structured fields (500-char cap each) encrypted at rest; caps are enforced before encryption. Structured fields are optional: omitted leaves the stored value untouched, an empty string clears it. After a non-empty save the server derives up to 3 clarifying questions (AI when the `aboutMeQuestions` capability is available and the daily Coach token budget allows, deterministic completion hints otherwise, with no provider call) and returns them as `pendingQuestions`. Rate-limited per user. Optimistic concurrency (v1.32.21): send `baseUpdatedAt` (the `updatedAt` from a prior read) and the write 409s if the stored self-context changed since; omit it for the legacy unconditional write. The token is the about-me document's own revision, so it is not perturbed by unrelated account or emergency-profile writes.",
       requestBody: {
         required: true,
         content: {

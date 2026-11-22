@@ -1,5 +1,6 @@
 "use client";
 
+import { CONFIRM_SAVED } from "@/lib/api/mutation-feedback";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Droplet, Info } from "lucide-react";
 
@@ -51,6 +52,7 @@ export function GlucoseReferenceCard() {
   });
 
   const toggle = useMutation({
+    meta: CONFIRM_SAVED,
     mutationFn: async (hasDiabetes: boolean) =>
       apiPatch<DiabetesPrefShape>("/api/auth/me/diabetes", { hasDiabetes }),
     onSuccess: (next) => {

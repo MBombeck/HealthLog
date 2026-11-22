@@ -148,6 +148,8 @@ export type RecordSurfacePartId<P extends RecordSurfacePage> =
 export const GUARDIAN_ROUTES_SERVED_ELSEWHERE: Readonly<
   Record<string, string>
 > = {
+  "onboarding/extras":
+    "The getting-started checklist's optional group on the dashboard (`getting-started-extras.tsx`): presence and counts only, for the owner or the guardian inside the profile.",
   "record-settings":
     "The managed-profile Settings sections (`record-settings-section-gate.tsx`), listed by `SETTINGS_DESTINATION_INVENTORY`.",
   "record-settings/[family]":

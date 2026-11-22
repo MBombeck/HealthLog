@@ -3,7 +3,8 @@
  * (`push-relay/live-activity.ts`): start the next dose's Activity and update
  * the running ones over the relay, for devices with the Live Activity
  * consent, while the operator's switch is on. A pass that throws fails the
- * job; the next run is the retry.
+ * job; the next run is the retry. A device that throws is counted and the
+ * pass carries on.
  */
 import { type Job } from "pg-boss";
 
@@ -23,6 +24,10 @@ export async function handlePushLiveActivity(
         push_live_activity_devices: facts.devices,
         push_live_activity_started: facts.started,
         push_live_activity_updated: facts.updated,
+        // Every device the pass reached was attempted.
+        items_attempted: facts.devices,
+        items_failed: facts.failed,
+        partial_failed: facts.failed > 0,
       });
     } catch (err) {
       evt.addWarning(`live activity relay pass failed: ${err}`);

@@ -69,6 +69,10 @@ export const adminKeys = {
   adminPushRelay: () => ["admin", "push-relay"] as const,
   /** Database migrations applied, pending and failed. */
   adminMigrations: () => ["admin", "migrations"] as const,
+  /** 1.49 — the first-admin server setup's steps, stamp, notice and facts. */
+  adminServerSetup: () => ["admin", "server-setup"] as const,
+  /** 1.49 — the setup health check list (System status + the setup). */
+  adminSetupHealth: () => ["admin", "setup-health"] as const,
   adminFeedback: (status: string) => ["admin", "feedback", status] as const,
   adminFeedbackRoot: () => ["admin", "feedback"] as const,
   adminHostMetrics: (window: string) =>

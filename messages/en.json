@@ -1585,6 +1585,7 @@
     "complianceWindow": "Adherence ({days} days)",
     "complianceUnavailable": "Adherence could not be loaded",
     "complianceNotApplicable": "Adherence not applicable",
+    "complianceNoDoses": "No doses yet",
     "complianceNotApplicableReason": "No local schedule is stored in HealthLog.",
     "complianceInfo": "Share of expected doses you logged. Weekly schedules count week by week.",
     "complianceInfoLabel": "What does adherence mean?",
@@ -1595,6 +1596,8 @@
     "cycleDueToday": "Due today",
     "cycleNoClosedCycles": "No closed dose cycles yet",
     "intakeToastTaken": "{name}: taken, {time}",
+    "intakeToastTakenFor": "{name}: taken, {time}, for the {slot} dose",
+    "intakeToastExtra": "{name}: taken, {time}, as an extra dose",
     "intakeToastSkipped": "{name}: skipped",
     "intakeToastFailed": "Could not record {name}. Try again",
     "intakeUndone": "Entry reverted",
@@ -2682,7 +2685,9 @@
         "undo": "Undo",
         "takeFor": "Take {name}",
         "skipFor": "Skip {name}",
-        "takeSlot": "Take ({time})"
+        "takeSlot": "Take ({time})",
+        "takeExtra": "Take an extra dose",
+        "takeExtraFor": "Take an extra dose of {name}"
       },
       "state": {
         "pending": "Pending",
@@ -2697,7 +2702,8 @@
       },
       "snoozedToast": "{name}: reminder again at {time}",
       "snoozeFailed": "Could not snooze {name}. Try again",
-      "earlyHint": "Early: this dose is due from {time}."
+      "earlyHint": "Early: this dose is due from {time}.",
+      "extraHint": "Counts as an extra dose, not for the {time} dose."
     },
     "intakeForm": {
       "title": "Log intake",
@@ -2709,6 +2715,7 @@
       "doseHint": "Pre-filled with the planned dose. Change it only if you took a different amount.",
       "countsFor": "Counts for the {time} dose.",
       "countsForLate": "Counts for the {time} dose, as late.",
+      "countsForEarly": "Counts for the {time} dose, taken early.",
       "countNearLabel": "Count it for the {time} dose",
       "skips": "Skips the {time} dose.",
       "extraDose": "Logged as an extra dose, not part of the plan. It stays in your history and does not count toward adherence.",
@@ -5436,7 +5443,9 @@
       "aiOptional": "AI is optional. Everything here works without it.",
       "aiSetupCta": "Set up AI",
       "relayOptional": "The iPhone app can get notifications from this server through the optional HealthLog push relay, which stays off until you turn it on.",
-      "relaySetupCta": "Push relay settings"
+      "relaySetupCta": "Push relay settings",
+      "serverSetup": "This server's own setup is still open: sign-ups, notifications, AI and privacy.",
+      "serverSetupCta": "Set up the server"
     },
     "welcomeBack": {
       "title": "Welcome back",
@@ -5463,20 +5472,24 @@
       "medication": "Medication",
       "sources": "Where readings come from",
       "visit": "Doctor's visit",
-      "units": "Units",
+      "units": "Region & units",
       "confirm": "Confirm",
       "first-result": "First result",
-      "done": "Done"
+      "done": "Done",
+      "reminders": "Reminders",
+      "ai": "Coach"
     },
     "flow": {
       "welcome": {
         "title": "Welcome to HealthLog",
-        "body": "Five short questions decide what HealthLog shows you first. It takes about two minutes.",
+        "body": "A few short questions decide what HealthLog shows you first. It takes about two minutes.",
         "changeLater": "Nothing is final: every choice can be changed later under Settings.",
         "setUp": "Set up",
         "skip": "Skip for now",
         "againBody": "Your setup is finished. Answer the questions again to change what HealthLog shows first, or go to the dashboard.",
-        "setUpAgain": "Set up again"
+        "setUpAgain": "Set up again",
+        "serverSetup": "You run this server. Its own setup is a separate short pass, before or after yours.",
+        "serverSetupCta": "Set up the server"
       },
       "who": {
         "title": "Who is this record for?",
@@ -5547,14 +5560,16 @@
         }
       },
       "units": {
-        "title": "Which units do you use?",
-        "body": "Readings are stored once and shown in the unit you choose. You can change it later under Settings.",
+        "title": "Your region and units",
+        "body": "Your day and your reminder times follow the time zone. Readings are stored once and shown in the unit you choose. You can change all of it later under Settings.",
         "glucoseLegend": "Blood glucose",
         "weightLegend": "Weight and height",
         "options": {
           "metric": "kg and cm",
           "imperial": "lb and ft/in"
-        }
+        },
+        "timezoneHint": "Filled in from this account. Your day, your charts and your reminders follow it.",
+        "registryLegend": "Medicine registry for package leaflets"
       },
       "confirm": {
         "title": "Here is what your answers switch on",
@@ -5650,6 +5665,30 @@
         "tourCta": "Take a short tour",
         "openRecord": "Open the record of {name}",
         "createProfile": "Create the profile for the person you look after"
+      },
+      "reminders": {
+        "title": "Where should reminders reach you?",
+        "body": "These are the ways this server can reach you. Set up one, several or none for now.",
+        "app": "Using the iPhone app? It brings its own reminders, so you can skip this step."
+      },
+      "ai": {
+        "title": "Use the Coach?",
+        "body": "The Coach answers questions about your readings with an AI model.",
+        "whereServer": "When you ask it something, your question and the readings it needs go to {providers} through this server's account.",
+        "whereOwn": "When you ask it something, your question and the readings it needs go to the AI service you set up with your own key.",
+        "whereLocal": "When you ask it something, your question and the readings it needs go to the model you run yourself.",
+        "whereNone": "No AI service is set up for you yet, so the Coach has nothing to answer with.",
+        "setUp": "Set up AI",
+        "nothingUntilAsked": "Nothing is sent before you ask.",
+        "options": {
+          "yes": "Yes, use the Coach",
+          "no": "No, switch it off"
+        },
+        "hints": {
+          "yes": "You can ask it about your readings whenever you like.",
+          "no": "The Coach goes away. Everything else works as before."
+        },
+        "later": "You can change this at any time under Settings, AI."
       }
     }
   },
@@ -5685,6 +5724,43 @@
       "managedProfileTitle": "Create the profile you look after",
       "managedProfileDescription": "Your answers were given for another person's record; it is created under Shared access.",
       "managedProfileCta": "Create the profile"
+    },
+    "extras": {
+      "toggle": "More you can set up",
+      "hint": "All optional. None of it counts towards the list above.",
+      "loadError": "These suggestions could not be loaded.",
+      "items": {
+        "emergencyCard": {
+          "title": "Emergency card",
+          "description": "Allergies, medication and contacts for someone who has to help.",
+          "cta": "Open"
+        },
+        "careFeed": {
+          "title": "Care calendar subscription",
+          "description": "Appointments and check-ups in the calendar app you already use.",
+          "cta": "Subscribe"
+        },
+        "sharing": {
+          "title": "Share with someone",
+          "description": "Give another account access, or look after someone's record.",
+          "cta": "Set up"
+        },
+        "imports": {
+          "title": "Bring in older data",
+          "description": "Gadgetbridge, Health Connect, FHIR files and more.",
+          "cta": "Import"
+        },
+        "reportSchedule": {
+          "title": "Regular doctor report",
+          "description": "A report filed into your documents every month, quarter or year.",
+          "cta": "Schedule"
+        },
+        "iosApp": {
+          "title": "The iPhone app",
+          "description": "Apple Health sync, and reminders through the push relay if this server offers it.",
+          "cta": "Learn more"
+        }
+      }
     }
   },
   "trendHints": {
@@ -6449,6 +6525,8 @@
             "privacyNote": "The password is stored encrypted and never shown again. Each file is imported once: a file HealthLog already has is not read twice. A folder on your home network works only when the person running the server allows its address.",
             "lastAttempt": "Last attempt {when}: {outcome}",
             "fetchNow": "Fetch now",
+            "fetchStarted": "Fetching now. The result appears on this card.",
+            "removed": "Folder removed",
             "remove": "Remove folder",
             "removeTitle": "Remove this folder?",
             "removeBody": "HealthLog stops fetching from it and forgets the password. What was already imported stays."
@@ -8787,7 +8865,19 @@
         "next": "Next",
         "pageOf": "Page {page} of {total}",
         "export": "Export CSV",
-        "empty": "No audit entries match the current filters."
+        "empty": "No audit entries match the current filters.",
+        "family": {
+          "auth": "Sign-ins",
+          "documents": "Documents",
+          "sharing": "Sharing and managed profiles",
+          "medication": "Medications"
+        },
+        "familyAll": {
+          "auth": "All sign-in actions",
+          "documents": "All document actions",
+          "sharing": "All sharing and profile actions",
+          "medication": "All medication actions"
+        }
       },
       "app-logs": {
         "title": "App logs",
@@ -9540,6 +9630,117 @@
         "lastSuccess": "Last delivered {time}.",
         "lastFailure": "Last failure {time}: {reason}.",
         "noReason": "no reason given"
+      }
+    },
+    "serverSetup": {
+      "stepsLabel": "Server setup steps",
+      "finish": "Finish",
+      "steps": {
+        "accounts": "Accounts",
+        "notifications": "Notifications",
+        "ai": "AI",
+        "privacy": "Privacy",
+        "health": "Setup check"
+      },
+      "notice": {
+        "title": "Set up this server",
+        "body": "Five short steps for the decisions only you can make here: who may sign up, how notifications leave the server, what AI may do, and what else leaves it. Every step can be skipped and changed later.",
+        "open": "Start the setup",
+        "dismiss": "Not now"
+      },
+      "accounts": {
+        "title": "Who can use this server",
+        "body": "Decide whether people can sign up on their own and whether every account needs a second factor.",
+        "invites": "With sign-ups closed, people still join with an invite link.",
+        "invitesLink": "Create an invite"
+      },
+      "notifications": {
+        "title": "How notifications leave the server",
+        "body": "Choose which channels people may use. The push relay for the App Store app stays off unless you switch it on."
+      },
+      "ai": {
+        "title": "What AI may do",
+        "body": "AI is optional. HealthLog works completely without it.",
+        "off": "Off: nothing goes to any AI service.",
+        "ownKey": "People's own keys: a person's questions and the readings they need go to the provider that person set up.",
+        "serverKey": "This server's key: questions and readings go to the provider you set here, and each person is asked for consent first.",
+        "local": "A local model: everything stays with the model the person points at, on your own network.",
+        "docs": "How the AI providers work"
+      },
+      "privacy": {
+        "title": "What else leaves the server",
+        "body": "Besides notifications and AI, three things can send data elsewhere. Each is your call.",
+        "geoTitle": "Sign-in locations",
+        "geoDescription": "How the place of a sign-in is worked out from its IP address.",
+        "geoBody": "With the GeoLite2 databases mounted, the lookup happens on this server. Without them, each sign-in address is sent to an online service. IP_GEO_LOOKUP_DISABLED=1 switches the lookup off.",
+        "geoDocs": "Set up the local databases",
+        "geoLoadError": "The lookup setting could not be read.",
+        "docs": "What HealthLog sends where"
+      },
+      "health": {
+        "title": "Check the setup",
+        "body": "A read-only check of how this server is set up. It stays under Admin, System status.",
+        "keys": "Your encryption keys are the only way to read your data in a backup. Keep a copy somewhere other than this server."
+      },
+      "facts": {
+        "title": "From the server's environment",
+        "description": "Set in the environment, not here. Change it there and restart.",
+        "oidc": "Single sign-on (OIDC)",
+        "oidcOn": "Configured, beside passwords and passkeys",
+        "oidcOnly": "Configured, the only way to sign in",
+        "oidcOff": "Not configured",
+        "oidcDocs": "Set up single sign-on",
+        "smtp": "Email (SMTP)",
+        "smtpOn": "Configured",
+        "smtpMissing": "Not configured, missing: {names}",
+        "telegram": "Telegram replies",
+        "telegramOn": "Webhook secret set",
+        "telegramOff": "No webhook secret, so buttons in Telegram messages do not answer",
+        "channelsDocs": "How the channels work"
+      }
+    },
+    "setupHealth": {
+      "title": "Setup check",
+      "description": "Keys, cookies, backups and the address this server is reached at.",
+      "loadError": "The setup check could not be loaded.",
+      "fix": "Open",
+      "docs": "How to fix it",
+      "openSetup": "Open the server setup",
+      "state": {
+        "ok": "All fine",
+        "attention": "Worth a look",
+        "failing": "Needs fixing"
+      },
+      "signal": {
+        "encryption_keys": "Encryption keys",
+        "secure_cookie": "Secure cookies",
+        "app_url": "Public address",
+        "database_dump": "Database dump"
+      },
+      "reason": {
+        "encryption_keys": {
+          "present": "Keys loaded: {count}. Active key: {active}.",
+          "missing": "No encryption key is loaded."
+        },
+        "secure_cookie": {
+          "on": "Cookies carry the Secure flag.",
+          "off": "Cookies do not carry the Secure flag.",
+          "secure_over_https": "Secure cookies over HTTPS, as it should be.",
+          "plain_http": "Plain HTTP without the Secure flag: fine for a server only reachable on your own network.",
+          "secure_over_http": "This page came over plain HTTP, but cookies carry the Secure flag, so browsers drop the sign-in. Serve HTTPS or set SESSION_COOKIE_SECURE=false.",
+          "insecure_over_https": "This page came over HTTPS, but cookies lack the Secure flag. Remove SESSION_COOKIE_SECURE=false."
+        },
+        "app_url": {
+          "unset": "NEXT_PUBLIC_APP_URL is not set. Links in emails, invites and sign-in with SSO need it.",
+          "invalid": "NEXT_PUBLIC_APP_URL is not a valid address.",
+          "mismatch": "NEXT_PUBLIC_APP_URL is {configured}, but this page was opened at {request}.",
+          "matches": "Reached at {url}, as configured."
+        },
+        "database_dump": {
+          "disabled": "No nightly database dump is taken. Back the database up another way.",
+          "not_persistent": "The dump directory is not on a mounted volume, so dumps are lost at the next update.",
+          "scheduled": "Nightly dump scheduled ({cron})."
+        }
       }
     },
     "versionMigrations": {
@@ -14407,7 +14608,48 @@
     "waitingForWorker": "Waiting for the background worker. If this does not change, the server's worker may not be running.",
     "errorWorkerUnavailable": "The background worker is not available right now. Try again in a moment, or ask the server operator to check it.",
     "errorTimedOut": "Reading took longer than your AI response time allows. Try again, or raise the response time in the AI settings.",
-    "errorReaderBusy": "The document reader is busy with other work. Try again in a minute."
+    "errorReaderBusy": "The document reader is busy with other work. Try again in a minute.",
+    "jobFailure": {
+      "title": "Background AI that stopped",
+      "description": "Work that stopped recently and why; an entry goes once the work succeeds again.",
+      "line": "{job}: {reason}",
+      "repeated": "Failed {count} times in a row, last on {when}.",
+      "lastAt": "Last tried on {when}.",
+      "openDocument": "Open the document",
+      "retry": "Try again",
+      "job": {
+        "documentSummary": "Document summary",
+        "documentIndex": "Reading a document for search",
+        "documentRead": "Reading a document's values",
+        "labScan": "Lab report scan",
+        "supplementLabel": "Supplement label",
+        "statusText": "Notes on the cards",
+        "briefing": "Daily briefing",
+        "periodNarrative": "Week and month review",
+        "workoutInsight": "Workout note",
+        "reactionLine": "Reaction to new data",
+        "coachNudge": "Coach nudge",
+        "coachMemory": "Coach memory",
+        "other": "Background AI work"
+      },
+      "code": {
+        "no_provider": "No AI provider is set up that could do this.",
+        "chain_no_provider": "This task is bound to a provider chain, and none of its providers is set up. Check the chain and its keys in the AI settings.",
+        "consent_required": "The AI provider needs your consent first. You can give it in the AI settings.",
+        "not_permitted": "AI work is not allowed on this record.",
+        "check_failed": "The server could not check whether AI may run. It tries again next time.",
+        "credential_expired": "The AI provider refused the key. Check or reconnect it in the AI settings.",
+        "rate_limited": "The AI provider reported too many requests. It tries again later.",
+        "provider_timeout": "The AI provider did not answer in time.",
+        "provider_unreachable": "The AI provider could not be reached. Check that it is running.",
+        "provider_empty": "The AI provider answered with nothing.",
+        "provider_reasoning_only": "The model reasoned but gave no answer.",
+        "provider_paused": "The AI provider failed several times in a row, so background work waits before trying it again.",
+        "provider_error": "The AI provider returned an error.",
+        "budget_exhausted": "Today's AI allowance is used up. It works again tomorrow.",
+        "unreadable_file": "The file could not be prepared for the AI provider."
+      }
+    }
   },
   "symptoms": {
     "add": "New symptom",
@@ -14564,6 +14806,8 @@
     "loadFailed": "This day could not be loaded.",
     "dayOf": "Day {n} of {m}",
     "dayN": "Day {n}",
+    "seizure": "Seizure",
+    "seizureCount": "{count} seizures",
     "usualRange": "Usually {lo} to {hi}",
     "groups": {
       "scores": "Scores",
@@ -15408,6 +15652,7 @@
       "untyped": "No type recorded",
       "ruleText": "{count} or more in {hours} h",
       "recorded": "Recorded seizures",
+      "diarySince": "Diary kept since",
       "seizureDays": "Days with a seizure",
       "seizureFreeDays": "Days without a recorded seizure",
       "per28Days": "Seizures per 28 days",

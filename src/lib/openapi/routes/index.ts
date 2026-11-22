@@ -31,6 +31,7 @@ import { activityPaths } from "./activity";
 import { provenancePaths } from "./provenance";
 import { adminDiagnosticPaths, adminInvitePaths } from "./admin";
 import { aiUsagePaths } from "./ai-usage";
+import { aiJobFailurePaths } from "./ai-job-failures";
 import { dawarichPaths } from "./dawarich";
 import { lifeCircumstancesPaths } from "./life-circumstances";
 import { relationLinkPaths } from "./relation-links";
@@ -65,6 +66,7 @@ import { inboundDocumentPaths } from "./documents";
 import { documentSourcePaths } from "./document-sources";
 import { devicePaths } from "./devices";
 import { pushRelayAdminPaths } from "./push-relay";
+import { adminServerSetupPaths } from "./admin-server-setup";
 import { exportPaths } from "./export";
 import { familyHistoryPaths } from "./family-history";
 import { healthRecordPaths } from "./health-record";
@@ -125,6 +127,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...provenancePaths,
   ...devicePaths,
   ...pushRelayAdminPaths,
+  ...adminServerSetupPaths,
   ...medicationPaths,
   ...profilePaths,
   ...coachPaths,
@@ -217,6 +220,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // composition, life circumstances and AUDIT-C, Dawarich movement context and
   // the relation links (appended, spread order is load-bearing).
   ...aiUsagePaths,
+  ...aiJobFailurePaths,
   ...medicationIngredientPaths,
   ...medicineRegistryPaths,
   ...lifeCircumstancesPaths,

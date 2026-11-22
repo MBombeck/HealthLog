@@ -87,6 +87,7 @@ describe("graded series from day aggregates", () => {
       {
         day: "2026-03-04",
         segment: 1,
+        lastAt: new Date("2026-03-04T12:00:00.000Z"),
         n: 15,
         sum: 12 * 150 + 3 * 60,
         min: 60,
@@ -97,6 +98,7 @@ describe("graded series from day aggregates", () => {
       {
         day: "2026-03-05",
         segment: 1,
+        lastAt: new Date("2026-03-05T12:00:00.000Z"),
         n: 1,
         sum: 60,
         min: 60,

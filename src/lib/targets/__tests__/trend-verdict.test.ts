@@ -22,7 +22,12 @@ function verdict(
   thresholdsJson: unknown = null,
   profile: typeof NO_PROFILE | typeof MAN_41 = NO_PROFILE,
 ) {
-  return resolveTrendVerdict(key, { profile, thresholdsJson, referenceValue });
+  return resolveTrendVerdict(key, {
+    profile,
+    thresholdsJson,
+    referenceValue,
+    pregnancy: false,
+  });
 }
 
 describe("resolveTrendVerdict against the person's own target", () => {
@@ -242,11 +247,32 @@ describe("resolveSummaryVerdicts", () => {
         BLOOD_PRESSURE_SYS: { avg7: 132, latest: 118 },
         ACTIVITY_STEPS: { avg7: null, latest: 9000 },
       },
-      { profile: NO_PROFILE, thresholdsJson: OWN_BP },
+      { profile: NO_PROFILE, thresholdsJson: OWN_BP, pregnancy: false },
     );
     expect(out.BLOOD_PRESSURE_SYS.direction).toBe("up-bad");
     expect(out.ACTIVITY_STEPS.direction).toBe("up-good");
     expect(out.MOOD.direction).toBe("up-good");
     expect(out.BLOOD_PRESSURE_IN_TARGET.direction).toBe("up-good");
+  });
+});
+
+describe("resolveTrendVerdict during a pregnancy", () => {
+  it("judges weight against no target while the state holds", () => {
+    const ownWeight = { WEIGHT: { min: 60, max: 65 } };
+    const judged = resolveTrendVerdict("WEIGHT", {
+      profile: NO_PROFILE,
+      thresholdsJson: ownWeight,
+      referenceValue: 72,
+      pregnancy: false,
+    });
+    expect(judged.targetPosition).toBe("above");
+    const pregnant = resolveTrendVerdict("WEIGHT", {
+      profile: NO_PROFILE,
+      thresholdsJson: ownWeight,
+      referenceValue: 72,
+      pregnancy: true,
+    });
+    expect(pregnant.targetPosition).toBeNull();
+    expect(pregnant.basis).toBe("metric_default");
   });
 });

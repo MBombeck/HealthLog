@@ -4,6 +4,7 @@
  * otherwise make itself — the change direction, the change over the window,
  * the reference lines — and the stat strip.
  */
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
@@ -110,6 +111,7 @@ export async function readSeries(args: {
   const dayValues = seriesDayValues(verdictType, points, seriesTz);
   const reference = seriesReferenceValue(dayValues);
   const direction = resolveTrendVerdict(verdictType, {
+    pregnancy: await pregnancyContextActive(prisma, userId, seriesTz),
     profile: rangeProfile,
     thresholdsJson: record?.thresholdsJson ?? null,
     // The verdict reads stored units: sleep is served in hours here and

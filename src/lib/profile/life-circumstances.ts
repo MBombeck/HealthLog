@@ -473,7 +473,8 @@ export async function lockAiSections(
  * Switch life-circumstance sections in or out of the AI inclusion list. Only
  * the named sections change; the other stored values, the five about-me
  * sections among them, stay as they are. `base` is the about-me token
- * (`UserHealthProfile.updatedAt`): a stale one is a conflict, as on about-me.
+ * (`UserHealthProfile.aboutMeRevisedAt`): a stale one is a conflict, as on
+ * about-me.
  * Any change clears the cached briefing in the same transaction, because it
  * may quote a section that just left.
  */
@@ -486,9 +487,9 @@ export async function updateLifeAiSections(
     await lockAiSections(tx, userId);
     const row = await tx.userHealthProfile.findUnique({
       where: { userId },
-      select: { aiIncludedSections: true, updatedAt: true },
+      select: { aiIncludedSections: true, aboutMeRevisedAt: true },
     });
-    if (row && base && row.updatedAt.getTime() !== base.getTime()) {
+    if (row && base && row.aboutMeRevisedAt.getTime() !== base.getTime()) {
       return { conflict: true as const };
     }
     const next = storedSections(row?.aiIncludedSections);
@@ -501,17 +502,17 @@ export async function updateLifeAiSections(
       ? await tx.userHealthProfile.update({
           where: { userId },
           data: { aiIncludedSections },
-          select: { updatedAt: true },
+          select: { aboutMeRevisedAt: true },
         })
       : await tx.userHealthProfile.create({
           data: { userId, aiIncludedSections },
-          select: { updatedAt: true },
+          select: { aboutMeRevisedAt: true },
         });
     await invalidateHealthProfileFactConsumers(userId, tx);
     return {
       conflict: false as const,
       aiSections: lifeSwitches(next),
-      updatedAt: saved.updatedAt.toISOString(),
+      updatedAt: saved.aboutMeRevisedAt.toISOString(),
     };
   });
 }

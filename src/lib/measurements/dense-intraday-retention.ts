@@ -447,6 +447,7 @@ export interface DenseIntradayRetentionSummary {
      * hour's live rows were left as they are.
      */
     hoursLeftAsStored: number;
+    daysFailed: number; // folds that threw, stepped over and retried next run
   };
 }
 
@@ -468,10 +469,9 @@ export interface DenseIntradayRetentionOptions extends ConsolidationOptions {
  * (user-local hours, anchored at local HH:30) and deletes the raw rows
  * (soft-deleted before v1.42; a server-pulled source's nightly increment is
  * still tombstoned, see `dense-fold-removal.ts`); rows inside the window
- * stay raw. Idempotent —
- * re-invocation after a successful pass converges to zero work because the
- * folded rows are gone from the live scan, and the minted hourly
- * rows are excluded by the `NOT startsWith('stats:')` predicate.
+ * stay raw. Idempotent: a pass after a successful one finds no work, because
+ * the folded rows are gone from the live scan and the minted hourly rows are
+ * excluded by the `NOT startsWith('stats:')` predicate.
  *
  * Does NOT enforce any auth gate — the queue handler owns that concern.
  */
@@ -481,10 +481,8 @@ export async function runDenseIntradayRetention(
 ): Promise<DenseIntradayRetentionSummary> {
   const log = options.log ?? ((line) => console.log(line));
   const retentionDays = options.retentionDays ?? DENSE_INTRADAY_RETENTION_DAYS;
-  // The shared base resolves the cutoff from `cutoffHours`; the retention
-  // window is the same mechanism expressed in days, so the rows newer than
-  // it stay raw exactly like the mean-consolidation grace window keeps
-  // today's syncs raw — only the width differs.
+  // The retention window in days is the base's `cutoffHours`: rows newer
+  // than it stay raw, like the mean consolidation's grace window.
   const cutoffHours = retentionDays > 0 ? retentionDays * 24 : undefined;
 
   const summary: DenseIntradayRetentionSummary = {
@@ -499,6 +497,7 @@ export async function runDenseIntradayRetention(
       derivedRestingRowsUpserted: 0,
       syncResetsStamped: 0,
       hoursLeftAsStored: 0,
+      daysFailed: 0,
     },
   };
 
@@ -998,6 +997,7 @@ export async function runDenseIntradayRetention(
   // stopped early stops the pass: the next run resumes where it left off.
   for (const source of DENSE_INTRADAY_FOLD_SOURCES) {
     const walk = await walkSource(source);
+    summary.totals.daysFailed += walk.daysFailed;
     summary.totals.usersScanned = Math.max(
       summary.totals.usersScanned,
       walk.usersScanned,
@@ -1009,7 +1009,7 @@ export async function runDenseIntradayRetention(
   }
 
   log(
-    `[dense-intraday-retention] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} hourlyRowsUpserted=${summary.totals.hourlyRowsUpserted} dailyRowsRetired=${summary.totals.dailyRowsRetired} derivedRestingRowsUpserted=${summary.totals.derivedRestingRowsUpserted} syncResetsStamped=${summary.totals.syncResetsStamped} hoursLeftAsStored=${summary.totals.hoursLeftAsStored}${options.dryRun ? " (dry-run)" : ""}`,
+    `[dense-intraday-retention] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} hourlyRowsUpserted=${summary.totals.hourlyRowsUpserted} dailyRowsRetired=${summary.totals.dailyRowsRetired} derivedRestingRowsUpserted=${summary.totals.derivedRestingRowsUpserted} syncResetsStamped=${summary.totals.syncResetsStamped} hoursLeftAsStored=${summary.totals.hoursLeftAsStored} daysFailed=${summary.totals.daysFailed}${options.dryRun ? " (dry-run)" : ""}`,
   );
 
   return summary;

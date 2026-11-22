@@ -429,6 +429,8 @@ export interface LaPassFacts {
   devices: number;
   started: number;
   updated: number;
+  /** Devices whose run threw; the pass carried on past each. */
+  failed: number;
 }
 
 /** The start item for `device`'s next dose, or null when none is due. */
@@ -650,7 +652,7 @@ const PASS_PERIOD_MS = 5 * 60_000;
 export async function runLiveActivityRelayPass(
   now: Date = new Date(),
 ): Promise<LaPassFacts> {
-  const facts: LaPassFacts = { devices: 0, started: 0, updated: 0 };
+  const facts: LaPassFacts = { devices: 0, started: 0, updated: 0, failed: 0 };
   if (!liveActivityRelayEnabled()) return facts;
   const ctx = await loadPushContext();
   if (!ctx.registration?.instanceId) return facts;
@@ -682,6 +684,7 @@ export async function runLiveActivityRelayPass(
       facts.started += done.started;
       facts.updated += done.updated;
     } catch (err) {
+      facts.failed += 1;
       getEvent()?.addWarning(
         `live_activity_relay_failed: ${err instanceof Error ? err.message : String(err)}`,
       );

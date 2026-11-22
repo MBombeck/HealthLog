@@ -1197,7 +1197,8 @@
           "streak": 0,
           "taken7": 6,
           "skipped7": 0,
-          "missed7": 0
+          "missed7": 0,
+          "expected30": 29
         },
         {
           "id": "<id:2>",
@@ -1207,10 +1208,11 @@
           "categoryLabel": null,
           "compliance7": 43,
           "compliance30": 47,
-          "streak": 1,
+          "streak": 0,
           "taken7": 3,
           "skipped7": 0,
-          "missed7": 4
+          "missed7": 4,
+          "expected30": 30
         }
       ],
       "alerts": [

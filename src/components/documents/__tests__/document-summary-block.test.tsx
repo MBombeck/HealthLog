@@ -175,3 +175,39 @@ describe("DocumentSummaryBlock — a background read (v1.40)", () => {
     expect(base()).not.toContain("run-phase");
   });
 });
+
+describe("DocumentSummaryBlock — a recorded failure (#1404)", () => {
+  const failure = {
+    job: "documentSummary" as const,
+    code: "provider_unreachable" as const,
+    documentId: "doc-1",
+    providerType: "local",
+    failCount: 3,
+    firstFailedAt: "2026-11-20T08:00:00.000Z",
+    lastFailedAt: "2026-11-21T08:00:00.000Z",
+  };
+
+  it("says why the summary stopped and offers to try again", () => {
+    const html = base({ summaryState: "UNAVAILABLE", failures: [failure] });
+    expect(html).toContain('data-slot="document-detail-summary-failure"');
+    expect(html).toContain("The AI provider could not be reached.");
+    expect(html).toContain("Failed 3 times in a row");
+    expect(html).toContain("Try again");
+    expect(html).not.toContain("No summary could be generated");
+  });
+
+  it("ignores another kind's failure", () => {
+    const html = base({
+      summaryState: "UNAVAILABLE",
+      failures: [{ ...failure, job: "documentIndex" }],
+    });
+    expect(html).not.toContain("document-detail-summary-failure");
+    expect(html).toContain("No summary could be generated");
+  });
+
+  it("keeps the safety screen's own sentence for a withheld summary", () => {
+    const html = base({ summaryState: "WITHHELD", failures: [failure] });
+    expect(html).not.toContain("document-detail-summary-failure");
+    expect(html).toContain("did not pass the safety check");
+  });
+});

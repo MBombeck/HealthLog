@@ -1585,6 +1585,7 @@
     "complianceWindow": "Observance {days} jours",
     "complianceUnavailable": "Impossible de charger l'observance",
     "complianceNotApplicable": "Observance non applicable",
+    "complianceNoDoses": "Pas encore de dose",
     "complianceNotApplicableReason": "Aucun planning local n’est enregistré dans HealthLog.",
     "complianceInfo": "Part des doses attendues que vous avez enregistrées. Les plans hebdomadaires comptent semaine par semaine.",
     "complianceInfoLabel": "Que signifie l'observance ?",
@@ -1595,6 +1596,8 @@
     "cycleDueToday": "À prendre aujourd'hui",
     "cycleNoClosedCycles": "Aucun cycle de dose terminé pour l'instant",
     "intakeToastTaken": "{name} : prise, {time}",
+    "intakeToastTakenFor": "{name} : prise, {time}, pour la dose de {slot}",
+    "intakeToastExtra": "{name} : prise, {time}, en dose supplémentaire",
     "intakeToastSkipped": "{name} : sautée",
     "intakeToastFailed": "Impossible d'enregistrer {name}. Réessayez",
     "intakeUndone": "Entrée annulée",
@@ -2682,7 +2685,9 @@
         "undo": "Annuler",
         "takeFor": "Prendre {name}",
         "skipFor": "Sauter {name}",
-        "takeSlot": "Prendre ({time})"
+        "takeSlot": "Prendre ({time})",
+        "takeExtra": "Prendre une dose supplémentaire",
+        "takeExtraFor": "Prendre une dose supplémentaire de {name}"
       },
       "state": {
         "pending": "À venir",
@@ -2697,7 +2702,8 @@
       },
       "snoozedToast": "{name} : rappel à {time}",
       "snoozeFailed": "Impossible de reporter {name}. Réessaie",
-      "earlyHint": "En avance : cette dose est prévue à partir de {time}."
+      "earlyHint": "En avance : cette dose est prévue à partir de {time}.",
+      "extraHint": "Compte comme dose supplémentaire, pas pour la dose de {time}."
     },
     "intakeForm": {
       "title": "Saisir une prise",
@@ -2709,6 +2715,7 @@
       "doseHint": "Préremplie avec la dose prévue. Ne la change que si tu as pris une autre quantité.",
       "countsFor": "Compte pour la dose de {time}.",
       "countsForLate": "Compte pour la dose de {time}, comme prise en retard.",
+      "countsForEarly": "Compte pour la dose de {time}, prise en avance.",
       "countNearLabel": "La compter pour la dose de {time}",
       "skips": "Saute la dose de {time}.",
       "extraDose": "Enregistrée comme dose supplémentaire, hors planning. Elle reste dans l’historique et ne compte pas dans l’observance.",
@@ -5436,7 +5443,9 @@
       "aiOptional": "L'IA est facultative. Tout fonctionne aussi sans elle.",
       "aiSetupCta": "Configurer l'IA",
       "relayOptional": "L’app iPhone peut recevoir les notifications de ce serveur via le relais push HealthLog, facultatif et désactivé tant que vous ne l’activez pas.",
-      "relaySetupCta": "Réglages du relais push"
+      "relaySetupCta": "Réglages du relais push",
+      "serverSetup": "La configuration de ce serveur reste ouverte : inscriptions, notifications, IA et confidentialité.",
+      "serverSetupCta": "Configurer le serveur"
     },
     "welcomeBack": {
       "title": "Bon retour",
@@ -5463,20 +5472,24 @@
       "medication": "Médicaments",
       "sources": "D'où viennent les mesures",
       "visit": "Visite médicale",
-      "units": "Unités",
+      "units": "Région et unités",
       "confirm": "Confirmer",
       "first-result": "Premier résultat",
-      "done": "Terminé"
+      "done": "Terminé",
+      "reminders": "Rappels",
+      "ai": "Coach"
     },
     "flow": {
       "welcome": {
         "title": "Bienvenue dans HealthLog",
-        "body": "Cinq questions rapides décident de ce que HealthLog vous montre en premier. Cela prend environ deux minutes.",
+        "body": "Quelques questions rapides décident de ce que HealthLog vous montre en premier. Cela prend environ deux minutes.",
         "changeLater": "Rien n'est définitif : chaque choix peut être modifié plus tard dans les réglages.",
         "setUp": "Configurer",
         "skip": "Passer pour l'instant",
         "againBody": "Votre configuration est terminée. Répondez à nouveau aux questions pour changer ce que HealthLog montre en premier, ou allez au tableau de bord.",
-        "setUpAgain": "Reconfigurer"
+        "setUpAgain": "Reconfigurer",
+        "serverSetup": "Vous administrez ce serveur. Sa propre configuration est un court passage à part, avant ou après la vôtre.",
+        "serverSetupCta": "Configurer le serveur"
       },
       "who": {
         "title": "À qui appartient ce dossier ?",
@@ -5547,14 +5560,16 @@
         }
       },
       "units": {
-        "title": "Quelles unités utilisez-vous ?",
-        "body": "Les mesures sont enregistrées une fois et affichées dans l'unité de votre choix. Vous pourrez la changer plus tard dans les réglages.",
+        "title": "Votre région et vos unités",
+        "body": "Votre journée et l'heure de vos rappels suivent le fuseau horaire. Les mesures sont enregistrées une fois et affichées dans l'unité de votre choix. Vous pourrez tout modifier plus tard dans les réglages.",
         "glucoseLegend": "Glycémie",
         "weightLegend": "Poids et taille",
         "options": {
           "metric": "kg et cm",
           "imperial": "lb et ft/in"
-        }
+        },
+        "timezoneHint": "Repris de ce compte. Votre journée, vos graphiques et vos rappels le suivent.",
+        "registryLegend": "Registre des médicaments pour les notices"
       },
       "confirm": {
         "title": "Voici ce que vos réponses activent",
@@ -5650,6 +5665,30 @@
         "tourCta": "Faire une courte visite guidée",
         "openRecord": "Ouvrir le dossier de {name}",
         "createProfile": "Créer le profil de la personne dont vous vous occupez"
+      },
+      "reminders": {
+        "title": "Où voulez-vous recevoir vos rappels ?",
+        "body": "Voici les moyens dont ce serveur dispose pour vous joindre. Configurez-en un, plusieurs ou aucun pour l'instant.",
+        "app": "Vous utilisez l'app iPhone ? Elle a ses propres rappels, vous pouvez donc passer cette étape."
+      },
+      "ai": {
+        "title": "Utiliser le Coach ?",
+        "body": "Le Coach répond à vos questions sur vos mesures à l'aide d'un modèle d'IA.",
+        "whereServer": "Quand vous lui posez une question, celle-ci et les mesures nécessaires partent vers {providers} via le compte de ce serveur.",
+        "whereOwn": "Quand vous lui posez une question, celle-ci et les mesures nécessaires partent vers le service d'IA que vous avez configuré avec votre propre clé.",
+        "whereLocal": "Quand vous lui posez une question, celle-ci et les mesures nécessaires partent vers le modèle que vous faites tourner vous-même.",
+        "whereNone": "Aucun service d'IA n'est encore configuré pour vous, le Coach ne peut donc pas encore répondre.",
+        "setUp": "Configurer l'IA",
+        "nothingUntilAsked": "Rien n'est envoyé avant que vous posiez une question.",
+        "options": {
+          "yes": "Oui, utiliser le Coach",
+          "no": "Non, le désactiver"
+        },
+        "hints": {
+          "yes": "Vous pouvez l'interroger sur vos mesures quand vous voulez.",
+          "no": "Le Coach disparaît. Tout le reste fonctionne comme avant."
+        },
+        "later": "Vous pouvez changer cela à tout moment dans les réglages, rubrique IA."
       }
     }
   },
@@ -5685,6 +5724,43 @@
       "managedProfileTitle": "Créer le profil de la personne dont vous vous occupez",
       "managedProfileDescription": "Vos réponses concernaient le dossier d'une autre personne ; il se crée dans Accès partagé.",
       "managedProfileCta": "Créer le profil"
+    },
+    "extras": {
+      "toggle": "D'autres choses à configurer",
+      "hint": "Tout est facultatif. Rien de cela ne compte dans la liste ci-dessus.",
+      "loadError": "Ces suggestions n'ont pas pu être chargées.",
+      "items": {
+        "emergencyCard": {
+          "title": "Carte d'urgence",
+          "description": "Allergies, médicaments et contacts pour qui devra aider.",
+          "cta": "Ouvrir"
+        },
+        "careFeed": {
+          "title": "Abonnement agenda des rendez-vous",
+          "description": "Rendez-vous et bilans dans l'app de calendrier que vous utilisez déjà.",
+          "cta": "S'abonner"
+        },
+        "sharing": {
+          "title": "Partager avec quelqu'un",
+          "description": "Donner accès à un autre compte, ou gérer le dossier de quelqu'un.",
+          "cta": "Configurer"
+        },
+        "imports": {
+          "title": "Importer des données plus anciennes",
+          "description": "Gadgetbridge, Health Connect, fichiers FHIR et plus.",
+          "cta": "Importer"
+        },
+        "reportSchedule": {
+          "title": "Rapport médical régulier",
+          "description": "Un rapport classé dans vos documents chaque mois, trimestre ou année.",
+          "cta": "Planifier"
+        },
+        "iosApp": {
+          "title": "L'app iPhone",
+          "description": "Synchronisation avec Apple Santé, et rappels via le relais push si ce serveur le propose.",
+          "cta": "En savoir plus"
+        }
+      }
     }
   },
   "trendHints": {
@@ -6449,6 +6525,8 @@
             "privacyNote": "Le mot de passe est stocké chiffré et n'est plus jamais affiché. Chaque fichier est importé une fois : un fichier que HealthLog a déjà n'est pas lu deux fois. Un dossier sur votre réseau domestique ne fonctionne que si la personne qui gère le serveur autorise son adresse.",
             "lastAttempt": "Dernière tentative {when} : {outcome}",
             "fetchNow": "Récupérer maintenant",
+            "fetchStarted": "Récupération en cours. Le résultat s’affichera sur cette carte.",
+            "removed": "Dossier supprimé",
             "remove": "Retirer le dossier",
             "removeTitle": "Retirer ce dossier ?",
             "removeBody": "HealthLog cesse d'y récupérer quoi que ce soit et oublie le mot de passe. Ce qui a déjà été importé reste."
@@ -8787,7 +8865,19 @@
         "next": "Suivant",
         "pageOf": "Page {page} sur {total}",
         "export": "Exporter en CSV",
-        "empty": "Aucune entrée d'audit ne correspond aux filtres actuels."
+        "empty": "Aucune entrée d'audit ne correspond aux filtres actuels.",
+        "family": {
+          "auth": "Connexions",
+          "documents": "Documents",
+          "sharing": "Partage et profils gérés",
+          "medication": "Médicaments"
+        },
+        "familyAll": {
+          "auth": "Toutes les actions de connexion",
+          "documents": "Toutes les actions sur les documents",
+          "sharing": "Toutes les actions de partage et de profils",
+          "medication": "Toutes les actions sur les médicaments"
+        }
       },
       "app-logs": {
         "title": "Journaux de l'app",
@@ -9540,6 +9630,117 @@
         "lastSuccess": "Dernière livraison {time}.",
         "lastFailure": "Dernier échec {time} : {reason}.",
         "noReason": "sans motif"
+      }
+    },
+    "serverSetup": {
+      "stepsLabel": "Étapes de configuration du serveur",
+      "finish": "Terminer",
+      "steps": {
+        "accounts": "Comptes",
+        "notifications": "Notifications",
+        "ai": "IA",
+        "privacy": "Confidentialité",
+        "health": "Vérification"
+      },
+      "notice": {
+        "title": "Configurer ce serveur",
+        "body": "Cinq courtes étapes pour les décisions que vous seul pouvez prendre ici : qui peut s'inscrire, comment les notifications quittent le serveur, ce que l'IA peut faire et ce qui sort encore. Chaque étape peut être passée et modifiée plus tard.",
+        "open": "Commencer la configuration",
+        "dismiss": "Pas maintenant"
+      },
+      "accounts": {
+        "title": "Qui peut utiliser ce serveur",
+        "body": "Choisissez si les gens peuvent s'inscrire eux-mêmes et si chaque compte doit avoir un second facteur.",
+        "invites": "Inscriptions fermées, les gens peuvent toujours rejoindre le serveur avec un lien d'invitation.",
+        "invitesLink": "Créer une invitation"
+      },
+      "notifications": {
+        "title": "Comment les notifications quittent le serveur",
+        "body": "Choisissez les canaux que les gens peuvent utiliser. Le relais push pour l'app de l'App Store reste désactivé tant que vous ne l'activez pas."
+      },
+      "ai": {
+        "title": "Ce que l'IA peut faire",
+        "body": "L'IA est facultative. HealthLog fonctionne entièrement sans elle.",
+        "off": "Désactivée : rien ne part vers un service d'IA.",
+        "ownKey": "Clés personnelles : les questions d'une personne et les mesures nécessaires partent vers le fournisseur que cette personne a configuré.",
+        "serverKey": "Clé de ce serveur : les questions et les mesures partent vers le fournisseur que vous indiquez ici, et chaque personne donne d'abord son consentement.",
+        "local": "Modèle local : tout reste auprès du modèle indiqué par la personne, sur votre propre réseau.",
+        "docs": "Fonctionnement des fournisseurs d'IA"
+      },
+      "privacy": {
+        "title": "Ce qui quitte encore le serveur",
+        "body": "En plus des notifications et de l'IA, trois éléments peuvent envoyer des données ailleurs. Chacun relève de votre choix.",
+        "geoTitle": "Lieux de connexion",
+        "geoDescription": "Comment le lieu d'une connexion est déterminé à partir de son adresse IP.",
+        "geoBody": "Avec les bases GeoLite2 montées, la recherche se fait sur ce serveur. Sans elles, chaque adresse de connexion est envoyée à un service en ligne. IP_GEO_LOOKUP_DISABLED=1 désactive la recherche.",
+        "geoDocs": "Installer les bases locales",
+        "geoLoadError": "Le réglage de la recherche n'a pas pu être lu.",
+        "docs": "Ce que HealthLog envoie et où"
+      },
+      "health": {
+        "title": "Vérifier la configuration",
+        "body": "Une vue en lecture seule de la configuration de ce serveur. Elle reste dans la console d'administration, sous État du système.",
+        "keys": "Vos clés de chiffrement sont le seul moyen de lire vos données dans une sauvegarde. Gardez-en une copie ailleurs que sur ce serveur."
+      },
+      "facts": {
+        "title": "Depuis l'environnement du serveur",
+        "description": "Défini dans l'environnement, pas ici. Modifiez-le là-bas puis redémarrez.",
+        "oidc": "Authentification unique (OIDC)",
+        "oidcOn": "Configurée, en plus des mots de passe et des clés d'accès",
+        "oidcOnly": "Configurée, seul moyen de se connecter",
+        "oidcOff": "Non configurée",
+        "oidcDocs": "Configurer l'authentification unique",
+        "smtp": "E-mail (SMTP)",
+        "smtpOn": "Configuré",
+        "smtpMissing": "Non configuré, il manque : {names}",
+        "telegram": "Réponses dans Telegram",
+        "telegramOn": "Secret du webhook défini",
+        "telegramOff": "Pas de secret de webhook, les boutons des messages Telegram ne répondent donc pas",
+        "channelsDocs": "Fonctionnement des canaux"
+      }
+    },
+    "setupHealth": {
+      "title": "Vérification de la configuration",
+      "description": "Clés, cookies, sauvegardes et adresse à laquelle ce serveur est joint.",
+      "loadError": "La vérification de la configuration n'a pas pu être chargée.",
+      "fix": "Ouvrir",
+      "docs": "Comment corriger",
+      "openSetup": "Ouvrir la configuration du serveur",
+      "state": {
+        "ok": "Tout va bien",
+        "attention": "À regarder",
+        "failing": "À corriger"
+      },
+      "signal": {
+        "encryption_keys": "Clés de chiffrement",
+        "secure_cookie": "Cookies sécurisés",
+        "app_url": "Adresse publique",
+        "database_dump": "Sauvegarde de la base"
+      },
+      "reason": {
+        "encryption_keys": {
+          "present": "Clés chargées : {count}. Clé active : {active}.",
+          "missing": "Aucune clé de chiffrement n'est chargée."
+        },
+        "secure_cookie": {
+          "on": "Les cookies portent l'attribut Secure.",
+          "off": "Les cookies ne portent pas l'attribut Secure.",
+          "secure_over_https": "Cookies sécurisés via HTTPS, comme il se doit.",
+          "plain_http": "HTTP simple sans attribut Secure : convient à un serveur accessible uniquement sur votre propre réseau.",
+          "secure_over_http": "Cette page est arrivée en HTTP simple, mais les cookies portent l'attribut Secure, donc les navigateurs rejettent la connexion. Servez le site en HTTPS ou définissez SESSION_COOKIE_SECURE=false.",
+          "insecure_over_https": "Cette page est arrivée en HTTPS, mais les cookies n'ont pas l'attribut Secure. Retirez SESSION_COOKIE_SECURE=false."
+        },
+        "app_url": {
+          "unset": "NEXT_PUBLIC_APP_URL n'est pas défini. Les liens des e-mails, les invitations et la connexion par SSO en ont besoin.",
+          "invalid": "NEXT_PUBLIC_APP_URL n'est pas une adresse valide.",
+          "mismatch": "NEXT_PUBLIC_APP_URL vaut {configured}, mais cette page a été ouverte à {request}.",
+          "matches": "Joint à {url}, comme configuré."
+        },
+        "database_dump": {
+          "disabled": "Aucune sauvegarde nocturne de la base n'est faite. Sauvegardez la base d'une autre manière.",
+          "not_persistent": "Le dossier des sauvegardes n'est pas sur un volume monté, elles seront perdues à la prochaine mise à jour.",
+          "scheduled": "Sauvegarde nocturne planifiée ({cron})."
+        }
       }
     },
     "versionMigrations": {
@@ -14407,7 +14608,48 @@
     "waitingForWorker": "En attente du traitement en arrière-plan. Si rien ne change, le worker du serveur n'est peut-être pas lancé.",
     "errorWorkerUnavailable": "Le traitement en arrière-plan n'est pas disponible pour le moment. Réessayez dans un instant ou demandez à la personne qui gère le serveur de le vérifier.",
     "errorTimedOut": "La lecture a pris plus de temps que votre délai de réponse IA ne le permet. Réessayez ou augmentez ce délai dans les réglages IA.",
-    "errorReaderBusy": "Le lecteur de documents est occupé par d'autres tâches. Réessayez dans une minute."
+    "errorReaderBusy": "Le lecteur de documents est occupé par d'autres tâches. Réessayez dans une minute.",
+    "jobFailure": {
+      "title": "IA en arrière-plan interrompue",
+      "description": "Les tâches interrompues récemment et pourquoi ; une entrée disparaît dès que la tâche réussit à nouveau.",
+      "line": "{job} : {reason}",
+      "repeated": "Échec {count} fois de suite, la dernière le {when}.",
+      "lastAt": "Dernière tentative le {when}.",
+      "openDocument": "Ouvrir le document",
+      "retry": "Réessayer",
+      "job": {
+        "documentSummary": "Résumé du document",
+        "documentIndex": "Lecture du document pour la recherche",
+        "documentRead": "Lecture des valeurs d’un document",
+        "labScan": "Scan d’un compte rendu de laboratoire",
+        "supplementLabel": "Étiquette d’un complément",
+        "statusText": "Notes des cartes",
+        "briefing": "Briefing du jour",
+        "periodNarrative": "Bilan de la semaine et du mois",
+        "workoutInsight": "Note d’entraînement",
+        "reactionLine": "Réaction aux nouvelles données",
+        "coachNudge": "Rappel du Coach",
+        "coachMemory": "Mémoire du Coach",
+        "other": "Tâche d’IA en arrière-plan"
+      },
+      "code": {
+        "no_provider": "Aucun fournisseur d’IA capable de le faire n’est configuré.",
+        "chain_no_provider": "Cette tâche est liée à une chaîne de fournisseurs, et aucun de ses fournisseurs n’est configuré. Vérifiez la chaîne et ses clés dans les réglages IA.",
+        "consent_required": "Le fournisseur d’IA a d’abord besoin de votre consentement. Vous pouvez le donner dans les réglages IA.",
+        "not_permitted": "Le travail d’IA n’est pas autorisé sur ce dossier.",
+        "check_failed": "Le serveur n’a pas pu vérifier si l’IA peut s’exécuter. Il réessaiera la prochaine fois.",
+        "credential_expired": "Le fournisseur d’IA a refusé la clé. Vérifiez-la ou reconnectez-la dans les réglages IA.",
+        "rate_limited": "Le fournisseur d’IA signale trop de requêtes. Une nouvelle tentative aura lieu plus tard.",
+        "provider_timeout": "Le fournisseur d’IA n’a pas répondu à temps.",
+        "provider_unreachable": "Le fournisseur d’IA était injoignable. Vérifiez qu’il est en marche.",
+        "provider_empty": "Le fournisseur d’IA a répondu sans contenu.",
+        "provider_reasoning_only": "Le modèle a raisonné, mais n’a donné aucune réponse.",
+        "provider_paused": "Le fournisseur d’IA a échoué plusieurs fois de suite ; le travail en arrière-plan attend avant de le réessayer.",
+        "provider_error": "Le fournisseur d’IA a renvoyé une erreur.",
+        "budget_exhausted": "Le quota d’IA du jour est épuisé. Cela refonctionnera demain.",
+        "unreadable_file": "Le fichier n’a pas pu être préparé pour le fournisseur d’IA."
+      }
+    }
   },
   "symptoms": {
     "add": "Nouveau symptôme",
@@ -14564,6 +14806,8 @@
     "loadFailed": "Impossible de charger ce jour.",
     "dayOf": "Jour {n} sur {m}",
     "dayN": "Jour {n}",
+    "seizure": "Crise",
+    "seizureCount": "{count} crises",
     "usualRange": "Habituellement de {lo} à {hi}",
     "groups": {
       "scores": "Scores",
@@ -15408,6 +15652,7 @@
       "untyped": "Aucun type enregistré",
       "ruleText": "{count} ou plus en {hours} h",
       "recorded": "Crises enregistrées",
+      "diarySince": "Journal tenu depuis le",
       "seizureDays": "Jours avec crise",
       "seizureFreeDays": "Jours sans crise enregistrée",
       "per28Days": "Crises par 28 jours",

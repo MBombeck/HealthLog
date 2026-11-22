@@ -11,6 +11,7 @@
  * Empty = each surface's own default (60 s for most, longer for the briefing).
  * ──────────────────────────────────────────────────────────────── */
 
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save, Timer } from "lucide-react";
@@ -69,6 +70,8 @@ export function ResponseTimeoutCard({
   }
 
   const saveMutation = useMutation({
+    // Confirms in place: the saved line under the field.
+    meta: CONFIRMS_INLINE,
     mutationFn: async (responseTimeoutSeconds: number | null) => {
       await apiPatch("/api/user/ai-provider", { responseTimeoutSeconds });
     },

@@ -14,8 +14,10 @@ import { MedicationStateBadges } from "@/components/medications/card-parts/medic
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
 import { OverdueSlotValue } from "@/components/medications/dose-state-label";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
+import { lastTakenLabel } from "@/components/medications/card-parts/last-taken-label";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
-import { formatDateTime, formatTime } from "@/lib/format";
+import { formatTime } from "@/lib/format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
 import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
@@ -24,6 +26,7 @@ import {
   cardTakeSlot,
   cardWindowPill,
 } from "@/lib/medications/dose-state/pill";
+import { shownAdherence } from "@/lib/medications/shown-adherence";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
 import {
   estimateDailyDoseCount,
@@ -42,7 +45,7 @@ import { LogInjectionSiteDialog } from "@/components/medications/log-injection-s
 import { useGlobalExcludedInjectionSites } from "@/lib/medications/use-injection-site-prefs";
 import { useAuth } from "@/hooks/use-auth";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
-import { DEFAULT_TIMEZONE, shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 interface Schedule {
   id: string;
@@ -131,6 +134,8 @@ interface Medication {
   note?: string | null;
   /** #1430 — the saved leaflet link; null = none. */
   leafletUrl?: string | null;
+  /** #1430 — the caller's registry search, built by the list read. */
+  leafletSearch?: LeafletSearch | null;
   /**
    * v1.39.4 (#1040) — server-resolved: taken / skip are offered today only
    * when true (active, tracked, and the course includes today).
@@ -257,11 +262,9 @@ export function MedicationCard({
   // rows; otherwise it falls back to the static 7-/30-day fields.
   const complianceNotApplicable = compliance?.applicable === false;
   const display = compliance?.complianceDisplay ?? undefined;
-  const shortDays = display?.shortDays ?? 7;
-  const longDays = display?.longDays ?? 30;
-  const rate7 = display?.short.rate ?? compliance?.compliance7?.rate ?? 0;
-  const rate30 = display?.long.rate ?? compliance?.compliance30?.rate ?? 0;
-  const streak = display?.short.streak ?? compliance?.compliance7?.streak ?? 0;
+  // A window with no dose to score shows "no doses yet", never a rate.
+  const { shortDays, longDays, rate7, rate30, streak } =
+    shownAdherence(compliance);
   // The open dose, resolved on the server (`currentDose`), drives the pill,
   // the calm status line (never a card tint) and the slot the buttons
   // record; no state and no pill while the display block is absent.
@@ -293,7 +296,6 @@ export function MedicationCard({
   // nearest slot: the resolved open dose while it is due, overdue or missed,
   // else the server's next-due.
   const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
-  const displayedSlot = takeSlot?.at ?? null;
 
   // v1.16.11 — low-stock card context. Runway days from the list
   // payload's dose-derived stock over the same estimate the table /
@@ -343,23 +345,6 @@ export function MedicationCard({
     stockRunwayDays <= lowStockTrigger
       ? stockRunwayDays
       : null;
-
-  function formatLastTakenAt(value: string): string {
-    // Day keys (YYYY-MM-DD) in the profile zone, string-comparable for the
-    // today / yesterday / older bucketing below. The user-facing display goes
-    // through formatTime / formatDateTime. Yesterday is the key before
-    // today's: the browser's `setDate(-1)` steps in the browser's zone, which
-    // need not be the profile's.
-    const intakeDay = userDayKey(new Date(value), userTz);
-    const todayDay = userDayKey(new Date(), userTz);
-    const yesterdayDay = shiftDateKey(todayDay, -1);
-    const time = formatTime(value);
-
-    if (intakeDay === todayDay) return `${t("medications.today")}, ${time}`;
-    if (intakeDay === yesterdayDay)
-      return `${t("medications.yesterday")}, ${time}`;
-    return formatDateTime(value);
-  }
 
   const stateBadges = (
     <MedicationStateBadges
@@ -484,7 +469,7 @@ export function MedicationCard({
       nextLine={asNeededLine ?? nextLine}
       lastLine={
         medication.lastTakenAt
-          ? formatLastTakenAt(medication.lastTakenAt)
+          ? lastTakenLabel(medication.lastTakenAt, userTz, t)
           : null
       }
       asNeeded={medication.asNeeded === true}
@@ -503,7 +488,7 @@ export function MedicationCard({
       intakeActionable={medication.intakeActionable !== false}
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
-      onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      onRecordIntake={(skipped) => recordIntake(skipped, takeSlot)}
       takeSlot={takeSlot}
       snooze={snooze}
     >

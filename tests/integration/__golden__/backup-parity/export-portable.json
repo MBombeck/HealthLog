@@ -214,6 +214,23 @@
     "medications": [
       {
         "ref": "<id:5>",
+        "treatmentClass": "GLP1",
+        "dosesPerUnit": 3,
+        "unitsPerDose": "2.5",
+        "notificationsEnabled": false,
+        "pausedAt": "2026-06-30T12:34:56.789Z",
+        "oneShot": true,
+        "asNeeded": false,
+        "deliveryForm": "INJECTION",
+        "trackInjectionSites": true,
+        "allowedInjectionSites": [
+          "ABDOMEN_LEFT"
+        ],
+        "liveActivityEnabled": true,
+        "criticalAlarmEnabled": true,
+        "atcCode": "rt-Medication-atcCode",
+        "rxNormCode": "rt-Medication-rxNormCode",
+        "reorderLeadDays": 3,
         "name": "Round-trip tablet",
         "dose": "5 mg",
         "active": false,
@@ -226,12 +243,36 @@
         "createdAt": "2026-05-01T11:53:00.000Z",
         "schedules": [
           {
+            "daysOfWeek": "rt-MedicationSchedule-daysOfWeek",
+            "timesOfDay": [
+              "rt-MedicationSchedule-timesOfDay"
+            ],
+            "reminderGraceMinutes": 3,
+            "rrule": "FREQ=WEEKLY;BYDAY=MO,TH",
+            "rollingIntervalDays": null,
+            "scheduleType": "PRN",
+            "cyclicOnWeeks": 3,
+            "cyclicOffWeeks": 3,
+            "doseWindows": {
+              "roundTrip": "rt-MedicationSchedule-doseWindows"
+            },
+            "unitsPerDose": "2.5",
             "windowStart": "08:00",
             "windowEnd": "09:00",
             "label": "Morning",
             "dose": "rt-MedicationSchedule-dose"
           },
           {
+            "daysOfWeek": null,
+            "timesOfDay": [],
+            "reminderGraceMinutes": null,
+            "rrule": null,
+            "rollingIntervalDays": 3,
+            "scheduleType": "SCHEDULED",
+            "cyclicOnWeeks": null,
+            "cyclicOffWeeks": null,
+            "doseWindows": null,
+            "unitsPerDose": null,
             "windowStart": "20:00",
             "windowEnd": "21:00",
             "label": "Every third evening",
@@ -412,6 +453,21 @@
       },
       {
         "ref": "<id:6>",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "1",
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "oneShot": false,
+        "asNeeded": true,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "reorderLeadDays": null,
         "name": "Buccal midazolam",
         "dose": "10 mg",
         "active": true,
@@ -445,7 +501,11 @@
         "skipped": true,
         "source": "API",
         "takenVia": "WEB",
-        "autoRecorded": true
+        "autoRecorded": true,
+        "injectionSite": "ABDOMEN_LEFT",
+        "doseTaken": "rt-MedicationIntakeEvent-doseTaken",
+        "attributionSource": "USER_PIN",
+        "autoMissed": false
       },
       {
         "ref": "<id:8>",
@@ -456,7 +516,11 @@
         "skipped": false,
         "source": "WEB",
         "takenVia": null,
-        "autoRecorded": false
+        "autoRecorded": false,
+        "injectionSite": null,
+        "doseTaken": null,
+        "attributionSource": "AUTO",
+        "autoMissed": false
       }
     ],
     "moodEntries": [
@@ -574,7 +638,9 @@
         "pregnancyTest": "NEGATIVE",
         "progesteroneTest": "NEGATIVE",
         "contraceptive": "NONE",
-        "sensitive": "[unreadable: encrypted with a key this instance no longer holds]",
+        "sensitive": {
+          "sexualActivity": true
+        },
         "note": "rt-CycleDayLog-notesEncrypted",
         "source": "WITHINGS",
         "externalId": "rt-CycleDayLog-externalId",
@@ -714,7 +780,8 @@
               }
             ],
             "note": "rt-IllnessDayLog-noteEncrypted",
-            "updatedAt": "2026-05-02T22:29:00.000Z"
+            "updatedAt": "2026-05-02T22:29:00.000Z",
+            "tz": "rt-IllnessDayLog-tz"
           }
         ]
       },
@@ -832,7 +899,18 @@
       "emergencyImplants": "rt-UserHealthProfile-emergencyImplantsEncrypted",
       "emergencyNote": "rt-UserHealthProfile-emergencyNoteEncrypted"
     },
-    "healthProfileFacts": [],
+    "healthProfileFacts": [
+      {
+        "id": "<id:19>",
+        "kind": "SMOKING_STATUS",
+        "value": "NEVER",
+        "validFrom": "2026-01-01T00:00:00.000Z",
+        "validUntil": "2026-06-30T12:34:56.789Z",
+        "provenance": "USER_CORRECTION",
+        "supersededByRevisionId": null,
+        "createdAt": "2026-05-03T15:08:00.000Z"
+      }
+    ],
     "customMetrics": [
       {
         "name": "Grip strength",
@@ -978,7 +1056,9 @@
         "visit": "within-a-month",
         "units": {
           "glucoseUnit": "mmol/L",
-          "unitPreference": "metric"
+          "unitPreference": "metric",
+          "timezone": "Europe/Berlin",
+          "medicineRegistry": "DE"
         }
       },
       "steps": [
@@ -1011,6 +1091,14 @@
           "status": "pending"
         },
         {
+          "id": "reminders",
+          "status": "skipped"
+        },
+        {
+          "id": "ai",
+          "status": "skipped"
+        },
+        {
           "id": "first-result",
           "status": "pending"
         },
@@ -1029,7 +1117,7 @@
     },
     "practitioners": [
       {
-        "id": "<id:19>",
+        "id": "<id:20>",
         "name": "Round-trip practice",
         "specialty": "Internal medicine",
         "practice": "rt-Practitioner-practice",
@@ -1042,44 +1130,44 @@
     ],
     "encounters": [
       {
-        "id": "<id:20>",
+        "id": "<id:21>",
         "occurredAt": "2026-06-30T08:00:00.000Z",
         "status": "PLANNED",
         "kind": "ROUTINE",
-        "practitionerId": "<id:19>",
+        "practitionerId": "<id:20>",
         "reason": "annual check",
         "outcome": "ferritin back in range, recheck in a year",
         "bodySite": "rt-Encounter-bodySiteEncrypted",
         "laterality": "LEFT",
-        "reminderId": "<id:21>",
+        "reminderId": "<id:22>",
         "createdAt": "2026-05-04T14:31:00.000Z",
         "updatedAt": "2026-05-04T14:32:00.000Z"
       }
     ],
     "encounterDocumentLinks": [
       {
-        "encounterId": "<id:20>",
+        "encounterId": "<id:21>",
         "targetId": "<id:18>",
         "createdAt": "2026-05-04T16:04:00.000Z"
       }
     ],
     "encounterLabLinks": [
       {
-        "encounterId": "<id:20>",
+        "encounterId": "<id:21>",
         "targetId": "<id:11>",
         "createdAt": "2026-05-04T17:44:00.000Z"
       }
     ],
     "encounterConditionLinks": [
       {
-        "encounterId": "<id:20>",
+        "encounterId": "<id:21>",
         "targetId": "<id:14>",
         "createdAt": "2026-05-04T19:24:00.000Z"
       }
     ],
     "customVaccines": [
       {
-        "id": "<id:22>",
+        "id": "<id:23>",
         "name": "Round-trip travel combo",
         "components": [
           "typhoid",
@@ -1093,7 +1181,7 @@
     ],
     "vaccinations": [
       {
-        "id": "<id:23>",
+        "id": "<id:24>",
         "occurredAt": "2026-05-14T00:00:00.000Z",
         "antigenSlug": "tdap",
         "vaccineName": "Tetanus, diphtheria and pertussis",
@@ -1101,10 +1189,10 @@
         "seriesDoses": 3,
         "lotNumber": "RT-4471",
         "site": "LEFT_ARM",
-        "practitionerId": "<id:19>",
-        "encounterId": "<id:20>",
-        "reminderId": "<id:21>",
-        "customVaccineId": "<id:22>",
+        "practitionerId": "<id:20>",
+        "encounterId": "<id:21>",
+        "reminderId": "<id:22>",
+        "customVaccineId": "<id:23>",
         "note": "sore arm for a day, nothing else",
         "createdAt": "2026-05-04T21:14:00.000Z",
         "updatedAt": "2026-05-04T21:15:00.000Z"
@@ -1112,14 +1200,14 @@
     ],
     "vaccinationDocumentLinks": [
       {
-        "vaccinationId": "<id:23>",
+        "vaccinationId": "<id:24>",
         "targetId": "<id:18>",
         "createdAt": "2026-05-04T22:44:00.000Z"
       }
     ],
     "measurementReminders": [
       {
-        "id": "<id:21>",
+        "id": "<id:22>",
         "label": "Blutdruck messen",
         "measurementType": "BLOOD_PRESSURE_SYS",
         "intervalDays": 7,
@@ -1142,8 +1230,8 @@
     ],
     "measurementReminderEvents": [
       {
-        "id": "<id:24>",
-        "reminderId": "<id:21>",
+        "id": "<id:25>",
+        "reminderId": "<id:22>",
         "kind": "SKIPPED",
         "occurredAt": "2026-06-24T06:00:00.000Z",
         "onTime": false,
@@ -1151,8 +1239,8 @@
         "createdAt": "2026-05-05T03:47:01.000Z"
       },
       {
-        "id": "<id:25>",
-        "reminderId": "<id:21>",
+        "id": "<id:26>",
+        "reminderId": "<id:22>",
         "kind": "SATISFIED",
         "occurredAt": "2026-07-01T06:05:00.000Z",
         "onTime": true,
@@ -1162,7 +1250,7 @@
     ],
     "coachConversations": [
       {
-        "id": "<id:26>",
+        "id": "<id:27>",
         "title": "How is my blood pressure trending?",
         "documentScoped": false,
         "summary": "earlier turns: weight trend and evening walks",
@@ -1172,7 +1260,7 @@
         "updatedAt": "2026-05-05T05:25:00.000Z",
         "messages": [
           {
-            "id": "<id:27>",
+            "id": "<id:28>",
             "role": "user",
             "content": "my readings look higher this week, is that real?",
             "metricSourceJson": "rt-CoachMessage-metricSourceJson",
@@ -1185,7 +1273,7 @@
             "createdAt": "2026-07-20T09:58:00.000Z"
           },
           {
-            "id": "<id:28>",
+            "id": "<id:29>",
             "role": "assistant",
             "content": "the last seven mornings average 4 mmHg above the fortnight before",
             "metricSourceJson": null,
@@ -1201,7 +1289,7 @@
         "attachments": []
       },
       {
-        "id": "<id:29>",
+        "id": "<id:30>",
         "title": "About my June labs",
         "documentScoped": true,
         "summary": null,
@@ -1211,7 +1299,7 @@
         "updatedAt": "2026-05-05T05:25:01.000Z",
         "messages": [
           {
-            "id": "<id:30>",
+            "id": "<id:31>",
             "role": "user",
             "content": "What does the ferritin mean?",
             "metricSourceJson": null,
@@ -1234,21 +1322,21 @@
     ],
     "coachFacts": [
       {
-        "id": "<id:31>",
+        "id": "<id:32>",
         "fact": "does not tolerate ACE inhibitors",
         "category": "constraint",
         "confidence": 80,
-        "sourceConversationId": "<id:26>",
+        "sourceConversationId": "<id:27>",
         "source": "user",
         "lastUsedAt": "2026-07-20T10:00:00.000Z",
-        "sourceMessageId": "<id:28>",
+        "sourceMessageId": "<id:29>",
         "createdAt": "2026-05-05T10:26:00.000Z",
         "updatedAt": "2026-05-05T10:27:00.000Z"
       }
     ],
     "coachPlans": [
       {
-        "id": "<id:32>",
+        "id": "<id:33>",
         "metric": "BLOOD_PRESSURE",
         "ifCue": "if the evening reading is over 140",
         "thenAction": "then walk twenty minutes before dinner tomorrow",
@@ -1256,23 +1344,23 @@
         "outcome": "rt-CoachPlan-outcomeEncrypted",
         "status": "active",
         "reviewDate": "2026-10-01T00:00:00.000Z",
-        "sourceConversationId": "<id:26>",
+        "sourceConversationId": "<id:27>",
         "createdAt": "2026-05-05T12:10:00.000Z",
         "updatedAt": "2026-05-05T12:11:00.000Z"
       }
     ],
     "coachReminders": [
       {
-        "id": "<id:33>",
+        "id": "<id:34>",
         "note": "ask how the evening walks are going",
         "metric": "BLOOD_PRESSURE",
-        "relatedPlanId": "<id:32>",
+        "relatedPlanId": "<id:33>",
         "triggerKind": "rt-CoachReminder-triggerKind",
         "dueAt": "2026-09-01T07:00:00.000Z",
         "contextCue": "rt-CoachReminder-contextCue",
         "status": "rt-CoachReminder-status",
         "source": "extractor",
-        "sourceConversationId": "<id:26>",
+        "sourceConversationId": "<id:27>",
         "lastSurfacedAt": "2026-06-30T12:34:56.789Z",
         "surfaceCount": 2,
         "createdAt": "2026-05-05T13:53:00.000Z",
@@ -1290,7 +1378,7 @@
     ],
     "extractedFacts": [
       {
-        "id": "<id:34>",
+        "id": "<id:35>",
         "documentId": "<id:18>",
         "factType": "OBSERVATION",
         "status": "APPROVED",
@@ -1579,7 +1667,7 @@
     ],
     "seizureTypes": [
       {
-        "ref": "<id:35>",
+        "ref": "<id:36>",
         "label": "The big one",
         "rescuePlan": "Midazolam after 5 minutes",
         "ilaeType": "FOCAL_TO_BILATERAL_TC",
@@ -1596,7 +1684,7 @@
     ],
     "seizureEvents": [
       {
-        "typeProfileId": "<id:35>",
+        "typeProfileId": "<id:36>",
         "ilaeType": null,
         "ilaeTypeAtLog": "FOCAL_PRESERVED",
         "onsetAt": "2026-06-22T07:00:00.000Z",
@@ -1726,15 +1814,15 @@
     ],
     "encounterMedicationLinks": [
       {
-        "encounterId": "<id:20>",
+        "encounterId": "<id:21>",
         "medicationId": "<id:5>",
         "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
-        "encounterId": "<id:20>",
-        "vaccinationId": "<id:23>",
+        "encounterId": "<id:21>",
+        "vaccinationId": "<id:24>",
         "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
@@ -1794,7 +1882,7 @@
     "documents": 1,
     "healthProfile": 1,
     "customMetrics": 1,
-    "healthProfileFactRevisions": 0,
+    "healthProfileFactRevisions": 1,
     "customMetricEntries": 2,
     "correlationPatterns": 1,
     "intradayProfiles": 1,
@@ -1863,7 +1951,7 @@
     "documents": 1,
     "healthProfile": 1,
     "customMetrics": 1,
-    "healthProfileFactRevisions": 0,
+    "healthProfileFactRevisions": 1,
     "customMetricEntries": 2,
     "correlationPatterns": 1,
     "intradayProfiles": 1,
@@ -2110,26 +2198,67 @@
         "ref": "<id:5>",
         "name": "Round-trip tablet",
         "dose": "5 mg",
+        "treatmentClass": "GLP1",
+        "dosesPerUnit": 3,
+        "unitsPerDose": "2.5",
         "active": false,
+        "notificationsEnabled": false,
+        "pausedAt": "2026-06-30T12:34:56.789Z",
+        "oneShot": true,
+        "asNeeded": false,
         "trackIntake": false,
         "autoMarkTaken": true,
         "autoMarkTakenSince": "2026-06-30T12:34:56.789Z",
         "category": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
+        "deliveryForm": "INJECTION",
+        "trackInjectionSites": true,
+        "allowedInjectionSites": [
+          "ABDOMEN_LEFT"
+        ],
+        "liveActivityEnabled": true,
+        "criticalAlarmEnabled": true,
+        "atcCode": "rt-Medication-atcCode",
+        "rxNormCode": "rt-Medication-rxNormCode",
         "note": "before breakfast, with water",
         "leafletUrl": "https://medicinesdatabase.be/human-use/medicines/12345/leaflet",
+        "reorderLeadDays": 3,
         "createdAt": "2026-05-01T11:53:00.000Z",
         "schedules": [
           {
             "windowStart": "08:00",
             "windowEnd": "09:00",
             "label": "Morning",
-            "dose": "rt-MedicationSchedule-dose"
+            "dose": "rt-MedicationSchedule-dose",
+            "unitsPerDose": "2.5",
+            "daysOfWeek": "rt-MedicationSchedule-daysOfWeek",
+            "timesOfDay": [
+              "rt-MedicationSchedule-timesOfDay"
+            ],
+            "reminderGraceMinutes": 3,
+            "rrule": "FREQ=WEEKLY;BYDAY=MO,TH",
+            "rollingIntervalDays": null,
+            "scheduleType": "PRN",
+            "cyclicOnWeeks": 3,
+            "cyclicOffWeeks": 3,
+            "doseWindows": {
+              "roundTrip": "rt-MedicationSchedule-doseWindows"
+            }
           },
           {
             "windowStart": "20:00",
             "windowEnd": "21:00",
             "label": "Every third evening",
-            "dose": null
+            "dose": null,
+            "unitsPerDose": null,
+            "daysOfWeek": null,
+            "timesOfDay": [],
+            "reminderGraceMinutes": null,
+            "rrule": null,
+            "rollingIntervalDays": 3,
+            "scheduleType": "SCHEDULED",
+            "cyclicOnWeeks": null,
+            "cyclicOffWeeks": null,
+            "doseWindows": null
           }
         ],
         "sideEffects": [
@@ -2308,13 +2437,28 @@
         "ref": "<id:6>",
         "name": "Buccal midazolam",
         "dose": "10 mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "1",
         "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "oneShot": false,
+        "asNeeded": true,
         "trackIntake": true,
         "autoMarkTaken": false,
         "autoMarkTakenSince": null,
         "category": "OTHER",
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
         "note": null,
         "leafletUrl": null,
+        "reorderLeadDays": null,
         "createdAt": "2026-05-01T11:53:01.000Z",
         "schedules": [],
         "sideEffects": [],
@@ -2346,9 +2490,13 @@
         "scheduledFor": "2026-07-01T08:00:00.000Z",
         "takenAt": "2026-07-01T08:04:00.000Z",
         "skipped": true,
+        "autoMissed": false,
         "autoRecorded": true,
+        "attributionSource": "USER_PIN",
         "source": "API",
-        "takenVia": "WEB"
+        "takenVia": "WEB",
+        "injectionSite": "ABDOMEN_LEFT",
+        "doseTaken": "rt-MedicationIntakeEvent-doseTaken"
       },
       {
         "ref": "<id:8>",
@@ -2357,9 +2505,13 @@
         "scheduledFor": "2026-06-22T07:06:00.000Z",
         "takenAt": "2026-06-22T07:06:00.000Z",
         "skipped": false,
+        "autoMissed": false,
         "autoRecorded": false,
+        "attributionSource": "AUTO",
         "source": "WEB",
-        "takenVia": null
+        "takenVia": null,
+        "injectionSite": null,
+        "doseTaken": null
       }
     ],
     "moodEntries": [
@@ -2446,7 +2598,9 @@
         "progesteroneTest": "NEGATIVE",
         "contraceptive": "NONE",
         "note": "rt-CycleDayLog-notesEncrypted",
-        "sensitive": "[unreadable: encrypted with a key this instance no longer holds]",
+        "sensitive": {
+          "sexualActivity": true
+        },
         "source": "WITHINGS",
         "externalId": "rt-CycleDayLog-externalId",
         "tz": "rt-CycleDayLog-tz",
@@ -2617,7 +2771,8 @@
               }
             ],
             "note": "rt-IllnessDayLog-noteEncrypted",
-            "updatedAt": "2026-05-02T22:29:00.000Z"
+            "updatedAt": "2026-05-02T22:29:00.000Z",
+            "tz": "rt-IllnessDayLog-tz"
           }
         ]
       },
@@ -2718,7 +2873,7 @@
     ],
     "seizureTypes": [
       {
-        "ref": "<id:35>",
+        "ref": "<id:36>",
         "label": "The big one",
         "ilaeType": "FOCAL_TO_BILATERAL_TC",
         "usualDurationSec": 120,
@@ -2735,7 +2890,7 @@
     ],
     "seizureEvents": [
       {
-        "typeProfileId": "<id:35>",
+        "typeProfileId": "<id:36>",
         "ilaeType": null,
         "ilaeTypeAtLog": "FOCAL_PRESERVED",
         "onsetAt": "2026-06-22T07:00:00.000Z",
@@ -2905,7 +3060,7 @@
     ],
     "extractedFacts": [
       {
-        "id": "<id:34>",
+        "id": "<id:35>",
         "documentId": "<id:18>",
         "factType": "OBSERVATION",
         "status": "APPROVED",
@@ -2972,7 +3127,18 @@
       "emergencyImplants": "rt-UserHealthProfile-emergencyImplantsEncrypted",
       "emergencyNote": "rt-UserHealthProfile-emergencyNoteEncrypted"
     },
-    "healthProfileFacts": [],
+    "healthProfileFacts": [
+      {
+        "id": "<id:19>",
+        "kind": "SMOKING_STATUS",
+        "value": "NEVER",
+        "validFrom": "2026-01-01T00:00:00.000Z",
+        "validUntil": "2026-06-30T12:34:56.789Z",
+        "provenance": "USER_CORRECTION",
+        "supersededByRevisionId": null,
+        "createdAt": "2026-05-03T15:08:00.000Z"
+      }
+    ],
     "customMetrics": [
       {
         "name": "Grip strength",
@@ -3117,7 +3283,9 @@
         "visit": "within-a-month",
         "units": {
           "glucoseUnit": "mmol/L",
-          "unitPreference": "metric"
+          "unitPreference": "metric",
+          "timezone": "Europe/Berlin",
+          "medicineRegistry": "DE"
         }
       },
       "steps": [
@@ -3150,6 +3318,14 @@
           "status": "pending"
         },
         {
+          "id": "reminders",
+          "status": "skipped"
+        },
+        {
+          "id": "ai",
+          "status": "skipped"
+        },
+        {
           "id": "first-result",
           "status": "pending"
         },
@@ -3168,7 +3344,7 @@
     },
     "practitioners": [
       {
-        "id": "<id:19>",
+        "id": "<id:20>",
         "name": "Round-trip practice",
         "specialty": "Internal medicine",
         "practice": "rt-Practitioner-practice",
@@ -3181,44 +3357,44 @@
     ],
     "encounters": [
       {
-        "id": "<id:20>",
+        "id": "<id:21>",
         "occurredAt": "2026-06-30T08:00:00.000Z",
         "status": "PLANNED",
         "kind": "ROUTINE",
-        "practitionerId": "<id:19>",
+        "practitionerId": "<id:20>",
         "reason": "annual check",
         "outcome": "ferritin back in range, recheck in a year",
         "bodySite": "rt-Encounter-bodySiteEncrypted",
         "laterality": "LEFT",
-        "reminderId": "<id:21>",
+        "reminderId": "<id:22>",
         "createdAt": "2026-05-04T14:31:00.000Z",
         "updatedAt": "2026-05-04T14:32:00.000Z"
       }
     ],
     "encounterDocumentLinks": [
       {
-        "encounterId": "<id:20>",
+        "encounterId": "<id:21>",
         "targetId": "<id:18>",
         "createdAt": "2026-05-04T16:04:00.000Z"
       }
     ],
     "encounterLabLinks": [
       {
-        "encounterId": "<id:20>",
+        "encounterId": "<id:21>",
         "targetId": "<id:11>",
         "createdAt": "2026-05-04T17:44:00.000Z"
       }
     ],
     "encounterConditionLinks": [
       {
-        "encounterId": "<id:20>",
+        "encounterId": "<id:21>",
         "targetId": "<id:14>",
         "createdAt": "2026-05-04T19:24:00.000Z"
       }
     ],
     "customVaccines": [
       {
-        "id": "<id:22>",
+        "id": "<id:23>",
         "name": "Round-trip travel combo",
         "components": [
           "typhoid",
@@ -3232,7 +3408,7 @@
     ],
     "vaccinations": [
       {
-        "id": "<id:23>",
+        "id": "<id:24>",
         "occurredAt": "2026-05-14T00:00:00.000Z",
         "antigenSlug": "tdap",
         "vaccineName": "Tetanus, diphtheria and pertussis",
@@ -3240,10 +3416,10 @@
         "seriesDoses": 3,
         "lotNumber": "RT-4471",
         "site": "LEFT_ARM",
-        "practitionerId": "<id:19>",
-        "encounterId": "<id:20>",
-        "reminderId": "<id:21>",
-        "customVaccineId": "<id:22>",
+        "practitionerId": "<id:20>",
+        "encounterId": "<id:21>",
+        "reminderId": "<id:22>",
+        "customVaccineId": "<id:23>",
         "note": "sore arm for a day, nothing else",
         "createdAt": "2026-05-04T21:14:00.000Z",
         "updatedAt": "2026-05-04T21:15:00.000Z"
@@ -3251,7 +3427,7 @@
     ],
     "vaccinationDocumentLinks": [
       {
-        "vaccinationId": "<id:23>",
+        "vaccinationId": "<id:24>",
         "targetId": "<id:18>",
         "createdAt": "2026-05-04T22:44:00.000Z"
       }
@@ -3265,15 +3441,15 @@
     ],
     "encounterMedicationLinks": [
       {
-        "encounterId": "<id:20>",
+        "encounterId": "<id:21>",
         "medicationId": "<id:5>",
         "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
-        "encounterId": "<id:20>",
-        "vaccinationId": "<id:23>",
+        "encounterId": "<id:21>",
+        "vaccinationId": "<id:24>",
         "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
@@ -3293,7 +3469,7 @@
     ],
     "coachConversations": [
       {
-        "id": "<id:26>",
+        "id": "<id:27>",
         "title": "How is my blood pressure trending?",
         "documentScoped": false,
         "summary": "earlier turns: weight trend and evening walks",
@@ -3303,7 +3479,7 @@
         "updatedAt": "2026-05-05T05:25:00.000Z",
         "messages": [
           {
-            "id": "<id:27>",
+            "id": "<id:28>",
             "role": "user",
             "content": "my readings look higher this week, is that real?",
             "metricSourceJson": "rt-CoachMessage-metricSourceJson",
@@ -3316,7 +3492,7 @@
             "createdAt": "2026-07-20T09:58:00.000Z"
           },
           {
-            "id": "<id:28>",
+            "id": "<id:29>",
             "role": "assistant",
             "content": "the last seven mornings average 4 mmHg above the fortnight before",
             "metricSourceJson": null,
@@ -3332,7 +3508,7 @@
         "attachments": []
       },
       {
-        "id": "<id:29>",
+        "id": "<id:30>",
         "title": "About my June labs",
         "documentScoped": true,
         "summary": null,
@@ -3342,7 +3518,7 @@
         "updatedAt": "2026-05-05T05:25:01.000Z",
         "messages": [
           {
-            "id": "<id:30>",
+            "id": "<id:31>",
             "role": "user",
             "content": "What does the ferritin mean?",
             "metricSourceJson": null,
@@ -3367,21 +3543,21 @@
     "consentReceipts": [],
     "coachFacts": [
       {
-        "id": "<id:31>",
+        "id": "<id:32>",
         "fact": "does not tolerate ACE inhibitors",
         "category": "constraint",
         "confidence": 80,
-        "sourceConversationId": "<id:26>",
+        "sourceConversationId": "<id:27>",
         "source": "user",
         "lastUsedAt": "2026-07-20T10:00:00.000Z",
-        "sourceMessageId": "<id:28>",
+        "sourceMessageId": "<id:29>",
         "createdAt": "2026-05-05T10:26:00.000Z",
         "updatedAt": "2026-05-05T10:27:00.000Z"
       }
     ],
     "coachPlans": [
       {
-        "id": "<id:32>",
+        "id": "<id:33>",
         "metric": "BLOOD_PRESSURE",
         "ifCue": "if the evening reading is over 140",
         "thenAction": "then walk twenty minutes before dinner tomorrow",
@@ -3389,23 +3565,23 @@
         "outcome": "rt-CoachPlan-outcomeEncrypted",
         "status": "active",
         "reviewDate": "2026-10-01T00:00:00.000Z",
-        "sourceConversationId": "<id:26>",
+        "sourceConversationId": "<id:27>",
         "createdAt": "2026-05-05T12:10:00.000Z",
         "updatedAt": "2026-05-05T12:11:00.000Z"
       }
     ],
     "coachReminders": [
       {
-        "id": "<id:33>",
+        "id": "<id:34>",
         "note": "ask how the evening walks are going",
         "metric": "BLOOD_PRESSURE",
-        "relatedPlanId": "<id:32>",
+        "relatedPlanId": "<id:33>",
         "triggerKind": "rt-CoachReminder-triggerKind",
         "dueAt": "2026-09-01T07:00:00.000Z",
         "contextCue": "rt-CoachReminder-contextCue",
         "status": "rt-CoachReminder-status",
         "source": "extractor",
-        "sourceConversationId": "<id:26>",
+        "sourceConversationId": "<id:27>",
         "lastSurfacedAt": "2026-06-30T12:34:56.789Z",
         "surfaceCount": 2,
         "createdAt": "2026-05-05T13:53:00.000Z",
@@ -3414,7 +3590,7 @@
     ],
     "measurementReminders": [
       {
-        "id": "<id:21>",
+        "id": "<id:22>",
         "label": "Blutdruck messen",
         "measurementType": "BLOOD_PRESSURE_SYS",
         "intervalDays": 7,
@@ -3437,8 +3613,8 @@
     ],
     "measurementReminderEvents": [
       {
-        "id": "<id:24>",
-        "reminderId": "<id:21>",
+        "id": "<id:25>",
+        "reminderId": "<id:22>",
         "kind": "SKIPPED",
         "occurredAt": "2026-06-24T06:00:00.000Z",
         "onTime": false,
@@ -3446,8 +3622,8 @@
         "createdAt": "2026-05-05T03:47:01.000Z"
       },
       {
-        "id": "<id:25>",
-        "reminderId": "<id:21>",
+        "id": "<id:26>",
+        "reminderId": "<id:22>",
         "kind": "SATISFIED",
         "occurredAt": "2026-07-01T06:05:00.000Z",
         "onTime": true,
@@ -3695,7 +3871,7 @@
     "extractedFacts": 1,
     "documentImportKeys": 1,
     "healthProfile": 1,
-    "healthProfileFactRevisions": 0,
+    "healthProfileFactRevisions": 1,
     "customMetrics": 1,
     "customMetricEntries": 2,
     "correlationPatterns": 1,
@@ -3754,7 +3930,7 @@
       "extractedFacts": 1,
       "documentImportKeys": 1,
       "healthProfile": 1,
-      "healthProfileFactRevisions": 0,
+      "healthProfileFactRevisions": 1,
       "customMetrics": 1,
       "customMetricEntries": 2,
       "correlationPatterns": 1,

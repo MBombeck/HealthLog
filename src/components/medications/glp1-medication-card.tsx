@@ -15,6 +15,8 @@ import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
 import { useCardDoseSnooze } from "@/components/medications/card-parts/use-dose-snooze";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
+import { lastTakenLabel } from "@/components/medications/card-parts/last-taken-label";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
 import {
   useTranslations,
   useFormatters,
@@ -26,7 +28,7 @@ import {
   queryKeys,
 } from "@/lib/query-keys";
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
-import { formatDateTime, formatTime } from "@/lib/format";
+import { formatTime } from "@/lib/format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
 import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
@@ -39,6 +41,7 @@ import {
   cardTakeSlot,
   cardWindowPill,
 } from "@/lib/medications/dose-state/pill";
+import { shownAdherence } from "@/lib/medications/shown-adherence";
 import {
   estimateDailyDoseCount,
   estimateRunwayDays,
@@ -46,7 +49,11 @@ import {
 } from "@/lib/medications/supply-runway";
 import { useAuth } from "@/hooks/use-auth";
 import { useMedicationComplianceSummary } from "@/lib/queries/use-medication-compliance-summary";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import {
+  DEFAULT_TIMEZONE,
+  daysBetweenDateKeys,
+  userDayKey,
+} from "@/lib/tz/format";
 
 /**
  * v1.4.25 — GLP-1 medication card variant.
@@ -120,6 +127,8 @@ export interface Glp1Medication {
   note?: string | null;
   /** #1430 — the saved leaflet link; null = none. */
   leafletUrl?: string | null;
+  /** #1430 — the caller's registry search, built by the list read. */
+  leafletSearch?: LeafletSearch | null;
   /**
    * v1.8.4 — server-computed next due instant from `GET /api/medications`
    * (the canonical recurrence engine anchored on the last intake). The card
@@ -190,13 +199,6 @@ interface Glp1MedicationCardProps {
   highlighted?: boolean;
 }
 
-function diffDays(target: Date, from: Date): number {
-  const ms =
-    Date.UTC(target.getFullYear(), target.getMonth(), target.getDate()) -
-    Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
-  return Math.round(ms / (24 * 60 * 60 * 1000));
-}
-
 /**
  * v1.8.4 — the next injection instant now comes from the server's
  * `nextDueAt` (the canonical recurrence engine, anchored on the last
@@ -208,11 +210,16 @@ function diffDays(target: Date, from: Date): number {
 function nextInjectionFromServer(
   nextDueAt: string | null | undefined,
   now: Date,
+  tz: string,
 ): { date: Date; daysAway: number } | null {
   if (!nextDueAt) return null;
   const date = new Date(nextDueAt);
   if (Number.isNaN(date.getTime())) return null;
-  return { date, daysAway: Math.max(0, diffDays(date, now)) };
+  const daysAway = daysBetweenDateKeys(
+    userDayKey(now, tz),
+    userDayKey(date, tz),
+  );
+  return { date, daysAway: Math.max(0, daysAway) };
 }
 
 export function Glp1MedicationCard({
@@ -330,17 +337,15 @@ export function Glp1MedicationCard({
 
   const schedule = medication.schedules[0] ?? null;
   const now = new Date();
-  const next = nextInjectionFromServer(medication.nextDueAt, now);
+  const next = nextInjectionFromServer(medication.nextDueAt, now, userTz);
   // v1.8.6 — the two compliance windows scale with the dosing cadence. When
   // the server supplies `complianceDisplay` the card reads its cadence-scaled
   // rows; otherwise it falls back to the static 7-/30-day fields.
   const complianceNotApplicable = compliance?.applicable === false;
   const display = compliance?.complianceDisplay ?? undefined;
-  const shortDays = display?.shortDays ?? 7;
-  const longDays = display?.longDays ?? 30;
-  const rate7 = display?.short.rate ?? compliance?.compliance7?.rate ?? 0;
-  const rate30 = display?.long.rate ?? compliance?.compliance30?.rate ?? 0;
-  const streak = display?.short.streak ?? compliance?.compliance7?.streak ?? 0;
+  // A window with no dose to score shows "no doses yet", never a rate.
+  const { shortDays, longDays, rate7, rate30, streak } =
+    shownAdherence(compliance);
   // v1.15.9 — the open dose's server-derived status drives the green
   // take-window highlight + the overdue / heavily-overdue top line, shared
   // verbatim with the generic card. No state (calm) without a dose.
@@ -352,7 +357,6 @@ export function Glp1MedicationCard({
   // while due, overdue or missed, else the server's next-due), threaded onto
   // the take / skip POST so the server records THIS dose.
   const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
-  const displayedSlot = takeSlot?.at ?? null;
 
   // v1.16.11 / v1.17.0 — low-stock card context, identical to the generic
   // card: runway days from the list payload's dose-derived stock, surfaced
@@ -401,17 +405,6 @@ export function Glp1MedicationCard({
   // doesn't interest me." Site TRACKING / logging is unchanged everywhere
   // else (the picker, the detail history) — only the card line drops it.
   const recentInjections = details?.recentIntakes ?? [];
-
-  function lastInjectionLabel(): string | null {
-    if (!medication.lastTakenAt) return null;
-    const d = new Date(medication.lastTakenAt);
-    const days = diffDays(d, now);
-    if (days === 0)
-      return `${t("medications.today")}, ${formatTime(medication.lastTakenAt)}`;
-    if (days === -1)
-      return `${t("medications.yesterday")}, ${formatTime(medication.lastTakenAt)}`;
-    return formatDateTime(medication.lastTakenAt);
-  }
 
   function nextInjectionLabel(): string | null {
     if (!next) return null;
@@ -462,7 +455,7 @@ export function Glp1MedicationCard({
   // closes; a same-day anchor shows the clock, an older one weekday + date.
   const overdueLabel =
     medication.nextDueOverdue && next
-      ? diffDays(next.date, now) === 0
+      ? userDayKey(next.date, userTz) === userDayKey(now, userTz)
         ? formatTime(next.date.toISOString())
         : `${weekdayLabel(getDayOfWeekInTz(next.date, displayTz))}, ${fmt.dateShortSmart(next.date)}`
       : null;
@@ -500,7 +493,11 @@ export function Glp1MedicationCard({
   // v1.15.9 — the last-injection line drops the injection-site display; it
   // now reads exactly like the generic card's last line (relative-day only).
   const lastLine = medication.lastTakenAt
-    ? t("medications.glp1LastInjection", { label: lastInjectionLabel() ?? "—" })
+    ? t("medications.glp1LastInjection", {
+        label: medication.lastTakenAt
+          ? lastTakenLabel(medication.lastTakenAt, userTz, t)
+          : "—",
+      })
     : null;
 
   return (
@@ -535,7 +532,7 @@ export function Glp1MedicationCard({
       intakeActionable={medication.intakeActionable !== false}
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
-      onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      onRecordIntake={(skipped) => recordIntake(skipped, takeSlot)}
       takeSlot={takeSlot}
       snooze={snooze}
     >

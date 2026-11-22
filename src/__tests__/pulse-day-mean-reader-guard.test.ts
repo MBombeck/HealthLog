@@ -15,7 +15,8 @@
  * file that no longer matches fails):
  *
  *   1. Database means over measurement values: `AVG(value)`, the per-day
- *      folds `SUM(total) / SUM(cnt)` and `SUM(count * mean)`, and Prisma's
+ *      folds `SUM(total) / SUM(cnt)` and `SUM(count * mean)`, the mean of
+ *      folded cells `SUM(value * n) / SUM(n)`, and Prisma's
  *      `_avg: { value }`. A file that holds one imports the shared statistic
  *      (it averages pulse among other types and the helper's CASE keeps the
  *      others on the plain mean).
@@ -52,11 +53,12 @@ const HELPER_IMPORT =
 
 /**
  * Database means over a measurement value: SQL `AVG(value)`, the per-day folds
- * `SUM(total) / SUM(cnt)` and `SUM(count * mean)`, and Prisma's
+ * `SUM(total) / SUM(cnt)` and `SUM(count * mean)`, the mean of folded cells
+ * `SUM(value * n) / SUM(n)`, and Prisma's
  * `_avg: { value: ... }`.
  */
 const SQL_MEAN =
-  /_avg\s*:\s*\{\s*value\s*:|\bAVG\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?value"?\s*\)|\bSUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?total"?\s*\)\s*\/\s*SUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?cnt"?\s*\)|\bSUM\s*\(\s*"?count"?\s*\*\s*"?mean"?\s*\)/gi;
+  /_avg\s*:\s*\{\s*value\s*:|\bAVG\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?value"?\s*\)|\bSUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?total"?\s*\)\s*\/\s*SUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?cnt"?\s*\)|\bSUM\s*\(\s*"?count"?\s*\*\s*"?mean"?\s*\)|\bSUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?value"?\s*\*\s*(?:[a-z_]+\s*\.\s*)?n\s*\)\s*\/\s*(?:NULLIF\s*\(\s*)?SUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?n\s*\)/gi;
 
 /** In-memory means and the folds that make them, counted in files that name pulse. */
 const TS_MEAN =
@@ -278,6 +280,8 @@ describe("pulse day-mean reader guard", () => {
     ).toHaveLength(1);
     expect(`(SUM(c.total) /  SUM(c.cnt))`.match(SQL_MEAN)).toHaveLength(1);
     expect(`SUM("count" * "mean")`.match(SQL_MEAN)).toHaveLength(1);
+    expect(`SUM(c."value" * c.n) / SUM(c.n)`.match(SQL_MEAN)).toHaveLength(1);
+    expect(`SUM(k."value" * k.n) AS total`.match(SQL_MEAN)).toBeNull();
     expect(`aggregate({ _avg: { value: true } })`.match(SQL_MEAN)).toHaveLength(
       1,
     );

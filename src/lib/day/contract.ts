@@ -81,6 +81,7 @@ export const DAY_INDEX_MAX_SPAN_DAYS = 366;
  *   medications  intakes, dose changes, pauses, course starts and ends
  *   illness      episodes running or starting, their day logs
  *   symptoms     occurrences of person-defined symptoms
+ *   seizures     seizures recorded in the seizure diary that day
  *   allergies    an allergy whose onset is this day
  *   labs         results drawn that day
  *   visits       visits and procedures
@@ -101,6 +102,7 @@ export const DAY_SECTION_KEYS = [
   "medications",
   "illness",
   "symptoms",
+  "seizures",
   "allergies",
   "labs",
   "visits",
@@ -208,6 +210,7 @@ export const DAY_EVENT_KINDS = [
   "illnessResolved",
   "illnessDayLog",
   "symptom",
+  "seizure",
   "allergyOnset",
   "labResult",
   "visit",

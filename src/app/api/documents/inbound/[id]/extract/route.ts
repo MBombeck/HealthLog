@@ -38,6 +38,7 @@
  * calls in one HTTP request. What does not fit is reported on the document as
  * `extractionIncomplete`, and the background run reads it in full.
  */
+import { documentAiJobFailures } from "@/lib/ai/job-failure/read";
 import { Buffer } from "node:buffer";
 
 import { NextRequest } from "next/server";
@@ -263,6 +264,7 @@ async function runNow(
       undefined,
       undefined,
       await markerIndexForFacts(userId, staged.facts),
+      await documentAiJobFailures(userId, staged.id),
     ),
   );
 }

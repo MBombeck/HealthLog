@@ -53,7 +53,14 @@ import { usePushRelayStatus } from "@/components/admin/use-push-relay";
  * server choice that decides whether the iPhone app hears from this server.
  */
 
-export function DoneScreen({ state }: { state: OnboardingStateDto }) {
+export function DoneScreen({
+  state,
+  serverSetupOpen = false,
+}: {
+  state: OnboardingStateDto;
+  /** 1.49 — an admin whose server setup is not finished (server-resolved). */
+  serverSetupOpen?: boolean;
+}) {
   const { t } = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
@@ -92,24 +99,6 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
     router.push("/");
   }
 
-  // One quiet line, only while this person could set AI up here, has no
-  // provider yet and has not switched the Coach and AI analysis off: the same
-  // rule as the Insights hint, which stays the one place that invites. With
-  // nothing to offer the screen goes from "done" straight to the exits.
-  const provider = useAiProviderState();
-  const showAiLine =
-    !provider.configured &&
-    provider.canConfigure &&
-    !hasOptedOutOfAi(user?.modules);
-
-  // For an admin, one line that the push relay exists and is a choice: only
-  // while this server allows it and nobody has switched it on yet. Nothing
-  // here turns it on; the link leads to the switch and its confirmations.
-  const isAdmin = user?.role === "ADMIN";
-  const relay = usePushRelayStatus({ enabled: isAdmin });
-  const showRelayLine =
-    isAdmin && relay.data?.allowed === true && !relay.data.offered;
-
   return (
     <section
       aria-labelledby="onboarding-done-title"
@@ -133,25 +122,7 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
         </p>
       </div>
 
-      {showAiLine ? (
-        <p data-slot="onboarding-ai-line" className="max-w-md text-sm">
-          {t("onboarding.done.aiOptional")}{" "}
-          <InlineAction asChild size="sm" className="underline">
-            <Link href="/settings/ai">{t("onboarding.done.aiSetupCta")}</Link>
-          </InlineAction>
-        </p>
-      ) : null}
-
-      {showRelayLine ? (
-        <p data-slot="onboarding-relay-line" className="max-w-md text-sm">
-          {t("onboarding.done.relayOptional")}{" "}
-          <InlineAction asChild size="sm" className="underline">
-            <Link href="/admin/services">
-              {t("onboarding.done.relaySetupCta")}
-            </Link>
-          </InlineAction>
-        </p>
-      ) : null}
+      <DoneScreenOffers serverSetupOpen={serverSetupOpen} />
 
       <div className="flex w-full max-w-xs flex-col gap-2">
         <Button
@@ -251,5 +222,75 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
         </InlineAction>
       </div>
     </section>
+  );
+}
+
+/**
+ * The quiet optional lines under "done": AI for a person who could set it up,
+ * the server setup for an admin whose setup is open, else the push relay for
+ * an admin. Each is a link, never a switch.
+ */
+function DoneScreenOffers({ serverSetupOpen }: { serverSetupOpen: boolean }) {
+  const { t } = useTranslations();
+  const { user } = useAuth();
+  // One quiet line, only while this person could set AI up here, has no
+  // provider yet and has not switched the Coach and AI analysis off: the same
+  // rule as the Insights hint, which stays the one place that invites. With
+  // nothing to offer the screen goes from "done" straight to the exits.
+  const provider = useAiProviderState();
+  const showAiLine =
+    !provider.configured &&
+    provider.canConfigure &&
+    !hasOptedOutOfAi(user?.modules);
+
+  // For an admin, one line that the push relay exists and is a choice: only
+  // while this server allows it and nobody has switched it on yet. Nothing
+  // here turns it on; the link leads to the switch and its confirmations.
+  const isAdmin = user?.role === "ADMIN";
+  // While the server setup is open its line takes this place: the setup's
+  // notifications step is where the relay is decided.
+  const relay = usePushRelayStatus({ enabled: isAdmin && !serverSetupOpen });
+  const showRelayLine =
+    isAdmin &&
+    !serverSetupOpen &&
+    relay.data?.allowed === true &&
+    !relay.data.offered;
+
+  return (
+    <>
+      {showAiLine ? (
+        <p data-slot="onboarding-ai-line" className="max-w-md text-sm">
+          {t("onboarding.done.aiOptional")}{" "}
+          <InlineAction asChild size="sm" className="underline">
+            <Link href="/settings/ai">{t("onboarding.done.aiSetupCta")}</Link>
+          </InlineAction>
+        </p>
+      ) : null}
+
+      {serverSetupOpen ? (
+        <p
+          data-slot="onboarding-server-setup-line"
+          className="max-w-md text-sm"
+        >
+          {t("onboarding.done.serverSetup")}{" "}
+          <InlineAction asChild size="sm" className="underline">
+            <Link href="/onboarding/server">
+              {t("onboarding.done.serverSetupCta")}
+            </Link>
+          </InlineAction>
+        </p>
+      ) : null}
+
+      {showRelayLine ? (
+        <p data-slot="onboarding-relay-line" className="max-w-md text-sm">
+          {t("onboarding.done.relayOptional")}{" "}
+          <InlineAction asChild size="sm" className="underline">
+            <Link href="/admin/services">
+              {t("onboarding.done.relaySetupCta")}
+            </Link>
+          </InlineAction>
+        </p>
+      ) : null}
+    </>
   );
 }

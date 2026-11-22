@@ -17,6 +17,7 @@
 import { apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { MS_PER_HOUR } from "@/lib/time-constants";
 
 /**
  * Per source address, across every link of one surface, before the lookup.
@@ -25,7 +26,6 @@ import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
  * secrets checked by HMAC, so guessing is not what this stops.
  */
 export const URL_CREDENTIAL_SURFACE_LIMIT_PER_HOUR = 600;
-export const HOUR_MS = 60 * 60 * 1000;
 
 /** Headers every answer of a URL-credential surface carries, misses included. */
 export const URL_CREDENTIAL_HEADERS: Readonly<Record<string, string>> = {
@@ -46,7 +46,7 @@ export function checkUrlCredentialSurface(request: Request, bucket: string) {
     request,
     bucket,
     URL_CREDENTIAL_SURFACE_LIMIT_PER_HOUR,
-    HOUR_MS,
+    MS_PER_HOUR,
   );
 }
 
@@ -78,16 +78,6 @@ export function urlCredentialTooMany(
     response.headers.set(k, v);
   }
   return response;
-}
-
-/** Does the request's `If-None-Match` name this ETag (weak or strong)? */
-export function matchesEtag(request: Request, etag: string): boolean {
-  const header = request.headers.get("if-none-match");
-  if (!header) return false;
-  return header
-    .split(",")
-    .map((v) => v.trim().replace(/^W\//, ""))
-    .some((v) => v === etag || v === "*");
 }
 
 /**

@@ -33,4 +33,6 @@ export const onboardingKeys = {
    */
   onboardingUpcomingVisits: () =>
     ["encounters", "onboarding-upcoming"] as const,
+  /** 1.49 — presence behind the checklist's optional "More" group. */
+  onboardingExtras: () => ["onboarding", "extras"] as const,
 };

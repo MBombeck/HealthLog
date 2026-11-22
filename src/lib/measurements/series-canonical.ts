@@ -6,8 +6,10 @@
  * ladder-winning source before they aggregate. The dense and raw reads of
  * `/api/measurements/series` filtered on user and type only, so with a second
  * provider a day's value blended the two and the configured ladder had no
- * effect on those charts. This is the one place that applies the same rule to
- * them, through the same SQL helper the other live readers use.
+ * effect on those charts. This applies the same rule to the raw points and the
+ * activity calendar, through the same SQL helper the other live readers use;
+ * the dense read folds its readings first and picks over the folded cells
+ * (`dense-series-read.ts`), the same rule over fewer rows.
  *
  * Only a type that HAS a ladder is collapsed (`RANKED_TYPES`). For a type
  * without one (glucose, body water, bone mass) the helper would break the tie

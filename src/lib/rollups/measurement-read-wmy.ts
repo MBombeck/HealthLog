@@ -285,8 +285,8 @@ export interface TieredSeriesRow {
  *   - 366–730     → WEEK
  *   - ≤ 365       → DAY   (daily resolution; the DAY cap covers it)
  *
- * This ladder must stay COMPATIBLE with the chart's client-side
- * `pickBucket` (`src/lib/charts/bucket-time-series.ts`), which captions
+ * This ladder must stay COMPATIBLE with the chart's client-side All grain
+ * (`pickRangeBucket` in `src/lib/charts/range-grain.ts`), which captions
  * the rendered series from the visible data span (day ≤ 90, week 91–730,
  * month > 730): for any span the tier chosen here is never COARSER than
  * the caption the client will print, so a "Wochendurchschnitt" chip

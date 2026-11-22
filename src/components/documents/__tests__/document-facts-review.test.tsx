@@ -99,6 +99,7 @@ function doc(
     summaryGeneratedAt: null,
     summaryState: "NONE",
     extractionIncomplete: false,
+    aiFailures: [],
     ...overrides,
   };
 }

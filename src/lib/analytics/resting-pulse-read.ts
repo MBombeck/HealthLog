@@ -14,8 +14,9 @@
  * interpolates between the two neighbouring order statistics the same way
  * `percentile` in `strain-score.ts` does, the value is rounded the same way
  * in JavaScript, days under `RESTING_PROXY_MIN_DAILY_SAMPLES` are skipped,
- * and each day is anchored on its earliest sample. Days are cut in the zone
- * the caller passes, with the same expression `readDayAggregates` uses.
+ * and each day is anchored on its earliest sample. Days are cut in the
+ * profile zone the caller passes, as `readDayAggregates` cuts a pulse day;
+ * a reading's own zone is not read (`reading-zone-reader-ratchet.test.ts`).
  *
  * The fold is cached as a closed block. A day's proxy depends only on that
  * day's readings, so the whole local days between the window's first

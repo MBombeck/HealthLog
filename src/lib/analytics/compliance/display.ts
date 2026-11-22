@@ -27,6 +27,7 @@ import {
 import {
   COMPLIANCE_LEDGER_WINDOW_DAYS,
   tallyComplianceFromLedger,
+  forwardComplianceSlot,
   trailingComplianceLedger,
   trailingComplianceTally,
 } from "./ledger";
@@ -162,6 +163,7 @@ export function buildComplianceDisplay(
     now,
     soonestCadenceFamily(schedules),
     trailingComplianceLedger(events, schedules, ctx, now),
+    (at) => forwardComplianceSlot(events, schedules, ctx, at, now),
   );
 
   return {
@@ -685,6 +687,7 @@ export function buildMedicationComplianceBundle(
     now,
     soonestCadenceFamily(schedules),
     ledgerRows,
+    (at) => forwardComplianceSlot(events, schedules, ctx, at, now),
   );
 
   const complianceDisplay: ComplianceDisplay = {

@@ -24,7 +24,6 @@ import pLimit from "p-limit";
 import type { MeasurementType } from "@/generated/prisma/client";
 import {
   resolveBpTargetOverride,
-  resolveWeightTargetOverride,
   type ThresholdOverridesJson,
 } from "@/lib/analytics/effective-range";
 import { resolveGlucoseUnit } from "@/lib/glucose";
@@ -47,6 +46,7 @@ import { buildMoodTargets } from "./mood-builder";
 import { buildSleepTarget } from "./sleep-builder";
 import { buildTargetPageSummary } from "./summary-builder";
 import { buildVitalTargets } from "./vitals-builder";
+import { weightTargetFor } from "@/lib/cycle/pregnancy-context";
 import type { TargetItem, TargetMoodEntry, TargetValueByType } from "./types";
 import {
   resolveTrendVerdict,
@@ -268,6 +268,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
         : null;
   }
 
+  const framed = await weightTargetFor(prisma, userId, { ...dbUser, timezone });
   const vitalSection = buildVitalTargets({
     recentMeasurements,
     restingPulseProxy,
@@ -276,16 +277,14 @@ export async function buildTargetsResponse(user: AuthedUser) {
     heightCm,
     age,
     adultBands: age != null ? age >= 18 : dbUser?.managedProfileAt == null,
+    pregnancy: framed.pregnancy,
     gender,
     timezone,
     now,
-    // v1.34 — the weight card grades against the user's OWN target when they
-    // set one, so the reference panel and the weight chart above it name the
-    // same band.
-    weightTargetOverride: resolveWeightTargetOverride(dbUser?.thresholdsJson),
-    // The blood-pressure card likewise names the user's own band when they
-    // set one. The insights page draws its chart zones from this same range,
-    // so the chart and the card below it cannot disagree.
+    // The weight card grades against the user's own target, none in a pregnancy.
+    weightTargetOverride: framed.target,
+    // The blood-pressure card likewise names the user's own band; the chart
+    // zones come from this same range, so chart and card cannot disagree.
     bpTargetOverride: resolveBpTargetOverride(
       {
         heightCm,
@@ -351,6 +350,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
   const verdictTargets = withTargetVerdicts(
     targets,
     {
+      pregnancy: framed.pregnancy,
       profile: {
         heightCm,
         dateOfBirth: dbUser?.dateOfBirth ?? null,

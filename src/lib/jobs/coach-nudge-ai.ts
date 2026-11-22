@@ -36,6 +36,7 @@ import type { CoachNudgeTrigger } from "@/lib/jobs/coach-nudge";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveProviderChain } from "@/lib/ai/provider";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
+import { trackAiJob } from "@/lib/ai/job-failure/report";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import {
   buildDateKey,
@@ -163,7 +164,17 @@ export function sanitiseAiBody(raw: string, locale: Locale): string | null {
   return text;
 }
 
-export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
+/**
+ * #1404 — the composition under the reporter: a provider that fails here, or
+ * a refusal nobody chose, is named under Settings, AI. The nudge itself goes
+ * out as its template either way.
+ */
+export const composeNudgeWithAI: ComposeNudgeWithAI = (params) =>
+  trackAiJob({ userId: params.userId, job: "coachNudge" }, () =>
+    composeNudge(params),
+  );
+
+const composeNudge: ComposeNudgeWithAI = async (params) => {
   const { tickBudget } = params;
 
   // Per-tick ceiling — count and wall-clock. Exhausted → template.

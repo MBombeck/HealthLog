@@ -42,6 +42,24 @@ describe("buildAuditLogQueryParams", () => {
     expect(params.has("filter")).toBe(false);
   });
 
+  it("narrows to a whole family when one is picked (#1403)", () => {
+    const params = buildAuditLogQueryParams({
+      ...base,
+      actionFilter: "family:documents",
+    });
+    expect(params.get("filter")).toBe("documents");
+    expect(params.has("action")).toBe(false);
+  });
+
+  it("falls back to the auth default for a family it does not know", () => {
+    const params = buildAuditLogQueryParams({
+      ...base,
+      actionFilter: "family:billing",
+    });
+    expect(params.get("filter")).toBe("auth");
+    expect(params.has("action")).toBe(false);
+  });
+
   it("carries the remaining filters through", () => {
     const params = buildAuditLogQueryParams({
       ...base,

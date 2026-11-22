@@ -1585,6 +1585,7 @@
     "complianceWindow": "Therapietrouw ({days} dagen)",
     "complianceUnavailable": "Therapietrouw kon niet worden geladen",
     "complianceNotApplicable": "Therapietrouw niet van toepassing",
+    "complianceNoDoses": "Nog geen doses",
     "complianceNotApplicableReason": "Er is geen lokaal schema opgeslagen in HealthLog.",
     "complianceInfo": "Aandeel van de verwachte doses dat je hebt vastgelegd. Wekelijkse schema's tellen per week.",
     "complianceInfoLabel": "Wat betekent therapietrouw?",
@@ -1595,6 +1596,8 @@
     "cycleDueToday": "Vandaag gepland",
     "cycleNoClosedCycles": "Nog geen afgeronde doseringscycli",
     "intakeToastTaken": "{name}: ingenomen, {time}",
+    "intakeToastTakenFor": "{name}: ingenomen, {time}, voor de dosis van {slot}",
+    "intakeToastExtra": "{name}: ingenomen, {time}, als extra dosis",
     "intakeToastSkipped": "{name}: overgeslagen",
     "intakeToastFailed": "{name} kon niet worden geregistreerd. Probeer het opnieuw",
     "intakeUndone": "Registratie teruggedraaid",
@@ -2682,7 +2685,9 @@
         "undo": "Ongedaan maken",
         "takeFor": "{name} innemen",
         "skipFor": "{name} overslaan",
-        "takeSlot": "Innemen ({time})"
+        "takeSlot": "Innemen ({time})",
+        "takeExtra": "Extra dosis innemen",
+        "takeExtraFor": "Extra dosis {name} innemen"
       },
       "state": {
         "pending": "Gepland",
@@ -2697,7 +2702,8 @@
       },
       "snoozedToast": "{name}: herinnering om {time}",
       "snoozeFailed": "{name} kon niet worden uitgesteld. Probeer het opnieuw",
-      "earlyHint": "Vroeg: deze dosis is vanaf {time} aan de beurt."
+      "earlyHint": "Vroeg: deze dosis is vanaf {time} aan de beurt.",
+      "extraHint": "Telt als extra dosis, niet voor de dosis van {time}."
     },
     "intakeForm": {
       "title": "Inname vastleggen",
@@ -2709,6 +2715,7 @@
       "doseHint": "Vooraf ingevuld met de geplande dosis. Pas hem alleen aan als je een andere hoeveelheid nam.",
       "countsFor": "Telt voor de dosis van {time}.",
       "countsForLate": "Telt voor de dosis van {time}, als te laat.",
+      "countsForEarly": "Telt voor de dosis van {time}, eerder ingenomen.",
       "countNearLabel": "Laten tellen voor de dosis van {time}",
       "skips": "Slaat de dosis van {time} over.",
       "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema. Ze blijft in je geschiedenis en telt niet mee voor je therapietrouw.",
@@ -5436,7 +5443,9 @@
       "aiOptional": "AI is optioneel. Alles werkt ook zonder.",
       "aiSetupCta": "AI instellen",
       "relayOptional": "De iPhone-app kan meldingen van deze server krijgen via de optionele HealthLog-pushrelay, die uit blijft tot je hem aanzet.",
-      "relaySetupCta": "Instellingen pushrelay"
+      "relaySetupCta": "Instellingen pushrelay",
+      "serverSetup": "De inrichting van deze server staat nog open: registratie, meldingen, AI en privacy.",
+      "serverSetupCta": "Server inrichten"
     },
     "welcomeBack": {
       "title": "Welkom terug",
@@ -5463,20 +5472,24 @@
       "medication": "Medicatie",
       "sources": "Waar metingen vandaan komen",
       "visit": "Doktersbezoek",
-      "units": "Eenheden",
+      "units": "Regio en eenheden",
       "confirm": "Bevestigen",
       "first-result": "Eerste resultaat",
-      "done": "Klaar"
+      "done": "Klaar",
+      "reminders": "Herinneringen",
+      "ai": "Coach"
     },
     "flow": {
       "welcome": {
         "title": "Welkom bij HealthLog",
-        "body": "Vijf korte vragen bepalen wat HealthLog je als eerste laat zien. Het duurt ongeveer twee minuten.",
+        "body": "Een paar korte vragen bepalen wat HealthLog je als eerste laat zien. Het duurt ongeveer twee minuten.",
         "changeLater": "Niets is definitief: elke keuze kun je later wijzigen onder Instellingen.",
         "setUp": "Instellen",
         "skip": "Nu overslaan",
         "againBody": "Je installatie is voltooid. Beantwoord de vragen opnieuw om te wijzigen wat HealthLog als eerste laat zien, of ga naar het dashboard.",
-        "setUpAgain": "Opnieuw instellen"
+        "setUpAgain": "Opnieuw instellen",
+        "serverSetup": "Jij beheert deze server. Zijn eigen inrichting is een aparte korte ronde, voor of na die van jou.",
+        "serverSetupCta": "Server inrichten"
       },
       "who": {
         "title": "Voor wie is dit dossier?",
@@ -5547,14 +5560,16 @@
         }
       },
       "units": {
-        "title": "Welke eenheden gebruik je?",
-        "body": "Metingen worden één keer opgeslagen en getoond in de eenheid die je kiest. Je kunt dit later wijzigen onder Instellingen.",
+        "title": "Je regio en eenheden",
+        "body": "Je dag en je herinneringstijden volgen de tijdzone. Waarden worden één keer opgeslagen en getoond in de eenheid die je kiest. Je kunt alles later wijzigen onder Instellingen.",
         "glucoseLegend": "Bloedglucose",
         "weightLegend": "Gewicht en lengte",
         "options": {
           "metric": "kg en cm",
           "imperial": "lb en ft/in"
-        }
+        },
+        "timezoneHint": "Overgenomen van dit account. Je dag, je grafieken en je herinneringen volgen deze.",
+        "registryLegend": "Geneesmiddelenregister voor bijsluiters"
       },
       "confirm": {
         "title": "Dit zetten je antwoorden aan",
@@ -5650,6 +5665,30 @@
         "tourCta": "Korte rondleiding volgen",
         "openRecord": "Dossier van {name} openen",
         "createProfile": "Profiel aanmaken voor de persoon voor wie je zorgt"
+      },
+      "reminders": {
+        "title": "Waar wil je herinneringen ontvangen?",
+        "body": "Zo kan deze server je bereiken. Stel er één in, meerdere of voorlopig geen.",
+        "app": "Gebruik je de iPhone-app? Die heeft eigen herinneringen, dus je kunt deze stap overslaan."
+      },
+      "ai": {
+        "title": "De Coach gebruiken?",
+        "body": "De Coach beantwoordt vragen over je waarden met een AI-model.",
+        "whereServer": "Als je iets vraagt, gaan je vraag en de benodigde waarden via het account van deze server naar {providers}.",
+        "whereOwn": "Als je iets vraagt, gaan je vraag en de benodigde waarden naar de AI-dienst die je met je eigen sleutel hebt ingesteld.",
+        "whereLocal": "Als je iets vraagt, gaan je vraag en de benodigde waarden naar het model dat je zelf draait.",
+        "whereNone": "Er is nog geen AI-dienst voor je ingesteld, dus de Coach kan nog niet antwoorden.",
+        "setUp": "AI instellen",
+        "nothingUntilAsked": "Er wordt niets verstuurd voordat je iets vraagt.",
+        "options": {
+          "yes": "Ja, de Coach gebruiken",
+          "no": "Nee, uitschakelen"
+        },
+        "hints": {
+          "yes": "Je kunt hem op elk moment vragen stellen over je waarden.",
+          "no": "De Coach verdwijnt. Al het andere werkt zoals voorheen."
+        },
+        "later": "Je kunt dit altijd wijzigen onder Instellingen, AI."
       }
     }
   },
@@ -5685,6 +5724,43 @@
       "managedProfileTitle": "Het profiel aanmaken voor wie je zorgt",
       "managedProfileDescription": "Je antwoorden gelden voor het dossier van iemand anders; dat wordt aangemaakt onder Gedeelde toegang.",
       "managedProfileCta": "Profiel aanmaken"
+    },
+    "extras": {
+      "toggle": "Meer dat je kunt instellen",
+      "hint": "Allemaal optioneel. Niets hiervan telt mee voor de lijst hierboven.",
+      "loadError": "Deze suggesties konden niet worden geladen.",
+      "items": {
+        "emergencyCard": {
+          "title": "Noodkaart",
+          "description": "Allergieën, medicatie en contacten voor wie moet helpen.",
+          "cta": "Openen"
+        },
+        "careFeed": {
+          "title": "Agenda-abonnement voor afspraken",
+          "description": "Afspraken en controles in de agenda-app die je al gebruikt.",
+          "cta": "Abonneren"
+        },
+        "sharing": {
+          "title": "Met iemand delen",
+          "description": "Geef een ander account toegang of beheer het dossier van iemand anders.",
+          "cta": "Instellen"
+        },
+        "imports": {
+          "title": "Oudere gegevens binnenhalen",
+          "description": "Gadgetbridge, Health Connect, FHIR-bestanden en meer.",
+          "cta": "Importeren"
+        },
+        "reportSchedule": {
+          "title": "Vast artsrapport",
+          "description": "Een rapport dat elke maand, elk kwartaal of elk jaar in je documenten komt.",
+          "cta": "Plannen"
+        },
+        "iosApp": {
+          "title": "De iPhone-app",
+          "description": "Synchronisatie met Apple Gezondheid, en herinneringen via de push-relay als deze server die aanbiedt.",
+          "cta": "Meer informatie"
+        }
+      }
     }
   },
   "trendHints": {
@@ -6449,6 +6525,8 @@
             "privacyNote": "Het wachtwoord wordt versleuteld opgeslagen en nooit meer getoond. Elk bestand wordt één keer geïmporteerd: een bestand dat HealthLog al heeft wordt niet opnieuw gelezen. Een map op je thuisnetwerk werkt alleen als wie de server beheert het adres toestaat.",
             "lastAttempt": "Laatste poging {when}: {outcome}",
             "fetchNow": "Nu ophalen",
+            "fetchStarted": "Wordt nu opgehaald. Het resultaat verschijnt op deze kaart.",
+            "removed": "Map verwijderd",
             "remove": "Map verwijderen",
             "removeTitle": "Deze map verwijderen?",
             "removeBody": "HealthLog haalt daar niets meer op en vergeet het wachtwoord. Wat al geïmporteerd is, blijft."
@@ -8787,7 +8865,19 @@
         "next": "Volgende",
         "pageOf": "Pagina {page} van {total}",
         "export": "CSV exporteren",
-        "empty": "Geen auditregistraties die aan de huidige filters voldoen."
+        "empty": "Geen auditregistraties die aan de huidige filters voldoen.",
+        "family": {
+          "auth": "Aanmeldingen",
+          "documents": "Documenten",
+          "sharing": "Delen en beheerde profielen",
+          "medication": "Medicijnen"
+        },
+        "familyAll": {
+          "auth": "Alle aanmeldacties",
+          "documents": "Alle documentacties",
+          "sharing": "Alle acties voor delen en profielen",
+          "medication": "Alle medicijnacties"
+        }
       },
       "app-logs": {
         "title": "Applogs",
@@ -9540,6 +9630,117 @@
         "lastSuccess": "Laatst bezorgd {time}.",
         "lastFailure": "Laatste fout {time}: {reason}.",
         "noReason": "geen reden opgegeven"
+      }
+    },
+    "serverSetup": {
+      "stepsLabel": "Stappen van de serverinrichting",
+      "finish": "Klaar",
+      "steps": {
+        "accounts": "Accounts",
+        "notifications": "Meldingen",
+        "ai": "AI",
+        "privacy": "Privacy",
+        "health": "Controle"
+      },
+      "notice": {
+        "title": "Deze server inrichten",
+        "body": "Vijf korte stappen voor de keuzes die alleen jij hier kunt maken: wie zich mag registreren, hoe meldingen de server verlaten, wat AI mag en wat er verder naar buiten gaat. Elke stap kun je overslaan en later wijzigen.",
+        "open": "Inrichting starten",
+        "dismiss": "Niet nu"
+      },
+      "accounts": {
+        "title": "Wie deze server kan gebruiken",
+        "body": "Bepaal of mensen zich zelf kunnen registreren en of elk account een tweede factor nodig heeft.",
+        "invites": "Met gesloten registratie komen mensen nog steeds binnen met een uitnodigingslink.",
+        "invitesLink": "Uitnodiging maken"
+      },
+      "notifications": {
+        "title": "Hoe meldingen de server verlaten",
+        "body": "Kies welke kanalen mensen mogen gebruiken. De push-relay voor de app uit de App Store blijft uit tot je hem aanzet."
+      },
+      "ai": {
+        "title": "Wat AI mag",
+        "body": "AI is optioneel. HealthLog werkt volledig zonder.",
+        "off": "Uit: er gaat niets naar een AI-dienst.",
+        "ownKey": "Eigen sleutels: de vragen van iemand en de benodigde waarden gaan naar de provider die die persoon heeft ingesteld.",
+        "serverKey": "Sleutel van deze server: vragen en waarden gaan naar de provider die je hier instelt, en iedereen wordt eerst om toestemming gevraagd.",
+        "local": "Lokaal model: alles blijft bij het model waar de persoon naar verwijst, in je eigen netwerk.",
+        "docs": "Zo werken de AI-providers"
+      },
+      "privacy": {
+        "title": "Wat de server verder verlaat",
+        "body": "Naast meldingen en AI kunnen drie dingen gegevens naar buiten sturen. Elk daarvan beslis jij.",
+        "geoTitle": "Aanmeldlocaties",
+        "geoDescription": "Hoe de plaats van een aanmelding uit het IP-adres wordt afgeleid.",
+        "geoBody": "Met gekoppelde GeoLite2-databases gebeurt het opzoeken op deze server. Zonder worden alle aanmeldadressen naar een onlinedienst gestuurd. IP_GEO_LOOKUP_DISABLED=1 zet het opzoeken uit.",
+        "geoDocs": "Lokale databases instellen",
+        "geoLoadError": "De instelling voor het opzoeken kon niet worden gelezen.",
+        "docs": "Wat HealthLog waarheen stuurt"
+      },
+      "health": {
+        "title": "Inrichting controleren",
+        "body": "Een alleen-lezen overzicht van hoe deze server is ingericht. Het blijft in de beheeromgeving onder Systeemstatus.",
+        "keys": "Je versleutelingssleutels zijn de enige manier om je gegevens in een back-up te lezen. Bewaar een kopie ergens anders dan op deze server."
+      },
+      "facts": {
+        "title": "Uit de omgeving van de server",
+        "description": "Ingesteld in de omgeving, niet hier. Wijzig het daar en herstart.",
+        "oidc": "Eenmalige aanmelding (OIDC)",
+        "oidcOn": "Ingesteld, naast wachtwoorden en passkeys",
+        "oidcOnly": "Ingesteld, de enige manier om aan te melden",
+        "oidcOff": "Niet ingesteld",
+        "oidcDocs": "Eenmalige aanmelding instellen",
+        "smtp": "E-mail (SMTP)",
+        "smtpOn": "Ingesteld",
+        "smtpMissing": "Niet ingesteld, ontbreekt: {names}",
+        "telegram": "Antwoorden in Telegram",
+        "telegramOn": "Webhookgeheim ingesteld",
+        "telegramOff": "Geen webhookgeheim, dus knoppen in Telegram-berichten reageren niet",
+        "channelsDocs": "Zo werken de kanalen"
+      }
+    },
+    "setupHealth": {
+      "title": "Inrichtingscontrole",
+      "description": "Sleutels, cookies, back-ups en het adres waarop deze server bereikbaar is.",
+      "loadError": "De inrichtingscontrole kon niet worden geladen.",
+      "fix": "Openen",
+      "docs": "Zo los je het op",
+      "openSetup": "Serverinrichting openen",
+      "state": {
+        "ok": "Alles in orde",
+        "attention": "Even bekijken",
+        "failing": "Moet worden opgelost"
+      },
+      "signal": {
+        "encryption_keys": "Versleutelingssleutels",
+        "secure_cookie": "Veilige cookies",
+        "app_url": "Openbaar adres",
+        "database_dump": "Databasedump"
+      },
+      "reason": {
+        "encryption_keys": {
+          "present": "Geladen sleutels: {count}. Actieve sleutel: {active}.",
+          "missing": "Er is geen versleutelingssleutel geladen."
+        },
+        "secure_cookie": {
+          "on": "Cookies hebben de Secure-vlag.",
+          "off": "Cookies hebben de Secure-vlag niet.",
+          "secure_over_https": "Veilige cookies via HTTPS, zoals het hoort.",
+          "plain_http": "Gewone HTTP zonder Secure-vlag: prima voor een server die alleen in je eigen netwerk bereikbaar is.",
+          "secure_over_http": "Deze pagina kwam via gewone HTTP, maar de cookies hebben de Secure-vlag, dus browsers gooien de aanmelding weg. Gebruik HTTPS of stel SESSION_COOKIE_SECURE=false in.",
+          "insecure_over_https": "Deze pagina kwam via HTTPS, maar de cookies missen de Secure-vlag. Verwijder SESSION_COOKIE_SECURE=false."
+        },
+        "app_url": {
+          "unset": "NEXT_PUBLIC_APP_URL is niet ingesteld. Links in e-mails, uitnodigingen en aanmelden met SSO hebben die nodig.",
+          "invalid": "NEXT_PUBLIC_APP_URL is geen geldig adres.",
+          "mismatch": "NEXT_PUBLIC_APP_URL is {configured}, maar deze pagina is geopend op {request}.",
+          "matches": "Bereikbaar op {url}, zoals ingesteld."
+        },
+        "database_dump": {
+          "disabled": "Er wordt geen nachtelijke databasedump gemaakt. Maak op een andere manier een back-up van de database.",
+          "not_persistent": "De dumpmap staat niet op een gekoppeld volume, dus dumps gaan bij de volgende update verloren.",
+          "scheduled": "Nachtelijke dump gepland ({cron})."
+        }
       }
     },
     "versionMigrations": {
@@ -14407,7 +14608,48 @@
     "waitingForWorker": "Wachten op het achtergrondproces. Als dit niet verandert, draait het achtergrondproces van de server mogelijk niet.",
     "errorWorkerUnavailable": "Het achtergrondproces is op dit moment niet beschikbaar. Probeer het zo opnieuw, of vraag de beheerder van de server om het te controleren.",
     "errorTimedOut": "Het lezen duurde langer dan je ingestelde AI-responstijd toestaat. Probeer het opnieuw, of verhoog de responstijd in de AI-instellingen.",
-    "errorReaderBusy": "De documentlezer is met ander werk bezig. Probeer het over een minuut opnieuw."
+    "errorReaderBusy": "De documentlezer is met ander werk bezig. Probeer het over een minuut opnieuw.",
+    "jobFailure": {
+      "title": "Gestopte AI op de achtergrond",
+      "description": "Werk dat onlangs stopte en waarom; een regel verdwijnt zodra het weer lukt.",
+      "line": "{job}: {reason}",
+      "repeated": "{count} keer achter elkaar mislukt, het laatst op {when}.",
+      "lastAt": "Laatst geprobeerd op {when}.",
+      "openDocument": "Document openen",
+      "retry": "Opnieuw proberen",
+      "job": {
+        "documentSummary": "Samenvatting van een document",
+        "documentIndex": "Document lezen voor zoeken",
+        "documentRead": "Waarden uit een document lezen",
+        "labScan": "Labuitslag scannen",
+        "supplementLabel": "Etiket van een supplement",
+        "statusText": "Toelichtingen op de kaarten",
+        "briefing": "Dagbriefing",
+        "periodNarrative": "Week- en maandoverzicht",
+        "workoutInsight": "Notitie bij een training",
+        "reactionLine": "Reactie op nieuwe gegevens",
+        "coachNudge": "Seintje van de Coach",
+        "coachMemory": "Geheugen van de Coach",
+        "other": "AI-werk op de achtergrond"
+      },
+      "code": {
+        "no_provider": "Er is geen AI-provider ingesteld die dit kan doen.",
+        "chain_no_provider": "Deze taak is gekoppeld aan een providerketen en geen van de providers daarin is ingesteld. Controleer de keten en de sleutels in de AI-instellingen.",
+        "consent_required": "De AI-provider heeft eerst je toestemming nodig. Die kun je geven in de AI-instellingen.",
+        "not_permitted": "AI-werk is voor dit dossier niet toegestaan.",
+        "check_failed": "De server kon niet nagaan of AI mag draaien. Hij probeert het de volgende keer opnieuw.",
+        "credential_expired": "De AI-provider weigerde de sleutel. Controleer hem of koppel opnieuw in de AI-instellingen.",
+        "rate_limited": "De AI-provider meldt te veel verzoeken. Het wordt later opnieuw geprobeerd.",
+        "provider_timeout": "De AI-provider antwoordde niet op tijd.",
+        "provider_unreachable": "De AI-provider was niet bereikbaar. Controleer of hij draait.",
+        "provider_empty": "De AI-provider gaf een leeg antwoord.",
+        "provider_reasoning_only": "Het model dacht na, maar gaf geen antwoord.",
+        "provider_paused": "De AI-provider faalde meerdere keren achter elkaar, dus het achtergrondwerk wacht voordat het hem opnieuw probeert.",
+        "provider_error": "De AI-provider gaf een fout terug.",
+        "budget_exhausted": "Het AI-tegoed van vandaag is op. Morgen werkt het weer.",
+        "unreadable_file": "Het bestand kon niet worden voorbereid voor de AI-provider."
+      }
+    }
   },
   "symptoms": {
     "add": "Nieuw symptoom",
@@ -14564,6 +14806,8 @@
     "loadFailed": "Deze dag kon niet worden geladen.",
     "dayOf": "Dag {n} van {m}",
     "dayN": "Dag {n}",
+    "seizure": "Aanval",
+    "seizureCount": "{count} aanvallen",
     "usualRange": "Meestal {lo} tot {hi}",
     "groups": {
       "scores": "Scores",
@@ -15408,6 +15652,7 @@
       "untyped": "Geen type vastgelegd",
       "ruleText": "{count} of meer in {hours} u",
       "recorded": "Vastgelegde aanvallen",
+      "diarySince": "Dagboek bijgehouden sinds",
       "seizureDays": "Dagen met een aanval",
       "seizureFreeDays": "Dagen zonder vastgelegde aanval",
       "per28Days": "Aanvallen per 28 dagen",

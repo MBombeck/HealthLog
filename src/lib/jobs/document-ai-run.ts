@@ -30,6 +30,8 @@
 import type { Job } from "pg-boss";
 
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
+import { trackAiJob } from "@/lib/ai/job-failure/report";
+import type { AiJobKind } from "@/lib/ai/job-failure/types";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 import {
@@ -112,6 +114,16 @@ export interface DocumentAiRunPayload {
 
 /** The capability each kind of run answers to. */
 const RUN_CAPABILITY = DOCUMENT_AI_RUN_CAPABILITY;
+
+/** The kind of AI work each run is recorded as when it fails (#1404). */
+const RUN_JOB_KIND: Record<DocumentAiRunKindValue, AiJobKind> = {
+  DOCUMENT_INDEX: "documentIndex",
+  LABS_OCR_EXTRACT: "labScan",
+  DOCUMENT_SUMMARY: "documentSummary",
+  DOCUMENT_SUGGEST: "documentRead",
+  DOCUMENT_EXTRACT: "documentRead",
+  SUPPLEMENT_LABEL_EXTRACT: "supplementLabel",
+};
 
 /**
  * Hand a created run to the worker. False when no queue is reachable; the
@@ -652,7 +664,18 @@ export async function runDocumentAiRun(
         lane: "interactive",
         extendDeadline: (ms) => moveRunDeadline(run.id, ms, deadlineAt),
       },
-      () => RUN_DISPATCH[run.kind](run, deadlineAt, now),
+      // #1404 — why a read stopped is said on its document and under
+      // Settings, AI, for the person who closed the sheet.
+      () =>
+        trackAiJob(
+          {
+            userId: run.userId,
+            job: RUN_JOB_KIND[run.kind],
+            documentId: run.documentId,
+            requested: true,
+          },
+          () => RUN_DISPATCH[run.kind](run, deadlineAt, now),
+        ),
     );
   } catch (err) {
     // Everything that throws here threw before the body took over the

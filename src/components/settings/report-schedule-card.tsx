@@ -10,6 +10,7 @@
  * it ended, and the period the next run files. It never computes a period
  * itself; the server answers from the record's clock.
  */
+import { CONFIRM_SAVED } from "@/lib/api/mutation-feedback";
 import { useState } from "react";
 import { CalendarClock, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -59,6 +60,7 @@ export function ReportScheduleCard() {
   });
   const save = useMutation({
     mutationKey: KEY,
+    meta: CONFIRM_SAVED,
     mutationFn: (body: {
       cadence: ReportScheduleCadence;
       window: ReportScheduleWindow;
@@ -67,6 +69,7 @@ export function ReportScheduleCard() {
   });
   const off = useMutation({
     mutationKey: KEY,
+    meta: CONFIRM_SAVED,
     mutationFn: () => apiDelete(PATH),
     onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
   });

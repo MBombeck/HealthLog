@@ -8,6 +8,7 @@ const m = vi.hoisted(() => ({
   shifts: vi.fn(),
   claim: vi.fn(),
   dispatch: vi.fn(),
+  release: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: {} }));
@@ -35,7 +36,7 @@ const prisma = {
   notificationPreference: { findMany: m.preferences },
   user: { findMany: m.users },
   illnessEpisode: { findFirst: m.illness },
-  notificationEvent: { findFirst: m.told },
+  notificationEvent: { findFirst: m.told, deleteMany: m.release },
 } as unknown as Parameters<typeof runMeasurementAnomalyTick>[1];
 
 // 10:15 in Berlin (winter, UTC+1).
@@ -61,7 +62,11 @@ beforeEach(() => {
   m.told.mockResolvedValue(null);
   m.shifts.mockResolvedValue([shift("2026-11-09")]);
   m.claim.mockResolvedValue(true);
-  m.dispatch.mockResolvedValue({ dispatched: true });
+  m.dispatch.mockResolvedValue({
+    dispatched: true,
+    channelsAttempted: 1,
+    channelsSucceeded: 1,
+  });
 });
 
 describe("anomalyTapUrl", () => {
@@ -90,7 +95,8 @@ describe("pickFreshShift", () => {
 describe("runMeasurementAnomalyTick", () => {
   it("tells an opted-in person about a fresh shift in their morning", async () => {
     const result = await runMeasurementAnomalyTick(AT_TEN, prisma);
-    expect(result).toEqual({ scanned: 1, sent: 1 });
+    expect(result).toEqual({ scanned: 1, sent: 1, failed: 0 });
+    expect(m.release).not.toHaveBeenCalled();
     const payload = m.dispatch.mock.calls[0][0];
     expect(payload.eventType).toBe("MEASUREMENT_ANOMALY");
     expect(payload.message).toBe(
@@ -133,5 +139,35 @@ describe("runMeasurementAnomalyTick", () => {
     expect(m.claim).toHaveBeenCalledTimes(1);
     expect(m.claim.mock.calls[0][1].dedupKey).toBe("week");
     expect(m.dispatch).not.toHaveBeenCalled();
+  });
+
+  it("hands the week back and counts the person when no channel delivered", async () => {
+    m.dispatch.mockResolvedValue({
+      dispatched: false,
+      channelsAttempted: 2,
+      channelsSucceeded: 0,
+    });
+    const result = await runMeasurementAnomalyTick(AT_TEN, prisma);
+    expect(result).toEqual({ scanned: 1, sent: 0, failed: 1 });
+    const released = m.release.mock.calls.map((c) => c[0].where.dedupKey);
+    expect(released).toEqual(["week", "shift:RESTING_HEART_RATE:up"]);
+  });
+
+  it("hands the week back without counting a failure when no channel was tried", async () => {
+    m.dispatch.mockResolvedValue({
+      dispatched: false,
+      channelsAttempted: 0,
+      channelsSucceeded: 0,
+    });
+    const result = await runMeasurementAnomalyTick(AT_TEN, prisma);
+    expect(result).toEqual({ scanned: 1, sent: 0, failed: 0 });
+    expect(m.release).toHaveBeenCalledTimes(2);
+  });
+
+  it("hands the week back and carries on when the notice throws", async () => {
+    m.dispatch.mockRejectedValue(new Error("boom"));
+    const result = await runMeasurementAnomalyTick(AT_TEN, prisma);
+    expect(result).toEqual({ scanned: 1, sent: 0, failed: 1 });
+    expect(m.release).toHaveBeenCalledTimes(2);
   });
 });

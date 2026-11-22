@@ -24,6 +24,7 @@ import {
 } from "@/lib/modules/gate";
 import {
   emptyOnboardingNeeds,
+  onboardingOffersFromAi,
   readHeldUnitPreferences,
 } from "@/lib/onboarding/needs";
 import {
@@ -287,7 +288,7 @@ function displayPreferences(
     dateFormat: user.dateFormat ?? "AUTO",
     // #1430 — which official medicine registry "Find leaflet" opens: an ISO
     // 3166 alpha-2 code, `EU`, or `NONE`. Independent of the language. The
-    // medication detail read builds the link itself (`leafletSearch`), so a
+    // medication list and detail reads build the link (`leafletSearch`), so a
     // client only reads this to show and edit the setting.
     medicineRegistry,
   };
@@ -446,6 +447,9 @@ async function loadRecordView(auth: AuthContext, accountAccess: AccountAccess) {
       glucoseUnit: record?.glucoseUnit ?? null,
       unitPreference: record?.unitPreference ?? null,
     }),
+    // The follow-ups' server facts, off the AI block resolved above for the
+    // same record, so the step list and the `ai` field cannot disagree.
+    onboardingOffersFromAi(ai),
   );
   // The answers name the domains the record tracks, which is exactly what the
   // module map below is masked for. A SCOPED grant therefore gets the shape of

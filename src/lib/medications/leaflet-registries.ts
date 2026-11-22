@@ -302,3 +302,20 @@ export function buildLeafletSearch(
     searchTerm: template.prefill === "none" ? name : query,
   };
 }
+
+/**
+ * A medication read row with the caller's registry search added. The list
+ * read caches rows per record, and the search is the CALLER's, so it goes on
+ * after the cache, as the course authority does.
+ */
+export function withLeafletSearch<T extends Record<string, unknown>>(
+  row: T,
+  registry: MedicineRegistryChoice,
+): T & { leafletSearch: LeafletSearch | null } {
+  const name = typeof row.name === "string" ? row.name : "";
+  const dose = typeof row.dose === "string" ? row.dose : null;
+  return {
+    ...row,
+    leafletSearch: buildLeafletSearch(registry, { name, dose }),
+  };
+}

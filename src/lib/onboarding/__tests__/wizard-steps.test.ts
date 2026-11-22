@@ -29,13 +29,16 @@ import {
   resumeScreen,
   screenOrder,
   stepCounter,
+  stepTrack,
   unitsQuestionApplies,
 } from "../wizard-steps";
 
 function state(
   statuses: Partial<Record<OnboardingStepId, OnboardingStepStatus>> = {},
   needs: Partial<OnboardingNeeds> = {},
-  extra: Partial<Pick<OnboardingStateDto, "completedAt" | "firstResult">> = {},
+  extra: Partial<
+    Pick<OnboardingStateDto, "completedAt" | "firstResult" | "offers">
+  > = {},
 ): OnboardingStateDto {
   return {
     steps: defaultOnboardingSteps().map((step) => ({
@@ -45,6 +48,7 @@ function state(
     needs: { ...emptyOnboardingNeeds(), ...needs },
     completedAt: extra.completedAt ?? null,
     firstResult: extra.firstResult ?? null,
+    offers: extra.offers ?? { ai: false },
   };
 }
 
@@ -86,7 +90,12 @@ describe("unitsQuestionApplies", () => {
           { units: "done" },
           {
             areas: ["glucose"],
-            units: { glucoseUnit: "mmol/L", unitPreference: null },
+            units: {
+              glucoseUnit: "mmol/L",
+              unitPreference: null,
+              timezone: null,
+              medicineRegistry: null,
+            },
           },
         ),
       ),
@@ -238,7 +247,7 @@ describe("firstResultApplies", () => {
 });
 
 describe("screenOrder", () => {
-  it("runs welcome, the questions, confirm, the first result, done", () => {
+  it("runs welcome, the questions, confirm, the follow-ups, the first result, done", () => {
     expect(
       screenOrder(
         state(
@@ -255,6 +264,7 @@ describe("screenOrder", () => {
       "visit",
       "units",
       "confirm",
+      "reminders",
       "first-result",
       "done",
     ]);
@@ -331,12 +341,19 @@ describe("resumeScreen", () => {
     ).toBe("units");
   });
 
-  it("offers the first result after confirm, then done", () => {
-    const confirmed = state(
-      { ...QUESTIONS_DONE, confirm: "done" },
+  it("offers the reminders, then the first result after confirm, then done", () => {
+    const afterConfirm = state(
+      { ...QUESTIONS_DONE, units: "done", confirm: "done" },
       { recordTarget: "me", medication: "yes" },
       { completedAt: "2026-09-10T08:00:00.000Z" },
     );
+    expect(resumeScreen(afterConfirm)).toBe("reminders");
+    const confirmed = {
+      ...afterConfirm,
+      steps: afterConfirm.steps.map((s) =>
+        s.id === "reminders" ? { ...s, status: "done" as const } : s,
+      ),
+    };
     expect(resumeScreen(confirmed)).toBe("first-result");
     expect(
       resumeScreen({
@@ -434,7 +451,12 @@ describe("questionsToPassBeforeConfirm", () => {
           {
             recordTarget: "me",
             areas: ["glucose"],
-            units: { glucoseUnit: "mg/dL", unitPreference: null },
+            units: {
+              glucoseUnit: "mg/dL",
+              unitPreference: null,
+              timezone: null,
+              medicineRegistry: null,
+            },
           },
         ),
       ),
@@ -468,18 +490,76 @@ describe("isOnboardingPathname", () => {
   });
 });
 
-describe("stepCounter", () => {
-  it("counts the questions only, at the size this flow actually has", () => {
-    expect(stepCounter(state(), "who")).toEqual({ current: 1, total: 5 });
-    expect(stepCounter(state({}, { areas: ["glucose"] }), "units")).toEqual({
-      current: 6,
-      total: 6,
-    });
+describe("stepCounter and the step bar", () => {
+  /**
+   * The bar is drawn from `stepTrack` (`OnboardingShell` hands it to the
+   * frame, which fills every segment up to the screen's index); the counter
+   * must name exactly that place, on every screen of every branch.
+   */
+  function expectAgreement(flow: OnboardingStateDto) {
+    const track = stepTrack(flow);
+    for (const [index, screen] of track.entries()) {
+      expect(stepCounter(flow, screen), screen).toEqual({
+        current: index + 1,
+        total: track.length,
+      });
+    }
+    expect(stepCounter(flow, "welcome")).toBeNull();
+    expect(track).toEqual(screenOrder(flow).filter((s) => s !== "welcome"));
+  }
+
+  const branches: Array<[string, OnboardingStateDto]> = [
+    [
+      "an admin's first run, AI offered, medication and units",
+      state(
+        { ...QUESTIONS_DONE, confirm: "done" },
+        { recordTarget: "me", areas: ["glucose"], medication: "yes" },
+        { offers: { ai: true }, completedAt: "2026-09-10T08:00:00.000Z" },
+      ),
+    ],
+    [
+      "an invited person, AI not offered",
+      state(
+        {},
+        { recordTarget: "me", areas: ["sleep"] },
+        { offers: { ai: false } },
+      ),
+    ],
+    [
+      "AI offered, nothing else to follow up",
+      state(
+        {},
+        { recordTarget: "me", areas: ["labs"] },
+        { offers: { ai: true } },
+      ),
+    ],
+    [
+      "a skipped units step stays on the track",
+      state(
+        { ...QUESTIONS_DONE, units: "skipped" },
+        { recordTarget: "me", areas: ["weight-body"], medication: "sometimes" },
+      ),
+    ],
+    [
+      "somebody else's record ends at confirm",
+      state(
+        {},
+        { recordTarget: "someone-else", medication: "yes" },
+        { offers: { ai: true } },
+      ),
+    ],
+  ];
+
+  it.each(branches)("agree for %s", (_name, flow) => {
+    expectAgreement(flow);
   });
 
-  it("has nothing to say on the screens that are not questions", () => {
-    expect(stepCounter(state(), "welcome")).toBeNull();
-    expect(stepCounter(state(), "confirm")).toBeNull();
-    expect(stepCounter(state(), "done")).toBeNull();
+  it("counts the whole track, not the questions only", () => {
+    const flow = branches[0][1];
+    expect(stepCounter(flow, "who")).toEqual({
+      current: 1,
+      total: stepTrack(flow).length,
+    });
+    expect(stepCounter(flow, "done")?.current).toBe(stepTrack(flow).length);
   });
 });

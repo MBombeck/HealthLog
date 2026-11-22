@@ -61,6 +61,8 @@ export async function runDenseIntradayHourlyRebuildForUser(
   hourlyRowsUpserted: number;
   dailyRowsRetired: number;
   daysSkippedNoTombstones: number;
+  /** Days whose rebuild threw and were stepped over; retried next run. */
+  daysFailed: number;
   /** The job's budget ran out first; see the queue handler. */
   stoppedEarly: boolean;
 }> {
@@ -72,6 +74,7 @@ export async function runDenseIntradayHourlyRebuildForUser(
       hourlyRowsUpserted: 0,
       dailyRowsRetired: 0,
       daysSkippedNoTombstones: 0,
+      daysFailed: 0,
       stoppedEarly: false,
     };
   }
@@ -99,6 +102,7 @@ export async function runDenseIntradayHourlyRebuildForUser(
     hourlyRowsUpserted: summary.totals.hourlyRowsUpserted,
     dailyRowsRetired: summary.totals.dailyRowsRetired,
     daysSkippedNoTombstones: summary.totals.daysSkippedNoTombstones,
+    daysFailed: summary.totals.daysFailed,
     stoppedEarly: summary.stoppedEarly,
   };
 }

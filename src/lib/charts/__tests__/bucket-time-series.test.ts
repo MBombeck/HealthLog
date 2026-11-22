@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  bucketTimeSeries,
-  pickBucket,
-  type BucketInputPoint,
-} from "../bucket-time-series";
+import { bucketTimeSeries, type BucketInputPoint } from "../bucket-time-series";
+import { pickRangeBucket } from "../range-grain";
 
 const dayMs = 24 * 60 * 60 * 1000;
+
+/** The All tab's grain for `points`, as the charts pass it in. */
+const allGrain = (points: BucketInputPoint[]) =>
+  pickRangeBucket(
+    0,
+    points.map((p) => Number(p.timestamp)),
+  );
 
 function dailyAt(start: Date, day: number, value: number): BucketInputPoint {
   return {
@@ -14,21 +18,6 @@ function dailyAt(start: Date, day: number, value: number): BucketInputPoint {
     values: { weight: value },
   };
 }
-
-describe("pickBucket()", () => {
-  it.each([
-    [0, "day"],
-    [1, "day"],
-    [90, "day"],
-    [91, "week"],
-    [365, "week"],
-    [730, "week"],
-    [731, "month"],
-    [1500, "month"],
-  ])("range %d days -> %s", (range, expected) => {
-    expect(pickBucket(range)).toBe(expected);
-  });
-});
 
 // These expectations were always Berlin's — the module used to hard-code it,
 // so the tests read as timezone-agnostic while quietly depending on one. Now
@@ -96,7 +85,10 @@ describe("bucketTimeSeries()", () => {
 
   it("preserves daily granularity for ranges <= 90 days", () => {
     const points = [0, 1, 2, 30, 89].map((d) => dailyAt(start, d, 80 + d));
-    const result = bucketTimeSeries(points, { timeZone: BERLIN });
+    const result = bucketTimeSeries(points, {
+      bucket: allGrain(points),
+      timeZone: BERLIN,
+    });
     expect(result.bucket).toBe("day");
     expect(result.points).toHaveLength(5);
   });
@@ -106,7 +98,10 @@ describe("bucketTimeSeries()", () => {
     const points = Array.from({ length: 200 }, (_, i) =>
       dailyAt(start, i, 80 + (i % 5)),
     );
-    const result = bucketTimeSeries(points, { timeZone: BERLIN });
+    const result = bucketTimeSeries(points, {
+      bucket: allGrain(points),
+      timeZone: BERLIN,
+    });
     expect(result.bucket).toBe("week");
     // 200 / 7 ≈ 28.5 — first/last weeks may be partial → 29 distinct keys.
     expect(result.points.length).toBeGreaterThanOrEqual(28);
@@ -122,7 +117,10 @@ describe("bucketTimeSeries()", () => {
     const points = Array.from({ length: 800 }, (_, i) =>
       dailyAt(start, i, 100),
     );
-    const result = bucketTimeSeries(points, { timeZone: BERLIN });
+    const result = bucketTimeSeries(points, {
+      bucket: allGrain(points),
+      timeZone: BERLIN,
+    });
     expect(result.bucket).toBe("month");
     // ~26 calendar months
     expect(result.points.length).toBeGreaterThanOrEqual(25);

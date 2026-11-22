@@ -50,9 +50,9 @@ async function storedPrefs(userId: string): Promise<unknown> {
 async function storedUpdatedAt(userId: string): Promise<Date> {
   const row = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { updatedAt: true },
+    select: { modulePreferencesRevisedAt: true },
   });
-  return row.updatedAt;
+  return row.modulePreferencesRevisedAt;
 }
 
 async function patch(

@@ -717,6 +717,23 @@ export const E2E_SETUP_LOCALE = {
   role: "USER",
 } as const;
 
+/**
+ * 1.49 — the follow-ups' journey: a schedule (so "Region & units" asks for the
+ * time zone and the registry, and the reminders follow-up applies) and the
+ * Coach answered "No", which switches the offer off under the flow.
+ */
+export const E2E_SETUP_FOLLOWUPS = {
+  email: "e2e-setup-followups@healthlog.test",
+  username: "e2e-setup-followups",
+  password: "e2e-setup-followups-pass-1149",
+  role: "USER",
+} as const;
+
+export const SETUP_FOLLOWUPS_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateSetupFollowups.json",
+);
+
 export const SETUP_BP_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateSetupBp.json",
@@ -754,6 +771,7 @@ const SETUP_FLOW_ACCOUNTS = [
   E2E_SETUP_A11Y,
   E2E_SETUP_LOCALE,
   E2E_SETUP_CONNECT,
+  E2E_SETUP_FOLLOWUPS,
 ] as const;
 
 async function hashPassword(password: string): Promise<string> {
@@ -1862,6 +1880,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     await capture(E2E_SETUP_A11Y, SETUP_A11Y_STORAGE_STATE_PATH);
     await capture(E2E_SETUP_LOCALE, SETUP_LOCALE_STORAGE_STATE_PATH);
     await capture(E2E_SETUP_CONNECT, SETUP_CONNECT_STORAGE_STATE_PATH);
+    await capture(E2E_SETUP_FOLLOWUPS, SETUP_FOLLOWUPS_STORAGE_STATE_PATH);
     await capture(E2E_SETUP_CHILD, SETUP_CHILD_STORAGE_STATE_PATH);
     await pool.query(
       `UPDATE users SET totp_confirmed_at = $2 WHERE username = $1`,

@@ -4,6 +4,10 @@
  */
 import { prisma, toJson } from "@/lib/db";
 import {
+  userDocumentRevisionSelect,
+  userDocumentToken,
+} from "@/lib/optimistic-lock";
+import {
   DEFAULT_DASHBOARD_LAYOUT,
   resolveDashboardLayout,
   serializeDashboardLayout,
@@ -36,8 +40,13 @@ export async function resetDashboardLayout(
     const updated = await tx.user.update({
       where: { id: userId },
       data: { dashboardWidgetsJson: toJson(normalized) },
-      select: { updatedAt: true },
+      select: userDocumentRevisionSelect("dashboardWidgets"),
     });
-    return { normalized, updatedAt: updated.updatedAt.toISOString() };
+    return {
+      normalized,
+      updatedAt:
+        userDocumentToken(updated, "dashboardWidgets") ??
+        new Date().toISOString(),
+    };
   });
 }

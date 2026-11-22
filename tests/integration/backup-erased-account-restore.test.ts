@@ -321,7 +321,12 @@ async function goThroughOnboarding(prisma: PrismaClient, userId: string) {
   await answer({ step: "visit", visit: "no" });
   await answer({
     step: "units",
-    units: { glucoseUnit: "mmol/L", unitPreference: "metric" },
+    units: {
+      glucoseUnit: "mmol/L",
+      unitPreference: "metric",
+      timezone: "Europe/Berlin",
+      medicineRegistry: "DE",
+    },
   });
   const { POST } = await import("@/app/api/onboarding/complete/route");
   const done = await (POST as (r: Request) => Promise<Response>)(
