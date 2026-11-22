@@ -97,13 +97,12 @@ export const APP_SETTINGS_COLUMNS = {
     codec: "plain",
     whenAbsent: true,
   },
-  aiUsageMaxLevel: { class: "SETTING", codec: "plain", whenAbsent: "STANDARD" },
-  aiUsageDefaultLevel: {
-    class: "SETTING",
-    codec: "plain",
-    whenAbsent: "STANDARD",
-  },
-  aiSyncRegenGapHours: { class: "SETTING", codec: "plain", whenAbsent: null },
+  // Carried from 1.49 on. A file written before left them out although the
+  // columns existed, so its silence says nothing about them: no default is
+  // written, and the host keeps its own value.
+  aiUsageMaxLevel: { class: "SETTING", codec: "plain" },
+  aiUsageDefaultLevel: { class: "SETTING", codec: "plain" },
+  aiSyncRegenGapHours: { class: "SETTING", codec: "plain" },
   aiReasoningEnabled: { class: "SETTING", codec: "plain", whenAbsent: true },
   aiReasoningMaxEffort: {
     class: "SETTING",

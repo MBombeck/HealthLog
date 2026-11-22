@@ -149,14 +149,16 @@ describe("AppSettings column backup classification", () => {
     }
   });
 
-  it("restores an older file's missing settings at their defaults", () => {
+  it("restores an older file's missing settings at their defaults, or not at all", () => {
     const written = appSettingsRowFromFile({});
-    expect(written.aiUsageMaxLevel).toBe("STANDARD");
-    expect(written.aiUsageDefaultLevel).toBe("STANDARD");
-    expect(written.aiSyncRegenGapHours).toBeNull();
+    // Absent from a file older than the column: the host ran on the default.
     expect(written.aiReasoningEnabled).toBe(true);
-    // A column the file lacks and the table names no default for is not
-    // invented.
+    expect(written.assistantDocumentAiEnabled).toBe(true);
+    // Absent from a file that could have carried them and did not: the
+    // file says nothing, so the host keeps its value.
+    expect(written).not.toHaveProperty("aiUsageMaxLevel");
+    expect(written).not.toHaveProperty("aiUsageDefaultLevel");
+    expect(written).not.toHaveProperty("aiSyncRegenGapHours");
     expect(written).not.toHaveProperty("registrationEnabled");
   });
 });

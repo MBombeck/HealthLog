@@ -55,9 +55,9 @@ export const appSettingsBackupSchema = z
     // Optional for the same reason.
     aiReasoningEnabled: z.boolean().optional(),
     aiReasoningMaxEffort: z.enum(REASONING_MAX_EFFORTS).optional(),
-    // The operator's AI usage bounds. Optional for the same reason: an older
-    // file left them out although it could have carried them, and restores
-    // them at their defaults.
+    // The operator's AI usage bounds. Optional: a file from before 1.49 left
+    // them out although the columns existed, and the restore then leaves the
+    // host's own values alone (`app-settings-columns.ts`).
     aiUsageMaxLevel: z.enum(AiUsageLevel).optional(),
     aiUsageDefaultLevel: z.enum(AiUsageLevel).optional(),
     // The admin write path's bounds (`adminAiUsageSchema`).
