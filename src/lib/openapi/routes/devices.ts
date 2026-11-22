@@ -52,7 +52,7 @@ const deviceRegisterRequest = z
       .nullable()
       .optional()
       .describe(
-        'v1.7.0 per-device medication-delivery override; omitted keeps the stored value. "client" keeps the server\'s medication-reminder push off this device (the app reminds locally) while its local plan can run (see `localRunwayUntil`; without one, for 3 days after its last authenticated request), "server" pushes it to this device whatever the account says, and null / no override follows the account-wide switch (`notificationPrefs.medication.clientManaged` or `deliveryDefault: "client"`). Since v1.48.0 the server honours it per device on the APNs send; before, it was stored and echoed only. Only the reminder that announces a dose is affected: follow-ups for a dose still open, every other push, and the Telegram, ntfy, webhook, email and Web Push channels are not.',
+        'v1.7.0 per-device medication-delivery override; omitted keeps the stored value. "client" keeps the server\'s medication-reminder push off this device (the app reminds locally) while its local plan can run (see `localRunwayUntil`; without one, for 3 days after its last authenticated request), "server" pushes it to this device whatever the account says, and null / no override follows the account-wide switch (`notificationPrefs.medication.clientManaged` or `deliveryDefault: "client"`). Since v1.48.0 the server honours it per device on the APNs send; before, it was stored and echoed only. Since v1.49.0 the relay follows the same decision as this server\'s own APNs key. Only the reminder that announces a dose is affected: follow-ups for a dose still open (except over the relay, which carries them only to a device the server reminds), every other push, and the Telegram, ntfy, webhook, email and Web Push channels are not. `GET /api/devices/me/push-diagnostics` shows the resolved value as `medicationReminder`.',
       ),
     localRunwayUntil: isoDateTime()
       .nullable()
@@ -222,6 +222,22 @@ const devicePushDiagnostics = z
       })
       .describe(
         "The device's silent budget, from the rule the send asks (`src/lib/push-relay/wakes.ts`).",
+      ),
+    medicationReminder: z
+      .object({
+        delivery: z
+          .enum(["server", "client"])
+          .describe(
+            "Who reminds this device of a dose now, by the same decision the send reads: `server` when the server's medication reminder goes to this device (over `transport`, the relay included), `client` while the app reminds locally. The device's `medicationDelivery`, else the account switch; a device that reminds locally counts as `server` once its local plan has run out (`localRunwayUntil`, else 3 days after its last request).",
+          ),
+        localUntil: isoDateTime()
+          .nullable()
+          .describe(
+            "While `delivery` is `client`: when the server takes over unless the device reports a new runway or shows up again. Null while `delivery` is `server`.",
+          ),
+      })
+      .describe(
+        "The medication-reminder delivery resolved for this device. A follow-up for a dose still open goes to every device over this server's own key, and over the relay only while `delivery` is `server`.",
       ),
     lastDelivery: z
       .object({

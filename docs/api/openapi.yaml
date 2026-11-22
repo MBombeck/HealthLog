@@ -33087,9 +33087,11 @@ components:
             (see `localRunwayUntil`; without one, for 3 days after its last authenticated request), \"server\" pushes it
             to this device whatever the account says, and null / no override follows the account-wide switch
             (`notificationPrefs.medication.clientManaged` or `deliveryDefault: \"client\"`). Since v1.48.0 the server
-            honours it per device on the APNs send; before, it was stored and echoed only. Only the reminder that
-            announces a dose is affected: follow-ups for a dose still open, every other push, and the Telegram, ntfy,
-            webhook, email and Web Push channels are not."
+            honours it per device on the APNs send; before, it was stored and echoed only. Since v1.49.0 the relay
+            follows the same decision as this server's own APNs key. Only the reminder that announces a dose is
+            affected: follow-ups for a dose still open (except over the relay, which carries them only to a device the
+            server reminds), every other push, and the Telegram, ntfy, webhook, email and Web Push channels are not.
+            `GET /api/devices/me/push-diagnostics` shows the resolved value as `medicationReminder`."
           anyOf:
             - type: string
               enum:
@@ -61887,6 +61889,33 @@ components:
             - nextFreeAt
           additionalProperties: false
           description: The device's silent budget, from the rule the send asks (`src/lib/push-relay/wakes.ts`).
+        medicationReminder:
+          type: object
+          properties:
+            delivery:
+              type: string
+              enum:
+                - server
+                - client
+              description: "Who reminds this device of a dose now, by the same decision the send reads: `server` when the server's
+                medication reminder goes to this device (over `transport`, the relay included), `client` while the app
+                reminds locally. The device's `medicationDelivery`, else the account switch; a device that reminds
+                locally counts as `server` once its local plan has run out (`localRunwayUntil`, else 3 days after its
+                last request)."
+            localUntil:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+              description: "While `delivery` is `client`: when the server takes over unless the device reports a new runway or shows
+                up again. Null while `delivery` is `server`."
+          required:
+            - delivery
+            - localUntil
+          additionalProperties: false
+          description: The medication-reminder delivery resolved for this device. A follow-up for a dose still open goes to every
+            device over this server's own key, and over the relay only while `delivery` is `server`.
         lastDelivery:
           type: object
           properties:
@@ -62088,6 +62117,7 @@ components:
         - relay
         - binding
         - budget
+        - medicationReminder
         - lastDelivery
         - receipt
         - serverTime

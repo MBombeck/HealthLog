@@ -22,6 +22,10 @@
  *   server's own key leaves no per-device record.
  */
 import { prisma } from "@/lib/db";
+import {
+  CLIENT_MANAGED_APNS_EVENTS,
+  localDeliveryUntil,
+} from "@/lib/notifications/client-managed-apns";
 import { loadApnsConfig } from "@/lib/notifications/senders/apns";
 import {
   deviceRouteOf,
@@ -306,6 +310,16 @@ export interface DevicePushDiagnostics {
     owedSince: string | null;
     nextFreeAt: string | null;
   };
+  /**
+   * Who reminds this device of a dose right now, by the decision the send
+   * itself reads (`resolveApnsDeliveryTargets`): `server` when the server's
+   * reminder goes to it (over `transport`), `client` while the app reminds
+   * locally, with `localUntil` the instant the server takes over.
+   */
+  medicationReminder: {
+    delivery: "server" | "client";
+    localUntil: string | null;
+  };
   lastDelivery: Record<DeliveryKind, LastDelivery | null>;
   receipt: {
     reportedAt: string;
@@ -323,6 +337,10 @@ const DEVICE_DIAGNOSTIC_SELECT = {
   envelopeOpenedSilentId: true,
   envelopeReportedAt: true,
   pushDataChange: { select: { intakeSyncOwedAt: true } },
+  medicationDelivery: true,
+  lastSeen: true,
+  localRunwayUntil: true,
+  user: { select: { notificationPrefs: true } },
 } as const;
 
 /**
@@ -357,6 +375,13 @@ export async function devicePushDiagnostics(
   const budget = silentBudgetSummary(window, route);
   const owedSince = device.pushDataChange?.intakeSyncOwedAt ?? null;
   const health = relayHealth(registration);
+  const localUntil = localDeliveryUntil(
+    device,
+    CLIENT_MANAGED_APNS_EVENTS.MEDICATION_REMINDER.isClientManaged(
+      device.user.notificationPrefs,
+    ),
+    now,
+  );
   return {
     deviceId: device.id,
     transport: transportOf(route),
@@ -384,6 +409,10 @@ export async function devicePushDiagnostics(
       owedSyncs: owedSince ? 1 : 0,
       owedSince: owedSince?.toISOString() ?? null,
       nextFreeAt: budget.nextFreeAt?.toISOString() ?? null,
+    },
+    medicationReminder: {
+      delivery: localUntil ? "client" : "server",
+      localUntil: localUntil?.toISOString() ?? null,
     },
     lastDelivery,
     receipt: device.envelopeReportedAt
