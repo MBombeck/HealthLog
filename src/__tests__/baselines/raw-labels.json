@@ -1,7 +1,7 @@
 {
   "$comment": "Raw <label> elements per file under src/components and src/app, outside src/components/ui. Maintained by src/__tests__/form-field-ratchet.test.ts.",
-  "count": 44,
-  "total": 67,
+  "count": 38,
+  "total": 47,
   "entries": {
     "components/admin/backups/restore-dialog.tsx": 1,
     "components/auth/mfa-login-step.tsx": 1,
@@ -35,12 +35,6 @@
     "components/settings/export-section.tsx": 2,
     "components/settings/injection-sites-card.tsx": 1,
     "components/settings/low-stock-card.tsx": 3,
-    "components/settings/managed-record/ai-source-form.tsx": 1,
-    "components/settings/managed-record/coach-form.tsx": 3,
-    "components/settings/managed-record/insights-form.tsx": 1,
-    "components/settings/managed-record/notifications-form.tsx": 3,
-    "components/settings/managed-record/profile-form.tsx": 9,
-    "components/settings/managed-record/thresholds-form.tsx": 3,
     "components/settings/medicine-registry-card.tsx": 1,
     "components/settings/mood-reminder-card.tsx": 2,
     "components/settings/notification-content-card.tsx": 1,
