@@ -213,13 +213,13 @@ export async function importHealthConnectExport(
   options: ImportHealthConnectOptions,
 ): Promise<HealthConnectImportResult> {
   const startedAt = Date.now();
-  const hc = openHealthConnectDb(options.dbPath);
+  const hc = await openHealthConnectDb(options.dbPath);
   try {
     const run = new ImportRun(hc, options, startedAt);
     await run.execute();
     return run.result();
   } finally {
-    hc.close();
+    await hc.close();
   }
 }
 
@@ -276,9 +276,9 @@ class ImportRun {
   }
 
   async execute(): Promise<void> {
-    this.loadApps();
-    this.loadDevices();
-    this.loadRanking();
+    await this.loadApps();
+    await this.loadDevices();
+    await this.loadRanking();
     for (const spec of INSTANT_SPECS) await this.importInstant(spec);
     await this.importPulse();
     await this.importSleep();
@@ -318,9 +318,9 @@ class ImportRun {
 
   // ── Lookups ─────────────────────────────────────────────────────────────
 
-  private loadApps(): void {
+  private async loadApps(): Promise<void> {
     const skip = packagesToSkip(this.options.connectedIntegrations);
-    for (const row of this.hc.all(
+    for (const row of await this.hc.all(
       "SELECT row_id, package_name FROM application_info_table",
     )) {
       const id = hcInt(row.row_id);
@@ -331,9 +331,9 @@ class ImportRun {
     }
   }
 
-  private loadDevices(): void {
+  private async loadDevices(): Promise<void> {
     if (!this.hc.usable("device_info_table", ["row_id", "device_type"])) return;
-    for (const row of this.hc.all(
+    for (const row of await this.hc.all(
       "SELECT row_id, device_type FROM device_info_table",
     )) {
       const id = hcInt(row.row_id);
@@ -343,7 +343,7 @@ class ImportRun {
     }
   }
 
-  private loadRanking(): void {
+  private async loadRanking(): Promise<void> {
     if (
       !this.hc.usable("health_data_category_priority_table", [
         "health_data_category",
@@ -352,12 +352,11 @@ class ImportRun {
     ) {
       return;
     }
+    const rows = await this.hc.all(
+      "SELECT health_data_category AS category, app_id_priority_order AS ord FROM health_data_category_priority_table",
+    );
     this.ranking = new AppRanking(
-      this.hc
-        .all(
-          "SELECT health_data_category AS category, app_id_priority_order AS ord FROM health_data_category_priority_table",
-        )
-        .map((row) => ({ category: hcInt(row.category), order: row.ord })),
+      rows.map((row) => ({ category: hcInt(row.category), order: row.ord })),
     );
   }
 
@@ -439,7 +438,7 @@ class ImportRun {
     const sql = `SELECT ${select}${device} FROM ${spec.table} ORDER BY time, app_info_id`;
     const sink = new MeasurementSink(this, true);
     const collapse = new NaturalKeyCollapse(sink, this, spec.category);
-    for (const batch of this.hc.batches(sql)) {
+    for await (const batch of this.hc.batches(sql)) {
       for (const row of batch) {
         const appId = hcInt(row.app_info_id);
         if (!this.admit(appId)) continue;
@@ -561,7 +560,7 @@ class ImportRun {
         deviceType: null,
       });
     };
-    for (const batch of this.hc.batches(sql, [cutoff])) {
+    for await (const batch of this.hc.batches(sql, [cutoff])) {
       for (const row of batch) {
         const lh = hcInt(row.lh);
         if (lh === null) continue;
@@ -579,7 +578,7 @@ class ImportRun {
   /** Samples from `cutoff` on, one row each, from one app per local hour. */
   private async importRawPulse(cutoff: number): Promise<void> {
     const chosen = new Map<number, number>();
-    for (const row of this.hc.all(
+    for (const row of await this.hc.all(
       `SELECT (s.epoch_millis + p.start_zone_offset * 1000) / 3600000 AS lh,
               p.app_info_id AS app
        FROM heart_rate_record_series_table s
@@ -612,7 +611,7 @@ class ImportRun {
       ORDER BY s.epoch_millis, p.app_info_id`;
     const sink = new MeasurementSink(this, false);
     const collapse = new NaturalKeyCollapse(sink, this, HC_CATEGORY.VITALS);
-    for (const batch of this.hc.batches(sql, [cutoff])) {
+    for await (const batch of this.hc.batches(sql, [cutoff])) {
       for (const row of batch) {
         const appId = hcInt(row.app);
         if (!this.admit(appId)) continue;
@@ -671,7 +670,7 @@ class ImportRun {
       end: number;
       device: string | null;
     }> = [];
-    for (const batch of this.hc.batches(
+    for await (const batch of this.hc.batches(
       `SELECT row_id, uuid, app_info_id, start_time, end_time${hasDevice ? ", device_info_id" : ""}
        FROM sleep_session_record_table ORDER BY start_time`,
     )) {
@@ -725,7 +724,7 @@ class ImportRun {
       "stage_type",
     ]);
     if (stagesUsable) {
-      for (const row of this.hc.all(
+      for (const row of await this.hc.all(
         "SELECT parent_key AS k, group_concat(DISTINCT stage_type) AS types FROM sleep_stages_table GROUP BY parent_key",
       )) {
         const key = hcInt(row.k);
@@ -762,7 +761,7 @@ class ImportRun {
 
     if (stagesUsable) {
       const staged = new NaturalKeyCollapse(sink, this, HC_CATEGORY.SLEEP);
-      for (const batch of this.hc.batches(
+      for await (const batch of this.hc.batches(
         "SELECT parent_key AS k, stage_start_time AS s, stage_end_time AS e, stage_type AS t FROM sleep_stages_table ORDER BY stage_end_time, parent_key",
       )) {
         for (const row of batch) {
@@ -823,7 +822,7 @@ class ImportRun {
       end: number;
       exerciseType: number | null;
     }> = [];
-    for (const batch of this.hc.batches(
+    for await (const batch of this.hc.batches(
       "SELECT uuid, app_info_id, start_time, end_time, exercise_type FROM exercise_session_record_table ORDER BY start_time",
     )) {
       for (const row of batch) {
@@ -891,7 +890,7 @@ class ImportRun {
     const sql = `SELECT local_date AS day, app_info_id AS app, SUM(${spec.column}) AS total, COUNT(*) AS n
       FROM ${spec.table} GROUP BY local_date, app_info_id ORDER BY local_date, app_info_id`;
     const days: Array<{ dayKey: string; value: number }> = [];
-    for (const day of this.dailyGroups(sql, HC_CATEGORY.ACTIVITY)) {
+    for await (const day of this.dailyGroups(sql, HC_CATEGORY.ACTIVITY)) {
       this.stat(spec.type).read += 1;
       days.push({
         dayKey: day.dayKey,
@@ -908,10 +907,10 @@ class ImportRun {
    * Walk `sql` (rows of `day`, `app`, `total`, `n`, ordered by day) and yield
    * one total per day from the app the category's ranking picks.
    */
-  private *dailyGroups(
+  private async *dailyGroups(
     sql: string,
     category: number,
-  ): Generator<{ dayKey: string; total: number; app: number }> {
+  ): AsyncGenerator<{ dayKey: string; total: number; app: number }> {
     let day: number | null = null;
     let candidates: Array<{ appId: number; total: number }> = [];
     const pick = () => {
@@ -919,7 +918,7 @@ class ImportRun {
       candidates = [];
       return best;
     };
-    for (const batch of this.hc.batches(sql)) {
+    for await (const batch of this.hc.batches(sql)) {
       for (const row of batch) {
         const d = hcInt(row.day);
         const app = hcInt(row.app) ?? 0;
@@ -1044,7 +1043,7 @@ class ImportRun {
         "nutrition_record_table",
       ] as const) {
         if (!this.hc.columns(table)) continue;
-        const [row] = this.hc.all(`SELECT COUNT(*) AS n FROM ${table}`);
+        const [row] = await this.hc.all(`SELECT COUNT(*) AS n FROM ${table}`);
         const n = hcInt(row?.n) ?? 0;
         this.recordsRead += n;
         if (n > 0) this.skip("nutrients_module_off", n);
@@ -1060,7 +1059,7 @@ class ImportRun {
     };
 
     if (hydration) {
-      for (const day of this.dailyGroups(
+      for await (const day of this.dailyGroups(
         `SELECT local_date AS day, app_info_id AS app, SUM(volume) AS total, COUNT(*) AS n
          FROM hydration_record_table GROUP BY local_date, app_info_id ORDER BY local_date, app_info_id`,
         HC_CATEGORY.NUTRITION,
@@ -1114,7 +1113,7 @@ class ImportRun {
           }
           await flushIfFull();
         };
-        for (const batch of this.hc.batches(sql)) {
+        for await (const batch of this.hc.batches(sql)) {
           for (const row of batch) {
             const d = hcInt(row.day);
             if (d === null) continue;
@@ -1231,7 +1230,7 @@ class ImportRun {
       if (!current || order[level] > order[current]) flowByDay.set(day, level);
     };
     if (flowUsable) {
-      for (const row of this.hc.all(
+      for (const row of await this.hc.all(
         "SELECT local_date AS day, app_info_id AS app, MAX(flow) AS flow, COUNT(*) AS n FROM menstruation_flow_record_table GROUP BY local_date, app_info_id",
       )) {
         if (!this.admit(hcInt(row.app), hcInt(row.n) ?? 0)) continue;
@@ -1244,7 +1243,7 @@ class ImportRun {
       }
     }
     if (periodUsable) {
-      for (const batch of this.hc.batches(
+      for await (const batch of this.hc.batches(
         "SELECT app_info_id AS app, local_date AS day, end_time AS e, end_zone_offset AS eo FROM menstruation_period_record_table",
       )) {
         for (const row of batch) {
