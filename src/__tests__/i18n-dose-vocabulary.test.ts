@@ -11,7 +11,7 @@ import {
 /**
  * One word per dose state and action, in every sentence that names one.
  *
- * `medications/dose-state/terms.ts` holds the words the card, the table and
+ * The dose term table (`DOSE_STATE_TERM`, `DOSE_ACTION_TERM`) holds the words the card, the table and
  * the forms render through. Push, Telegram, the doctor report, the share
  * texts and the export help write their own sentences around a state, and in
  * each language those sentences drifted to a second verb: German said a dose

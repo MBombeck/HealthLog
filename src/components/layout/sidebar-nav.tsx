@@ -422,6 +422,57 @@ export function SidebarCollapseToggle({
   );
 }
 
+/**
+ * One destination in the rail. Collapsed, only the icon shows and the label
+ * moves into a hover tooltip, so the link carries the label as its
+ * accessible name: a tooltip exists only while hovered and names nothing.
+ */
+function RailNavLink({
+  href,
+  label,
+  icon: Icon,
+  tourId,
+  collapsed,
+  active,
+  intent,
+}: {
+  href: string;
+  label: string;
+  icon: typeof Settings;
+  tourId?: string;
+  collapsed: boolean;
+  active: boolean;
+  intent?: ReturnType<typeof medicationsPrefetchIntentProps>;
+}) {
+  const link = (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      aria-label={collapsed ? label : undefined}
+      data-tour-id={tourId}
+      {...intent}
+      className={cn(
+        railRowClass(collapsed),
+        active
+          ? "bg-primary/10 text-primary"
+          : "text-foreground hover:bg-accent",
+      )}
+    >
+      <Icon aria-hidden="true" className="h-4 w-4" />
+      {collapsed ? null : label}
+    </Link>
+  );
+  if (!collapsed) return link;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{link}</TooltipTrigger>
+      <TooltipContent side="right" sideOffset={8}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function SidebarNav() {
   const pathname = usePathname();
   const { t } = useTranslations();
@@ -685,60 +736,22 @@ export function SidebarNav() {
             className={cn(collapsed ? "p-1.5" : "p-3", RAIL_SHORT_PY)}
           >
             <div className={RAIL_LIST_GAP}>
-              {visibleNavItems.map((item) => {
-                const isActive = isNavDestinationActive(
-                  item.href,
-                  pathname,
-                  visibleNavItems,
-                );
-                const label = t(item.tKey);
-
-                if (collapsed) {
-                  return (
-                    <Tooltip key={item.href}>
-                      <TooltipTrigger asChild>
-                        <Link
-                          href={item.href}
-                          aria-current={isActive ? "page" : undefined}
-                          aria-label={label}
-                          data-tour-id={item.tourId}
-                          {...(item.href === "/medications" ? medsIntent : {})}
-                          className={cn(
-                            railRowClass(true),
-                            isActive
-                              ? "bg-primary/10 text-primary"
-                              : "text-foreground hover:bg-accent",
-                          )}
-                        >
-                          <item.icon aria-hidden="true" className="h-4 w-4" />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" sideOffset={8}>
-                        {label}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={isActive ? "page" : undefined}
-                    data-tour-id={item.tourId}
-                    {...(item.href === "/medications" ? medsIntent : {})}
-                    className={cn(
-                      railRowClass(false),
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground hover:bg-accent",
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {label}
-                  </Link>
-                );
-              })}
+              {visibleNavItems.map((item) => (
+                <RailNavLink
+                  key={item.href}
+                  href={item.href}
+                  label={t(item.tKey)}
+                  icon={item.icon}
+                  tourId={item.tourId}
+                  collapsed={collapsed}
+                  active={isNavDestinationActive(
+                    item.href,
+                    pathname,
+                    visibleNavItems,
+                  )}
+                  intent={item.href === "/medications" ? medsIntent : undefined}
+                />
+              ))}
             </div>
           </RailNavList>
 

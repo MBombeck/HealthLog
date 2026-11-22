@@ -220,6 +220,30 @@ interface MedicationComplianceChartProps {
   dayLinks?: boolean;
 }
 
+/** The 7 / 30 / 90 day choice, labelled and named in the reader's locale. */
+function RangeButtons({
+  days,
+  onChange,
+}: {
+  days: RangeDays;
+  onChange: (days: RangeDays) => void;
+}) {
+  const { t } = useTranslations();
+  return RANGE_DAYS.map((r) => (
+    <Button
+      key={r}
+      variant={days === r ? "default" : "ghost"}
+      size="sm"
+      className="min-h-11 px-2 text-xs sm:px-3"
+      aria-pressed={days === r}
+      aria-label={t("charts.daysNAria", { days: r })}
+      onClick={() => onChange(r)}
+    >
+      {t("charts.daysNLabel", { days: r })}
+    </Button>
+  ));
+}
+
 export function MedicationComplianceChart({
   title,
   userTimezone = DEFAULT_TIMEZONE,
@@ -493,19 +517,7 @@ export function MedicationComplianceChart({
           className="flex flex-nowrap items-center justify-end gap-1 self-end sm:self-auto"
           data-slot="chart-header-controls"
         >
-          {RANGE_DAYS.map((r) => (
-            <Button
-              key={r}
-              variant={days === r ? "default" : "ghost"}
-              size="sm"
-              className="min-h-11 px-2 text-xs sm:px-3"
-              aria-pressed={days === r}
-              aria-label={t("charts.daysNAria", { days: r })}
-              onClick={() => setDays(r)}
-            >
-              {t("charts.daysNLabel", { days: r })}
-            </Button>
-          ))}
+          <RangeButtons days={days} onChange={setDays} />
           {/* v1.4.18 — overlay-controls dropdown next to the range
               tabs.
               v1.4.25 — the compliance card never paints a
