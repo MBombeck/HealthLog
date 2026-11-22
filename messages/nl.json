@@ -1881,7 +1881,7 @@
           "title": "Klaar. Moet HealthLog je eraan herinneren?",
           "subline": "Controleer alles hieronder voordat je opslaat.",
           "remindersLabel": "Herinneringen aan",
-          "remindersDescription": "Push, Telegram of ntfy, afhankelijk van je instellingen.",
+          "remindersDescription": "Herinneringen komen aan zoals je ze bij Meldingen hebt ingesteld: webpush, Telegram of ntfy. De iPhone-app plant zijn herinneringen zelf.",
           "noChannelHint": "Voor herinneringen is een meldingskanaal nodig, en er is er op dit moment geen actief.",
           "noChannelHintLink": "Meldingen instellen",
           "short": "Klaar"
@@ -5381,7 +5381,9 @@
       "importCta": "Bestaande geschiedenis importeren",
       "modulesCta": "Je modules kiezen",
       "aiOptional": "AI is optioneel. Alles werkt ook zonder.",
-      "aiSetupCta": "AI instellen"
+      "aiSetupCta": "AI instellen",
+      "relayOptional": "De iPhone-app kan meldingen van deze server krijgen via de optionele HealthLog-pushrelay, die uit blijft tot je hem aanzet.",
+      "relaySetupCta": "Instellingen pushrelay"
     },
     "welcomeBack": {
       "title": "Welkom terug",
@@ -5453,7 +5455,7 @@
       },
       "medication": {
         "title": "Neem je medicatie volgens een schema in?",
-        "body": "Een schema zet de medicatiemodule en herinneringen aan.",
+        "body": "Een schema zet de medicatiemodule aan. Herinneringen stel je in wanneer je je eerste medicijn toevoegt.",
         "options": {
           "yes": "Ja",
           "no": "Nee",
@@ -9335,8 +9337,19 @@
       "title": "HealthLog-pushrelay",
       "description": "Laat de app uit de App Store meldingen van deze server ontvangen via de relay van het HealthLog-project.",
       "whatItSees": "Elke melding wordt op deze server versleuteld voor het apparaat waarvoor hij bedoeld is, dus de relay kan hem niet lezen. Hij ziet wanneer deze server een apparaat iets stuurt.",
+      "seesSummary": "Wat de relay ziet",
+      "seesHeading": "De relay ziet",
+      "seesWhen": "dat deze server een apparaat iets stuurt, wanneer en van welke soort: een melding, een stille synchronisatie of het einde van een live-activiteit",
+      "seesToken": "het pushtoken van het apparaat tijdens de bezorging (alleen bewaard als hash met sleutel), en de instantie-id van deze server",
+      "seesAddress": "het adres van deze server zolang die verbonden is, niet bewaard en niet gelogd",
+      "seesConsent": "een hash van de koppelsleutel van het apparaat, en de versie en de dag van de toestemming van de persoon",
+      "notSeesHeading": "De relay ziet niet",
+      "notSeesContent": "wat er in een melding staat: namen van medicijnen, doses, metingen, notities, accountnamen of iets anders erin",
+      "seesTiming": "Het moment kan toch iets zeggen: leg je op het ene apparaat een dosis vast en krijgt een ander apparaat van je de bevestiging, dan zien de relay en Apple dat er op dat moment iets gebeurde.",
+      "seesSource": "De volledige privacyverklaring van de relay",
       "toggleLabel": "De HealthLog-pushrelay aanbieden aan de gebruikers van deze server",
       "toggleDescription": "Uit tot je het aanzet. Daarna beslist iedereen in de eigen app.",
+      "toggleDescriptionOn": "Aan. Iedereen beslist in de eigen app of de eigen apparaten het gebruiken.",
       "devices": "{count} apparaten gekoppeld",
       "since": "sinds {time}",
       "docs": "Meer informatie",
@@ -9344,7 +9357,8 @@
       "terms": "Relayvoorwaarden",
       "dialogTitle": "HealthLog-pushrelay aanbieden",
       "dialogBody": "De relay wordt beheerd door de maintainer van het HealthLog-project. Elke melding wordt op deze server versleuteld voor het eigen apparaat; de relay kan hem niet lezen, maar ziet dat deze server een apparaat iets stuurt, en wanneer. Na het aanzetten ziet iedereen op deze server één keer een aanbod in de app en beslist zelf. Herinneringen blijven op de apparaten. De relay is voor privé- en huishoudelijk gebruik en is geen medische dienst.",
-      "acceptTerms": "Ik ga akkoord met de relayvoorwaarden en heb de privacyverklaring gelezen.",
+      "acceptTerms": "Ik ga akkoord met de relayvoorwaarden.",
+      "readPrivacy": "Ik heb de privacyverklaring van de relay gelezen.",
       "householdOnly": "Ik beheer deze server privé voor mezelf of mijn huishouden.",
       "enable": "Aanzetten",
       "cancel": "Annuleren",

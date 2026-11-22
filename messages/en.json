@@ -1881,7 +1881,7 @@
           "title": "All done. Should HealthLog remind you?",
           "subline": "Review everything below before you save.",
           "remindersLabel": "Reminders on",
-          "remindersDescription": "Push, Telegram or ntfy, based on your settings.",
+          "remindersDescription": "Reminders arrive the way you set them up under Notifications: web push, Telegram or ntfy. The iPhone app plans its own reminders.",
           "noChannelHint": "Reminders need a notification channel, and none is active right now.",
           "noChannelHintLink": "Set up notifications",
           "short": "Done"
@@ -5381,7 +5381,9 @@
       "importCta": "Import existing history",
       "modulesCta": "Choose your modules",
       "aiOptional": "AI is optional. Everything here works without it.",
-      "aiSetupCta": "Set up AI"
+      "aiSetupCta": "Set up AI",
+      "relayOptional": "The iPhone app can get notifications from this server through the optional HealthLog push relay, which stays off until you turn it on.",
+      "relaySetupCta": "Push relay settings"
     },
     "welcomeBack": {
       "title": "Welcome back",
@@ -5453,7 +5455,7 @@
       },
       "medication": {
         "title": "Do you take medication on a schedule?",
-        "body": "A schedule switches on the medication module and reminders.",
+        "body": "A schedule switches on the medication module. Reminders can be set up when you add your first medication.",
         "options": {
           "yes": "Yes",
           "no": "No",
@@ -9335,8 +9337,19 @@
       "title": "HealthLog push relay",
       "description": "Lets the App Store app receive notifications from this server through the relay run by the HealthLog project.",
       "whatItSees": "Each notification is encrypted on this server for the device it goes to, so the relay cannot read it. The relay sees when this server sends a device something.",
+      "seesSummary": "What the relay sees",
+      "seesHeading": "The relay sees",
+      "seesWhen": "that this server sends a device something, when, and of which kind: an alert, a silent sync or the end of a Live Activity",
+      "seesToken": "the device's push token while it delivers (stored only as a keyed hash), and this server's instance id",
+      "seesAddress": "this server's address while it is connected, neither stored nor logged",
+      "seesConsent": "a hash of the device's binding key, and the version and day of the person's consent",
+      "notSeesHeading": "It does not see",
+      "notSeesContent": "what a notification says: medication names, doses, readings, notes, account names or anything else inside it",
+      "seesTiming": "Timing can still tell something: when you log a dose on one device and another device of yours gets the confirmation, the relay and Apple see that something happened at that moment.",
+      "seesSource": "The relay's full privacy notice",
       "toggleLabel": "Offer the HealthLog push relay to this server's users",
       "toggleDescription": "Off until you turn it on. After that each person decides in their own app.",
+      "toggleDescriptionOn": "On. Each person decides in their own app whether their devices use it.",
       "devices": "{count} devices bound",
       "since": "since {time}",
       "docs": "Learn more",
@@ -9344,7 +9357,8 @@
       "terms": "Relay terms",
       "dialogTitle": "Offer the HealthLog push relay",
       "dialogBody": "The relay is run by the maintainer of the HealthLog project. Each notification is encrypted on this server for its device; the relay cannot read it, but it sees that this server sends a device something, and when. After you turn it on, every person on this server sees an offer in their app once and decides for themselves. Reminders stay on the devices. The relay is for private and household use and is not a medical service.",
-      "acceptTerms": "I accept the relay terms and have read the privacy notice.",
+      "acceptTerms": "I accept the relay terms.",
+      "readPrivacy": "I have read the relay's privacy notice.",
       "householdOnly": "I run this server privately for myself or my household.",
       "enable": "Turn on",
       "cancel": "Cancel",

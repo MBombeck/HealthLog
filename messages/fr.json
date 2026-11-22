@@ -1881,7 +1881,7 @@
           "title": "Terminé ! HealthLog doit-il vous le rappeler ?",
           "subline": "Vérifiez tout ci-dessous avant d’enregistrer.",
           "remindersLabel": "Rappels activés",
-          "remindersDescription": "Push, Telegram ou ntfy, selon vos réglages.",
+          "remindersDescription": "Les rappels arrivent comme vous les avez configurés dans Notifications : push web, Telegram ou ntfy. L’app iPhone planifie elle-même ses rappels.",
           "noChannelHint": "Les rappels nécessitent un canal de notification, et aucun n'est actif pour le moment.",
           "noChannelHintLink": "Configurer les notifications",
           "short": "Fini"
@@ -5381,7 +5381,9 @@
       "importCta": "Importer un historique existant",
       "modulesCta": "Choisir vos modules",
       "aiOptional": "L'IA est facultative. Tout fonctionne aussi sans elle.",
-      "aiSetupCta": "Configurer l'IA"
+      "aiSetupCta": "Configurer l'IA",
+      "relayOptional": "L’app iPhone peut recevoir les notifications de ce serveur via le relais push HealthLog, facultatif et désactivé tant que vous ne l’activez pas.",
+      "relaySetupCta": "Réglages du relais push"
     },
     "welcomeBack": {
       "title": "Bon retour",
@@ -5453,7 +5455,7 @@
       },
       "medication": {
         "title": "Prenez-vous des médicaments selon un horaire fixe ?",
-        "body": "Un horaire active le module médicaments et les rappels.",
+        "body": "Un horaire active le module médicaments. Les rappels se configurent quand vous ajoutez votre premier médicament.",
         "options": {
           "yes": "Oui",
           "no": "Non",
@@ -9335,8 +9337,19 @@
       "title": "Relais push HealthLog",
       "description": "Permet à l'app de l'App Store de recevoir les notifications de ce serveur via le relais du projet HealthLog.",
       "whatItSees": "Chaque notification est chiffrée sur ce serveur pour l'appareil destinataire, le relais ne peut donc pas la lire. Il voit quand ce serveur envoie quelque chose à un appareil.",
+      "seesSummary": "Ce que voit le relais",
+      "seesHeading": "Le relais voit",
+      "seesWhen": "que ce serveur envoie quelque chose à un appareil, quand, et de quel type : une alerte, une synchronisation silencieuse ou la fin d’une activité en direct",
+      "seesToken": "le jeton push de l’appareil pendant la remise (stocké uniquement sous forme de hachage à clé), et l’identifiant d’instance de ce serveur",
+      "seesAddress": "l’adresse de ce serveur tant qu’il est connecté, ni stockée ni journalisée",
+      "seesConsent": "un hachage de la clé de liaison de l’appareil, ainsi que la version et le jour du consentement de la personne",
+      "notSeesHeading": "Il ne voit pas",
+      "notSeesContent": "ce que dit une notification : noms de médicaments, doses, mesures, notes, noms de compte ou quoi que ce soit d’autre qu’elle contient",
+      "seesTiming": "Le moment peut tout de même révéler quelque chose : si vous enregistrez une dose sur un appareil et qu’un autre de vos appareils reçoit la confirmation, le relais et Apple voient que quelque chose s’est passé à cet instant.",
+      "seesSource": "L’avis de confidentialité complet du relais",
       "toggleLabel": "Proposer le relais push HealthLog aux utilisateurs de ce serveur",
       "toggleDescription": "Désactivé tant que vous ne l'activez pas. Ensuite, chaque personne décide dans sa propre app.",
+      "toggleDescriptionOn": "Activé. Chaque personne décide dans sa propre app si ses appareils l’utilisent.",
       "devices": "{count} appareils liés",
       "since": "depuis {time}",
       "docs": "En savoir plus",
@@ -9344,7 +9357,8 @@
       "terms": "Conditions du relais",
       "dialogTitle": "Proposer le relais push HealthLog",
       "dialogBody": "Le relais est exploité par le mainteneur du projet HealthLog. Chaque notification est chiffrée sur ce serveur pour son appareil ; le relais ne peut pas la lire, mais il voit que ce serveur envoie quelque chose à un appareil, et quand. Une fois activé, chaque personne de ce serveur voit une fois une proposition dans son app et décide elle-même. Les rappels restent sur les appareils. Le relais est destiné à un usage privé et familial et n'est pas un service médical.",
-      "acceptTerms": "J'accepte les conditions du relais et j'ai lu l'avis de confidentialité.",
+      "acceptTerms": "J’accepte les conditions du relais.",
+      "readPrivacy": "J’ai lu l’avis de confidentialité du relais.",
       "householdOnly": "J'exploite ce serveur à titre privé, pour moi ou mon foyer.",
       "enable": "Activer",
       "cancel": "Annuler",

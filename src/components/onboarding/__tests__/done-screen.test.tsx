@@ -9,7 +9,18 @@ import { I18nProvider } from "@/lib/i18n/context";
  * (dashboard, tour, connect, log) are there either way.
  */
 
+/** `GET /api/admin/push-relay`, read only for an admin. */
+const relay = vi.hoisted(() => ({
+  status: null as null | { allowed: boolean; offered: boolean },
+  asked: [] as boolean[],
+}));
 vi.mock("@tanstack/react-query", () => ({
+  useQuery: ({ enabled }: { enabled?: boolean }) => {
+    relay.asked.push(enabled !== false);
+    return {
+      data: enabled === false ? undefined : (relay.status ?? undefined),
+    };
+  },
   useMutation: () => ({
     mutate: () => {},
     mutateAsync: async () => {},
@@ -22,9 +33,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
 
-const auth = vi.hoisted(() => ({ modules: {} as Record<string, boolean> }));
+const auth = vi.hoisted(() => ({
+  modules: {} as Record<string, boolean>,
+  role: "USER" as "USER" | "ADMIN",
+}));
 vi.mock("@/hooks/use-auth", () => ({
-  useAuth: () => ({ user: { id: "u1", modules: auth.modules } }),
+  useAuth: () => ({
+    user: { id: "u1", modules: auth.modules, role: auth.role },
+  }),
 }));
 
 /** `ai.provider` from `/api/auth/me`. */
@@ -164,5 +180,53 @@ describe("<DoneScreen> exits", () => {
   it("offers the managed profile only to an answer that asked for it later", () => {
     expect(render("both")).toContain('href="/settings/access"');
     expect(render("me")).not.toContain('href="/settings/access"');
+  });
+});
+
+describe("<DoneScreen> push relay line", () => {
+  function withRelay(
+    role: "USER" | "ADMIN",
+    status: { allowed: boolean; offered: boolean } | null,
+    run: () => void,
+  ) {
+    auth.role = role;
+    relay.status = status;
+    relay.asked = [];
+    try {
+      run();
+    } finally {
+      auth.role = "USER";
+      relay.status = null;
+    }
+  }
+
+  it("tells an admin the relay is a choice, with a link to its switch", () => {
+    withRelay("ADMIN", { allowed: true, offered: false }, () => {
+      const html = render();
+      const line = html.match(
+        /<p[^>]*data-slot="onboarding-relay-line"[^>]*>([\s\S]*?)<\/p>/,
+      );
+      expect(line).not.toBeNull();
+      expect(line![1]).toContain("optional HealthLog push relay");
+      expect(line![1]).toContain('href="/admin/services"');
+      // Nothing here switches it on.
+      expect(line![1]).not.toContain("<button");
+    });
+  });
+
+  it("is left out for everyone else, who never asks for the relay status", () => {
+    withRelay("USER", { allowed: true, offered: false }, () => {
+      expect(render()).not.toContain('data-slot="onboarding-relay-line"');
+      expect(relay.asked).not.toContain(true);
+    });
+  });
+
+  it("is left out when the server does not allow the relay or it is on", () => {
+    withRelay("ADMIN", { allowed: false, offered: false }, () => {
+      expect(render()).not.toContain('data-slot="onboarding-relay-line"');
+    });
+    withRelay("ADMIN", { allowed: true, offered: true }, () => {
+      expect(render()).not.toContain('data-slot="onboarding-relay-line"');
+    });
   });
 });

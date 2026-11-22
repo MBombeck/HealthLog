@@ -1881,7 +1881,7 @@
           "title": "Fatto. Vuoi che HealthLog te lo ricordi?",
           "subline": "Controlla tutto qui sotto prima di salvare.",
           "remindersLabel": "Promemoria attivi",
-          "remindersDescription": "Push, Telegram o ntfy, in base alle tue impostazioni.",
+          "remindersDescription": "I promemoria arrivano come li hai impostati in Notifiche: push web, Telegram o ntfy. L’app per iPhone pianifica da sola i propri promemoria.",
           "noChannelHint": "I promemoria richiedono un canale di notifica, ma al momento nessuno è attivo.",
           "noChannelHintLink": "Configura le notifiche",
           "short": "Fatto"
@@ -5381,7 +5381,9 @@
       "importCta": "Importa la cronologia esistente",
       "modulesCta": "Scegli i tuoi moduli",
       "aiOptional": "L'IA è facoltativa. Tutto funziona anche senza.",
-      "aiSetupCta": "Configura IA"
+      "aiSetupCta": "Configura IA",
+      "relayOptional": "L’app per iPhone può ricevere le notifiche di questo server tramite il relay push di HealthLog, facoltativo e spento finché non lo attivi.",
+      "relaySetupCta": "Impostazioni del relay push"
     },
     "welcomeBack": {
       "title": "Bentornato",
@@ -5453,7 +5455,7 @@
       },
       "medication": {
         "title": "Prendi farmaci con un orario fisso?",
-        "body": "Un orario attiva il modulo farmaci e i promemoria.",
+        "body": "Un orario attiva il modulo farmaci. I promemoria si impostano quando aggiungi il tuo primo farmaco.",
         "options": {
           "yes": "Sì",
           "no": "No",
@@ -9335,8 +9337,19 @@
       "title": "Relay push di HealthLog",
       "description": "Permette all'app dell'App Store di ricevere le notifiche di questo server tramite il relay del progetto HealthLog.",
       "whatItSees": "Ogni notifica viene cifrata su questo server per il dispositivo a cui è destinata, quindi il relay non può leggerla. Vede quando questo server invia qualcosa a un dispositivo.",
+      "seesSummary": "Cosa vede il relay",
+      "seesHeading": "Il relay vede",
+      "seesWhen": "che questo server invia qualcosa a un dispositivo, quando e di che tipo: un avviso, una sincronizzazione silenziosa o la fine di un’Attività Live",
+      "seesToken": "il token push del dispositivo durante la consegna (salvato solo come hash con chiave), e l’id di istanza di questo server",
+      "seesAddress": "l’indirizzo di questo server mentre è connesso, né salvato né registrato",
+      "seesConsent": "un hash della chiave di associazione del dispositivo, e la versione e il giorno del consenso della persona",
+      "notSeesHeading": "Non vede",
+      "notSeesContent": "cosa dice una notifica: nomi di farmaci, dosi, misurazioni, note, nomi di account o qualsiasi altra cosa contenga",
+      "seesTiming": "Il momento può comunque dire qualcosa: se registri una dose su un dispositivo e un altro tuo dispositivo riceve la conferma, il relay e Apple vedono che in quel momento è successo qualcosa.",
+      "seesSource": "L’informativa sulla privacy completa del relay",
       "toggleLabel": "Offrire il relay push di HealthLog agli utenti di questo server",
       "toggleDescription": "Disattivato finché non lo attivi. Poi ogni persona decide nella propria app.",
+      "toggleDescriptionOn": "Attivo. Ogni persona decide nella propria app se i suoi dispositivi lo usano.",
       "devices": "{count} dispositivi collegati",
       "since": "dal {time}",
       "docs": "Scopri di più",
@@ -9344,7 +9357,8 @@
       "terms": "Condizioni del relay",
       "dialogTitle": "Offrire il relay push di HealthLog",
       "dialogBody": "Il relay è gestito dal maintainer del progetto HealthLog. Ogni notifica viene cifrata su questo server per il suo dispositivo; il relay non può leggerla, ma vede che questo server invia qualcosa a un dispositivo, e quando. Dopo l'attivazione, ogni persona su questo server vede una volta un'offerta nella propria app e decide da sé. I promemoria restano sui dispositivi. Il relay è per uso privato e familiare e non è un servizio medico.",
-      "acceptTerms": "Accetto le condizioni del relay e ho letto l'informativa sulla privacy.",
+      "acceptTerms": "Accetto le condizioni del relay.",
+      "readPrivacy": "Ho letto l’informativa sulla privacy del relay.",
       "householdOnly": "Gestisco questo server privatamente per me o la mia famiglia.",
       "enable": "Attiva",
       "cancel": "Annulla",

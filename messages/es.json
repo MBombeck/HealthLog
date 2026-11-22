@@ -1881,7 +1881,7 @@
           "title": "Listo. ¿Quieres que HealthLog te lo recuerde?",
           "subline": "Revisa todo abajo antes de guardar.",
           "remindersLabel": "Recordatorios activados",
-          "remindersDescription": "Push, Telegram o ntfy, según tus ajustes.",
+          "remindersDescription": "Los recordatorios llegan como los configuraste en Notificaciones: push web, Telegram o ntfy. La app de iPhone programa sus propios recordatorios.",
           "noChannelHint": "Los recordatorios necesitan un canal de notificaciones, pero ahora mismo no hay ninguno activo.",
           "noChannelHintLink": "Configurar notificaciones",
           "short": "Listo"
@@ -5381,7 +5381,9 @@
       "importCta": "Importar historial existente",
       "modulesCta": "Elige tus módulos",
       "aiOptional": "La IA es opcional. Todo funciona también sin ella.",
-      "aiSetupCta": "Configurar IA"
+      "aiSetupCta": "Configurar IA",
+      "relayOptional": "La app de iPhone puede recibir notificaciones de este servidor a través del relé push de HealthLog, opcional y desactivado hasta que lo actives.",
+      "relaySetupCta": "Ajustes del relé push"
     },
     "welcomeBack": {
       "title": "Bienvenido de nuevo",
@@ -5453,7 +5455,7 @@
       },
       "medication": {
         "title": "¿Tomas medicación con un horario fijo?",
-        "body": "Un horario activa el módulo de medicación y los recordatorios.",
+        "body": "Un horario activa el módulo de medicación. Los recordatorios se configuran al añadir tu primer medicamento.",
         "options": {
           "yes": "Sí",
           "no": "No",
@@ -9335,8 +9337,19 @@
       "title": "Relé push de HealthLog",
       "description": "Permite que la app de la App Store reciba notificaciones de este servidor a través del relé del proyecto HealthLog.",
       "whatItSees": "Cada notificación se cifra en este servidor para el dispositivo que la recibe, así que el relé no puede leerla. Ve cuándo este servidor envía algo a un dispositivo.",
+      "seesSummary": "Qué ve el relé",
+      "seesHeading": "El relé ve",
+      "seesWhen": "que este servidor envía algo a un dispositivo, cuándo y de qué tipo: una alerta, una sincronización silenciosa o el final de una Actividad en vivo",
+      "seesToken": "el token push del dispositivo mientras entrega (guardado solo como hash con clave), y el id de instancia de este servidor",
+      "seesAddress": "la dirección de este servidor mientras está conectado, sin guardarla ni registrarla",
+      "seesConsent": "un hash de la clave de vinculación del dispositivo, y la versión y el día del consentimiento de la persona",
+      "notSeesHeading": "No ve",
+      "notSeesContent": "lo que dice una notificación: nombres de medicamentos, dosis, mediciones, notas, nombres de cuenta ni nada más de su contenido",
+      "seesTiming": "El momento aún puede decir algo: si registras una dosis en un dispositivo y otro de tus dispositivos recibe la confirmación, el relé y Apple ven que algo pasó en ese momento.",
+      "seesSource": "El aviso de privacidad completo del relé",
       "toggleLabel": "Ofrecer el relé push de HealthLog a los usuarios de este servidor",
       "toggleDescription": "Desactivado hasta que lo actives. Después, cada persona decide en su propia app.",
+      "toggleDescriptionOn": "Activado. Cada persona decide en su propia app si sus dispositivos lo usan.",
       "devices": "{count} dispositivos vinculados",
       "since": "desde {time}",
       "docs": "Más información",
@@ -9344,7 +9357,8 @@
       "terms": "Condiciones del relé",
       "dialogTitle": "Ofrecer el relé push de HealthLog",
       "dialogBody": "El relé lo opera el mantenedor del proyecto HealthLog. Cada notificación se cifra en este servidor para su dispositivo; el relé no puede leerla, pero ve que este servidor envía algo a un dispositivo y cuándo. Cuando lo actives, cada persona de este servidor verá una vez una oferta en su app y decidirá por sí misma. Los recordatorios se quedan en los dispositivos. El relé es para uso privado y doméstico y no es un servicio médico.",
-      "acceptTerms": "Acepto las condiciones del relé y he leído el aviso de privacidad.",
+      "acceptTerms": "Acepto las condiciones del relé.",
+      "readPrivacy": "He leído el aviso de privacidad del relé.",
       "householdOnly": "Mantengo este servidor de forma privada para mí o mi hogar.",
       "enable": "Activar",
       "cancel": "Cancelar",

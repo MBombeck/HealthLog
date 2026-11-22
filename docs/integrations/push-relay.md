@@ -52,10 +52,13 @@ The relay is off until the admin turns it on.
 1. After the update every admin sees a one-time notice on the admin start
    page that the option exists. It can be dismissed and does not come back.
 2. In **Admin > Services**, switch on **Offer the HealthLog push relay to this
-   server's users**. The dialog asks for two confirmations: that you accept
-   the relay terms and have read its privacy notice, and that you run this
-   server privately for yourself or your household. The hosted relay is for
-   private and household use only and is not a medical service.
+   server's users**. The dialog asks for three confirmations, each with its
+   own checkbox: that you accept the relay terms, that you have read its
+   privacy notice, and that you run this server privately for yourself or
+   your household. The hosted relay is for private and household use only and
+   is not a medical service. The card lists what the relay sees and what it
+   does not under **What the relay sees**, with a link to the full privacy
+   notice.
 3. Your server creates its instance key, stores it encrypted, and registers
    with the relay. The card then shows the relay's state and how many devices
    are bound.

@@ -1881,7 +1881,7 @@
           "title": "다 됐어요. HealthLog가 알림을 보낼까요?",
           "subline": "저장하기 전에 아래 내용을 확인해 주세요.",
           "remindersLabel": "알림 켜기",
-          "remindersDescription": "푸시, Telegram, ntfy 중 설정에 따라 보내요.",
+          "remindersDescription": "알림은 알림 설정에서 정한 방식으로 와요: 웹 푸시, Telegram, ntfy. iPhone 앱은 알림을 직접 예약해요.",
           "noChannelHint": "알림을 보내려면 알림 채널이 필요한데, 지금은 켜진 채널이 없어요.",
           "noChannelHintLink": "알림 설정하기",
           "short": "완료"
@@ -5381,7 +5381,9 @@
       "importCta": "기존 기록 불러오기",
       "modulesCta": "모듈 고르기",
       "aiOptional": "AI는 선택 사항이에요. AI 없이도 모든 기능이 작동해요.",
-      "aiSetupCta": "AI 설정"
+      "aiSetupCta": "AI 설정",
+      "relayOptional": "iPhone 앱은 선택 사항인 HealthLog 푸시 릴레이를 통해 이 서버의 알림을 받을 수 있어요. 직접 켜기 전까지는 꺼져 있어요.",
+      "relaySetupCta": "푸시 릴레이 설정"
     },
     "welcomeBack": {
       "title": "다시 오셨네요",
@@ -5453,7 +5455,7 @@
       },
       "medication": {
         "title": "정해진 일정에 따라 약을 복용하시나요?",
-        "body": "일정이 있으면 복약 모듈과 알림이 켜집니다.",
+        "body": "일정이 있으면 복약 모듈이 켜져요. 알림은 첫 약을 추가할 때 설정할 수 있어요.",
         "options": {
           "yes": "예",
           "no": "아니요",
@@ -9335,8 +9337,19 @@
       "title": "HealthLog 푸시 릴레이",
       "description": "App Store 앱이 HealthLog 프로젝트가 운영하는 릴레이를 통해 이 서버의 알림을 받을 수 있게 합니다.",
       "whatItSees": "모든 알림은 이 서버에서 받는 기기용으로 암호화되므로 릴레이는 내용을 읽을 수 없습니다. 릴레이는 이 서버가 언제 기기에 무언가를 보내는지만 봅니다.",
+      "seesSummary": "릴레이가 보는 것",
+      "seesHeading": "볼 수 있는 것",
+      "seesWhen": "이 서버가 기기에 무언가를 보낸다는 사실, 그 시점과 종류(알림, 무음 동기화, 실시간 현황 종료)",
+      "seesToken": "전송하는 동안의 기기 푸시 토큰(키로 만든 해시로만 저장)과 이 서버의 인스턴스 ID",
+      "seesAddress": "연결되어 있는 동안의 이 서버 주소(저장하지도 기록하지도 않음)",
+      "seesConsent": "기기 연결 키의 해시, 그리고 그 사람이 동의한 버전과 날짜",
+      "notSeesHeading": "볼 수 없는 것",
+      "notSeesContent": "알림의 내용: 약 이름, 용량, 측정값, 메모, 계정 이름 등 알림 안의 모든 것",
+      "seesTiming": "그래도 시점은 무언가를 알려 줄 수 있어요. 한 기기에서 복용을 기록하고 다른 기기가 확인 알림을 받으면, 릴레이와 Apple은 그때 무슨 일이 있었다는 것을 알 수 있어요.",
+      "seesSource": "릴레이 개인정보 안내 전문",
       "toggleLabel": "이 서버 사용자에게 HealthLog 푸시 릴레이 제공",
       "toggleDescription": "켜기 전까지는 꺼져 있습니다. 켠 뒤에는 각자 자신의 앱에서 결정합니다.",
+      "toggleDescriptionOn": "켜져 있어요. 기기에서 사용할지는 각자 자신의 앱에서 정해요.",
       "devices": "연결된 기기 {count}대",
       "since": "{time}부터",
       "docs": "자세히 알아보기",
@@ -9344,7 +9357,8 @@
       "terms": "릴레이 이용 조건",
       "dialogTitle": "HealthLog 푸시 릴레이 제공",
       "dialogBody": "릴레이는 HealthLog 프로젝트 관리자가 운영합니다. 각 알림은 이 서버에서 해당 기기용으로 암호화되어 릴레이가 읽을 수 없지만, 이 서버가 기기에 무언가를 보낸다는 사실과 그 시점은 볼 수 있습니다. 켜면 이 서버의 모든 사람이 앱에서 한 번 제안을 보고 스스로 결정합니다. 리마인더는 기기에 남습니다. 릴레이는 개인 및 가정용이며 의료 서비스가 아닙니다.",
-      "acceptTerms": "릴레이 이용 조건에 동의하며 개인정보 안내를 읽었습니다.",
+      "acceptTerms": "릴레이 이용 조건에 동의합니다.",
+      "readPrivacy": "릴레이 개인정보 안내를 읽었습니다.",
       "householdOnly": "이 서버를 나 자신이나 가족을 위해 개인적으로 운영합니다.",
       "enable": "켜기",
       "cancel": "취소",

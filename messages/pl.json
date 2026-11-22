@@ -1881,7 +1881,7 @@
           "title": "Gotowe. Czy HealthLog ma Ci przypominać?",
           "subline": "Sprawdź wszystko poniżej przed zapisaniem.",
           "remindersLabel": "Przypomnienia włączone",
-          "remindersDescription": "Push, Telegram lub ntfy, w zależności od ustawień.",
+          "remindersDescription": "Przypomnienia docierają tak, jak ustawisz je w Powiadomieniach: web push, Telegram lub ntfy. Aplikacja na iPhone’a sama planuje swoje przypomnienia.",
           "noChannelHint": "Przypomnienia wymagają kanału powiadomień, a obecnie żaden nie jest aktywny.",
           "noChannelHintLink": "Skonfiguruj powiadomienia",
           "short": "Gotowe"
@@ -5381,7 +5381,9 @@
       "importCta": "Importuj istniejącą historię",
       "modulesCta": "Wybierz swoje moduły",
       "aiOptional": "AI jest opcjonalne. Wszystko działa także bez niego.",
-      "aiSetupCta": "Skonfiguruj AI"
+      "aiSetupCta": "Skonfiguruj AI",
+      "relayOptional": "Aplikacja na iPhone’a może dostawać powiadomienia z tego serwera przez opcjonalny przekaźnik push HealthLog, wyłączony, dopóki go nie włączysz.",
+      "relaySetupCta": "Ustawienia przekaźnika push"
     },
     "welcomeBack": {
       "title": "Witaj ponownie",
@@ -5453,7 +5455,7 @@
       },
       "medication": {
         "title": "Czy bierzesz leki według stałego harmonogramu?",
-        "body": "Harmonogram włącza moduł leków i przypomnienia.",
+        "body": "Harmonogram włącza moduł leków. Przypomnienia ustawisz, gdy dodasz pierwszy lek.",
         "options": {
           "yes": "Tak",
           "no": "Nie",
@@ -9335,8 +9337,19 @@
       "title": "Przekaźnik push HealthLog",
       "description": "Pozwala aplikacji z App Store odbierać powiadomienia z tego serwera przez przekaźnik projektu HealthLog.",
       "whatItSees": "Każde powiadomienie jest szyfrowane na tym serwerze dla urządzenia docelowego, więc przekaźnik nie może go odczytać. Widzi, kiedy ten serwer coś wysyła do urządzenia.",
+      "seesSummary": "Co widzi przekaźnik",
+      "seesHeading": "Przekaźnik widzi",
+      "seesWhen": "że ten serwer coś wysyła do urządzenia, kiedy i jakiego rodzaju: alert, cichą synchronizację albo koniec aktywności na żywo",
+      "seesToken": "token push urządzenia podczas doręczania (przechowywany tylko jako hash z kluczem) oraz identyfikator instancji tego serwera",
+      "seesAddress": "adres tego serwera, gdy jest połączony, bez zapisywania i bez logowania",
+      "seesConsent": "hash klucza powiązania urządzenia oraz wersję i dzień zgody danej osoby",
+      "notSeesHeading": "Nie widzi",
+      "notSeesContent": "treści powiadomienia: nazw leków, dawek, pomiarów, notatek, nazw kont ani niczego innego, co zawiera",
+      "seesTiming": "Sam moment może jednak coś zdradzić: gdy zapiszesz dawkę na jednym urządzeniu, a inne Twoje urządzenie dostanie potwierdzenie, przekaźnik i Apple widzą, że w tej chwili coś się stało.",
+      "seesSource": "Pełna informacja o prywatności przekaźnika",
       "toggleLabel": "Udostępnij przekaźnik push HealthLog użytkownikom tego serwera",
       "toggleDescription": "Wyłączone, dopóki go nie włączysz. Potem każda osoba decyduje we własnej aplikacji.",
+      "toggleDescriptionOn": "Włączone. Każda osoba decyduje we własnej aplikacji, czy jej urządzenia z niego korzystają.",
       "devices": "Powiązane urządzenia: {count}",
       "since": "od {time}",
       "docs": "Dowiedz się więcej",
@@ -9344,7 +9357,8 @@
       "terms": "Warunki przekaźnika",
       "dialogTitle": "Udostępnij przekaźnik push HealthLog",
       "dialogBody": "Przekaźnik prowadzi opiekun projektu HealthLog. Każde powiadomienie jest szyfrowane na tym serwerze dla swojego urządzenia; przekaźnik nie może go odczytać, ale widzi, że ten serwer coś wysyła do urządzenia, i kiedy. Po włączeniu każda osoba na tym serwerze raz zobaczy propozycję w swojej aplikacji i sama zdecyduje. Przypomnienia zostają na urządzeniach. Przekaźnik służy do użytku prywatnego i domowego i nie jest usługą medyczną.",
-      "acceptTerms": "Akceptuję warunki przekaźnika i przeczytałem informację o prywatności.",
+      "acceptTerms": "Akceptuję warunki przekaźnika.",
+      "readPrivacy": "Zapoznałem(-am) się z informacją o prywatności przekaźnika.",
       "householdOnly": "Prowadzę ten serwer prywatnie dla siebie lub mojego gospodarstwa domowego.",
       "enable": "Włącz",
       "cancel": "Anuluj",

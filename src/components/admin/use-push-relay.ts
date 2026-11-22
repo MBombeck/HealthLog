@@ -26,7 +26,13 @@ export interface AdminPushRelayStatus {
   noticePending: boolean;
 }
 
-export function usePushRelayStatus() {
+/**
+ * The relay status. Admin only: a surface that non-admins see too passes
+ * `enabled: false` for them, so their session never asks.
+ */
+export function usePushRelayStatus({
+  enabled = true,
+}: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.adminPushRelay(),
     queryFn: () =>
@@ -34,6 +40,7 @@ export function usePushRelayStatus() {
         credentials: "include",
       }),
     staleTime: 30_000,
+    enabled,
   });
 }
 
