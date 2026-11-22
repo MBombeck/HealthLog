@@ -125,6 +125,7 @@ export const cycleDayLogSchema = z
     tz: z.string().nullable().optional(),
     syncVersion: z.number().int().optional(),
     deletedAt: isoDateTime.nullable().optional(),
+    appleHealthDeletedAt: isoDateTime.nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
     symptomKeys: z.array(z.string()).default([]),

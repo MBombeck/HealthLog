@@ -616,7 +616,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:20>",
@@ -638,7 +639,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:21>",
@@ -660,7 +662,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:22>",
@@ -682,7 +685,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": "<now>"
+        "deletedAt": "<now>",
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:23>",
@@ -704,7 +708,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:24>",
@@ -726,7 +731,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": "<now>"
+        "deletedAt": "<now>",
+        "appleHealthDeletedAt": null
       }
     ],
     "doseChanges": [],

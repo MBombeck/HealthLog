@@ -45,6 +45,7 @@ function row(overrides: Partial<SlotIntakeRow> = {}): SlotIntakeRow {
     syncVersion: 0,
     takenVia: null,
     deletedAt: null,
+    appleHealthDeletedAt: null,
     ...overrides,
   };
 }

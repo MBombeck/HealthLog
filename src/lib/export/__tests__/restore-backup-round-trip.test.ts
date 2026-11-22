@@ -174,7 +174,6 @@ function sourceClient() {
     illnessEpisode: empty,
     allergy: empty,
     familyHistoryEntry: empty,
-    appleHealthTombstone: empty,
     workout: {
       findMany: vi.fn().mockResolvedValue([
         {

@@ -109,6 +109,11 @@ const batchEntrySchema = z
           "The id MUST be stable across app restarts. An object description or memory address (`<Class: 0x…>`, `0x12ab34cd`) is a new value on every launch, so it can never match its own earlier row; such an entry is `skipped` with reason `unstable_external_id` while the rest of the batch still lands.",
       ),
     externalSourceVersion: z.string().min(1).max(120).optional(),
+    computedAt: isoDateTime()
+      .optional()
+      .describe(
+        "Since v1.49.0, on a `stats:` entry: when the client computed this day total. A write of the same row carrying an earlier `computedAt` than the stored row's is refused, `duplicate` with reason `stale`, so an out-of-order replay never replaces a newer total; an equal or later one writes. Without it the entry overwrites as before and the stored row forgets its time, so the next entry that states one writes. Ignored on every other entry.",
+      ),
     // v1.8.6 — optional per-entry source tag. Defaults to
     // `APPLE_HEALTH` server-side when omitted, so legacy clients are
     // unchanged. Restricted to the `{APPLE_HEALTH, MANUAL}` subset of
@@ -174,7 +179,7 @@ const batchEntryResult = z
       .string()
       .optional()
       .describe(
-        "Why a row was `skipped` or a `duplicate`. `tombstoned` (since v1.49.0): an immutable sample whose `(type, source, externalId)` names a row deleted earlier (in HealthLog, or through `DELETE /api/measurements/by-external-ids`); it stays deleted and nothing is written. A `stats:` aggregate is a day's total, not a sample, and a re-post writes it again. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`, `hour_bucket_unsupported_type`, `hour_bucket_too_old` (since v1.43): an hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent for the row as sent.",
+        "Why a row was `skipped` or a `duplicate`. `tombstoned` (since v1.49.0): an immutable sample whose `(type, source, externalId)` names a row the person deleted in HealthLog (web, app or MCP); it stays deleted and nothing is written. A sample the phone reported deleted through `DELETE /api/measurements/by-external-ids` is the other case: posted again, it is back in Apple Health, and the deleted row is written again in place (`updated`). A `stats:` aggregate is a day's total, not a sample, and a re-post writes it again either way. `stale` (since v1.49.0): a `stats:` entry whose `computedAt` is earlier than the one the stored row was written with; the newer total stays. `superseded_in_batch`: a later entry of the same batch carries the same `stats:` id. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`, `hour_bucket_unsupported_type`, `hour_bucket_too_old` (since v1.43): an hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent for the row as sent.",
       ),
     convertedValue: z
       .number()

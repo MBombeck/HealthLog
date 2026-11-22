@@ -271,7 +271,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
     {
       id: result.id,
       status: result.outcome,
-      ...(result.reason ? { reason: result.reason } : {}),
       recordedAt: body.recordedAt,
       sampleCount: result.sampleCount,
       durationSeconds: result.durationSeconds,

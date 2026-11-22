@@ -31,6 +31,7 @@ export const symptomEventBackupSchema = z
     source: z.string().min(1).max(40).optional(),
     externalId: z.string().min(1).max(120).nullable().optional(),
     deletedAt: isoDateTime.nullable().optional(),
+    appleHealthDeletedAt: isoDateTime.nullable().optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
   })

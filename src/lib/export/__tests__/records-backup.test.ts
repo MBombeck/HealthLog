@@ -156,7 +156,6 @@ function buildMockPrisma() {
         },
       ]),
     },
-    appleHealthTombstone: { findMany: vi.fn().mockResolvedValue([]) },
     workout: {
       findMany: vi.fn().mockResolvedValue([
         {

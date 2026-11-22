@@ -764,6 +764,12 @@ export const medicationIntakeEventResource = z
       .describe(
         "Soft-delete tombstone. Non-null rows are excluded from every list/aggregate read; sync readers use it to propagate deletions.",
       ),
+    appleHealthDeletedAt: isoDateTime()
+      .nullable()
+      .optional()
+      .describe(
+        "Since v1.49.0: who deleted a tombstone. Equal to `deletedAt` when the phone reported the dose deleted through `DELETE /api/medications/intake/by-external-ids`; null, or different, when it was deleted in HealthLog. A re-post of a dose deleted in HealthLog is refused (`duplicate`, reason `tombstoned`), one the phone reported is written again. Null on every live row; do not show it.",
+      ),
   })
   .meta({
     id: "MedicationIntakeEvent",

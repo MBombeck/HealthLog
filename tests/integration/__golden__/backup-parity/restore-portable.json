@@ -533,6 +533,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -559,6 +561,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -585,6 +589,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -611,6 +617,8 @@
         "deviceType": "rt-Measurement-deviceType",
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -816,7 +824,8 @@
         "externalId": null,
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:11>",
@@ -838,7 +847,8 @@
         "externalId": null,
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "MedicationSideEffect": [
@@ -978,7 +988,8 @@
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "MoodContext": [
@@ -1233,8 +1244,9 @@
         "source": "rt-SymptomEvent-source",
         "externalId": "rt-SymptomEvent-externalId",
         "deletedAt": null,
-        "createdAt": "2026-05-03T03:31:00.000Z",
-        "updatedAt": "2026-05-03T03:32:00.000Z"
+        "appleHealthDeletedAt": null,
+        "createdAt": "2026-05-03T03:32:00.000Z",
+        "updatedAt": "2026-05-03T03:33:00.000Z"
       },
       {
         "id": "<id:38>",
@@ -1248,8 +1260,9 @@
         "source": "MANUAL",
         "externalId": null,
         "deletedAt": null,
-        "createdAt": "2026-05-03T03:31:01.000Z",
-        "updatedAt": "2026-05-03T03:32:01.000Z"
+        "appleHealthDeletedAt": null,
+        "createdAt": "2026-05-03T03:32:01.000Z",
+        "updatedAt": "2026-05-03T03:33:01.000Z"
       },
       {
         "id": "<id:39>",
@@ -1263,8 +1276,9 @@
         "source": "MANUAL",
         "externalId": null,
         "deletedAt": null,
-        "createdAt": "2026-05-03T03:31:02.000Z",
-        "updatedAt": "2026-05-03T03:32:02.000Z"
+        "appleHealthDeletedAt": null,
+        "createdAt": "2026-05-03T03:32:02.000Z",
+        "updatedAt": "2026-05-03T03:33:02.000Z"
       }
     ],
     "SeizureTypeProfile": [
@@ -1495,6 +1509,7 @@
         "tz": "rt-CycleDayLog-tz",
         "syncVersion": 0,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>"
       }
@@ -2266,7 +2281,6 @@
         "updatedAt": "2026-05-06T19:54:00.000Z"
       }
     ],
-    "AppleHealthTombstone": [],
     "OnboardingRecord": [
       {
         "id": "<id:92>",
@@ -2355,7 +2369,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-07T02:26:00.000Z"
+        "mergedAt": "2026-05-07T00:46:00.000Z"
       }
     ],
     "LabResultDocumentLink": [],
@@ -2365,7 +2379,7 @@
         "encounterId": "<id:57>",
         "medicationId": "<id:7>",
         "userId": "round-trip-owner",
-        "createdAt": "2026-05-07T05:44:00.000Z"
+        "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "EncounterVaccinationLink": [
@@ -2374,7 +2388,7 @@
         "encounterId": "<id:57>",
         "vaccinationId": "<id:60>",
         "userId": "round-trip-owner",
-        "createdAt": "2026-05-07T07:24:00.000Z"
+        "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
     "MedicationDocumentLink": [],
@@ -2384,7 +2398,7 @@
         "medicationId": "<id:7>",
         "episodeId": "<id:30>",
         "userId": "round-trip-owner",
-        "createdAt": "2026-05-07T10:44:00.000Z"
+        "createdAt": "2026-05-07T09:04:00.000Z"
       }
     ],
     "AccountGrant": [
@@ -3330,7 +3344,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-07T02:26:00.000Z"
+        "mergedAt": "2026-05-07T00:46:00.000Z"
       }
     ],
     "labResultImportKeys": [
@@ -4138,8 +4152,8 @@
             "endAt": "2026-06-30T12:34:56.789Z",
             "source": "rt-SymptomEvent-source",
             "externalId": "rt-SymptomEvent-externalId",
-            "createdAt": "2026-05-03T03:31:00.000Z",
-            "updatedAt": "2026-05-03T03:32:00.000Z"
+            "createdAt": "2026-05-03T03:32:00.000Z",
+            "updatedAt": "2026-05-03T03:33:00.000Z"
           },
           {
             "note": null,
@@ -4149,8 +4163,8 @@
             "endAt": null,
             "source": "MANUAL",
             "externalId": null,
-            "createdAt": "2026-05-03T03:31:02.000Z",
-            "updatedAt": "2026-05-03T03:32:02.000Z"
+            "createdAt": "2026-05-03T03:32:02.000Z",
+            "updatedAt": "2026-05-03T03:33:02.000Z"
           }
         ]
       },
@@ -4171,8 +4185,8 @@
             "endAt": null,
             "source": "MANUAL",
             "externalId": null,
-            "createdAt": "2026-05-03T03:31:01.000Z",
-            "updatedAt": "2026-05-03T03:32:01.000Z"
+            "createdAt": "2026-05-03T03:32:01.000Z",
+            "updatedAt": "2026-05-03T03:33:01.000Z"
           }
         ]
       }
@@ -4322,14 +4336,14 @@
       {
         "encounterId": "<id:19>",
         "medicationId": "<id:5>",
-        "createdAt": "2026-05-07T05:44:00.000Z"
+        "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
         "encounterId": "<id:19>",
         "vaccinationId": "<id:22>",
-        "createdAt": "2026-05-07T07:24:00.000Z"
+        "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
     "medicationDocumentLinks": [],
@@ -4337,7 +4351,7 @@
       {
         "medicationId": "<id:5>",
         "episodeId": "<id:14>",
-        "createdAt": "2026-05-07T10:44:00.000Z"
+        "createdAt": "2026-05-07T09:04:00.000Z"
       }
     ],
     "nutrientDays": [

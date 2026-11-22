@@ -47,6 +47,7 @@ const MOOD_ENTRY_BACKUP_SELECT = {
   syncedAt: true,
   syncVersion: true,
   deletedAt: true,
+  appleHealthDeletedAt: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.MoodEntrySelect;
@@ -225,6 +226,13 @@ function serialiseMoodEntry(
             : null,
           syncedAt: moodEntry.syncedAt.toISOString(),
           syncVersion: moodEntry.syncVersion,
+          // Who deleted a tombstone: only where the phone reported it.
+          ...(moodEntry.appleHealthDeletedAt
+            ? {
+                appleHealthDeletedAt:
+                  moodEntry.appleHealthDeletedAt.toISOString(),
+              }
+            : {}),
           createdAt: moodEntry.createdAt.toISOString(),
           updatedAt: moodEntry.updatedAt.toISOString(),
           // When each link was written, by tag key, for both link arms.

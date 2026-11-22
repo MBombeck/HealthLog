@@ -74,6 +74,8 @@ export const moodEntrySchema = z
     syncedAt: isoDateTime.optional(),
     syncVersion: z.number().int().optional(),
     deletedAt: isoDateTime.nullable().optional(),
+    // Equal to `deletedAt` when the phone reported the deletion (v1.49.0).
+    appleHealthDeletedAt: isoDateTime.nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
     factors: z.array(moodFactorSchema).default([]),

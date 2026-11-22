@@ -72,6 +72,10 @@ export interface MeasurementInsertRow {
   timeZone?: string | null;
   syncVersion: number;
   deletedAt: Date | null;
+  /** Equal to `deletedAt` when the phone reported the deletion. */
+  appleHealthDeletedAt?: Date | null;
+  /** When the phone computed a `stats:` day total. */
+  statsComputedAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -106,6 +110,8 @@ const COLUMNS: { [K in keyof MeasurementInsertRow]-?: [string, Kind] } = {
   timeZone: ["time_zone", "text"],
   syncVersion: ["sync_version", "int4"],
   deletedAt: ["deleted_at", "timestamp"],
+  appleHealthDeletedAt: ["apple_health_deleted_at", "timestamp"],
+  statsComputedAt: ["stats_computed_at", "timestamp"],
   createdAt: ["created_at", "timestamp"],
   updatedAt: ["updated_at", "timestamp"],
 };
@@ -231,6 +237,8 @@ export type NewMeasurementRow = Omit<
   | "rhythmClassification"
   | "syncVersion"
   | "deletedAt"
+  | "appleHealthDeletedAt"
+  | "statsComputedAt"
   | "createdAt"
   | "updatedAt"
 > &
@@ -243,6 +251,7 @@ export type NewMeasurementRow = Omit<
       | "aggregationProvenance"
       | "glucoseContext"
       | "rhythmClassification"
+      | "statsComputedAt"
     >
   >;
 
@@ -286,6 +295,8 @@ export async function insertNewMeasurementRows(
     timeZone: row.timeZone ?? null,
     syncVersion: 1,
     deletedAt: null,
+    appleHealthDeletedAt: null,
+    statsComputedAt: row.statsComputedAt ?? null,
     createdAt: now,
     updatedAt: now,
   }));

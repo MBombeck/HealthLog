@@ -34,6 +34,10 @@ import {
   type BatchContext,
 } from "./entry";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
+import {
+  deletedInHealthLog,
+  type TombstoneOrigin,
+} from "@/lib/sync/tombstone-repost";
 
 interface BatchInput {
   user: Pick<SessionUser, "id" | "timezone">;
@@ -60,9 +64,11 @@ export type BulkIntakeOutcome =
  * `(user_id, external_id)` unique (migration 0239) is the race backstop.
  *
  * A deleted Apple Health dose with no live row under its UUID is a
- * tombstone: its entry is refused, `duplicate` with reason `tombstoned`, so a
- * fresh install reading the whole Apple Health history does not bring back a
- * dose deleted in HealthLog (iOS #191, `tombstone-repost.ts`).
+ * tombstone. When its newest deletion was the person's, in HealthLog, the
+ * entry is refused, `duplicate` with reason `tombstoned`, so a fresh install
+ * reading the whole Apple Health history does not bring the dose back or take
+ * its stock again (iOS #191). When the phone reported it deleted in Apple
+ * Health, the re-post lands as a new dose (`tombstone-repost.ts`).
  */
 async function loadKnownExternalIds(
   userId: string,
@@ -87,12 +93,27 @@ async function loadKnownExternalIds(
         externalId: { in: batchExternalIds },
         OR: [{ deletedAt: null }, { source: APP_MINTED_SOURCE }],
       },
-      select: { id: true, externalId: true, deletedAt: true },
+      select: {
+        id: true,
+        externalId: true,
+        deletedAt: true,
+        appleHealthDeletedAt: true,
+      },
     });
+    const newestTombstone = new Map<string, TombstoneOrigin>();
     for (const row of existingExternalRows) {
       if (!row.externalId) continue;
-      if (!row.deletedAt) rowIdByExternalId.set(row.externalId, row.id);
-      else deleted.add(row.externalId);
+      if (!row.deletedAt) {
+        rowIdByExternalId.set(row.externalId, row.id);
+        continue;
+      }
+      const held = newestTombstone.get(row.externalId);
+      if (!held || held.deletedAt!.getTime() < row.deletedAt.getTime()) {
+        newestTombstone.set(row.externalId, row);
+      }
+    }
+    for (const [externalId, row] of newestTombstone) {
+      if (deletedInHealthLog(row)) deleted.add(externalId);
     }
   }
   const tombstoned = new Set(

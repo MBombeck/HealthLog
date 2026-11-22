@@ -99,12 +99,16 @@ export const INTEGRATION_CYCLE_SOURCE: Partial<
 export async function getMeasurementFreshnessBySource(
   userId: string,
   sources: readonly MeasurementSource[],
+  options: { withOldest?: boolean } = {},
 ): Promise<Map<MeasurementSource, MetricFreshnessSample[]>> {
   const out = new Map<MeasurementSource, MetricFreshnessSample[]>();
   const perSource = await Promise.all(
     [...new Set(sources)].map(async (source) => {
       const types = await listLiveMeasurementTypes(userId, { source });
-      return { source, samples: await newestPerType(userId, source, types) };
+      return {
+        source,
+        samples: await newestPerType(userId, source, types, options),
+      };
     }),
   );
   for (const { source, samples } of perSource) {
@@ -113,15 +117,25 @@ export async function getMeasurementFreshnessBySource(
   return out;
 }
 
+/**
+ * The newest live reading of each type from one source, and with
+ * `withOldest` the oldest one too: two `LIMIT 1` probes per type down the
+ * `(user_id, type, measured_at, …)` unique index, one from each end, in the
+ * same statement. The oldest is what the iPhone app's history walk jumps to
+ * (`oldestSeenAt` on `GET /api/integrations/healthkit`, iOS #191): below it
+ * the server holds nothing of the type from that source.
+ */
 async function newestPerType(
   userId: string,
   source: MeasurementSource,
   types: readonly MeasurementType[],
+  options: { withOldest?: boolean } = {},
 ): Promise<MetricFreshnessSample[]> {
   if (types.length === 0) return [];
+  const withOldest = options.withOldest === true;
   // Parameter-bound throughout; the enum casts are literal SQL.
   const rows = await prisma.$queryRaw<
-    Array<{ type: string; last_seen: Date | null }>
+    Array<{ type: string; last_seen: Date | null; first_seen: Date | null }>
   >`
     SELECT live."type"::text AS "type",
       (
@@ -133,7 +147,17 @@ async function newestPerType(
           AND m."source" = ${source}::"measurement_source"
         ORDER BY m."measured_at" DESC
         LIMIT 1
-      ) AS "last_seen"
+      ) AS "last_seen",
+      CASE WHEN ${withOldest} THEN (
+        SELECT m."measured_at"
+        FROM "measurements" m
+        WHERE m."user_id" = ${userId}
+          AND m."type" = live."type"
+          AND m."deleted_at" IS NULL
+          AND m."source" = ${source}::"measurement_source"
+        ORDER BY m."measured_at" ASC
+        LIMIT 1
+      ) END AS "first_seen"
     FROM unnest(${[...types]}::"measurement_type"[]) AS live("type")
   `;
   const samples: MetricFreshnessSample[] = [];
@@ -142,32 +166,40 @@ async function newestPerType(
     samples.push({
       type: row.type,
       lastSeenAt: new Date(row.last_seen).toISOString(),
+      ...(withOldest && row.first_seen
+        ? { oldestSeenAt: new Date(row.first_seen).toISOString() }
+        : {}),
     });
   }
   return samples;
 }
 
 /**
- * Newest workout per source. `Workout` rows are hard-deleted, so there is no
- * tombstone predicate to apply.
+ * Newest (and oldest) workout per source. `Workout` rows are hard-deleted, so
+ * there is no tombstone predicate to apply.
  */
 export async function getWorkoutFreshnessBySource(
   userId: string,
   sources: readonly MeasurementSource[],
-): Promise<Map<MeasurementSource, string>> {
-  const out = new Map<MeasurementSource, string>();
+): Promise<Map<MeasurementSource, { newest: string; oldest: string }>> {
+  const out = new Map<MeasurementSource, { newest: string; oldest: string }>();
   if (sources.length === 0) return out;
 
   const grouped = await prisma.workout.groupBy({
     by: ["source"],
     where: { userId, source: { in: [...sources] } },
     _max: { startedAt: true },
+    _min: { startedAt: true },
   });
 
   for (const row of grouped) {
     const lastSeen = row._max.startedAt;
-    if (!lastSeen) continue;
-    out.set(row.source, lastSeen.toISOString());
+    const firstSeen = row._min.startedAt;
+    if (!lastSeen || !firstSeen) continue;
+    out.set(row.source, {
+      newest: lastSeen.toISOString(),
+      oldest: firstSeen.toISOString(),
+    });
   }
   return out;
 }
@@ -209,15 +241,16 @@ export async function getSourceFreshness(
   source: MeasurementSource,
 ): Promise<MetricFreshnessSample[]> {
   const [measurements, workouts] = await Promise.all([
-    getMeasurementFreshnessBySource(userId, [source]),
+    getMeasurementFreshnessBySource(userId, [source], { withOldest: true }),
     getWorkoutFreshnessBySource(userId, [source]),
   ]);
   const entries = measurements.get(source) ?? [];
-  const workoutSeenAt = workouts.get(source);
-  if (workoutSeenAt) {
+  const workoutSeen = workouts.get(source);
+  if (workoutSeen) {
     entries.push({
       type: WORKOUT_FRESHNESS_TYPE,
-      lastSeenAt: workoutSeenAt,
+      lastSeenAt: workoutSeen.newest,
+      oldestSeenAt: workoutSeen.oldest,
     });
   }
   return sortByType(entries);
@@ -236,18 +269,23 @@ export async function getSourceFreshness(
 export async function getAppleHealthDoseFreshness(
   userId: string,
 ): Promise<MetricFreshnessSample | null> {
-  const rows = await prisma.$queryRaw<Array<{ last_seen: Date | null }>>`
-    SELECT max(COALESCE(e."taken_at", e."scheduled_for")) AS "last_seen"
+  const rows = await prisma.$queryRaw<
+    Array<{ last_seen: Date | null; first_seen: Date | null }>
+  >`
+    SELECT max(COALESCE(e."taken_at", e."scheduled_for")) AS "last_seen",
+      min(COALESCE(e."taken_at", e."scheduled_for")) AS "first_seen"
     FROM "medication_intake_events" e
     WHERE e."user_id" = ${userId}
       AND e."external_id" IS NOT NULL
       AND e."deleted_at" IS NULL
   `;
   const lastSeen = rows[0]?.last_seen;
+  const firstSeen = rows[0]?.first_seen;
   if (!lastSeen) return null;
   return {
     type: MEDICATION_DOSE_FRESHNESS_TYPE,
     lastSeenAt: new Date(lastSeen).toISOString(),
+    ...(firstSeen ? { oldestSeenAt: new Date(firstSeen).toISOString() } : {}),
   };
 }
 
@@ -324,11 +362,11 @@ export async function getSourceMetricFreshness(
   for (const [key, source] of Object.entries(
     INTEGRATION_WORKOUT_SOURCE,
   ) as Array<[IntegrationKey, MeasurementSource]>) {
-    const lastSeenAt = workouts.get(source);
-    if (!lastSeenAt) continue;
+    const seen = workouts.get(source);
+    if (!seen) continue;
     (out[key] ??= []).push({
       type: WORKOUT_FRESHNESS_TYPE,
-      lastSeenAt,
+      lastSeenAt: seen.newest,
     });
   }
 

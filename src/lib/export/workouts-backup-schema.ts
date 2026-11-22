@@ -9,7 +9,6 @@
 import { z } from "zod/v4";
 import { MeasurementSource } from "@/generated/prisma/enums";
 import { isoDateTime } from "@/lib/export/backup-schema-kit";
-import { APPLE_HEALTH_TOMBSTONE_DOMAINS } from "@/lib/sync/apple-health-tombstones";
 
 export const workoutBackupSchema = z
   .object({
@@ -32,18 +31,5 @@ export const workoutBackupSchema = z
     metadata: z.json().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
-  })
-  .passthrough();
-
-/**
- * One Apple Health sample the phone reported deleted (disaster-recovery files
- * only). Restored as written, so a late re-post after the restore stays
- * deleted as it did before.
- */
-export const appleHealthTombstoneBackupSchema = z
-  .object({
-    domain: z.enum(APPLE_HEALTH_TOMBSTONE_DOMAINS),
-    externalId: z.string().min(1).max(120),
-    createdAt: isoDateTime,
   })
   .passthrough();

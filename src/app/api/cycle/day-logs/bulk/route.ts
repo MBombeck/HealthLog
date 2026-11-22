@@ -39,7 +39,11 @@ import {
   UNSTABLE_EXTERNAL_ID_REASON,
   type UnstableExternalIdShape,
 } from "@/lib/validations/external-id";
-import { upsertCycleDayLog } from "@/lib/cycle/day-log-write";
+import {
+  upsertCycleDayLog,
+  type DayLogWriteResult,
+} from "@/lib/cycle/day-log-write";
+import { TOMBSTONED_ENTRY } from "@/lib/sync/tombstone-repost";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -52,6 +56,20 @@ interface EntryResult {
   id?: string;
   externalId?: string;
   reason?: string;
+}
+
+/**
+ * The entry's answer for one write. A refused write is an Apple Health
+ * re-post of a day the person deleted in HealthLog: nothing was written
+ * (`tombstone-repost.ts`).
+ */
+function entryOutcome(r: DayLogWriteResult): {
+  status: EntryStatus;
+  reason?: string;
+} {
+  if (r.refused) return TOMBSTONED_ENTRY;
+  if (!r.existed) return { status: "inserted" };
+  return { status: r.changed ? "updated" : "duplicate" };
 }
 
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postBulk));
@@ -166,23 +184,18 @@ async function postBulk(request: NextRequest): Promise<Response> {
         tz,
         cycleId,
         encryptSensitive,
+        { refuseDeletedInHealthLog: true },
       );
 
-      let status: EntryStatus;
-      if (!r.existed) {
-        status = "inserted";
-        inserted += 1;
-      } else if (r.changed) {
-        status = "updated";
-        updated += 1;
-      } else {
-        status = "duplicate";
-        duplicates += 1;
-      }
+      const { status, reason } = entryOutcome(r);
+      if (status === "inserted") inserted += 1;
+      else if (status === "updated") updated += 1;
+      else duplicates += 1;
 
       results.push({
         index: i,
         status,
+        ...(reason ? { reason } : {}),
         id: r.id,
         ...(entry.externalId ? { externalId: entry.externalId } : {}),
       });

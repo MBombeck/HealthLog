@@ -61,7 +61,14 @@ type Verdict = Pick<MeasurementReconciliationVerdict, "status"> &
     dirtyIdentities: Array<{ type: MeasurementType; measuredAt: Date }>;
     error: { code?: string };
     tombstoned: boolean;
+    stale: boolean;
   }>;
+
+/**
+ * The `reason` of a `stats:` write refused because the stored total was
+ * computed later than the entry's (`computedAt`).
+ */
+export const STALE_STATS_REASON = "stale" as const;
 
 /** What the reads before the write loop found for this batch. */
 interface StoredState {
@@ -95,6 +102,9 @@ function desiredFor(userId: string, p: PreparedEntry) {
     deviceType: p.row.deviceType as string | null,
     timeZone: p.row.timeZone as string | null,
     aggregationProvenance: statsRow ? ("HEALTHKIT_STATISTICS" as const) : null,
+    ...(statsRow
+      ? { statsComputedAt: (p.row.statsComputedAt as Date | null) ?? null }
+      : {}),
     // Only a bridge row names its token (#1272); a phone row leaves the
     // column as it is.
     ...(p.row.ingestTokenId
@@ -324,6 +334,19 @@ export class MeasurementBatchWriter {
       return;
     }
 
+    // A newer total stays: the stored row was computed after this entry
+    // (an out-of-order replay). Decided again under the reconciler's lock,
+    // which answers the same for a total that lands in between.
+    if (statsRow && this.isStaleStatsRow(p)) {
+      this.results[p.index] = {
+        index: p.index,
+        status: "duplicate",
+        reason: STALE_STATS_REASON,
+      };
+      this.duplicateCount++;
+      return;
+    }
+
     if (statsRow && this.isUnchangedStatsRow(p)) {
       this.results[p.index] = { index: p.index, status: "updated" };
       this.unchangedStatsCount++;
@@ -393,13 +416,14 @@ export class MeasurementBatchWriter {
   }
 
   private isExactStoredDuplicate(p: PreparedEntry): boolean {
+    const stored = this.stored.existingByExternalKey.get(
+      externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+    );
     return (
-      sampleIsStoredDuplicate(
-        this.stored.existingByExternalKey.get(
-          externalKeyOf(p.row.type, p.row.source, p.row.externalId),
-        ),
-        p.row,
-      ) &&
+      sampleIsStoredDuplicate(stored, p.row) &&
+      // A sample the phone reported deleted in Apple Health and now posts
+      // again is written again, by the reconciler (`tombstone-repost.ts`).
+      !(stored?.deleted === true && !stored.refused) &&
       this.stored.onceInThisBatch(p.row) &&
       classifyRangeRejection(
         p.row.type as MeasurementType,
@@ -408,12 +432,24 @@ export class MeasurementBatchWriter {
     );
   }
 
-  /** The prefiltered duplicate's stored row is a deleted one. */
+  /** The prefiltered duplicate's stored row was deleted in HealthLog. */
   private isStoredTombstone(p: PreparedEntry): boolean {
     return (
       this.stored.existingByExternalKey.get(
         externalKeyOf(p.row.type, p.row.source, p.row.externalId),
-      )?.deleted === true
+      )?.refused === true
+    );
+  }
+
+  private isStaleStatsRow(p: PreparedEntry): boolean {
+    const incoming = p.row.statsComputedAt;
+    const stored = this.stored.storedStats.get(
+      externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+    )?.statsComputedAt;
+    return (
+      incoming instanceof Date &&
+      stored instanceof Date &&
+      stored.getTime() > incoming.getTime()
     );
   }
 
@@ -478,7 +514,13 @@ export class MeasurementBatchWriter {
       case "duplicate":
         this.results[p.index] = verdict.tombstoned
           ? { index: p.index, ...TOMBSTONED_ENTRY }
-          : { index: p.index, status: "duplicate" };
+          : verdict.stale
+            ? {
+                index: p.index,
+                status: "duplicate",
+                reason: STALE_STATS_REASON,
+              }
+            : { index: p.index, status: "duplicate" };
         this.duplicateCount++;
         break;
       case "failed":

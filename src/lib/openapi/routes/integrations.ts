@@ -272,6 +272,11 @@ const metricFreshnessEntry = z
 // `HealthKitFreshnessEntry` in `src/lib/integrations/healthkit-type-sync.ts`.
 const appleHealthMetricFreshnessEntry = metricFreshnessEntry
   .extend({
+    oldestSeenAt: isoDateTime()
+      .optional()
+      .describe(
+        "Since v1.49.0: the oldest stored reading of this type from Apple Health, in the same scope as `lastSeenAt` (live rows only; the oldest `takenAt`, or slot of a skipped dose, on `MEDICATION_DOSE`; the oldest start on `WORKOUTS`). Below it the server holds nothing of the type from Apple Health, so a history walk that has met only duplicates can jump here and go on below. Unlike `lastSeenAt` on a type the app writes back, it never counts a reading entered here. Absent on a server before v1.49.0.",
+      ),
     lastReceivedAt: isoDateTime()
       .nullable()
       .optional()

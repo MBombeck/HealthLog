@@ -229,6 +229,12 @@ function toRestoredMeasurementData(
         : null,
     syncVersion: measurement.syncVersion ?? 1,
     deletedAt: measurement.deletedAt ? new Date(measurement.deletedAt) : null,
+    appleHealthDeletedAt: measurement.appleHealthDeletedAt
+      ? new Date(measurement.appleHealthDeletedAt)
+      : null,
+    statsComputedAt: measurement.statsComputedAt
+      ? new Date(measurement.statsComputedAt)
+      : null,
     ...(measurement.createdAt
       ? { createdAt: new Date(measurement.createdAt) }
       : {}),

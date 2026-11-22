@@ -27,6 +27,11 @@ export interface BatchIngestEntry {
   assessmentAnswers?: number[];
   externalId: string;
   externalSourceVersion?: string;
+  /**
+   * When the phone computed a `stats:` day total (ISO). Compared with the
+   * stored row's; ignored on every other entry.
+   */
+  computedAt?: string;
   source?: "APPLE_HEALTH" | "MANUAL";
   deviceType?: DeviceType | null;
   /**

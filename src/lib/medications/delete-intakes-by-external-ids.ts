@@ -11,13 +11,15 @@
  * evicted and the other devices told once for the whole batch rather than
  * per event.
  *
- * A later re-post of a deleted dose's externalId through the bulk route is
- * refused per entry (`duplicate`, reason `tombstoned`), however the dose was
- * deleted: here, or in HealthLog (`deleteIntakeEvent`). That is decided at the
- * ingest, not by the index: the unique on `(user_id, external_id)`
- * (migration 0239) stays partial over live rows, so the tombstone never
- * blocks the ledger itself (an undo or a restore of the deleted row still
- * lands), only the re-import of the same Apple Health dose event.
+ * The tombstone is stamped as Apple Health's deletion, so a later re-post of
+ * the dose event (it came back in HealthKit) lands as a new dose and takes
+ * its stock again. A dose deleted in HealthLog (`deleteIntakeEvent`) is the
+ * other case: its re-post is refused per entry (`duplicate`, reason
+ * `tombstoned`). That is decided at the ingest, not by the index: the unique
+ * on `(user_id, external_id)` (migration 0239) stays partial over live rows,
+ * so the tombstone never blocks the ledger itself (an undo or a restore of
+ * the deleted row still lands), only the re-import of the same Apple Health
+ * dose event (`tombstone-repost.ts`).
  */
 import { prisma } from "@/lib/db";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
@@ -26,6 +28,7 @@ import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
+import { appleHealthDeletion } from "@/lib/sync/tombstone-repost";
 
 export async function deleteAppleHealthIntakes(
   user: { id: string; timezone: string | null },
@@ -55,7 +58,7 @@ export async function deleteAppleHealthIntakes(
     });
     const { count } = await prisma.medicationIntakeEvent.updateMany({
       where: { id: event.id, deletedAt: null },
-      data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
+      data: { ...appleHealthDeletion(), syncVersion: { increment: 1 } },
     });
     if (count === 0) continue;
     deleted += count;

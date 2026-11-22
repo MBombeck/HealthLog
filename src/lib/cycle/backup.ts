@@ -144,6 +144,8 @@ export interface CycleBackupSection {
     tz: string | null;
     syncVersion?: number;
     deletedAt?: string | null;
+    /** Disaster recovery, where set: `deletedAt` if the phone deleted it. */
+    appleHealthDeletedAt?: string;
     createdAt?: string;
     updatedAt?: string;
     /**
@@ -320,6 +322,9 @@ export async function buildCycleBackupSection(
             cycleId: d.cycleId,
             syncVersion: d.syncVersion,
             deletedAt: d.deletedAt?.toISOString() ?? null,
+            ...(d.appleHealthDeletedAt
+              ? { appleHealthDeletedAt: d.appleHealthDeletedAt.toISOString() }
+              : {}),
             createdAt: d.createdAt.toISOString(),
             updatedAt: d.updatedAt.toISOString(),
           }
@@ -533,6 +538,25 @@ function dayLogSymptomLinks(
         ]
       : [];
   });
+}
+
+/** A day-log's tombstone, its origin and timestamps, as the file has them. */
+function restoredDayLogStamps(
+  d: Partial<
+    Record<
+      "deletedAt" | "appleHealthDeletedAt" | "createdAt" | "updatedAt",
+      string | null
+    >
+  >,
+) {
+  return {
+    deletedAt: d.deletedAt ? new Date(d.deletedAt) : null,
+    appleHealthDeletedAt: d.appleHealthDeletedAt
+      ? new Date(d.appleHealthDeletedAt)
+      : null,
+    ...(d.createdAt ? { createdAt: new Date(d.createdAt) } : {}),
+    ...(d.updatedAt ? { updatedAt: new Date(d.updatedAt) } : {}),
+  };
 }
 
 /**
@@ -758,9 +782,7 @@ export async function restoreCycleData(
         externalId: d.externalId ?? null,
         tz: d.tz ?? null,
         syncVersion: d.syncVersion ?? 0,
-        deletedAt: d.deletedAt ? new Date(d.deletedAt) : null,
-        ...(d.createdAt ? { createdAt: new Date(d.createdAt) } : {}),
-        ...(d.updatedAt ? { updatedAt: new Date(d.updatedAt) } : {}),
+        ...restoredDayLogStamps(d),
         ...(symptomLinks.length > 0
           ? { symptomLinks: { create: symptomLinks } }
           : {}),

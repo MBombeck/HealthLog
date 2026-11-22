@@ -439,6 +439,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -465,6 +467,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -491,6 +495,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -517,6 +523,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -638,7 +646,8 @@
         "externalId": null,
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:9>",
@@ -660,7 +669,8 @@
         "externalId": null,
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "MedicationSideEffect": [],
@@ -705,7 +715,8 @@
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:12>",
@@ -729,7 +740,8 @@
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "MoodContext": [],
@@ -949,7 +961,6 @@
     "MedicationScheduleRevision": [],
     "MedicationEfficacyTarget": [],
     "EcgRecording": [],
-    "AppleHealthTombstone": [],
     "OnboardingRecord": [],
     "BiomarkerAlias": [],
     "BiomarkerMerge": [],
@@ -1810,7 +1821,6 @@
         "externalId": null
       }
     ],
-    "appleHealthTombstones": [],
     "documents": [],
     "manifest": {
       "documents": {

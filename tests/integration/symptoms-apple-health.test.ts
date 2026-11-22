@@ -507,20 +507,22 @@ describe("DELETE /api/symptoms/events/by-external-ids", () => {
     );
   });
 
-  it("a re-post of a deleted sample stays deleted", async () => {
+  it("a sample the phone reported deleted comes back when it is posted again", async () => {
     const id = "A0000000-0000-4000-8000-000000000080";
     await ingest([sample(id)]);
     await deleteByExternalIds([id]);
-    const replay = await ingest([sample(id)]);
-    expect(replay.entries).toEqual([
-      { index: 0, status: "duplicate", reason: "tombstoned" },
-    ]);
-    expect(
-      await getPrismaClient().symptomEvent.count({
-        where: { externalId: id },
-      }),
-    ).toBe(1);
     expect(await listEvents()).toEqual([]);
+    // Back in HealthKit: written again, on the same row.
+    const replay = await ingest([sample(id, { intensity: 4 })]);
+    expect(replay.entries).toEqual([{ index: 0, status: "inserted" }]);
+    const rows = await getPrismaClient().symptomEvent.findMany({
+      where: { externalId: id },
+      select: { deletedAt: true, appleHealthDeletedAt: true, intensity: true },
+    });
+    expect(rows).toEqual([
+      { deletedAt: null, appleHealthDeletedAt: null, intensity: 4 },
+    ]);
+    expect((await listEvents()).map((e) => e.externalId)).toEqual([id]);
   });
 
   it("the person's own delete of an import tombstones it too", async () => {
@@ -538,8 +540,12 @@ describe("DELETE /api/symptoms/events/by-external-ids", () => {
       { id: row.id },
     );
     expect(removed.status).toBe(200);
+    // Deleted in HealthLog: the re-post stays out (iOS #191).
     const replay = await ingest([sample(id)]);
-    expect(replay.entries[0].status).toBe("duplicate");
+    expect(replay.entries).toEqual([
+      { index: 0, status: "duplicate", reason: "tombstoned" },
+    ]);
+    expect(await listEvents()).toEqual([]);
     // A second delete finds nothing to delete.
     const twice = await call(
       DELETE,
@@ -804,8 +810,13 @@ describe("the backup", () => {
         externalId: r.externalId,
         endAt: r.endAt?.toISOString() ?? null,
         deletedAt: r.deletedAt?.toISOString() ?? null,
+        appleHealthDeletedAt: r.appleHealthDeletedAt?.toISOString() ?? null,
       }));
     expect(pick(after)).toEqual(pick(before));
+    // Who deleted it travels too: the phone, so the same instant.
+    expect(pick(after)[1]?.appleHealthDeletedAt).toBe(
+      pick(after)[1]?.deletedAt,
+    );
     expect(
       (
         await prisma.symptomDefinition.findFirstOrThrow({
@@ -813,11 +824,12 @@ describe("the backup", () => {
         })
       ).code,
     ).toBe("FEVER");
-    // The restored tombstone still keeps the replay out.
+    // The restored tombstone still knows the phone deleted it: a re-post
+    // (back in HealthKit) writes it again, as it would have before.
     const replay = await ingest([
       sample("A0000000-0000-4000-8000-000000000121"),
     ]);
-    expect(replay.entries[0].status).toBe("duplicate");
+    expect(replay.entries[0].status).toBe("inserted");
   });
 
   it("restores a file with a repeated code or sample without aborting, and an unknown code as a named symptom", async () => {

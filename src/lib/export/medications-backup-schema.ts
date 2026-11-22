@@ -397,5 +397,6 @@ export const intakeEventSchema = z
     updatedAt: isoDateTime.optional(),
     syncVersion: z.number().int().optional(),
     deletedAt: isoDateTime.nullable().optional(),
+    appleHealthDeletedAt: isoDateTime.nullable().optional(),
   })
   .passthrough();

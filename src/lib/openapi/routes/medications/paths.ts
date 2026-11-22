@@ -219,13 +219,13 @@ const bulkIntakeEntryResult = z
     status: z
       .enum(["inserted", "updated", "duplicate", "alreadyTaken", "skipped"])
       .describe(
-        '`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent replay of an entry already stored, nothing else; since v1.49.0 also the re-post of an Apple Health dose (`externalId`) deleted earlier, in HealthLog or through `DELETE /api/medications/intake/by-external-ids`, which carries `reason: "tombstoned"` and no `id`: it stays deleted and nothing was written. `alreadyTaken` — the slot already holds a take recorded by another writer or another key, and this entry was a take or a skip: nothing was written, no stock consumed or refunded; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose. `skipped` — not stored; see `reason`.',
+        '`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent replay of an entry already stored, nothing else; since v1.49.0 also the re-post of an Apple Health dose (`externalId`) the person deleted in HealthLog, which carries `reason: "tombstoned"` and no `id`: it stays deleted, nothing was written and no stock was taken. A dose the phone reported deleted through `DELETE /api/medications/intake/by-external-ids` is the other case: posted again, it is back in Apple Health and lands as a new dose (`inserted`). `alreadyTaken` — the slot already holds a take recorded by another writer or another key, and this entry was a take or a skip: nothing was written, no stock consumed or refunded; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose. `skipped` — not stored; see `reason`.',
       ),
     reason: z
       .string()
       .optional()
       .describe(
-        "On a `duplicate`: `tombstoned` (since v1.49.0) for a deleted dose's re-post. Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`, `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0) `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same answer.",
+        "On a `duplicate`: `tombstoned` (since v1.49.0) for the re-post of a dose deleted in HealthLog. Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`, `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0) `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same answer.",
       ),
     id: z.string().optional().describe("The landed row id (absent on skips)."),
     syncVersion: z

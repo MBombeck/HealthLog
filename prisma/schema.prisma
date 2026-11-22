@@ -1174,9 +1174,6 @@ model User {
   // The paired AFib verdict still lands as an IRREGULAR_RHYTHM_NOTIFICATION
   // Measurement EVENT row (v1.18.11); this holds the raw signal samples.
   ecgRecordings                             EcgRecording[]
-  // The Apple Health workouts and ECG recordings the phone reported
-  // deleted, so a late re-post of the same sample stays deleted.
-  appleHealthTombstones                     AppleHealthTombstone[]
   // v1.38.0 — visits. `Encounter` is one contact with the healthcare
   // system (happened or booked), `Practitioner` the account's own address
   // book, and the three link tables are what the visit produced. No
@@ -2307,6 +2304,18 @@ model Measurement {
   // recorded instant. The unique-by-externalId index keeps both
   // states distinguishable for the bulk-backfill UPSERT path.
   deletedAt             DateTime?                         @map("deleted_at")
+  /// When the phone reported this row deleted in Apple Health (the
+  /// `by-external-ids` delete). The deletion is Apple Health's while this
+  /// equals `deletedAt`; any other deletion (the person in HealthLog, the
+  /// server's own housekeeping) leaves it null or different. A re-post of a
+  /// row deleted in HealthLog is refused, one deleted in Apple Health may
+  /// come back (`src/lib/sync/tombstone-repost.ts`).
+  appleHealthDeletedAt  DateTime?                         @map("apple_health_deleted_at")
+  /// When the phone computed this `stats:` day total (`computedAt` on the
+  /// batch entry). A write of the same row carrying an earlier `computedAt`
+  /// is refused as `stale`, so an out-of-order replay never replaces a newer
+  /// total. Null on every other row, and on a total written without one.
+  statsComputedAt       DateTime?                         @map("stats_computed_at")
   createdAt             DateTime                          @default(now()) @map("created_at")
   updatedAt             DateTime                          @updatedAt @map("updated_at")
   /// The `measurements:write` token that carried this reading, set on every
@@ -2501,39 +2510,6 @@ model EcgRecording {
   // per deleted row (migration 0362).
   @@index([measurementId])
   @@map("ecg_recordings")
-}
-
-/// The Apple Health samples the phone reported deleted through
-/// `DELETE /api/workouts/by-external-ids` and
-/// `DELETE /api/insights/ecg/by-external-ids`.
-///
-/// Neither `Workout` nor `EcgRecording` has a tombstone column, and adding one
-/// would put a `deletedAt: null` on every reader of two widely read tables. The
-/// rows therefore still go outright, and this ledger remembers the HealthKit
-/// sample id instead, so a late re-post of a deleted sample answers
-/// `duplicate` and writes nothing: the rule mood entries keep with their
-/// `deletedAt`. Only `source = APPLE_HEALTH` rows are ever recorded, and no
-/// reader of workouts or recordings looks here.
-///
-/// `domain` is a closed set in app code: "workout" | "ecg"
-/// (`src/lib/sync/apple-health-tombstones.ts`).
-model AppleHealthTombstone {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  domain     String
-  /// The HealthKit sample UUID: `Workout.externalId` or
-  /// `EcgRecording.externalRecordingId` of the deleted row.
-  externalId String   @map("external_id")
-  /// When the phone reported the sample deleted. Named `createdAt` because
-  /// the row is the record of that deletion, not a soft-deleted row.
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, domain, externalId])
-  // The 75-day purge reads one account's rows by age (migration 0517).
-  @@index([userId, createdAt])
-  @@map("apple_health_tombstones")
 }
 
 // ─── Measurement rollups (v1.5.0) ──────────────────────────
@@ -3806,6 +3782,13 @@ model MedicationIntakeEvent {
   // keyed on the server `id`. NULL = live; non-NULL = tombstoned.
   // Read paths (today / compliance / lists) filter `deletedAt: null`.
   deletedAt            DateTime?               @map("deleted_at")
+  /// When the phone reported this row deleted in Apple Health (the
+  /// `by-external-ids` delete). The deletion is Apple Health's while this
+  /// equals `deletedAt`; any other deletion (the person in HealthLog, the
+  /// server's own housekeeping) leaves it null or different. A re-post of a
+  /// row deleted in HealthLog is refused, one deleted in Apple Health may
+  /// come back (`src/lib/sync/tombstone-repost.ts`).
+  appleHealthDeletedAt DateTime?               @map("apple_health_deleted_at")
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
@@ -4935,11 +4918,11 @@ model OAuthCallbackClaim {
 // ─── Mood Entries ─────────────────────────────────────────────
 
 model MoodEntry {
-  id            String    @id @default(cuid())
-  userId        String    @map("user_id")
-  date          String // YYYY-MM-DD — anchored to `tz` when not null, else legacy Europe/Berlin
-  mood          String // SUPER_GUT, GUT, OKAY, SCHLECHT, LAUSIG
-  score         Int // 1-5
+  id                   String    @id @default(cuid())
+  userId               String    @map("user_id")
+  date                 String // YYYY-MM-DD — anchored to `tz` when not null, else legacy Europe/Berlin
+  mood                 String // SUPER_GUT, GUT, OKAY, SCHLECHT, LAUSIG
+  score                Int // 1-5
   /// v1.37 — the five level-A self-state values, each 0-10 with its own
   /// anchors. `MOOD_DIMENSIONS` (`src/lib/mood/dimensions.ts`) is the one
   /// table binding a column to its label, its anchors and its orientation.
@@ -4977,12 +4960,12 @@ model MoodEntry {
   /// evidence, and averaging the two would weaken the line that makes the
   /// score worth showing to a doctor. The reasoning is written out at
   /// `src/lib/analytics/score/wellbeing.ts`.
-  moodA1        Int?      @map("mood_a1") // 0-10, pleasantness
-  stressA2      Int?      @map("stress_a2") // 0-10, inverse-oriented
-  energyA3      Int?      @map("energy_a3") // 0-10
-  connectionA4  Int?      @map("connection_a4") // 0-10
-  stabilityA5   Int?      @map("stability_a5") // 0-10
-  tags          String? // JSON array of tag keys
+  moodA1               Int?      @map("mood_a1") // 0-10, pleasantness
+  stressA2             Int?      @map("stress_a2") // 0-10, inverse-oriented
+  energyA3             Int?      @map("energy_a3") // 0-10
+  connectionA4         Int?      @map("connection_a4") // 0-10
+  stabilityA5          Int?      @map("stability_a5") // 0-10
+  tags                 String? // JSON array of tag keys
   /// v1.4.30 — first-class free-text note. Replaces the
   /// `tags: ["note:<text>"]` workaround the iOS app shipped through
   /// v0.4.1.1 (per R-E H-5); the prior pattern contaminated the
@@ -4995,16 +4978,16 @@ model MoodEntry {
   /// the encrypted column and null this; the boot-time backfill migrates the
   /// remaining rows. Column drop is a follow-up release once the backfill
   /// reports zero remaining.
-  note          String?   @db.Text
+  note                 String?   @db.Text
   /// v1.23 — free-text mood note, AES-256-GCM at rest (Bytes, matching the
   /// IllnessDayLog / CycleDayLog / LabResult note convention). Registered in
   /// ENCRYPTED_COLUMNS + the rotation script.
-  noteEncrypted Bytes?    @map("note_encrypted")
+  noteEncrypted        Bytes?    @map("note_encrypted")
   // Provenance. MANUAL / WEB / TELEGRAM / DAYLIO / MCP, plus the legacy
   // MOODLOG value carried by rows the retired moodLog bridge imported —
   // those rows are user history and keep their label. The column default
   // is legacy too; every writer sets `source` explicitly.
-  source        String    @default("MOODLOG")
+  source               String    @default("MOODLOG")
   // v1.12.1 — stable per-source dedup id. NULL for native / MANUAL
   // entries (those dedup on the legacy `(userId, date, moodLoggedAt)`
   // key). When an importer receives a source-stable id (an iOS row
@@ -5013,23 +4996,23 @@ model MoodEntry {
   // idempotent even when `moodLoggedAt` re-rounds / re-zones. Postgres
   // treats NULLs as distinct in that unique, so MANUAL rows never
   // collide on it. See migration 0122.
-  externalId    String?   @map("external_id")
-  moodLoggedAt  DateTime  @map("mood_logged_at")
+  externalId           String?   @map("external_id")
+  moodLoggedAt         DateTime  @map("mood_logged_at")
   /// v1.4.25 W7b — per-row IANA timezone that the `date` string is
   /// anchored to. Nullable for backward compatibility: legacy rows
   /// (`tz IS NULL`) were written under the Europe/Berlin assumption
   /// and read-paths interpret them as such. New rows always carry the
   /// user's `displayTimezone` at write time.
-  tz            String?   @db.VarChar(64)
-  syncedAt      DateTime  @default(now()) @map("synced_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  tz                   String?   @db.VarChar(64)
+  syncedAt             DateTime  @default(now()) @map("synced_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
   // v1.7.0 sync — LWW reconciliation counter for the offline-sync feed.
   // Monotonically bumped on every server-side mutation (update +
   // soft-delete). Mood is last-writer-wins by syncVersion: the higher
   // value wins. Default 0 for the additive migration so legacy rows
   // round-trip unchanged.
-  syncVersion   Int       @default(0) @map("sync_version")
+  syncVersion          Int       @default(0) @map("sync_version")
   // v1.7.0 sync — soft-delete tombstone. The user-facing DELETE route
   // flips this (and bumps syncVersion) rather than removing the row, so
   // the `/api/sync/changes` feed surfaces the deletion as a tombstone
@@ -5037,7 +5020,14 @@ model MoodEntry {
   // NULL = live row; non-NULL = tombstoned at the recorded instant.
   // Every list / detail / analytics / rollup read filters
   // `deletedAt: null` so tombstoned rows never surface in normal reads.
-  deletedAt     DateTime? @map("deleted_at")
+  deletedAt            DateTime? @map("deleted_at")
+  /// When the phone reported this row deleted in Apple Health (the
+  /// `by-external-ids` delete). The deletion is Apple Health's while this
+  /// equals `deletedAt`; any other deletion (the person in HealthLog, the
+  /// server's own housekeeping) leaves it null or different. A re-post of a
+  /// row deleted in HealthLog is refused, one deleted in Apple Health may
+  /// come back (`src/lib/sync/tombstone-repost.ts`).
+  appleHealthDeletedAt DateTime? @map("apple_health_deleted_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -6537,16 +6527,16 @@ model LiveActivityToken {
 }
 
 model Device {
-  id                     String              @id @default(cuid())
-  userId                 String              @map("user_id")
-  platform               String // "ios"
-  token                  String              @unique
-  bundleId               String              @map("bundle_id")
-  locale                 String?
-  appVersion             String?             @map("app_version")
-  model                  String?
-  apnsToken              String?             @map("apns_token")
-  apnsEnvironment        String?             @map("apns_environment") // "sandbox" | "production"
+  id                         String              @id @default(cuid())
+  userId                     String              @map("user_id")
+  platform                   String // "ios"
+  token                      String              @unique
+  bundleId                   String              @map("bundle_id")
+  locale                     String?
+  appVersion                 String?             @map("app_version")
+  model                      String?
+  apnsToken                  String?             @map("apns_token")
+  apnsEnvironment            String?             @map("apns_environment") // "sandbox" | "production"
   /// v1.7.0 — per-device medication-delivery override. NULL = inherit the
   /// user-level roaming default
   /// (`User.notificationPrefs.medication.deliveryDefault`). "server"
@@ -6554,7 +6544,7 @@ model Device {
   /// v1.48.0 (#179) the dispatcher's APNs send honours it per device for the
   /// medication reminder that announces a dose; NULL there follows the
   /// account-wide client-managed flag (`deviceDeliversLocally`).
-  medicationDelivery     String?             @map("medication_delivery")
+  medicationDelivery         String?             @map("medication_delivery")
   /// Until when a device that delivers its own medication reminders has
   /// them planned (`POST /api/devices` `localRunwayUntil`, at most 14 days
   /// ahead; null clears it, omitted keeps it). A device delivers locally
@@ -6563,7 +6553,7 @@ model Device {
   /// sign-in token moves): a quiet phone whose plan ran dry gets the
   /// server's reminder push again until it shows up. Reader: the dispatcher's
   /// APNs branch (`client-managed-apns.ts`, `deviceDeliversLocally`).
-  localRunwayUntil       DateTime?           @map("local_runway_until")
+  localRunwayUntil           DateTime?           @map("local_runway_until")
   /// v1.17.1 (#22) — APNs push token for the iOS Live Activity update/end
   /// channel. ActivityKit issues a per-Activity push token distinct from the
   /// device APNs token; the server stores the most recent one so the worker
@@ -6571,78 +6561,78 @@ model Device {
   /// the device has no active Live Activity. The iOS client owns the
   /// ActivityKit lifecycle and registers/clears this token; no server-side
   /// behaviour hangs off it beyond addressing the update push.
-  liveActivityPushToken  String?             @map("live_activity_push_token")
+  liveActivityPushToken      String?             @map("live_activity_push_token")
   /// The device's running medication Live Activities, one row each, with
   /// the dose it shows. Replaced as a set by `POST /api/devices`
   /// (`liveActivities`); a row goes when its end push goes out.
-  liveActivities         LiveActivityToken[]
+  liveActivities             LiveActivityToken[]
   /// The device's X25519 push key (raw 32 bytes, base64url), the recipient
   /// of every sealed push envelope. Set only with the device's consent, from
   /// `POST /api/devices` `pushKey`; null for a device that takes plaintext
   /// pushes. Readers: the push builders (`push-relay/route-device.ts`).
-  pushKeyPublic          String?             @map("push_key_public")
+  pushKeyPublic              String?             @map("push_key_public")
   /// The envelope suites the device opens (`pushKey.suites`). Reader: the
   /// sealer, which refuses to seal with a suite the device cannot open.
-  pushKeySuites          Int[]               @default([]) @map("push_key_suites")
+  pushKeySuites              Int[]               @default([]) @map("push_key_suites")
   /// When and under which consent text the person turned the relay on for
   /// this device (`relayConsent`). Readers: the relay binding (the consent
   /// record the relay stores) and `/api/auth/me` `push.device.consent`.
-  relayConsentAt         DateTime?           @map("relay_consent_at")
-  relayConsentVersion    String?             @map("relay_consent_version")
+  relayConsentAt             DateTime?           @map("relay_consent_at")
+  relayConsentVersion        String?             @map("relay_consent_version")
   /// The device's signed relay binding, forwarded to the relay unchanged:
   /// the Ed25519 binding key, the `hl-bind-v1` statement fields and the
   /// signature. Kept so a rebind after `404 binding_unknown` can resubmit the
   /// last statement. Reader: `push-relay/binding.ts`.
-  relayBindingKey        String?             @map("relay_binding_key")
-  relayBindingStatement  Json?               @map("relay_binding_statement")
-  relayBindingSignature  String?             @map("relay_binding_signature")
+  relayBindingKey            String?             @map("relay_binding_key")
+  relayBindingStatement      Json?               @map("relay_binding_statement")
+  relayBindingSignature      String?             @map("relay_binding_signature")
   /// `none` | `bound` | `rebind_needed` | `conflict`. Reader: `/api/auth/me`
   /// `push.device.relayState` and the push routing, which sends over the
   /// relay only for `bound`.
-  relayState             String              @default("none") @map("relay_state")
+  relayState                 String              @default("none") @map("relay_state")
   /// The person's second, separate consent to Live Activity start and
   /// update over the relay (`liveActivityConsent`), whose content the relay
   /// and Apple can see. Distinct from the relay consent, off until given.
   /// Readers: the Live Activity relay sender (`push-relay/live-activity.ts`)
   /// and `/api/auth/me` `push.device.liveActivityConsent`.
-  liveActivityConsentAt      DateTime? @map("live_activity_consent_at")
+  liveActivityConsentAt      DateTime?           @map("live_activity_consent_at")
   /// @internal: consent evidence, the text version the person agreed to;
   /// kept as the record of that consent, never surfaced.
-  liveActivityConsentVersion String?   @map("live_activity_consent_version")
+  liveActivityConsentVersion String?             @map("live_activity_consent_version")
   /// The ActivityKit push-to-start token and the device's `hl-la-start-v1`
   /// statement over it (`liveActivityStart`), handed to the relay only
   /// inside a start push. Reader: `push-relay/live-activity.ts`.
-  laStartToken               String?   @map("la_start_token")
-  laStartStatement           Json?     @map("la_start_statement")
-  laStartSignature           String?   @map("la_start_signature")
+  laStartToken               String?             @map("la_start_token")
+  laStartStatement           Json?               @map("la_start_statement")
+  laStartSignature           String?             @map("la_start_signature")
   /// The dose the last relay start was for, so a dose starts once and the
   /// app's registration of the started Activity (`relayStart: true`) finds
   /// its dose. Reader and writer: `push-relay/live-activity.ts`.
-  laStartedMedicationId      String?   @map("la_started_medication_id")
-  laStartedSlot              DateTime? @map("la_started_slot")
+  laStartedMedicationId      String?             @map("la_started_medication_id")
+  laStartedSlot              DateTime?           @map("la_started_slot")
   /// When the last relay start went out. Reader: the admin diagnostic
   /// (`/api/admin/notifications/diagnostic`, `liveActivityStartedAt`).
-  laStartedAt                DateTime? @map("la_started_at")
+  laStartedAt                DateTime?           @map("la_started_at")
   /// When the relay last confirmed the binding. Reader: the admin diagnostic
   /// (`relayBoundAt`).
-  relayBoundAt           DateTime?           @map("relay_bound_at")
+  relayBoundAt               DateTime?           @map("relay_bound_at")
   /// The newest envelope ids this device reports it opened, per class
   /// (`GET /api/sync/state`), and when it reported them. Reader: the receipt
   /// write (`push-relay/receipts.ts`), which keeps the newer of the stored and
   /// the reported id, so a late report cannot move them back; the time is
   /// read by `intakeSync` (`capability.ts`) and the admin diagnostic.
-  envelopeOpenedAlertId  String?             @map("envelope_opened_alert_id")
-  envelopeOpenedSilentId String?             @map("envelope_opened_silent_id")
-  envelopeReportedAt     DateTime?           @map("envelope_reported_at")
-  relayDeliveries        PushRelayDelivery[]
+  envelopeOpenedAlertId      String?             @map("envelope_opened_alert_id")
+  envelopeOpenedSilentId     String?             @map("envelope_opened_silent_id")
+  envelopeReportedAt         DateTime?           @map("envelope_reported_at")
+  relayDeliveries            PushRelayDelivery[]
   /// The silent wakes this server sent the device (DATA_CHANGED,
   /// HEALTHKIT_CATCH_UP), for their rate limits (`push-relay/wakes.ts`).
-  pushWakes              PushWake[]
+  pushWakes                  PushWake[]
   /// The DATA_CHANGED wake owed to the device (`push-relay/data-changed.ts`).
-  pushDataChange         PushDataChange?
-  lastSeen               DateTime            @default(now()) @map("last_seen")
-  createdAt              DateTime            @default(now()) @map("created_at")
-  updatedAt              DateTime            @updatedAt @map("updated_at")
+  pushDataChange             PushDataChange?
+  lastSeen                   DateTime            @default(now()) @map("last_seen")
+  createdAt                  DateTime            @default(now()) @map("created_at")
+  updatedAt                  DateTime            @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -9029,9 +9019,16 @@ model CycleDayLog {
   /// distinct so MANUAL rows never collide on it.
   externalId String?           @map("external_id")
 
-  tz          String?
-  syncVersion Int       @default(0) @map("sync_version")
-  deletedAt   DateTime? @map("deleted_at")
+  tz                   String?
+  syncVersion          Int       @default(0) @map("sync_version")
+  deletedAt            DateTime? @map("deleted_at")
+  /// When the phone reported this row deleted in Apple Health (the
+  /// `by-external-ids` delete). The deletion is Apple Health's while this
+  /// equals `deletedAt`; any other deletion (the person in HealthLog, the
+  /// server's own housekeeping) leaves it null or different. A re-post of a
+  /// row deleted in HealthLog is refused, one deleted in Apple Health may
+  /// come back (`src/lib/sync/tombstone-repost.ts`).
+  appleHealthDeletedAt DateTime? @map("apple_health_deleted_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -9111,13 +9108,13 @@ model CycleSymptom {
 /// pairing unique; cascade on both sides so deleting a day-log (or a
 /// catalog symptom) cleans up its links.
 model CycleSymptomLink {
-  dayLogId  String   @map("day_log_id")
-  symptomId String   @map("symptom_id")
+  dayLogId  String            @map("day_log_id")
+  symptomId String            @map("symptom_id")
   /// Optional 1-4 Likert intensity for this symptom on this day. NULL = a
   /// plain presence link (the pre-severity contract). Surfaced in
   /// CycleDayLogDTO so the log-day sheet can pre-fill the severity chips.
-  severity  Int?     @map("severity")
-  createdAt DateTime @default(now()) @map("created_at")
+  severity  Int?              @map("severity")
+  createdAt DateTime          @default(now()) @map("created_at")
   /// Which write the link came from: `MANUAL` for the log-day sheet and every
   /// hand-made write, `APPLE_HEALTH` / `HEALTH_CONNECT` for an import. An
   /// import's day write replaces only the links of its own source, so a
@@ -9334,35 +9331,42 @@ model SymptomDefinition {
 /// same numeric rating scale the pain score uses), an optional note, and an
 /// optional link to the illness episode it happened during. v1.40.
 model SymptomEvent {
-  id            String    @id @default(cuid())
-  userId        String    @map("user_id")
-  definitionId  String    @map("definition_id")
+  id                   String    @id @default(cuid())
+  userId               String    @map("user_id")
+  definitionId         String    @map("definition_id")
   /// The instant it happened (UTC). Day grouping is the reader's concern.
-  occurredAt    DateTime  @map("occurred_at")
+  occurredAt           DateTime  @map("occurred_at")
   /// 0-10, CHECK-constrained in the migration.
-  intensity     Int
+  intensity            Int
   /// Optional free-text note, AES-256-GCM encrypted at rest.
-  noteEncrypted Bytes?    @map("note_encrypted")
+  noteEncrypted        Bytes?    @map("note_encrypted")
   /// The episode the person said this happened during. Only an open episode
   /// of the same account can be linked (the route checks); deleting the
   /// episode row keeps the event and drops the link.
-  episodeId     String?   @map("episode_id")
+  episodeId            String?   @map("episode_id")
   /// When it ended, for an occurrence imported with a duration (an Apple
   /// Health sample's `endDate`). NULL for a moment, and for every manual entry.
-  endAt         DateTime? @map("end_at")
+  endAt                DateTime? @map("end_at")
   /// `MANUAL` (logged in HealthLog) or `APPLE_HEALTH` (imported through
   /// `POST /api/symptoms/events/batch`). Never settable by a manual write.
-  source        String    @default("MANUAL")
+  source               String    @default("MANUAL")
   /// The HealthKit sample UUID of an imported occurrence; NULL for a manual
   /// one. Half of the `(userId, source, externalId)` dedup key.
-  externalId    String?   @map("external_id")
+  externalId           String?   @map("external_id")
   /// Tombstone. Only an imported occurrence is ever soft-deleted (by the app's
   /// deletion reconciliation or the person's own delete), so a late re-post of
   /// its sample answers `duplicate` instead of bringing it back. Every reader
   /// filters `deletedAt: null`.
-  deletedAt     DateTime? @map("deleted_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt            DateTime? @map("deleted_at")
+  /// When the phone reported this row deleted in Apple Health (the
+  /// `by-external-ids` delete). The deletion is Apple Health's while this
+  /// equals `deletedAt`; any other deletion (the person in HealthLog, the
+  /// server's own housekeeping) leaves it null or different. A re-post of a
+  /// row deleted in HealthLog is refused, one deleted in Apple Health may
+  /// come back (`src/lib/sync/tombstone-repost.ts`).
+  appleHealthDeletedAt DateTime? @map("apple_health_deleted_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   definition SymptomDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
@@ -11722,34 +11726,34 @@ model FhirImportedResource {
 /// imported, by hash, is never imported again. Read and written only by
 /// `src/lib/import/health-connect/remote-*.ts` and its settings route.
 model HealthConnectRemoteSource {
-  id                  String    @id @default(cuid())
-  userId              String    @unique @map("user_id")
+  id                   String    @id @default(cuid())
+  userId               String    @unique @map("user_id")
   /// The folder, `https://host/remote.php/dav/files/<user>/<folder>` on
   /// Nextcloud. No credentials, query or fragment: those are refused on save.
-  folderUrl           String    @map("folder_url")
+  folderUrl            String    @map("folder_url")
   /// The export's file name inside the folder; Health Connect writes
   /// `Health Connect.zip`.
-  fileName            String    @default("Health Connect.zip") @map("file_name")
+  fileName             String    @default("Health Connect.zip") @map("file_name")
   /// The WebDAV user name and password (a Nextcloud app password), sealed
   /// with the app's encryption key as one JSON value. Never returned.
-  credentialsEncrypted String   @map("credentials_encrypted")
-  enabled             Boolean   @default(true)
+  credentialsEncrypted String    @map("credentials_encrypted")
+  enabled              Boolean   @default(true)
   /// When the next fetch is due. Advanced by six hours after a fetch that
   /// found nothing new or imported, and by a growing backoff after a failure.
-  nextAttemptAt       DateTime  @default(now()) @map("next_attempt_at")
-  lastAttemptAt       DateTime? @map("last_attempt_at")
+  nextAttemptAt        DateTime  @default(now()) @map("next_attempt_at")
+  lastAttemptAt        DateTime? @map("last_attempt_at")
   /// The closed outcome of the last attempt (`imported`, `unchanged`,
   /// `not_found`, `unauthorized`, `private_origin_not_approved`, …).
-  lastOutcome         String?   @map("last_outcome")
-  consecutiveFailures Int       @default(0) @map("consecutive_failures")
+  lastOutcome          String?   @map("last_outcome")
+  consecutiveFailures  Int       @default(0) @map("consecutive_failures")
   /// The ETag the server sent for the last file read, so an unchanged file is
   /// not downloaded again.
-  lastEtag            String?   @map("last_etag")
+  lastEtag             String?   @map("last_etag")
   /// SHA-256 of the last file handed to the importer.
-  lastFileSha256      String?   @map("last_file_sha256")
-  lastImportJobId     String?   @map("last_import_job_id")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  lastFileSha256       String?   @map("last_file_sha256")
+  lastImportJobId      String?   @map("last_import_job_id")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

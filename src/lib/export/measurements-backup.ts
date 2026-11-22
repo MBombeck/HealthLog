@@ -46,6 +46,8 @@ const MEASUREMENT_BACKUP_SELECT = {
   ingestTokenId: true,
   syncVersion: true,
   deletedAt: true,
+  appleHealthDeletedAt: true,
+  statsComputedAt: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.MeasurementSelect;
@@ -92,6 +94,18 @@ function serialiseMeasurement(
         ingestTokenId: measurement.ingestTokenId,
         syncVersion: measurement.syncVersion,
         deletedAt: measurement.deletedAt?.toISOString() ?? null,
+        // Who deleted a tombstone, and when a `stats:` total was computed:
+        // written only where set, so a file carries them only for the rows
+        // they describe.
+        ...(measurement.appleHealthDeletedAt
+          ? {
+              appleHealthDeletedAt:
+                measurement.appleHealthDeletedAt.toISOString(),
+            }
+          : {}),
+        ...(measurement.statsComputedAt
+          ? { statsComputedAt: measurement.statsComputedAt.toISOString() }
+          : {}),
         createdAt: measurement.createdAt.toISOString(),
         updatedAt: measurement.updatedAt.toISOString(),
       }
