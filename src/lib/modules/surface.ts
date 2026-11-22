@@ -270,6 +270,7 @@ const STATIC_SURFACE_MODULE = {
   "day-section:illness": "illness",
   // Person-defined symptoms ride the illness module, as everywhere else.
   "day-section:symptoms": "illness",
+  "day-section:seizures": "seizures",
   "day-section:labs": "labs",
   "day-section:vaccinations": "vaccinations",
   "day-section:documents": "inboundDocuments",
