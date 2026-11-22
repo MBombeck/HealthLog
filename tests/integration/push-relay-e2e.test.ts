@@ -279,8 +279,9 @@ describe("push relay end to end", () => {
       (plaintext.iat as number) + 7200,
     );
 
+    // The confirmation's delivery; the silent sync beside it has its own.
     const delivery = await prisma.pushRelayDelivery.findFirstOrThrow({
-      where: { deviceId },
+      where: { deviceId, pushClass: "alert" },
     });
     expect(delivery).toMatchObject({
       status: "accepted",
