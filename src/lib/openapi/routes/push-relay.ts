@@ -136,7 +136,7 @@ export const devicePushBlockSchema = z
     relayState: z
       .enum(["none", "bound", "rebind_needed", "conflict"])
       .describe(
-        "`rebind_needed`: send a fresh `relayBinding`. `conflict`: answer the relay's challenge push directly.",
+        "`rebind_needed`: send a fresh `relayBinding`. `conflict`: answer the relay's challenge push directly. A `conflict` not settled by a fresh binding within 30 minutes (the challenge's lifetime) reads `rebind_needed` (v1.49.0).",
       ),
     intakeSync: z
       .enum(["ok", "degraded"])
@@ -159,7 +159,7 @@ export const devicePushBlockSchema = z
       })
       .nullable()
       .describe(
-        "The dose the Live Activity the server started on this device (over the relay) shows. The start push never carries it, so the app reads it here, and in the `POST /api/devices` answer right after it registers the started Activity's token (`relayStart: true`). Null when no server start is pending or running, or once that slot is taken, skipped or missed, its medication paused, ended or deleted, or the Activity ended.",
+        "The dose the Live Activity the server started on this device (over the relay) shows. The start push never carries it, so the app reads it here, and in the `POST /api/devices` answer right after it registers the started Activity's token (`relayStart: true`). Null until the relay accepted the start (a start still in flight or one the relay refused shows null; a refused one is tried again later), when no server start is running, or once that slot is taken, skipped or missed, its medication paused, ended or deleted, or the Activity ended.",
       ),
   })
   .meta({ id: "DevicePushState" });
@@ -238,7 +238,12 @@ const adminRelayStatus = z
     offered: z.boolean(),
     state: z.enum(["ok", "degraded", "down", "off"]),
     since: z.string().nullable(),
-    reason: z.string().nullable(),
+    reason: z
+      .string()
+      .nullable()
+      .describe(
+        "Why the state is not `ok`, e.g. `bad_signature` (the relay refused this server's signature three times in a row), `relay_degraded`, `relay_maintenance` or `relay_misconfigured` (what the relay's status reports about itself), `circuit_open`, or a registration refusal.",
+      ),
     instanceId: z.string().nullable(),
     tier: z.string().nullable(),
     notice: z
@@ -292,6 +297,33 @@ const adminRelayStatus = z
       })
       .describe(
         "v1.49.0. The hand-off time as this server sees it, over the pushes the relay accepted in the last `windowHours` hours: from queueing a push on this server until the relay answered `accepted`. The relay answers `accepted` only once Apple accepted the push, so the time covers this server's hand-off, the network and the relay's request to Apple. From this instance's own delivery ledger. Aggregate only: nothing per person, device or kind of push.",
+      ),
+    relayCheck: z
+      .object({
+        checkedAt: isoDateTime()
+          .nullable()
+          .describe("When this server last asked `GET /v1/status`."),
+        answeredAt: isoDateTime()
+          .nullable()
+          .describe("When the relay last answered it."),
+        state: z
+          .enum(["ok", "degraded", "maintenance", "misconfigured"])
+          .nullable()
+          .describe("The relay's own state in that answer."),
+        devices: z
+          .object({
+            active: z.number().int(),
+            provisional: z.number().int(),
+            limit: z.number().int(),
+          })
+          .nullable()
+          .describe(
+            "This instance's bindings at the relay: active (soft-invalid included), provisional, and its device limit.",
+          ),
+      })
+      .nullable()
+      .describe(
+        "v1.49.0. The hourly signed `GET /v1/status`: what the relay last reported about itself and this instance. Null before the first check.",
       ),
     termsVersion: z.string(),
     termsConfirmationNeeded: z

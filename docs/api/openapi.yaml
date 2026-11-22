@@ -61864,7 +61864,9 @@ components:
             - bound
             - rebind_needed
             - conflict
-          description: "`rebind_needed`: send a fresh `relayBinding`. `conflict`: answer the relay's challenge push directly."
+          description: "`rebind_needed`: send a fresh `relayBinding`. `conflict`: answer the relay's challenge push directly. A
+            `conflict` not settled by a fresh binding within 30 minutes (the challenge's lifetime) reads `rebind_needed`
+            (v1.49.0)."
         intakeSync:
           type: string
           enum:
@@ -61902,8 +61904,10 @@ components:
             - type: "null"
           description: "The dose the Live Activity the server started on this device (over the relay) shows. The start push never
             carries it, so the app reads it here, and in the `POST /api/devices` answer right after it registers the
-            started Activity's token (`relayStart: true`). Null when no server start is pending or running, or once that
-            slot is taken, skipped or missed, its medication paused, ended or deleted, or the Activity ended."
+            started Activity's token (`relayStart: true`). Null until the relay accepted the start (a start still in
+            flight or one the relay refused shows null; a refused one is tried again later), when no server start is
+            running, or once that slot is taken, skipped or missed, its medication paused, ended or deleted, or the
+            Activity ended."
       required:
         - transport
         - envelope
@@ -62011,6 +62015,8 @@ components:
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
                 - type: "null"
             reason:
+              description: As `push.relay.reason`, e.g. `bad_signature` once the relay refused this server's signature three times in
+                a row, or `relay_maintenance` from the relay's own status.
               type:
                 - string
                 - "null"
@@ -62030,6 +62036,7 @@ components:
                 - bound
                 - rebind_needed
                 - conflict
+              description: "As `push.device.relayState`: a `conflict` older than 30 minutes reads `rebind_needed`."
             consent:
               type: boolean
               description: The person turned the relay on for this device.
@@ -62165,7 +62172,8 @@ components:
                         covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
                         `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
                     reason:
-                      description: The relay's or Apple's reason on a failure, else null.
+                      description: The relay's or Apple's reason on a failure; for a `pending` push over the relay, the code it waits on
+                        (`bad_signature`, `relay_unavailable`, `relay_paused`, a quota code); else null.
                       type:
                         - string
                         - "null"
@@ -62202,7 +62210,8 @@ components:
                         covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
                         `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
                     reason:
-                      description: The relay's or Apple's reason on a failure, else null.
+                      description: The relay's or Apple's reason on a failure; for a `pending` push over the relay, the code it waits on
+                        (`bad_signature`, `relay_unavailable`, `relay_paused`, a quota code); else null.
                       type:
                         - string
                         - "null"
@@ -62240,7 +62249,8 @@ components:
                         covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
                         `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
                     reason:
-                      description: The relay's or Apple's reason on a failure, else null.
+                      description: The relay's or Apple's reason on a failure; for a `pending` push over the relay, the code it waits on
+                        (`bad_signature`, `relay_unavailable`, `relay_paused`, a quota code); else null.
                       type:
                         - string
                         - "null"
@@ -62278,7 +62288,8 @@ components:
                         covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
                         `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
                     reason:
-                      description: The relay's or Apple's reason on a failure, else null.
+                      description: The relay's or Apple's reason on a failure; for a `pending` push over the relay, the code it waits on
+                        (`bad_signature`, `relay_unavailable`, `relay_paused`, a quota code); else null.
                       type:
                         - string
                         - "null"
@@ -62437,6 +62448,9 @@ components:
             - string
             - "null"
         reason:
+          description: Why the state is not `ok`, e.g. `bad_signature` (the relay refused this server's signature three times in a
+            row), `relay_degraded`, `relay_maintenance` or `relay_misconfigured` (what the relay's status reports about
+            itself), `circuit_open`, or a registration refusal.
           type:
             - string
             - "null"
@@ -62574,6 +62588,66 @@ components:
             answers `accepted` only once Apple accepted the push, so the time covers this server's hand-off, the network
             and the relay's request to Apple. From this instance's own delivery ledger. Aggregate only: nothing per
             person, device or kind of push."
+        relayCheck:
+          anyOf:
+            - type: object
+              properties:
+                checkedAt:
+                  anyOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    - type: "null"
+                  description: When this server last asked `GET /v1/status`.
+                answeredAt:
+                  anyOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    - type: "null"
+                  description: When the relay last answered it.
+                state:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - ok
+                        - degraded
+                        - maintenance
+                        - misconfigured
+                    - type: "null"
+                  description: The relay's own state in that answer.
+                devices:
+                  anyOf:
+                    - type: object
+                      properties:
+                        active:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                        provisional:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                        limit:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                      required:
+                        - active
+                        - provisional
+                        - limit
+                      additionalProperties: false
+                    - type: "null"
+                  description: "This instance's bindings at the relay: active (soft-invalid included), provisional, and its device limit."
+              required:
+                - checkedAt
+                - answeredAt
+                - state
+                - devices
+              additionalProperties: false
+            - type: "null"
+          description: "v1.49.0. The hourly signed `GET /v1/status`: what the relay last reported about itself and this instance.
+            Null before the first check."
         termsVersion:
           type: string
         termsConfirmationNeeded:
@@ -62620,6 +62694,7 @@ components:
         - devices
         - usage
         - handoff
+        - relayCheck
         - termsVersion
         - termsConfirmationNeeded
         - unbindsPending
@@ -76398,7 +76473,8 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         relayState:
           type: string
-          description: v1.49.0 — `none` | `bound` | `rebind_needed` | `conflict`, as the push routing reads it.
+          description: v1.49.0 — `none` | `bound` | `rebind_needed` | `conflict`, as `push.device.relayState` reads it (a
+            `conflict` older than 30 minutes reads `rebind_needed`).
         relayBoundAt:
           anyOf:
             - type: string
@@ -76412,7 +76488,8 @@ components:
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
-          description: v1.49.0 — when the server last started a Live Activity on the device over the relay.
+          description: v1.49.0 — when the relay accepted the server's last Live Activity start on the device; null while a start
+            is in flight or after one the relay refused.
         envelopesReportedAt:
           anyOf:
             - type: string

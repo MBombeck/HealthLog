@@ -42,6 +42,17 @@ export interface AdminPushRelayStatus {
     /** How many of them waited for at least one retry on this server. */
     retried: number;
   };
+  /**
+   * The hourly signed `GET /v1/status`: when it was asked and what the relay
+   * last answered. Null before the first check; absent on a response from a
+   * build before the field.
+   */
+  relayCheck?: {
+    checkedAt: string | null;
+    answeredAt: string | null;
+    state: "ok" | "degraded" | "maintenance" | "misconfigured" | null;
+    devices: { active: number; provisional: number; limit: number } | null;
+  } | null;
   termsVersion: string;
   /** The relay is on and its accepted terms text is older than `termsVersion`. */
   termsConfirmationNeeded: boolean;

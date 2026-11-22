@@ -266,7 +266,7 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
       else if (sealed.lastFailure) lastReason = sealed.lastFailure;
       // The outbox holds it and tries again until its deadline: not
       // accepted yet, and not the failure `intake_recorded_failed` named.
-      else if (sealed.waiting) lastReason = "relay_waiting";
+      else if (sealed.waiting) lastReason = sealed.waitReason;
     }
     const payload = intakeRecordedPayload(item.event, locale);
     for (const device of recipients) {

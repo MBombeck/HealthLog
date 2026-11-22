@@ -9643,6 +9643,29 @@
         "lastFailure": "Último fallo {time}: {reason}.",
         "noReason": "sin motivo indicado"
       },
+      "stateReason": {
+        "badSignature": "El relé no acepta la firma de este servidor, así que no le llega ningún push. Desactiva el relé aquí y vuelve a activarlo para registrar este servidor de nuevo.",
+        "relayDegraded": "El relé informa de una incidencia por su parte. Los pushes esperan y salen en cuanto se recupere.",
+        "relayMaintenance": "El relé está en mantenimiento. Los pushes esperan y salen en cuanto vuelva.",
+        "relayMisconfigured": "El relé informa de que Apple no acepta ahora su clave de push. Los pushes esperan hasta que quien gestiona el relé lo resuelva."
+      },
+      "notice": "Aviso del relé ({level}): {id}",
+      "noticeLevel": {
+        "info": "información",
+        "planned": "planificado",
+        "actionRequired": "requiere acción"
+      },
+      "check": {
+        "line": "Estado del relé consultado {time}: {state}.",
+        "devices": "En el relé: {active} vinculaciones activas y {provisional} nuevas, límite {limit}.",
+        "unanswered": "Estado del relé consultado {time}, aún sin respuesta.",
+        "state": {
+          "ok": "funciona con normalidad",
+          "degraded": "con incidencias",
+          "maintenance": "en mantenimiento",
+          "misconfigured": "Apple no acepta la clave de push"
+        }
+      },
       "handoff": {
         "title": "Tiempo de entrega al relé, últimas {hours} h",
         "median": "Mediana",

@@ -9643,6 +9643,29 @@
         "lastFailure": "Laatste fout {time}: {reason}.",
         "noReason": "geen reden opgegeven"
       },
+      "stateReason": {
+        "badSignature": "De relay accepteert de handtekening van deze server niet, dus er komt geen push aan. Zet de relay hier uit en weer aan om deze server opnieuw aan te melden.",
+        "relayDegraded": "De relay meldt een storing aan zijn kant. Pushes wachten en gaan de deur uit zodra hij hersteld is.",
+        "relayMaintenance": "De relay is in onderhoud. Pushes wachten en gaan de deur uit zodra hij terug is.",
+        "relayMisconfigured": "De relay meldt dat Apple zijn pushsleutel op dit moment niet accepteert. Pushes wachten tot de beheerder van de relay het heeft opgelost."
+      },
+      "notice": "Melding van de relay ({level}): {id}",
+      "noticeLevel": {
+        "info": "informatie",
+        "planned": "gepland",
+        "actionRequired": "actie nodig"
+      },
+      "check": {
+        "line": "Relaystatus opgevraagd {time}: {state}.",
+        "devices": "Bij de relay: {active} actieve en {provisional} nieuwe koppelingen, limiet {limit}.",
+        "unanswered": "Relaystatus opgevraagd {time}, nog geen antwoord.",
+        "state": {
+          "ok": "werkt normaal",
+          "degraded": "verstoord",
+          "maintenance": "in onderhoud",
+          "misconfigured": "pushsleutel niet geaccepteerd door Apple"
+        }
+      },
       "handoff": {
         "title": "Overdrachtstijd, afgelopen {hours} u",
         "median": "Mediaan",

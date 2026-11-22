@@ -9643,6 +9643,29 @@
         "lastFailure": "마지막 실패 {time}: {reason}.",
         "noReason": "사유 없음"
       },
+      "stateReason": {
+        "badSignature": "릴레이가 이 서버의 서명을 받아들이지 않아 어떤 푸시도 전달되지 않습니다. 여기에서 릴레이를 껐다가 다시 켜서 이 서버를 새로 등록하세요.",
+        "relayDegraded": "릴레이 측에서 장애가 있다고 알려 왔습니다. 푸시는 대기하다가 릴레이가 복구되면 전송됩니다.",
+        "relayMaintenance": "릴레이가 점검 중입니다. 푸시는 대기하다가 릴레이가 돌아오면 전송됩니다.",
+        "relayMisconfigured": "Apple이 지금 릴레이의 푸시 키를 받아들이지 않는다고 릴레이가 알려 왔습니다. 릴레이 운영자가 해결할 때까지 푸시는 대기합니다."
+      },
+      "notice": "릴레이 공지 ({level}): {id}",
+      "noticeLevel": {
+        "info": "안내",
+        "planned": "예정",
+        "actionRequired": "조치 필요"
+      },
+      "check": {
+        "line": "릴레이 상태 확인 {time}: {state}.",
+        "devices": "릴레이에 활성 연결 {active}개, 새 연결 {provisional}개, 한도 {limit}개.",
+        "unanswered": "릴레이 상태를 {time}에 요청했지만 아직 응답이 없습니다.",
+        "state": {
+          "ok": "정상 작동 중",
+          "degraded": "장애 중",
+          "maintenance": "점검 중",
+          "misconfigured": "Apple이 푸시 키를 받아들이지 않음"
+        }
+      },
       "handoff": {
         "title": "릴레이 전달 소요 시간, 최근 {hours}시간",
         "median": "중앙값",

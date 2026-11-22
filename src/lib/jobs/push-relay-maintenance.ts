@@ -1,7 +1,8 @@
 /**
  * The worker binding of the push relay's minute pass
- * (`push-relay/maintenance.ts`): register, probe, retry the outbox, rotate
- * the sender key, report receipts, prune. A pass that throws fails the job;
+ * (`push-relay/maintenance.ts`): register, probe and check the relay's
+ * status, retry the outbox, rotate the sender key, report receipts, prune,
+ * expire binding conflicts. A pass that throws fails the job;
  * the next minute's run is the retry.
  */
 import { type Job } from "pg-boss";
@@ -21,12 +22,14 @@ export async function handlePushRelayMaintenance(
       return jobDone({
         push_relay_registered: facts.registered,
         push_relay_probed: facts.probed,
+        push_relay_status_checked: facts.status_checked,
         push_relay_retried: facts.retried,
         push_relay_rotated: facts.rotated,
         push_relay_receipts_sent: facts.receipts_sent,
         push_relay_pruned: facts.pruned,
         push_relay_unbound: facts.unbound,
         push_relay_instance_key_rotated: facts.instance_key_rotated,
+        push_relay_conflicts_expired: facts.conflicts_expired,
         // An unbind given up after 7 days is work that never happened; the
         // run counts it (`FanOutTally`). One still retrying is not counted:
         // its backoff is the retry.

@@ -9643,6 +9643,29 @@
         "lastFailure": "Última falha {time}: {reason}.",
         "noReason": "sem motivo informado"
       },
+      "stateReason": {
+        "badSignature": "O relay não aceita a assinatura deste servidor, então nenhum push chega até ele. Desligue e ligue o relay de novo aqui para registrar este servidor outra vez.",
+        "relayDegraded": "O relay informa uma instabilidade do lado dele. Os pushes aguardam e saem assim que ele se recuperar.",
+        "relayMaintenance": "O relay está em manutenção. Os pushes aguardam e saem assim que ele voltar.",
+        "relayMisconfigured": "O relay informa que a Apple não está aceitando a chave de push dele agora. Os pushes aguardam até quem opera o relay resolver."
+      },
+      "notice": "Aviso do relay ({level}): {id}",
+      "noticeLevel": {
+        "info": "informação",
+        "planned": "planejado",
+        "actionRequired": "ação necessária"
+      },
+      "check": {
+        "line": "Status do relay consultado {time}: {state}.",
+        "devices": "No relay: {active} vínculos ativos e {provisional} novos, limite {limit}.",
+        "unanswered": "Status do relay consultado {time}, ainda sem resposta.",
+        "state": {
+          "ok": "funcionando normalmente",
+          "degraded": "instável",
+          "maintenance": "em manutenção",
+          "misconfigured": "chave de push recusada pela Apple"
+        }
+      },
       "handoff": {
         "title": "Tempo de envio ao relay, últimas {hours} h",
         "median": "Mediana",

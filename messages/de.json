@@ -9643,6 +9643,29 @@
         "lastFailure": "Letzter Fehler {time}: {reason}.",
         "noReason": "ohne Angabe"
       },
+      "stateReason": {
+        "badSignature": "Das Relay nimmt die Signatur dieses Servers nicht an, deshalb erreicht es kein Push. Schalte das Relay hier aus und wieder ein, damit sich dieser Server neu anmeldet.",
+        "relayDegraded": "Das Relay meldet eine Störung auf seiner Seite. Pushes warten und gehen raus, sobald es sich erholt hat.",
+        "relayMaintenance": "Das Relay wird gerade gewartet. Pushes warten und gehen raus, sobald es wieder da ist.",
+        "relayMisconfigured": "Das Relay meldet, dass Apple seinen Push-Schlüssel gerade nicht annimmt. Pushes warten, bis der Betreiber des Relays das behoben hat."
+      },
+      "notice": "Hinweis des Relays ({level}): {id}",
+      "noticeLevel": {
+        "info": "Information",
+        "planned": "geplant",
+        "actionRequired": "Handlung nötig"
+      },
+      "check": {
+        "line": "Relay-Status abgefragt {time}: {state}.",
+        "devices": "Beim Relay: {active} aktive und {provisional} neue Bindungen, Grenze {limit}.",
+        "unanswered": "Relay-Status abgefragt {time}, noch keine Antwort.",
+        "state": {
+          "ok": "läuft normal",
+          "degraded": "gestört",
+          "maintenance": "in Wartung",
+          "misconfigured": "Push-Schlüssel von Apple nicht angenommen"
+        }
+      },
       "handoff": {
         "title": "Übergabezeit, letzte {hours} h",
         "median": "Median",
