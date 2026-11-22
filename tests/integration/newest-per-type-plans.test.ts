@@ -43,7 +43,7 @@ import {
   readNewestRowsPerType,
 } from "@/lib/measurements/newest-per-type";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
-import type { MeasurementType } from "@/generated/prisma/client";
+import { Prisma, type MeasurementType } from "@/generated/prisma/client";
 
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
@@ -269,10 +269,25 @@ describe.each<
   it("bounds the overview's latest readings of every type", async () => {
     const perType = 365;
     const [rows, plans] = await withPlans(() =>
-      readLatestReadingsPerType(ACCOUNT, [...MEASUREMENT_TYPES], perType),
+      readLatestReadingsPerType(
+        ACCOUNT,
+        [...MEASUREMENT_TYPES],
+        "UTC",
+        new Date(),
+        perType,
+      ),
     );
-    expect(rows).toHaveLength(perType + SPARSE_DAYS * 5);
-    expectBounded(plans, rows.length + MEASUREMENT_TYPES.length);
+    // The newest 365 pulse readings span an hour, so the overview reads the
+    // last 30 days of pulse by time: all of it here, as rows, since the
+    // stream stays under the dense cap.
+    expect(rows).toHaveLength(PULSE_ROWS + SPARSE_DAYS * 5);
+    // The descent, then the bounded count that decided the 30-day read.
+    expect(plans).toHaveLength(2);
+    expectBounded(
+      [plans[0]],
+      perType + SPARSE_DAYS * 5 + MEASUREMENT_TYPES.length,
+    );
+    expectBounded([plans[1]], PULSE_ROWS + 1);
   });
 
   it("finds the dashboard's latest reading of every type by one probe each", async () => {
@@ -345,9 +360,19 @@ async function withPlans<T>(read: () => Promise<T>): Promise<[T, unknown[]]> {
   ) => Promise<unknown>;
   const explains: Array<() => Promise<Array<{ "QUERY PLAN": unknown }>>> = [];
   vi.spyOn(appPrisma, "$queryRaw").mockImplementation(((
-    strings: TemplateStringsArray,
+    strings: TemplateStringsArray | Prisma.Sql,
     ...values: unknown[]
   ) => {
+    if (strings instanceof Prisma.Sql) {
+      const statement = strings;
+      explains.push(
+        () =>
+          tagged(
+            Prisma.sql`EXPLAIN (ANALYZE, FORMAT JSON) ${statement}`,
+          ) as Promise<Array<{ "QUERY PLAN": unknown }>>,
+      );
+      return tagged(statement);
+    }
     const explain = Object.assign([head + strings[0], ...strings.slice(1)], {
       raw: [head + strings.raw[0], ...strings.raw.slice(1)],
     });

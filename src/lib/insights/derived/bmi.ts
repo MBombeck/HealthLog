@@ -135,6 +135,7 @@ export async function computeBmi(
   const since = new Date(now.getTime() - windowDays * 24 * 60 * 60 * 1000);
   // Bounded read of the recent weights — the latest backs the BMI value, the
   // trailing set backs the inline sparkline (a small cap, not a per-day walk).
+  // dense-take: WEIGHT_TYPE is the scale, a few readings a day; the newest few back the sparkline only.
   const weights = await prisma.measurement.findMany({
     where: {
       userId,

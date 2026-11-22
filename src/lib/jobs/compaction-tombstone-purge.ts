@@ -196,6 +196,7 @@ export async function purgeCompactionTombstones(
   }
 
   async function classifyNextPage(skipUserIds: ReadonlySet<string>) {
+    // dense-take: a page of the purge scan; the job keeps paging until a page comes back short.
     const page: ScannedRow[] = await prisma.measurement.findMany({
       where: {
         deletedAt: { not: null },

@@ -40,8 +40,9 @@ import {
   type RollupCoverageMap,
 } from "@/lib/rollups/measurement-coverage";
 import { computeMoodStability } from "@/lib/insights/mood-aggregates";
+import { readLatestLocalDayMean } from "@/lib/measurements/dense-bucket-read";
 import { MS_PER_DAY } from "@/lib/time-constants";
-import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
   buildInsufficient,
   buildOk,
@@ -57,15 +58,6 @@ import {
 } from "./types";
 
 const DEFAULT_WINDOW_DAYS = 30;
-/**
- * Row cap for the latest-day mean read. A dense intra-day day (high-frequency
- * RHR/HRV) can hold hundreds of rows; the deviation only needs the latest day's
- * mean, so a bounded sample of the most-recent rows is enough — mirrors the
- * dense-intraday retention reasoning (`measurements/dense-intraday-retention.ts`)
- * that keeps the recent window dense but caps the read. The common single-
- * reading-per-day case is unaffected.
- */
-const MAX_LATEST_DAY_ROWS = 50;
 /** Minimum present components before a headline is produced (no 1-of-N). */
 export const READINESS_MIN_COMPONENTS = 2;
 
@@ -206,9 +198,12 @@ export function blendReadinessComponents(
 // ── helpers ─────────────────────────────────────────────────────────────
 
 /**
- * The most recent DAY mean for a type within the window — the "today"
- * value the deviation is measured against. Bounded raw read; null when no
- * reading in the window.
+ * The most recent DAY mean for a type within the window — the "today" value
+ * the deviation is measured against; null when no reading is in the window.
+ * Day keys are minted in the user's timezone so a 23:30-local reading lands
+ * on the right "today" bucket regardless of UTC offset. Every reading of the
+ * day is meaned in Postgres; a cap of the newest 50 rows used to stand for
+ * the day, which on a dense stream was its last hours.
  */
 async function readLatestDayMean(
   userId: string,
@@ -217,26 +212,14 @@ async function readLatestDayMean(
   now: Date,
   tz: string,
 ): Promise<number | null> {
-  const since = new Date(now.getTime() - windowDays * MS_PER_DAY);
-  const rows = await prisma.measurement.findMany({
-    where: { userId, type, deletedAt: null, measuredAt: { gte: since } },
-    orderBy: { measuredAt: "desc" },
-    take: MAX_LATEST_DAY_ROWS,
-    select: { value: true, measuredAt: true },
+  const latest = await readLatestLocalDayMean({
+    userId,
+    type,
+    since: new Date(now.getTime() - windowDays * MS_PER_DAY),
+    timeZone: tz,
+    plausibleOnly: false,
   });
-  if (rows.length === 0) return null;
-  // Derive the most-recent day defensively (do not assume the DB ordering).
-  // Day-keys are minted in the user's timezone so a 23:30-local reading lands
-  // on the right "today" bucket regardless of UTC offset.
-  let latestDay = "";
-  for (const r of rows) {
-    const d = userDayKey(r.measuredAt, tz);
-    if (d > latestDay) latestDay = d;
-  }
-  const sameDay = rows.filter(
-    (r) => userDayKey(r.measuredAt, tz) === latestDay,
-  );
-  return sameDay.reduce((s, r) => s + r.value, 0) / sameDay.length;
+  return latest?.value ?? null;
 }
 
 /**

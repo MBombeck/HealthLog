@@ -49,16 +49,21 @@ describe("readLatestReadingsPerType", () => {
     const rows = await readLatestReadingsPerType(
       user.id,
       ["PULSE", "WEIGHT", "BODY_FAT"],
+      "UTC",
+      new Date(now),
       365,
     );
     const byType = (t: string) => rows.filter((r) => r.type === t);
-    expect(byType("PULSE")).toHaveLength(365);
+    // The newest 365 pulse readings span six hours, so the last 30 days are
+    // read instead: every one of the 6 000, under the dense cap.
+    expect(byType("PULSE")).toHaveLength(6000);
     expect(byType("WEIGHT")).toHaveLength(51);
     expect(byType("BODY_FAT")).toHaveLength(0);
     for (let i = 1; i < rows.length; i += 1) {
       expect(rows[i].measuredAt >= rows[i - 1].measuredAt).toBe(true);
     }
-    // The newest pulse reading is in, the oldest of the 6 000 is not.
+    // The newest pulse reading is in, and so is the oldest of the 6 000.
     expect(byType("PULSE").at(-1)!.measuredAt.getTime()).toBe(now);
+    expect(byType("PULSE")[0].measuredAt.getTime()).toBe(now - 5999 * 60_000);
   });
 });

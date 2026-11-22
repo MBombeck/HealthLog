@@ -195,6 +195,7 @@ async function drillDownResponse(
   // spanning exactly 24 h. Works for every IANA offset including
   // sub-half-hour zones (Asia/Kathmandu UTC+5:45, Pacific/Chatham UTC+12:45).
   const { dayStart, dayEnd } = localDayWindow(dayKey, tz);
+  // dense-take: a list page of the requested size, not a fold; the validator bounds it.
   const samples = await prisma.measurement.findMany({
     where: {
       userId: user.id,
@@ -342,6 +343,7 @@ async function plainPageResponse(
   };
 
   const [measurements, total] = await Promise.all([
+    // dense-take: a list page of the requested size; `total` counts every row.
     prisma.measurement.findMany({
       where,
       // `{ id: sortDir }` is the tiebreaker, not decoration. `measuredAt`

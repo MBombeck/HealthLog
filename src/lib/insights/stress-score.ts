@@ -112,21 +112,22 @@ export function stressProxyFromSdnn(
 }
 
 /**
- * Read the scored day's intra-day SDNN samples (raw `HEART_RATE_VARIABILITY`
- * rows on the scored UTC day). The dense intra-day retention tier keeps
- * these raw within its window, so for a recently-synced day the engine sees
- * the full intra-day set. Returns the per-sample values for the day.
+ * The scored day's intra-day SDNN: how many raw `HEART_RATE_VARIABILITY`
+ * rows the scored UTC day holds, and their mean, aggregated in Postgres. The
+ * dense intra-day retention tier keeps these raw within its window, so for a
+ * recently-synced day the engine sees the full intra-day set; the aggregate
+ * counts every one of them, where a row read used to stop at 2 000.
  */
 async function readIntradaySdnn(
   prisma: PrismaClient,
   userId: string,
   now: Date,
-): Promise<number[]> {
+): Promise<{ count: number; mean: number | null }> {
   const dayKey = scoreDayKey(now);
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: UTC day window of the UTC-day score engines (scoreDayKey)
   const dayStart = new Date(`${dayKey}T00:00:00.000Z`);
   const dayEnd = new Date(dayStart.getTime() + MS_PER_DAY);
-  const rows = await prisma.measurement.findMany({
+  const agg = await prisma.measurement.aggregate({
     where: {
       userId,
       type: "HEART_RATE_VARIABILITY" as MeasurementType,
@@ -136,10 +137,10 @@ async function readIntradaySdnn(
       // already-folded `stats:` daily-mean row is one point, not a shape.
       NOT: { externalId: { startsWith: "stats:" } },
     },
-    select: { value: true },
-    take: 2000,
+    _count: { _all: true },
+    _avg: { value: true },
   });
-  return rows.map((r) => r.value);
+  return { count: agg._count._all, mean: agg._avg.value };
 }
 
 export interface StressComputeResult {
@@ -164,11 +165,11 @@ export async function computeStressScore(
   now: Date,
 ): Promise<StressComputeResult> {
   const sdnn = await readIntradaySdnn(prisma, userId, now);
-  if (sdnn.length < STRESS_MIN_INTRADAY_SAMPLES) {
+  if (sdnn.count < STRESS_MIN_INTRADAY_SAMPLES || sdnn.mean === null) {
     return {
       score: null,
       reason: "insufficient_intraday_samples",
-      intradaySamples: sdnn.length,
+      intradaySamples: sdnn.count,
     };
   }
 
@@ -181,17 +182,16 @@ export async function computeStressScore(
     return {
       score: null,
       reason: "insufficient_baseline",
-      intradaySamples: sdnn.length,
+      intradaySamples: sdnn.count,
     };
   }
 
-  const dayMean = sdnn.reduce((s, v) => s + v, 0) / sdnn.length;
   const score = stressProxyFromSdnn(
-    dayMean,
+    sdnn.mean,
     baseline.value.center,
     baseline.value.spread,
   );
-  return { score, reason: "ok", intradaySamples: sdnn.length };
+  return { score, reason: "ok", intradaySamples: sdnn.count };
 }
 
 /**

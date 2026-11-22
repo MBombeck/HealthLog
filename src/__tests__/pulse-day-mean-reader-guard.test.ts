@@ -98,6 +98,10 @@ const SQL_READERS: Record<string, Entry> = {
   "lib/measurements/dense-series-read.ts": HELPER,
   "lib/rollups/measurement-rollups.ts": HELPER,
   "lib/rollups/tiered-context.ts": HELPER,
+  "lib/insights/stress-score.ts": {
+    exempt:
+      "the scored day's mean SDNN over HEART_RATE_VARIABILITY rows only; pulse never enters",
+  },
   "lib/insights/correlation-channel-series.ts": {
     exempt:
       "the one SQL mean is the room-climate hour mean, over INDOOR_CO2 / INDOOR_TEMPERATURE / INDOOR_HUMIDITY only; pulse reaches the correlation channels through `dayValueRows` and the rollup compose",
@@ -134,9 +138,6 @@ const TS_READERS: Record<string, Entry> = {
   "components/charts/health-chart/series-math.ts": {
     exempt:
       "a rolling average over the points the chart draws: display smoothing, not a stated figure",
-  },
-  "lib/analytics/correlations-fast-path.ts": {
-    exempt: "mood mean; pulse enters as the resting series, never a day mean",
   },
   "lib/dashboard/summary/cards.ts": {
     exempt:

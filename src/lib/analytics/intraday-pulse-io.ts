@@ -17,7 +17,9 @@
  */
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
-import { resolveRestingPulseSeries } from "@/lib/analytics/resting-pulse";
+import { mergeRestingWithProxy } from "@/lib/analytics/resting-pulse";
+import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
+import { readLocalDayMinuteBuckets } from "@/lib/measurements/dense-bucket-read";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { userDayKey } from "@/lib/tz/format";
 import {
@@ -25,7 +27,6 @@ import {
   HOURLY_BUCKET_MINUTES,
   MIN_BASELINE_DAYS,
   computeHourlyMeanSeries,
-  computeTenMinuteMeanSeries,
   computeUploadedBucketSeries,
   detectTensionWindow,
   makeLocalResolver,
@@ -45,9 +46,13 @@ import { median, roundTo } from "@/lib/stats/central";
 const WINDOW_LEAD_MS = 15 * 60 * 60 * 1000; // covers UTC−14…+12 day starts
 const WINDOW_TRAIL_MS = 39 * 60 * 60 * 1000;
 
-/** Defensive read caps — dense Apple-Health accounts emit ~1 sample/second. */
-const MAX_DAY_PULSE_ROWS = 6000;
-const MAX_DAY_STEP_ROWS = 2000;
+/**
+ * How far back the PULSE proxy reaches when the resting rows cannot carry the
+ * baseline. The baseline is the median of the last 30 daily points, so 30
+ * days of proxy days is everything it can use; it is the same window the
+ * targets card folds its proxy over.
+ */
+const PROXY_BASELINE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** The DTO both the route and the digest read. */
 export interface IntradayPulseResult {
@@ -105,7 +110,7 @@ async function resolveBaseline(
     select: { value: true, measuredAt: true },
   });
 
-  // Only reach for the heavier PULSE-history read when the resting rows
+  // Only reach for the heavier PULSE-proxy read when the resting rows
   // cannot carry the baseline on their own: too few of them, OR the newest
   // one is already stale. Staleness matters because the retention fold mints
   // derived resting rows only for the days it has ALREADY folded, so a proxy
@@ -114,29 +119,30 @@ async function resolveBaseline(
   // pinned the baseline to the fold horizon and never advanced it past it.
   // A genuinely native account reports a resting row daily, never trips the
   // staleness arm, and pays for no extra read.
+  //
+  // The proxy folds in Postgres, one row per local day. It used to read the
+  // newest 365 PULSE rows and fold them here, which on a watch recording
+  // every few seconds is the last quarter of an hour: one proxy day, a
+  // baseline that never matured, and no tension window on any day.
   const newestRestingAt = restingRows[0]?.measuredAt ?? null;
   const restingIsStale =
     newestRestingAt === null ||
     Date.now() - newestRestingAt.getTime() > RESTING_STALE_AFTER_MS;
-  const pulseHistory =
+  const proxySamples =
     restingRows.length >= MIN_BASELINE_DAYS && !restingIsStale
       ? []
-      : await prisma.measurement.findMany({
-          where: { userId, type: "PULSE", deletedAt: null },
-          orderBy: { measuredAt: "desc" },
-          take: 365,
-          select: { value: true, measuredAt: true },
+      : await readRestingPulseProxy({
+          userId,
+          since: new Date(Date.now() - PROXY_BASELINE_WINDOW_MS),
+          timeZone: timezone,
         });
 
-  const resolved = resolveRestingPulseSeries({
+  const resolved = mergeRestingWithProxy({
     restingSamples: restingRows.map((r) => ({
       measuredAt: r.measuredAt,
       value: r.value,
     })),
-    pulseSamples: pulseHistory.map((r) => ({
-      measuredAt: r.measuredAt,
-      value: r.value,
-    })),
+    proxySamples,
     dayKeyOf: (d) => userDayKey(d, timezone),
   });
 
@@ -181,29 +187,39 @@ export async function loadIntradayPulse(
   const anchorMs = new Date(`${dateKey}T00:00:00.000Z`).getTime();
   const start = new Date(anchorMs - WINDOW_LEAD_MS);
   const end = new Date(anchorMs + WINDOW_TRAIL_MS);
-  // DATAINT M2 — PULSE/step reads are bounded to the EXACT local-day window
-  // (DST-aware; 23/24/25h), not the ±15h/39h padded superset. The prior
-  // padded read meant `take: MAX_DAY_*_ROWS` (an ascending cap) could be
-  // entirely consumed by the PREVIOUS local day's samples (e.g. a
-  // workout-heavy evening) before reaching the viewed day at all on a dense
-  // account — the cap now only ever spends against rows that are actually
-  // inside `dateKey`. `computeTenMinuteMeanSeries` / the step-bucket loop
-  // already re-filter by `dayKey` defensively, so this is a pure narrowing.
-  // The workout-overlap read keeps the wider padded window: it has no `take`
-  // cap, so there is no truncation risk, and a workout can legitimately
-  // start the local-day before or end the local-day after.
+  // The PULSE and step reads cover the local day (DST-aware; 23/24/25h). The
+  // raw readings fold into ten-minute buckets in Postgres
+  // (`readLocalDayMinuteBuckets`), at most 144 rows for a day of any density;
+  // a capped row read used to end the chart in the fourth hour of a watch
+  // writing 35 000 rows a day. The `stats:` rows are aggregates already (an
+  // uploaded ten-minute bucket, a folded hour) and are read as rows. The
+  // workout read keeps the padded window: a workout can start the local day
+  // before or end the local day after.
   const { dayStart, dayEnd } = localDayWindow(dateKey, timezone);
 
-  const [pulseRows, stepRows, workoutRows, baseline] = await Promise.all([
+  const [
+    rawPulseBuckets,
+    statsPulseRows,
+    stepBucketRows,
+    workoutRows,
+    baseline,
+  ] = await Promise.all([
+    readLocalDayMinuteBuckets({
+      userId,
+      type: "PULSE",
+      dateKey,
+      timeZone: timezone,
+      bucketMinutes: BUCKET_MINUTES,
+    }),
     prisma.measurement.findMany({
       where: {
         userId,
         type: "PULSE",
         deletedAt: null,
         measuredAt: { gte: dayStart, lt: dayEnd },
+        externalId: { startsWith: "stats:" },
       },
       orderBy: { measuredAt: "asc" },
-      take: MAX_DAY_PULSE_ROWS,
       select: {
         value: true,
         valueMin: true,
@@ -212,16 +228,16 @@ export async function loadIntradayPulse(
         externalId: true,
       },
     }),
-    prisma.measurement.findMany({
-      where: {
-        userId,
-        type: "ACTIVITY_STEPS",
-        deletedAt: null,
-        measuredAt: { gte: dayStart, lt: dayEnd },
-      },
-      orderBy: { measuredAt: "asc" },
-      take: MAX_DAY_STEP_ROWS,
-      select: { value: true, measuredAt: true, externalId: true },
+    // Intraday step buckets exclude the consolidated `stats:` daily totals
+    // (the helper reads raw rows only), or a single day-sum row would dump
+    // the whole day's steps into one bucket and wrongly mark an at-rest
+    // stretch as moving.
+    readLocalDayMinuteBuckets({
+      userId,
+      type: "ACTIVITY_STEPS",
+      dateKey,
+      timeZone: timezone,
+      bucketMinutes: BUCKET_MINUTES,
     }),
     prisma.workout.findMany({
       where: {
@@ -234,32 +250,32 @@ export async function loadIntradayPulse(
     resolveBaseline(userId, timezone),
   ]);
 
-  // v1.30.7 (iOS #34) — classify the day's PULSE rows three ways by externalId
-  // shape (the shapes are disjoint, so this is unambiguous):
-  //   · raw per-sample        — no `stats:` prefix;
+  // v1.30.7 (iOS #34) — the day's PULSE readings come in three shapes, told
+  // apart by externalId (the shapes are disjoint, so this is unambiguous):
+  //   · raw per-sample        — no `stats:` prefix, folded in SQL above;
   //   · uploaded 10-min bucket — `stats:HK…:<10-min ISO instant with Z>`
   //     (the go-forward aggregated wire contract);
   //   · server-folded hourly  — any other `stats:` row (the dense-intraday
   //     retention fold's `stats:<HK>:<day>T<HH>` local-hour output).
   // Per the per-day-exclusive cutover invariant a day is normally single-grain;
   // the one cutover-straddling local day is handled by the overlay below.
-  const rawPulseRows = pulseRows.filter(
-    (r) => !r.externalId?.startsWith("stats:"),
-  );
-  const uploadedBucketRows = pulseRows.filter((r) =>
+  const uploadedBucketRows = statsPulseRows.filter((r) =>
     isAggregatedBucketExternalId(r.externalId),
   );
-  const foldedPulseRows = pulseRows.filter(
-    (r) =>
-      r.externalId?.startsWith("stats:") &&
-      !isAggregatedBucketExternalId(r.externalId),
+  const foldedPulseRows = statsPulseRows.filter(
+    (r) => !isAggregatedBucketExternalId(r.externalId),
   );
 
-  const rawSeries = computeTenMinuteMeanSeries(
-    rawPulseRows.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
-    dateKey,
-    localOf,
-  );
+  // Same shape and rounding as `computeTenMinuteMeanSeries`: the mean and the
+  // range to one decimal, the raw count kept for the density gate.
+  const rawSeries: IntradayHrBucket[] = rawPulseBuckets.map((b) => ({
+    startMinute: b.startMinute,
+    mean: roundTo(b.sum / b.n, 1),
+    count: b.n,
+    min: roundTo(b.min, 1),
+    max: roundTo(b.max, 1),
+  }));
+  const rawSampleRows = rawPulseBuckets.reduce((n, b) => n + b.n, 0);
   const bucketSeries = computeUploadedBucketSeries(
     uploadedBucketRows.flatMap((r) => {
       const bucketStart = parseAggregatedBucketStart(r.externalId);
@@ -310,21 +326,9 @@ export async function loadIntradayPulse(
     useHourlyFallback && hourlySeries.length > 0 ? "hourly" : "tenMin";
   const series = resolution === "hourly" ? hourlySeries : tenMinSeries;
 
-  // Intraday step buckets — EXCLUDE the consolidated `stats:` daily totals, or a
-  // single day-sum row would dump the whole day's steps into one bucket and
-  // wrongly mark an at-rest stretch as moving.
-  const stepBuckets = new Map<number, number>();
-  for (const row of stepRows) {
-    if (row.externalId?.startsWith("stats:")) continue;
-    const local = localOf(row.measuredAt);
-    if (local.dayKey !== dateKey) continue;
-    const startMinute =
-      Math.floor(local.minuteOfDay / BUCKET_MINUTES) * BUCKET_MINUTES;
-    stepBuckets.set(
-      startMinute,
-      (stepBuckets.get(startMinute) ?? 0) + row.value,
-    );
-  }
+  const stepBuckets = new Map<number, number>(
+    stepBucketRows.map((b) => [b.startMinute, b.sum]),
+  );
 
   const workouts = workoutRows
     .map((w) => workoutToInterval(w.startedAt, w.endedAt, dateKey, localOf))
@@ -358,7 +362,7 @@ export async function loadIntradayPulse(
   // buckets" rather than leaving the read path itself as a live suspect.
   annotate({
     meta: {
-      intraday_raw_sample_rows: rawPulseRows.length,
+      intraday_raw_sample_rows: rawSampleRows,
       intraday_uploaded_bucket_rows: uploadedBucketRows.length,
       intraday_folded_hourly_rows: foldedPulseRows.length,
       intraday_ten_min_buckets: tenMinSeries.length,

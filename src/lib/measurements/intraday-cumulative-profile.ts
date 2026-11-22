@@ -40,7 +40,7 @@ import { prisma } from "@/lib/db";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 
 import { hourOfDayForUserTz, type PerSampleRow } from "./consolidation-tz";
-import { localDayWindow } from "@/lib/tz/local-day";
+import { readLocalDayMinuteBuckets } from "./dense-bucket-read";
 
 /** Hours in a stored profile. Always 24, DST days included — see below. */
 export const PROFILE_HOURS = 24;
@@ -73,13 +73,6 @@ export const CUMULATIVE_PROFILE_RETENTION_DAYS = 400;
  * simply absent, which is the truth.
  */
 export const CUMULATIVE_PROFILE_LIVE_FOLD_DAYS = 2;
-
-/**
- * Rows a single live day-fold will read. A dense Apple Watch step day is
- * ~1 440 rows; the cap is generous headroom over that and exists so a
- * pathological account cannot turn a highlight into an unbounded scan.
- */
-const MAX_LIVE_FOLD_ROWS = 5000;
 
 /** Prefix marking an already-collapsed daily-stats row. */
 const DAILY_STATS_PREFIX = "stats:";
@@ -153,6 +146,20 @@ export function foldHourlyCumulative(
     sampleCount += 1;
   }
 
+  return cumulativeFoldFromHourSums(perHour, sampleCount, dateKey, timezone);
+}
+
+/**
+ * The running totals of a day whose readings are already summed per local
+ * hour (`perHour[h]` the sum of hour `h`), as the live fold reads them from
+ * Postgres. `null` when no reading backed the day, as for the row fold.
+ */
+function cumulativeFoldFromHourSums(
+  perHour: readonly number[],
+  sampleCount: number,
+  dateKey: string,
+  timezone: string,
+): CumulativeDayFold | null {
   if (sampleCount === 0) return null;
 
   const hourlyCumulative = new Array<number>(PROFILE_HOURS);
@@ -291,8 +298,8 @@ export async function pruneIntradayCumulativeProfiles(
  *
  * Stored rows answer the drained days. The days still inside the grace window
  * hold no stored row yet, so each is folded live from its raw per-sample rows —
- * bounded to `CUMULATIVE_PROFILE_LIVE_FOLD_DAYS` and to `MAX_LIVE_FOLD_ROWS`
- * per day. A day that yields neither is absent from the result; the caller
+ * bounded to `CUMULATIVE_PROFILE_LIVE_FOLD_DAYS`, each day summed per hour in
+ * Postgres. A day that yields neither is absent from the result; the caller
  * counts what it got rather than assuming a length.
  *
  * Profiles cut on a different timezone than the account's current one are
@@ -370,9 +377,14 @@ export async function readCumulativeDayProfiles(args: {
 }
 
 /**
- * Fold one local day straight from its live per-sample rows. Scoped to the
- * exact local-day window (DST-aware, 23/24/25 h) so the row cap is only ever
- * spent on rows that are actually inside the day.
+ * Fold one local day straight from its live per-sample rows, summed per local
+ * hour in Postgres (`readLocalDayMinuteBuckets`), so the database returns at
+ * most 24 rows however dense the stream. It used to read the rows under a
+ * 5 000-row cap and fold them here; a watch writing active energy every few
+ * seconds ran past the cap by mid-afternoon and the rest of the day was
+ * missing from the curve with nothing to say so. Scoped to the exact
+ * local-day window (DST-aware, 23/24/25 h); `stats:` rows are skipped as the
+ * row fold skips them.
  */
 async function foldLiveDay(
   db: PrismaClient,
@@ -381,23 +393,21 @@ async function foldLiveDay(
   dateKey: string,
   timezone: string,
 ): Promise<CumulativeDayFold | null> {
-  const { dayStart, dayEnd } = localDayWindow(dateKey, timezone);
-  const rows = await db.measurement.findMany({
-    where: {
-      userId,
-      type,
-      deletedAt: null,
-      measuredAt: { gte: dayStart, lt: dayEnd },
-    },
-    orderBy: { measuredAt: "asc" },
-    take: MAX_LIVE_FOLD_ROWS,
-    select: {
-      id: true,
-      type: true,
-      value: true,
-      measuredAt: true,
-      externalId: true,
-    },
+  const buckets = await readLocalDayMinuteBuckets({
+    userId,
+    type,
+    dateKey,
+    timeZone: timezone,
+    bucketMinutes: 60,
+    db,
   });
-  return foldHourlyCumulative(rows, dateKey, timezone);
+  const perHour = new Array<number>(PROFILE_HOURS).fill(0);
+  let sampleCount = 0;
+  for (const b of buckets) {
+    const hour = b.startMinute / 60;
+    if (hour < 0 || hour >= PROFILE_HOURS) continue;
+    perHour[hour] += b.sum;
+    sampleCount += b.n;
+  }
+  return cumulativeFoldFromHourSums(perHour, sampleCount, dateKey, timezone);
 }

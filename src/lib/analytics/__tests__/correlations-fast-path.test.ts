@@ -29,8 +29,18 @@ vi.mock("@/lib/rollups/measurement-coverage", () => ({
   probeRollupCoverage: vi.fn(),
 }));
 
+// The PULSE proxy folds in SQL; the fake derives it from `proxyPulseRows`
+// in the zone the read is asked for.
+const { proxyRead } = vi.hoisted(() => ({ proxyRead: vi.fn() }));
+let proxyPulseRows: Array<{ measuredAt: Date; value: number }> = [];
+vi.mock("@/lib/analytics/resting-pulse-read", () => ({
+  readRestingPulseProxy: (opts: unknown) => proxyRead(opts),
+}));
+
 import { prisma } from "@/lib/db";
+import { deriveRestingProxyFromPulse } from "@/lib/analytics/resting-pulse";
 import { annotate } from "@/lib/logging/context";
+import { userDayKey } from "@/lib/tz/format";
 import {
   isFullyCovered,
   probeRollupCoverage,
@@ -54,6 +64,13 @@ const FULLY_COVERED = isFullyCovered as unknown as ReturnType<typeof vi.fn>;
 const ANNOTATE = annotate as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
+  proxyRead.mockReset();
+  proxyPulseRows = [];
+  proxyRead.mockImplementation(async (opts: { timeZone: string }) =>
+    deriveRestingProxyFromPulse(proxyPulseRows, (d) =>
+      userDayKey(d, opts.timeZone),
+    ),
+  );
   MEASUREMENT_FIND_MANY.mockReset();
   ROLLUP_FIND_MANY.mockReset();
   MOOD_FIND_MANY.mockReset();
@@ -106,8 +123,10 @@ describe("computeCorrelationHypothesesFastPath", () => {
       // low-percentile proxy) from `measurements`, so the rollup count
       // drops to 2 and the resting reads land on `measurements`.
       expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(2);
-      // RESTING read returns [] (default mock) → RAW PULSE proxy read too.
-      expect(MEASUREMENT_FIND_MANY).toHaveBeenCalledTimes(2);
+      // RESTING read returns [] (default mock) → the PULSE proxy is read,
+      // folded in SQL rather than as raw rows.
+      expect(MEASUREMENT_FIND_MANY).toHaveBeenCalledTimes(1);
+      expect(proxyRead).toHaveBeenCalledOnce();
       // Mood + intake reads always live.
       expect(MOOD_FIND_MANY).toHaveBeenCalledTimes(1);
       expect(INTAKE_FIND_MANY).toHaveBeenCalledTimes(1);
@@ -159,9 +178,10 @@ describe("computeCorrelationHypothesesFastPath", () => {
       });
 
       expect(result.path).toBe("live");
-      // SYS + WEIGHT (live series) + RESTING + RAW-PULSE proxy (resting
-      // series, since RESTING returns [] under the default mock) = 4 reads.
-      expect(MEASUREMENT_FIND_MANY).toHaveBeenCalledTimes(4);
+      // SYS + WEIGHT (live series) + RESTING = 3 row reads; the PULSE proxy
+      // (RESTING returns [] under the default mock) folds in SQL.
+      expect(MEASUREMENT_FIND_MANY).toHaveBeenCalledTimes(3);
+      expect(proxyRead).toHaveBeenCalledOnce();
       expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
     });
 
@@ -224,8 +244,9 @@ describe("computeCorrelationHypothesesFastPath", () => {
 
       expect(result.path).toBe("rollup");
       expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(2);
-      // Resting-pulse reads (RESTING + RAW-PULSE proxy) land on measurements.
-      expect(MEASUREMENT_FIND_MANY).toHaveBeenCalledTimes(2);
+      // The RESTING read lands on measurements; the PULSE proxy folds in SQL.
+      expect(MEASUREMENT_FIND_MANY).toHaveBeenCalledTimes(1);
+      expect(proxyRead).toHaveBeenCalledOnce();
 
       const calls = ANNOTATE.mock.calls.map((c) => c[0]);
       const corrCall = calls.find((c) => c?.meta?.correlations !== undefined);
@@ -253,7 +274,9 @@ describe("computeCorrelationHypothesesFastPath", () => {
       });
 
       expect(result.path).toBe("live");
-      expect(MEASUREMENT_FIND_MANY).toHaveBeenCalledTimes(4);
+      // SYS + WEIGHT + RESTING as rows; the PULSE proxy folds in SQL.
+      expect(MEASUREMENT_FIND_MANY).toHaveBeenCalledTimes(3);
+      expect(proxyRead).toHaveBeenCalledOnce();
       expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
 
       const calls = ANNOTATE.mock.calls.map((c) => c[0]);
@@ -304,23 +327,9 @@ describe("computeCorrelationHypothesesFastPath", () => {
       FULLY_COVERED.mockReturnValue(false);
       PROBE.mockResolvedValue(coverage);
 
-      MEASUREMENT_FIND_MANY.mockImplementation(
-        async (args: {
-          where?: { type?: string };
-        }): Promise<Array<{ id: string; measuredAt: Date; value: number }>> => {
-          const type = args?.where?.type;
-          if (type === "PULSE") {
-            // No RESTING_HEART_RATE rows exist, so the proxy reads RAW PULSE.
-            return pulseValues.map((value, i) => ({
-              id: `pulse-${i}`,
-              measuredAt: day,
-              value,
-            }));
-          }
-          // SYS / WEIGHT / RESTING_HEART_RATE → empty.
-          return [];
-        },
-      );
+      // SYS / WEIGHT / RESTING_HEART_RATE → empty, so the proxy is read.
+      MEASUREMENT_FIND_MANY.mockResolvedValue([]);
+      proxyPulseRows = pulseValues.map((value) => ({ measuredAt: day, value }));
       MOOD_FIND_MANY.mockResolvedValue([{ score: 4, moodLoggedAt: day }]);
 
       const result = await computeCorrelationHypothesesFastPath({

@@ -399,24 +399,30 @@ export async function computeStrainScore(
   const dayStart = new Date(`${dayKey}T00:00:00.000Z`);
   const dayEnd = new Date(dayStart.getTime() + MS_PER_DAY);
 
-  // Day-total active energy first — it is the fallback signal and cheap.
-  const energyRows = await prisma.measurement.findMany({
+  // Day-total active energy first — it is the fallback signal and cheap. One
+  // row per source and device type, summed in Postgres: the source picker
+  // below chooses between sources and device types and never between single
+  // rows, so the sums pick exactly as the rows would. A watch writing active
+  // energy every few seconds holds more rows a day than any cap that used to
+  // stand here, and a capped read ended the day's total mid-afternoon.
+  const energyGroups = await prisma.measurement.groupBy({
+    by: ["source", "deviceType"],
     where: {
       userId,
       type: "ACTIVE_ENERGY_BURNED" as MeasurementType,
       deletedAt: null,
       measuredAt: { gte: dayStart, lt: dayEnd },
     },
-    orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
-    select: {
-      value: true,
-      source: true,
-      deviceType: true,
-      measuredAt: true,
-      type: true,
-    },
-    take: 5000,
+    orderBy: [{ source: "asc" }, { deviceType: "asc" }],
+    _sum: { value: true },
   });
+  const energyRows = energyGroups.map((g) => ({
+    source: g.source,
+    deviceType: g.deviceType,
+    measuredAt: dayStart,
+    type: "ACTIVE_ENERGY_BURNED" as MeasurementType,
+    value: g._sum.value ?? 0,
+  }));
 
   // The day's workouts + their HR series, with the session identity the
   // cross-source picker needs: one run recorded by the watch and synced again
