@@ -19,6 +19,7 @@ import { Toaster } from "@/components/ui/sonner";
 import {
   applyThemeColor,
   parseThemeChoice,
+  resolveTheme,
   THEME_STORAGE_KEY,
   type ResolvedTheme,
   type ThemeChoice,
@@ -165,7 +166,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     getSystemThemeSnapshot,
     getServerSystemSnapshot,
   );
-  const resolvedTheme = theme === "system" ? systemTheme : theme;
+  const resolvedTheme = resolveTheme(theme, systemTheme === "dark");
 
   // Keep the <html> class in sync with the resolved theme. This is a DOM write,
   // not a setState — it runs on mount (reconciling the class the inline script
