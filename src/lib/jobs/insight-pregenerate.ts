@@ -73,6 +73,7 @@ import {
 } from "@/lib/insights/comprehensive-generate";
 import { generateStatusBatchForUser } from "@/lib/insights/status-batch";
 import { withFeatureCacheScope } from "@/lib/insights/feature-cache";
+import { warmScope } from "./insight-pregenerate-scope";
 import { generateMetricStatus } from "@/lib/insights/metric-status";
 import {
   METRIC_STATUS_IDS,
@@ -533,10 +534,8 @@ export async function runInsightPregenerate(
   const generate = options.generate ?? generateComprehensiveInsight;
   const enqueueRetry = options.enqueueRetry ?? enqueuePregenerateFailureRetry;
   const reportRun = options.reportRun ?? reportJobRun;
-  // v1.18.7 — when the caller injects its own `statusGenerators`
-  // (the unit tests do), keep the per-card warm so those assertions hold;
-  // production injects nothing, so the seven warm calls collapse into ONE
-  // batched generation. The injected per-card path stays the test seam.
+  // Injected `statusGenerators` (the unit tests) keep the per-card warm;
+  // production injects none, so the seven warm calls are ONE batched call.
   const injectedStatusGenerators = options.statusGenerators;
   const warmStatus = (
     userId: string,
@@ -566,8 +565,7 @@ export async function runInsightPregenerate(
     firstFailure: null,
   };
 
-  // Master kill-switch — when the operator disabled the briefing
-  // surface globally there is nothing to pre-generate.
+  // The operator's briefing switch is off: nothing to pre-generate.
   const flags = await getAssistantFlags();
   if (!flags.briefing) return result;
 
@@ -600,7 +598,9 @@ export async function runInsightPregenerate(
     const outcome = await withBackgroundEvent(
       "job.insight_pregenerate.candidate",
       (evt) =>
-        withFeatureCacheScope(() => pregenerateCandidate(candidate, key, evt)),
+        warmScope(candidate.id, () =>
+          pregenerateCandidate(candidate, key, evt),
+        ),
     );
     runOutcomes.push(outcome);
   }

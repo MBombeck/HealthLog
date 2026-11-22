@@ -54,7 +54,7 @@
     "components/admin/glitchtip-section.tsx :: GlitchtipSection": 231,
     "components/admin/host-metrics-chart.tsx :: HostMetricsChart": 232,
     "components/admin/invite-tokens-section.tsx :: InviteTokensSection": 525,
-    "components/admin/login-overview-section.tsx :: LoginOverviewSection": 501,
+    "components/admin/login-overview-section.tsx :: LoginOverviewSection": 481,
     "components/admin/pulse-day-mean-card.tsx :: PulseDayMeanCard": 302,
     "components/admin/reminders-section.tsx :: RemindersSection": 306,
     "components/admin/user-management-section.tsx :: UserManagementSection": 630,

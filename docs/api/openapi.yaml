@@ -29140,6 +29140,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
+  /api/ai/job-failures:
+    get:
+      tags:
+        - Profile
+      summary: Why background AI work stopped (v1.49)
+      description: "Own account only: a cookie session or a full-scope token. One entry per kind of background AI work (and
+        per document for document work) whose latest run failed, newest first, at most 50. A document's entries are
+        listed only while the document is in the record. Refusals that are somebody's decision (an operator switch, a
+        module or the AI analysis turned off, the usage level) are never listed; a missing provider or consent only when
+        the person started the work or bound the capability to a named chain."
+      responses:
+        "200":
+          description: The recorded failures.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetAiJobFailuresResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/medications/{id}/ingredients:
     put:
       tags:
@@ -92126,6 +92147,13 @@ components:
             more facts than one review takes. Kept from the last extraction (the extract route, its background run, or
             automatic lab staging) until the next one replaces the facts; false for a document never extracted. A review
             shows it whenever it is opened, not only when the run ends."
+        aiFailures:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiJobFailure"
+          description: v1.49 — why the latest background AI work on this document stopped, one entry per kind (`documentSummary`,
+            `documentIndex`, `documentRead`), newest first. Empty when nothing failed or the work succeeded since.
+            Absent on servers older than v1.49.
       required:
         - id
         - kind
@@ -92159,6 +92187,7 @@ components:
         - summaryGeneratedAt
         - summaryState
         - extractionIncomplete
+        - aiFailures
       additionalProperties: false
       description: 'A stored document plus its staged facts. `summary` is a short (3-4 sentence) plain-language description of
         WHAT the document is, generated once and then served from storage; it is descriptive only, never a diagnosis.
@@ -92310,6 +92339,89 @@ components:
         catalogue entry when this release still knows the dose's slug, for the reader's own bundle to name; null is the
         signal to show `vaccineName`, the person's own wording. The same table the dose's own
         `/api/vaccinations/{id}/links` writes from the other end.
+    AiJobFailure:
+      type: object
+      properties:
+        job:
+          type: string
+          enum:
+            - documentSummary
+            - documentIndex
+            - documentRead
+            - labScan
+            - supplementLabel
+            - statusText
+            - briefing
+            - periodNarrative
+            - workoutInsight
+            - reactionLine
+            - coachNudge
+            - coachMemory
+          description: "The kind of background AI work: `documentSummary`, `documentIndex` (making a document searchable),
+            `documentRead` (reading a document's values or filing suggestions), `labScan`, `supplementLabel`,
+            `statusText` (the notes on the cards), `briefing`, `periodNarrative`, `workoutInsight`, `reactionLine`,
+            `coachNudge`, `coachMemory`. Treat an unknown value as other background work."
+        code:
+          type: string
+          enum:
+            - no_provider
+            - chain_no_provider
+            - consent_required
+            - not_permitted
+            - check_failed
+            - credential_expired
+            - rate_limited
+            - provider_timeout
+            - provider_unreachable
+            - provider_empty
+            - provider_reasoning_only
+            - provider_paused
+            - provider_error
+            - budget_exhausted
+            - unreadable_file
+          description: "Why it stopped. `no_provider`: no provider is set up that could do this work. `chain_no_provider`: the
+            work is bound to a named chain and none of its entries is set up. `consent_required`: the provider needs a
+            consent receipt and none is active. `not_permitted`: the work may not run on this record. `check_failed`:
+            the server could not check whether it may run. `credential_expired`: the provider refused the key.
+            `rate_limited`: the provider said too many requests. `provider_timeout`: no answer in time.
+            `provider_unreachable`: the provider could not be reached. `provider_empty`: it answered with nothing.
+            `provider_reasoning_only`: the model reasoned and never answered. `provider_paused`: the provider failed so
+            often that background work waits before trying again. `provider_error`: another provider failure.
+            `budget_exhausted`: today's AI allowance is used up. `unreadable_file`: the file could not be prepared for
+            the provider. Treat an unknown value as `provider_error`."
+        documentId:
+          description: The document the work was for, or null.
+          type:
+            - string
+            - "null"
+        providerType:
+          description: The provider entry that failed (a chain provider type such as `local` or `anthropic`), when one was called.
+          type:
+            - string
+            - "null"
+        failCount:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+          description: Failures in a row since the last success.
+        firstFailedAt:
+          type: string
+          description: ISO 8601.
+        lastFailedAt:
+          type: string
+          description: ISO 8601.
+      required:
+        - job
+        - code
+        - documentId
+        - providerType
+        - failCount
+        - firstFailedAt
+        - lastFailedAt
+      additionalProperties: false
+      description: Why the latest background AI work of one kind stopped (v1.49). Recorded by the server from closed codes
+        only; no provider message or payload is stored. A later success removes it; it is no longer served thirty days
+        after its last failure.
     InboundDocumentUpdateEnvelope:
       type: object
       properties:
@@ -105321,6 +105433,33 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    GetAiJobFailuresResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AiJobFailuresList"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AiJobFailuresList:
+      type: object
+      properties:
+        failures:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiJobFailure"
+      required:
+        - failures
       additionalProperties: false
     PutMedicationIngredientsResponse:
       type: object

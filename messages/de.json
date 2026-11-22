@@ -8725,7 +8725,19 @@
         "next": "Weiter",
         "pageOf": "Seite {page} von {total}",
         "export": "CSV exportieren",
-        "empty": "Keine Audit-Einträge passen zu den aktuellen Filtern."
+        "empty": "Keine Audit-Einträge passen zu den aktuellen Filtern.",
+        "family": {
+          "auth": "Anmeldungen",
+          "documents": "Dokumente",
+          "sharing": "Teilen und verwaltete Profile",
+          "medication": "Medikamente"
+        },
+        "familyAll": {
+          "auth": "Alle Anmeldeaktionen",
+          "documents": "Alle Dokumentaktionen",
+          "sharing": "Alle Aktionen zu Teilen und Profilen",
+          "medication": "Alle Medikamentenaktionen"
+        }
       },
       "app-logs": {
         "title": "App-Logs",
@@ -14316,7 +14328,48 @@
     "waitingForWorker": "Warte auf den Hintergrunddienst. Ändert sich das nicht, läuft der Worker auf dem Server vielleicht nicht.",
     "errorWorkerUnavailable": "Der Hintergrunddienst ist gerade nicht erreichbar. Versuch es gleich noch einmal oder bitte die Person, die den Server betreibt, ihn zu prüfen.",
     "errorTimedOut": "Das Lesen hat länger gedauert, als deine KI-Antwortzeit erlaubt. Versuch es noch einmal oder erhöhe die Antwortzeit in den KI-Einstellungen.",
-    "errorReaderBusy": "Der Dokumentleser ist gerade mit anderen Aufgaben beschäftigt. Versuch es in einer Minute noch einmal."
+    "errorReaderBusy": "Der Dokumentleser ist gerade mit anderen Aufgaben beschäftigt. Versuch es in einer Minute noch einmal.",
+    "jobFailure": {
+      "title": "Angehaltene KI im Hintergrund",
+      "description": "Was zuletzt nicht durchlief und warum; ein Eintrag verschwindet, sobald es wieder klappt.",
+      "line": "{job}: {reason}",
+      "repeated": "{count}-mal hintereinander fehlgeschlagen, zuletzt am {when}.",
+      "lastAt": "Zuletzt versucht am {when}.",
+      "openDocument": "Dokument öffnen",
+      "retry": "Erneut versuchen",
+      "job": {
+        "documentSummary": "Dokument-Zusammenfassung",
+        "documentIndex": "Dokument für die Suche lesen",
+        "documentRead": "Werte aus einem Dokument lesen",
+        "labScan": "Laborbefund scannen",
+        "supplementLabel": "Etikett eines Nahrungsergänzungsmittels",
+        "statusText": "Hinweise auf den Karten",
+        "briefing": "Tagesbriefing",
+        "periodNarrative": "Wochen- und Monatsrückblick",
+        "workoutInsight": "Notiz zum Training",
+        "reactionLine": "Reaktion auf neue Daten",
+        "coachNudge": "Coach-Anstoß",
+        "coachMemory": "Coach-Gedächtnis",
+        "other": "KI-Arbeit im Hintergrund"
+      },
+      "code": {
+        "no_provider": "Es ist kein KI-Anbieter eingerichtet, der das übernehmen kann.",
+        "chain_no_provider": "Diese Aufgabe ist an eine Anbieterkette gebunden, und keiner ihrer Anbieter ist eingerichtet. Prüf die Kette und ihre Schlüssel in den KI-Einstellungen.",
+        "consent_required": "Der KI-Anbieter braucht zuerst deine Einwilligung. Du kannst sie in den KI-Einstellungen geben.",
+        "not_permitted": "Für diese Akte ist KI-Arbeit nicht erlaubt.",
+        "check_failed": "Der Server konnte nicht prüfen, ob die KI laufen darf. Er versucht es beim nächsten Mal wieder.",
+        "credential_expired": "Der KI-Anbieter hat den Schlüssel abgelehnt. Prüf ihn oder verbinde ihn neu in den KI-Einstellungen.",
+        "rate_limited": "Der KI-Anbieter meldet zu viele Anfragen. Es wird später erneut versucht.",
+        "provider_timeout": "Der KI-Anbieter hat nicht rechtzeitig geantwortet.",
+        "provider_unreachable": "Der KI-Anbieter war nicht erreichbar. Prüf, ob er läuft.",
+        "provider_empty": "Der KI-Anbieter hat eine leere Antwort geliefert.",
+        "provider_reasoning_only": "Das Modell hat nachgedacht, aber keine Antwort gegeben.",
+        "provider_paused": "Der KI-Anbieter ist mehrmals hintereinander gescheitert, daher wartet die Hintergrundarbeit, bevor sie ihn wieder versucht.",
+        "provider_error": "Der KI-Anbieter hat einen Fehler gemeldet.",
+        "budget_exhausted": "Das KI-Kontingent für heute ist aufgebraucht. Morgen geht es wieder.",
+        "unreadable_file": "Die Datei konnte nicht für den KI-Anbieter aufbereitet werden."
+      }
+    }
   },
   "symptoms": {
     "add": "Neues Symptom",

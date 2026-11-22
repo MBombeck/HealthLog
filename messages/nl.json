@@ -8725,7 +8725,19 @@
         "next": "Volgende",
         "pageOf": "Pagina {page} van {total}",
         "export": "CSV exporteren",
-        "empty": "Geen auditregistraties die aan de huidige filters voldoen."
+        "empty": "Geen auditregistraties die aan de huidige filters voldoen.",
+        "family": {
+          "auth": "Aanmeldingen",
+          "documents": "Documenten",
+          "sharing": "Delen en beheerde profielen",
+          "medication": "Medicijnen"
+        },
+        "familyAll": {
+          "auth": "Alle aanmeldacties",
+          "documents": "Alle documentacties",
+          "sharing": "Alle acties voor delen en profielen",
+          "medication": "Alle medicijnacties"
+        }
       },
       "app-logs": {
         "title": "Applogs",
@@ -14316,7 +14328,48 @@
     "waitingForWorker": "Wachten op het achtergrondproces. Als dit niet verandert, draait het achtergrondproces van de server mogelijk niet.",
     "errorWorkerUnavailable": "Het achtergrondproces is op dit moment niet beschikbaar. Probeer het zo opnieuw, of vraag de beheerder van de server om het te controleren.",
     "errorTimedOut": "Het lezen duurde langer dan je ingestelde AI-responstijd toestaat. Probeer het opnieuw, of verhoog de responstijd in de AI-instellingen.",
-    "errorReaderBusy": "De documentlezer is met ander werk bezig. Probeer het over een minuut opnieuw."
+    "errorReaderBusy": "De documentlezer is met ander werk bezig. Probeer het over een minuut opnieuw.",
+    "jobFailure": {
+      "title": "Gestopte AI op de achtergrond",
+      "description": "Werk dat onlangs stopte en waarom; een regel verdwijnt zodra het weer lukt.",
+      "line": "{job}: {reason}",
+      "repeated": "{count} keer achter elkaar mislukt, het laatst op {when}.",
+      "lastAt": "Laatst geprobeerd op {when}.",
+      "openDocument": "Document openen",
+      "retry": "Opnieuw proberen",
+      "job": {
+        "documentSummary": "Samenvatting van een document",
+        "documentIndex": "Document lezen voor zoeken",
+        "documentRead": "Waarden uit een document lezen",
+        "labScan": "Labuitslag scannen",
+        "supplementLabel": "Etiket van een supplement",
+        "statusText": "Toelichtingen op de kaarten",
+        "briefing": "Dagbriefing",
+        "periodNarrative": "Week- en maandoverzicht",
+        "workoutInsight": "Notitie bij een training",
+        "reactionLine": "Reactie op nieuwe gegevens",
+        "coachNudge": "Seintje van de Coach",
+        "coachMemory": "Geheugen van de Coach",
+        "other": "AI-werk op de achtergrond"
+      },
+      "code": {
+        "no_provider": "Er is geen AI-provider ingesteld die dit kan doen.",
+        "chain_no_provider": "Deze taak is gekoppeld aan een providerketen en geen van de providers daarin is ingesteld. Controleer de keten en de sleutels in de AI-instellingen.",
+        "consent_required": "De AI-provider heeft eerst je toestemming nodig. Die kun je geven in de AI-instellingen.",
+        "not_permitted": "AI-werk is voor dit dossier niet toegestaan.",
+        "check_failed": "De server kon niet nagaan of AI mag draaien. Hij probeert het de volgende keer opnieuw.",
+        "credential_expired": "De AI-provider weigerde de sleutel. Controleer hem of koppel opnieuw in de AI-instellingen.",
+        "rate_limited": "De AI-provider meldt te veel verzoeken. Het wordt later opnieuw geprobeerd.",
+        "provider_timeout": "De AI-provider antwoordde niet op tijd.",
+        "provider_unreachable": "De AI-provider was niet bereikbaar. Controleer of hij draait.",
+        "provider_empty": "De AI-provider gaf een leeg antwoord.",
+        "provider_reasoning_only": "Het model dacht na, maar gaf geen antwoord.",
+        "provider_paused": "De AI-provider faalde meerdere keren achter elkaar, dus het achtergrondwerk wacht voordat het hem opnieuw probeert.",
+        "provider_error": "De AI-provider gaf een fout terug.",
+        "budget_exhausted": "Het AI-tegoed van vandaag is op. Morgen werkt het weer.",
+        "unreadable_file": "Het bestand kon niet worden voorbereid voor de AI-provider."
+      }
+    }
   },
   "symptoms": {
     "add": "Nieuw symptoom",

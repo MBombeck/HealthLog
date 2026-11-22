@@ -8725,7 +8725,19 @@
         "next": "Avanti",
         "pageOf": "Pagina {page} di {total}",
         "export": "Esporta CSV",
-        "empty": "Nessuna voce di audit corrisponde ai filtri attuali."
+        "empty": "Nessuna voce di audit corrisponde ai filtri attuali.",
+        "family": {
+          "auth": "Accessi",
+          "documents": "Documenti",
+          "sharing": "Condivisione e profili gestiti",
+          "medication": "Farmaci"
+        },
+        "familyAll": {
+          "auth": "Tutte le azioni di accesso",
+          "documents": "Tutte le azioni sui documenti",
+          "sharing": "Tutte le azioni di condivisione e profili",
+          "medication": "Tutte le azioni sui farmaci"
+        }
       },
       "app-logs": {
         "title": "Log dell'app",
@@ -14316,7 +14328,48 @@
     "waitingForWorker": "In attesa del processo in background. Se non cambia, il worker del server potrebbe non essere attivo.",
     "errorWorkerUnavailable": "Il processo in background non è disponibile al momento. Riprova tra poco o chiedi a chi gestisce il server di controllarlo.",
     "errorTimedOut": "La lettura ha richiesto più tempo di quanto consenta il tuo tempo di risposta dell'IA. Riprova o aumenta il tempo di risposta nelle impostazioni IA.",
-    "errorReaderBusy": "Il lettore di documenti è occupato con altre attività. Riprova tra un minuto."
+    "errorReaderBusy": "Il lettore di documenti è occupato con altre attività. Riprova tra un minuto.",
+    "jobFailure": {
+      "title": "IA in background interrotta",
+      "description": "Le attività interrotte di recente e il perché; una voce sparisce appena l’attività riesce di nuovo.",
+      "line": "{job}: {reason}",
+      "repeated": "Non riuscita {count} volte di fila, l’ultima il {when}.",
+      "lastAt": "Ultimo tentativo il {when}.",
+      "openDocument": "Apri il documento",
+      "retry": "Riprova",
+      "job": {
+        "documentSummary": "Riepilogo del documento",
+        "documentIndex": "Lettura del documento per la ricerca",
+        "documentRead": "Lettura dei valori di un documento",
+        "labScan": "Scansione di un referto di laboratorio",
+        "supplementLabel": "Etichetta di un integratore",
+        "statusText": "Note sulle schede",
+        "briefing": "Briefing del giorno",
+        "periodNarrative": "Riepilogo della settimana e del mese",
+        "workoutInsight": "Nota sull’allenamento",
+        "reactionLine": "Reazione ai nuovi dati",
+        "coachNudge": "Promemoria del Coach",
+        "coachMemory": "Memoria del Coach",
+        "other": "Attività IA in background"
+      },
+      "code": {
+        "no_provider": "Non è configurato nessun fornitore di IA in grado di farlo.",
+        "chain_no_provider": "Questa attività è legata a una catena di fornitori e nessuno dei suoi fornitori è configurato. Controlla la catena e le sue chiavi nelle impostazioni IA.",
+        "consent_required": "Il fornitore di IA ha prima bisogno del tuo consenso. Puoi darlo nelle impostazioni IA.",
+        "not_permitted": "Su questa cartella il lavoro dell’IA non è consentito.",
+        "check_failed": "Il server non ha potuto verificare se l’IA può essere eseguita. Riproverà la prossima volta.",
+        "credential_expired": "Il fornitore di IA ha rifiutato la chiave. Controllala o ricollegala nelle impostazioni IA.",
+        "rate_limited": "Il fornitore di IA segnala troppe richieste. Si riproverà più tardi.",
+        "provider_timeout": "Il fornitore di IA non ha risposto in tempo.",
+        "provider_unreachable": "Il fornitore di IA non era raggiungibile. Controlla che sia in funzione.",
+        "provider_empty": "Il fornitore di IA ha risposto senza contenuto.",
+        "provider_reasoning_only": "Il modello ha ragionato ma non ha dato una risposta.",
+        "provider_paused": "Il fornitore di IA ha fallito più volte di fila, quindi il lavoro in background aspetta prima di riprovarlo.",
+        "provider_error": "Il fornitore di IA ha restituito un errore.",
+        "budget_exhausted": "La quota di IA di oggi è esaurita. Domani funziona di nuovo.",
+        "unreadable_file": "Non è stato possibile preparare il file per il fornitore di IA."
+      }
+    }
   },
   "symptoms": {
     "add": "Nuovo sintomo",

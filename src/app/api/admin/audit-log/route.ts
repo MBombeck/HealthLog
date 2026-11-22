@@ -8,6 +8,10 @@ import { getAuditLogRetentionDays } from "@/lib/jobs/audit-log-cleanup";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { isoDateTime } from "@/lib/validations/datetime";
+import {
+  AUDIT_ACTION_FAMILIES,
+  AUDIT_ACTION_FAMILY_KEYS,
+} from "@/lib/auth/audit-families";
 
 /**
  * v1.4.16: parse the union of legacy + new query params. Legacy
@@ -23,7 +27,9 @@ const querySchema = z.object({
   // Legacy
   limit: z.coerce.number().int().min(1).max(500).optional(),
   offset: z.coerce.number().int().min(0).default(0),
-  filter: z.enum(["auth", "all"]).optional(),
+  // `auth` is the legacy shortcut; every family of `AUDIT_ACTION_FAMILIES`
+  // narrows the same way (#1403).
+  filter: z.enum(["all", ...AUDIT_ACTION_FAMILY_KEYS]).optional(),
   // New
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().optional(),
@@ -48,7 +54,9 @@ export const dynamic = "force-dynamic";
  *                floors at the audit-log retention horizon so an
  *                open-ended sweep can't seqscan the table unbounded.
  *   - until    — ISO-8601 upper bound on `createdAt`
- *   - filter   — legacy shortcut: `auth` restricts to `auth.*` actions
+ *   - filter   — one family of `AUDIT_ACTION_FAMILIES`: `auth` restricts to
+ *                `auth.*` actions, `documents`, `sharing` and `medication`
+ *                to theirs; `all` (or none) does not narrow
  *
  * Pagination:
  *   - `page` + `perPage` (25/50/100; default 50). Out-of-range `perPage`
@@ -100,8 +108,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // Build the WHERE filter compositionally so each filter is independent.
   const ands: Record<string, unknown>[] = [];
 
-  if (parsed.filter === "auth") {
-    ands.push({ action: { startsWith: "auth." } });
+  if (parsed.filter && parsed.filter !== "all") {
+    const prefixes = AUDIT_ACTION_FAMILIES[parsed.filter];
+    ands.push(
+      prefixes.length === 1
+        ? { action: { startsWith: prefixes[0] } }
+        : {
+            OR: prefixes.map((prefix) => ({ action: { startsWith: prefix } })),
+          },
+    );
   }
 
   if (parsed.action) {

@@ -31,6 +31,7 @@ import {
   serialiseDocumentDetail,
 } from "@/lib/documents/store";
 import { attachOwnerSourceUrls } from "@/lib/documents/source-url";
+import { documentAiJobFailures } from "@/lib/ai/job-failure/read";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -144,6 +145,8 @@ export const GET = apiHandler(
       doseLinks === null ? null : (doseLinks.get(document.id) ?? []),
       // v1.43 — the marker each pending lab value resolves to, or choices.
       await markerIndexForFacts(user.id, document.facts),
+      // #1404 — why background AI work on this document stopped, if it did.
+      await documentAiJobFailures(user.id, document.id),
     );
     // #1394 — the archive link, for the owner on their own record only.
     await attachOwnerSourceUrls(auth, [{ dto: detail, row: document }]);
@@ -347,6 +350,8 @@ export const PATCH = apiHandler(
       thumbnail !== null,
       visitLinks.get(document.id) ?? [],
       doseLinks === null ? null : (doseLinks.get(document.id) ?? []),
+      null,
+      await documentAiJobFailures(user.id, document.id),
     );
     await attachOwnerSourceUrls(auth, [{ dto: detail, row: document }]);
     return apiSuccess(detail);

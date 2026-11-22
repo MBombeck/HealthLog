@@ -208,6 +208,9 @@ export const WIPE_MODELS = [
   // holds the uploaded report until it is read, and a finished run holds what
   // was read off it; a child of the document, so it goes before it.
   "DocumentAiRun",
+  // Why background AI work stopped (#1404). Some rows name a document, so
+  // they go with the documents.
+  "AiJobFailure",
   "ImportJob",
   // The FHIR Bundle import's ledger of which resources became which rows. A
   // wipe empties the rows it points at, so it goes with them: a later import
