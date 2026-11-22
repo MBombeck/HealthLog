@@ -263,7 +263,10 @@ describe("release container inputs", () => {
     expect(dockerfile).toContain(
       "sh -c '! command -v npm && ! command -v npx && ! command -v corepack && ! command -v yarn && ! command -v pnpm'",
     );
-    expect(dockerfile).toContain("tsx@4.23.1");
+    const cliPackage = JSON.parse(
+      readRepoFile("docker/prisma-cli/package.json"),
+    ) as { dependencies: Record<string, string> };
+    expect(cliPackage.dependencies.tsx).toBe("4.23.1");
     expect(dockerfile).toContain(
       "ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx",
     );
@@ -273,9 +276,9 @@ describe("release container inputs", () => {
     // here trailed the app's by a patch.
     const floor = (name: string) =>
       packageJson.dependencies[name]!.replace(/^[\^~]/, "");
-    expect(dockerfile).toContain(`prisma@${floor("prisma")} `);
-    expect(dockerfile).toContain(`@prisma/engines@${floor("prisma")} `);
-    expect(dockerfile).toContain(`dotenv@${floor("dotenv")} `);
+    expect(cliPackage.dependencies.prisma).toBe(floor("prisma"));
+    expect(cliPackage.dependencies["@prisma/engines"]).toBe(floor("prisma"));
+    expect(cliPackage.dependencies.dotenv).toBe(floor("dotenv"));
     expect(dockerfile).toContain(
       "ln -sfn /opt/prisma-cli/node_modules/dotenv /app/node_modules/dotenv",
     );
