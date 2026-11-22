@@ -143,6 +143,42 @@ test.describe("add measurement flow", () => {
       await expect(rows.first()).toContainText(WEIGHT_KG);
     });
 
+    await test.step("the weight chart on the 90-day tab draws weeks", async () => {
+      const card = page
+        .locator('[data-slot="chart-data-table"]')
+        .first()
+        .locator("xpath=ancestor::div[.//*[@data-slot='chart-range-tab']][1]");
+      await card
+        .locator('[data-slot="chart-range-tab"][data-value="90"]')
+        .click();
+      await expect(card.locator('[data-slot="chart-plot"]')).toHaveAttribute(
+        "data-bucket",
+        "week",
+      );
+      const table = card.locator('[data-slot="chart-data-table"]');
+      const region = table.locator('[data-slot="chart-data-table-region"]');
+      if (await region.isHidden()) {
+        await table.locator('[data-slot="chart-data-table-toggle"]').click();
+      }
+      const rows = table.locator('[data-slot="chart-data-table-row"]');
+      // One reading today: one week, the one still running, with its count.
+      await expect(rows).toHaveCount(1);
+      await expect(rows.first()).toHaveAttribute("data-bucket", "week");
+      await expect(rows.first()).toContainText(WEIGHT_KG);
+      await expect(
+        rows.first().locator('[data-slot="chart-data-table-readings"]'),
+      ).toHaveText("1");
+      // Back to 30 days, which the range pick persists for the account: the
+      // tab is daily again.
+      await card
+        .locator('[data-slot="chart-range-tab"][data-value="30"]')
+        .click();
+      await expect(card.locator('[data-slot="chart-plot"]')).toHaveAttribute(
+        "data-bucket",
+        "day",
+      );
+    });
+
     await test.step("the day view", async () => {
       await page.goto(`/measurements?day=${todayInBerlin()}`, {
         waitUntil: "domcontentloaded",
