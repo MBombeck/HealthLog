@@ -1,7 +1,7 @@
 # Data import
 
 HealthLog has these ways to bring data in, all reachable from
-**Settings → Export & import**:
+**Settings > Export & import**:
 
 1. An **Apple Health `export.zip`** upload — the full archive from the
    iPhone Health app, parsed server-side. See
@@ -43,7 +43,7 @@ scroll.
 
 On the iPhone: **Health app → profile picture → Export All Health
 Data**, then move the resulting `export.zip` somewhere you can reach
-from a browser. In HealthLog open **Settings → Export & import** and drop
+from a browser. In HealthLog open **Settings > Export & import** and drop
 the archive onto the Apple Health control (or click to pick it). The
 upload streams to the server — a multi-gigabyte archive never buffers in
 the browser — and a background job parses it while a progress indicator
@@ -246,7 +246,7 @@ types and their units is served by `GET /api/meta/capabilities` under
 
 ### Worked example
 
-The **Download example** button in **Settings → Export & import** mints
+The **Download example** button in **Settings > Export & import** mints
 exactly this payload, which is a valid import body:
 
 ```json
@@ -296,7 +296,7 @@ The response is a count envelope:
 
 `POST /api/import/csv` takes the raw file as `text/csv` — one measurement
 per row, no JSON wrapper. The **CSV file** control in
-**Settings → Export & import** posts to it, and **Download example**
+**Settings > Export & import** posts to it, and **Download example**
 mints a file with the right header.
 
 A header row is required; column order does not matter and header
@@ -333,7 +333,7 @@ with the reasons grouped by count.
 
 Watches and bike computers record each workout as a FIT file: Garmin,
 Wahoo, Coros, Polar, Suunto, Zwift and most others. The **Activity file
-(FIT)** card in **Settings → Export & import** takes one such file at a
+(FIT)** card in **Settings > Export & import** takes one such file at a
 time and posts it to `POST /api/import/fit`; a background job reads it
 while the card shows its progress, and the result stays on the card after
 a reload (`GET /api/import/fit/status`).
