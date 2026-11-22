@@ -22,8 +22,10 @@
  *     `SAME_SHIFT_QUIET_DAYS`, so the break date moving by a day as more
  *     readings arrive never sends it again.
  *   - At most one such push a week, whatever else shifted.
- *   - Not during an open illness episode: a resting heart rate that rises
- *     with a flu is expected, and the person knows they are ill.
+ *   - Not during an open illness episode, a pregnancy or the postpartum
+ *     weeks (`vital-shift-context.ts`): a resting heart rate that rises with
+ *     a flu is expected, and the person knows they are ill; weight and pulse
+ *     move through a pregnancy the same way.
  *
  * A metric whose module is switched off is not scanned. On a managed
  * profile the dispatcher's own rules decide whether a guardian hears it; the
@@ -41,6 +43,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { buildExtendedChangepointSignals } from "@/lib/insights/derived/changepoint";
+import { vitalShiftContext } from "@/lib/insights/vital-shift-context";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
 import {
@@ -150,11 +153,17 @@ async function notifyUser(
   tz: string,
   now: Date,
 ): Promise<boolean> {
-  const ill = await prisma.illnessEpisode.findFirst({
-    where: { userId: user.id, deletedAt: null, resolvedAt: null },
-    select: { id: true },
-  });
-  if (ill) return false;
+  // A known state that explains the shift (an open illness, a pregnancy or
+  // the weeks after a birth) means no notice, and the shift is not used up:
+  // once the state ends, a change that outlasts it is told.
+  const explained = await vitalShiftContext(prisma, user.id, tz, now);
+  if (explained) {
+    annotate({
+      action: { name: "notification.measurementAnomaly.explained" },
+      meta: { context: explained },
+    });
+    return false;
+  }
 
   const modules = await resolveModuleMap(user.id);
   const shifts = await buildExtendedChangepointSignals(user.id, now, modules);
