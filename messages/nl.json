@@ -8910,7 +8910,7 @@
       },
       "backups": {
         "title": "Back-ups",
-        "subtitle": "Accountkopieën in de database van deze server, om één account op deze server terug te zetten.",
+        "subtitle": "Accountkopieën in de database van deze server, om één account hier terug te zetten.",
         "description": "Elk account heeft één wekelijkse kopie, die elke zondag wordt vervangen, plus kopieën die hier zijn geüpload en de kopie die vóór 'Alle gegevens verwijderen' wordt gemaakt. Een kopie zet een bestaand account op deze server terug. Een verloren server kan ze niet herbouwen: daarvoor zijn een databasedump en de encryptiesleutels nodig. De groottes gelden voor de versleutelde kopie. Downloaden ontsleutelt die voor de beheerder die erom vraagt; de versleutelde tekst blijft in de database.",
         "runNow": "Nu back-up maken",
         "runEnqueued": "Back-uptaak in de wachtrij gezet",

@@ -8788,7 +8788,7 @@
       },
       "services": {
         "title": "Push i kanały",
-        "subtitle": "Kanały powiadomień, klucze Web Push, przekaźnik push i stan dostarczania dla całego serwera."
+        "subtitle": "Kanały powiadomień, klucze Web Push, przekaźnik push i doręczanie w całym serwerze."
       },
       "integrations": {
         "title": "Monitorowanie",
