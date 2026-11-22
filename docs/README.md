@@ -63,6 +63,8 @@ notes, and machine-readable specs that ship alongside the source:
   covers the opt-in notification about a vital that settled at a new level.
   [`using/seizure-diary.md`](./using/seizure-diary.md) covers the seizure
   diary.
+  [`using/medication-leaflets.md`](./using/medication-leaflets.md) covers
+  finding a medication's official leaflet and saving its link.
 - [`migration/`](./migration/) — migration notes. Currently only
   v1.3 to v1.4; later releases are covered by `CHANGELOG.md` and
   <https://docs.healthlog.dev>.
