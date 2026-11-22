@@ -143,19 +143,29 @@ describe("POST /api/devices", () => {
     expect(prisma.device.update).not.toHaveBeenCalled();
   });
 
-  it("rejects cross-user re-registration with 409", async () => {
+  it("takes over a device token another account registered", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.device.findUnique).mockResolvedValue({
-      id: "dev-1",
+      id: "dev-foreign",
       userId: "other-user",
-      token: "abcd1234efgh5678",
+      token: "install-token-1",
+      apnsToken: null,
+      relayState: "none",
+      relayConsentAt: null,
     } as never);
     const res = await POST(
-      req({ token: "abcd1234efgh5678", bundleId: "io.healthlog.app" }),
+      req({ token: "install-token-1", bundleId: "io.healthlog.app" }),
     );
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(201);
+    expect(prisma.device.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["dev-foreign"] } },
+    });
+    expect(prisma.device.create).toHaveBeenCalledTimes(1);
     expect(prisma.device.update).not.toHaveBeenCalled();
-    expect(prisma.device.create).not.toHaveBeenCalled();
+    expect(auditLog).toHaveBeenCalledWith("devices.register.taken_over", {
+      userId: "other-user",
+      details: { deviceId: "dev-foreign" },
+    });
   });
 
   it("updates in place when same user re-registers their own token", async () => {
@@ -239,23 +249,34 @@ describe("POST /api/devices", () => {
     });
   });
 
-  it("rejects re-registration of an apnsToken owned by another user with 409", async () => {
+  it("takes over an apnsToken another account holds", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.device.findFirst).mockResolvedValue({
-      id: "other-dev",
-      userId: "other-user",
-    } as never);
+    vi.mocked(prisma.device.findFirst).mockImplementation((async (args: {
+      where: { apnsToken?: string; userId?: string };
+    }) =>
+      args.where.apnsToken && !args.where.userId
+        ? {
+            id: "other-dev",
+            userId: "other-user",
+            token: "other-install",
+            apnsToken: args.where.apnsToken,
+            relayState: "none",
+            relayConsentAt: null,
+          }
+        : null) as never);
     const res = await POST(
       req({
-        token: "abcd1234efgh5678",
+        token: "install-token-2",
         bundleId: "io.healthlog.app",
-        apnsToken: "deadbeef".repeat(8),
+        apnsToken: "ab".repeat(32),
         apnsEnvironment: "sandbox",
       }),
     );
-    expect(res.status).toBe(409);
-    expect(prisma.device.create).not.toHaveBeenCalled();
-    expect(prisma.device.update).not.toHaveBeenCalled();
+    expect(res.status).toBe(201);
+    expect(prisma.device.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["other-dev"] } },
+    });
+    expect(prisma.device.create).toHaveBeenCalledTimes(1);
   });
 
   it("reconciles a changed legacy token onto the same user's APNs device", async () => {

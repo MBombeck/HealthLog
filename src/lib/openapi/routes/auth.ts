@@ -1800,6 +1800,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "End the calling session, and the calling token with it",
       description:
         "Clears the browser session cookie. When the request ALSO carries `Authorization: Bearer hlk_…` it revokes that access token and the refresh sibling paired with it, so a native client signs out in one call rather than through the refresh endpoint's `revoke: true` arm.\n\n" +
+        "Since v1.49.0 a native sign-out also ends the device's pushes: once the device (the `X-Device-Id` it signed in with) has no live sign-in of the account left, its APNs token, push key, relay consent and binding (unbound at the relay) and Live Activity state are dropped, so none of the account's reminders or confirmations reach it. The device row and its delivery choice stay; the next sign-in's `POST /api/devices` registers the push credentials again. The same holds for every other way a sign-in ends: the refresh endpoint's `revoke: true`, reuse detection, sign out everywhere, a password change, and a sign-in that expired (swept nightly).\n\n" +
         "Takes no body and needs no credential: an unauthenticated call answers 200 exactly like an authenticated one. Whether the Bearer revocation actually found a row is recorded server-side and is deliberately absent from the response — a caller that could read it would learn whether a token it presented was live.",
       responses: {
         "200": {

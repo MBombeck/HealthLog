@@ -79,8 +79,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
       channels,
       lastSeenAt: d.lastSeen.toISOString(),
       createdAt: d.createdAt.toISOString(),
+      // The header and `RefreshToken.deviceId` carry the device's `token`
+      // (what the app registers), not the row id.
       isCurrent:
-        trustedCurrentDeviceId !== null && d.id === trustedCurrentDeviceId,
+        trustedCurrentDeviceId !== null && d.token === trustedCurrentDeviceId,
     };
   });
 
