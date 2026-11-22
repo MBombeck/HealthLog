@@ -10,6 +10,7 @@ import type { SeizureDiaryDTO } from "@/lib/seizures/shared";
 import { buildSeizuresSnapshotBlock } from "../seizures-snapshot";
 
 const NOW = new Date("2026-11-22T12:00:00.000Z");
+const OWN = { excludesMedications: false };
 
 function diary(events: number): SeizureDiaryDTO {
   const dto = {
@@ -63,7 +64,7 @@ describe("buildSeizuresSnapshotBlock", () => {
   it("is nothing with the seizure diary switched off", async () => {
     vi.mocked(isModuleEnabled).mockResolvedValue(false);
     expect(
-      await buildSeizuresSnapshotBlock("u1", "Europe/Berlin", NOW),
+      await buildSeizuresSnapshotBlock("u1", "Europe/Berlin", NOW, OWN),
     ).toBeNull();
     expect(readSeizureDiary).not.toHaveBeenCalled();
   });
@@ -71,12 +72,17 @@ describe("buildSeizuresSnapshotBlock", () => {
   it("is nothing without a recorded seizure", async () => {
     vi.mocked(readSeizureDiary).mockResolvedValue(diary(0));
     expect(
-      await buildSeizuresSnapshotBlock("u1", "Europe/Berlin", NOW),
+      await buildSeizuresSnapshotBlock("u1", "Europe/Berlin", NOW, OWN),
     ).toBeNull();
   });
 
   it("carries counts, clusters newest first and month totals, never the family's words", async () => {
-    const block = await buildSeizuresSnapshotBlock("u1", "Europe/Berlin", NOW);
+    const block = await buildSeizuresSnapshotBlock(
+      "u1",
+      "Europe/Berlin",
+      NOW,
+      OWN,
+    );
     expect(block).toMatchObject({
       windowDays: 90,
       recordedSeizures: 4,
@@ -91,10 +97,31 @@ describe("buildSeizuresSnapshotBlock", () => {
 
   it("stays inside the Coach's history reach", async () => {
     await buildSeizuresSnapshotBlock("u1", "Europe/Berlin", NOW, {
-      window: "last30days",
-      days: 30,
+      reach: { window: "last30days", days: 30 },
+      excludesMedications: false,
     });
     const from = vi.mocked(readSeizureDiary).mock.calls[0][0].from!;
     expect(NOW.getTime() - from.getTime()).toBe(30 * 86_400_000);
+  });
+
+  it("carries the rescue doses only while medications are shared", async () => {
+    const shared = await buildSeizuresSnapshotBlock(
+      "u1",
+      "Europe/Berlin",
+      NOW,
+      OWN,
+    );
+    expect(shared!.rescueDoses).toBe(1);
+    // A rescue dose is a medication given: with medications excluded from
+    // the Coach it is left out like every other medication figure, and the
+    // seizure counts stay.
+    const excluded = await buildSeizuresSnapshotBlock(
+      "u1",
+      "Europe/Berlin",
+      NOW,
+      { excludesMedications: true },
+    );
+    expect(excluded).not.toHaveProperty("rescueDoses");
+    expect(excluded!.recordedSeizures).toBe(4);
   });
 });
