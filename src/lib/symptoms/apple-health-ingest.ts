@@ -17,8 +17,9 @@
  *     permanent for the entry as sent.
  *   - `duplicate`: the `(userId, APPLE_HEALTH, externalId)` row exists,
  *     deleted ones included, so a late re-post of a sample the app reported
- *     gone (or the person deleted) never brings it back. A second entry with
- *     an externalId already in the same batch is a duplicate too.
+ *     gone (or the person deleted) never brings it back; that one carries
+ *     `reason: "tombstoned"` (`tombstone-repost.ts`). A second entry with an
+ *     externalId already in the same batch is a duplicate too.
  *   - `inserted`, or `failed` when the write itself failed (transient: the
  *     app keeps the row and resends it).
  *
@@ -35,6 +36,7 @@ import type { BatchIngestResult } from "@/lib/measurements/batch-ingest/ingest";
 import { summariseSkips } from "@/lib/measurements/batch-ingest/report";
 import { isP2002 } from "@/lib/prisma-errors";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
+import { TOMBSTONED_ENTRY } from "@/lib/sync/tombstone-repost";
 import {
   classifyExternalId,
   unstableExternalIdMeta,
@@ -211,12 +213,17 @@ export async function ingestSymptomBatch(args: {
             source: APP_MINTED_SOURCE,
             externalId: { in: accepted.map((p) => p.externalId) },
           },
-          select: { externalId: true },
+          select: { externalId: true, deletedAt: true },
         });
   const storedIds = new Set(stored.map((r) => r.externalId));
+  const deletedIds = new Set(
+    stored.filter((r) => r.deletedAt !== null).map((r) => r.externalId),
+  );
   const fresh: PreparedSymptom[] = [];
   for (const p of accepted) {
-    if (storedIds.has(p.externalId)) {
+    if (deletedIds.has(p.externalId)) {
+      results[p.index] = { index: p.index, ...TOMBSTONED_ENTRY };
+    } else if (storedIds.has(p.externalId)) {
       results[p.index] = { index: p.index, status: "duplicate" };
     } else {
       fresh.push(p);

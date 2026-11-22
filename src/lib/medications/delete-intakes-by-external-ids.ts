@@ -11,10 +11,13 @@
  * evicted and the other devices told once for the whole batch rather than
  * per event.
  *
- * A later re-post of a deleted dose's externalId through the bulk route
- * inserts a new dose: the live-row unique on `(user_id, external_id)`
- * (migration 0239) lets a tombstone never block the ledger. The app drops the
- * outbox entry of a sample it reported deleted.
+ * A later re-post of a deleted dose's externalId through the bulk route is
+ * refused per entry (`duplicate`, reason `tombstoned`), however the dose was
+ * deleted: here, or in HealthLog (`deleteIntakeEvent`). That is decided at the
+ * ingest, not by the index: the unique on `(user_id, external_id)`
+ * (migration 0239) stays partial over live rows, so the tombstone never
+ * blocks the ledger itself (an undo or a restore of the deleted row still
+ * lands), only the re-import of the same Apple Health dose event.
  */
 import { prisma } from "@/lib/db";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";

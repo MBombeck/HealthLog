@@ -3728,6 +3728,14 @@ paths:
         through the refresh endpoint's `revoke: true` arm.
 
 
+        Since v1.49.0 a native sign-out also ends the device's pushes: once the device (the `X-Device-Id` it signed in
+        with) has no live sign-in of the account left, its APNs token, push key, relay consent and binding (unbound at
+        the relay) and Live Activity state are dropped, so none of the account's reminders or confirmations reach it.
+        The device row and its delivery choice stay; the next sign-in's `POST /api/devices` registers the push
+        credentials again. The same holds for every other way a sign-in ends: the refresh endpoint's `revoke: true`,
+        reuse detection, sign out everywhere, a password change, and a sign-in that expired (swept nightly).
+
+
         Takes no body and needs no credential: an unauthenticated call answers 200 exactly like an authenticated one.
         Whether the Bearer revocation actually found a row is recorded server-side and is deliberately absent from the
         response — a caller that could read it would learn whether a token it presented was live.
@@ -6006,12 +6014,12 @@ paths:
       summary: Delete Apple Health workouts by external ID
       description: "Removes the workouts whose externalId is listed, with the personal records they set; the records are
         re-derived afterwards. The rows go outright, and since v1.48.2 every listed id is remembered: a later re-post of
-        the same externalId to `POST /api/workouts/batch` answers `duplicate` and writes nothing, including an id that
-        had not landed yet when the delete arrived. An id is remembered for 75 days, the tombstone retention every Apple
-        Health delete shares; after that a re-post lands again. Only the caller's own rows with `source = APPLE_HEALTH`
-        are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard
-        Bearer token (the native login); a narrow-scope token is refused 403. Metered by the shared per-account write
-        bucket."
+        the same externalId to `POST /api/workouts/batch` answers `duplicate` with `reason: \"tombstoned\"` (since
+        v1.49.0) and writes nothing, including an id that had not landed yet when the delete arrived. An id is
+        remembered for 75 days, the tombstone retention every Apple Health delete shares; after that a re-post lands
+        again. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a
+        no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope
+        token is refused 403. Metered by the shared per-account write bucket."
       requestBody:
         required: true
         content:
@@ -6037,10 +6045,11 @@ paths:
       description: "Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed,
         waveform included. A paired rhythm notification is a measurement of its own and stays. The rows go outright, and
         since v1.48.2 every listed id is remembered: a later re-post of the same id to `POST /api/insights/ecg` answers
-        `duplicate` and writes nothing. An id is remembered for 75 days, the tombstone retention every Apple Health
-        delete shares; after that a re-post lands again. Only the caller's own rows with `source = APPLE_HEALTH` are
-        matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer
-        token (the native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket."
+        `duplicate` with `reason: \"tombstoned\"` (since v1.49.0) and writes nothing. An id is remembered for 75 days,
+        the tombstone retention every Apple Health delete shares; after that a re-post lands again. Only the caller's
+        own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an error.
+        Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope token is refused 403.
+        Metered by the shared per-account write bucket."
       requestBody:
         required: true
         content:
@@ -6065,10 +6074,11 @@ paths:
       summary: Delete Apple Health cycle day-logs by external ID
       description: "Soft-deletes the day-logs whose externalId is listed, each as `DELETE /api/cycle/day-logs/{id}` does: the
         tombstone reaches `/api/sync/changes`, and a day that opened a cycle takes that cycle with it, the cycle before
-        it re-anchored. A later re-post of the same externalId through `POST /api/cycle/day-logs/bulk` brings the day
-        back. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a
-        no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope
-        token is refused 403. Metered by the shared per-account write bucket."
+        it re-anchored. A later re-post of the same externalId through `POST /api/cycle/day-logs/bulk` writes the day
+        again, since a day is fed by many samples; since v1.49.0 it starts from empty fields and no symptoms, so nothing
+        the deleted day held comes back. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id
+        naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the
+        native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket."
       requestBody:
         required: true
         content:
@@ -6101,9 +6111,10 @@ paths:
       description: "Soft-deletes the mood entries posted with `source = APPLE_HEALTH` whose externalId is listed, each as
         `DELETE /api/mood-entries/{id}` does; the tombstone reaches `/api/sync/changes`. A mood logged in HealthLog
         itself is never touched. A later re-post of a deleted externalId stays deleted: `POST /api/mood-entries/bulk`
-        answers `duplicate`. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything
-        else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a
-        narrow-scope token is refused 403. Metered by the shared per-account write bucket."
+        answers `duplicate` with `reason: \"tombstoned\"` (since v1.49.0). Only the caller's own rows with `source =
+        APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or
+        a wildcard Bearer token (the native login); a narrow-scope token is refused 403. Metered by the shared
+        per-account write bucket."
       requestBody:
         required: true
         content:
@@ -6128,12 +6139,12 @@ paths:
       summary: Delete Apple Health symptom occurrences by external ID
       description: "Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is
         listed. One logged in HealthLog is never touched. A later re-post of a deleted externalId stays deleted: the
-        batch answers `duplicate`. The tombstone is kept for 75 days, the retention every Apple Health delete shares.
-        Owner-only: a session switched into another record is refused 403 `sharing.not_permitted`. Served when `GET
-        /api/auth/me` reports `features.appleHealthSymptoms: true`. Only the caller's own rows with `source =
-        APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or
-        a wildcard Bearer token (the native login); a narrow-scope token is refused 403. Metered by the shared
-        per-account write bucket."
+        batch answers `duplicate` with `reason: \"tombstoned\"` (since v1.49.0). The tombstone is kept for 75 days, the
+        retention every Apple Health delete shares. Owner-only: a session switched into another record is refused 403
+        `sharing.not_permitted`. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`. Only the
+        caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an
+        error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope token is refused
+        403. Metered by the shared per-account write bucket."
       requestBody:
         required: true
         content:
@@ -6174,10 +6185,13 @@ paths:
         dose-event UUID) is listed, each as `DELETE /api/medications/{id}/intake/{eventId}` does: the stock it consumed
         is refunded, the tombstone reaches `/api/sync/changes`, and a one-shot medication whose only dose it was becomes
         active again. The caller's other devices get one silent intake-sync push (the device named by `x-device-id` is
-        skipped). A later re-post of the same externalId through `POST /api/medications/intake/bulk` inserts a new dose:
-        a tombstone never blocks the ledger. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id
-        naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the
-        native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket."
+        skipped). Since v1.49.0 a later re-post of the same externalId through `POST /api/medications/intake/bulk` is
+        refused per entry, `duplicate` with `reason: \"tombstoned\"`, and writes nothing; so is the re-post of an Apple
+        Health dose deleted in HealthLog itself. A fresh install that reads the whole Apple Health history therefore
+        needs no list of deleted ids to skip. The tombstone is kept for 75 days, the retention every Apple Health delete
+        shares. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a
+        no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope
+        token is refused 403. Metered by the shared per-account write bucket."
       requestBody:
         required: true
         content:
@@ -6645,12 +6659,14 @@ paths:
         - Devices
       summary: Register native device + APNs token
       description: "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other
-        returns 422. Cross-user re-registration of either identifier returns 409. A refused push field (push key, relay
-        binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10
-        new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's
-        APNs token changes, the old token's relay binding is removed and the device has to bind the new token
-        (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is
-        the device's push state after the call."
+        returns 422. A `token` (the `X-Device-Id`) or `apnsToken` another account holds is taken over, not refused: that
+        account's device row goes, with its push key, relay binding (unbound at the relay before this request's binding
+        is forwarded) and Live Activity state, so nothing sealed for it reaches the device. Both accounts get an audit
+        row. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode`
+        `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return
+        429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is
+        removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new
+        `relayBinding`). The answer's `push` block is the device's push state after the call."
       requestBody:
         required: true
         content:
@@ -6666,12 +6682,6 @@ paths:
                 $ref: "#/components/schemas/DeviceRegisterResponse"
         "401": *a1
         "403": *a9
-        "409":
-          description: Device or APNs token already registered to another user.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
   /api/devices/{id}:
@@ -32720,8 +32730,9 @@ components:
             - production
         medicationDelivery:
           description: "v1.7.0 per-device medication-delivery override; omitted keeps the stored value. \"client\" keeps the
-            server's medication-reminder push off this device (the app reminds locally), \"server\" pushes it to this
-            device whatever the account says, and null / no override follows the account-wide switch
+            server's medication-reminder push off this device (the app reminds locally) while its local plan can run
+            (see `localRunwayUntil`; without one, for 3 days after its last authenticated request), \"server\" pushes it
+            to this device whatever the account says, and null / no override follows the account-wide switch
             (`notificationPrefs.medication.clientManaged` or `deliveryDefault: \"client\"`). Since v1.48.0 the server
             honours it per device on the APNs send; before, it was stored and echoed only. Only the reminder that
             announces a dose is affected: follow-ups for a dose still open, every other push, and the Telegram, ntfy,
@@ -32731,6 +32742,19 @@ components:
               enum:
                 - server
                 - client
+            - type: "null"
+        localRunwayUntil:
+          description: "Until when this device has its medication reminders planned locally (ISO 8601). Only read while the device
+            delivers locally (`medicationDelivery: \"client\"`, or inheriting a client-managed account). Such a device
+            keeps the server's reminder push off only while `now <= localRunwayUntil`; past it the server pushes the
+            reminder that announces a dose to this device again. Without a runway the server allows 3 days after the
+            device's last authenticated request. Must lie between now (5 minutes of clock skew allowed) and 14 days
+            ahead, else 422. Null clears it (back to the 3-day rule); omitted keeps the stored value. Send it on every
+            registration, since a request that does not register does not move it."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
         liveActivityPushToken:
           description: v1.17.1 (#22) hex-encoded ActivityKit Live Activity push token (distinct from the device APNs token). The
@@ -32973,8 +32997,8 @@ components:
       required:
         - token
         - bundleId
-      description: Native device registration. Re-registering an APNs token belonging to another user returns 409
-        (cross-user-hijack guard).
+      description: Native device registration. A `token` or `apnsToken` another account holds is taken over (see `POST
+        /api/devices`).
     AdminPushRelaySwitch:
       type: object
       properties:
@@ -50010,6 +50034,20 @@ components:
                     - key
                     - createdAt
                   additionalProperties: false
+              symptomSources:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                      minLength: 1
+                    source:
+                      type: string
+                  required:
+                    - key
+                    - source
+                  additionalProperties: {}
             required:
               - date
               - symptomKeys
@@ -58307,9 +58345,12 @@ components:
             an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must
             not advance the entry cursor; the response is marked `Cache-Control: no-store`."
         reason:
-          description: "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean
-            type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same
-            source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`,
+          description: "Why a row was `skipped` or a `duplicate`. `tombstoned` (since v1.49.0): an immutable sample whose `(type,
+            source, externalId)` names a row deleted earlier (in HealthLog, or through `DELETE
+            /api/measurements/by-external-ids`); it stays deleted and nothing is written. A `stats:` aggregate is a
+            day's total, not a sample, and a re-post writes it again. `folded_window` (since v1.42): a raw sample of a
+            dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row
+            of the same source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`,
             `hour_bucket_unsupported_type`, `hour_bucket_too_old` (since v1.43): an hourly
             `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent for the row as sent."
           type: string
@@ -59748,19 +59789,21 @@ components:
             - enriched
             - updated
             - skipped
-          description: "`inserted`: a new workout row. `duplicate`: the workout was already stored and nothing was written; since
+          description: '`inserted`: a new workout row. `duplicate`: the workout was already stored and nothing was written; since
             v1.48.2 also an `APPLE_HEALTH` workout whose externalId was deleted through `DELETE
-            /api/workouts/by-external-ids`, which stays deleted. `enriched`: the workout was already stored and the
-            heart-rate series or GPS track this entry carried (or both) was attached because the stored workout had
-            none; no workout row was inserted, and the entry also counts towards the top-level `duplicates`. A track is
-            attached only while the account keeps tracks (`storeWorkoutRoutes`), and when the stored workout had no
-            elevation, the climb derived from the attached track fills `elevationM`; no other column of the workout row
-            is written. `updated` (since v1.40.0): a workout entered by hand (`source: MANUAL`, `externalId` starting
-            `manual:`) was sent again with different values and the stored row now carries them; no row was inserted, so
-            it also counts towards `duplicates`. `skipped`: the server refused the entry, see `reason`."
+            /api/workouts/by-external-ids`, which stays deleted; since v1.49.0 that one carries `reason: "tombstoned"`.
+            `enriched`: the workout was already stored and the heart-rate series or GPS track this entry carried (or
+            both) was attached because the stored workout had none; no workout row was inserted, and the entry also
+            counts towards the top-level `duplicates`. A track is attached only while the account keeps tracks
+            (`storeWorkoutRoutes`), and when the stored workout had no elevation, the climb derived from the attached
+            track fills `elevationM`; no other column of the workout row is written. `updated` (since v1.40.0): a
+            workout entered by hand (`source: MANUAL`, `externalId` starting `manual:`) was sent again with different
+            values and the stored row now carries them; no row was inserted, so it also counts towards `duplicates`.
+            `skipped`: the server refused the entry, see `reason`.'
         reason:
           description: "Why a `skipped` entry was refused: `unstable_external_id` for an id that does not survive a client
-            restart, `invalid_samples` for a heart-rate series that failed validation."
+            restart, `invalid_samples` for a heart-rate series that failed validation. On a `duplicate`: `tombstoned`
+            (since v1.49.0) for a workout deleted earlier, which stays deleted."
           type: string
       required:
         - index
@@ -61076,6 +61119,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PushSenderKey"
+          description: The same keys as `push.relay.senderKeys`.
         relayInstanceId:
           type:
             - string
@@ -61126,6 +61170,9 @@ components:
             - next
             - current
             - previous
+          description: "`current` seals every envelope now. `next` is the incoming key: published at least 7 days before it seals
+            anything, then it becomes `current` and the old `current` becomes `previous`. `previous` sealed until its
+            retirement and stays published for 30 days after it. Pin every listed key and try each when opening."
       required:
         - publicKey
         - status
@@ -62637,17 +62684,20 @@ components:
             - duplicate
             - alreadyTaken
             - skipped
-          description: "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent
-            replay of an entry already stored, nothing else. `alreadyTaken` — the slot already holds a take recorded by
-            another writer or another key, and this entry was a take or a skip: nothing was written, no stock consumed
-            or refunded; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance
-            the cursor and warn before a second dose. `skipped` — not stored; see `reason`."
+          description: '`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent
+            replay of an entry already stored, nothing else; since v1.49.0 also the re-post of an Apple Health dose
+            (`externalId`) deleted earlier, in HealthLog or through `DELETE /api/medications/intake/by-external-ids`,
+            which carries `reason: "tombstoned"` and no `id`: it stays deleted and nothing was written. `alreadyTaken` —
+            the slot already holds a take recorded by another writer or another key, and this entry was a take or a
+            skip: nothing was written, no stock consumed or refunded; `intake` is the recorded row, `takenAt` and
+            `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose. `skipped` — not
+            stored; see `reason`.'
         reason:
-          description: "Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`,
-            `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0)
-            `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the
-            per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same
-            answer."
+          description: "On a `duplicate`: `tombstoned` (since v1.49.0) for a deleted dose's re-post. Why a `skipped` entry was not
+            stored. Among others: `medication_not_found`, `unstable_external_id`, `force_slot_invalid`,
+            `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0) `intake_not_tracked` for an entry against
+            a medication kept as a record only (`trackIntake: false`), the per-entry form of
+            `medication.intake.notTracked`. A skip is final: resending the entry gives the same answer."
           type: string
         id:
           description: The landed row id (absent on skips).
@@ -79588,6 +79638,11 @@ components:
             recording deleted through `DELETE /api/insights/ecg/by-external-ids`: it stays deleted, nothing is written,
             and `id` names the deletion record rather than a recording. All three statuses mean the client may advance
             its cursor."
+        reason:
+          description: "Since v1.49.0, only on a `duplicate` for an `APPLE_HEALTH` recording deleted earlier: it stays deleted and
+            nothing was written. Absent otherwise."
+          type: string
+          const: tombstoned
         recordedAt:
           type: string
           format: date-time
@@ -81834,6 +81889,9 @@ components:
             - skipped
           description: "`inserted`/`duplicate` — the row landed (advance the cursor). `skipped` — see `reason`."
         reason:
+          description: "Why an entry was `skipped`. On a `duplicate`: `tombstoned` (since v1.49.0) for an entry whose `(source,
+            externalId)` names an entry deleted earlier (in HealthLog, or through `DELETE
+            /api/mood-entries/by-external-ids`); it stays deleted and nothing is written."
           type: string
         id:
           description: The upserted row id (absent on skips).
@@ -97808,8 +97866,11 @@ components:
           items:
             $ref: "#/components/schemas/PushSenderKey"
           description: "The keys to pin for this account, at most three: `next` (announced at least 7 days before it seals
-            anything), `current`, and `previous` for 30 days after it retired. Pin all of them and try each. Present
-            whenever this server seals envelopes, over the relay or over its own APNs key."
+            anything), `current`, and `previous` for 30 days after it retired. Pin all of them and try each. The server
+            enforces the notice: sealing switches only to a key that was published as `next` for 7 days, and a new
+            `next` is announced only after `previous` retired. The one exception is the operator's emergency rotation of
+            an exposed key, which replaces `current` at once and drops `next` and `previous`. Present whenever this
+            server seals envelopes, over the relay or over its own APNs key."
         envelopeVersions:
           type: array
           items:
@@ -102680,8 +102741,9 @@ components:
         reason:
           description: "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`),
             `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10),
-            `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started).
-            Decode unknown reasons leniently."
+            `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started). On a
+            `duplicate`: `tombstoned` (since v1.49.0) for a sample deleted earlier (in HealthLog, or through `DELETE
+            /api/symptoms/events/by-external-ids`), which stays deleted. Decode unknown reasons leniently."
           type: string
       required:
         - index

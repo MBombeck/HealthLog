@@ -228,7 +228,15 @@ describe("DELETE /api/workouts/by-external-ids", () => {
       }),
     );
     expect(replay.status).toBe(200);
-    expect(await statuses(replay)).toEqual(["duplicate", "duplicate"]);
+    const replayed = (
+      (await replay.json()) as {
+        data: { entries: Array<{ status: string; reason?: string }> };
+      }
+    ).data.entries.map((e) => [e.status, e.reason]);
+    expect(replayed).toEqual([
+      ["duplicate", "tombstoned"],
+      ["duplicate", "tombstoned"],
+    ]);
     expect(await prisma.workout.count({ where: { userId: OWNER } })).toBe(0);
 
     // The ledger is the Apple Health namespace only: a hand-entered workout
@@ -371,8 +379,12 @@ describe("DELETE /api/insights/ecg/by-external-ids", () => {
     const replay = await POST(post("/api/insights/ecg", strip));
     expect(replay.status).toBe(200);
     expect(
-      ((await replay.json()) as { data: { status: string } }).data.status,
-    ).toBe("duplicate");
+      (
+        (await replay.json()) as {
+          data: { status: string; reason?: string };
+        }
+      ).data,
+    ).toMatchObject({ status: "duplicate", reason: "tombstoned" });
     expect(await prisma.ecgRecording.count({ where: { userId: OWNER } })).toBe(
       0,
     );
@@ -409,7 +421,27 @@ describe("an ECG posted while its delete is in flight", () => {
 });
 
 describe("DELETE /api/cycle/day-logs/by-external-ids", () => {
-  it("tombstones the Apple Health day with the cycle it opened; a bulk re-post brings it back", async () => {
+  beforeEach(async () => {
+    // The truncate may take the seeded catalogue with it.
+    const prisma = getPrismaClient();
+    const cat = await prisma.cycleSymptomCategory.upsert({
+      where: { key: "physical" },
+      create: { key: "physical", labelKey: "cycle.symptomCategory.physical" },
+      update: {},
+    });
+    await prisma.cycleSymptom.upsert({
+      where: { key: "cramps" },
+      create: {
+        key: "cramps",
+        categoryId: cat.id,
+        labelKey: "cycle.symptom.cramps",
+        isActive: true,
+      },
+      update: { isActive: true },
+    });
+  });
+
+  it("tombstones the Apple Health day with the cycle it opened; a bulk re-post writes it again from empty fields", async () => {
     const prisma = getPrismaClient();
     const bulk = await import("@/app/api/cycle/day-logs/bulk/route");
     const day = {
@@ -451,20 +483,34 @@ describe("DELETE /api/cycle/day-logs/by-external-ids", () => {
       }),
     ).toBe(0);
 
+    // A new sample of the deleted day that names only a symptom: the day
+    // comes back, but the deleted flow does not (iOS #191).
     const replay = await bulk.POST(
-      post("/api/cycle/day-logs/bulk", { entries: [day] }),
+      post("/api/cycle/day-logs/bulk", {
+        entries: [
+          {
+            date: day.date,
+            source: "APPLE_HEALTH",
+            externalId: "CYC-1",
+            loggedAt: day.loggedAt,
+            symptoms: [{ key: "cramps" }],
+          },
+        ],
+      }),
     );
     const replayBody = (await replay.json()) as {
       data: { entries: Array<{ status: string }> };
     };
     expect(replayBody.data.entries[0]?.status).toBe("updated");
-    expect(
-      (
-        await prisma.cycleDayLog.findFirstOrThrow({
-          where: { userId: OWNER, externalId: "CYC-1" },
-        })
-      ).deletedAt,
-    ).toBeNull();
+    const revived = await prisma.cycleDayLog.findFirstOrThrow({
+      where: { userId: OWNER, externalId: "CYC-1" },
+      include: { symptomLinks: { include: { symptom: true } } },
+    });
+    expect(revived.deletedAt).toBeNull();
+    expect(revived.flow).toBeNull();
+    expect(revived.symptomLinks.map((l) => [l.symptom.key, l.source])).toEqual([
+      ["cramps", "APPLE_HEALTH"],
+    ]);
   });
 });
 
@@ -506,9 +552,12 @@ describe("DELETE /api/mood-entries/by-external-ids", () => {
       post("/api/mood-entries/bulk", { entries: [entry("APPLE_HEALTH", 0)] }),
     );
     const replayBody = (await replay.json()) as {
-      data: { entries: Array<{ status: string }> };
+      data: { entries: Array<{ status: string; reason?: string }> };
     };
-    expect(replayBody.data.entries[0]?.status).toBe("duplicate");
+    expect(replayBody.data.entries[0]).toMatchObject({
+      status: "duplicate",
+      reason: "tombstoned",
+    });
     expect(
       await prisma.moodEntry.count({
         where: { userId: OWNER, deletedAt: null },
@@ -605,11 +654,76 @@ describe("DELETE /api/medications/intake/by-external-ids", () => {
       }),
     );
     const replayBody = (await replay.json()) as {
-      data: { entries: Array<{ status: string }> };
+      data: {
+        entries: Array<{ status: string; reason?: string; id?: string }>;
+      };
     };
-    // The live-row unique (migration 0239) lets a tombstone never block the
-    // ledger, so the replay lands as a new dose rather than reviving the old.
+    // A deleted dose stays deleted (iOS #191): the replay is refused per
+    // entry and writes nothing.
     expect(replay.status).toBe(200);
-    expect(replayBody.data.entries.map((e) => e.status)).toEqual(["inserted"]);
+    expect(replayBody.data.entries).toEqual([
+      { index: 0, status: "duplicate", reason: "tombstoned" },
+    ]);
+    expect(
+      await prisma.medicationIntakeEvent.count({
+        where: { userId: OWNER, externalId: "DOSE-1", deletedAt: null },
+      }),
+    ).toBe(0);
+  });
+
+  it("refuses the re-post of an Apple Health dose deleted in HealthLog, and lands a new one", async () => {
+    const prisma = getPrismaClient();
+    const med = await prisma.medication.create({
+      data: {
+        userId: OWNER,
+        name: "Ramipril",
+        dose: "5 mg",
+        externalSource: "APPLE_HEALTH",
+      },
+    });
+    const bulk = await import("@/app/api/medications/intake/bulk/route");
+    const dose = (externalId: string, hour: number) => ({
+      medicationId: med.id,
+      takenAt: new Date(at.getTime() + hour * 3_600_000).toISOString(),
+      scheduledFor: new Date(at.getTime() + hour * 3_600_000).toISOString(),
+      source: "APPLE_HEALTH",
+      externalId,
+    });
+    const send = async (entries: unknown[]) =>
+      (
+        (await (
+          await bulk.POST(post("/api/medications/intake/bulk", { entries }))
+        ).json()) as {
+          data: { entries: Array<{ status: string; reason?: string }> };
+        }
+      ).data.entries.map((e) => [e.status, e.reason]);
+
+    expect(await send([dose("DOSE-H", 0)])).toEqual([["inserted", undefined]]);
+    const row = await prisma.medicationIntakeEvent.findFirstOrThrow({
+      where: { userId: OWNER, externalId: "DOSE-H" },
+    });
+    // Deleted the way the web and the app delete one dose.
+    const { DELETE } =
+      await import("@/app/api/medications/[id]/intake/[eventId]/route");
+    const removed = await DELETE(
+      new NextRequest(
+        `http://localhost/api/medications/${med.id}/intake/${row.id}`,
+        { method: "DELETE" },
+      ),
+      { params: Promise.resolve({ id: med.id, eventId: row.id }) },
+    );
+    expect(removed.status).toBeLessThan(300);
+
+    // A fresh install reads the whole history: the deleted dose stays out,
+    // a dose it had not sent before lands.
+    expect(await send([dose("DOSE-H", 0), dose("DOSE-NEW", 4)])).toEqual([
+      ["duplicate", "tombstoned"],
+      ["inserted", undefined],
+    ]);
+    expect(
+      await prisma.medicationIntakeEvent.count({
+        where: { userId: OWNER, deletedAt: null },
+      }),
+    ).toBe(1);
   });
 });

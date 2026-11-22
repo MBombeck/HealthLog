@@ -16,6 +16,7 @@ import { unstableExternalIdMeta } from "@/lib/validations/external-id";
 import { batchWorkoutIndicesToKeep } from "@/lib/workouts/batch-dedup";
 import { prisma } from "@/lib/db";
 import { findAppleHealthTombstones } from "@/lib/sync/apple-health-tombstones";
+import { TOMBSTONED_ENTRY } from "@/lib/sync/tombstone-repost";
 
 import {
   prepareWorkouts,
@@ -105,8 +106,8 @@ export async function ingestWorkoutBatch(
   }
 
   // A workout the phone reported deleted stays deleted: a late re-post of its
-  // Apple Health sample id answers `duplicate` and writes nothing, the rule a
-  // mood entry keeps with its tombstone (see `apple-health-tombstones.ts`).
+  // Apple Health sample id answers `duplicate` with reason `tombstoned` and
+  // writes nothing (`tombstone-repost.ts`).
   const deletedIds = await findAppleHealthTombstones(
     prisma,
     userId,
@@ -121,7 +122,7 @@ export async function ingestWorkoutBatch(
       p.dedupKey?.source === "APPLE_HEALTH" &&
       deletedIds.has(p.dedupKey.externalId);
     if (deleted) {
-      results[p.index] = { index: p.index, status: "duplicate" };
+      results[p.index] = { index: p.index, ...TOMBSTONED_ENTRY };
       duplicateCount += 1;
     }
     return !deleted;

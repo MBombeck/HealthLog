@@ -48,6 +48,7 @@ import {
   type EntryResult,
   type PreparedEntry,
 } from "./entries";
+import { TOMBSTONED_ENTRY } from "@/lib/sync/tombstone-repost";
 
 /**
  * Rows per set-based insert statement. 500 entries fit two statements; each
@@ -59,6 +60,7 @@ type Verdict = Pick<MeasurementReconciliationVerdict, "status"> &
   Partial<{
     dirtyIdentities: Array<{ type: MeasurementType; measuredAt: Date }>;
     error: { code?: string };
+    tombstoned: boolean;
   }>;
 
 /** What the reads before the write loop found for this batch. */
@@ -354,7 +356,9 @@ export class MeasurementBatchWriter {
             status: "duplicate",
             reason: FOLDED_WINDOW_REASON,
           }
-        : { index: p.index, status: "duplicate" };
+        : this.isStoredTombstone(p)
+          ? { index: p.index, ...TOMBSTONED_ENTRY }
+          : { index: p.index, status: "duplicate" };
       this.duplicateCount++;
       if (folded) this.foldedWindowCount++;
       this.pushMergeCandidate(p);
@@ -401,6 +405,15 @@ export class MeasurementBatchWriter {
         p.row.type as MeasurementType,
         p.row.value as number,
       ) === null
+    );
+  }
+
+  /** The prefiltered duplicate's stored row is a deleted one. */
+  private isStoredTombstone(p: PreparedEntry): boolean {
+    return (
+      this.stored.existingByExternalKey.get(
+        externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+      )?.deleted === true
     );
   }
 
@@ -463,7 +476,9 @@ export class MeasurementBatchWriter {
         );
         break;
       case "duplicate":
-        this.results[p.index] = { index: p.index, status: "duplicate" };
+        this.results[p.index] = verdict.tombstoned
+          ? { index: p.index, ...TOMBSTONED_ENTRY }
+          : { index: p.index, status: "duplicate" };
         this.duplicateCount++;
         break;
       case "failed":
