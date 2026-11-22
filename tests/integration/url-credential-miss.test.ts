@@ -121,7 +121,6 @@ describe("the two pages a stranger opens: one 404 for every dead link", () => {
       await db().clinicianShareLink.create({
         data: {
           userId: user.id,
-          createdById: user.id,
           tokenHash: hashToken(raw),
           label: "Practice",
           rangeStart: new Date("2026-01-01T00:00:00Z"),
