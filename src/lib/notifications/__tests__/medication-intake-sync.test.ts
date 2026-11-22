@@ -35,6 +35,20 @@ vi.mock("@/lib/logging/context", () => ({
   getEvent: () => ({ addWarning: addWarningMock, addMeta: vi.fn() }),
 }));
 
+// Each flush writes its own background event; its meta is asserted here.
+const metaMock = vi.fn();
+vi.mock("@/lib/logging/background", () => ({
+  withBackgroundEvent: (
+    _name: string,
+    fn: (evt: Record<string, unknown>) => Promise<unknown>,
+  ) =>
+    fn({
+      addMeta: (...a: unknown[]) => metaMock(...a),
+      addWarning: (...a: unknown[]) => addWarningMock(...a),
+      setBackground: vi.fn(),
+    }),
+}));
+
 const deviceFindMany = vi.fn();
 const channelFindUnique = vi.fn();
 const deviceDeleteMany = vi.fn();
@@ -82,7 +96,7 @@ const APNS_CONFIG = { bundleId: "test.healthlog.ios" };
  * (Fake timers do not fake microtasks, so plain awaits drain them.)
  */
 async function drainFlush(): Promise<void> {
-  for (let i = 0; i < 20; i += 1) await Promise.resolve();
+  for (let i = 0; i < 80; i += 1) await Promise.resolve();
 }
 
 /** Unique per-test user id so per-user coalescing windows never leak
@@ -234,12 +248,12 @@ describe("queueMedicationIntakeSync — coalescing", () => {
     // Trailing fan-out covering the two coalesced mutations.
     expect(rawSendMock).toHaveBeenCalledTimes(2);
     expect(recordPushAttemptMock).toHaveBeenCalledTimes(2);
-    expect(annotateMock).toHaveBeenLastCalledWith({
-      meta: {
-        medication_intake_sync_devices: 1,
-        medication_intake_sync_coalesced: 2,
-      },
-    });
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_coalesced", 2);
+    expect(metaMock).toHaveBeenLastCalledWith(
+      "intake_sync_flush_to_handoff_ms",
+      expect.any(Number),
+    );
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_devices", 1);
   });
 
   it("a single queue call (bulk route) produces exactly ONE fan-out", async () => {
@@ -252,12 +266,12 @@ describe("queueMedicationIntakeSync — coalescing", () => {
     await drainFlush();
 
     expect(rawSendMock).toHaveBeenCalledTimes(1);
-    expect(annotateMock).toHaveBeenCalledWith({
-      meta: {
-        medication_intake_sync_devices: 1,
-        medication_intake_sync_coalesced: 0,
-      },
-    });
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_devices", 1);
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_coalesced", 0);
+    expect(metaMock).toHaveBeenCalledWith(
+      "intake_sync_write_to_flush_ms",
+      expect.any(Number),
+    );
   });
 
   it("does not coalesce across users", async () => {

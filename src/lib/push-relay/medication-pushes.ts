@@ -17,15 +17,23 @@
  * the relay contract) is not ended over the relay.
  */
 import { prisma } from "@/lib/db";
+import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
+import { EVENT_DEFAULT_ENABLED } from "@/lib/notifications/types";
 import { fromBase64Url } from "@/lib/push-relay/encoding";
 import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
 import {
+  loadPushContext,
   routeOf,
   sendSealed,
   type PushContext,
   type RoutableDevice,
   type SealedSendResult,
 } from "@/lib/push-relay/route-device";
+import {
+  recordSilentPushes,
+  silentBudgetLeft,
+  wakeableDevices,
+} from "@/lib/push-relay/wakes";
 import { sendRelayItems } from "@/lib/push-relay/relay-send";
 
 const RECORDED_LIFETIME_S = 2 * 3600;
@@ -33,8 +41,7 @@ const SYNC_LIFETIME_S = 3600;
 const ACTIVITY_LIFETIME_S = 4 * 3600;
 /** The relay accepts an activity statement at most 12 hours old. */
 const ACTIVITY_STATEMENT_MAX_AGE_S = 12 * 3600 - 300;
-/** Silent pushes per relay device and hour (the relay's own limit). */
-export const SILENT_PER_HOUR = 6;
+const SYNC_EVENT = "MEDICATION_INTAKE_SYNC";
 
 export interface RecordedFields {
   medicationId: string;
@@ -72,7 +79,7 @@ export function intakeRecordedMessage(
 export function intakeSyncMessage(syncedAt: Date): EnvelopeMessage {
   return {
     pushClass: "silent",
-    type: "MEDICATION_INTAKE_SYNC",
+    type: SYNC_EVENT,
     lifetimeSeconds: SYNC_LIFETIME_S,
     data: { syncedAt: syncedAt.toISOString() },
   };
@@ -93,47 +100,136 @@ export function sendSealedIntakeRecorded(
   );
 }
 
-/**
- * Whether a relay device still has silent budget this hour: every silent
- * push the relay carried for it counts, whatever its type.
- */
-export async function silentBudgetLeft(
-  deviceId: string,
-  now: Date,
-): Promise<boolean> {
-  const sent = await prisma.pushRelayDelivery.count({
-    where: {
-      deviceId,
-      pushClass: "silent",
-      createdAt: { gte: new Date(now.getTime() - 3600_000) },
-    },
-  });
-  return sent < SILENT_PER_HOUR;
+export interface IntakeSyncSendResult extends SealedSendResult {
+  /** Devices the silent budget held back: owed, sent by the minute pass. */
+  deferred: string[];
 }
 
 /**
  * Send the silent sync sealed. A relay device is skipped when the flush also
  * sends it the recorded confirmation (that alert triggers the sync in the
- * extension) or when its hourly silent budget is spent. `confirmationInFlush`
- * means the confirmation is enabled for the account, not merely that a dose
- * was recorded: the confirmation is opt-in, and the sync must not depend on it.
+ * extension); `confirmationFor` names those devices, and is empty when the
+ * confirmation is off for the account: it is opt-in, and the sync must not
+ * depend on it. A device whose silent budget (`wakes.ts`) is spent is not
+ * skipped but owed the sync: the minute pass sends it once the budget frees
+ * up, one for however many changes arrived meanwhile.
  */
 export async function sendSealedIntakeSync(
   devices: RoutableDevice[],
   ctx: PushContext,
-  options: { confirmationInFlush: boolean },
-): Promise<SealedSendResult> {
-  const now = new Date();
+  options: { confirmationFor: ReadonlySet<string> },
+  now: Date = new Date(),
+): Promise<IntakeSyncSendResult> {
   const message = intakeSyncMessage(now);
   const targets = [];
+  const deferred: string[] = [];
   for (const device of devices) {
-    if (routeOf(device, ctx) === "relay") {
-      if (options.confirmationInFlush) continue;
-      if (!(await silentBudgetLeft(device.id, now))) continue;
+    const route = routeOf(device, ctx);
+    if (route !== "relay" && route !== "direct") continue;
+    if (route === "relay" && options.confirmationFor.has(device.id)) continue;
+    if (!(await silentBudgetLeft(device, SYNC_EVENT, ctx, now))) {
+      deferred.push(device.id);
+      continue;
     }
     targets.push({ device, message, collapseKey: "intake-sync" });
   }
-  return sendSealed(targets, ctx);
+  if (deferred.length > 0) await oweIntakeSync(deferred, now);
+  const sealed = await sendSealed(targets, ctx);
+  await recordSilentPushes(SYNC_EVENT, sealed.handled, now);
+  return { ...sealed, deferred };
+}
+
+/** Mark the sync owed to these devices (the first time it is owed stays). */
+async function oweIntakeSync(deviceIds: string[], now: Date): Promise<void> {
+  for (const deviceId of deviceIds) {
+    await prisma.$executeRaw`
+      INSERT INTO "push_data_changes" ("device_id", "intake_sync_owed_at", "updated_at")
+      VALUES (${deviceId}, ${now.toISOString()}::timestamp(3), ${now.toISOString()}::timestamp(3))
+      ON CONFLICT ("device_id") DO UPDATE SET
+        "intake_sync_owed_at" = COALESCE("push_data_changes"."intake_sync_owed_at", EXCLUDED."intake_sync_owed_at")`;
+  }
+}
+
+/**
+ * Whether the account takes the intake sync at all. There is no user-facing
+ * toggle (this is coherence plumbing), but an explicit per-channel
+ * preference (APNS / MEDICATION_INTAKE_SYNC / disabled) is honoured so an
+ * operator can switch the fan-out off; so is the APNs channel itself.
+ */
+export async function intakeSyncEnabled(userId: string): Promise<boolean> {
+  const channel = await prisma.notificationChannel.findUnique({
+    where: { userId_type: { userId, type: "APNS" } },
+    select: {
+      enabled: true,
+      preferences: {
+        where: { eventType: SYNC_EVENT },
+        select: { enabled: true },
+      },
+    },
+  });
+  if (!channel || !channel.enabled) return false;
+  const pref = channel.preferences[0];
+  if (pref) return pref.enabled;
+  return EVENT_DEFAULT_ENABLED.MEDICATION_INTAKE_SYNC;
+}
+
+/**
+ * The minute pass: send every owed intake sync whose device has silent
+ * budget again, and clear what is settled. A device whose account no longer
+ * takes the sync (pending deletion, APNs channel or the sync switched off)
+ * or that lost its route is owed nothing any more. Returns how many went out.
+ */
+export async function flushOwedIntakeSyncs(
+  now: Date = new Date(),
+): Promise<number> {
+  const owed = await prisma.pushDataChange.findMany({
+    where: { intakeSyncOwedAt: { not: null } },
+    select: { deviceId: true, device: { select: { userId: true } } },
+    orderBy: { intakeSyncOwedAt: "asc" },
+    take: 500,
+  });
+  if (owed.length === 0) return 0;
+  const ctx = await loadPushContext();
+  let sent = 0;
+  for (const row of owed) {
+    const userId = row.device.userId;
+    const device = (await intakeSyncEnabled(userId))
+      ? (await wakeableDevices(userId)).find((d) => d.id === row.deviceId)
+      : undefined;
+    const route = device ? routeOf(device, ctx) : "none";
+    if (!device || (route !== "relay" && route !== "direct")) {
+      await clearOwed(row.deviceId);
+      continue;
+    }
+    if (!(await silentBudgetLeft(device, SYNC_EVENT, ctx, now))) continue;
+    const result = await sendSealed(
+      [{ device, message: intakeSyncMessage(now), collapseKey: "intake-sync" }],
+      ctx,
+    );
+    await recordSilentPushes(SYNC_EVENT, result.handled, now);
+    if (result.handled.length > 0) {
+      await clearOwed(row.deviceId);
+      recordPushAttempt({
+        userId,
+        channel: "APNS",
+        eventType: SYNC_EVENT,
+        result: result.anyAccepted || result.waiting ? "ok" : "error",
+        reason:
+          result.anyAccepted || result.waiting
+            ? "intake_sync_owed_sent"
+            : (result.lastFailure ?? "intake_sync_failed"),
+      });
+      sent += 1;
+    }
+  }
+  return sent;
+}
+
+async function clearOwed(deviceId: string): Promise<void> {
+  await prisma.pushDataChange.updateMany({
+    where: { deviceId },
+    data: { intakeSyncOwedAt: null },
+  });
 }
 
 export interface RelayActivityRow {
