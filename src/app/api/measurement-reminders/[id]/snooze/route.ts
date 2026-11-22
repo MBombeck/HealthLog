@@ -24,7 +24,7 @@ import { annotate } from "@/lib/logging/context";
 import { toMeasurementReminderDto } from "@/lib/measurement-reminders/dto";
 import { snoozeMeasurementReminderSchema } from "@/lib/validations/measurement-reminders";
 import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, shiftDateKey, userDayKey } from "@/lib/tz/format";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -68,32 +68,13 @@ export const POST = apiHandler(
     );
 
     // Range gate: at least tomorrow (a snooze to today or the past is a
-    // no-op wearing a confirmation), at most five years out.
+    // no-op wearing a confirmation), at most five years out. "Tomorrow" is
+    // the calendar day after today in the profile zone, stepped on the key:
+    // `now + 24 h` lands two days on in the last hour before a 23-hour day
+    // and on today itself in the first hour of a 25-hour one.
     const now = new Date();
-    const startOfTomorrow = zonedWallClockToUtc(
-      (() => {
-        const probe = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-        const parts = new Intl.DateTimeFormat("sv-SE", {
-          timeZone: timezone,
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        })
-          .format(probe)
-          .split("-")
-          .map(Number);
-        return {
-          year: parts[0],
-          month: parts[1],
-          day: parts[2],
-          hour: 0,
-          minute: 0,
-          second: 0,
-        };
-      })(),
-      timezone,
-    );
-    if (until.getTime() < startOfTomorrow.getTime()) {
+    const tomorrow = shiftDateKey(userDayKey(now, timezone), 1);
+    if (parsed.data.until < tomorrow) {
       return apiError("Snooze date must be at least tomorrow", 422);
     }
     if (until.getTime() > now.getTime() + SNOOZE_CAP_MS) {

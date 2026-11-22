@@ -249,6 +249,32 @@ describe("POST /api/measurement-reminders/[id]/snooze", () => {
     expect(updateMock).not.toHaveBeenCalled();
   });
 
+  // "Tomorrow" is the calendar day after today in the profile zone. It used to
+  // be the date of `now + 24 h`, which in the last hour before the 23-hour
+  // day is the day after tomorrow, and in the first hour of the 25-hour day
+  // is still today.
+  it("accepts tomorrow in the last hour before the clocks go forward", async () => {
+    // Saturday 2026-03-28 23:30 CET; tomorrow is the 23-hour Sunday.
+    vi.setSystemTime(new Date("2026-03-28T22:30:00.000Z"));
+    const res = await SNOOZE(snoozeRequest({ until: "2026-03-29" }), params());
+    expect(res.status).toBe(200);
+  });
+
+  it("refuses today in the first hour of the day the clocks go back", async () => {
+    // Sunday 2026-10-25 00:30 CEST, the start of the 25-hour day.
+    vi.setSystemTime(new Date("2026-10-24T22:30:00.000Z"));
+    const today = await SNOOZE(
+      snoozeRequest({ until: "2026-10-25" }),
+      params(),
+    );
+    expect(today.status).toBe(422);
+    const tomorrow = await SNOOZE(
+      snoozeRequest({ until: "2026-10-26" }),
+      params(),
+    );
+    expect(tomorrow.status).toBe(200);
+  });
+
   it("422s a date beyond the five-year cap", async () => {
     const res = await SNOOZE(snoozeRequest({ until: "2031-07-01" }), params());
     expect(res.status).toBe(422);

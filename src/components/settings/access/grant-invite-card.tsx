@@ -23,8 +23,13 @@ import {
   useRecentProof,
 } from "@/components/settings/security-section/use-recent-proof";
 import { SHARE_DOMAINS, type ShareDomain } from "@/lib/sharing/scope";
-import { DEFAULT_TIMEZONE, isValidTimezone } from "@/lib/tz/format";
-import { wallClockInTz, zonedWallClockToUtc } from "@/lib/tz/wall-clock";
+import {
+  DEFAULT_TIMEZONE,
+  isValidTimezone,
+  shiftDateKey,
+  userDayKey,
+} from "@/lib/tz/format";
+import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
 
 /**
  * v1.37.0 — offering somebody access to this record.
@@ -691,13 +696,7 @@ export function endOfDayIso(day: string, timeZone: string): string | null {
 /** The earliest day worth offering: a grant that lapses today confers nothing. */
 function tomorrowIso(timeZone: string): string {
   const zone = isValidTimezone(timeZone) ? timeZone : DEFAULT_TIMEZONE;
-  const today = wallClockInTz(new Date(), zone);
-  const tomorrow = new Date(
-    Date.UTC(today.year, today.month - 1, today.day) + 86_400_000,
-  );
-  return `${tomorrow.getUTCFullYear()}-${String(
-    tomorrow.getUTCMonth() + 1,
-  ).padStart(2, "0")}-${String(tomorrow.getUTCDate()).padStart(2, "0")}`;
+  return shiftDateKey(userDayKey(new Date(), zone), 1);
 }
 
 function useInvitationOwnerTimezone(): string {
