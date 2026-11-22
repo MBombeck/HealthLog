@@ -67,6 +67,7 @@ function state(
     needs: { ...emptyOnboardingNeeds(), ...needs },
     completedAt,
     firstResult: null,
+    offers: { ai: false },
   };
 }
 

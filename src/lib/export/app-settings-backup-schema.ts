@@ -57,5 +57,10 @@ export const appSettingsBackupSchema = z
     moduleAvailabilityJson: z.unknown().nullable(),
     documentMaxFileBytes: z.number().int(),
     documentQuotaBytes: z.string().regex(/^\d+$/),
+    // 1.49 — the first-admin server setup's stamp and step states. Absent on
+    // a file written before the setup existed; a restore then leaves them as
+    // the server has them.
+    serverSetupCompletedAt: isoDateTime.nullable().optional(),
+    serverSetupStepsJson: z.unknown().nullable().optional(),
   })
   .passthrough();

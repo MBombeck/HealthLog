@@ -25,6 +25,7 @@ import {
   next,
   readMe,
   readTileOrder,
+  skipFollowUps,
 } from "./setup-flow-helpers";
 
 test.describe("setup flow — blood pressure and weight, typed in", () => {
@@ -87,6 +88,7 @@ test.describe("setup flow — blood pressure and weight, typed in", () => {
     await next(page);
 
     // The first result: one blood-pressure reading, entered inline.
+    await skipFollowUps(page, ["ai"]);
     await expectScreen(page, "first-result");
     const screen = page.locator("section[data-task]");
     await expect(screen).toHaveAttribute("data-task", "log-reading");

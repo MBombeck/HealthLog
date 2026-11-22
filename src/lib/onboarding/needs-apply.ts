@@ -109,6 +109,10 @@ export function applyOnboardingAnswer(
               input.units.unitPreference === undefined
                 ? state.needs.units.unitPreference
                 : input.units.unitPreference,
+            timezone: input.units.timezone ?? state.needs.units.timezone,
+            medicineRegistry:
+              input.units.medicineRegistry ??
+              state.needs.units.medicineRegistry,
           },
         },
       };
@@ -133,6 +137,8 @@ export function applyOnboardingAnswer(
       };
     }
     case "confirm":
+    case "reminders":
+    case "ai":
     case "done":
       return { ...state, steps };
   }

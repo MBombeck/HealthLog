@@ -31,6 +31,7 @@ function state(
     needs: { ...emptyOnboardingNeeds(), ...needs },
     completedAt: null,
     firstResult: null,
+    offers: { ai: false },
   };
 }
 

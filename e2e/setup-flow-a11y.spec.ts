@@ -116,6 +116,19 @@ const SCREENS: ScreenCase[] = [
       }),
   },
   {
+    screen: "reminders",
+    path: "/onboarding/reminders",
+    painted: (page) =>
+      page.locator('[data-slot="notification-channels-panel"]'),
+    prepare: (page) => complete(page),
+  },
+  {
+    screen: "ai",
+    path: "/onboarding/ai",
+    painted: (page) => page.locator('[data-slot="onboarding-question-ai"]'),
+    prepare: (page) => answer(page, { step: "reminders", status: "skipped" }),
+  },
+  {
     screen: "first-result",
     path: "/onboarding/first-result",
     // v1.38.19 — wait for the tile the screen SETTLED on, not for
@@ -126,7 +139,7 @@ const SCREENS: ScreenCase[] = [
     // frame was hiding. `data-connect-slot` appears only once the screen has
     // decided, and it is on every one of the four tiles.
     painted: (page) => page.locator("[data-connect-slot]"),
-    prepare: (page) => complete(page),
+    prepare: (page) => answer(page, { step: "ai", status: "skipped" }),
   },
   {
     screen: "done",

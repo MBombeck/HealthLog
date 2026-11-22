@@ -66,6 +66,7 @@ import { inboundDocumentPaths } from "./documents";
 import { documentSourcePaths } from "./document-sources";
 import { devicePaths } from "./devices";
 import { pushRelayAdminPaths } from "./push-relay";
+import { adminServerSetupPaths } from "./admin-server-setup";
 import { exportPaths } from "./export";
 import { familyHistoryPaths } from "./family-history";
 import { healthRecordPaths } from "./health-record";
@@ -126,6 +127,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...provenancePaths,
   ...devicePaths,
   ...pushRelayAdminPaths,
+  ...adminServerSetupPaths,
   ...medicationPaths,
   ...profilePaths,
   ...coachPaths,

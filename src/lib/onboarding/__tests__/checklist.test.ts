@@ -36,6 +36,7 @@ function onboardingState(
     needs: { ...emptyOnboardingNeeds(), recordTarget: "me", ...needs },
     completedAt: "2026-09-10T08:00:00.000Z",
     firstResult: null,
+    offers: { ai: false },
     ...overrides,
   };
 }
@@ -419,6 +420,7 @@ describe("checklistOrderFromNeeds", () => {
   });
 
   it("puts medication second for somebody who takes one on a schedule", () => {
+    expect(order({ medication: "yes" })[2]).toBe("notifications");
     expect(order({ medication: "yes" })[1]).toBe("medication");
     expect(order({ medication: "sometimes" })[1]).toBe("medication");
     expect(order({ medication: "no" })[1]).not.toBe("medication");
@@ -488,9 +490,12 @@ describe("buildChecklist, ordered by the setup answers", () => {
         ),
       }),
     );
-    expect(items.map((i) => i.id).slice(0, 3)).toEqual([
+    // A schedule brings the channels row up behind the medication row:
+    // a reminder needs somewhere to arrive.
+    expect(items.map((i) => i.id).slice(0, 4)).toEqual([
       "profile",
       "medication",
+      "notifications",
       "dataSource",
     ]);
     expect([...items.map((i) => i.id)].sort()).toEqual(
@@ -610,6 +615,7 @@ describe("shouldShowChecklist and the setup flow", () => {
       needs: emptyOnboardingNeeds(),
       completedAt: null,
       firstResult: null,
+      offers: { ai: false },
     };
     expect(
       shouldShowChecklist({
@@ -655,6 +661,7 @@ describe("isStillInSetup", () => {
       needs: emptyOnboardingNeeds(),
       completedAt: null,
       firstResult: null,
+      offers: { ai: false },
     };
     expect(
       isStillInSetup({

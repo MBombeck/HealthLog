@@ -14,6 +14,7 @@
  * set and has its own screen.
  */
 import { ONBOARDING_AREA_KEYS } from "@/lib/modules/registry";
+import type { MedicineRegistryChoice } from "@/lib/medications/leaflet-registries";
 import type { OnboardingAnswerInput } from "@/lib/validations/onboarding-needs";
 
 import {
@@ -156,41 +157,59 @@ export function questionSkipBody(
 }
 
 /**
- * Which of the two unit questions this flow asks. Glucose needs a
+ * Which of the "Region & units" questions this flow asks. Glucose needs a
  * glucose unit, weight needs the metric/imperial preference; an area not
  * ticked is not asked about, so a person who chose only glucose never sees
- * "kg or lb".
+ * "kg or lb". The medicine registry is asked only when medication was chosen.
+ * The time zone is asked of everyone who reaches the screen.
  */
 export function unitQuestionsFor(needs: OnboardingNeeds): {
   glucose: boolean;
   weight: boolean;
+  registry: boolean;
 } {
   return {
     glucose: needs.areas.includes("glucose"),
     weight: needs.areas.includes("weight-body"),
+    registry: needs.medication === "yes" || needs.medication === "sometimes",
   };
 }
 
 /**
- * The Q6 body. Only the questions that were asked reach the wire, and only
- * with a chosen value: an omitted field leaves the account's own column
- * alone, which is what "never re-ask a value the account holds" needs when
- * a person confirms the one they already had.
+ * The body "Continue" sends, or null while nothing is chosen. Only what the
+ * screen asked rides the body.
+ *
+ * The time zone and the registry arrive already filled (the account's own
+ * values), so they never count as the answer on their own while a unit is
+ * asked: a screen that asks for a unit is answered by choosing one, and a
+ * prefilled zone beside an untouched unit question is still nothing chosen.
+ * Only a screen with no unit question at all (a medication schedule without a
+ * unit-bearing area) is answered by confirming the filled values.
  */
 export function unitsAnswerBody(input: {
-  asked: { glucose: boolean; weight: boolean };
+  asked: { glucose: boolean; weight: boolean; registry: boolean };
   glucoseUnit: "mg/dL" | "mmol/L" | null;
   unitPreference: "metric" | "imperial" | null;
+  timezone: string | null;
+  medicineRegistry: MedicineRegistryChoice | null;
 }): OnboardingAnswerInput | null {
   const units: {
     glucoseUnit?: "mg/dL" | "mmol/L";
     unitPreference?: "metric" | "imperial";
+    timezone?: string;
+    medicineRegistry?: MedicineRegistryChoice;
   } = {};
   if (input.asked.glucose && input.glucoseUnit) {
     units.glucoseUnit = input.glucoseUnit;
   }
   if (input.asked.weight && input.unitPreference) {
     units.unitPreference = input.unitPreference;
+  }
+  const unitAsked = input.asked.glucose || input.asked.weight;
+  if (unitAsked && Object.keys(units).length === 0) return null;
+  if (input.timezone) units.timezone = input.timezone;
+  if (input.asked.registry && input.medicineRegistry) {
+    units.medicineRegistry = input.medicineRegistry;
   }
   // v1.39 — nothing chosen is not an answer: an empty
   // units body marked Q6 done while recording no preference at all.

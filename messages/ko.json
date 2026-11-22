@@ -5429,7 +5429,9 @@
       "aiOptional": "AI는 선택 사항이에요. AI 없이도 모든 기능이 작동해요.",
       "aiSetupCta": "AI 설정",
       "relayOptional": "iPhone 앱은 선택 사항인 HealthLog 푸시 릴레이를 통해 이 서버의 알림을 받을 수 있어요. 직접 켜기 전까지는 꺼져 있어요.",
-      "relaySetupCta": "푸시 릴레이 설정"
+      "relaySetupCta": "푸시 릴레이 설정",
+      "serverSetup": "이 서버의 설정이 아직 남아 있습니다: 가입, 알림, AI, 개인정보.",
+      "serverSetupCta": "서버 설정"
     },
     "welcomeBack": {
       "title": "다시 오셨네요",
@@ -5456,20 +5458,24 @@
       "medication": "복약",
       "sources": "측정값의 출처",
       "visit": "진료 예정",
-      "units": "단위",
+      "units": "지역 및 단위",
       "confirm": "확인",
       "first-result": "첫 결과",
-      "done": "완료"
+      "done": "완료",
+      "reminders": "알림",
+      "ai": "코치"
     },
     "flow": {
       "welcome": {
         "title": "HealthLog에 오신 것을 환영합니다",
-        "body": "짧은 질문 다섯 개로 HealthLog가 먼저 보여 줄 내용이 정해집니다. 약 2분이 걸립니다.",
+        "body": "몇 가지 짧은 질문으로 HealthLog가 먼저 보여 줄 내용이 정해집니다. 약 2분이 걸립니다.",
         "changeLater": "확정되는 것은 없습니다. 모든 선택은 나중에 설정에서 바꿀 수 있습니다.",
         "setUp": "설정 시작",
         "skip": "지금은 건너뛰기",
         "againBody": "설정이 완료되었습니다. HealthLog가 먼저 보여 줄 내용을 바꾸려면 질문에 다시 답하고, 아니면 대시보드로 이동하세요.",
-        "setUpAgain": "다시 설정하기"
+        "setUpAgain": "다시 설정하기",
+        "serverSetup": "이 서버를 운영하고 계십니다. 서버 설정은 본인 설정 전이나 후에 따로 짧게 진행합니다.",
+        "serverSetupCta": "서버 설정"
       },
       "who": {
         "title": "이 기록은 누구의 것인가요?",
@@ -5540,14 +5546,16 @@
         }
       },
       "units": {
-        "title": "어떤 단위를 사용하시나요?",
-        "body": "측정값은 한 번 저장되고 선택한 단위로 표시됩니다. 나중에 설정에서 바꿀 수 있습니다.",
+        "title": "지역과 단위",
+        "body": "하루의 기준과 알림 시간은 시간대를 따릅니다. 측정값은 한 번 저장되고 선택한 단위로 표시됩니다. 모두 나중에 설정에서 바꿀 수 있습니다.",
         "glucoseLegend": "혈당",
         "weightLegend": "체중과 키",
         "options": {
           "metric": "kg과 cm",
           "imperial": "lb와 ft/in"
-        }
+        },
+        "timezoneHint": "이 계정의 값을 가져왔습니다. 하루, 차트, 알림이 이 시간대를 따릅니다.",
+        "registryLegend": "첨부문서를 찾을 의약품 등록처"
       },
       "confirm": {
         "title": "답변으로 켜지는 항목입니다",
@@ -5643,6 +5651,30 @@
         "tourCta": "짧은 둘러보기",
         "openRecord": "{name}의 기록 열기",
         "createProfile": "내가 돌보는 사람의 프로필 만들기"
+      },
+      "reminders": {
+        "title": "알림을 어디로 받을까요?",
+        "body": "이 서버가 알림을 보낼 수 있는 방법입니다. 하나, 여러 개를 설정하거나 지금은 건너뛰어도 됩니다.",
+        "app": "iPhone 앱을 쓰시나요? 앱이 자체 알림을 보내므로 이 단계는 건너뛰어도 됩니다."
+      },
+      "ai": {
+        "title": "코치를 사용할까요?",
+        "body": "코치는 AI 모델로 측정값에 관한 질문에 답합니다.",
+        "whereServer": "질문하면 질문과 필요한 측정값이 이 서버의 계정을 통해 {providers}(으)로 전송됩니다.",
+        "whereOwn": "질문하면 질문과 필요한 측정값이 직접 키로 설정한 AI 서비스로 전송됩니다.",
+        "whereLocal": "질문하면 질문과 필요한 측정값이 직접 운영하는 모델로 전송됩니다.",
+        "whereNone": "아직 설정된 AI 서비스가 없어서 코치가 답할 수 없습니다.",
+        "setUp": "AI 설정",
+        "nothingUntilAsked": "질문하기 전에는 아무것도 전송되지 않습니다.",
+        "options": {
+          "yes": "예, 코치를 사용합니다",
+          "no": "아니요, 끄겠습니다"
+        },
+        "hints": {
+          "yes": "언제든 측정값에 대해 물어볼 수 있습니다.",
+          "no": "코치가 사라집니다. 나머지는 그대로 작동합니다."
+        },
+        "later": "언제든 설정의 AI에서 바꿀 수 있습니다."
       }
     }
   },
@@ -5678,6 +5710,43 @@
       "managedProfileTitle": "돌보는 사람의 프로필 만들기",
       "managedProfileDescription": "답변은 다른 사람의 기록에 대한 것이었습니다. 프로필은 공유 접근에서 만듭니다.",
       "managedProfileCta": "프로필 만들기"
+    },
+    "extras": {
+      "toggle": "추가로 설정할 수 있는 것",
+      "hint": "모두 선택 사항입니다. 위 목록의 진행에는 포함되지 않습니다.",
+      "loadError": "이 제안을 불러올 수 없습니다.",
+      "items": {
+        "emergencyCard": {
+          "title": "응급 카드",
+          "description": "도움을 줘야 하는 사람을 위한 알레르기, 약, 연락처.",
+          "cta": "열기"
+        },
+        "careFeed": {
+          "title": "진료 캘린더 구독",
+          "description": "이미 쓰는 캘린더 앱에 진료 예약과 검진을 표시합니다.",
+          "cta": "구독"
+        },
+        "sharing": {
+          "title": "다른 사람과 공유",
+          "description": "다른 계정에 접근 권한을 주거나 다른 사람의 기록을 관리합니다.",
+          "cta": "설정"
+        },
+        "imports": {
+          "title": "이전 데이터 가져오기",
+          "description": "Gadgetbridge, Health Connect, FHIR 파일 등.",
+          "cta": "가져오기"
+        },
+        "reportSchedule": {
+          "title": "정기 진료 보고서",
+          "description": "매월, 분기 또는 매년 문서함에 보고서를 보관합니다.",
+          "cta": "예약"
+        },
+        "iosApp": {
+          "title": "iPhone 앱",
+          "description": "Apple 건강 동기화, 그리고 이 서버가 제공하면 푸시 릴레이를 통한 알림.",
+          "cta": "자세히 보기"
+        }
+      }
     }
   },
   "trendHints": {
@@ -9480,6 +9549,117 @@
         "inviteRequired": "이 릴레이는 초대로만 새 서버를 받습니다. 초대 코드를 입력하세요.",
         "inviteRejected": "릴레이가 이 초대 코드를 받아들이지 않았습니다. 만료되었거나 이미 사용되었을 수 있습니다. 새 코드를 받아 입력하세요.",
         "registrationPaused": "릴레이가 지금은 새 서버를 받지 않습니다. 이 서버가 나중에 스스로 다시 시도합니다."
+      }
+    },
+    "serverSetup": {
+      "stepsLabel": "서버 설정 단계",
+      "finish": "완료",
+      "steps": {
+        "accounts": "계정",
+        "notifications": "알림",
+        "ai": "AI",
+        "privacy": "개인정보",
+        "health": "점검"
+      },
+      "notice": {
+        "title": "이 서버 설정하기",
+        "body": "여기서만 정할 수 있는 결정을 위한 짧은 다섯 단계입니다: 누가 가입할 수 있는지, 알림이 서버를 어떻게 나가는지, AI가 무엇을 할 수 있는지, 그 밖에 무엇이 밖으로 나가는지. 모든 단계는 건너뛸 수 있고 나중에 바꿀 수 있습니다.",
+        "open": "설정 시작",
+        "dismiss": "나중에"
+      },
+      "accounts": {
+        "title": "이 서버를 사용할 수 있는 사람",
+        "body": "사람들이 직접 가입할 수 있는지, 모든 계정에 2단계 인증이 필요한지 정하세요.",
+        "invites": "가입을 닫아도 초대 링크로는 계속 참여할 수 있습니다.",
+        "invitesLink": "초대 만들기"
+      },
+      "notifications": {
+        "title": "알림이 서버를 나가는 방법",
+        "body": "사람들이 쓸 수 있는 채널을 고르세요. App Store 앱용 푸시 릴레이는 직접 켜기 전까지 꺼져 있습니다."
+      },
+      "ai": {
+        "title": "AI가 할 수 있는 일",
+        "body": "AI는 선택 사항입니다. HealthLog는 AI 없이도 모든 기능이 작동합니다.",
+        "off": "끄기: 어떤 AI 서비스로도 아무것도 전송되지 않습니다.",
+        "ownKey": "개인 키: 사용자의 질문과 필요한 측정값이 그 사용자가 설정한 제공자로 전송됩니다.",
+        "serverKey": "이 서버의 키: 질문과 측정값이 여기서 설정한 제공자로 전송되며, 각 사용자에게 먼저 동의를 받습니다.",
+        "local": "로컬 모델: 모든 것이 사용자가 지정한 모델, 즉 내 네트워크 안에 머뭅니다.",
+        "docs": "AI 제공자 작동 방식"
+      },
+      "privacy": {
+        "title": "그 밖에 서버를 나가는 것",
+        "body": "알림과 AI 외에도 세 가지가 데이터를 외부로 보낼 수 있습니다. 모두 직접 결정합니다.",
+        "geoTitle": "로그인 위치",
+        "geoDescription": "IP 주소로 로그인 위치를 알아내는 방법입니다.",
+        "geoBody": "GeoLite2 데이터베이스를 마운트하면 조회가 이 서버에서 이루어집니다. 없으면 모든 로그인 주소가 온라인 서비스로 전송됩니다. IP_GEO_LOOKUP_DISABLED=1로 조회를 끌 수 있습니다.",
+        "geoDocs": "로컬 데이터베이스 설정",
+        "geoLoadError": "조회 설정을 읽을 수 없습니다.",
+        "docs": "HealthLog가 무엇을 어디로 보내는지"
+      },
+      "health": {
+        "title": "설정 점검",
+        "body": "이 서버가 어떻게 설정되어 있는지 읽기 전용으로 보여 줍니다. 관리자 콘솔의 시스템 상태에 계속 남아 있습니다.",
+        "keys": "암호화 키가 있어야만 백업 속 데이터를 읽을 수 있습니다. 이 서버가 아닌 다른 곳에 사본을 보관하세요."
+      },
+      "facts": {
+        "title": "서버 환경 설정",
+        "description": "여기가 아니라 환경 변수에서 설정합니다. 그곳에서 바꾸고 다시 시작하세요.",
+        "oidc": "통합 로그인(OIDC)",
+        "oidcOn": "설정됨, 비밀번호 및 패스키와 함께",
+        "oidcOnly": "설정됨, 유일한 로그인 방법",
+        "oidcOff": "설정 안 됨",
+        "oidcDocs": "통합 로그인 설정",
+        "smtp": "이메일(SMTP)",
+        "smtpOn": "설정됨",
+        "smtpMissing": "설정 안 됨, 누락: {names}",
+        "telegram": "Telegram 응답",
+        "telegramOn": "웹훅 비밀 설정됨",
+        "telegramOff": "웹훅 비밀이 없어 Telegram 메시지의 버튼이 응답하지 않습니다",
+        "channelsDocs": "채널 작동 방식"
+      }
+    },
+    "setupHealth": {
+      "title": "설정 점검",
+      "description": "키, 쿠키, 백업, 그리고 이 서버에 접속하는 주소.",
+      "loadError": "설정 점검을 불러올 수 없습니다.",
+      "fix": "열기",
+      "docs": "해결 방법",
+      "openSetup": "서버 설정 열기",
+      "state": {
+        "ok": "모두 정상",
+        "attention": "확인 필요",
+        "failing": "수정 필요"
+      },
+      "signal": {
+        "encryption_keys": "암호화 키",
+        "secure_cookie": "보안 쿠키",
+        "app_url": "공개 주소",
+        "database_dump": "데이터베이스 덤프"
+      },
+      "reason": {
+        "encryption_keys": {
+          "present": "불러온 키: {count}개. 활성 키: {active}.",
+          "missing": "불러온 암호화 키가 없습니다."
+        },
+        "secure_cookie": {
+          "on": "쿠키에 Secure 플래그가 있습니다.",
+          "off": "쿠키에 Secure 플래그가 없습니다.",
+          "secure_over_https": "HTTPS로 보안 쿠키를 사용 중입니다. 정상입니다.",
+          "plain_http": "Secure 플래그 없는 일반 HTTP: 내 네트워크에서만 접속하는 서버라면 괜찮습니다.",
+          "secure_over_http": "이 페이지는 일반 HTTP로 열렸지만 쿠키에 Secure 플래그가 있어 브라우저가 로그인을 버립니다. HTTPS를 제공하거나 SESSION_COOKIE_SECURE=false로 설정하세요.",
+          "insecure_over_https": "이 페이지는 HTTPS로 열렸지만 쿠키에 Secure 플래그가 없습니다. SESSION_COOKIE_SECURE=false를 제거하세요."
+        },
+        "app_url": {
+          "unset": "NEXT_PUBLIC_APP_URL이 설정되지 않았습니다. 이메일 링크, 초대, SSO 로그인에 필요합니다.",
+          "invalid": "NEXT_PUBLIC_APP_URL이 올바른 주소가 아닙니다.",
+          "mismatch": "NEXT_PUBLIC_APP_URL은 {configured}인데 이 페이지는 {request}에서 열렸습니다.",
+          "matches": "설정대로 {url}에서 접속됩니다."
+        },
+        "database_dump": {
+          "disabled": "야간 데이터베이스 덤프가 만들어지지 않습니다. 다른 방법으로 데이터베이스를 백업하세요.",
+          "not_persistent": "덤프 폴더가 마운트된 볼륨에 있지 않아 다음 업데이트 때 덤프가 사라집니다.",
+          "scheduled": "야간 덤프 예약됨({cron})."
+        }
       }
     }
   },

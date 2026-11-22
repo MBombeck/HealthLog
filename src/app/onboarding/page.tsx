@@ -55,7 +55,7 @@ export default async function OnboardingRootPage(props?: {
 
   return (
     <OnboardingShell screen="welcome" state={state} userLocale={userLocale}>
-      <WelcomeScreen variant="fresh" />
+      <WelcomeScreen variant="fresh" serverSetupOpen={flow.serverSetupOpen} />
     </OnboardingShell>
   );
 }

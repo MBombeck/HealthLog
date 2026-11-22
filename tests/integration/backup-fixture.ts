@@ -878,7 +878,12 @@ export async function seedEveryTwoEndedModel(
         medication: "yes",
         sources: ["withings"],
         visit: "within-a-month",
-        units: { glucoseUnit: "mmol/L", unitPreference: "metric" },
+        units: {
+          glucoseUnit: "mmol/L",
+          unitPreference: "metric",
+          timezone: "Europe/Berlin",
+          medicineRegistry: "DE",
+        },
       },
       stepsJson: [
         { id: "who", status: "done" },

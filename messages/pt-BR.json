@@ -5429,7 +5429,9 @@
       "aiOptional": "A IA é opcional. Tudo funciona também sem ela.",
       "aiSetupCta": "Configurar IA",
       "relayOptional": "O app para iPhone pode receber notificações deste servidor pelo relay de push do HealthLog, opcional e desligado até você ativar.",
-      "relaySetupCta": "Configurações do relay de push"
+      "relaySetupCta": "Configurações do relay de push",
+      "serverSetup": "A configuração deste servidor ainda está aberta: cadastros, notificações, IA e privacidade.",
+      "serverSetupCta": "Configurar o servidor"
     },
     "welcomeBack": {
       "title": "Bem-vindo de volta",
@@ -5456,20 +5458,24 @@
       "medication": "Medicamento",
       "sources": "De onde vêm as leituras",
       "visit": "Consulta médica",
-      "units": "Unidades",
+      "units": "Região e unidades",
       "confirm": "Confirmar",
       "first-result": "Primeiro resultado",
-      "done": "Concluído"
+      "done": "Concluído",
+      "reminders": "Lembretes",
+      "ai": "Coach"
     },
     "flow": {
       "welcome": {
         "title": "Bem-vindo ao HealthLog",
-        "body": "Cinco perguntas curtas decidem o que o HealthLog mostra primeiro. Leva cerca de dois minutos.",
+        "body": "Algumas perguntas curtas decidem o que o HealthLog mostra primeiro. Leva cerca de dois minutos.",
         "changeLater": "Nada é definitivo: cada escolha pode ser alterada depois nas Configurações.",
         "setUp": "Configurar",
         "skip": "Pular por agora",
         "againBody": "Sua configuração está concluída. Responda às perguntas novamente para mudar o que o HealthLog mostra primeiro, ou vá ao painel.",
-        "setUpAgain": "Configurar novamente"
+        "setUpAgain": "Configurar novamente",
+        "serverSetup": "Você administra este servidor. A configuração dele é uma etapa curta à parte, antes ou depois da sua.",
+        "serverSetupCta": "Configurar o servidor"
       },
       "who": {
         "title": "Para quem é este registro?",
@@ -5540,14 +5546,16 @@
         }
       },
       "units": {
-        "title": "Quais unidades você usa?",
-        "body": "As leituras são armazenadas uma vez e exibidas na unidade que você escolher. Pode mudar depois nas Configurações.",
+        "title": "Sua região e suas unidades",
+        "body": "Seu dia e os horários dos lembretes seguem o fuso horário. As leituras são armazenadas uma vez e exibidas na unidade que você escolher. Você pode mudar tudo depois em Configurações.",
         "glucoseLegend": "Glicemia",
         "weightLegend": "Peso e altura",
         "options": {
           "metric": "kg e cm",
           "imperial": "lb e ft/in"
-        }
+        },
+        "timezoneHint": "Preenchido a partir desta conta. Seu dia, seus gráficos e seus lembretes seguem esse fuso.",
+        "registryLegend": "Registro de medicamentos para as bulas"
       },
       "confirm": {
         "title": "Aqui está o que suas respostas ligam",
@@ -5643,6 +5651,30 @@
         "tourCta": "Fazer um tour curto",
         "openRecord": "Abrir o registro de {name}",
         "createProfile": "Criar o perfil da pessoa de quem você cuida"
+      },
+      "reminders": {
+        "title": "Onde você quer receber os lembretes?",
+        "body": "Estas são as formas como este servidor pode chegar até você. Configure uma, várias ou nenhuma por enquanto.",
+        "app": "Usa o app para iPhone? Ele tem lembretes próprios, então você pode pular esta etapa."
+      },
+      "ai": {
+        "title": "Usar o Coach?",
+        "body": "O Coach responde perguntas sobre suas leituras com um modelo de IA.",
+        "whereServer": "Quando você pergunta algo, sua pergunta e as leituras necessárias vão para {providers} pela conta deste servidor.",
+        "whereOwn": "Quando você pergunta algo, sua pergunta e as leituras necessárias vão para o serviço de IA que você configurou com sua própria chave.",
+        "whereLocal": "Quando você pergunta algo, sua pergunta e as leituras necessárias vão para o modelo que você mesmo executa.",
+        "whereNone": "Ainda não há nenhum serviço de IA configurado para você, então o Coach ainda não pode responder.",
+        "setUp": "Configurar a IA",
+        "nothingUntilAsked": "Nada é enviado antes de você perguntar.",
+        "options": {
+          "yes": "Sim, usar o Coach",
+          "no": "Não, desativar"
+        },
+        "hints": {
+          "yes": "Você pode perguntar sobre suas leituras quando quiser.",
+          "no": "O Coach some. Todo o resto funciona como antes."
+        },
+        "later": "Você pode mudar isso a qualquer momento em Configurações, IA."
       }
     }
   },
@@ -5678,6 +5710,43 @@
       "managedProfileTitle": "Crie o perfil que você cuida",
       "managedProfileDescription": "Suas respostas foram dadas para o registro de outra pessoa; ele é criado em Acesso compartilhado.",
       "managedProfileCta": "Criar o perfil"
+    },
+    "extras": {
+      "toggle": "Mais coisas que você pode configurar",
+      "hint": "Tudo opcional. Nada disso conta para a lista acima.",
+      "loadError": "Não foi possível carregar estas sugestões.",
+      "items": {
+        "emergencyCard": {
+          "title": "Cartão de emergência",
+          "description": "Alergias, medicamentos e contatos para quem precisar ajudar.",
+          "cta": "Abrir"
+        },
+        "careFeed": {
+          "title": "Assinatura de calendário de consultas",
+          "description": "Consultas e exames no app de calendário que você já usa.",
+          "cta": "Assinar"
+        },
+        "sharing": {
+          "title": "Compartilhar com alguém",
+          "description": "Dê acesso a outra conta ou cuide do registro de outra pessoa.",
+          "cta": "Configurar"
+        },
+        "imports": {
+          "title": "Trazer dados antigos",
+          "description": "Gadgetbridge, Health Connect, arquivos FHIR e mais.",
+          "cta": "Importar"
+        },
+        "reportSchedule": {
+          "title": "Relatório médico periódico",
+          "description": "Um relatório arquivado nos seus documentos todo mês, trimestre ou ano.",
+          "cta": "Agendar"
+        },
+        "iosApp": {
+          "title": "O app para iPhone",
+          "description": "Sincronização com o Apple Saúde e lembretes pelo relay de push, se este servidor oferecer.",
+          "cta": "Saiba mais"
+        }
+      }
     }
   },
   "trendHints": {
@@ -9480,6 +9549,117 @@
         "inviteRequired": "Este relay aceita novos servidores apenas por convite. Insira um código de convite.",
         "inviteRejected": "O relay não aceitou este código de convite. Ele pode ter expirado ou já ter sido usado. Peça um novo e insira-o.",
         "registrationPaused": "O relay não está aceitando novos servidores no momento. Este servidor tentará de novo mais tarde por conta própria."
+      }
+    },
+    "serverSetup": {
+      "stepsLabel": "Etapas da configuração do servidor",
+      "finish": "Concluir",
+      "steps": {
+        "accounts": "Contas",
+        "notifications": "Notificações",
+        "ai": "IA",
+        "privacy": "Privacidade",
+        "health": "Verificação"
+      },
+      "notice": {
+        "title": "Configurar este servidor",
+        "body": "Cinco etapas curtas para as decisões que só você pode tomar aqui: quem pode se cadastrar, como as notificações saem do servidor, o que a IA pode fazer e o que mais sai dele. Cada etapa pode ser pulada e alterada depois.",
+        "open": "Começar a configuração",
+        "dismiss": "Agora não"
+      },
+      "accounts": {
+        "title": "Quem pode usar este servidor",
+        "body": "Decida se as pessoas podem se cadastrar sozinhas e se cada conta precisa de um segundo fator.",
+        "invites": "Com o cadastro fechado, as pessoas ainda entram com um link de convite.",
+        "invitesLink": "Criar um convite"
+      },
+      "notifications": {
+        "title": "Como as notificações saem do servidor",
+        "body": "Escolha quais canais as pessoas podem usar. O relay de push para o app da App Store continua desligado até você ligá-lo."
+      },
+      "ai": {
+        "title": "O que a IA pode fazer",
+        "body": "A IA é opcional. O HealthLog funciona totalmente sem ela.",
+        "off": "Desligada: nada vai para nenhum serviço de IA.",
+        "ownKey": "Chaves próprias: as perguntas de uma pessoa e as leituras necessárias vão para o provedor que essa pessoa configurou.",
+        "serverKey": "Chave deste servidor: perguntas e leituras vão para o provedor que você definir aqui, e cada pessoa é consultada antes para dar consentimento.",
+        "local": "Modelo local: tudo fica com o modelo que a pessoa indicar, na sua própria rede.",
+        "docs": "Como funcionam os provedores de IA"
+      },
+      "privacy": {
+        "title": "O que mais sai do servidor",
+        "body": "Além das notificações e da IA, três coisas podem enviar dados para fora. Cada uma é decisão sua.",
+        "geoTitle": "Locais de login",
+        "geoDescription": "Como o local de um login é descoberto a partir do endereço IP.",
+        "geoBody": "Com os bancos GeoLite2 montados, a consulta acontece neste servidor. Sem eles, cada endereço de login é enviado a um serviço online. IP_GEO_LOOKUP_DISABLED=1 desliga a consulta.",
+        "geoDocs": "Configurar os bancos locais",
+        "geoLoadError": "Não foi possível ler a configuração da consulta.",
+        "docs": "O que o HealthLog envia e para onde"
+      },
+      "health": {
+        "title": "Verificar a configuração",
+        "body": "Uma visão somente leitura de como este servidor está configurado. Ela continua no console de administração, em Status do sistema.",
+        "keys": "Suas chaves de criptografia são a única forma de ler seus dados em um backup. Guarde uma cópia em outro lugar que não seja este servidor."
+      },
+      "facts": {
+        "title": "Do ambiente do servidor",
+        "description": "Definido no ambiente, não aqui. Altere lá e reinicie.",
+        "oidc": "Login único (OIDC)",
+        "oidcOn": "Configurado, junto com senhas e chaves de acesso",
+        "oidcOnly": "Configurado, a única forma de entrar",
+        "oidcOff": "Não configurado",
+        "oidcDocs": "Configurar o login único",
+        "smtp": "E-mail (SMTP)",
+        "smtpOn": "Configurado",
+        "smtpMissing": "Não configurado, falta: {names}",
+        "telegram": "Respostas no Telegram",
+        "telegramOn": "Segredo do webhook definido",
+        "telegramOff": "Sem segredo do webhook, então os botões das mensagens do Telegram não respondem",
+        "channelsDocs": "Como funcionam os canais"
+      }
+    },
+    "setupHealth": {
+      "title": "Verificação da configuração",
+      "description": "Chaves, cookies, backups e o endereço em que este servidor é acessado.",
+      "loadError": "Não foi possível carregar a verificação da configuração.",
+      "fix": "Abrir",
+      "docs": "Como corrigir",
+      "openSetup": "Abrir a configuração do servidor",
+      "state": {
+        "ok": "Tudo certo",
+        "attention": "Vale uma olhada",
+        "failing": "Precisa de correção"
+      },
+      "signal": {
+        "encryption_keys": "Chaves de criptografia",
+        "secure_cookie": "Cookies seguros",
+        "app_url": "Endereço público",
+        "database_dump": "Dump do banco de dados"
+      },
+      "reason": {
+        "encryption_keys": {
+          "present": "Chaves carregadas: {count}. Chave ativa: {active}.",
+          "missing": "Nenhuma chave de criptografia está carregada."
+        },
+        "secure_cookie": {
+          "on": "Os cookies têm o atributo Secure.",
+          "off": "Os cookies não têm o atributo Secure.",
+          "secure_over_https": "Cookies seguros por HTTPS, como deve ser.",
+          "plain_http": "HTTP simples sem o atributo Secure: tudo bem para um servidor acessível só na sua própria rede.",
+          "secure_over_http": "Esta página chegou por HTTP simples, mas os cookies têm o atributo Secure, então os navegadores descartam o login. Use HTTPS ou defina SESSION_COOKIE_SECURE=false.",
+          "insecure_over_https": "Esta página chegou por HTTPS, mas os cookies não têm o atributo Secure. Remova SESSION_COOKIE_SECURE=false."
+        },
+        "app_url": {
+          "unset": "NEXT_PUBLIC_APP_URL não está definida. Os links nos e-mails, os convites e o login com SSO precisam dela.",
+          "invalid": "NEXT_PUBLIC_APP_URL não é um endereço válido.",
+          "mismatch": "NEXT_PUBLIC_APP_URL é {configured}, mas esta página foi aberta em {request}.",
+          "matches": "Acessível em {url}, como configurado."
+        },
+        "database_dump": {
+          "disabled": "Nenhum dump noturno do banco de dados é feito. Faça o backup do banco de outra forma.",
+          "not_persistent": "A pasta de dumps não está em um volume montado, então os dumps se perdem na próxima atualização.",
+          "scheduled": "Dump noturno agendado ({cron})."
+        }
       }
     }
   },

@@ -7,6 +7,8 @@ import { DoneScreen } from "@/components/onboarding/done-screen";
 import { FirstResultScreen } from "@/components/onboarding/first-result-screen";
 import { QuestionScreen } from "@/components/onboarding/question-screen";
 import { UnitsScreen } from "@/components/onboarding/units-screen";
+import { RemindersScreen } from "@/components/onboarding/reminders-screen";
+import { AiScreen } from "@/components/onboarding/ai-screen";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { loadOnboardingFlowState } from "@/lib/onboarding/load-flow-state";
@@ -26,8 +28,10 @@ import {
  * v1.39 — one setup screen per step id.
  *
  *   /onboarding/who … /onboarding/visit   the five questions
- *   /onboarding/units                     Q6, when it applies
+ *   /onboarding/units                     Q6 "Region & units", when it applies
  *   /onboarding/confirm                   the module map and the profile
+ *   /onboarding/reminders                 where reminders arrive (1.49)
+ *   /onboarding/ai                        the Coach, yes or no (1.49)
  *   /onboarding/first-result              the one task the flow ends on
  *   /onboarding/done                      the exit
  *
@@ -80,7 +84,7 @@ export default async function OnboardingStepPage({ params }: PageProps) {
 
   const flow = await loadOnboardingFlowState();
   if (!flow) redirect("/auth/login");
-  const { state, userLocale } = flow;
+  const { state, userLocale, serverSetupOpen } = flow;
 
   if (!canVisitScreen(state, screen)) {
     const resume = resumeScreen(state);
@@ -89,12 +93,16 @@ export default async function OnboardingStepPage({ params }: PageProps) {
 
   return (
     <OnboardingShell screen={screen} state={state} userLocale={userLocale}>
-      {renderScreen(screen, state)}
+      {renderScreen(screen, state, serverSetupOpen)}
     </OnboardingShell>
   );
 }
 
-function renderScreen(screen: OnboardingStepId, state: OnboardingStateDto) {
+function renderScreen(
+  screen: OnboardingStepId,
+  state: OnboardingStateDto,
+  serverSetupOpen: boolean,
+) {
   if (isQuestionStepId(screen)) {
     return <QuestionScreen step={screen} state={state} />;
   }
@@ -113,8 +121,14 @@ function renderScreen(screen: OnboardingStepId, state: OnboardingStateDto) {
       />
     );
   }
+  if (screen === "reminders") {
+    return <RemindersScreen state={state} />;
+  }
+  if (screen === "ai") {
+    return <AiScreen state={state} />;
+  }
   if (screen === "first-result") {
     return <FirstResultScreen state={state} />;
   }
-  return <DoneScreen state={state} />;
+  return <DoneScreen state={state} serverSetupOpen={serverSetupOpen} />;
 }

@@ -24,6 +24,7 @@ import {
 } from "@/lib/modules/gate";
 import {
   emptyOnboardingNeeds,
+  onboardingOffersFromAi,
   readHeldUnitPreferences,
 } from "@/lib/onboarding/needs";
 import {
@@ -446,6 +447,9 @@ async function loadRecordView(auth: AuthContext, accountAccess: AccountAccess) {
       glucoseUnit: record?.glucoseUnit ?? null,
       unitPreference: record?.unitPreference ?? null,
     }),
+    // The follow-ups' server facts, off the AI block resolved above for the
+    // same record, so the step list and the `ai` field cannot disagree.
+    onboardingOffersFromAi(ai),
   );
   // The answers name the domains the record tracks, which is exactly what the
   // module map below is masked for. A SCOPED grant therefore gets the shape of
