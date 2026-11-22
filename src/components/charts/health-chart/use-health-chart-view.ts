@@ -15,8 +15,9 @@ import {
   PERIOD_START_KEY,
   pickRangeBucket,
   READINGS_KEY,
-  todayUtc,
 } from "@/lib/charts/range-grain";
+import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { userDayKey } from "@/lib/tz/format";
 import { shiftDailySeriesForward } from "@/lib/charts/comparison-shift";
 import {
   computeWindowStats,
@@ -302,19 +303,17 @@ export function useHealthChartView({
         : [...data];
     // An empty window stays an empty slice ("no data in this range");
     // returning null would quietly widen the window to the whole series.
-    const spanDays =
-      sliced.length < 2
-        ? 0
-        : Math.round(
-            (sliced[sliced.length - 1].timestamp - sliced[0].timestamp) /
-              (24 * 60 * 60 * 1000),
-          );
     return {
       sliced,
-      bucketType: pickRangeBucket(rangePoints, spanDays),
+      bucketType: pickRangeBucket(
+        rangePoints,
+        sliced.map((point) => point.timestamp),
+      ),
       period: {
         firstDay: rangePoints > 0 ? firstWindowDayUtc(cutoff) : null,
-        lastDay: todayUtc(userTimezone, new Date(now)),
+        lastDay: dayKeyAsUtcMidnight(
+          userDayKey(new Date(now), userTimezone),
+        ).getTime(),
       },
     };
   }, [data, rangePoints, userTimezone]);
