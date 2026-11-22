@@ -34,7 +34,7 @@ import {
   readMoodDayRollups,
 } from "@/lib/rollups/mood-rollups";
 import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
-import { readSevenDayMeans } from "@/lib/analytics/summaries-slice";
+import { readSevenDayMeans } from "@/lib/analytics/seven-day-means";
 import { readLatestEver } from "@/lib/dashboard/summary-reads";
 import {
   summarizeSleepNights,
