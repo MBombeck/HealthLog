@@ -6,7 +6,10 @@
  *    unreachable when the operator turned it on, or forgot the instance),
  *    unless the relay wants an invite code from the operator or paused
  *    registration.
- * 2. Probes an open breaker with a signed `GET /v1/status` when it is due.
+ * 2. Probes an open breaker with a signed `GET /v1/status` when it is due,
+ *    and asks the same once an hour otherwise (`relay-status.ts`), so an
+ *    instance the relay forgot, its notices and its own state arrive
+ *    without a push.
  * 3. Retries the outbox: pending deliveries whose next attempt is due, each
  *    with its finished envelope and its own deadline.
  * 4. Moves the staged sender-key rollout one step (announce yearly, promote
@@ -15,6 +18,8 @@
  * 6. Prunes delivery rows older than 30 days.
  * 7. Sends the relay unbinds owed for erased accounts (`unbind-queue.ts`).
  * 8. Rotates the instance signing key when it is 30 days old.
+ * 9. Turns a binding conflict the app has not settled in 30 minutes into
+ *    `rebind_needed` (`binding.ts`, `expireRelayConflicts`).
  */
 import { prisma } from "@/lib/db";
 import { loadApnsConfig } from "@/lib/notifications/senders/apns";
@@ -27,6 +32,8 @@ import {
   loadRegistration,
   relayCall,
 } from "@/lib/push-relay/registration";
+import { expireRelayConflicts } from "@/lib/push-relay/binding";
+import { statusCheckDue } from "@/lib/push-relay/relay-status";
 import { attemptDeliveries } from "@/lib/push-relay/relay-send";
 import {
   markReceiptsReported,
@@ -50,6 +57,8 @@ const OUTBOX_BATCH = 500;
 export interface RelayMaintenanceFacts {
   registered: boolean;
   probed: boolean;
+  /** The hourly `GET /v1/status` was asked. */
+  status_checked: boolean;
   retried: number;
   rotated: boolean;
   receipts_sent: boolean;
@@ -60,6 +69,8 @@ export interface RelayMaintenanceFacts {
   /** Unbinds dropped unsent: no relay holds a binding of this server. */
   unbinds_moot: number;
   instance_key_rotated: boolean;
+  /** Devices whose unsettled binding conflict now asks for a rebind. */
+  conflicts_expired: number;
 }
 
 export async function runRelayMaintenance(
@@ -68,6 +79,7 @@ export async function runRelayMaintenance(
   const facts: RelayMaintenanceFacts = {
     registered: false,
     probed: false,
+    status_checked: false,
     retried: 0,
     rotated: false,
     receipts_sent: false,
@@ -76,6 +88,7 @@ export async function runRelayMaintenance(
     unbinds_given_up: 0,
     unbinds_moot: 0,
     instance_key_rotated: false,
+    conflicts_expired: 0,
   };
   const config = relayConfig();
   // A switch-off the relay has not confirmed yet is finished first.
@@ -96,6 +109,16 @@ export async function runRelayMaintenance(
   if (row?.instanceId && isCircuitOpen(row) && probeDue(row, now)) {
     await relayCall(row, "GET", "/v1/status", undefined, config);
     facts.probed = true;
+    row = await loadRegistration(config);
+  } else if (row && statusCheckDue(row, now)) {
+    // Stamped before the call: an answer that never comes waits for the
+    // next hour (or the breaker), not for the next minute.
+    await prisma.pushRelayRegistration.update({
+      where: { id: row.id },
+      data: { statusCheckedAt: now },
+    });
+    await relayCall(row, "GET", "/v1/status", undefined, config);
+    facts.status_checked = true;
     row = await loadRegistration(config);
   }
 
@@ -160,6 +183,8 @@ export async function runRelayMaintenance(
       }
     }
   }
+
+  facts.conflicts_expired = await expireRelayConflicts(now);
 
   const pruned = await prisma.pushRelayDelivery.deleteMany({
     where: { createdAt: { lt: new Date(now.getTime() - RETENTION_MS) } },

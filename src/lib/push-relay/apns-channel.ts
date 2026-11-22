@@ -213,7 +213,7 @@ export async function sendApnsChannel(
     return { ok: true };
   }
   const reason = sealed.waiting
-    ? "relay_waiting"
+    ? sealed.waitReason
     : (sealed.lastFailure ?? "sealed_send_failed");
   recordPushAttemptForPayload(payload, userId, {
     userId,

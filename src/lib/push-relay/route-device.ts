@@ -134,6 +134,12 @@ export interface SealedSendResult {
   anyAccepted: boolean;
   /** Something waits for the relay or Apple to come back. */
   waiting: boolean;
+  /**
+   * The ledger reason of a send that is only waiting: `relay_bad_signature`
+   * while the relay refuses this server's signature (it waits for a fix on
+   * this side, not for the relay), `relay_waiting` otherwise.
+   */
+  waitReason: "relay_waiting" | "relay_bad_signature";
   lastFailure: string | null;
   /** Sealed pushes this server's own APNs key could not deliver. */
   directFailures: number;
@@ -149,6 +155,7 @@ export async function sendSealed(
     handled: [],
     anyAccepted: false,
     waiting: false,
+    waitReason: "relay_waiting",
     lastFailure: null,
     directFailures: 0,
     relay: null,
@@ -224,6 +231,9 @@ export async function sendSealed(
     result.relay = summary;
     if (summary.accepted > 0) result.anyAccepted = true;
     if (summary.waiting > 0) result.waiting = true;
+    if (summary.outcomes.bad_signature) {
+      result.waitReason = "relay_bad_signature";
+    }
     if (summary.failed > 0 && summary.accepted === 0) {
       // Name what the relay (or the outbox) answered, never a bare failure.
       const code = Object.keys(summary.outcomes).find((c) => c !== "accepted");

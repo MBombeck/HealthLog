@@ -37,7 +37,7 @@ export type ServerFeature = (typeof SERVER_FEATURES)[number];
 /** What each key promises, one line, kept beside the key. */
 export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
   "medication.intake-recorded-push":
-    "A take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices.",
+    "A take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since v1.49.0 so does its undo (outcome reopened), and every one carries asOf.",
   "medication.already-taken":
     "POST /api/medications/{id}/intake and POST /api/ingest/medication carry data.alreadyTaken; a take of a taken slot writes nothing.",
   "medication.bulk-already-taken":

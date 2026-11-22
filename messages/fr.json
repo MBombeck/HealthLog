@@ -9643,6 +9643,29 @@
         "lastFailure": "Dernier échec {time} : {reason}.",
         "noReason": "sans motif"
       },
+      "stateReason": {
+        "badSignature": "Le relais n'accepte pas la signature de ce serveur, aucun push ne lui parvient donc. Désactive puis réactive le relais ici pour réinscrire ce serveur.",
+        "relayDegraded": "Le relais signale une perturbation de son côté. Les pushes attendent et partent dès qu'il est rétabli.",
+        "relayMaintenance": "Le relais est en maintenance. Les pushes attendent et partent dès son retour.",
+        "relayMisconfigured": "Le relais signale qu'Apple n'accepte pas sa clé de push en ce moment. Les pushes attendent que l'exploitant du relais ait corrigé le problème."
+      },
+      "notice": "Avis du relais ({level}) : {id}",
+      "noticeLevel": {
+        "info": "information",
+        "planned": "prévu",
+        "actionRequired": "action requise"
+      },
+      "check": {
+        "line": "État du relais vérifié {time} : {state}.",
+        "devices": "Sur le relais : {active} liaisons actives et {provisional} nouvelles, limite {limit}.",
+        "unanswered": "État du relais demandé {time}, pas encore de réponse.",
+        "state": {
+          "ok": "fonctionne normalement",
+          "degraded": "perturbé",
+          "maintenance": "en maintenance",
+          "misconfigured": "clé de push refusée par Apple"
+        }
+      },
       "handoff": {
         "title": "Délai de remise au relais, dernières {hours} h",
         "median": "Médiane",
@@ -10195,7 +10218,9 @@
     "intakeRecorded": {
       "title": "Dose enregistrée",
       "bodyTaken": "Une dose a été enregistrée comme prise sur un autre appareil.",
-      "bodySkipped": "Une dose a été enregistrée comme sautée sur un autre appareil."
+      "bodySkipped": "Une dose a été enregistrée comme sautée sur un autre appareil.",
+      "titleReopened": "Dose modifiée",
+      "bodyReopened": "Une dose enregistrée a été annulée sur un autre appareil."
     },
     "security": {
       "newDeviceTitle": "Nouvelle connexion à votre compte",

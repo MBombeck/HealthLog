@@ -7131,19 +7131,37 @@ paths:
       responses:
         "200":
           description: "`TodayIntakeEntry[]` for `scope=today`, `MedicationComplianceDayBucket[]` for `scope=compliance`. The
-            array is the whole payload — there is no wrapper object inside `data`. `scope=today` carries `ETag` and
-            `Cache-Control: private, no-cache`."
+            array is the whole payload — there is no wrapper object inside `data`. `scope=today` carries `ETag`,
+            `HealthLog-As-Of` and `Cache-Control: private, no-cache`."
           headers:
             ETag:
               description: "`scope=today` only: the strong content tag of the body, for `If-None-Match`."
               schema:
                 type: string
+            HealthLog-As-Of:
+              description: "v1.49.0, `scope=today` only: the server instant the rows were read at (ISO 8601, UTC, milliseconds).
+                Compare it with `asOf` of a `MEDICATION_INTAKE_RECORDED` push: a push newer than the list holds a change
+                the list does not show yet. A header, not a body field, so it does not move the `ETag`."
+              schema:
+                type: string
+                format: date-time
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MedicationIntakeAggregateEnvelope"
         "304":
-          description: "`scope=today` only: the rows are unchanged since the `If-None-Match` ETag. No body; the `ETag` is repeated."
+          description: "`scope=today` only: the rows are unchanged since the `If-None-Match` ETag. No body; the `ETag` is
+            repeated, and `HealthLog-As-Of` names the instant they were confirmed current."
+          headers:
+            ETag:
+              description: The same tag as the request's `If-None-Match`.
+              schema:
+                type: string
+            HealthLog-As-Of:
+              description: The server instant the rows were read and found unchanged (ISO 8601, UTC, milliseconds).
+              schema:
+                type: string
+                format: date-time
         "401": *a1
         "403": *a18
         "422":
@@ -48059,31 +48077,31 @@ components:
               - push.device-diagnostics
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
-            take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices.
-            `medication.already-taken`: POST /api/medications/{id}/intake and POST /api/ingest/medication carry
-            data.alreadyTaken; a take of a taken slot writes nothing. `medication.bulk-already-taken`: POST
-            /api/medications/intake/bulk answers status alreadyTaken per entry with intake, takenAt and takenVia.
-            `medication.undo-precondition`: DELETE /api/medications/{id}/intake/{eventId} honours expectedSyncVersion
-            and expectedIdempotencyKey, 409 medications.intake.changedSinceSeen. `sync.medications-last-updated`: GET
-            /api/sync/state carries medications.lastUpdatedAt. `medication.live-activity-tokens`: POST /api/devices
-            takes liveActivityTokens; each Activity is ended by its own push once its dose is answered. `push.relay`:
-            The server seals push envelopes and can use the push relay; /api/auth/me push.relay and push.device carry
-            the state, POST /api/devices takes pushKey, relayConsent and relayBinding. `medication.dose-state`: Today
-            rows carry the resolved state, takenLate, dueAt, overdueSince and slotInstant; complianceDisplay.currentDose
-            carries the same state, takenLate, dueAt and overdueSince, with its slot as targetAt.
-            `measurement.reading-timezone`: POST /api/measurements/batch accepts an optional IANA timeZone per entry;
-            the reading's own zone sets its day for sleep, the day view, list day groups and daily charts.
-            `apple-health.types-2026-11`: The batch ingest accepts the Apple Health cycling distance, rowing distance
-            and speed, and running speed, power, ground contact time, vertical oscillation and stride length types.
-            `medication.snooze-setting`: GET/PATCH /api/auth/me/notification-prefs carry medication.snoozeMinutes
-            (5–240, default 30); a snooze without snoozedUntil and Telegram's Remind me later button defer by it.
-            `apple-health.effort-scores`: The batch ingest accepts HealthKit workoutEffortScore,
-            estimatedWorkoutEffortScore and physicalEffort as WORKOUT_EFFORT_SCORE, ESTIMATED_WORKOUT_EFFORT_SCORE and
-            PHYSICAL_EFFORT. `medication.intake-sync-version`: Today rows, the single take answers and every landed bulk
-            entry carry the row's syncVersion, the value expectedSyncVersion compares.
-            `medication.current-dose-open-slot`: complianceDisplay.currentDose names the earliest slot still due or
-            overdue, so a dose whose time has passed stays current until it is recorded or missed.
-            `cycle.pregnancy-state`: CycleProfileDTO and the cycle calendar carry pregnancy (CyclePregnancyDTO):
+            take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
+            v1.49.0 so does its undo (outcome reopened), and every one carries asOf. `medication.already-taken`: POST
+            /api/medications/{id}/intake and POST /api/ingest/medication carry data.alreadyTaken; a take of a taken slot
+            writes nothing. `medication.bulk-already-taken`: POST /api/medications/intake/bulk answers status
+            alreadyTaken per entry with intake, takenAt and takenVia. `medication.undo-precondition`: DELETE
+            /api/medications/{id}/intake/{eventId} honours expectedSyncVersion and expectedIdempotencyKey, 409
+            medications.intake.changedSinceSeen. `sync.medications-last-updated`: GET /api/sync/state carries
+            medications.lastUpdatedAt. `medication.live-activity-tokens`: POST /api/devices takes liveActivityTokens;
+            each Activity is ended by its own push once its dose is answered. `push.relay`: The server seals push
+            envelopes and can use the push relay; /api/auth/me push.relay and push.device carry the state, POST
+            /api/devices takes pushKey, relayConsent and relayBinding. `medication.dose-state`: Today rows carry the
+            resolved state, takenLate, dueAt, overdueSince and slotInstant; complianceDisplay.currentDose carries the
+            same state, takenLate, dueAt and overdueSince, with its slot as targetAt. `measurement.reading-timezone`:
+            POST /api/measurements/batch accepts an optional IANA timeZone per entry; the reading's own zone sets its
+            day for sleep, the day view, list day groups and daily charts. `apple-health.types-2026-11`: The batch
+            ingest accepts the Apple Health cycling distance, rowing distance and speed, and running speed, power,
+            ground contact time, vertical oscillation and stride length types. `medication.snooze-setting`: GET/PATCH
+            /api/auth/me/notification-prefs carry medication.snoozeMinutes (5–240, default 30); a snooze without
+            snoozedUntil and Telegram's Remind me later button defer by it. `apple-health.effort-scores`: The batch
+            ingest accepts HealthKit workoutEffortScore, estimatedWorkoutEffortScore and physicalEffort as
+            WORKOUT_EFFORT_SCORE, ESTIMATED_WORKOUT_EFFORT_SCORE and PHYSICAL_EFFORT. `medication.intake-sync-version`:
+            Today rows, the single take answers and every landed bulk entry carry the row's syncVersion, the value
+            expectedSyncVersion compares. `medication.current-dose-open-slot`: complianceDisplay.currentDose names the
+            earliest slot still due or overdue, so a dose whose time has passed stays current until it is recorded or
+            missed. `cycle.pregnancy-state`: CycleProfileDTO and the cycle calendar carry pregnancy (CyclePregnancyDTO):
             PREGNANT or POSTPARTUM with its dates, the resolved week and predictionsPaused; PATCH
             /api/auth/me/cycle-prefs takes pregnancy. While paused the forecast is empty and the verdict is
             INSUFFICIENT_DATA. `profile.emergency-card`: GET /api/emergency-card returns the emergency card;
@@ -61864,7 +61882,9 @@ components:
             - bound
             - rebind_needed
             - conflict
-          description: "`rebind_needed`: send a fresh `relayBinding`. `conflict`: answer the relay's challenge push directly."
+          description: "`rebind_needed`: send a fresh `relayBinding`. `conflict`: answer the relay's challenge push directly. A
+            `conflict` not settled by a fresh binding within 30 minutes (the challenge's lifetime) reads `rebind_needed`
+            (v1.49.0)."
         intakeSync:
           type: string
           enum:
@@ -61902,8 +61922,10 @@ components:
             - type: "null"
           description: "The dose the Live Activity the server started on this device (over the relay) shows. The start push never
             carries it, so the app reads it here, and in the `POST /api/devices` answer right after it registers the
-            started Activity's token (`relayStart: true`). Null when no server start is pending or running, or once that
-            slot is taken, skipped or missed, its medication paused, ended or deleted, or the Activity ended."
+            started Activity's token (`relayStart: true`). Null until the relay accepted the start (a start still in
+            flight or one the relay refused shows null; a refused one is tried again later), when no server start is
+            running, or once that slot is taken, skipped or missed, its medication paused, ended or deleted, or the
+            Activity ended."
       required:
         - transport
         - envelope
@@ -62011,6 +62033,8 @@ components:
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
                 - type: "null"
             reason:
+              description: As `push.relay.reason`, e.g. `bad_signature` once the relay refused this server's signature three times in
+                a row, or `relay_maintenance` from the relay's own status.
               type:
                 - string
                 - "null"
@@ -62030,6 +62054,7 @@ components:
                 - bound
                 - rebind_needed
                 - conflict
+              description: "As `push.device.relayState`: a `conflict` older than 30 minutes reads `rebind_needed`."
             consent:
               type: boolean
               description: The person turned the relay on for this device.
@@ -62165,7 +62190,8 @@ components:
                         covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
                         `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
                     reason:
-                      description: The relay's or Apple's reason on a failure, else null.
+                      description: The relay's or Apple's reason on a failure; for a `pending` push over the relay, the code it waits on
+                        (`bad_signature`, `relay_unavailable`, `relay_paused`, a quota code); else null.
                       type:
                         - string
                         - "null"
@@ -62202,7 +62228,8 @@ components:
                         covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
                         `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
                     reason:
-                      description: The relay's or Apple's reason on a failure, else null.
+                      description: The relay's or Apple's reason on a failure; for a `pending` push over the relay, the code it waits on
+                        (`bad_signature`, `relay_unavailable`, `relay_paused`, a quota code); else null.
                       type:
                         - string
                         - "null"
@@ -62240,7 +62267,8 @@ components:
                         covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
                         `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
                     reason:
-                      description: The relay's or Apple's reason on a failure, else null.
+                      description: The relay's or Apple's reason on a failure; for a `pending` push over the relay, the code it waits on
+                        (`bad_signature`, `relay_unavailable`, `relay_paused`, a quota code); else null.
                       type:
                         - string
                         - "null"
@@ -62278,7 +62306,8 @@ components:
                         covered by a receipt from this device), `dropped` or `failed`. Over this server's own APNs key:
                         `sent` for a silent push, `accepted`, `failed` or `skipped` for an alert."
                     reason:
-                      description: The relay's or Apple's reason on a failure, else null.
+                      description: The relay's or Apple's reason on a failure; for a `pending` push over the relay, the code it waits on
+                        (`bad_signature`, `relay_unavailable`, `relay_paused`, a quota code); else null.
                       type:
                         - string
                         - "null"
@@ -62437,6 +62466,9 @@ components:
             - string
             - "null"
         reason:
+          description: Why the state is not `ok`, e.g. `bad_signature` (the relay refused this server's signature three times in a
+            row), `relay_degraded`, `relay_maintenance` or `relay_misconfigured` (what the relay's status reports about
+            itself), `circuit_open`, or a registration refusal.
           type:
             - string
             - "null"
@@ -62574,6 +62606,66 @@ components:
             answers `accepted` only once Apple accepted the push, so the time covers this server's hand-off, the network
             and the relay's request to Apple. From this instance's own delivery ledger. Aggregate only: nothing per
             person, device or kind of push."
+        relayCheck:
+          anyOf:
+            - type: object
+              properties:
+                checkedAt:
+                  anyOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    - type: "null"
+                  description: When this server last asked `GET /v1/status`.
+                answeredAt:
+                  anyOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    - type: "null"
+                  description: When the relay last answered it.
+                state:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - ok
+                        - degraded
+                        - maintenance
+                        - misconfigured
+                    - type: "null"
+                  description: The relay's own state in that answer.
+                devices:
+                  anyOf:
+                    - type: object
+                      properties:
+                        active:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                        provisional:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                        limit:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                      required:
+                        - active
+                        - provisional
+                        - limit
+                      additionalProperties: false
+                    - type: "null"
+                  description: "This instance's bindings at the relay: active (soft-invalid included), provisional, and its device limit."
+              required:
+                - checkedAt
+                - answeredAt
+                - state
+                - devices
+              additionalProperties: false
+            - type: "null"
+          description: "v1.49.0. The hourly signed `GET /v1/status`: what the relay last reported about itself and this instance.
+            Null before the first check."
         termsVersion:
           type: string
         termsConfirmationNeeded:
@@ -62620,6 +62712,7 @@ components:
         - devices
         - usage
         - handoff
+        - relayCheck
         - termsVersion
         - termsConfirmationNeeded
         - unbindsPending
@@ -76398,7 +76491,8 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         relayState:
           type: string
-          description: v1.49.0 — `none` | `bound` | `rebind_needed` | `conflict`, as the push routing reads it.
+          description: v1.49.0 — `none` | `bound` | `rebind_needed` | `conflict`, as `push.device.relayState` reads it (a
+            `conflict` older than 30 minutes reads `rebind_needed`).
         relayBoundAt:
           anyOf:
             - type: string
@@ -76412,7 +76506,8 @@ components:
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
-          description: v1.49.0 — when the server last started a Live Activity on the device over the relay.
+          description: v1.49.0 — when the relay accepted the server's last Live Activity start on the device; null while a start
+            is in flight or after one the relay refused.
         envelopesReportedAt:
           anyOf:
             - type: string

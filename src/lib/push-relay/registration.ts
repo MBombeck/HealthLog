@@ -11,7 +11,9 @@
  * `relayCall` is the one door for instance requests. It applies the
  * request-level answer to the registration: the breaker (`circuit.ts`), a
  * pause the relay asked for, suspension, revocation, an unknown instance
- * (registered again by the maintenance pass), the clock offset. It never
+ * (registered again by the maintenance pass), the clock offset, a run of
+ * refused signatures, and what `GET /v1/status` reports
+ * (`relay-status.ts`). It never
  * touches a device row or a notification channel.
  */
 import { randomBytes } from "node:crypto";
@@ -43,6 +45,12 @@ import {
   ensureEnvelopeKeys,
 } from "@/lib/push-relay/sender-keys";
 import { recordRelayDecision } from "@/lib/push-relay/operator-decision";
+import {
+  anyItemAccepted,
+  RELAY_REPORTED_REASONS,
+  relayStatusOf,
+  stateForReported,
+} from "@/lib/push-relay/relay-status";
 
 export type RegistrationRow = NonNullable<
   Awaited<ReturnType<typeof prisma.pushRelayRegistration.findUnique>>
@@ -147,12 +155,19 @@ async function applyAnswer(
     }
     return result;
   }
-  const circuit = afterSignedResponse();
+  const error = result.body?.error;
+  const retry = result.retryAfter;
+  const badSignature = result.status === 401 && error === "bad_signature";
+  // Any other signed answer to a push or a status request ends a run of
+  // refused signatures.
+  const circuit = {
+    ...afterSignedResponse(),
+    ...(governsPushes && !badSignature ? { badSignatureCount: 0 } : {}),
+  };
   if (isCircuitOpen(row)) {
     getEvent()?.addMeta("push_relay_circuit", "closed");
   }
-  const error = result.body?.error;
-  const retry = result.retryAfter;
+  const isStatus = path.split("?")[0] === "/v1/status";
   if (result.status === 401 && error === "unknown_instance") {
     await prisma.pushRelayRegistration.update({
       where: { id: row.id },
@@ -177,16 +192,41 @@ async function applyAnswer(
         data: { lastSuccessAt: now },
       });
     }
+  } else if (badSignature) {
+    // The relay refuses this server's signature, after the key overlap was
+    // tried (`relayCall`). Every push waits for its deadline meanwhile, so
+    // the state says so once it is no single mishap.
+    const { badSignatureCount } = await prisma.pushRelayRegistration.update({
+      where: { id: row.id },
+      data: { ...circuit, badSignatureCount: { increment: 1 } },
+      select: { badSignatureCount: true },
+    });
+    getEvent()?.addMeta("push_relay_bad_signature", badSignatureCount);
+    if (badSignatureCount >= BAD_SIGNATURE_THRESHOLD) {
+      await setState(row.id, "degraded", "bad_signature");
+    }
   } else if ((result.status === 429 || result.status === 503) && retry) {
     await setState(row.id, "degraded", String(error ?? "paused"), {
       ...circuit,
       pausedUntil: new Date(now.getTime() + retry * 1000),
     });
   } else if (result.status < 300) {
-    await setState(row.id, "ok", null, {
+    const status = isStatus ? relayStatusOf(result.body, now) : null;
+    // What the relay reports about itself holds until it reports `ok` or
+    // Apple takes a push through it: a push request the relay answered is
+    // not proof that anything got through.
+    const next = status
+      ? stateForReported(status.state)
+      : row.state === "degraded" &&
+          RELAY_REPORTED_REASONS.has(row.stateReason ?? "") &&
+          !anyItemAccepted(result.body)
+        ? { state: "degraded" as const, reason: row.stateReason }
+        : { state: "ok" as const, reason: null };
+    await setState(row.id, next.state, next.reason, {
       ...circuit,
       lastSuccessAt: now,
       pausedUntil: null,
+      ...(status ? { relayStatus: { ...status } } : {}),
       ...(result.body && "notice" in result.body ? noticeOf(result.body) : {}),
       ...(typeof result.body?.tier === "string"
         ? { tier: result.body.tier }
@@ -231,6 +271,13 @@ export async function promoteInstanceKey(
     },
   });
 }
+
+/**
+ * Refused signatures in a row, on push and status requests, before the
+ * relay state reads `degraded` with the reason `bad_signature`. One alone
+ * can be a key rotation the relay has not applied yet.
+ */
+export const BAD_SIGNATURE_THRESHOLD = 3;
 
 function isBadSignature(result: RelayCallResult): boolean {
   return (

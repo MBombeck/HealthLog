@@ -276,6 +276,107 @@ describe("the intake sync's budget, audience and triggers", () => {
     ).toEqual([{ result: "ok", reason: null }]);
   });
 
+  it("announces an undone dose as reopened, in place of its confirmation", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const registeredKeys = deviceBody(instanceId, TOKEN);
+    await registerDevice(session, registeredKeys.body);
+    const prisma = getPrismaClient();
+    const channel = await prisma.notificationChannel.findUniqueOrThrow({
+      where: { userId_type: { userId: user.id, type: "APNS" } },
+    });
+    await prisma.notificationPreference.create({
+      data: {
+        channelId: channel.id,
+        eventType: "MEDICATION_INTAKE_RECORDED",
+        enabled: true,
+      },
+    });
+    const medication = await prisma.medication.create({
+      data: { userId: user.id, name: "Ramipril", dose: "5 mg" },
+    });
+    const pillBox = await makeToken(user, {
+      permissions: ["medication:ingest", `medication:${medication.id}:ingest`],
+    });
+    const { POST } = await import("@/app/api/ingest/medication/route");
+    const taken = await callRoute(POST, {
+      method: "POST",
+      route: "/api/ingest/medication",
+      auth: pillBox,
+      body: { medicationName: "Ramipril", idempotencyKey: "box-undo" },
+    });
+    expect(taken.status).toBe(201);
+    const alerts = () =>
+      fake.apns.filter((a) => a.token === TOKEN && a.pushClass === "alert");
+    await eventually(() => alerts().length === 1);
+
+    // The person undoes it on the web: the other devices learn that the
+    // slot is open again, without opening the app.
+    const row = await prisma.medicationIntakeEvent.findFirstOrThrow({
+      where: { medicationId: medication.id, deletedAt: null },
+    });
+    const { DELETE } =
+      await import("@/app/api/medications/[id]/intake/[eventId]/route");
+    const undone = await callRoute(DELETE, {
+      method: "DELETE",
+      route: "/api/medications/{id}/intake/{eventId}",
+      params: { id: medication.id, eventId: row.id },
+      auth: session,
+    });
+    expect(undone.status).toBe(200);
+    await eventually(() => alerts().length === 2);
+
+    const sender = fromBase64Url(await senderKey(session), 32) as Buffer;
+    const [confirmation, reopened] = alerts().map((a) => ({
+      collapse: a.collapse,
+      plaintext: openEnvelope({
+        recipientKeys: [registeredKeys.pushKey.privateKey],
+        trustedSenders: [sender],
+        apnsToken: Buffer.from(TOKEN, "hex"),
+        envelope: fromBase64Url(a.payload.e as string) as Buffer,
+        expectedClass: "alert",
+        now: Math.floor(Date.now() / 1000),
+      }),
+    }));
+    expect(confirmation!.plaintext.d).toMatchObject({
+      outcome: "taken",
+      intakeId: row.id,
+      asOf: expect.any(String),
+    });
+    expect(reopened!.plaintext.t).toBe("MEDICATION_INTAKE_RECORDED");
+    expect(reopened!.plaintext.d).toEqual({
+      medicationId: medication.id,
+      intakeId: row.id,
+      slotInstant: row.scheduledFor.toISOString(),
+      outcome: "reopened",
+      takenAt: null,
+      takenVia: null,
+      asOf: expect.any(String),
+    });
+    const asOf = (p: Record<string, unknown>) =>
+      Date.parse((p.d as { asOf: string }).asOf);
+    expect(asOf(reopened!.plaintext)).toBeGreaterThanOrEqual(
+      asOf(confirmation!.plaintext),
+    );
+    // It replaces the confirmation on the device, and tells the relay no
+    // more than the confirmation did: the same class, lifetime and collapse.
+    expect(reopened!.collapse).toBe(confirmation!.collapse);
+    const lifetime = (p: { exp?: unknown; iat?: unknown }) =>
+      (p.exp as number) - (p.iat as number);
+    expect(lifetime(reopened!.plaintext)).toBe(15 * 60);
+    expect(lifetime(reopened!.plaintext)).toBe(
+      lifetime(confirmation!.plaintext),
+    );
+    expect(JSON.stringify(reopened!.plaintext)).not.toContain("Ramipril");
+    const wire = fake.wire.filter((i) => i.class === "alert");
+    expect(wire).toHaveLength(2);
+    expect(wire[1]!.ttlSeconds).toBe(wire[0]!.ttlSeconds);
+    expect(String(wire[1]!.envelope).length).toBe(
+      String(wire[0]!.envelope).length,
+    );
+  });
+
   it("owes the sync again when the relay drops it at its deadline", async () => {
     const { instanceId } = await enableRelay();
     const user = await makeUser();

@@ -35,6 +35,9 @@ import { readIntakeCompliance } from "@/lib/medications/intake-compliance";
 import { findIntakeForStatusUpdate } from "@/lib/medications/update-intake-status/admission";
 import { updateIntakeStatus } from "@/lib/medications/update-intake-status/update-intake-status";
 
+/** The instant the today rows were read (`scope=today`, 200 and 304). */
+const TODAY_AS_OF_HEADER = "HealthLog-As-Of";
+
 // The query + body schemas live in `@/lib/validations/medication` since this
 // endpoint joined the published contract: the OpenAPI registry generates from
 // the validation modules, and a schema that only exists inside a handler is
@@ -84,9 +87,20 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // a new row, a tombstone, a dose whose state moved with the clock) moves
     // it, so a cold start confirms its cached rows with a 304 before it
     // shows a dose as due.
+    //
+    // `HealthLog-As-Of` names the instant the rows were read, taken before
+    // the read, so no change committed after it can be in them. A device
+    // compares it with the `asOf` of a dose push: a push that is newer tells
+    // a change the list does not show yet. A header and not a body field,
+    // so it never moves the ETag.
+    const asOf = new Date();
     const rows = await readTodayIntakes({ userId: user.id, userTz });
     const etag = contentEtag(JSON.stringify({ data: rows, error: null }));
-    const headers = { ETag: etag, "Cache-Control": "private, no-cache" };
+    const headers = {
+      ETag: etag,
+      [TODAY_AS_OF_HEADER]: asOf.toISOString(),
+      "Cache-Control": "private, no-cache",
+    };
     if (matchesEtag(request, etag)) {
       annotate({ meta: { "medications.intake.today.not_modified": true } });
       return new Response(null, { status: 304, headers });

@@ -273,6 +273,7 @@ describe("push relay end to end", () => {
       outcome: "taken",
       takenAt: expect.any(String),
       takenVia: "INTEGRATION",
+      asOf: expect.any(String),
     });
     expect(JSON.stringify(plaintext)).not.toContain("Ramipril");
     // Over the relay the confirmation lives as long as every other alert.

@@ -32,7 +32,7 @@ const adminDiagnosticDevice = z
     relayState: z
       .string()
       .describe(
-        "v1.49.0 — `none` | `bound` | `rebind_needed` | `conflict`, as the push routing reads it.",
+        "v1.49.0 — `none` | `bound` | `rebind_needed` | `conflict`, as `push.device.relayState` reads it (a `conflict` older than 30 minutes reads `rebind_needed`).",
       ),
     relayBoundAt: isoDateTime()
       .nullable()
@@ -40,7 +40,7 @@ const adminDiagnosticDevice = z
     liveActivityStartedAt: isoDateTime()
       .nullable()
       .describe(
-        "v1.49.0 — when the server last started a Live Activity on the device over the relay.",
+        "v1.49.0 — when the relay accepted the server's last Live Activity start on the device; null while a start is in flight or after one the relay refused.",
       ),
     envelopesReportedAt: isoDateTime()
       .nullable()

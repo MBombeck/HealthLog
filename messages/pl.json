@@ -9643,6 +9643,29 @@
         "lastFailure": "Ostatni błąd {time}: {reason}.",
         "noReason": "bez podanej przyczyny"
       },
+      "stateReason": {
+        "badSignature": "Przekaźnik nie przyjmuje podpisu tego serwera, więc nie dociera do niego żaden push. Wyłącz tutaj przekaźnik i włącz go ponownie, aby zarejestrować ten serwer od nowa.",
+        "relayDegraded": "Przekaźnik zgłasza zakłócenie po swojej stronie. Pushe czekają i wyjdą, gdy wróci do normy.",
+        "relayMaintenance": "Przekaźnik jest w trakcie konserwacji. Pushe czekają i wyjdą, gdy wróci.",
+        "relayMisconfigured": "Przekaźnik zgłasza, że Apple nie przyjmuje teraz jego klucza push. Pushe czekają, aż operator przekaźnika to naprawi."
+      },
+      "notice": "Komunikat przekaźnika ({level}): {id}",
+      "noticeLevel": {
+        "info": "informacja",
+        "planned": "planowane",
+        "actionRequired": "wymaga działania"
+      },
+      "check": {
+        "line": "Stan przekaźnika sprawdzony {time}: {state}.",
+        "devices": "W przekaźniku: {active} aktywnych i {provisional} nowych powiązań, limit {limit}.",
+        "unanswered": "Stan przekaźnika sprawdzany {time}, brak odpowiedzi.",
+        "state": {
+          "ok": "działa normalnie",
+          "degraded": "zakłócony",
+          "maintenance": "w konserwacji",
+          "misconfigured": "Apple nie przyjmuje klucza push"
+        }
+      },
       "handoff": {
         "title": "Czas przekazania, ostatnie {hours} h",
         "median": "Mediana",
@@ -10195,7 +10218,9 @@
     "intakeRecorded": {
       "title": "Dawka zapisana",
       "bodyTaken": "Dawkę zapisano jako przyjętą na innym urządzeniu.",
-      "bodySkipped": "Dawkę zapisano jako pominiętą na innym urządzeniu."
+      "bodySkipped": "Dawkę zapisano jako pominiętą na innym urządzeniu.",
+      "titleReopened": "Dawka zmieniona",
+      "bodyReopened": "Zapisaną dawkę cofnięto na innym urządzeniu."
     },
     "security": {
       "newDeviceTitle": "Nowe logowanie do Twojego konta",

@@ -123,6 +123,8 @@ export class FakeRelay {
   invites: Set<string> | null = null;
   /** The `invite` field of every registration body, in order. */
   registrationInvites: Array<string | undefined> = [];
+  /** Merged into the `GET /v1/status` answer (the relay's state, devices). */
+  status: Record<string, unknown> = {};
 
   private sign(nonce: string | null, status: number, body: string): string {
     const seed = this.forge ? Buffer.alloc(32, 0x42) : RELAY_SEED;
@@ -302,6 +304,7 @@ export class FakeRelay {
         tier: "probation",
         notice: null,
         relayTime: Math.floor(Date.now() / 1000),
+        ...this.status,
       });
     }
     return this.reply(nonce, 404, { error: "not_found" });

@@ -163,6 +163,7 @@ describe("diagnostic shapes", () => {
       apnsEnvironment: null,
       lastSeen: at,
       relayState: "none",
+      relayConflictAt: null,
       relayBoundAt: null,
       laStartedAt: null,
       envelopeReportedAt: null,

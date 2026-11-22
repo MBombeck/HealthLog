@@ -47,6 +47,7 @@ import {
   type RelayOperatorDecision,
 } from "@/lib/push-relay/operator-decision";
 import { readOperatorRow } from "@/lib/settings/operator-row";
+import { relayStateAt } from "@/lib/push-relay/relay-state";
 import {
   liveActivityStartedOf,
   type LiveActivityStarted,
@@ -289,6 +290,8 @@ const DEVICE_BLOCK_SELECT = {
   userId: true,
   laStartedMedicationId: true,
   laStartedSlot: true,
+  laStartedAt: true,
+  relayConflictAt: true,
 } as const;
 
 type DeviceBlockRow = Prisma.DeviceGetPayload<{
@@ -326,7 +329,7 @@ async function devicePushBlockOf(
     transport,
     envelope: device?.pushKeyPublic && transport !== "none" ? 1 : null,
     consent: Boolean(device?.relayConsentAt),
-    relayState: device?.relayState ?? "none",
+    relayState: device ? relayStateAt(device) : "none",
     intakeSync,
     senderKeys,
     relayInstanceId: row?.instanceId ?? null,

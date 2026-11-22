@@ -9643,6 +9643,29 @@
         "lastFailure": "Ultimo errore {time}: {reason}.",
         "noReason": "motivo non indicato"
       },
+      "stateReason": {
+        "badSignature": "Il relay non accetta la firma di questo server, quindi non gli arriva nessun push. Disattiva e riattiva il relay qui per registrare di nuovo questo server.",
+        "relayDegraded": "Il relay segnala un disservizio da parte sua. I push restano in attesa e partono appena si è ripreso.",
+        "relayMaintenance": "Il relay è in manutenzione. I push restano in attesa e partono appena torna disponibile.",
+        "relayMisconfigured": "Il relay segnala che Apple al momento non accetta la sua chiave push. I push restano in attesa finché chi gestisce il relay non risolve."
+      },
+      "notice": "Avviso del relay ({level}): {id}",
+      "noticeLevel": {
+        "info": "informazione",
+        "planned": "programmato",
+        "actionRequired": "intervento richiesto"
+      },
+      "check": {
+        "line": "Stato del relay controllato {time}: {state}.",
+        "devices": "Sul relay: {active} associazioni attive e {provisional} nuove, limite {limit}.",
+        "unanswered": "Stato del relay richiesto {time}, ancora nessuna risposta.",
+        "state": {
+          "ok": "funziona normalmente",
+          "degraded": "con disservizi",
+          "maintenance": "in manutenzione",
+          "misconfigured": "chiave push non accettata da Apple"
+        }
+      },
       "handoff": {
         "title": "Tempo di passaggio al relay, ultime {hours} h",
         "median": "Mediana",
@@ -10195,7 +10218,9 @@
     "intakeRecorded": {
       "title": "Dose registrata",
       "bodyTaken": "Una dose è stata registrata come assunta su un altro dispositivo.",
-      "bodySkipped": "Una dose è stata registrata come saltata su un altro dispositivo."
+      "bodySkipped": "Una dose è stata registrata come saltata su un altro dispositivo.",
+      "titleReopened": "Dose aggiornata",
+      "bodyReopened": "Una dose registrata è stata annullata su un altro dispositivo."
     },
     "security": {
       "newDeviceTitle": "Nuovo accesso al tuo account",

@@ -10,7 +10,11 @@ import {
   RELAY_TERMS_VERSION,
 } from "@/lib/push-relay/config";
 import { relayHealth } from "@/lib/push-relay/capability";
-import { loadRegistration } from "@/lib/push-relay/registration";
+import {
+  loadRegistration,
+  type RegistrationRow,
+} from "@/lib/push-relay/registration";
+import { storedRelayStatus } from "@/lib/push-relay/relay-status";
 import {
   loadStoredRelayDecision,
   operatorDecisionOf,
@@ -115,6 +119,21 @@ async function relayHandoff(now: Date) {
   };
 }
 
+/**
+ * The hourly `GET /v1/status` (`relay-status.ts`): when it was asked, and
+ * what the relay last answered about itself and this instance.
+ */
+function relayCheckOf(row: RegistrationRow | null) {
+  const answer = storedRelayStatus(row?.relayStatus ?? null);
+  if (!row?.statusCheckedAt && !answer) return null;
+  return {
+    checkedAt: row?.statusCheckedAt?.toISOString() ?? null,
+    answeredAt: answer?.at ?? null,
+    state: answer?.state ?? null,
+    devices: answer?.devices ?? null,
+  };
+}
+
 export async function adminRelayStatus(now = new Date()) {
   const config = relayConfig();
   const [row, stored, bound, consented, usage, handoff, unbindsPending, held] =
@@ -150,6 +169,7 @@ export async function adminRelayStatus(now = new Date()) {
     devices: { bound, consented },
     usage,
     handoff,
+    relayCheck: relayCheckOf(row),
     termsVersion: RELAY_TERMS_VERSION,
     // The terms text the operator accepted with the switch is older than the
     // current one: the card asks for the current text to be confirmed once.

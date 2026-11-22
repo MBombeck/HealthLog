@@ -37,6 +37,7 @@ import { getEvent } from "@/lib/logging/context";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { isCircuitOpen } from "@/lib/push-relay/circuit";
 import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
+import { settleLiveActivityPush } from "@/lib/push-relay/live-activity-settle";
 import { oweIntakeSync } from "@/lib/push-relay/owed-intake-sync";
 import { MAX_RETRY_AFTER_S } from "@/lib/push-relay/responses";
 import {
@@ -254,21 +255,39 @@ function loadPending(ids: string[]) {
   });
 }
 
+/**
+ * Make a push final. What depends on its answer is settled here, the one
+ * place every final answer passes: a Live Activity start or update counts
+ * as done only once accepted (`live-activity-settle.ts`).
+ */
 async function finish(
-  id: string,
+  row: PendingRow,
   status: "accepted" | "dropped" | "failed",
   reason: string | null,
 ) {
+  const now = new Date();
   await prisma.pushRelayDelivery.update({
-    where: { id },
+    where: { id: row.id },
     data: {
       status,
       reason,
       item: Prisma.DbNull,
       nextAttemptAt: null,
-      ...(status === "accepted" ? { acceptedAt: new Date() } : {}),
+      ...(status === "accepted" ? { acceptedAt: now } : {}),
     },
   });
+  if (row.pushClass === "liveactivity") {
+    await settleLiveActivityPush(
+      {
+        deviceId: row.device.id,
+        ref: row.ref,
+        eventType: row.eventType,
+        item: row.item,
+      },
+      status,
+      now,
+    );
+  }
 }
 
 /** The silent sync that makes the app re-read the doses. */
@@ -280,7 +299,7 @@ const INTAKE_SYNC_EVENT = "MEDICATION_INTAKE_SYNC";
  * announced is still unread there, and the next one may be hours away.
  */
 async function dropAtDeadline(row: PendingRow, now: Date) {
-  await finish(row.id, "dropped", "deadline");
+  await finish(row, "dropped", "deadline");
   getEvent()?.addMeta("push_relay_stale_dropped", true);
   if (row.eventType === INTAKE_SYNC_EVENT) {
     await oweIntakeSync([row.device.id], now);
@@ -296,6 +315,7 @@ async function reschedule(
   row: PendingRow,
   now: Date,
   hint: number | null,
+  code: string,
 ): Promise<boolean> {
   const at = nextAttemptAt(
     row.pushClass as RelayPushClass,
@@ -309,7 +329,10 @@ async function reschedule(
   }
   await prisma.pushRelayDelivery.update({
     where: { id: row.id },
-    data: { attempts: { increment: 1 }, nextAttemptAt: at },
+    // A waiting push keeps the code it waits on as its reason, so the
+    // ledger and the diagnostics say why it has not gone yet
+    // (`bad_signature`, a quota, the relay unreachable).
+    data: { attempts: { increment: 1 }, nextAttemptAt: at, reason: code },
   });
   return true;
 }
@@ -319,9 +342,10 @@ async function retryLater(
   row: PendingRow,
   now: Date,
   hint: number | null,
+  code: string,
   summary: RelaySendSummary,
 ) {
-  if (await reschedule(row, now, hint)) {
+  if (await reschedule(row, now, hint, reasonCode(code))) {
     summary.waiting += 1;
     return;
   }
@@ -330,10 +354,10 @@ async function retryLater(
 }
 
 /** Hold everything until the relay can take it again. */
-async function holdAll(rows: PendingRow[], until: Date) {
+async function holdAll(rows: PendingRow[], until: Date, reason: string) {
   await prisma.pushRelayDelivery.updateMany({
     where: { id: { in: rows.map((r) => r.id) } },
-    data: { nextAttemptAt: until },
+    data: { nextAttemptAt: until, reason },
   });
 }
 
@@ -363,8 +387,12 @@ export async function attemptDeliveries(
  * one that is not a plain snake_case word is counted as `unrecognised`
  * rather than written into a log key verbatim.
  */
+function reasonCode(code: string): string {
+  return /^[a-z][a-z0-9_]{0,39}$/.test(code) ? code : "unrecognised";
+}
+
 function count(summary: RelaySendSummary, code: string, n = 1) {
-  const key = /^[a-z][a-z0-9_]{0,39}$/.test(code) ? code : "unrecognised";
+  const key = reasonCode(code);
   summary.outcomes[key] = (summary.outcomes[key] ?? 0) + n;
 }
 
@@ -400,7 +428,7 @@ async function attemptInto(
       summary.failed += 1;
       count(summary, "deadline");
     } else if (!row.device.apnsToken || row.device.relayState !== "bound") {
-      await finish(row.id, "failed", "not_bound");
+      await finish(row, "failed", "not_bound");
       summary.failed += 1;
       count(summary, "not_bound");
     } else {
@@ -412,13 +440,14 @@ async function attemptInto(
     await holdAll(
       live,
       registration?.nextProbeAt ?? new Date(now.getTime() + 60 * SECOND),
+      "relay_unavailable",
     );
     summary.waiting += live.length;
     count(summary, "relay_unavailable", live.length);
     return;
   }
   if (registration.pausedUntil && registration.pausedUntil > now) {
-    await holdAll(live, registration.pausedUntil);
+    await holdAll(live, registration.pausedUntil, "relay_paused");
     summary.waiting += live.length;
     count(summary, "relay_paused", live.length);
     return;
@@ -482,13 +511,13 @@ async function sendBatch(
       count(summary, code);
       if (defect) {
         await finish(
-          row.id,
+          row,
           "failed",
           String(result.body?.error ?? "invalid_item"),
         );
         summary.failed += 1;
       } else {
-        await retryLater(row, now, hint, summary);
+        await retryLater(row, now, hint, code, summary);
       }
     }
     if (defect) getEvent()?.addWarning("push_relay_request_refused_as_invalid");
@@ -524,7 +553,7 @@ async function applyItemResult(
   });
   count(summary, code);
   if (status === 200 && code === "accepted") {
-    await finish(row.id, "accepted", null);
+    await finish(row, "accepted", null);
     summary.accepted += 1;
     return;
   }
@@ -543,10 +572,10 @@ async function applyItemResult(
     return;
   }
   if (status === 429 || status === 503 || status === 0) {
-    await retryLater(row, now, hint, summary);
+    await retryLater(row, now, hint, code, summary);
     return;
   }
-  await finish(row.id, "failed", code.slice(0, 40));
+  await finish(row, "failed", code.slice(0, 40));
   summary.failed += 1;
 }
 

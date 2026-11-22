@@ -134,7 +134,9 @@ const lastDelivery = z
     reason: z
       .string()
       .nullable()
-      .describe("The relay's or Apple's reason on a failure, else null."),
+      .describe(
+        "The relay's or Apple's reason on a failure; for a `pending` push over the relay, the code it waits on (`bad_signature`, `relay_unavailable`, `relay_paused`, a quota code); else null.",
+      ),
   })
   .nullable();
 
@@ -165,14 +167,23 @@ const devicePushDiagnostics = z
       .object({
         state: z.enum(["ok", "degraded", "down", "off"]),
         since: isoDateTime().nullable(),
-        reason: z.string().nullable(),
+        reason: z
+          .string()
+          .nullable()
+          .describe(
+            "As `push.relay.reason`, e.g. `bad_signature` once the relay refused this server's signature three times in a row, or `relay_maintenance` from the relay's own status.",
+          ),
       })
       .describe(
         "The instance's relay registration, as `push.relay.state` reads it.",
       ),
     binding: z
       .object({
-        state: z.enum(["none", "bound", "rebind_needed", "conflict"]),
+        state: z
+          .enum(["none", "bound", "rebind_needed", "conflict"])
+          .describe(
+            "As `push.device.relayState`: a `conflict` older than 30 minutes reads `rebind_needed`.",
+          ),
         consent: z
           .boolean()
           .describe("The person turned the relay on for this device."),

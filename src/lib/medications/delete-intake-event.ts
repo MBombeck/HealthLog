@@ -14,6 +14,7 @@ import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { afterDoseChange } from "@/lib/medications/after-dose-change";
+import { reopenedEventOf } from "@/lib/notifications/medication-intake-recorded";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   slotLockKey,
@@ -145,6 +146,8 @@ export async function deleteIntakeEvent(input: {
     scope: "intakes",
     userId: user.id,
     originDeviceToken: input.originDeviceToken,
+    // A take or skip undone: its slot is open again on the other devices.
+    recorded: reopenedEventOf(event, null),
   });
   return "deleted";
 }

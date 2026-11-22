@@ -22,6 +22,7 @@ import {
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { afterDoseChange } from "@/lib/medications/after-dose-change";
+import { reopenedEventOf } from "@/lib/notifications/medication-intake-recorded";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   applyCanonicalSlotWrite,
@@ -629,6 +630,9 @@ export async function updateIntakeEvent(
     scope: "intakes",
     userId: user.id,
     originDeviceToken: input.originDeviceToken,
+    // A take or skip reverted, or moved off its slot: that slot is open
+    // again on the other devices.
+    recorded: reopenedEventOf(event, updated),
   });
 
   return { ok: true as const, row: updated };

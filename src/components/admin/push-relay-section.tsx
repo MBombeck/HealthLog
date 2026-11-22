@@ -28,6 +28,7 @@ import {
   useSetPushRelay,
   type AdminPushRelayStatus,
 } from "./use-push-relay";
+import { PushRelayCheck } from "./push-relay-check";
 import { PushRelayHandoff } from "./push-relay-handoff";
 import { PushRelayTools } from "./push-relay-tools";
 import {
@@ -206,6 +207,7 @@ export function PushRelaySection() {
             disabled={setRelay.isPending || !status.available}
           />
         )}
+        <PushRelayCheck status={status} />
         <RelayUsage status={status} />
         {status.offered && status.handoff && (
           <PushRelayHandoff handoff={status.handoff} />

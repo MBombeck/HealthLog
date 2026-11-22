@@ -18,8 +18,18 @@
  * `aps.thread-id` per medication, and a neutral localised alert with no
  * medication name, like every medication push without a name. Custom keys
  * beside `aps`: `eventType`, `medicationId`, `intakeId`, `slotInstant`,
- * `outcome` (`taken` | `skipped`), `takenAt` and `takenVia` (both null on a
- * skip).
+ * `outcome` (`taken` | `skipped` | `reopened`), `takenAt` and `takenVia`
+ * (both null on a skip and on `reopened`), and `asOf`, the server instant
+ * the outcome was recorded. The sealed envelope carries the same fields in
+ * `d`.
+ *
+ * `reopened` announces a slot that was taken or skipped and is open again:
+ * the take or skip was deleted, reverted, or moved to another slot, on the
+ * web, in the app or anywhere else (`reopenedEventOf`). It goes the same way
+ * as a confirmation: the same switch, the same devices, the same collapse id
+ * per slot (so it replaces the confirmation it undoes), sealed wherever the
+ * device has a push key, and over the relay as an ordinary alert with the
+ * class lifetime. Its text is neutral, like the confirmation's.
  *
  * Gating: the APNs channel must be enabled; an explicit per-channel
  * preference row for this event wins; without one the confirmation is on
@@ -71,6 +81,52 @@ export function recordedEventOf(
   };
 }
 
+/**
+ * How far back an undone dose is announced. The app keeps a recorded dose
+ * as answered for up to 36 hours without a reload, so an older slot that
+ * opens again (a purge, a history edit) needs no push.
+ */
+export const REOPENED_WINDOW_MS = 36 * 3600_000;
+
+interface AnsweredRow {
+  id: string;
+  medicationId: string;
+  scheduledFor: Date;
+  takenAt: Date | null;
+  skipped: boolean;
+}
+
+/**
+ * The `reopened` announcement of a slot that was answered and is not any
+ * more: its row was deleted (`after` null), reverted to open, or moved to
+ * another slot. None for a slot that was open before, is still answered, or
+ * lies more than {@link REOPENED_WINDOW_MS} back. Every undo writer builds
+ * its event here (`src/__tests__/intake-write-sync-push-guard.test.ts`).
+ */
+export function reopenedEventOf(
+  before: AnsweredRow,
+  after: { takenAt: Date | null; skipped: boolean; scheduledFor?: Date } | null,
+  now: Date = new Date(),
+): IntakeRecordedEvent | undefined {
+  if (before.takenAt === null && !before.skipped) return undefined;
+  if (now.getTime() - before.scheduledFor.getTime() > REOPENED_WINDOW_MS) {
+    return undefined;
+  }
+  const moved =
+    after?.scheduledFor !== undefined &&
+    after.scheduledFor.getTime() !== before.scheduledFor.getTime();
+  const stillAnswered = after && (after.takenAt !== null || after.skipped);
+  if (stillAnswered && !moved) return undefined;
+  return {
+    medicationId: before.medicationId,
+    intakeId: before.id,
+    slotInstant: before.scheduledFor,
+    outcome: "reopened",
+    takenAt: null,
+    takenVia: null,
+  };
+}
+
 export const INTAKE_RECORDED_EVENT = "MEDICATION_INTAKE_RECORDED";
 const COALESCE_WINDOW_MS = 2_000;
 
@@ -78,7 +134,8 @@ export interface IntakeRecordedEvent {
   medicationId: string;
   intakeId: string;
   slotInstant: Date;
-  outcome: "taken" | "skipped";
+  /** `reopened`: the slot was answered and is open again (undone). */
+  outcome: "taken" | "skipped" | "reopened";
   takenAt: Date | null;
   takenVia:
     | "WEB"
@@ -94,6 +151,8 @@ export interface IntakeRecordedEvent {
 interface Pending {
   event: IntakeRecordedEvent;
   originDeviceToken: string | null;
+  /** When the server recorded this outcome: the push's `asOf`. */
+  asOf: Date;
 }
 
 const pending = new Map<string, Pending>();
@@ -114,6 +173,7 @@ export function queueIntakeRecorded(input: {
     pending.set(key, {
       event: input.event,
       originDeviceToken: input.originDeviceToken,
+      asOf: new Date(),
     });
     if (queued) return;
     const timer = setTimeout(() => {
@@ -176,6 +236,7 @@ function localeOf(value: string | null | undefined): Locale {
 export function intakeRecordedPayload(
   event: IntakeRecordedEvent,
   locale: Locale,
+  asOf: Date,
 ): Record<string, unknown> {
   return {
     aps: {
@@ -191,20 +252,30 @@ export function intakeRecordedPayload(
     outcome: event.outcome,
     takenAt: event.takenAt?.toISOString() ?? null,
     takenVia: event.takenVia,
+    asOf: asOf.toISOString(),
   };
 }
+
+const RECORDED_TEXT = {
+  taken: {
+    title: "notifications.intakeRecorded.title",
+    body: "notifications.intakeRecorded.bodyTaken",
+  },
+  skipped: {
+    title: "notifications.intakeRecorded.title",
+    body: "notifications.intakeRecorded.bodySkipped",
+  },
+  reopened: {
+    title: "notifications.intakeRecorded.titleReopened",
+    body: "notifications.intakeRecorded.bodyReopened",
+  },
+} as const;
 
 /** The neutral localised text of one confirmation. */
 function recordedText(event: IntakeRecordedEvent, locale: Locale) {
   const { t } = getServerTranslator(locale);
-  return {
-    title: t("notifications.intakeRecorded.title"),
-    body: t(
-      event.outcome === "taken"
-        ? "notifications.intakeRecorded.bodyTaken"
-        : "notifications.intakeRecorded.bodySkipped",
-    ),
-  };
+  const keys = RECORDED_TEXT[event.outcome];
+  return { title: t(keys.title), body: t(keys.body) };
 }
 
 async function sendIntakeRecorded(userId: string, item: Pending) {
@@ -257,7 +328,7 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
     if (sealedDevices.length > 0) {
       const sealed = await sendSealedIntakeRecorded(
         sealedDevices,
-        item.event,
+        { ...item.event, asOf: item.asOf },
         recordedText(item.event, locale),
         await loadPushContext(),
       );
@@ -266,9 +337,9 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
       else if (sealed.lastFailure) lastReason = sealed.lastFailure;
       // The outbox holds it and tries again until its deadline: not
       // accepted yet, and not the failure `intake_recorded_failed` named.
-      else if (sealed.waiting) lastReason = "relay_waiting";
+      else if (sealed.waiting) lastReason = sealed.waitReason;
     }
-    const payload = intakeRecordedPayload(item.event, locale);
+    const payload = intakeRecordedPayload(item.event, locale, item.asOf);
     for (const device of recipients) {
       if (!config || !device.apnsToken || device.pushKeyPublic) continue;
       attempted = true;

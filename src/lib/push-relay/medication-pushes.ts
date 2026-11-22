@@ -54,10 +54,15 @@ export interface RecordedFields {
   medicationId: string;
   intakeId: string;
   slotInstant: Date;
-  outcome: "taken" | "skipped";
+  outcome: "taken" | "skipped" | "reopened";
   takenAt: Date | null;
-  /** Null on a skip. */
+  /** Null on a skip and on `reopened`. */
   takenVia: string | null;
+  /**
+   * When the server recorded the outcome. Every send passes it; the relay's
+   * published test vectors predate it and build the envelope without.
+   */
+  asOf?: Date;
 }
 
 /** The sealed confirmation of one recorded dose. */
@@ -76,6 +81,7 @@ export function intakeRecordedMessage(
       outcome: event.outcome,
       takenAt: event.takenAt?.toISOString() ?? null,
       takenVia: event.takenVia,
+      ...(event.asOf ? { asOf: event.asOf.toISOString() } : {}),
     },
     text,
     ui: { thread: `medication-${event.medicationId}`, level: "passive" },

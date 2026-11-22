@@ -9643,6 +9643,29 @@
         "lastFailure": "Last failure {time}: {reason}.",
         "noReason": "no reason given"
       },
+      "stateReason": {
+        "badSignature": "The relay does not accept this server's signature, so no push reaches it. Turn the relay off and on again here to register this server anew.",
+        "relayDegraded": "The relay reports a disruption on its side. Pushes wait and go out once it has recovered.",
+        "relayMaintenance": "The relay is in maintenance. Pushes wait and go out once it is back.",
+        "relayMisconfigured": "The relay reports that Apple does not accept its push key right now. Pushes wait until the relay's operator has fixed it."
+      },
+      "notice": "Notice from the relay ({level}): {id}",
+      "noticeLevel": {
+        "info": "information",
+        "planned": "planned",
+        "actionRequired": "action required"
+      },
+      "check": {
+        "line": "Relay status checked {time}: {state}.",
+        "devices": "At the relay: {active} active and {provisional} new bindings, limit {limit}.",
+        "unanswered": "Relay status asked {time}, no answer yet.",
+        "state": {
+          "ok": "running normally",
+          "degraded": "disrupted",
+          "maintenance": "in maintenance",
+          "misconfigured": "push key not accepted by Apple"
+        }
+      },
       "handoff": {
         "title": "Hand-off time, last {hours} h",
         "median": "Median",
@@ -10195,7 +10218,9 @@
     "intakeRecorded": {
       "title": "Dose recorded",
       "bodyTaken": "A dose was recorded as taken on another device.",
-      "bodySkipped": "A dose was recorded as skipped on another device."
+      "bodySkipped": "A dose was recorded as skipped on another device.",
+      "titleReopened": "Dose updated",
+      "bodyReopened": "A recorded dose was undone on another device."
     },
     "security": {
       "newDeviceTitle": "New sign-in to your account",
