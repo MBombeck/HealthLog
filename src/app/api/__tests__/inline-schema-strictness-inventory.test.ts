@@ -54,6 +54,10 @@ const DELIBERATELY_OPEN: Record<string, { count: number; reason: string }> = {
     reason: "hand-built query object",
   },
   "analytics/range/route.ts": { count: 1, reason: "hand-built query object" },
+  "medications/resolved-slots/route.ts": {
+    count: 1,
+    reason: "hand-built query object",
+  },
   "insights/biomarker-assessment/route.ts": {
     count: 1,
     reason: "hand-built query object",

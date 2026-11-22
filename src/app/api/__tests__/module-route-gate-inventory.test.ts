@@ -301,6 +301,7 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // v1.40 (#1041) — the person's own category vocabulary: the same row
   // store, the same data-layer reasoning.
   "src/app/api/medications/categories/route.ts",
+  "src/app/api/medications/resolved-slots/route.ts",
   "src/app/api/medications/categories/[key]/route.ts",
   // v1.40 (#1024) — a medication's courses, same again.
   "src/app/api/medications/[id]/courses/route.ts",

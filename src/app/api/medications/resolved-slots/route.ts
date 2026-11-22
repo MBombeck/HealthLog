@@ -87,9 +87,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  const parsed = querySchema.safeParse(
-    Object.fromEntries(request.nextUrl.searchParams),
-  );
+  const searchParams = request.nextUrl.searchParams;
+  const parsed = querySchema.safeParse({
+    from: searchParams.get("from") ?? undefined,
+    to: searchParams.get("to") ?? undefined,
+  });
   if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
 
   const now = new Date();
