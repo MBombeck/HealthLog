@@ -93,6 +93,10 @@ const BUDGET = {
   healthStatus: 59,
   correlations: 43,
   batchIngest500: 28,
+  // The Apple Health card and the phone's sync read (1.49.0). The newest and
+  // the oldest reading of each type are two index probes per type in ONE
+  // statement, so `oldestSeenAt` costs no statement of its own.
+  integrationsHealthkit: 1,
 } as const;
 
 type Handler = (
@@ -447,6 +451,19 @@ describe("statement budgets on the hot routes (real Postgres)", () => {
       "http://localhost/api/insights/correlations",
     );
     expectWithin("/api/insights/correlations", m, BUDGET.correlations);
+  });
+
+  it("GET /api/integrations/healthkit", async () => {
+    const { GET } = await import("@/app/api/integrations/healthkit/route");
+    const m = await measureRead(
+      GET as unknown as Handler,
+      "http://localhost/api/integrations/healthkit",
+    );
+    expectWithin(
+      "/api/integrations/healthkit",
+      m,
+      BUDGET.integrationsHealthkit,
+    );
   });
 
   it("POST /api/measurements/batch, 500 fresh rows", async () => {

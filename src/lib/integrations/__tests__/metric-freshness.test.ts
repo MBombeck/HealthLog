@@ -191,6 +191,7 @@ describe("getSourceMetricFreshness", () => {
       {
         source: "STRAVA",
         _max: { startedAt: new Date("2026-07-20T06:00:00.000Z") },
+        _min: { startedAt: new Date("2026-07-20T06:00:00.000Z") },
       },
     ]);
 
@@ -212,6 +213,7 @@ describe("getSourceMetricFreshness", () => {
       {
         source: "POLAR",
         _max: { startedAt: new Date("2026-07-19T17:00:00.000Z") },
+        _min: { startedAt: new Date("2026-07-19T17:00:00.000Z") },
       },
     ]);
 
@@ -240,7 +242,11 @@ describe("getSourceMetricFreshness", () => {
         },
       ]);
       workoutGroupByMock.mockResolvedValue([
-        { source, _max: { startedAt: new Date("2026-06-01T09:00:00.000Z") } },
+        {
+          source,
+          _max: { startedAt: new Date("2026-06-01T09:00:00.000Z") },
+          _min: { startedAt: new Date("2026-06-01T09:00:00.000Z") },
+        },
       ]);
 
       expect((await getSourceMetricFreshness("u1"))[integration]).toEqual([

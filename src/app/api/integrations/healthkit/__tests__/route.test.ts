@@ -563,12 +563,22 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       "RESPIRATORY_RATE",
       "PULSE",
     ]);
+    const oldest = ago(400 * DAY);
     mockProbes([
-      { type: "RESPIRATORY_RATE", last_seen: ago(2 * DAY) },
-      { type: "PULSE", last_seen: ago(60 * 60 * 1000) },
+      {
+        type: "RESPIRATORY_RATE",
+        last_seen: ago(2 * DAY),
+        first_seen: oldest,
+      },
+      { type: "PULSE", last_seen: ago(60 * 60 * 1000), first_seen: null },
     ] as never);
+    const workoutAt = ago(DAY);
     vi.mocked(prisma.workout.groupBy).mockResolvedValue([
-      { source: "APPLE_HEALTH", _max: { startedAt: ago(DAY) } },
+      {
+        source: "APPLE_HEALTH",
+        _max: { startedAt: workoutAt },
+        _min: { startedAt: workoutAt },
+      },
     ] as never);
     const receivedAt = ago(3 * 60 * 60 * 1000);
     vi.mocked(prisma.healthKitTypeSync.findMany).mockResolvedValue([
@@ -588,6 +598,12 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       lastReceivedAt: receivedAt.toISOString(),
       lastTrigger: "manual",
       lastNewSampleAt: null,
+      // iOS #191: where the history walk may jump to.
+      oldestSeenAt: oldest.toISOString(),
+    });
+    expect(byType.PULSE).not.toHaveProperty("oldestSeenAt");
+    expect(byType.WORKOUTS).toMatchObject({
+      oldestSeenAt: workoutAt.toISOString(),
     });
     expect(byType.PULSE).toMatchObject({
       lastReceivedAt: null,

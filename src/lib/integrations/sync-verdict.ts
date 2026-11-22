@@ -347,6 +347,11 @@ export interface MetricFreshnessSample {
   type: string;
   /** ISO timestamp of the newest (non-deleted) reading for this metric. */
   lastSeenAt: string;
+  /**
+   * ISO timestamp of the oldest (non-deleted) reading, from the same source
+   * and in the same scope as `lastSeenAt`. Apple Health list only.
+   */
+  oldestSeenAt?: string;
   /** How many live rows the source holds. `CYCLE_DAYS` only. */
   count?: number;
 }
