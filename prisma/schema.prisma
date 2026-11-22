@@ -9097,6 +9097,7 @@ model CycleSymptomLink {
   /// plain presence link (the pre-severity contract). Surfaced in
   /// CycleDayLogDTO so the log-day sheet can pre-fill the severity chips.
   severity  Int?     @map("severity")
+  createdAt DateTime @default(now()) @map("created_at")
   /// Which write the link came from: `MANUAL` for the log-day sheet and every
   /// hand-made write, `APPLE_HEALTH` / `HEALTH_CONNECT` for an import. An
   /// import's day write replaces only the links of its own source, so a
@@ -9104,7 +9105,6 @@ model CycleSymptomLink {
   /// day's whole set and keeps the source of the links it leaves in place
   /// (`replaceSymptomLinks`). Carried by the backup (`symptomSources`).
   source    MeasurementSource @default(MANUAL)
-  createdAt DateTime @default(now()) @map("created_at")
 
   dayLog  CycleDayLog  @relation(fields: [dayLogId], references: [id], onDelete: Cascade)
   symptom CycleSymptom @relation(fields: [symptomId], references: [id], onDelete: Cascade)
