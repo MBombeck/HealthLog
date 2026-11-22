@@ -91,6 +91,9 @@ test.describe("offline, with the service worker", () => {
     expect(about?.status()).toBe(200);
     expect(about?.headers()["cache-control"]).toContain("no-store");
     expect(about?.headers()["x-healthlog-page-cache"]).toBeUndefined();
+    // The page has rendered (and the worker has seen its response) before
+    // the cache is read.
+    await expect(page.getByRole("heading").first()).toBeVisible();
     await page.waitForLoadState("networkidle");
 
     const cachedAbout = await page.evaluate(async () => {
