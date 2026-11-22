@@ -8,7 +8,10 @@
  * the authenticated channel only: `push.device.liveActivityStarted` on
  * `GET /api/auth/me` and in the `POST /api/devices` answer.
  *
- * It is null once there is nothing left to show: the slot was taken, skipped
+ * It is null until the relay accepted the start (`laStartedAt`): a start
+ * still in flight, or one that failed, started nothing on the device
+ * (`live-activity-settle.ts`). It is null again once there is nothing left
+ * to show: the slot was taken, skipped
  * or turned missed, its row is gone, or the medication was paused, ended or
  * deleted. The server ends an Activity only in those cases
  * (`liveActivityEndState`), so an ended Activity reads null too. An Activity
@@ -27,9 +30,10 @@ export async function liveActivityStartedOf(device: {
   userId: string;
   laStartedMedicationId: string | null;
   laStartedSlot: Date | null;
+  laStartedAt: Date | null;
 }): Promise<LiveActivityStarted | null> {
-  const { userId, laStartedMedicationId, laStartedSlot } = device;
-  if (!laStartedMedicationId || !laStartedSlot) return null;
+  const { userId, laStartedMedicationId, laStartedSlot, laStartedAt } = device;
+  if (!laStartedMedicationId || !laStartedSlot || !laStartedAt) return null;
   const open = await prisma.medicationIntakeEvent.findFirst({
     where: {
       userId,

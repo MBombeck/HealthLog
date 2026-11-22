@@ -437,6 +437,133 @@ describe("start and update", () => {
   });
 });
 
+describe("a start or update counts once the relay accepted it", () => {
+  async function retryOutbox() {
+    // The outbox's next attempt, due now.
+    await getPrismaClient().pushRelayDelivery.updateMany({
+      where: { status: "pending" },
+      data: { nextAttemptAt: new Date(Date.now() - 1000) },
+    });
+    const { runRelayMaintenance } =
+      await import("@/lib/push-relay/maintenance");
+    await runRelayMaintenance();
+  }
+
+  const startsOnWire = () =>
+    fake.wire.filter(
+      (i) =>
+        i.class === "liveactivity" &&
+        (i.activity as { event?: string } | undefined)?.event === "start",
+    ).length;
+
+  it("marks a waiting start only once the relay accepts it", async () => {
+    const t = await setUp();
+    await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(),
+    });
+    const { medication, slot } = await dueDose(t.session.userId, 30);
+    // Apple is unreachable for the relay: the start waits in the outbox.
+    fake.itemAnswer = (item) =>
+      item.class === "liveactivity"
+        ? { status: 503, error: "apns_unavailable", retryAfter: 5 }
+        : null;
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    expect(await startedOnMe(t.session)).toBeNull();
+    const held = await getPrismaClient().device.findFirstOrThrow({
+      where: { apnsToken: TOKEN },
+    });
+    expect(held.laStartedAt).toBeNull();
+    expect(held.laStartRef).not.toBeNull();
+    // Held while in flight: the next pass does not start the dose twice.
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    expect(startsOnWire()).toBe(1);
+
+    // The retry gets through: now it counts.
+    fake.itemAnswer = null;
+    await retryOutbox();
+    expect(laPushes()).toHaveLength(1);
+    expect(await startedOnMe(t.session)).toEqual({
+      medicationId: medication.id,
+      slotInstant: slot.toISOString(),
+    });
+    const started = await getPrismaClient().device.findFirstOrThrow({
+      where: { apnsToken: TOKEN },
+    });
+    expect(started.laStartedAt).not.toBeNull();
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+  });
+
+  it("forgets a refused start and tries it again after the cool-down", async () => {
+    const t = await setUp();
+    await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(),
+    });
+    await dueDose(t.session.userId, 30);
+    fake.itemAnswer = (item) =>
+      item.class === "liveactivity"
+        ? { status: 403, error: "activity_refused" }
+        : null;
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    const cleared = await getPrismaClient().device.findFirstOrThrow({
+      where: { apnsToken: TOKEN },
+    });
+    expect(cleared).toMatchObject({
+      laStartedMedicationId: null,
+      laStartedSlot: null,
+      laStartedAt: null,
+      laStartRef: null,
+    });
+    expect(await startedOnMe(t.session)).toBeNull();
+
+    // Within the cool-down nothing is tried again.
+    fake.itemAnswer = null;
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    expect(startsOnWire()).toBe(1);
+    // After it, the dose starts.
+    await getPrismaClient().pushRelayDelivery.updateMany({
+      data: { createdAt: new Date(Date.now() - 31 * 60_000) },
+    });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    expect(startsOnWire()).toBe(2);
+    expect(await startedOnMe(t.session)).not.toBeNull();
+  });
+
+  it("stores an update's state only once the relay accepts it", async () => {
+    const t = await setUp();
+    await t.reg({ liveActivityConsent: t.consent() });
+    const { medication, slot } = await dueDose(t.session.userId, -90);
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({
+          relayStart: true,
+          medicationId: medication.id,
+          slotInstant: slot.toISOString(),
+        }),
+      ],
+    });
+    fake.itemAnswer = (item) =>
+      item.class === "liveactivity"
+        ? { status: 503, error: "apns_unavailable", retryAfter: 5 }
+        : null;
+    expect(await runLiveActivityRelayPass()).toMatchObject({ updated: 0 });
+    const lastState = async () =>
+      (await getPrismaClient().liveActivityToken.findFirstOrThrow({}))
+        .lastRelayState;
+    expect(await lastState()).toBeNull();
+    // In flight: not sent a second time.
+    await runLiveActivityRelayPass();
+    expect(fake.wire.filter((i) => i.class === "liveactivity").length).toBe(1);
+
+    fake.itemAnswer = null;
+    await retryOutbox();
+    expect(await lastState()).toMatchObject({ status: "overdue" });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ updated: 0 });
+    expect(laPushes()).toHaveLength(1);
+  });
+});
+
 describe("the dose state", () => {
   const contentState = (push: (typeof fake.apns)[number] | undefined) =>
     (push!.payload.aps as Record<string, unknown>)["content-state"];

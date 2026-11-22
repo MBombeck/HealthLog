@@ -6643,6 +6643,10 @@ model Device {
   /// `push.device.relayState` and the push routing, which sends over the
   /// relay only for `bound`.
   relayState                 String              @default("none") @map("relay_state")
+  /// When the relay answered the binding with `409 binding_conflict`. A
+  /// conflict still unsettled after 30 minutes reads and becomes
+  /// `rebind_needed` (`push-relay/binding.ts`, `relayStateAt`).
+  relayConflictAt            DateTime?           @map("relay_conflict_at")
   /// The person's second, separate consent to Live Activity start and
   /// update over the relay (`liveActivityConsent`), whose content the relay
   /// and Apple can see. Distinct from the relay consent, off until given.
@@ -6663,9 +6667,16 @@ model Device {
   /// its dose. Reader and writer: `push-relay/live-activity.ts`.
   laStartedMedicationId      String?             @map("la_started_medication_id")
   laStartedSlot              DateTime?           @map("la_started_slot")
-  /// When the last relay start went out. Reader: the admin diagnostic
-  /// (`/api/admin/notifications/diagnostic`, `liveActivityStartedAt`).
+  /// When the relay accepted the last start; null while it is in flight.
+  /// `liveActivityStarted` names the dose only once this is set. Readers: the
+  /// admin diagnostic (`/api/admin/notifications/diagnostic`,
+  /// `liveActivityStartedAt`) and `push-relay/live-activity-started.ts`.
   laStartedAt                DateTime?           @map("la_started_at")
+  /// The outbox ref of the last start, so its final answer settles exactly
+  /// that start: accepted sets `laStartedAt`, a failure for good clears the
+  /// dose so the next pass tries again. Writer and reader:
+  /// `push-relay/live-activity-settle.ts`.
+  laStartRef                 String?             @map("la_start_ref")
   /// When the relay last confirmed the binding. Reader: the admin diagnostic
   /// (`relayBoundAt`).
   relayBoundAt               DateTime?           @map("relay_bound_at")
@@ -11632,6 +11643,16 @@ model PushRelayRegistration {
   clockOffsetSeconds           Int       @default(0) @map("clock_offset_seconds")
   noticeId                     String?   @map("notice_id")
   noticeLevel                  String?   @map("notice_level")
+  /// Consecutive answers in which the relay refused this server's signature
+  /// on a push or status request; three make the state `degraded` with the
+  /// reason `bad_signature`. Reset by any other signed answer.
+  badSignatureCount            Int       @default(0) @map("bad_signature_count")
+  /// When this server last asked `GET /v1/status` (hourly,
+  /// `push-relay/relay-status.ts`), and what the relay last answered there:
+  /// `{ at, state, registration, devices: { active, provisional, limit },
+  /// keyRotatedDay }`. Reader: the admin relay card.
+  statusCheckedAt              DateTime? @map("status_checked_at")
+  relayStatus                  Json?     @map("relay_status")
   /// The server-side cap on deletions after `410 unregistered`.
   unregisteredSince            DateTime? @map("unregistered_since")
   unregisteredCount            Int       @default(0) @map("unregistered_count")

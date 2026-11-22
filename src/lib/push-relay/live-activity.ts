@@ -21,7 +21,9 @@
  *
  * The pass (`push-live-activity`, every five minutes) starts an Activity for
  * the next open dose of each eligible device, once per dose, unless the
- * device already runs one for it; and it updates every running Activity
+ * device already runs one for it. A start or update counts only once the
+ * relay accepted it; one that failed for good is tried again after a
+ * cool-down (`live-activity-settle.ts`); and it updates every running Activity
  * whose state changed since the last update, of those it started itself
  * (`relayStarted`). The state is the server's one resolved dose
  * (`medications/dose-state/resolve.ts`): the medication's own bands
@@ -67,6 +69,13 @@ import {
   sendRelayItems,
   type RelayItemInput,
 } from "@/lib/push-relay/relay-send";
+import {
+  LA_START_EVENT,
+  LA_UPDATE_EVENT,
+  refusedRecently,
+  startHeld,
+  updatesInFlight,
+} from "@/lib/push-relay/live-activity-settle";
 
 export const RELAY_LA_STATUSES = [
   "pending",
@@ -259,6 +268,8 @@ const DEVICE_SELECT = {
   laStartSignature: true,
   laStartedMedicationId: true,
   laStartedSlot: true,
+  laStartedAt: true,
+  laStartRef: true,
   liveActivities: {
     select: {
       id: true,
@@ -464,12 +475,19 @@ async function startItem(
   const state = doseContentState(dose, timeFormat, now);
   if (!state) return null;
   const slot = dose.scheduledFor.getTime();
+  // Once per dose: a start the relay accepted, or one still in flight. A
+  // start that failed for good no longer holds the dose
+  // (`live-activity-settle.ts`), and one whose outbox row is gone is no
+  // start at all.
   if (
     device.laStartedMedicationId === dose.medicationId &&
-    device.laStartedSlot?.getTime() === slot
+    device.laStartedSlot?.getTime() === slot &&
+    (device.laStartedAt !== null ||
+      (await startHeld(device.id, device.laStartRef)))
   ) {
     return null;
   }
+  if (await refusedRecently(device.id, LA_START_EVENT, now)) return null;
   const running = device.liveActivities.some(
     (a) =>
       a.medicationId === dose.medicationId &&
@@ -483,7 +501,7 @@ async function startItem(
       deviceId: device.id,
       ref: `las-${newUlid(now.getTime())}`,
       pushClass: "liveactivity",
-      eventType: "LIVE_ACTIVITY_START",
+      eventType: LA_START_EVENT,
       activity: {
         event: "start",
         state,
@@ -524,6 +542,15 @@ async function updateItems(
   const nowS = Math.floor(now.getTime() / 1000);
   const updates = [];
   const missed: LaActivity[] = [];
+  const relayStarted = device.liveActivities.some((a) => a.relayStarted);
+  // An update is final only once accepted: one still in flight is not sent
+  // twice, and after a refusal the device's updates wait out the cool-down.
+  const [inFlight, refused] = relayStarted
+    ? await Promise.all([
+        updatesInFlight(device.id),
+        refusedRecently(device.id, LA_UPDATE_EVENT, now),
+      ])
+    : [new Set<string>(), false];
   for (const activity of device.liveActivities) {
     const iat = statementIat(activity.activityStatement);
     if (
@@ -556,7 +583,8 @@ async function updateItems(
       missed.push(activity);
       continue;
     }
-    if (!activity.relayStarted) continue;
+    if (!activity.relayStarted || refused) continue;
+    if (inFlight.has(activity.pushToken.toLowerCase())) continue;
     if (sameState(state, activity.lastRelayState)) continue;
     updates.push({
       rowId: activity.id,
@@ -565,7 +593,7 @@ async function updateItems(
         deviceId: device.id,
         ref: `lau-${newUlid(now.getTime())}`,
         pushClass: "liveactivity" as const,
-        eventType: "LIVE_ACTIVITY_UPDATE",
+        eventType: LA_UPDATE_EVENT,
         activity: {
           event: "update" as const,
           state,
@@ -579,23 +607,6 @@ async function updateItems(
     });
   }
   return { updates, missed };
-}
-
-/** Refs of items the relay accepted or still holds for a retry. */
-async function liveRefs(
-  deviceId: string,
-  refs: string[],
-): Promise<Set<string>> {
-  if (refs.length === 0) return new Set();
-  const rows = await prisma.pushRelayDelivery.findMany({
-    where: {
-      deviceId,
-      ref: { in: refs },
-      status: { in: ["accepted", "pending"] },
-    },
-    select: { ref: true },
-  });
-  return new Set(rows.map((r) => r.ref));
 }
 
 /** Start and update the Live Activities of one device. */
@@ -625,33 +636,33 @@ export async function runDeviceLiveActivities(
   }
   const items = [...(start ? [start.item] : []), ...updates.map((u) => u.item)];
   if (items.length === 0) return { started: 0, updated: 0 };
-  const summary = await sendRelayItems(items, ctx.config);
-  const sent = await liveRefs(
-    device.id,
-    items.map((i) => i.ref),
-  );
-  let started = 0;
-  if (start && sent.has(start.item.ref)) {
-    started = 1;
+  if (start) {
+    // The dose is held while the start is in flight; `laStartedAt` follows
+    // only when the relay accepts it, and a failure for good clears the
+    // dose again (`live-activity-settle.ts`, run by the outbox).
     await prisma.device.update({
       where: { id: device.id },
       data: {
         laStartedMedicationId: start.dose.medicationId,
         laStartedSlot: start.dose.scheduledFor,
-        laStartedAt: now,
+        laStartedAt: null,
+        laStartRef: start.item.ref,
       },
     });
   }
+  const summary = await sendRelayItems(items, ctx.config);
+  const accepted = new Set(
+    summary.answers
+      .filter((a) => a.status === 200 && a.code === "accepted")
+      .map((a) => a.ref),
+  );
+  const started = start && accepted.has(start.item.ref) ? 1 : 0;
   let updated = 0;
   for (const u of updates) {
     if (summary.activityGone.includes(u.item.ref)) {
       await prisma.liveActivityToken.deleteMany({ where: { id: u.rowId } });
-    } else if (sent.has(u.item.ref)) {
+    } else if (accepted.has(u.item.ref)) {
       updated += 1;
-      await prisma.liveActivityToken.update({
-        where: { id: u.rowId },
-        data: { lastRelayState: { ...u.state } },
-      });
     }
   }
   return { started, updated };

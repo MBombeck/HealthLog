@@ -55,6 +55,7 @@ export function clearedPushCredentials() {
     laStartedMedicationId: null,
     laStartedSlot: null,
     laStartedAt: null,
+    laStartRef: null,
     ...clearedRelayFields({ pushKey: true }),
   };
 }
