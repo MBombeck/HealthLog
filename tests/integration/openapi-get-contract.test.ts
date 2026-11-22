@@ -124,6 +124,8 @@ const CHECKED_FLOOR = 235;
  * about the operation: a list a fixture could fill is a row to seed.
  */
 const EMPTY_ALLOWED: Record<string, string> = {
+  "/api/admin/push-relay":
+    "The list names relay hosts this server is still registered with but can no longer reach after `PUSH_RELAY_MODE=off` or a changed `PUSH_RELAY_URL`; the contract run has no such host by construction, and `push-relay-lifecycle.test.ts` fills it and reads it back.",
   "/api/admin/migrations":
     "The lists are the pending and the failed migrations, empty on a migrated database by definition; `admin-operator-insights.test.ts` writes a half-done row and reads it back.",
   "/api/auth/me/mfa":
