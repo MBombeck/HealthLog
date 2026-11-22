@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2838,
-  "total": 8846,
+  "count": 2837,
+  "total": 8845,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -703,7 +703,6 @@
     "components/admin/module-availability-section.tsx": 1,
     "components/admin/provider-health-section.tsx": 4,
     "components/admin/recent-audit-preview.tsx": 1,
-    "components/admin/reminders-section.tsx": 1,
     "components/admin/section-slugs.ts": 5,
     "components/admin/system-status-section.tsx": 2,
     "components/admin/user-management-section.tsx": 1,

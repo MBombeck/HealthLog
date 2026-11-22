@@ -5691,7 +5691,6 @@
       "sectionsNav": "Onderdelen van Instellingen",
       "groups": {
         "account": "Account",
-        "yourData": "Je gegevens",
         "healthProfile": "Gezondheidsprofiel",
         "ai": "AI",
         "connectivity": "Verbindingen",
@@ -5700,7 +5699,8 @@
         "arrangement": "Indeling",
         "notifications": "Meldingen",
         "connections": "Verbindingen",
-        "data": "Gegevens"
+        "data": "Gegevens",
+        "serverData": "Servergegevens"
       },
       "allSections": "Alle onderdelen"
     },
@@ -8593,7 +8593,8 @@
       "ok": "OK",
       "error": "Mislukt",
       "skipped": "Overgeslagen",
-      "autoDisabled": "Automatisch uitgeschakelde kanalen"
+      "autoDisabled": "Automatisch uitgeschakelde kanalen",
+      "loadError": "De bezorgstatus kon niet worden geladen."
     },
     "reminderLateMinutes": "Drempelwaarde te laat (minuten)",
     "reminderLateMinutesDescription": "Minuten na het einde van het tijdvenster tot het label van geel naar oranje gaat.",
@@ -8647,12 +8648,12 @@
         "subtitle": "Registratie, standaardtaal en andere appbrede schakelaars."
       },
       "services": {
-        "title": "Diensten",
-        "subtitle": "Zet meldingskanalen en de API aan of uit voor de hele server."
+        "title": "Push en kanalen",
+        "subtitle": "Meldingskanalen, Web Push-sleutels, de push-relay en de bezorgstatus voor de hele server."
       },
       "integrations": {
-        "title": "Koppelingen",
-        "subtitle": "Configureer Umami, GlitchTip, Web Push en bugmeldingen."
+        "title": "Bewaking",
+        "subtitle": "Umami, GlitchTip en foutrapporten instellen."
       },
       "coach": {
         "title": "Coach",
@@ -9468,7 +9469,36 @@
         "inviteRequired": "Deze relay laat nieuwe servers alleen op uitnodiging toe. Voer een uitnodigingscode in.",
         "inviteRejected": "De relay heeft deze uitnodigingscode niet geaccepteerd. Misschien is hij verlopen of al gebruikt. Vraag een nieuwe aan en voer die in.",
         "registrationPaused": "De relay neemt op dit moment geen nieuwe servers aan. Deze server probeert het later vanzelf opnieuw."
+      },
+      "usage": {
+        "accepted": "Aangenomen",
+        "pending": "Wachtend",
+        "dropped": "Verworpen",
+        "failed": "Mislukt",
+        "window": "Pushberichten die deze server de afgelopen {days} dagen aan de relay gaf.",
+        "lastSuccess": "Laatst bezorgd {time}.",
+        "lastFailure": "Laatste fout {time}: {reason}.",
+        "noReason": "geen reden opgegeven"
       }
+    },
+    "versionMigrations": {
+      "title": "Versie en database",
+      "description": "Welke build draait, uit welke image-lijn, en of de database elke migratie heeft die deze build meebrengt.",
+      "version": "Versie",
+      "channel": {
+        "release": "Release",
+        "edge": "Edge",
+        "development": "Ontwikkelbuild"
+      },
+      "built": "Bouw {sha}, {time}",
+      "migrations": "Databasemigraties",
+      "applied": "{applied} van {shipped} toegepast",
+      "appliedOnly": "{applied} toegepast",
+      "pending": "{count} in afwachting: {names}",
+      "failed": "Mislukt, en houdt de update tegen: {names}",
+      "upToDate": "Bijgewerkt",
+      "lastApplied": "Laatste: {name}, {time}",
+      "loadError": "De status van de migraties kon niet worden geladen."
     }
   },
   "achievements": {

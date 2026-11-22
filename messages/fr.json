@@ -5691,7 +5691,6 @@
       "sectionsNav": "Sections des réglages",
       "groups": {
         "account": "Compte",
-        "yourData": "Vos données",
         "healthProfile": "Profil de santé",
         "ai": "IA",
         "connectivity": "Connectivité",
@@ -5700,7 +5699,8 @@
         "arrangement": "Disposition",
         "notifications": "Notifications",
         "connections": "Connexions",
-        "data": "Données"
+        "data": "Données",
+        "serverData": "Données du serveur"
       },
       "allSections": "Toutes les sections"
     },
@@ -8593,7 +8593,8 @@
       "ok": "OK",
       "error": "Échecs",
       "skipped": "Ignorées",
-      "autoDisabled": "Canaux désactivés automatiquement"
+      "autoDisabled": "Canaux désactivés automatiquement",
+      "loadError": "L'état de la diffusion n'a pas pu être chargé."
     },
     "reminderLateMinutes": "Seuil de retard (minutes)",
     "reminderLateMinutesDescription": "Minutes après la fin de la fenêtre avant que le badge passe du jaune à l'orange.",
@@ -8647,12 +8648,12 @@
         "subtitle": "Inscription, langue par défaut et autres commutateurs applicables à toute l'application."
       },
       "services": {
-        "title": "Services",
-        "subtitle": "Activez ou désactivez les canaux de notification et l'API pour tout le serveur."
+        "title": "Push et canaux",
+        "subtitle": "Canaux de notification, clés Web Push, relais push et état de la diffusion pour tout le serveur."
       },
       "integrations": {
-        "title": "Intégrations",
-        "subtitle": "Configurez Umami, GlitchTip, Web Push et les rapports de bug."
+        "title": "Supervision",
+        "subtitle": "Configurer Umami, GlitchTip et les rapports de bug."
       },
       "coach": {
         "title": "Coach",
@@ -9468,7 +9469,36 @@
         "inviteRequired": "Ce relais n'accepte de nouveaux serveurs que sur invitation. Saisissez un code d'invitation.",
         "inviteRejected": "Le relais n'a pas accepté ce code d'invitation. Il a peut-être expiré ou déjà été utilisé. Demandez-en un nouveau et saisissez-le.",
         "registrationPaused": "Le relais n'accepte pas de nouveaux serveurs pour le moment. Ce serveur réessaiera plus tard de lui-même."
+      },
+      "usage": {
+        "accepted": "Acceptés",
+        "pending": "En attente",
+        "dropped": "Abandonnés",
+        "failed": "Échoués",
+        "window": "Notifications push que ce serveur a confiées au relais ces {days} derniers jours.",
+        "lastSuccess": "Dernière livraison {time}.",
+        "lastFailure": "Dernier échec {time} : {reason}.",
+        "noReason": "sans motif"
       }
+    },
+    "versionMigrations": {
+      "title": "Version et base de données",
+      "description": "Quelle version tourne, depuis quelle ligne d'images, et si la base de données a toutes les migrations livrées avec elle.",
+      "version": "Version",
+      "channel": {
+        "release": "Publication",
+        "edge": "Edge",
+        "development": "Version de développement"
+      },
+      "built": "Compilation {sha}, {time}",
+      "migrations": "Migrations de la base",
+      "applied": "{applied} sur {shipped} appliquées",
+      "appliedOnly": "{applied} appliquées",
+      "pending": "{count} en attente : {names}",
+      "failed": "En échec, et bloquant la mise à jour : {names}",
+      "upToDate": "À jour",
+      "lastApplied": "Dernière : {name}, {time}",
+      "loadError": "L'état des migrations n'a pas pu être chargé."
     }
   },
   "achievements": {

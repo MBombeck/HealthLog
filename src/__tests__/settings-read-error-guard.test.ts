@@ -29,7 +29,6 @@ const KNOWN_GAPS = new Set([
   "components/admin/central-codex-section.tsx",
   "components/admin/login-overview-section.tsx",
   "components/admin/module-availability-section.tsx",
-  "components/admin/reminders-section.tsx",
   "components/admin/support-report-card.tsx",
   "components/admin/use-push-relay.ts",
   "components/admin/use-recovery-kit.ts",

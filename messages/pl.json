@@ -5691,7 +5691,6 @@
       "sectionsNav": "Sekcje ustawień",
       "groups": {
         "account": "Konto",
-        "yourData": "Twoje dane",
         "healthProfile": "Profil zdrowotny",
         "ai": "AI",
         "connectivity": "Łączność",
@@ -5700,7 +5699,8 @@
         "arrangement": "Układ",
         "notifications": "Powiadomienia",
         "connections": "Połączenia",
-        "data": "Dane"
+        "data": "Dane",
+        "serverData": "Dane serwera"
       },
       "allSections": "Wszystkie sekcje"
     },
@@ -8593,7 +8593,8 @@
       "ok": "OK",
       "error": "Nieudane",
       "skipped": "Pominięte",
-      "autoDisabled": "Automatycznie wyłączone kanały"
+      "autoDisabled": "Automatycznie wyłączone kanały",
+      "loadError": "Nie udało się wczytać stanu dostarczania."
     },
     "reminderLateMinutes": "Próg opóźnienia (minuty)",
     "reminderLateMinutesDescription": "Minuty po końcu okna, zanim oznaczenie zmieni kolor z żółtego na pomarańczowy.",
@@ -8647,12 +8648,12 @@
         "subtitle": "Rejestracja, domyślny język i inne przełączniki obejmujące całą aplikację."
       },
       "services": {
-        "title": "Usługi",
-        "subtitle": "Włącz lub wyłącz kanały powiadomień i API dla całego serwera."
+        "title": "Push i kanały",
+        "subtitle": "Kanały powiadomień, klucze Web Push, przekaźnik push i stan dostarczania dla całego serwera."
       },
       "integrations": {
-        "title": "Integracje",
-        "subtitle": "Skonfiguruj Umami, GlitchTip, Web Push i zgłoszenia błędów."
+        "title": "Monitorowanie",
+        "subtitle": "Skonfiguruj Umami, GlitchTip i zgłoszenia błędów."
       },
       "coach": {
         "title": "Coach",
@@ -9468,7 +9469,36 @@
         "inviteRequired": "Ten przekaźnik przyjmuje nowe serwery tylko na zaproszenie. Wpisz kod zaproszenia.",
         "inviteRejected": "Przekaźnik nie przyjął tego kodu zaproszenia. Mógł wygasnąć albo został już użyty. Poproś o nowy i wpisz go.",
         "registrationPaused": "Przekaźnik nie przyjmuje teraz nowych serwerów. Ten serwer sam spróbuje ponownie później."
+      },
+      "usage": {
+        "accepted": "Przyjęte",
+        "pending": "Oczekujące",
+        "dropped": "Odrzucone",
+        "failed": "Nieudane",
+        "window": "Powiadomienia push przekazane przez ten serwer do przekaźnika w ciągu ostatnich {days} dni.",
+        "lastSuccess": "Ostatnio dostarczono {time}.",
+        "lastFailure": "Ostatni błąd {time}: {reason}.",
+        "noReason": "bez podanej przyczyny"
       }
+    },
+    "versionMigrations": {
+      "title": "Wersja i baza danych",
+      "description": "Która kompilacja działa, z której linii obrazów i czy baza danych ma wszystkie migracje dostarczone z nią.",
+      "version": "Wersja",
+      "channel": {
+        "release": "Wydanie",
+        "edge": "Edge",
+        "development": "Kompilacja deweloperska"
+      },
+      "built": "Kompilacja {sha}, {time}",
+      "migrations": "Migracje bazy danych",
+      "applied": "Zastosowano {applied} z {shipped}",
+      "appliedOnly": "Zastosowano {applied}",
+      "pending": "Oczekuje {count}: {names}",
+      "failed": "Nieudane i blokujące aktualizację: {names}",
+      "upToDate": "Aktualne",
+      "lastApplied": "Ostatnia: {name}, {time}",
+      "loadError": "Nie udało się wczytać stanu migracji."
     }
   },
   "achievements": {

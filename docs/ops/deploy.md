@@ -308,7 +308,7 @@ New variables, all optional and on the compose whitelist:
 your own network for the scheduled Health Connect fetch), and
 `PUSH_RELAY_MODE`, `PUSH_RELAY_URL`, `PUSH_RELAY_KEYS`,
 `PUSH_RELAY_LIVE_ACTIVITY` ([push-relay.md](../integrations/push-relay.md)).
-The relay is off until an admin turns it on in Admin > Services, and Live
+The relay is off until an admin turns it on in Admin > Push and channels, and Live
 Activity start and update go over it only with `PUSH_RELAY_LIVE_ACTIVITY=on`
 and a second consent on the device. `pnpm check-env` reports all five.
 

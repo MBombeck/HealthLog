@@ -5691,7 +5691,6 @@
       "sectionsNav": "Sezioni delle impostazioni",
       "groups": {
         "account": "Account",
-        "yourData": "I tuoi dati",
         "healthProfile": "Profilo sanitario",
         "ai": "IA",
         "connectivity": "Connettività",
@@ -5700,7 +5699,8 @@
         "arrangement": "Disposizione",
         "notifications": "Notifiche",
         "connections": "Connessioni",
-        "data": "Dati"
+        "data": "Dati",
+        "serverData": "Dati del server"
       },
       "allSections": "Tutte le sezioni"
     },
@@ -8593,7 +8593,8 @@
       "ok": "OK",
       "error": "Non riuscite",
       "skipped": "Saltate",
-      "autoDisabled": "Canali disattivati automaticamente"
+      "autoDisabled": "Canali disattivati automaticamente",
+      "loadError": "Non è stato possibile caricare lo stato dei recapiti."
     },
     "reminderLateMinutes": "Soglia di ritardo (minuti)",
     "reminderLateMinutesDescription": "Minuti dopo la fine della finestra prima che il badge passi da giallo ad arancione.",
@@ -8647,12 +8648,12 @@
         "subtitle": "Registrazione, lingua predefinita e altri interruttori validi per l'intera app."
       },
       "services": {
-        "title": "Servizi",
-        "subtitle": "Attiva o disattiva i canali di notifica e l'API per l'intero server."
+        "title": "Push e canali",
+        "subtitle": "Canali di notifica, chiavi Web Push, il relay push e lo stato dei recapiti per tutto il server."
       },
       "integrations": {
-        "title": "Integrazioni",
-        "subtitle": "Configura Umami, GlitchTip, Web Push e le segnalazioni di bug."
+        "title": "Monitoraggio",
+        "subtitle": "Configura Umami, GlitchTip e le segnalazioni di errori."
       },
       "coach": {
         "title": "Coach",
@@ -9468,7 +9469,36 @@
         "inviteRequired": "Questo relay accetta nuovi server solo su invito. Inserisci un codice di invito.",
         "inviteRejected": "Il relay non ha accettato questo codice di invito. Potrebbe essere scaduto o già usato. Chiedine uno nuovo e inseriscilo.",
         "registrationPaused": "Il relay al momento non accetta nuovi server. Questo server riproverà più tardi da solo."
+      },
+      "usage": {
+        "accepted": "Accettati",
+        "pending": "In attesa",
+        "dropped": "Scartati",
+        "failed": "Non riusciti",
+        "window": "Notifiche push che questo server ha passato al relay negli ultimi {days} giorni.",
+        "lastSuccess": "Ultimo recapito {time}.",
+        "lastFailure": "Ultimo errore {time}: {reason}.",
+        "noReason": "motivo non indicato"
       }
+    },
+    "versionMigrations": {
+      "title": "Versione e database",
+      "description": "Quale build è in esecuzione, da quale linea di immagini, e se il database ha tutte le migrazioni che porta con sé.",
+      "version": "Versione",
+      "channel": {
+        "release": "Rilascio",
+        "edge": "Edge",
+        "development": "Build di sviluppo"
+      },
+      "built": "Versione compilata {sha}, {time}",
+      "migrations": "Migrazioni del database",
+      "applied": "{applied} di {shipped} applicate",
+      "appliedOnly": "{applied} applicate",
+      "pending": "{count} in sospeso: {names}",
+      "failed": "Non riuscite, e bloccano l’aggiornamento: {names}",
+      "upToDate": "Aggiornato",
+      "lastApplied": "Ultima: {name}, {time}",
+      "loadError": "Non è stato possibile caricare lo stato delle migrazioni."
     }
   },
   "achievements": {

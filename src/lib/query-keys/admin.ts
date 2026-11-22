@@ -67,6 +67,8 @@ export const adminKeys = {
   adminRecoveryReadiness: () => ["admin", "recovery-readiness"] as const,
   /** The push relay switch, its state and the one-time notice. */
   adminPushRelay: () => ["admin", "push-relay"] as const,
+  /** Database migrations applied, pending and failed. */
+  adminMigrations: () => ["admin", "migrations"] as const,
   adminFeedback: (status: string) => ["admin", "feedback", status] as const,
   adminFeedbackRoot: () => ["admin", "feedback"] as const,
   adminHostMetrics: (window: string) =>

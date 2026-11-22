@@ -5691,7 +5691,6 @@
       "sectionsNav": "Seções de configurações",
       "groups": {
         "account": "Conta",
-        "yourData": "Seus dados",
         "healthProfile": "Perfil de saúde",
         "ai": "IA",
         "connectivity": "Conectividade",
@@ -5700,7 +5699,8 @@
         "arrangement": "Organização",
         "notifications": "Notificações",
         "connections": "Conexões",
-        "data": "Dados"
+        "data": "Dados",
+        "serverData": "Dados do servidor"
       },
       "allSections": "Todas as seções"
     },
@@ -8593,7 +8593,8 @@
       "ok": "OK",
       "error": "Falha",
       "skipped": "Ignorada",
-      "autoDisabled": "Canais desativados automaticamente"
+      "autoDisabled": "Canais desativados automaticamente",
+      "loadError": "Não foi possível carregar o estado das entregas."
     },
     "reminderLateMinutes": "Limite de atraso (minutos)",
     "reminderLateMinutesDescription": "Minutos após o fim da janela até o selo mudar de amarelo para laranja.",
@@ -8647,12 +8648,12 @@
         "subtitle": "Registro, idioma padrão e outros interruptores de todo o aplicativo."
       },
       "services": {
-        "title": "Serviços",
-        "subtitle": "Ative ou desative canais de notificação e a API para todo o servidor."
+        "title": "Push e canais",
+        "subtitle": "Canais de notificação, chaves Web Push, o relay de push e o estado das entregas para todo o servidor."
       },
       "integrations": {
-        "title": "Integrações",
-        "subtitle": "Configure Umami, GlitchTip, Web Push e relatórios de bugs."
+        "title": "Monitoramento",
+        "subtitle": "Configurar Umami, GlitchTip e relatórios de erros."
       },
       "coach": {
         "title": "Coach",
@@ -9468,7 +9469,36 @@
         "inviteRequired": "Este relay aceita novos servidores apenas por convite. Insira um código de convite.",
         "inviteRejected": "O relay não aceitou este código de convite. Ele pode ter expirado ou já ter sido usado. Peça um novo e insira-o.",
         "registrationPaused": "O relay não está aceitando novos servidores no momento. Este servidor tentará de novo mais tarde por conta própria."
+      },
+      "usage": {
+        "accepted": "Aceitos",
+        "pending": "Aguardando",
+        "dropped": "Descartados",
+        "failed": "Com falha",
+        "window": "Notificações push que este servidor passou ao relay nos últimos {days} dias.",
+        "lastSuccess": "Última entrega {time}.",
+        "lastFailure": "Última falha {time}: {reason}.",
+        "noReason": "sem motivo informado"
       }
+    },
+    "versionMigrations": {
+      "title": "Versão e banco de dados",
+      "description": "Qual build está rodando, de qual linha de imagens, e se o banco de dados tem todas as migrações que vêm com ela.",
+      "version": "Versão",
+      "channel": {
+        "release": "Lançamento",
+        "edge": "Edge",
+        "development": "Build de desenvolvimento"
+      },
+      "built": "Compilação {sha}, {time}",
+      "migrations": "Migrações do banco de dados",
+      "applied": "{applied} de {shipped} aplicadas",
+      "appliedOnly": "{applied} aplicadas",
+      "pending": "{count} pendentes: {names}",
+      "failed": "Com falha, e travando a atualização: {names}",
+      "upToDate": "Em dia",
+      "lastApplied": "Última: {name}, {time}",
+      "loadError": "Não foi possível carregar o estado das migrações."
     }
   },
   "achievements": {

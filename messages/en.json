@@ -5691,7 +5691,6 @@
       "sectionsNav": "Settings sections",
       "groups": {
         "account": "Account",
-        "yourData": "Your data",
         "healthProfile": "Health profile",
         "ai": "AI",
         "connectivity": "Connectivity",
@@ -5700,7 +5699,8 @@
         "arrangement": "Arrangement",
         "notifications": "Notifications",
         "connections": "Connections",
-        "data": "Data"
+        "data": "Data",
+        "serverData": "Server data"
       },
       "allSections": "All sections"
     },
@@ -8593,7 +8593,8 @@
       "ok": "OK",
       "error": "Failed",
       "skipped": "Skipped",
-      "autoDisabled": "Auto-disabled channels"
+      "autoDisabled": "Auto-disabled channels",
+      "loadError": "Delivery health could not be loaded."
     },
     "reminderLateMinutes": "Late threshold (minutes)",
     "reminderLateMinutesDescription": "Minutes after window end until the badge changes from yellow to orange.",
@@ -8647,12 +8648,12 @@
         "subtitle": "Registration, default language, and other app-wide toggles."
       },
       "services": {
-        "title": "Services",
-        "subtitle": "Turn notification channels and the API on or off for the whole server."
+        "title": "Push and channels",
+        "subtitle": "Notification channels, Web Push keys, the push relay and delivery health for the whole server."
       },
       "integrations": {
-        "title": "Integrations",
-        "subtitle": "Configure Umami, GlitchTip, Web Push, and bug reports."
+        "title": "Monitoring",
+        "subtitle": "Configure Umami, GlitchTip and bug reports."
       },
       "coach": {
         "title": "Coach",
@@ -9468,7 +9469,36 @@
         "inviteRequired": "This relay accepts new servers by invitation only. Enter an invite code.",
         "inviteRejected": "The relay did not accept this invite code. It may have expired or already been used. Ask for a new one and enter it.",
         "registrationPaused": "The relay is not taking new servers right now. This server asks again later on its own."
+      },
+      "usage": {
+        "accepted": "Accepted",
+        "pending": "Waiting",
+        "dropped": "Dropped",
+        "failed": "Failed",
+        "window": "Pushes this server handed the relay in the last {days} days.",
+        "lastSuccess": "Last delivered {time}.",
+        "lastFailure": "Last failure {time}: {reason}.",
+        "noReason": "no reason given"
       }
+    },
+    "versionMigrations": {
+      "title": "Version and database",
+      "description": "Which build runs, from which image line, and whether the database has every migration that build ships with.",
+      "version": "Version",
+      "channel": {
+        "release": "Release",
+        "edge": "Edge",
+        "development": "Development build"
+      },
+      "built": "Build {sha}, {time}",
+      "migrations": "Database migrations",
+      "applied": "{applied} of {shipped} applied",
+      "appliedOnly": "{applied} applied",
+      "pending": "{count} pending: {names}",
+      "failed": "Failed, and holding back the update: {names}",
+      "upToDate": "Up to date",
+      "lastApplied": "Last: {name}, {time}",
+      "loadError": "The migration status could not be loaded."
     }
   },
   "achievements": {

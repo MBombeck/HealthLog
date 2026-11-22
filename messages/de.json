@@ -5691,7 +5691,6 @@
       "sectionsNav": "Einstellungs-Bereiche",
       "groups": {
         "account": "Konto",
-        "yourData": "Deine Daten",
         "healthProfile": "Gesundheitsprofil",
         "ai": "KI",
         "connectivity": "Konnektivität",
@@ -5700,7 +5699,8 @@
         "arrangement": "Anordnung",
         "notifications": "Benachrichtigungen",
         "connections": "Verbindungen",
-        "data": "Daten"
+        "data": "Daten",
+        "serverData": "Serverdaten"
       },
       "allSections": "Alle Bereiche"
     },
@@ -8593,7 +8593,8 @@
       "ok": "OK",
       "error": "Fehlgeschlagen",
       "skipped": "Übersprungen",
-      "autoDisabled": "Automatisch deaktivierte Kanäle"
+      "autoDisabled": "Automatisch deaktivierte Kanäle",
+      "loadError": "Die Zustellung konnte nicht geladen werden."
     },
     "reminderLateMinutes": "Spät-Schwellenwert (Minuten)",
     "reminderLateMinutesDescription": "Minuten nach Fenster-Ende bis der Badge von Gelb auf Orange wechselt.",
@@ -8647,12 +8648,12 @@
         "subtitle": "Registrierung, Standardsprache und weitere globale Schalter."
       },
       "services": {
-        "title": "Dienste",
-        "subtitle": "Benachrichtigungskanäle und die API für den ganzen Server ein- oder ausschalten."
+        "title": "Push und Kanäle",
+        "subtitle": "Benachrichtigungskanäle, Web-Push-Schlüssel, das Push-Relay und die Zustellung für den ganzen Server."
       },
       "integrations": {
-        "title": "Integrationen",
-        "subtitle": "Umami, GlitchTip, Web Push und Bug-Reports konfigurieren."
+        "title": "Monitoring",
+        "subtitle": "Umami, GlitchTip und Fehlerberichte einrichten."
       },
       "coach": {
         "title": "Coach",
@@ -9468,7 +9469,36 @@
         "inviteRequired": "Dieses Relay nimmt neue Server nur auf Einladung auf. Gib einen Einladungscode ein.",
         "inviteRejected": "Das Relay hat diesen Einladungscode nicht angenommen. Er ist vielleicht abgelaufen oder schon benutzt. Lass dir einen neuen geben und gib ihn ein.",
         "registrationPaused": "Das Relay nimmt gerade keine neuen Server auf. Dieser Server fragt später von selbst wieder an."
+      },
+      "usage": {
+        "accepted": "Angenommen",
+        "pending": "Wartend",
+        "dropped": "Verworfen",
+        "failed": "Fehlgeschlagen",
+        "window": "Pushes, die dieser Server in den letzten {days} Tagen an das Relay gegeben hat.",
+        "lastSuccess": "Zuletzt zugestellt {time}.",
+        "lastFailure": "Letzter Fehler {time}: {reason}.",
+        "noReason": "ohne Angabe"
       }
+    },
+    "versionMigrations": {
+      "title": "Version und Datenbank",
+      "description": "Welcher Build läuft, aus welcher Image-Linie, und ob die Datenbank jede Migration hat, die dieser Build mitbringt.",
+      "version": "Version",
+      "channel": {
+        "release": "Release",
+        "edge": "Edge",
+        "development": "Entwicklungsbuild"
+      },
+      "built": "Build {sha} vom {time}",
+      "migrations": "Datenbank-Migrationen",
+      "applied": "{applied} von {shipped} angewendet",
+      "appliedOnly": "{applied} angewendet",
+      "pending": "{count} ausstehend: {names}",
+      "failed": "Fehlgeschlagen, das Update hängt daran: {names}",
+      "upToDate": "Auf dem neuesten Stand",
+      "lastApplied": "Zuletzt: {name}, {time}",
+      "loadError": "Der Stand der Migrationen konnte nicht geladen werden."
     }
   },
   "achievements": {

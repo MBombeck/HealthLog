@@ -5691,7 +5691,6 @@
       "sectionsNav": "설정 섹션",
       "groups": {
         "account": "계정",
-        "yourData": "내 데이터",
         "healthProfile": "건강 프로필",
         "ai": "AI",
         "connectivity": "연결",
@@ -5700,7 +5699,8 @@
         "arrangement": "배치",
         "notifications": "알림",
         "connections": "연결",
-        "data": "데이터"
+        "data": "데이터",
+        "serverData": "서버 데이터"
       },
       "allSections": "모든 항목"
     },
@@ -8568,7 +8568,8 @@
       "ok": "정상",
       "error": "실패",
       "skipped": "건너뜀",
-      "autoDisabled": "자동으로 꺼진 채널"
+      "autoDisabled": "자동으로 꺼진 채널",
+      "loadError": "전송 상태를 불러오지 못했습니다."
     },
     "reminderLateMinutes": "지연 기준선 (분)",
     "reminderLateMinutesDescription": "복용 시간대가 끝난 뒤 배지가 노랑에서 주황으로 바뀌기까지의 분이에요.",
@@ -8622,12 +8623,12 @@
         "subtitle": "회원가입, 기본 언어 등 앱 전체 설정이에요."
       },
       "services": {
-        "title": "서비스",
-        "subtitle": "알림 채널과 API를 서버 전체에서 켜거나 꺼요."
+        "title": "푸시와 채널",
+        "subtitle": "서버 전체의 알림 채널, Web Push 키, 푸시 릴레이, 전송 상태."
       },
       "integrations": {
-        "title": "연동",
-        "subtitle": "Umami, GlitchTip, 웹 푸시, 버그 신고를 설정해요."
+        "title": "모니터링",
+        "subtitle": "Umami, GlitchTip, 버그 보고를 설정합니다."
       },
       "coach": {
         "title": "코치",
@@ -9468,7 +9469,36 @@
         "inviteRequired": "이 릴레이는 초대로만 새 서버를 받습니다. 초대 코드를 입력하세요.",
         "inviteRejected": "릴레이가 이 초대 코드를 받아들이지 않았습니다. 만료되었거나 이미 사용되었을 수 있습니다. 새 코드를 받아 입력하세요.",
         "registrationPaused": "릴레이가 지금은 새 서버를 받지 않습니다. 이 서버가 나중에 스스로 다시 시도합니다."
+      },
+      "usage": {
+        "accepted": "수락됨",
+        "pending": "대기 중",
+        "dropped": "폐기됨",
+        "failed": "실패",
+        "window": "최근 {days}일 동안 이 서버가 릴레이에 넘긴 푸시.",
+        "lastSuccess": "마지막 전송 {time}.",
+        "lastFailure": "마지막 실패 {time}: {reason}.",
+        "noReason": "사유 없음"
       }
+    },
+    "versionMigrations": {
+      "title": "버전과 데이터베이스",
+      "description": "어떤 빌드가 어느 이미지 계열에서 실행 중인지, 그리고 그 빌드에 포함된 마이그레이션이 데이터베이스에 모두 적용되었는지.",
+      "version": "버전",
+      "channel": {
+        "release": "정식 릴리스",
+        "edge": "Edge",
+        "development": "개발 빌드"
+      },
+      "built": "빌드 {sha}, {time}",
+      "migrations": "데이터베이스 마이그레이션",
+      "applied": "{shipped}개 중 {applied}개 적용",
+      "appliedOnly": "{applied}개 적용",
+      "pending": "{count}개 대기: {names}",
+      "failed": "실패하여 업데이트를 막고 있음: {names}",
+      "upToDate": "최신 상태",
+      "lastApplied": "마지막: {name}, {time}",
+      "loadError": "마이그레이션 상태를 불러오지 못했습니다."
     }
   },
   "achievements": {

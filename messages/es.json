@@ -5691,7 +5691,6 @@
       "sectionsNav": "Secciones de ajustes",
       "groups": {
         "account": "Cuenta",
-        "yourData": "Tus datos",
         "healthProfile": "Perfil de salud",
         "ai": "IA",
         "connectivity": "Conectividad",
@@ -5700,7 +5699,8 @@
         "arrangement": "Disposición",
         "notifications": "Notificaciones",
         "connections": "Conexiones",
-        "data": "Datos"
+        "data": "Datos",
+        "serverData": "Datos del servidor"
       },
       "allSections": "Todas las secciones"
     },
@@ -8593,7 +8593,8 @@
       "ok": "OK",
       "error": "Fallidas",
       "skipped": "Omitidas",
-      "autoDisabled": "Canales desactivados automáticamente"
+      "autoDisabled": "Canales desactivados automáticamente",
+      "loadError": "No se pudo cargar el estado de entrega."
     },
     "reminderLateMinutes": "Umbral de retraso (minutos)",
     "reminderLateMinutesDescription": "Minutos tras el fin de la ventana hasta que la insignia cambia de amarillo a naranja.",
@@ -8647,12 +8648,12 @@
         "subtitle": "Registro, idioma predeterminado y otros interruptores de toda la aplicación."
       },
       "services": {
-        "title": "Servicios",
-        "subtitle": "Activa o desactiva los canales de notificación y la API en todo el servidor."
+        "title": "Push y canales",
+        "subtitle": "Canales de notificación, claves de Web Push, el relé push y el estado de entrega para todo el servidor."
       },
       "integrations": {
-        "title": "Integraciones",
-        "subtitle": "Configura Umami, GlitchTip, Web Push e informes de errores."
+        "title": "Supervisión",
+        "subtitle": "Configurar Umami, GlitchTip y los informes de errores."
       },
       "coach": {
         "title": "Coach",
@@ -9468,7 +9469,36 @@
         "inviteRequired": "Este relé solo admite servidores nuevos por invitación. Introduce un código de invitación.",
         "inviteRejected": "El relé no aceptó este código de invitación. Puede que haya caducado o que ya se haya usado. Pide uno nuevo e introdúcelo.",
         "registrationPaused": "El relé no admite servidores nuevos en este momento. Este servidor volverá a intentarlo más tarde por sí solo."
+      },
+      "usage": {
+        "accepted": "Aceptados",
+        "pending": "En espera",
+        "dropped": "Descartados",
+        "failed": "Fallidos",
+        "window": "Notificaciones push que este servidor entregó al relé en los últimos {days} días.",
+        "lastSuccess": "Última entrega {time}.",
+        "lastFailure": "Último fallo {time}: {reason}.",
+        "noReason": "sin motivo indicado"
       }
+    },
+    "versionMigrations": {
+      "title": "Versión y base de datos",
+      "description": "Qué compilación se ejecuta, de qué línea de imágenes, y si la base de datos tiene todas las migraciones que trae.",
+      "version": "Versión",
+      "channel": {
+        "release": "Publicación",
+        "edge": "Edge",
+        "development": "Compilación de desarrollo"
+      },
+      "built": "Compilación {sha}, {time}",
+      "migrations": "Migraciones de la base de datos",
+      "applied": "{applied} de {shipped} aplicadas",
+      "appliedOnly": "{applied} aplicadas",
+      "pending": "{count} pendientes: {names}",
+      "failed": "Fallidas, y bloquean la actualización: {names}",
+      "upToDate": "Al día",
+      "lastApplied": "Última: {name}, {time}",
+      "loadError": "No se pudo cargar el estado de las migraciones."
     }
   },
   "achievements": {

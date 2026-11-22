@@ -24,7 +24,11 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { SettingsToggle } from "./_shared";
-import { usePushRelayStatus, useSetPushRelay } from "./use-push-relay";
+import {
+  usePushRelayStatus,
+  useSetPushRelay,
+  type AdminPushRelayStatus,
+} from "./use-push-relay";
 import { PushRelayTools } from "./push-relay-tools";
 
 const STATE_LABEL = {
@@ -209,6 +213,7 @@ export function PushRelaySection() {
               : ""}
           </p>
         )}
+        <RelayUsage status={status} />
         {reasonKey && (
           <div className="space-y-2" data-slot="push-relay-refusal">
             <p className="text-sm">{t(reasonKey)}</p>
@@ -494,5 +499,54 @@ function PushRelayEnableDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+/** What this server handed the relay lately, from its own ledger. */
+function RelayUsage({ status }: { status: AdminPushRelayStatus }) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  const { usage, lastSuccessAt } = status;
+  if (!status.offered || !usage) return null;
+  const counts = [
+    ["accepted", usage.accepted],
+    ["pending", usage.pending],
+    ["dropped", usage.dropped],
+    ["failed", usage.failed],
+  ] as const;
+  return (
+    <div className="space-y-1 text-xs" data-slot="push-relay-usage">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
+        {counts.map(([key, value]) => (
+          <div key={key}>
+            <dt className="text-muted-foreground">
+              {key === "accepted"
+                ? t("admin.pushRelay.usage.accepted")
+                : key === "pending"
+                  ? t("admin.pushRelay.usage.pending")
+                  : key === "dropped"
+                    ? t("admin.pushRelay.usage.dropped")
+                    : t("admin.pushRelay.usage.failed")}
+            </dt>
+            <dd className="font-medium tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-muted-foreground">
+        {t("admin.pushRelay.usage.window", { days: usage.windowDays })}
+        {lastSuccessAt
+          ? ` ${t("admin.pushRelay.usage.lastSuccess", {
+              time: fmt.dateTime(lastSuccessAt),
+            })}`
+          : ""}
+        {usage.lastFailure
+          ? ` ${t("admin.pushRelay.usage.lastFailure", {
+              time: fmt.dateTime(usage.lastFailure.at),
+              reason:
+                usage.lastFailure.reason ?? t("admin.pushRelay.usage.noReason"),
+            })}`
+          : ""}
+      </p>
+    </div>
   );
 }
