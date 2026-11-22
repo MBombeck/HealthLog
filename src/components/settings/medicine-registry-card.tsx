@@ -7,6 +7,7 @@ import { BookOpen } from "lucide-react";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { FieldGroup } from "@/components/ui/field-group";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useAuth } from "@/hooks/use-auth";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
@@ -99,10 +100,7 @@ export function MedicineRegistrySelect({
   const { value, options, select, pending } =
     useMedicineRegistryChoice(isAuthenticated);
   return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="text-sm font-medium">
-        {t(labelKey)}
-      </label>
+    <FieldGroup htmlFor={id} label={t(labelKey)}>
       <NativeSelect
         id={id}
         data-slot="medicine-registry-select"
@@ -119,7 +117,7 @@ export function MedicineRegistrySelect({
           </option>
         ))}
       </NativeSelect>
-    </div>
+    </FieldGroup>
   );
 }
 

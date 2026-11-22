@@ -660,7 +660,7 @@ export function EnvironmentSection() {
             icon={Wind}
             title={t("settings.sections.environment.airQuality.title")}
             status={
-              <label className="flex min-h-11 items-center gap-3">
+              <div className="flex min-h-11 items-center gap-3">
                 <Switch
                   checked={
                     data.airQuality.enabled && !data.airQuality.operatorDisabled
@@ -673,7 +673,7 @@ export function EnvironmentSection() {
                     "settings.sections.environment.airQuality.toggle",
                   )}
                 />
-              </label>
+              </div>
             }
           />
           <p className="text-sm leading-relaxed">
