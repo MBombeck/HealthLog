@@ -7351,6 +7351,11 @@
     "integrationFallback": {
       "description": "Настроено в этом аккаунте без собственной карточки настроек."
     },
+    "healthConnectFolder": {
+      "name": "Health Connect из папки",
+      "description": "Загружается из вашей папки WebDAV или Nextcloud каждые шесть часов. Настраивается и меняется в разделе «Импорт».",
+      "manage": "Открыть настройки папки"
+    },
     "withingsViewData": "Посмотреть ваши измерения",
     "whoopViewData": "Посмотреть ваше восстановление",
     "googleHealthViewData": "Посмотреть ваши шаги",

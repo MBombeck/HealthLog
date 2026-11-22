@@ -51,19 +51,18 @@ import {
 export type IntegrationKey =
   | "withings"
   | "whoop"
-  // v1.17.0 — Nightscout glucose (F1) + Polar / Oura OAuth (F4).
   | "nightscout"
   | "polar"
   | "oura"
-  // v1.27.0 — Google Health (Fitbit + Pixel Watch + Fitbit Air) via the
-  // Google Health API, the successor of the retired Fitbit Web API.
+  // Google Health (Fitbit devices), the successor of the Fitbit Web API.
   | "google-health"
-  // v1.28.x — Strava OAuth workout source.
   | "strava"
   // v1.43 — Dawarich movement context (daily values, nightly).
   | "dawarich"
   // Garmin Personal API (a pasted key, hourly poll).
-  | "garmin";
+  | "garmin"
+  // The Health Connect export fetched from a WebDAV folder (remote-fetch.ts).
+  | "health-connect-remote";
 
 /**
  * Failure kinds carried into `recordSyncFailure`.
@@ -1281,6 +1280,7 @@ const INTEGRATION_LABELS: Record<IntegrationKey, string> = {
   strava: "Strava",
   dawarich: "Dawarich",
   garmin: "Garmin",
+  "health-connect-remote": "Health Connect folder",
 };
 
 const FAILURE_KIND_COPY: Record<

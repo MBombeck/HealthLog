@@ -7351,6 +7351,11 @@
     "integrationFallback": {
       "description": "Configurato su questo account ma senza una scheda di impostazioni propria."
     },
+    "healthConnectFolder": {
+      "name": "Health Connect da una cartella",
+      "description": "Prelevato dalla tua cartella WebDAV o Nextcloud ogni sei ore. Si configura e si modifica in Importa.",
+      "manage": "Apri le impostazioni della cartella"
+    },
     "withingsViewData": "Vedi le tue misurazioni",
     "whoopViewData": "Vedi il tuo recupero",
     "googleHealthViewData": "Vedi i tuoi passi",

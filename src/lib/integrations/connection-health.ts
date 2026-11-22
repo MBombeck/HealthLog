@@ -44,6 +44,7 @@ export const CONNECTION_KEYS: readonly ConnectionKey[] = [
   "nightscout",
   "dawarich",
   "garmin",
+  "health-connect-remote",
   "apple-health",
 ];
 

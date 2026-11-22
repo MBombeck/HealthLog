@@ -7351,6 +7351,11 @@
     "integrationFallback": {
       "description": "Configured on this account without a settings card of its own."
     },
+    "healthConnectFolder": {
+      "name": "Health Connect from a folder",
+      "description": "Fetched from your WebDAV or Nextcloud folder every six hours. Set up and changed under Import.",
+      "manage": "Open the folder settings"
+    },
     "withingsViewData": "View your measurements",
     "whoopViewData": "View your recovery",
     "googleHealthViewData": "View your steps",

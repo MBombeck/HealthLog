@@ -200,6 +200,14 @@ now**:
   minutes, then doubles up to a day, and the card names the last outcome.
   An import that is already running for the account is retried in thirty
   minutes.
+- Every fetch is also recorded as a connection, `health-connect-remote`, so
+  its state shows on **Settings → Integrations**, in
+  `GET /api/integrations/status` and in the assistant's integration status
+  like any other source. A refused user name or app password reads as
+  "action needed" until a new password is saved; a missing file, a redirect
+  or an address the server does not allow is reported as a lasting problem;
+  a timeout or a server error is retried. Pausing or removing the folder
+  ends the connection.
 
 The password is stored encrypted with the app's encryption key and never
 shown again. Removing the folder deletes it; the imports stay. It only ever

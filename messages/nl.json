@@ -7351,6 +7351,11 @@
     "integrationFallback": {
       "description": "Ingesteld op dit account zonder eigen instellingenkaart."
     },
+    "healthConnectFolder": {
+      "name": "Health Connect uit een map",
+      "description": "Wordt elke zes uur uit je WebDAV- of Nextcloud-map opgehaald. Instellen en wijzigen doe je onder Importeren.",
+      "manage": "Mapinstellingen openen"
+    },
     "withingsViewData": "Je metingen bekijken",
     "whoopViewData": "Je herstel bekijken",
     "googleHealthViewData": "Je stappen bekijken",

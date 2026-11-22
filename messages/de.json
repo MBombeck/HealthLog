@@ -7351,6 +7351,11 @@
     "integrationFallback": {
       "description": "Für dieses Konto eingerichtet, hat aber keine eigene Einstellungskarte."
     },
+    "healthConnectFolder": {
+      "name": "Health Connect aus einem Ordner",
+      "description": "Wird alle sechs Stunden aus deinem WebDAV- oder Nextcloud-Ordner abgeholt. Eingerichtet und geändert wird es unter Import.",
+      "manage": "Ordner-Einstellungen öffnen"
+    },
     "withingsViewData": "Messwerte ansehen",
     "whoopViewData": "Erholung ansehen",
     "googleHealthViewData": "Schritte ansehen",

@@ -76,6 +76,7 @@ const LABELS: Record<ConnectionKey, string> = {
   nightscout: "Nightscout",
   dawarich: "Dawarich",
   garmin: "Garmin",
+  "health-connect-remote": "Health Connect folder",
   "apple-health": "Apple Health",
 };
 
@@ -116,7 +117,7 @@ async function countDeliveredDays(
  * closed).
  */
 async function listWatchedUserIds(): Promise<string[]> {
-  const [withings, whoop, google, userRows, healthKit, watches] =
+  const [withings, whoop, google, userRows, healthKit, folders, watches] =
     await Promise.all([
       // An account pending deletion is frozen: its connections are not
       // synced, so their silence is not an incident.
@@ -152,6 +153,10 @@ async function listWatchedUserIds(): Promise<string[]> {
         distinct: ["userId"],
         select: { userId: true },
       }),
+      prisma.healthConnectRemoteSource.findMany({
+        where: { enabled: true, ...OWNED_BY_ACTIVE_ACCOUNT },
+        select: { userId: true },
+      }),
       prisma.integrationWatch.findMany({
         where: {
           OR: [
@@ -164,7 +169,13 @@ async function listWatchedUserIds(): Promise<string[]> {
       }),
     ]);
   const ids = new Set<string>();
-  for (const r of [...withings, ...whoop, ...google, ...healthKit]) {
+  for (const r of [
+    ...withings,
+    ...whoop,
+    ...google,
+    ...healthKit,
+    ...folders,
+  ]) {
     ids.add(r.userId);
   }
   for (const r of userRows) ids.add(r.id);

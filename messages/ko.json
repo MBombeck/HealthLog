@@ -7351,6 +7351,11 @@
     "integrationFallback": {
       "description": "이 계정에 설정돼 있지만 전용 설정 카드는 없어요."
     },
+    "healthConnectFolder": {
+      "name": "폴더에서 Health Connect 가져오기",
+      "description": "6시간마다 WebDAV 또는 Nextcloud 폴더에서 가져와요. 설정과 변경은 불러오기에서 해요.",
+      "manage": "폴더 설정 열기"
+    },
     "withingsViewData": "측정값 보기",
     "whoopViewData": "회복도 보기",
     "googleHealthViewData": "걸음 수 보기",

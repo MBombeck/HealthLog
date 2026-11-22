@@ -32,7 +32,10 @@ export type IntegrationKey =
   // v1.43 — Dawarich movement context; publishes `health` only.
   | "dawarich"
   // Garmin Personal API; a pasted key, like Nightscout.
-  | "garmin";
+  | "garmin"
+  // The Health Connect export fetched from a WebDAV folder; managed on the
+  // import card, shown here read-only.
+  | "health-connect-remote";
 /**
  * One envelope entry as the cards read it. Since v1.42.4 the cards render
  * `health` alone; the older health-shaped fields (ledger `state`, `lastError`,

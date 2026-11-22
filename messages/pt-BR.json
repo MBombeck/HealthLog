@@ -7351,6 +7351,11 @@
     "integrationFallback": {
       "description": "Configurado nesta conta sem um cartão de configurações próprio."
     },
+    "healthConnectFolder": {
+      "name": "Health Connect de uma pasta",
+      "description": "Buscado na sua pasta WebDAV ou Nextcloud a cada seis horas. Configure e altere em Importar.",
+      "manage": "Abrir as configurações da pasta"
+    },
     "withingsViewData": "Ver suas medições",
     "whoopViewData": "Ver sua recuperação",
     "googleHealthViewData": "Ver seus passos",

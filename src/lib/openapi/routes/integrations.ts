@@ -1210,8 +1210,11 @@ const integrationEnvelopeEntry = z
         "nightscout",
         "dawarich",
         "garmin",
+        "health-connect-remote",
       ])
-      .describe("Which provider this entry describes."),
+      .describe(
+        "Which provider this entry describes. `health-connect-remote` is the scheduled Health Connect export fetched from a WebDAV or Nextcloud folder (`/api/import/health-connect-remote`): `configured` when a folder is set up, `connected` when it is also switched on. A refused user name or app password reads as `reauth_required`; the fix is a new password on that route, not an OAuth reconnect.",
+      ),
     state: integrationLedgerState.meta(legacy()),
     lastSuccessAt: isoDateTime().nullable(),
     lastAttemptAt: isoDateTime().nullable(),
@@ -1327,13 +1330,13 @@ const integrationStatusEnvelope = z
     integrations: z
       .array(integrationEnvelopeEntry)
       .describe(
-        "All nine providers, always, in the fixed order withings, whoop, google-health, polar, oura, strava, nightscout, dawarich, garmin. A provider the user has never touched still appears, with `connected: false` and the ledger state `unknown` — absence from this list never means anything, because nothing is ever absent from it.",
+        "All ten providers, always, in the fixed order withings, whoop, google-health, polar, oura, strava, nightscout, dawarich, garmin, health-connect-remote. A provider the user has never touched still appears, with `connected: false` and the ledger state `unknown` — absence from this list never means anything, because nothing is ever absent from it.",
       ),
   })
   .meta({
     id: "IntegrationStatusEnvelope",
     description:
-      "The one read behind the integrations settings surface. It carries every field the per-provider status routes carry, so a client has the choice of nine round-trips or this one; the per-provider routes remain for callers that want a single provider.",
+      "The one read behind the integrations settings surface. It carries every field the per-provider status routes carry, so a client has the choice of one round-trip per provider or this one; the per-provider routes remain for callers that want a single provider.",
   });
 
 export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
@@ -2779,10 +2782,10 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Read every integration's status in one call",
       description:
-        "The consolidated envelope behind the integrations settings surface: all nine providers, always, in a fixed order, each with the ledger core, the server-resolved liveness verdict and its own extras. Prefer this over nine per-provider round-trips. Pure read. Auth via cookie or Bearer.",
+        "The consolidated envelope behind the integrations settings surface: all ten providers, always, in a fixed order, each with the ledger core, the server-resolved liveness verdict and its own extras. Prefer this over a round-trip per provider. Pure read. Auth via cookie or Bearer.",
       responses: {
         "200": {
-          description: "All nine provider entries plus the alert threshold.",
+          description: "All ten provider entries plus the alert threshold.",
           content: {
             "application/json": {
               schema: dataEnvelope(

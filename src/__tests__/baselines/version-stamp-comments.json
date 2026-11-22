@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2841,
-  "total": 8866,
+  "total": 8863,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -2225,7 +2225,7 @@
     "lib/integrations/healthkit-type-sync.ts": 4,
     "lib/integrations/http-status-classifier.ts": 1,
     "lib/integrations/metric-freshness.ts": 1,
-    "lib/integrations/status.ts": 19,
+    "lib/integrations/status.ts": 16,
     "lib/intl/__tests__/formatter-cache.test.ts": 1,
     "lib/jobs/__tests__/apple-health-import-reconcile.test.ts": 1,
     "lib/jobs/__tests__/coach-nudge.test.ts": 3,
