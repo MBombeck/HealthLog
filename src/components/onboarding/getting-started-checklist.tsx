@@ -20,7 +20,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useAccountOnceMounted } from "@/hooks/use-auth";
+import { isFullAccount, useAccountOnceMounted } from "@/hooks/use-auth";
 import { hasOptedOutOfAi } from "@/lib/ai/capabilities/types";
 import { useTranslations } from "@/lib/i18n/context";
 import { useDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
@@ -407,7 +407,7 @@ export function GettingStartedChecklist() {
   // dashboard's snapshot query shares the cache key, so the checklist
   // almost always sees the cached value synchronously on mount and
   // never blocks UI.)
-  if (!user) return null;
+  if (!isFullAccount(user)) return null; // the seed withholds the birth date
   if (snapshotData === undefined) return null;
   if (!show) return null;
 

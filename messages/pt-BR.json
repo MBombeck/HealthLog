@@ -1505,7 +1505,7 @@
       "failedToast": "Nenhuma tomada registrada. Tente novamente"
     },
     "emptyTitle": "Nenhum medicamento ainda",
-    "emptyDescription": "Adicione medicamentos, doses e janelas de lembrete para acompanhar a adesão.",
+    "emptyDescription": "Adicione medicamentos, doses e horários para acompanhar a adesão.",
     "loadFailed": "Não foi possível carregar os medicamentos",
     "retryLoad": "Tentar novamente",
     "inactive": "Pausado",
@@ -1756,7 +1756,7 @@
         }
       },
       "courseWindow": {
-        "section": "Janela do curso",
+        "section": "Período do tratamento",
         "startsOn": {
           "label": "Começa em"
         },
@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "Que tipo de medicamento é?",
-          "subline": "Usamos isso para os modelos e análises corretos.",
+          "subline": "Opcional. Serve para escolher os modelos e as análises certos; sem escolha, o medicamento fica em “Outro”.",
           "short": "Tipo"
         },
         "step3": {
           "title": "Qual é a dose?",
-          "subline": "Um comprimido, uma inalação, uma gota, dependendo da forma.",
+          "subline": "Quanto você toma de cada vez, como na embalagem ou na receita: 5 mg ou 2 comprimidos.",
           "amountLabel": "Quantidade",
           "amountPlaceholder": "ex.: 5",
           "unitLabel": "Unidade",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "ex.: 4",
           "dosesPerUnitHint": "Quantos comprimidos ou unidades vêm em uma embalagem ou caneta nova, por ex. 28 comprimidos ou uma caneta de 4 doses. Preenche a quantidade ao registrar uma embalagem; deixe em branco se as embalagens variam.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Comprimidos ou unidades por dose",
-          "unitsPerDoseHint": "ex.: 2 comprimidos de 2 mg para uma dose de 4 mg, ou ½ comprimido para uma dose dividida"
+          "unitsPerDoseLabel": "Quantos comprimidos ou unidades formam esta dose?",
+          "unitsPerDoseHint": "ex.: 2 comprimidos de 2 mg para uma dose de 4 mg, ou ½ comprimido para uma dose dividida",
+          "packSizeToggle": "Tamanho da embalagem (opcional)"
         },
         "step4": {
           "title": "Por quanto período você está tomando?",
@@ -1875,13 +1876,14 @@
           "doseOverridePlaceholder": "ex.: meio comprimido",
           "unitsOverrideLabel": "Unidades consumidas neste horário",
           "unitsOverrideInherit": "Padrão",
-          "short": "Horários"
+          "short": "Horários",
+          "overrideToggle": "Outra dose neste horário?"
         },
         "step8": {
           "title": "Tudo pronto. O HealthLog deve lembrar você?",
           "subline": "Revise tudo abaixo antes de salvar.",
           "remindersLabel": "Lembretes ligados",
-          "remindersDescription": "Push, Telegram ou ntfy, conforme suas configurações.",
+          "remindersDescription": "Os lembretes chegam como você os configurou em Notificações: push web, Telegram ou ntfy. O app para iPhone agenda os próprios lembretes.",
           "noChannelHint": "Os lembretes precisam de um canal de notificação, e nenhum está ativo agora.",
           "noChannelHintLink": "Configurar notificações",
           "short": "Concluído"
@@ -1923,11 +1925,11 @@
         },
         "rolling": {
           "label": "Flexível a partir da última dose",
-          "description": "Deixe a próxima dose aberta. Quando você tocar 'tomada', o contador recomeça daquele momento."
+          "description": "Deixe a próxima dose aberta. Quando você tocar em 'Tomar', a contagem recomeça daquele momento."
         },
         "oneShot": {
           "label": "Dose única",
-          "description": "Uma administração, ex.: uma vacina ou um curso de antibiótico."
+          "description": "Uma administração, ex.: uma vacina ou uma injeção no consultório."
         },
         "asNeeded": {
           "label": "Conforme necessário",
@@ -1954,7 +1956,9 @@
         "times": "às {times}",
         "startsOn": "Começa: {date}",
         "endsOn": "Termina: {date}",
-        "noEndDate": "Sem data de fim"
+        "noEndDate": "Sem data de fim",
+        "windowLine": "{time}: no horário até {onTime}, atrasada até {late}, depois perdida.",
+        "windowDays": "Uma dose conta como no horário no seu dia, como atrasada até {days} dias depois e então como perdida."
       },
       "compose": {
         "scheduleIndex": "Cronograma {n} de {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Não foi possível salvar o medicamento. Tente novamente."
+      },
+      "blocked": {
+        "name": "Digite um nome para continuar.",
+        "amount": "Digite a quantidade para continuar.",
+        "unitsPerDose": "Escolha quantos comprimidos ou unidades formam a dose.",
+        "start": "Escolha uma data de início para continuar.",
+        "endBeforeStart": "A data de término precisa ser no dia do início ou depois.",
+        "mode": "Escolha com que frequência você toma.",
+        "weekdays": "Escolha pelo menos um dia da semana.",
+        "interval": "Informe quantas semanas há entre as doses.",
+        "dayOfMonth": "Escolha um dia do mês entre 1 e 31.",
+        "rollingDays": "Digite um número de dias entre 1 e 365.",
+        "time": "Adicione pelo menos um horário.",
+        "unknown": "Ainda falta algo nesta etapa."
       }
     },
     "doseStrength": {
@@ -2154,11 +2172,11 @@
           "openButton": "Ajustar"
         },
         "grace": {
-          "label": "Janela de lembrete",
+          "label": "Duração dos lembretes",
           "appliesToAllNote": "Aplica-se a todos os cronogramas deste medicamento.",
           "unit": "minutos",
-          "saved": "Janela de lembrete salva",
-          "failed": "Não foi possível salvar a janela de lembrete.",
+          "saved": "Duração dos lembretes salva",
+          "failed": "Não foi possível salvar a duração dos lembretes.",
           "description": "Por quanto tempo os lembretes continuam após a hora da dose, antes do lembrete de atraso."
         },
         "codes": {
@@ -2370,8 +2388,8 @@
         "timesTitle": "Horários das doses",
         "timesNote": "Ajuste o horário e a janela de pontualidade de cada dose. A frequência (diária, semanal…) é editada no editor em Avançado.",
         "scheduleLabel": "Cronograma {index}",
-        "fullEditNote": "Frequência, classe de tratamento e janela do curso são editadas no editor em Avançado → Ciclo de vida.",
-        "graceEcho": "Janela de lembrete: {minutes} minutos",
+        "fullEditNote": "Frequência, classe de tratamento e período do tratamento são editadas no editor em Avançado → Ciclo de vida.",
+        "graceEcho": "Duração dos lembretes: {minutes} minutos",
         "reminderTitle": "Lembrete",
         "manageChannels": "Gerenciar canais de notificação",
         "history": {
@@ -2685,13 +2703,13 @@
       "countsForLate": "Conta para a dose das {time}, como atrasada.",
       "countNearLabel": "Contar para a dose das {time}",
       "skips": "Pula a dose das {time}.",
-      "extraDose": "Registrada como dose extra, fora do cronograma.",
+      "extraDose": "Registrada como dose extra, fora do cronograma. Ela fica no histórico e não conta para a adesão.",
       "scheduleLoading": "Verificando as doses previstas para esse dia…",
       "scheduleUnavailable": "Não foi possível ler o cronograma desse dia, então ela é registrada como dose extra.",
       "noMedications": "Adicione um medicamento primeiro; depois você pode registrar tomadas dele.",
       "saveError": "Não foi possível salvar a tomada. Tente de novo"
     },
-    "phaseGreenHint": "Primeiro lembrete, este tempo antes do fim da janela de lembrete.",
+    "phaseGreenHint": "Primeiro lembrete, este tempo antes do fim da janela.",
     "phaseYellowHint": "Outro lembrete, este tempo antes do fim da janela.",
     "phaseOrangeHint": "Um lembrete de que a dose está atrasada, este tempo depois do fim da janela.",
     "phaseRedHint": "Passado este tempo após a janela, a dose conta como perdida.",
@@ -2746,6 +2764,7 @@
     "days7Title": "Últimos 7 dias",
     "days30Label": "30d",
     "daysNLabel": "{days}d",
+    "daysNAria": "Últimos {days} dias",
     "days30Title": "Últimos 30 dias",
     "days90Label": "90d",
     "days90Title": "Últimos 90 dias",
@@ -5380,7 +5399,9 @@
       "importCta": "Importar histórico existente",
       "modulesCta": "Escolher seus módulos",
       "aiOptional": "A IA é opcional. Tudo funciona também sem ela.",
-      "aiSetupCta": "Configurar IA"
+      "aiSetupCta": "Configurar IA",
+      "relayOptional": "O app para iPhone pode receber notificações deste servidor pelo relay de push do HealthLog, opcional e desligado até você ativar.",
+      "relaySetupCta": "Configurações do relay de push"
     },
     "welcomeBack": {
       "title": "Bem-vindo de volta",
@@ -5452,7 +5473,7 @@
       },
       "medication": {
         "title": "Você toma medicamentos em um cronograma?",
-        "body": "Um cronograma liga o módulo de medicamentos e os lembretes.",
+        "body": "Um cronograma liga o módulo de medicamentos. Os lembretes podem ser configurados quando você adicionar o primeiro medicamento.",
         "options": {
           "yes": "Sim",
           "no": "Não",
@@ -6372,7 +6393,8 @@
               "httpsRequired": "Use um endereço https://. Com http://, a senha seria enviada sem criptografia.",
               "passwordRequired": "Informe a senha uma vez ao configurar a pasta.",
               "saveFailed": "Não foi possível salvar a pasta. Confira o endereço e tente de novo.",
-              "fetchFailed": "Não foi possível iniciar a busca. Tente mais tarde."
+              "fetchFailed": "Não foi possível iniciar a busca. Tente mais tarde.",
+              "removeFailed": "Não foi possível remover a pasta. Tente de novo."
             },
             "title": "Health Connect de uma pasta",
             "description": "O HealthLog busca a exportação que o Health Connect salva de forma programada numa pasta WebDAV ou Nextcloud e importa o que for novo.",
@@ -7328,6 +7350,11 @@
     },
     "integrationFallback": {
       "description": "Configurado nesta conta sem um cartão de configurações próprio."
+    },
+    "healthConnectFolder": {
+      "name": "Health Connect de uma pasta",
+      "description": "Buscado na sua pasta WebDAV ou Nextcloud a cada seis horas. Configure e altere em Importar.",
+      "manage": "Abrir as configurações da pasta"
     },
     "withingsViewData": "Ver suas medições",
     "whoopViewData": "Ver sua recuperação",
@@ -9333,8 +9360,19 @@
       "title": "Relay de push do HealthLog",
       "description": "Permite que o app da App Store receba notificações deste servidor pelo relay do projeto HealthLog.",
       "whatItSees": "Cada notificação é criptografada neste servidor para o dispositivo de destino, então o relay não consegue lê-la. Ele vê quando este servidor envia algo a um dispositivo.",
+      "seesSummary": "O que o relay vê",
+      "seesHeading": "O relay vê",
+      "seesWhen": "que este servidor envia algo a um dispositivo, quando e de que tipo: um alerta, uma sincronização silenciosa ou o fim de uma Atividade ao Vivo",
+      "seesToken": "o token push do dispositivo durante a entrega (guardado só como hash com chave), e o id de instância deste servidor",
+      "seesAddress": "o endereço deste servidor enquanto está conectado, sem guardar nem registrar",
+      "seesConsent": "um hash da chave de vínculo do dispositivo, e a versão e o dia do consentimento da pessoa",
+      "notSeesHeading": "Ele não vê",
+      "notSeesContent": "o que uma notificação diz: nomes de medicamentos, doses, medições, notas, nomes de conta ou qualquer outra coisa dentro dela",
+      "seesTiming": "O momento ainda pode dizer algo: se você registra uma dose em um dispositivo e outro dispositivo seu recebe a confirmação, o relay e a Apple veem que algo aconteceu naquele momento.",
+      "seesSource": "O aviso de privacidade completo do relay",
       "toggleLabel": "Oferecer o relay de push do HealthLog aos usuários deste servidor",
       "toggleDescription": "Desligado até você ativar. Depois, cada pessoa decide no próprio app.",
+      "toggleDescriptionOn": "Ligado. Cada pessoa decide no próprio app se os dispositivos dela o usam.",
       "devices": "{count} dispositivos vinculados",
       "since": "desde {time}",
       "docs": "Saiba mais",
@@ -9342,7 +9380,8 @@
       "terms": "Termos do relay",
       "dialogTitle": "Oferecer o relay de push do HealthLog",
       "dialogBody": "O relay é operado pelo mantenedor do projeto HealthLog. Cada notificação é criptografada neste servidor para o seu dispositivo; o relay não consegue lê-la, mas vê que este servidor envia algo a um dispositivo, e quando. Depois de ativar, cada pessoa neste servidor vê uma oferta no app uma vez e decide por si. Os lembretes ficam nos dispositivos. O relay é para uso privado e doméstico e não é um serviço médico.",
-      "acceptTerms": "Aceito os termos do relay e li o aviso de privacidade.",
+      "acceptTerms": "Aceito os termos do relay.",
+      "readPrivacy": "Li o aviso de privacidade do relay.",
       "householdOnly": "Mantenho este servidor de forma privada para mim ou minha família.",
       "enable": "Ativar",
       "cancel": "Cancelar",
@@ -9795,8 +9834,8 @@
     "eventMedicationIntakeSyncDesc": "Atualização entre dispositivos quando uma dose é registrada, tomada ou pulada.",
     "eventDailyBriefing": "Resumo diário",
     "eventDailyBriefingDesc": "Um resumo calmo pela manhã da leitura do seu dia. Desativado até você ativá-lo.",
-    "eventSecurityAlert": "Novo login",
-    "eventSecurityAlertDesc": "Enviado quando sua conta é usada em um dispositivo ou de um lugar que nunca vimos antes.",
+    "eventSecurityAlert": "Segurança da conta",
+    "eventSecurityAlertDesc": "Enviado em um login de um dispositivo ou lugar desconhecido, quando uma chave de acesso é adicionada ou removida, quando um token de acesso é revogado e quando um dispositivo é desconectado porque seu token de login foi usado duas vezes.",
     "eventSharedRecordIntake": "Alguém com quem você compartilhou seu registro marca uma dose",
     "eventSharedRecordIntakeDesc": "Enviado apenas quando outra pessoa faz isso, nunca para suas próprias entradas.",
     "eventMedicationIntakeRecorded": "Confirmar doses tomadas em outros dispositivos",
@@ -10053,7 +10092,7 @@
     "noActiveMedications": "Nenhum medicamento ativo encontrado.",
     "whichMedication": "<b>Qual medicamento você tomou?</b>",
     "cancelButton": "Cancelar",
-    "askMedicationName": "Especifique um medicamento, por exemplo <b>tomado Ramipril</b>.",
+    "askMedicationName": "Especifique um medicamento, por exemplo <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Medicamento não encontrado. Envie o nome exatamente como está no HealthLog.",
     "helpHeader": "<b>Comandos disponíveis:</b>",
     "helpBody": "/help: mostrar esta ajuda\n/add: registrar uma tomada\n/start: iniciar o bot\n\n<b>Comandos de texto:</b>\ntaken &lt;nome&gt;: confirmar uma tomada\n\n<b>Botões nos lembretes:</b>\n• ✅ Tomar: registrar a tomada\n• 🕐 Lembrar mais tarde: adiar o lembrete, pelo tempo definido nos ajustes\n• ⏭ Pular: pular a tomada\n• Deixar como perdida: deixar uma tomada perdida como perdida",
@@ -13337,7 +13376,7 @@
       }
     },
     "action": {
-      "logDose": "Registrar dose",
+      "logDose": "Tomar",
       "reconnect": "Reconectar",
       "viewCheckups": "Ver checks",
       "viewAppointment": "Ver consulta",
@@ -15590,6 +15629,8 @@
     "link": {
       "validUntil": "Somente leitura. Este link funciona até {date}.",
       "readOnly": "Somente leitura. Compartilhado pela pessoa, que pode revogá-lo a qualquer momento.",
+      "missTitle": "Este link para o cartão de emergência não funciona",
+      "missBody": "O link pode ter sido revogado ou ter expirado. A pessoa dona do cartão pode criar um novo.",
       "title": "Link QR",
       "loadError": "Não foi possível carregar o status do link.",
       "disclosure": "Quem escanear o código vê os itens marcados, sem entrar. Você pode definir um fim para o link e revogá-lo a qualquer momento; cada abertura fica registrada para você.",

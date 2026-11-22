@@ -538,7 +538,7 @@
       "reasonFit": "Nie można obliczyć",
       "excludedAdherence": "Pominięto {count} dni po rozpoczęciu (przyjęto mniej niż {floor}% dawek)",
       "excludedNotTaking": "Pominięto {count} dni (lek wstrzymany lub przerwa między kuracjami)",
-      "notTracked": "przyjmowanie nie jest rejestrowane, więc nie pominięto dni z powodu opuszczonych dawek",
+      "notTracked": "przyjmowanie nie jest rejestrowane, więc nie pominięto dni z powodu nieprzyjętych dawek",
       "endDoseChange": "okres kończy się {date}, przed pierwszą zmianą dawki",
       "days": "{before} dni przed, {after} dni po rozpoczęciu, pominięto {excluded} dni",
       "method": "Regresja segmentowa na wartościach dziennych od 90 dni przed do najwyżej 180 dni po rozpoczęciu, przedziały Neweya-Westa. Pominięto dni po rozpoczęciu, w których w ciągu poprzednich 14 dni przyjęto mniej niż 80% dawek. Opisuje związek w czasie, a nie udowodnione działanie leku.",
@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "Jaki to rodzaj leku?",
-          "subline": "Wykorzystujemy to do odpowiednich szablonów i analiz.",
+          "subline": "Opcjonalnie. Pozwala dobrać szablony i analizy; bez wyboru lek trafi do kategorii „Inne”.",
           "short": "Rodzaj"
         },
         "step3": {
           "title": "Jaka jest dawka?",
-          "subline": "Tabletka, wziew, kropla: w zależności od formy.",
+          "subline": "Ile przyjmujesz za każdym razem, jak na opakowaniu lub recepcie: 5 mg albo 2 tabletki.",
           "amountLabel": "Ilość",
           "amountPlaceholder": "np. 5",
           "unitLabel": "Jednostka",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "np. 4",
           "dosesPerUnitHint": "Ile tabletek lub jednostek zawiera nowe opakowanie lub wstrzykiwacz, np. 28 tabletek albo wstrzykiwacz na 4 dawki. Uzupełnia ilość przy dodawaniu opakowania; zostaw puste, jeśli opakowania się różnią.",
           "short": "Dawka",
-          "unitsPerDoseLabel": "Tabletki lub jednostki na dawkę",
-          "unitsPerDoseHint": "np. 2 tabletki po 2 mg na dawkę 4 mg lub ½ tabletki przy dzielonej dawce"
+          "unitsPerDoseLabel": "Ile tabletek lub jednostek składa się na tę dawkę?",
+          "unitsPerDoseHint": "np. 2 tabletki po 2 mg na dawkę 4 mg lub ½ tabletki przy dzielonej dawce",
+          "packSizeToggle": "Wielkość opakowania (opcjonalnie)"
         },
         "step4": {
           "title": "Przez jaki okres go przyjmujesz?",
@@ -1875,13 +1876,14 @@
           "doseOverridePlaceholder": "np. pół tabletki",
           "unitsOverrideLabel": "Jednostki zużyte o tej porze",
           "unitsOverrideInherit": "Domyślnie",
-          "short": "Godziny"
+          "short": "Godziny",
+          "overrideToggle": "Inna dawka o tej porze?"
         },
         "step8": {
           "title": "Gotowe. Czy HealthLog ma Ci przypominać?",
           "subline": "Sprawdź wszystko poniżej przed zapisaniem.",
           "remindersLabel": "Przypomnienia włączone",
-          "remindersDescription": "Push, Telegram lub ntfy, w zależności od ustawień.",
+          "remindersDescription": "Przypomnienia docierają tak, jak ustawisz je w Powiadomieniach: web push, Telegram lub ntfy. Aplikacja na iPhone’a sama planuje swoje przypomnienia.",
           "noChannelHint": "Przypomnienia wymagają kanału powiadomień, a obecnie żaden nie jest aktywny.",
           "noChannelHintLink": "Skonfiguruj powiadomienia",
           "short": "Gotowe"
@@ -1923,11 +1925,11 @@
         },
         "rolling": {
           "label": "Elastycznie od ostatniej dawki",
-          "description": "Pozostaw kolejną dawkę otwartą. Po naciśnięciu „przyjęto” licznik startuje od nowa od tego momentu."
+          "description": "Pozostaw kolejną dawkę otwartą. Po naciśnięciu „Przyjmij” liczenie zaczyna się od nowa od tego momentu."
         },
         "oneShot": {
           "label": "Jednorazowo",
-          "description": "Jednorazowe podanie, np. szczepionka lub kuracja antybiotykowa."
+          "description": "Jednorazowe podanie, np. szczepionka lub zastrzyk u lekarza."
         },
         "asNeeded": {
           "label": "W razie potrzeby",
@@ -1954,7 +1956,9 @@
         "times": "o {times}",
         "startsOn": "Początek: {date}",
         "endsOn": "Koniec: {date}",
-        "noEndDate": "Brak daty zakończenia"
+        "noEndDate": "Brak daty zakończenia",
+        "windowLine": "{time}: punktualnie do {onTime}, z opóźnieniem do {late}, potem nieprzyjęta.",
+        "windowDays": "Dawka liczy się jako punktualna w swoim dniu, jako opóźniona do {days} dni później, a potem jako nieprzyjęta."
       },
       "compose": {
         "scheduleIndex": "Harmonogram {n} z {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Nie udało się zapisać leku. Spróbuj ponownie."
+      },
+      "blocked": {
+        "name": "Wpisz nazwę, aby kontynuować.",
+        "amount": "Wpisz ilość, aby kontynuować.",
+        "unitsPerDose": "Wybierz, ile tabletek lub jednostek składa się na dawkę.",
+        "start": "Wybierz datę rozpoczęcia, aby kontynuować.",
+        "endBeforeStart": "Data zakończenia musi przypadać w dniu rozpoczęcia lub później.",
+        "mode": "Wybierz, jak często go przyjmujesz.",
+        "weekdays": "Wybierz co najmniej jeden dzień tygodnia.",
+        "interval": "Podaj, ile tygodni dzieli dawki.",
+        "dayOfMonth": "Wybierz dzień miesiąca od 1 do 31.",
+        "rollingDays": "Wpisz liczbę dni od 1 do 365.",
+        "time": "Dodaj co najmniej jedną godzinę.",
+        "unknown": "W tym kroku czegoś jeszcze brakuje."
       }
     },
     "doseStrength": {
@@ -2154,11 +2172,11 @@
           "openButton": "Dostosuj"
         },
         "grace": {
-          "label": "Okno przypomnienia",
+          "label": "Czas przypomnień",
           "appliesToAllNote": "Dotyczy wszystkich harmonogramów tego leku.",
           "unit": "minut",
-          "saved": "Okno przypomnienia zapisane",
-          "failed": "Nie udało się zapisać okna przypomnienia.",
+          "saved": "Czas przypomnień zapisany",
+          "failed": "Nie udało się zapisać czasu przypomnień.",
           "description": "Jak długo po porze dawki przychodzą przypomnienia, zanim przyjdzie to o przekroczeniu terminu."
         },
         "codes": {
@@ -2370,8 +2388,8 @@
         "timesTitle": "Godziny przyjęcia",
         "timesNote": "Dostosuj godzinę i okno punktualności każdej dawki. Częstotliwość (codziennie, co tydzień…) zmieniasz w edytorze w sekcji Zaawansowane.",
         "scheduleLabel": "Harmonogram {index}",
-        "fullEditNote": "Częstotliwość, klasę leczenia i okno kuracji edytujesz w edytorze w sekcji Zaawansowane → Cykl życia.",
-        "graceEcho": "Okno przypomnienia: {minutes} minut",
+        "fullEditNote": "Częstotliwość, klasę leczenia i okres leczenia edytujesz w edytorze w sekcji Zaawansowane → Cykl życia.",
+        "graceEcho": "Czas przypomnień: {minutes} minut",
         "reminderTitle": "Przypomnienie",
         "manageChannels": "Zarządzaj kanałami powiadomień",
         "history": {
@@ -2509,7 +2527,7 @@
         "basis": "Na podstawie {before} dni przed i {after} dni po rozpoczęciu (od {from} do {to}).",
         "excludedAdherence": "Pominięto {count} dni po rozpoczęciu, bo w ciągu {lookback} dni przed nimi przyjęto mniej niż {floor}% dawek.",
         "excludedNotTaking": "Pominięto {count} dni, bo lek był wstrzymany albo przypadały między kuracjami.",
-        "notTracked": "Przyjmowanie tego leku nie jest rejestrowane, więc nie pominięto żadnych dni z powodu opuszczonych dawek.",
+        "notTracked": "Przyjmowanie tego leku nie jest rejestrowane, więc nie pominięto żadnych dni z powodu nieprzyjętych dawek.",
         "endDoseChange": "Okres kończy się przed pierwszą zmianą dawki, więc opisuje dawkę początkową.",
         "confoundersTitle": "Inne zmiany leków w tym okresie, których ten widok nie potrafi oddzielić od tego leku:",
         "confounderStarted": "{name} rozpoczęty {date}",
@@ -2685,13 +2703,13 @@
       "countsForLate": "Liczy się jako dawka z {time}, z opóźnieniem.",
       "countNearLabel": "Policz jako dawkę z {time}",
       "skips": "Pomija dawkę z {time}.",
-      "extraDose": "Zapisana jako dodatkowa dawka, poza planem.",
+      "extraDose": "Zapisana jako dodatkowa dawka, poza planem. Zostaje w historii i nie wlicza się do przestrzegania planu.",
       "scheduleLoading": "Sprawdzanie dawek zaplanowanych na ten dzień…",
       "scheduleUnavailable": "Nie udało się odczytać planu na ten dzień, więc zostanie zapisana jako dodatkowa dawka.",
       "noMedications": "Najpierw dodaj lek, a potem będziesz mógł rejestrować jego przyjęcia.",
       "saveError": "Nie udało się zapisać przyjęcia. Spróbuj ponownie"
     },
-    "phaseGreenHint": "Pierwsze przypomnienie, tyle przed końcem okna przypomnień.",
+    "phaseGreenHint": "Pierwsze przypomnienie, tyle przed końcem okna.",
     "phaseYellowHint": "Kolejne przypomnienie, tyle przed końcem okna.",
     "phaseOrangeHint": "Przypomnienie, że dawka jest po terminie, tyle po końcu okna.",
     "phaseRedHint": "Po tylu od końca okna dawka liczy się jako nieprzyjęta.",
@@ -2746,6 +2764,7 @@
     "days7Title": "Ostatnie 7 dni",
     "days30Label": "30 dni",
     "daysNLabel": "{days} dni",
+    "daysNAria": "Ostatnie {days} dni",
     "days30Title": "Ostatnie 30 dni",
     "days90Label": "90 dni",
     "days90Title": "Ostatnie 90 dni",
@@ -5380,7 +5399,9 @@
       "importCta": "Importuj istniejącą historię",
       "modulesCta": "Wybierz swoje moduły",
       "aiOptional": "AI jest opcjonalne. Wszystko działa także bez niego.",
-      "aiSetupCta": "Skonfiguruj AI"
+      "aiSetupCta": "Skonfiguruj AI",
+      "relayOptional": "Aplikacja na iPhone’a może dostawać powiadomienia z tego serwera przez opcjonalny przekaźnik push HealthLog, wyłączony, dopóki go nie włączysz.",
+      "relaySetupCta": "Ustawienia przekaźnika push"
     },
     "welcomeBack": {
       "title": "Witaj ponownie",
@@ -5452,7 +5473,7 @@
       },
       "medication": {
         "title": "Czy bierzesz leki według stałego harmonogramu?",
-        "body": "Harmonogram włącza moduł leków i przypomnienia.",
+        "body": "Harmonogram włącza moduł leków. Przypomnienia ustawisz, gdy dodasz pierwszy lek.",
         "options": {
           "yes": "Tak",
           "no": "Nie",
@@ -6372,7 +6393,8 @@
               "httpsRequired": "Użyj adresu https://. Przez http:// hasło zostałoby wysłane bez szyfrowania.",
               "passwordRequired": "Wpisz hasło raz przy konfiguracji folderu.",
               "saveFailed": "Nie udało się zapisać folderu. Sprawdź adres i spróbuj ponownie.",
-              "fetchFailed": "Nie udało się rozpocząć pobierania. Spróbuj później."
+              "fetchFailed": "Nie udało się rozpocząć pobierania. Spróbuj później.",
+              "removeFailed": "Nie udało się usunąć folderu. Spróbuj ponownie."
             },
             "title": "Health Connect z folderu",
             "description": "HealthLog pobiera eksport, który Health Connect zapisuje według harmonogramu w folderze WebDAV lub Nextcloud, i importuje to, co nowe.",
@@ -7328,6 +7350,11 @@
     },
     "integrationFallback": {
       "description": "Skonfigurowane na tym koncie, ale bez własnej karty ustawień."
+    },
+    "healthConnectFolder": {
+      "name": "Health Connect z folderu",
+      "description": "Pobierane z folderu WebDAV lub Nextcloud co sześć godzin. Konfiguracja i zmiany w sekcji Import.",
+      "manage": "Otwórz ustawienia folderu"
     },
     "withingsViewData": "Zobacz swoje pomiary",
     "whoopViewData": "Zobacz swoją regenerację",
@@ -9333,8 +9360,19 @@
       "title": "Przekaźnik push HealthLog",
       "description": "Pozwala aplikacji z App Store odbierać powiadomienia z tego serwera przez przekaźnik projektu HealthLog.",
       "whatItSees": "Każde powiadomienie jest szyfrowane na tym serwerze dla urządzenia docelowego, więc przekaźnik nie może go odczytać. Widzi, kiedy ten serwer coś wysyła do urządzenia.",
+      "seesSummary": "Co widzi przekaźnik",
+      "seesHeading": "Przekaźnik widzi",
+      "seesWhen": "że ten serwer coś wysyła do urządzenia, kiedy i jakiego rodzaju: alert, cichą synchronizację albo koniec aktywności na żywo",
+      "seesToken": "token push urządzenia podczas doręczania (przechowywany tylko jako hash z kluczem) oraz identyfikator instancji tego serwera",
+      "seesAddress": "adres tego serwera, gdy jest połączony, bez zapisywania i bez logowania",
+      "seesConsent": "hash klucza powiązania urządzenia oraz wersję i dzień zgody danej osoby",
+      "notSeesHeading": "Nie widzi",
+      "notSeesContent": "treści powiadomienia: nazw leków, dawek, pomiarów, notatek, nazw kont ani niczego innego, co zawiera",
+      "seesTiming": "Sam moment może jednak coś zdradzić: gdy zapiszesz dawkę na jednym urządzeniu, a inne Twoje urządzenie dostanie potwierdzenie, przekaźnik i Apple widzą, że w tej chwili coś się stało.",
+      "seesSource": "Pełna informacja o prywatności przekaźnika",
       "toggleLabel": "Udostępnij przekaźnik push HealthLog użytkownikom tego serwera",
       "toggleDescription": "Wyłączone, dopóki go nie włączysz. Potem każda osoba decyduje we własnej aplikacji.",
+      "toggleDescriptionOn": "Włączone. Każda osoba decyduje we własnej aplikacji, czy jej urządzenia z niego korzystają.",
       "devices": "Powiązane urządzenia: {count}",
       "since": "od {time}",
       "docs": "Dowiedz się więcej",
@@ -9342,7 +9380,8 @@
       "terms": "Warunki przekaźnika",
       "dialogTitle": "Udostępnij przekaźnik push HealthLog",
       "dialogBody": "Przekaźnik prowadzi opiekun projektu HealthLog. Każde powiadomienie jest szyfrowane na tym serwerze dla swojego urządzenia; przekaźnik nie może go odczytać, ale widzi, że ten serwer coś wysyła do urządzenia, i kiedy. Po włączeniu każda osoba na tym serwerze raz zobaczy propozycję w swojej aplikacji i sama zdecyduje. Przypomnienia zostają na urządzeniach. Przekaźnik służy do użytku prywatnego i domowego i nie jest usługą medyczną.",
-      "acceptTerms": "Akceptuję warunki przekaźnika i przeczytałem informację o prywatności.",
+      "acceptTerms": "Akceptuję warunki przekaźnika.",
+      "readPrivacy": "Zapoznałem(-am) się z informacją o prywatności przekaźnika.",
       "householdOnly": "Prowadzę ten serwer prywatnie dla siebie lub mojego gospodarstwa domowego.",
       "enable": "Włącz",
       "cancel": "Anuluj",
@@ -9795,8 +9834,8 @@
     "eventMedicationIntakeSyncDesc": "Aktualizacja między urządzeniami, gdy dawka zostanie zapisana, przyjęta lub pominięta.",
     "eventDailyBriefing": "Codzienne podsumowanie",
     "eventDailyBriefingDesc": "Spokojne poranne podsumowanie Twojego dnia. Wyłączone, dopóki go nie włączysz.",
-    "eventSecurityAlert": "Nowe logowanie",
-    "eventSecurityAlertDesc": "Wysyłane, gdy Twoje konto zostanie użyte na nieznanym urządzeniu lub z nieznanego miejsca.",
+    "eventSecurityAlert": "Bezpieczeństwo konta",
+    "eventSecurityAlertDesc": "Wysyłane przy logowaniu z nieznanego urządzenia lub miejsca, po dodaniu lub usunięciu klucza dostępu, po unieważnieniu tokenu dostępu oraz gdy urządzenie zostanie wylogowane, bo jego token logowania użyto dwa razy.",
     "eventSharedRecordIntake": "Ktoś z dostępem oznacza dawkę",
     "eventSharedRecordIntakeDesc": "Wysyłane tylko wtedy, gdy robi to inna osoba, nigdy przy Twoich własnych wpisach.",
     "eventMedicationIntakeRecorded": "Potwierdzaj dawki przyjęte na innych urządzeniach",
@@ -10053,7 +10092,7 @@
     "noActiveMedications": "Nie znaleziono aktywnych leków.",
     "whichMedication": "<b>Który lek został przyjęty?</b>",
     "cancelButton": "Anuluj",
-    "askMedicationName": "Podaj lek, np. <b>przyjęty Ramipril</b>.",
+    "askMedicationName": "Podaj lek, np. <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Nie znaleziono leku. Wyślij nazwę dokładnie tak, jak w HealthLog.",
     "helpHeader": "<b>Dostępne polecenia:</b>",
     "helpBody": "/help: pokaż tę pomoc\n/add: zapisz przyjęcie\n/start: uruchom bota\n\n<b>Polecenia tekstowe:</b>\ntaken &lt;nazwa&gt;: potwierdź przyjęcie\n\n<b>Przyciski w przypomnieniach:</b>\n• ✅ Przyjmij: zapisz przyjęcie\n• 🕐 Przypomnij później: odłóż przypomnienie o czas ustawiony w ustawieniach\n• ⏭ Pomiń: pomiń dawkę\n• Zostaw jako nieprzyjęte: zostaw nieprzyjętą dawkę jako nieprzyjętą",
@@ -13337,7 +13376,7 @@
       }
     },
     "action": {
-      "logDose": "Zapisz dawkę",
+      "logDose": "Przyjmij",
       "reconnect": "Połącz ponownie",
       "viewCheckups": "Zobacz badania",
       "viewAppointment": "Zobacz wizytę",
@@ -15265,7 +15304,7 @@
       "triggersTitle": "Podejrzewane czynniki wyzwalające",
       "triggersNote": "Wskazane przez osobę lub opiekuna przy zapisie; nie są to ustalone przyczyny.",
       "overlaysTitle": "Zapisane w tym samym czasie",
-      "overlayMissedDose": "{followed} z {of} napadów wystąpiło w ciągu 48 godzin po pominiętej lub opuszczonej zaplanowanej dawce.",
+      "overlayMissedDose": "{followed} z {of} napadów wystąpiło w ciągu 48 godzin po nieprzyjętej lub pominiętej zaplanowanej dawce.",
       "overlayIllness": "Napady w trakcie jednego z {episodes} zapisanych epizodów chorobowych: {during}.",
       "overlaySleep": "Zapisany sen w nocy przed dniem z napadem: średnio {before} h (noce: {nightsBefore}); pozostałe noce: {other} h (noce: {nightsOther}).",
       "overlayCycleDays": "Napady według dnia cyklu (dzień: liczba): {list}.",
@@ -15590,6 +15629,8 @@
     "link": {
       "validUntil": "Tylko do odczytu. Ten link działa do {date}.",
       "readOnly": "Tylko do odczytu. Udostępnione przez właściciela, który może je w każdej chwili cofnąć.",
+      "missTitle": "Ten link do karty ratunkowej nie działa",
+      "missBody": "Link mógł zostać cofnięty lub wygasnąć. Osoba, do której należy karta, może utworzyć nowy.",
       "title": "Link QR",
       "loadError": "Nie udało się wczytać stanu linku.",
       "disclosure": "Każdy, kto zeskanuje kod, zobaczy zaznaczone pozycje bez logowania. Możesz ustawić koniec ważności i w każdej chwili cofnąć link; każde otwarcie jest zapisywane.",

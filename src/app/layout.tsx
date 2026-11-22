@@ -10,7 +10,8 @@ import { AuthShell } from "@/components/layout/auth-shell";
 import { AuthMeSeed } from "@/components/layout/auth-me-seed";
 import { getSession } from "@/lib/auth/session";
 import { buildAuthMePayload } from "@/lib/auth/me-payload";
-import type { MePayload } from "@/hooks/use-auth";
+import { toAccountSeed, type AccountSeed } from "@/lib/auth/account-seed";
+import { ACCOUNT_SEED_REQUEST_HEADER } from "@/lib/http/page-cache-headers";
 import { MonitoringBootstrap } from "@/components/monitoring/bootstrap";
 import { getPublicMonitoringSettings } from "@/lib/monitoring-settings";
 import { WebVitalsReporter } from "@/components/monitoring/web-vitals-reporter";
@@ -86,17 +87,21 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const requestHeaders = await headers();
   const nonce =
     process.env.NODE_ENV === "production"
-      ? ((await headers()).get("x-nonce") ?? undefined)
+      ? (requestHeaders.get("x-nonce") ?? undefined)
       : undefined;
+  // The proxy marks the session-gated pages; a public page (sign-in, legal,
+  // the token views) carries no account in its document at all.
+  const seedAllowed = requestHeaders.get(ACCOUNT_SEED_REQUEST_HEADER) === "1";
 
   // The monitoring switches ride the document render instead of a request
   // from every page load; the key-mismatch page reads no data.
   const [initialLocale, monitoring, me] = await Promise.all([
     resolveInitialLocale(),
     isKeyMismatch() ? null : getPublicMonitoringSettings(),
-    isKeyMismatch() ? null : serverAccount(),
+    isKeyMismatch() || !seedAllowed ? null : serverAccount(),
   ]);
 
   return (
@@ -176,12 +181,13 @@ export default async function RootLayout({
 }
 
 /**
- * The signed-in account's `/api/auth/me` payload, built by the route's own
- * builder, in its wire shape (JSON semantics: dates as ISO strings), or null
+ * The signed-in account's seed: the `/api/auth/me` payload built by the
+ * route's own builder, in its wire shape (JSON semantics: dates as ISO
+ * strings), cut down to what the first paint reads (`toAccountSeed`), or null
  * when there is no session or it cannot be built. An accelerator only: on
  * null the shell fetches the payload itself, exactly as before.
  */
-async function serverAccount(): Promise<MePayload | null> {
+async function serverAccount(): Promise<AccountSeed | null> {
   // The server-prefetch escape hatch covers the account too: with
   // `DASHBOARD_SSR_PREFETCH=false` every page falls back to pure client
   // fetching, the shell included. The e2e server sets it so Playwright route
@@ -194,7 +200,7 @@ async function serverAccount(): Promise<MePayload | null> {
       ...session,
       authMethod: "cookie",
     });
-    return JSON.parse(JSON.stringify(payload)) as MePayload;
+    return toAccountSeed(JSON.parse(JSON.stringify(payload)));
   } catch {
     return null;
   }

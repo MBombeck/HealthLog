@@ -183,6 +183,7 @@ export async function loadConnectionFacts(
         nightscoutUrlEncrypted: true,
         dawarichUrlEncrypted: true,
         garminApiKeyEncrypted: true,
+        healthConnectRemoteSource: { select: { enabled: true } },
         healthKitLastSyncedAt: true,
       },
     }),
@@ -235,8 +236,8 @@ export async function loadConnectionFacts(
     nightscout: !!dbUser?.nightscoutUrlEncrypted,
     dawarich: !!dbUser?.dawarichUrlEncrypted,
     garmin: !!dbUser?.garminApiKeyEncrypted,
-    // Apple Health has nothing to connect; it is "connected" once the phone
-    // has delivered anything (a live batch, or rows from the export import).
+    "health-connect-remote": !!dbUser?.healthConnectRemoteSource?.enabled,
+    // Apple Health is "connected" once the phone has delivered anything.
     "apple-health": false,
   };
   const legacyLastSyncedAt: Partial<Record<ConnectionKey, Date | null>> = {
@@ -245,8 +246,7 @@ export async function loadConnectionFacts(
     "google-health": googleHealthConn?.lastSyncedAt ?? null,
   };
 
-  // Newest data per wanted, connected source. Apple Health is probed even
-  // before it counts as connected, because delivered data is what connects it.
+  // Newest data per connected source; Apple Health's data is what connects it.
   const lastData = new Map<ConnectionKey, Date | null>();
   await Promise.all(
     [...wanted].map(async (key) => {

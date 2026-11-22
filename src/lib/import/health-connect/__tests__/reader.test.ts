@@ -49,9 +49,11 @@ afterEach(() => {
   }
 });
 
-function refusal(fn: () => unknown): HealthConnectImportError {
+async function refusal(
+  fn: () => Promise<unknown>,
+): Promise<HealthConnectImportError> {
   try {
-    fn();
+    await fn();
   } catch (err) {
     if (err instanceof HealthConnectImportError) return err;
     throw err;
@@ -60,9 +62,9 @@ function refusal(fn: () => unknown): HealthConnectImportError {
 }
 
 describe("openHealthConnectDb", () => {
-  it("opens the fixture read-only and finds its tables by name", () => {
+  it("opens the fixture read-only and finds its tables by name", async () => {
     const { path } = fixture();
-    const hc = openHealthConnectDb(path);
+    const hc = await openHealthConnectDb(path);
     try {
       expect(hc.userVersion).toBe(20);
       expect(hc.warnings).toEqual([]);
@@ -71,39 +73,39 @@ describe("openHealthConnectDb", () => {
       );
       expect(hc.columns("weight_record_table")?.has("weight")).toBe(true);
       // query_only: the importer cannot write to the upload even by mistake.
-      expect(() => hc.all("DELETE FROM weight_record_table")).toThrow();
+      await expect(hc.all("DELETE FROM weight_record_table")).rejects.toThrow();
     } finally {
-      hc.close();
+      await hc.close();
     }
   });
 
-  it("refuses a database older than schema version 9", () => {
+  it("refuses a database older than schema version 9", async () => {
     const { path } = fixture({ userVersion: 8 });
-    expect(refusal(() => openHealthConnectDb(path)).code).toBe(
+    expect((await refusal(() => openHealthConnectDb(path))).code).toBe(
       "unsupported_version",
     );
   });
 
-  it("reads a newer schema version than it knows, with a warning", () => {
+  it("reads a newer schema version than it knows, with a warning", async () => {
     const { path } = fixture({ userVersion: 31 });
-    const hc = openHealthConnectDb(path);
+    const hc = await openHealthConnectDb(path);
     expect(hc.warnings).toContain("user_version_newer:31");
-    hc.close();
+    await hc.close();
   });
 
-  it("refuses a view standing in for a record table", () => {
+  it("refuses a view standing in for a record table", async () => {
     const { path } = fixture();
     const db = new DatabaseSync(path);
     db.exec(
       "DROP TABLE weight_record_table; CREATE VIEW weight_record_table AS SELECT 1 AS uuid, 2 AS time, 3 AS weight, 4 AS app_info_id",
     );
     db.close();
-    const err = refusal(() => openHealthConnectDb(path));
+    const err = await refusal(() => openHealthConnectDb(path));
     expect(err.code).toBe("unsafe_schema");
     expect(err.message).toContain("weight_record_table is a view");
   });
 
-  it("skips a table whose required column is missing and keeps the rest", () => {
+  it("skips a table whose required column is missing and keeps the rest", async () => {
     const { path } = fixture();
     const db = new DatabaseSync(path);
     db.exec("ALTER TABLE body_fat_record_table DROP COLUMN percentage");
@@ -111,7 +113,7 @@ describe("openHealthConnectDb", () => {
       "CREATE TABLE some_future_record_table (row_id INTEGER, uuid BLOB)",
     );
     db.close();
-    const hc = openHealthConnectDb(path);
+    const hc = await openHealthConnectDb(path);
     try {
       expect(hc.usable("body_fat_record_table", ["uuid", "percentage"])).toBe(
         false,
@@ -121,56 +123,60 @@ describe("openHealthConnectDb", () => {
         "column_missing:body_fat_record_table.percentage",
       ]);
     } finally {
-      hc.close();
+      await hc.close();
     }
   });
 
-  it("refuses a database without the application table", () => {
+  it("refuses a database without the application table", async () => {
     const { path } = fixture();
     const db = new DatabaseSync(path);
     db.exec("PRAGMA foreign_keys = OFF; DROP TABLE application_info_table");
     db.close();
-    expect(refusal(() => openHealthConnectDb(path)).code).toBe(
+    expect((await refusal(() => openHealthConnectDb(path))).code).toBe(
       "not_health_connect",
     );
   });
 
-  it("refuses a file that is not a SQLite database", () => {
+  it("refuses a file that is not a SQLite database", async () => {
     const dir = mkdtempSync(join(tmpdir(), "hc-reader-"));
     const path = join(dir, "health_connect_export.db");
     writeFileSync(path, "PK this is not a database");
-    expect(refusal(() => openHealthConnectDb(path)).code).toBe(
+    expect((await refusal(() => openHealthConnectDb(path))).code).toBe(
       "not_health_connect",
     );
   });
 
-  it("opens a WAL-mode database in a read-only directory and leaves no companion files", () => {
+  it("opens a WAL-mode database in a read-only directory and leaves no companion files", async () => {
     const { dir, path } = fixture({ wal: true });
     const ro = join(dir, "ro");
     mkdirSync(ro);
     copyFileSync(path, join(ro, "health_connect_export.db"));
     chmodSync(ro, 0o555);
-    const hc = openHealthConnectDb(join(ro, "health_connect_export.db"));
+    const hc = await openHealthConnectDb(join(ro, "health_connect_export.db"));
     try {
-      const [row] = hc.all("SELECT COUNT(*) AS n FROM weight_record_table");
+      const [row] = await hc.all(
+        "SELECT COUNT(*) AS n FROM weight_record_table",
+      );
       expect(Number(row.n)).toBeGreaterThan(0);
     } finally {
-      hc.close();
+      await hc.close();
     }
     expect(readdirSync(ro)).toEqual(["health_connect_export.db"]);
   });
 
-  it("hands rows out in batches of at most the batch size", () => {
+  it("hands rows out in batches of at most the batch size", async () => {
     const { path } = fixture({ days: 3 });
-    const hc = openHealthConnectDb(path);
+    const hc = await openHealthConnectDb(path);
     try {
-      const sizes = [
-        ...hc.batches("SELECT * FROM steps_record_table", [], 40),
-      ].map((b) => b.length);
+      const sizes = (
+        await Array.fromAsync(
+          hc.batches("SELECT * FROM steps_record_table", [], 40),
+        )
+      ).map((b) => b.length);
       expect(sizes.every((n) => n <= 40)).toBe(true);
       expect(sizes.reduce((a, b) => a + b, 0)).toBe(3 * 16 * 2);
     } finally {
-      hc.close();
+      await hc.close();
     }
   });
 });

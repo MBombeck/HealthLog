@@ -6,12 +6,17 @@ import type { Instrumentation } from "next";
  * rather than importing the notification layer (see the notice module).
  */
 async function registerOfflineGeoNoticeAtBoot(): Promise<void> {
-  try {
-    const { registerOfflineGeoNotice } =
-      await import("@/lib/notifications/offline-geo-notice");
-    registerOfflineGeoNotice();
-  } catch {
-    // Without it the lookups still resolve; only the notice is missing.
+  // Guarded here as well as at the call site: the Edge pass over this file
+  // keeps every import a guard does not enclose, and this one reaches the
+  // whole notification layer (`edge-graph-node-free-guard.test.ts`).
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    try {
+      const { registerOfflineGeoNotice } =
+        await import("@/lib/notifications/offline-geo-notice");
+      registerOfflineGeoNotice();
+    } catch {
+      // Without it the lookups still resolve; only the notice is missing.
+    }
   }
 }
 
@@ -20,10 +25,13 @@ async function registerOfflineGeoNoticeAtBoot(): Promise<void> {
  * TRUST_PROXY_HOPS), said once, with a bad value named.
  */
 async function logProxyTrustAtBootSafely(): Promise<void> {
-  try {
-    (await import("@/lib/http/proxy-trust")).logProxyTrustAtBoot();
-  } catch {
-    // A log line must never break boot.
+  // Node-only, guarded like the helper above.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    try {
+      (await import("@/lib/http/proxy-trust")).logProxyTrustAtBoot();
+    } catch {
+      // A log line must never break boot.
+    }
   }
 }
 

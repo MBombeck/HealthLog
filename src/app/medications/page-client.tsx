@@ -39,7 +39,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { MedicationCategoriesSheet } from "@/components/medications/medication-categories-sheet";
 import { MedicationFilterRail } from "@/components/medications/medication-filter-rail";
 import {
-  buildDoseStatusById,
+  buildDoseStateById,
   groupMedications,
   useMedicationGroupsOpen,
 } from "@/components/medications/medication-list-groups";
@@ -380,14 +380,14 @@ export default function MedicationsPageClient() {
   // Groups open by default per the saved mode, and every group with a match
   // is open while a filter is active. The dose status feeds "flagged" mode,
   // which opens only groups with a dose due.
-  const doseStatusById = useMemo(
-    () => buildDoseStatusById(complianceRows),
+  const doseStateById = useMemo(
+    () => buildDoseStateById(complianceRows),
     [complianceRows],
   );
   const { isOpen, toggle } = useMedicationGroupsOpen(
     layout.groupsOpen ?? "expanded",
     isFiltered,
-    { doseStatusById, highlightId },
+    { doseStateById, highlightId },
   );
 
   if (authLoading) {

@@ -47,12 +47,14 @@ job until it reports the imported / skipped counts.
 
 The endpoint is `POST /api/import/apple-health-export`. The handler:
 
-1. Rate-limits to **three uploads per minute per user** to protect
-   against a flood of multi-gigabyte uploads
-   (`src/app/api/import/apple-health-export/route.ts:43-46`).
+1. Rate-limits to **five uploads per minute per user** to protect
+   against a flood of multi-gigabyte uploads. Every file import
+   shares this rule and the rest of the upload path
+   (`src/lib/import/staged-upload.ts`).
 2. Enforces the **1.5 GB cap** twice — once cheaply against the
    declared `Content-Length`, then a second time at the streaming
-   sink so a missing/wrong header cannot bypass it.
+   sink so a missing/wrong header cannot bypass it. Both answer `413`
+   with `errorCode` `import.file.too_large`.
 3. Streams the body to a temp file at `/tmp/healthlog-apple-health-import-*`
    while computing a SHA-256 of the bytes inline.
 4. Looks up any prior `ImportJob` row with the same `userId` +
@@ -400,7 +402,7 @@ Override per-user via Settings → Source priority (`/settings/sources`).
 | Archive is encrypted                                | `failureReason: "Encrypted ZIP entries are not supported"`                      | Apple does not encrypt the export — this means the file was repacked by a third-party tool. Re-export from iOS directly.                                             |
 | Unsupported compression method                      | `failureReason: "Unsupported ZIP compression method <n> for export.xml"`        | Same recovery — re-export from iOS, which always emits method 0 (stored) or method 8 (deflate).                                                                      |
 | Worker is not running                               | `503 Background worker is not running` from the kick-off endpoint               | The worker process is down. Check `docker compose ps` for the `app-worker` container (or `HEALTHLOG_PROCESS_TYPE=all` mode on the main `app` container) and restart. |
-| Rate-limited                                        | `429 Too many import uploads, try again later`                                  | Wait sixty seconds; the limit is three uploads per minute per user.                                                                                                  |
+| Rate-limited                                        | `429 Too many import uploads, try again later`                                  | Wait sixty seconds; the limit is five uploads per minute per user.                                                                                                   |
 
 The wide-event log line `import.apple-health.kickoff` (or
 `import.apple-health.kickoff.denied` on failure) captures every

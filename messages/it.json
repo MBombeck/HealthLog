@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "Che tipo di farmaco è?",
-          "subline": "Lo usiamo per i modelli e le analisi corretti.",
+          "subline": "Facoltativo. Serve a scegliere i modelli e le analisi giusti; senza scelta il farmaco va sotto «Altro».",
           "short": "Tipo"
         },
         "step3": {
           "title": "Qual è la dose?",
-          "subline": "Una compressa, uno spruzzo, una goccia, a seconda della forma.",
+          "subline": "Quanto prendi ogni volta, come sulla confezione o sulla ricetta: 5 mg oppure 2 compresse.",
           "amountLabel": "Quantità",
           "amountPlaceholder": "ad es. 5",
           "unitLabel": "Unità",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "es. 4",
           "dosesPerUnitHint": "Quante compresse o unità contiene una nuova confezione o penna, ad es. 28 compresse o una penna da 4 dosi. Precompila la quantità quando aggiungi una confezione; lascia vuoto se le confezioni variano.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Compresse o unità per dose",
-          "unitsPerDoseHint": "ad es. 2 compresse da 2 mg per una dose da 4 mg, oppure ½ compressa per una dose divisa"
+          "unitsPerDoseLabel": "Quante compresse o unità formano questa dose?",
+          "unitsPerDoseHint": "ad es. 2 compresse da 2 mg per una dose da 4 mg, oppure ½ compressa per una dose divisa",
+          "packSizeToggle": "Dimensione confezione (facoltativa)"
         },
         "step4": {
           "title": "Per quanto tempo lo assumi?",
@@ -1875,13 +1876,14 @@
           "doseOverridePlaceholder": "es. mezza compressa",
           "unitsOverrideLabel": "Unità consumate a questo orario",
           "unitsOverrideInherit": "Predefinito",
-          "short": "Orari"
+          "short": "Orari",
+          "overrideToggle": "Un'altra dose a quest'ora?"
         },
         "step8": {
           "title": "Fatto. Vuoi che HealthLog te lo ricordi?",
           "subline": "Controlla tutto qui sotto prima di salvare.",
           "remindersLabel": "Promemoria attivi",
-          "remindersDescription": "Push, Telegram o ntfy, in base alle tue impostazioni.",
+          "remindersDescription": "I promemoria arrivano come li hai impostati in Notifiche: push web, Telegram o ntfy. L’app per iPhone pianifica da sola i propri promemoria.",
           "noChannelHint": "I promemoria richiedono un canale di notifica, ma al momento nessuno è attivo.",
           "noChannelHintLink": "Configura le notifiche",
           "short": "Fatto"
@@ -1923,11 +1925,11 @@
         },
         "rolling": {
           "label": "Flessibile dall’ultima dose",
-          "description": "Lascia aperta la prossima dose. Quando tocchi «assunta», il conteggio riparte da quel momento."
+          "description": "Lascia aperta la prossima dose. Quando tocchi «Assumi», il conteggio riparte da quel momento."
         },
         "oneShot": {
           "label": "Dose singola",
-          "description": "Una singola somministrazione, ad es. un vaccino o un ciclo di antibiotico."
+          "description": "Una singola somministrazione, ad es. un vaccino o un’iniezione dal medico."
         },
         "asNeeded": {
           "label": "Al bisogno",
@@ -1954,7 +1956,9 @@
         "times": "alle {times}",
         "startsOn": "Inizio: {date}",
         "endsOn": "Fine: {date}",
-        "noEndDate": "Nessuna data di fine"
+        "noEndDate": "Nessuna data di fine",
+        "windowLine": "{time}: puntuale fino alle {onTime}, in ritardo fino alle {late}, poi mancata.",
+        "windowDays": "Una dose conta come puntuale nel suo giorno, in ritardo fino a {days} giorni dopo, poi come mancata."
       },
       "compose": {
         "scheduleIndex": "Programma {n} di {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Impossibile salvare il farmaco. Riprova."
+      },
+      "blocked": {
+        "name": "Inserisci un nome per continuare.",
+        "amount": "Inserisci la quantità per continuare.",
+        "unitsPerDose": "Scegli quante compresse o unità formano la dose.",
+        "start": "Scegli una data di inizio per continuare.",
+        "endBeforeStart": "La data di fine deve essere il giorno di inizio o dopo.",
+        "mode": "Scegli quanto spesso lo prendi.",
+        "weekdays": "Scegli almeno un giorno della settimana.",
+        "interval": "Indica quante settimane passano tra le dosi.",
+        "dayOfMonth": "Scegli un giorno del mese tra 1 e 31.",
+        "rollingDays": "Inserisci un numero di giorni tra 1 e 365.",
+        "time": "Aggiungi almeno un orario.",
+        "unknown": "In questo passaggio manca ancora qualcosa."
       }
     },
     "doseStrength": {
@@ -2154,11 +2172,11 @@
           "openButton": "Modifica"
         },
         "grace": {
-          "label": "Finestra di promemoria",
+          "label": "Durata dei promemoria",
           "appliesToAllNote": "Vale per tutti i programmi di questo farmaco.",
           "unit": "minuti",
-          "saved": "Finestra di promemoria salvata",
-          "failed": "Impossibile salvare la finestra di promemoria.",
+          "saved": "Durata dei promemoria salvata",
+          "failed": "Impossibile salvare la durata dei promemoria.",
           "description": "Per quanto continuano i promemoria dopo l'ora della dose, prima di quello di ritardo."
         },
         "codes": {
@@ -2370,8 +2388,8 @@
         "timesTitle": "Orari di assunzione",
         "timesNote": "Regola l'orario e la finestra puntuale di ogni dose. La frequenza (giornaliera, settimanale…) si modifica nell'editor, in Avanzate.",
         "scheduleLabel": "Programma {index}",
-        "fullEditNote": "Frequenza, classe di trattamento e finestra del ciclo si modificano nell'editor, in Avanzate → Ciclo di vita.",
-        "graceEcho": "Finestra di promemoria: {minutes} minuti",
+        "fullEditNote": "Frequenza, classe di trattamento e periodo di trattamento si modificano nell'editor, in Avanzate → Ciclo di vita.",
+        "graceEcho": "Durata dei promemoria: {minutes} minuti",
         "reminderTitle": "Promemoria",
         "manageChannels": "Gestisci i canali di notifica",
         "history": {
@@ -2685,13 +2703,13 @@
       "countsForLate": "Conta per la dose delle {time}, come in ritardo.",
       "countNearLabel": "Contala per la dose delle {time}",
       "skips": "Salta la dose delle {time}.",
-      "extraDose": "Registrata come dose extra, fuori programma.",
+      "extraDose": "Registrata come dose extra, fuori programma. Resta nella cronologia e non conta per l’aderenza.",
       "scheduleLoading": "Verifica delle dosi previste quel giorno…",
       "scheduleUnavailable": "Impossibile leggere il programma di quel giorno, quindi viene registrata come dose extra.",
       "noMedications": "Aggiungi prima un farmaco, poi potrai registrarne le assunzioni.",
       "saveError": "Impossibile salvare l'assunzione. Riprova"
     },
-    "phaseGreenHint": "Primo promemoria, questo tempo prima della fine della finestra di promemoria.",
+    "phaseGreenHint": "Primo promemoria, questo tempo prima della fine della finestra.",
     "phaseYellowHint": "Un altro promemoria, questo tempo prima della fine della finestra.",
     "phaseOrangeHint": "Un promemoria che la dose è in ritardo, questo tempo dopo la fine della finestra.",
     "phaseRedHint": "Passato questo tempo dalla finestra, la dose conta come mancata.",
@@ -2746,6 +2764,7 @@
     "days7Title": "Ultimi 7 giorni",
     "days30Label": "30 g",
     "daysNLabel": "{days} g",
+    "daysNAria": "Ultimi {days} giorni",
     "days30Title": "Ultimi 30 giorni",
     "days90Label": "90 g",
     "days90Title": "Ultimi 90 giorni",
@@ -5380,7 +5399,9 @@
       "importCta": "Importa la cronologia esistente",
       "modulesCta": "Scegli i tuoi moduli",
       "aiOptional": "L'IA è facoltativa. Tutto funziona anche senza.",
-      "aiSetupCta": "Configura IA"
+      "aiSetupCta": "Configura IA",
+      "relayOptional": "L’app per iPhone può ricevere le notifiche di questo server tramite il relay push di HealthLog, facoltativo e spento finché non lo attivi.",
+      "relaySetupCta": "Impostazioni del relay push"
     },
     "welcomeBack": {
       "title": "Bentornato",
@@ -5452,7 +5473,7 @@
       },
       "medication": {
         "title": "Prendi farmaci con un orario fisso?",
-        "body": "Un orario attiva il modulo farmaci e i promemoria.",
+        "body": "Un orario attiva il modulo farmaci. I promemoria si impostano quando aggiungi il tuo primo farmaco.",
         "options": {
           "yes": "Sì",
           "no": "No",
@@ -6372,7 +6393,8 @@
               "httpsRequired": "Usa un indirizzo https://. Con http:// la password viaggerebbe in chiaro.",
               "passwordRequired": "Inserisci la password una volta quando configuri la cartella.",
               "saveFailed": "Non è stato possibile salvare la cartella. Controlla l'indirizzo e riprova.",
-              "fetchFailed": "Non è stato possibile avviare il prelievo. Riprova più tardi."
+              "fetchFailed": "Non è stato possibile avviare il prelievo. Riprova più tardi.",
+              "removeFailed": "Non è stato possibile rimuovere la cartella. Riprova."
             },
             "title": "Health Connect da una cartella",
             "description": "HealthLog preleva l'esportazione che Health Connect salva a orari programmati in una cartella WebDAV o Nextcloud e importa ciò che è nuovo.",
@@ -7328,6 +7350,11 @@
     },
     "integrationFallback": {
       "description": "Configurato su questo account ma senza una scheda di impostazioni propria."
+    },
+    "healthConnectFolder": {
+      "name": "Health Connect da una cartella",
+      "description": "Prelevato dalla tua cartella WebDAV o Nextcloud ogni sei ore. Si configura e si modifica in Importa.",
+      "manage": "Apri le impostazioni della cartella"
     },
     "withingsViewData": "Vedi le tue misurazioni",
     "whoopViewData": "Vedi il tuo recupero",
@@ -9333,8 +9360,19 @@
       "title": "Relay push di HealthLog",
       "description": "Permette all'app dell'App Store di ricevere le notifiche di questo server tramite il relay del progetto HealthLog.",
       "whatItSees": "Ogni notifica viene cifrata su questo server per il dispositivo a cui è destinata, quindi il relay non può leggerla. Vede quando questo server invia qualcosa a un dispositivo.",
+      "seesSummary": "Cosa vede il relay",
+      "seesHeading": "Il relay vede",
+      "seesWhen": "che questo server invia qualcosa a un dispositivo, quando e di che tipo: un avviso, una sincronizzazione silenziosa o la fine di un’Attività Live",
+      "seesToken": "il token push del dispositivo durante la consegna (salvato solo come hash con chiave), e l’id di istanza di questo server",
+      "seesAddress": "l’indirizzo di questo server mentre è connesso, né salvato né registrato",
+      "seesConsent": "un hash della chiave di associazione del dispositivo, e la versione e il giorno del consenso della persona",
+      "notSeesHeading": "Non vede",
+      "notSeesContent": "cosa dice una notifica: nomi di farmaci, dosi, misurazioni, note, nomi di account o qualsiasi altra cosa contenga",
+      "seesTiming": "Il momento può comunque dire qualcosa: se registri una dose su un dispositivo e un altro tuo dispositivo riceve la conferma, il relay e Apple vedono che in quel momento è successo qualcosa.",
+      "seesSource": "L’informativa sulla privacy completa del relay",
       "toggleLabel": "Offrire il relay push di HealthLog agli utenti di questo server",
       "toggleDescription": "Disattivato finché non lo attivi. Poi ogni persona decide nella propria app.",
+      "toggleDescriptionOn": "Attivo. Ogni persona decide nella propria app se i suoi dispositivi lo usano.",
       "devices": "{count} dispositivi collegati",
       "since": "dal {time}",
       "docs": "Scopri di più",
@@ -9342,7 +9380,8 @@
       "terms": "Condizioni del relay",
       "dialogTitle": "Offrire il relay push di HealthLog",
       "dialogBody": "Il relay è gestito dal maintainer del progetto HealthLog. Ogni notifica viene cifrata su questo server per il suo dispositivo; il relay non può leggerla, ma vede che questo server invia qualcosa a un dispositivo, e quando. Dopo l'attivazione, ogni persona su questo server vede una volta un'offerta nella propria app e decide da sé. I promemoria restano sui dispositivi. Il relay è per uso privato e familiare e non è un servizio medico.",
-      "acceptTerms": "Accetto le condizioni del relay e ho letto l'informativa sulla privacy.",
+      "acceptTerms": "Accetto le condizioni del relay.",
+      "readPrivacy": "Ho letto l’informativa sulla privacy del relay.",
       "householdOnly": "Gestisco questo server privatamente per me o la mia famiglia.",
       "enable": "Attiva",
       "cancel": "Annulla",
@@ -9795,8 +9834,8 @@
     "eventMedicationIntakeSyncDesc": "Aggiornamento tra dispositivi quando una dose viene registrata, assunta o saltata.",
     "eventDailyBriefing": "Riepilogo quotidiano",
     "eventDailyBriefingDesc": "Un riepilogo mattutino e tranquillo della tua giornata. Disattivato finché non lo attivi.",
-    "eventSecurityAlert": "Nuovo accesso",
-    "eventSecurityAlertDesc": "Inviato quando il tuo account viene usato su un dispositivo o da un luogo sconosciuti.",
+    "eventSecurityAlert": "Sicurezza dell’account",
+    "eventSecurityAlertDesc": "Inviato per un accesso da un dispositivo o un luogo sconosciuti, quando una passkey viene aggiunta o rimossa, quando un token di accesso viene revocato e quando un dispositivo viene disconnesso perché il suo token di accesso è stato usato due volte.",
     "eventSharedRecordIntake": "Una persona con accesso segna una dose",
     "eventSharedRecordIntakeDesc": "Inviato solo quando lo fa un'altra persona, mai per le tue voci.",
     "eventMedicationIntakeRecorded": "Conferma le dosi prese su altri dispositivi",
@@ -10053,7 +10092,7 @@
     "noActiveMedications": "Nessun farmaco attivo trovato.",
     "whichMedication": "<b>Quale farmaco hai assunto?</b>",
     "cancelButton": "Annulla",
-    "askMedicationName": "Indica il farmaco, es. <b>preso Ramipril</b>.",
+    "askMedicationName": "Indica il farmaco, es. <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Farmaco non trovato. Invia il nome esattamente come appare in HealthLog.",
     "helpHeader": "<b>Comandi disponibili:</b>",
     "helpBody": "/help: mostra questa guida\n/add: registra un'assunzione\n/start: avvia il bot\n\n<b>Comandi testuali:</b>\ntaken &lt;nome&gt;: conferma un'assunzione\n\n<b>Pulsanti nei promemoria:</b>\n• ✅ Assumi: registra l'assunzione\n• 🕐 Ricordamelo più tardi: posticipa il promemoria, della durata scelta nelle impostazioni\n• ⏭ Salta: salta l'assunzione\n• Lasciare mancata: lascia un'assunzione mancata come mancata",
@@ -13337,7 +13376,7 @@
       }
     },
     "action": {
-      "logDose": "Registra dose",
+      "logDose": "Assumi",
       "reconnect": "Riconnetti",
       "viewCheckups": "Vedi controlli",
       "viewAppointment": "Vedi appuntamento",
@@ -15590,6 +15629,8 @@
     "link": {
       "validUntil": "Sola lettura. Questo link funziona fino al {date}.",
       "readOnly": "Sola lettura. Condiviso dalla persona, che può revocarlo in qualsiasi momento.",
+      "missTitle": "Questo link alla tessera di emergenza non funziona",
+      "missBody": "Il link potrebbe essere stato revocato o essere scaduto. La persona a cui appartiene la tessera può crearne uno nuovo.",
       "title": "Link QR",
       "loadError": "Impossibile caricare lo stato del link.",
       "disclosure": "Chi scansiona il codice vede le voci selezionate, senza accedere. Puoi dare una scadenza al link e revocarlo in qualsiasi momento; ogni apertura viene registrata per te.",

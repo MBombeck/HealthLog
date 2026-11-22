@@ -326,7 +326,7 @@ function LinkForm({
                   })
                 }
               />
-              <Label htmlFor={`card-field-${f}`} className="text-sm">
+              <Label noColon htmlFor={`card-field-${f}`} className="text-sm">
                 {t(`emergencyCard.fields.${f}`)}
               </Label>
             </div>

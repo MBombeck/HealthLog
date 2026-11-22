@@ -11,8 +11,12 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { readUpdatedAtToken, withBaseToken } from "@/lib/api/optimistic-token";
-import { useSnoozeMinutes } from "@/lib/queries/use-snooze-minutes";
-import { SNOOZE_MINUTE_CHOICES } from "@/lib/medications/snooze-length";
+import { useSnoozePrefsQuery } from "@/lib/queries/use-snooze-minutes";
+import { CardQueryBody } from "@/components/settings/_card-query-body";
+import {
+  DEFAULT_SNOOZE_MINUTES,
+  SNOOZE_MINUTE_CHOICES,
+} from "@/lib/medications/snooze-length";
 
 /**
  * Settings → Notifications: how long "Remind me later" pushes a dose
@@ -28,7 +32,12 @@ export function DoseSnoozeCard({
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  const stored = useSnoozeMinutes(isAuthenticated);
+  // The stored value, or the default for somebody who never chose one. A
+  // failed read is shown as one: the select waits for an answer instead of
+  // offering the default as if it were saved.
+  const prefs = useSnoozePrefsQuery(isAuthenticated);
+  const stored =
+    prefs.data?.medication?.snoozeMinutes ?? DEFAULT_SNOOZE_MINUTES;
   const [optimistic, setOptimistic] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,27 +87,29 @@ export function DoseSnoozeCard({
         titleId="settings-dose-snooze-title"
         description={t("settings.sections.notifications.snooze.description")}
       />
-      <div className="flex min-h-11 items-center justify-between gap-3">
-        <label htmlFor="dose-snooze-minutes" className="text-sm font-medium">
-          {t("settings.sections.notifications.snooze.label")}
-        </label>
-        <NativeSelect
-          id="dose-snooze-minutes"
-          className="w-auto"
-          value={minutes}
-          disabled={!isAuthenticated || saving}
-          onChange={(e) => void save(Number(e.target.value))}
-          data-slot="dose-snooze-minutes"
-        >
-          {choices.map((m) => (
-            <option key={m} value={m}>
-              {t("settings.sections.notifications.snooze.option", {
-                minutes: m,
-              })}
-            </option>
-          ))}
-        </NativeSelect>
-      </div>
+      <CardQueryBody query={prefs} slot="dose-snooze">
+        <div className="flex min-h-11 items-center justify-between gap-3">
+          <label htmlFor="dose-snooze-minutes" className="text-sm font-medium">
+            {t("settings.sections.notifications.snooze.label")}
+          </label>
+          <NativeSelect
+            id="dose-snooze-minutes"
+            className="w-auto"
+            value={minutes}
+            disabled={!isAuthenticated || saving}
+            onChange={(e) => void save(Number(e.target.value))}
+            data-slot="dose-snooze-minutes"
+          >
+            {choices.map((m) => (
+              <option key={m} value={m}>
+                {t("settings.sections.notifications.snooze.option", {
+                  minutes: m,
+                })}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+      </CardQueryBody>
       {error && (
         <p role="alert" className="text-destructive text-sm">
           {error}

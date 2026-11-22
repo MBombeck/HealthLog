@@ -46,6 +46,14 @@ export interface MultipartStreamOptions {
   tmpPrefix?: string;
 }
 
+/** The captured file passed `maxBytes`; the upload is refused as too large. */
+export class MultipartTooLargeError extends Error {
+  constructor(maxBytes: number) {
+    super(`Upload exceeds size cap of ${maxBytes} bytes`);
+    this.name = "MultipartTooLargeError";
+  }
+}
+
 const CRLF = Buffer.from("\r\n");
 const DOUBLE_CRLF = Buffer.from("\r\n\r\n");
 
@@ -126,7 +134,7 @@ export async function streamMultipartToDisk(
   const writeFileChunk = (chunk: Buffer): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (bytesWritten + chunk.length > opts.maxBytes) {
-        reject(new Error(`Upload exceeds size cap of ${opts.maxBytes} bytes`));
+        reject(new MultipartTooLargeError(opts.maxBytes));
         return;
       }
       bytesWritten += chunk.length;

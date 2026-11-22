@@ -112,6 +112,18 @@ const NIGHTLY_CADENCE: SyncCadence = {
 };
 
 /**
+ * The Health Connect folder fetch runs every six hours after a fetch that
+ * found nothing new or imported, and backs off to a day after failures. An
+ * attempt is overdue after two days; a fetch of an unchanged file is the
+ * freshness, because the phone exporting nothing new is not a failing
+ * connection.
+ */
+const FOLDER_FETCH_CADENCE: SyncCadence = {
+  attemptStaleAfterMs: 2 * ATTEMPT_STALE_AFTER_MS,
+  dataStaleAfterMs: DATA_STALE_AFTER_MS,
+};
+
+/**
  * Every `IntegrationKey` but Dawarich is polled by an hourly cron registered
  * in `src/lib/jobs/reminder/register-integration-sync.ts`; Dawarich nightly.
  * Apple Health is not an `IntegrationKey` — it takes `PUSH_CADENCE` directly.
@@ -126,6 +138,7 @@ export const INTEGRATION_CADENCE: Record<IntegrationKey, SyncCadence> = {
   strava: POLLED_CADENCE,
   dawarich: NIGHTLY_CADENCE,
   garmin: POLLED_CADENCE,
+  "health-connect-remote": FOLDER_FETCH_CADENCE,
 };
 
 export interface SyncVerdictInput {

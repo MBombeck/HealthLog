@@ -1505,7 +1505,7 @@
       "failedToast": "Geen inname geregistreerd. Probeer het opnieuw"
     },
     "emptyTitle": "Nog geen medicatie",
-    "emptyDescription": "Voeg medicijnen, doseringen en herinneringsvensters toe om je therapietrouw bij te houden.",
+    "emptyDescription": "Voeg medicijnen, doseringen en innametijden toe om je therapietrouw bij te houden.",
     "loadFailed": "Medicatie kon niet worden geladen",
     "retryLoad": "Opnieuw proberen",
     "inactive": "Gepauzeerd",
@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "Wat voor soort medicijn is het?",
-          "subline": "Dit gebruiken we voor de juiste sjablonen en analyses.",
+          "subline": "Optioneel. Hiermee kiezen we de juiste sjablonen en analyses; zonder keuze komt het medicijn onder ‘Overig’.",
           "short": "Soort"
         },
         "step3": {
           "title": "Wat is de dosis?",
-          "subline": "Een tablet, een puf, een druppel, afhankelijk van de vorm.",
+          "subline": "Hoeveel je elke keer neemt, zoals op de verpakking of het recept: 5 mg of 2 tabletten.",
           "amountLabel": "Hoeveelheid",
           "amountPlaceholder": "bijv. 5",
           "unitLabel": "Eenheid",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "bijv. 4",
           "dosesPerUnitHint": "Hoeveel tabletten of eenheden een nieuwe verpakking of pen bevat, bijv. 28 tabletten of een pen met 4 doses. Vult de hoeveelheid in bij het toevoegen van een verpakking; laat leeg als verpakkingen verschillen.",
           "short": "Dosis",
-          "unitsPerDoseLabel": "Tabletten of eenheden per dosis",
-          "unitsPerDoseHint": "bijv. 2 tabletten van 2 mg voor een dosis van 4 mg, of ½ tablet voor een gedeelde dosis"
+          "unitsPerDoseLabel": "Hoeveel tabletten of eenheden vormen deze dosis?",
+          "unitsPerDoseHint": "bijv. 2 tabletten van 2 mg voor een dosis van 4 mg, of ½ tablet voor een gedeelde dosis",
+          "packSizeToggle": "Verpakkingsgrootte (optioneel)"
         },
         "step4": {
           "title": "Over welke periode neem je het in?",
@@ -1875,13 +1876,14 @@
           "doseOverridePlaceholder": "bijv. een halve tablet",
           "unitsOverrideLabel": "Verbruikte eenheden op dit tijdstip",
           "unitsOverrideInherit": "Standaard",
-          "short": "Tijdstippen"
+          "short": "Tijdstippen",
+          "overrideToggle": "Een andere dosis op dit tijdstip?"
         },
         "step8": {
           "title": "Klaar. Moet HealthLog je eraan herinneren?",
           "subline": "Controleer alles hieronder voordat je opslaat.",
           "remindersLabel": "Herinneringen aan",
-          "remindersDescription": "Push, Telegram of ntfy, afhankelijk van je instellingen.",
+          "remindersDescription": "Herinneringen komen aan zoals je ze bij Meldingen hebt ingesteld: webpush, Telegram of ntfy. De iPhone-app plant zijn herinneringen zelf.",
           "noChannelHint": "Voor herinneringen is een meldingskanaal nodig, en er is er op dit moment geen actief.",
           "noChannelHintLink": "Meldingen instellen",
           "short": "Klaar"
@@ -1923,11 +1925,11 @@
         },
         "rolling": {
           "label": "Flexibel vanaf laatste dosis",
-          "description": "Laat de volgende dosis open. Als je op 'ingenomen' tikt, begint de teller vanaf dat moment opnieuw."
+          "description": "Laat de volgende dosis open. Als je op 'Innemen' tikt, begint de telling vanaf dat moment opnieuw."
         },
         "oneShot": {
           "label": "Eenmalige dosis",
-          "description": "Eén toediening, bijv. een vaccin of een antibioticakuur."
+          "description": "Eén toediening, bijv. een vaccin of een injectie bij de arts."
         },
         "asNeeded": {
           "label": "Zo nodig",
@@ -1954,7 +1956,9 @@
         "times": "om {times}",
         "startsOn": "Begint: {date}",
         "endsOn": "Eindigt: {date}",
-        "noEndDate": "Geen einddatum"
+        "noEndDate": "Geen einddatum",
+        "windowLine": "{time}: op tijd tot {onTime}, te laat tot {late}, daarna gemist.",
+        "windowDays": "Een dosis telt op haar dag als op tijd, tot {days} dagen erna als te laat en daarna als gemist."
       },
       "compose": {
         "scheduleIndex": "Schema {n} van {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Het medicijn kon niet worden opgeslagen. Probeer het opnieuw."
+      },
+      "blocked": {
+        "name": "Vul een naam in om verder te gaan.",
+        "amount": "Vul de hoeveelheid in om verder te gaan.",
+        "unitsPerDose": "Kies hoeveel tabletten of eenheden de dosis vormen.",
+        "start": "Kies een startdatum om verder te gaan.",
+        "endBeforeStart": "De einddatum moet op of na de startdatum liggen.",
+        "mode": "Kies hoe vaak je het neemt.",
+        "weekdays": "Kies minstens één dag van de week.",
+        "interval": "Vul in hoeveel weken er tussen de doses zitten.",
+        "dayOfMonth": "Kies een dag van de maand tussen 1 en 31.",
+        "rollingDays": "Vul een aantal dagen in tussen 1 en 365.",
+        "time": "Voeg minstens één tijdstip toe.",
+        "unknown": "Bij deze stap ontbreekt nog iets."
       }
     },
     "doseStrength": {
@@ -2154,11 +2172,11 @@
           "openButton": "Aanpassen"
         },
         "grace": {
-          "label": "Herinneringsvenster",
+          "label": "Herinneringsduur",
           "appliesToAllNote": "Geldt voor elk schema van dit medicijn.",
           "unit": "minuten",
-          "saved": "Herinneringsvenster opgeslagen",
-          "failed": "Het herinneringsvenster kon niet worden opgeslagen.",
+          "saved": "Herinneringsduur opgeslagen",
+          "failed": "De herinneringsduur kon niet worden opgeslagen.",
           "description": "Hoe lang de herinneringen na het tijdstip van de dosis doorgaan, voor de te-laat-herinnering."
         },
         "codes": {
@@ -2371,7 +2389,7 @@
         "timesNote": "Pas per dosis het tijdstip en het venster voor op tijd aan. De frequentie (dagelijks, wekelijks…) bewerk je in de editor onder Geavanceerd.",
         "scheduleLabel": "Schema {index}",
         "fullEditNote": "Frequentie, behandelklasse en kuurperiode bewerk je in de editor onder Geavanceerd → Levenscyclus.",
-        "graceEcho": "Herinneringsvenster: {minutes} minuten",
+        "graceEcho": "Herinneringsduur: {minutes} minuten",
         "reminderTitle": "Herinnering",
         "manageChannels": "Meldingskanalen beheren",
         "history": {
@@ -2685,14 +2703,14 @@
       "countsForLate": "Telt voor de dosis van {time}, als te laat.",
       "countNearLabel": "Laten tellen voor de dosis van {time}",
       "skips": "Slaat de dosis van {time} over.",
-      "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema.",
+      "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema. Ze blijft in je geschiedenis en telt niet mee voor je therapietrouw.",
       "scheduleLoading": "Controleren welke doses die dag gepland zijn…",
       "scheduleUnavailable": "Het schema van die dag kon niet worden gelezen, dus dit wordt vastgelegd als extra dosis.",
       "noMedications": "Voeg eerst een medicijn toe, daarna kun je er innames bij vastleggen.",
       "saveError": "De inname kon niet worden opgeslagen. Probeer het opnieuw"
     },
-    "phaseGreenHint": "Eerste herinnering, zo lang voor het einde van het herinneringsvenster.",
-    "phaseYellowHint": "Nog een herinnering, zo lang voor het einde van het venster.",
+    "phaseGreenHint": "Eerste herinnering, zo lang voor het einde van het tijdvenster.",
+    "phaseYellowHint": "Nog een herinnering, zo lang voor het einde van het tijdvenster.",
     "phaseOrangeHint": "Een herinnering dat de dosis te laat is, zo lang na het einde van het venster.",
     "phaseRedHint": "Zo lang na het venster telt de dosis als gemist.",
     "filter": {
@@ -2746,6 +2764,7 @@
     "days7Title": "Afgelopen 7 dagen",
     "days30Label": "30 d",
     "daysNLabel": "{days} d",
+    "daysNAria": "Laatste {days} dagen",
     "days30Title": "Afgelopen 30 dagen",
     "days90Label": "90 d",
     "days90Title": "Afgelopen 90 dagen",
@@ -5380,7 +5399,9 @@
       "importCta": "Bestaande geschiedenis importeren",
       "modulesCta": "Je modules kiezen",
       "aiOptional": "AI is optioneel. Alles werkt ook zonder.",
-      "aiSetupCta": "AI instellen"
+      "aiSetupCta": "AI instellen",
+      "relayOptional": "De iPhone-app kan meldingen van deze server krijgen via de optionele HealthLog-pushrelay, die uit blijft tot je hem aanzet.",
+      "relaySetupCta": "Instellingen pushrelay"
     },
     "welcomeBack": {
       "title": "Welkom terug",
@@ -5452,7 +5473,7 @@
       },
       "medication": {
         "title": "Neem je medicatie volgens een schema in?",
-        "body": "Een schema zet de medicatiemodule en herinneringen aan.",
+        "body": "Een schema zet de medicatiemodule aan. Herinneringen stel je in wanneer je je eerste medicijn toevoegt.",
         "options": {
           "yes": "Ja",
           "no": "Nee",
@@ -6372,7 +6393,8 @@
               "httpsRequired": "Gebruik een https://-adres. Via http:// gaat het wachtwoord onversleuteld over het netwerk.",
               "passwordRequired": "Vul het wachtwoord één keer in bij het instellen van de map.",
               "saveFailed": "De map kon niet worden opgeslagen. Controleer het adres en probeer het opnieuw.",
-              "fetchFailed": "Ophalen kon niet worden gestart. Probeer het later opnieuw."
+              "fetchFailed": "Ophalen kon niet worden gestart. Probeer het later opnieuw.",
+              "removeFailed": "De map kon niet worden verwijderd. Probeer het opnieuw."
             },
             "title": "Health Connect uit een map",
             "description": "HealthLog haalt de export die Health Connect volgens schema opslaat uit een WebDAV- of Nextcloud-map en importeert wat nieuw is.",
@@ -7328,6 +7350,11 @@
     },
     "integrationFallback": {
       "description": "Ingesteld op dit account zonder eigen instellingenkaart."
+    },
+    "healthConnectFolder": {
+      "name": "Health Connect uit een map",
+      "description": "Wordt elke zes uur uit je WebDAV- of Nextcloud-map opgehaald. Instellen en wijzigen doe je onder Importeren.",
+      "manage": "Mapinstellingen openen"
     },
     "withingsViewData": "Je metingen bekijken",
     "whoopViewData": "Je herstel bekijken",
@@ -9333,8 +9360,19 @@
       "title": "HealthLog-pushrelay",
       "description": "Laat de app uit de App Store meldingen van deze server ontvangen via de relay van het HealthLog-project.",
       "whatItSees": "Elke melding wordt op deze server versleuteld voor het apparaat waarvoor hij bedoeld is, dus de relay kan hem niet lezen. Hij ziet wanneer deze server een apparaat iets stuurt.",
+      "seesSummary": "Wat de relay ziet",
+      "seesHeading": "De relay ziet",
+      "seesWhen": "dat deze server een apparaat iets stuurt, wanneer en van welke soort: een melding, een stille synchronisatie of het einde van een live-activiteit",
+      "seesToken": "het pushtoken van het apparaat tijdens de bezorging (alleen bewaard als hash met sleutel), en de instantie-id van deze server",
+      "seesAddress": "het adres van deze server zolang die verbonden is, niet bewaard en niet gelogd",
+      "seesConsent": "een hash van de koppelsleutel van het apparaat, en de versie en de dag van de toestemming van de persoon",
+      "notSeesHeading": "De relay ziet niet",
+      "notSeesContent": "wat er in een melding staat: namen van medicijnen, doses, metingen, notities, accountnamen of iets anders erin",
+      "seesTiming": "Het moment kan toch iets zeggen: leg je op het ene apparaat een dosis vast en krijgt een ander apparaat van je de bevestiging, dan zien de relay en Apple dat er op dat moment iets gebeurde.",
+      "seesSource": "De volledige privacyverklaring van de relay",
       "toggleLabel": "De HealthLog-pushrelay aanbieden aan de gebruikers van deze server",
       "toggleDescription": "Uit tot je het aanzet. Daarna beslist iedereen in de eigen app.",
+      "toggleDescriptionOn": "Aan. Iedereen beslist in de eigen app of de eigen apparaten het gebruiken.",
       "devices": "{count} apparaten gekoppeld",
       "since": "sinds {time}",
       "docs": "Meer informatie",
@@ -9342,7 +9380,8 @@
       "terms": "Relayvoorwaarden",
       "dialogTitle": "HealthLog-pushrelay aanbieden",
       "dialogBody": "De relay wordt beheerd door de maintainer van het HealthLog-project. Elke melding wordt op deze server versleuteld voor het eigen apparaat; de relay kan hem niet lezen, maar ziet dat deze server een apparaat iets stuurt, en wanneer. Na het aanzetten ziet iedereen op deze server één keer een aanbod in de app en beslist zelf. Herinneringen blijven op de apparaten. De relay is voor privé- en huishoudelijk gebruik en is geen medische dienst.",
-      "acceptTerms": "Ik ga akkoord met de relayvoorwaarden en heb de privacyverklaring gelezen.",
+      "acceptTerms": "Ik ga akkoord met de relayvoorwaarden.",
+      "readPrivacy": "Ik heb de privacyverklaring van de relay gelezen.",
       "householdOnly": "Ik beheer deze server privé voor mezelf of mijn huishouden.",
       "enable": "Aanzetten",
       "cancel": "Annuleren",
@@ -9795,8 +9834,8 @@
     "eventMedicationIntakeSyncDesc": "Update op al je apparaten als een dosis wordt geregistreerd, ingenomen of overgeslagen.",
     "eventDailyBriefing": "Dagelijkse briefing",
     "eventDailyBriefingDesc": "Eén rustige ochtendsamenvatting van hoe je dag ervoor staat. Staat uit totdat je hem inschakelt.",
-    "eventSecurityAlert": "Nieuwe inlog",
-    "eventSecurityAlertDesc": "Wordt verstuurd als je account wordt gebruikt op een apparaat of vanaf een plek die we nog niet eerder hebben gezien.",
+    "eventSecurityAlert": "Accountbeveiliging",
+    "eventSecurityAlertDesc": "Wordt verstuurd bij een inlog vanaf een onbekend apparaat of een onbekende plek, als een passkey wordt toegevoegd of verwijderd, als een toegangstoken wordt ingetrokken en als een apparaat wordt afgemeld omdat zijn inlogtoken twee keer is gebruikt.",
     "eventSharedRecordIntake": "Iemand met wie je je dossier deelt, registreert een dosis",
     "eventSharedRecordIntakeDesc": "Alleen als iemand anders dat doet, nooit voor je eigen registraties.",
     "eventMedicationIntakeRecorded": "Doses van andere apparaten bevestigen",
@@ -13337,7 +13376,7 @@
       }
     },
     "action": {
-      "logDose": "Dosis registreren",
+      "logDose": "Innemen",
       "reconnect": "Opnieuw verbinden",
       "viewCheckups": "Controles bekijken",
       "viewAppointment": "Afspraak bekijken",
@@ -15590,6 +15629,8 @@
     "link": {
       "validUntil": "Alleen lezen. Deze link werkt tot {date}.",
       "readOnly": "Alleen lezen. Gedeeld door de eigenaar, die de link altijd kan intrekken.",
+      "missTitle": "Deze link naar de noodkaart werkt niet",
+      "missBody": "De link is misschien ingetrokken of verlopen. De persoon van wie de kaart is, kan een nieuwe maken.",
       "title": "QR-link",
       "loadError": "De status van de link kon niet worden geladen.",
       "disclosure": "Wie de code scant, ziet de aangevinkte onderdelen zonder in te loggen. Je kunt de link een einddatum geven en altijd intrekken; elke keer openen wordt voor je vastgelegd.",

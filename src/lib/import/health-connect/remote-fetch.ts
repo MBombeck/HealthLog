@@ -20,6 +20,12 @@
  * an import already running for the account is retried in thirty minutes.
  * Outcomes are closed codes; nothing from the file or the server's answer
  * body is stored or logged.
+ *
+ * Every attempt is also written to the shared integration ledger under
+ * `health-connect-remote`, so a fetch that keeps failing (a revoked app
+ * password answering 401 every six hours) reaches Settings → Integrations,
+ * `/api/integrations/status` and the assistant's integration tool like any
+ * other connection, not only the import card.
  */
 import { createHash, randomUUID } from "node:crypto";
 import { createWriteStream } from "node:fs";
@@ -30,6 +36,11 @@ import { join } from "node:path";
 import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
+import {
+  recordSyncFailure,
+  recordSyncSuccess,
+  type FailureKind,
+} from "@/lib/integrations/status";
 import { annotate } from "@/lib/logging/context";
 import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
 
@@ -63,6 +74,84 @@ export type RemoteOutcome =
   | "no_worker";
 
 const SUCCESS: ReadonlySet<RemoteOutcome> = new Set(["imported", "unchanged"]);
+
+/**
+ * How each failed outcome reads on the integration ledger, with the closed
+ * sentence stored as its error. `busy` is absent: another import of the
+ * account is running, the folder is fine, and the attempt is retried in
+ * thirty minutes, so it is neither a success nor a failure of the fetch.
+ */
+export const REMOTE_FAILURE: Readonly<
+  Record<
+    Exclude<RemoteOutcome, "imported" | "unchanged" | "busy">,
+    { kind: FailureKind; message: string }
+  >
+> = {
+  unauthorized: {
+    kind: "reauth_required",
+    message: "The folder refused the user name or app password.",
+  },
+  not_found: {
+    kind: "persistent",
+    message: "The export file was not found in the folder.",
+  },
+  redirected: {
+    kind: "persistent",
+    message: "The folder address answered with a redirect.",
+  },
+  invalid_origin: {
+    kind: "persistent",
+    message: "The folder address is not usable.",
+  },
+  private_origin_not_approved: {
+    kind: "persistent",
+    message: "The folder is on a private network this server does not allow.",
+  },
+  too_large: {
+    kind: "persistent",
+    message: "The export file is larger than 1 GB.",
+  },
+  upstream_error: {
+    kind: "transient",
+    message: "The folder's server answered with an error.",
+  },
+  timeout: {
+    kind: "transient",
+    message: "The folder's server did not answer in time.",
+  },
+  network: {
+    kind: "transient",
+    message: "The folder's server could not be reached.",
+  },
+  no_worker: {
+    kind: "transient",
+    message: "No background worker took the import.",
+  },
+};
+
+/** Write one attempt to the shared ledger. Best effort: never fails the fetch. */
+async function recordOnLedger(
+  userId: string,
+  outcome: RemoteOutcome,
+): Promise<void> {
+  try {
+    if (outcome === "imported" || outcome === "unchanged") {
+      await recordSyncSuccess(userId, "health-connect-remote");
+      return;
+    }
+    if (outcome === "busy") return;
+    const failure = REMOTE_FAILURE[outcome];
+    await recordSyncFailure({
+      userId,
+      integration: "health-connect-remote",
+      kind: failure.kind,
+      message: failure.message,
+      errorCode: outcome,
+    });
+  } catch {
+    // The row on the source already holds the outcome; the ledger is a mirror.
+  }
+}
 
 export interface RemoteCredentials {
   username: string;
@@ -289,6 +378,7 @@ export async function fetchRemoteSource(
       ...(jobId ? { lastImportJobId: jobId } : {}),
     },
   });
+  await recordOnLedger(source.userId, outcome);
   annotate({
     action: { name: "import.health-connect.remote.fetch" },
     meta: { outcome, failures },

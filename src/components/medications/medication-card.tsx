@@ -20,7 +20,7 @@ import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
 import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
 import {
-  cardDoseStatus,
+  liveDoseState,
   cardTakeSlot,
   cardWindowPill,
 } from "@/lib/medications/dose-state/pill";
@@ -262,10 +262,10 @@ export function MedicationCard({
   const streak = display?.short.streak ?? compliance?.compliance7?.streak ?? 0;
   // The open dose, resolved on the server (`currentDose`), drives the pill,
   // the calm status line (never a card tint) and the slot the buttons
-  // record; "upcoming" and no pill while the display block is absent.
+  // record; no state and no pill while the display block is absent.
   const now = new Date();
   const currentDose = display?.currentDose;
-  const doseStatus = cardDoseStatus(currentDose, now);
+  const doseState = liveDoseState(currentDose, now);
   const pill = cardWindowPill(currentDose, now, userTz);
   const categoryLabel = getMedicationCategoryLabel(
     medication.category,
@@ -480,7 +480,7 @@ export function MedicationCard({
       stateBadges={stateBadges}
       headerActions={headerActions}
       windowStatus={pill}
-      doseStatus={medication.asNeeded ? "upcoming" : doseStatus}
+      doseState={medication.asNeeded ? null : doseState}
       nextLine={asNeededLine ?? nextLine}
       lastLine={
         medication.lastTakenAt

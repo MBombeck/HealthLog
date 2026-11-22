@@ -19,7 +19,8 @@ import { MedicationIntakeActions } from "@/components/medications/card-parts/med
 import { MedicationNextLastSlot } from "@/components/medications/card-parts/medication-next-last-slot";
 import { MedicationNote } from "@/components/medications/medication-note";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import type { CurrentCycle, DoseStatus } from "@/lib/analytics/compliance";
+import type { CurrentCycle } from "@/lib/analytics/compliance";
+import type { DoseState } from "@/lib/medications/dose-state/resolve";
 import type { MedicationWindowStatus } from "@/lib/medications/dose-state/pill";
 
 /**
@@ -44,12 +45,13 @@ import type { MedicationWindowStatus } from "@/lib/medications/dose-state/pill";
  *     never tints the card background or border. A whole card washing green
  *     reads as "take it now everywhere" and drowns the page; status is shown
  *     ONLY through the discreet top line / pill below.
- *   - `on_time_window` → the discreet "Take now" pill (success-toned text +
+ *   - `due` → the discreet "Take now" pill (success-toned text +
  *     glyph), no card wash.
  *   - `overdue` → a calm top status line; `missed` (at / past the miss
  *     cutoff) escalates to "Stark überfällig" in the destructive tone — both
  *     are a single text line with an icon, not a surface tint.
- *   - `upcoming` / `taken_*` / `skipped` → no escalation; the card stays calm.
+ *   - `pending` / `taken` / `taken_late` / `skipped` → no escalation; the
+ *     card stays calm.
  */
 export interface MedicationCardBodyProps {
   /**
@@ -91,10 +93,10 @@ export interface MedicationCardBodyProps {
   } | null;
 
   /**
-   * The open dose's server-derived {@link DoseStatus}. Drives the green
-   * take-window highlight and the overdue / heavily-overdue top line.
+   * The open dose's server-resolved state at render time (`liveDoseState`),
+   * null when there is none. Drives the overdue / missed top line.
    */
-  doseStatus: DoseStatus;
+  doseState: DoseState | null;
 
   /** Upcoming-intake line value, or null when there is nothing to show. */
   nextLine: ReactNode | null;
@@ -200,7 +202,7 @@ export function MedicationCardBody({
   stateBadges,
   headerActions,
   windowStatus,
-  doseStatus,
+  doseState,
   nextLine,
   lastLine,
   compliance,
@@ -228,9 +230,9 @@ export function MedicationCardBody({
   // contradict each other. Suppressed on an inactive med.
   const canAct = active && intakeActionable;
   const escalation: "missed" | "overdue" | null =
-    canAct && doseStatus === "missed"
+    canAct && doseState === "missed"
       ? "missed"
-      : canAct && doseStatus === "overdue"
+      : canAct && doseState === "overdue"
         ? "overdue"
         : null;
 

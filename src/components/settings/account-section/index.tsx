@@ -16,7 +16,7 @@ import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { HeightFieldControl } from "@/components/profile/height-field-control";
-import { useAuth } from "@/hooks/use-auth";
+import { isFullAccount, useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
@@ -139,11 +139,11 @@ export function AccountSection() {
   }, [isLoading, isAuthenticated, router]);
 
   // Hydrate the form draft once the auth payload arrives. Using the
-  // React-recommended "store-the-prop-id alongside the state" pattern so the
-  // sync-from-server happens during render (not in a setState-in-effect),
-  // satisfying the strict `react-hooks/set-state-in-effect` rule.
+  // React-recommended "store-the-prop-id alongside the state" pattern (no
+  // setState-in-effect); never from the server-rendered seed, whose withheld
+  // identity fields would seed a draft that saves them as cleared.
   const [seededUserId, setSeededUserId] = useState<string | null>(null);
-  if (user && user.id !== seededUserId) {
+  if (isFullAccount(user) && user.id !== seededUserId) {
     const seed = {
       email: user.email ?? "",
       displayName: user.displayName ?? "",
@@ -359,9 +359,9 @@ export function AccountSection() {
     }
   }
 
-  if (!mounted || isLoading) {
-    // §13 — a loading section paints its card + header, not a bare centered
-    // spinner (reference: admin/coach-feedback-section).
+  if (!mounted || isLoading || user?.accountSeed) {
+    // §13 — a loading section (the seeded account too) paints its card +
+    // header, not a bare centered spinner (ref.: admin/coach-feedback-section).
     return (
       <SettingsCard>
         <SettingsCardHeader

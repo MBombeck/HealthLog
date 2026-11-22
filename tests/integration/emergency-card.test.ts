@@ -224,6 +224,52 @@ describe("emergency card", () => {
     );
   });
 
+  it("answers /e/<token> as one script-free document, and every miss as the same 404", async () => {
+    const owner = await makeUser();
+    await seedCard(owner.id);
+    await signIn(owner.id);
+    const { url } = (
+      await (await call("link", "POST", { fields: ["BLOOD_TYPE"] })).json()
+    ).data;
+    // The reader is a stranger: no session.
+    cookieJar.clear();
+    const { GET } = await import("@/app/e/[token]/route");
+    const open = (token: string) =>
+      GET(new NextRequest(`http://localhost/e/${token}`), {
+        params: Promise.resolve({ token }),
+      });
+
+    const hit = await open(tokenOf(url));
+    expect(hit.status).toBe(200);
+    expect(hit.headers.get("content-type")).toContain("text/html");
+    expect(hit.headers.get("cache-control")).toContain("no-store");
+    expect(hit.headers.get("referrer-policy")).toBe("no-referrer");
+    const page = await hit.text();
+    // No script: nothing registers a service worker on the reader's phone.
+    expect(page).not.toMatch(/<script/i);
+    // The phone's own light or dark setting decides the colours.
+    expect(page).toContain("prefers-color-scheme:dark");
+    expect(page).toContain("color-scheme:light dark");
+
+    const misses = ["hlm_nope", `hlm_${"0".repeat(48)}`, "not-even-close"];
+    await db().emergencyCardLink.updateMany({
+      where: { userId: owner.id },
+      data: { revokedAt: new Date() },
+    });
+    misses.push(tokenOf(url));
+    const bodies = new Set<string>();
+    for (const token of misses) {
+      const miss = await open(token);
+      expect(miss.status, token).toBe(404);
+      expect(miss.headers.get("cache-control"), token).toContain("no-store");
+      const body = await miss.text();
+      expect(body).not.toMatch(/<script|href=/i);
+      bodies.add(body);
+    }
+    // One document for every miss class.
+    expect(bodies.size).toBe(1);
+  });
+
   it("ends the link with a credential remediation", async () => {
     const owner = await makeUser();
     await signIn(owner.id);

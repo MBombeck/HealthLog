@@ -202,8 +202,12 @@ describe("resolveSyncVerdict — the ladder", () => {
 
   it("puts every hourly ledger-backed integration on the polled cadence", () => {
     for (const [key, cadence] of Object.entries(INTEGRATION_CADENCE)) {
-      // Dawarich runs once a night; a run is overdue after two days.
-      const expected = key === "dawarich" ? 48 * HOUR : 24 * HOUR;
+      // Dawarich runs once a night and the Health Connect folder every six
+      // hours with a backoff to a day; either is overdue after two days.
+      const expected =
+        key === "dawarich" || key === "health-connect-remote"
+          ? 48 * HOUR
+          : 24 * HOUR;
       expect(cadence.attemptStaleAfterMs, key).toBe(expected);
     }
   });

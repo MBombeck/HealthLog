@@ -13,8 +13,8 @@ import {
 import { applyCategoryOrder } from "@/lib/settings/module-list-layout";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { MEDICATION_CATEGORY_VALUES } from "@/lib/medications/category-values";
-import type { DoseStatus } from "@/lib/analytics/compliance/dose-status";
-import { cardDoseStatus } from "@/lib/medications/dose-state/pill";
+import { liveDoseState } from "@/lib/medications/dose-state/pill";
+import type { DoseState } from "@/lib/medications/dose-state/resolve";
 import type { MedicationComplianceSummaryEntry } from "@/lib/queries/use-medication-compliance-summary";
 
 export interface MedicationGroupCategory {
@@ -31,10 +31,10 @@ export interface MedicationGroup<T> {
 /**
  * The current dose status of each medication at `now`, read from the
  * resolved open dose in the batched compliance rows the way the card reads
- * it (`cardDoseStatus`), so a dose whose time passed since the fetch counts
- * as due here too. A medication without a row counts as upcoming.
+ * it (`liveDoseState`), so a dose whose time passed since the fetch counts
+ * as due here too. A medication without a row has no state (null).
  */
-export function buildDoseStatusById(
+export function buildDoseStateById(
   rows:
     | readonly Pick<
         MedicationComplianceSummaryEntry,
@@ -43,11 +43,11 @@ export function buildDoseStatusById(
     | null
     | undefined,
   now: Date = new Date(),
-): Map<string, DoseStatus> {
+): Map<string, DoseState | null> {
   return new Map(
     (rows ?? []).map((row) => [
       row.medicationId,
-      cardDoseStatus(row.complianceDisplay?.currentDose, now),
+      liveDoseState(row.complianceDisplay?.currentDose, now),
     ]),
   );
 }
@@ -175,12 +175,12 @@ export function isMedicationDue<
     intakeActionable?: boolean;
     nextDueOverdue?: boolean;
     nextDueAt?: string | null;
-    doseStatus?: DoseStatus;
+    doseState?: DoseState | null;
   },
 >(
   med: T,
   options?: {
-    doseStatusById?: ReadonlyMap<string, DoseStatus>;
+    doseStateById?: ReadonlyMap<string, DoseState | null>;
     now?: Date;
   },
 ): boolean {
@@ -194,15 +194,12 @@ export function isMedicationDue<
     return false;
   }
 
-  const doseStatus =
-    med.doseStatus ??
-    (med.id ? options?.doseStatusById?.get(med.id) : undefined);
+  const doseState =
+    med.doseState ?? (med.id ? options?.doseStateById?.get(med.id) : undefined);
 
-  if (doseStatus) {
+  if (doseState) {
     return (
-      doseStatus === "on_time_window" ||
-      doseStatus === "overdue" ||
-      doseStatus === "missed"
+      doseState === "due" || doseState === "overdue" || doseState === "missed"
     );
   }
 
@@ -229,13 +226,13 @@ export function openByDefault<
     intakeActionable?: boolean;
     nextDueOverdue?: boolean;
     nextDueAt?: string | null;
-    doseStatus?: DoseStatus;
+    doseState?: DoseState | null;
   },
 >(
   group: MedicationGroup<T>,
   mode: MedicationGroupsOpen,
   options?: {
-    doseStatusById?: ReadonlyMap<string, DoseStatus>;
+    doseStateById?: ReadonlyMap<string, DoseState | null>;
     now?: Date;
   },
 ): boolean {
@@ -246,7 +243,7 @@ export function openByDefault<
 }
 
 export interface UseMedicationGroupsOpenOptions {
-  doseStatusById?: ReadonlyMap<string, DoseStatus>;
+  doseStateById?: ReadonlyMap<string, DoseState | null>;
   now?: Date;
   highlightId?: string | null;
 }
@@ -265,7 +262,7 @@ export function useMedicationGroupsOpen<
     intakeActionable?: boolean;
     nextDueOverdue?: boolean;
     nextDueAt?: string | null;
-    doseStatus?: DoseStatus;
+    doseState?: DoseState | null;
   },
 >(
   mode: MedicationGroupsOpen = "expanded",

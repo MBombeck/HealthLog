@@ -71,6 +71,39 @@ import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 
 export const dynamic = "force-dynamic";
 
+/** What the envelope reads off the account row: connect markers and extras. */
+const ENVELOPE_USER_SELECT = {
+  withingsClientIdEncrypted: true,
+  withingsClientSecretEncrypted: true,
+  whoopClientIdEncrypted: true,
+  whoopClientSecretEncrypted: true,
+  googleHealthClientIdEncrypted: true,
+  googleHealthClientSecretEncrypted: true,
+  polarAccessTokenEncrypted: true,
+  polarClientIdEncrypted: true,
+  polarClientSecretEncrypted: true,
+  ouraAccessTokenEncrypted: true,
+  ouraClientIdEncrypted: true,
+  ouraClientSecretEncrypted: true,
+  ouraScopeDenied: true,
+  stravaAccessTokenEncrypted: true,
+  stravaClientIdEncrypted: true,
+  stravaClientSecretEncrypted: true,
+  // Nightscout folds onto the envelope; the card reads these three off
+  // it instead of its own /api/nightscout/status round-trip.
+  nightscoutUrlEncrypted: true,
+  nightscoutTokenEncrypted: true,
+  nightscoutAllowPrivateHost: true,
+  dawarichUrlEncrypted: true,
+  // Garmin: the connect marker and the facts its card warns from.
+  garminApiKeyEncrypted: true,
+  garminRegion: true,
+  garminKeyExpiresAt: true,
+  garminBackfillProgress: true,
+  garminBackfillCompletedAt: true,
+  fitbitRemovalNoticeAt: true,
+} as const;
+
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "integrations.status" } });
@@ -90,6 +123,7 @@ export const GET = apiHandler(async () => {
       nightscoutStatus,
       dawarichStatus,
       garminStatus,
+      healthConnectRemoteStatus,
       dbUser,
       withingsConn,
       whoopConn,
@@ -100,6 +134,7 @@ export const GET = apiHandler(async () => {
       polarAvailable,
       ouraAvailable,
       stravaAvailable,
+      folderSource,
     ],
     health,
     metricFreshness,
@@ -114,39 +149,10 @@ export const GET = apiHandler(async () => {
       getIntegrationStatus(user.id, "nightscout"),
       getIntegrationStatus(user.id, "dawarich"),
       getIntegrationStatus(user.id, "garmin"),
+      getIntegrationStatus(user.id, "health-connect-remote"),
       prisma.user.findUnique({
         where: { id: user.id },
-        select: {
-          withingsClientIdEncrypted: true,
-          withingsClientSecretEncrypted: true,
-          whoopClientIdEncrypted: true,
-          whoopClientSecretEncrypted: true,
-          googleHealthClientIdEncrypted: true,
-          googleHealthClientSecretEncrypted: true,
-          polarAccessTokenEncrypted: true,
-          polarClientIdEncrypted: true,
-          polarClientSecretEncrypted: true,
-          ouraAccessTokenEncrypted: true,
-          ouraClientIdEncrypted: true,
-          ouraClientSecretEncrypted: true,
-          ouraScopeDenied: true,
-          stravaAccessTokenEncrypted: true,
-          stravaClientIdEncrypted: true,
-          stravaClientSecretEncrypted: true,
-          // Nightscout folds onto the envelope; the card reads these three off
-          // it instead of its own /api/nightscout/status round-trip.
-          nightscoutUrlEncrypted: true,
-          nightscoutTokenEncrypted: true,
-          nightscoutAllowPrivateHost: true,
-          dawarichUrlEncrypted: true,
-          // Garmin: the connect marker and the facts its card warns from.
-          garminApiKeyEncrypted: true,
-          garminRegion: true,
-          garminKeyExpiresAt: true,
-          garminBackfillProgress: true,
-          garminBackfillCompletedAt: true,
-          fitbitRemovalNoticeAt: true,
-        },
+        select: ENVELOPE_USER_SELECT,
       }),
       prisma.withingsConnection.findUnique({
         where: { userId: user.id },
@@ -182,6 +188,11 @@ export const GET = apiHandler(async () => {
       getPolarClientCredentials(user.id).then((c) => !!c),
       getOuraClientCredentials(user.id).then((c) => !!c),
       getStravaClientCredentials(user.id).then((c) => !!c),
+      // The Health Connect export folder: set up, and switched on or paused.
+      prisma.healthConnectRemoteSource.findUnique({
+        where: { userId: user.id },
+        select: { enabled: true },
+      }),
     ]),
     // The unified per-connection state. Resolved by the same loader the
     // per-provider routes and the integration watchdog use, so the envelope
@@ -196,6 +207,7 @@ export const GET = apiHandler(async () => {
       "nightscout",
       "dawarich",
       "garmin",
+      "health-connect-remote",
     ]),
     // See `metricFreshnessDegraded` below.
     getSourceMetricFreshness(user.id).catch(() => {
@@ -215,7 +227,7 @@ export const GET = apiHandler(async () => {
   // "we could not tell whether a metric has gone quiet" were the same answer on
   // the wire, and the honesty signal quietly became the thing it was built to
   // prevent. `metricFreshnessDegraded` separates them. One flag rather than a
-  // nullable array per entry, because this is ONE query for all eight providers
+  // nullable array per entry, because this is ONE query for every provider
   // — it fails for all of them or for none. (Read in the round above.)
 
   const now = Date.now();
@@ -304,6 +316,8 @@ export const GET = apiHandler(async () => {
   const nightscoutConfigured = !!dbUser?.nightscoutUrlEncrypted;
   const dawarichConfigured = !!dbUser?.dawarichUrlEncrypted;
   const garmin = garminExtras(dbUser);
+  const folderConfigured = folderSource !== null;
+  const folderConnected = folderSource?.enabled === true;
 
   if (metricFreshnessDegraded) {
     annotate({ meta: { integrations_metric_freshness_degraded: true } });
@@ -494,6 +508,19 @@ export const GET = apiHandler(async () => {
           configured: garmin.configured,
         }),
       } satisfies IntegrationViewModel & GarminExtras,
+      {
+        ...publish(healthConnectRemoteStatus),
+        // The Health Connect export fetched from a WebDAV or Nextcloud
+        // folder. Managed on the import card; `connected` is a folder that
+        // is set up and switched on, `configured` one that is set up at all.
+        connected: folderConnected,
+        configured: folderConfigured,
+        health: health["health-connect-remote"],
+        ...resolve("health-connect-remote", healthConnectRemoteStatus, {
+          connected: folderConnected,
+          configured: folderConfigured,
+        }),
+      } satisfies IntegrationViewModel & FolderExtras,
     ],
   });
 });
@@ -643,6 +670,12 @@ function garminExtras(
 // v1.43 — Dawarich: the connect marker only; the card reads `health` and its
 // own status route.
 interface DawarichExtras {
+  connected: boolean;
+  configured: boolean;
+}
+
+/** The Health Connect export folder: set up, and switched on. */
+interface FolderExtras {
   connected: boolean;
   configured: boolean;
 }

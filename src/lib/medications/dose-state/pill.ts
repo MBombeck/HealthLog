@@ -16,8 +16,10 @@
  *
  * Client-safe: no server imports. Instants may arrive as ISO strings (JSON).
  */
-import type { DoseStatus } from "@/lib/analytics/compliance/dose-status";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
+
+import { openDoseStateAt, type DoseState } from "./resolve";
+import { doseStateFromWire } from "./terms";
 
 type Instant = Date | string | null;
 
@@ -55,27 +57,34 @@ function hhmm(t: number, tz: string): string {
 const OPEN = new Set(["upcoming", "due", "overdue"]);
 
 /**
- * The resolved state at `now`. A dose that records nothing (`upcoming`,
- * `due`, `overdue`) moves along its own instants; a recorded or missed one
- * keeps the server's state.
+ * The resolved dose's state at `now`, in the resolver's own vocabulary
+ * (`DoseState`). A dose that records nothing (`upcoming`, `due`, `overdue`
+ * on the wire) moves along its own instants through the resolver's ladder
+ * (`openDoseStateAt`), so the card and the server cannot disagree about a
+ * boundary; a recorded or missed one keeps the server's state. Null for no
+ * dose or an unknown state.
  */
 export function liveDoseState(
   dose: ResolvedDoseWire | null | undefined,
   now: Date,
-): string | null {
+): DoseState | null {
   if (!dose || dose.state == null) return null;
-  if (!OPEN.has(dose.state)) return dose.state;
+  const resolved = doseStateFromWire(dose.state, dose.takenLate === true);
+  if (!OPEN.has(dose.state)) return resolved;
   const dueAt = ms(dose.dueAt);
   const overdueSince = ms(dose.overdueSince);
   const missedAfter = ms(dose.missedAfter);
   if (dueAt === null || overdueSince === null || missedAfter === null) {
-    return dose.state;
+    return resolved;
   }
-  const t = now.getTime();
-  if (t < dueAt) return "upcoming";
-  if (t <= overdueSince) return "due";
-  if (t <= missedAfter) return "overdue";
-  return "missed";
+  return openDoseStateAt(
+    {
+      dueAt: new Date(dueAt),
+      overdueSince: new Date(overdueSince),
+      missedAfter: new Date(missedAfter),
+    },
+    now,
+  );
 }
 
 /** The card's pill for the resolved open dose, or null for no pill. */
@@ -107,30 +116,6 @@ export function cardWindowPill(
       ? window
       : { windowStart: hhmm(slot, tz), windowEnd: hhmm(slot, tz) }),
   };
-}
-
-/**
- * The resolved dose in the older `currentDose.status` vocabulary the card
- * body's escalation reads, at `now`. `upcoming` while nothing is resolved.
- */
-export function cardDoseStatus(
-  dose: ResolvedDoseWire | null | undefined,
-  now: Date,
-): DoseStatus {
-  switch (liveDoseState(dose, now)) {
-    case "due":
-      return "on_time_window";
-    case "overdue":
-      return "overdue";
-    case "missed":
-      return "missed";
-    case "skipped":
-      return "skipped";
-    case "taken":
-      return dose?.takenLate ? "taken_late" : "taken_on_time";
-    default:
-      return "upcoming";
-  }
 }
 
 /**
@@ -177,7 +162,7 @@ export function cardTakeSlot(
   if (!at) return null;
   const dueAt = ms(dose?.dueAt);
   const early =
-    liveDoseState(dose, now) === "upcoming" &&
+    liveDoseState(dose, now) === "pending" &&
     ms(dose?.targetAt) === at.getTime() &&
     dueAt !== null;
   return { at, earlyFrom: early ? new Date(dueAt) : null };

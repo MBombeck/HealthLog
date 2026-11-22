@@ -73,4 +73,48 @@ test.describe("offline, with the service worker", () => {
       await context.setOffline(false);
     }
   });
+
+  test("a public page opened signed in is no-store and never comes back offline @critical", async ({
+    page,
+    context,
+  }) => {
+    // `/about` is public, but rendered for a session it is the session's
+    // document: `private, no-store`, no page-cache permit, and so nothing the
+    // worker could replay after the session ends.
+    await page.goto("/medications");
+    await page.waitForFunction(
+      () => navigator.serviceWorker?.controller !== null,
+      undefined,
+      { timeout: 20_000 },
+    );
+    const about = await page.goto("/about");
+    expect(about?.status()).toBe(200);
+    expect(about?.headers()["cache-control"]).toContain("no-store");
+    expect(about?.headers()["x-healthlog-page-cache"]).toBeUndefined();
+    // The page has rendered (and the worker has seen its response) before
+    // the cache is read.
+    await expect(page.getByRole("heading").first()).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
+    const cachedAbout = await page.evaluate(async () => {
+      const names = await caches.keys();
+      for (const name of names.filter((n) =>
+        n.startsWith("healthlog-pages-"),
+      )) {
+        const hit = await (await caches.open(name)).match("/about");
+        if (hit) return true;
+      }
+      return false;
+    });
+    expect(cachedAbout).toBe(false);
+
+    try {
+      await context.setOffline(true);
+      const offline = await page.goto("/about");
+      expect(offline?.status()).toBe(503);
+      await expect(page.getByText("Offline", { exact: true })).toBeVisible();
+    } finally {
+      await context.setOffline(false);
+    }
+  });
 });

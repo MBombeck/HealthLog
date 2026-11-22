@@ -15,6 +15,7 @@ import {
   setActiveSchedule,
   summariseCadence,
   summariseScheduleDraft,
+  stepBlocker,
   validateStep,
   type WizardPayload,
   WIZARD_TREATMENT_MAPPING,
@@ -104,12 +105,31 @@ describe("validateStep", () => {
     expect(validateStep({ ...base, name: "   " }, 1)).toBe(false);
   });
 
-  it("step 2: requires a treatment row", () => {
+  it("step 2: the class is optional, and none files the medication under Other", () => {
     const base = emptyWizardPayload();
-    expect(validateStep(base, 2)).toBe(false);
+    expect(validateStep(base, 2)).toBe(true);
     expect(validateStep({ ...base, treatmentRow: "bloodPressure" }, 2)).toBe(
       true,
     );
+    const body = buildCreateBody({ ...base, name: "Foo", doseAmount: "5" });
+    expect(body.treatmentClass).toBe(
+      WIZARD_TREATMENT_MAPPING.other.treatmentClass,
+    );
+  });
+
+  it("names what holds a step, in the same terms as the gate", () => {
+    const base = emptyWizardPayload();
+    expect(stepBlocker(base, 1)).toBe("medications.wizard.blocked.name");
+    expect(stepBlocker(base, 3)).toBe("medications.wizard.blocked.amount");
+    expect(
+      stepBlocker({ ...base, doseAmount: "5", unitsPerDose: "x" }, 3),
+    ).toBe("medications.wizard.blocked.unitsPerDose");
+    expect(stepBlocker({ ...base, timesOfDay: [] }, 7)).toBe(
+      "medications.wizard.blocked.time",
+    );
+    for (const step of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      expect(validateStep(base, step)).toBe(stepBlocker(base, step) === null);
+    }
   });
 
   it("step 3: requires populated dose amount", () => {

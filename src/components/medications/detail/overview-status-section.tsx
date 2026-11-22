@@ -25,10 +25,7 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { SupplySummary } from "@/lib/medications/inventory/summary";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
 import { estimateRunwayDays } from "@/lib/medications/supply-runway";
-import {
-  doseStateFromWire,
-  isOpenDoseState,
-} from "@/lib/medications/dose-state/terms";
+import { isOpenDoseState } from "@/lib/medications/dose-state/terms";
 import {
   cardTakeSlot,
   liveDoseState,
@@ -127,7 +124,7 @@ export function OverviewStatusSection({
   // overdue), the take for the slot it names, else the next due one.
   const now = new Date();
   const state = currentDose
-    ? doseStateFromWire(liveDoseState(currentDose, now), currentDose.takenLate)
+    ? liveDoseState(currentDose, now)
     : medication.nextDueOverdue
       ? "overdue"
       : null;

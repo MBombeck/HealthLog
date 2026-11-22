@@ -99,6 +99,9 @@ import { PUBLIC_PATHS as PROXY_PUBLIC_PATHS } from "@/proxy";
 const NON_PAGE_PREFIXES = new Set([
   "/i18n/", // locale-catalog boot script
   "/robots.txt", // static text route
+  // The emergency card answers from a route handler with its own document;
+  // no page is rendered under `/e/`, so the shell never mounts there.
+  "/e/",
 ]);
 
 const PAGE_PREFIXES = PROXY_PUBLIC_PATHS.filter(

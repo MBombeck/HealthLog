@@ -76,6 +76,43 @@ const recordFileImportJob = z
   })
   .meta({ id: "RecordFileImportJob" });
 
+/**
+ * The refusals every staged file upload answers alike
+ * (`src/lib/import/staged-upload.ts`). Spread after the 202.
+ */
+export function stagedUploadErrorResponses(cap: string) {
+  return {
+    "400": {
+      description: "The request carried no body at all.",
+      content: { "application/json": { schema: errorEnvelope } },
+    },
+    "409": {
+      description:
+        "An import for this account (of any kind) is already queued or running. The upload was discarded. `meta.errorCode` is `import.apple_health.busy` for every kind, `meta.jobId` names the running job; poll it, then upload again.",
+      content: { "application/json": { schema: errorEnvelope } },
+    },
+    "413": {
+      description: `The file is larger than ${cap}. Answered alike whether the declared \`Content-Length\` says so (beyond a 64 KiB allowance for the multipart envelope) or the stream finds it while reading; \`meta.errorCode\` is \`import.file.too_large\`. Nothing was kept.`,
+      content: { "application/json": { schema: errorEnvelope } },
+    },
+    ...stdResponses,
+    "422": {
+      description:
+        "The multipart body could not be read: no `file` part, a malformed boundary, or a dropped connection. The message names the failure. Whether the file itself is readable is decided by the worker and reported on the job (`status: failed`, `failureReason`).",
+      content: { "application/json": { schema: errorEnvelope } },
+    },
+    "429": {
+      ...stdResponses["429"],
+      description: `More than five uploads of this kind in a minute by this account (the bucket \`import:<kind>:<account>\`, spent before the body is read). ${stdResponses["429"].description}`,
+    },
+    "503": {
+      description:
+        "No background worker is bound, or the queue did not take the job (the job is then marked failed), so nothing would run the import. The upload was discarded; retry once a worker runs.",
+      content: { "application/json": { schema: errorEnvelope } },
+    },
+  };
+}
+
 function uploadPath(input: {
   summary: string;
   description: string;
@@ -115,30 +152,7 @@ function uploadPath(input: {
             },
           },
         },
-        "400": {
-          description: "The request carried no body at all.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "409": {
-          description:
-            "An import for this account (of any kind) is already queued or running. The upload was discarded. `errorCode` is `import.apple_health.busy`, `jobId` names the running job.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "413": {
-          description: `The file is larger than ${input.cap} (\`import.file.too_large\`).`,
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        ...stdResponses,
-        "422": {
-          description:
-            "The multipart body could not be read. Whether the file is readable is decided by the worker and reported on the job.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "503": {
-          description:
-            "No background worker is bound, or the queue did not take the job.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...stagedUploadErrorResponses(input.cap),
       },
     },
   };
@@ -173,7 +187,7 @@ function statusPath(
 }
 
 const SHARED =
-  "Body is `multipart/form-data` with the file under `file`, streamed to disk after authentication. The response is **202 with a `jobId`**; poll the status route. Re-uploading the same bytes resolves to the still-viable job. One import per account at a time, whatever its kind. Five uploads a minute per account. A run stops at a ten-minute budget, keeps what it wrote and fails with `time_budget`; uploading the same file again continues. Cookie or wildcard Bearer.";
+  "Body is `multipart/form-data` with the file under `file`, streamed to disk after authentication. The response is **202 with a `jobId`**; poll the status route. Re-uploading the same bytes resolves to the still-viable job. One import per account at a time, whatever its kind. Five uploads a minute per account and kind. A run stops at a ten-minute budget, keeps what it wrote and fails with `time_budget`; uploading the same file again continues. Cookie or wildcard Bearer.";
 
 export const importFilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/import/gadgetbridge": uploadPath({

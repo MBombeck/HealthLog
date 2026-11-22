@@ -19,18 +19,18 @@ vi.mock("@/hooks/use-auth", () => ({
   },
 }));
 
-import type { MePayload } from "@/hooks/use-auth";
+import { toAccountSeed, type AccountSeed } from "@/lib/auth/account-seed";
 import { queryKeys } from "@/lib/query-keys";
 import { AuthMeSeed } from "../auth-me-seed";
 
-const PAYLOAD: MePayload = {
+const PAYLOAD: AccountSeed = toAccountSeed({
   id: "u1",
   username: "u1",
   role: "USER",
   timezone: "Europe/Berlin",
-};
+});
 
-function seed(client: QueryClient, payload: MePayload | null) {
+function seed(client: QueryClient, payload: AccountSeed | null) {
   renderToStaticMarkup(
     <QueryClientProvider client={client}>
       <AuthMeSeed payload={payload} />

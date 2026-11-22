@@ -62,6 +62,8 @@ import {
 } from "@/lib/validations/medication";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 import { parseUnitsPerDoseInput } from "@/lib/medications/units-per-dose";
+
+import { TIME_RE, validateStep } from "./wizard-step-gate";
 import {
   isExplicitRange,
   type DoseWindowEntry,
@@ -361,8 +363,6 @@ export interface WizardPayload {
   activeScheduleIndex: number;
 }
 
-const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
 function todayUtc(): Date {
   const now = new Date();
   return new Date(
@@ -552,82 +552,8 @@ export function progressIndices(
   return RECURRING_PATH;
 }
 
-// ────────────────────────────────────────────────────────────────────
-// validateStep — pure per-step gate
-// ────────────────────────────────────────────────────────────────────
-
-/**
- * Returns true when the step's required inputs are populated.
- *
- * Matrix:
- *  - Step 1: name populated.
- *  - Step 2: treatment row picked.
- *  - Step 3: doseAmount populated.
- *  - Step 4: startsOn present + (endsOn null OR endsOn >= startsOn).
- *  - Step 5: mode picked.
- *  - Step 6: cadence-specific (weekdays >= 1; interval >= 1; monthly
- *    day 1..31; rolling 1..365).
- *  - Step 7: >= 1 valid HH:mm time.
- *  - Step 8: mirrors Step 4 (the reminders toggle has no failure mode).
- */
-export function validateStep(payload: WizardPayload, step: number): boolean {
-  switch (step) {
-    case 1:
-      return payload.name.trim().length > 0;
-    case 2:
-      return payload.treatmentRow !== null;
-    case 3:
-      return (
-        payload.doseAmount.trim().length > 0 &&
-        parseUnitsPerDoseInput(payload.unitsPerDose) !== null
-      );
-    case 4:
-      if (payload.startsOn === null) return false;
-      if (payload.endsOn === null) return true;
-      return payload.endsOn.getTime() >= payload.startsOn.getTime();
-    case 5:
-      return payload.mode !== null;
-    case 6: {
-      if (payload.mode !== "recurring") return true;
-      switch (payload.cadence.kind) {
-        case "weekdays":
-          return payload.subControls.weekdays.length >= 1;
-        case "everyNWeeks":
-          return (
-            payload.subControls.weekdays.length >= 1 &&
-            payload.subControls.intervalWeeks >= 1
-          );
-        case "monthly":
-          return (
-            payload.subControls.dayOfMonth >= 1 &&
-            payload.subControls.dayOfMonth <= 31
-          );
-        case "rolling":
-          return (
-            payload.subControls.rollingDays >= 1 &&
-            payload.subControls.rollingDays <= 365
-          );
-        default:
-          return true;
-      }
-    }
-    case 7: {
-      const times = payload.timesOfDay.filter((t) => TIME_RE.test(t));
-      // Blank inherits the medication-level value; anything typed must read.
-      const slotUnits = payload.scheduleUnitsPerDose.trim();
-      return (
-        times.length >= 1 &&
-        (slotUnits === "" || parseUnitsPerDoseInput(slotUnits) !== null)
-      );
-    }
-    case 8:
-      if (payload.startsOn === null) return false;
-      if (payload.endsOn === null) return true;
-      return payload.endsOn.getTime() >= payload.startsOn.getTime();
-    default:
-      return false;
-  }
-}
+// The per-step gate lives in `./wizard-step-gate.ts`.
+export { stepBlocker, validateStep } from "./wizard-step-gate";
 
 // ────────────────────────────────────────────────────────────────────
 // firstInvalidIndex — multi-step forward lookahead

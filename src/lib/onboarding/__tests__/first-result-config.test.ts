@@ -52,6 +52,8 @@ const NOT_AN_ONBOARDING_SOURCE: Record<string, string> = {
     "reached through the Fitbit answer, whose task opens the Google Health card",
   dawarich:
     "movement context for the environment module, not a source of readings",
+  "health-connect-remote":
+    "a second way in for the Health Connect export, reached through the Health Connect answer and set up on its import card",
 };
 
 describe("first-result targets", () => {

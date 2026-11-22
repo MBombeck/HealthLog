@@ -44,9 +44,10 @@ onto the **Health Connect export** card.
 The endpoint is `POST /api/import/health-connect-export`
 (`multipart/form-data`, field `file`). It:
 
-1. Allows three uploads per minute per account.
+1. Allows five uploads per minute per account.
 2. Refuses anything above **1 GiB**, once against the declared
-   `Content-Length` and again while the body streams to disk.
+   `Content-Length` and again while the body streams to disk, with
+   `413` and `errorCode` `import.file.too_large` either way.
 3. Streams the body to a temp file and hashes it with SHA-256 on the
    way. Uploading the same bytes again returns the earlier job
    (`idempotent: true`) instead of importing twice; a failed job never
@@ -199,6 +200,14 @@ now**:
   minutes, then doubles up to a day, and the card names the last outcome.
   An import that is already running for the account is retried in thirty
   minutes.
+- Every fetch is also recorded as a connection, `health-connect-remote`, so
+  its state shows on **Settings → Integrations**, in
+  `GET /api/integrations/status` and in the assistant's integration status
+  like any other source. A refused user name or app password reads as
+  "action needed" until a new password is saved; a missing file, a redirect
+  or an address the server does not allow is reported as a lasting problem;
+  a timeout or a server error is retried. Pausing or removing the folder
+  ends the connection.
 
 The password is stored encrypted with the app's encryption key and never
 shown again. Removing the folder deletes it; the imports stay. It only ever

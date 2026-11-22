@@ -8,7 +8,18 @@ import {
   RETIRED_ROUTE_STATUS,
 } from "@/lib/http/retired-routes";
 import { setBaselineSecurityHeaders } from "@/lib/http/proxy-bypass-routes";
-import { setPathCredentialHeaders } from "@/lib/http/path-credential-headers";
+import {
+  credentialRedirect,
+  setPathCredentialHeaders,
+} from "@/lib/http/path-credential-headers";
+import {
+  SHARE_VIEW_GATE_COOKIE,
+  shareViewToken,
+} from "@/lib/clinician-share/view-gate";
+import {
+  forwardAccountSeedPermission,
+  setPageCachePolicy,
+} from "@/lib/http/page-cache-headers";
 import { DEMO_REFUSAL_BODY } from "@/lib/demo-refusal";
 import { resolveRequestId } from "@/lib/http/request-id";
 import { redactSecrets } from "@/lib/logging/redact";
@@ -521,19 +532,9 @@ export function proxy(request: NextRequest) {
     if (/^hlv_[0-9a-f]{64}$/.test(token)) {
       target.searchParams.set("invite", token);
     }
-    const redirected = applyBaselineSecurityHeaders(
-      NextResponse.redirect(target, 307),
-    );
-    // The secret rides in the path of the request that produced this hop, so
-    // the hop itself carries the same defence the landing page earned in
-    // v1.17.0: uncacheable, unindexable, and never leaked as a `Referer`.
-    redirected.headers.set(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate",
-    );
-    redirected.headers.set("X-Robots-Tag", "noindex, nofollow");
-    redirected.headers.set("Referrer-Policy", "no-referrer");
-    return redirected;
+    // The secret rides in the path of this hop: uncacheable, unindexable,
+    // never leaked as a `Referer`.
+    return credentialRedirect(target);
   }
 
   // v1.42 (#959) — the managed-profile handover link answers at the edge for
@@ -547,16 +548,15 @@ export function proxy(request: NextRequest) {
     if (/^hlp_[0-9a-f]{64}$/.test(token)) {
       target.searchParams.set("token", token);
     }
-    const redirected = applyBaselineSecurityHeaders(
-      NextResponse.redirect(target, 307),
-    );
-    redirected.headers.set(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate",
-    );
-    redirected.headers.set("X-Robots-Tag", "noindex, nofollow");
-    redirected.headers.set("Referrer-Policy", "no-referrer");
-    return redirected;
+    return credentialRedirect(target);
+  }
+
+  // The clinician share page opened without the entry route's gate cookie:
+  // back to `/c/<token>`, which answers an unknown or ended link with a real
+  // 404 (`src/lib/clinician-share/view-gate.ts`).
+  const shareToken = shareViewToken(pathname);
+  if (shareToken && !request.cookies.has(SHARE_VIEW_GATE_COOKIE)) {
+    return credentialRedirect(new URL(`/c/${shareToken}`, request.url));
   }
 
   // Server-side route protection for pages (not API routes — those have their own getSession checks)
@@ -625,6 +625,7 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("x-request-id", requestId);
+  forwardAccountSeedPermission(requestHeaders, isSessionGatedPage);
 
   const response = NextResponse.next({
     request: {
@@ -663,27 +664,6 @@ export function proxy(request: NextRequest) {
   // Both serve routes take the narrow, document-only header posture.
   const isServeRoute = isDocumentServeRoute || isShareDocumentServeRoute;
 
-  // Session-gated pages carry one account's health record in the document
-  // itself. Several of them server-prefetch their data and serialise it into
-  // the HTML through a TanStack `HydrationBoundary` — the dashboard, Insights,
-  // the workouts list, the medications list, the Coach. Those pages are
-  // dynamic today only as a side effect of reading the session cookie, which
-  // is a property of the page code, not a guarantee: a stray `revalidate`
-  // export, a `force-static` segment, or a caching proxy in front of the app
-  // would be enough to retain one account's record and hand it to the next
-  // caller. Pin the guarantee at the edge instead, where no page-level change
-  // can weaken it.
-  //
-  // `private` bars shared caches (CDN, reverse proxy) outright; `no-store`
-  // additionally stops the browser's own disk cache and the bfcache snapshot,
-  // so a back-navigation after logout cannot repaint the record. The public
-  // surfaces (`/auth/*`, `/privacy`, `/about`, `/i18n/*`) are excluded by the
-  // same predicate that governs the auth redirect, so the statically
-  // rendered marketing/legal pages stay cacheable.
-  if (isSessionGatedPage) {
-    response.headers.set("Cache-Control", "private, no-store");
-  }
-
   // Security headers. Framing is refused by the CSP's `frame-ancestors`; a
   // browser that reads it ignores X-Frame-Options, kept for older ones.
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -696,6 +676,13 @@ export function proxy(request: NextRequest) {
 
   // Paths whose credential is the URL itself (share view, invite, feed).
   setPathCredentialHeaders(pathname, response.headers);
+  // A page rendered for a session is `private, no-store`, path or cookie;
+  // only an anonymous one may be kept by the worker (see the module).
+  setPageCachePolicy(response.headers, {
+    sessionGated: isSessionGatedPage,
+    isPage: !isApiRoute && !isStaticFile && !pathname.startsWith("/i18n/"),
+    carriesSession: readSessionCookie(request.cookies) !== null,
+  });
   // COOP isolates this BrowsingContextGroup from cross-origin popups,
   // closing the Spectre-class side-channel surface a stray
   // `window.opener` reference would otherwise carry. CORP narrows the

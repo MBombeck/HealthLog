@@ -76,7 +76,7 @@ import { Step5Cadence } from "./steps/step5-cadence";
 import { Step6SubCadence } from "./steps/step6-sub-cadence";
 import { Step7Times } from "./steps/step7-times";
 import { Step8Summary } from "./steps/step8-summary";
-import { validateStep } from "./wizard-payload";
+import { stepBlocker } from "./wizard-payload";
 import { extractorToWizardPartial } from "./nl-bridge";
 
 export interface MedicationWizardDialogProps {
@@ -229,10 +229,10 @@ function WizardDialogShell({
   // behind an unmet requirement.
   const lastReachable = firstInvalidIndex(payload, stepList, 0) >= totalSteps;
 
-  const canContinue = useMemo(
-    () => validateStep(payload, step),
-    [payload, step],
-  );
+  // What still holds this step, said under the disabled button rather than
+  // left for the person to guess; null when the step can be left.
+  const blocker = useMemo(() => stepBlocker(payload, step), [payload, step]);
+  const canContinue = blocker === null;
 
   const goNext = useCallback(() => {
     if (!canContinue) return;
@@ -446,43 +446,16 @@ function WizardDialogShell({
         className="min-h-[40dvh] md:min-h-0"
         bodyClassName="gap-0 p-0"
         footer={
-          <div className="flex w-full items-center justify-between gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={goBack}
-              disabled={isFirstStep || submitting}
-              data-slot="wizard-back"
-              className="h-11"
-            >
-              {t("medications.wizard.nav.back")}
-            </Button>
-            {!isLastStep ? (
-              <Button
-                type="button"
-                onClick={goNext}
-                disabled={!canContinue}
-                data-slot="wizard-next"
-                className="h-11"
-              >
-                {primaryCtaLabel}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={() => void onSubmit()}
-                disabled={!canContinue || submitting}
-                data-slot="wizard-save"
-                aria-busy={submitting || undefined}
-                className="h-11"
-              >
-                {submitting && (
-                  <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-                )}
-                {primaryCtaLabel}
-              </Button>
-            )}
-          </div>
+          <WizardFooter
+            blocker={blocker ? t(blocker) : null}
+            isFirstStep={isFirstStep}
+            isLastStep={isLastStep}
+            submitting={submitting}
+            label={primaryCtaLabel}
+            onBack={goBack}
+            onNext={goNext}
+            onSubmit={() => void onSubmit()}
+          />
         }
       >
         <div
@@ -651,5 +624,86 @@ function WizardDialogShell({
         />
       )}
     </>
+  );
+}
+
+/**
+ * Back, then Next or Save. A disabled Next or Save says what still holds the
+ * step (`blocker`, from the same gate that disables it) instead of leaving
+ * the person to guess.
+ */
+function WizardFooter({
+  blocker,
+  isFirstStep,
+  isLastStep,
+  submitting,
+  label,
+  onBack,
+  onNext,
+  onSubmit,
+}: {
+  blocker: string | null;
+  isFirstStep: boolean;
+  isLastStep: boolean;
+  submitting: boolean;
+  label: string;
+  onBack: () => void;
+  onNext: () => void;
+  onSubmit: () => void;
+}) {
+  const { t } = useTranslations();
+  const describedBy = blocker ? "wizard-blocked-hint" : undefined;
+  return (
+    <div className="flex w-full flex-col gap-2">
+      {blocker && (
+        <p
+          id="wizard-blocked-hint"
+          className="text-foreground text-right text-sm"
+          data-slot="wizard-blocked-hint"
+          aria-live="polite"
+        >
+          {blocker}
+        </p>
+      )}
+      <div className="flex w-full items-center justify-between gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onBack}
+          disabled={isFirstStep || submitting}
+          data-slot="wizard-back"
+          className="h-11"
+        >
+          {t("medications.wizard.nav.back")}
+        </Button>
+        {!isLastStep ? (
+          <Button
+            type="button"
+            onClick={onNext}
+            disabled={blocker !== null}
+            aria-describedby={describedBy}
+            data-slot="wizard-next"
+            className="h-11"
+          >
+            {label}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={blocker !== null || submitting}
+            aria-describedby={describedBy}
+            data-slot="wizard-save"
+            aria-busy={submitting || undefined}
+            className="h-11"
+          >
+            {submitting && (
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+            )}
+            {label}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

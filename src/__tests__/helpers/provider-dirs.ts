@@ -12,9 +12,16 @@ import { CONNECTION_KEYS } from "@/lib/integrations/connection-health";
 
 const LIB = join(process.cwd(), "src", "lib");
 
+/** Keys whose code lives under another name. */
+const DIR_OF: Partial<Record<string, string>> = {
+  // The folder fetch is a second way into the Health Connect importer.
+  "health-connect-remote": "import/health-connect",
+};
+
 export const PROVIDER_DIRS: readonly string[] = CONNECTION_KEYS.map((key) => {
-  if (!statSync(join(LIB, key), { throwIfNoEntry: false })?.isDirectory()) {
-    throw new Error(`provider-dirs: src/lib/${key} is not a directory`);
+  const dir = DIR_OF[key] ?? key;
+  if (!statSync(join(LIB, dir), { throwIfNoEntry: false })?.isDirectory()) {
+    throw new Error(`provider-dirs: src/lib/${dir} is not a directory`);
   }
-  return key;
+  return dir;
 });

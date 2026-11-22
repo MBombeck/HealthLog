@@ -12,12 +12,12 @@
  *   5. the gates, read live on every fetch: the record is not pending
  *      deletion, and the operator's external-access switch is on.
  *
- * Every miss is the same 404 with the same bytes.
+ * Every miss is the same 404 with the same bytes, built by the shared
+ * URL-credential answers (`src/lib/http/url-credential.ts`).
  */
 import { NextRequest } from "next/server";
 
 import { activeAccount } from "@/lib/account-deletion/active-account";
-import { apiError } from "@/lib/api-response";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { guardianMintRefusal } from "@/lib/sharing/guardian-minted";
 import { hashToken } from "@/lib/auth/hmac";
@@ -29,59 +29,27 @@ import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { annotate } from "@/lib/logging/context";
 import { runDetached } from "@/lib/logging/detached";
 import {
-  checkAuthSurfaceRateLimit,
-  checkRateLimit,
-  rateLimitHeaders,
-} from "@/lib/rate-limit";
+  checkUrlCredentialSurface,
+  HOUR_MS,
+  icsFeedResponse,
+  matchesEtag,
+  urlCredentialNotFound,
+  urlCredentialTooMany,
+} from "@/lib/http/url-credential";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 import { buildCareFeed } from "./build";
 
-/** Per source address, across every feed; the cycle feed's figure. */
-const SURFACE_LIMIT_PER_HOUR = 600;
 /** Per link; the cycle feed's figure. */
 const TOKEN_LIMIT_PER_HOUR = 120;
-const HOUR_MS = 60 * 60 * 1000;
 const UA_MAX_LENGTH = 80;
 
-function baseHeaders(): Record<string, string> {
-  return {
-    "X-Robots-Tag": "noindex, nofollow",
-    "Referrer-Policy": "no-referrer",
-  };
-}
-
-function notFound(reason: string): Response {
-  annotate({ meta: { feed_miss: reason } });
-  const response = apiError("Not found", 404, {
-    errorCode: "care.feed.notFound",
-  });
-  for (const [k, v] of Object.entries(baseHeaders()))
-    response.headers.set(k, v);
-  response.headers.set("Cache-Control", "no-store");
-  return response;
-}
-
-function tooMany(snapshot: Parameters<typeof rateLimitHeaders>[0]): Response {
-  const response = apiError("Too many requests. Try again later.", 429, {
-    errorCode: "care.feed.rateLimited",
-  });
-  for (const [k, v] of Object.entries({
-    ...baseHeaders(),
-    ...rateLimitHeaders(snapshot),
-  })) {
-    response.headers.set(k, v);
-  }
-  return response;
-}
-
-function matchesEtag(request: NextRequest, etag: string): boolean {
-  const header = request.headers.get("if-none-match");
-  if (!header) return false;
-  return header
-    .split(",")
-    .map((v) => v.trim().replace(/^W\//, ""))
-    .some((v) => v === etag || v === "*");
-}
+const NOT_FOUND_ERROR_CODE = "care.feed.notFound";
+const RATE_LIMITED_ERROR_CODE = "care.feed.rateLimited";
+const notFound = (reason: string) =>
+  urlCredentialNotFound(NOT_FOUND_ERROR_CODE, reason);
+const tooMany = (snapshot: Parameters<typeof urlCredentialTooMany>[1]) =>
+  urlCredentialTooMany(RATE_LIMITED_ERROR_CODE, snapshot);
 
 export async function serveCareFeed(
   request: NextRequest,
@@ -89,12 +57,7 @@ export async function serveCareFeed(
 ): Promise<Response> {
   annotate({ action: { name: "care.feed.fetch" } });
 
-  const surface = await checkAuthSurfaceRateLimit(
-    request,
-    "care-feed",
-    SURFACE_LIMIT_PER_HOUR,
-    HOUR_MS,
-  );
+  const surface = await checkUrlCredentialSurface(request, "care-feed");
   if (!surface.allowed) return tooMany(surface);
 
   const token = parseFeedTokenSegment(segment);
@@ -174,18 +137,10 @@ export async function serveCareFeed(
     },
   });
 
-  const headers: Record<string, string> = {
-    ...baseHeaders(),
-    "Cache-Control": "private, no-cache, max-age=0",
-    ETag: etag,
-  };
-  if (notModified) return new Response(null, { status: 304, headers });
-  return new Response(renderIcs(built.calendar, changedAt), {
-    status: 200,
-    headers: {
-      ...headers,
-      "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": 'inline; filename="healthlog-care.ics"',
-    },
+  return icsFeedResponse({
+    body: notModified ? "" : renderIcs(built.calendar, changedAt),
+    etag,
+    notModified,
+    filename: "healthlog-care.ics",
   });
 }

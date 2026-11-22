@@ -61,6 +61,8 @@ let origin = "";
 const requests: IncomingMessage[] = [];
 let fileBody = Buffer.from("PK-synthetic-export-1");
 let fileStatus = 200;
+/** The password the test server accepts. */
+const ACCEPTED_PASSWORD = "app-pass";
 
 beforeAll(async () => {
   server = createServer((req, res) => {
@@ -214,6 +216,82 @@ describe("scheduled Health Connect fetch", () => {
       Date.now() + 20 * 60_000,
     );
     expect(sent).toHaveLength(0);
+  });
+
+  it("writes every fetch to the shared ledger the integrations envelope reads", async () => {
+    const { GET: status } = await import("@/app/api/integrations/status/route");
+    const { DELETE } =
+      await import("@/app/api/import/health-connect-remote/route");
+    const entry = async () => {
+      const res = await (status as unknown as () => Promise<Response>)();
+      const body = (await res.json()) as {
+        data: {
+          integrations: Array<{
+            integration: string;
+            state: string;
+            connected: boolean;
+            configured: boolean;
+            health: { state: string; action?: string | null } | null;
+          }>;
+        };
+      };
+      const list = body.data.integrations;
+      expect(list.at(-1)?.integration).toBe("health-connect-remote");
+      return list.find((e) => e.integration === "health-connect-remote")!;
+    };
+    const ledger = () =>
+      getPrismaClient().integrationStatus.findUnique({
+        where: {
+          userId_integration: { userId, integration: "health-connect-remote" },
+        },
+      });
+
+    const before = await entry();
+    expect(before.configured).toBe(false);
+    expect(before.health).toBeNull();
+
+    // A refused password parks the connection at reauth, not at a retry.
+    await save({
+      folderUrl: `${origin}/dav`,
+      username: "me",
+      password: "wrong",
+    });
+    expect(await pass()).toBe("unauthorized");
+    expect((await ledger())?.state).toBe("error_reauth");
+    const refused = await entry();
+    expect(refused.connected).toBe(true);
+    expect(refused.health?.state).toBe("action_required");
+
+    // A new password starts a fresh streak; the next fetch is a success.
+    await save({
+      folderUrl: `${origin}/dav`,
+      username: "me",
+      password: ACCEPTED_PASSWORD,
+    });
+    expect((await ledger())?.state).toBe("connected");
+    expect(await pass()).toBe("imported");
+    const fine = await ledger();
+    expect(fine?.state).toBe("connected");
+    expect(fine?.lastSuccessAt).not.toBeNull();
+
+    // A missing file is a persistent failure, retried on the next pass.
+    fileStatus = 404;
+    await getPrismaClient().healthConnectRemoteSource.update({
+      where: { userId },
+      data: { lastEtag: null, nextAttemptAt: new Date() },
+    });
+    expect(await pass()).toBe("not_found");
+    expect((await ledger())?.state).toBe("error_transient");
+
+    // Forgetting the folder closes the connection on the ledger as well.
+    await (DELETE as unknown as (r: NextRequest) => Promise<Response>)(
+      new NextRequest("http://localhost/api/import/health-connect-remote", {
+        method: "DELETE",
+      }),
+    );
+    expect((await ledger())?.state).toBe("disconnected");
+    const gone = await entry();
+    expect(gone.configured).toBe(false);
   });
 });
 

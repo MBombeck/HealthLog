@@ -18,6 +18,7 @@ import { glucoseContextEnum } from "@/lib/validations/measurement";
 import { moodLevelEnum } from "@/lib/validations/mood";
 import { SLEEP_STAGE_NAMES } from "@/lib/validations/sleep-stage-entry";
 import { RhythmClassification } from "@/generated/prisma/enums";
+import { stagedUploadErrorResponses } from "./import-files";
 import { moodContextWire } from "./mood";
 import {
   dataEnvelope,
@@ -492,7 +493,7 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Import"],
       summary: "Upload a Health Connect export for background import",
       description:
-        "Takes the ZIP the Android Health Connect app writes (it holds `health_connect_export.db`) and hands it to a background worker. The response is **202 with a `jobId`**; poll `GET /api/import/health-connect-export/status`. Body is `multipart/form-data` with the file under `file`, streamed to disk after authentication like the Apple Health upload. Re-uploading the same bytes resolves to the still-viable job and returns `idempotent: true`. Imported rows carry `source = HEALTH_CONNECT`. Cookie or wildcard Bearer.",
+        "Takes the ZIP the Android Health Connect app writes (it holds `health_connect_export.db`) and hands it to a background worker. The response is **202 with a `jobId`**; poll `GET /api/import/health-connect-export/status`. Body is `multipart/form-data` with the file under `file`, streamed to disk after authentication like the Apple Health upload. Re-uploading the same bytes resolves to the still-viable job and returns `idempotent: true`. Imported rows carry `source = HEALTH_CONNECT`. Five uploads a minute per account. Cookie or wildcard Bearer.",
       requestBody: {
         required: true,
         content: {
@@ -530,31 +531,7 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "400": {
-          description: "The request carried no body at all.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "409": {
-          description:
-            "An import for this account (Health Connect or Apple Health) is already queued or running. The upload was discarded. `errorCode` is `import.apple_health.busy` for either kind, `jobId` names the running job.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "413": {
-          description:
-            "The declared `Content-Length` exceeds the 1 GiB upload cap.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        ...stdResponses,
-        "422": {
-          description:
-            "The multipart body could not be read: no `file` part, a malformed body, or more bytes than the cap. Whether the ZIP is a readable Health Connect export is decided by the worker and reported on the job (`status: failed`, `failureReason`).",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "503": {
-          description:
-            "No background worker is bound, or the queue did not take the job, so nothing would run the import.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...stagedUploadErrorResponses("1 GiB"),
       },
     },
   },
@@ -585,7 +562,7 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Import"],
       summary: "Upload an activity FIT file for background import",
       description:
-        'Takes one activity file: a bare `.fit`, a gzipped `.fit.gz`, or the ZIP Garmin Connect\'s "Export original" writes (exactly one `.fit` member). The response is **202 with a `jobId`**; poll `GET /api/import/fit/status`. Body is `multipart/form-data` with the file under `file`, streamed to disk after authentication and capped at 10 MB. The worker checks the FIT header and both checksums, caps the messages, definitions and developer fields before decoding, and maps each session to a workout with its heart-rate / speed / power / cadence series (at most 30 000 points, averaged down above that) and, when the account keeps routes, its GPS track (stored encrypted). A session that duplicates a stored workout from another source (same sport, start within the duplicate window) adds its series and track to that workout instead of being stored twice. New rows carry `source = IMPORT` and the external id `fit:<sha-256 of the FIT bytes>:<session start>`, so re-importing the same file changes nothing. Re-uploading the same bytes resolves to the still-viable job and returns `idempotent: true`. Ten uploads a minute per account. Cookie or wildcard Bearer.',
+        'Takes one activity file: a bare `.fit`, a gzipped `.fit.gz`, or the ZIP Garmin Connect\'s "Export original" writes (exactly one `.fit` member). The response is **202 with a `jobId`**; poll `GET /api/import/fit/status`. Body is `multipart/form-data` with the file under `file`, streamed to disk after authentication and capped at 10 MB. The worker checks the FIT header and both checksums, caps the messages, definitions and developer fields before decoding, and maps each session to a workout with its heart-rate / speed / power / cadence series (at most 30 000 points, averaged down above that) and, when the account keeps routes, its GPS track (stored encrypted). A session that duplicates a stored workout from another source (same sport, start within the duplicate window) adds its series and track to that workout instead of being stored twice. New rows carry `source = IMPORT` and the external id `fit:<sha-256 of the FIT bytes>:<session start>`, so re-importing the same file changes nothing. Re-uploading the same bytes resolves to the still-viable job and returns `idempotent: true`. Five uploads a minute per account. Cookie or wildcard Bearer.',
       requestBody: {
         required: true,
         content: {
@@ -617,30 +594,7 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "400": {
-          description: "The request carried no body at all.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "409": {
-          description:
-            "An import for this account (of any kind) is already queued or running. The upload was discarded. `errorCode` is `import.apple_health.busy`, `jobId` names the running job.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "413": {
-          description: "The file is larger than 10 MB.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        ...stdResponses,
-        "422": {
-          description:
-            "The multipart body could not be read: no `file` part or a malformed body. Whether the file is a readable activity is decided by the worker and reported on the job (`status: failed`, `failureReason`).",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "503": {
-          description:
-            "No background worker is bound, or the queue did not take the job, so nothing would run the import.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...stagedUploadErrorResponses("10 MB"),
       },
     },
   },
@@ -788,7 +742,7 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Import"],
       summary: "Upload an Apple Health export.zip for background import",
       description:
-        "Takes the `export.zip` the Health app produces and hands it to a background worker. The response is **202 with a `jobId`** — nothing has been imported yet. Poll `GET /api/import/apple-health-export/{jobId}/status` for the outcome.\n\nBody is `multipart/form-data` with the file under the field name `file`, capped at 1.5 GB. The upload is streamed straight to disk rather than buffered, computing a SHA-256 in the same pass; the declared `Content-Length` is checked first as a cheap pre-flight, but the streaming sink enforces the cap independently, so a missing or lying header does not get past it.\n\n**Idempotency is by CONTENT, not by an `Idempotency-Key`.** A 1 GB upload has no stable client-side key, so re-uploading the exact same bytes resolves to the previous job and returns `idempotent: true` without re-queueing. The match only covers a job that is still viable — queued, in flight, or done. A previously FAILED job is deliberately not matched, so the same export can always be retried with the same bytes rather than being tombstoned by its own failure.\n\nRate-limited to 3 uploads per minute per user, checked before the body is touched. Cookie or wildcard Bearer.",
+        "Takes the `export.zip` the Health app produces and hands it to a background worker. The response is **202 with a `jobId`** — nothing has been imported yet. Poll `GET /api/import/apple-health-export/{jobId}/status` for the outcome.\n\nBody is `multipart/form-data` with the file under the field name `file`, capped at 1.5 GB. The upload is streamed straight to disk rather than buffered, computing a SHA-256 in the same pass; the declared `Content-Length` is checked first as a cheap pre-flight, but the streaming sink enforces the cap independently, so a missing or lying header does not get past it. Either way a file past the cap is a 413 with `meta.errorCode` = `import.file.too_large`.\n\n**Idempotency is by CONTENT, not by an `Idempotency-Key`.** A 1 GB upload has no stable client-side key, so re-uploading the exact same bytes resolves to the previous job and returns `idempotent: true` without re-queueing. The match only covers a job that is still viable — queued, in flight, or done. A previously FAILED job is deliberately not matched, so the same export can always be retried with the same bytes rather than being tombstoned by its own failure.\n\nRate-limited to 5 uploads per minute per user, checked before the body is touched. Cookie or wildcard Bearer.",
       requestBody: {
         required: true,
         content: {
@@ -835,35 +789,7 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "400": {
-          description: "The request carried no body at all.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "413": {
-          description:
-            "The declared `Content-Length` exceeds 1.5 GB. A body that exceeds the cap without declaring it is refused by the streaming sink instead, which surfaces as the 422 below.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        ...stdResponses,
-        "409": {
-          description:
-            "An import for this account is already queued or running, and these bytes are not the ones it carries (the same bytes resolve to that job as a 202). `meta.errorCode` is `import.apple_health.busy` and `meta.jobId` names the running job; poll it, then upload again. The upload was discarded.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "422": {
-          description:
-            "The multipart body could not be streamed to disk — no `file` part, a malformed boundary, or the size cap tripped mid-stream. The message names the failure.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "429": {
-          description: "More than 3 uploads in a minute for this user.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "503": {
-          description:
-            "No background worker is bound to this process, or the queue did not accept the job, so nothing will run it. The staged upload is discarded (and a created job is marked failed); retry once a worker is running.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...stagedUploadErrorResponses("1.5 GB"),
       },
     },
   },

@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "De quel type de médicament s’agit-il ?",
-          "subline": "Nous l’utilisons pour les bons modèles et analyses.",
+          "subline": "Facultatif. Cela choisit les bons modèles et analyses ; sans choix, le médicament est classé dans « Autre ».",
           "short": "Type"
         },
         "step3": {
           "title": "Quelle est la dose ?",
-          "subline": "Un comprimé, une bouffée, une goutte, selon la forme.",
+          "subline": "Ce que vous prenez à chaque fois, comme sur la boîte ou l'ordonnance : 5 mg ou 2 comprimés.",
           "amountLabel": "Quantité",
           "amountPlaceholder": "par exemple 5",
           "unitLabel": "Unité",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "p. ex. 4",
           "dosesPerUnitHint": "Nombre de comprimés ou d'unités dans une nouvelle boîte ou un nouveau stylo, p. ex. 28 comprimés ou un stylo de 4 doses. Pré-remplit la quantité à l'ajout d'une boîte ; laisser vide si les boîtes varient.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Comprimés ou unités par dose",
-          "unitsPerDoseHint": "p. ex. 2 comprimés de 2 mg pour une dose de 4 mg, ou ½ comprimé pour une dose fractionnée"
+          "unitsPerDoseLabel": "Combien de comprimés ou d'unités font cette dose ?",
+          "unitsPerDoseHint": "p. ex. 2 comprimés de 2 mg pour une dose de 4 mg, ou ½ comprimé pour une dose fractionnée",
+          "packSizeToggle": "Taille du conditionnement (facultatif)"
         },
         "step4": {
           "title": "Sur quelle période le prenez-vous ?",
@@ -1875,13 +1876,14 @@
           "doseOverridePlaceholder": "ex. un demi-comprimé",
           "unitsOverrideLabel": "Unités consommées à cet horaire",
           "unitsOverrideInherit": "Par défaut",
-          "short": "Heures"
+          "short": "Heures",
+          "overrideToggle": "Une autre dose à cette heure ?"
         },
         "step8": {
           "title": "Terminé ! HealthLog doit-il vous le rappeler ?",
           "subline": "Vérifiez tout ci-dessous avant d’enregistrer.",
           "remindersLabel": "Rappels activés",
-          "remindersDescription": "Push, Telegram ou ntfy, selon vos réglages.",
+          "remindersDescription": "Les rappels arrivent comme vous les avez configurés dans Notifications : push web, Telegram ou ntfy. L’app iPhone planifie elle-même ses rappels.",
           "noChannelHint": "Les rappels nécessitent un canal de notification, et aucun n'est actif pour le moment.",
           "noChannelHintLink": "Configurer les notifications",
           "short": "Fini"
@@ -1923,11 +1925,11 @@
         },
         "rolling": {
           "label": "Flexible depuis la dernière dose",
-          "description": "Laissez la prochaine dose ouverte. Quand vous appuyez sur « pris », le compteur repart à partir de ce moment."
+          "description": "Laissez la prochaine dose ouverte. Quand vous appuyez sur « Prendre », le décompte repart de ce moment."
         },
         "oneShot": {
           "label": "Dose unique",
-          "description": "Une seule administration, par exemple un vaccin ou une cure d’antibiotique."
+          "description": "Une seule administration, par exemple un vaccin ou une injection chez le médecin."
         },
         "asNeeded": {
           "label": "Au besoin",
@@ -1954,7 +1956,9 @@
         "times": "à {times}",
         "startsOn": "Début : {date}",
         "endsOn": "Fin : {date}",
-        "noEndDate": "Pas de date de fin"
+        "noEndDate": "Pas de date de fin",
+        "windowLine": "{time} : à l'heure jusqu'à {onTime}, en retard jusqu'à {late}, ensuite manquée.",
+        "windowDays": "Une dose compte comme à l'heure le jour prévu, comme en retard jusqu'à {days} jours après, ensuite comme manquée."
       },
       "compose": {
         "scheduleIndex": "Horaire {n} sur {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Impossible d’enregistrer le médicament. Veuillez réessayer."
+      },
+      "blocked": {
+        "name": "Saisissez un nom pour continuer.",
+        "amount": "Saisissez la quantité pour continuer.",
+        "unitsPerDose": "Choisissez combien de comprimés ou d'unités font la dose.",
+        "start": "Choisissez une date de début pour continuer.",
+        "endBeforeStart": "La date de fin doit être le jour du début ou après.",
+        "mode": "Choisissez à quelle fréquence vous le prenez.",
+        "weekdays": "Choisissez au moins un jour de la semaine.",
+        "interval": "Indiquez combien de semaines séparent les doses.",
+        "dayOfMonth": "Choisissez un jour du mois entre 1 et 31.",
+        "rollingDays": "Saisissez un nombre de jours entre 1 et 365.",
+        "time": "Ajoutez au moins une heure.",
+        "unknown": "Il manque encore quelque chose à cette étape."
       }
     },
     "doseStrength": {
@@ -2154,11 +2172,11 @@
           "openButton": "Ajuster"
         },
         "grace": {
-          "label": "Fenêtre de rappel",
+          "label": "Durée des rappels",
           "appliesToAllNote": "S’applique à tous les horaires de ce médicament.",
           "unit": "minutes",
-          "saved": "Fenêtre de rappel enregistrée",
-          "failed": "Impossible d’enregistrer la fenêtre de rappel.",
+          "saved": "Durée des rappels enregistrée",
+          "failed": "Impossible d’enregistrer la durée des rappels.",
           "description": "Combien de temps les rappels continuent après l'heure de la dose, avant le rappel de retard."
         },
         "codes": {
@@ -2370,8 +2388,8 @@
         "timesTitle": "Heures de prise",
         "timesNote": "Ajustez l'heure et la fenêtre à l'heure de chaque dose. La fréquence (quotidienne, hebdomadaire…) se modifie dans l'éditeur, sous Avancé.",
         "scheduleLabel": "Horaire {index}",
-        "fullEditNote": "La fréquence, la classe de traitement et la fenêtre de cure se modifient dans l'éditeur, sous Avancé → Cycle de vie.",
-        "graceEcho": "Fenêtre de rappel : {minutes} minutes",
+        "fullEditNote": "La fréquence, la classe de traitement et la période de traitement se modifient dans l'éditeur, sous Avancé → Cycle de vie.",
+        "graceEcho": "Durée des rappels : {minutes} minutes",
         "reminderTitle": "Rappel",
         "manageChannels": "Gérer les canaux de notification",
         "history": {
@@ -2685,14 +2703,14 @@
       "countsForLate": "Compte pour la dose de {time}, comme prise en retard.",
       "countNearLabel": "La compter pour la dose de {time}",
       "skips": "Saute la dose de {time}.",
-      "extraDose": "Enregistrée comme dose supplémentaire, hors planning.",
+      "extraDose": "Enregistrée comme dose supplémentaire, hors planning. Elle reste dans l’historique et ne compte pas dans l’observance.",
       "scheduleLoading": "Vérification des doses prévues ce jour-là…",
       "scheduleUnavailable": "Impossible de lire le planning de ce jour, elle est donc enregistrée comme dose supplémentaire.",
       "noMedications": "Ajoutez d’abord un médicament, puis vous pourrez enregistrer des prises pour celui-ci.",
       "saveError": "Impossible d'enregistrer la prise. Réessaie"
     },
-    "phaseGreenHint": "Premier rappel, ce délai avant la fin de la plage de rappel.",
-    "phaseYellowHint": "Un autre rappel, ce délai avant la fin de la plage.",
+    "phaseGreenHint": "Premier rappel, ce délai avant la fin de la fenêtre.",
+    "phaseYellowHint": "Un autre rappel, ce délai avant la fin de la fenêtre.",
     "phaseOrangeHint": "Un rappel que la dose est en retard, ce délai après la fin de la plage.",
     "phaseRedHint": "Passé ce délai après la plage, la dose compte comme manquée.",
     "filter": {
@@ -2746,6 +2764,7 @@
     "days7Title": "7 derniers jours",
     "days30Label": "30 j",
     "daysNLabel": "{days} j",
+    "daysNAria": "{days} derniers jours",
     "days30Title": "30 derniers jours",
     "days90Label": "90 j",
     "days90Title": "90 derniers jours",
@@ -5380,7 +5399,9 @@
       "importCta": "Importer un historique existant",
       "modulesCta": "Choisir vos modules",
       "aiOptional": "L'IA est facultative. Tout fonctionne aussi sans elle.",
-      "aiSetupCta": "Configurer l'IA"
+      "aiSetupCta": "Configurer l'IA",
+      "relayOptional": "L’app iPhone peut recevoir les notifications de ce serveur via le relais push HealthLog, facultatif et désactivé tant que vous ne l’activez pas.",
+      "relaySetupCta": "Réglages du relais push"
     },
     "welcomeBack": {
       "title": "Bon retour",
@@ -5452,7 +5473,7 @@
       },
       "medication": {
         "title": "Prenez-vous des médicaments selon un horaire fixe ?",
-        "body": "Un horaire active le module médicaments et les rappels.",
+        "body": "Un horaire active le module médicaments. Les rappels se configurent quand vous ajoutez votre premier médicament.",
         "options": {
           "yes": "Oui",
           "no": "Non",
@@ -6372,7 +6393,8 @@
               "httpsRequired": "Utilisez une adresse https://. Avec http://, le mot de passe circulerait en clair.",
               "passwordRequired": "Saisissez le mot de passe une fois lors de la configuration du dossier.",
               "saveFailed": "Le dossier n'a pas pu être enregistré. Vérifiez l'adresse et réessayez.",
-              "fetchFailed": "La récupération n'a pas pu être lancée. Réessayez plus tard."
+              "fetchFailed": "La récupération n'a pas pu être lancée. Réessayez plus tard.",
+              "removeFailed": "Le dossier n'a pas pu être retiré. Réessayez."
             },
             "title": "Health Connect depuis un dossier",
             "description": "HealthLog récupère l'export que Health Connect enregistre selon un calendrier dans un dossier WebDAV ou Nextcloud, et importe ce qui est nouveau.",
@@ -7328,6 +7350,11 @@
     },
     "integrationFallback": {
       "description": "Configuré sur ce compte sans carte de réglages dédiée."
+    },
+    "healthConnectFolder": {
+      "name": "Health Connect depuis un dossier",
+      "description": "Récupéré dans votre dossier WebDAV ou Nextcloud toutes les six heures. Se configure et se modifie dans Import.",
+      "manage": "Ouvrir les réglages du dossier"
     },
     "withingsViewData": "Voir vos mesures",
     "whoopViewData": "Voir votre récupération",
@@ -9333,8 +9360,19 @@
       "title": "Relais push HealthLog",
       "description": "Permet à l'app de l'App Store de recevoir les notifications de ce serveur via le relais du projet HealthLog.",
       "whatItSees": "Chaque notification est chiffrée sur ce serveur pour l'appareil destinataire, le relais ne peut donc pas la lire. Il voit quand ce serveur envoie quelque chose à un appareil.",
+      "seesSummary": "Ce que voit le relais",
+      "seesHeading": "Le relais voit",
+      "seesWhen": "que ce serveur envoie quelque chose à un appareil, quand, et de quel type : une alerte, une synchronisation silencieuse ou la fin d’une activité en direct",
+      "seesToken": "le jeton push de l’appareil pendant la remise (stocké uniquement sous forme de hachage à clé), et l’identifiant d’instance de ce serveur",
+      "seesAddress": "l’adresse de ce serveur tant qu’il est connecté, ni stockée ni journalisée",
+      "seesConsent": "un hachage de la clé de liaison de l’appareil, ainsi que la version et le jour du consentement de la personne",
+      "notSeesHeading": "Il ne voit pas",
+      "notSeesContent": "ce que dit une notification : noms de médicaments, doses, mesures, notes, noms de compte ou quoi que ce soit d’autre qu’elle contient",
+      "seesTiming": "Le moment peut tout de même révéler quelque chose : si vous enregistrez une dose sur un appareil et qu’un autre de vos appareils reçoit la confirmation, le relais et Apple voient que quelque chose s’est passé à cet instant.",
+      "seesSource": "L’avis de confidentialité complet du relais",
       "toggleLabel": "Proposer le relais push HealthLog aux utilisateurs de ce serveur",
       "toggleDescription": "Désactivé tant que vous ne l'activez pas. Ensuite, chaque personne décide dans sa propre app.",
+      "toggleDescriptionOn": "Activé. Chaque personne décide dans sa propre app si ses appareils l’utilisent.",
       "devices": "{count} appareils liés",
       "since": "depuis {time}",
       "docs": "En savoir plus",
@@ -9342,7 +9380,8 @@
       "terms": "Conditions du relais",
       "dialogTitle": "Proposer le relais push HealthLog",
       "dialogBody": "Le relais est exploité par le mainteneur du projet HealthLog. Chaque notification est chiffrée sur ce serveur pour son appareil ; le relais ne peut pas la lire, mais il voit que ce serveur envoie quelque chose à un appareil, et quand. Une fois activé, chaque personne de ce serveur voit une fois une proposition dans son app et décide elle-même. Les rappels restent sur les appareils. Le relais est destiné à un usage privé et familial et n'est pas un service médical.",
-      "acceptTerms": "J'accepte les conditions du relais et j'ai lu l'avis de confidentialité.",
+      "acceptTerms": "J’accepte les conditions du relais.",
+      "readPrivacy": "J’ai lu l’avis de confidentialité du relais.",
       "householdOnly": "J'exploite ce serveur à titre privé, pour moi ou mon foyer.",
       "enable": "Activer",
       "cancel": "Annuler",
@@ -9792,11 +9831,11 @@
     "eventMeasurementReminder": "Rappel de mesure",
     "eventMeasurementReminderDesc": "Envoyé lorsqu'une mesure suivie est due.",
     "eventMedicationIntakeSync": "Synchronisation des prises",
-    "eventMedicationIntakeSyncDesc": "Mise à jour entre appareils quand une dose est enregistrée, prise ou ignorée.",
+    "eventMedicationIntakeSyncDesc": "Mise à jour entre appareils quand une dose est enregistrée, prise ou sautée.",
     "eventDailyBriefing": "Résumé quotidien",
     "eventDailyBriefingDesc": "Un résumé matinal et posé de votre journée. Désactivé jusqu'à ce que vous l'activiez.",
-    "eventSecurityAlert": "Nouvelle connexion",
-    "eventSecurityAlertDesc": "Envoyé quand votre compte est utilisé sur un appareil ou depuis un lieu inconnus.",
+    "eventSecurityAlert": "Sécurité du compte",
+    "eventSecurityAlertDesc": "Envoyé lors d’une connexion depuis un appareil ou un lieu inconnus, quand une clé d’accès est ajoutée ou supprimée, quand un jeton d’accès est révoqué et quand un appareil est déconnecté parce que son jeton de connexion a servi deux fois.",
     "eventSharedRecordIntake": "Une personne avec accès marque une dose",
     "eventSharedRecordIntakeDesc": "Envoyé uniquement quand une autre personne le fait, jamais pour vos propres saisies.",
     "eventMedicationIntakeRecorded": "Confirmer les doses prises sur d’autres appareils",
@@ -9822,7 +9861,7 @@
     "sharedRecordIntake": {
       "title": "{name} a marqué une dose",
       "bodyTaken": "{medication} : marquée comme prise par {name}.",
-      "bodySkipped": "{medication} : marquée comme ignorée par {name}."
+      "bodySkipped": "{medication} : marquée comme sautée par {name}."
     },
     "loginRequired": "Connectez-vous pour gérer les notifications.",
     "someChannelsGloballyDisabled": "Un ou plusieurs canaux sont désactivés dans les paramètres et ne recevront pas de notifications.",
@@ -10034,7 +10073,7 @@
     "snoozeOneHour": "1 heure",
     "snoozeThreeHours": "3 heures",
     "snoozedFor": "{name} reporté de {duration}.",
-    "skipped": "{name} ignoré.",
+    "skipped": "{name} sauté.",
     "alreadyRecorded": "{name} était déjà enregistré.",
     "recordedAsTaken": "{name} enregistré comme pris.",
     "confirmed": "{name} confirmé.",
@@ -10053,7 +10092,7 @@
     "noActiveMedications": "Aucun médicament actif trouvé.",
     "whichMedication": "<b>Quel médicament avez-vous pris ?</b>",
     "cancelButton": "Annuler",
-    "askMedicationName": "Indiquez le médicament, p. ex. <b>pris Ramipril</b>.",
+    "askMedicationName": "Indiquez le médicament, p. ex. <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Médicament introuvable. Envoyez le nom exactement tel qu’il apparaît dans HealthLog.",
     "helpHeader": "<b>Commandes disponibles :</b>",
     "helpBody": "/help : afficher cette aide\n/add : enregistrer une prise\n/start : démarrer le bot\n\n<b>Commandes texte :</b>\ntaken &lt;nom&gt; : confirmer une prise\n\n<b>Boutons dans les rappels :</b>\n• ✅ Prendre : enregistrer la prise\n• 🕐 Me le rappeler plus tard : reporter le rappel, de la durée choisie dans les réglages\n• ⏭ Sauter : sauter la prise\n• Laisser manquée : laisser une prise manquée comme manquée",
@@ -10066,14 +10105,14 @@
     "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 À prendre: {medName}",
-    "phaseGreenMessage": "🟢 À prendre:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa plage se termine dans {minutes} min.",
-    "phaseYellowTitle": "🟡 Toujours à prendre: {medName}",
-    "phaseYellowMessage": "🟡 Toujours à prendre:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nEncore {minutes} min dans la plage.",
-    "phaseOrangeTitle": "🟠 En retard: {medName}",
-    "phaseOrangeMessage": "🟠 En retard:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nEn retard de {minutes} min.",
-    "phaseRedTitle": "🔴 Manquée: {medName}",
-    "phaseRedMessage": "🔴 Manquée:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa prendre maintenant compte encore, comme prise en retard.",
+    "phaseGreenTitle": "🟢 À prendre : {medName}",
+    "phaseGreenMessage": "🟢 À prendre :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa fenêtre se termine dans {minutes} min.",
+    "phaseYellowTitle": "🟡 Toujours à prendre : {medName}",
+    "phaseYellowMessage": "🟡 Toujours à prendre :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nEncore {minutes} min dans la fenêtre.",
+    "phaseOrangeTitle": "🟠 En retard : {medName}",
+    "phaseOrangeMessage": "🟠 En retard :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nEn retard de {minutes} min.",
+    "phaseRedTitle": "🔴 Manquée : {medName}",
+    "phaseRedMessage": "🔴 Manquée :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa prendre maintenant compte encore, comme prise en retard.",
     "buttonTaken": "✅ Prendre",
     "buttonConfirm": "Laisser manquée",
     "buttonTakenLate": "✅ Prendre (compte en retard)",
@@ -13337,7 +13376,7 @@
       }
     },
     "action": {
-      "logDose": "Enregistrer la dose",
+      "logDose": "Prendre",
       "reconnect": "Reconnecter",
       "viewCheckups": "Voir les examens",
       "viewAppointment": "Voir le rendez-vous",
@@ -15590,6 +15629,8 @@
     "link": {
       "validUntil": "Lecture seule. Ce lien fonctionne jusqu'au {date}.",
       "readOnly": "Lecture seule. Partagé par la personne, qui peut le révoquer à tout moment.",
+      "missTitle": "Ce lien vers la carte d'urgence ne fonctionne pas",
+      "missBody": "Le lien a peut-être été révoqué ou a expiré. La personne à qui appartient la carte peut en créer un nouveau.",
       "title": "Lien QR",
       "loadError": "Le statut du lien n'a pas pu être chargé.",
       "disclosure": "Toute personne qui scanne le code voit les éléments cochés, sans se connecter. Tu peux donner une fin au lien et le révoquer à tout moment ; chaque ouverture est enregistrée pour toi.",

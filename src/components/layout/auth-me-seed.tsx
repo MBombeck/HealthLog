@@ -3,7 +3,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { adoptMePayload, type MePayload } from "@/hooks/use-auth";
+import { adoptMePayload } from "@/hooks/use-auth";
+import type { AccountSeed } from "@/lib/auth/account-seed";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
@@ -17,8 +18,10 @@ import { queryKeys } from "@/lib/query-keys";
  *
  * The seed is stamped as already stale, so the shell's own query still
  * fetches `/api/auth/me` once in the background: that response is the one
- * that resyncs the onboarding and second-factor hint cookies, and any change
- * since the render replaces the seed the usual way.
+ * that resyncs the onboarding and second-factor hint cookies, it brings the
+ * fields the seed withholds (`src/lib/auth/account-seed.ts`), and any change
+ * since the render replaces the seed the usual way. The refetch is the point,
+ * so the seed is not given a staleTime of its own.
  *
  * Rendered as the shell's preceding sibling, so its state initializer runs
  * before the shell's first `useAuth` in the same pass. In the browser it also
@@ -26,7 +29,7 @@ import { queryKeys } from "@/lib/query-keys";
  * later request asserts is adopted before any page below can send one. On the
  * server it only seeds the per-render cache.
  */
-export function AuthMeSeed({ payload }: { payload: MePayload | null }) {
+export function AuthMeSeed({ payload }: { payload: AccountSeed | null }) {
   const queryClient = useQueryClient();
   useState(() => {
     if (payload === null) return null;

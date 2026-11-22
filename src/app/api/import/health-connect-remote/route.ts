@@ -28,6 +28,7 @@ import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
+import { markDisconnected, markReconnected } from "@/lib/integrations/status";
 import { sealCredentials } from "@/lib/import/health-connect/remote-fetch";
 import {
   configuredWebdavPrivateOrigins,
@@ -124,7 +125,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const existing = await prisma.healthConnectRemoteSource.findUnique({
     where: { userId: user.id },
-    select: { id: true, folderUrl: true, fileName: true },
+    select: { id: true, folderUrl: true, fileName: true, enabled: true },
   });
   // The password belongs to the server it was given for: a first save, and a
   // save that moves the folder to another origin, bring their own.
@@ -177,6 +178,14 @@ export const PUT = apiHandler(async (request: NextRequest) => {
       },
     });
   }
+  // The shared ledger follows the source: a paused folder is disconnected,
+  // and a new address or password starts a fresh streak, the way a
+  // reconnect does for the other connections.
+  if (!body.enabled) {
+    await markDisconnected(user.id, "health-connect-remote");
+  } else if (!existing || !existing.enabled || moved || credentials) {
+    await markReconnected(user.id, "health-connect-remote");
+  }
   await auditLog("import.health-connect.remote.update", {
     userId: user.id,
     ipAddress: getClientIp(request),
@@ -197,6 +206,7 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     where: { userId: user.id },
   });
   if (count > 0) {
+    await markDisconnected(user.id, "health-connect-remote");
     await auditLog("import.health-connect.remote.delete", {
       userId: user.id,
       ipAddress: getClientIp(request),

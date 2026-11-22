@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   nextAttemptAfter,
+  REMOTE_FAILURE,
   REMOTE_SUCCESS_INTERVAL_MS,
   runWithinBudget,
 } from "../remote-fetch";
@@ -15,6 +16,26 @@ const MIN = 60_000;
 
 afterEach(() => {
   delete process.env.HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS;
+});
+
+describe("the ledger reading of a failed fetch", () => {
+  it("asks for a new password on a refusal and retries the rest", () => {
+    const kinds = Object.fromEntries(
+      Object.entries(REMOTE_FAILURE).map(([outcome, f]) => [outcome, f.kind]),
+    );
+    expect(kinds).toEqual({
+      unauthorized: "reauth_required",
+      not_found: "persistent",
+      redirected: "persistent",
+      invalid_origin: "persistent",
+      private_origin_not_approved: "persistent",
+      too_large: "persistent",
+      upstream_error: "transient",
+      timeout: "transient",
+      network: "transient",
+      no_worker: "transient",
+    });
+  });
 });
 
 describe("nextAttemptAfter", () => {

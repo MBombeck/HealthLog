@@ -60,8 +60,9 @@ const LIMITING_HELPERS: Record<string, string[]> = {
   // v1.44 — the lab and medication CSV imports: a preview bucket for a dry
   // run, the shared `import:` bucket for the import itself.
   handleRecordImport: ["lib/import/record-import-route.ts"],
-  // The Gadgetbridge and FHIR Bundle uploads: five files a minute per kind.
-  handleRecordFileUpload: ["lib/import/file-import/upload.ts"],
+  // The staged file uploads (Apple Health, Health Connect, FIT, Gadgetbridge,
+  // FHIR Bundle): five files a minute per acting account and kind.
+  handleStagedUpload: ["lib/import/staged-upload.ts"],
 };
 
 /** Mutating routes with no limit, each with the reason it needs none. */

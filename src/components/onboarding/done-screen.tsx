@@ -26,6 +26,7 @@ import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import { accountLabel } from "@/lib/sharing/account-access-view";
 import { InlineAction } from "@/components/ui/inline-action";
+import { usePushRelayStatus } from "@/components/admin/use-push-relay";
 
 /**
  * v1.39 — the setup flow's exit.
@@ -47,7 +48,9 @@ import { InlineAction } from "@/components/ui/inline-action";
  * cleared there too.
  *
  * AI gets one line with a link to Settings, AI, and no more: HealthLog is
- * complete without it, and the hint on Insights is where it is offered.
+ * complete without it, and the hint on Insights is where it is offered. An
+ * admin gets the same kind of line for the push relay, the one optional
+ * server choice that decides whether the iPhone app hears from this server.
  */
 
 export function DoneScreen({ state }: { state: OnboardingStateDto }) {
@@ -99,6 +102,14 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
     provider.canConfigure &&
     !hasOptedOutOfAi(user?.modules);
 
+  // For an admin, one line that the push relay exists and is a choice: only
+  // while this server allows it and nobody has switched it on yet. Nothing
+  // here turns it on; the link leads to the switch and its confirmations.
+  const isAdmin = user?.role === "ADMIN";
+  const relay = usePushRelayStatus({ enabled: isAdmin });
+  const showRelayLine =
+    isAdmin && relay.data?.allowed === true && !relay.data.offered;
+
   return (
     <section
       aria-labelledby="onboarding-done-title"
@@ -127,6 +138,17 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
           {t("onboarding.done.aiOptional")}{" "}
           <InlineAction asChild size="sm" className="underline">
             <Link href="/settings/ai">{t("onboarding.done.aiSetupCta")}</Link>
+          </InlineAction>
+        </p>
+      ) : null}
+
+      {showRelayLine ? (
+        <p data-slot="onboarding-relay-line" className="max-w-md text-sm">
+          {t("onboarding.done.relayOptional")}{" "}
+          <InlineAction asChild size="sm" className="underline">
+            <Link href="/admin/services">
+              {t("onboarding.done.relaySetupCta")}
+            </Link>
           </InlineAction>
         </p>
       ) : null}

@@ -29,7 +29,6 @@
  */
 import { NextRequest } from "next/server";
 
-import { apiError } from "@/lib/api-response";
 import { hashToken } from "@/lib/auth/hmac";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { activeAccount } from "@/lib/account-deletion/active-account";
@@ -39,10 +38,14 @@ import { annotate } from "@/lib/logging/context";
 import { runDetached } from "@/lib/logging/detached";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import {
-  checkAuthSurfaceRateLimit,
-  checkRateLimit,
-  rateLimitHeaders,
-} from "@/lib/rate-limit";
+  checkUrlCredentialSurface,
+  HOUR_MS,
+  icsFeedResponse,
+  matchesEtag,
+  urlCredentialNotFound,
+  urlCredentialTooMany,
+} from "@/lib/http/url-credential";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   findActiveGrant,
   grantAllows,
@@ -55,56 +58,22 @@ import { fetcherFamily } from "./fetcher";
 import { parseFeedTokenSegment } from "./token";
 
 /**
- * Per source address, across every feed. Generous because the big calendar
- * providers poll from a pool of addresses that churns, and a household behind
- * one address may hold several links on several devices; the per-token bucket
- * below is the one that bounds a single link. The token is a random secret
- * checked by its HMAC, so guessing links is not what these limits stop.
- */
-const SURFACE_LIMIT_PER_HOUR = 600;
-/**
  * Per link. One link subscribed on a phone, a tablet and a computer, each
  * refreshing every five minutes, is 36 fetches an hour; 120 leaves room for
- * a fourth device and for retries.
+ * a fourth device and for retries. The per-address surface limit is the
+ * shared one (`URL_CREDENTIAL_SURFACE_LIMIT_PER_HOUR`).
  */
 const TOKEN_LIMIT_PER_HOUR = 120;
-const HOUR_MS = 60 * 60 * 1000;
 
 /** The longest User-Agent kept for the status read. */
 const UA_MAX_LENGTH = 80;
 
-/** Headers every answer carries, the 404 included. */
-function baseHeaders(): Record<string, string> {
-  return {
-    "X-Robots-Tag": "noindex, nofollow",
-    "Referrer-Policy": "no-referrer",
-  };
-}
-
-/** One blunt 404 for every miss class. */
-function notFound(reason: string): Response {
-  annotate({ meta: { feed_miss: reason } });
-  const response = apiError("Not found", 404, {
-    errorCode: "cycle.feed.notFound",
-  });
-  for (const [k, v] of Object.entries(baseHeaders()))
-    response.headers.set(k, v);
-  response.headers.set("Cache-Control", "no-store");
-  return response;
-}
-
-function tooMany(snapshot: Parameters<typeof rateLimitHeaders>[0]): Response {
-  const response = apiError("Too many requests. Try again later.", 429, {
-    errorCode: "cycle.feed.rateLimited",
-  });
-  for (const [k, v] of Object.entries({
-    ...baseHeaders(),
-    ...rateLimitHeaders(snapshot),
-  })) {
-    response.headers.set(k, v);
-  }
-  return response;
-}
+const NOT_FOUND_ERROR_CODE = "cycle.feed.notFound";
+const RATE_LIMITED_ERROR_CODE = "cycle.feed.rateLimited";
+const notFound = (reason: string) =>
+  urlCredentialNotFound(NOT_FOUND_ERROR_CODE, reason);
+const tooMany = (snapshot: Parameters<typeof urlCredentialTooMany>[1]) =>
+  urlCredentialTooMany(RATE_LIMITED_ERROR_CODE, snapshot);
 
 const FEED_SELECT = {
   id: true,
@@ -168,16 +137,6 @@ async function feedStillAllowed(feed: {
   return { ok: true, subject };
 }
 
-/** Does the request's `If-None-Match` name this ETag? */
-function matchesEtag(request: NextRequest, etag: string): boolean {
-  const header = request.headers.get("if-none-match");
-  if (!header) return false;
-  return header
-    .split(",")
-    .map((v) => v.trim().replace(/^W\//, ""))
-    .some((v) => v === etag || v === "*");
-}
-
 export async function serveCycleFeed(
   request: NextRequest,
   segment: string,
@@ -185,12 +144,7 @@ export async function serveCycleFeed(
   annotate({ action: { name: "cycle.feed.fetch" } });
 
   // 1. Before any lookup.
-  const surface = await checkAuthSurfaceRateLimit(
-    request,
-    "cycle-feed",
-    SURFACE_LIMIT_PER_HOUR,
-    HOUR_MS,
-  );
+  const surface = await checkUrlCredentialSurface(request, "cycle-feed");
   if (!surface.allowed) return tooMany(surface);
 
   // 2. Shape.
@@ -260,20 +214,10 @@ export async function serveCycleFeed(
     },
   });
 
-  const headers: Record<string, string> = {
-    ...baseHeaders(),
-    // `no-cache`, not `no-store`: a client keeps the body and its validator
-    // and asks again with `If-None-Match`, which is what the 304 path is for.
-    "Cache-Control": "private, no-cache, max-age=0",
-    ETag: etag,
-  };
-  if (notModified) return new Response(null, { status: 304, headers });
-  return new Response(renderIcs(built.calendar, changedAt), {
-    status: 200,
-    headers: {
-      ...headers,
-      "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": 'inline; filename="healthlog.ics"',
-    },
+  return icsFeedResponse({
+    body: notModified ? "" : renderIcs(built.calendar, changedAt),
+    etag,
+    notModified,
+    filename: "healthlog.ics",
   });
 }

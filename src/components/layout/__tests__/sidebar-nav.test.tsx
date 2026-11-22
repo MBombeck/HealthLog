@@ -530,6 +530,22 @@ describe("<SidebarNav> collapse preference persistence", () => {
     expect(toggle).toBeGreaterThan(html.indexOf("</nav>"));
     expect(html.indexOf('href="/admin"')).toBeGreaterThan(toggle);
   });
+
+  it("gives every icon-only link in the rail an accessible name", () => {
+    // Collapsed, a rail link shows only its icon and the label lives in a
+    // tooltip that exists only while hovered, so without `aria-label` every
+    // destination read as an unnamed link (axe `link-name` at tablet width).
+    stubStorage({ [KEY]: "true" });
+    mockMountedRef.value = true;
+    const html = render({ role: "ADMIN" });
+    const links = html.match(/<a\b[^>]*>/g) ?? [];
+    expect(links.length).toBeGreaterThan(5);
+    const unnamed = links.filter((tag) => !/aria-label="[^"]+"/.test(tag));
+    expect(unnamed).toEqual([]);
+    expect(links.find((tag) => tag.includes('href="/admin"'))).toContain(
+      'aria-label="Admin console"',
+    );
+  });
 });
 
 /**

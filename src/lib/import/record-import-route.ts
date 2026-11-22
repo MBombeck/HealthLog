@@ -6,8 +6,11 @@
  *
  * Buckets: a dry run spends `import-preview:<id>` (30 an hour), because the
  * mapping screen re-checks the file whenever a column choice changes; the
- * real import spends the shared `import:<id>` bucket (5 an hour) every other
- * importer uses.
+ * real import spends the `import:<id>` bucket (5 an hour) it shares with the
+ * other buffered imports: the measurements CSV, the JSON import and the dose
+ * history import. The staged file uploads (Apple Health, Health Connect, FIT,
+ * Gadgetbridge, FHIR Bundle) spend their own per-kind bucket instead
+ * (`src/lib/import/staged-upload.ts`).
  */
 import type { NextRequest } from "next/server";
 import type { z } from "zod/v4";
