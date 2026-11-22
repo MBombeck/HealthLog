@@ -140,8 +140,6 @@ export function HealthRecordExportPanel() {
   const pickerPanelId = useId();
   const scopeSummaryId = useId();
 
-  // The saved choices are withheld from the server-rendered seed; seeding
-  // from its `null`s would show a first run to somebody who saved one.
   if (isFullAccount(user) && user.id !== seededUserId) {
     setSeededUserId(user.id);
     setPracticeName(user.lastReportPracticeName ?? "");

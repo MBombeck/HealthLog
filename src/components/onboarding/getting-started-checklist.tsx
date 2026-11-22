@@ -407,9 +407,7 @@ export function GettingStartedChecklist() {
   // dashboard's snapshot query shares the cache key, so the checklist
   // almost always sees the cached value synchronously on mount and
   // never blocks UI.)
-  // The seed withholds the date of birth, so the profile row would read as
-  // open until the full account lands.
-  if (!isFullAccount(user)) return null;
+  if (!isFullAccount(user)) return null; // the seed withholds the birth date
   if (snapshotData === undefined) return null;
   if (!show) return null;
 

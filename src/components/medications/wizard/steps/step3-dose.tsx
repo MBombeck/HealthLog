@@ -69,7 +69,6 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
   // restrict the allowed sites; an empty selection means "no
   // restriction" (every site offered, minus the global exclusion).
   const [allowedOpen, setAllowedOpen] = useState(false);
-  const [packOpen, setPackOpen] = useState(payload.dosesPerUnit !== "");
   const isInjection = payload.deliveryForm === "INJECTION";
   const counted = countedUnits(payload.doseAmount, payload.doseUnit);
   // The counted case carries its unit count in the dose itself; the field
@@ -140,32 +139,13 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
         </div>
       </div>
 
-      {/* v1.16.10 — units consumed per dose. The inventory counts units
-          (tablets / ampoules); a multi-unit dose (2 × 2 mg for 4 mg)
-          decrements several per take and every dose-level readout
-          divides by this factor. Asked only when the dose does not say it. */}
-      {askUnitsPerDose ? (
-        <div className="space-y-2" data-slot="wizard-units-per-dose-block">
-          <Label id="wizard-units-per-dose-label" className="text-sm">
-            {t("medications.wizard.steps.step3.unitsPerDoseLabel")}
-          </Label>
-          {/* v1.16.12 (#316) — curated fraction / whole-number buttons, the
-              most error-resistant input for the common doses. #1034 — plus
-              an Other field for a whole number and a fraction (1½) or any
-              other value up to four decimals; the step holds while it does
-              not read. */}
-          <UnitsPerDoseField
-            value={payload.unitsPerDose}
-            onChange={(next) => applyPartial({ unitsPerDose: next })}
-            labelId="wizard-units-per-dose-label"
-            inputId="wizard-units-per-dose-other"
-            dataSlot="wizard-units-per-dose"
-          />
-          <p className="text-muted-foreground text-xs">
-            {t("medications.wizard.steps.step3.unitsPerDoseHint")}
-          </p>
-        </div>
-      ) : null}
+      {/* Units consumed per dose, asked only when the dose does not say it. */}
+      {askUnitsPerDose && (
+        <UnitsPerDoseBlock
+          value={payload.unitsPerDose}
+          onChange={(unitsPerDose) => applyPartial({ unitsPerDose })}
+        />
+      )}
 
       {/* v1.6.0 — route of administration. Decoupled from the Step 2
           treatment row so an INJECTION delivery surfaces the rotation map
@@ -193,57 +173,10 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
         </Select>
       </div>
 
-      {/* The pack size belongs to the supply, not the dose: optional, folded
-          away until opened (open from the start when one is set). */}
-      <div className="space-y-2" data-slot="wizard-pack-size">
-        <Button
-          type="button"
-          variant="ghost"
-          className="min-h-11 w-full justify-between px-2 sm:min-h-9"
-          aria-expanded={packOpen}
-          aria-controls="wizard-pack-size-body"
-          onClick={() => setPackOpen((prev) => !prev)}
-          data-slot="wizard-pack-size-toggle"
-        >
-          <span className="text-sm font-medium">
-            {t("medications.wizard.steps.step3.packSizeToggle")}
-          </span>
-          {packOpen ? (
-            <ChevronUp aria-hidden="true" className="h-4 w-4" />
-          ) : (
-            <ChevronDown aria-hidden="true" className="h-4 w-4" />
-          )}
-        </Button>
-        {packOpen && (
-          <div id="wizard-pack-size-body" className="space-y-2 px-1">
-            <Label htmlFor="wizard-doses-per-unit" className="text-sm">
-              {t("medications.wizard.steps.step3.dosesPerUnitLabel")}
-            </Label>
-            <Input
-              id="wizard-doses-per-unit"
-              type="text"
-              inputMode="numeric"
-              value={payload.dosesPerUnit}
-              onChange={(e) =>
-                applyPartial({
-                  // v1.16.10 — the cap rose to 1000, so four digits.
-                  dosesPerUnit: e.target.value
-                    .replace(/[^0-9]/g, "")
-                    .slice(0, 4),
-                })
-              }
-              placeholder={t(
-                "medications.wizard.steps.step3.dosesPerUnitPlaceholder",
-              )}
-              maxLength={4}
-              autoComplete="off"
-            />
-            <p className="text-muted-foreground text-xs">
-              {t("medications.wizard.steps.step3.dosesPerUnitHint")}
-            </p>
-          </div>
-        )}
-      </div>
+      <PackSizeField
+        value={payload.dosesPerUnit}
+        onChange={(dosesPerUnit) => applyPartial({ dosesPerUnit })}
+      />
 
       {/* v1.8.5 — injection-site tracking opt-in + allowed-sites editor.
           Shown only for an INJECTION delivery form. Default off; enabling
@@ -324,6 +257,103 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
               )}
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Tablets or units per dose, asked when the dose itself does not say it. The
+ * inventory counts units (tablets, ampoules); a multi-unit dose (2 × 2 mg for
+ * 4 mg) decrements several per take and every dose-level readout divides by
+ * this factor. Curated fraction and whole-number buttons (#316), plus an
+ * Other field for a whole number and a fraction (1½) up to four decimals
+ * (#1034); the step holds while it does not read.
+ */
+function UnitsPerDoseBlock({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div className="space-y-2" data-slot="wizard-units-per-dose-block">
+      <Label id="wizard-units-per-dose-label" className="text-sm">
+        {t("medications.wizard.steps.step3.unitsPerDoseLabel")}
+      </Label>
+      <UnitsPerDoseField
+        value={value}
+        onChange={onChange}
+        labelId="wizard-units-per-dose-label"
+        inputId="wizard-units-per-dose-other"
+        dataSlot="wizard-units-per-dose"
+      />
+      <p className="text-muted-foreground text-xs">
+        {t("medications.wizard.steps.step3.unitsPerDoseHint")}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The pack size belongs to the supply, not the dose: optional, folded away
+ * until opened, and open from the start when one is set.
+ */
+function PackSizeField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const { t } = useTranslations();
+  const [open, setOpen] = useState(value !== "");
+  return (
+    <div className="space-y-2" data-slot="wizard-pack-size">
+      <Button
+        type="button"
+        variant="ghost"
+        className="min-h-11 w-full justify-between px-2 sm:min-h-9"
+        aria-expanded={open}
+        aria-controls="wizard-pack-size-body"
+        onClick={() => setOpen((prev) => !prev)}
+        data-slot="wizard-pack-size-toggle"
+      >
+        <span className="text-sm font-medium">
+          {t("medications.wizard.steps.step3.packSizeToggle")}
+        </span>
+        {open ? (
+          <ChevronUp aria-hidden="true" className="h-4 w-4" />
+        ) : (
+          <ChevronDown aria-hidden="true" className="h-4 w-4" />
+        )}
+      </Button>
+      {open && (
+        <div id="wizard-pack-size-body" className="space-y-2 px-1">
+          <Label htmlFor="wizard-doses-per-unit" className="text-sm">
+            {t("medications.wizard.steps.step3.dosesPerUnitLabel")}
+          </Label>
+          <Input
+            id="wizard-doses-per-unit"
+            type="text"
+            inputMode="numeric"
+            value={value}
+            // The pack-size cap is 1000, so four digits.
+            onChange={(e) =>
+              onChange(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))
+            }
+            placeholder={t(
+              "medications.wizard.steps.step3.dosesPerUnitPlaceholder",
+            )}
+            maxLength={4}
+            autoComplete="off"
+          />
+          <p className="text-muted-foreground text-xs">
+            {t("medications.wizard.steps.step3.dosesPerUnitHint")}
+          </p>
         </div>
       )}
     </div>

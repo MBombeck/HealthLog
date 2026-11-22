@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 76,
-  "total": 82639,
+  "total": 82548,
   "entries": {
     "components/cycle/log-day-sheet.tsx": 1646,
     "components/insights/coach-panel/chat-bubble.tsx": 821,
@@ -11,7 +11,7 @@
     "components/insights/health-score-card.tsx": 1023,
     "components/insights/insights-tab-strip.tsx": 1084,
     "components/medications/detail/medication-detail-tabs.tsx": 977,
-    "components/medications/wizard/wizard-payload.ts": 1431,
+    "components/medications/wizard/wizard-payload.ts": 1357,
     "components/mood/mood-list.tsx": 1130,
     "components/records/life-circumstances-manager.tsx": 828,
     "components/timeline/timeline-chart.tsx": 1095,
@@ -27,7 +27,7 @@
     "lib/ai/prompts/insight-generator.ts": 1115,
     "lib/ai/provider.ts": 1362,
     "lib/analytics/score/reader.ts": 998,
-    "lib/analytics/sleep-night.ts": 1319,
+    "lib/analytics/sleep-night.ts": 1312,
     "lib/analytics/summaries-slice.ts": 1178,
     "lib/cache/server-cache.ts": 848,
     "lib/cycle/prediction.ts": 883,
@@ -46,7 +46,7 @@
     "lib/google-health/sync-core.ts": 1620,
     "lib/idempotency.ts": 879,
     "lib/illness/correlation.ts": 1059,
-    "lib/import/health-connect/import.ts": 1686,
+    "lib/import/health-connect/import.ts": 1685,
     "lib/import/unzip-export-xml.ts": 825,
     "lib/insights/comprehensive-aggregator.ts": 868,
     "lib/insights/comprehensive-generate.ts": 941,
@@ -78,6 +78,6 @@
     "lib/validations/inbound-documents.ts": 989,
     "lib/withings/sync-sleep.ts": 879,
     "lib/withings/sync.ts": 926,
-    "proxy.ts": 846
+    "proxy.ts": 837
   }
 }

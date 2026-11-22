@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2841,
-  "total": 8867,
+  "total": 8866,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1196,7 +1196,7 @@
     "components/medications/wizard/__tests__/wizard-payload.test.ts": 4,
     "components/medications/wizard/medication-wizard-dialog.tsx": 7,
     "components/medications/wizard/nl-bridge.ts": 1,
-    "components/medications/wizard/steps/step3-dose.tsx": 2,
+    "components/medications/wizard/steps/step3-dose.tsx": 1,
     "components/medications/wizard/steps/step5-cadence.tsx": 1,
     "components/medications/wizard/steps/step8-summary.tsx": 1,
     "components/medications/wizard/wizard-payload.ts": 44,

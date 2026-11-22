@@ -69,6 +69,28 @@ function useOutcomeLabels() {
   } as Record<string, string>;
 }
 
+/** The sentence for a refused save, by the route's error code. */
+function remoteErrorText(err: unknown, t: (key: string) => string): string {
+  const k = "settings.sections.export.import.healthConnectRemote";
+  const code =
+    err instanceof ApiError && typeof err.meta?.errorCode === "string"
+      ? err.meta.errorCode
+      : null;
+  if (code === "import.health_connect.remote.private_origin_not_approved") {
+    return t(`${k}.error.privateOrigin`);
+  }
+  if (code === "import.health_connect.remote.invalid_url") {
+    return t(`${k}.error.invalidUrl`);
+  }
+  if (code === "import.health_connect.remote.https_required") {
+    return t(`${k}.error.httpsRequired`);
+  }
+  if (code === "import.health_connect.remote.password_required") {
+    return t(`${k}.error.passwordRequired`);
+  }
+  return t(`${k}.error.saveFailed`);
+}
+
 export function HealthConnectRemoteCard() {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -84,25 +106,7 @@ export function HealthConnectRemoteCard() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const errorText = (err: unknown) => {
-    const code =
-      err instanceof ApiError && typeof err.meta?.errorCode === "string"
-        ? err.meta.errorCode
-        : null;
-    if (code === "import.health_connect.remote.private_origin_not_approved") {
-      return t(`${k}.error.privateOrigin`);
-    }
-    if (code === "import.health_connect.remote.invalid_url") {
-      return t(`${k}.error.invalidUrl`);
-    }
-    if (code === "import.health_connect.remote.https_required") {
-      return t(`${k}.error.httpsRequired`);
-    }
-    if (code === "import.health_connect.remote.password_required") {
-      return t(`${k}.error.passwordRequired`);
-    }
-    return t(`${k}.error.saveFailed`);
-  };
+  const errorText = (err: unknown) => remoteErrorText(err, t);
   const done = () => {
     setError(null);
     void queryClient.invalidateQueries({ queryKey: key });

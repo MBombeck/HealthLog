@@ -71,23 +71,7 @@ export function Step8Summary({
   );
   const canRemove = payload.schedules.length > 1;
 
-  // A reminder needs a delivery channel: with none enabled a hint below the
-  // toggle says so before saving (no hint on a failed or loading read).
-  const { data: notificationChannels } = useQuery({
-    queryKey: queryKeys.notificationsStatus(),
-    queryFn: async () => {
-      const data = await apiGet<{ channels: Array<{ enabled: boolean }> }>(
-        "/api/notifications/status",
-      );
-      return data.channels;
-    },
-    enabled: payload.notificationsEnabled,
-    staleTime: 60_000,
-  });
-  const showNoChannelHint =
-    payload.notificationsEnabled &&
-    Array.isArray(notificationChannels) &&
-    !notificationChannels.some((channel) => channel.enabled);
+  const showNoChannelHint = useNoChannelHint(payload.notificationsEnabled);
 
   return (
     <div className="space-y-4" data-slot="wizard-step8">
@@ -327,5 +311,28 @@ function DoseWindowPlan({
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * A reminder needs a delivery channel: with none enabled a hint below the
+ * toggle says so before saving (no hint on a failed or loading read).
+ */
+function useNoChannelHint(remindersOn: boolean): boolean {
+  const { data: notificationChannels } = useQuery({
+    queryKey: queryKeys.notificationsStatus(),
+    queryFn: async () => {
+      const data = await apiGet<{ channels: Array<{ enabled: boolean }> }>(
+        "/api/notifications/status",
+      );
+      return data.channels;
+    },
+    enabled: remindersOn,
+    staleTime: 60_000,
+  });
+  return (
+    remindersOn &&
+    Array.isArray(notificationChannels) &&
+    !notificationChannels.some((channel) => channel.enabled)
   );
 }

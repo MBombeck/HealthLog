@@ -19,4 +19,55 @@ export const HEALTHLOG_PAGE_CACHE_HEADER = "X-HealthLog-Page-Cache";
  * into the document. Any incoming value is dropped first, so a client cannot
  * set it.
  */
-export const ACCOUNT_SEED_REQUEST_HEADER = "x-healthlog-account-seed";
+export const ACCOUNT_SEED_REQUEST_HEADER = "x-healthlog-page-seed";
+
+/**
+ * Hand the root layout its permission to write the account seed: set on a
+ * session-gated page only, and any value the client sent is dropped first.
+ */
+export function forwardAccountSeedPermission(
+  requestHeaders: Headers,
+  sessionGated: boolean,
+): void {
+  requestHeaders.delete(ACCOUNT_SEED_REQUEST_HEADER);
+  if (sessionGated) requestHeaders.set(ACCOUNT_SEED_REQUEST_HEADER, "1");
+}
+
+/**
+ * The cache posture of a page response, set at the edge where no page-level
+ * change can weaken it.
+ *
+ * Session-gated pages carry one account's health record in the document
+ * itself: several server-prefetch their data into the HTML through a
+ * TanStack `HydrationBoundary` (the dashboard, Insights, the workouts list,
+ * the medications list, the Coach), and the root layout writes the account
+ * seed. They are dynamic only as a side effect of reading the session
+ * cookie, which is a property of the page code, not a guarantee: a stray
+ * `revalidate`, a `force-static` segment or a caching proxy in front of the
+ * app would be enough to keep one account's page and hand it to the next
+ * caller. `private` bars shared caches outright; `no-store` also stops the
+ * browser's disk cache and the bfcache snapshot, so a back-navigation after
+ * logout cannot repaint the record.
+ *
+ * The rule follows the cookie as well as the path: a public page (sign-in,
+ * legal, about) rendered for a request that carries a session cookie is
+ * rendered for that session, so it is `private, no-store` too. Only a page
+ * answered to a request without a session cookie stays cacheable, and only
+ * that one carries the service worker's page-cache permit.
+ *
+ * Runs after the path-credential headers: a stricter answer already set
+ * there (`no-store` on a token page) stands, and nothing uncacheable carries
+ * the permit.
+ */
+export function setPageCachePolicy(
+  headers: Headers,
+  page: { sessionGated: boolean; isPage: boolean; carriesSession: boolean },
+): void {
+  if (!page.isPage && !page.sessionGated) return;
+  if (/no-store/i.test(headers.get("Cache-Control") ?? "")) return;
+  if (page.sessionGated || page.carriesSession) {
+    headers.set("Cache-Control", "private, no-store");
+  } else {
+    headers.set(HEALTHLOG_PAGE_CACHE_HEADER, "anonymous");
+  }
+}
