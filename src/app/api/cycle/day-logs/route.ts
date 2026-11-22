@@ -7,6 +7,8 @@
  * date)` key. `note` is encrypted at rest (`notesEncrypted`); the intent
  * fields stay queryable plaintext (they feed the rollup / correlation
  * tier). Returns the full `CycleDayLogDTO`: 201 on insert, 200 on update.
+ * An `APPLE_HEALTH` re-post of a day the person deleted in HealthLog answers
+ * `410` (`cycle.day-log.deleted_in_healthlog`) and writes nothing.
  *
  * Gated: a disabled / non-FEMALE-without-opt-in account 403s with
  * `errorCode:"cycle.disabled"` even with a valid Bearer token.
@@ -37,6 +39,7 @@ import {
   unstableExternalIdShape,
 } from "@/lib/validations/external-id";
 import { upsertCycleDayLog } from "@/lib/cycle/day-log-write";
+import { deletedInHealthLogRefusal } from "@/lib/sync/tombstone-repost-response";
 import { findOwningCycleId } from "@/lib/cycle/cycle-attribution";
 import { toCycleDayLogDTO, dayLogSymptomInclude } from "@/lib/cycle/dto";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -123,7 +126,11 @@ async function postDayLog(request: NextRequest): Promise<Response> {
   const cycleId = await findOwningCycleId(user.id, entry.date);
   let result;
   try {
-    result = await upsertCycleDayLog(user.id, entry, tz, cycleId);
+    // An Apple Health re-post of a day the person deleted in HealthLog stays
+    // out, as in the bulk drain; a day the person writes here revives.
+    result = await upsertCycleDayLog(user.id, entry, tz, cycleId, undefined, {
+      refuseDeletedInHealthLog: true,
+    });
   } catch (err: unknown) {
     // A residual unique-constraint collision (the helper adopts the
     // canonical row on the common case) surfaces as a clean 409, never a
@@ -143,6 +150,10 @@ async function postDayLog(request: NextRequest): Promise<Response> {
       });
     }
     throw err;
+  }
+
+  if (result.refused) {
+    return deletedInHealthLogRefusal("cycleDayLog", result.id);
   }
 
   const row = await prisma.cycleDayLog.findUniqueOrThrow({

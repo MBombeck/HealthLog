@@ -28,6 +28,8 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { levelAForWrite, shapeLevelA } from "@/lib/mood/level-a";
 import { contextForWire, persistMoodContext } from "@/lib/mood/context";
 import { listMoodEntriesPage } from "@/lib/mood/list-read";
+import { moodRepostFor, moodReviveFields } from "@/lib/mood/single-repost";
+import { deletedInHealthLogRefusal } from "@/lib/sync/tombstone-repost-response";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
 import { recomputeMoodBucketsForEntry } from "@/lib/rollups/mood-rollups";
 import {
@@ -99,6 +101,41 @@ export const GET = apiHandler(async (request: NextRequest) => {
   return apiSuccess(body);
 });
 
+/**
+ * The 422 breadcrumbs of a create body that did not parse: the wide event
+ * (with the unstable-id shape, when that was the reason) and the audit row.
+ */
+function onCreateInvalid(
+  userId: string,
+  error: { issues: Parameters<typeof sanitiseZodIssues>[0] },
+  body: unknown,
+): void {
+  const shape = unstableExternalIdShape(body);
+  annotate({
+    action: { name: "mood-entries.create.validation-failed" },
+    meta: {
+      issue_count: error.issues.length,
+      ...(shape ? unstableExternalIdMeta("mood.create", [shape]) : {}),
+    },
+  });
+  // v1.4.49 — strip `message` from the audit-ledger row; the
+  // mood-create schema's free-text `note` + `tags` could land in a
+  // Zod issue message verbatim.
+  const auditIssues = sanitiseZodIssues(error.issues, {
+    stripValuesFromMessage: true,
+  });
+  // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
+  // .create`, because that helper is the only writer that stamps
+  // `actorUserId`. Filed under the resolved record either way; without the
+  // stamp a manager's malformed payload would read as the owner's own.
+  void auditLog("mood-entries.create.validation-failed", {
+    userId,
+    details: { issues: auditIssues },
+  }).catch(() => {
+    /* swallow — 422 response is the contract */
+  });
+}
+
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postMoodEntry));
 
 async function postMoodEntry(request: NextRequest) {
@@ -113,32 +150,7 @@ async function postMoodEntry(request: NextRequest) {
   const parsed = await parseJsonBody(request, createMoodEntrySchema, {
     maxBytes: 64 * 1024,
     errorCode: "mood.create.invalid",
-    onInvalid: (error, body) => {
-      const shape = unstableExternalIdShape(body);
-      annotate({
-        action: { name: "mood-entries.create.validation-failed" },
-        meta: {
-          issue_count: error.issues.length,
-          ...(shape ? unstableExternalIdMeta("mood.create", [shape]) : {}),
-        },
-      });
-      // v1.4.49 — strip `message` from the audit-ledger row; the
-      // mood-create schema's free-text `note` + `tags` could land in a
-      // Zod issue message verbatim.
-      const auditIssues = sanitiseZodIssues(error.issues, {
-        stripValuesFromMessage: true,
-      });
-      // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
-      // .create`, because that helper is the only writer that stamps
-      // `actorUserId`. Filed under the resolved record either way; without the
-      // stamp a manager's malformed payload would read as the owner's own.
-      void auditLog("mood-entries.create.validation-failed", {
-        userId: user.id,
-        details: { issues: auditIssues },
-      }).catch(() => {
-        /* swallow — 422 response is the contract */
-      });
-    },
+    onInvalid: (error, body) => onCreateInvalid(user.id, error, body),
   });
   if (!parsed.ok) return parsed.error;
 
@@ -191,6 +203,13 @@ async function postMoodEntry(request: NextRequest) {
       422,
       { errorCode: "mood.create.external_id_not_delegable" },
     );
+  }
+
+  // A re-post of an entry deleted in HealthLog stays deleted; one the phone
+  // reported deleted in Apple Health is written back (`single-repost.ts`).
+  const repost = await moodRepostFor(user.id, resolvedSource, externalId);
+  if (repost.kind === "refused") {
+    return deletedInHealthLogRefusal("mood", repost.id);
   }
 
   try {
@@ -254,6 +273,7 @@ async function postMoodEntry(request: NextRequest) {
               note: null,
               noteEncrypted: encryptNote(note ?? null),
               moodLoggedAt,
+              ...moodReviveFields(repost.revive),
             },
           })
         : await tx.moodEntry.create({

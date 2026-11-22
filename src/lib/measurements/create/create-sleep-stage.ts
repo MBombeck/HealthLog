@@ -11,7 +11,9 @@
  *
  * `201` with the stored row when it was inserted, `200` when it was already
  * there (`duplicate`) or was corrected in place (`updated`). The row carries
- * a `status` saying which.
+ * a `status` saying which. A segment the person deleted in HealthLog answers
+ * `410` (`measurement.deleted_in_healthlog`) and stays deleted; one the
+ * phone reported deleted in Apple Health is written again.
  */
 import type { z } from "zod/v4";
 
@@ -21,6 +23,7 @@ import { annotate } from "@/lib/logging/context";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";
 import { auditLog } from "@/lib/auth/audit";
 import { apiError, apiSuccess } from "@/lib/api-response";
+import { deletedInHealthLogRefusal } from "@/lib/sync/tombstone-repost-response";
 import { getUnitForType } from "@/lib/validations/measurement";
 import { shapeMeasurementNotes } from "@/lib/crypto/note-cipher";
 import {
@@ -130,6 +133,11 @@ export async function createNamedSleepStage(
 
   if (verdict.status === "failed") {
     throw new MeasurementReconciliationError(verdict);
+  }
+  // A segment the person deleted in HealthLog stays deleted: the single
+  // route's answer to the refusal the batch route gives per entry.
+  if (verdict.status === "duplicate" && verdict.tombstoned === true) {
+    return deletedInHealthLogRefusal("measurement", verdict.row.id);
   }
   if (verdict.status === "rejected_range") {
     // The schema applies the same band, so this is the two gates disagreeing.

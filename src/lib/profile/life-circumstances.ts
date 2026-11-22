@@ -574,13 +574,15 @@ const AUDIT_C_SELECT = {
 
 /**
  * Store and score one entry. A repeat `externalId` returns the stored entry
- * (`replayed: true`) and writes nothing.
+ * (`replayed: true`) and writes nothing; `deleted` says the stored entry was
+ * deleted since, and the route refuses the re-post rather than answer it as
+ * a live entry.
  */
 export async function createAuditC(
   userId: string,
   input: AuditCCreateInput,
   now: Date = new Date(),
-): Promise<{ result: AuditCResult; replayed: boolean }> {
+): Promise<{ result: AuditCResult; replayed: boolean; deleted?: true }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { gender: true, locale: true },
@@ -595,7 +597,7 @@ export async function createAuditC(
     if (!externalId) return null;
     const existing = await prisma.mentalHealthAssessment.findFirst({
       where: { userId, instrument: "AUDIT_C", externalId },
-      select: AUDIT_C_SELECT,
+      select: { ...AUDIT_C_SELECT, deletedAt: true },
     });
     if (!existing) return null;
     const opened = openAuditCResponses(existing.responsesEncrypted);
@@ -607,6 +609,7 @@ export async function createAuditC(
         labelLocale,
       ),
       replayed: true,
+      ...(existing.deletedAt !== null && { deleted: true as const }),
     };
   };
 

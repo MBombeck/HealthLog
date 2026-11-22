@@ -21,6 +21,7 @@ import {
   MODULE_DISABLED_DESCRIPTION,
   createMeasurementSchema,
   dataEnvelope,
+  deletedInHealthLogResponse,
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
@@ -1086,7 +1087,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "Create one measurement (or a small array)",
       description:
         "Single ingest. The body may also be a bare ARRAY of the same objects — the mode the iOS client uses for a combined blood-pressure + pulse or dual-value glucose write — in which case `data` is the array of created rows in request order. Use `/api/measurements/batch` for Apple Health upload streams.\n\n" +
-        "Sleep stages by name (since v1.39.1): an object with `type: SLEEP_DURATION`, a `sleepStage` of `IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP` or `REM`, and the segment as `startDate` + `endDate` or as `measuredAt` (its end) + `value` (minutes). It is stored and deduplicated exactly as the batch route stores a HealthKit sleep sample, so a bridge can send stages without the HealthKit codepoints. See `NamedSleepStageEntry`.\n\n" +
+        "Sleep stages by name (since v1.39.1): an object with `type: SLEEP_DURATION`, a `sleepStage` of `IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP` or `REM`, and the segment as `startDate` + `endDate` or as `measuredAt` (its end) + `value` (minutes). It is stored and deduplicated exactly as the batch route stores a HealthKit sleep sample, so a bridge can send stages without the HealthKit codepoints. A segment whose `externalId` names one the person deleted in HealthLog answers 410 (`measurement.deleted_in_healthlog`) and stays deleted. See `NamedSleepStageEntry`.\n\n" +
         "Also reachable with a narrow `measurements:write` Bearer, which is the supported way to push readings from a scale, a watch bridge or a home-automation rule. That credential is confined to its owner's own record — a request carrying the account selector is refused 403 before any sharing grant is read, however the record is actually shared — and it may not attribute a source at all: rows it writes carry `source: EXTERNAL`, resolved from the credential, so a bridged reading stays distinguishable from a hand-typed one. A body naming ANY source, `MANUAL` included, is refused 422 (`measurement.create.source_not_permitted`). The GET on this same path, and the PUT and DELETE beside it, name no scope and so refuse it — though the rows themselves stay editable by their owner, unlike a connected provider's.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
@@ -1145,6 +1146,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "A measurement with this data already exists — the `(userId, type, source, externalId)` dedup index rejected the write. Never for a named sleep-stage body, which answers a re-post with 200 instead.",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        ...deletedInHealthLogResponse("measurement.deleted_in_healthlog"),
         // After the spread: `stdResponses` carries a generic 422 that would
         // otherwise overwrite this one.
         ...stdResponses,
