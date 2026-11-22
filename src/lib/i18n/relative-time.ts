@@ -18,7 +18,11 @@
  * same two keys as before. `locale` defaults to the app default so a caller
  * without one in hand keeps the previous behaviour rather than throwing.
  */
-import { DEFAULT_TIMEZONE, isValidTimezone } from "@/lib/tz/format";
+import {
+  DEFAULT_TIMEZONE,
+  isValidTimezone,
+  shiftDateKey,
+} from "@/lib/tz/format";
 import type { Formatters } from "@/lib/format-locale";
 import { pluralKey } from "./plural";
 import { defaultLocale, type Locale } from "./config";
@@ -92,14 +96,14 @@ export function relativeCalendarDate(
     month: "2-digit",
     day: "2-digit",
   });
-  const now = new Date();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
+  // Yesterday is the key before today's, not the host's calendar step back:
+  // `setDate(-1)` moves in the HOST zone, which on a server is UTC, so in the
+  // hour around a change of clocks in `timeZone` it named the wrong day.
+  const today = dayFormatter.format(new Date());
 
   const targetDay = dayFormatter.format(target);
-  if (targetDay === dayFormatter.format(now)) return t("medications.today");
-  if (targetDay === dayFormatter.format(yesterday))
-    return t("medications.yesterday");
+  if (targetDay === today) return t("medications.today");
+  if (targetDay === shiftDateKey(today, -1)) return t("medications.yesterday");
   return formatDate(target);
 }
 
@@ -133,15 +137,14 @@ export function formatUpdatedLabel(
     month: "2-digit",
     day: "2-digit",
   });
-  const now = new Date();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
+  // The key before today's, as in `relativeCalendarDate` above.
+  const today = dayFormatter.format(new Date());
 
   const targetDay = dayFormatter.format(target);
-  if (targetDay === dayFormatter.format(now)) {
+  if (targetDay === today) {
     return t("insights.updatedTodayAt", { time: formatTime(target) });
   }
-  if (targetDay === dayFormatter.format(yesterday)) {
+  if (targetDay === shiftDateKey(today, -1)) {
     return t("insights.updatedYesterday");
   }
   return t("insights.updatedOn", { date: formatDate(target) });

@@ -17,8 +17,6 @@ export interface CoachRecencyGroup<T> {
   conversations: T[];
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 const GROUPS: ReadonlyArray<{ id: CoachRecencyGroupId; labelKey: string }> = [
   { id: "today", labelKey: "insights.coach.history.groupToday" },
   { id: "yesterday", labelKey: "insights.coach.history.groupYesterday" },
@@ -30,13 +28,18 @@ export function groupConversationsByRecency<T extends { updatedAt: string }>(
   conversations: readonly T[],
   now: Date = new Date(),
 ): CoachRecencyGroup<T>[] {
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  ).getTime();
-  const startOfYesterday = startOfToday - DAY_MS;
-  const startOfWeek = startOfToday - 6 * DAY_MS;
+  // Each boundary is its own local midnight, built from the calendar parts:
+  // `startOfToday - 24 h` is an hour off yesterday's midnight after a change
+  // of clocks, so an evening thread moved between "Yesterday" and "This week".
+  const localMidnight = (daysBack: number) =>
+    new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - daysBack,
+    ).getTime();
+  const startOfToday = localMidnight(0);
+  const startOfYesterday = localMidnight(1);
+  const startOfWeek = localMidnight(6);
 
   const buckets: Record<CoachRecencyGroupId, T[]> = {
     today: [],

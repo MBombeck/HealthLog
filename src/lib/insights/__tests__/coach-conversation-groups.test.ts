@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { groupConversationsByRecency } from "../coach-conversation-groups";
 
@@ -44,5 +44,53 @@ describe("groupConversationsByRecency", () => {
 
   it("returns nothing for an empty list", () => {
     expect(groupConversationsByRecency([], NOW)).toEqual([]);
+  });
+});
+
+// The boundaries are the browser's own midnights. `startOfToday - 24 h` was an
+// hour off yesterday's midnight on the day after a change of clocks, so the
+// first or last hour of yesterday landed in the wrong group.
+describe("groupConversationsByRecency across a change of clocks", () => {
+  let hostZone: string | undefined;
+  beforeEach(() => {
+    hostZone = process.env.TZ;
+    process.env.TZ = "Europe/Berlin";
+  });
+  afterEach(() => {
+    process.env.TZ = hostZone;
+  });
+
+  it("keeps all of the 23-hour Sunday in yesterday on Monday", () => {
+    // Monday 2026-03-30 10:00 CEST.
+    const groups = groupConversationsByRecency(
+      [
+        c("sunday-start", "2026-03-28T23:00:00.000Z"), // Sun 00:00 CET
+        c("saturday-late", "2026-03-28T22:30:00.000Z"), // Sat 23:30 CET
+      ],
+      new Date("2026-03-30T08:00:00.000Z"),
+    );
+    expect(groups.map((g) => [g.id, g.conversations.map((x) => x.id)])).toEqual(
+      [
+        ["yesterday", ["sunday-start"]],
+        ["thisWeek", ["saturday-late"]],
+      ],
+    );
+  });
+
+  it("starts yesterday at the 25-hour Sunday's midnight on Monday", () => {
+    // Monday 2026-10-26 10:00 CET.
+    const groups = groupConversationsByRecency(
+      [
+        c("sunday-start", "2026-10-24T22:00:00.000Z"), // Sun 00:00 CEST
+        c("saturday-late", "2026-10-24T21:30:00.000Z"), // Sat 23:30 CEST
+      ],
+      new Date("2026-10-26T09:00:00.000Z"),
+    );
+    expect(groups.map((g) => [g.id, g.conversations.map((x) => x.id)])).toEqual(
+      [
+        ["yesterday", ["sunday-start"]],
+        ["thisWeek", ["saturday-late"]],
+      ],
+    );
   });
 });
