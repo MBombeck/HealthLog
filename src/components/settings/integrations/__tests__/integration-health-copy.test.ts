@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { locales, type Locale } from "@/lib/i18n/config";
 import { makeFormatters } from "@/lib/format-locale";
@@ -57,6 +57,18 @@ function translator(locale: Locale) {
 
 const NOW = new Date("2026-10-15T12:00:00.000Z");
 const fmt = makeFormatters("de", "Europe/Berlin", "AUTO", "AUTO");
+
+// The short date leaves the year out only inside the reader's current year,
+// and that year comes from the wall clock, not from the `now` each call is
+// handed. Pin the wall clock to the same instant, or every expectation below
+// gains a year the day the calendar leaves 2026.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 const t = translator("de");
 
 describe("formatHealthInstant", () => {
