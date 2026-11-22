@@ -106,6 +106,8 @@ interface ChangesData {
         id: string;
         syncVersion: number;
         deletedAt: string;
+        externalId: string | null;
+        source: string;
       }>;
     };
   };
@@ -539,6 +541,11 @@ describe("GET /api/sync/changes — intake domain (real Postgres)", () => {
     expect(j.data.changes.intakes.tombstones).toHaveLength(1);
     expect(j.data.changes.intakes.tombstones[0].id).toBe(delId);
     expect(j.data.changes.intakes.tombstones[0].syncVersion).toBe(1);
+    // Not from Apple Health: no dose-event id, and its own source.
+    expect(j.data.changes.intakes.tombstones[0]).toMatchObject({
+      externalId: null,
+      source: "WEB",
+    });
     expect(j.data.changes.intakes.upserts.map((u) => u.id)).toEqual([keepId]);
   });
 });

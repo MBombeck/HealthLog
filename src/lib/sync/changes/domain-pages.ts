@@ -31,6 +31,7 @@ import type {
   CycleDayTombstone,
   DomainBlock,
   IdTombstone,
+  IntakeTombstone,
   IntakeUpsert,
   MeasurementMirrorUpsert,
   MeasurementTombstone,
@@ -185,12 +186,16 @@ export function moodBlock(
 
 export function intakeBlock(
   page: IntakeRow[],
-): DomainBlock<IntakeUpsert, IdTombstone> {
+): DomainBlock<IntakeUpsert, IntakeTombstone> {
   const upserts: IntakeUpsert[] = [];
-  const tombstones: IdTombstone[] = [];
+  const tombstones: IntakeTombstone[] = [];
   for (const row of page) {
     if (row.deletedAt) {
-      tombstones.push(idTombstone({ ...row, deletedAt: row.deletedAt }));
+      tombstones.push({
+        ...idTombstone({ ...row, deletedAt: row.deletedAt }),
+        externalId: row.externalId,
+        source: row.source,
+      });
     } else {
       upserts.push({
         id: row.id,

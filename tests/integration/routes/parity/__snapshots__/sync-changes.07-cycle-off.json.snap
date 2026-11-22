@@ -151,7 +151,9 @@
               "id": "in-03",
               "syncVersion": "<syncVersion>",
               "deletedAt": "2026-10-15T11:30:00.000Z",
-              "updatedAt": "<updatedAt>"
+              "updatedAt": "<updatedAt>",
+              "externalId": null,
+              "source": "WEB"
             }
           ]
         },

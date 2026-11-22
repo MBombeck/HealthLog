@@ -56,6 +56,7 @@ const INTAKE_SELECT = {
   takenAt: true,
   skipped: true,
   source: true,
+  externalId: true,
   autoRecorded: true,
   syncVersion: true,
   deletedAt: true,

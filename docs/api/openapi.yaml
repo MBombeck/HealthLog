@@ -57790,11 +57790,26 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        externalId:
+          description: "Since v1.49.0: the HealthKit dose-event UUID the dose recorded, null for a dose not from Apple Health.
+            Lets a client match a deleted dose to its Apple Health record without holding the server id. Informational:
+            `POST /api/medications/intake/bulk` already refuses the re-post of a dose the person deleted in HealthLog
+            (`skipped`, `deleted_in_healthlog`), and takes one the phone reported deleted in Apple Health."
+          type:
+            - string
+            - "null"
+        source:
+          type: string
+          description: "Since v1.49.0: the row's `source`, as on the upsert. A dose from Apple Health that landed on a pending
+            slot row keeps that row's source (`REMINDER`), so `externalId`, not `source`, says whether it came from
+            Apple Health."
       required:
         - id
         - syncVersion
         - deletedAt
         - updatedAt
+        - externalId
+        - source
       additionalProperties: false
       description: A soft-deleted medication intake, keyed on server `id`. Apply before upserts within the domain page.
     SyncCycleDayTombstone:
