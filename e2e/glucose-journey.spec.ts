@@ -299,7 +299,8 @@ test.describe("blood glucose", () => {
       await captureReading(page, {
         typed: String(READINGS.typedAsMgdl.mgdl),
         yesterdayAt: "07:30",
-        expectPlaceholder: "95",
+        // The form offers the person's latest reading, in the unit it asks in.
+        expectPlaceholder: String(READINGS.untagged.mgdl),
       }),
     ).toBe(201);
 
@@ -323,7 +324,7 @@ test.describe("blood glucose", () => {
       await captureReading(page, {
         typed: READINGS.typedAsMmol.typed,
         context: "BEDTIME",
-        expectPlaceholder: "5.3",
+        expectPlaceholder: READINGS.untagged.mmol,
       }),
     ).toBe(201);
 
