@@ -187,7 +187,7 @@ export function CourseWindowRow({
               aria-label={t(`${i18nPrefix}.noEndDate`)}
               data-slot="course-window-no-end"
             />
-            <Label htmlFor={`${endId}-no-end`} className="text-sm">
+            <Label noColon htmlFor={`${endId}-no-end`} className="text-sm">
               {t(`${i18nPrefix}.noEndDate`)}
             </Label>
           </div>
