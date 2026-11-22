@@ -23,6 +23,7 @@
 import { prisma } from "@/lib/db";
 import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
 import { deviceDeleteWrites } from "@/lib/devices/delete-devices";
+import { endDeviceLiveActivities } from "@/lib/notifications/live-activity-end";
 
 export interface RevokeDeviceCascadeResult {
   id: string;
@@ -94,6 +95,10 @@ export async function revokeDeviceCascade(
   // pass; the relay answers 204 whether or not the token was bound.
   const removal = deviceDeleteWrites(device);
   writes.push(...removal.writes);
+
+  // Its running Activities end while their tokens and the relay binding
+  // still exist; once the row goes nothing can reach them.
+  await endDeviceLiveActivities([device.id]);
 
   await prisma.$transaction(writes as never);
 

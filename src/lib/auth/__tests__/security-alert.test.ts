@@ -25,6 +25,7 @@ describe("sendSecurityAlert", () => {
     ["passkey_removed", "Passkey entfernt"],
     ["token_revoked", "Zugriffstoken widerrufen"],
     ["refresh_reuse", "Ein Gerät wurde abgemeldet"],
+    ["device_reassigned", "Ein Gerät gehört jetzt zu einem anderen Konto"],
   ] as const)(
     "sends %s as an urgent SECURITY_ALERT in the account's locale",
     async (kind, title) => {

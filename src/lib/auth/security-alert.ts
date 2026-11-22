@@ -1,7 +1,10 @@
 /**
  * The SECURITY_ALERT notifications: a sign-in from a new device, a passkey
- * added or removed, an access token revoked, and a device family signed out
- * because its refresh token was presented twice.
+ * added or removed, an access token revoked, a device family signed out
+ * because its refresh token was presented twice, and a device of the account
+ * that another account's registration took over (`device_reassigned`; it
+ * reaches the account's other devices and channels, since the taken-over
+ * one is no longer the account's).
  *
  * Each one is localised against the recipient's own locale and goes through
  * the dispatcher, which applies the per-channel SECURITY_ALERT preference
@@ -26,7 +29,8 @@ export type SecurityAlertKind =
   | "passkey_added"
   | "passkey_removed"
   | "token_revoked"
-  | "refresh_reuse";
+  | "refresh_reuse"
+  | "device_reassigned";
 
 type Translate = ReturnType<typeof getServerTranslator>["t"];
 
@@ -57,6 +61,10 @@ const TEXT: Record<
   refresh_reuse: (t) => ({
     title: t("notifications.security.refreshReuseTitle"),
     body: t("notifications.security.refreshReuseBody"),
+  }),
+  device_reassigned: (t) => ({
+    title: t("notifications.security.deviceReassignedTitle"),
+    body: t("notifications.security.deviceReassignedBody"),
   }),
 };
 

@@ -13,7 +13,9 @@
  * its push credentials: the APNs token, the push key, the relay consent and
  * binding (whose unbind is queued, `unbind-queue.ts`), the Live Activity
  * tokens and the push-to-start state; relay pushes still waiting for it are
- * dropped. The row itself stays, so its per-device
+ * dropped. Its running Activities get their end push first, where the
+ * revocation has no transaction of its own (`afterRefreshRevocation`, the
+ * nightly sweep), so none is left on the lock screen. The row itself stays, so its per-device
  * delivery choice survives, and the next sign-in's `POST /api/devices` puts
  * the credentials back. A device that never had a refresh token (a row older
  * than per-device sign-in) is not touched: "no live sign-in" cannot be told
@@ -28,6 +30,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { endDeviceLiveActivities } from "@/lib/notifications/live-activity-end";
 import { clearedRelayFields } from "@/lib/push-relay/binding";
 import { relayConfig } from "@/lib/push-relay/config";
 import { drainRelayUnbinds } from "@/lib/push-relay/unbind-queue";
@@ -191,6 +194,10 @@ export async function drainQueuedUnbinds(
  */
 export async function afterRefreshRevocation(userId: string): Promise<void> {
   try {
+    // The running Activities end while the device still holds the tokens
+    // and the relay binding that reach them (`live-activity-end.ts`).
+    const devices = await signedOutDevices(prisma, userId);
+    await endDeviceLiveActivities(devices.map((d) => d.id));
     await drainQueuedUnbinds(await stripSignedOutDevicePush(prisma, userId));
   } catch (err) {
     getEvent()?.addWarning(
@@ -237,6 +244,7 @@ export async function sweepSignedOutDevices(
   `;
   for (const { userId } of rows) {
     const devices = await signedOutDevices(db, userId, now);
+    await endDeviceLiveActivities(devices.map((d) => d.id));
     await drainQueuedUnbinds(await stripDevicePush(db, devices));
   }
   return rows.length;

@@ -22,13 +22,14 @@
  * The pass (`push-live-activity`, every five minutes) starts an Activity for
  * the next open dose of each eligible device, once per dose, unless the
  * device already runs one for it; and it updates every running Activity
- * whose state changed since the last update. The state is the server's one
- * resolved dose (`medications/dose-state/resolve.ts`): the medication's own
- * bands (`dueAt`, `overdueSince`, `missedAfter`), the same the today rows,
- * the web and the reminders read; nothing here knows a due or overdue
- * minute. A dose the resolver calls missed has nothing left to show, and the
- * pass ends its Activity. Taken and skipped doses end the Activity as before
- * (`medication-intake-sync.ts`).
+ * whose state changed since the last update, of those it started itself
+ * (`relayStarted`). The state is the server's one resolved dose
+ * (`medications/dose-state/resolve.ts`): the medication's own bands
+ * (`dueAt`, `overdueSince`, `missedAfter`), the same the today rows, the web
+ * and the reminders read; nothing here knows a due or overdue minute. A dose
+ * the resolver calls missed has nothing left to show, and the pass ends its
+ * Activity, whoever started it. Taken and skipped doses end the Activity as
+ * before (`medication-intake-sync.ts`).
  *
  * When a dose starts is the app's decision: `MedicationLiveActivityPlan`
  * surfaces a dose from `leadWindow` (two hours) before its scheduled time,
@@ -263,6 +264,7 @@ const DEVICE_SELECT = {
       activityStatement: true,
       activitySignature: true,
       lastRelayState: true,
+      relayStarted: true,
     },
   },
 } as const;
@@ -487,6 +489,12 @@ type LaActivity = LaDevice["liveActivities"][number];
 /**
  * The update items for `device`'s running Activities whose state changed,
  * and the Activities whose dose the resolver calls missed: those end.
+ *
+ * Only an Activity the server started over the relay (`relayStarted`) is
+ * updated here. One the app started itself has the app's own attributes
+ * type, whose content state is not the relay template: an update would
+ * decode wrong or not at all. It keeps the direct path, and still ends
+ * here when its dose is missed, and on the intake path when it is answered.
  */
 async function updateItems(
   device: LaDevice,
@@ -533,6 +541,7 @@ async function updateItems(
       missed.push(activity);
       continue;
     }
+    if (!activity.relayStarted) continue;
     if (sameState(state, activity.lastRelayState)) continue;
     updates.push({
       rowId: activity.id,

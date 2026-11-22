@@ -6,10 +6,12 @@
  * never delivers it to a force-quit app, and a reminder the iPhone scheduled
  * locally can only be withdrawn by the app itself or by its Notification
  * Service Extension, which runs only for a REMOTE alert. So a take or a skip
- * recorded on the web, in Telegram, through the ingest hook or by the
- * auto-take also sends this quiet alert to the owner's iOS devices other than
- * the one that recorded it. The extension reads the payload, withdraws the
- * matching local reminder and shows the neutral text, or nothing.
+ * a person records on the web, in Telegram, through the ingest hook or on
+ * another device also sends this quiet alert to the owner's iOS devices other
+ * than the one that recorded it. The extension reads the payload, withdraws
+ * the matching local reminder and shows the neutral text, or nothing. The
+ * automatic passes (auto-take, auto-miss) send none: they reach the app
+ * through the silent intake sync only.
  *
  * Wire (APNs): `apns-push-type: alert`, priority 5, `apns-collapse-id` per
  * slot, `aps.mutable-content: 1`, `aps.interruption-level: passive`,

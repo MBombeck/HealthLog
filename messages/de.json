@@ -9856,7 +9856,9 @@
       "tokenRevokedTitle": "Zugriffstoken widerrufen",
       "tokenRevokedBody": "Ein Zugriffstoken deines Kontos wurde widerrufen. Falls du das nicht warst, ändere dein Passwort und prüfe deine Tokens.",
       "refreshReuseTitle": "Ein Gerät wurde abgemeldet",
-      "refreshReuseBody": "Ein Anmeldetoken wurde zweimal verwendet, deshalb wurde sein Gerät abgemeldet. Melde dich dort neu an. Passiert das wieder, ändere dein Passwort."
+      "refreshReuseBody": "Ein Anmeldetoken wurde zweimal verwendet, deshalb wurde sein Gerät abgemeldet. Melde dich dort neu an. Passiert das wieder, ändere dein Passwort.",
+      "deviceReassignedTitle": "Ein Gerät gehört jetzt zu einem anderen Konto",
+      "deviceReassignedBody": "Ein Gerät, das die Benachrichtigungen dieses Kontos bekam, ist jetzt bei einem anderen Konto angemeldet und bekommt sie nicht mehr. Warst du das nicht, prüfe deine Geräte und Anmeldungen."
     },
     "sharedRecordIntake": {
       "title": "{name} hat eine Dosis markiert",

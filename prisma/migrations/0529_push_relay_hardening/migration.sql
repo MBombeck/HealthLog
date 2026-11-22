@@ -29,6 +29,11 @@ BEGIN
         ADD COLUMN IF NOT EXISTS "next_sender_public_key" TEXT,
         ADD COLUMN IF NOT EXISTS "next_announced_at" TIMESTAMP(3);
 
+    -- Writes wait from the lowering to the build, so a still-running older
+    -- container cannot store a second spelling of a token in between and
+    -- fail the build with 23505. Reads go on.
+    LOCK TABLE "devices" IN SHARE ROW EXCLUSIVE MODE;
+
     UPDATE "devices" AS d
        SET "apns_token" = NULL,
            "apns_environment" = NULL

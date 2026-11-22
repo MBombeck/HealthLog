@@ -153,15 +153,18 @@ async function setUp() {
       ).toString("base64url"),
     };
   };
-  const activityEntry = (extra: Record<string, unknown>) => {
+  const activityEntry = (
+    extra: Record<string, unknown>,
+    activityToken: string = LA_TOKEN,
+  ) => {
     const statement = {
       instanceId,
       tokenTag: base.tokenTag,
-      laTokenTag: tokenTagHex(LA_TOKEN) as string,
+      laTokenTag: tokenTagHex(activityToken) as string,
       iat: now(),
     };
     return {
-      token: LA_TOKEN,
+      token: activityToken,
       statement,
       signature: signText(
         seed,
@@ -404,6 +407,7 @@ describe("start and update", () => {
     await t.reg({
       liveActivityTokens: [
         t.activityEntry({
+          relayStart: true,
           medicationId: medication.id,
           slotInstant: slot.toISOString(),
         }),
@@ -486,6 +490,7 @@ describe("the dose state", () => {
     await t.reg({
       liveActivityTokens: [
         t.activityEntry({
+          relayStart: true,
           medicationId: medication.id,
           slotInstant: slot.toISOString(),
         }),
@@ -540,5 +545,144 @@ describe("the dose state", () => {
     ]);
     expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
     expect(await pass(second(missedAfter, 301))).toEqual([]);
+  });
+});
+
+describe("who started the Activity", () => {
+  const APP_LA_TOKEN = "7c".repeat(32);
+
+  it("updates only the one the server started, and ends both", async () => {
+    const t = await setUp();
+    await t.reg({ liveActivityConsent: t.consent() });
+    // Past the daily band's on-time hour after the slot: overdue.
+    const { medication, slot, at } = await dueDose(t.session.userId, -90);
+    const dose = {
+      medicationId: medication.id,
+      slotInstant: slot.toISOString(),
+    };
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({ ...dose, relayStart: true }),
+        // The app's own Activity of the same dose, its own attributes type.
+        t.activityEntry(dose, APP_LA_TOKEN),
+      ],
+    });
+    const rows = await getPrismaClient().liveActivityToken.findMany({
+      orderBy: { pushToken: "asc" },
+      select: { pushToken: true, relayStarted: true },
+    });
+    expect(rows).toEqual([
+      { pushToken: LA_TOKEN, relayStarted: true },
+      { pushToken: APP_LA_TOKEN, relayStarted: false },
+    ]);
+
+    expect(await runLiveActivityRelayPass()).toMatchObject({ updated: 1 });
+    expect(laPushes().map((p) => [p.token, p.payload.aps])).toEqual([
+      [LA_TOKEN, expect.objectContaining({ event: "update" })],
+    ]);
+
+    // A later post of the set that names the dose and leaves `relayStart`
+    // out keeps the mark: it belongs to the Activity, not to the post.
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry(dose),
+        t.activityEntry(dose, APP_LA_TOKEN),
+      ],
+    });
+    expect(
+      await getPrismaClient().liveActivityToken.count({
+        where: { relayStarted: true },
+      }),
+    ).toBe(1);
+    await getPrismaClient().medication.update({
+      where: { id: medication.id },
+      data: { snoozedUntil: new Date(Date.now() + 20 * 60_000) },
+    });
+    const before = laPushes().length;
+    expect(await runLiveActivityRelayPass()).toMatchObject({ updated: 1 });
+    expect(
+      laPushes()
+        .slice(before)
+        .map((p) => p.token),
+    ).toEqual([LA_TOKEN]);
+
+    // Missed (the daily band's late tail ends four hours after the slot):
+    // both end, whoever started them. Inside the statements' 12-hour life.
+    const ended = laPushes().length;
+    await runLiveActivityRelayPass(at(4 * 60 + 5));
+    expect(
+      laPushes()
+        .slice(ended)
+        .map((p) => [p.token, (p.payload.aps as { event: string }).event])
+        .sort(),
+    ).toEqual(
+      [
+        [APP_LA_TOKEN, "end"],
+        [LA_TOKEN, "end"],
+      ].sort(),
+    );
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
+  });
+});
+
+describe("a device leaving the account", () => {
+  const APP_LA_TOKEN = "8d".repeat(32);
+  const endedTokens = (from: number) =>
+    laPushes()
+      .slice(from)
+      .filter((p) => (p.payload.aps as { event?: string }).event === "end")
+      .map((p) => p.token)
+      .sort();
+
+  async function twoActivities() {
+    const t = await setUp();
+    await t.reg({ liveActivityConsent: t.consent() });
+    const { medication, slot } = await dueDose(t.session.userId, 10);
+    const dose = {
+      medicationId: medication.id,
+      slotInstant: slot.toISOString(),
+    };
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({ ...dose, relayStart: true }),
+        t.activityEntry(dose, APP_LA_TOKEN),
+      ],
+    });
+    return t;
+  }
+
+  it("ends its running Activities when its sign-in ends", async () => {
+    const t = await twoActivities();
+    const deviceToken = `device-${TOKEN.slice(0, 6)}`;
+    await getPrismaClient().refreshToken.create({
+      data: {
+        userId: t.session.userId,
+        tokenHash: "sign-out-test-hash",
+        deviceId: deviceToken,
+        expiresAt: new Date(Date.now() + 3600_000),
+        revokedAt: new Date(),
+      },
+    });
+    const before = laPushes().length;
+    const { afterRefreshRevocation } =
+      await import("@/lib/devices/signed-out-push");
+    await afterRefreshRevocation(t.session.userId);
+    expect(endedTokens(before)).toEqual([APP_LA_TOKEN, LA_TOKEN].sort());
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
+  });
+
+  it("ends its running Activities when another account takes it over", async () => {
+    await twoActivities();
+    const other = await makeSession(await makeUser());
+    const before = laPushes().length;
+    const taken = await registerDevice(other, {
+      token: `device-${TOKEN.slice(0, 6)}`,
+      bundleId: "dev.healthlog.app",
+      apnsToken: TOKEN,
+      apnsEnvironment: "production",
+    });
+    expect(taken.status).toBe(201);
+    expect(endedTokens(before)).toEqual([APP_LA_TOKEN, LA_TOKEN].sort());
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
   });
 });

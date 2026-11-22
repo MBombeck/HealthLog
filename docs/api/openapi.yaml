@@ -32928,7 +32928,9 @@ components:
               relayStart:
                 description: "The Activity was started by the server over the relay (attributes type `HealthLogDoseAttributes`), so the
                   app does not know its dose: the server fills in `medicationId` and `slotInstant` of the dose it
-                  started. Send its update token with an `hl-activity-v1` statement as for any Activity."
+                  started. Send its update token with an `hl-activity-v1` statement as for any Activity. Only Activities
+                  registered with it get relay updates; one the app started itself gets the direct path and the end push
+                  only. The mark sticks to the token on later posts of the set; a rotated token is sent with it again."
                 type: boolean
               slotInstant:
                 description: The slot the Activity counts down to (the today row's `slotInstant`). With it the server ends this Activity
@@ -47539,9 +47541,10 @@ components:
             takes liveActivityTokens; each Activity is ended by its own push once its dose is answered. `push.relay`:
             The server seals push envelopes and can use the push relay; /api/auth/me push.relay and push.device carry
             the state, POST /api/devices takes pushKey, relayConsent and relayBinding. `medication.dose-state`: Today
-            rows and complianceDisplay.currentDose carry the resolved state, takenLate, dueAt, overdueSince and
-            slotInstant. `measurement.reading-timezone`: POST /api/measurements/batch accepts an optional IANA timeZone
-            per entry; the reading's own zone sets its day for sleep, the day view, list day groups and daily charts.
+            rows carry the resolved state, takenLate, dueAt, overdueSince and slotInstant; complianceDisplay.currentDose
+            carries the same state, takenLate, dueAt and overdueSince, with its slot as targetAt.
+            `measurement.reading-timezone`: POST /api/measurements/batch accepts an optional IANA timeZone per entry;
+            the reading's own zone sets its day for sleep, the day view, list day groups and daily charts.
             `apple-health.types-2026-11`: The batch ingest accepts the Apple Health cycling distance, rowing distance
             and speed, and running speed, power, ground contact time, vertical oscillation and stride length types.
             `medication.snooze-setting`: GET/PATCH /api/auth/me/notification-prefs carry medication.snoozeMinutes
@@ -47564,19 +47567,19 @@ components:
             `push.healthkit-catch-up`: A device with a push key whose app registered in the last three days gets a
             sealed silent HEALTHKIT_CATCH_UP (d.requestedAt) when the account's Apple Health upload is six hours behind;
             at most three a day, four hours apart. `push.security-alert-relay`: SECURITY_ALERT (new sign-in, passkey
-            added or removed, token revoked, refresh-token reuse) reaches sealed and relay-bound devices with ui.level
-            time-sensitive and d.securityKind. `push.live-activity-relay`: POST /api/devices takes liveActivityConsent
-            (hl-la-consent-v1), liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with
-            hl-la-start-v1) and liveActivityTokens[].relayStart; the server starts and updates medication Live
-            Activities over the relay with the closed content state while push.relay.liveActivity lists start and update
-            (operator switch PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`:
-            push.device.liveActivityStarted on /api/auth/me and in the POST /api/devices answer names the dose ({
-            medicationId, slotInstant }) of the Live Activity the server started on the calling device; null once that
-            slot is answered, its medication paused or ended, or nothing was started. `day.dose-offset`: GET
-            /api/day/{date} symptom events and every GET /api/symptoms/events occurrence carry doseOffset (intakeId,
-            title, minutes) from one rule: the nearest dose taken at or before it on the same local day of the record's
-            zone, else the nearest after it (negative minutes); absent without a timed dose that day or when medications
-            are not readable."
+            added or removed, token revoked, refresh-token reuse, a device taken over by another account) reaches sealed
+            and relay-bound devices with ui.level time-sensitive and d.securityKind. `push.live-activity-relay`: POST
+            /api/devices takes liveActivityConsent (hl-la-consent-v1), liveActivityWithdraw (hl-la-withdraw-v1),
+            liveActivityStart (push-to-start token with hl-la-start-v1) and liveActivityTokens[].relayStart; the server
+            starts medication Live Activities over the relay and updates only those registered with relayStart, with the
+            closed content state, while push.relay.liveActivity lists start and update (operator switch
+            PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`: push.device.liveActivityStarted on
+            /api/auth/me and in the POST /api/devices answer names the dose ({ medicationId, slotInstant }) of the Live
+            Activity the server started on the calling device; null once that slot is answered, its medication paused or
+            ended, or nothing was started. `day.dose-offset`: GET /api/day/{date} symptom events and every GET
+            /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest dose
+            taken at or before it on the same local day of the record's zone, else the nearest after it (negative
+            minutes); absent without a timed dose that day or when medications are not readable."
       required:
         - version
         - buildSha

@@ -7,9 +7,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   // Sonner schedules a dismissal on the next frame; the node test
   // environment has no frames, so run it on a timer instead.
-  vi.stubGlobal("requestAnimationFrame", (fn: () => void) =>
-    setTimeout(fn, 0),
-  );
+  vi.stubGlobal("requestAnimationFrame", (fn: () => void) => setTimeout(fn, 0));
 });
 
 afterEach(() => {

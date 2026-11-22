@@ -45,7 +45,41 @@ vi.mock("next/headers", async () => {
   };
 });
 
+// Every dispatch, with the devices its account still held at that moment.
+const dispatched = vi.hoisted(
+  () =>
+    [] as Array<{
+      userId: string;
+      eventType: string;
+      metadata: unknown;
+      deviceIds: string[];
+    }>,
+);
+vi.mock("@/lib/notifications/dispatcher", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/notifications/dispatcher")>();
+  return {
+    ...actual,
+    dispatchNotification: async (
+      input: Parameters<typeof actual.dispatchNotification>[0],
+    ) => {
+      const devices = await getPrismaClient().device.findMany({
+        where: { userId: input.userId },
+        select: { id: true },
+      });
+      dispatched.push({
+        userId: input.userId,
+        eventType: input.eventType,
+        metadata: input.metadata,
+        deviceIds: devices.map((d) => d.id),
+      });
+      return actual.dispatchNotification(input);
+    },
+  };
+});
+
 beforeEach(async () => {
+  dispatched.length = 0;
   await truncateAllTables(getPrismaClient());
   cookieJar.clear();
   headerJar.clear();
@@ -306,6 +340,17 @@ describe("POST /api/devices", () => {
         laStartToken: "ef".repeat(32),
       },
     });
+    // The previous account's second phone keeps its pushes.
+    const otherDevice = await prisma.device.create({
+      data: {
+        userId: owner.id,
+        platform: "ios",
+        token: "owner-second-phone",
+        bundleId: "io.healthlog.ios",
+        apnsToken: "9a".repeat(32),
+        apnsEnvironment: "production",
+      },
+    });
     const medication = await prisma.medication.create({
       data: { userId: owner.id, name: "Owner med", dose: "1" },
     });
@@ -364,6 +409,16 @@ describe("POST /api/devices", () => {
       ].sort(),
     );
     for (const audit of audits) expect(audit.details ?? "").not.toContain(apns);
+    // The previous account hears of it, on what it still has: the taken-over
+    // row is gone before the alert is dispatched.
+    expect(dispatched.filter((d) => d.eventType === "SECURITY_ALERT")).toEqual([
+      {
+        userId: owner.id,
+        eventType: "SECURITY_ALERT",
+        metadata: { securityKind: "device_reassigned" },
+        deviceIds: [otherDevice.id],
+      },
+    ]);
   });
 
   it("takes over the same install token (X-Device-Id) another account registered", async () => {

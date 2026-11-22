@@ -89,7 +89,7 @@ const deviceRegisterRequest = z
             .boolean()
             .optional()
             .describe(
-              "The Activity was started by the server over the relay (attributes type `HealthLogDoseAttributes`), so the app does not know its dose: the server fills in `medicationId` and `slotInstant` of the dose it started. Send its update token with an `hl-activity-v1` statement as for any Activity.",
+              "The Activity was started by the server over the relay (attributes type `HealthLogDoseAttributes`), so the app does not know its dose: the server fills in `medicationId` and `slotInstant` of the dose it started. Send its update token with an `hl-activity-v1` statement as for any Activity. Only Activities registered with it get relay updates; one the app started itself gets the direct path and the end push only. The mark sticks to the token on later posts of the set; a rotated token is sent with it again.",
             ),
           slotInstant: isoDateTime()
             .optional()

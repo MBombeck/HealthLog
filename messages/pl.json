@@ -9856,7 +9856,9 @@
       "tokenRevokedTitle": "Unieważniono token dostępu",
       "tokenRevokedBody": "Unieważniono token dostępu do Twojego konta. Jeśli to nie Ty, zmień hasło i sprawdź swoje tokeny.",
       "refreshReuseTitle": "Wylogowano urządzenie",
-      "refreshReuseBody": "Token logowania został użyty dwa razy, więc jego urządzenie zostało wylogowane. Zaloguj się na nim ponownie. Jeśli to się powtarza, zmień hasło."
+      "refreshReuseBody": "Token logowania został użyty dwa razy, więc jego urządzenie zostało wylogowane. Zaloguj się na nim ponownie. Jeśli to się powtarza, zmień hasło.",
+      "deviceReassignedTitle": "Urządzenie przeszło na inne konto",
+      "deviceReassignedBody": "Urządzenie, które otrzymywało powiadomienia z tego konta, jest teraz zalogowane na inne konto i już ich nie otrzymuje. Jeśli to nie Ty, sprawdź swoje urządzenia i logowania."
     },
     "sharedRecordIntake": {
       "title": "{name} oznaczył(a) dawkę",

@@ -24,6 +24,8 @@ vi.mock("@/lib/db", () => ({
     device: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      // The pre-takeover Live Activity end looks for other accounts' rows.
+      findMany: async () => [],
       create: vi.fn(),
       update: vi.fn(),
       deleteMany: vi.fn(),

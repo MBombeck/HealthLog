@@ -37,8 +37,9 @@ const IOS_METADATA_ALLOWLIST = new Set([
   // can open it; an opaque id, and dropped for a managed delivery.
   "eventId",
   // SECURITY_ALERT: which change it reports (`new_device`, `passkey_added`,
-  // `passkey_removed`, `token_revoked`, `refresh_reuse`), so the app opens
-  // the account's security page. A closed set, no credential.
+  // `passkey_removed`, `token_revoked`, `refresh_reuse`,
+  // `device_reassigned`), so the app opens the account's security page. A
+  // closed set, no credential.
   "securityKind",
   // MEASUREMENT_ANOMALY names the metric whose level shifted (the
   // measurement type, e.g. `RESTING_HEART_RATE`), so the app opens its page
