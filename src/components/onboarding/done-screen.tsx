@@ -26,7 +26,6 @@ import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import { accountLabel } from "@/lib/sharing/account-access-view";
 import { InlineAction } from "@/components/ui/inline-action";
-import { usePushRelayStatus } from "@/components/admin/use-push-relay";
 
 /**
  * v1.39 — the setup flow's exit.
@@ -244,17 +243,17 @@ function DoneScreenOffers({ serverSetupOpen }: { serverSetupOpen: boolean }) {
     !hasOptedOutOfAi(user?.modules);
 
   // For an admin, one line that the push relay exists and is a choice: only
-  // while this server allows it and nobody has switched it on yet. Nothing
-  // here turns it on; the link leads to the switch and its confirmations.
-  const isAdmin = user?.role === "ADMIN";
+  // while the relay question is open for this server (`push.relay` of
+  // `/api/auth/me`). Nothing here turns it on; the link leads to the switch
+  // and its confirmations.
   // While the server setup is open its line takes this place: the setup's
-  // notifications step is where the relay is decided.
-  const relay = usePushRelayStatus({ enabled: isAdmin && !serverSetupOpen });
+  // notifications step asks the relay question.
+  const relay = user?.push?.relay;
   const showRelayLine =
-    isAdmin &&
+    user?.role === "ADMIN" &&
     !serverSetupOpen &&
-    relay.data?.allowed === true &&
-    !relay.data.offered;
+    relay?.canDecide === true &&
+    relay.operatorDecision === "undecided";
 
   return (
     <>

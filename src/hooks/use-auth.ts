@@ -316,6 +316,20 @@ export interface AuthUser {
    * safe.
    */
   recordSession?: { epoch: number; scope: string | null } | null;
+  /**
+   * The push block. The web reads one thing of it: the operator's answer to
+   * the relay question (`push.relay.operatorDecision`, `canDecide`) and the
+   * relay's documents the question links, for `PushRelayQuestion`. The rest
+   * is the native app's.
+   */
+  push?: {
+    relay?: {
+      operatorDecision?: "undecided" | "on" | "off";
+      canDecide?: boolean;
+      termsUrl?: string | null;
+      privacyUrl?: string | null;
+    } | null;
+  } | null;
 }
 
 /**

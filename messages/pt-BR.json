@@ -9601,11 +9601,12 @@
         "invalidUrl": "PUSH_RELAY_URL não é um endereço https, então o relay não pode ser usado.",
         "keysUnpinned": "Nenhuma chave está fixada para este relay, então suas respostas não podem ser verificadas. Defina PUSH_RELAY_KEYS."
       },
-      "notice": {
-        "title": "Novo: notificações pelo relay de push do HealthLog",
-        "body": "O app HealthLog da App Store agora pode receber notificações deste servidor pelo relay do projeto HealthLog. O conteúdo é criptografado aqui para cada dispositivo e o relay não consegue lê-lo; ele vê quando este servidor envia algo a um dispositivo. A opção fica desligada até você ativá-la, e depois cada pessoa decide no próprio app.",
-        "open": "Abrir configurações",
-        "dismiss": "Entendi"
+      "question": {
+        "title": "Enviar notificações push pelo relay do HealthLog?",
+        "body": "O app HealthLog da App Store recebe as notificações de um servidor sem chave push da Apple própria pelo relay do projeto HealthLog. O conteúdo é criptografado aqui para cada dispositivo e o relay não consegue lê-lo; ele vê quando este servidor envia algo a um dispositivo. Sua resposta vale para o servidor inteiro, e cada pessoa continua decidindo no próprio app.",
+        "yes": "Sim",
+        "no": "Não",
+        "declined": "O relay continua desligado. Você pode ativá-lo depois em Push e canais."
       },
       "test": {
         "button": "Enviar push de teste",

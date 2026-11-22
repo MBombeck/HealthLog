@@ -9601,11 +9601,12 @@
         "invalidUrl": "PUSH_RELAY_URL nie jest adresem https, więc nie można użyć przekaźnika.",
         "keysUnpinned": "Dla tego przekaźnika nie przypięto kluczy, więc nie można sprawdzić jego odpowiedzi. Ustaw PUSH_RELAY_KEYS."
       },
-      "notice": {
-        "title": "Nowość: powiadomienia przez przekaźnik push HealthLog",
-        "body": "Aplikacja HealthLog z App Store może teraz odbierać powiadomienia z tego serwera przez przekaźnik projektu HealthLog. Treść jest tu szyfrowana dla każdego urządzenia i przekaźnik nie może jej odczytać; widzi, kiedy ten serwer coś wysyła do urządzenia. Opcja pozostaje wyłączona, dopóki jej nie włączysz, a potem każda osoba decyduje we własnej aplikacji.",
-        "open": "Otwórz ustawienia",
-        "dismiss": "Rozumiem"
+      "question": {
+        "title": "Wysyłać powiadomienia push przez przekaźnik HealthLog?",
+        "body": "Aplikacja HealthLog z App Store dostaje powiadomienia z serwera bez własnego klucza push Apple przez przekaźnik projektu HealthLog. Treść jest tu szyfrowana dla każdego urządzenia i przekaźnik nie może jej odczytać; widzi, kiedy ten serwer coś wysyła do urządzenia. Twoja odpowiedź obowiązuje dla całego serwera, a każda osoba i tak decyduje we własnej aplikacji.",
+        "yes": "Tak",
+        "no": "Nie",
+        "declined": "Przekaźnik pozostaje wyłączony. Możesz go włączyć później w sekcji Push i kanały."
       },
       "test": {
         "button": "Wyślij testowy push",

@@ -9601,11 +9601,12 @@
         "invalidUrl": "PUSH_RELAY_URL no es una dirección https, por lo que no se puede usar el relé.",
         "keysUnpinned": "No hay claves fijadas para este relé, así que sus respuestas no se pueden comprobar. Define PUSH_RELAY_KEYS."
       },
-      "notice": {
-        "title": "Novedad: notificaciones a través del relé push de HealthLog",
-        "body": "La app HealthLog de la App Store ya puede recibir notificaciones de este servidor a través del relé del proyecto HealthLog. El contenido se cifra aquí para cada dispositivo y el relé no puede leerlo; ve cuándo este servidor envía algo a un dispositivo. La opción sigue desactivada hasta que la actives, y después cada persona decide en su propia app.",
-        "open": "Abrir ajustes",
-        "dismiss": "Entendido"
+      "question": {
+        "title": "¿Enviar notificaciones push a través del relé de HealthLog?",
+        "body": "La app HealthLog de la App Store recibe las notificaciones de un servidor sin clave push de Apple propia a través del relé del proyecto HealthLog. El contenido se cifra aquí para cada dispositivo y el relé no puede leerlo; ve cuándo este servidor envía algo a un dispositivo. Tu respuesta vale para todo el servidor, y cada persona sigue decidiendo en su propia app.",
+        "yes": "Sí",
+        "no": "No",
+        "declined": "El relé sigue desactivado. Puedes activarlo más tarde en Push y canales."
       },
       "test": {
         "button": "Enviar push de prueba",

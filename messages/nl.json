@@ -9601,11 +9601,12 @@
         "invalidUrl": "PUSH_RELAY_URL is geen https-adres, dus de relay kan niet worden gebruikt.",
         "keysUnpinned": "Voor deze relay zijn geen sleutels vastgelegd, dus zijn antwoorden kunnen niet worden gecontroleerd. Stel PUSH_RELAY_KEYS in."
       },
-      "notice": {
-        "title": "Nieuw: meldingen via de HealthLog-pushrelay",
-        "body": "De HealthLog-app uit de App Store kan nu meldingen van deze server ontvangen via de relay van het HealthLog-project. De inhoud wordt hier per apparaat versleuteld en de relay kan hem niet lezen; hij ziet wanneer deze server een apparaat iets stuurt. De optie blijft uit tot je hem aanzet, en daarna beslist iedereen in de eigen app.",
-        "open": "Instellingen openen",
-        "dismiss": "Begrepen"
+      "question": {
+        "title": "Pushmeldingen via de HealthLog-relay versturen?",
+        "body": "De HealthLog-app uit de App Store krijgt meldingen van een server zonder eigen Apple-pushsleutel via de relay van het HealthLog-project. De inhoud wordt hier per apparaat versleuteld en de relay kan hem niet lezen; hij ziet wanneer deze server een apparaat iets stuurt. Je antwoord geldt voor de hele server, en iedereen beslist nog steeds in de eigen app.",
+        "yes": "Ja",
+        "no": "Nee",
+        "declined": "De relay blijft uit. Je kunt hem later aanzetten onder Push en kanalen."
       },
       "test": {
         "button": "Testpush versturen",

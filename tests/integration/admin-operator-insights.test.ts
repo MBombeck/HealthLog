@@ -8,8 +8,8 @@
  *   pending, and a row that started and never finished reads as failed.
  * - `GET /api/admin/push-relay` counts the relay delivery ledger of the last
  *   seven days per outcome, aggregate only, and names the last failure; an
- *   older row is outside the window. The one-time notice that the relay
- *   exists is gone once the relay is offered.
+ *   older row is outside the window. The relay question is answered once
+ *   the relay is on.
  * - Both are admin-only.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -112,7 +112,7 @@ describe("GET /api/admin/migrations", () => {
 
 interface RelayStatus {
   offered: boolean;
-  noticePending: boolean;
+  operatorDecision: string;
   usage: {
     windowDays: number;
     accepted: number;
@@ -171,7 +171,7 @@ describe("GET /api/admin/push-relay usage", () => {
       failed: 1,
     });
     expect(res.data.usage.lastFailure?.reason).toBe("BadDeviceToken");
-    // The relay is offered, so the "it exists" notice is no longer due.
-    expect(res.data.noticePending).toBe(false);
+    // The relay is on, so the relay question is answered.
+    expect(res.data.operatorDecision).toBe("on");
   });
 });

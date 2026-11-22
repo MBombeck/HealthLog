@@ -922,8 +922,11 @@ model User {
   mfaEnforced                  Boolean   @default(false) @map("mfa_enforced")
   passkeyUpgradeNudgeDismissed Boolean   @default(false) @map("passkey_upgrade_nudge_dismissed")
   /// One-time admin notices this admin account has dismissed, by id
-  /// (`push_relay_available`). Reader: the admin start page, which shows a
-  /// notice only while its id is absent here.
+  /// (`server_setup_available`). Reader: the admin start page, which shows a
+  /// notice only while its id is absent here. The push relay's notice
+  /// (`push_relay_available`) gave way to the relay question in 1.49, which
+  /// is answered once for the server (`AppSettings.pushRelayDecision`); an id
+  /// already stored is inert.
   adminNoticesDismissed        String[]  @default([]) @map("admin_notices_dismissed")
 
   // Relations
@@ -5770,6 +5773,14 @@ model AppSettings {
   /// `SERVER_SETUP_STEP_IDS` (`src/lib/admin/server-setup.ts`); NULL before
   /// the first step. Same writer and readers as the stamp above.
   serverSetupStepsJson   Json?     @map("server_setup_steps_json")
+  /// 1.49 — the operator's answer to "Send push notifications through the
+  /// HealthLog relay?": `on` once a registration at the relay succeeded, `off`
+  /// once the admin said no or switched the relay off, NULL while nobody
+  /// answered (CHECK in migration 0556). Written by `registration.ts`
+  /// (`recordRelayDecision`) and the answer route; read by
+  /// `operatorDecisionOf` (`operator-decision.ts`) for `/api/auth/me`
+  /// `push.relay.operatorDecision` and the admin relay status.
+  pushRelayDecision      String?   @map("push_relay_decision")
 
   @@map("app_settings")
 }

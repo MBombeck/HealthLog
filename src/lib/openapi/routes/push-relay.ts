@@ -20,8 +20,13 @@ import {
   relayConsentSchema,
 } from "@/lib/push-relay/device-registration";
 import { relayInviteSchema } from "@/lib/push-relay/invite";
+import { RELAY_OPERATOR_DECISIONS } from "@/lib/push-relay/operator-decision";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
+
+const operatorDecisionSchema = z
+  .enum(RELAY_OPERATOR_DECISIONS)
+  .meta({ id: "PushRelayOperatorDecision" });
 
 const senderKey = z
   .object({
@@ -99,6 +104,14 @@ export const relayCapabilityBlock = z
       .string()
       .describe(
         "The consent text version the card shows; sent back as `relayConsent.textVersion`.",
+      ),
+    operatorDecision: operatorDecisionSchema.describe(
+      'The operator\'s one answer, for the whole server, to "Send push notifications through the HealthLog relay?". `on` once the registration at the relay succeeded; `off` when an admin said no or switched the relay off, and also when there is nothing to decide (`available: false`, or the server has an APNs key of its own, which the relay would never be used beside); `undecided` otherwise. Ask each person about the relay only while it is `on`.',
+    ),
+    canDecide: z
+      .boolean()
+      .describe(
+        "The caller is an admin of a server whose relay is available (never on a demo deploy). Informational for a Bearer client: the answer is given on the web admin page (`/admin`), because the routes that give it (`POST /api/admin/push-relay/decision`, `PUT /api/admin/push-relay`) are cookie-only like every admin route and refuse a Bearer token.",
       ),
   })
   .meta({ id: "PushRelayCapability" });
@@ -267,9 +280,24 @@ const adminRelayStatus = z
     termsUrl: z.string().nullable(),
     privacyUrl: z.string().nullable(),
     docsUrl: z.string(),
-    noticePending: z.boolean(),
+    operatorDecision: operatorDecisionSchema.describe(
+      "As `push.relay.operatorDecision` of `/api/auth/me`: the relay question is open while it is `undecided`.",
+    ),
   })
   .meta({ id: "AdminPushRelayStatus" });
+
+const adminRelaySwitchBody = z
+  .object({
+    enabled: z.boolean(),
+    acceptTerms: z.boolean().optional(),
+    householdOnly: z.boolean().optional(),
+    invite: relayInviteSchema
+      .optional()
+      .describe(
+        "The relay's one-time invite code, 24 base64url characters, for a relay that accepts new servers by invitation only. Used for this registration attempt only and never stored; any other shape is 422.",
+      ),
+  })
+  .meta({ id: "AdminPushRelaySwitch" });
 
 export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/admin/push-relay": {
@@ -296,25 +324,10 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Admin"],
       summary: "Offer the push relay to this server's users, or stop",
       description:
-        "Turning it on needs `acceptTerms` and `householdOnly`, registers the instance at the relay and creates its key; `invite` carries the relay's one-time code when the relay is invite-only. The answer is the state after the registration attempt: a refusal reads `offered: true`, `instanceId: null` and a `reason` (`invite_required`, `invite_rejected`, `registration_paused`, or a transport code). Turning it off deletes the instance at the relay, every device binding with it, and the key. On a relay that is on and registered, turning it on again records the operator's acceptance of the current terms text and changes nothing else. Admin-only, cookie-only, audit-logged, 10 per 15 minutes (429 `admin.pushRelay.rateLimited`).",
+        "Turning it on needs `acceptTerms` and `householdOnly`, registers the instance at the relay and creates its key; `invite` carries the relay's one-time code when the relay is invite-only. The answer is the state after the registration attempt: a refusal reads `offered: true`, `instanceId: null` and a `reason` (`invite_required`, `invite_rejected`, `registration_paused`, or a transport code). `operatorDecision` becomes `on` once the registration succeeded. Turning it off deletes the instance at the relay, every device binding with it, and the key, and sets `operatorDecision` to `off`. On a relay that is on and registered, turning it on again records the operator's acceptance of the current terms text and changes nothing else. Admin-only, cookie-only, audit-logged, 10 per 15 minutes (429 `admin.pushRelay.rateLimited`).",
       requestBody: {
         required: true,
-        content: {
-          "application/json": {
-            schema: z
-              .object({
-                enabled: z.boolean(),
-                acceptTerms: z.boolean().optional(),
-                householdOnly: z.boolean().optional(),
-                invite: relayInviteSchema
-                  .optional()
-                  .describe(
-                    "The relay's one-time invite code, 24 base64url characters, for a relay that accepts new servers by invitation only. Used for this registration attempt only and never stored; any other shape is 422.",
-                  ),
-              })
-              .meta({ id: "AdminPushRelaySwitch" }),
-          },
-        },
+        content: { "application/json": { schema: adminRelaySwitchBody } },
       },
       responses: {
         "200": {
@@ -336,23 +349,32 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
-  "/api/admin/push-relay/notice": {
+  "/api/admin/push-relay/decision": {
     post: {
       tags: ["Admin"],
-      summary: "Dismiss the one-time push relay notice",
+      summary: "Answer the relay question for the whole server",
       description:
-        "For the calling admin account; it does not come back. Admin-only, cookie-only.",
+        "The admin's answer to \"Send push notifications through the HealthLog relay?\", only while `operatorDecision` is `undecided` (409 `admin.pushRelay.decisionNotOpen` otherwise; the switch under `PUT /api/admin/push-relay` changes it later). `enabled: false` sets `off`, and nobody is asked again; an unfinished registration goes with it. `enabled: true` takes the switch's confirmations and invite code and turns the relay on through the same path; `operatorDecision` becomes `on` only once the registration succeeded, and a refusal leaves the question open with its `reason`. Admin-only and cookie-only: a Bearer token never reaches it, so a native client opens the web admin page (`/admin`) instead. Audit-logged (`admin.push_relay.declined`, `admin.push_relay.enabled`), rate limited with the switch (10 per 15 minutes, 429 `admin.pushRelay.rateLimited`).",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: adminRelaySwitchBody } },
+      },
       responses: {
         "200": {
-          description: "Dismissed.",
+          description: "The relay state after the answer.",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                z.object({ dismissed: z.literal(true) }),
-                "AdminPushRelayNoticeEnvelope",
+                adminRelayStatus,
+                "AdminPushRelayDecisionEnvelope",
               ),
             },
           },
+        },
+        "409": {
+          description:
+            "The question is not open (`admin.pushRelay.decisionNotOpen`), or the relay is not available on this server (`admin.pushRelay.unavailable`).",
+          content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
       },

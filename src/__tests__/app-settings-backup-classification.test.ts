@@ -150,6 +150,7 @@ describe("AppSettings column backup classification", () => {
       workoutClimbBackfillCursor: "cursor",
       serverSetupCompletedAt: new Date("2026-11-20T00:00:00.000Z"),
       serverSetupStepsJson: { done: ["registration"] },
+      pushRelayDecision: "off",
     };
     // The fixture is itself held to the schema, so a new column cannot be
     // left out of this case.
@@ -189,5 +190,13 @@ describe("AppSettings column backup classification", () => {
     expect(written).not.toHaveProperty("registrationEnabled");
     expect(written).not.toHaveProperty("serverSetupCompletedAt");
     expect(written).not.toHaveProperty("serverSetupStepsJson");
+    expect(written).not.toHaveProperty("pushRelayDecision");
+  });
+
+  it("refuses a relay decision the column's CHECK would refuse", () => {
+    const decision = appSettingsBackupSchema.shape.pushRelayDecision;
+    expect(decision.safeParse("maybe").success).toBe(false);
+    expect(decision.safeParse("on").success).toBe(true);
+    expect(decision.safeParse(null).success).toBe(true);
   });
 });

@@ -6,9 +6,10 @@
  * MFA policy, the Assistant switches, the module availability, the provider
  * presence, the AI usage bounds and the reasoning controls), each with its own
  * `SELECT` of a few columns, so one client boot read the same row six times.
- * Each reader now takes its columns from this one read, memoised for the
- * request (and read afresh for every call inside a background job, whose one
- * event spans a whole multi-user pass, like the readers it serves).
+ * Each reader (the push relay's operator decision among them) now takes its
+ * columns from this one read, memoised for the request (and read afresh for
+ * every call inside a background job, whose one event spans a whole
+ * multi-user pass, like the readers it serves).
  *
  * A reader keeps its own error handling: a failed read rejects here, and the
  * memo forgets a rejected read so the next caller tries again.
@@ -37,6 +38,7 @@ export const OPERATOR_ROW_SELECT = {
   aiSyncRegenGapHours: true,
   aiReasoningEnabled: true,
   aiReasoningMaxEffort: true,
+  pushRelayDecision: true,
 } as const satisfies Prisma.AppSettingsSelect;
 
 export type OperatorRow = Prisma.AppSettingsGetPayload<{

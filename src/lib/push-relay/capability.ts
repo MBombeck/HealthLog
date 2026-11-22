@@ -15,6 +15,12 @@
  *   while the operator's switch `PUSH_RELAY_LIVE_ACTIVITY` is on),
  *   `liveActivityConsentTextVersion`, `termsUrl`, `privacyUrl`,
  *   `consentTextVersion`.
+ * - `operatorDecision` (`undecided` | `on` | `off`): the operator's one answer
+ *   to "Send push notifications through the HealthLog relay?"
+ *   (`operator-decision.ts`); `canDecide`: the caller is an admin of a server
+ *   whose relay is available, not a demo deploy. The answer is given on the web admin page
+ *   (`/admin`): the routes that give it are cookie-only (`requireAdmin()`), so
+ *   an app signed in with a Bearer token opens that page instead.
  *
  * `push.device`: `transport` (`relay` | `direct` | `none`), `consent`,
  * `relayState`, `intakeSync` (`ok` | `degraded`), `liveActivityConsent`,
@@ -35,6 +41,12 @@ import {
   type RelayConfig,
 } from "@/lib/push-relay/config";
 import { isCircuitOpen } from "@/lib/push-relay/circuit";
+import {
+  operatorDecisionOf,
+  storedRelayDecisionOf,
+  type RelayOperatorDecision,
+} from "@/lib/push-relay/operator-decision";
+import { readOperatorRow } from "@/lib/settings/operator-row";
 import {
   liveActivityStartedOf,
   type LiveActivityStarted,
@@ -76,6 +88,8 @@ export interface RelayCapability {
   termsUrl: string | null;
   privacyUrl: string | null;
   consentTextVersion: string;
+  operatorDecision: RelayOperatorDecision;
+  canDecide: boolean;
 }
 
 export interface DevicePushBlock {
@@ -149,8 +163,10 @@ async function pushStateInputs(
 /** `push.relay` of `/api/auth/me`. */
 async function relayCapabilityOf(
   inputs: PushStateInputs,
+  isAdmin: boolean,
 ): Promise<RelayCapability> {
   const { config, registration: row } = inputs;
+  const operator = await readOperatorRow();
   const health = relayHealth(row);
   const docs = config.origin ? relayDocumentUrls(config.origin) : null;
   const sealing = sealsEnvelopes(row);
@@ -174,6 +190,15 @@ async function relayCapabilityOf(
     termsUrl: docs?.termsUrl ?? null,
     privacyUrl: docs?.privacyUrl ?? null,
     consentTextVersion: RELAY_CONSENT_TEXT_VERSION,
+    operatorDecision: operatorDecisionOf({
+      stored: storedRelayDecisionOf(operator?.pushRelayDecision),
+      offered: row !== null,
+      available: config.available,
+      apnsConfigured: inputs.apnsConfigured,
+    }),
+    // A demo deploy refuses every write and shares its account: nobody there
+    // is asked a question they could not answer.
+    canDecide: isAdmin && config.available && process.env.DEMO_MODE !== "true",
   };
 }
 
@@ -321,11 +346,12 @@ async function devicePushBlockOf(
 export async function accountPushState(
   userId: string,
   request?: Request,
+  options: { isAdmin?: boolean } = {},
 ): Promise<{ relay: RelayCapability; device: DevicePushBlock | null }> {
   const deviceToken = request?.headers.get("x-device-id") ?? null;
   const inputs = pushStateInputs();
   const [relay, device] = await Promise.all([
-    inputs.then(relayCapabilityOf),
+    inputs.then((i) => relayCapabilityOf(i, options.isAdmin === true)),
     deviceToken
       ? Promise.all([
           prisma.device.findFirst({
