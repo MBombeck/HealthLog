@@ -132,6 +132,8 @@ const effects = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/cache/invalidate", () => ({
+  // The dose seam evicts these after a restore (`after-dose-change.ts`).
+  invalidateUserMedications: vi.fn(),
   invalidateUserData: vi.fn((userId: string) => {
     effects.invalidated.push(userId);
   }),
