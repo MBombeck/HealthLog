@@ -301,7 +301,7 @@ export async function readNightSpanRows(
 }
 
 /** How many nights one chunked read reconstructs at a time. */
-const NIGHT_CHUNK = 90;
+export const NIGHT_CHUNK = 90;
 
 /**
  * Every night in a window as `reconstructSleepNights` builds it, oldest

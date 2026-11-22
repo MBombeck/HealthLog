@@ -41,7 +41,7 @@ vi.mock("@/lib/analytics/resting-pulse-read", () => ({
 }));
 // The verdict's basis: the dashboard's seven-day means. Empty here, so every
 // item is placed with its newest reading, else its own value.
-vi.mock("@/lib/analytics/summaries-slice", () => ({
+vi.mock("@/lib/analytics/seven-day-means", () => ({
   readSevenDayMeans: vi.fn(async () => ({})),
 }));
 

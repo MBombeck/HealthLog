@@ -13,10 +13,8 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { deriveRestingProxyFromPulse } from "@/lib/analytics/resting-pulse";
-import {
-  computeSummariesSlice,
-  readSevenDayMeans,
-} from "@/lib/analytics/summaries-slice";
+import { readSevenDayMeans } from "@/lib/analytics/seven-day-means";
+import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { buildTargetsResponse } from "@/lib/targets/build-response";
 import { buildGlucoseTargets } from "@/lib/targets/glucose-builder";
 import {
