@@ -96,7 +96,13 @@ export function MeasurementFormFooter({
             {t("measurements.saveAndNext")}
           </Button>
         )}
-        <Button type="submit" form={formId} disabled={loading} onClick={onSave}>
+        <Button
+          type="submit"
+          form={formId}
+          disabled={loading}
+          onClick={onSave}
+          data-testid="measurement-save"
+        >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : (

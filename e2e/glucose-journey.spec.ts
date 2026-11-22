@@ -241,9 +241,7 @@ async function captureReading(
       new URL(res.url()).pathname === "/api/measurements" &&
       res.request().method() === "POST",
   );
-  await sheet
-    .locator('[data-slot="responsive-sheet-footer"] button[type="submit"]')
-    .click();
+  await sheet.locator('[data-testid="measurement-save"]').click();
   return (await write).status();
 }
 

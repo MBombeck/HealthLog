@@ -116,10 +116,12 @@ function pastDays(body: CadenceBody) {
 
 describe("GET /api/medications/{id}/cadence", () => {
   it("computes the timeline and the chips from the stored doses", async () => {
-    const { owner, med } = await dailyMedicationWithOneMiss({
+    const { owner, med, takes } = await dailyMedicationWithOneMiss({
       days: 20,
       missedDaysAgo: 3,
     });
+    // Today's dose exists only once its take time (08:30 UTC) has passed.
+    const takenToday = takes.some((t) => t >= slotStart(0));
 
     const res = await callRoute<CadenceBody>(GET, {
       method: "GET",
@@ -151,9 +153,10 @@ describe("GET /api/medications/{id}/cadence", () => {
     );
     expect(today.every((p) => p.status !== "missed")).toBe(true);
 
-    // One miss three days ago: the run since covers two past days and today.
+    // One miss three days ago: the run since covers the two past days, and
+    // today once today's dose is recorded.
     expect(res.data.chips.missedLast30).toBe(1);
-    expect(res.data.chips.currentStreak).toBe(3);
+    expect(res.data.chips.currentStreak).toBe(takenToday ? 3 : 2);
     const taken = res.data.timeline.filter((p) => p.status === "taken").length;
     expect(res.data.chips.adherenceRate).toBe(
       Math.round((taken / (taken + 1)) * 100),
