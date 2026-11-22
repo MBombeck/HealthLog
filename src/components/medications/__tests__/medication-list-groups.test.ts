@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
-  buildDoseStatusById,
+  buildDoseStateById,
   groupMedications,
   openByDefault,
   isMedicationDue,
@@ -120,12 +120,12 @@ describe("groupMedications", () => {
 describe("isMedicationDue & openByDefault in flagged mode", () => {
   const now = new Date("2026-07-24T12:00:00.000Z");
 
-  it("recognises truly due dose status (on_time_window, overdue, missed)", () => {
+  it("recognises truly due dose states (due, overdue, missed)", () => {
     expect(
       isMedicationDue(
         { id: "1", active: true },
         {
-          doseStatusById: new Map([["1", "on_time_window"]]),
+          doseStateById: new Map([["1", "due"]]),
         },
       ),
     ).toBe(true);
@@ -133,7 +133,7 @@ describe("isMedicationDue & openByDefault in flagged mode", () => {
       isMedicationDue(
         { id: "2", active: true },
         {
-          doseStatusById: new Map([["2", "overdue"]]),
+          doseStateById: new Map([["2", "overdue"]]),
         },
       ),
     ).toBe(true);
@@ -141,7 +141,7 @@ describe("isMedicationDue & openByDefault in flagged mode", () => {
       isMedicationDue(
         { id: "3", active: true },
         {
-          doseStatusById: new Map([["3", "missed"]]),
+          doseStateById: new Map([["3", "missed"]]),
         },
       ),
     ).toBe(true);
@@ -152,7 +152,7 @@ describe("isMedicationDue & openByDefault in flagged mode", () => {
       isMedicationDue(
         { id: "1", active: true, nextDueAt: "2026-07-25T08:00:00.000Z" },
         {
-          doseStatusById: new Map([["1", "upcoming"]]),
+          doseStateById: new Map([["1", "pending"]]),
         },
       ),
     ).toBe(false);
@@ -342,7 +342,7 @@ describe("MedicationGroupHeader accessibility (item 8 regression)", () => {
   });
 });
 
-describe("buildDoseStatusById", () => {
+describe("buildDoseStateById", () => {
   // The resolved dose at fetch time says upcoming; its due time has passed
   // since, and the card already reads it as due. "Due only" must agree.
   const dose = {
@@ -356,25 +356,25 @@ describe("buildDoseStatusById", () => {
       medicationId: "m1",
       complianceDisplay: { currentDose: dose },
     },
-  ] as unknown as Parameters<typeof buildDoseStatusById>[0];
+  ] as unknown as Parameters<typeof buildDoseStateById>[0];
 
   it("reads the resolved dose at now, as the card does", () => {
     expect(
-      buildDoseStatusById(rows, new Date("2026-11-21T07:59:00.000Z")).get("m1"),
-    ).toBe("upcoming");
+      buildDoseStateById(rows, new Date("2026-11-21T07:59:00.000Z")).get("m1"),
+    ).toBe("pending");
     expect(
-      buildDoseStatusById(rows, new Date("2026-11-21T08:30:00.000Z")).get("m1"),
-    ).toBe("on_time_window");
+      buildDoseStateById(rows, new Date("2026-11-21T08:30:00.000Z")).get("m1"),
+    ).toBe("due");
     expect(
-      buildDoseStatusById(rows, new Date("2026-11-21T10:00:00.000Z")).get("m1"),
+      buildDoseStateById(rows, new Date("2026-11-21T10:00:00.000Z")).get("m1"),
     ).toBe("overdue");
   });
 
-  it("counts a medication without a resolved dose as upcoming", () => {
+  it("gives a medication without a resolved dose no state", () => {
     expect(
-      buildDoseStatusById([
+      buildDoseStateById([
         { medicationId: "m2", complianceDisplay: null },
-      ] as unknown as Parameters<typeof buildDoseStatusById>[0]).get("m2"),
-    ).toBe("upcoming");
+      ] as unknown as Parameters<typeof buildDoseStateById>[0]).get("m2"),
+    ).toBeNull();
   });
 });

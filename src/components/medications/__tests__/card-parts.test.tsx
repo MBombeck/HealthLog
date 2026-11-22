@@ -19,7 +19,8 @@ import { MedicationIntakeActions } from "@/components/medications/card-parts/med
 import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
 import { MedicationCycleStatus } from "@/components/medications/card-parts/medication-cycle-status";
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
-import type { CurrentCycle, DoseStatus } from "@/lib/analytics/compliance";
+import type { CurrentCycle } from "@/lib/analytics/compliance";
+import type { DoseState } from "@/lib/medications/dose-state/resolve";
 
 /**
  * v1.7.2 — the medication-card status pill, compliance bars, intake-action
@@ -441,7 +442,7 @@ describe("streak-token parity — generic vs GLP-1 card", () => {
  */
 describe("medication card body — shared shell + dose-state presentation", () => {
   function renderBody(
-    doseStatus: DoseStatus,
+    doseState: DoseState | null,
     active = true,
     highlighted = false,
   ) {
@@ -458,11 +459,11 @@ describe("medication card body — shared shell + dose-state presentation", () =
         stateBadges={null}
         headerActions={null}
         windowStatus={
-          doseStatus === "on_time_window"
+          doseState === "due"
             ? { status: "in_window", windowStart: "08:00", windowEnd: "20:00" }
             : null
         }
-        doseStatus={doseStatus}
+        doseState={doseState}
         nextLine="Tomorrow, 08:00"
         lastLine="Today, 07:30"
         compliance={{
@@ -483,7 +484,7 @@ describe("medication card body — shared shell + dose-state presentation", () =
     // The maintainer (recurring): the whole card washing green reads as "take it now"
     // and is a permanent removal. The take-window status survives ONLY as the
     // discreet "Take now" pill, never as a card background / ring tint.
-    const html = renderBody("on_time_window");
+    const html = renderBody("due");
     expect(html).not.toContain("ring-success/40");
     expect(html).not.toContain("bg-success/5");
     // The discreet status pill still communicates the state.
@@ -492,9 +493,9 @@ describe("medication card body — shared shell + dose-state presentation", () =
 
   it("never tints the card surface across any dose status", () => {
     for (const status of [
-      "on_time_window",
-      "upcoming",
-      "taken_on_time",
+      "due",
+      "pending",
+      "taken",
       "taken_late",
       "skipped",
       "overdue",
@@ -523,7 +524,7 @@ describe("medication card body — shared shell + dose-state presentation", () =
   });
 
   it("keeps the inactive surface muted without any status tint", () => {
-    const html = renderBody("on_time_window", false);
+    const html = renderBody("due", false);
     expect(html).not.toContain("ring-success/40");
     expect(html).not.toContain("bg-success/5");
     expect(html).toContain("opacity-60");
@@ -534,23 +535,23 @@ describe("medication card body — shared shell + dose-state presentation", () =
   // `<DocumentCard highlighted>`. Carries the id for the page's
   // scroll-into-view lookup regardless of highlight state.
   it("carries the medication id for the deep-link target lookup", () => {
-    const html = renderBody("upcoming");
+    const html = renderBody("pending");
     expect(html).toContain('data-medication-id="m1"');
   });
 
   it("rings the card when it is the deep-link highlight target", () => {
-    const html = renderBody("upcoming", true, true);
+    const html = renderBody("pending", true, true);
     expect(html).toContain("ring-primary");
     expect(html).toContain("ring-2");
   });
 
   it("does not ring the card when it is not the highlight target", () => {
-    const html = renderBody("upcoming", true, false);
+    const html = renderBody("pending", true, false);
     expect(html).not.toContain("ring-primary");
   });
 
   it("renders the decisive next + last lines exactly once each", () => {
-    const html = renderBody("upcoming");
+    const html = renderBody("pending");
     expect((html.match(/Next intake:/g) ?? []).length).toBe(1);
     expect((html.match(/Last intake:/g) ?? []).length).toBe(1);
     expect(html).toContain("Tomorrow, 08:00");
@@ -558,7 +559,7 @@ describe("medication card body — shared shell + dose-state presentation", () =
   });
 
   it("keeps the body shell + spacing tokens that guarantee cross-variant identity", () => {
-    const html = renderBody("upcoming");
+    const html = renderBody("pending");
     // Single shared CardContent body with the canonical spacing rhythm.
     expect(html).toContain("flex h-full flex-col space-y-3.5");
     // Bottom-pinned action wrapper.
@@ -668,7 +669,7 @@ describe("compliance error fallback (v1.16.8)", () => {
         stateBadges={null}
         headerActions={null}
         windowStatus={null}
-        doseStatus="upcoming"
+        doseState="pending"
         nextLine="Tomorrow, 08:00"
         lastLine="Today, 07:30"
         compliance={

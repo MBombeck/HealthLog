@@ -35,7 +35,7 @@ import { type InjectionSiteKey } from "@/lib/medications/injection-sites";
 import { LogInjectionSiteDialog } from "@/components/medications/log-injection-site-dialog";
 import { useGlobalExcludedInjectionSites } from "@/lib/medications/use-injection-site-prefs";
 import {
-  cardDoseStatus,
+  liveDoseState,
   cardTakeSlot,
   cardWindowPill,
 } from "@/lib/medications/dose-state/pill";
@@ -341,9 +341,9 @@ export function Glp1MedicationCard({
   const streak = display?.short.streak ?? compliance?.compliance7?.streak ?? 0;
   // v1.15.9 — the open dose's server-derived status drives the green
   // take-window highlight + the overdue / heavily-overdue top line, shared
-  // verbatim with the generic card. Defaults to "upcoming" (calm).
+  // verbatim with the generic card. No state (calm) without a dose.
   const currentDose = display?.currentDose;
-  const doseStatus = cardDoseStatus(currentDose, now);
+  const doseState = liveDoseState(currentDose, now);
   const pill = cardWindowPill(currentDose, now, userTz);
 
   // The slot of the injection this card shows (the resolved open dose
@@ -516,7 +516,7 @@ export function Glp1MedicationCard({
       stateBadges={stateBadges}
       headerActions={headerActions}
       windowStatus={pill}
-      doseStatus={doseStatus}
+      doseState={doseState}
       nextLine={nextLine}
       lastLine={lastLine}
       compliance={

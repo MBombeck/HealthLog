@@ -6,12 +6,11 @@
  */
 import { describe, expect, it } from "vitest";
 
-import {
-  cardDisplayedSlot,
-  cardDoseStatus,
-  cardWindowPill,
-  liveDoseState,
-} from "../pill";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { cardDisplayedSlot, cardWindowPill, liveDoseState } from "../pill";
+import { openDoseStateAt } from "../resolve";
 
 const SLOT = "2026-11-21T13:59:00.000Z";
 const dose = {
@@ -26,7 +25,7 @@ const at = (iso: string) => new Date(iso);
 describe("liveDoseState", () => {
   it("moves an open dose along its own instants", () => {
     const pending = { ...dose, state: "upcoming" };
-    expect(liveDoseState(pending, at("2026-11-21T12:00:00Z"))).toBe("upcoming");
+    expect(liveDoseState(pending, at("2026-11-21T12:00:00Z"))).toBe("pending");
     expect(liveDoseState(pending, at("2026-11-21T13:00:00Z"))).toBe("due");
     expect(liveDoseState(dose, at("2026-11-21T15:00:00Z"))).toBe("overdue");
     expect(liveDoseState(dose, at("2026-11-21T18:00:00Z"))).toBe("missed");
@@ -77,21 +76,50 @@ describe("cardWindowPill", () => {
   });
 });
 
-describe("cardDoseStatus", () => {
-  it("reads the older vocabulary at the clock", () => {
-    expect(cardDoseStatus(dose, at("2026-11-21T14:00:00Z"))).toBe(
-      "on_time_window",
-    );
-    expect(cardDoseStatus(dose, at("2026-11-21T18:00:00Z"))).toBe("missed");
+describe("liveDoseState speaks the resolver's vocabulary", () => {
+  it("names the states as the resolver does, pending and taken_late included", () => {
+    const pending = { ...dose, state: "upcoming" };
+    expect(liveDoseState(pending, at("2026-11-21T12:00:00Z"))).toBe("pending");
     expect(
-      cardDoseStatus(
+      liveDoseState(
         { ...dose, state: "taken", takenLate: true },
         at("2026-11-21T18:00:00Z"),
       ),
     ).toBe("taken_late");
-    expect(cardDoseStatus(undefined, at("2026-11-21T14:00:00Z"))).toBe(
-      "upcoming",
+    expect(liveDoseState(undefined, at("2026-11-21T14:00:00Z"))).toBeNull();
+  });
+
+  it("agrees with the resolver on every boundary instant", () => {
+    const instants = {
+      dueAt: new Date(dose.dueAt),
+      overdueSince: new Date(dose.overdueSince),
+      missedAfter: new Date(dose.missedAfter),
+    };
+    for (const iso of [
+      "2026-11-21T12:58:59.999Z",
+      dose.dueAt,
+      dose.overdueSince,
+      "2026-11-21T14:59:00.001Z",
+      dose.missedAfter,
+      "2026-11-21T17:59:00.001Z",
+    ]) {
+      expect(liveDoseState(dose, at(iso)), iso).toBe(
+        openDoseStateAt(instants, at(iso)),
+      );
+    }
+  });
+});
+
+describe("the dose ladder exists once", () => {
+  it("pill.ts compares no instants of its own: it calls openDoseStateAt", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/lib/medications/dose-state/pill.ts"),
+      "utf8",
     );
+    expect(source).toContain("openDoseStateAt(");
+    // The ladder's comparisons (`t < dueAt`, `<= overdueSince`, `<=
+    // missedAfter`) belong to `resolve.ts` alone.
+    expect(source).not.toMatch(/[<>]=?\s*(dueAt|overdueSince|missedAfter)\b/);
   });
 });
 

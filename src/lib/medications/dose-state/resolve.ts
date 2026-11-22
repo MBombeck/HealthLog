@@ -111,16 +111,27 @@ export function resolveDoseState(
       lateTakeCounts: false,
     };
   }
-  const t = now.getTime();
-  const state: DoseState =
-    outcome?.autoMissed || t > band.overdueEnd.getTime()
-      ? "missed"
-      : t < band.onTimeStart.getTime()
-        ? "pending"
-        : t <= band.onTimeEnd.getTime()
-          ? "due"
-          : "overdue";
+  const state: DoseState = outcome?.autoMissed
+    ? "missed"
+    : openDoseStateAt(base, now);
   return { ...base, state, lateTakeCounts: state !== "pending" };
+}
+
+/**
+ * Where an unanswered dose stands at `now` on its three instants: the one
+ * statement of the ladder (pending, due, overdue, missed). The server's
+ * resolver and the web card, which moves a fetched dose along the clock,
+ * both call it, so a boundary changes in one place.
+ */
+export function openDoseStateAt(
+  instants: { dueAt: Date; overdueSince: Date; missedAfter: Date },
+  now: Date,
+): "pending" | "due" | "overdue" | "missed" {
+  const t = now.getTime();
+  if (t > instants.missedAfter.getTime()) return "missed";
+  if (t < instants.dueAt.getTime()) return "pending";
+  if (t <= instants.overdueSince.getTime()) return "due";
+  return "overdue";
 }
 
 /**

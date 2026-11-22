@@ -35,8 +35,8 @@ import { estimateRunwayDays } from "@/lib/medications/supply-runway";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
 import {
   cardDisplayedSlot,
-  cardDoseStatus,
   cardWindowPill,
+  liveDoseState,
 } from "@/lib/medications/dose-state/pill";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
 import { formatTime } from "@/lib/format";
@@ -57,7 +57,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import {
-  buildDoseStatusById,
+  buildDoseStateById,
   groupMedications,
   useMedicationGroupsOpen,
 } from "@/components/medications/medication-list-groups";
@@ -266,10 +266,10 @@ export function MedicationTable({
 
   // Read at render time, not memoised on the rows: the table re-renders every
   // minute, so a dose whose time passes since the fetch counts as due.
-  const doseStatusById = buildDoseStatusById(complianceRows);
+  const doseStateById = buildDoseStateById(complianceRows);
 
   const { isOpen, toggle } = useMedicationGroupsOpen(groupsOpen, isFiltered, {
-    doseStatusById,
+    doseStateById,
     highlightId,
   });
 
@@ -493,7 +493,7 @@ function MedicationTableRowItem({
   // The resolved open dose (`currentDose`), as on the cards: pill, status
   // and the slot the buttons record (THIS dose, not "now" snapped).
   const currentDose = display?.currentDose;
-  const doseStatus = cardDoseStatus(currentDose, now);
+  const doseState = liveDoseState(currentDose, now);
   const pill = cardWindowPill(currentDose, now, userTz);
   const displayedSlot = cardDisplayedSlot(
     currentDose,
@@ -504,9 +504,9 @@ function MedicationTableRowItem({
   // Status cell in the card's precedence: escalation, then the pill.
   const canAct = medication.active && medication.intakeActionable !== false;
   const escalation: "missed" | "overdue" | null =
-    canAct && doseStatus === "missed"
+    canAct && doseState === "missed"
       ? "missed"
-      : canAct && doseStatus === "overdue"
+      : canAct && doseState === "overdue"
         ? "overdue"
         : null;
 
