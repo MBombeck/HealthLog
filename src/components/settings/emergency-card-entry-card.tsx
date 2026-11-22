@@ -27,7 +27,7 @@ export function EmergencyCardEntryCard() {
         description={t("emergencyCard.entry.description")}
       />
       <SettingsCardActions align="start">
-        <Button asChild variant="outline" size="sm" className="min-h-11">
+        <Button asChild variant="outline" size="sm">
           <Link href="/emergency-card">{t("records.emergency.cardLink")}</Link>
         </Button>
       </SettingsCardActions>
