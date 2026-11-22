@@ -114,6 +114,8 @@ The App Store price is there to cover Apple's yearly developer fee. TestFlight i
 
 Questions go to [Discussions](https://github.com/MBombeck/HealthLog/discussions), bugs to [Issues](https://github.com/MBombeck/HealthLog/issues). [Reporting a problem](https://docs.healthlog.dev/support/) shows how to copy the redacted support info that makes a report useful. Pull requests are welcome; [CONTRIBUTING.md](CONTRIBUTING.md) covers the setup, the branch model and [translations](CONTRIBUTING.md#translations). The API contract for clients is [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
 
+Anything that does not fit a public thread can go to `hello@healthlog.dev`; security problems go to `security@healthlog.dev` as described in [SECURITY.md](SECURITY.md).
+
 If HealthLog is useful to you, [GitHub Sponsors](https://github.com/sponsors/MBombeck) and [Buy Me a Coffee](https://buymeacoffee.com/mbombeck) pay for the servers, the push relay and the Apple developer account.
 
 ## Thanks

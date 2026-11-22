@@ -190,7 +190,7 @@ Fink covers browser editing today. It edits the files in this repository directl
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant 2.1](CODE_OF_CONDUCT.md). By participating, you agree to uphold its standards. Reports of unacceptable behavior go to `conduct@bombeck.io`.
+This project follows the [Contributor Covenant 2.1](CODE_OF_CONDUCT.md). By participating, you agree to uphold its standards. Reports of unacceptable behavior go to `conduct@healthlog.dev`.
 
 ## Security
 
