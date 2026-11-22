@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2841,
-  "total": 8864,
+  "count": 2840,
+  "total": 8859,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1782,7 +1782,6 @@
     "lib/analytics/__tests__/resting-pulse.test.ts": 1,
     "lib/analytics/__tests__/source-priority.test.ts": 5,
     "lib/analytics/__tests__/summaries-slice.test.ts": 18,
-    "lib/analytics/__tests__/summaries-slice.wmy-cap.test.ts": 1,
     "lib/analytics/__tests__/trend-delta.test.ts": 1,
     "lib/analytics/__tests__/trends.test.ts": 2,
     "lib/analytics/__tests__/window-trend.test.ts": 1,
@@ -1830,7 +1829,7 @@
     "lib/analytics/sleep-night.ts": 3,
     "lib/analytics/source-priority.ts": 2,
     "lib/analytics/source-rank-sql.ts": 3,
-    "lib/analytics/summaries-slice.ts": 36,
+    "lib/analytics/summaries-slice.ts": 32,
     "lib/analytics/trend-delta.ts": 1,
     "lib/analytics/trends.ts": 6,
     "lib/analytics/value-bands.ts": 1,

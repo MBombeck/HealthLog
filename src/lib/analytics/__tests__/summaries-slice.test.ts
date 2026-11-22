@@ -499,6 +499,8 @@ describe("computeSummariesSlice", () => {
     }
     function dayBucket(daysAgo: number, count: number, mean: number) {
       return {
+        // One read covers every type, so each bucket names its own.
+        type: "WEIGHT",
         bucketStart: startOfUtcDay(
           new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000),
         ),
