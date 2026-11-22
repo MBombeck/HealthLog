@@ -11,11 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { FieldGroup } from "@/components/ui/field-group";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Separator } from "@/components/ui/separator";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { useTranslations } from "@/lib/i18n/context";
 import type { CycleGoal, CycleProfileDTO, SecondarySymptom } from "./types";
 import { useUpdateCyclePrefs } from "./use-cycle";
@@ -102,8 +103,7 @@ export function CycleSettings({ profile }: { profile: CycleProfileDTO }) {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Inclusive goal selector — drives the rest of the copy. */}
-        <div className="space-y-2">
-          <Label htmlFor="cycle-goal">{t("cycle.goal.label")}</Label>
+        <FieldGroup htmlFor="cycle-goal" label={t("cycle.goal.label")}>
           <NativeSelect
             id="cycle-goal"
             value={goal}
@@ -115,30 +115,29 @@ export function CycleSettings({ profile }: { profile: CycleProfileDTO }) {
               </option>
             ))}
           </NativeSelect>
-        </div>
+        </FieldGroup>
 
         <Separator />
 
         {/* Predictions — when the goal hides conception framing, the
             description never names a fertile window. */}
-        <ToggleRow
+        <SwitchRow
           id="cycle-prediction"
           label={t("cycle.settings.prediction")}
           description={t("cycle.settings.predictionDescription")}
           checked={predictionEnabled}
-          onChange={setPredictionEnabled}
+          onCheckedChange={setPredictionEnabled}
         />
-        <ToggleRow
+        <SwitchRow
           id="cycle-rawchart"
           label={t("cycle.settings.rawChartMode")}
           description={t("cycle.settings.rawChartModeDescription")}
           checked={rawChartMode}
-          onChange={setRawChartMode}
+          onCheckedChange={setRawChartMode}
         />
 
         <Separator />
 
-        {/* Priors */}
         <div className="space-y-3">
           <p className="text-sm font-medium">
             {t("cycle.settings.priorsDescription")}
@@ -176,10 +175,26 @@ export function CycleSettings({ profile }: { profile: CycleProfileDTO }) {
         {/* Advanced — symptothermal secondary symptom. The default is mucus;
             the choice never forces itself on a casual user (progressive
             disclosure: it sits here in the advanced cycle settings). */}
-        <div className="space-y-2">
-          <Label htmlFor="cycle-secondary-symptom">
-            {t("cycle.settings.secondarySymptomLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor="cycle-secondary-symptom"
+          label={t("cycle.settings.secondarySymptomLabel")}
+          hint={
+            <>
+              {t("cycle.settings.secondarySymptomDescription")}{" "}
+              {/* Primary source for the symptothermal double-check method: the
+                  German NFP prospective cohort (Frank-Herrmann et al., Human
+                  Reproduction 2007). Plain anchor — no markdown renderer. */}
+              <a
+                href="https://pubmed.ncbi.nlm.nih.gov/17314078/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground/80 hover:text-foreground underline underline-offset-2"
+              >
+                {t("cycle.settings.secondarySymptomCitation")}
+              </a>
+            </>
+          }
+        >
           <NativeSelect
             id="cycle-secondary-symptom"
             value={secondarySymptom}
@@ -193,38 +208,24 @@ export function CycleSettings({ profile }: { profile: CycleProfileDTO }) {
               </option>
             ))}
           </NativeSelect>
-          <p className="text-muted-foreground text-sm">
-            {t("cycle.settings.secondarySymptomDescription")}{" "}
-            {/* Primary source for the symptothermal double-check method: the
-                German NFP prospective cohort (Frank-Herrmann et al., Human
-                Reproduction 2007). Plain anchor — no markdown renderer. */}
-            <a
-              href="https://pubmed.ncbi.nlm.nih.gov/17314078/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground/80 hover:text-foreground underline underline-offset-2"
-            >
-              {t("cycle.settings.secondarySymptomCitation")}
-            </a>
-          </p>
-        </div>
+        </FieldGroup>
 
         <Separator />
 
         {/* Privacy toggles */}
-        <ToggleRow
+        <SwitchRow
           id="cycle-encryption"
           label={t("cycle.settings.encryption")}
           description={t("cycle.settings.encryptionDescription")}
           checked={encryption}
-          onChange={setEncryption}
+          onCheckedChange={setEncryption}
         />
-        <ToggleRow
+        <SwitchRow
           id="cycle-discreet"
           label={t("cycle.settings.discreet")}
           description={t("cycle.settings.discreetDescription")}
           checked={discreet}
-          onChange={setDiscreet}
+          onCheckedChange={setDiscreet}
         />
 
         <Separator />
@@ -255,66 +256,32 @@ export function CycleSettings({ profile }: { profile: CycleProfileDTO }) {
             account-level delete), so the standalone affordances are not
             duplicated here. */}
 
-        <div className="flex items-center justify-end gap-3 pt-2">
-          {update.isSuccess ? (
-            <span className="text-muted-foreground text-sm" role="status">
-              {t("cycle.settings.saved")}
-            </span>
-          ) : null}
-          {update.isError ? (
-            <span className="text-destructive text-sm" role="alert">
-              {t("cycle.settings.saveError")}
-            </span>
-          ) : null}
-          <Button onClick={handleSave} disabled={update.isPending}>
+        {update.isSuccess ? (
+          <p className="text-muted-foreground text-right text-sm" role="status">
+            {t("cycle.settings.saved")}
+          </p>
+        ) : null}
+        {update.isError ? (
+          <p className="text-destructive text-right text-sm" role="alert">
+            {t("cycle.settings.saveError")}
+          </p>
+        ) : null}
+        <SettingsCardActions>
+          <Button size="sm" onClick={handleSave} disabled={update.isPending}>
             {update.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
             ) : null}
             {t("cycle.settings.save")}
           </Button>
-        </div>
+        </SettingsCardActions>
       </CardContent>
     </Card>
   );
 }
 
-function ToggleRow({
-  id,
-  label,
-  description,
-  checked,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="space-y-0.5">
-        <Label htmlFor={id} className="text-sm">
-          {label}
-        </Label>
-        <p className="text-muted-foreground text-sm">{description}</p>
-      </div>
-      <Switch
-        id={id}
-        checked={checked}
-        onCheckedChange={onChange}
-        className="mt-0.5 shrink-0"
-      />
-    </div>
-  );
-}
-
 /**
- * A "label + description → go to notifications" row. The long fertile-window
- * label collided with its button when both shared one tight flex line; here the
- * row stacks on the narrowest screens (button on its own line, full-width tap
- * target) and reflows to a clean inline layout from `sm` up, where the text
- * column can wrap freely while the button stays top-aligned and never shrinks.
+ * A "label + description → go to notifications" row: the text wraps in its
+ * own column and the action stays beside it (UI standards §11).
  */
 function LinkRow({
   title,
@@ -326,16 +293,16 @@ function LinkRow({
   linkLabel: string;
 }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-      <div className="min-w-0 space-y-0.5">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1 space-y-0.5">
         <p className="text-sm font-medium">{title}</p>
-        <p className="text-muted-foreground text-sm">{description}</p>
+        <p className="text-muted-foreground text-xs">{description}</p>
       </div>
       <Button
         variant="outline"
         size="sm"
         asChild
-        className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
+        className="min-h-11 shrink-0 sm:min-h-9"
       >
         <Link href="/notifications">{linkLabel}</Link>
       </Button>
@@ -359,10 +326,7 @@ function PriorField({
   max: number;
 }) {
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs">
-        {label}
-      </Label>
+    <FieldGroup htmlFor={id} label={label}>
       <input
         id={id}
         type="number"
@@ -373,6 +337,6 @@ function PriorField({
         onChange={(e) => onChange(e.target.value)}
         className="border-input bg-background focus-visible:border-input-focus w-full rounded-md border px-3 py-2 text-base focus-visible:outline-none md:pointer-fine:text-sm"
       />
-    </div>
+    </FieldGroup>
   );
 }

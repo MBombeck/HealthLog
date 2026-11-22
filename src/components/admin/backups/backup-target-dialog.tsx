@@ -3,6 +3,7 @@ import { Loader2, UserPlus } from "lucide-react";
 import { useState } from "react";
 
 import type { AdminUser } from "@/components/admin/_shared";
+import { FieldGroup } from "@/components/ui/field-group";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -165,10 +166,10 @@ export function BackupTargetForm({
       />
 
       {draft.into === "new" ? (
-        <div className="space-y-2">
-          <Label htmlFor="backup-target-username">
-            {t("admin.section.backups.target.usernameLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor="backup-target-username"
+          label={t("admin.section.backups.target.usernameLabel")}
+        >
           <Input
             id="backup-target-username"
             data-testid="backup-target-username"
@@ -191,12 +192,12 @@ export function BackupTargetForm({
           <p className="text-muted-foreground text-xs">
             {t("admin.section.backups.target.newAccountHint")}
           </p>
-        </div>
+        </FieldGroup>
       ) : (
-        <div className="space-y-2">
-          <Label htmlFor="backup-target-account">
-            {t("admin.section.backups.target.accountLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor="backup-target-account"
+          label={t("admin.section.backups.target.accountLabel")}
+        >
           <NativeSelect
             id="backup-target-account"
             data-testid="backup-target-account"
@@ -263,7 +264,7 @@ export function BackupTargetForm({
               />
             </>
           ) : null}
-        </div>
+        </FieldGroup>
       )}
     </div>
   );

@@ -23,8 +23,8 @@
  */
 import { useMemo } from "react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { listSupportedTimezones, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { useTranslations } from "@/lib/i18n/context";
@@ -61,8 +61,7 @@ export function TimezonePicker({
   if (zones.length === 0) {
     // Older engine — free-text fallback.
     return (
-      <div className="space-y-2">
-        <Label htmlFor={id}>{t("settings.timezone")}</Label>
+      <FieldGroup htmlFor={id} label={t("settings.timezone")}>
         <Input
           id={id}
           value={value}
@@ -71,13 +70,12 @@ export function TimezonePicker({
           autoComplete="off"
         />
         <p className="text-muted-foreground text-xs">{labelHint}</p>
-      </div>
+      </FieldGroup>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{t("settings.timezone")}</Label>
+    <FieldGroup htmlFor={id} label={t("settings.timezone")}>
       <NativeSelect
         id={id}
         value={value}
@@ -96,6 +94,6 @@ export function TimezonePicker({
         ))}
       </NativeSelect>
       <p className="text-muted-foreground text-xs">{labelHint}</p>
-    </div>
+    </FieldGroup>
   );
 }

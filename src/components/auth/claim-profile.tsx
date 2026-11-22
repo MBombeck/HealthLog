@@ -8,9 +8,9 @@ import { KeyRound, Loader2, LogIn, LogOut } from "lucide-react";
 
 import { accessLabel } from "@/components/settings/access/managed-profile-handover";
 import { useClientTransport } from "@/components/auth/insecure-transport-banner";
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/ui/logo";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import {
@@ -332,8 +332,7 @@ export function ClaimProfile({
         className="mt-6 space-y-4"
         data-slot="claim-form"
       >
-        <div className="space-y-2">
-          <Label htmlFor="claim-username">{t("auth.username")}</Label>
+        <FieldGroup htmlFor="claim-username" label={t("auth.username")}>
           <Input
             id="claim-username"
             value={username}
@@ -359,11 +358,10 @@ export function ClaimProfile({
               ? t("auth.claim.usernameReserved")
               : t("auth.claim.usernameHint")}
           </p>
-        </div>
+        </FieldGroup>
         {offersPassword && (
           <>
-            <div className="space-y-2">
-              <Label htmlFor="claim-email">{t("auth.email")}</Label>
+            <FieldGroup htmlFor="claim-email" label={t("auth.email")}>
               <Input
                 id="claim-email"
                 type="email"
@@ -381,9 +379,8 @@ export function ClaimProfile({
               >
                 {t("auth.claim.emailHint")}
               </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="claim-password">{t("auth.password")}</Label>
+            </FieldGroup>
+            <FieldGroup htmlFor="claim-password" label={t("auth.password")}>
               <Input
                 id="claim-password"
                 type="password"
@@ -394,7 +391,7 @@ export function ClaimProfile({
                 placeholder={t("auth.passwordMinLength")}
               />
               <PasswordStrength password={password} />
-            </div>
+            </FieldGroup>
           </>
         )}
 

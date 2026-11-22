@@ -4,11 +4,11 @@ import { useId, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, LogOut, MailOpen, UserPlus } from "lucide-react";
+import { FieldGroup } from "@/components/ui/field-group";
 import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { useTranslations } from "@/lib/i18n/context";
 import { detectBrowserTimezone } from "@/lib/tz/format";
@@ -196,8 +196,7 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleRegister} className="mt-8 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">{t("auth.email")}</Label>
+          <FieldGroup htmlFor="email" label={t("auth.email")}>
             <Input
               id="email"
               type="email"
@@ -213,10 +212,9 @@ export default function RegisterPage() {
               aria-invalid={!!error || undefined}
               aria-describedby={errorDescriptor}
             />
-          </div>
+          </FieldGroup>
 
-          <div className="space-y-2">
-            <Label htmlFor="username">{t("auth.username")}</Label>
+          <FieldGroup htmlFor="username" label={t("auth.username")}>
             <Input
               id="username"
               type="text"
@@ -234,10 +232,9 @@ export default function RegisterPage() {
               minLength={3}
               maxLength={30}
             />
-          </div>
+          </FieldGroup>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">{t("auth.password")}</Label>
+          <FieldGroup htmlFor="password" label={t("auth.password")}>
             <Input
               id="password"
               type="password"
@@ -255,7 +252,7 @@ export default function RegisterPage() {
             <p className="text-muted-foreground text-xs">
               {t("auth.passkeySetupLater")}
             </p>
-          </div>
+          </FieldGroup>
 
           {error && (
             <div

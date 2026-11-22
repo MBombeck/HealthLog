@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Loader2, Save, Shield } from "lucide-react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -144,37 +144,39 @@ export function PasswordCard() {
       >
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div className="grid gap-3 lg:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="current-password">
-                {t("settings.currentPassword")}
-              </Label>
+            <FieldGroup
+              htmlFor="current-password"
+              label={t("settings.currentPassword")}
+            >
               <PasswordInput
                 id="current-password"
                 autoComplete="current-password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-password">{t("settings.newPassword")}</Label>
+            </FieldGroup>
+            <FieldGroup
+              htmlFor="new-password"
+              label={t("settings.newPassword")}
+            >
               <PasswordInput
                 id="new-password"
                 autoComplete="new-password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">
-                {t("settings.confirmNewPassword")}
-              </Label>
+            </FieldGroup>
+            <FieldGroup
+              htmlFor="confirm-password"
+              label={t("settings.confirmNewPassword")}
+            >
               <PasswordInput
                 id="confirm-password"
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
-            </div>
+            </FieldGroup>
           </div>
 
           {msg && (

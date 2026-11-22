@@ -11,6 +11,7 @@ import {
   Smartphone,
 } from "lucide-react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -515,10 +516,10 @@ export function TotpCard({
                       {t("settings.security.totp.disableConfirm")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
-                  <div className="space-y-2">
-                    <Label htmlFor={disableCodeId}>
-                      {t("settings.security.totp.currentCode")}
-                    </Label>
+                  <FieldGroup
+                    htmlFor={disableCodeId}
+                    label={t("settings.security.totp.currentCode")}
+                  >
                     <Input
                       id={disableCodeId}
                       value={disableCode}
@@ -548,7 +549,7 @@ export function TotpCard({
                         ? t("settings.security.useRecoveryCode")
                         : t("settings.security.useAuthenticator")}
                     </InlineAction>
-                  </div>
+                  </FieldGroup>
                   <AlertDialogFooter>
                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                     <AlertDialogAction

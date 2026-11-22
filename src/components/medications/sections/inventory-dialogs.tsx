@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2 } from "lucide-react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { DateField } from "@/components/ui/date-field";
@@ -185,13 +186,10 @@ export function AddInventoryDialog({
       }
     >
       <form id={formId} onSubmit={submit} className="space-y-4">
-        <div className="space-y-2">
-          <label
-            htmlFor="inventory-add-container-type"
-            className="text-sm font-medium"
-          >
-            {t("medications.detail.bestand.containerTypeLabel")}
-          </label>
+        <FieldGroup
+          htmlFor="inventory-add-container-type"
+          label={t("medications.detail.bestand.containerTypeLabel")}
+        >
           <Select
             value={containerType}
             onValueChange={(v) => setContainerType(v as ContainerType)}
@@ -211,14 +209,11 @@ export function AddInventoryDialog({
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div className="space-y-2">
-          <label
-            htmlFor="inventory-add-quantity"
-            className="text-sm font-medium"
-          >
-            {t("medications.detail.bestand.addQuantityLabel")}
-          </label>
+        </FieldGroup>
+        <FieldGroup
+          htmlFor="inventory-add-quantity"
+          label={t("medications.detail.bestand.addQuantityLabel")}
+        >
           {unitsPerDose > 1 && (
             <Segmented
               mode="toggle"
@@ -275,40 +270,34 @@ export function AddInventoryDialog({
           >
             {t("medications.detail.bestand.addQuantityHelper")}
           </p>
-        </div>
-        <div className="space-y-2">
-          <label htmlFor="inventory-add-expiry" className="text-sm font-medium">
-            {t("medications.detail.bestand.addExpiryLabel")}
-          </label>
+        </FieldGroup>
+        <FieldGroup
+          htmlFor="inventory-add-expiry"
+          label={t("medications.detail.bestand.addExpiryLabel")}
+        >
           <DateField
             id="inventory-add-expiry"
             value={expiry}
             onChange={setExpiry}
           />
-        </div>
+        </FieldGroup>
         {containerType === "PEN" && (
           <>
-            <div className="space-y-2">
-              <label
-                htmlFor="inventory-add-manufacturer"
-                className="text-sm font-medium"
-              >
-                {t("medications.detail.bestand.addManufacturerLabel")}
-              </label>
+            <FieldGroup
+              htmlFor="inventory-add-manufacturer"
+              label={t("medications.detail.bestand.addManufacturerLabel")}
+            >
               <Input
                 id="inventory-add-manufacturer"
                 value={manufacturer}
                 maxLength={120}
                 onChange={(e) => setManufacturer(e.target.value)}
               />
-            </div>
-            <div className="space-y-2">
-              <label
-                htmlFor="inventory-add-dose-strength"
-                className="text-sm font-medium"
-              >
-                {t("medications.detail.bestand.addDoseStrengthLabel")}
-              </label>
+            </FieldGroup>
+            <FieldGroup
+              htmlFor="inventory-add-dose-strength"
+              label={t("medications.detail.bestand.addDoseStrengthLabel")}
+            >
               <Input
                 id="inventory-add-dose-strength"
                 value={doseStrength}
@@ -318,7 +307,7 @@ export function AddInventoryDialog({
               <p className="text-muted-foreground text-sm">
                 {t("medications.detail.bestand.addDoseStrengthHint")}
               </p>
-            </div>
+            </FieldGroup>
           </>
         )}
       </form>
@@ -431,13 +420,10 @@ export function AdjustInventoryDialog({
       }
     >
       <form id={formId} onSubmit={submit} className="space-y-4">
-        <div className="space-y-2">
-          <label
-            htmlFor="inventory-adjust-remaining"
-            className="text-sm font-medium"
-          >
-            {t("medications.detail.bestand.adjustQuantityLabel")}
-          </label>
+        <FieldGroup
+          htmlFor="inventory-adjust-remaining"
+          label={t("medications.detail.bestand.adjustQuantityLabel")}
+        >
           <Input
             id="inventory-adjust-remaining"
             type="number"
@@ -459,14 +445,11 @@ export function AdjustInventoryDialog({
               total: item.unitsTotal ?? t("medications.detail.bestand.unknown"),
             })}
           </p>
-        </div>
-        <div className="space-y-2">
-          <label
-            htmlFor="inventory-edit-expiry"
-            className="text-sm font-medium"
-          >
-            {t("medications.detail.bestand.editExpiryLabel")}
-          </label>
+        </FieldGroup>
+        <FieldGroup
+          htmlFor="inventory-edit-expiry"
+          label={t("medications.detail.bestand.editExpiryLabel")}
+        >
           <DateField
             id="inventory-edit-expiry"
             value={expiry}
@@ -480,14 +463,11 @@ export function AdjustInventoryDialog({
           >
             {t("medications.detail.bestand.editExpiryHelper")}
           </p>
-        </div>
-        <div className="space-y-2">
-          <label
-            htmlFor="inventory-edit-opened"
-            className="text-sm font-medium"
-          >
-            {t("medications.detail.bestand.editOpenedLabel")}
-          </label>
+        </FieldGroup>
+        <FieldGroup
+          htmlFor="inventory-edit-opened"
+          label={t("medications.detail.bestand.editOpenedLabel")}
+        >
           <DateField
             id="inventory-edit-opened"
             value={opened}
@@ -503,7 +483,7 @@ export function AdjustInventoryDialog({
               ? t("medications.detail.bestand.editOpenedHelperClock")
               : t("medications.detail.bestand.editOpenedHelper")}
           </p>
-        </div>
+        </FieldGroup>
       </form>
     </ResponsiveSheet>
   );
@@ -611,13 +591,10 @@ export function PackagingDialog({
       }
     >
       <form id={formId} onSubmit={submit} className="space-y-4">
-        <div className="space-y-2">
-          <label
-            htmlFor="packaging-units-per-dose"
-            className="text-sm font-medium"
-          >
-            {t("medications.detail.bestand.packagingUnitsPerDoseLabel")}
-          </label>
+        <FieldGroup
+          htmlFor="packaging-units-per-dose"
+          label={t("medications.detail.bestand.packagingUnitsPerDoseLabel")}
+        >
           <Input
             id="packaging-units-per-dose"
             type="text"
@@ -638,14 +615,11 @@ export function PackagingDialog({
           >
             {t("medications.detail.bestand.packagingUnitsPerDoseHelper")}
           </p>
-        </div>
-        <div className="space-y-2">
-          <label
-            htmlFor="packaging-default-pack"
-            className="text-sm font-medium"
-          >
-            {t("medications.detail.bestand.packagingDefaultPackLabel")}
-          </label>
+        </FieldGroup>
+        <FieldGroup
+          htmlFor="packaging-default-pack"
+          label={t("medications.detail.bestand.packagingDefaultPackLabel")}
+        >
           <Input
             id="packaging-default-pack"
             type="number"
@@ -664,7 +638,7 @@ export function PackagingDialog({
           >
             {t("medications.detail.bestand.packagingDefaultPackHelper")}
           </p>
-        </div>
+        </FieldGroup>
       </form>
     </ResponsiveSheet>
   );
