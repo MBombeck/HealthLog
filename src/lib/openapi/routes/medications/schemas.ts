@@ -1401,7 +1401,7 @@ export const medicationListLayoutResult = medicationListLayoutSchema
     updatedAt: isoDateTime()
       .optional()
       .describe(
-        "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
+        "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
       ),
   })
   .meta({

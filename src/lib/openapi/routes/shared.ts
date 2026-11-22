@@ -259,7 +259,7 @@ export const createBatchWorkoutSchema = createBatchWorkoutSchemaBase.meta({
 // ── Optimistic concurrency (v1.32.21 / R5a) ──────────────────────────
 // The write endpoints that read-modify-write a per-user blob accept an
 // optional `baseUpdatedAt` base token (the `updatedAt` the client last
-// read) and guard the write on the stored row still carrying it. A stale
+// read) and guard the write on the stored resource still carrying it. A stale
 // token fails the write with 409 and changes nothing; an omitted token
 // takes the prior unconditional write (backward-compatible). The token is
 // OPAQUE — clients only ever echo a server-returned value.
@@ -273,18 +273,18 @@ export const createBatchWorkoutSchema = createBatchWorkoutSchemaBase.meta({
 export const baseUpdatedAtField = isoDateTime()
   .optional()
   .describe(
-    "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored row still carrying this exact value — a stale token fails with 409 and changes nothing. A present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it.",
+    "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored resource still carrying this exact value — a stale token fails with 409 and changes nothing. A present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it.",
   );
 
 /**
  * Optional response field echoing the fresh optimistic-concurrency token.
- * Every guarded GET / write response carries the stored row's `updatedAt`; the
+ * Every guarded GET / write response carries the resource's own revision; the
  * client echoes it back as `baseUpdatedAt` on the next write.
  */
 export const updatedAtTokenField = isoDateTime()
   .optional()
   .describe(
-    "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or synthesise it.",
+    "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or synthesise it.",
   );
 
 /**

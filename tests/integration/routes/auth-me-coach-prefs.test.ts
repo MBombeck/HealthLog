@@ -41,7 +41,7 @@ async function storedColumns(userId: string) {
     select: {
       coachPrefsJson: true,
       insightsExcludeMetrics: true,
-      updatedAt: true,
+      coachPrefsRevisedAt: true,
     },
   });
 }
@@ -77,7 +77,7 @@ describe("GET /api/auth/me/coach-prefs", () => {
     expect(res.status).toBe(200);
     expect(res.data.tone).toBe("concise");
     const row = await storedColumns(user.id);
-    expect(res.data.updatedAt).toBe(row.updatedAt.toISOString());
+    expect(res.data.updatedAt).toBe(row.coachPrefsRevisedAt.toISOString());
   });
 
   it("answers the pure defaults with no token for a never-saved account", async () => {
@@ -118,7 +118,7 @@ describe("PUT /api/auth/me/coach-prefs — optimistic concurrency", () => {
       excludeMetrics: ["weight"],
     });
     expect(row.insightsExcludeMetrics).toEqual(["weight"]);
-    expect(res.data.updatedAt).toBe(row.updatedAt.toISOString());
+    expect(res.data.updatedAt).toBe(row.coachPrefsRevisedAt.toISOString());
     expect(res.data.updatedAt).not.toBe(read.data.updatedAt);
   });
 
@@ -165,7 +165,7 @@ describe("PUT /api/auth/me/coach-prefs — optimistic concurrency", () => {
     const row = await storedColumns(user.id);
     expect(row.insightsExcludeMetrics).toEqual(["weight"]);
     expect(row.coachPrefsJson).toMatchObject({ excludeMetrics: ["weight"] });
-    expect(res.data.updatedAt).toBe(row.updatedAt.toISOString());
+    expect(res.data.updatedAt).toBe(row.coachPrefsRevisedAt.toISOString());
   });
 
   it("answers a malformed token with 422 and leaves the row alone", async () => {

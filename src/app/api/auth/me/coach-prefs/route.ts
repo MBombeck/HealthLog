@@ -26,8 +26,9 @@ import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import {
   takeBaseToken,
-  guardedUserUpdate,
+  guardedUserDocumentUpdate,
   invalidBaseTokenError,
+  userDocumentToken,
 } from "@/lib/optimistic-lock";
 import {
   coachPrefsSchema,
@@ -43,18 +44,22 @@ export const GET = apiHandler(async () => {
 
   const row = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { coachPrefsJson: true, updatedAt: true },
+    select: { coachPrefsJson: true, coachPrefsRevisedAt: true },
   });
   const prefs = parseCoachPrefs(row?.coachPrefsJson);
   // v1.32.22 — a never-saved user gets the PURE default with NO token
   // (mirrors the insights-layout never-saved GET). There is nothing to guard
   // against yet, and the first save is just the tokenless unconditional write.
   // A saved row carries `updatedAt` (additive sibling key; the prefs shape is a
-  // fixed key set, so it cannot collide) so the client can echo it.
+  // fixed key set, so it cannot collide) so the client can echo it. It is the
+  // prefs' own revision, never the row's `updatedAt`.
   if (row?.coachPrefsJson == null) {
     return apiSuccess(prefs);
   }
-  return apiSuccess({ ...prefs, updatedAt: row.updatedAt?.toISOString() });
+  return apiSuccess({
+    ...prefs,
+    updatedAt: userDocumentToken(row, "coachPrefs"),
+  });
 });
 
 export const PUT = apiHandler(async (req: Request) => {
@@ -106,8 +111,9 @@ export const PUT = apiHandler(async (req: Request) => {
   // v1.32.22 — the guarded write covers BOTH columns in one conditional
   // update so the mirror-column contract (v1.4.36 W3 T3) stays unsplittable: a
   // 409 leaves `coachPrefsJson` AND `insightsExcludeMetrics` untouched together.
-  const guarded = await guardedUserUpdate({
+  const guarded = await guardedUserDocumentUpdate({
     userId: user.id,
+    document: "coachPrefs",
     base,
     data: {
       coachPrefsJson: parsed.data,

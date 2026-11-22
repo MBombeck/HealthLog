@@ -151,6 +151,18 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   stravaAthleteId: "CREDENTIAL",
 
   // ── Operational ───────────────────────────────────────────────────────────
+  // The lock tokens of the settings documents (migration 0554): the database
+  // moves each when its document changes, and a restore that writes a
+  // document moves it again. Carrying one would hand a restored account a
+  // token nobody read.
+  dashboardWidgetsRevisedAt: "OPERATIONAL",
+  insightsLayoutRevisedAt: "OPERATIONAL",
+  medicationListLayoutRevisedAt: "OPERATIONAL",
+  moodTagLayoutRevisedAt: "OPERATIONAL",
+  modulePreferencesRevisedAt: "OPERATIONAL",
+  notificationPrefsRevisedAt: "OPERATIONAL",
+  coachPrefsRevisedAt: "OPERATIONAL",
+  healthScoreConfigRevisedAt: "OPERATIONAL",
   insightsCachedAt: "OPERATIONAL",
   insightsCachedTextEncrypted: "OPERATIONAL",
   insightsCachedLocale: "OPERATIONAL",

@@ -9743,7 +9743,7 @@ paths:
       summary: Replace per-user Coach prompt-tuning preferences
       description: "Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the
         documented defaults. Supports optimistic concurrency: echo the `updatedAt` from the last read as `baseUpdatedAt`
-        and the write is refused with 409 if the row changed since; omit it for the legacy unconditional write."
+        and the write is refused with 409 if the prefs changed since; omit it for the legacy unconditional write."
       requestBody:
         required: true
         content:
@@ -12597,8 +12597,8 @@ paths:
       summary: Replace the calling user's Insights tile layout
       description: "Persists the full tile layout. The normalised layout plus the advanced `updatedAt` token is returned.
         Optimistic concurrency (v1.32.21): send `baseUpdatedAt` (the token from a prior read) and the write 409s if the
-        stored row changed since; omit it for the legacy unconditional write. Invalid bodies return the multi-issue 422
-        envelope, matching the dashboard-widgets route."
+        stored layout changed since; omit it for the legacy unconditional write. Invalid bodies return the multi-issue
+        422 envelope, matching the dashboard-widgets route."
       requestBody:
         required: true
         content:
@@ -12862,7 +12862,8 @@ paths:
         deterministic completion hints otherwise, with no provider call) and returns them as `pendingQuestions`.
         Rate-limited per user. Optimistic concurrency (v1.32.21): send `baseUpdatedAt` (the `updatedAt` from a prior
         read) and the write 409s if the stored self-context changed since; omit it for the legacy unconditional write.
-        The token is per-surface (`UserHealthProfile.updatedAt`), so it is not perturbed by unrelated account writes."
+        The token is the about-me document's own revision, so it is not perturbed by unrelated account or
+        emergency-profile writes."
       requestBody:
         required: true
         content:
@@ -12899,11 +12900,11 @@ paths:
                 baseUpdatedAt:
                   description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
                     legacy unconditional write (older clients are unaffected). When present, the write is guarded on the
-                    stored row still carrying this exact value — a stale token fails with 409 and changes nothing. A
-                    present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note
-                    that this is NOT the unconditional write: sending `null` or a malformed string is rejected rather
-                    than treated as an omitted token. Treat as opaque: only ever echo a server-returned value, never
-                    parse or synthesise it."
+                    stored resource still carrying this exact value — a stale token fails with 409 and changes nothing.
+                    A present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` —
+                    note that this is NOT the unconditional write: sending `null` or a malformed string is rejected
+                    rather than treated as an omitted token. Treat as opaque: only ever echo a server-returned value,
+                    never parse or synthesise it."
                   type: string
                   format: date-time
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -25437,9 +25438,9 @@ paths:
       summary: Replace the calling user's dashboard widget layout
       description: "Persists the layout with preserve-when-absent semantics and returns the normalised layout plus the
         advanced `updatedAt` token. Optimistic concurrency (v1.32.16): send `baseUpdatedAt` (the token from a prior
-        read) and the write 409s if the stored row changed since — so a committed Save can never be silently reverted by
-        a later request that started from an older snapshot; omit it for the legacy unconditional write. Invalid bodies
-        return the multi-issue 422 envelope."
+        read) and the write 409s if the stored layout changed since — so a committed Save can never be silently reverted
+        by a later request that started from an older snapshot; omit it for the legacy unconditional write. Invalid
+        bodies return the multi-issue 422 envelope."
       requestBody:
         required: true
         content:
@@ -34015,7 +34016,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -34895,7 +34896,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -34937,7 +34938,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -35004,7 +35005,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -35091,7 +35092,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -35844,7 +35845,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -36900,7 +36901,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -42047,7 +42048,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -64818,8 +64819,9 @@ components:
               - type: string
                 pattern: ^custom:[0-9a-f-]{36}$
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -67951,9 +67953,9 @@ components:
             - medium
             - high
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
-            synthesise it."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque — only ever echo a server-returned value, never parse or synthesise it."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -68100,9 +68102,9 @@ components:
             - type: "null"
           description: When the recipe last changed; null while it never has.
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
-            synthesise it."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque — only ever echo a server-returned value, never parse or synthesise it."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -68155,9 +68157,9 @@ components:
         modules:
           $ref: "#/components/schemas/ModuleMap"
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
-            synthesise it."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque — only ever echo a server-returned value, never parse or synthesise it."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -69888,9 +69890,9 @@ components:
             - detail
           additionalProperties: false
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
-            synthesise it."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque — only ever echo a server-returned value, never parse or synthesise it."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -73110,8 +73112,9 @@ components:
               - order
             additionalProperties: false
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -83161,9 +83164,9 @@ components:
             items:
               type: string
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
-            synthesise it."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque — only ever echo a server-returned value, never parse or synthesise it."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -97968,8 +97971,9 @@ components:
             again. Additive.
           type: boolean
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -98236,8 +98240,9 @@ components:
             again. Additive.
           type: boolean
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$

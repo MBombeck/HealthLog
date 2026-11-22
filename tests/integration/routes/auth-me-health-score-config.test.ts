@@ -91,9 +91,9 @@ async function storedConfig(userId: string): Promise<StoredConfig | null> {
 async function storedUpdatedAt(userId: string): Promise<Date> {
   const row = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { updatedAt: true },
+    select: { healthScoreConfigRevisedAt: true },
   });
-  return row.updatedAt;
+  return row.healthScoreConfigRevisedAt;
 }
 
 async function userWithConfig(

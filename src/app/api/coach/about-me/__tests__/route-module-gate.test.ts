@@ -41,7 +41,7 @@ const {
   invalidateInsights,
 } = vi.hoisted(() => {
   const profileFindUnique = vi.fn();
-  const profileUpsert = vi.fn(async () => ({ updatedAt: new Date(0) }));
+  const profileUpsert = vi.fn(async () => ({ aboutMeRevisedAt: new Date(0) }));
   const userUpdate = vi.fn(async () => ({}));
   const tx = {
     $queryRaw: vi.fn(async () => []),
@@ -163,7 +163,7 @@ describe("about-me module gate", () => {
     vi.clearAllMocks();
     vi.mocked(getAiCapability).mockResolvedValue(AI_AVAILABLE);
     profileFindUnique.mockResolvedValue({
-      updatedAt: new Date(0),
+      aboutMeRevisedAt: new Date(0),
       aiIncludedSections: ["ABOUT_ME"],
     });
   });
@@ -241,7 +241,7 @@ describe("about-me module gate", () => {
     const txProfileUpsert = vi.fn(
       async (args: { update: { aiIncludedSections?: string[] } }) => {
         stagedSections = args.update.aiIncludedSections ?? stagedSections;
-        return { updatedAt: new Date(0) };
+        return { aboutMeRevisedAt: new Date(0) };
       },
     );
     transaction.mockImplementationOnce(
@@ -373,7 +373,7 @@ describe("about-me module gate", () => {
   it("clears pending questions when inclusion removes every text field", async () => {
     setGates(true, false);
     profileFindUnique.mockResolvedValue({
-      updatedAt: new Date(0),
+      aboutMeRevisedAt: new Date(0),
       aiIncludedSections: [],
     });
 
@@ -391,7 +391,7 @@ describe("about-me module gate", () => {
   it("audits an excluded nonempty stored field as updated, not cleared", async () => {
     setGates(true, false);
     profileFindUnique.mockResolvedValue({
-      updatedAt: new Date(0),
+      aboutMeRevisedAt: new Date(0),
       aiIncludedSections: [],
     });
     vi.mocked(getSelfContextForUser).mockResolvedValueOnce({
