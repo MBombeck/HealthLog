@@ -1,10 +1,19 @@
 "use client";
 
-import { Moon, Sun, Sunrise, Sunset } from "lucide-react";
+import { useState } from "react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Moon,
+  Sun,
+  Sunrise,
+  Sunset,
+} from "lucide-react";
 
 import { TimesOfDayChips } from "@/components/medications/scheduling/times-of-day-chips";
 import { DoseWindowEditor } from "@/components/medications/scheduling/dose-window-editor";
 import type { DoseWindowScale } from "@/components/medications/scheduling/dose-window";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UnitsPerDoseField } from "@/components/medications/units-per-dose-field";
@@ -31,7 +40,9 @@ const PRESETS = [
  * ≥2-day rolling cadence is day-scale (the 4-day rule); everything else
  * is intraday (the ±1h / +3h minute bands).
  */
-function scaleForCadence(payload: StepProps["payload"]): DoseWindowScale {
+export function scaleForCadence(
+  payload: Pick<StepProps["payload"], "cadence">,
+): DoseWindowScale {
   const rolling = payload.cadence.rollingIntervalDays;
   if (typeof rolling === "number" && rolling >= 2) return "dayScale";
   if (/FREQ=(WEEKLY|MONTHLY|YEARLY)/.test(payload.cadence.rrule ?? "")) {
@@ -42,6 +53,12 @@ function scaleForCadence(payload: StepProps["payload"]): DoseWindowScale {
 
 export function Step7Times({ payload, applyPartial }: StepProps) {
   const { t } = useTranslations();
+  // #219 — the per-time dose fields fold away behind one question; open from
+  // the start when this schedule already sets one of them.
+  const [overrideOpen, setOverrideOpen] = useState(
+    payload.scheduleDose.trim() !== "" ||
+      payload.scheduleUnitsPerDose.trim() !== "",
+  );
   function togglePreset(time: string) {
     const has = payload.timesOfDay.includes(time);
     if (has) {
@@ -117,40 +134,66 @@ export function Step7Times({ payload, applyPartial }: StepProps) {
         className="border-border/60 space-y-3 rounded-lg border p-3"
         data-slot="wizard-schedule-override"
       >
-        <p className="text-muted-foreground text-xs">
-          {t("medications.wizard.steps.step7.overrideHint")}
-        </p>
-        <div className="space-y-2">
-          <Label htmlFor="wizard-schedule-dose" className="text-sm">
-            {t("medications.wizard.steps.step7.doseOverrideLabel")}
-          </Label>
-          <Input
-            id="wizard-schedule-dose"
-            type="text"
-            value={payload.scheduleDose}
-            onChange={(e) => applyPartial({ scheduleDose: e.target.value })}
-            placeholder={t(
-              "medications.wizard.steps.step7.doseOverridePlaceholder",
-            )}
-            maxLength={50}
-            autoComplete="off"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label id="wizard-schedule-units-label" className="text-sm">
-            {t("medications.wizard.steps.step7.unitsOverrideLabel")}
-          </Label>
-          <UnitsPerDoseField
-            value={payload.scheduleUnitsPerDose}
-            onChange={(next) => applyPartial({ scheduleUnitsPerDose: next })}
-            labelId="wizard-schedule-units-label"
-            inputId="wizard-schedule-units-other"
-            dataSlot="wizard-schedule-units"
-            inherit={{
-              label: t("medications.wizard.steps.step7.unitsOverrideInherit"),
-            }}
-          />
-        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-11 w-full justify-between px-2 sm:min-h-9"
+          aria-expanded={overrideOpen}
+          aria-controls="wizard-schedule-override-body"
+          onClick={() => setOverrideOpen((prev) => !prev)}
+          data-slot="wizard-schedule-override-toggle"
+        >
+          <span className="text-sm font-medium">
+            {t("medications.wizard.steps.step7.overrideToggle")}
+          </span>
+          {overrideOpen ? (
+            <ChevronUp aria-hidden="true" className="h-4 w-4" />
+          ) : (
+            <ChevronDown aria-hidden="true" className="h-4 w-4" />
+          )}
+        </Button>
+        {overrideOpen && (
+          <div id="wizard-schedule-override-body" className="space-y-3">
+            <p className="text-muted-foreground text-xs">
+              {t("medications.wizard.steps.step7.overrideHint")}
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="wizard-schedule-dose" className="text-sm">
+                {t("medications.wizard.steps.step7.doseOverrideLabel")}
+              </Label>
+              <Input
+                id="wizard-schedule-dose"
+                type="text"
+                value={payload.scheduleDose}
+                onChange={(e) => applyPartial({ scheduleDose: e.target.value })}
+                placeholder={t(
+                  "medications.wizard.steps.step7.doseOverridePlaceholder",
+                )}
+                maxLength={50}
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label id="wizard-schedule-units-label" className="text-sm">
+                {t("medications.wizard.steps.step7.unitsOverrideLabel")}
+              </Label>
+              <UnitsPerDoseField
+                value={payload.scheduleUnitsPerDose}
+                onChange={(next) =>
+                  applyPartial({ scheduleUnitsPerDose: next })
+                }
+                labelId="wizard-schedule-units-label"
+                inputId="wizard-schedule-units-other"
+                dataSlot="wizard-schedule-units"
+                inherit={{
+                  label: t(
+                    "medications.wizard.steps.step7.unitsOverrideInherit",
+                  ),
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

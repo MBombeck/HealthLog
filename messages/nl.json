@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "Wat voor soort medicijn is het?",
-          "subline": "Dit gebruiken we voor de juiste sjablonen en analyses.",
+          "subline": "Optioneel. Hiermee kiezen we de juiste sjablonen en analyses; zonder keuze komt het medicijn onder ‘Overig’.",
           "short": "Soort"
         },
         "step3": {
           "title": "Wat is de dosis?",
-          "subline": "Een tablet, een puf, een druppel, afhankelijk van de vorm.",
+          "subline": "Hoeveel je elke keer neemt, zoals op de verpakking of het recept: 5 mg of 2 tabletten.",
           "amountLabel": "Hoeveelheid",
           "amountPlaceholder": "bijv. 5",
           "unitLabel": "Eenheid",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "bijv. 4",
           "dosesPerUnitHint": "Hoeveel tabletten of eenheden een nieuwe verpakking of pen bevat, bijv. 28 tabletten of een pen met 4 doses. Vult de hoeveelheid in bij het toevoegen van een verpakking; laat leeg als verpakkingen verschillen.",
           "short": "Dosis",
-          "unitsPerDoseLabel": "Tabletten of eenheden per dosis",
-          "unitsPerDoseHint": "bijv. 2 tabletten van 2 mg voor een dosis van 4 mg, of ½ tablet voor een gedeelde dosis"
+          "unitsPerDoseLabel": "Hoeveel tabletten of eenheden vormen deze dosis?",
+          "unitsPerDoseHint": "bijv. 2 tabletten van 2 mg voor een dosis van 4 mg, of ½ tablet voor een gedeelde dosis",
+          "packSizeToggle": "Verpakkingsgrootte (optioneel)"
         },
         "step4": {
           "title": "Over welke periode neem je het in?",
@@ -1875,7 +1876,8 @@
           "doseOverridePlaceholder": "bijv. een halve tablet",
           "unitsOverrideLabel": "Verbruikte eenheden op dit tijdstip",
           "unitsOverrideInherit": "Standaard",
-          "short": "Tijdstippen"
+          "short": "Tijdstippen",
+          "overrideToggle": "Een andere dosis op dit tijdstip?"
         },
         "step8": {
           "title": "Klaar. Moet HealthLog je eraan herinneren?",
@@ -1954,7 +1956,9 @@
         "times": "om {times}",
         "startsOn": "Begint: {date}",
         "endsOn": "Eindigt: {date}",
-        "noEndDate": "Geen einddatum"
+        "noEndDate": "Geen einddatum",
+        "windowLine": "{time}: op tijd tot {onTime}, te laat tot {late}, daarna gemist.",
+        "windowDays": "Een dosis telt op haar dag als op tijd, tot {days} dagen erna als te laat en daarna als gemist."
       },
       "compose": {
         "scheduleIndex": "Schema {n} van {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Het medicijn kon niet worden opgeslagen. Probeer het opnieuw."
+      },
+      "blocked": {
+        "name": "Vul een naam in om verder te gaan.",
+        "amount": "Vul de hoeveelheid in om verder te gaan.",
+        "unitsPerDose": "Kies hoeveel tabletten of eenheden de dosis vormen.",
+        "start": "Kies een startdatum om verder te gaan.",
+        "endBeforeStart": "De einddatum moet op of na de startdatum liggen.",
+        "mode": "Kies hoe vaak je het neemt.",
+        "weekdays": "Kies minstens één dag van de week.",
+        "interval": "Vul in hoeveel weken er tussen de doses zitten.",
+        "dayOfMonth": "Kies een dag van de maand tussen 1 en 31.",
+        "rollingDays": "Vul een aantal dagen in tussen 1 en 365.",
+        "time": "Voeg minstens één tijdstip toe.",
+        "unknown": "Bij deze stap ontbreekt nog iets."
       }
     },
     "doseStrength": {

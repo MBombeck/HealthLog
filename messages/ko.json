@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "어떤 종류의 약인가요?",
-          "subline": "알맞은 템플릿과 분석에 사용해요.",
+          "subline": "선택 사항이에요. 알맞은 템플릿과 분석을 고르는 데 쓰고, 고르지 않으면 ‘기타’로 분류해요.",
           "short": "종류"
         },
         "step3": {
           "title": "용량이 얼마인가요?",
-          "subline": "제형에 따라 한 정, 한 번 흡입, 한 방울 등이에요.",
+          "subline": "한 번에 복용하는 양을 포장이나 처방전에 적힌 대로 입력하세요. 예: 5mg 또는 2정.",
           "amountLabel": "양",
           "amountPlaceholder": "예: 5",
           "unitLabel": "단위",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "예: 4",
           "dosesPerUnitHint": "새 포장이나 펜 하나에 든 정제 또는 단위 수예요. 예: 정제 28개, 4회분 펜. 포장을 추가할 때 수량이 미리 채워져요. 포장마다 다르면 비워 두세요.",
           "short": "용량",
-          "unitsPerDoseLabel": "1회 복용 정제·단위 수",
-          "unitsPerDoseHint": "예: 4mg 용량이면 2mg 2정, 반으로 나눠 먹으면 ½정"
+          "unitsPerDoseLabel": "이 용량은 정제나 단위 몇 개인가요?",
+          "unitsPerDoseHint": "예: 4mg 용량이면 2mg 2정, 반으로 나눠 먹으면 ½정",
+          "packSizeToggle": "포장 크기(선택)"
         },
         "step4": {
           "title": "언제부터 언제까지 복용하나요?",
@@ -1875,7 +1876,8 @@
           "doseOverridePlaceholder": "예: 반 알",
           "unitsOverrideLabel": "이 시간대에 복용하는 단위 수",
           "unitsOverrideInherit": "기본값",
-          "short": "시간"
+          "short": "시간",
+          "overrideToggle": "이 시간에는 다른 용량인가요?"
         },
         "step8": {
           "title": "다 됐어요. HealthLog가 알림을 보낼까요?",
@@ -1954,7 +1956,9 @@
         "times": "{times}에",
         "startsOn": "시작: {date}",
         "endsOn": "종료: {date}",
-        "noEndDate": "종료일 없음"
+        "noEndDate": "종료일 없음",
+        "windowLine": "{time}: {onTime}까지 정시, {late}까지 늦음, 그 뒤에는 놓침.",
+        "windowDays": "복용은 해당 날짜에 정시, 그 뒤 {days}일까지 늦음, 그 뒤에는 놓침으로 기록돼요."
       },
       "compose": {
         "scheduleIndex": "일정 {n}/{total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "약을 저장하지 못했어요. 다시 시도해 주세요."
+      },
+      "blocked": {
+        "name": "계속하려면 이름을 입력하세요.",
+        "amount": "계속하려면 양을 입력하세요.",
+        "unitsPerDose": "용량이 정제나 단위 몇 개인지 고르세요.",
+        "start": "계속하려면 시작일을 고르세요.",
+        "endBeforeStart": "종료일은 시작일과 같거나 그 뒤여야 해요.",
+        "mode": "얼마나 자주 복용하는지 고르세요.",
+        "weekdays": "요일을 하나 이상 고르세요.",
+        "interval": "복용 사이가 몇 주인지 입력하세요.",
+        "dayOfMonth": "1에서 31 사이의 날짜를 고르세요.",
+        "rollingDays": "1에서 365 사이의 일수를 입력하세요.",
+        "time": "시간을 하나 이상 추가하세요.",
+        "unknown": "이 단계에서 아직 빠진 것이 있어요."
       }
     },
     "doseStrength": {

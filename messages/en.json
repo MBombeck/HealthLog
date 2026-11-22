@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "What kind of medication is it?",
-          "subline": "We use this for the right templates and analytics.",
+          "subline": "Optional. It picks the right templates and analytics; without a choice the medication is filed under Other.",
           "short": "Type"
         },
         "step3": {
           "title": "What's the dose?",
-          "subline": "A tablet, a puff, a drop, depending on the form.",
+          "subline": "How much you take each time, as on the pack or the prescription: 5 mg, or 2 tablets.",
           "amountLabel": "Amount",
           "amountPlaceholder": "e.g. 5",
           "unitLabel": "Unit",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "e.g. 4",
           "dosesPerUnitHint": "How many tablets or units one new pack or pen holds, e.g. 28 tablets or a 4-dose pen. Fills in the amount when you add a pack; leave empty if packs vary.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Tablets or units per dose",
-          "unitsPerDoseHint": "e.g. 2 tablets of 2 mg for a 4 mg dose, or ½ a tablet for a split dose"
+          "unitsPerDoseLabel": "How many tablets or units make up this dose?",
+          "unitsPerDoseHint": "e.g. 2 tablets of 2 mg for a 4 mg dose, or ½ a tablet for a split dose",
+          "packSizeToggle": "Pack size (optional)"
         },
         "step4": {
           "title": "Over what period are you taking it?",
@@ -1875,7 +1876,8 @@
           "doseOverridePlaceholder": "e.g. half a tablet",
           "unitsOverrideLabel": "Units consumed at this time",
           "unitsOverrideInherit": "Default",
-          "short": "Times"
+          "short": "Times",
+          "overrideToggle": "Different dose at this time?"
         },
         "step8": {
           "title": "All done. Should HealthLog remind you?",
@@ -1954,7 +1956,9 @@
         "times": "at {times}",
         "startsOn": "Starts: {date}",
         "endsOn": "Ends: {date}",
-        "noEndDate": "No end date"
+        "noEndDate": "No end date",
+        "windowLine": "{time}: on time until {onTime}, late until {late}, then missed.",
+        "windowDays": "A dose counts as on time on its day, as late for up to {days} days after, then as missed."
       },
       "compose": {
         "scheduleIndex": "Schedule {n} of {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Could not save the medication. Please retry."
+      },
+      "blocked": {
+        "name": "Enter a name to continue.",
+        "amount": "Enter the amount to continue.",
+        "unitsPerDose": "Choose how many tablets or units make up the dose.",
+        "start": "Choose a start date to continue.",
+        "endBeforeStart": "The end date has to be on or after the start date.",
+        "mode": "Choose how often you take it.",
+        "weekdays": "Choose at least one day of the week.",
+        "interval": "Enter how many weeks lie between doses.",
+        "dayOfMonth": "Choose a day of the month between 1 and 31.",
+        "rollingDays": "Enter a number of days between 1 and 365.",
+        "time": "Add at least one time of day.",
+        "unknown": "Something on this step is still missing."
       }
     },
     "doseStrength": {

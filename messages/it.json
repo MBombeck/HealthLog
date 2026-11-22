@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "Che tipo di farmaco è?",
-          "subline": "Lo usiamo per i modelli e le analisi corretti.",
+          "subline": "Facoltativo. Serve a scegliere i modelli e le analisi giusti; senza scelta il farmaco va sotto «Altro».",
           "short": "Tipo"
         },
         "step3": {
           "title": "Qual è la dose?",
-          "subline": "Una compressa, uno spruzzo, una goccia, a seconda della forma.",
+          "subline": "Quanto prendi ogni volta, come sulla confezione o sulla ricetta: 5 mg oppure 2 compresse.",
           "amountLabel": "Quantità",
           "amountPlaceholder": "ad es. 5",
           "unitLabel": "Unità",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "es. 4",
           "dosesPerUnitHint": "Quante compresse o unità contiene una nuova confezione o penna, ad es. 28 compresse o una penna da 4 dosi. Precompila la quantità quando aggiungi una confezione; lascia vuoto se le confezioni variano.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Compresse o unità per dose",
-          "unitsPerDoseHint": "ad es. 2 compresse da 2 mg per una dose da 4 mg, oppure ½ compressa per una dose divisa"
+          "unitsPerDoseLabel": "Quante compresse o unità formano questa dose?",
+          "unitsPerDoseHint": "ad es. 2 compresse da 2 mg per una dose da 4 mg, oppure ½ compressa per una dose divisa",
+          "packSizeToggle": "Dimensione confezione (facoltativa)"
         },
         "step4": {
           "title": "Per quanto tempo lo assumi?",
@@ -1875,7 +1876,8 @@
           "doseOverridePlaceholder": "es. mezza compressa",
           "unitsOverrideLabel": "Unità consumate a questo orario",
           "unitsOverrideInherit": "Predefinito",
-          "short": "Orari"
+          "short": "Orari",
+          "overrideToggle": "Un'altra dose a quest'ora?"
         },
         "step8": {
           "title": "Fatto. Vuoi che HealthLog te lo ricordi?",
@@ -1954,7 +1956,9 @@
         "times": "alle {times}",
         "startsOn": "Inizio: {date}",
         "endsOn": "Fine: {date}",
-        "noEndDate": "Nessuna data di fine"
+        "noEndDate": "Nessuna data di fine",
+        "windowLine": "{time}: puntuale fino alle {onTime}, in ritardo fino alle {late}, poi mancata.",
+        "windowDays": "Una dose conta come puntuale nel suo giorno, in ritardo fino a {days} giorni dopo, poi come mancata."
       },
       "compose": {
         "scheduleIndex": "Programma {n} di {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Impossibile salvare il farmaco. Riprova."
+      },
+      "blocked": {
+        "name": "Inserisci un nome per continuare.",
+        "amount": "Inserisci la quantità per continuare.",
+        "unitsPerDose": "Scegli quante compresse o unità formano la dose.",
+        "start": "Scegli una data di inizio per continuare.",
+        "endBeforeStart": "La data di fine deve essere il giorno di inizio o dopo.",
+        "mode": "Scegli quanto spesso lo prendi.",
+        "weekdays": "Scegli almeno un giorno della settimana.",
+        "interval": "Indica quante settimane passano tra le dosi.",
+        "dayOfMonth": "Scegli un giorno del mese tra 1 e 31.",
+        "rollingDays": "Inserisci un numero di giorni tra 1 e 365.",
+        "time": "Aggiungi almeno un orario.",
+        "unknown": "In questo passaggio manca ancora qualcosa."
       }
     },
     "doseStrength": {

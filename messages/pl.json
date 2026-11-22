@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "Jaki to rodzaj leku?",
-          "subline": "Wykorzystujemy to do odpowiednich szablonów i analiz.",
+          "subline": "Opcjonalnie. Pozwala dobrać szablony i analizy; bez wyboru lek trafi do kategorii „Inne”.",
           "short": "Rodzaj"
         },
         "step3": {
           "title": "Jaka jest dawka?",
-          "subline": "Tabletka, wziew, kropla: w zależności od formy.",
+          "subline": "Ile przyjmujesz za każdym razem, jak na opakowaniu lub recepcie: 5 mg albo 2 tabletki.",
           "amountLabel": "Ilość",
           "amountPlaceholder": "np. 5",
           "unitLabel": "Jednostka",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "np. 4",
           "dosesPerUnitHint": "Ile tabletek lub jednostek zawiera nowe opakowanie lub wstrzykiwacz, np. 28 tabletek albo wstrzykiwacz na 4 dawki. Uzupełnia ilość przy dodawaniu opakowania; zostaw puste, jeśli opakowania się różnią.",
           "short": "Dawka",
-          "unitsPerDoseLabel": "Tabletki lub jednostki na dawkę",
-          "unitsPerDoseHint": "np. 2 tabletki po 2 mg na dawkę 4 mg lub ½ tabletki przy dzielonej dawce"
+          "unitsPerDoseLabel": "Ile tabletek lub jednostek składa się na tę dawkę?",
+          "unitsPerDoseHint": "np. 2 tabletki po 2 mg na dawkę 4 mg lub ½ tabletki przy dzielonej dawce",
+          "packSizeToggle": "Wielkość opakowania (opcjonalnie)"
         },
         "step4": {
           "title": "Przez jaki okres go przyjmujesz?",
@@ -1875,7 +1876,8 @@
           "doseOverridePlaceholder": "np. pół tabletki",
           "unitsOverrideLabel": "Jednostki zużyte o tej porze",
           "unitsOverrideInherit": "Domyślnie",
-          "short": "Godziny"
+          "short": "Godziny",
+          "overrideToggle": "Inna dawka o tej porze?"
         },
         "step8": {
           "title": "Gotowe. Czy HealthLog ma Ci przypominać?",
@@ -1954,7 +1956,9 @@
         "times": "o {times}",
         "startsOn": "Początek: {date}",
         "endsOn": "Koniec: {date}",
-        "noEndDate": "Brak daty zakończenia"
+        "noEndDate": "Brak daty zakończenia",
+        "windowLine": "{time}: punktualnie do {onTime}, z opóźnieniem do {late}, potem nieprzyjęta.",
+        "windowDays": "Dawka liczy się jako punktualna w swoim dniu, jako opóźniona do {days} dni później, a potem jako nieprzyjęta."
       },
       "compose": {
         "scheduleIndex": "Harmonogram {n} z {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Nie udało się zapisać leku. Spróbuj ponownie."
+      },
+      "blocked": {
+        "name": "Wpisz nazwę, aby kontynuować.",
+        "amount": "Wpisz ilość, aby kontynuować.",
+        "unitsPerDose": "Wybierz, ile tabletek lub jednostek składa się na dawkę.",
+        "start": "Wybierz datę rozpoczęcia, aby kontynuować.",
+        "endBeforeStart": "Data zakończenia musi przypadać w dniu rozpoczęcia lub później.",
+        "mode": "Wybierz, jak często go przyjmujesz.",
+        "weekdays": "Wybierz co najmniej jeden dzień tygodnia.",
+        "interval": "Podaj, ile tygodni dzieli dawki.",
+        "dayOfMonth": "Wybierz dzień miesiąca od 1 do 31.",
+        "rollingDays": "Wpisz liczbę dni od 1 do 365.",
+        "time": "Dodaj co najmniej jedną godzinę.",
+        "unknown": "W tym kroku czegoś jeszcze brakuje."
       }
     },
     "doseStrength": {

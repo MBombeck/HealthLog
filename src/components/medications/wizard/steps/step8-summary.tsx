@@ -18,6 +18,11 @@ import {
   type WizardPayload,
 } from "../wizard-payload";
 import { Step8NoteField } from "./step8-note-field";
+import { scaleForCadence } from "./step7-times";
+import {
+  dayScaleLateDays,
+  intradayDoseWindowPlan,
+} from "@/lib/medications/scheduling/dose-window-plan";
 
 export interface Step8SummaryProps {
   payload: WizardPayload;
@@ -94,6 +99,7 @@ export function Step8Summary({
           {t("medications.wizard.summary.title")}
         </p>
         <p>{topSummary}</p>
+        {payload.schedules.length <= 1 && <DoseWindowPlan draft={payload} />}
       </div>
 
       <div className="space-y-2" data-slot="wizard-schedule-list">
@@ -111,6 +117,7 @@ export function Step8Summary({
               data-index={index}
             >
               <p className="text-sm">{cardSummary}</p>
+              {payload.schedules.length > 1 && <DoseWindowPlan draft={draft} />}
               <div className="mt-2 flex items-center gap-2">
                 <Button
                   type="button"
@@ -276,5 +283,49 @@ export function Step8Summary({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * When a dose of this schedule counts as on time, late and missed, in plain
+ * words, from the same bands the history and the reminders use. Nothing for
+ * an as-needed schedule, which has no window.
+ */
+function DoseWindowPlan({
+  draft,
+}: {
+  draft: Pick<WizardPayload, "mode" | "cadence" | "timesOfDay"> & {
+    doseWindows?: WizardPayload["doseWindows"];
+  };
+}) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  if (draft.mode === null || draft.mode === "asNeeded") return null;
+  if (scaleForCadence(draft) === "dayScale") {
+    return (
+      <p className="mt-2" data-slot="wizard-window-plan">
+        {t("medications.wizard.summary.windowDays", {
+          days: dayScaleLateDays(),
+        })}
+      </p>
+    );
+  }
+  const lines = intradayDoseWindowPlan(
+    draft.timesOfDay,
+    draft.doseWindows ?? [],
+  );
+  if (lines.length === 0) return null;
+  return (
+    <ul className="mt-2 space-y-0.5" data-slot="wizard-window-plan">
+      {lines.map((line) => (
+        <li key={line.timeOfDay}>
+          {t("medications.wizard.summary.windowLine", {
+            time: fmt.wallTime(line.timeOfDay),
+            onTime: fmt.wallTime(line.onTimeUntil),
+            late: fmt.wallTime(line.lateUntil),
+          })}
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -23,6 +23,7 @@ import {
 import type { MedicationDeliveryForm } from "@/lib/validations/medication";
 import { UnitsPerDoseField } from "@/components/medications/units-per-dose-field";
 import { DOSE_UNIT_KEYS } from "@/lib/medications/dose-units";
+import { parseUnitsPerDoseInput } from "@/lib/medications/units-per-dose";
 import { useTranslations } from "@/lib/i18n/context";
 
 import type { StepProps } from "./step1-name";
@@ -33,6 +34,34 @@ const DELIVERY_FORM_KEYS: readonly MedicationDeliveryForm[] = [
   "OTHER",
 ];
 
+/**
+ * Units counted from the supply one by one. With one of these the dose
+ * itself says how many units a dose takes ("2 tablets"), so the step does not
+ * ask "tablets per dose" a second time; with a strength unit (mg, ml, …) it
+ * does, because "5 mg" does not say how many tablets that is.
+ */
+const COUNT_UNITS = new Set([
+  "tablets",
+  "capsules",
+  "drops",
+  "puffs",
+  "sprays",
+  "pieces",
+]);
+
+/** The units a counted dose takes from the supply, or null when unreadable. */
+function countedUnits(amount: string, unit: string): string | null {
+  if (!COUNT_UNITS.has(unit)) return null;
+  const value = parseUnitsPerDoseInput(amount.trim());
+  return value === null ? null : String(value);
+}
+
+/**
+ * Step 3: how much one dose is. One question up front (amount and unit, side
+ * by side); the route below it, prefilled by the class; the supply details
+ * (units per dose for a strength unit, the pack size) are the optional part,
+ * and the pack size folds away until somebody wants it.
+ */
 export function Step3Dose({ payload, applyPartial }: StepProps) {
   const { t } = useTranslations();
   // v1.8.5 — injection-site tracking is a per-medication opt-in surfaced
@@ -40,7 +69,15 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
   // restrict the allowed sites; an empty selection means "no
   // restriction" (every site offered, minus the global exclusion).
   const [allowedOpen, setAllowedOpen] = useState(false);
+  const [packOpen, setPackOpen] = useState(payload.dosesPerUnit !== "");
   const isInjection = payload.deliveryForm === "INJECTION";
+  const counted = countedUnits(payload.doseAmount, payload.doseUnit);
+  // The counted case carries its unit count in the dose itself; the field
+  // only shows when it says something the dose does not (a strength unit,
+  // or a stored count that differs from the dose, from an older edit).
+  const askUnitsPerDose =
+    counted === null ||
+    parseUnitsPerDoseInput(payload.unitsPerDose) !== Number(counted);
 
   function toggleAllowedSite(site: InjectionSiteKey, checked: boolean) {
     const current = new Set(payload.allowedInjectionSites);
@@ -51,9 +88,20 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
     });
   }
 
+  // A counted dose sets the units per dose with it, so the supply count
+  // follows "2 tablets" without a second question.
+  function setDose(doseAmount: string, doseUnit: string) {
+    const units = countedUnits(doseAmount, doseUnit);
+    applyPartial({
+      doseAmount,
+      doseUnit,
+      ...(units !== null ? { unitsPerDose: units } : {}),
+    });
+  }
+
   return (
     <div className="space-y-6" data-slot="wizard-step3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 items-start gap-3">
         <div className="space-y-2">
           <Label htmlFor="wizard-dose-amount" className="text-sm">
             {t("medications.wizard.steps.step3.amountLabel")}
@@ -63,7 +111,7 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
             type="text"
             inputMode="decimal"
             value={payload.doseAmount}
-            onChange={(e) => applyPartial({ doseAmount: e.target.value })}
+            onChange={(e) => setDose(e.target.value, payload.doseUnit)}
             placeholder={t("medications.wizard.steps.step3.amountPlaceholder")}
             maxLength={20}
             autoComplete="off"
@@ -76,7 +124,7 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
           </Label>
           <Select
             value={payload.doseUnit}
-            onValueChange={(v) => applyPartial({ doseUnit: v })}
+            onValueChange={(v) => setDose(payload.doseAmount, v)}
           >
             <SelectTrigger id="wizard-dose-unit" className="w-full">
               <SelectValue />
@@ -92,83 +140,109 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
         </div>
       </div>
 
-      {/* v1.6.0 — route of administration + inventory. Decoupled from
-          the Step 2 treatment row so an INJECTION delivery surfaces the
-          rotation map for any class, not only GLP-1. */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="wizard-delivery-form" className="text-sm">
-            {t("medications.wizard.steps.step3.deliveryFormLabel")}
-          </Label>
-          <Select
-            value={payload.deliveryForm}
-            onValueChange={(v) =>
-              applyPartial({ deliveryForm: v as MedicationDeliveryForm })
-            }
-          >
-            <SelectTrigger id="wizard-delivery-form" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DELIVERY_FORM_KEYS.map((d) => (
-                <SelectItem key={d} value={d}>
-                  {t(`medications.wizard.steps.step3.deliveryForm.${d}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="wizard-doses-per-unit" className="text-sm">
-            {t("medications.wizard.steps.step3.dosesPerUnitLabel")}
-          </Label>
-          <Input
-            id="wizard-doses-per-unit"
-            type="text"
-            inputMode="numeric"
-            value={payload.dosesPerUnit}
-            onChange={(e) =>
-              applyPartial({
-                // v1.16.10 — the cap rose to 1000, so four digits.
-                dosesPerUnit: e.target.value.replace(/[^0-9]/g, "").slice(0, 4),
-              })
-            }
-            placeholder={t(
-              "medications.wizard.steps.step3.dosesPerUnitPlaceholder",
-            )}
-            maxLength={4}
-            autoComplete="off"
-          />
-          <p className="text-muted-foreground text-xs">
-            {t("medications.wizard.steps.step3.dosesPerUnitHint")}
-          </p>
-        </div>
-      </div>
-
       {/* v1.16.10 — units consumed per dose. The inventory counts units
           (tablets / ampoules); a multi-unit dose (2 × 2 mg for 4 mg)
           decrements several per take and every dose-level readout
-          divides by this factor. */}
+          divides by this factor. Asked only when the dose does not say it. */}
+      {askUnitsPerDose ? (
+        <div className="space-y-2" data-slot="wizard-units-per-dose-block">
+          <Label id="wizard-units-per-dose-label" className="text-sm">
+            {t("medications.wizard.steps.step3.unitsPerDoseLabel")}
+          </Label>
+          {/* v1.16.12 (#316) — curated fraction / whole-number buttons, the
+              most error-resistant input for the common doses. #1034 — plus
+              an Other field for a whole number and a fraction (1½) or any
+              other value up to four decimals; the step holds while it does
+              not read. */}
+          <UnitsPerDoseField
+            value={payload.unitsPerDose}
+            onChange={(next) => applyPartial({ unitsPerDose: next })}
+            labelId="wizard-units-per-dose-label"
+            inputId="wizard-units-per-dose-other"
+            dataSlot="wizard-units-per-dose"
+          />
+          <p className="text-muted-foreground text-xs">
+            {t("medications.wizard.steps.step3.unitsPerDoseHint")}
+          </p>
+        </div>
+      ) : null}
+
+      {/* v1.6.0 — route of administration. Decoupled from the Step 2
+          treatment row so an INJECTION delivery surfaces the rotation map
+          for any class, not only GLP-1 (which preselects it). */}
       <div className="space-y-2">
-        <Label id="wizard-units-per-dose-label" className="text-sm">
-          {t("medications.wizard.steps.step3.unitsPerDoseLabel")}
+        <Label htmlFor="wizard-delivery-form" className="text-sm">
+          {t("medications.wizard.steps.step3.deliveryFormLabel")}
         </Label>
-        {/* v1.16.12 (#316) — curated fraction / whole-number buttons, the
-            most error-resistant input for the common doses. #1034 — plus an
-            Other field for a whole number and a fraction (1½) or any other
-            value up to four decimals; the step holds while it does not read.
-            The decimal value is what the payload + API carry; the button
-            shows the glyph. */}
-        <UnitsPerDoseField
-          value={payload.unitsPerDose}
-          onChange={(next) => applyPartial({ unitsPerDose: next })}
-          labelId="wizard-units-per-dose-label"
-          inputId="wizard-units-per-dose-other"
-          dataSlot="wizard-units-per-dose"
-        />
-        <p className="text-muted-foreground text-xs">
-          {t("medications.wizard.steps.step3.unitsPerDoseHint")}
-        </p>
+        <Select
+          value={payload.deliveryForm}
+          onValueChange={(v) =>
+            applyPartial({ deliveryForm: v as MedicationDeliveryForm })
+          }
+        >
+          <SelectTrigger id="wizard-delivery-form" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {DELIVERY_FORM_KEYS.map((d) => (
+              <SelectItem key={d} value={d}>
+                {t(`medications.wizard.steps.step3.deliveryForm.${d}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* The pack size belongs to the supply, not the dose: optional, folded
+          away until opened (open from the start when one is set). */}
+      <div className="space-y-2" data-slot="wizard-pack-size">
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-11 w-full justify-between px-2 sm:min-h-9"
+          aria-expanded={packOpen}
+          aria-controls="wizard-pack-size-body"
+          onClick={() => setPackOpen((prev) => !prev)}
+          data-slot="wizard-pack-size-toggle"
+        >
+          <span className="text-sm font-medium">
+            {t("medications.wizard.steps.step3.packSizeToggle")}
+          </span>
+          {packOpen ? (
+            <ChevronUp aria-hidden="true" className="h-4 w-4" />
+          ) : (
+            <ChevronDown aria-hidden="true" className="h-4 w-4" />
+          )}
+        </Button>
+        {packOpen && (
+          <div id="wizard-pack-size-body" className="space-y-2 px-1">
+            <Label htmlFor="wizard-doses-per-unit" className="text-sm">
+              {t("medications.wizard.steps.step3.dosesPerUnitLabel")}
+            </Label>
+            <Input
+              id="wizard-doses-per-unit"
+              type="text"
+              inputMode="numeric"
+              value={payload.dosesPerUnit}
+              onChange={(e) =>
+                applyPartial({
+                  // v1.16.10 — the cap rose to 1000, so four digits.
+                  dosesPerUnit: e.target.value
+                    .replace(/[^0-9]/g, "")
+                    .slice(0, 4),
+                })
+              }
+              placeholder={t(
+                "medications.wizard.steps.step3.dosesPerUnitPlaceholder",
+              )}
+              maxLength={4}
+              autoComplete="off"
+            />
+            <p className="text-muted-foreground text-xs">
+              {t("medications.wizard.steps.step3.dosesPerUnitHint")}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* v1.8.5 — injection-site tracking opt-in + allowed-sites editor.

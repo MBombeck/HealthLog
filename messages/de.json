@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "Was für ein Medikament ist das?",
-          "subline": "Wir nutzen das für passende Vorlagen und Auswertungen.",
+          "subline": "Optional. Damit passen Vorlagen und Auswertungen; ohne Auswahl landet das Medikament unter „Sonstiges“.",
           "short": "Art"
         },
         "step3": {
           "title": "Wie hoch ist die Dosis?",
-          "subline": "Eine Tablette, ein Hub, ein Tropfen, je nach Form.",
+          "subline": "Wie viel du jedes Mal nimmst, wie auf der Packung oder dem Rezept: 5 mg oder 2 Tabletten.",
           "amountLabel": "Menge",
           "amountPlaceholder": "z. B. 5",
           "unitLabel": "Einheit",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "z. B. 4",
           "dosesPerUnitHint": "Wie viele Tabletten oder Einheiten eine neue Packung oder ein Pen enthält, z. B. 28 Tabletten oder ein Pen mit 4 Dosen. Wird beim Erfassen einer Packung vorausgefüllt; leer lassen, wenn Packungen variieren.",
           "short": "Dosis",
-          "unitsPerDoseLabel": "Tabletten oder Einheiten pro Dosis",
-          "unitsPerDoseHint": "z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis oder ½ Tablette bei geteilter Dosis"
+          "unitsPerDoseLabel": "Wie viele Tabletten oder Einheiten ergeben diese Dosis?",
+          "unitsPerDoseHint": "z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis oder ½ Tablette bei geteilter Dosis",
+          "packSizeToggle": "Packungsgröße (optional)"
         },
         "step4": {
           "title": "Über welchen Zeitraum nimmst du es?",
@@ -1875,7 +1876,8 @@
           "doseOverridePlaceholder": "z. B. eine halbe Tablette",
           "unitsOverrideLabel": "Verbrauchte Einheiten zu dieser Uhrzeit",
           "unitsOverrideInherit": "Standard",
-          "short": "Zeiten"
+          "short": "Zeiten",
+          "overrideToggle": "Andere Dosis zu dieser Uhrzeit?"
         },
         "step8": {
           "title": "Fertig! Soll HealthLog dich erinnern?",
@@ -1954,7 +1956,9 @@
         "times": "um {times}",
         "startsOn": "Beginn: {date}",
         "endsOn": "Ende: {date}",
-        "noEndDate": "Kein Enddatum"
+        "noEndDate": "Kein Enddatum",
+        "windowLine": "{time}: pünktlich bis {onTime}, verspätet bis {late}, danach verpasst.",
+        "windowDays": "Eine Dosis zählt an ihrem Tag als pünktlich, bis zu {days} Tage danach als verspätet, danach als verpasst."
       },
       "compose": {
         "scheduleIndex": "Zeitplan {n} von {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Medikament konnte nicht gespeichert werden. Bitte erneut versuchen."
+      },
+      "blocked": {
+        "name": "Gib einen Namen ein, um weiterzumachen.",
+        "amount": "Gib die Menge ein, um weiterzumachen.",
+        "unitsPerDose": "Wähle, wie viele Tabletten oder Einheiten die Dosis ergeben.",
+        "start": "Wähle ein Startdatum, um weiterzumachen.",
+        "endBeforeStart": "Das Enddatum muss am oder nach dem Startdatum liegen.",
+        "mode": "Wähle, wie oft du es nimmst.",
+        "weekdays": "Wähle mindestens einen Wochentag.",
+        "interval": "Gib an, wie viele Wochen zwischen den Dosen liegen.",
+        "dayOfMonth": "Wähle einen Tag im Monat zwischen 1 und 31.",
+        "rollingDays": "Gib eine Zahl von Tagen zwischen 1 und 365 ein.",
+        "time": "Füge mindestens eine Uhrzeit hinzu.",
+        "unknown": "Auf diesem Schritt fehlt noch etwas."
       }
     },
     "doseStrength": {

@@ -1797,12 +1797,12 @@
         },
         "step2": {
           "title": "De quel type de médicament s’agit-il ?",
-          "subline": "Nous l’utilisons pour les bons modèles et analyses.",
+          "subline": "Facultatif. Cela choisit les bons modèles et analyses ; sans choix, le médicament est classé dans « Autre ».",
           "short": "Type"
         },
         "step3": {
           "title": "Quelle est la dose ?",
-          "subline": "Un comprimé, une bouffée, une goutte, selon la forme.",
+          "subline": "Ce que vous prenez à chaque fois, comme sur la boîte ou l'ordonnance : 5 mg ou 2 comprimés.",
           "amountLabel": "Quantité",
           "amountPlaceholder": "par exemple 5",
           "unitLabel": "Unité",
@@ -1830,8 +1830,9 @@
           "dosesPerUnitPlaceholder": "p. ex. 4",
           "dosesPerUnitHint": "Nombre de comprimés ou d'unités dans une nouvelle boîte ou un nouveau stylo, p. ex. 28 comprimés ou un stylo de 4 doses. Pré-remplit la quantité à l'ajout d'une boîte ; laisser vide si les boîtes varient.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Comprimés ou unités par dose",
-          "unitsPerDoseHint": "p. ex. 2 comprimés de 2 mg pour une dose de 4 mg, ou ½ comprimé pour une dose fractionnée"
+          "unitsPerDoseLabel": "Combien de comprimés ou d'unités font cette dose ?",
+          "unitsPerDoseHint": "p. ex. 2 comprimés de 2 mg pour une dose de 4 mg, ou ½ comprimé pour une dose fractionnée",
+          "packSizeToggle": "Taille du conditionnement (facultatif)"
         },
         "step4": {
           "title": "Sur quelle période le prenez-vous ?",
@@ -1875,7 +1876,8 @@
           "doseOverridePlaceholder": "ex. un demi-comprimé",
           "unitsOverrideLabel": "Unités consommées à cet horaire",
           "unitsOverrideInherit": "Par défaut",
-          "short": "Heures"
+          "short": "Heures",
+          "overrideToggle": "Une autre dose à cette heure ?"
         },
         "step8": {
           "title": "Terminé ! HealthLog doit-il vous le rappeler ?",
@@ -1954,7 +1956,9 @@
         "times": "à {times}",
         "startsOn": "Début : {date}",
         "endsOn": "Fin : {date}",
-        "noEndDate": "Pas de date de fin"
+        "noEndDate": "Pas de date de fin",
+        "windowLine": "{time} : à l'heure jusqu'à {onTime}, en retard jusqu'à {late}, ensuite manquée.",
+        "windowDays": "Une dose compte comme à l'heure le jour prévu, comme en retard jusqu'à {days} jours après, ensuite comme manquée."
       },
       "compose": {
         "scheduleIndex": "Horaire {n} sur {total}",
@@ -1967,6 +1971,20 @@
       },
       "errors": {
         "submitFailed": "Impossible d’enregistrer le médicament. Veuillez réessayer."
+      },
+      "blocked": {
+        "name": "Saisissez un nom pour continuer.",
+        "amount": "Saisissez la quantité pour continuer.",
+        "unitsPerDose": "Choisissez combien de comprimés ou d'unités font la dose.",
+        "start": "Choisissez une date de début pour continuer.",
+        "endBeforeStart": "La date de fin doit être le jour du début ou après.",
+        "mode": "Choisissez à quelle fréquence vous le prenez.",
+        "weekdays": "Choisissez au moins un jour de la semaine.",
+        "interval": "Indiquez combien de semaines séparent les doses.",
+        "dayOfMonth": "Choisissez un jour du mois entre 1 et 31.",
+        "rollingDays": "Saisissez un nombre de jours entre 1 et 365.",
+        "time": "Ajoutez au moins une heure.",
+        "unknown": "Il manque encore quelque chose à cette étape."
       }
     },
     "doseStrength": {

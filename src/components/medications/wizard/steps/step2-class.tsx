@@ -119,7 +119,11 @@ export function Step2Class({ payload, applyPartial }: StepProps) {
           value={row}
           label={t(`medications.wizard.classRow.${row}`)}
           Icon={ROW_ICONS[row]}
-          selected={payload.treatmentRow === row && customKey === null}
+          // Optional: with no choice the medication is filed under Other,
+          // so Other reads as chosen until another row is picked.
+          selected={
+            (payload.treatmentRow ?? "other") === row && customKey === null
+          }
           slot="wizard-class-row"
           onSelect={() =>
             applyPartial(
