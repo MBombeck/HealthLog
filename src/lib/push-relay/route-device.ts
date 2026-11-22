@@ -225,7 +225,11 @@ export async function sendSealed(
     if (summary.accepted > 0) result.anyAccepted = true;
     if (summary.waiting > 0) result.waiting = true;
     if (summary.failed > 0 && summary.accepted === 0) {
-      result.lastFailure ??= "relay_item_failed";
+      // Name what the relay (or the outbox) answered, never a bare failure.
+      const code = Object.keys(summary.outcomes).find((c) => c !== "accepted");
+      result.lastFailure ??= code
+        ? `relay_item_failed:${code}`
+        : "relay_item_failed";
     }
   }
   if (result.lastFailure) {

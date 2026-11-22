@@ -105,6 +105,11 @@ export function sendSealedIntakeRecorded(
 export interface IntakeSyncSendResult extends SealedSendResult {
   /** Devices the silent budget held back: owed, sent by the minute pass. */
   deferred: string[];
+  /**
+   * Relay devices skipped on purpose: the recorded confirmation in the same
+   * flush stands in for their silent sync. Not a failure.
+   */
+  covered: string[];
 }
 
 /**
@@ -125,10 +130,14 @@ export async function sendSealedIntakeSync(
   const message = intakeSyncMessage(now);
   const targets = [];
   const deferred: string[] = [];
+  const covered: string[] = [];
   for (const device of devices) {
     const route = routeOf(device, ctx);
     if (route !== "relay" && route !== "direct") continue;
-    if (route === "relay" && options.confirmationFor.has(device.id)) continue;
+    if (route === "relay" && options.confirmationFor.has(device.id)) {
+      covered.push(device.id);
+      continue;
+    }
     if (!(await silentBudgetLeft(device, SYNC_EVENT, ctx, now))) {
       deferred.push(device.id);
       continue;
@@ -138,7 +147,7 @@ export async function sendSealedIntakeSync(
   if (deferred.length > 0) await oweIntakeSync(deferred, now);
   const sealed = await sendSealed(targets, ctx);
   await recordSilentPushes(SYNC_EVENT, sealed.handled, now);
-  return { ...sealed, deferred };
+  return { ...sealed, deferred, covered };
 }
 
 /** Mark the sync owed to these devices (the first time it is owed stays). */
@@ -219,7 +228,7 @@ export async function flushOwedIntakeSyncs(
         reason:
           result.anyAccepted || result.waiting
             ? "intake_sync_owed_sent"
-            : (result.lastFailure ?? "intake_sync_failed"),
+            : (result.lastFailure ?? "intake_sync_nothing_sent"),
       });
       sent += 1;
     }

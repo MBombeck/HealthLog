@@ -256,6 +256,15 @@ describe("the intake sync's budget, audience and triggers", () => {
         where: { kind: "MEDICATION_INTAKE_SYNC" },
       }),
     ).toBe(0);
+    // Left out on purpose is not a failure: the flush used to record this as
+    // `error` / `intake_sync_failed`, which read as a broken relay.
+    const rows = await prisma.pushAttempt.findMany({
+      where: { userId: user.id, eventType: "MEDICATION_INTAKE_SYNC" },
+      select: { result: true, reason: true },
+    });
+    expect(rows).toEqual([
+      { result: "skipped", reason: "intake_sync_covered_by_confirmation" },
+    ]);
   });
 
   it("owes the sync past the silent budget and sends it once the hour frees up", async () => {
