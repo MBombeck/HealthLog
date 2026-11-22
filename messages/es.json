@@ -8788,7 +8788,7 @@
       },
       "services": {
         "title": "Push y canales",
-        "subtitle": "Canales de notificación, claves de Web Push, el relé push y el estado de entrega para todo el servidor."
+        "subtitle": "Canales de notificación, claves de Web Push, relé push y entregas de todo el servidor."
       },
       "integrations": {
         "title": "Supervisión",

@@ -8788,7 +8788,7 @@
       },
       "services": {
         "title": "Push und Kanäle",
-        "subtitle": "Benachrichtigungskanäle, Web-Push-Schlüssel, das Push-Relay und die Zustellung für den ganzen Server."
+        "subtitle": "Benachrichtigungskanäle, Web-Push-Schlüssel, Push-Relay und Zustellung für den Server."
       },
       "integrations": {
         "title": "Monitoring",

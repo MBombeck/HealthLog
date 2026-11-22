@@ -5,6 +5,13 @@ import { Tabs as TabsPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * The root takes `min-w-0`. The strip below scrolls when its labels outgrow
+ * the width, but a scroll container still reports its whole content as its
+ * min-content width, so a root standing in a grid or flex cell (the Cycle
+ * page's single phone column) widened that cell to the strip's labels and
+ * pushed the page sideways instead of letting the strip scroll.
+ */
 function Tabs({
   className,
   orientation = "horizontal",
@@ -16,7 +23,7 @@ function Tabs({
       data-orientation={orientation}
       orientation={orientation}
       className={cn(
-        "group/tabs flex gap-2 data-[orientation=horizontal]:flex-col",
+        "group/tabs flex min-w-0 gap-2 data-[orientation=horizontal]:flex-col",
         className,
       )}
       {...props}

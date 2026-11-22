@@ -4,6 +4,7 @@ import { join, relative, sep } from "node:path";
 import type { APIRequestContext } from "@playwright/test";
 
 import { ADMIN_SECTION_SLUGS } from "@/components/admin/section-slugs";
+import { SERVER_SETUP_STEP_IDS } from "@/lib/admin/server-setup";
 import { MODULE_SETTINGS_PAGE_IDS } from "@/components/settings/module-settings-page-ids";
 import { SETTINGS_SECTION_SLUGS } from "@/lib/settings/section-slugs";
 
@@ -79,6 +80,10 @@ const DYNAMIC_ROUTES: Record<string, Resolver> = {
     SETTINGS_SECTION_SLUGS.map((slug) => `/settings/${slug}`),
   "/admin/[section]": async () =>
     ADMIN_SECTION_SLUGS.map((slug) => `/admin/${slug}`),
+  // The first-admin server setup (1.49). The sweep's account is an admin, and
+  // a finished setup re-opens on any step from Admin, so every step renders.
+  "/onboarding/server/[step]": async () =>
+    SERVER_SETUP_STEP_IDS.map((step) => `/onboarding/server/${step}`),
   // `LAYOUT_GROUP_IDS` lives beside React components the test runner cannot
   // load; `settings/layout/[module]` 404s an unknown group, so a stale entry
   // here fails on the status check below rather than passing quietly. Mood

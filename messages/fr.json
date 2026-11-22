@@ -6532,7 +6532,7 @@
             "removeBody": "HealthLog cesse d'y récupérer quoi que ce soit et oublie le mot de passe. Ce qui a déjà été importé reste."
           }
         },
-        "subtitle": "Exportez vos données, ou importez des mesures et des entrées depuis d’autres applis et fichiers."
+        "subtitle": "Exportez vos données, ou importez mesures et entrées d’autres applis et fichiers."
       },
       "about": {
         "title": "À propos de cette app",

@@ -50,6 +50,24 @@ describe("<TabsList>", () => {
   });
 });
 
+describe("<Tabs> root", () => {
+  it("cannot widen the cell it stands in to the strip's labels", () => {
+    // The strip scrolls, but its min-content is still every label side by
+    // side. Without `min-w-0` on the root, a root in a grid or flex cell
+    // widened that cell to the labels (Cycle on a 390 px phone ran 10 px
+    // past the screen) instead of letting the strip scroll.
+    const html = renderToStaticMarkup(
+      <Tabs defaultValue="a">
+        <TabsList>
+          <TabsTrigger value="a">A</TabsTrigger>
+        </TabsList>
+      </Tabs>,
+    );
+    const root = html.match(/<div\b[^>]*data-slot="tabs"[^>]*>/)![0];
+    expect(root).toMatch(/\bmin-w-0\b/);
+  });
+});
+
 describe("<Tabs> paints as the segmented control", () => {
   const html = renderToStaticMarkup(
     <Tabs defaultValue="a">

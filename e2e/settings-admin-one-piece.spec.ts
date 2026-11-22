@@ -1,3 +1,8 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { locales } from "@/lib/i18n/config";
+
 import { expect, test } from "./setup/test";
 
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
@@ -275,6 +280,134 @@ async function measureListCards(page: import("@playwright/test").Page) {
     return out;
   });
 }
+
+/**
+ * The shells' explainers, as the locale bundles hold them: every Settings
+ * section, every Admin section, and the Admin landing.
+ */
+function shellExplainers(): Array<{
+  locale: string;
+  key: string;
+  text: string;
+}> {
+  const out: Array<{ locale: string; key: string; text: string }> = [];
+  for (const locale of locales) {
+    const bundle = JSON.parse(
+      readFileSync(join(process.cwd(), "messages", `${locale}.json`), "utf8"),
+    ) as {
+      settings?: { sections?: Record<string, { subtitle?: string }> };
+      admin?: {
+        subtitle?: string;
+        section?: Record<string, { subtitle?: string }>;
+      };
+    };
+    for (const [slug, entry] of Object.entries(
+      bundle.settings?.sections ?? {},
+    )) {
+      if (entry.subtitle)
+        out.push({
+          locale,
+          key: `settings.sections.${slug}`,
+          text: entry.subtitle,
+        });
+    }
+    for (const [slug, entry] of Object.entries(bundle.admin?.section ?? {})) {
+      if (entry.subtitle)
+        out.push({
+          locale,
+          key: `admin.section.${slug}`,
+          text: entry.subtitle,
+        });
+    }
+    if (bundle.admin?.subtitle)
+      out.push({ locale, key: "admin", text: bundle.admin.subtitle });
+  }
+  return out;
+}
+
+/**
+ * The one-line rule for every shipped locale, not only the two the sweeps
+ * below walk. Walking ten locales through forty routes would cost minutes, and
+ * the question is only how wide each sentence sets: so the explainer column
+ * is measured once, on a real page, and every locale's sentence is set beside
+ * it in the same computed font, with its own `lang` (the Cyrillic and Korean
+ * faces are not the Latin ones). A translation that runs past the column
+ * fails here by locale and key, before it wraps on somebody's screen.
+ */
+test("every locale's shell explainer fits one line at desktop width", async ({
+  page,
+}) => {
+  test.skip(
+    (page.viewportSize()?.width ?? 1280) < 768,
+    "the one-line rule holds at desktop width; a phone wraps by design",
+  );
+  await page.goto("/admin/services", { waitUntil: "domcontentloaded" });
+  const explainer = page
+    .locator('main [data-slot="page-header-row"]:visible > p')
+    .first();
+  await expect(explainer).toBeVisible({ timeout: 15_000 });
+  await settleBeforeMeasure(page, explainer);
+
+  const sentences = shellExplainers();
+  expect(sentences.length).toBeGreaterThan(locales.length * 20);
+  const result = await explainer.evaluate(async (p, items) => {
+    const column = p.clientWidth;
+    const computed = getComputedStyle(p);
+    const probe = document.createElement("div");
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.cssText =
+      "position:absolute;left:-10000px;top:0;visibility:hidden";
+    const spans = items.map((item) => {
+      const span = document.createElement("span");
+      span.lang = item.locale;
+      span.textContent = item.text;
+      span.style.display = "block";
+      span.style.width = "max-content";
+      span.style.whiteSpace = "nowrap";
+      for (const property of [
+        "font-family",
+        "font-size",
+        "font-weight",
+        "font-style",
+        "font-stretch",
+        "font-feature-settings",
+        "font-variation-settings",
+        "letter-spacing",
+        "word-spacing",
+        "text-transform",
+      ]) {
+        span.style.setProperty(property, computed.getPropertyValue(property));
+      }
+      probe.appendChild(span);
+      return span;
+    });
+    document.body.appendChild(probe);
+    // The unicode-range faces load on first use; measure once they have.
+    await document.fonts.ready;
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+    await document.fonts.ready;
+    const widths = spans.map((span) => span.getBoundingClientRect().width);
+    probe.remove();
+    return { column, widths };
+  }, sentences);
+
+  expect(result.column, "the explainer column was measured").toBeGreaterThan(
+    300,
+  );
+  const tooWide = sentences
+    .map((item, index) => ({ ...item, width: result.widths[index] }))
+    .filter((item) => item.width > result.column)
+    .map(
+      (item) =>
+        `${item.locale} ${item.key}: ${item.width.toFixed(0)}px of ${result.column}px — ${item.text}`,
+    );
+  expect(
+    tooWide,
+    "an explainer is wider than the column it sits in at desktop width",
+  ).toEqual([]);
+});
 
 for (const locale of ["en", "de"] as const) {
   test.describe(`one piece — ${locale}`, () => {
