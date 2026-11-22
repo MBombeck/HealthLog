@@ -241,13 +241,14 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
         "externalSource": null,
         "externalId": null,
-        "createdAt": "2026-05-01T11:52:01.000Z",
-        "updatedAt": "2026-05-01T11:53:01.000Z"
+        "createdAt": "2026-05-01T11:53:01.000Z",
+        "updatedAt": "2026-05-01T11:54:01.000Z"
       },
       {
         "id": "<id:8>",
@@ -279,13 +280,14 @@
         "atcCode": "rt-Medication-atcCode",
         "rxNormCode": "rt-Medication-rxNormCode",
         "noteEncrypted": "<sealed:v1:before breakfast, with water>",
+        "leafletUrl": "https://medicinesdatabase.be/human-use/medicines/12345/leaflet",
         "lowStockNotifiedAt": "2026-06-30T12:34:56.789Z",
         "lowStockNotifiedThresholdDays": 3,
         "reorderLeadDays": 3,
         "externalSource": "WEB",
         "externalId": "rt-Medication-externalId",
-        "createdAt": "2026-05-01T11:52:00.000Z",
-        "updatedAt": "2026-05-01T11:53:00.000Z"
+        "createdAt": "2026-05-01T11:53:00.000Z",
+        "updatedAt": "2026-05-01T11:54:00.000Z"
       }
     ],
     "MedicationSchedule": [
@@ -2665,6 +2667,7 @@
         }
       },
       "glucoseUnit": "mmol/L",
+      "medicineRegistry": "GB",
       "hasDiabetes": true,
       "labsLocalOcrEnabled": true,
       "storeWorkoutRoutes": true,

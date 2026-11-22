@@ -345,7 +345,7 @@
           "seizureTypes": 0,
           "seizureEvents": 0
         },
-        "accountSettingsApplied": 66,
+        "accountSettingsApplied": 67,
         "skipped": {
           "catalogueKeys": [],
           "links": 0
@@ -656,13 +656,14 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
         "externalSource": null,
         "externalId": null,
-        "createdAt": "2026-05-01T11:52:01.000Z",
-        "updatedAt": "2026-05-01T11:53:01.000Z"
+        "createdAt": "2026-05-01T11:53:01.000Z",
+        "updatedAt": "2026-05-01T11:54:01.000Z"
       },
       {
         "id": "<id:8>",
@@ -694,13 +695,14 @@
         "atcCode": "rt-Medication-atcCode",
         "rxNormCode": "rt-Medication-rxNormCode",
         "noteEncrypted": "<sealed:v1:before breakfast, with water>",
+        "leafletUrl": "https://medicinesdatabase.be/human-use/medicines/12345/leaflet",
         "lowStockNotifiedAt": "2026-06-30T12:34:56.789Z",
         "lowStockNotifiedThresholdDays": 3,
         "reorderLeadDays": 3,
         "externalSource": "WEB",
         "externalId": "rt-Medication-externalId",
-        "createdAt": "2026-05-01T11:52:00.000Z",
-        "updatedAt": "2026-05-01T11:53:00.000Z"
+        "createdAt": "2026-05-01T11:53:00.000Z",
+        "updatedAt": "2026-05-01T11:54:00.000Z"
       }
     ],
     "MedicationSchedule": [
@@ -3060,6 +3062,7 @@
         }
       },
       "glucoseUnit": "mmol/L",
+      "medicineRegistry": "GB",
       "hasDiabetes": true,
       "labsLocalOcrEnabled": true,
       "storeWorkoutRoutes": true,
@@ -3293,6 +3296,7 @@
       "locale": "fr",
       "unitPreference": "imperial",
       "glucoseUnit": "mmol/L",
+      "medicineRegistry": "GB",
       "timeFormat": "H12",
       "dateFormat": "DMY",
       "modulePreferencesJson": {
@@ -3563,7 +3567,7 @@
         "reorderLeadDays": 3,
         "externalSource": "WEB",
         "externalId": "rt-Medication-externalId",
-        "updatedAt": "2026-05-01T11:53:00.000Z",
+        "updatedAt": "2026-05-01T11:54:00.000Z",
         "categoryUpdatedAt": "2026-05-01T21:22:00.000Z",
         "name": "Round-trip tablet",
         "dose": "5 mg",
@@ -3573,7 +3577,8 @@
         "autoMarkTakenSince": "<now>",
         "category": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
         "noteEncrypted": "<sealed:v1:before breakfast, with water>",
-        "createdAt": "2026-05-01T11:52:00.000Z",
+        "leafletUrl": "https://medicinesdatabase.be/human-use/medicines/12345/leaflet",
+        "createdAt": "2026-05-01T11:53:00.000Z",
         "schedules": [
           {
             "id": "<id:7>",
@@ -3838,7 +3843,7 @@
         "reorderLeadDays": null,
         "externalSource": null,
         "externalId": null,
-        "updatedAt": "2026-05-01T11:53:01.000Z",
+        "updatedAt": "2026-05-01T11:54:01.000Z",
         "categoryUpdatedAt": null,
         "name": "Buccal midazolam",
         "dose": "10 mg",
@@ -3848,7 +3853,8 @@
         "autoMarkTakenSince": null,
         "category": "OTHER",
         "noteEncrypted": null,
-        "createdAt": "2026-05-01T11:52:01.000Z",
+        "leafletUrl": null,
+        "createdAt": "2026-05-01T11:53:01.000Z",
         "schedules": [],
         "sideEffects": [],
         "pauseEras": [],
