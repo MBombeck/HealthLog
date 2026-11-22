@@ -586,7 +586,6 @@ describe("a fan-out always names why it did not deliver", () => {
   const none = {
     anySuccess: false,
     deferred: 0,
-    covered: 0,
     guardianRelaySkipped: 0,
     unrouted: 0,
     lastFailureReason: undefined,
@@ -599,9 +598,6 @@ describe("a fan-out always names why it did not deliver", () => {
       "ok",
       "intake_sync_deferred_budget",
     ],
-    // The relay device whose recorded confirmation stands in for the sync:
-    // nothing was sent and nothing failed. This used to read `error`.
-    [{ ...none, covered: 1 }, "skipped", "intake_sync_covered_by_confirmation"],
     [{ ...none, deferred: 2 }, "skipped", "intake_sync_deferred_budget"],
     [
       { ...none, guardianRelaySkipped: 1 },
@@ -611,7 +607,7 @@ describe("a fan-out always names why it did not deliver", () => {
     [
       {
         ...none,
-        covered: 1,
+        deferred: 1,
         lastFailureReason: "relay_item_failed:apns_rejected",
       },
       "error",

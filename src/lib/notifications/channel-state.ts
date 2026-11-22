@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { auditLog } from "@/lib/auth/audit";
 import { getEvent } from "@/lib/logging/context";
+import { APNS_DEVICE_UNROUTED } from "@/lib/notifications/apns-idle-reasons";
 import {
   NO_RECIPIENT_COOLDOWN_MS,
   nextRetryAt,
@@ -173,13 +174,28 @@ export async function recordChannelNoRecipient(
   });
 }
 
-/** Pairing an iPhone ends a rest that was waiting for one. */
+/**
+ * The reasons an APNs channel rests for want of a device it can reach: no
+ * iPhone paired, or its sealed devices without a route.
+ */
+const APNS_WAITING_FOR_DEVICE = ["apns_no_devices", APNS_DEVICE_UNROUTED];
+
+/**
+ * A device registering with its APNs token ends a rest that was waiting for
+ * one: an iPhone paired, or one that comes back to bind to the relay again.
+ * (`POST /api/devices` calls this before it forwards the binding; a device
+ * that then does not bind rests the channel again at the next alert.)
+ */
 export async function endApnsNoDeviceRest(
   db: Pick<Prisma.TransactionClient, "notificationChannel">,
   userId: string,
 ): Promise<void> {
   await db.notificationChannel.updateMany({
-    where: { userId, type: "APNS", lastFailureReason: "apns_no_devices" },
+    where: {
+      userId,
+      type: "APNS",
+      lastFailureReason: { in: APNS_WAITING_FOR_DEVICE },
+    },
     data: { nextRetryAt: null, lastFailureReason: null },
   });
 }

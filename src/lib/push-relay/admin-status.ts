@@ -21,6 +21,9 @@ export const RELAY_DOCS_URL = "https://docs.healthlog.dev/guides/push-relay/";
 /** How far back the usage counts reach. */
 export const RELAY_USAGE_WINDOW_DAYS = 7;
 
+/** How far back the hand-off time reaches. */
+const RELAY_HANDOFF_WINDOW_HOURS = 24;
+
 /**
  * What this instance handed the relay in the window, from its own delivery
  * ledger (`push_relay_deliveries`): counts per outcome and the last failure,
@@ -63,15 +66,65 @@ async function relayUsage(now: Date) {
   };
 }
 
+/**
+ * How long a push took from being queued on this server until the relay
+ * answered `accepted`, over the pushes accepted in the window: the median
+ * and the 95th percentile in whole milliseconds, aggregate only. The relay
+ * answers `accepted` once Apple accepted the push, so the time covers this
+ * server's hand-off, the network and the relay's request to Apple.
+ * `retried` counts the pushes that waited for at least one retry here, whose
+ * time therefore includes this server's backoff.
+ *
+ * One aggregate over the ledger's accepted rows, which always answers with
+ * one row; the percentiles are null when it counted none. The start of the
+ * window is bound as a UTC string and cast to a zone-less timestamp, which
+ * is what `accepted_at` is, so the comparison does not depend on the time
+ * zone of the process or of the database session.
+ */
+async function relayHandoff(now: Date) {
+  const since = new Date(
+    now.getTime() - RELAY_HANDOFF_WINDOW_HOURS * 60 * 60 * 1000,
+  ).toISOString();
+  const [row] = await prisma.$queryRaw<
+    Array<{
+      count: number;
+      retried: number;
+      p50: number | null;
+      p95: number | null;
+    }>
+  >`
+    SELECT count(*)::int AS "count",
+           (count(*) FILTER (WHERE "attempts" > 0))::int AS "retried",
+           percentile_cont(0.5) WITHIN GROUP (ORDER BY "ms") AS "p50",
+           percentile_cont(0.95) WITHIN GROUP (ORDER BY "ms") AS "p95"
+      FROM (
+        SELECT "attempts",
+               (extract(epoch FROM "accepted_at" - "created_at") * 1000)::double precision AS "ms"
+          FROM "push_relay_deliveries"
+         WHERE "status" = 'accepted'
+           AND "accepted_at" >= ${since}::timestamp(3)
+      ) AS "accepted"`;
+  const whole = (ms: number | null) =>
+    ms === null ? null : Math.round(Number(ms));
+  return {
+    windowHours: RELAY_HANDOFF_WINDOW_HOURS,
+    count: row.count,
+    p50Ms: whole(row.p50),
+    p95Ms: whole(row.p95),
+    retried: row.retried,
+  };
+}
+
 export async function adminRelayStatus(now = new Date()) {
   const config = relayConfig();
-  const [row, stored, bound, consented, usage, unbindsPending, held] =
+  const [row, stored, bound, consented, usage, handoff, unbindsPending, held] =
     await Promise.all([
       config.available ? loadRegistration(config) : null,
       loadStoredRelayDecision(),
       prisma.device.count({ where: { relayState: "bound" } }),
       prisma.device.count({ where: { relayConsentAt: { not: null } } }),
       relayUsage(now),
+      relayHandoff(now),
       prisma.pushRelayUnbind.count(),
       prisma.pushRelayRegistration.findMany({
         where: { instanceId: { not: null } },
@@ -96,6 +149,7 @@ export async function adminRelayStatus(now = new Date()) {
     lastSuccessAt: row?.lastSuccessAt?.toISOString() ?? null,
     devices: { bound, consented },
     usage,
+    handoff,
     termsVersion: RELAY_TERMS_VERSION,
     // The terms text the operator accepted with the switch is older than the
     // current one: the card asks for the current text to be confirmed once.

@@ -1,13 +1,19 @@
 /**
  * A dose recorded on another surface reaches a relay-bound device as a
- * silent sync, whether or not the recorded-dose confirmation is on.
+ * silent sync, whether or not the recorded-dose confirmation is on, and
+ * whether or not that confirmation goes to the same device.
  *
  * The relay leg used to skip the silent sync whenever the flush carried a
  * recorded dose, on the assumption that the confirmation alert would trigger
- * the sync in the extension. The confirmation is opt-in and off by default
- * (on only for an account whose phone keeps its own reminders), so a pill
- * box take on a server without its own APNs key reached a server-reminded
- * device as neither: the widget and the app kept showing the dose as due.
+ * the sync in the extension. First for every account, so a pill box take on
+ * a server without its own APNs key reached a server-reminded device as
+ * neither; then only while the confirmation was on, which still left the
+ * device without its sync whenever the alert did not arrive. No push stands
+ * in for another now.
+ *
+ * The same file holds the other ways a dose that is answered could stay
+ * shown as due: a sync the relay drops, an end the relay did not take, and a
+ * slot the app names a few seconds off the stored one.
  *
  * And a Live Activity end over the relay that failed once (a relay outage
  * past the end's deadline) is sent again by the next flush. Its ref is fixed
@@ -207,7 +213,7 @@ function silentTypes(
 const settle = () => new Promise((r) => setTimeout(r, 400));
 
 describe("the intake sync's budget, audience and triggers", () => {
-  it("lets the confirmation stand in for the silent sync when it is on", async () => {
+  it("sends the silent sync beside the confirmation when it is on", async () => {
     const { instanceId } = await enableRelay();
     const user = await makeUser();
     const session = await makeSession(user);
@@ -239,32 +245,110 @@ describe("the intake sync's budget, audience and triggers", () => {
       body: { medicationName: "Ramipril", idempotencyKey: "box-2" },
     });
     expect(res.status).toBe(201);
+    // The alert and the sync are independent: an alert that does not arrive
+    // (it lives 15 minutes over the relay, and the person's settings may
+    // keep it from the extension) must not leave the device without the
+    // sync. This used to send the alert alone.
     await eventually(() => fake.apns.some((a) => a.pushClass === "alert"));
-    // The alert triggers the sync in the extension; a silent sync beside it
-    // would spend the relay's budget twice for one dose. The DATA_CHANGED
-    // wake that names `intakes` follows its own window.
-    await settle();
     const sender = await senderKey(session);
     const { pushKey } = registeredKeys;
-    expect(
-      silentTypes(TOKEN, pushKey, sender).filter(
+    await eventually(() =>
+      silentTypes(TOKEN, pushKey, sender).some(
         (p) => p.t === "MEDICATION_INTAKE_SYNC",
       ),
-    ).toHaveLength(0);
+    );
     expect(
       await prisma.pushWake.count({
         where: { kind: "MEDICATION_INTAKE_SYNC" },
       }),
-    ).toBe(0);
-    // Left out on purpose is not a failure: the flush used to record this as
-    // `error` / `intake_sync_failed`, which read as a broken relay.
-    const rows = await prisma.pushAttempt.findMany({
-      where: { userId: user.id, eventType: "MEDICATION_INTAKE_SYNC" },
-      select: { result: true, reason: true },
-    });
-    expect(rows).toEqual([
-      { result: "skipped", reason: "intake_sync_covered_by_confirmation" },
-    ]);
+    ).toBe(1);
+    await eventually(
+      async () =>
+        (await prisma.pushAttempt.count({
+          where: { userId: user.id, eventType: "MEDICATION_INTAKE_SYNC" },
+        })) === 1,
+    );
+    expect(
+      await prisma.pushAttempt.findMany({
+        where: { userId: user.id, eventType: "MEDICATION_INTAKE_SYNC" },
+        select: { result: true, reason: true },
+      }),
+    ).toEqual([{ result: "ok", reason: null }]);
+  });
+
+  it("owes the sync again when the relay drops it at its deadline", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const registered = await registerDevice(
+      session,
+      deviceBody(instanceId, TOKEN).body,
+    );
+    const deviceId = registered.data.id;
+    const prisma = getPrismaClient();
+    // The relay's own count says the device has had its silent pushes for
+    // this hour and more (its limit halves after a restart): the hint lies
+    // beyond the sync's one-hour lifetime.
+    fake.itemAnswer = (item) =>
+      item.class === "silent"
+        ? {
+            status: 429,
+            error: "device_quota",
+            scope: "device",
+            retryAfter: 7200,
+          }
+        : null;
+    const { queueMedicationIntakeSync } =
+      await import("@/lib/notifications/medication-intake-sync");
+    queueMedicationIntakeSync({ userId: user.id, originDeviceToken: null });
+    await eventually(
+      async () =>
+        (await prisma.pushDataChange.findUnique({ where: { deviceId } }))
+          ?.intakeSyncOwedAt != null,
+    );
+    expect(
+      await prisma.pushRelayDelivery.findMany({
+        where: { deviceId, eventType: "MEDICATION_INTAKE_SYNC" },
+        select: { status: true, reason: true },
+      }),
+    ).toEqual([{ status: "dropped", reason: "deadline" }]);
+    // Dropped is failed with the relay's code, never "waiting" (which the
+    // flush reads as sent).
+    await eventually(
+      async () =>
+        (await prisma.pushAttempt.count({
+          where: { userId: user.id, eventType: "MEDICATION_INTAKE_SYNC" },
+        })) === 1,
+    );
+    expect(
+      await prisma.pushAttempt.findMany({
+        where: { userId: user.id, eventType: "MEDICATION_INTAKE_SYNC" },
+        select: { result: true, reason: true },
+      }),
+    ).toEqual([{ result: "error", reason: "relay_item_failed:device_quota" }]);
+    expect(fake.apns.filter((a) => a.pushClass === "silent")).toHaveLength(0);
+
+    // While the relay still refuses, the minute pass tries and the sync
+    // stays owed: the pass must not settle what the outbox has just dropped.
+    const { flushDueDataChanges } =
+      await import("@/lib/push-relay/data-changed");
+    expect((await flushDueDataChanges(new Date())).owedSynced).toBe(1);
+    expect(
+      (await prisma.pushDataChange.findUniqueOrThrow({ where: { deviceId } }))
+        .intakeSyncOwedAt,
+    ).not.toBeNull();
+    expect(fake.apns.filter((a) => a.pushClass === "silent")).toHaveLength(0);
+
+    // The relay takes it again: the minute pass sends the owed sync, once.
+    fake.itemAnswer = null;
+    expect((await flushDueDataChanges(new Date())).owedSynced).toBe(1);
+    await eventually(() =>
+      fake.apns.some((a) => a.pushClass === "silent" && a.token === TOKEN),
+    );
+    expect(
+      (await prisma.pushDataChange.findUniqueOrThrow({ where: { deviceId } }))
+        .intakeSyncOwedAt,
+    ).toBeNull();
   });
 
   it("owes the sync past the silent budget and sends it once the hour frees up", async () => {
@@ -403,5 +487,289 @@ describe("the intake sync's budget, audience and triggers", () => {
     expect(dataChanged?.d).toMatchObject({
       domains: ["intakes", "medications"],
     });
+  });
+});
+
+/** A registered Activity of `deviceId`, with the statement its device signed. */
+async function registerActivity(args: {
+  deviceId: string;
+  instanceId: string;
+  binding: { seed: Buffer };
+  medicationId: string;
+  slotInstant: Date;
+  laToken: string;
+}) {
+  const statement = {
+    instanceId: args.instanceId,
+    tokenTag: tokenTagHex(TOKEN) as string,
+    laTokenTag: tokenTagHex(args.laToken) as string,
+    iat: Math.floor(Date.now() / 1000) - 60,
+  };
+  return getPrismaClient().liveActivityToken.create({
+    data: {
+      deviceId: args.deviceId,
+      pushToken: args.laToken,
+      medicationId: args.medicationId,
+      slotInstant: args.slotInstant,
+      activityStatement: statement,
+      activitySignature: signText(
+        args.binding.seed,
+        activityText({ host: RELAY_HOST, ...statement }),
+      ).toString("base64url"),
+    },
+  });
+}
+
+const endsFor = (laToken: string) =>
+  fake.apns.filter(
+    (a) => a.pushClass === "liveactivity" && a.token === laToken,
+  );
+
+describe("an answered dose leaves no Live Activity showing it as due", () => {
+  it("leaves the Activity of the device that recorded the dose to the app", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const { body, binding } = deviceBody(instanceId, TOKEN);
+    const registered = await registerDevice(session, body);
+    const deviceId = registered.data.id;
+    const prisma = getPrismaClient();
+    const medication = await prisma.medication.create({
+      data: { userId: user.id, name: "Ramipril", dose: "5 mg" },
+    });
+    const slot = new Date(Date.now() - 5 * 60_000);
+    await prisma.medicationIntakeEvent.create({
+      data: {
+        userId: user.id,
+        medicationId: medication.id,
+        scheduledFor: slot,
+        takenAt: new Date(),
+      },
+    });
+    const laToken = "7d".repeat(32);
+    const activity = await registerActivity({
+      deviceId,
+      instanceId,
+      binding,
+      medicationId: medication.id,
+      slotInstant: slot,
+      laToken,
+    });
+    // The device itself recorded the dose (`X-Device-Id`). The app runs
+    // there and ends its own Activity. A push from here would show the relay
+    // and Apple the moment of a dose recorded on the phone itself, which the
+    // consent text says they do not see.
+    const { queueMedicationIntakeSync } =
+      await import("@/lib/notifications/medication-intake-sync");
+    queueMedicationIntakeSync({
+      userId: user.id,
+      originDeviceToken: body.token,
+    });
+    await eventually(
+      async () =>
+        (await prisma.pushAttempt.count({
+          where: { userId: user.id, eventType: "MEDICATION_INTAKE_SYNC" },
+        })) === 1,
+    );
+    expect(
+      await prisma.pushAttempt.findMany({
+        where: { userId: user.id, eventType: "MEDICATION_INTAKE_SYNC" },
+        select: { result: true, reason: true },
+      }),
+    ).toEqual([{ result: "skipped", reason: "intake_sync_no_other_devices" }]);
+    await settle();
+    expect(fake.wire).toHaveLength(0);
+    // Nor does the five-minute pass end it later: it only sends again what
+    // the flush had decided to send.
+    const { retryLostActivityEnds } =
+      await import("@/lib/notifications/live-activity-answered");
+    expect(await retryLostActivityEnds()).toEqual({
+      retried: 0,
+      ended: 0,
+      failed: 0,
+    });
+    expect(fake.wire).toHaveLength(0);
+    expect(
+      await prisma.liveActivityToken.count({ where: { id: activity.id } }),
+    ).toBe(1);
+  });
+
+  it("sends an end the relay did not take again, and no other", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const { body, binding } = deviceBody(instanceId, TOKEN);
+    const deviceId = (await registerDevice(session, body)).data.id;
+    const prisma = getPrismaClient();
+    const medication = await prisma.medication.create({
+      data: { userId: user.id, name: "Ramipril", dose: "5 mg" },
+    });
+    const taken = new Date(Date.now() - 50 * 60_000);
+    const open = new Date(Date.now() - 10 * 60_000);
+    await prisma.medicationIntakeEvent.createMany({
+      data: [
+        {
+          userId: user.id,
+          medicationId: medication.id,
+          scheduledFor: taken,
+          takenAt: new Date(),
+        },
+        { userId: user.id, medicationId: medication.id, scheduledFor: open },
+      ],
+    });
+    const base = { deviceId, instanceId, binding, medicationId: medication.id };
+    const lostRow = (activityId: string, status: string, reason: string) =>
+      prisma.pushRelayDelivery.create({
+        data: {
+          deviceId,
+          ref: `end-${activityId}`,
+          pushClass: "liveactivity",
+          eventType: "LIVE_ACTIVITY_END",
+          expiresAt: new Date(Date.now() - 60_000),
+          status,
+          reason,
+        },
+      });
+    // Dropped past its deadline during a relay outage: its dose is taken.
+    const lost = await registerActivity({
+      ...base,
+      slotInstant: taken,
+      laToken: "8a".repeat(32),
+    });
+    await lostRow(lost.id, "dropped", "deadline");
+    // An end was lost for this one too, but its dose is open again (the take
+    // was undone): nothing to end.
+    const reopened = await registerActivity({
+      ...base,
+      slotInstant: open,
+      laToken: "8b".repeat(32),
+    });
+    await lostRow(reopened.id, "dropped", "deadline");
+    // Refused a minute ago: that one waits half an hour before the next try.
+    const refused = await registerActivity({
+      ...base,
+      slotInstant: new Date(taken.getTime() + 1000),
+      laToken: "8c".repeat(32),
+    });
+    await lostRow(refused.id, "failed", "activity_refused");
+    // No end was ever sent for this one: the pass leaves it alone.
+    const untouched = await registerActivity({
+      ...base,
+      slotInstant: new Date(taken.getTime() + 2000),
+      laToken: "8d".repeat(32),
+    });
+
+    const { retryLostActivityEnds } =
+      await import("@/lib/notifications/live-activity-answered");
+    expect(await retryLostActivityEnds()).toEqual({
+      retried: 1,
+      ended: 1,
+      failed: 0,
+    });
+    expect(endsFor("8a".repeat(32))).toHaveLength(1);
+    expect(
+      fake.apns.filter((a) => a.pushClass === "liveactivity"),
+    ).toHaveLength(1);
+    const left = await prisma.liveActivityToken.findMany({
+      where: { deviceId },
+      select: { id: true },
+    });
+    expect(left.map((r) => r.id).sort()).toEqual(
+      [reopened.id, refused.id, untouched.id].sort(),
+    );
+    // Half an hour on, the refused one is due as well.
+    expect(
+      await retryLostActivityEnds(new Date(Date.now() + 31 * 60_000)),
+    ).toMatchObject({ retried: 1, ended: 1 });
+    expect(endsFor("8c".repeat(32))).toHaveLength(1);
+    expect(endsFor("8d".repeat(32))).toHaveLength(0);
+  });
+
+  it("ends an Activity whose slot the app named a few seconds off", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const { body, binding } = deviceBody(instanceId, TOKEN);
+    const deviceId = (await registerDevice(session, body)).data.id;
+    const prisma = getPrismaClient();
+    const medication = await prisma.medication.create({
+      data: { userId: user.id, name: "Ramipril", dose: "5 mg" },
+    });
+    const slot = new Date(Date.now() - 20 * 60_000);
+    await prisma.medicationIntakeEvent.create({
+      data: {
+        userId: user.id,
+        medicationId: medication.id,
+        scheduledFor: slot,
+        skipped: true,
+      },
+    });
+    const base = { deviceId, instanceId, binding, medicationId: medication.id };
+    // Named from the app's own schedule, 30 seconds off: the same dose.
+    const near = await registerActivity({
+      ...base,
+      slotInstant: new Date(slot.getTime() + 30_000),
+      laToken: "9a".repeat(32),
+    });
+    // Two minutes off is another slot, and no dose of it is answered.
+    const far = await registerActivity({
+      ...base,
+      slotInstant: new Date(slot.getTime() + 120_000),
+      laToken: "9b".repeat(32),
+    });
+    const { queueMedicationIntakeSync } =
+      await import("@/lib/notifications/medication-intake-sync");
+    queueMedicationIntakeSync({ userId: user.id, originDeviceToken: null });
+    await eventually(() => endsFor("9a".repeat(32)).length === 1);
+    await eventually(
+      async () =>
+        (await prisma.liveActivityToken.count({ where: { id: near.id } })) ===
+        0,
+    );
+    await settle();
+    expect(endsFor("9b".repeat(32))).toHaveLength(0);
+    expect(
+      await prisma.liveActivityToken.count({ where: { id: far.id } }),
+    ).toBe(1);
+  });
+});
+
+describe("a device the relay has just bound", () => {
+  it("gets one sync at once, so its provisional binding becomes active", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    // The relay answers `provisional` for a new binding and removes it after
+    // two days without a push Apple accepted. A phone that plans its own
+    // reminders may get none for weeks.
+    fake.bindState = "provisional";
+    const registered = await registerDevice(
+      session,
+      deviceBody(instanceId, TOKEN).body,
+    );
+    expect(registered.data.push.relayState).toBe("bound");
+    await eventually(() =>
+      fake.apns.some((a) => a.pushClass === "silent" && a.token === TOKEN),
+    );
+    const prisma = getPrismaClient();
+    await eventually(
+      async () =>
+        (await prisma.pushAttempt.count({
+          where: { userId: user.id, reason: "relay_binding_activation" },
+        })) === 1,
+    );
+    expect(
+      await prisma.pushWake.count({
+        where: { deviceId: registered.data.id, kind: "MEDICATION_INTAKE_SYNC" },
+      }),
+    ).toBe(1);
+  });
+
+  it("gets none when the relay already holds the binding as active", async () => {
+    const { instanceId } = await enableRelay();
+    const session = await makeSession(await makeUser());
+    await registerDevice(session, deviceBody(instanceId, TOKEN).body);
+    await settle();
+    expect(fake.apns).toHaveLength(0);
   });
 });

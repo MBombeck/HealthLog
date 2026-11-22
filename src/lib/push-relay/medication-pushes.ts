@@ -19,6 +19,7 @@
  * the relay contract) is not ended over the relay.
  */
 import { prisma } from "@/lib/db";
+import { withBackgroundEvent } from "@/lib/logging/background";
 import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
 import { EVENT_DEFAULT_ENABLED } from "@/lib/notifications/types";
 import { fromBase64Url } from "@/lib/push-relay/encoding";
@@ -36,6 +37,10 @@ import {
   silentBudgetLeft,
   wakeableDevices,
 } from "@/lib/push-relay/wakes";
+import {
+  clearOwedIntakeSync,
+  oweIntakeSync,
+} from "@/lib/push-relay/owed-intake-sync";
 import { sendRelayItems } from "@/lib/push-relay/relay-send";
 
 const RECORDED_LIFETIME_S = 2 * 3600;
@@ -105,39 +110,29 @@ export function sendSealedIntakeRecorded(
 export interface IntakeSyncSendResult extends SealedSendResult {
   /** Devices the silent budget held back: owed, sent by the minute pass. */
   deferred: string[];
-  /**
-   * Relay devices skipped on purpose: the recorded confirmation in the same
-   * flush stands in for their silent sync. Not a failure.
-   */
-  covered: string[];
 }
 
 /**
- * Send the silent sync sealed. A relay device is skipped when the flush also
- * sends it the recorded confirmation (that alert triggers the sync in the
- * extension); `confirmationFor` names those devices, and is empty when the
- * confirmation is off for the account: it is opt-in, and the sync must not
- * depend on it. A device whose silent budget (`wakes.ts`) is spent is not
- * skipped but owed the sync: the minute pass sends it once the budget frees
- * up, one for however many changes arrived meanwhile.
+ * Send the silent sync sealed, to every routable device. It goes out on
+ * every dose change, also when the visible confirmation of the same change
+ * goes to the device: no push stands in for another, so a confirmation that
+ * does not arrive never leaves the device without its sync. A device whose
+ * silent budget (`wakes.ts`) is spent is not skipped but owed the sync: the
+ * minute pass sends it once the budget frees up, one for however many
+ * changes arrived meanwhile. A sync the relay then drops at its deadline is
+ * owed again (`relay-send.ts`).
  */
 export async function sendSealedIntakeSync(
   devices: RoutableDevice[],
   ctx: PushContext,
-  options: { confirmationFor: ReadonlySet<string> },
   now: Date = new Date(),
 ): Promise<IntakeSyncSendResult> {
   const message = intakeSyncMessage(now);
   const targets = [];
   const deferred: string[] = [];
-  const covered: string[] = [];
   for (const device of devices) {
     const route = routeOf(device, ctx);
     if (route !== "relay" && route !== "direct") continue;
-    if (route === "relay" && options.confirmationFor.has(device.id)) {
-      covered.push(device.id);
-      continue;
-    }
     if (!(await silentBudgetLeft(device, SYNC_EVENT, ctx, now))) {
       deferred.push(device.id);
       continue;
@@ -147,18 +142,7 @@ export async function sendSealedIntakeSync(
   if (deferred.length > 0) await oweIntakeSync(deferred, now);
   const sealed = await sendSealed(targets, ctx);
   await recordSilentPushes(SYNC_EVENT, sealed.handled, now);
-  return { ...sealed, deferred, covered };
-}
-
-/** Mark the sync owed to these devices (the first time it is owed stays). */
-async function oweIntakeSync(deviceIds: string[], now: Date): Promise<void> {
-  for (const deviceId of deviceIds) {
-    await prisma.$executeRaw`
-      INSERT INTO "push_data_changes" ("device_id", "intake_sync_owed_at", "updated_at")
-      VALUES (${deviceId}, ${now.toISOString()}::timestamp(3), ${now.toISOString()}::timestamp(3))
-      ON CONFLICT ("device_id") DO UPDATE SET
-        "intake_sync_owed_at" = COALESCE("push_data_changes"."intake_sync_owed_at", EXCLUDED."intake_sync_owed_at")`;
-  }
+  return { ...sealed, deferred };
 }
 
 /**
@@ -209,17 +193,23 @@ export async function flushOwedIntakeSyncs(
       : undefined;
     const route = device ? routeOf(device, ctx) : "none";
     if (!device || (route !== "relay" && route !== "direct")) {
-      await clearOwed(row.deviceId);
+      await clearOwedIntakeSync(row.deviceId);
       continue;
     }
     if (!(await silentBudgetLeft(device, SYNC_EVENT, ctx, now))) continue;
+    // Settled before the send, not after it: a sync the relay drops at once
+    // is owed again by the outbox (`relay-send.ts`), and clearing afterwards
+    // would wipe that.
+    await clearOwedIntakeSync(row.deviceId);
     const result = await sendSealed(
       [{ device, message: intakeSyncMessage(now), collapseKey: "intake-sync" }],
       ctx,
     );
     await recordSilentPushes(SYNC_EVENT, result.handled, now);
-    if (result.handled.length > 0) {
-      await clearOwed(row.deviceId);
+    if (result.handled.length === 0) {
+      // Nothing was handed over (the envelope could not be sealed): still owed.
+      await oweIntakeSync([row.deviceId], now);
+    } else {
       recordPushAttempt({
         userId,
         channel: "APNS",
@@ -236,11 +226,82 @@ export async function flushOwedIntakeSyncs(
   return sent;
 }
 
-async function clearOwed(deviceId: string): Promise<void> {
-  await prisma.pushDataChange.updateMany({
-    where: { deviceId },
-    data: { intakeSyncOwedAt: null },
-  });
+/** The ledger reason of the sync that activates a binding. */
+const BINDING_ACTIVATION_REASON = "relay_binding_activation";
+
+/**
+ * The first push to a device the relay has just bound: one silent intake
+ * sync, at once.
+ *
+ * The relay holds a new binding as `provisional` and makes it `active` only
+ * once Apple accepted a push for it. A binding still provisional more than
+ * two days after it was made is removed, and so is an instance none of whose
+ * pushes Apple ever accepted, with every binding it has (`spec/protocol.md`,
+ * "Retention"). Neither tells this server: the next push answers
+ * `404 binding_unknown` or `401 unknown_instance` and is lost, and the device
+ * has to bind again, which starts the two days anew. A phone that plans its
+ * own reminders, on an account nobody records for on the web, may get no push
+ * for weeks; its binding was gone long before the first dose confirmation or
+ * security alert was due. A provisional binding also gets no Live Activity
+ * push at all (`403 activity_refused`).
+ *
+ * Apple's acceptance of this sync makes the binding active and marks the
+ * instance as delivering. The app is in the foreground registering at that
+ * moment; reading its doses once more costs it nothing, and the push carries
+ * no data. It is a sync like any other: it counts against the device's
+ * silent budget, and one the budget holds back or the relay drops is owed
+ * and sent by the minute pass, so the activation is retried. What the relay
+ * sees is a silent push at the moment it bound the device, which tells it
+ * nothing it did not know.
+ *
+ * Never throws: the registration that bound the device has answered.
+ */
+export async function activateRelayBinding(
+  userId: string,
+  deviceId: string,
+): Promise<void> {
+  try {
+    await withBackgroundEvent(
+      "notification.relay_binding.activate",
+      async (evt) => {
+        // The account's own gates: no push for an account pending deletion
+        // or with its APNs channel switched off.
+        const device = (await wakeableDevices(userId)).find(
+          (d) => d.id === deviceId,
+        );
+        const ctx = await loadPushContext();
+        if (!device || routeOf(device, ctx) !== "relay") {
+          evt.addMeta("relay_binding_activation", "no_route");
+          return;
+        }
+        const sent = await sendSealedIntakeSync([device], ctx);
+        const owed = sent.deferred.length > 0;
+        const handed = sent.anyAccepted || sent.waiting;
+        evt.addMeta(
+          "relay_binding_activation",
+          sent.anyAccepted
+            ? "accepted"
+            : sent.waiting
+              ? "waiting"
+              : owed
+                ? "owed"
+                : (sent.lastFailure ?? "not_sent"),
+        );
+        recordPushAttempt({
+          userId,
+          channel: "APNS",
+          eventType: SYNC_EVENT,
+          result: handed ? "ok" : owed ? "skipped" : "error",
+          reason:
+            handed || owed
+              ? BINDING_ACTIVATION_REASON
+              : (sent.lastFailure ?? "intake_sync_nothing_sent"),
+        });
+      },
+    );
+  } catch {
+    // Best effort: the binding stands, and the next sync activates it.
+  }
 }
 
 export interface RelayActivityRow {

@@ -147,7 +147,7 @@ describe("relay wire metadata", () => {
     const { sendRelayTestPush } = await import("@/lib/push-relay/test-push");
     expect((await sendRelayTestPush(admin.id)).outcome).toBe("accepted");
 
-    await sendSealedIntakeSync([device], ctx, { confirmationFor: new Set() });
+    await sendSealedIntakeSync([device], ctx);
     const { sendWake } = await import("@/lib/push-relay/wakes");
     await sendWake(
       "DATA_CHANGED",

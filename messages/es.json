@@ -9642,6 +9642,17 @@
         "lastSuccess": "Última entrega {time}.",
         "lastFailure": "Último fallo {time}: {reason}.",
         "noReason": "sin motivo indicado"
+      },
+      "handoff": {
+        "title": "Tiempo de entrega al relé, últimas {hours} h",
+        "median": "Mediana",
+        "p95": "Percentil 95",
+        "pushes": "Notificaciones",
+        "retried": "Con reintento",
+        "milliseconds": "{value} ms",
+        "seconds": "{value} s",
+        "empty": "Ninguna notificación push {hours, plural, =1 {en la última hora} other {en las últimas # horas}}",
+        "helper": "Desde que entra en la cola de este servidor hasta la respuesta del relé. El relé responde cuando Apple ha aceptado la notificación."
       }
     },
     "serverSetup": {

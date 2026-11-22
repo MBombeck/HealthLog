@@ -265,7 +265,9 @@ describe("POST /api/devices", () => {
       where: {
         userId: "user-1",
         type: "APNS",
-        lastFailureReason: "apns_no_devices",
+        // A device that registers ends the rest of a channel that waited
+        // for one: none paired, or none with a route.
+        lastFailureReason: { in: ["apns_no_devices", "apns_device_unrouted"] },
       },
       data: { nextRetryAt: null, lastFailureReason: null },
     });

@@ -11,12 +11,15 @@
  *
  * The relay's answer maps onto `Device.relayState`, which the app reads on
  * `/api/auth/me`: `bound`, `conflict` (the relay sent the device a challenge
- * push to answer directly), `rebind_needed` (a fresh statement is needed),
- * `none`. Nothing the relay answers here deletes the device row.
+ * push to answer directly), `rebind_needed` (a fresh statement is needed:
+ * the old one is stale, or the relay could not take the binding just now),
+ * `none` (the relay refused it for good). Nothing the relay answers here
+ * deletes the device row.
  */
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { activateRelayBinding } from "@/lib/push-relay/medication-pushes";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { tokenTagHex } from "@/lib/push-relay/encoding";
 import { bindText, verifyEncoded } from "@/lib/push-relay/statements";
@@ -94,6 +97,10 @@ export function stateAfterBind(
   if (status === null || (status === 401 && error === "stale_timestamp")) {
     return "rebind_needed";
   }
+  // The relay is busy, paused or over a limit for now (`429`, `503`): the
+  // binding is worth another try, and only a fresh statement can make it.
+  // `none` reads as "not available" in the app and ended the attempt.
+  if (status === 429 || status === 503) return "rebind_needed";
   return "none";
 }
 
@@ -108,6 +115,7 @@ export async function forwardBinding(
   const device = await prisma.device.findUnique({
     where: { id: deviceId },
     select: {
+      userId: true,
       apnsToken: true,
       apnsEnvironment: true,
       relayBindingKey: true,
@@ -171,6 +179,11 @@ export async function forwardBinding(
   // would remove the binding just made.
   if (state === "bound") {
     await prisma.pushRelayUnbind.deleteMany({ where: { token } });
+    // A binding the relay holds as provisional is removed after two days
+    // unless Apple accepted a push for it: send that push now.
+    if (result.kind === "response" && result.body?.state === "provisional") {
+      void activateRelayBinding(device.userId, deviceId);
+    }
   }
   return state;
 }

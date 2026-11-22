@@ -9642,6 +9642,17 @@
         "lastSuccess": "Laatst bezorgd {time}.",
         "lastFailure": "Laatste fout {time}: {reason}.",
         "noReason": "geen reden opgegeven"
+      },
+      "handoff": {
+        "title": "Overdrachtstijd, afgelopen {hours} u",
+        "median": "Mediaan",
+        "p95": "95e percentiel",
+        "pushes": "Pushberichten",
+        "retried": "Opnieuw geprobeerd",
+        "milliseconds": "{value} ms",
+        "seconds": "{value} s",
+        "empty": "Geen pushberichten in de afgelopen {hours, plural, one {# uur} other {# uur}}",
+        "helper": "Van het in de wachtrij zetten op deze server tot het antwoord van de relay. De relay antwoordt zodra Apple het pushbericht heeft aangenomen."
       }
     },
     "serverSetup": {

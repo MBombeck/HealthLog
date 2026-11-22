@@ -9642,6 +9642,17 @@
         "lastSuccess": "Ostatnio dostarczono {time}.",
         "lastFailure": "Ostatni błąd {time}: {reason}.",
         "noReason": "bez podanej przyczyny"
+      },
+      "handoff": {
+        "title": "Czas przekazania, ostatnie {hours} h",
+        "median": "Mediana",
+        "p95": "95. percentyl",
+        "pushes": "Powiadomienia",
+        "retried": "Z ponowną próbą",
+        "milliseconds": "{value} ms",
+        "seconds": "{value} s",
+        "empty": "Brak powiadomień push w ciągu {hours, plural, one {ostatniej # godziny} few {ostatnich # godzin} many {ostatnich # godzin} other {ostatnich # godziny}}",
+        "helper": "Od dodania do kolejki na tym serwerze do odpowiedzi przekaźnika. Przekaźnik odpowiada, gdy Apple przyjmie powiadomienie."
       }
     },
     "serverSetup": {

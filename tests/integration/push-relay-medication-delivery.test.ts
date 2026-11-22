@@ -62,10 +62,16 @@ vi.mock("@parse/node-apn", () => {
   return { default: { Provider, Notification }, Provider, Notification };
 });
 
+import type { EventType } from "@/lib/notifications/types";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { callRoute } from "../kit/call-route";
 import { makeSession, makeUser } from "../kit/factories";
-import { bindDevice, enableRelay } from "./push-relay-kit";
+import {
+  bindDevice,
+  deviceBody,
+  enableRelay,
+  registerDevice,
+} from "./push-relay-kit";
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -365,6 +371,146 @@ describe("the relay and the server's own APNs key select the same devices", () =
       expect(directFollowUp, why).toEqual(ALL);
       expect(relayFollowUp, why).toEqual(directDose);
     }
+  });
+});
+
+describe("an event the relay does not carry leaves the channel alone", () => {
+  async function dispatch(
+    userId: string,
+    eventType: EventType,
+    metadata: Record<string, unknown> = {},
+  ) {
+    const { dispatchNotification } =
+      await import("@/lib/notifications/dispatcher");
+    return dispatchNotification({
+      userId,
+      eventType,
+      title: "HealthLog",
+      message: "Something for you",
+      metadata,
+    });
+  }
+
+  async function apnsChannel(userId: string) {
+    return getPrismaClient().notificationChannel.findUniqueOrThrow({
+      where: { userId_type: { userId, type: "APNS" } },
+      select: { nextRetryAt: true, lastFailureReason: true, enabled: true },
+    });
+  }
+
+  const attempts = (userId: string, eventType: string) =>
+    getPrismaClient().pushAttempt.findMany({
+      where: { userId, eventType, channel: "APNS" },
+      select: { result: true, reason: true },
+    });
+
+  /** The ledger row is written without being awaited. */
+  async function attemptsOnceWritten(userId: string, eventType: string) {
+    for (let i = 0; i < 80; i++) {
+      const rows = await attempts(userId, eventType);
+      if (rows.length > 0) return rows;
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    return [];
+  }
+
+  /** Both events are for the APNs channel, whatever their defaults say. */
+  async function enableOnApns(userId: string, eventTypes: string[]) {
+    const prisma = getPrismaClient();
+    const channel = await prisma.notificationChannel.findUniqueOrThrow({
+      where: { userId_type: { userId, type: "APNS" } },
+      select: { id: true },
+    });
+    await prisma.notificationPreference.createMany({
+      data: eventTypes.map((eventType) => ({
+        channelId: channel.id,
+        eventType,
+        enabled: true,
+      })),
+    });
+  }
+
+  it("sends the next alert after a reminder the phone plans itself", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const token = tokenFor(3);
+    await bindDevice(instanceId, token, session);
+    await enableOnApns(user.id, ["MOOD_REMINDER", "SECURITY_ALERT"]);
+    fake.apns.length = 0;
+
+    // The app plans its mood reminder itself: the relay carries none. On a
+    // server without its own APNs key this used to answer "APNs not
+    // configured", which rests the channel for an hour.
+    const mood = await dispatch(user.id, "MOOD_REMINDER");
+    expect(mood.dispatched).toBe(false);
+    expect(fake.apns).toHaveLength(0);
+    expect(await attemptsOnceWritten(user.id, "MOOD_REMINDER")).toEqual([
+      { result: "skipped", reason: "apns_event_not_carried" },
+    ]);
+    expect((await apnsChannel(user.id)).nextRetryAt).toBeNull();
+
+    // The same for the follow-up of a dose still open, on a phone that
+    // reminds itself: on by default, so this is the one that bit.
+    await remind(user.id, true);
+    expect(fake.apns).toHaveLength(0);
+    expect(await attemptsOnceWritten(user.id, "MEDICATION_REMINDER")).toEqual([
+      { result: "skipped", reason: "apns_event_not_carried" },
+    ]);
+    expect((await apnsChannel(user.id)).nextRetryAt).toBeNull();
+
+    // So the alert that is for the relay goes out right after it.
+    const alert = await dispatch(user.id, "SECURITY_ALERT", {
+      securityKind: "new_device",
+    });
+    expect(alert.dispatched).toBe(true);
+    expect(
+      fake.apns.filter((a) => a.pushClass === "alert" && a.token === token),
+    ).toHaveLength(1);
+  });
+
+  it("rests only while no device has a route, and goes on when one binds", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const token = tokenFor(4);
+    const { body } = deviceBody(instanceId, token);
+    const bound = await registerDevice(session, body);
+    expect(bound.data.push.relayState).toBe("bound");
+    await enableOnApns(user.id, ["SECURITY_ALERT"]);
+    fake.apns.length = 0;
+    const prisma = getPrismaClient();
+    // The relay forgot the binding: the device has to bind again.
+    await prisma.device.update({
+      where: { id: bound.data.id },
+      data: { relayState: "rebind_needed", relayBoundAt: null },
+    });
+
+    const lost = await dispatch(user.id, "SECURITY_ALERT", {
+      securityKind: "new_device",
+    });
+    expect(lost.dispatched).toBe(false);
+    expect(await attemptsOnceWritten(user.id, "SECURITY_ALERT")).toEqual([
+      { result: "skipped", reason: "apns_device_unrouted" },
+    ]);
+    const resting = await apnsChannel(user.id);
+    expect(resting.lastFailureReason).toBe("apns_device_unrouted");
+    expect(resting.nextRetryAt).not.toBeNull();
+    expect(resting.enabled).toBe(true);
+
+    // The app comes back and binds again, with the key it holds: the rest
+    // ends with it, not an hour later.
+    const again1 = await registerDevice(session, body);
+    expect(again1.data.push.relayState).toBe("bound");
+    expect((await apnsChannel(user.id)).nextRetryAt).toBeNull();
+    fake.apns.length = 0;
+    const again = await dispatch(user.id, "SECURITY_ALERT", {
+      securityKind: "passkey_added",
+    });
+    expect(again.dispatched).toBe(true);
+    expect(
+      fake.apns.filter((a) => a.pushClass === "alert" && a.token === token),
+    ).toHaveLength(1);
   });
 });
 

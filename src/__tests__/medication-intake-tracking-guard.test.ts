@@ -97,7 +97,7 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
     "folds duplicate rows of doses already recorded",
   "lib/doctor-report/collect-medications.ts":
     "the report's administration ledger lists recorded doses; collect.ts gates rates via expectsDoses",
-  "lib/notifications/medication-intake-sync.ts":
+  "lib/notifications/live-activity-answered.ts":
     "whether the slot a Live Activity shows was answered, to end it, no rate; open doses come from openActivityDoses, which filters by tracking",
   "lib/medications/ingredients/recompute.ts":
     "sums the nutrients of doses that were taken; a recorded dose counts whatever the switch says",

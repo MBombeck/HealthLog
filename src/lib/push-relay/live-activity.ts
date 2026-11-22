@@ -48,6 +48,10 @@ import { resolveDosesByRow } from "@/lib/medications/dose-state/today";
 import type { ResolvedDose } from "@/lib/medications/dose-state/resolve";
 import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import {
+  activitySlotWindow,
+  sameActivitySlot,
+} from "@/lib/push-relay/activity-slot";
 import { liveActivityRelayEnabled } from "@/lib/push-relay/config";
 import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
 import { fromBase64Url } from "@/lib/push-relay/encoding";
@@ -376,7 +380,13 @@ async function doseAt(
   now: Date,
 ): Promise<ActivityDose | null> {
   const row = await prisma.medicationIntakeEvent.findFirst({
-    where: { userId, medicationId, scheduledFor: slot, deletedAt: null },
+    where: {
+      userId,
+      medicationId,
+      scheduledFor: activitySlotWindow(slot),
+      deletedAt: null,
+    },
+    orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
     select: DOSE_ROW_SELECT,
   });
   if (!row) return null;
@@ -463,7 +473,8 @@ async function startItem(
   const running = device.liveActivities.some(
     (a) =>
       a.medicationId === dose.medicationId &&
-      (a.slotInstant === null || a.slotInstant.getTime() === slot),
+      (a.slotInstant === null ||
+        sameActivitySlot(a.slotInstant, dose.scheduledFor)),
   );
   if (running) return null;
   return {
@@ -529,7 +540,9 @@ async function updateItems(
       activity.slotInstant,
       now,
     );
-    // Taken and skipped end the Activity on their own path.
+    // Taken and skipped end the Activity on their own paths: the intake
+    // flush at once, and this job's retry of an end the relay did not take
+    // (`notifications/live-activity-answered.ts`).
     if (
       !dose ||
       dose.resolved.state === "taken" ||

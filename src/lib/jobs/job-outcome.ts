@@ -248,6 +248,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "provider",
   "push_data_changed_flushed",
   "push_live_activity_devices",
+  "push_live_activity_ended",
   "push_live_activity_started",
   "push_live_activity_updated",
   "push_relay_instance_key_rotated",

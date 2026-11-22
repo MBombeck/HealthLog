@@ -13,6 +13,10 @@ import { resolveEventDefault } from "@/lib/notifications/event-defaults";
 import { sendViaTelegram } from "@/lib/notifications/senders/telegram";
 import { sendViaNtfy } from "@/lib/notifications/senders/ntfy";
 import { sendViaWebPush } from "@/lib/notifications/senders/web-push";
+import {
+  APNS_DEVICE_UNROUTED,
+  APNS_EVENT_NOT_CARRIED,
+} from "@/lib/notifications/apns-idle-reasons";
 import { sendApnsChannel } from "@/lib/push-relay/apns-channel";
 import { sendViaWebhook } from "@/lib/notifications/senders/webhook";
 import { sendViaEmail } from "@/lib/notifications/senders/email";
@@ -61,9 +65,46 @@ const NO_RECIPIENT_REASONS: ReadonlySet<string> = new Set([
   "web_push_vapid_not_configured",
   "apns_no_devices",
   "apns_not_configured",
+  APNS_DEVICE_UNROUTED,
   "email_no_recipient",
   "email_not_configured",
 ]);
+
+/**
+ * Sender outcomes that mean the event was none for this channel: nothing was
+ * due there, by design. The sender writes a `skipped` ledger row. Unlike a
+ * missing recipient this says nothing about the channel, so it neither
+ * counts as an attempt nor rests the channel: the next event that is for it
+ * goes out.
+ */
+const NOT_FOR_CHANNEL_REASONS: ReadonlySet<string> = new Set([
+  APNS_EVENT_NOT_CARRIED,
+]);
+
+/**
+ * Whether a send that did not succeed went nowhere by design, and what that
+ * does to the channel: an event that was none for it leaves it alone, a
+ * missing recipient rests it. False for a real failure.
+ */
+async function wentNowhere(
+  ref: { id: string; userId: string; type: ChannelType },
+  outcome: SendOutcome,
+  now: Date,
+): Promise<boolean> {
+  if (!outcome.reason) return false;
+  if (NOT_FOR_CHANNEL_REASONS.has(outcome.reason)) {
+    getEvent()?.addMeta(
+      `notification_skip_${ref.type.toLowerCase()}_not_for_channel`,
+      outcome.reason,
+    );
+    return true;
+  }
+  if (NO_RECIPIENT_REASONS.has(outcome.reason)) {
+    await recordChannelNoRecipient(ref, outcome.reason, now);
+    return true;
+  }
+  return false;
+}
 
 /**
  * Dispatch a notification to all enabled channels for a user.
@@ -429,9 +470,8 @@ export async function dispatchNotification(
           continue;
         }
 
-        if (outcome.reason && NO_RECIPIENT_REASONS.has(outcome.reason)) {
+        if (await wentNowhere(ref, outcome, now)) {
           channelsAttempted -= 1; // nothing went anywhere
-          await recordChannelNoRecipient(ref, outcome.reason, now);
           continue;
         }
 
