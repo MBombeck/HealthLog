@@ -37,7 +37,8 @@ import { hashToken } from "@/lib/auth/hmac";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { moodDateKey } from "@/lib/mood/date-key";
-import { checkUrlCredentialSurface, HOUR_MS } from "@/lib/http/url-credential";
+import { checkUrlCredentialSurface } from "@/lib/http/url-credential";
+import { MS_PER_HOUR } from "@/lib/time-constants";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
@@ -119,7 +120,7 @@ export async function readEmergencyCardByToken(
   const recorded = await checkRateLimit(
     `emergency-card:audit:${link.id}:${surface.ip ?? "unknown"}`,
     AUDIT_LIMIT_PER_HOUR,
-    HOUR_MS,
+    MS_PER_HOUR,
   );
   if (recorded.allowed) {
     await prisma.emergencyCardLink.update({
