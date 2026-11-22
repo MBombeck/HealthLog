@@ -5429,7 +5429,9 @@
       "aiOptional": "KI ist optional. Alles hier funktioniert auch ohne.",
       "aiSetupCta": "KI einrichten",
       "relayOptional": "Die iPhone-App kann Benachrichtigungen dieses Servers über das optionale HealthLog-Push-Relay bekommen, das aus bleibt, bis du es einschaltest.",
-      "relaySetupCta": "Push-Relay-Einstellungen"
+      "relaySetupCta": "Push-Relay-Einstellungen",
+      "serverSetup": "Die Einrichtung dieses Servers ist noch offen: Registrierung, Benachrichtigungen, KI und Datenschutz.",
+      "serverSetupCta": "Server einrichten"
     },
     "welcomeBack": {
       "title": "Willkommen zurück",
@@ -5456,10 +5458,12 @@
       "medication": "Medikamente",
       "sources": "Woher die Werte kommen",
       "visit": "Arztbesuch",
-      "units": "Einheiten",
+      "units": "Region & Einheiten",
       "confirm": "Bestätigen",
       "first-result": "Erstes Ergebnis",
-      "done": "Fertig"
+      "done": "Fertig",
+      "reminders": "Erinnerungen",
+      "ai": "Coach"
     },
     "flow": {
       "welcome": {
@@ -5469,7 +5473,9 @@
         "setUp": "Einrichten",
         "skip": "Vorerst überspringen",
         "againBody": "Deine Einrichtung ist abgeschlossen. Beantworte die Fragen erneut, um zu ändern, was HealthLog zuerst zeigt, oder geh zum Dashboard.",
-        "setUpAgain": "Erneut einrichten"
+        "setUpAgain": "Erneut einrichten",
+        "serverSetup": "Du betreibst diesen Server. Seine eigene Einrichtung ist ein eigener kurzer Durchgang, vor oder nach deiner.",
+        "serverSetupCta": "Server einrichten"
       },
       "who": {
         "title": "Für wen ist diese Akte?",
@@ -5540,14 +5546,16 @@
         }
       },
       "units": {
-        "title": "Welche Einheiten verwendest du?",
-        "body": "Werte werden einmal gespeichert und in der Einheit angezeigt, die du wählst. Du kannst sie später unter Einstellungen ändern.",
+        "title": "Deine Region und Einheiten",
+        "body": "Dein Tag und deine Erinnerungszeiten richten sich nach der Zeitzone. Werte werden einmal gespeichert und in der Einheit angezeigt, die du wählst. Du kannst alles später unter Einstellungen ändern.",
         "glucoseLegend": "Blutzucker",
         "weightLegend": "Gewicht und Größe",
         "options": {
           "metric": "kg und cm",
           "imperial": "lb und ft/in"
-        }
+        },
+        "timezoneHint": "Aus diesem Konto übernommen. Dein Tag, deine Diagramme und deine Erinnerungen richten sich danach.",
+        "registryLegend": "Arzneimittelregister für Beipackzettel"
       },
       "confirm": {
         "title": "Das schalten deine Antworten ein",
@@ -5643,6 +5651,30 @@
         "tourCta": "Kurze Tour machen",
         "openRecord": "Akte von {name} öffnen",
         "createProfile": "Profil für die Person anlegen, um die du dich kümmerst"
+      },
+      "reminders": {
+        "title": "Wo sollen dich Erinnerungen erreichen?",
+        "body": "So kann dich dieser Server erreichen. Richte einen Weg ein, mehrere oder vorerst keinen.",
+        "app": "Du nutzt die iPhone-App? Sie bringt eigene Erinnerungen mit, du kannst diesen Schritt also überspringen."
+      },
+      "ai": {
+        "title": "Den Coach nutzen?",
+        "body": "Der Coach beantwortet Fragen zu deinen Werten mit einem KI-Modell.",
+        "whereServer": "Wenn du etwas fragst, gehen deine Frage und die nötigen Werte über das Konto dieses Servers an {providers}.",
+        "whereOwn": "Wenn du etwas fragst, gehen deine Frage und die nötigen Werte an den KI-Dienst, den du mit deinem eigenen Schlüssel eingerichtet hast.",
+        "whereLocal": "Wenn du etwas fragst, gehen deine Frage und die nötigen Werte an das Modell, das du selbst betreibst.",
+        "whereNone": "Für dich ist noch kein KI-Dienst eingerichtet, der Coach kann also noch nicht antworten.",
+        "setUp": "KI einrichten",
+        "nothingUntilAsked": "Bevor du fragst, wird nichts gesendet.",
+        "options": {
+          "yes": "Ja, Coach nutzen",
+          "no": "Nein, ausschalten"
+        },
+        "hints": {
+          "yes": "Du kannst ihn jederzeit zu deinen Werten fragen.",
+          "no": "Der Coach verschwindet. Alles andere funktioniert wie bisher."
+        },
+        "later": "Du kannst das jederzeit unter Einstellungen, KI ändern."
       }
     }
   },
@@ -9468,6 +9500,117 @@
         "inviteRequired": "Dieses Relay nimmt neue Server nur auf Einladung auf. Gib einen Einladungscode ein.",
         "inviteRejected": "Das Relay hat diesen Einladungscode nicht angenommen. Er ist vielleicht abgelaufen oder schon benutzt. Lass dir einen neuen geben und gib ihn ein.",
         "registrationPaused": "Das Relay nimmt gerade keine neuen Server auf. Dieser Server fragt später von selbst wieder an."
+      }
+    },
+    "serverSetup": {
+      "stepsLabel": "Schritte der Server-Einrichtung",
+      "finish": "Fertig",
+      "steps": {
+        "accounts": "Konten",
+        "notifications": "Benachrichtigungen",
+        "ai": "KI",
+        "privacy": "Datenschutz",
+        "health": "Prüfung"
+      },
+      "notice": {
+        "title": "Diesen Server einrichten",
+        "body": "Fünf kurze Schritte für die Entscheidungen, die nur du hier treffen kannst: wer sich registrieren darf, wie Benachrichtigungen den Server verlassen, was KI darf und was sonst noch hinausgeht. Jeder Schritt lässt sich überspringen und später ändern.",
+        "open": "Einrichtung starten",
+        "dismiss": "Nicht jetzt"
+      },
+      "accounts": {
+        "title": "Wer diesen Server nutzen kann",
+        "body": "Lege fest, ob sich Leute selbst registrieren können und ob jedes Konto einen zweiten Faktor braucht.",
+        "invites": "Bei geschlossener Registrierung kommen Leute weiterhin mit einem Einladungslink dazu.",
+        "invitesLink": "Einladung erstellen"
+      },
+      "notifications": {
+        "title": "Wie Benachrichtigungen den Server verlassen",
+        "body": "Wähle, welche Kanäle die Leute nutzen dürfen. Das Push-Relay für die App aus dem App Store bleibt aus, bis du es einschaltest."
+      },
+      "ai": {
+        "title": "Was KI darf",
+        "body": "KI ist optional. HealthLog funktioniert vollständig ohne.",
+        "off": "Aus: Nichts geht an einen KI-Dienst.",
+        "ownKey": "Eigene Schlüssel: Die Fragen einer Person und die nötigen Werte gehen an den Anbieter, den diese Person eingerichtet hat.",
+        "serverKey": "Schlüssel dieses Servers: Fragen und Werte gehen an den Anbieter, den du hier einträgst, und jede Person wird vorher um ihre Einwilligung gebeten.",
+        "local": "Lokales Modell: Alles bleibt bei dem Modell, auf das die Person zeigt, in deinem eigenen Netz.",
+        "docs": "So funktionieren die KI-Anbieter"
+      },
+      "privacy": {
+        "title": "Was sonst noch den Server verlässt",
+        "body": "Neben Benachrichtigungen und KI können drei Dinge Daten nach außen senden. Jedes entscheidest du.",
+        "geoTitle": "Anmeldeorte",
+        "geoDescription": "Wie der Ort einer Anmeldung aus ihrer IP-Adresse ermittelt wird.",
+        "geoBody": "Mit eingebundenen GeoLite2-Datenbanken geschieht die Zuordnung auf diesem Server. Ohne sie wird jede Anmeldeadresse an einen Online-Dienst gesendet. IP_GEO_LOOKUP_DISABLED=1 schaltet die Zuordnung ab.",
+        "geoDocs": "Lokale Datenbanken einrichten",
+        "geoLoadError": "Die Einstellung zur Zuordnung konnte nicht gelesen werden.",
+        "docs": "Was HealthLog wohin sendet"
+      },
+      "health": {
+        "title": "Einrichtung prüfen",
+        "body": "Eine reine Ansicht, wie dieser Server eingerichtet ist. Sie bleibt in der Admin-Konsole unter Systemstatus.",
+        "keys": "Deine Schlüssel sind der einzige Weg, deine Daten in einer Sicherung zu lesen. Bewahre eine Kopie an einem anderen Ort als diesem Server auf."
+      },
+      "facts": {
+        "title": "Aus der Umgebung des Servers",
+        "description": "In der Umgebung gesetzt, nicht hier. Dort ändern und neu starten.",
+        "oidc": "Single Sign-on (OIDC)",
+        "oidcOn": "Eingerichtet, neben Passwörtern und Passkeys",
+        "oidcOnly": "Eingerichtet, einziger Weg zur Anmeldung",
+        "oidcOff": "Nicht eingerichtet",
+        "oidcDocs": "Single Sign-on einrichten",
+        "smtp": "E-Mail (SMTP)",
+        "smtpOn": "Eingerichtet",
+        "smtpMissing": "Nicht eingerichtet, es fehlt: {names}",
+        "telegram": "Antworten in Telegram",
+        "telegramOn": "Webhook-Geheimnis gesetzt",
+        "telegramOff": "Kein Webhook-Geheimnis, Knöpfe in Telegram-Nachrichten reagieren also nicht",
+        "channelsDocs": "So funktionieren die Kanäle"
+      }
+    },
+    "setupHealth": {
+      "title": "Einrichtungsprüfung",
+      "description": "Schlüssel, Cookies, Sicherungen und die Adresse, unter der dieser Server erreichbar ist.",
+      "loadError": "Die Einrichtungsprüfung konnte nicht geladen werden.",
+      "fix": "Öffnen",
+      "docs": "So behebst du es",
+      "openSetup": "Server-Einrichtung öffnen",
+      "state": {
+        "ok": "Alles in Ordnung",
+        "attention": "Einen Blick wert",
+        "failing": "Muss behoben werden"
+      },
+      "signal": {
+        "encryption_keys": "Schlüssel",
+        "secure_cookie": "Sichere Cookies",
+        "app_url": "Öffentliche Adresse",
+        "database_dump": "Datenbank-Dump"
+      },
+      "reason": {
+        "encryption_keys": {
+          "present": "Geladene Schlüssel: {count}. Aktiver Schlüssel: {active}.",
+          "missing": "Es ist kein Schlüssel geladen."
+        },
+        "secure_cookie": {
+          "on": "Cookies tragen das Secure-Flag.",
+          "off": "Cookies tragen das Secure-Flag nicht.",
+          "secure_over_https": "Sichere Cookies über HTTPS, so wie es sein soll.",
+          "plain_http": "Einfaches HTTP ohne Secure-Flag: in Ordnung für einen Server, der nur im eigenen Netz erreichbar ist.",
+          "secure_over_http": "Diese Seite kam über einfaches HTTP, aber die Cookies tragen das Secure-Flag, deshalb verwerfen Browser die Anmeldung. Stelle HTTPS bereit oder setze SESSION_COOKIE_SECURE=false.",
+          "insecure_over_https": "Diese Seite kam über HTTPS, aber den Cookies fehlt das Secure-Flag. Entferne SESSION_COOKIE_SECURE=false."
+        },
+        "app_url": {
+          "unset": "NEXT_PUBLIC_APP_URL ist nicht gesetzt. Links in E-Mails, Einladungen und die Anmeldung mit SSO brauchen sie.",
+          "invalid": "NEXT_PUBLIC_APP_URL ist keine gültige Adresse.",
+          "mismatch": "NEXT_PUBLIC_APP_URL ist {configured}, diese Seite wurde aber unter {request} geöffnet.",
+          "matches": "Erreichbar unter {url}, wie eingestellt."
+        },
+        "database_dump": {
+          "disabled": "Es wird kein nächtlicher Datenbank-Dump erstellt. Sichere die Datenbank auf anderem Weg.",
+          "not_persistent": "Das Dump-Verzeichnis liegt nicht auf einem eingebundenen Volume, Dumps gehen beim nächsten Update verloren.",
+          "scheduled": "Nächtlicher Dump geplant ({cron})."
+        }
       }
     }
   },

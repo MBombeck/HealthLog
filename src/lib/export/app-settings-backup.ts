@@ -15,6 +15,7 @@
  * account copy does not rebuild a lost host; a database dump and the keys do
  * (`docs/ops/disaster-recovery.md`).
  */
+import { Prisma } from "@/generated/prisma/client";
 import { DEFAULT_REASONING_MAX_EFFORT } from "@/lib/ai/reasoning/levels";
 import type {
   BackupExportContext,
@@ -46,6 +47,8 @@ export async function buildAppSettingsBackupPart(
               adminCodexConnectedAt:
                 appSettings.adminCodexConnectedAt?.toISOString() ?? null,
               documentQuotaBytes: appSettings.documentQuotaBytes.toString(),
+              serverSetupCompletedAt:
+                appSettings.serverSetupCompletedAt?.toISOString() ?? null,
             }
           : null,
     },
@@ -113,6 +116,22 @@ export async function restoreAppSettings(ctx: RestoreContext): Promise<void> {
     moduleAvailabilityJson: coachFold.moduleAvailabilityJson as never,
     documentMaxFileBytes: settings.documentMaxFileBytes,
     documentQuotaBytes: BigInt(settings.documentQuotaBytes),
+    // A file from before 1.49 carries no setup state; the server's stays.
+    ...(settings.serverSetupCompletedAt !== undefined
+      ? {
+          serverSetupCompletedAt: settings.serverSetupCompletedAt
+            ? new Date(settings.serverSetupCompletedAt)
+            : null,
+        }
+      : {}),
+    ...(settings.serverSetupStepsJson !== undefined
+      ? {
+          serverSetupStepsJson:
+            settings.serverSetupStepsJson == null
+              ? Prisma.DbNull
+              : (settings.serverSetupStepsJson as Prisma.InputJsonValue),
+        }
+      : {}),
   };
   await tx.appSettings.upsert({
     where: { id: settings.id },

@@ -5429,7 +5429,9 @@
       "aiOptional": "AI jest opcjonalne. Wszystko działa także bez niego.",
       "aiSetupCta": "Skonfiguruj AI",
       "relayOptional": "Aplikacja na iPhone’a może dostawać powiadomienia z tego serwera przez opcjonalny przekaźnik push HealthLog, wyłączony, dopóki go nie włączysz.",
-      "relaySetupCta": "Ustawienia przekaźnika push"
+      "relaySetupCta": "Ustawienia przekaźnika push",
+      "serverSetup": "Konfiguracja tego serwera jest wciąż otwarta: rejestracja, powiadomienia, AI i prywatność.",
+      "serverSetupCta": "Skonfiguruj serwer"
     },
     "welcomeBack": {
       "title": "Witaj ponownie",
@@ -5456,10 +5458,12 @@
       "medication": "Leki",
       "sources": "Skąd pochodzą pomiary",
       "visit": "Wizyta u lekarza",
-      "units": "Jednostki",
+      "units": "Region i jednostki",
       "confirm": "Potwierdzenie",
       "first-result": "Pierwszy wynik",
-      "done": "Gotowe"
+      "done": "Gotowe",
+      "reminders": "Przypomnienia",
+      "ai": "Coach"
     },
     "flow": {
       "welcome": {
@@ -5469,7 +5473,9 @@
         "setUp": "Skonfiguruj",
         "skip": "Pomiń na razie",
         "againBody": "Konfiguracja jest zakończona. Odpowiedz na pytania ponownie, aby zmienić, co HealthLog pokazuje najpierw, albo przejdź do panelu.",
-        "setUpAgain": "Skonfiguruj ponownie"
+        "setUpAgain": "Skonfiguruj ponownie",
+        "serverSetup": "Prowadzisz ten serwer. Jego konfiguracja to osobny krótki przebieg, przed twoją albo po niej.",
+        "serverSetupCta": "Skonfiguruj serwer"
       },
       "who": {
         "title": "Dla kogo jest ta kartoteka?",
@@ -5540,14 +5546,16 @@
         }
       },
       "units": {
-        "title": "Jakich jednostek używasz?",
-        "body": "Pomiary są zapisywane raz i wyświetlane w wybranej jednostce. Możesz ją później zmienić w Ustawieniach.",
+        "title": "Twój region i jednostki",
+        "body": "Twój dzień i godziny przypomnień zależą od strefy czasowej. Pomiary są zapisywane raz i wyświetlane w wybranej jednostce. Wszystko możesz później zmienić w Ustawieniach.",
         "glucoseLegend": "Glukoza we krwi",
         "weightLegend": "Waga i wzrost",
         "options": {
           "metric": "kg i cm",
           "imperial": "lb i ft/in"
-        }
+        },
+        "timezoneHint": "Przejęta z tego konta. Twój dzień, wykresy i przypomnienia się do niej stosują.",
+        "registryLegend": "Rejestr leków dla ulotek"
       },
       "confirm": {
         "title": "Oto co włączają Twoje odpowiedzi",
@@ -5643,6 +5651,30 @@
         "tourCta": "Zrób krótką wycieczkę",
         "openRecord": "Otwórz kartotekę: {name}",
         "createProfile": "Utwórz profil osoby, którą się opiekujesz"
+      },
+      "reminders": {
+        "title": "Gdzie mają do ciebie trafiać przypomnienia?",
+        "body": "Tak ten serwer może do ciebie dotrzeć. Skonfiguruj jeden sposób, kilka albo na razie żaden.",
+        "app": "Korzystasz z aplikacji na iPhone’a? Ma własne przypomnienia, więc możesz pominąć ten krok."
+      },
+      "ai": {
+        "title": "Korzystać z Coacha?",
+        "body": "Coach odpowiada na pytania o twoje wyniki za pomocą modelu AI.",
+        "whereServer": "Gdy o coś zapytasz, twoje pytanie i potrzebne wyniki trafią do {providers} przez konto tego serwera.",
+        "whereOwn": "Gdy o coś zapytasz, twoje pytanie i potrzebne wyniki trafią do usługi AI, którą skonfigurowano twoim własnym kluczem.",
+        "whereLocal": "Gdy o coś zapytasz, twoje pytanie i potrzebne wyniki trafią do modelu, który uruchamiasz sam.",
+        "whereNone": "Nie skonfigurowano jeszcze dla ciebie żadnej usługi AI, więc Coach nie może jeszcze odpowiadać.",
+        "setUp": "Skonfiguruj AI",
+        "nothingUntilAsked": "Nic nie jest wysyłane, dopóki nie zapytasz.",
+        "options": {
+          "yes": "Tak, korzystaj z Coacha",
+          "no": "Nie, wyłącz"
+        },
+        "hints": {
+          "yes": "Możesz pytać o swoje wyniki, kiedy chcesz.",
+          "no": "Coach znika. Wszystko inne działa jak dotąd."
+        },
+        "later": "W każdej chwili możesz to zmienić w Ustawieniach, w sekcji AI."
       }
     }
   },
@@ -9468,6 +9500,117 @@
         "inviteRequired": "Ten przekaźnik przyjmuje nowe serwery tylko na zaproszenie. Wpisz kod zaproszenia.",
         "inviteRejected": "Przekaźnik nie przyjął tego kodu zaproszenia. Mógł wygasnąć albo został już użyty. Poproś o nowy i wpisz go.",
         "registrationPaused": "Przekaźnik nie przyjmuje teraz nowych serwerów. Ten serwer sam spróbuje ponownie później."
+      }
+    },
+    "serverSetup": {
+      "stepsLabel": "Kroki konfiguracji serwera",
+      "finish": "Zakończ",
+      "steps": {
+        "accounts": "Konta",
+        "notifications": "Powiadomienia",
+        "ai": "AI",
+        "privacy": "Prywatność",
+        "health": "Sprawdzenie"
+      },
+      "notice": {
+        "title": "Skonfiguruj ten serwer",
+        "body": "Pięć krótkich kroków dla decyzji, które tylko ty możesz tu podjąć: kto może się rejestrować, jak powiadomienia opuszczają serwer, co wolno AI i co jeszcze wychodzi na zewnątrz. Każdy krok można pominąć i zmienić później.",
+        "open": "Rozpocznij konfigurację",
+        "dismiss": "Nie teraz"
+      },
+      "accounts": {
+        "title": "Kto może korzystać z tego serwera",
+        "body": "Zdecyduj, czy ludzie mogą rejestrować się sami i czy każde konto potrzebuje drugiego składnika.",
+        "invites": "Przy zamkniętej rejestracji ludzie nadal dołączają przez link z zaproszeniem.",
+        "invitesLink": "Utwórz zaproszenie"
+      },
+      "notifications": {
+        "title": "Jak powiadomienia opuszczają serwer",
+        "body": "Wybierz, z których kanałów mogą korzystać ludzie. Przekaźnik push dla aplikacji z App Store pozostaje wyłączony, dopóki go nie włączysz."
+      },
+      "ai": {
+        "title": "Co wolno AI",
+        "body": "AI jest opcjonalna. HealthLog działa w pełni bez niej.",
+        "off": "Wyłączona: nic nie trafia do żadnej usługi AI.",
+        "ownKey": "Własne klucze: pytania danej osoby i potrzebne pomiary trafiają do dostawcy, którego ta osoba skonfigurowała.",
+        "serverKey": "Klucz tego serwera: pytania i pomiary trafiają do dostawcy, którego tu ustawisz, a każda osoba najpierw jest proszona o zgodę.",
+        "local": "Model lokalny: wszystko zostaje przy modelu wskazanym przez osobę, w twojej własnej sieci.",
+        "docs": "Jak działają dostawcy AI"
+      },
+      "privacy": {
+        "title": "Co jeszcze opuszcza serwer",
+        "body": "Oprócz powiadomień i AI dane na zewnątrz mogą wysyłać trzy rzeczy. O każdej decydujesz ty.",
+        "geoTitle": "Miejsca logowania",
+        "geoDescription": "Jak miejsce logowania jest ustalane na podstawie adresu IP.",
+        "geoBody": "Z podłączonymi bazami GeoLite2 wyszukiwanie odbywa się na tym serwerze. Bez nich każdy adres logowania jest wysyłany do usługi online. IP_GEO_LOOKUP_DISABLED=1 wyłącza wyszukiwanie.",
+        "geoDocs": "Skonfiguruj lokalne bazy",
+        "geoLoadError": "Nie udało się odczytać ustawienia wyszukiwania.",
+        "docs": "Co HealthLog wysyła i dokąd"
+      },
+      "health": {
+        "title": "Sprawdź konfigurację",
+        "body": "Widok tylko do odczytu, jak skonfigurowano ten serwer. Pozostaje w konsoli administratora w sekcji Stan systemu.",
+        "keys": "Klucze szyfrowania to jedyny sposób na odczytanie twoich danych z kopii zapasowej. Przechowuj ich kopię w innym miejscu niż ten serwer."
+      },
+      "facts": {
+        "title": "Ze środowiska serwera",
+        "description": "Ustawiane w środowisku, nie tutaj. Zmień to tam i uruchom ponownie.",
+        "oidc": "Logowanie jednokrotne (OIDC)",
+        "oidcOn": "Skonfigurowane, obok haseł i kluczy dostępu",
+        "oidcOnly": "Skonfigurowane, jedyny sposób logowania",
+        "oidcOff": "Nieskonfigurowane",
+        "oidcDocs": "Skonfiguruj logowanie jednokrotne",
+        "smtp": "E-mail (SMTP)",
+        "smtpOn": "Skonfigurowany",
+        "smtpMissing": "Nieskonfigurowany, brakuje: {names}",
+        "telegram": "Odpowiedzi w Telegramie",
+        "telegramOn": "Sekret webhooka ustawiony",
+        "telegramOff": "Brak sekretu webhooka, więc przyciski w wiadomościach Telegrama nie reagują",
+        "channelsDocs": "Jak działają kanały"
+      }
+    },
+    "setupHealth": {
+      "title": "Sprawdzenie konfiguracji",
+      "description": "Klucze, ciasteczka, kopie zapasowe i adres, pod którym działa ten serwer.",
+      "loadError": "Nie udało się wczytać sprawdzenia konfiguracji.",
+      "fix": "Otwórz",
+      "docs": "Jak to naprawić",
+      "openSetup": "Otwórz konfigurację serwera",
+      "state": {
+        "ok": "Wszystko w porządku",
+        "attention": "Warto spojrzeć",
+        "failing": "Wymaga naprawy"
+      },
+      "signal": {
+        "encryption_keys": "Klucze szyfrowania",
+        "secure_cookie": "Bezpieczne ciasteczka",
+        "app_url": "Adres publiczny",
+        "database_dump": "Zrzut bazy danych"
+      },
+      "reason": {
+        "encryption_keys": {
+          "present": "Wczytane klucze: {count}. Aktywny klucz: {active}.",
+          "missing": "Nie wczytano żadnego klucza szyfrowania."
+        },
+        "secure_cookie": {
+          "on": "Ciasteczka mają flagę Secure.",
+          "off": "Ciasteczka nie mają flagi Secure.",
+          "secure_over_https": "Bezpieczne ciasteczka przez HTTPS, tak jak trzeba.",
+          "plain_http": "Zwykły HTTP bez flagi Secure: w porządku dla serwera dostępnego tylko we własnej sieci.",
+          "secure_over_http": "Ta strona przyszła przez zwykły HTTP, ale ciasteczka mają flagę Secure, więc przeglądarki odrzucają logowanie. Udostępnij HTTPS albo ustaw SESSION_COOKIE_SECURE=false.",
+          "insecure_over_https": "Ta strona przyszła przez HTTPS, ale ciasteczkom brakuje flagi Secure. Usuń SESSION_COOKIE_SECURE=false."
+        },
+        "app_url": {
+          "unset": "NEXT_PUBLIC_APP_URL nie jest ustawiony. Potrzebują go linki w e-mailach, zaproszenia i logowanie przez SSO.",
+          "invalid": "NEXT_PUBLIC_APP_URL nie jest prawidłowym adresem.",
+          "mismatch": "NEXT_PUBLIC_APP_URL to {configured}, ale ta strona została otwarta pod {request}.",
+          "matches": "Dostępny pod {url}, zgodnie z konfiguracją."
+        },
+        "database_dump": {
+          "disabled": "Nie jest tworzony nocny zrzut bazy danych. Zabezpiecz bazę w inny sposób.",
+          "not_persistent": "Katalog zrzutów nie leży na podłączonym wolumenie, więc zrzuty przepadną przy następnej aktualizacji.",
+          "scheduled": "Nocny zrzut zaplanowany ({cron})."
+        }
       }
     }
   },

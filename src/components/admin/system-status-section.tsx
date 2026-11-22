@@ -24,6 +24,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   geoLookupState,
+  type AdminGeoStatus,
   StatusItem,
   useSystemStatus,
   type FailingQueue,
@@ -263,25 +264,7 @@ export function SystemStatusSection() {
             )}
             {/* v1.4.27 — offline GeoLite2 availability, read from the
                 admin status rather than the public /api/version. */}
-            <StatusItem
-              icon={Map}
-              label={t("admin.offlineGeoLabel")}
-              value={
-                {
-                  offline: t("admin.offlineGeoEnabled"),
-                  off: t("admin.offlineGeoOff"),
-                  chosen: t("admin.offlineGeoChosen", {
-                    host: status.geo.providerHost,
-                  }),
-                  default: t("admin.offlineGeoFallback", {
-                    host: status.geo.providerHost,
-                  }),
-                }[geoLookupState(status.geo)]
-              }
-              tone={
-                geoLookupState(status.geo) === "default" ? "warning" : "success"
-              }
-            />
+            <GeoLookupStatusItem geo={status.geo} />
           </div>
         ) : isError ? (
           // P19: surface load failures inline instead of leaving the
@@ -309,5 +292,30 @@ export function SystemStatusSection() {
       </SettingsCard>
       {status && <FailingJobsCard failingJobs={status.failingJobs} />}
     </div>
+  );
+}
+
+/**
+ * How login IPs are placed on this host, as one status tile. Shared by System
+ * status and the server setup's privacy step (1.49), so both say it the same
+ * way.
+ */
+export function GeoLookupStatusItem({ geo }: { geo: AdminGeoStatus }) {
+  const { t } = useTranslations();
+  const state = geoLookupState(geo);
+  return (
+    <StatusItem
+      icon={Map}
+      label={t("admin.offlineGeoLabel")}
+      value={
+        {
+          offline: t("admin.offlineGeoEnabled"),
+          off: t("admin.offlineGeoOff"),
+          chosen: t("admin.offlineGeoChosen", { host: geo.providerHost }),
+          default: t("admin.offlineGeoFallback", { host: geo.providerHost }),
+        }[state]
+      }
+      tone={state === "default" ? "warning" : "success"}
+    />
   );
 }

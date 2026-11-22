@@ -51,7 +51,51 @@ export async function OnboardingShell({
   const steps = screenOrder(state).filter(
     (id): id is OnboardingStepId => id !== "welcome",
   );
-  const currentIndex = (steps as readonly string[]).indexOf(screen);
+
+  return (
+    <SetupFrame
+      screen={screen}
+      counter={
+        counter
+          ? t("onboarding.shell.stepOf", {
+              current: counter.current,
+              total: counter.total,
+            })
+          : null
+      }
+      stepsLabel={t("onboarding.shell.stepsLabel")}
+      steps={steps.map((id) => ({
+        id,
+        label: t(`onboarding.steps.${id}`),
+      }))}
+    >
+      {children}
+    </SetupFrame>
+  );
+}
+
+/**
+ * The frame both setup flows paint: the logo, the step counter, the step
+ * track and the one `<main>`. The person flow (`OnboardingShell`) and the
+ * server setup (1.49) hand it their own steps, already translated, so the two
+ * cannot drift apart in layout.
+ */
+export function SetupFrame({
+  screen,
+  flow = "person",
+  counter,
+  stepsLabel,
+  steps,
+  children,
+}: {
+  screen: string;
+  flow?: "person" | "server";
+  counter: string | null;
+  stepsLabel: string;
+  steps: ReadonlyArray<{ id: string; label: string }>;
+  children: React.ReactNode;
+}) {
+  const currentIndex = steps.findIndex((step) => step.id === screen);
 
   return (
     <div
@@ -62,6 +106,7 @@ export async function OnboardingShell({
         "px-4 pt-6 pb-[max(env(safe-area-inset-bottom),1rem)]",
       )}
       data-slot="onboarding-shell"
+      data-flow={flow}
       data-screen={screen}
     >
       <header className="mb-6 flex items-center justify-between gap-3">
@@ -71,35 +116,30 @@ export async function OnboardingShell({
           aria-live="polite"
           data-slot="onboarding-step-counter"
         >
-          {counter
-            ? t("onboarding.shell.stepOf", {
-                current: counter.current,
-                total: counter.total,
-              })
-            : null}
+          {counter}
         </p>
       </header>
 
       {/* A landmark of its own: every piece of page content sits inside one
           (axe `region`), and the step list is the flow's navigation. */}
-      <nav aria-label={t("onboarding.shell.stepsLabel")} className="mb-8">
+      <nav aria-label={stepsLabel} className="mb-8">
         <ol
           className="flex items-center gap-2"
           data-slot="onboarding-step-list"
         >
-          {steps.map((id, index) => {
+          {steps.map((step, index) => {
             const reached = currentIndex >= index;
             return (
               <li
-                key={id}
-                aria-current={id === screen ? "step" : undefined}
+                key={step.id}
+                aria-current={step.id === screen ? "step" : undefined}
                 data-reached={reached}
                 className={cn(
                   "h-1.5 flex-1 rounded-full transition-colors",
                   reached ? "bg-primary" : "bg-muted",
                 )}
               >
-                <span className="sr-only">{t(`onboarding.steps.${id}`)}</span>
+                <span className="sr-only">{step.label}</span>
               </li>
             );
           })}

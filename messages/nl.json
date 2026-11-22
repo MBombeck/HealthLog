@@ -5429,7 +5429,9 @@
       "aiOptional": "AI is optioneel. Alles werkt ook zonder.",
       "aiSetupCta": "AI instellen",
       "relayOptional": "De iPhone-app kan meldingen van deze server krijgen via de optionele HealthLog-pushrelay, die uit blijft tot je hem aanzet.",
-      "relaySetupCta": "Instellingen pushrelay"
+      "relaySetupCta": "Instellingen pushrelay",
+      "serverSetup": "De inrichting van deze server staat nog open: registratie, meldingen, AI en privacy.",
+      "serverSetupCta": "Server inrichten"
     },
     "welcomeBack": {
       "title": "Welkom terug",
@@ -5456,10 +5458,12 @@
       "medication": "Medicatie",
       "sources": "Waar metingen vandaan komen",
       "visit": "Doktersbezoek",
-      "units": "Eenheden",
+      "units": "Regio en eenheden",
       "confirm": "Bevestigen",
       "first-result": "Eerste resultaat",
-      "done": "Klaar"
+      "done": "Klaar",
+      "reminders": "Herinneringen",
+      "ai": "Coach"
     },
     "flow": {
       "welcome": {
@@ -5469,7 +5473,9 @@
         "setUp": "Instellen",
         "skip": "Nu overslaan",
         "againBody": "Je installatie is voltooid. Beantwoord de vragen opnieuw om te wijzigen wat HealthLog als eerste laat zien, of ga naar het dashboard.",
-        "setUpAgain": "Opnieuw instellen"
+        "setUpAgain": "Opnieuw instellen",
+        "serverSetup": "Jij beheert deze server. Zijn eigen inrichting is een aparte korte ronde, voor of na die van jou.",
+        "serverSetupCta": "Server inrichten"
       },
       "who": {
         "title": "Voor wie is dit dossier?",
@@ -5540,14 +5546,16 @@
         }
       },
       "units": {
-        "title": "Welke eenheden gebruik je?",
-        "body": "Metingen worden één keer opgeslagen en getoond in de eenheid die je kiest. Je kunt dit later wijzigen onder Instellingen.",
+        "title": "Je regio en eenheden",
+        "body": "Je dag en je herinneringstijden volgen de tijdzone. Waarden worden één keer opgeslagen en getoond in de eenheid die je kiest. Je kunt alles later wijzigen onder Instellingen.",
         "glucoseLegend": "Bloedglucose",
         "weightLegend": "Gewicht en lengte",
         "options": {
           "metric": "kg en cm",
           "imperial": "lb en ft/in"
-        }
+        },
+        "timezoneHint": "Overgenomen van dit account. Je dag, je grafieken en je herinneringen volgen deze.",
+        "registryLegend": "Geneesmiddelenregister voor bijsluiters"
       },
       "confirm": {
         "title": "Dit zetten je antwoorden aan",
@@ -5643,6 +5651,30 @@
         "tourCta": "Korte rondleiding volgen",
         "openRecord": "Dossier van {name} openen",
         "createProfile": "Profiel aanmaken voor de persoon voor wie je zorgt"
+      },
+      "reminders": {
+        "title": "Waar wil je herinneringen ontvangen?",
+        "body": "Zo kan deze server je bereiken. Stel er één in, meerdere of voorlopig geen.",
+        "app": "Gebruik je de iPhone-app? Die heeft eigen herinneringen, dus je kunt deze stap overslaan."
+      },
+      "ai": {
+        "title": "De Coach gebruiken?",
+        "body": "De Coach beantwoordt vragen over je waarden met een AI-model.",
+        "whereServer": "Als je iets vraagt, gaan je vraag en de benodigde waarden via het account van deze server naar {providers}.",
+        "whereOwn": "Als je iets vraagt, gaan je vraag en de benodigde waarden naar de AI-dienst die je met je eigen sleutel hebt ingesteld.",
+        "whereLocal": "Als je iets vraagt, gaan je vraag en de benodigde waarden naar het model dat je zelf draait.",
+        "whereNone": "Er is nog geen AI-dienst voor je ingesteld, dus de Coach kan nog niet antwoorden.",
+        "setUp": "AI instellen",
+        "nothingUntilAsked": "Er wordt niets verstuurd voordat je iets vraagt.",
+        "options": {
+          "yes": "Ja, de Coach gebruiken",
+          "no": "Nee, uitschakelen"
+        },
+        "hints": {
+          "yes": "Je kunt hem op elk moment vragen stellen over je waarden.",
+          "no": "De Coach verdwijnt. Al het andere werkt zoals voorheen."
+        },
+        "later": "Je kunt dit altijd wijzigen onder Instellingen, AI."
       }
     }
   },
@@ -9468,6 +9500,117 @@
         "inviteRequired": "Deze relay laat nieuwe servers alleen op uitnodiging toe. Voer een uitnodigingscode in.",
         "inviteRejected": "De relay heeft deze uitnodigingscode niet geaccepteerd. Misschien is hij verlopen of al gebruikt. Vraag een nieuwe aan en voer die in.",
         "registrationPaused": "De relay neemt op dit moment geen nieuwe servers aan. Deze server probeert het later vanzelf opnieuw."
+      }
+    },
+    "serverSetup": {
+      "stepsLabel": "Stappen van de serverinrichting",
+      "finish": "Klaar",
+      "steps": {
+        "accounts": "Accounts",
+        "notifications": "Meldingen",
+        "ai": "AI",
+        "privacy": "Privacy",
+        "health": "Controle"
+      },
+      "notice": {
+        "title": "Deze server inrichten",
+        "body": "Vijf korte stappen voor de keuzes die alleen jij hier kunt maken: wie zich mag registreren, hoe meldingen de server verlaten, wat AI mag en wat er verder naar buiten gaat. Elke stap kun je overslaan en later wijzigen.",
+        "open": "Inrichting starten",
+        "dismiss": "Niet nu"
+      },
+      "accounts": {
+        "title": "Wie deze server kan gebruiken",
+        "body": "Bepaal of mensen zich zelf kunnen registreren en of elk account een tweede factor nodig heeft.",
+        "invites": "Met gesloten registratie komen mensen nog steeds binnen met een uitnodigingslink.",
+        "invitesLink": "Uitnodiging maken"
+      },
+      "notifications": {
+        "title": "Hoe meldingen de server verlaten",
+        "body": "Kies welke kanalen mensen mogen gebruiken. De push-relay voor de app uit de App Store blijft uit tot je hem aanzet."
+      },
+      "ai": {
+        "title": "Wat AI mag",
+        "body": "AI is optioneel. HealthLog werkt volledig zonder.",
+        "off": "Uit: er gaat niets naar een AI-dienst.",
+        "ownKey": "Eigen sleutels: de vragen van iemand en de benodigde waarden gaan naar de provider die die persoon heeft ingesteld.",
+        "serverKey": "Sleutel van deze server: vragen en waarden gaan naar de provider die je hier instelt, en iedereen wordt eerst om toestemming gevraagd.",
+        "local": "Lokaal model: alles blijft bij het model waar de persoon naar verwijst, in je eigen netwerk.",
+        "docs": "Zo werken de AI-providers"
+      },
+      "privacy": {
+        "title": "Wat de server verder verlaat",
+        "body": "Naast meldingen en AI kunnen drie dingen gegevens naar buiten sturen. Elk daarvan beslis jij.",
+        "geoTitle": "Aanmeldlocaties",
+        "geoDescription": "Hoe de plaats van een aanmelding uit het IP-adres wordt afgeleid.",
+        "geoBody": "Met gekoppelde GeoLite2-databases gebeurt het opzoeken op deze server. Zonder worden alle aanmeldadressen naar een onlinedienst gestuurd. IP_GEO_LOOKUP_DISABLED=1 zet het opzoeken uit.",
+        "geoDocs": "Lokale databases instellen",
+        "geoLoadError": "De instelling voor het opzoeken kon niet worden gelezen.",
+        "docs": "Wat HealthLog waarheen stuurt"
+      },
+      "health": {
+        "title": "Inrichting controleren",
+        "body": "Een alleen-lezen overzicht van hoe deze server is ingericht. Het blijft in de beheeromgeving onder Systeemstatus.",
+        "keys": "Je versleutelingssleutels zijn de enige manier om je gegevens in een back-up te lezen. Bewaar een kopie ergens anders dan op deze server."
+      },
+      "facts": {
+        "title": "Uit de omgeving van de server",
+        "description": "Ingesteld in de omgeving, niet hier. Wijzig het daar en herstart.",
+        "oidc": "Eenmalige aanmelding (OIDC)",
+        "oidcOn": "Ingesteld, naast wachtwoorden en passkeys",
+        "oidcOnly": "Ingesteld, de enige manier om aan te melden",
+        "oidcOff": "Niet ingesteld",
+        "oidcDocs": "Eenmalige aanmelding instellen",
+        "smtp": "E-mail (SMTP)",
+        "smtpOn": "Ingesteld",
+        "smtpMissing": "Niet ingesteld, ontbreekt: {names}",
+        "telegram": "Antwoorden in Telegram",
+        "telegramOn": "Webhookgeheim ingesteld",
+        "telegramOff": "Geen webhookgeheim, dus knoppen in Telegram-berichten reageren niet",
+        "channelsDocs": "Zo werken de kanalen"
+      }
+    },
+    "setupHealth": {
+      "title": "Inrichtingscontrole",
+      "description": "Sleutels, cookies, back-ups en het adres waarop deze server bereikbaar is.",
+      "loadError": "De inrichtingscontrole kon niet worden geladen.",
+      "fix": "Openen",
+      "docs": "Zo los je het op",
+      "openSetup": "Serverinrichting openen",
+      "state": {
+        "ok": "Alles in orde",
+        "attention": "Even bekijken",
+        "failing": "Moet worden opgelost"
+      },
+      "signal": {
+        "encryption_keys": "Versleutelingssleutels",
+        "secure_cookie": "Veilige cookies",
+        "app_url": "Openbaar adres",
+        "database_dump": "Databasedump"
+      },
+      "reason": {
+        "encryption_keys": {
+          "present": "Geladen sleutels: {count}. Actieve sleutel: {active}.",
+          "missing": "Er is geen versleutelingssleutel geladen."
+        },
+        "secure_cookie": {
+          "on": "Cookies hebben de Secure-vlag.",
+          "off": "Cookies hebben de Secure-vlag niet.",
+          "secure_over_https": "Veilige cookies via HTTPS, zoals het hoort.",
+          "plain_http": "Gewone HTTP zonder Secure-vlag: prima voor een server die alleen in je eigen netwerk bereikbaar is.",
+          "secure_over_http": "Deze pagina kwam via gewone HTTP, maar de cookies hebben de Secure-vlag, dus browsers gooien de aanmelding weg. Gebruik HTTPS of stel SESSION_COOKIE_SECURE=false in.",
+          "insecure_over_https": "Deze pagina kwam via HTTPS, maar de cookies missen de Secure-vlag. Verwijder SESSION_COOKIE_SECURE=false."
+        },
+        "app_url": {
+          "unset": "NEXT_PUBLIC_APP_URL is niet ingesteld. Links in e-mails, uitnodigingen en aanmelden met SSO hebben die nodig.",
+          "invalid": "NEXT_PUBLIC_APP_URL is geen geldig adres.",
+          "mismatch": "NEXT_PUBLIC_APP_URL is {configured}, maar deze pagina is geopend op {request}.",
+          "matches": "Bereikbaar op {url}, zoals ingesteld."
+        },
+        "database_dump": {
+          "disabled": "Er wordt geen nachtelijke databasedump gemaakt. Maak op een andere manier een back-up van de database.",
+          "not_persistent": "De dumpmap staat niet op een gekoppeld volume, dus dumps gaan bij de volgende update verloren.",
+          "scheduled": "Nachtelijke dump gepland ({cron})."
+        }
       }
     }
   },

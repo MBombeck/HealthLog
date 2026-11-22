@@ -5747,6 +5747,16 @@ model AppSettings {
   /// `done` when finished, NULL before it starts. Operational, never shown.
   workoutClimbBackfillCursor String?   @map("workout_climb_backfill_cursor")
 
+  /// 1.49 — when the first-admin server setup was finished; NULL while it is
+  /// offered. Migration 0551 stamps instances that already had accounts, so an
+  /// upgrade never offers it. Written by `PATCH /api/admin/server-setup`, read
+  /// by its GET (the setup screens, the admin notice, the done screen line).
+  serverSetupCompletedAt DateTime? @map("server_setup_completed_at")
+  /// 1.49 — each server setup step's state, `[{ id, status }]` with the ids of
+  /// `SERVER_SETUP_STEP_IDS` (`src/lib/admin/server-setup.ts`); NULL before
+  /// the first step. Same writer and readers as the stamp above.
+  serverSetupStepsJson   Json?     @map("server_setup_steps_json")
+
   @@map("app_settings")
 }
 
