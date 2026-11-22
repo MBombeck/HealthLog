@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HeartPulse, Loader2, QrCode } from "lucide-react";
@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { FieldGroup } from "@/components/ui/field-group";
 import { InlineAction } from "@/components/ui/inline-action";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import {
   recentProofErrorMessage,
   useRecentProof,
@@ -161,11 +163,10 @@ export function EmergencyCardPage() {
                 {t("emergencyCard.page.downloadError")}
               </p>
             ) : null}
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <SettingsCardActions>
               <Button
                 variant="outline"
                 size="sm"
-                className="min-h-11 w-full sm:w-auto"
                 disabled={busy !== null}
                 onClick={() => void download("offline")}
               >
@@ -176,7 +177,6 @@ export function EmergencyCardPage() {
               </Button>
               <Button
                 size="sm"
-                className="min-h-11 w-full sm:w-auto"
                 disabled={busy !== null}
                 onClick={() => void download("wallet")}
               >
@@ -187,7 +187,7 @@ export function EmergencyCardPage() {
                   ? t("emergencyCard.page.walletWithQr")
                   : t("emergencyCard.page.wallet")}
               </Button>
-            </div>
+            </SettingsCardActions>
           </CardContent>
         </Card>
 
@@ -246,6 +246,14 @@ function LinkCard({
   }
 
   const link = status.data?.link ?? null;
+  // A refusal stands above the action row it answers (§12), so the form and
+  // the status each place it before their own row.
+  const errorLine =
+    error || revoke.isError ? (
+      <p className="text-destructive text-sm" role="alert">
+        {error ?? t("emergencyCard.link.error")}
+      </p>
+    ) : null;
   return (
     <Card data-slot="emergency-card-link-card">
       <CardHeader>
@@ -263,9 +271,14 @@ function LinkCard({
             <Loader2 className="text-muted-foreground size-5 animate-spin motion-reduce:animate-none" />
           </div>
         ) : !link ? (
-          <LinkForm pending={mint.isPending} onCreate={(b) => void create(b)} />
+          <LinkForm
+            pending={mint.isPending}
+            onCreate={(b) => void create(b)}
+            error={errorLine}
+          />
         ) : (
           <LinkStatus
+            error={errorLine}
             link={link}
             minted={minted && qr ? { url: minted.url, qr } : null}
             revokePending={revoke.isPending}
@@ -279,11 +292,6 @@ function LinkCard({
             }
           />
         )}
-        {error || revoke.isError ? (
-          <p className="text-destructive text-sm" role="alert">
-            {error ?? t("emergencyCard.link.error")}
-          </p>
-        ) : null}
         {proof.dialog}
       </CardContent>
     </Card>
@@ -294,8 +302,10 @@ function LinkCard({
 function LinkForm({
   pending,
   onCreate,
+  error,
 }: {
   pending: boolean;
+  error: ReactNode;
   onCreate: (body: {
     fields: EmergencyCardField[];
     expiresInDays: number | null;
@@ -335,10 +345,10 @@ function LinkForm({
           ))}
         </div>
       </fieldset>
-      <div className="space-y-2">
-        <Label htmlFor="card-link-expiry">
-          {t("emergencyCard.link.expiryLabel")}
-        </Label>
+      <FieldGroup
+        htmlFor="card-link-expiry"
+        label={t("emergencyCard.link.expiryLabel")}
+      >
         <NativeSelect
           id="card-link-expiry"
           value={expiry}
@@ -350,11 +360,11 @@ function LinkForm({
             </option>
           ))}
         </NativeSelect>
-      </div>
-      <div className="flex justify-end">
+      </FieldGroup>
+      {error}
+      <SettingsCardActions>
         <Button
           size="sm"
-          className="min-h-11 w-full sm:w-auto"
           disabled={pending || fields.size === 0}
           onClick={() =>
             onCreate({
@@ -368,7 +378,7 @@ function LinkForm({
           ) : null}
           {t("emergencyCard.link.create")}
         </Button>
-      </div>
+      </SettingsCardActions>
     </>
   );
 }
@@ -379,7 +389,9 @@ function LinkStatus({
   minted,
   revokePending,
   onRevoke,
+  error,
 }: {
+  error: ReactNode;
   link: CardLinkSummary;
   minted: { url: string; qr: string } | null;
   revokePending: boolean;
@@ -434,7 +446,8 @@ function LinkStatus({
             })
           : t("emergencyCard.link.notOpened")}
       </p>
-      <div className="flex justify-end">
+      {error}
+      <SettingsCardActions>
         <ConfirmButton
           label={t("emergencyCard.link.revoke")}
           title={t("emergencyCard.link.revokeTitle")}
@@ -445,9 +458,8 @@ function LinkStatus({
           variant="destructive"
           destructive
           size="sm"
-          className="min-h-11 w-full sm:w-auto"
         />
-      </div>
+      </SettingsCardActions>
     </>
   );
 }
