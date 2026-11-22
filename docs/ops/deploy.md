@@ -214,43 +214,85 @@ always did, and finds nothing in the queue schema it did not create.
 ### v1.49.0 notes
 
 The sequence above covers this release, with one possible stop (`0517`, see
-below). It brings twenty-one migrations, `0514` to `0538` (`0516`, `0523`,
-`0527` and `0528` do not exist). Copy the pre-migration dump of step 0 off
+below). It brings twenty-seven migrations, `0514` to `0545` (`0516`, `0523`,
+`0527`, `0528` and `0541` do not exist), so the boot log says
+`27 database migrations pending`. Copy the pre-migration dump of step 0 off
 the host before you start: it is the way back.
 
-Three migrations change data:
+Four migrations touch data you already have:
 
 - `0515` merges doses recorded twice for one slot. Of each slot's live rows
   it keeps the one that records a take, else a skip, else the oldest pending
-  row, and soft-deletes the rest (clearing `deleted_at` restores one). It
-  clears the auto-miss mark on doses that were taken or skipped, installs a
-  trigger that keeps it cleared, rewrites legacy single-time schedules with a
-  dose window into `times_of_day` and `dose_windows`, and replaces the
-  slot's unique index `(user_id, medication_id, scheduled_for, source)` with
-  one on `(user_id, medication_id, scheduled_for)`: one live dose per slot,
+  row, and soft-deletes the rest (clearing `deleted_at` restores one); a
+  merged take that took units off a pack gives them back and loses its
+  `inventory_consumption` stamp. It clears the auto-miss mark on doses that
+  were taken or skipped, installs a trigger that keeps it cleared, rewrites
+  legacy single-time schedules with a dose window into `times_of_day` and
+  `dose_windows`, and replaces the slot's unique index
+  `(user_id, medication_id, scheduled_for, source)` with one on
+  `(user_id, medication_id, scheduled_for)`: one live dose per slot,
   whoever writes it.
-- `0517` makes e-mail address and username unique regardless of case. When
-  two accounts already share one, it stops before changing anything and the
-  container does not start; see "Accounts that differ only in case" above.
-  Existing addresses are not rewritten; new and changed ones are stored in
-  lower case. It also drops six duplicate indexes, builds four small
-  retention indexes, and adds a shape CHECK to day keys stored as text. A
-  column holding a key that does not fit gets the CHECK `NOT VALID` and the
-  count as a warning, instead of a failed start.
-- `0529` lowers APNs device tokens. Where two devices hold one token in
-  different case, the one seen most recently keeps it; the other loses its
-  token and registers again on its next launch.
+- `0517` makes e-mail address and username unique regardless of case. It
+  takes `LOCK TABLE "users" IN SHARE ROW EXCLUSIVE MODE` before it counts
+  the clashes, so a v1.48.5 container that still runs cannot add a clashing
+  account between the count and the index build. Its writes to `users`
+  (sign-ups, account changes) wait until the file commits; the migration
+  itself waits at most its 10 s `lock_timeout` for the lock, and the boot
+  retries it on a timeout. When two accounts already share an address or name, it
+  stops before changing anything and the container does not start; see
+  "Accounts that differ only in case" above. Existing addresses are not
+  rewritten; new and changed ones are stored in lower case. It also drops
+  six duplicate indexes, builds four small retention indexes, and adds a
+  shape CHECK to day keys stored as text. A column holding a key that does
+  not fit gets the CHECK `NOT VALID` and the count as a warning, instead of
+  a failed start.
+- `0529` lowers APNs device tokens. It takes
+  `LOCK TABLE "devices" IN SHARE ROW EXCLUSIVE MODE` before it lowers them,
+  so writes to `devices` from a v1.48.5 container (a device registering, its
+  `last_seen` stamp) wait until it commits; the migration waits at most 5 s
+  for the lock, and the boot retries it on a timeout. Where two
+  devices hold one token in different case, the one seen most recently keeps
+  it; the other loses its token and environment and registers again on its
+  next launch. A unique index on `lower(apns_token)` refuses a second
+  spelling of one token from then on.
+- `0543` adds `cycle_symptom_links.source` (`measurement_source`,
+  `NOT NULL DEFAULT 'MANUAL'`, a catalog change without a rewrite) and
+  backfills it: a link on a day whose `cycle_day_logs.source` is not
+  `MANUAL` takes the day's source, every other link keeps `MANUAL`. An
+  Apple Health day write then replaces only the links it wrote, and a
+  symptom logged by hand on the same day stays.
+
+Two more change data only on a host that ran a 1.49 pre-release. Coming from
+1.48, the columns and tables they touch are created earlier in the same
+update and hold nothing:
+
+- `0539` encrypts the pregnancy state at rest. It adds
+  `cycle_profiles.pregnancy_encrypted` (one AES-256-GCM envelope the app
+  writes, holding the state and its three days), then drops the plaintext
+  columns `0533` added, `reproductive_state`, `pregnancy_start_date`,
+  `pregnancy_due_date` and `delivery_date`, with their three day-key CHECKs,
+  and drops the enum `cycle_reproductive_state`. `postpartum_weeks` stays. A
+  state set under a pre-release is cleared, because SQL cannot seal it with
+  the application's key; its owner sets it again.
+- `0540` adds `created_by_id` to `care_calendar_feeds` and
+  `emergency_card_links`, backfills it with `user_id` (every existing link
+  was made by its owner), sets it `NOT NULL`, and adds an index and a
+  cascading foreign key to `users` for each. A link a guardian makes for a
+  managed profile ends when that guardian's grant does.
 
 The rest is additive: enum values for Apple Health workout effort and sport
 quantities (`0514`, `0519`), nullable columns or columns with a default
-(`0520`, `0521`, `0525`, `0526`, `0530`, `0533`, `0536`, `0537`), and new
-tables (`0522`, `0524`, `0531`, `0532`, `0534`, `0535`). `0538` only drops
-an index on `live_activity_tokens` that another index already covers. `0518`
-builds an
-index on `measurements` `CONCURRENTLY` at boot. Writes carry on, but on a
-very large table the build can take a while; the app's healthcheck allows
-ten minutes for the start. If it is interrupted, see "A concurrent index
-build that failed" above.
+(`0520`, `0521`, `0525`, `0526`, `0530`, `0533`, `0536`, `0537`, and
+`devices.local_runway_until` in `0542`, `push_data_changes.intake_sync_owed_at`
+in `0544`, `live_activity_tokens.relay_started BOOLEAN NOT NULL DEFAULT false`
+in `0545`), and new tables (`0522`, `0524`, `0531`, `0532`, `0534`, `0535`).
+`0545` is metadata-only: existing Live Activity rows read `false`, and relay
+updates go only to an Activity the server started over the relay. `0538`
+only drops an index on `live_activity_tokens` that another index already
+covers. `0518` builds an index on `measurements` `CONCURRENTLY` at boot.
+Writes carry on, but on a very large table the build can take a while; the
+app's healthcheck allows ten minutes for the start. If it is interrupted,
+see "A concurrent index build that failed" above.
 
 New variables, all optional and on the compose whitelist:
 `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS` (a WebDAV or Nextcloud server on
@@ -276,6 +318,13 @@ Steps:
       WHERE conname LIKE '%\\_day\\_key\\_shape' AND NOT convalidated"
    ```
 
+A stop in `0517` is not a reason to roll back. The migration refuses to run
+while two accounts share an e-mail address or a username when case is
+ignored (`HealthLog 0517: … belong to more than one account when case is
+ignored`), and nothing was changed: the file is one transaction. Resolve each pair with the
+query under "Accounts that differ only in case", mark the migration rolled
+back as described there, and start again.
+
 Rollback to v1.48.5: restore the pre-migration dump with the v1.48.5 image,
 following disaster-recovery.md, "Going back to before a migration", and pin
 the image there with `HEALTHLOG_IMAGE_REF=:v1.48.5` (the leading colon is
@@ -285,6 +334,11 @@ container too, if you run one. Switching the image back alone is not enough:
 
 - After `0515`, v1.48.5 writes a dose for a slot another source already
   holds as a second row, and the new index refuses it, so that write fails.
+- After `0517`, v1.48.5 stores an address or username in the case it is
+  typed, and the unique indexes on `lower(email)` and `lower(username)`
+  refuse a case variant of one another account holds: the write fails with
+  `P2002` (registration answers 409). That refusal is what the indexes are
+  for, so the steps below leave them in place.
 - After `0529`, v1.48.5 stores an APNs token in the case the app sends it,
   and the index on `lower(apns_token)` refuses a token another device
   already holds in other letters.
@@ -295,10 +349,28 @@ container too, if you run one. Switching the image back alone is not enough:
   `RUNNING_STRIDE_LENGTH`) may not decode in the v1.48.5 image, whose client
   does not know them.
 
-Every other migration is harmless to the old image, which ignores what it
-does not know. If the dump is gone, or too much has been written since,
-switch the image back only after these three steps, run as the database
-owner, and expect the merged doses and lowered tokens to stay as they are:
+Only the dump undoes these; the old image runs on top of them, but they stay
+as the migration left them:
+
+- `0515` rewrites rows in place: merged doses are soft-deleted with their
+  `inventory_consumption` cleared and their units refunded to the pack, the
+  auto-miss mark is cleared, and legacy schedules are rewritten into
+  `times_of_day` and `dose_windows`. The previous values are not kept.
+- `0529` overwrites every mixed-case token with its lower-case form and
+  clears the token and environment of the device that lost a clash.
+- `0514` and `0519` add enum values with `ALTER TYPE … ADD VALUE`, which
+  PostgreSQL cannot drop. The values alone do not trouble v1.48.5; a reading
+  of one of those types does, and short of the dump it can only be moved
+  aside.
+
+No other migration needs the dump. `0517` rewrites no row, and its indexes
+and CHECKs can be dropped. `0539` drops columns and an enum, and `0540` and
+`0543` add `NOT NULL` columns, but v1.48.5 never reads the dropped columns,
+`0540`'s tables are new in this release, and `0543`'s column has a default
+that covers v1.48.5's inserts. Nothing is renamed. Every other migration is
+harmless to the old image, which ignores what it does not know. If the dump
+is gone, or too much has been written since, switch the image back only
+after these three steps, run as the database owner:
 
 ```sql
 DROP INDEX IF EXISTS "medication_intake_events_user_med_slot_live_key";
