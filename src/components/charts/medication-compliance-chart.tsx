@@ -50,6 +50,7 @@ import { ArrowDown, ArrowRight, ArrowUp, Pill } from "lucide-react";
 import { ComplianceInfoTip } from "@/components/medications/card-parts/compliance-info-tip";
 import { TileHeader } from "@/components/insights/tile-header";
 import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
@@ -229,19 +230,20 @@ function RangeButtons({
   onChange: (days: RangeDays) => void;
 }) {
   const { t } = useTranslations();
-  return RANGE_DAYS.map((r) => (
-    <Button
-      key={r}
-      variant={days === r ? "default" : "ghost"}
+  return (
+    <Segmented
       size="sm"
-      className="min-h-11 px-2 text-xs sm:px-3"
-      aria-pressed={days === r}
-      aria-label={t("charts.daysNAria", { days: r })}
-      onClick={() => onChange(r)}
-    >
-      {t("charts.daysNLabel", { days: r })}
-    </Button>
-  ));
+      mode="toggle"
+      label={t("charts.rangeLabel")}
+      value={String(days)}
+      onChange={(next) => onChange(Number(next) as RangeDays)}
+      options={RANGE_DAYS.map((r) => ({
+        value: String(r),
+        label: t("charts.daysNLabel", { days: r }),
+        title: t("charts.daysNAria", { days: r }),
+      }))}
+    />
+  );
 }
 
 export function MedicationComplianceChart({
