@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 76,
-  "total": 82231,
+  "total": 82216,
   "entries": {
     "components/cycle/log-day-sheet.tsx": 1646,
     "components/insights/coach-panel/chat-bubble.tsx": 821,
@@ -59,7 +59,7 @@
     "lib/jobs/coach-nudge.ts": 1077,
     "lib/jobs/insight-pregenerate.ts": 1192,
     "lib/jobs/medication-intake-import.ts": 819,
-    "lib/jobs/offhost-backup.ts": 1094,
+    "lib/jobs/offhost-backup.ts": 1079,
     "lib/jobs/reaction-line.ts": 803,
     "lib/managed-profiles/handover.ts": 986,
     "lib/mcp/record-search.ts": 1397,

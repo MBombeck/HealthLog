@@ -327,12 +327,20 @@ const FACT_OF: Record<string, string> = {
 
 export function reportScheduleFacts(
   counts: Readonly<Record<string, number>>,
-): Record<string, number> {
-  const facts: Record<string, number> = {};
+): Record<string, number | boolean> {
+  const facts: Record<string, number | boolean> = {};
   for (const [key, value] of Object.entries(counts)) {
     const fact = FACT_OF[key];
     if (fact) facts[fact] = value;
   }
+  // The records the tick attempted and the ones whose render or filing
+  // failed (`FanOutTally`): each failed one is stamped on its own schedule,
+  // and the run says how many there were, so a host that cannot render
+  // reports shows on the failing jobs card rather than as a green run.
+  const failed = counts.failed ?? 0;
+  facts.items_attempted = (counts.due ?? 0) - (counts.deferred ?? 0);
+  facts.items_failed = failed;
+  facts.partial_failed = failed > 0;
   return facts;
 }
 

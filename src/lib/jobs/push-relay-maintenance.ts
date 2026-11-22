@@ -27,6 +27,12 @@ export async function handlePushRelayMaintenance(
         push_relay_pruned: facts.pruned,
         push_relay_unbound: facts.unbound,
         push_relay_instance_key_rotated: facts.instance_key_rotated,
+        // An unbind given up after 7 days is work that never happened; the
+        // run counts it (`FanOutTally`). One still retrying is not counted:
+        // its backoff is the retry.
+        items_attempted: facts.unbound + facts.unbinds_given_up,
+        items_failed: facts.unbinds_given_up,
+        partial_failed: facts.unbinds_given_up > 0,
       });
     } catch (err) {
       evt.addWarning(`push-relay maintenance failed: ${err}`);
