@@ -8,7 +8,9 @@
  *      ≥ 2 usable HR points.
  *   2. Pulse-window reconstruction — raw `PULSE` measurement rows in
  *      `[startedAt − 5 min, endedAt + 5 min]`, bucketed at session
- *      grain. Only attempted for workouts younger than the dense
+ *      grain in Postgres (`readElapsedBuckets`), so a dense stream of a
+ *      long session arrives as a few hundred buckets and is never cut
+ *      short by a row cap. Only attempted for workouts younger than the dense
  *      retention window (beyond it only hourly folds survive, which are
  *      useless for a session curve), and only when the fallback quality
  *      gate passes.
@@ -19,15 +21,13 @@
  * silence over speculation. A watchless ride with two opportunistic BPM
  * readings must not paint a two-point "curve".
  */
-import { prisma } from "@/lib/db";
+import { readElapsedBuckets } from "@/lib/measurements/dense-bucket-read";
 import { median } from "@/lib/stats/central";
 
 /** Dense raw-PULSE retention. Older days keep only hourly folds. */
 const DENSE_INTRADAY_RETENTION_DAYS = 90;
 /** ± padding around the session for the fallback window. */
 const WINDOW_PAD_MS = 5 * 60 * 1000;
-/** Defensive read cap — dense accounts emit ~1 PULSE sample/second. */
-const MAX_WINDOW_PULSE_ROWS = 6000;
 /** Fallback gate: raw samples required in the padded window. */
 const MIN_FALLBACK_SAMPLES = 8;
 /** Fallback gate: fraction of session buckets that must be non-empty. */
@@ -222,33 +222,31 @@ export async function buildWorkoutHrSeries(
 
   const windowStart = new Date(startMs - WINDOW_PAD_MS);
   const windowEnd = new Date(endedAt.getTime() + WINDOW_PAD_MS);
-  const rows = await prisma.measurement.findMany({
-    where: {
-      userId,
-      type: "PULSE",
-      deletedAt: null,
-      measuredAt: { gte: windowStart, lte: windowEnd },
-    },
-    orderBy: { measuredAt: "asc" },
-    take: MAX_WINDOW_PULSE_ROWS,
-    select: { value: true, measuredAt: true, externalId: true },
-  });
-
-  // Raw per-sample rows only — a consolidated `stats:` fold is a day
-  // shape, not a session reading.
-  const raw: RawHrSample[] = rows
-    .filter((r) => !r.externalId?.startsWith("stats:"))
-    .map((r) => ({ tMs: r.measuredAt.getTime(), hr: r.value }));
-
-  // Gate part 1: enough raw samples in the padded window.
-  if (raw.length < MIN_FALLBACK_SAMPLES) return null;
-
-  const { points, bucketCount, medianDensity } = foldHrBuckets(
-    raw,
-    startMs,
+  // Raw per-sample rows only — a consolidated `stats:` fold is a day shape,
+  // not a session reading. The padding only widens the read so the gate
+  // below counts a boundary reading; the curve covers `[0, spanSec)`.
+  const { buckets, windowCount } = await readElapsedBuckets({
+    userId,
+    type: "PULSE",
+    from: windowStart,
+    to: windowEnd,
+    originMs: startMs,
     spanSec,
     bucketSec,
-  );
+  });
+
+  // Gate part 1: enough raw samples in the padded window.
+  if (windowCount < MIN_FALLBACK_SAMPLES) return null;
+
+  // Same shape as `foldHrBuckets`: the mean rounded to a whole bpm.
+  const bucketCount = Math.max(1, Math.ceil(spanSec / bucketSec));
+  const points: HrSeriesPoint[] = buckets.map((b) => ({
+    tSec: b.index * bucketSec,
+    mean: Math.round(b.sum / b.n),
+    min: b.min,
+    max: b.max,
+  }));
+  const medianDensity = median(buckets.map((b) => b.n)) ?? 0;
 
   // Gate part 2: enough of the session is actually covered.
   if (points.length / bucketCount < MIN_BUCKET_COVERAGE) return null;

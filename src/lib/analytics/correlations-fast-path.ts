@@ -60,7 +60,8 @@ import {
   correlateWeightWeekday,
   type CorrelationResult,
 } from "@/lib/insights/correlations";
-import { resolveRestingPulseSeries } from "@/lib/analytics/resting-pulse";
+import { mergeRestingWithProxy } from "@/lib/analytics/resting-pulse";
+import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
 import { isNearUtc, userDayKey } from "@/lib/tz/resolver";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { defaultLocale, type Locale } from "@/lib/i18n/config";
@@ -241,26 +242,22 @@ export async function computeCorrelationHypothesesFastPath(
     weightRows = weightRowsLive;
   }
 
-  // v1.2.5 — resolve the RESTING-pulse series the mood × pulse
-  // hypothesis scores against. Prefer the clean RESTING_HEART_RATE rows;
-  // only when the user has none do we pull RAW PULSE samples for the
-  // low-percentile daily proxy (the proxy needs the per-day distribution,
-  // not the day-mean — a day-mean folds in workout HR). Both reads are
-  // raw because the proxy floor is a percentile, not an AVG. Keying the
-  // proxy on `userDayKey(d, userTz)` aligns its buckets with the mood /
-  // intake day keys used below.
+  // v1.2.5 — the RESTING-pulse series the mood × pulse hypothesis scores
+  // against: the RESTING_HEART_RATE rows, else the low-percentile daily PULSE
+  // proxy (a day-mean folds in workout HR), folded in Postgres one row per
+  // local day; it used to page every raw pulse row of the window into
+  // memory. Keyed on the user's day like the mood / intake days below.
   const restingSamples = await fetchSeriesChunked(
     userId,
     "RESTING_HEART_RATE",
     since,
   );
-  const pulseSamplesForResting =
-    restingSamples.length === 0
-      ? await fetchSeriesChunked(userId, "PULSE", since)
-      : [];
-  const { series: restingPulseSeries } = resolveRestingPulseSeries({
+  const { series: restingPulseSeries } = mergeRestingWithProxy({
     restingSamples,
-    pulseSamples: pulseSamplesForResting,
+    proxySamples:
+      restingSamples.length === 0
+        ? await readRestingPulseProxy({ userId, since, timeZone: userTz })
+        : [],
     dayKeyOf: (d) => userDayKey(d, userTz),
   });
   // One resting figure per user-local day. RESTING_HEART_RATE can carry
@@ -391,7 +388,7 @@ export async function computeCorrelationHypothesesFastPath(
 
 async function fetchSeriesChunked(
   userId: string,
-  type: "BLOOD_PRESSURE_SYS" | "PULSE" | "WEIGHT" | "RESTING_HEART_RATE",
+  type: "BLOOD_PRESSURE_SYS" | "WEIGHT" | "RESTING_HEART_RATE",
   since: Date,
 ): Promise<ChunkedRow[]> {
   const out: ChunkedRow[] = [];

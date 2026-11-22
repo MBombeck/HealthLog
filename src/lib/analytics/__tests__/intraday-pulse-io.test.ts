@@ -2,12 +2,15 @@
  * Unit coverage for `loadIntradayPulse` — the two DATAINT-audit fixes:
  *
  *   - M2: the PULSE/step reads are bounded to the exact local-day window
- *     (`localDayWindow`), not the ±15h/39h padded superset a dense account's
- *     read cap could be entirely consumed by (the previous evening's
- *     samples starving the viewed day's afternoon).
+ *     (`localDayWindow`), not the ±15h/39h padded superset.
  *   - M5: the resting-baseline PULSE-proxy fallback buckets by the CALLER's
- *     timezone, not a hardcoded Berlin default — `resolveBaseline` now
- *     threads `timezone` into `resolveRestingPulseSeries`'s `dayKeyOf`.
+ *     timezone, not a hardcoded Berlin default — `resolveBaseline` threads
+ *     `timezone` into the proxy read.
+ *
+ * The raw readings fold in SQL (`dense-bucket-read.ts`) and the proxy too
+ * (`resting-pulse-read.ts`); the fakes below fold the rows `findMany` hands
+ * back with the same rules, so these cases keep exercising the caller. The
+ * SQL is pinned in `tests/integration/dense-day-readers.test.ts`.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
@@ -23,9 +26,28 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/logging/context", () => ({ annotate: annotateMock }));
+vi.mock("@/lib/measurements/dense-bucket-read", async () => {
+  const { makeFakeDenseBucketRead } =
+    await import("@/lib/measurements/__tests__/fake-dense-bucket-read");
+  return makeFakeDenseBucketRead((args) => findManyMock(args));
+});
+const proxyMock = vi.fn();
+vi.mock("@/lib/analytics/resting-pulse-read", () => ({
+  readRestingPulseProxy: (...args: unknown[]) => proxyMock(...args),
+}));
+
+/** A row source that honours the `stats:` prefix filter a read asks for. */
+function byPrefix<T extends { externalId?: string | null }>(
+  args: { where: { externalId?: { startsWith?: string } } },
+  rows: T[],
+): T[] {
+  const prefix = args.where.externalId?.startsWith;
+  return prefix ? rows.filter((r) => r.externalId?.startsWith(prefix)) : rows;
+}
 
 import { loadIntradayPulse } from "@/lib/analytics/intraday-pulse-io";
 import {
+  deriveRestingProxyFromPulse,
   resolveRestingPulseSeries,
   type PulseSample,
 } from "@/lib/analytics/resting-pulse";
@@ -42,6 +64,9 @@ function median(values: number[]): number | null {
 describe("loadIntradayPulse", () => {
   beforeEach(() => {
     findManyMock.mockReset();
+    findManyMock.mockResolvedValue([]);
+    proxyMock.mockReset();
+    proxyMock.mockResolvedValue([]);
     workoutFindManyMock.mockReset();
     workoutFindManyMock.mockResolvedValue([]);
     annotateMock.mockReset();
@@ -104,34 +129,19 @@ describe("loadIntradayPulse", () => {
       ...dayB.map((measuredAt, i) => ({ value: 80 + i, measuredAt })),
     ];
 
-    findManyMock.mockImplementation(
-      async (args: { where: { type: string } }) => {
-        if (args.where.type === "PULSE") return [];
-        if (args.where.type === "RESTING_HEART_RATE") return [];
-        return [];
-      },
-    );
-    // `resolveBaseline` fires a SECOND PULSE read (take: 365, no window) when
-    // resting rows are thin — swap the mock to serve it on the second PULSE
-    // call specifically by checking call order isn't reliable, so key off
-    // `select`/`take` shape instead.
-    findManyMock.mockImplementation(
-      async (args: {
-        where: { type: string; measuredAt?: unknown };
-        take?: number;
-      }) => {
-        if (args.where.type === "RESTING_HEART_RATE") return [];
-        if (args.where.type === "PULSE" && args.take === 365) {
-          return pulseHistory;
-        }
-        // The view-day-windowed PULSE / ACTIVITY_STEPS reads — irrelevant here.
-        return [];
-      },
+    // No resting rows, so `resolveBaseline` reads the PULSE proxy; the fake
+    // folds the history in whatever zone the read is asked for.
+    proxyMock.mockImplementation(async (opts: { timeZone: string }) =>
+      deriveRestingProxyFromPulse(pulseHistory, (d) =>
+        userDayKey(d, opts.timeZone),
+      ),
     );
 
     const result = await loadIntradayPulse("user-1", tz, dateKey);
 
     expect(result.baselineSource).toBe("proxy");
+    expect(proxyMock).toHaveBeenCalledOnce();
+    expect(proxyMock.mock.calls[0][0]).toMatchObject({ timeZone: tz });
 
     const expected = resolveRestingPulseSeries({
       restingSamples: [],
@@ -192,12 +202,16 @@ describe("loadIntradayPulse", () => {
 
     findManyMock.mockImplementation(
       async (args: {
-        where: { type: string; measuredAt?: unknown };
+        where: {
+          type: string;
+          measuredAt?: unknown;
+          externalId?: { startsWith?: string };
+        };
         take?: number;
       }) => {
         if (args.where.type === "RESTING_HEART_RATE") return restingRows;
         if (args.where.type === "PULSE" && args.where.measuredAt) {
-          return bucketRows; // the view-day-windowed read
+          return byPrefix(args, bucketRows); // the view-day-windowed reads
         }
         return [];
       },
@@ -245,12 +259,16 @@ describe("loadIntradayPulse", () => {
 
     findManyMock.mockImplementation(
       async (args: {
-        where: { type: string; measuredAt?: unknown };
+        where: {
+          type: string;
+          measuredAt?: unknown;
+          externalId?: { startsWith?: string };
+        };
         take?: number;
       }) => {
         if (args.where.type === "RESTING_HEART_RATE") return restingRows;
         if (args.where.type === "PULSE" && args.where.measuredAt) {
-          return [uploadedBucket, rawSample];
+          return byPrefix(args, [uploadedBucket, rawSample]);
         }
         return [];
       },

@@ -178,6 +178,33 @@ function makePrisma(opts: {
     id: `e${i}`,
   }));
   const measurementFindMany = vi.fn().mockResolvedValue(energyRows);
+  // The day's energy is summed per source and device type in SQL; the fake
+  // groups the fixture rows the same way.
+  const measurementGroupBy = vi.fn(async () => {
+    const groups = new Map<
+      string,
+      { source: unknown; deviceType: unknown; sum: number }
+    >();
+    for (const row of energyRows as Array<{
+      value: number;
+      source?: string;
+      deviceType?: string | null;
+    }>) {
+      const key = `${row.source}|${row.deviceType ?? null}`;
+      const g = groups.get(key) ?? {
+        source: row.source,
+        deviceType: row.deviceType ?? null,
+        sum: 0,
+      };
+      g.sum += row.value;
+      groups.set(key, g);
+    }
+    return [...groups.values()].map((g) => ({
+      source: g.source,
+      deviceType: g.deviceType,
+      _sum: { value: g.sum },
+    }));
+  });
   const measurementFindFirst = vi
     .fn()
     .mockResolvedValue(opts.rhr == null ? null : { value: opts.rhr });
@@ -214,6 +241,7 @@ function makePrisma(opts: {
       measurement: {
         findMany: measurementFindMany,
         findFirst: measurementFindFirst,
+        groupBy: measurementGroupBy,
         upsert,
       },
       workout: { findMany: workoutFindMany },

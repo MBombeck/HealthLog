@@ -514,7 +514,7 @@ async function readMetricPoints(
     measurements = nights.map((n) => ({ measuredAt: n.measuredAt }));
   } else {
     // The latest 365 readings, never less than the last 30 days.
-    const rows = await readRecentReadings(userId, meta.measurementType);
+    const rows = await readRecentReadings(userId, meta.measurementType, userTz);
     for (const m of rows) {
       points.push({
         measuredAt: m.measuredAt,
