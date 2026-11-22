@@ -8,10 +8,8 @@
 import type {
   IntakeTakenVia,
   MedicationIntakeEvent,
-  PrismaClient,
 } from "@/generated/prisma/client";
 import { medicationWindow } from "@/lib/medications/course-window";
-
 import { prisma as defaultPrisma } from "@/lib/db";
 import { isP2002 } from "@/lib/prisma-errors";
 import {
@@ -26,8 +24,9 @@ import {
 } from "@/lib/medications/scheduling/attribute-intake";
 import type { WorkerScheduleRow } from "@/lib/medications/scheduling/worker-helpers";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
+import * as autoTake from "./auto-take-correction";
 
-type PrismaLike = Pick<PrismaClient, "medication" | "medicationIntakeEvent">;
+type PrismaLike = autoTake.SlotWriteClient;
 
 /**
  * The intake row the slot upsert reads and returns: the whole row, so a
@@ -368,7 +367,7 @@ async function applyToExisting(
 
   const existingActioned = existing.takenAt !== null || existing.skipped;
   const incomingIsPendingEcho = !isExplicitTaken && !isExplicitSkip;
-  const existingTaken = existing.takenAt !== null && !existing.skipped;
+  const existingTaken = autoTake.holdsTake(existing);
 
   // A take onto a slot that already holds a take writes nothing and answers
   // `alreadyTaken` (the same key again: a replay). Checked before the
@@ -467,6 +466,7 @@ async function applyToExisting(
     },
   })) as SlotIntakeRow;
 
+  if (isExplicitSkip) await autoTake.refundCorrectedAutoTake(client, existing);
   return {
     row,
     outcome: "updated",
