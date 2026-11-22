@@ -733,3 +733,43 @@ describe("an answered dose leaves no Live Activity showing it as due", () => {
     ).toBe(1);
   });
 });
+
+describe("a device the relay has just bound", () => {
+  it("gets one sync at once, so its provisional binding becomes active", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    // The relay answers `provisional` for a new binding and removes it after
+    // two days without a push Apple accepted. A phone that plans its own
+    // reminders may get none for weeks.
+    fake.bindState = "provisional";
+    const registered = await registerDevice(
+      session,
+      deviceBody(instanceId, TOKEN).body,
+    );
+    expect(registered.data.push.relayState).toBe("bound");
+    await eventually(() =>
+      fake.apns.some((a) => a.pushClass === "silent" && a.token === TOKEN),
+    );
+    const prisma = getPrismaClient();
+    await eventually(
+      async () =>
+        (await prisma.pushAttempt.count({
+          where: { userId: user.id, reason: "relay_binding_activation" },
+        })) === 1,
+    );
+    expect(
+      await prisma.pushWake.count({
+        where: { deviceId: registered.data.id, kind: "MEDICATION_INTAKE_SYNC" },
+      }),
+    ).toBe(1);
+  });
+
+  it("gets none when the relay already holds the binding as active", async () => {
+    const { instanceId } = await enableRelay();
+    const session = await makeSession(await makeUser());
+    await registerDevice(session, deviceBody(instanceId, TOKEN).body);
+    await settle();
+    expect(fake.apns).toHaveLength(0);
+  });
+});

@@ -19,6 +19,7 @@
  * the relay contract) is not ended over the relay.
  */
 import { prisma } from "@/lib/db";
+import { withBackgroundEvent } from "@/lib/logging/background";
 import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
 import { EVENT_DEFAULT_ENABLED } from "@/lib/notifications/types";
 import { fromBase64Url } from "@/lib/push-relay/encoding";
@@ -223,6 +224,84 @@ export async function flushOwedIntakeSyncs(
     }
   }
   return sent;
+}
+
+/** The ledger reason of the sync that activates a binding. */
+const BINDING_ACTIVATION_REASON = "relay_binding_activation";
+
+/**
+ * The first push to a device the relay has just bound: one silent intake
+ * sync, at once.
+ *
+ * The relay holds a new binding as `provisional` and makes it `active` only
+ * once Apple accepted a push for it. A binding still provisional more than
+ * two days after it was made is removed, and so is an instance none of whose
+ * pushes Apple ever accepted, with every binding it has (`spec/protocol.md`,
+ * "Retention"). Neither tells this server: the next push answers
+ * `404 binding_unknown` or `401 unknown_instance` and is lost, and the device
+ * has to bind again, which starts the two days anew. A phone that plans its
+ * own reminders, on an account nobody records for on the web, may get no push
+ * for weeks; its binding was gone long before the first dose confirmation or
+ * security alert was due. A provisional binding also gets no Live Activity
+ * push at all (`403 activity_refused`).
+ *
+ * Apple's acceptance of this sync makes the binding active and marks the
+ * instance as delivering. The app is in the foreground registering at that
+ * moment; reading its doses once more costs it nothing, and the push carries
+ * no data. It is a sync like any other: it counts against the device's
+ * silent budget, and one the budget holds back or the relay drops is owed
+ * and sent by the minute pass, so the activation is retried. What the relay
+ * sees is a silent push at the moment it bound the device, which tells it
+ * nothing it did not know.
+ *
+ * Never throws: the registration that bound the device has answered.
+ */
+export async function activateRelayBinding(
+  userId: string,
+  deviceId: string,
+): Promise<void> {
+  try {
+    await withBackgroundEvent(
+      "notification.relay_binding.activate",
+      async (evt) => {
+        // The account's own gates: no push for an account pending deletion
+        // or with its APNs channel switched off.
+        const device = (await wakeableDevices(userId)).find(
+          (d) => d.id === deviceId,
+        );
+        const ctx = await loadPushContext();
+        if (!device || routeOf(device, ctx) !== "relay") {
+          evt.addMeta("relay_binding_activation", "no_route");
+          return;
+        }
+        const sent = await sendSealedIntakeSync([device], ctx);
+        const owed = sent.deferred.length > 0;
+        const handed = sent.anyAccepted || sent.waiting;
+        evt.addMeta(
+          "relay_binding_activation",
+          sent.anyAccepted
+            ? "accepted"
+            : sent.waiting
+              ? "waiting"
+              : owed
+                ? "owed"
+                : (sent.lastFailure ?? "not_sent"),
+        );
+        recordPushAttempt({
+          userId,
+          channel: "APNS",
+          eventType: SYNC_EVENT,
+          result: handed ? "ok" : owed ? "skipped" : "error",
+          reason:
+            handed || owed
+              ? BINDING_ACTIVATION_REASON
+              : (sent.lastFailure ?? "intake_sync_nothing_sent"),
+        });
+      },
+    );
+  } catch {
+    // Best effort: the binding stands, and the next sync activates it.
+  }
 }
 
 export interface RelayActivityRow {

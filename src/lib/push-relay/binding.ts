@@ -17,6 +17,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { activateRelayBinding } from "@/lib/push-relay/medication-pushes";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { tokenTagHex } from "@/lib/push-relay/encoding";
 import { bindText, verifyEncoded } from "@/lib/push-relay/statements";
@@ -108,6 +109,7 @@ export async function forwardBinding(
   const device = await prisma.device.findUnique({
     where: { id: deviceId },
     select: {
+      userId: true,
       apnsToken: true,
       apnsEnvironment: true,
       relayBindingKey: true,
@@ -171,6 +173,11 @@ export async function forwardBinding(
   // would remove the binding just made.
   if (state === "bound") {
     await prisma.pushRelayUnbind.deleteMany({ where: { token } });
+    // A binding the relay holds as provisional is removed after two days
+    // unless Apple accepted a push for it: send that push now.
+    if (result.kind === "response" && result.body?.state === "provisional") {
+      void activateRelayBinding(device.userId, deviceId);
+    }
   }
   return state;
 }
