@@ -171,6 +171,11 @@
 - The documentation link on the relay card and in its dialog leads to the push relay page.
 - The admin relay card shows a failed status read instead of nothing.
 
+- A dose change on another device always reaches a phone whose silent-push budget at the relay is spent: the relay's refusal is no longer counted as delivered, the sync is owed and goes out the first minute the relay takes one again.
+- A Live Activity started from the server through the push relay appears only for a medication with Live Activity turned on and only for a dose coming up or currently due, never for one that is long overdue or already answered; the earliest such dose gets it.
+- A dose the iOS app names by its slot binds to that slot on the bulk route exactly as on the single route, also when it is taken early and the windows of two doses overlap.
+- Posting a single entry again that was deleted in HealthLog (mood, measurement, cycle day, AUDIT-C) answers `410` with the reason `deleted_in_healthlog` instead of bringing it back; a mood entry deleted in Apple Health comes back when Apple Health sends it again.
+
 ### Security
 
 - Pages rendered for a signed-in request are `private, no-store` on every path, public ones included, and the service worker caches only pages answered to an anonymous request. The account data in a page's first HTML leaves out name, birth date, insurance and saved report fields; `/api/auth/me` answers `private, no-store`.
