@@ -503,6 +503,7 @@ describe("GET /api/medications/[id]/compliance — caching and limits", () => {
     // Column-bounded: only the five fields the math consumes
     // (v1.15.20 adds the slot-binding provenance for pinned takes).
     expect(call.select).toEqual({
+      medicationId: true,
       takenAt: true,
       skipped: true,
       scheduledFor: true,
