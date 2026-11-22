@@ -26,6 +26,7 @@ import {
   dataEnvelope,
   errorEnvelope,
   malformedJsonResponse,
+  recordRefusal,
   stdResponses,
 } from "./shared";
 
@@ -94,13 +95,9 @@ const cardLinkSummary = z
 
 const linkStatus = z.object({ link: cardLinkSummary.nullable() });
 
-const COOKIE_ONLY = {
-  "403": {
-    description:
-      "A Bearer caller (`emergency-card.cookie_only`): the link and the downloads are managed over a browser session, on the caller's own record only. Making a link while the operator's external-access switch is off answers `emergency-card.api_disabled`.",
-    content: { "application/json": { schema: errorEnvelope } },
-  },
-};
+const COOKIE_ONLY = recordRefusal(
+  "A Bearer caller (`emergency-card.cookie_only`): the link and the downloads are managed over a browser session, on the caller's own record or on a managed profile the caller is guardian of. Making a link while the operator's external-access switch is off answers `emergency-card.api_disabled`.",
+);
 
 const NONE_404 = {
   "404": {
@@ -115,7 +112,7 @@ export const emergencyCardPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "The caller's emergency card",
       description:
-        "Every item of the caller's own emergency card: blood type, active allergies (severe first), ongoing conditions, current medications, the pregnancy or postpartum state, implants, contacts, the declarations, the note and the birth date. Always the caller's own record, never one a switch opened.",
+        "Every item of the caller's own emergency card: blood type, active allergies (severe first), ongoing conditions, current medications, the pregnancy or postpartum state, implants, contacts, the declarations, the note and the birth date. The caller's own record, or the managed profile a guardian switched into; a delegate on an adult's record is refused with 403 at every grant level.",
       responses: {
         "200": {
           description: "The card.",
@@ -128,6 +125,7 @@ export const emergencyCardPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },

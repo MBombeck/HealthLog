@@ -19,6 +19,7 @@ import {
   dataEnvelope,
   errorEnvelope,
   malformedJsonResponse,
+  recordRefusal,
   stdResponses,
 } from "./shared";
 
@@ -66,13 +67,9 @@ const careFeedMinted = z.object({
   feed: careFeedSummary,
 });
 
-const COOKIE_ONLY = {
-  "403": {
-    description:
-      "A Bearer caller (`care.feed.cookie_only`): the subscription is managed over a browser session, on the caller's own record only. Turning it on while the operator's external-access switch is off answers `care.feed.api_disabled`.",
-    content: { "application/json": { schema: errorEnvelope } },
-  },
-};
+const COOKIE_ONLY = recordRefusal(
+  "A Bearer caller (`care.feed.cookie_only`): the subscription is managed over a browser session, on the caller's own record or on a managed profile the caller is guardian of. Turning it on while the operator's external-access switch is off answers `care.feed.api_disabled`.",
+);
 
 const NONE_404 = {
   "404": {

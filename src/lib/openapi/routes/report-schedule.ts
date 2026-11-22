@@ -16,7 +16,12 @@ import {
 } from "@/lib/validations/report-schedule";
 import { isoDateTime } from "@/lib/validations/datetime";
 
-import { dataEnvelope, malformedJsonResponse, stdResponses } from "./shared";
+import {
+  dataEnvelope,
+  malformedJsonResponse,
+  recordRefusal,
+  stdResponses,
+} from "./shared";
 
 const reportScheduleView = z
   .object({
@@ -71,6 +76,7 @@ export const reportSchedulePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },
@@ -103,6 +109,9 @@ export const reportSchedulePaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...malformedJsonResponse,
+        ...recordRefusal(
+          "`module.disabled` while the `doctorReport` module is off.",
+        ),
         ...stdResponses,
       },
     },
@@ -122,6 +131,7 @@ export const reportSchedulePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },

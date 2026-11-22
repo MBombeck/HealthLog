@@ -1258,8 +1258,10 @@ model User {
   // managed profile.
   cycleCalendarFeeds       CycleCalendarFeed[] @relation("CycleCalendarFeedSubject")
   cycleCalendarFeedsMinted CycleCalendarFeed[] @relation("CycleCalendarFeedCreator")
-  careCalendarFeeds        CareCalendarFeed[]
-  emergencyCardLinks       EmergencyCardLink[]
+  careCalendarFeeds        CareCalendarFeed[]  @relation("CareCalendarFeedSubject")
+  careCalendarFeedsMinted  CareCalendarFeed[]  @relation("CareCalendarFeedCreator")
+  emergencyCardLinks       EmergencyCardLink[] @relation("EmergencyCardLinkSubject")
+  emergencyCardLinksMinted EmergencyCardLink[] @relation("EmergencyCardLinkCreator")
 
   // v1.39 — the needs-based onboarding's answers and step ledger for THIS
   // record. 1:1, and keyed by record rather than by the person at the
@@ -8777,9 +8779,13 @@ enum CareCalendarFeedTitleMode {
 /// `revokedAt` and never deletes. Not in the backup, for the reason the cycle
 /// feed is not (`backup-plan.ts`).
 model CareCalendarFeed {
-  id     String @id @default(cuid())
-  /// The record whose care dates the feed serves, and who minted it.
-  userId String @map("user_id")
+  id          String @id @default(cuid())
+  /// The record whose care dates the feed serves.
+  userId      String @map("user_id")
+  /// Who minted it: the owner, or the guardian of a managed profile. A
+  /// guardian's feed is re-checked against their live MANAGE grant and the
+  /// managed-profile marker on every fetch, and ends with a handover.
+  createdById String @map("created_by_id")
 
   /// HMAC-SHA256 of the raw `hlf_` token.
   tokenHash   String @unique @map("token_hash")
@@ -8806,9 +8812,11 @@ model CareCalendarFeed {
   includeVaccinations Boolean                   @default(true) @map("include_vaccinations")
   titleMode           CareCalendarFeedTitleMode @default(DISCREET) @map("title_mode")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User @relation("CareCalendarFeedSubject", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User @relation("CareCalendarFeedCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([createdById])
   @@map("care_calendar_feeds")
 }
 
@@ -8841,6 +8849,10 @@ enum EmergencyCardField {
 model EmergencyCardLink {
   id          String               @id @default(cuid())
   userId      String               @map("user_id")
+  /// Who minted it: the owner, or the guardian of a managed profile. A
+  /// guardian's link is re-checked against their live MANAGE grant and the
+  /// managed-profile marker on every scan, and ends with a handover.
+  createdById String               @map("created_by_id")
   /// HMAC-SHA256 of the raw `hlm_` token.
   tokenHash   String               @unique @map("token_hash")
   /// The first 8 characters of the raw token, shown so the owner can tell
@@ -8856,9 +8868,11 @@ model EmergencyCardLink {
   lastAccessAt DateTime? @map("last_access_at")
   accessCount  Int       @default(0) @map("access_count")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User @relation("EmergencyCardLinkSubject", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User @relation("EmergencyCardLinkCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([createdById])
   @@map("emergency_card_links")
 }
 

@@ -5,11 +5,14 @@
  * copy and the wallet PDF from it, and the iOS app can read it for a
  * lock-screen surface.
  *
- * Always the caller's own record (`requireActorAuth`): a delegate or a
- * guardian reading inside someone else's record gets their own card, never
- * the owner's. A narrow Bearer token is refused by the default scope arm.
+ * Auth: through `requireGuardianAuth()`: the record's owner on their own
+ * record, or the guardian of a managed profile (a MANAGE grant on a record
+ * that carries the managed-profile marker), who holds the profile's card
+ * because the profile has nobody who signs in. A delegate on an adult's
+ * record is refused at every grant level: the card is the person's own.
+ * A narrow Bearer token is refused by the default scope arm.
  */
-import { apiHandler, requireActorAuth } from "@/lib/api-handler";
+import { apiHandler, requireGuardianAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import {
   emergencyCardHasContent,
@@ -22,7 +25,7 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireActorAuth();
+  const { user } = await requireGuardianAuth();
   const today = moodDateKey(new Date(), user.timezone ?? DEFAULT_TIMEZONE);
   const card = await loadEmergencyCard(user.id, today);
   annotate({

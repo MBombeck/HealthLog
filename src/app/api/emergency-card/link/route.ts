@@ -10,16 +10,18 @@
  *   DELETE → revoke it. The row is stamped, never deleted; a scanned card
  *            answers 404 from then on.
  *
- * Auth: cookie session only, and always the caller's own record
- * (`requireActorAuth`). Making a link needs a fresh proof, like every other
- * standing credential.
+ * Auth: cookie session only, through `requireGuardianAuth()`: the owner on
+ * their own record, or the guardian of a managed profile, for the profile's
+ * card. A delegate on an adult's record is refused at every grant level.
+ * Making a link needs a fresh proof of the person at the keyboard, like every
+ * other standing credential.
  */
 import { NextRequest } from "next/server";
 
 import {
   apiHandler,
   assertRecentCookieProof,
-  requireActorAuth,
+  requireGuardianAuth,
 } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
@@ -53,7 +55,7 @@ export const dynamic = "force-dynamic";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const GET = apiHandler(async () => {
-  const auth = await requireActorAuth();
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return cardCookieOnlyRefusal();
   annotate({ action: { name: "emergency-card.link.status" } });
   const live = await findLiveCardLink(auth.user.id);
@@ -61,10 +63,11 @@ export const GET = apiHandler(async () => {
 });
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const auth = await requireActorAuth();
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return cardCookieOnlyRefusal();
-  const { user } = auth;
-  await assertRecentCookieProof(user, auth.session.id);
+  const { user, actor } = auth;
+  // The proof is the person at the keyboard, so it is the actor's session.
+  await assertRecentCookieProof(actor, auth.session.id);
   annotate({ action: { name: "emergency-card.link.create" } });
 
   // The operator's external-access switch covers this credential too.
@@ -75,7 +78,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const rl = await checkRateLimit(
-    `emergency-card:mint:${user.id}`,
+    `emergency-card:mint:${actor.id}`,
     CARD_LINK_MINT_LIMIT_PER_HOUR,
     CARD_LINK_MINT_WINDOW_MS,
   );
@@ -103,6 +106,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     created = await prisma.emergencyCardLink.create({
       data: {
         userId: user.id,
+        createdById: actor.id,
         tokenHash: minted.hash,
         tokenPrefix: minted.prefix,
         fields,
@@ -136,7 +140,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 });
 
 export const DELETE = apiHandler(async () => {
-  const auth = await requireActorAuth();
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return cardCookieOnlyRefusal();
   const { user } = auth;
   annotate({ action: { name: "emergency-card.link.revoke" } });
