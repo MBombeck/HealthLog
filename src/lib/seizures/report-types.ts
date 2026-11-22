@@ -37,6 +37,12 @@ export interface SeizureReportSummary {
   seizureFreeDays: number;
   per28Days: number;
   longestFreeDays: number;
+  /**
+   * When the diary began, as an ISO instant, while that is later than the
+   * report period's start: the figures above count from it. Null when the
+   * diary covers the whole period.
+   */
+  diaryFrom: string | null;
   daysSinceLast: number | null;
   convulsive: number;
   fromSleep: number;

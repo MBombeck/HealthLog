@@ -24,6 +24,7 @@ import {
   cardTakeSlot,
   cardWindowPill,
 } from "@/lib/medications/dose-state/pill";
+import { shownAdherence } from "@/lib/medications/shown-adherence";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
 import {
   estimateDailyDoseCount,
@@ -257,11 +258,9 @@ export function MedicationCard({
   // rows; otherwise it falls back to the static 7-/30-day fields.
   const complianceNotApplicable = compliance?.applicable === false;
   const display = compliance?.complianceDisplay ?? undefined;
-  const shortDays = display?.shortDays ?? 7;
-  const longDays = display?.longDays ?? 30;
-  const rate7 = display?.short.rate ?? compliance?.compliance7?.rate ?? 0;
-  const rate30 = display?.long.rate ?? compliance?.compliance30?.rate ?? 0;
-  const streak = display?.short.streak ?? compliance?.compliance7?.streak ?? 0;
+  // A window with no dose to score shows "no doses yet", never a rate.
+  const { shortDays, longDays, rate7, rate30, streak } =
+    shownAdherence(compliance);
   // The open dose, resolved on the server (`currentDose`), drives the pill,
   // the calm status line (never a card tint) and the slot the buttons
   // record; no state and no pill while the display block is absent.
@@ -293,7 +292,6 @@ export function MedicationCard({
   // nearest slot: the resolved open dose while it is due, overdue or missed,
   // else the server's next-due.
   const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
-  const displayedSlot = takeSlot?.at ?? null;
 
   // v1.16.11 — low-stock card context. Runway days from the list
   // payload's dose-derived stock over the same estimate the table /
@@ -503,7 +501,7 @@ export function MedicationCard({
       intakeActionable={medication.intakeActionable !== false}
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
-      onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      onRecordIntake={(skipped) => recordIntake(skipped, takeSlot)}
       takeSlot={takeSlot}
       snooze={snooze}
     >

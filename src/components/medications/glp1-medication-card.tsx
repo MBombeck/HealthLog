@@ -39,6 +39,7 @@ import {
   cardTakeSlot,
   cardWindowPill,
 } from "@/lib/medications/dose-state/pill";
+import { shownAdherence } from "@/lib/medications/shown-adherence";
 import {
   estimateDailyDoseCount,
   estimateRunwayDays,
@@ -336,11 +337,9 @@ export function Glp1MedicationCard({
   // rows; otherwise it falls back to the static 7-/30-day fields.
   const complianceNotApplicable = compliance?.applicable === false;
   const display = compliance?.complianceDisplay ?? undefined;
-  const shortDays = display?.shortDays ?? 7;
-  const longDays = display?.longDays ?? 30;
-  const rate7 = display?.short.rate ?? compliance?.compliance7?.rate ?? 0;
-  const rate30 = display?.long.rate ?? compliance?.compliance30?.rate ?? 0;
-  const streak = display?.short.streak ?? compliance?.compliance7?.streak ?? 0;
+  // A window with no dose to score shows "no doses yet", never a rate.
+  const { shortDays, longDays, rate7, rate30, streak } =
+    shownAdherence(compliance);
   // v1.15.9 — the open dose's server-derived status drives the green
   // take-window highlight + the overdue / heavily-overdue top line, shared
   // verbatim with the generic card. No state (calm) without a dose.
@@ -352,7 +351,6 @@ export function Glp1MedicationCard({
   // while due, overdue or missed, else the server's next-due), threaded onto
   // the take / skip POST so the server records THIS dose.
   const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
-  const displayedSlot = takeSlot?.at ?? null;
 
   // v1.16.11 / v1.17.0 — low-stock card context, identical to the generic
   // card: runway days from the list payload's dose-derived stock, surfaced
@@ -535,7 +533,7 @@ export function Glp1MedicationCard({
       intakeActionable={medication.intakeActionable !== false}
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
-      onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      onRecordIntake={(skipped) => recordIntake(skipped, takeSlot)}
       takeSlot={takeSlot}
       snooze={snooze}
     >

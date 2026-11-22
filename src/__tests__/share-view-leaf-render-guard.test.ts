@@ -406,6 +406,7 @@ const DISPOSITIONS: Record<StructuredLeafId, Disposition> = {
           seizureFreeDays: 27,
           per28Days: 3.7,
           longestFreeDays: 12,
+          diaryFrom: null,
           daysSinceLast: 2,
           convulsive: 4,
           fromSleep: 1,
