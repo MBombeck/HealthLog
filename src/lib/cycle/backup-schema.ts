@@ -133,6 +133,16 @@ export const cycleDayLogSchema = z
     symptomLinkCreatedAt: z
       .array(z.object({ key: z.string().min(1), createdAt: isoDateTime }))
       .optional(),
+    // Which write each link came from, sparse: only links an import wrote
+    // are listed, every other link is the person's own (`MANUAL`). A file
+    // without it restores every link as `MANUAL`. The source is read as a
+    // plain string and checked at the write, so an unknown one costs that
+    // link its provenance, not the restore.
+    symptomSources: z
+      .array(
+        z.object({ key: z.string().min(1), source: z.string() }).passthrough(),
+      )
+      .optional(),
   })
   .passthrough();
 /** Cycle-tracking preferences (one row per user). */

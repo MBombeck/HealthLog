@@ -182,7 +182,7 @@ const symptomBatchEntryResult = z
       .string()
       .optional()
       .describe(
-        "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`), `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10), `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started). Decode unknown reasons leniently.",
+        "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`), `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10), `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started). On a `duplicate`: `tombstoned` (since v1.49.0) for a sample deleted earlier (in HealthLog, or through `DELETE /api/symptoms/events/by-external-ids`), which stays deleted. Decode unknown reasons leniently.",
       ),
   })
   .meta({ id: "SymptomBatchEntryResult" });

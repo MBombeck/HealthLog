@@ -52,6 +52,11 @@ export type MeasurementReconciliationVerdict =
   | {
       status: "inserted" | "updated" | "resurrected" | "duplicate";
       row: ReconciledMeasurementRow;
+      /**
+       * On a `duplicate`: the row at the entry's external identity is a
+       * deleted one, so the re-post was refused (`tombstone-repost.ts`).
+       */
+      tombstoned?: boolean;
       retiredCollisionId?: string;
       dirtyIdentities?: DirtyMeasurementIdentity[];
     }
@@ -335,6 +340,14 @@ export async function reconcileExternalMeasurement(
       };
     }
 
+    // An immutable sample whose external identity names a deleted row stays
+    // deleted, whatever else matches: a late re-post never brings it back
+    // (`tombstone-repost.ts`). A provider re-score (`update`) still may.
+    if (options.exactExternalMatch === "duplicate" && externalHit?.deletedAt) {
+      await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${SAVEPOINT}`);
+      return { status: "duplicate", row: externalHit, tombstoned: true };
+    }
+
     if (
       options.exactExternalMatch === "duplicate" &&
       exactExternalMatch &&
@@ -549,7 +562,17 @@ async function settleExactMatches(
             aggregationAuthority(row.aggregationProvenance)) ||
         options.exactExternalMatch === "duplicate"
       ) {
-        settled.push([index, { status: "duplicate", row: reconciled }]);
+        settled.push([
+          index,
+          {
+            status: "duplicate",
+            row: reconciled,
+            ...(options.exactExternalMatch === "duplicate" &&
+            row.deletedAt !== null
+              ? { tombstoned: true }
+              : {}),
+          },
+        ]);
         continue;
       }
       const { userId: _ownerId, ...mutable } = desired;

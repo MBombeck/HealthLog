@@ -95,6 +95,8 @@ export type AuthLedger = (typeof LEDGERS)[number]["key"];
 
 export interface AuthLedgerCleanupResult {
   deleted: Record<AuthLedger, number>;
+  /** Accounts whose signed-out devices lost their push credentials. */
+  signedOutAccounts: number;
   /** False when a table stopped at the batch cap with rows left. */
   drained: boolean;
 }
@@ -104,6 +106,13 @@ export async function cleanupAuthLedgers(
   now: Date = new Date(),
   { batchSize = PURGE_BATCH_SIZE, maxBatches = PURGE_MAX_BATCHES } = {},
 ): Promise<AuthLedgerCleanupResult> {
+  // Before the expired refresh rows go: they are what tells a signed-out
+  // device from one that never signed in (`signed-out-push.ts`). Loaded here,
+  // not at the top: the worker registry imports this module for its queue
+  // name and must not pull the push relay with it.
+  const { sweepSignedOutDevices } =
+    await import("@/lib/devices/signed-out-push");
+  const signedOutAccounts = await sweepSignedOutDevices(prisma, now);
   const deleted = {} as Record<AuthLedger, number>;
   let drained = true;
   for (const ledger of LEDGERS) {
@@ -128,7 +137,7 @@ export async function cleanupAuthLedgers(
     deleted[ledger.key] = total;
     if (!finished) drained = false;
   }
-  return { deleted, drained };
+  return { deleted, signedOutAccounts, drained };
 }
 
 export async function handleAuthLedgerCleanup(
@@ -137,11 +146,13 @@ export async function handleAuthLedgerCleanup(
   void jobs;
   return withBackgroundEvent("job.auth_ledger_cleanup", async (evt) => {
     try {
-      const { deleted, drained } = await cleanupAuthLedgers(getWorkerPrisma());
+      const { deleted, signedOutAccounts, drained } =
+        await cleanupAuthLedgers(getWorkerPrisma());
       for (const [key, count] of Object.entries(deleted)) {
         evt.addMeta(`auth_ledger_cleanup_${key}`, count);
       }
       evt.addMeta("auth_ledger_cleanup_drained", drained);
+      evt.addMeta("auth_ledger_cleanup_signed_out_accounts", signedOutAccounts);
       if (!drained) {
         evt.addWarning(
           "auth-ledger-cleanup stopped at the batch cap; a backlog remains for the next run",

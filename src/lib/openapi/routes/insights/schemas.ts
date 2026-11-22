@@ -1881,6 +1881,12 @@ export const ecgIngestResponse = z
       .describe(
         "What the write did. `inserted` — a new recording landed (HTTP 201). `updated` — this `externalRecordingId` was already stored and the row was overwritten in place (HTTP 200); a retry is safe and creates nothing. `duplicate` — this exact recording is already stored under a DIFFERENT id, i.e. it arrived earlier through the `export.zip` importer (HTTP 200); nothing was written and `id` names the row that already holds it. A recording is the same recording when `(source, recordedAt, samplingFrequency)` match, which is enforced by a unique index rather than by convention. Since v1.48.2 `duplicate` is also the answer for an `APPLE_HEALTH` recording deleted through `DELETE /api/insights/ecg/by-external-ids`: it stays deleted, nothing is written, and `id` names the deletion record rather than a recording. All three statuses mean the client may advance its cursor.",
       ),
+    reason: z
+      .literal("tombstoned")
+      .optional()
+      .describe(
+        "Since v1.49.0, only on a `duplicate` for an `APPLE_HEALTH` recording deleted earlier: it stays deleted and nothing was written. Absent otherwise.",
+      ),
     recordedAt: isoDateTime().describe(
       "The `recordedAt` that was submitted, echoed back.",
     ),

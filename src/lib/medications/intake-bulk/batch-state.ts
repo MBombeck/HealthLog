@@ -26,6 +26,9 @@ export interface BulkIntakeEntry {
 }
 
 /**
+ * A `duplicate` with reason `tombstoned` is a re-post of a dose deleted
+ * earlier: nothing was written (`tombstone-repost.ts`).
+ *
  * `updated` joins the per-entry status vocabulary: a write that snaps onto
  * an existing scheduled-slot row (e.g. the pending REMINDER row) updates it
  * in place rather than inserting. The iOS sync engine treats `updated` the
@@ -95,10 +98,16 @@ export interface BatchState {
    * UUID dedups too.
    */
   rowIdByExternalId: Map<string, string>;
+  /**
+   * Apple Health dose-event UUIDs of doses deleted earlier with no live row
+   * under them: their entries are refused (`tombstone-repost.ts`).
+   */
+  tombstonedExternalIds: Set<string>;
 }
 
 export function createBatchState(
   rowIdByExternalId: Map<string, string>,
+  tombstonedExternalIds: Set<string> = new Set(),
 ): BatchState {
   return {
     results: [],
@@ -112,6 +121,7 @@ export function createBatchState(
     syncSlots: new Map(),
     snoozeClearIds: new Set<string>(),
     rowIdByExternalId,
+    tombstonedExternalIds,
   };
 }
 

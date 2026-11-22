@@ -6546,6 +6546,15 @@ model Device {
   /// medication reminder that announces a dose; NULL there follows the
   /// account-wide client-managed flag (`deviceDeliversLocally`).
   medicationDelivery     String?             @map("medication_delivery")
+  /// Until when a device that delivers its own medication reminders has
+  /// them planned (`POST /api/devices` `localRunwayUntil`, at most 14 days
+  /// ahead; null clears it, omitted keeps it). A device delivers locally
+  /// only while `now <= localRunwayUntil`, or, without a runway, while it
+  /// was seen in the last 3 days (`lastSeen`, which every request on its
+  /// sign-in token moves): a quiet phone whose plan ran dry gets the
+  /// server's reminder push again until it shows up. Reader: the dispatcher's
+  /// APNs branch (`client-managed-apns.ts`, `deviceDeliversLocally`).
+  localRunwayUntil       DateTime?           @map("local_runway_until")
   /// v1.17.1 (#22) — APNs push token for the iOS Live Activity update/end
   /// channel. ActivityKit issues a per-Activity push token distinct from the
   /// device APNs token; the server stores the most recent one so the worker
@@ -9097,6 +9106,13 @@ model CycleSymptomLink {
   /// CycleDayLogDTO so the log-day sheet can pre-fill the severity chips.
   severity  Int?     @map("severity")
   createdAt DateTime @default(now()) @map("created_at")
+  /// Which write the link came from: `MANUAL` for the log-day sheet and every
+  /// hand-made write, `APPLE_HEALTH` / `HEALTH_CONNECT` for an import. An
+  /// import's day write replaces only the links of its own source, so a
+  /// symptom logged by hand on the same day stays; a hand-made write sets the
+  /// day's whole set and keeps the source of the links it leaves in place
+  /// (`replaceSymptomLinks`). Carried by the backup (`symptomSources`).
+  source    MeasurementSource @default(MANUAL)
 
   dayLog  CycleDayLog  @relation(fields: [dayLogId], references: [id], onDelete: Cascade)
   symptom CycleSymptom @relation(fields: [symptomId], references: [id], onDelete: Cascade)

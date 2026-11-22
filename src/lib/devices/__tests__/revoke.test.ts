@@ -60,6 +60,7 @@ describe("revokeDeviceCascade", () => {
     vi.mocked(prisma.device.findUnique).mockResolvedValue({
       id: "dev-1",
       userId: "user-1",
+      token: "install-1",
       model: "iPhone 15",
       bundleId: "io.healthlog.ios",
     } as never);
@@ -98,6 +99,11 @@ describe("revokeDeviceCascade", () => {
       "API_TOKEN_UPDATE",
       "DEVICE_DELETE",
     ]);
+    // Sign-ins are keyed on the device's token (`X-Device-Id`), not its id.
+    expect(vi.mocked(prisma.refreshToken.updateMany)).toHaveBeenCalledWith({
+      where: { userId: "user-1", deviceId: "install-1", revokedAt: null },
+      data: { revokedAt: expect.any(Date) },
+    });
   });
 
   it("omits the apiToken.updateMany write when no access-token hashes exist", async () => {

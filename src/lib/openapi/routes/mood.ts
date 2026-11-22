@@ -424,7 +424,12 @@ const bulkMoodEntryResult = z
       .describe(
         "`inserted`/`duplicate` — the row landed (advance the cursor). `skipped` — see `reason`.",
       ),
-    reason: z.string().optional(),
+    reason: z
+      .string()
+      .optional()
+      .describe(
+        "Why an entry was `skipped`. On a `duplicate`: `tombstoned` (since v1.49.0) for an entry whose `(source, externalId)` names an entry deleted earlier (in HealthLog, or through `DELETE /api/mood-entries/by-external-ids`); it stays deleted and nothing is written.",
+      ),
     id: z
       .string()
       .optional()

@@ -37,8 +37,13 @@ export async function readStoredSampleIdentities(
   db: Pick<PrismaClient, "measurement">,
   userId: string,
   externalIds: readonly string[],
-): Promise<Map<string, { measuredAt: Date; sleepStage: unknown }>> {
-  const out = new Map<string, { measuredAt: Date; sleepStage: unknown }>();
+): Promise<
+  Map<string, { measuredAt: Date; sleepStage: unknown; deleted: boolean }>
+> {
+  const out = new Map<
+    string,
+    { measuredAt: Date; sleepStage: unknown; deleted: boolean }
+  >();
   if (externalIds.length === 0) return out;
   const rows = await db.measurement.findMany({
     where: { userId, externalId: { in: [...externalIds] } },
@@ -48,12 +53,14 @@ export async function readStoredSampleIdentities(
       externalId: true,
       measuredAt: true,
       sleepStage: true,
+      deletedAt: true,
     },
   });
   for (const row of rows) {
     out.set(externalKeyOf(row.type, row.source, row.externalId), {
       measuredAt: row.measuredAt,
       sleepStage: row.sleepStage,
+      deleted: row.deletedAt !== null,
     });
   }
   return out;

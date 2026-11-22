@@ -19,6 +19,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { credentialRevocations } from "@/lib/auth/credential-revocations";
+import { stripSignedOutDevicePush } from "@/lib/devices/signed-out-push";
 import { remainingGuardianWhere } from "@/lib/managed-profiles/guardian-where";
 import { queueRelayUnbindsForAccount } from "@/lib/push-relay/unbind-queue";
 import {
@@ -59,6 +60,9 @@ export async function lockAccountForDeletion(
   for (const revoke of credentialRevocations(tx, input.userId)) {
     await revoke;
   }
+  // The account's devices take no more of its pushes during the window; the
+  // relay's minute pass sends the queued unbinds.
+  await stripSignedOutDevicePush(tx, input.userId);
   // A handover link is a credential for the profile it hands over: claimed
   // during the window, it would give someone an account that is locked at
   // once and erased when the window ends. The links this account minted for

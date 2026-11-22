@@ -15,6 +15,7 @@ import { hashToken } from "@/lib/auth/hmac";
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { issueApiToken } from "@/lib/auth/issue-token";
 import type { TokenPolicyDecision } from "@/lib/auth/native-client";
+import { afterRefreshRevocation } from "@/lib/devices/signed-out-push";
 
 export interface IssuedRefreshBundle {
   accessToken: string;
@@ -197,6 +198,8 @@ export async function rotateRefreshToken(input: {
     // and forget, so the refusal does not wait on the dispatcher.
     if (compromised.length > 0) {
       void sendSecurityAlert(row.userId, "refresh_reuse");
+      // The revoked family's device takes no more of the account's pushes.
+      await afterRefreshRevocation(row.userId);
     }
     return { ok: false, reason: "already_used" };
   }
@@ -349,6 +352,11 @@ export async function revokeBearerAccessToken(
   rawAccessToken: string,
 ): Promise<boolean> {
   const accessHash = hashToken(rawAccessToken);
+  // The account whose device signs out, read off the paired sign-in.
+  const owner = await prisma.refreshToken.findFirst({
+    where: { accessTokenHash: accessHash, revokedAt: null },
+    select: { userId: true },
+  });
 
   const apiResult = await prisma.apiToken.updateMany({
     where: { tokenHash: accessHash, revoked: false },
@@ -357,10 +365,14 @@ export async function revokeBearerAccessToken(
 
   // Revoke the paired refresh sibling so a native logout kills both halves
   // of the pair in one call.
-  await prisma.refreshToken.updateMany({
+  const refreshResult = await prisma.refreshToken.updateMany({
     where: { accessTokenHash: accessHash, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+  // Signing out drops the device's push key and relay binding with it.
+  if (owner && refreshResult.count > 0) {
+    await afterRefreshRevocation(owner.userId);
+  }
 
   return apiResult.count > 0;
 }
@@ -381,7 +393,7 @@ export async function revokeRefreshTokenByHash(
 ): Promise<boolean> {
   const row = await prisma.refreshToken.findUnique({
     where: { tokenHash: refreshTokenHash },
-    select: { accessTokenHash: true, revokedAt: true },
+    select: { userId: true, accessTokenHash: true, revokedAt: true },
   });
   if (!row || row.revokedAt) return false;
 
@@ -397,6 +409,7 @@ export async function revokeRefreshTokenByHash(
       data: { revoked: true },
     });
   }
+  await afterRefreshRevocation(row.userId);
   return true;
 }
 
@@ -409,7 +422,7 @@ export async function revokeRefreshToken(
   const hash = hashToken(refreshToken);
   const row = await prisma.refreshToken.findUnique({
     where: { tokenHash: hash },
-    select: { accessTokenHash: true, revokedAt: true },
+    select: { userId: true, accessTokenHash: true, revokedAt: true },
   });
   if (!row || row.revokedAt) return false;
 
@@ -425,5 +438,6 @@ export async function revokeRefreshToken(
       data: { revoked: true },
     });
   }
+  await afterRefreshRevocation(row.userId);
   return true;
 }

@@ -107,16 +107,57 @@ export function hasClientManagedApnsGate(
 }
 
 /**
+ * How long a device that delivers locally is trusted to have a plan without
+ * saying how long it has (`Device.localRunwayUntil`): three days since its
+ * last request. A phone that has not run for longer may have run its local
+ * schedule dry, so the server reminds it again until it shows up.
+ */
+export const CLIENT_DEVICE_QUIET_MS = 3 * 24 * 60 * 60 * 1000;
+
+/** How far ahead a device may report its local runway. */
+export const LOCAL_RUNWAY_MAX_DAYS = 14;
+/** Clock skew a runway may lie in the past by and still be accepted. */
+const LOCAL_RUNWAY_SKEW_MS = 5 * 60 * 1000;
+
+/** Whether a reported `localRunwayUntil` is within the accepted bounds. */
+export function localRunwayInBounds(at: Date, now: Date): boolean {
+  const t = at.getTime();
+  return (
+    t >= now.getTime() - LOCAL_RUNWAY_SKEW_MS &&
+    t <= now.getTime() + LOCAL_RUNWAY_MAX_DAYS * 24 * 60 * 60 * 1000
+  );
+}
+
+/** What the local-delivery decision reads off a device row. */
+export interface LocalDeliveryDevice {
+  medicationDelivery: string | null;
+  lastSeen: Date;
+  localRunwayUntil: Date | null;
+}
+
+/**
  * Does this device deliver the reminder itself? Its own override decides;
- * without one (`null`, shown as "inherit") the account-wide flag does.
+ * without one (`null`, shown as "inherit") the account-wide flag does. A
+ * device that would deliver locally does so only while its plan can still
+ * run: until the runway it reported, or, without one, for three days after
+ * its last request. Past that it counts as `server` until it is seen again.
  */
 export function deviceDeliversLocally(
-  override: string | null,
+  device: LocalDeliveryDevice,
   accountDeliversLocally: boolean,
+  now: Date = new Date(),
 ): boolean {
-  if (override === "client") return true;
-  if (override === "server") return false;
-  return accountDeliversLocally;
+  const local =
+    device.medicationDelivery === "client"
+      ? true
+      : device.medicationDelivery === "server"
+        ? false
+        : accountDeliversLocally;
+  if (!local) return false;
+  const until =
+    device.localRunwayUntil?.getTime() ??
+    device.lastSeen.getTime() + CLIENT_DEVICE_QUIET_MS;
+  return now.getTime() <= until;
 }
 
 /**
@@ -152,7 +193,12 @@ export async function resolveApnsDeliveryTargets(
   }
   const devices = await prisma.device.findMany({
     where: { userId: recipientUserId, apnsToken: { not: null } },
-    select: { id: true, medicationDelivery: true },
+    select: {
+      id: true,
+      medicationDelivery: true,
+      lastSeen: true,
+      localRunwayUntil: true,
+    },
   });
   // No device to decide for: the account's rule, exactly as before. The
   // sender then reports `apns_no_devices` when it is asked to send.
@@ -163,8 +209,9 @@ export async function resolveApnsDeliveryTargets(
   }
   const local: string[] = [];
   const server: string[] = [];
+  const now = new Date();
   for (const device of devices) {
-    (deviceDeliversLocally(device.medicationDelivery, accountDeliversLocally)
+    (deviceDeliversLocally(device, accountDeliversLocally, now)
       ? local
       : server
     ).push(device.id);

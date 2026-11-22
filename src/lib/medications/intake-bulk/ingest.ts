@@ -33,6 +33,7 @@ import {
   OWNED_MEDICATION_SELECT,
   type BatchContext,
 } from "./entry";
+import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
 
 interface BatchInput {
   user: Pick<SessionUser, "id" | "timezone">;
@@ -52,17 +53,24 @@ export type BulkIntakeOutcome =
   | { kind: "ingested"; body: Record<string, unknown> };
 
 /**
- * Idempotent re-sync dedup: one read collects every live row already
- * carrying one of the batch's external dose-event UUIDs; the per-entry loop
- * reports those entries as `duplicate` (first-write-wins per Apple dose)
- * without touching the DB again. Fresh inserts register into the same map so
- * an intra-batch repeat of a UUID dedups too. The partial
+ * Idempotent re-sync dedup: one read collects every row already carrying one
+ * of the batch's external dose-event UUIDs. A live one answers its entry
+ * `duplicate` (first-write-wins per Apple dose); fresh inserts register into
+ * the same map so an intra-batch repeat of a UUID dedups too. The partial
  * `(user_id, external_id)` unique (migration 0239) is the race backstop.
+ *
+ * A deleted Apple Health dose with no live row under its UUID is a
+ * tombstone: its entry is refused, `duplicate` with reason `tombstoned`, so a
+ * fresh install reading the whole Apple Health history does not bring back a
+ * dose deleted in HealthLog (iOS #191, `tombstone-repost.ts`).
  */
 async function loadKnownExternalIds(
   userId: string,
   entries: BulkIntakeEntry[],
-): Promise<Map<string, string>> {
+): Promise<{
+  rowIdByExternalId: Map<string, string>;
+  tombstoned: Set<string>;
+}> {
   const batchExternalIds = Array.from(
     new Set(
       entries
@@ -71,20 +79,26 @@ async function loadKnownExternalIds(
     ),
   );
   const rowIdByExternalId = new Map<string, string>();
+  const deleted = new Set<string>();
   if (batchExternalIds.length > 0) {
     const existingExternalRows = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId,
         externalId: { in: batchExternalIds },
-        deletedAt: null,
+        OR: [{ deletedAt: null }, { source: APP_MINTED_SOURCE }],
       },
-      select: { id: true, externalId: true },
+      select: { id: true, externalId: true, deletedAt: true },
     });
     for (const row of existingExternalRows) {
-      if (row.externalId) rowIdByExternalId.set(row.externalId, row.id);
+      if (!row.externalId) continue;
+      if (!row.deletedAt) rowIdByExternalId.set(row.externalId, row.id);
+      else deleted.add(row.externalId);
     }
   }
-  return rowIdByExternalId;
+  const tombstoned = new Set(
+    [...deleted].filter((id) => !rowIdByExternalId.has(id)),
+  );
+  return { rowIdByExternalId, tombstoned };
 }
 
 /**
@@ -300,7 +314,8 @@ export async function ingestBulkIntake(
     };
   }
 
-  const state = createBatchState(await loadKnownExternalIds(user.id, entries));
+  const known = await loadKnownExternalIds(user.id, entries);
+  const state = createBatchState(known.rowIdByExternalId, known.tombstoned);
   const ctx: BatchContext = {
     user,
     ownedSet,

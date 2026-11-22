@@ -76,6 +76,17 @@ vi.mock("@/lib/db", () => ({
           null
         );
       }),
+      findFirst: vi.fn(
+        async ({ where }: { where: Record<string, unknown> }) => {
+          return (
+            dbState.refreshTokens.find((r) =>
+              Object.entries(where).every(
+                ([k, v]) => (r as unknown as Record<string, unknown>)[k] === v,
+              ),
+            ) ?? null
+          );
+        },
+      ),
       findMany: vi.fn(async ({ where }: { where: Record<string, unknown> }) => {
         return dbState.refreshTokens.filter((r) =>
           Object.entries(where).every(
@@ -165,6 +176,14 @@ vi.mock("@/lib/auth/hmac", () => ({
 const sendSecurityAlert = vi.fn();
 vi.mock("@/lib/auth/security-alert", () => ({
   sendSecurityAlert: (...args: unknown[]) => sendSecurityAlert(...args),
+}));
+
+// The device side of a revocation has its own integration suite
+// (`tests/integration/device-signed-out-push.test.ts`); here it is only
+// checked that every revocation reaches it.
+const afterRefreshRevocation = vi.fn(async (_userId: string) => {});
+vi.mock("@/lib/devices/signed-out-push", () => ({
+  afterRefreshRevocation: (userId: string) => afterRefreshRevocation(userId),
 }));
 
 import {
@@ -589,6 +608,7 @@ describe("revokeBearerAccessToken (M-2 logout bearer revoke)", () => {
     expect(refreshRow?.revokedAt).toBeNull();
 
     const ok = await revokeBearerAccessToken(bundle.accessToken);
+    expect(afterRefreshRevocation).toHaveBeenCalledWith("u1");
     expect(ok).toBe(true);
 
     expect(

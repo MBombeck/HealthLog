@@ -949,6 +949,12 @@
             "severity": 3
           }
         ],
+        "symptomSources": [
+          {
+            "key": "custom:round-trip-cramps",
+            "source": "WITHINGS"
+          }
+        ],
         "symptomLinkCreatedAt": [
           {
             "key": "custom:round-trip-cramps",
@@ -985,6 +991,7 @@
         "tz": null,
         "symptomKeys": [],
         "symptomSeverities": [],
+        "symptomSources": [],
         "symptomLinkCreatedAt": []
       }
     ],
@@ -3640,6 +3647,12 @@
             "key": "custom:round-trip-cramps",
             "createdAt": "2026-05-03T23:23:00.000Z"
           }
+        ],
+        "symptomSources": [
+          {
+            "key": "custom:round-trip-cramps",
+            "source": "WITHINGS"
+          }
         ]
       },
       {
@@ -3671,7 +3684,8 @@
         "updatedAt": "2026-05-03T20:26:01.000Z",
         "symptomKeys": [],
         "symptomSeverities": [],
-        "symptomLinkCreatedAt": []
+        "symptomLinkCreatedAt": [],
+        "symptomSources": []
       }
     ],
     "customSymptoms": [
