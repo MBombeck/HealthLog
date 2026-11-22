@@ -4,6 +4,10 @@
  * instant, or the standalone insert, with the inventory hook each one owes.
  */
 import { prisma } from "@/lib/db";
+import {
+  createAdHocIntake,
+  findRowForExternalDoseAt,
+} from "@/lib/medications/ad-hoc-intake";
 import type { SessionUser } from "@/lib/auth/session-user";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 import {
@@ -143,6 +147,8 @@ async function replayedRowId(write: EntryWrite): Promise<string | null> {
  * client anchor (a future slot instant the taken guard rejected) can never
  * park a live row exactly on a slot the worker later mints a pending
  * REMINDER row for. A pending echo (no takenAt) keeps the incoming instant.
+ * On the exact instant of a slot row it moves to the next free millisecond
+ * (`ad-hoc-intake.ts`), so an extra dose on the minute of a held slot lands.
  * The idempotencyKey, when supplied, has a UNIQUE index; a racing
  * re-submission returns the existing row via P2002 → status: "duplicate".
  */
@@ -151,33 +157,30 @@ async function insertStandalone(
   state: BatchState,
 ): Promise<Date> {
   const { user, entry, index: i, resolvedInjectionSite } = write;
-  const effectiveScheduledFor = entry.takenAt ?? write.incomingScheduledFor;
-  const row = await prisma.medicationIntakeEvent.create({
-    data: {
-      userId: user.id,
-      medicationId: entry.medicationId,
-      scheduledFor: effectiveScheduledFor,
-      takenAt: entry.takenAt ?? null,
-      skipped: entry.skipped,
-      // Apple provenance on a standalone (ad-hoc) row;
-      // every other caller keeps today's "API".
-      source: entry.source ?? "API",
-      ...(entry.takenAt && {
-        takenVia: entry.source === "APPLE_HEALTH" ? "APPLE_HEALTH" : "APP",
-      }),
-      idempotencyKey: entry.idempotencyKey ?? null,
-      // External dose-event UUID for the idempotent
-      // re-sync dedup.
-      ...(entry.externalId !== undefined && {
-        externalId: entry.externalId,
-      }),
-      // Site only on a resolved taken-injection entry.
-      ...(resolvedInjectionSite !== null && {
-        injectionSite: resolvedInjectionSite,
-      }),
-      // Dose override only on a taken entry carrying one.
-      ...(!entry.skipped && entry.doseTaken && { doseTaken: entry.doseTaken }),
-    },
+  const row = await createAdHocIntake(prisma, {
+    userId: user.id,
+    medicationId: entry.medicationId,
+    scheduledFor: entry.takenAt ?? write.incomingScheduledFor,
+    takenAt: entry.takenAt ?? null,
+    skipped: entry.skipped,
+    // Apple provenance on a standalone (ad-hoc) row;
+    // every other caller keeps today's "API".
+    source: entry.source ?? "API",
+    ...(entry.takenAt && {
+      takenVia: entry.source === "APPLE_HEALTH" ? "APPLE_HEALTH" : "APP",
+    }),
+    idempotencyKey: entry.idempotencyKey ?? null,
+    // External dose-event UUID for the idempotent
+    // re-sync dedup.
+    ...(entry.externalId !== undefined && {
+      externalId: entry.externalId,
+    }),
+    // Site only on a resolved taken-injection entry.
+    ...(resolvedInjectionSite !== null && {
+      injectionSite: resolvedInjectionSite,
+    }),
+    // Dose override only on a taken entry carrying one.
+    ...(!entry.skipped && entry.doseTaken && { doseTaken: entry.doseTaken }),
   });
   state.inserted += 1;
   state.results.push({ index: i, status: "inserted", id: row.id });
@@ -193,7 +196,7 @@ async function insertStandalone(
       intakeAt: entry.takenAt as Date,
     });
   }
-  return effectiveScheduledFor;
+  return row.scheduledFor;
 }
 
 /**
@@ -224,7 +227,9 @@ export async function writeEntry(
   //      refused to snap to), converge onto THAT row through the shared
   //      slot upsert instead of inserting a sibling that differs only
   //      by `source`. The partial unique index carries `source`, so it
-  //      cannot catch this duplicate; the probe must.
+  //      cannot catch this duplicate; the probe must. A row recording
+  //      another Apple dose event is not the slot: two events on one
+  //      minute are two doses (`findRowForExternalDoseAt`).
   const replayId = await replayedRowId(write);
   if (replayId !== null) {
     state.duplicates += 1;
@@ -250,14 +255,11 @@ export async function writeEntry(
       takenAt: entry.takenAt ?? null,
       suppliedSlot: incomingScheduledFor,
     })
-      ? await prisma.medicationIntakeEvent.findFirst({
-          where: {
-            userId: user.id,
-            medicationId: entry.medicationId,
-            scheduledFor: incomingScheduledFor,
-            deletedAt: null,
-          },
-          select: { id: true },
+      ? await findRowForExternalDoseAt({
+          userId: user.id,
+          medicationId: entry.medicationId,
+          instant: incomingScheduledFor,
+          externalId: entry.externalId ?? null,
         })
       : null;
   if (existingSlotRow) {

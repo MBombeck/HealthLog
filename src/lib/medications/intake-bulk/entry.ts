@@ -254,12 +254,14 @@ async function writeScreenedEntry(
 }
 
 /**
- * P2002 = unique-constraint violation. Two shapes reach here:
- *   1. an idempotencyKey collision on the unscheduled/PRN insert →
- *      "duplicate" (the canonical-slot path already absorbs its own
- *      same-slot P2002 race inside `applyCanonicalSlotWrite`);
- *   2. a same-slot collision on the unscheduled insert. In both
- *      cases we surface the existing row id so the cursor advances.
+ * P2002 = unique-constraint violation. A racing re-submission of the same
+ * entry (its idempotencyKey, or its Apple dose-event externalId, written by a
+ * concurrent batch) answers "duplicate" with the row that won, so the cursor
+ * advances. The canonical-slot path absorbs its own same-slot race inside
+ * `applyCanonicalSlotWrite`, and the ad-hoc insert moves off a held instant
+ * (`ad-hoc-intake.ts`). A conflict that names no row of this entry stored
+ * nothing, and says so: it is answered like any other failed write, never as
+ * a "duplicate" without an id.
  */
 async function answerFailedEntry(
   ctx: BatchContext,
@@ -275,7 +277,7 @@ async function answerFailedEntry(
     "code" in err &&
     (err as { code: string }).code === "P2002"
   ) {
-    const existing = entry.idempotencyKey
+    const byKey = entry.idempotencyKey
       ? await prisma.medicationIntakeEvent.findUnique({
           where: {
             userId_idempotencyKey: {
@@ -285,10 +287,13 @@ async function answerFailedEntry(
           },
           select: { id: true },
         })
-      : // An Apple entry that raced the partial
-        // `(user_id, external_id)` unique (concurrent batches syncing
-        // the same dose event) resolves to the winning live row.
-        entry.externalId
+      : null;
+    // An Apple entry that raced the partial `(user_id, external_id)` unique
+    // (concurrent batches syncing the same dose event) resolves to the
+    // winning live row.
+    const existing =
+      byKey ??
+      (entry.externalId
         ? await prisma.medicationIntakeEvent.findFirst({
             where: {
               userId: user.id,
@@ -297,14 +302,12 @@ async function answerFailedEntry(
             },
             select: { id: true },
           })
-        : null;
-    state.duplicates += 1;
-    state.results.push({
-      index: i,
-      status: "duplicate",
-      id: existing?.id,
-    });
-    return;
+        : null);
+    if (existing) {
+      state.duplicates += 1;
+      state.results.push({ index: i, status: "duplicate", id: existing.id });
+      return;
+    }
   }
   const reason =
     err instanceof Error ? err.message.slice(0, 120) : "create_failed";

@@ -168,17 +168,20 @@ beforeEach(() => {
   );
   vi.mocked(prisma.medicationIntakeEvent.count).mockResolvedValue(0);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
-  // The standalone branch wraps the create in a `$transaction([...])`. The
-  // create mock records the `data` it was called with; the transaction
-  // resolves to the created row so the rest of the handler proceeds.
-  vi.mocked(prisma.medicationIntakeEvent.create).mockReturnValue({
+  // The standalone branch wraps the create in an interactive transaction.
+  // The create mock records the `data` it was called with and resolves to
+  // the created row so the rest of the handler proceeds.
+  vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValue({
     id: "evt-1",
     takenAt: new Date(),
     scheduledFor: new Date(),
   } as never);
-  vi.mocked(prisma.$transaction).mockResolvedValue([
-    { id: "evt-1", takenAt: new Date(), scheduledFor: new Date() },
-  ] as never);
+  vi.mocked(prisma.$transaction).mockImplementation((async (arg: unknown) =>
+    Array.isArray(arg)
+      ? Promise.all(arg)
+      : (arg as (c: unknown) => unknown)(
+          prisma,
+        )) as unknown as typeof prisma.$transaction);
 });
 
 describe("POST intake — transport-derived source (iOS #64)", () => {

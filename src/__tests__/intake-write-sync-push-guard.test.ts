@@ -56,6 +56,8 @@ const EXEMPT: Record<string, string> = {
     "called by record-intake.ts, which calls the seam",
   "lib/medications/intake-bulk/entry-write.ts":
     "called by intake-bulk/ingest.ts, which calls the seam",
+  "lib/medications/ad-hoc-intake.ts":
+    "the shared ad-hoc insert; every caller calls the seam",
   "lib/medications/inventory/consumption.ts":
     "stamps the stock consumption on a row, no dose state",
   "lib/medications/scheduling/project-today-intakes.ts":

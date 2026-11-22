@@ -345,7 +345,14 @@ export async function recordIntake(
     resolvedDoseTaken,
   };
   const replayed = await findReplayedIntake(write);
-  if (replayed) return { kind: "existing", row: replayed };
+  if (replayed?.kind === "existing") return replayed;
+  if (replayed?.kind === "alreadyTaken") {
+    annotate({
+      action: { name: "medication.intake.repeat_tap" },
+      meta: { medication_id: id, event_id: replayed.row.id },
+    });
+    return replayed;
+  }
   if (bound.alreadyTaken) {
     annotate({
       action: { name: "medication.intake.already_taken" },

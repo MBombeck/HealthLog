@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { createAdHocIntake } from "@/lib/medications/ad-hoc-intake";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -202,17 +203,15 @@ async function createAdHocIngest(input: {
   });
   if (recent) return { kind: "existing", row: recent };
   try {
-    const row = await prisma.medicationIntakeEvent.create({
-      data: {
-        userId: input.userId,
-        medicationId: input.medicationId,
-        scheduledFor: input.takenAt,
-        takenAt: input.takenAt,
-        skipped: false,
-        source: "API",
-        takenVia: "INTEGRATION",
-        idempotencyKey: input.idempotencyKey,
-      },
+    const row = await createAdHocIntake(prisma, {
+      userId: input.userId,
+      medicationId: input.medicationId,
+      scheduledFor: input.takenAt,
+      takenAt: input.takenAt,
+      skipped: false,
+      source: "API",
+      takenVia: "INTEGRATION",
+      idempotencyKey: input.idempotencyKey,
     });
     return { kind: "created", row };
   } catch (err) {
