@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
   COACH_HISTORY_WINDOWS,
@@ -95,8 +96,10 @@ export function CoachSettingsForm({
         disabled={disabled}
       />
       <div className="grid gap-4 sm:grid-cols-3">
-        <label className="grid gap-1 text-sm" htmlFor="managed-coach-tone">
-          {t("settings.sharedRecord.managedSettings.coach.tone")}
+        <FieldGroup
+          htmlFor="managed-coach-tone"
+          label={t("settings.sharedRecord.managedSettings.coach.tone")}
+        >
           <NativeSelect
             defaultValue={asString(preferences.tone, "warm")}
             disabled={disabled}
@@ -113,9 +116,11 @@ export function CoachSettingsForm({
               {t("settings.sharedRecord.managedSettings.coach.concise")}
             </option>
           </NativeSelect>
-        </label>
-        <label className="grid gap-1 text-sm" htmlFor="managed-coach-verbosity">
-          {t("settings.sharedRecord.managedSettings.coach.verbosity")}
+        </FieldGroup>
+        <FieldGroup
+          htmlFor="managed-coach-verbosity"
+          label={t("settings.sharedRecord.managedSettings.coach.verbosity")}
+        >
           <NativeSelect
             defaultValue={asString(preferences.verbosity, "default")}
             disabled={disabled}
@@ -132,13 +137,13 @@ export function CoachSettingsForm({
               {t("settings.sharedRecord.managedSettings.coach.detailed")}
             </option>
           </NativeSelect>
-        </label>
+        </FieldGroup>
         {/* The same lookback options and wording as the Coach's own picker:
             the choice is a limit on every Coach read. */}
-        <div className="grid gap-1 text-sm">
-          <label htmlFor="managed-coach-window">
-            {t("insights.coach.lookback.label")}
-          </label>
+        <FieldGroup
+          htmlFor="managed-coach-window"
+          label={t("insights.coach.lookback.label")}
+        >
           <NativeSelect
             value={lookback}
             onChange={(event) =>
@@ -170,7 +175,7 @@ export function CoachSettingsForm({
               ? ` ${t("insights.coach.lookback.note")}`
               : null}
           </p>
-        </div>
+        </FieldGroup>
       </div>
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">

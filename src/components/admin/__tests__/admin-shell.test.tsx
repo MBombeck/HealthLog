@@ -7,7 +7,7 @@ import { join } from "node:path";
  * `<AdminShell>` mirrors `<SettingsShell>`: a sticky desktop sidebar
  * plus a horizontal section strip on mobile. With 13 sections the strip
  * is always wider than a 393 CSS-px (Pixel-5) viewport, so v1.4.18
- * phase A2 added the `no-scrollbar` class to the strip — Chromium /
+ * hid the strip's scrollbar (today through `SubNavRow`) — Chromium /
  * WebKit otherwise paint an always-on horizontal scrollbar at the top
  * of every admin page, which the maintainer kept mis-attributing to the
  * `/admin/api-tokens` table card right below it. Three previous fix
@@ -93,22 +93,19 @@ describe("<AdminShell>", () => {
     }
   });
 
-  it("mobile section strip uses `no-scrollbar` so the swipe area doesn't paint a horizontal scrollbar", () => {
-    // The 13-section strip is ~1700 CSS px wide. Without
-    // `no-scrollbar` (defined in `globals.css`) Chromium/WebKit paint
-    // an always-on horizontal scrollbar at the top of every admin
-    // page. A live probe of /admin/api-tokens at a Pixel-5 viewport
-    // pins this as the *only* element
-    // with `overflow-x:auto AND scrollWidth > clientWidth`, so the
-    // class is the load-bearing fix.
+  it("mobile section strip paints no horizontal scrollbar", () => {
+    // The 13-section strip is ~1700 CSS px wide. Without a hidden
+    // scrollbar Chromium/WebKit paint an always-on horizontal bar at the
+    // top of every admin page. The strip is the app's `SubNavRow` now,
+    // which hides it (`[scrollbar-width:none]` plus the WebKit
+    // pseudo-element) and keeps `overflow-x-auto`, so swipe and
+    // keyboard-arrow scrolling continue to work.
     const html = renderShell({ active: "api-tokens" });
-    const nav = html.match(/<nav\b[^>]*md:hidden[^>]*>/);
-    expect(nav).not.toBeNull();
-    expect(nav![0]).toMatch(/\bno-scrollbar\b/);
-    // Scroll behaviour itself is preserved — the strip still uses
-    // `overflow-x-auto` so swipe / keyboard-arrow scrolling continues
-    // to work, only the painted bar is suppressed.
-    expect(nav![0]).toMatch(/\boverflow-x-auto\b/);
+    const row = html.match(/<div\b[^>]*data-slot="sub-nav-row"[^>]*>/);
+    expect(row).not.toBeNull();
+    expect(row![0]).toMatch(/\[scrollbar-width:none\]/);
+    expect(row![0]).toMatch(/\[&amp;::-webkit-scrollbar\]:hidden/);
+    expect(row![0]).toMatch(/\boverflow-x-auto\b/);
   });
 
   it('marks the active section with aria-current="page" in both layouts', () => {

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { InlineAction } from "@/components/ui/inline-action";
 import { apiPost } from "@/lib/api/api-fetch";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -24,6 +25,8 @@ export function FitbitRemovalNotice() {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
   const dismiss = useMutation({
+    // Confirms in place: the note goes once the status refetches.
+    meta: CONFIRMS_INLINE,
     mutationFn: () =>
       apiPost<{ dismissed: true }>(
         "/api/integrations/fitbit-removal-notice/dismiss",

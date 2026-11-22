@@ -7,6 +7,7 @@ import { FileText, Settings, Sparkles } from "lucide-react";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useAuth } from "@/hooks/use-auth";
 import { apiGet, apiPatch } from "@/lib/api/api-fetch";
+import { CONFIRM_SAVED } from "@/lib/api/mutation-feedback";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   aiInputDependentKeys,
@@ -98,6 +99,8 @@ export function ManagedRecordSettingsSection({
     },
   });
   const save = useMutation({
+    // The form shows no saved state of its own.
+    meta: CONFIRM_SAVED,
     mutationFn: async (patch: unknown) => {
       const response = await apiPatch<ManagedRecordSettingsResponse>(
         `/api/record-settings/${family}`,

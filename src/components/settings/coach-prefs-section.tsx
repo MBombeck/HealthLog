@@ -26,7 +26,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { SwitchRow } from "@/components/ui/switch-row";
 import {
   Select,
@@ -323,14 +322,10 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
                 const id = `coach-prefs-exclude-${metric}`;
                 const checked = draft.excludeMetrics.includes(metric);
                 return (
-                  <li
-                    key={metric}
-                    className="flex items-center justify-between gap-3 px-3 py-2"
-                  >
-                    <Label htmlFor={id} className="cursor-pointer text-xs">
-                      {t(`insights.coach.metric.${metric}`)}
-                    </Label>
-                    <Switch
+                  <li key={metric}>
+                    <SwitchRow
+                      className="px-3 py-2"
+                      label={t(`insights.coach.metric.${metric}`)}
                       id={id}
                       data-slot={`coach-prefs-exclude-${metric}`}
                       checked={checked}
@@ -360,14 +355,10 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
                 const id = `coach-prefs-context-${metric}`;
                 const sent = !draft.excludeMetrics.includes(metric);
                 return (
-                  <li
-                    key={metric}
-                    className="flex items-center justify-between gap-3 px-3 py-2"
-                  >
-                    <Label htmlFor={id} className="cursor-pointer text-xs">
-                      {t(`insights.coach.metric.${metric}`)}
-                    </Label>
-                    <Switch
+                  <li key={metric}>
+                    <SwitchRow
+                      className="px-3 py-2"
+                      label={t(`insights.coach.metric.${metric}`)}
                       id={id}
                       data-slot={`coach-prefs-context-${metric}`}
                       checked={sent}

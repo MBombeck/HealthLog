@@ -1,7 +1,6 @@
 import { useState } from "react";
 
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { useAiCapability } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
@@ -62,32 +61,23 @@ export function DocumentsSettingsForm({
       <p className="text-foreground text-sm">
         {t("settings.sharedRecord.managedSettings.documents.honesty")}
       </p>
-      <div className="flex items-center justify-between gap-3">
-        <Label
-          htmlFor="managed-switch-autoAiRead"
-          noColon
-          className="leading-snug font-normal"
-        >
-          {label}
-        </Label>
-        <Switch
-          id="managed-switch-autoAiRead"
-          checked={on}
-          onCheckedChange={flip}
-          disabled={disabled || (blocked && !on)}
-          aria-label={label}
-          className="shrink-0"
-          data-slot="managed-documents-auto-read"
-        />
-      </div>
-      {blockedCopy ? (
-        <p
-          className="text-muted-foreground text-xs"
-          data-slot="managed-documents-auto-read-blocked"
-        >
-          {blockedCopy}
-        </p>
-      ) : null}
+      <SwitchRow
+        id="managed-switch-autoAiRead"
+        label={label}
+        checked={on}
+        onCheckedChange={flip}
+        disabled={disabled || (blocked && !on)}
+        data-slot="managed-documents-auto-read"
+      >
+        {blockedCopy ? (
+          <p
+            className="text-muted-foreground text-xs"
+            data-slot="managed-documents-auto-read-blocked"
+          >
+            {blockedCopy}
+          </p>
+        ) : null}
+      </SwitchRow>
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}

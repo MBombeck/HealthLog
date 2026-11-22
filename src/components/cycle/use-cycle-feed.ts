@@ -12,6 +12,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { CONFIRM_SAVED, CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { queryKeys } from "@/lib/query-keys";
 
 import type { ProjectionState } from "./types";
@@ -83,6 +84,8 @@ export function useMintCycleFeed(proof: {
 }) {
   const invalidate = useInvalidateStatus();
   return useMutation({
+    // Confirms in place: the card shows the new link.
+    meta: CONFIRMS_INLINE,
     mutationKey: queryKeys.cycleFeedSubscription(),
     mutationFn: (kind: "create" | "rotate") =>
       kind === "create"
@@ -99,6 +102,8 @@ export function useMintCycleFeed(proof: {
 export function useUpdateCycleFeed() {
   const invalidate = useInvalidateStatus();
   return useMutation({
+    // An option the select or switch only shows once the status refetches.
+    meta: CONFIRM_SAVED,
     mutationKey: queryKeys.cycleFeedSubscription(),
     mutationFn: (patch: CycleFeedOptionsPatch) =>
       apiPatch<CycleFeedStatus>(PATH, patch),
@@ -109,6 +114,8 @@ export function useUpdateCycleFeed() {
 export function useRevokeCycleFeed() {
   const invalidate = useInvalidateStatus();
   return useMutation({
+    // Confirms in place: the card turns back to its "Turn on" state.
+    meta: CONFIRMS_INLINE,
     mutationKey: queryKeys.cycleFeedSubscription(),
     mutationFn: () => apiDelete<{ revoked: true }>(PATH),
     onSettled: () => invalidate(),

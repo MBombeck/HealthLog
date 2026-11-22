@@ -675,7 +675,7 @@ test.describe("notification preferences drive the dispatch decision", () => {
       page.locator('[data-slot="notifications-client-managed-chip"]'),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      page.locator('[data-slot="notifications-switch-row"]'),
+      page.locator('[data-slot="medication-notifications-switch"]'),
     ).toHaveCount(0);
   });
 

@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InHeaderSlot } from "@/components/layout/header-slot";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -85,11 +86,13 @@ export function BodySitesSection({
 
   return (
     <section aria-labelledby="body-sites-title" className="space-y-4">
-      <PageHeader
-        titleId="body-sites-title"
-        title={t("bodySites.title")}
-        description={t("bodySites.description")}
-      />
+      <InHeaderSlot>
+        <PageHeader
+          titleId="body-sites-title"
+          title={t("bodySites.title")}
+          description={t("bodySites.description")}
+        />
+      </InHeaderSlot>
 
       {list.isError ? (
         <QueryErrorCard

@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -53,8 +54,12 @@ export function NotificationsSettingsForm({
         disabled={disabled}
         className="flex items-center justify-between gap-3 text-sm sm:col-span-2"
       />
-      <label className="grid gap-1 text-sm" htmlFor="managed-reminder-hour">
-        {t("settings.sharedRecord.managedSettings.notifications.reminderHour")}
+      <FieldGroup
+        htmlFor="managed-reminder-hour"
+        label={t(
+          "settings.sharedRecord.managedSettings.notifications.reminderHour",
+        )}
+      >
         <Input
           defaultValue={asNumber(mood.reminderHour, 22)}
           disabled={disabled}
@@ -64,11 +69,13 @@ export function NotificationsSettingsForm({
           name="reminderHour"
           type="number"
         />
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-low-stock">
-        {t(
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-low-stock"
+        label={t(
           "settings.sharedRecord.managedSettings.notifications.lowStockRunwayDays",
         )}
+      >
         <Input
           defaultValue={
             medication.lowStockRunwayDays === null
@@ -82,11 +89,13 @@ export function NotificationsSettingsForm({
           name="lowStockRunwayDays"
           type="number"
         />
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-reorder-lead">
-        {t(
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-reorder-lead"
+        label={t(
           "settings.sharedRecord.managedSettings.notifications.reorderLeadDays",
         )}
+      >
         <Input
           defaultValue={asNumber(medication.reorderLeadDays, 10)}
           disabled={disabled}
@@ -96,7 +105,7 @@ export function NotificationsSettingsForm({
           name="reorderLeadDays"
           type="number"
         />
-      </label>
+      </FieldGroup>
       <FormFooter
         disabled={disabled}
         label={saveLabel}

@@ -29,6 +29,7 @@ import {
   useRecentProof,
 } from "@/components/settings/security-section/use-recent-proof";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { CONFIRM_SAVED, CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { useTranslations } from "@/lib/i18n/context";
 import { formatRelativeTime } from "@/lib/i18n/relative-time";
 import { queryKeys } from "@/lib/query-keys";
@@ -77,17 +78,23 @@ export function CareCalendarFeedCard() {
   });
   const proof = useRecentProof();
   const mint = useMutation({
+    // Confirms in place: the card shows the new link.
+    meta: CONFIRMS_INLINE,
     mutationKey: KEY,
     mutationFn: () =>
       proof.run(() => apiPost<CareFeedMinted>("/api/care/feed-subscription")),
     onSettled: invalidate,
   });
   const update = useMutation({
+    // An option the switch or select only shows once the status refetches.
+    meta: CONFIRM_SAVED,
     mutationKey: KEY,
     mutationFn: (patch: OptionsPatch) => apiPatch(PATH, patch),
     onSettled: invalidate,
   });
   const revoke = useMutation({
+    // Confirms in place: the card turns back to its "Turn on" state.
+    meta: CONFIRMS_INLINE,
     mutationKey: KEY,
     mutationFn: () => apiDelete(PATH),
     onSettled: invalidate,

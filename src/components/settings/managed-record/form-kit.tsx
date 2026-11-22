@@ -1,8 +1,7 @@
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 
 import { SettingsCardActions } from "../_card-actions";
 
@@ -87,10 +86,10 @@ export function FormFooter({
 }
 
 /**
- * A managed-settings toggle row — a `<Switch>` (the same primitive the owner
- * module section uses) paired with a hidden mirror input so the FormData
- * submit still reads `name === "on"`. Uncontrolled at the DOM level, controlled
- * in React so the switch and its mirror stay in lockstep.
+ * A managed-settings toggle row: the kit's `SwitchRow` (the row every owner
+ * switch uses) paired with a hidden mirror input so the FormData submit still
+ * reads `name === "on"`. Uncontrolled at the DOM level, controlled in React so
+ * the switch and its mirror stay in lockstep.
  */
 export function ManagedSwitchRow({
   name,
@@ -108,21 +107,16 @@ export function ManagedSwitchRow({
   const id = `managed-switch-${name}`;
   const [on, setOn] = useState(defaultChecked);
   return (
-    <div
-      className={className ?? "flex items-center justify-between gap-3 text-sm"}
-    >
-      <Label htmlFor={id} noColon className="leading-snug font-normal">
-        {label}
-      </Label>
-      <Switch
+    <>
+      <SwitchRow
         id={id}
+        label={label}
         checked={on}
         onCheckedChange={setOn}
         disabled={disabled}
-        aria-label={label}
-        className="shrink-0"
+        className={className}
       />
       <input name={name} type="hidden" value={on ? "on" : "off"} />
-    </div>
+    </>
   );
 }

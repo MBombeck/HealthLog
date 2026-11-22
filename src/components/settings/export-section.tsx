@@ -39,7 +39,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { cn } from "@/lib/utils";
@@ -385,20 +385,14 @@ function MedicationsCsvCard() {
         setSince={setSince}
         setUntil={setUntil}
       />
-      <label
-        htmlFor="export-medications-include-intake"
-        className="flex min-h-11 cursor-pointer items-center gap-3 text-xs"
-      >
-        <Switch
-          id="export-medications-include-intake"
-          data-testid="export-medications-include-intake"
-          checked={includeIntake}
-          onCheckedChange={setIncludeIntake}
-        />
-        <span className="text-muted-foreground">
-          {t("settings.sections.export.cards.medicationsCsv.includeIntake")}
-        </span>
-      </label>
+      <SwitchRow
+        className="min-h-11"
+        label={t("settings.sections.export.cards.medicationsCsv.includeIntake")}
+        id="export-medications-include-intake"
+        data-testid="export-medications-include-intake"
+        checked={includeIntake}
+        onCheckedChange={setIncludeIntake}
+      />
       {error && (
         <p role="alert" className="text-destructive text-sm">
           {error}
@@ -535,24 +529,18 @@ function FullBackupCard() {
       >
         {t("settings.sections.export.cards.fullBackup.scopeNote")}
       </p>
-      <label
-        htmlFor="export-full-backup-encrypt"
-        className="flex min-h-11 cursor-pointer items-center gap-3 text-xs"
-      >
-        <Switch
-          id="export-full-backup-encrypt"
-          data-testid="export-full-backup-encrypt"
-          checked={encrypt}
-          onCheckedChange={(v) => {
-            setEncrypt(v);
-            setError(null);
-            if (!v) setPassphrase("");
-          }}
-        />
-        <span className="text-muted-foreground">
-          {t("settings.sections.export.cards.fullBackup.encryptToggle")}
-        </span>
-      </label>
+      <SwitchRow
+        className="min-h-11"
+        label={t("settings.sections.export.cards.fullBackup.encryptToggle")}
+        id="export-full-backup-encrypt"
+        data-testid="export-full-backup-encrypt"
+        checked={encrypt}
+        onCheckedChange={(v) => {
+          setEncrypt(v);
+          setError(null);
+          if (!v) setPassphrase("");
+        }}
+      />
       {encrypt && (
         <div className="space-y-2">
           <PasswordInput

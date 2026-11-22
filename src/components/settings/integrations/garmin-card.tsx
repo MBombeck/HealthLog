@@ -31,7 +31,9 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { PasswordInput } from "@/components/ui/password-input";
 import { TagChip } from "@/components/ui/tag-chip";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { apiFetchRaw, apiPost } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import type { GarminBackfillStep } from "@/lib/garmin/backfill-progress";
 import {
   GARMIN_KEY_VALIDITY_DAYS,
@@ -171,7 +173,22 @@ export function GarminCard({
       queryClient.invalidateQueries({
         queryKey: queryKeys.integrationsStatus(),
       });
+      toastWrittenOutcome(
+        "success",
+        t("settings.integrationDisconnected", {
+          provider: t("settings.garmin"),
+        }),
+      );
     },
+    // The confirmation has closed by now; a refused disconnect would leave
+    // the card connected without a word.
+    onError: (failure) =>
+      showErrorToast(
+        t("settings.integrationDisconnectFailed", {
+          provider: t("settings.garmin"),
+        }),
+        { cause: failure },
+      ),
   });
 
   // An expired or revoked key is resolved by pasting a new one: the button

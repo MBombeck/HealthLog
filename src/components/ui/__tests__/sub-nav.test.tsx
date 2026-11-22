@@ -51,15 +51,11 @@ describe("sub-navigation pills", () => {
  * A row of pills that marks the current page is `SubNav`. The Insights
  * pills and the Admin console's phone strip were two hand-written copies in
  * two sizes and two tints. A file that marks a current page and spells a
- * bordered pill of its own is a third; the one that remains is listed and a
- * new one fails.
+ * bordered pill of its own is a third, and fails.
  */
 describe("no hand-written pill strip beside SubNav", () => {
-  const REMAINING = [
-    // The Admin console's phone strip: moves to `SubNavLink` with the
-    // console's navigation.
-    "components/admin/admin-shell.tsx",
-  ];
+  // Empty since the Admin console's phone strip moved to `SubNavLink`.
+  const REMAINING: string[] = [];
 
   const PILL_RE = /"[^"\n]*\brounded-full\b[^"\n]*"/g;
 
@@ -88,7 +84,7 @@ describe("no hand-written pill strip beside SubNav", () => {
     ).toBe(false);
   });
 
-  it("finds none but the listed one", () => {
+  it("finds none", () => {
     const src = join(__dirname, "../../..");
     const found = walkSourceFiles(src, { floor: 1200, extensions: [".tsx"] })
       .filter((p) => /^(components|app)\//.test(p))

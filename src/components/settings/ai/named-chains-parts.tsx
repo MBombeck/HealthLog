@@ -6,7 +6,7 @@
  * the card owns the draft and the save.
  * ──────────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useTranslations } from "@/lib/i18n/context";
@@ -420,12 +421,15 @@ export function DefaultChainSelect({
   onChange: (value: string | null) => void;
 }) {
   const { t } = useTranslations();
+  const id = useId();
   return (
-    <label className="block space-y-1.5">
-      <span className="text-sm font-medium">
-        {t("settings.ai.namedChains.defaultChainLabel")}
-      </span>
+    <FieldGroup
+      htmlFor={id}
+      label={t("settings.ai.namedChains.defaultChainLabel")}
+      hint={t("settings.ai.namedChains.defaultChainHint")}
+    >
       <NativeSelect
+        id={id}
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
         className="w-full sm:w-64"
@@ -437,9 +441,6 @@ export function DefaultChainSelect({
           </option>
         ))}
       </NativeSelect>
-      <span className="text-muted-foreground block text-xs">
-        {t("settings.ai.namedChains.defaultChainHint")}
-      </span>
-    </label>
+    </FieldGroup>
   );
 }

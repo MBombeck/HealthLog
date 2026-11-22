@@ -38,7 +38,12 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { apiFetchRaw, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiGet, apiPost } from "@/lib/api/api-fetch";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
+import { showErrorToast } from "@/lib/errors/error-toast";
+import { translateCode } from "@/lib/i18n/translate-code";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { runConnectionTest } from "@/components/settings/test-connection-button";
 
 type ChannelType = "TELEGRAM" | "NTFY" | "WEB_PUSH" | "APNS";
 
@@ -86,6 +91,8 @@ export function NotificationStatusCard() {
   });
 
   const reEnable = useMutation({
+    // Confirms in place: the channel's badge turns back to "Active".
+    meta: CONFIRMS_INLINE,
     mutationFn: async (channelId: string) => {
       await apiPost("/api/notifications/status", { channelId });
     },
@@ -96,17 +103,27 @@ export function NotificationStatusCard() {
     },
   });
 
+  // A test send changes nothing on the row it was started from, so it says
+  // how it went, the same words the channel card's own test button uses.
   const test = useMutation({
-    mutationFn: async (channel: ChannelStatus) => {
-      const res = await apiFetchRaw(TEST_ENDPOINTS[channel.type], {
-        method: "POST",
-      });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error((json as { error?: string }).error ?? "test_failed");
+    mutationFn: (channel: ChannelStatus) =>
+      runConnectionTest(TEST_ENDPOINTS[channel.type]),
+    onSuccess: (result) => {
+      if (result.kind === "ok") {
+        toastWrittenOutcome(
+          "success",
+          t("settings.testConnection.ok", { latency: result.latency }),
+        );
+      } else {
+        showErrorToast(
+          translateCode(
+            t,
+            "settings.testConnection.errors",
+            result.errorCode,
+            "settings.testConnection.errors.generic",
+          ),
+        );
       }
-    },
-    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.notificationsStatus(),
       });

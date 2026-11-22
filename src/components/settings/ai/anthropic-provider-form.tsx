@@ -16,6 +16,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { PasswordInput } from "@/components/ui/password-input";
 import { apiPatch } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
@@ -71,6 +72,8 @@ export function AnthropicProviderForm({
       : modelChoice.trim();
 
   const saveMutation = useMutation({
+    // Confirms in place: the saved line above the action row.
+    meta: CONFIRMS_INLINE,
     mutationFn: async () => {
       const body: Record<string, unknown> = {
         provider: uiToLegacyProviderEnum("anthropic"),

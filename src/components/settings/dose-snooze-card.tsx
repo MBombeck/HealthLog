@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { BellRing } from "lucide-react";
 
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -89,9 +90,9 @@ export function DoseSnoozeCard({
       />
       <CardQueryBody query={prefs} slot="dose-snooze">
         <div className="flex min-h-11 items-center justify-between gap-3">
-          <label htmlFor="dose-snooze-minutes" className="text-sm font-medium">
+          <Label htmlFor="dose-snooze-minutes">
             {t("settings.sections.notifications.snooze.label")}
-          </label>
+          </Label>
           <NativeSelect
             id="dose-snooze-minutes"
             className="w-auto"

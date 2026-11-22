@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PackageOpen } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -254,9 +255,9 @@ export function LowStockCard({
       <p className="text-sm">{t("notifications.lowStock.detail")}</p>
       {enabled && (
         <div className="flex min-h-11 items-center justify-between gap-3">
-          <label htmlFor="low-stock-days" className="text-sm font-medium">
+          <Label htmlFor="low-stock-days">
             {t("notifications.lowStock.daysLabel")}
-          </label>
+          </Label>
           <Input
             id="low-stock-days"
             type="number"
@@ -285,9 +286,9 @@ export function LowStockCard({
       {enabled && (
         <div>
           <div className="flex min-h-11 items-center justify-between gap-3">
-            <label htmlFor="low-stock-lead" className="text-sm font-medium">
+            <Label htmlFor="low-stock-lead">
               {t("notifications.lowStock.leadLabel")}
-            </label>
+            </Label>
             <Input
               id="low-stock-lead"
               type="number"
