@@ -5710,6 +5710,43 @@
       "managedProfileTitle": "Crea il profilo della persona di cui ti prendi cura",
       "managedProfileDescription": "Le tue risposte riguardavano la cartella di un'altra persona; si crea in Accesso condiviso.",
       "managedProfileCta": "Crea il profilo"
+    },
+    "extras": {
+      "toggle": "Altro che puoi configurare",
+      "hint": "Tutto facoltativo. Niente di questo conta per l'elenco sopra.",
+      "loadError": "Non è stato possibile caricare questi suggerimenti.",
+      "items": {
+        "emergencyCard": {
+          "title": "Tessera di emergenza",
+          "description": "Allergie, farmaci e contatti per chi deve aiutare.",
+          "cta": "Apri"
+        },
+        "careFeed": {
+          "title": "Abbonamento al calendario degli appuntamenti",
+          "description": "Appuntamenti e controlli nell'app di calendario che usi già.",
+          "cta": "Iscriviti"
+        },
+        "sharing": {
+          "title": "Condividi con qualcuno",
+          "description": "Dai accesso a un altro account o gestisci il profilo di qualcuno.",
+          "cta": "Configura"
+        },
+        "imports": {
+          "title": "Importa dati precedenti",
+          "description": "Gadgetbridge, Health Connect, file FHIR e altro.",
+          "cta": "Importa"
+        },
+        "reportSchedule": {
+          "title": "Referto medico periodico",
+          "description": "Un referto archiviato nei tuoi documenti ogni mese, trimestre o anno.",
+          "cta": "Pianifica"
+        },
+        "iosApp": {
+          "title": "L'app per iPhone",
+          "description": "Sincronizzazione con Apple Salute e promemoria tramite il relay push, se questo server lo offre.",
+          "cta": "Scopri di più"
+        }
+      }
     }
   },
   "trendHints": {

@@ -5710,6 +5710,43 @@
       "managedProfileTitle": "Create the profile you look after",
       "managedProfileDescription": "Your answers were given for another person's record; it is created under Shared access.",
       "managedProfileCta": "Create the profile"
+    },
+    "extras": {
+      "toggle": "More you can set up",
+      "hint": "All optional. None of it counts towards the list above.",
+      "loadError": "These suggestions could not be loaded.",
+      "items": {
+        "emergencyCard": {
+          "title": "Emergency card",
+          "description": "Allergies, medication and contacts for someone who has to help.",
+          "cta": "Open"
+        },
+        "careFeed": {
+          "title": "Care calendar subscription",
+          "description": "Appointments and check-ups in the calendar app you already use.",
+          "cta": "Subscribe"
+        },
+        "sharing": {
+          "title": "Share with someone",
+          "description": "Give another account access, or look after someone's record.",
+          "cta": "Set up"
+        },
+        "imports": {
+          "title": "Bring in older data",
+          "description": "Gadgetbridge, Health Connect, FHIR files and more.",
+          "cta": "Import"
+        },
+        "reportSchedule": {
+          "title": "Regular doctor report",
+          "description": "A report filed into your documents every month, quarter or year.",
+          "cta": "Schedule"
+        },
+        "iosApp": {
+          "title": "The iPhone app",
+          "description": "Apple Health sync, and reminders through the push relay if this server offers it.",
+          "cta": "Learn more"
+        }
+      }
     }
   },
   "trendHints": {

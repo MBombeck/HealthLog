@@ -5710,6 +5710,43 @@
       "managedProfileTitle": "Crie o perfil que você cuida",
       "managedProfileDescription": "Suas respostas foram dadas para o registro de outra pessoa; ele é criado em Acesso compartilhado.",
       "managedProfileCta": "Criar o perfil"
+    },
+    "extras": {
+      "toggle": "Mais coisas que você pode configurar",
+      "hint": "Tudo opcional. Nada disso conta para a lista acima.",
+      "loadError": "Não foi possível carregar estas sugestões.",
+      "items": {
+        "emergencyCard": {
+          "title": "Cartão de emergência",
+          "description": "Alergias, medicamentos e contatos para quem precisar ajudar.",
+          "cta": "Abrir"
+        },
+        "careFeed": {
+          "title": "Assinatura de calendário de consultas",
+          "description": "Consultas e exames no app de calendário que você já usa.",
+          "cta": "Assinar"
+        },
+        "sharing": {
+          "title": "Compartilhar com alguém",
+          "description": "Dê acesso a outra conta ou cuide do registro de outra pessoa.",
+          "cta": "Configurar"
+        },
+        "imports": {
+          "title": "Trazer dados antigos",
+          "description": "Gadgetbridge, Health Connect, arquivos FHIR e mais.",
+          "cta": "Importar"
+        },
+        "reportSchedule": {
+          "title": "Relatório médico periódico",
+          "description": "Um relatório arquivado nos seus documentos todo mês, trimestre ou ano.",
+          "cta": "Agendar"
+        },
+        "iosApp": {
+          "title": "O app para iPhone",
+          "description": "Sincronização com o Apple Saúde e lembretes pelo relay de push, se este servidor oferecer.",
+          "cta": "Saiba mais"
+        }
+      }
     }
   },
   "trendHints": {

@@ -5710,6 +5710,43 @@
       "managedProfileTitle": "Utwórz profil osoby, którą się opiekujesz",
       "managedProfileDescription": "Twoje odpowiedzi dotyczyły kartoteki innej osoby; tworzy się ją w Dostępie współdzielonym.",
       "managedProfileCta": "Utwórz profil"
+    },
+    "extras": {
+      "toggle": "Co jeszcze możesz skonfigurować",
+      "hint": "Wszystko opcjonalne. Nic z tego nie liczy się do listy powyżej.",
+      "loadError": "Nie udało się wczytać tych propozycji.",
+      "items": {
+        "emergencyCard": {
+          "title": "Karta ratunkowa",
+          "description": "Alergie, leki i kontakty dla kogoś, kto ma pomóc.",
+          "cta": "Otwórz"
+        },
+        "careFeed": {
+          "title": "Subskrypcja kalendarza wizyt",
+          "description": "Wizyty i badania w aplikacji kalendarza, której już używasz.",
+          "cta": "Subskrybuj"
+        },
+        "sharing": {
+          "title": "Udostępnij komuś",
+          "description": "Daj dostęp innemu kontu albo opiekuj się czyimś profilem.",
+          "cta": "Skonfiguruj"
+        },
+        "imports": {
+          "title": "Przenieś starsze dane",
+          "description": "Gadgetbridge, Health Connect, pliki FHIR i więcej.",
+          "cta": "Importuj"
+        },
+        "reportSchedule": {
+          "title": "Regularny raport dla lekarza",
+          "description": "Raport zapisywany w twoich dokumentach co miesiąc, kwartał lub rok.",
+          "cta": "Zaplanuj"
+        },
+        "iosApp": {
+          "title": "Aplikacja na iPhone'a",
+          "description": "Synchronizacja z Apple Zdrowie i przypomnienia przez przekaźnik push, jeśli ten serwer go oferuje.",
+          "cta": "Dowiedz się więcej"
+        }
+      }
     }
   },
   "trendHints": {

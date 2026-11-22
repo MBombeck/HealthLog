@@ -23091,6 +23091,25 @@ paths:
         "403": *a9
         "422": *a4
         "429": *a5
+  /api/onboarding/extras:
+    get:
+      tags:
+        - Onboarding
+      summary: Presence behind the checklist's optional rows
+      description: "Whether each optional getting-started row applies to the active record and whether it is set up: emergency
+        card, care calendar feed, sharing, imports, doctor report schedule, the iPhone app. The record's owner, or a
+        managed profile's guardian; a delegate on an adult's record is refused (403)."
+      responses:
+        "200":
+          description: One entry per row.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingChecklistExtrasEnvelope"
+        "401": *a1
+        "403": *a18
+        "422": *a4
+        "429": *a5
   /api/onboarding/answers:
     patch:
       tags:
@@ -93106,6 +93125,119 @@ components:
         - data
         - error
       additionalProperties: false
+    OnboardingChecklistExtrasEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/OnboardingChecklistExtras"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    OnboardingChecklistExtras:
+      type: object
+      properties:
+        emergencyCard:
+          type: object
+          properties:
+            applies:
+              type: boolean
+              description: "Whether the row means anything for this record: inside a managed profile only the guardian's rows
+                (emergency card, care feed, report schedule) apply."
+            done:
+              type: boolean
+              description: Whether it is already set up.
+          required:
+            - applies
+            - done
+          additionalProperties: false
+        careFeed:
+          type: object
+          properties:
+            applies:
+              type: boolean
+              description: "Whether the row means anything for this record: inside a managed profile only the guardian's rows
+                (emergency card, care feed, report schedule) apply."
+            done:
+              type: boolean
+              description: Whether it is already set up.
+          required:
+            - applies
+            - done
+          additionalProperties: false
+        sharing:
+          type: object
+          properties:
+            applies:
+              type: boolean
+              description: "Whether the row means anything for this record: inside a managed profile only the guardian's rows
+                (emergency card, care feed, report schedule) apply."
+            done:
+              type: boolean
+              description: Whether it is already set up.
+          required:
+            - applies
+            - done
+          additionalProperties: false
+        imports:
+          type: object
+          properties:
+            applies:
+              type: boolean
+              description: "Whether the row means anything for this record: inside a managed profile only the guardian's rows
+                (emergency card, care feed, report schedule) apply."
+            done:
+              type: boolean
+              description: Whether it is already set up.
+          required:
+            - applies
+            - done
+          additionalProperties: false
+        reportSchedule:
+          type: object
+          properties:
+            applies:
+              type: boolean
+              description: "Whether the row means anything for this record: inside a managed profile only the guardian's rows
+                (emergency card, care feed, report schedule) apply."
+            done:
+              type: boolean
+              description: Whether it is already set up.
+          required:
+            - applies
+            - done
+          additionalProperties: false
+        iosApp:
+          type: object
+          properties:
+            applies:
+              type: boolean
+              description: "Whether the row means anything for this record: inside a managed profile only the guardian's rows
+                (emergency card, care feed, report schedule) apply."
+            done:
+              type: boolean
+              description: Whether it is already set up.
+          required:
+            - applies
+            - done
+          additionalProperties: false
+      required:
+        - emergencyCard
+        - careFeed
+        - sharing
+        - imports
+        - reportSchedule
+        - iosApp
+      additionalProperties: false
+      description: 1.49 — presence behind the getting-started checklist's optional rows. Existence and counts only, never contents.
     OnboardingStateEnvelope:
       type: object
       properties:

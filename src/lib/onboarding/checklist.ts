@@ -91,8 +91,11 @@ export interface ChecklistInputs {
    * finish or that was declined.
    */
   aiConfigurable: boolean;
-  /** Dismissed item ids (per-item localStorage state). */
-  dismissedIds: ReadonlySet<ChecklistItemId>;
+  /**
+   * Dismissed ids (per-item localStorage state). Also holds the `extra:<id>`
+   * ids of the optional "More" group, which this list ignores.
+   */
+  dismissedIds: ReadonlySet<string>;
   /**
    * v1.39 — visits booked from today on, for the "prepare the visit"
    * row. Read only while the row can exist, so a caller that never asked the
@@ -151,6 +154,9 @@ export function checklistOrderFromNeeds(
 
   if (needs.medication === "yes" || needs.medication === "sometimes") {
     promote("medication");
+    // A reminder needs somewhere to arrive: the channels row follows the
+    // medication row for a schedule (1.49).
+    promote("notifications");
   }
   // "I type them in" and "a file I already have" are not connections, so they
   // say nothing about the data-source row.

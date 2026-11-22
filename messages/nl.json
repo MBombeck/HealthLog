@@ -5710,6 +5710,43 @@
       "managedProfileTitle": "Het profiel aanmaken voor wie je zorgt",
       "managedProfileDescription": "Je antwoorden gelden voor het dossier van iemand anders; dat wordt aangemaakt onder Gedeelde toegang.",
       "managedProfileCta": "Profiel aanmaken"
+    },
+    "extras": {
+      "toggle": "Meer dat je kunt instellen",
+      "hint": "Allemaal optioneel. Niets hiervan telt mee voor de lijst hierboven.",
+      "loadError": "Deze suggesties konden niet worden geladen.",
+      "items": {
+        "emergencyCard": {
+          "title": "Noodkaart",
+          "description": "Allergieën, medicatie en contacten voor wie moet helpen.",
+          "cta": "Openen"
+        },
+        "careFeed": {
+          "title": "Agenda-abonnement voor afspraken",
+          "description": "Afspraken en controles in de agenda-app die je al gebruikt.",
+          "cta": "Abonneren"
+        },
+        "sharing": {
+          "title": "Met iemand delen",
+          "description": "Geef een ander account toegang of beheer het dossier van iemand anders.",
+          "cta": "Instellen"
+        },
+        "imports": {
+          "title": "Oudere gegevens binnenhalen",
+          "description": "Gadgetbridge, Health Connect, FHIR-bestanden en meer.",
+          "cta": "Importeren"
+        },
+        "reportSchedule": {
+          "title": "Vast artsrapport",
+          "description": "Een rapport dat elke maand, elk kwartaal of elk jaar in je documenten komt.",
+          "cta": "Plannen"
+        },
+        "iosApp": {
+          "title": "De iPhone-app",
+          "description": "Synchronisatie met Apple Gezondheid, en herinneringen via de push-relay als deze server die aanbiedt.",
+          "cta": "Meer informatie"
+        }
+      }
     }
   },
   "trendHints": {

@@ -30,6 +30,7 @@ import {
   ONBOARDING_VISIT_ANSWERS,
 } from "@/lib/onboarding/needs";
 import { tourProgressSchema } from "@/lib/onboarding/tour-progress";
+import { CHECKLIST_EXTRA_IDS } from "@/lib/onboarding/checklist-extras";
 import { MEDICINE_REGISTRY_CHOICES } from "@/lib/medications/leaflet-registries";
 import { ONBOARDING_AREA_KEYS } from "@/lib/modules/registry";
 import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
@@ -37,7 +38,12 @@ import {
   onboardingAnswerSchema,
   onboardingRestartSchema,
 } from "@/lib/validations/onboarding-needs";
-import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import {
+  dataEnvelope,
+  errorEnvelope,
+  recordRefusal,
+  stdResponses,
+} from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
 
 /* ── v1.39 (C1): the needs-based flow ─────────────────────────────────────── */
@@ -241,7 +247,54 @@ const onboardingCompleteRequest = onboardingCompleteSchema.meta({
     "The completion stamp's body. `managedRecordId` (v1.39) names the managed record the answers were given for — see the field. The profile fields are the legacy half: every one optional, only a truthy value is written — sending `heightCm: 0` or an empty `displayName` leaves the column alone rather than clearing it, and there is no way to CLEAR a field through this endpoint. `dateOfBirth` is a free string parsed with `new Date(...)`: an unparseable value is silently ignored, not refused. The web flow writes its profile through `PUT /api/auth/profile` instead.",
 });
 
+const checklistExtraPresence = z.object({
+  applies: z
+    .boolean()
+    .describe(
+      "Whether the row means anything for this record: inside a managed profile only the guardian's rows (emergency card, care feed, report schedule) apply.",
+    ),
+  done: z.boolean().describe("Whether it is already set up."),
+});
+
+const checklistExtrasResource = z
+  .object(
+    Object.fromEntries(
+      CHECKLIST_EXTRA_IDS.map((id) => [id, checklistExtraPresence]),
+    ) as Record<
+      (typeof CHECKLIST_EXTRA_IDS)[number],
+      typeof checklistExtraPresence
+    >,
+  )
+  .meta({
+    id: "OnboardingChecklistExtras",
+    description:
+      "1.49 — presence behind the getting-started checklist's optional rows. Existence and counts only, never contents.",
+  });
+
 export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/onboarding/extras": {
+    get: {
+      tags: ["Onboarding"],
+      summary: "Presence behind the checklist's optional rows",
+      description:
+        "Whether each optional getting-started row applies to the active record and whether it is set up: emergency card, care calendar feed, sharing, imports, doctor report schedule, the iPhone app. The record's owner, or a managed profile's guardian; a delegate on an adult's record is refused (403).",
+      responses: {
+        "200": {
+          description: "One entry per row.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                checklistExtrasResource,
+                "OnboardingChecklistExtrasEnvelope",
+              ),
+            },
+          },
+        },
+        ...recordRefusal(),
+        ...stdResponses,
+      },
+    },
+  },
   "/api/onboarding/answers": {
     patch: {
       tags: ["Onboarding"],

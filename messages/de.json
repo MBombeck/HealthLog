@@ -5710,6 +5710,43 @@
       "managedProfileTitle": "Profil der betreuten Person anlegen",
       "managedProfileDescription": "Deine Antworten galten der Akte einer anderen Person; sie wird unter Geteilter Zugriff angelegt.",
       "managedProfileCta": "Profil anlegen"
+    },
+    "extras": {
+      "toggle": "Was du noch einrichten kannst",
+      "hint": "Alles freiwillig. Nichts davon zählt zur Liste oben.",
+      "loadError": "Diese Vorschläge konnten nicht geladen werden.",
+      "items": {
+        "emergencyCard": {
+          "title": "Notfallkarte",
+          "description": "Allergien, Medikamente und Kontakte für jemanden, der helfen muss.",
+          "cta": "Öffnen"
+        },
+        "careFeed": {
+          "title": "Kalender-Abo für Termine",
+          "description": "Termine und Vorsorge in der Kalender-App, die du schon nutzt.",
+          "cta": "Abonnieren"
+        },
+        "sharing": {
+          "title": "Mit jemandem teilen",
+          "description": "Einem anderen Konto Zugriff geben oder das Profil eines anderen Menschen betreuen.",
+          "cta": "Einrichten"
+        },
+        "imports": {
+          "title": "Ältere Daten übernehmen",
+          "description": "Gadgetbridge, Health Connect, FHIR-Dateien und mehr.",
+          "cta": "Importieren"
+        },
+        "reportSchedule": {
+          "title": "Regelmäßiger Arztbericht",
+          "description": "Ein Bericht, der jeden Monat, jedes Quartal oder jedes Jahr in deinen Dokumenten landet.",
+          "cta": "Planen"
+        },
+        "iosApp": {
+          "title": "Die iPhone-App",
+          "description": "Abgleich mit Apple Health und Erinnerungen über das Push-Relay, wenn dieser Server es anbietet.",
+          "cta": "Mehr erfahren"
+        }
+      }
     }
   },
   "trendHints": {
