@@ -19,6 +19,13 @@
  * window and within the silent budget (`push-relay/data-changed.ts`). The
  * device the request came from (`X-Device-Id`) is left out of both.
  *
+ * Before it tells anyone it evicts the record's medication caches: a device
+ * woken by the push reads within a second, and must not be answered from a
+ * cell that predates the write. Most writers evict on their own; the seam
+ * does it for all of them, so a writer that only marks the cells stale (the
+ * automatic passes) or forgets (a snooze, a course change) cannot hand a
+ * freshly woken device the old state.
+ *
  * The one seam: `src/__tests__/intake-write-sync-push-guard.test.ts` holds
  * every intake and medication writer to calling it, or to a stated reason.
  * Synchronous and non-throwing; nothing here can fail the write.
@@ -40,6 +47,7 @@ export interface DoseChange extends IntakeSyncRequest {
 
 export function afterDoseChange(change: DoseChange): void {
   const { scope, ...sync } = change;
+  invalidateUserMedications(change.userId, { evict: true });
   queueMedicationIntakeSync(sync);
   const domains: DataDomain[] =
     scope === "medication" ? ["intakes", "medications"] : ["intakes"];
@@ -61,7 +69,6 @@ export function afterMedicationChange(
   userId: string,
   originDeviceToken?: string | null,
 ): void {
-  invalidateUserMedications(userId, { evict: true });
   afterDoseChange({
     userId,
     scope: "medication",
