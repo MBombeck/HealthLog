@@ -41,7 +41,8 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: mocks.getGlobalBoss,
 }));
 
-vi.mock("@/lib/multipart/stream-to-disk", () => ({
+vi.mock("@/lib/multipart/stream-to-disk", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/multipart/stream-to-disk")>()),
   streamMultipartToDisk: mocks.streamToDisk,
 }));
 
@@ -120,12 +121,32 @@ describe("POST /api/import/health-connect-export", () => {
     expect((await POST(upload())).status).toBe(401);
   });
 
-  it("refuses a declared body above 1 GiB before reading it", async () => {
+  it("refuses a declared body above 1 GiB and the envelope before reading it", async () => {
     const res = await POST(
-      upload({ "content-length": String(1024 * 1024 * 1024 + 1) }),
+      upload({
+        "content-length": String(1024 * 1024 * 1024 + 64 * 1024 + 1),
+      }),
     );
     expect(res.status).toBe(413);
+    expect((await res.json()).meta.errorCode).toBe("import.file.too_large");
     expect(mocks.streamToDisk).not.toHaveBeenCalled();
+  });
+
+  it("reads a file just under the cap whose envelope takes the body past it", async () => {
+    const res = await POST(
+      upload({ "content-length": String(1024 * 1024 * 1024 + 512) }),
+    );
+    expect(res.status).toBe(202);
+    expect(mocks.streamToDisk).toHaveBeenCalled();
+  });
+
+  it("answers a file the stream finds past the cap with the same 413", async () => {
+    const { MultipartTooLargeError } =
+      await import("@/lib/multipart/stream-to-disk");
+    mocks.streamToDisk.mockRejectedValue(new MultipartTooLargeError(1));
+    const res = await POST(upload());
+    expect(res.status).toBe(413);
+    expect((await res.json()).meta.errorCode).toBe("import.file.too_large");
   });
 
   it("caps the streamed body at 1 GiB and stages it under its own name", async () => {

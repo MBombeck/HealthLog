@@ -17383,7 +17383,8 @@ paths:
         a background worker. The response is **202 with a `jobId`**; poll `GET
         /api/import/health-connect-export/status`. Body is `multipart/form-data` with the file under `file`, streamed to
         disk after authentication like the Apple Health upload. Re-uploading the same bytes resolves to the still-viable
-        job and returns `idempotent: true`. Imported rows carry `source = HEALTH_CONNECT`. Cookie or wildcard Bearer."
+        job and returns `idempotent: true`. Imported rows carry `source = HEALTH_CONNECT`. Five uploads a minute per
+        account. Cookie or wildcard Bearer."
       requestBody:
         required: true
         content:
@@ -17412,29 +17413,45 @@ paths:
         "401": *a1
         "403": *a9
         "409":
-          description: An import for this account (Health Connect or Apple Health) is already queued or running. The upload was
-            discarded. `errorCode` is `import.apple_health.busy` for either kind, `jobId` names the running job.
+          description: An import for this account (of any kind) is already queued or running. The upload was discarded.
+            `meta.errorCode` is `import.apple_health.busy` for every kind, `meta.jobId` names the running job; poll it,
+            then upload again.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "413":
-          description: The declared `Content-Length` exceeds the 1 GiB upload cap.
+          description: The file is larger than 1 GiB. Answered alike whether the declared `Content-Length` says so (beyond a 64
+            KiB allowance for the multipart envelope) or the stream finds it while reading; `meta.errorCode` is
+            `import.file.too_large`. Nothing was kept.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
-          description: "The multipart body could not be read: no `file` part, a malformed body, or more bytes than the cap.
-            Whether the ZIP is a readable Health Connect export is decided by the worker and reported on the job
-            (`status: failed`, `failureReason`)."
+          description: "The multipart body could not be read: no `file` part, a malformed boundary, or a dropped connection. The
+            message names the failure. Whether the file itself is readable is decided by the worker and reported on the
+            job (`status: failed`, `failureReason`)."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": *a5
+        "429":
+          description: More than five uploads of this kind in a minute by this account (the bucket `import:<kind>:<account>`,
+            spent before the body is read). Rate limit exceeded. The response carries `Retry-After` (whole seconds,
+            rounded up and never below 1 — wait at least that long before retrying), `X-RateLimit-Limit` (the bucket's
+            cap), `X-RateLimit-Remaining` and `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back
+            off on `Retry-After` rather than guessing. A 429 raised by a ceiling that is not one of these buckets — a
+            daily AI budget, an upstream provider's own refusal relayed onward — carries none of them, because there is
+            no bucket to describe.
+          headers: *a8
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "503":
-          description: No background worker is bound, or the queue did not take the job, so nothing would run the import.
+          description: No background worker is bound, or the queue did not take the job (the job is then marked failed), so
+            nothing would run the import. The upload was discarded; retry once a worker runs.
           content:
             application/json:
               schema:
@@ -17471,7 +17488,7 @@ paths:
         start within the duplicate window) adds its series and track to that workout instead of being stored twice. New
         rows carry `source = IMPORT` and the external id `fit:<sha-256 of the FIT bytes>:<session start>`, so
         re-importing the same file changes nothing. Re-uploading the same bytes resolves to the still-viable job and
-        returns `idempotent: true`. Ten uploads a minute per account. Cookie or wildcard Bearer."
+        returns `idempotent: true`. Five uploads a minute per account. Cookie or wildcard Bearer."
       requestBody:
         required: true
         content:
@@ -17501,27 +17518,44 @@ paths:
         "403": *a9
         "409":
           description: An import for this account (of any kind) is already queued or running. The upload was discarded.
-            `errorCode` is `import.apple_health.busy`, `jobId` names the running job.
+            `meta.errorCode` is `import.apple_health.busy` for every kind, `meta.jobId` names the running job; poll it,
+            then upload again.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "413":
-          description: The file is larger than 10 MB.
+          description: The file is larger than 10 MB. Answered alike whether the declared `Content-Length` says so (beyond a 64
+            KiB allowance for the multipart envelope) or the stream finds it while reading; `meta.errorCode` is
+            `import.file.too_large`. Nothing was kept.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
-          description: "The multipart body could not be read: no `file` part or a malformed body. Whether the file is a readable
-            activity is decided by the worker and reported on the job (`status: failed`, `failureReason`)."
+          description: "The multipart body could not be read: no `file` part, a malformed boundary, or a dropped connection. The
+            message names the failure. Whether the file itself is readable is decided by the worker and reported on the
+            job (`status: failed`, `failureReason`)."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": *a5
+        "429":
+          description: More than five uploads of this kind in a minute by this account (the bucket `import:<kind>:<account>`,
+            spent before the body is read). Rate limit exceeded. The response carries `Retry-After` (whole seconds,
+            rounded up and never below 1 — wait at least that long before retrying), `X-RateLimit-Limit` (the bucket's
+            cap), `X-RateLimit-Remaining` and `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back
+            off on `Retry-After` rather than guessing. A 429 raised by a ceiling that is not one of these buckets — a
+            daily AI budget, an upstream provider's own refusal relayed onward — carries none of them, because there is
+            no bucket to describe.
+          headers: *a8
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "503":
-          description: No background worker is bound, or the queue did not take the job, so nothing would run the import.
+          description: No background worker is bound, or the queue did not take the job (the job is then marked failed), so
+            nothing would run the import. The upload was discarded; retry once a worker runs.
           content:
             application/json:
               schema:
@@ -18066,7 +18100,8 @@ paths:
         Body is `multipart/form-data` with the file under the field name `file`, capped at 1.5 GB. The upload is
         streamed straight to disk rather than buffered, computing a SHA-256 in the same pass; the declared
         `Content-Length` is checked first as a cheap pre-flight, but the streaming sink enforces the cap independently,
-        so a missing or lying header does not get past it.
+        so a missing or lying header does not get past it. Either way a file past the cap is a 413 with `meta.errorCode`
+        = `import.file.too_large`.
 
 
         **Idempotency is by CONTENT, not by an `Idempotency-Key`.** A 1 GB upload has no stable client-side key, so
@@ -18076,7 +18111,7 @@ paths:
         tombstoned by its own failure.
 
 
-        Rate-limited to 3 uploads per minute per user, checked before the body is touched. Cookie or wildcard Bearer.
+        Rate-limited to 5 uploads per minute per user, checked before the body is touched. Cookie or wildcard Bearer.
       requestBody:
         required: true
         content:
@@ -18107,36 +18142,45 @@ paths:
         "401": *a1
         "403": *a9
         "409":
-          description: An import for this account is already queued or running, and these bytes are not the ones it carries (the
-            same bytes resolve to that job as a 202). `meta.errorCode` is `import.apple_health.busy` and `meta.jobId`
-            names the running job; poll it, then upload again. The upload was discarded.
+          description: An import for this account (of any kind) is already queued or running. The upload was discarded.
+            `meta.errorCode` is `import.apple_health.busy` for every kind, `meta.jobId` names the running job; poll it,
+            then upload again.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "413":
-          description: The declared `Content-Length` exceeds 1.5 GB. A body that exceeds the cap without declaring it is refused
-            by the streaming sink instead, which surfaces as the 422 below.
+          description: The file is larger than 1.5 GB. Answered alike whether the declared `Content-Length` says so (beyond a 64
+            KiB allowance for the multipart envelope) or the stream finds it while reading; `meta.errorCode` is
+            `import.file.too_large`. Nothing was kept.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
-          description: The multipart body could not be streamed to disk — no `file` part, a malformed boundary, or the size cap
-            tripped mid-stream. The message names the failure.
+          description: "The multipart body could not be read: no `file` part, a malformed boundary, or a dropped connection. The
+            message names the failure. Whether the file itself is readable is decided by the worker and reported on the
+            job (`status: failed`, `failureReason`)."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429":
-          description: More than 3 uploads in a minute for this user.
+          description: More than five uploads of this kind in a minute by this account (the bucket `import:<kind>:<account>`,
+            spent before the body is read). Rate limit exceeded. The response carries `Retry-After` (whole seconds,
+            rounded up and never below 1 — wait at least that long before retrying), `X-RateLimit-Limit` (the bucket's
+            cap), `X-RateLimit-Remaining` and `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back
+            off on `Retry-After` rather than guessing. A 429 raised by a ceiling that is not one of these buckets — a
+            daily AI budget, an upstream provider's own refusal relayed onward — carries none of them, because there is
+            no bucket to describe.
+          headers: *a8
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "503":
-          description: No background worker is bound to this process, or the queue did not accept the job, so nothing will run it.
-            The staged upload is discarded (and a created job is marked failed); retry once a worker is running.
+          description: No background worker is bound, or the queue did not take the job (the job is then marked failed), so
+            nothing would run the import. The upload was discarded; retry once a worker runs.
           content:
             application/json:
               schema:
@@ -18197,8 +18241,8 @@ paths:
         table with rows is named in the result's `skips`. Body is `multipart/form-data` with the file under `file`,
         streamed to disk after authentication. The response is **202 with a `jobId`**; poll the status route.
         Re-uploading the same bytes resolves to the still-viable job. One import per account at a time, whatever its
-        kind. Five uploads a minute per account. A run stops at a ten-minute budget, keeps what it wrote and fails with
-        `time_budget`; uploading the same file again continues. Cookie or wildcard Bearer."
+        kind. Five uploads a minute per account and kind. A run stops at a ten-minute budget, keeps what it wrote and
+        fails with `time_budget`; uploading the same file again continues. Cookie or wildcard Bearer."
       requestBody:
         required: true
         content:
@@ -18228,27 +18272,44 @@ paths:
         "403": *a9
         "409":
           description: An import for this account (of any kind) is already queued or running. The upload was discarded.
-            `errorCode` is `import.apple_health.busy`, `jobId` names the running job.
+            `meta.errorCode` is `import.apple_health.busy` for every kind, `meta.jobId` names the running job; poll it,
+            then upload again.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "413":
-          description: The file is larger than 512 MB (`import.file.too_large`).
+          description: The file is larger than 512 MB. Answered alike whether the declared `Content-Length` says so (beyond a 64
+            KiB allowance for the multipart envelope) or the stream finds it while reading; `meta.errorCode` is
+            `import.file.too_large`. Nothing was kept.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
-          description: The multipart body could not be read. Whether the file is readable is decided by the worker and reported on
-            the job.
+          description: "The multipart body could not be read: no `file` part, a malformed boundary, or a dropped connection. The
+            message names the failure. Whether the file itself is readable is decided by the worker and reported on the
+            job (`status: failed`, `failureReason`)."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": *a5
+        "429":
+          description: More than five uploads of this kind in a minute by this account (the bucket `import:<kind>:<account>`,
+            spent before the body is read). Rate limit exceeded. The response carries `Retry-After` (whole seconds,
+            rounded up and never below 1 — wait at least that long before retrying), `X-RateLimit-Limit` (the bucket's
+            cap), `X-RateLimit-Remaining` and `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back
+            off on `Retry-After` rather than guessing. A 429 raised by a ceiling that is not one of these buckets — a
+            daily AI budget, an upstream provider's own refusal relayed onward — carries none of them, because there is
+            no bucket to describe.
+          headers: *a8
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "503":
-          description: No background worker is bound, or the queue did not take the job.
+          description: No background worker is bound, or the queue did not take the job (the job is then marked failed), so
+            nothing would run the import. The upload was discarded; retry once a worker runs.
           content:
             application/json:
               schema:
@@ -18285,8 +18346,8 @@ paths:
         documents are not read. Body is `multipart/form-data` with the file under `file`, streamed to disk after
         authentication. The response is **202 with a `jobId`**; poll the status route. Re-uploading the same bytes
         resolves to the still-viable job. One import per account at a time, whatever its kind. Five uploads a minute per
-        account. A run stops at a ten-minute budget, keeps what it wrote and fails with `time_budget`; uploading the
-        same file again continues. Cookie or wildcard Bearer.
+        account and kind. A run stops at a ten-minute budget, keeps what it wrote and fails with `time_budget`;
+        uploading the same file again continues. Cookie or wildcard Bearer.
       requestBody:
         required: true
         content:
@@ -18316,27 +18377,44 @@ paths:
         "403": *a9
         "409":
           description: An import for this account (of any kind) is already queued or running. The upload was discarded.
-            `errorCode` is `import.apple_health.busy`, `jobId` names the running job.
+            `meta.errorCode` is `import.apple_health.busy` for every kind, `meta.jobId` names the running job; poll it,
+            then upload again.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "413":
-          description: The file is larger than 32 MB (`import.file.too_large`).
+          description: The file is larger than 32 MB. Answered alike whether the declared `Content-Length` says so (beyond a 64
+            KiB allowance for the multipart envelope) or the stream finds it while reading; `meta.errorCode` is
+            `import.file.too_large`. Nothing was kept.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
-          description: The multipart body could not be read. Whether the file is readable is decided by the worker and reported on
-            the job.
+          description: "The multipart body could not be read: no `file` part, a malformed boundary, or a dropped connection. The
+            message names the failure. Whether the file itself is readable is decided by the worker and reported on the
+            job (`status: failed`, `failureReason`)."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": *a5
+        "429":
+          description: More than five uploads of this kind in a minute by this account (the bucket `import:<kind>:<account>`,
+            spent before the body is read). Rate limit exceeded. The response carries `Retry-After` (whole seconds,
+            rounded up and never below 1 — wait at least that long before retrying), `X-RateLimit-Limit` (the bucket's
+            cap), `X-RateLimit-Remaining` and `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back
+            off on `Retry-After` rather than guessing. A 429 raised by a ceiling that is not one of these buckets — a
+            daily AI budget, an upstream provider's own refusal relayed onward — carries none of them, because there is
+            no bucket to describe.
+          headers: *a8
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "503":
-          description: No background worker is bound, or the queue did not take the job.
+          description: No background worker is bound, or the queue did not take the job (the job is then marked failed), so
+            nothing would run the import. The upload was discarded; retry once a worker runs.
           content:
             application/json:
               schema:
