@@ -101,6 +101,8 @@ HealthLog releases on a fixed schedule (see [Release schedule](#release-schedule
 
 A SwiftUI companion on the [App Store](https://apps.apple.com/app/id6769501341), built on the same API as the web client: live HealthKit two-way sync, medication reminders with action buttons that work without opening the app, and an on-device coach on Apple-Intelligence-capable iPhones. Code lives in [MBombeck/healthlog-iOS](https://github.com/MBombeck/healthlog-iOS).
 
+From app 1.7 on, a self-hosted server without its own Apple push key can reach the App Store app through the optional [push relay](https://docs.healthlog.dev/guides/push-relay/). It stays off until an admin of the server turns it on, and each person then decides on their own iPhone.
+
 The App Store listing carries a small price, which exists to cover Apple's yearly developer fee rather than to earn anything; write to marc@healthlog.dev for a free code if that price is in your way. [TestFlight](https://testflight.apple.com/join/bucuTBpa) stays free and carries the newest builds, and the source builds on your own machine.
 
 ## Tech stack
@@ -124,9 +126,7 @@ Actively developed. Issue reports and pull requests are welcome. Behaviour and s
 
 ## Release schedule
 
-HealthLog ships on a calendar. A feature release comes out on the first Saturday of every month. On the other Saturdays there is a patch release with fixes, if there is anything to fix. Nothing else ships in between, with one exception: a security problem, data loss or a broken install gets a fix as soon as it is ready, and the release notes say why.
-
-For a self-hoster that means one update a month to read about, a small one on some Saturdays, and no reason to pull images every day. The `:edge` image follows `main` for anyone who wants to check a fix before it is released; take a backup first, migrations do not run backwards. The calendar starts after 1.49.0, and the full rule is in [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
+HealthLog ships on a calendar: a feature release on the first Saturday of every month, fixes on the other Saturdays when there are any, and a release out of schedule only for a security problem, data loss or a broken install. The calendar starts after 1.49.0. What that means for an update is in [Updates and deploy](https://docs.healthlog.dev/guides/updates-and-deploy/#release-schedule); the full rule is [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
 
 ## Thanks
 

@@ -14,7 +14,10 @@ container image is pulled, `docker-entrypoint.sh` runs
 `prisma migrate deploy` against the live database, and only then does
 the Next.js process bind to the listener. This page documents the
 ordering explicitly for manual-rollback and partial-deploy scenarios
-where the operator drives the steps by hand.
+where the operator drives the steps by hand. The reader's version of the
+update, with the release calendar and the way back, is
+[Updates and deploy](https://docs.healthlog.dev/guides/updates-and-deploy/);
+this page holds the operator detail and the notes for each release.
 
 ## Migration ordering
 
@@ -22,13 +25,14 @@ Migrations land **before** the new app container takes traffic. The
 canonical command sequence on a single-instance host:
 
 ```sh
-# 0. Nothing to do by hand for the way back: when the new image brings
-#    migrations, its entrypoint first writes
-#    healthlog-<time>-pre-migration.dump into DB_BACKUP_DIR (the `backups`
-#    volume) and keeps the last two. A migration is not undone by going back
-#    to the previous image; that dump is the way back
-#    (docs/ops/disaster-recovery.md, "Going back to before a migration").
-#    Copy it off the host if the host itself is what you are worried about.
+# 0. The way back: when the new image brings migrations, its entrypoint
+#    first writes healthlog-<time>-pre-migration.dump into DB_BACKUP_DIR
+#    (the `backups` volume of the published compose file). Without that
+#    volume no dump is taken: run `pg_dump` yourself before step 1
+#    (docs/ops/disaster-recovery.md). A migration is not undone by going
+#    back to the previous image; the dump is the way back
+#    (disaster-recovery.md, "Going back to before a migration"). Copy it
+#    off the host if the host itself is what you are worried about.
 
 # 1. Pull the new image. If you pin a version with HEALTHLOG_IMAGE_REF,
 #    set it to the new one first.
@@ -210,7 +214,7 @@ always did, and finds nothing in the queue schema it did not create.
 ### v1.49.0 notes
 
 The sequence above covers this release, with one possible stop (`0517`, see
-below). It brings twenty migrations, `0514` to `0537` (`0516`, `0523`,
+below). It brings twenty-one migrations, `0514` to `0538` (`0516`, `0523`,
 `0527` and `0528` do not exist). Copy the pre-migration dump of step 0 off
 the host before you start: it is the way back.
 
@@ -240,7 +244,9 @@ Three migrations change data:
 The rest is additive: enum values for Apple Health workout effort and sport
 quantities (`0514`, `0519`), nullable columns or columns with a default
 (`0520`, `0521`, `0525`, `0526`, `0530`, `0533`, `0536`, `0537`), and new
-tables (`0522`, `0524`, `0531`, `0532`, `0534`, `0535`). `0518` builds an
+tables (`0522`, `0524`, `0531`, `0532`, `0534`, `0535`). `0538` only drops
+an index on `live_activity_tokens` that another index already covers. `0518`
+builds an
 index on `measurements` `CONCURRENTLY` at boot. Writes carry on, but on a
 very large table the build can take a while; the app's healthcheck allows
 ten minutes for the start. If it is interrupted, see "A concurrent index
@@ -270,10 +276,25 @@ Steps:
       WHERE conname LIKE '%\\_day\\_key\\_shape' AND NOT convalidated"
    ```
 
-Rollback to v1.48.5: restore the pre-migration dump with the v1.48.5 image
-(disaster-recovery.md, "Going back to before a migration"). Anything written
-since the update is lost, so decide early. Switching the image back alone is
-not enough:
+Rollback to v1.48.5: restore the pre-migration dump with the v1.48.5 image.
+Anything written since the update is lost, so decide early. The steps are
+those of disaster-recovery.md, "Going back to before a migration", with the
+image pinned in the `.env` next to the compose file:
+
+```sh
+docker compose stop app
+docker compose exec -T db pg_dump -U healthlog -Fc healthlog > healthlog-1.49.0.dump
+docker compose exec db dropdb -U healthlog healthlog
+docker compose exec db createdb -U healthlog healthlog
+docker compose run --rm db-restore list
+docker compose run --rm db-restore healthlog-<time>-pre-migration.dump
+# in .env: HEALTHLOG_IMAGE_REF=:v1.48.5
+# (or the digest form, HEALTHLOG_IMAGE_REF=@sha256:<digest>)
+docker compose up -d
+```
+
+Stop a separate worker container too, if you run one. Switching the image
+back alone is not enough:
 
 - After `0515`, v1.48.5 writes a dose for a slot another source already
   holds as a second row, and the new index refuses it, so that write fails.
