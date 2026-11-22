@@ -38,7 +38,11 @@ import type { z } from "zod";
 
 import { assertRecordContext, cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
-import { seedContractAccount, type ContractFixture } from "./contract-seed";
+import {
+  CONTRACT_DEVICE_TOKEN,
+  seedContractAccount,
+  type ContractFixture,
+} from "./contract-seed";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -396,6 +400,14 @@ const emptyBodies: string[] = [];
 /** Operations that answered at least once with a row in a list (or no list). */
 const filled = new Set<string>();
 
+/**
+ * Request headers an operation requires to name what it reads: the calling
+ * device's own reads take it from `X-Device-Id`, as the app sends it.
+ */
+const HEADERS_FOR: Record<string, Record<string, string>> = {
+  "/api/devices/me/push-diagnostics": { "x-device-id": CONTRACT_DEVICE_TOKEN },
+};
+
 /** Call one operation once and report what disagrees with its schema. */
 async function check(
   op: PublishedGet,
@@ -429,9 +441,12 @@ async function check(
   enter(op.path);
   let res: Response;
   try {
-    res = await mod.GET(new NextRequest(url), {
-      params: Promise.resolve(params),
-    });
+    res = await mod.GET(
+      new NextRequest(url, { headers: HEADERS_FOR[op.path] }),
+      {
+        params: Promise.resolve(params),
+      },
+    );
   } catch (error) {
     return { called: false, findings: [`threw: ${(error as Error).message}`] };
   }

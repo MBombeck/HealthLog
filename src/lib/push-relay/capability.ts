@@ -51,6 +51,7 @@ import {
 import {
   ROUTABLE_DEVICE_SELECT,
   routeFor,
+  type DeviceRoute,
   type RoutableDevice,
 } from "@/lib/push-relay/route-device";
 
@@ -177,22 +178,38 @@ async function relayCapabilityOf(
 }
 
 /**
- * How a push reaches this device, by the rule the real send follows
- * (`routeFor` in `route-device.ts`). A plaintext push over this server's own
- * APNs key (a device without a push key) reads `direct`, as it always has:
- * the app only tells the server's key from the relay.
+ * The way a push reaches `device`, by the rule the real send follows
+ * (`routeFor` in `route-device.ts`), from what this request read. Shared by
+ * `push.device` and the device's push diagnostics.
  */
-function displayTransport(
+export function deviceRouteOf(
   device: RoutableDevice,
-  inputs: PushStateInputs,
-): "relay" | "direct" | "none" {
-  const route = routeFor(device, {
+  inputs: {
+    registration: RegistrationRow | null;
+    apnsConfigured: boolean;
+  },
+): DeviceRoute {
+  return routeFor(device, {
     apnsConfigured: inputs.apnsConfigured,
     registration: inputs.registration,
     canSeal: sealsEnvelopes(inputs.registration),
   });
-  if (route === "legacy") return "direct";
-  return route;
+}
+
+/**
+ * What the app is told about a route. A plaintext push over this server's own
+ * APNs key (a device without a push key) reads `direct`, as it always has:
+ * the app only tells the server's key from the relay.
+ */
+export function transportOf(route: DeviceRoute): "relay" | "direct" | "none" {
+  return route === "legacy" ? "direct" : route;
+}
+
+function displayTransport(
+  device: RoutableDevice,
+  inputs: PushStateInputs,
+): "relay" | "direct" | "none" {
+  return transportOf(deviceRouteOf(device, inputs));
 }
 
 const UNDELIVERED_GRACE_MS = 10 * 60 * 1000;

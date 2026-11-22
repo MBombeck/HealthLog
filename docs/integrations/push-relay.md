@@ -197,6 +197,24 @@ them itself. Medication reminders stay on the iPhone unless a device is set to
 server delivery. Notifications about another person's record (guardian
 features) do not go over the relay.
 
+### Diagnostics on the device
+
+The app's push diagnostics screen reads `GET /api/devices/me/push-diagnostics`
+for the device it runs on (named by its `X-Device-Id`). It shows how pushes
+reach that device (the relay, the server's own APNs key, or not at all),
+whether they are sealed, the relay's state and the device's binding, and the
+silent budget: how many of the six silent pushes an hour the device has used,
+how many of the four wakes, whether an intake sync is owed and when the next
+one fits. It also lists the newest push of each kind (alert, silent sync,
+wake, Live Activity) with its outcome, the last receipt the app sent back, and
+the APNs token, masked to its first and last eight characters.
+
+It never shows another device, a token in full, or what a notification said.
+Over the server's own APNs key the alert row appears only while the device is
+the account's one APNs device, because the server records those attempts per
+account, not per device. Operators who need the whole account see the same
+values, computed by the same code, in the admin notification diagnostic.
+
 ### When the relay is down
 
 Nothing is lost that the iPhone does not already have: reminders are local.
