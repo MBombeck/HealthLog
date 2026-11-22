@@ -4,7 +4,7 @@ import { useId } from "react";
 
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 import type { DashboardLayout } from "@/lib/dashboard-layout";
 import { useTranslations } from "@/lib/i18n/context";
@@ -44,18 +44,14 @@ export function HeroSettingsFieldset({
       </p>
       {/* The top card itself can be switched off. Shown is the
           default; the choices below shape the card while it is shown. */}
-      <div className="flex min-h-11 items-center justify-between gap-3">
-        <Label htmlFor={todayCardSwitchId} className="text-sm font-medium">
-          {t("dashboard.todayCardVisible")}
-        </Label>
-        <Switch
-          id={todayCardSwitchId}
-          checked={layout.todayCardVisible !== false}
-          onCheckedChange={setTodayCardVisible}
-          disabled={saveMutation.isPending}
-          data-slot="today-card-switch"
-        />
-      </div>
+      <SwitchRow
+        label={t("dashboard.todayCardVisible")}
+        id={todayCardSwitchId}
+        checked={layout.todayCardVisible !== false}
+        onCheckedChange={setTodayCardVisible}
+        disabled={saveMutation.isPending}
+        data-slot="today-card-switch"
+      />
       {/* Hero primary content — a single labelled select beside the
           highlight toggles. "score" keeps the health-score read;
           "reminders" promotes the highlight rail into the hero slot. */}
@@ -84,23 +80,18 @@ export function HeroSettingsFieldset({
             layout.enabledHeroItemKinds ?? PRIORITY_ITEM_KINDS
           ).includes(kind);
           return (
-            <div
+            <SwitchRow
               key={kind}
-              className="flex min-h-11 items-center justify-between gap-3 py-2"
-            >
-              <Label htmlFor={inputId} className="text-sm font-medium">
-                {t(HERO_ITEM_LABEL_KEYS[kind])}
-              </Label>
-              <Switch
-                id={inputId}
-                checked={checked}
-                onCheckedChange={(value) => toggleHeroItem(kind, value)}
-                disabled={saveMutation.isPending}
-                aria-label={t(HERO_ITEM_LABEL_KEYS[kind])}
-                data-slot="hero-item-switch"
-                data-kind={kind}
-              />
-            </div>
+              className="py-2"
+              label={t(HERO_ITEM_LABEL_KEYS[kind])}
+              id={inputId}
+              checked={checked}
+              onCheckedChange={(value) => toggleHeroItem(kind, value)}
+              disabled={saveMutation.isPending}
+              aria-label={t(HERO_ITEM_LABEL_KEYS[kind])}
+              data-slot="hero-item-switch"
+              data-kind={kind}
+            />
           );
         })}
       </div>

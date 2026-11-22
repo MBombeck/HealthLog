@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +15,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
-import { Label } from "@/components/ui/label";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import type { MeasurementReminder } from "@/hooks/use-measurement-reminders";
 import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
@@ -124,17 +124,17 @@ export function CheckupPostponeSheet({
               </Button>
             ))}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor={`snooze-date-${reminder.id}`}>
-              {t("measurementReminders.postpone.dateLabel")}
-            </Label>
+          <FieldGroup
+            htmlFor={`snooze-date-${reminder.id}`}
+            label={t("measurementReminders.postpone.dateLabel")}
+          >
             <DateField
               id={`snooze-date-${reminder.id}`}
               value={snoozeDate}
               onChange={setSnoozeDate}
               min={minSnoozeDate}
             />
-          </div>
+          </FieldGroup>
           {/* The honest-skip zone sits set apart below the snooze controls:
               a different decision (let this cycle go, restart the rhythm)
               with its own confirm step. */}

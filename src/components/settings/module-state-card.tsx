@@ -60,7 +60,7 @@ export function ModuleStateCard({
       />
       {children}
       <SettingsCardActions align="start">
-        <Button asChild variant="outline" size="sm" className="min-h-11">
+        <Button asChild variant="outline" size="sm">
           <Link href={`/settings/modules#module-${moduleKey}`}>
             {t("settings.moduleState.change")}
             <ChevronRight className="size-4" aria-hidden="true" />

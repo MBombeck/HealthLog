@@ -221,13 +221,7 @@ export function EmergencyProfileManager() {
       {/* The card these details fill: a page of its own, so the way there is
           a button in the action row (ui-standards §12), secondary to Save. */}
       <SettingsCardActions>
-        <Button
-          asChild
-          type="button"
-          variant="outline"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-        >
+        <Button asChild type="button" variant="outline" size="sm">
           <Link href="/emergency-card" data-slot="emergency-card-entry">
             {t("records.emergency.cardLink")}
           </Link>
@@ -235,7 +229,6 @@ export function EmergencyProfileManager() {
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={disabled || !dirty}
           onClick={() => current && save.mutate(current)}
         >

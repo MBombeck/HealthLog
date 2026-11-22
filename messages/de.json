@@ -9608,7 +9608,9 @@
       "rotate": {
         "button": "Relay-Schlüssel erneuern",
         "done": "Der Relay-Schlüssel wurde erneuert",
-        "failed": "Der Relay-Schlüssel ließ sich jetzt nicht erneuern; das Relay erlaubt eine Erneuerung am Tag"
+        "failed": "Der Relay-Schlüssel ließ sich jetzt nicht erneuern; das Relay erlaubt eine Erneuerung am Tag",
+        "confirmTitle": "Relay-Schlüssel jetzt erneuern?",
+        "confirmBody": "Dieser Server ersetzt den Schlüssel, mit dem er Anfragen an das Relay signiert, sofort statt im 30-Tage-Takt. Das Relay erlaubt eine Erneuerung am Tag."
       },
       "invite": {
         "label": "Einladungscode (optional)",

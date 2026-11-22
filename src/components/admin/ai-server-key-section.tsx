@@ -200,7 +200,6 @@ export function AiServerKeySection() {
           )}
           <Button
             size="sm"
-            className="min-h-11 sm:min-h-9"
             onClick={handleSave}
             disabled={save.isPending}
             data-slot="admin-ai-server-key-save"

@@ -202,7 +202,6 @@ export function AboutMeNoteManager() {
             icon={<Trash2 className="size-4" aria-hidden />}
             variant="outline"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             title={t("settings.ai.aboutMe.clearTitle")}
             body={t("settings.ai.aboutMe.clearBody")}
             confirmLabel={t("settings.ai.aboutMe.clearConfirm")}
@@ -213,7 +212,6 @@ export function AboutMeNoteManager() {
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           data-testid="settings-about-me-save"
           disabled={save.isPending || !dirty}
           onClick={() => save.mutate({ aboutMe: value })}

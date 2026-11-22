@@ -65,7 +65,6 @@ export function SetupCard() {
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11"
           onClick={showChecklist}
           data-slot="settings-show-checklist"
         >
@@ -74,7 +73,6 @@ export function SetupCard() {
         <Button
           type="button"
           size="sm"
-          className="min-h-11"
           onClick={setUpAgain}
           disabled={restart.isPending}
           data-slot="settings-set-up-again"

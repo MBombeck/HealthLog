@@ -203,12 +203,11 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
         )}
       </ImportStatusRegion>
 
-      <SettingsCardActions className="mt-auto" align="start">
+      <SettingsCardActions className="mt-auto">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={busy}
           onClick={() => inputRef.current?.click()}
           data-testid={`${testId}-choose`}

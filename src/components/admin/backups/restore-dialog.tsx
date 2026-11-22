@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { History, Loader2 } from "lucide-react";
 import { useState } from "react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +17,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ApiError, apiGet } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -321,10 +321,10 @@ export function RestoreRowDialog({
             </span>
           </span>
         </label>
-        <div className="space-y-2">
-          <Label htmlFor={`restore-prompt-${row.id}`}>
-            {t("admin.section.backups.restorePromptLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor={`restore-prompt-${row.id}`}
+          label={t("admin.section.backups.restorePromptLabel")}
+        >
           <Input
             id={`restore-prompt-${row.id}`}
             data-testid="backup-restore-prompt"
@@ -334,7 +334,7 @@ export function RestoreRowDialog({
             spellCheck={false}
             placeholder="RESTORE"
           />
-        </div>
+        </FieldGroup>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction

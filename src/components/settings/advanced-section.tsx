@@ -162,7 +162,7 @@ function DataResetCard() {
           variant="destructive"
           size="sm"
           disabled={deleting || grace.pending}
-          className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
+          className="shrink-0"
         >
           {deleting ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
@@ -318,7 +318,7 @@ function AccountDeleteCard() {
           variant="destructive"
           size="sm"
           disabled={deleting || grace.pending}
-          className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
+          className="shrink-0"
           data-slot="settings-account-delete-trigger"
         >
           {deleting ? (

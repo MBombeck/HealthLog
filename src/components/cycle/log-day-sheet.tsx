@@ -36,6 +36,7 @@ import { ConfirmButton, ConfirmDialog } from "@/components/ui/confirm-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Popover,
@@ -1113,21 +1114,14 @@ export function LogDaySheet({
             {t("cycle.sheet.bbtHint")}
           </p>
           {resolveBbt(bbt) != null && (
-            <div className="mt-3 flex items-start justify-between gap-3">
-              <div className="flex flex-col">
-                <span className="text-sm">
-                  {t("cycle.sheet.temperatureDisturbed")}
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {t("cycle.sheet.temperatureDisturbedHint")}
-                </span>
-              </div>
-              <Switch
-                checked={bbtDisturbed}
-                onCheckedChange={setBbtDisturbed}
-                aria-label={t("cycle.sheet.temperatureDisturbed")}
-              />
-            </div>
+            <SwitchRow
+              className="mt-3"
+              label={t("cycle.sheet.temperatureDisturbed")}
+              description={t("cycle.sheet.temperatureDisturbedHint")}
+              checked={bbtDisturbed}
+              onCheckedChange={setBbtDisturbed}
+              aria-label={t("cycle.sheet.temperatureDisturbed")}
+            />
           )}
         </Field>
 

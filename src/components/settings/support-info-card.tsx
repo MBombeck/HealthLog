@@ -115,7 +115,6 @@ export function SupportInfoCard() {
       <SettingsCardActions>
         <Button
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={() => void copy()}
           disabled={busy}
           aria-live="polite"

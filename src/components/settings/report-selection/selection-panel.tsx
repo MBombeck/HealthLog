@@ -46,7 +46,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ReportVisitOffer } from "./report-visit-offer";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
@@ -410,15 +410,11 @@ export function HealthRecordExportPanel() {
                 onChange={setSelected}
               />
               {isPdfLike ? (
-                <label className="flex min-h-11 items-center justify-between gap-3 text-sm sm:min-h-9">
-                  <span className="text-foreground">
-                    {t("settings.healthRecord.includeCharts")}
-                  </span>
-                  <Switch
-                    checked={includeCharts}
-                    onCheckedChange={() => setIncludeCharts((v) => !v)}
-                  />
-                </label>
+                <SwitchRow
+                  label={t("settings.healthRecord.includeCharts")}
+                  checked={includeCharts}
+                  onCheckedChange={() => setIncludeCharts((v) => !v)}
+                />
               ) : null}
             </div>
           )}

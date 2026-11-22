@@ -24,6 +24,24 @@ describe("<Label>", () => {
     expect(html).toContain('data-no-colon="true"');
   });
 
+  it("adds no colon to a label that already ends in punctuation", () => {
+    // "What are you tracking for?:" and "Your recent average::" were both on
+    // screen. The label reads its own text.
+    for (const text of [
+      "What are you tracking for?",
+      "Your recent average:",
+      "Wofür trackst du?",
+      "무엇을 기록하나요？",
+    ]) {
+      const html = renderToStaticMarkup(<Label htmlFor="x">{text}</Label>);
+      expect(html, text).toContain('data-no-colon="true"');
+    }
+    for (const text of ["Body temperature", "Note (optional)", "Dose (mg)"]) {
+      const html = renderToStaticMarkup(<Label htmlFor="x">{text}</Label>);
+      expect(html, text).toContain('data-no-colon="false"');
+    }
+  });
+
   it("lets a call site take over the layout", () => {
     const html = renderToStaticMarkup(
       <Label htmlFor="x" className="flex items-baseline">

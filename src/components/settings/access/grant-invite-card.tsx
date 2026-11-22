@@ -374,7 +374,6 @@ export function GrantInviteCard() {
           <Button
             type="submit"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             data-slot="grant-invite-submit"
             // A narrowed invitation with nothing ticked would be a grant that
             // opens nothing, which the server refuses. The button is inert and

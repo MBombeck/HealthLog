@@ -9,7 +9,7 @@ import { Activity, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -283,21 +283,17 @@ export function RuntimeActionsRow({
       />
       {showRegenerate && (
         <div>
-          <div className="flex items-center justify-between gap-4">
-            <div className="pr-2">
-              <p className="text-sm font-medium">{t("settings.rawData")}</p>
-              <p className="text-muted-foreground text-xs">
-                {privacyMode === "raw"
-                  ? t("settings.rawDataOnDescription")
-                  : t("settings.rawDataOffDescription")}
-              </p>
-            </div>
-            <Switch
-              aria-label={t("settings.rawData")}
-              checked={privacyMode === "raw"}
-              onCheckedChange={togglePrivacy}
-            />
-          </div>
+          <SwitchRow
+            label={t("settings.rawData")}
+            description={
+              privacyMode === "raw"
+                ? t("settings.rawDataOnDescription")
+                : t("settings.rawDataOffDescription")
+            }
+            aria-label={t("settings.rawData")}
+            checked={privacyMode === "raw"}
+            onCheckedChange={togglePrivacy}
+          />
           {privacyMode === "raw" && (
             <div className="bg-warning/15 text-warning mt-2 rounded-lg p-2 text-xs">
               {t("settings.rawDataWarning")}
@@ -328,7 +324,6 @@ export function RuntimeActionsRow({
           type="button"
           size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-9"
           onClick={runTest}
           disabled={testing}
           data-testid="ai-test-active-provider"
@@ -344,7 +339,6 @@ export function RuntimeActionsRow({
           <Button
             size="sm"
             variant="outline"
-            className="min-h-11 sm:min-h-9"
             onClick={regenerate}
             disabled={regen}
           >

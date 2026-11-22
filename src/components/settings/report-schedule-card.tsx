@@ -167,12 +167,10 @@ export function ReportScheduleCard() {
                 onConfirm={() => off.mutate()}
                 pending={off.isPending}
                 size="sm"
-                className="min-h-11 w-full sm:w-auto"
               />
             ) : (
               <Button
                 size="sm"
-                className="min-h-11 w-full sm:w-auto"
                 onClick={() => save.mutate(draft)}
                 disabled={busy}
               >

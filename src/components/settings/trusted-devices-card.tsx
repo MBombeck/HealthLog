@@ -154,12 +154,18 @@ export function TrustedDevicesCard({
           </ul>
         )}
 
+        {status && (
+          <p role="status" className="text-muted-foreground text-right text-sm">
+            {status}
+          </p>
+        )}
+
         {devices.length > 0 && (
           <SettingsCardActions>
             <ConfirmButton
+              size="sm"
               slot="revoke-all-trusted-devices"
               destructive
-              className="min-h-11 sm:min-h-9"
               label={t("settings.security.trustedDevices.revokeAll")}
               title={t(
                 "settings.security.trustedDevices.revokeAllConfirmTitle",
@@ -170,12 +176,6 @@ export function TrustedDevicesCard({
               pending={revokeAll.isPending}
             />
           </SettingsCardActions>
-        )}
-
-        {status && (
-          <p role="status" className="text-muted-foreground text-right text-sm">
-            {status}
-          </p>
         )}
       </div>
     </SettingsCard>

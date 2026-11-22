@@ -14,7 +14,6 @@ import {
   Loader2,
   PlusCircle,
   RotateCcw,
-  Save,
   X,
 } from "lucide-react";
 
@@ -240,22 +239,18 @@ export function FallbackChainCard({
           confirmLabel={t("settings.ai.providerChain.resetDefaults")}
           onConfirm={() => void resetToDefaults()}
           size="sm"
-          className="min-h-11 sm:min-h-9"
           icon={<RotateCcw className="h-4 w-4" />}
           destructive
         />
         <Button
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={() => saveMutation.mutate(entries)}
           disabled={saveMutation.isPending || entries.length === 0}
           data-testid="ai-fallback-chain-save"
         >
           {saveMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
+          ) : null}
           {t("settings.ai.providerChain.saveOrder")}
         </Button>
       </SettingsCardActions>

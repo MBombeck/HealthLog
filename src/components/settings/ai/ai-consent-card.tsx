@@ -167,7 +167,6 @@ export function AiConsentCard({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setConfirming(false)}
                 disabled={revoke.isPending}
               >
@@ -177,7 +176,6 @@ export function AiConsentCard({
                 type="button"
                 variant="destructive"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 data-slot="ai-consent-withdraw-confirm"
                 onClick={() => revoke.mutate()}
                 disabled={revoke.isPending}
@@ -193,7 +191,6 @@ export function AiConsentCard({
               type="button"
               variant="outline"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               data-slot="ai-consent-withdraw"
               onClick={() => setConfirming(true)}
             >
@@ -285,7 +282,6 @@ function DocumentReadingConsentRow({
               type="button"
               variant="outline"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               onClick={() => setConfirming(false)}
               disabled={revoke.isPending}
             >
@@ -295,7 +291,6 @@ function DocumentReadingConsentRow({
               type="button"
               variant="destructive"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               data-slot="ai-consent-document-reading-withdraw-confirm"
               onClick={() => revoke.mutate()}
               disabled={revoke.isPending}
@@ -311,7 +306,6 @@ function DocumentReadingConsentRow({
             type="button"
             variant="outline"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             data-slot="ai-consent-document-reading-withdraw"
             onClick={() => setConfirming(true)}
           >

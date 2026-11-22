@@ -185,7 +185,6 @@ export function NotificationHealthCard() {
         <Button
           size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-9"
           onClick={() => testNotification.mutate()}
           disabled={testNotification.isPending}
         >

@@ -9608,7 +9608,9 @@
       "rotate": {
         "button": "Rotate relay key",
         "done": "The relay key was rotated",
-        "failed": "The relay key could not be rotated now; the relay allows one rotation a day"
+        "failed": "The relay key could not be rotated now; the relay allows one rotation a day",
+        "confirmTitle": "Rotate the relay key now?",
+        "confirmBody": "This server replaces the key it signs relay requests with, now rather than on its 30-day schedule. The relay allows one rotation a day."
       },
       "invite": {
         "label": "Invite code (optional)",

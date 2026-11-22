@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import {
   ApiError,
@@ -211,17 +211,12 @@ export function HealthConnectRemoteCard() {
               placeholder={source ? t(`${k}.passwordKept`) : undefined}
             />
           </div>
-          <div className="flex items-center justify-between gap-3 text-sm">
-            <Label htmlFor="hc-remote-enabled" noColon className="font-normal">
-              {t(`${k}.enabled`)}
-            </Label>
-            <Switch
-              id="hc-remote-enabled"
-              checked={enabled ?? source?.enabled ?? true}
-              onCheckedChange={setEnabled}
-              className="shrink-0"
-            />
-          </div>
+          <SwitchRow
+            label={t(`${k}.enabled`)}
+            id="hc-remote-enabled"
+            checked={enabled ?? source?.enabled ?? true}
+            onCheckedChange={setEnabled}
+          />
           <p className="text-muted-foreground text-xs">
             {t(`${k}.privacyNote`)}
           </p>
@@ -240,25 +235,13 @@ export function HealthConnectRemoteCard() {
               {error}
             </p>
           )}
-          <SettingsCardActions className="mt-auto" align="start">
-            <Button
-              type="submit"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-              disabled={busy}
-            >
-              {save.isPending && (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              )}
-              {t("common.save")}
-            </Button>
+          <SettingsCardActions className="mt-auto">
             {source && (
               <>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="min-h-11 sm:min-h-9"
                   disabled={busy}
                   onClick={() => fetchNow.mutate()}
                 >
@@ -268,7 +251,6 @@ export function HealthConnectRemoteCard() {
                   slot="hc-remote-remove"
                   destructive
                   size="sm"
-                  className="min-h-11 sm:min-h-9"
                   label={t(`${k}.remove`)}
                   title={t(`${k}.removeTitle`)}
                   body={t(`${k}.removeBody`)}
@@ -278,6 +260,12 @@ export function HealthConnectRemoteCard() {
                 />
               </>
             )}
+            <Button type="submit" size="sm" disabled={busy}>
+              {save.isPending && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+              )}
+              {t("common.save")}
+            </Button>
           </SettingsCardActions>
         </form>
       </CardQueryBody>

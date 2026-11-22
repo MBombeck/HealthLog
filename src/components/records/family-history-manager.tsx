@@ -148,7 +148,7 @@ export function FamilyHistoryManager() {
           button. */}
       {!isLoading && !isError && rows.length > 0 ? (
         <SettingsCardActions>
-          <Button size="sm" onClick={openNew} className="min-h-11 sm:min-h-9">
+          <Button size="sm" onClick={openNew}>
             <Plus className="h-4 w-4" />
             {t("records.family.add")}
           </Button>

@@ -468,12 +468,12 @@ function WizardDialogShell({
           className="flex flex-col"
         >
           {/* v1.8.6 — dot stepper replaces the v1.5.5 continuous
-              `<Progress>` strip + "Step X of Y" caption. The dot row +
-              body share the same outer padding so they read as one
-              column; the right padding leaves room for the shell's
-              36 px close-X (`pr-12` mobile / `pr-14` desktop). The NL
-              "Describe" affordance is re-homed beside the stepper on
-              the Step-1 create path. */}
+              `<Progress>` strip + "Step X of Y" caption. The right
+              padding leaves room for the shell's 36 px close-X
+              (`pr-12` mobile / `pr-14` desktop), which sits over this
+              band and over nothing below it. The NL "Describe"
+              affordance is re-homed beside the stepper on the Step-1
+              create path. */}
           <div className="border-border/70 space-y-1.5 border-b p-4 pr-12 sm:p-6 sm:pr-14">
             <WizardStepper
               steps={stepList}
@@ -508,7 +508,7 @@ function WizardDialogShell({
           </div>
 
           {/* Step body — v1.5.5 D-3 §8 spacing buckets:
-              outer  = p-4 pr-12 sm:p-6 sm:pr-14
+              outer  = p-4 sm:p-6, both sides alike (no close-X here)
               section = gap-6 sm:gap-8
               row    = gap-3
               tight  = space-y-1
@@ -517,7 +517,7 @@ function WizardDialogShell({
               snaps the step. The slide proposed in D-2 was stripped. */}
           <div
             ref={bodyRef}
-            className="animate-in fade-in-0 flex flex-col gap-6 p-4 pr-12 duration-200 motion-reduce:animate-none sm:gap-8 sm:p-6 sm:pr-14"
+            className="animate-in fade-in-0 flex flex-col gap-6 p-4 duration-200 motion-reduce:animate-none sm:gap-8 sm:p-6"
             data-slot="wizard-step-body"
             key={step}
           >

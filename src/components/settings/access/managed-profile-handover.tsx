@@ -145,13 +145,7 @@ export function ManagedProfileHandover({
             {t("recordSharing.managed.handover.oidcOnly")}
           </p>
           <SettingsCardActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-              onClick={onClose}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
               {t("common.close")}
             </Button>
           </SettingsCardActions>
@@ -184,7 +178,6 @@ export function ManagedProfileHandover({
               type="button"
               variant="outline"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               data-slot="managed-profile-handover-revoke"
               disabled={revoke.isPending}
               onClick={() =>
@@ -202,7 +195,6 @@ export function ManagedProfileHandover({
             <Button
               type="button"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               data-slot="managed-profile-handover-replace"
               onClick={() => setReplacing(true)}
             >
@@ -383,19 +375,12 @@ function HandoverProposalForm({
       )}
 
       <SettingsCardActions>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          onClick={onCancel}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
           {t("common.cancel")}
         </Button>
         <Button
           type="submit"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           data-slot="managed-profile-handover-create"
           disabled={create.isPending}
         >
@@ -498,7 +483,6 @@ function HandoverLink({
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           data-slot="managed-profile-handover-done"
           onClick={onDone}
         >

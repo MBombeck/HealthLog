@@ -29,7 +29,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ModuleStateCard } from "@/components/settings/module-state-card";
@@ -328,16 +328,12 @@ function McpTokensCard() {
         </p>
 
         <div className="border-border bg-muted/30 space-y-2 rounded-lg border p-3">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-sm font-medium">
-              {t("settings.mcp.writeScopeToggleLabel")}
-            </span>
-            <Switch
-              checked={allowWrite}
-              onCheckedChange={setAllowWrite}
-              aria-label={t("settings.mcp.writeScopeToggleLabel")}
-            />
-          </div>
+          <SwitchRow
+            label={t("settings.mcp.writeScopeToggleLabel")}
+            checked={allowWrite}
+            onCheckedChange={setAllowWrite}
+            aria-label={t("settings.mcp.writeScopeToggleLabel")}
+          />
           <p className="text-sm leading-relaxed">
             {t("settings.mcp.writeScopeNote")}
           </p>

@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { Baby, Loader2 } from "lucide-react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -93,10 +93,10 @@ export function CyclePregnancyCard({ profile }: { profile: CycleProfileDTO }) {
         title={t("cycle.pregnancy.title")}
         description={t("cycle.pregnancy.description")}
       />
-      <div className="space-y-2">
-        <Label htmlFor="cycle-pregnancy-state">
-          {t("cycle.pregnancy.stateLabel")}
-        </Label>
+      <FieldGroup
+        htmlFor="cycle-pregnancy-state"
+        label={t("cycle.pregnancy.stateLabel")}
+      >
         <NativeSelect
           id="cycle-pregnancy-state"
           value={choice}
@@ -110,49 +110,49 @@ export function CyclePregnancyCard({ profile }: { profile: CycleProfileDTO }) {
             {t("cycle.pregnancy.state.POSTPARTUM")}
           </option>
         </NativeSelect>
-      </div>
+      </FieldGroup>
 
       {choice === "PREGNANT" ? (
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="cycle-pregnancy-start">
-              {t("cycle.pregnancy.startDate")}
-            </Label>
+          <FieldGroup
+            htmlFor="cycle-pregnancy-start"
+            label={t("cycle.pregnancy.startDate")}
+          >
             <DateField
               id="cycle-pregnancy-start"
               value={startDate}
               onChange={setStartDate}
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cycle-pregnancy-due">
-              {t("cycle.pregnancy.dueDate")}
-            </Label>
+          </FieldGroup>
+          <FieldGroup
+            htmlFor="cycle-pregnancy-due"
+            label={t("cycle.pregnancy.dueDate")}
+          >
             <DateField
               id="cycle-pregnancy-due"
               value={dueDate}
               onChange={setDueDate}
             />
-          </div>
+          </FieldGroup>
         </div>
       ) : null}
 
       {choice === "POSTPARTUM" ? (
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="cycle-pregnancy-delivery">
-              {t("cycle.pregnancy.deliveryDate")}
-            </Label>
+          <FieldGroup
+            htmlFor="cycle-pregnancy-delivery"
+            label={t("cycle.pregnancy.deliveryDate")}
+          >
             <DateField
               id="cycle-pregnancy-delivery"
               value={deliveryDate}
               onChange={setDeliveryDate}
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cycle-pregnancy-weeks">
-              {t("cycle.pregnancy.postpartumWeeks")}
-            </Label>
+          </FieldGroup>
+          <FieldGroup
+            htmlFor="cycle-pregnancy-weeks"
+            label={t("cycle.pregnancy.postpartumWeeks")}
+          >
             <Input
               id="cycle-pregnancy-weeks"
               type="number"
@@ -162,7 +162,7 @@ export function CyclePregnancyCard({ profile }: { profile: CycleProfileDTO }) {
               value={weeks}
               onChange={(e) => setWeeks(e.target.value)}
             />
-          </div>
+          </FieldGroup>
         </div>
       ) : null}
 
@@ -179,7 +179,6 @@ export function CyclePregnancyCard({ profile }: { profile: CycleProfileDTO }) {
       <SettingsCardActions>
         <Button
           size="sm"
-          className="min-h-11 w-full sm:w-auto"
           onClick={() => void handleSave()}
           disabled={update.isPending}
         >

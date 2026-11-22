@@ -576,7 +576,6 @@ export function UserManagementSection() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setEditingUser(null)}
               >
                 {t("common.cancel")}
@@ -584,7 +583,6 @@ export function UserManagementSection() {
               <Button
                 type="submit"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 disabled={updateUser.isPending}
                 aria-busy={updateUser.isPending || undefined}
               >
@@ -626,14 +624,12 @@ export function UserManagementSection() {
               <Button
                 variant="outline"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setResetUser(null)}
               >
                 {t("common.cancel")}
               </Button>
               <Button
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 disabled={resetPw.isPending || !resetPassword}
                 onClick={() =>
                   resetPw.mutate({

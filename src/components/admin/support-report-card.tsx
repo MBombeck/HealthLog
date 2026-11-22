@@ -96,7 +96,6 @@ export function SupportReportCard() {
         <Button
           variant="outline"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={() => void copy()}
           disabled={busy}
           aria-live="polite"
@@ -113,12 +112,7 @@ export function SupportReportCard() {
             ? t("admin.supportReport.copied")
             : t("admin.supportReport.copy")}
         </Button>
-        <Button
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          onClick={() => void download()}
-          disabled={busy}
-        >
+        <Button size="sm" onClick={() => void download()} disabled={busy}>
           <Download className="size-4" aria-hidden="true" />
           {t("admin.supportReport.download")}
         </Button>

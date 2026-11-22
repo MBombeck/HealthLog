@@ -216,7 +216,6 @@ export function BackupsSection() {
           data-testid="backup-run-now"
           disabled={runBackup.isPending}
           onClick={() => runBackup.mutate()}
-          className="min-h-11"
         >
           {runBackup.isPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />

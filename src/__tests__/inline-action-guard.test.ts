@@ -39,6 +39,7 @@ const ALLOWED: Record<string, string> = {
 
 const OPENER_RE = /<(button|Link|a)\b((?:[^>{]|\{[^}]*\})*?)>/g;
 const CLASS_RE = /className=(?:"([^"]*)"|\{cn\(\s*"([^"]*)")/;
+const INLINE_ACTION_OPENER_RE = /<InlineAction\b(?:[^>{]|\{[^}]*\})*?>/g;
 
 function isInlineActionShape(cls: string): boolean {
   return (
@@ -112,6 +113,25 @@ describe("small text actions go through InlineAction", () => {
       "components/x.tsx:Link",
       "components/y.tsx:button",
     ]);
+  });
+
+  it("lets no call site give the action a height of its own", () => {
+    // The touch target is the primitive's hit area. A height on the call
+    // site brings back the 44 px box around a 12 px link.
+    const withHeight = (source: string) =>
+      [...source.matchAll(INLINE_ACTION_OPENER_RE)].filter((m) =>
+        /className="(?:[^"]*\s)?(?:[a-z-]+:)*(?:min-h|h|py)-/.test(m[0]),
+      ).length;
+    expect(
+      withHeight('<InlineAction asChild className="min-h-11 font-medium">'),
+    ).toBe(1);
+    expect(withHeight('<InlineAction tone="muted" className="shrink-0">')).toBe(
+      0,
+    );
+    const offenders = files
+      .filter((f) => withHeight(f.source) > 0)
+      .map((f) => f.path);
+    expect(offenders).toEqual([]);
   });
 
   it("is used where the copies were", () => {

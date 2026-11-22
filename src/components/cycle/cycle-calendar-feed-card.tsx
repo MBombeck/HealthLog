@@ -8,7 +8,7 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -128,12 +128,7 @@ function OffState({
         </p>
       ) : null}
       <SettingsCardActions>
-        <Button
-          size="sm"
-          className="min-h-11 w-full sm:w-auto"
-          onClick={onTurnOn}
-          disabled={pending}
-        >
+        <Button size="sm" onClick={onTurnOn} disabled={pending}>
           {pending ? (
             <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : null}
@@ -190,7 +185,7 @@ function OnState({
           {error ?? t("cycle.feed.error")}
         </p>
       ) : null}
-      <SettingsCardActions className="flex-col items-stretch sm:flex-row sm:items-center">
+      <SettingsCardActions>
         <ConfirmButton
           label={t("cycle.feed.turnOff")}
           title={t("cycle.feed.turnOffTitle")}
@@ -201,7 +196,6 @@ function OnState({
           variant="destructive"
           destructive
           size="sm"
-          className="min-h-11 w-full sm:w-auto"
         />
         <ConfirmButton
           label={t("cycle.feed.rotate")}
@@ -211,7 +205,6 @@ function OnState({
           onConfirm={onRotate}
           pending={pending}
           size="sm"
-          className="min-h-11 w-full sm:w-auto"
         />
       </SettingsCardActions>
     </>
@@ -380,23 +373,14 @@ function FeedOptions({ status }: { status: CycleFeedStatus }) {
         </p>
       </div>
       {status.fertileAvailable ? (
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-0.5">
-            <Label htmlFor="cycle-feed-fertile" className="text-sm">
-              {t("cycle.feed.fertile")}
-            </Label>
-            <p className="text-muted-foreground text-sm">
-              {t("cycle.feed.fertileDescription")}
-            </p>
-          </div>
-          <Switch
-            id="cycle-feed-fertile"
-            checked={feed.includeFertile}
-            disabled={update.isPending}
-            onCheckedChange={(v) => save({ includeFertile: v })}
-            className="mt-0.5 shrink-0"
-          />
-        </div>
+        <SwitchRow
+          label={t("cycle.feed.fertile")}
+          description={t("cycle.feed.fertileDescription")}
+          id="cycle-feed-fertile"
+          checked={feed.includeFertile}
+          disabled={update.isPending}
+          onCheckedChange={(v) => save({ includeFertile: v })}
+        />
       ) : null}
       {update.isError ? (
         <p className="text-destructive text-sm" role="alert">
