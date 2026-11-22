@@ -114,6 +114,8 @@ async function optedInUserIds(prisma: PrismaClient): Promise<string[]> {
 export interface AnomalyTickResult {
   scanned: number;
   sent: number;
+  /** People whose notice threw or reached no channel; the tick carried on. */
+  failed: number;
 }
 
 /** One tick: scan the opted-in people whose local hour it is. */
@@ -122,7 +124,7 @@ export async function runMeasurementAnomalyTick(
   prisma: PrismaClient = defaultPrisma,
 ): Promise<AnomalyTickResult> {
   const ids = await optedInUserIds(prisma);
-  if (ids.length === 0) return { scanned: 0, sent: 0 };
+  if (ids.length === 0) return { scanned: 0, sent: 0, failed: 0 };
   const users = await prisma.user.findMany({
     where: activeAccount({ id: { in: ids } }),
     select: { id: true, timezone: true, locale: true },
@@ -130,21 +132,25 @@ export async function runMeasurementAnomalyTick(
 
   let scanned = 0;
   let sent = 0;
+  let failed = 0;
   for (const user of users) {
     const tz = user.timezone || DEFAULT_TIMEZONE;
     if (wallClockInTz(now, tz).hour !== ANOMALY_LOCAL_HOUR) continue;
     scanned += 1;
     try {
-      if (await notifyUser(prisma, user, tz, now)) sent += 1;
+      const told = await notifyUser(prisma, user, tz, now);
+      if (told === "sent") sent += 1;
+      if (told === "undelivered") failed += 1;
     } catch (err) {
+      failed += 1;
       logCaught("notification.measurementAnomaly.failed", err);
     }
   }
   annotate({
     action: { name: "notification.measurementAnomaly.tick" },
-    meta: { scanned, sent },
+    meta: { scanned, sent, failed },
   });
-  return { scanned, sent };
+  return { scanned, sent, failed };
 }
 
 async function notifyUser(
@@ -152,7 +158,7 @@ async function notifyUser(
   user: { id: string; locale: string | null },
   tz: string,
   now: Date,
-): Promise<boolean> {
+): Promise<"sent" | "quiet" | "undelivered"> {
   // A known state that explains the shift (an open illness, a pregnancy or
   // the weeks after a birth) means no notice, and the shift is not used up:
   // once the state ends, a change that outlasts it is told.
@@ -162,13 +168,13 @@ async function notifyUser(
       action: { name: "notification.measurementAnomaly.explained" },
       meta: { context: explained },
     });
-    return false;
+    return "quiet";
   }
 
   const modules = await resolveModuleMap(user.id);
   const shifts = await buildExtendedChangepointSignals(user.id, now, modules);
   const shift = pickFreshShift(shifts, userDayKey(now, tz));
-  if (!shift) return false;
+  if (!shift) return "quiet";
 
   const since = (days: number) => new Date(now.getTime() - days * DAY_MS);
   // A shift already told is never told again within its quiet window; read
@@ -183,7 +189,7 @@ async function notifyUser(
     },
     select: { id: true },
   });
-  if (told) return false;
+  if (told) return "quiet";
   // The week is the atomic claim: two workers on one tick send once.
   const weekFree = await claimNotificationEvent(prisma, {
     recordUserId: user.id,
@@ -191,13 +197,36 @@ async function notifyUser(
     dedupKey: "week",
     since: since(ANOMALY_WEEKLY_CAP_DAYS),
   });
-  if (!weekFree) return false;
-  await claimNotificationEvent(prisma, {
+  if (!weekFree) return "quiet";
+  const shiftClaimed = await claimNotificationEvent(prisma, {
     recordUserId: user.id,
     eventType: MEASUREMENT_ANOMALY_EVENT,
     dedupKey: shiftKey,
     since: since(SAME_SHIFT_QUIET_DAYS),
   });
+  // The claims are the quiet week and the quiet shift. A notice that never
+  // went out hands them back, so the next morning tells it instead of the
+  // week passing in silence after a delivery that failed.
+  const release = async () => {
+    await prisma.notificationEvent.deleteMany({
+      where: {
+        recordUserId: user.id,
+        eventType: MEASUREMENT_ANOMALY_EVENT,
+        dedupKey: "week",
+        createdAt: { gte: since(ANOMALY_WEEKLY_CAP_DAYS) },
+      },
+    });
+    if (shiftClaimed) {
+      await prisma.notificationEvent.deleteMany({
+        where: {
+          recordUserId: user.id,
+          eventType: MEASUREMENT_ANOMALY_EVENT,
+          dedupKey: shiftKey,
+          createdAt: { gte: since(SAME_SHIFT_QUIET_DAYS) },
+        },
+      });
+    }
+  };
 
   const render = (locale: Locale) => {
     const { t } = getServerTranslator(locale);
@@ -220,22 +249,32 @@ async function notifyUser(
       ),
     };
   };
-  const own = render(await resolveJobLocale(user.locale));
-  await dispatchNotification({
-    eventType: MEASUREMENT_ANOMALY_EVENT,
-    userId: user.id,
-    title: own.title,
-    message: own.message,
-    renderForRecipient: render,
-    metadata: {
-      metric: shift.metric,
-      breakDate: shift.breakDate,
-      // The metric's own page when one focuses it; without one the tap
-      // target stays the event's default, the Insights overview.
-      ...anomalyTapUrl(shift.metric),
-    },
-  });
-  return true;
+  let outcome: Awaited<ReturnType<typeof dispatchNotification>>;
+  try {
+    const own = render(await resolveJobLocale(user.locale));
+    outcome = await dispatchNotification({
+      eventType: MEASUREMENT_ANOMALY_EVENT,
+      userId: user.id,
+      title: own.title,
+      message: own.message,
+      renderForRecipient: render,
+      metadata: {
+        metric: shift.metric,
+        breakDate: shift.breakDate,
+        // The metric's own page when one focuses it; without one the tap
+        // target stays the event's default, the Insights overview.
+        ...anomalyTapUrl(shift.metric),
+      },
+    });
+  } catch (err) {
+    await release();
+    throw err;
+  }
+  if (outcome.dispatched) return "sent";
+  await release();
+  // A channel that tried and failed is a failed notice; none to try (every
+  // channel paused or switched off) is not, and the claims are back either way.
+  return outcome.channelsAttempted > 0 ? "undelivered" : "quiet";
 }
 
 /**
@@ -255,7 +294,13 @@ export async function handleMeasurementAnomalyCheck(
 ): Promise<JobOutcome> {
   void jobs;
   return withBackgroundEvent("job.measurement_anomaly_check", async () => {
-    const { scanned, sent } = await runMeasurementAnomalyTick();
-    return jobDone({ users_scanned: scanned, sent });
+    const { scanned, sent, failed } = await runMeasurementAnomalyTick();
+    return jobDone({
+      users_scanned: scanned,
+      sent,
+      items_attempted: scanned,
+      items_failed: failed,
+      partial_failed: failed > 0,
+    });
   });
 }
