@@ -9,20 +9,24 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+import type { PrismaClient } from "@/generated/prisma/client";
+
 import { WideEventBuilder } from "@/lib/logging/event-builder";
 import { eventStorage } from "@/lib/logging/context";
 
 import { loadPregnancyFields } from "../pregnancy-store";
 
+type CycleProfileClient = Pick<PrismaClient, "cycleProfile">;
+
 function fakeDb() {
-  const findUnique = vi.fn(async () => ({
-    pregnancyEncrypted: null,
-    postpartumWeeks: 12,
-  }));
-  return {
-    db: { cycleProfile: { findUnique } } as never,
-    findUnique,
-  };
+  const findUnique = vi.fn(
+    async (): Promise<{
+      pregnancyEncrypted: string | null;
+      postpartumWeeks: number;
+    }> => ({ pregnancyEncrypted: null, postpartumWeeks: 12 }),
+  );
+  const db = { cycleProfile: { findUnique } } as unknown as CycleProfileClient;
+  return { db, findUnique };
 }
 
 function inRequest<T>(method: string, fn: () => Promise<T>): Promise<T> {

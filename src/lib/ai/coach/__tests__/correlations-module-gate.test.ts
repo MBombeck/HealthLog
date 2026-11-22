@@ -19,7 +19,10 @@ vi.mock("@/lib/modules/gate", () => ({
   // Every module on: the record's map feeds the matrix mask.
   resolveModuleMap: vi.fn(async () => ({})),
 }));
-vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/logging/context", () => ({
+  annotate: vi.fn(),
+  getEvent: () => null,
+}));
 
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
