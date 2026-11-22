@@ -73,7 +73,14 @@ vi.mock("@/lib/analytics/source-rank-sql", () => {
   };
 });
 
+// The 90-day window aggregate has its own parity suite against the statement
+// it replaced (`tests/integration/canonical-window-parity.test.ts`).
+vi.mock("@/lib/analytics/canonical-window", () => ({
+  readCanonicalWindow: vi.fn(async () => []),
+}));
+
 import { prisma } from "@/lib/db";
+import { readCanonicalWindow } from "@/lib/analytics/canonical-window";
 import { buildComprehensiveAggregate } from "../comprehensive-aggregator";
 import {
   composeWindowedRegression,
@@ -128,26 +135,27 @@ describe("buildComprehensiveAggregate", () => {
       // pass moved to `$queryRawUnsafe`:
       // RAW:    1. per-type coverage probe — WEIGHT covered ⇒ happy path.
       //         2. firstMeasurementAt.
-      // UNSAFE: 1. narrow aggregate — windowed/regression columns only.
-      //         2. latests.
+      // The window aggregate (`readCanonicalWindow`) carries the windowed
+      // means and the anomaly count.
+      // UNSAFE: 1. latests.
       RAW.mockResolvedValueOnce([
         { type: "WEIGHT", has_buckets: true },
       ]).mockResolvedValueOnce([
         { first_at: new Date(now.getTime() - 86400000) },
       ]);
-      UNSAFE.mockResolvedValueOnce([
+      vi.mocked(readCanonicalWindow).mockResolvedValueOnce([
         {
           type: "WEIGHT",
-          count: BigInt(42),
-          stddev_value: 1.2,
-          anomaly_count: BigInt(3),
           avg7: 81.9,
           avg30: 82.1,
           avg30_last_month: 83.0,
-          // v1.20.0 — slope / r² no longer ride the narrow aggregate;
+          median: 82,
+          anomalies: 3,
+          // v1.20.0 — slope / r² no longer ride the window aggregate;
           // they compose from the accumulator buckets below.
         },
-      ]).mockResolvedValueOnce([
+      ]);
+      UNSAFE.mockResolvedValueOnce([
         { type: "WEIGHT", value: 81.4, measured_at: now },
       ]);
 
@@ -233,7 +241,7 @@ describe("buildComprehensiveAggregate", () => {
       const expectedReg7 = composeWindowedRegression(accBuckets, since7);
 
       // v1.18.10 — bpRawRows now reads source-collapsed rows via
-      // `$queryRawUnsafe` (3rd UNSAFE call: narrow, latests, bpRaw). Empty
+      // `$queryRawUnsafe` (2nd UNSAFE call: latests, bpRaw). Empty
       // here since the rollup-fresh fixture doesn't exercise BP pairing.
       UNSAFE.mockResolvedValueOnce([]);
 
@@ -274,12 +282,13 @@ describe("buildComprehensiveAggregate", () => {
 
       // Contract pin — the heavy aggregate path is NOT exercised on the
       // rollup-fresh branch. v1.11.1 — the coverage probe + first_at
-      // stay on `$queryRaw` (2 calls); the narrow aggregate + the
-      // DISTINCT-ON latest moved to `$queryRawUnsafe` (2 calls). Neither
-      // path runs the legacy heavy COUNT/MIN/MAX/AVG query.
+      // stay on `$queryRaw` (2 calls); the DISTINCT-ON latest and the BP
+      // pull run on `$queryRawUnsafe` (2 calls), the window aggregate is
+      // its own read. Neither path runs the legacy heavy
+      // COUNT/MIN/MAX/AVG query.
       expect(RAW).toHaveBeenCalledTimes(2);
-      // v1.18.10 — narrow + latests + bpRaw all run on `$queryRawUnsafe`.
-      expect(UNSAFE).toHaveBeenCalledTimes(3);
+      expect(readCanonicalWindow).toHaveBeenCalledTimes(1);
+      expect(UNSAFE).toHaveBeenCalledTimes(2);
       // bpRawRows no longer uses `measurement.findMany`.
       expect(FIND_MANY).not.toHaveBeenCalled();
       expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(1);

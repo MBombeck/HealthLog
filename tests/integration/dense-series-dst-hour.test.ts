@@ -8,7 +8,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { readDenseSeries } from "@/lib/measurements/dense-series-read";
-import { seriesRowsFrom } from "@/lib/measurements/series-canonical";
 
 import { makeUser } from "../kit/factories";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -36,7 +35,7 @@ async function read(userTz: string) {
     grain: "hour",
     userTz,
     since,
-    seriesRows: seriesRowsFrom(null, "BLOOD_GLUCOSE", since),
+    priorityJson: null,
   });
   return bucketRows.map((r) => [r.bucket_start.toISOString(), r.mean]);
 }

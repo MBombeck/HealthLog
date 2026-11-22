@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 321,
-  "total": 100607,
+  "count": 320,
+  "total": 100373,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -237,7 +237,7 @@
     "lib/analytics/correlations-fast-path.ts :: computeCorrelationHypothesesFastPath": 252,
     "lib/analytics/intraday-pulse-io.ts :: loadIntradayPulse": 204,
     "lib/analytics/score/reader.ts :: computeUserHealthScore": 323,
-    "lib/analytics/summaries-slice.ts :: computeFromRollups": 372,
+    "lib/analytics/summaries-slice.ts :: computeFromRollups": 355,
     "lib/api-handler.ts :: apiHandler": 204,
     "lib/auth/profile-update.ts :: applyProfileUpdate": 344,
     "lib/cache/server-cache.ts :: createServerCaches": 230,
@@ -267,7 +267,6 @@
     "lib/illness/correlation.ts :: computeIllnessCorrelation": 233,
     "lib/import/labs-csv.ts :: importLabsCsv": 297,
     "lib/import/labs-csv.ts :: importLabsCsv > flush": 219,
-    "lib/insights/comprehensive-aggregator.ts :: buildFromRollups": 217,
     "lib/insights/features.ts :: extractFeatures": 655,
     "lib/insights/mood-aggregates.ts :: fetchMoodAggregates": 227,
     "lib/insights/status-provider.ts :: runStatusCompletion": 215,
