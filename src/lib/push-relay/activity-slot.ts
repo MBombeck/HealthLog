@@ -7,6 +7,7 @@
  * Activity of an answered dose running. Two doses of one medication are
  * never as close together as the tolerance.
  */
+import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
 /** How far a named slot may lie from the stored instant of its dose. */
 export const ACTIVITY_SLOT_TOLERANCE_MS = 59_999;
@@ -25,3 +26,17 @@ export function sameActivitySlot(named: Date, stored: Date): boolean {
     Math.abs(named.getTime() - stored.getTime()) <= ACTIVITY_SLOT_TOLERANCE_MS
   );
 }
+
+/**
+ * The medications the server may start a Live Activity for, and keep one it
+ * started running: tracked, active, neither paused nor ended, and with the
+ * person's own Live Activity opt-in on the medication (`liveActivityEnabled`,
+ * off by default), the switch the app plans its own Activities by.
+ */
+export const STARTABLE_MEDICATION_WHERE = {
+  ...TRACKED_INTAKE_EVENT_WHERE.medication,
+  active: true,
+  pausedAt: null,
+  endedAt: null,
+  liveActivityEnabled: true,
+} as const;

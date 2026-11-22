@@ -33934,8 +33934,9 @@ components:
         notificationsEnabled:
           type: boolean
         liveActivityEnabled:
-          description: iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the
-            ActivityKit lifecycle; the server only stores + echoes the flag.
+          description: iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client plans its own
+            Activities by it; a server start over the push relay requires it, and a server-started Activity ends once it
+            is off.
           type: boolean
         criticalAlarmEnabled:
           description: iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute switch /
@@ -34420,8 +34421,8 @@ components:
         notificationsEnabled:
           type: boolean
         liveActivityEnabled:
-          description: iOS Live Activity opt-in for this medication's reminders. The iOS client owns the ActivityKit lifecycle;
-            the server only stores + echoes the flag.
+          description: iOS Live Activity opt-in for this medication's reminders. The iOS client plans its own Activities by it; a
+            server start over the push relay requires it, and a server-started Activity ends once it is off.
           type: boolean
         criticalAlarmEnabled:
           description: iOS 26 AlarmKit critical-reminder opt-in. Critical alarms bypass the device mute switch / Focus; the server
@@ -64457,8 +64458,9 @@ components:
           type: boolean
         liveActivityEnabled:
           type: boolean
-          description: v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the
-            ActivityKit lifecycle; the server only stores + echoes the flag.
+          description: v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client plans its
+            own Activities by it; a server start over the push relay requires it, and a server-started Activity ends
+            once it is off.
         criticalAlarmEnabled:
           type: boolean
           description: v1.7.0 iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute
@@ -64989,8 +64991,9 @@ components:
           type: boolean
         liveActivityEnabled:
           type: boolean
-          description: v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the
-            ActivityKit lifecycle; the server only stores + echoes the flag.
+          description: v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client plans its
+            own Activities by it; a server start over the push relay requires it, and a server-started Activity ends
+            once it is off.
         criticalAlarmEnabled:
           type: boolean
           description: v1.7.0 iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute
@@ -109482,8 +109485,9 @@ components:
           type: boolean
         liveActivityEnabled:
           type: boolean
-          description: v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the
-            ActivityKit lifecycle; the server only stores + echoes the flag.
+          description: v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client plans its
+            own Activities by it; a server start over the push relay requires it, and a server-started Activity ends
+            once it is off.
         criticalAlarmEnabled:
           type: boolean
           description: v1.7.0 iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute
