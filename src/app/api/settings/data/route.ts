@@ -31,6 +31,7 @@ import {
 } from "@/lib/account-deletion/grace";
 import { takePreWipeCopy } from "@/lib/account-deletion/pre-wipe-copy";
 import { logCaught } from "@/lib/logging/signal";
+import { queueRelayUnbindsForAccount } from "@/lib/push-relay/unbind-queue";
 
 export const dynamic = "force-dynamic";
 
@@ -126,6 +127,12 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
           tx,
           userId,
         );
+
+        // The wipe deletes the account's devices; the push relay still holds
+        // their bindings to this instance. Queue the unbinds in the same
+        // transaction, as account deletion does, so the worker tells the
+        // relay even when it is down right now.
+        await queueRelayUnbindsForAccount(tx, userId);
 
         const perModel: Record<string, number> = {};
         for (const model of WIPE_MODELS) {

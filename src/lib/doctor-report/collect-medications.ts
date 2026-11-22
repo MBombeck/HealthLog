@@ -96,8 +96,10 @@ export function findReportMedications(
         where: { effectiveFrom: { lte: end } },
         orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
       },
+      // The last take that stands: a deleted dose (undone, or merged as a
+      // second row of its slot) is not the last one.
       intakeEvents: {
-        where: { takenAt: { not: null, lte: end } },
+        where: { deletedAt: null, takenAt: { not: null, lte: end } },
         orderBy: [{ takenAt: "desc" }, { id: "desc" }],
         take: 1,
         select: { takenAt: true, injectionSite: true },
