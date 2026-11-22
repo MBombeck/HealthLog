@@ -117,12 +117,25 @@ gate as always:
   before the tag is pushed.
 
 Then merge with a merge commit, tag, delete the branch and cut the next
-`release/vX.Y.0` from `main`. Red is never shipped. If the gate is not green on
+`release/vX.Y.0` from `main`. The tag is annotated and signed, on the merge
+commit:
+
+```sh
+git tag -s -m "vX.Y.Z" vX.Y.Z <merge-sha>
+git push origin vX.Y.Z
+```
+
+A bare `git tag vX.Y.Z` stops at "no tag message" where `tag.gpgsign` is on,
+and the tag ruleset allows no delete and no move, so a wrong tag cannot be
+taken back: check the sha before the push. `pnpm release:next` prints the
+command on a release day. The calendar check dates an annotated tag by its
+tagger date (`creatordate`); the lightweight tags up to v1.48.5 are dated by
+their commit. Red is never shipped. If the gate is not green on
 the first Saturday, the work that holds it up leaves the branch and the rest
 ships.
 
 A patch is the same on a smaller scale: release commit on `main`, Security &
-Quality green for it, tag.
+Quality green for it, tag (annotated and signed, as above).
 
 After any release, `/api/version` is checked on every deploy target
 (`docs/ops/deploy.md`).

@@ -48,13 +48,21 @@ const SYNC_LIFETIME_S = 3600;
 const ACTIVITY_LIFETIME_S = 4 * 3600;
 /** The relay accepts an activity statement at most 12 hours old. */
 const ACTIVITY_STATEMENT_MAX_AGE_S = 12 * 3600 - 300;
-const SYNC_EVENT = "MEDICATION_INTAKE_SYNC";
+export const SYNC_EVENT = "MEDICATION_INTAKE_SYNC";
+
+/**
+ * What a confirmation can say about a dose. The relay consent pin hashes this
+ * list (`src/__tests__/relay-consent-pin.test.ts`): a new outcome is a new
+ * occasion on which the relay sees a push.
+ */
+export const RECORDED_OUTCOMES = ["taken", "skipped", "reopened"] as const;
+export type RecordedOutcome = (typeof RECORDED_OUTCOMES)[number];
 
 export interface RecordedFields {
   medicationId: string;
   intakeId: string;
   slotInstant: Date;
-  outcome: "taken" | "skipped" | "reopened";
+  outcome: RecordedOutcome;
   takenAt: Date | null;
   /** Null on a skip and on `reopened`. */
   takenVia: string | null;

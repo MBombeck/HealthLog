@@ -373,6 +373,15 @@ export function evaluatePullRequest({ source, commitSubjects, changelog }) {
 }
 
 /** What `pnpm release:next` prints. */
+/**
+ * The release tag is annotated and signed. With `tag.gpgsign` set, a bare
+ * `git tag vX.Y.Z` stops at "no tag message", and the tag ruleset allows no
+ * delete and no move, so the command is printed in full rather than recalled.
+ */
+export function tagCommand(tag) {
+  return `Tag the release commit on main as an annotated, signed tag, then push it: git tag -s -m "${tag}" ${tag} <sha> && git push origin ${tag}`;
+}
+
 export function describeNext({ now, tags, changelog }) {
   const stable = tags
     .map((t) => ({ ...parseTag(t.name), date: t.date }))
@@ -390,6 +399,7 @@ export function describeNext({ now, tags, changelog }) {
     );
     lines.push(
       `After it, the first minor is on the first Saturday of the first month that starts at least ${MINOR_GAP_DAYS} days later.`,
+      tagCommand(`v${SCHEDULE_STARTS_AFTER}`),
     );
     return lines;
   }
@@ -422,9 +432,9 @@ export function describeNext({ now, tags, changelog }) {
   );
 
   if (window && !shippedThisWindow && compareDays(window, minorDue) === 0) {
-    lines.push(`Today: release day for ${nextMinor}.`);
+    lines.push(`Today: release day for ${nextMinor}.`, tagCommand(nextMinor));
   } else if (window && !shippedThisWindow && entries > 0) {
-    lines.push(`Today: release day for ${nextPatch}.`);
+    lines.push(`Today: release day for ${nextPatch}.`, tagCommand(nextPatch));
   } else {
     lines.push(
       "Today: not a release day. Stop here; a tag today needs an out-of-schedule reason and approval.",
@@ -453,7 +463,11 @@ function git(args, cwd) {
   });
 }
 
-/** Lightweight tags have no time of their own; the tagged commit's date stands in. */
+/**
+ * An annotated tag carries its own time (the tagger date), which is when the
+ * release was made. A lightweight tag (every tag up to v1.48.5) has none; the
+ * tagged commit's date stands in. `creatordate` picks whichever applies.
+ */
 export function readTags(cwd) {
   return git(
     [

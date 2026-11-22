@@ -113,8 +113,16 @@ export async function restoreAppSettings(ctx: RestoreContext): Promise<void> {
     settings.moduleAvailabilityJson,
     settings.assistantCoachEnabled,
   );
+  const row = appSettingsRowFromFile(settings);
+  // The relay answer and the relay registration are one state in two places,
+  // and only the answer travels. While this host is registered at a relay,
+  // the registration is what sends (`routeFor`), so the host's own answer
+  // stays: a file from before the switch would otherwise write `null` or
+  // `off` beside a running relay, and the admin would be asked again, or
+  // told it is off, while every push still goes over it.
+  if (await hostIsRegisteredAtRelay(tx)) delete row.pushRelayDecision;
   const settingsData = {
-    ...appSettingsRowFromFile(settings),
+    ...row,
     assistantCoachEnabled: coachFold.assistantCoachEnabled,
     moduleAvailabilityJson: coachFold.moduleAvailabilityJson,
   } as never;
@@ -123,4 +131,18 @@ export async function restoreAppSettings(ctx: RestoreContext): Promise<void> {
     create: { id: settings.id, ...(settingsData as object) },
     update: settingsData,
   });
+}
+
+/**
+ * A live registration on this host: one with an instance id that is not
+ * being deleted (`loadRegistration`).
+ */
+async function hostIsRegisteredAtRelay(
+  tx: RestoreContext["tx"],
+): Promise<boolean> {
+  const live = await tx.pushRelayRegistration.findFirst({
+    where: { instanceId: { not: null }, state: { not: "deleting" } },
+    select: { id: true },
+  });
+  return live !== null;
 }

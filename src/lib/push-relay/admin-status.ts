@@ -195,6 +195,7 @@ export async function adminRelayStatus(now = new Date()) {
     operatorDecision: operatorDecisionOf({
       stored,
       offered: row !== null,
+      registered: row?.instanceId != null,
       available: config.available,
       apnsConfigured: loadApnsConfig() !== null,
     }),

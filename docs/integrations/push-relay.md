@@ -48,11 +48,12 @@ the envelope, because the relay needs it to hand the push to Apple:
   they are about;
 - for a Live Activity push, its event (start, update or end).
 
-What timing can reveal is said plainly: if you record a dose on one device
-and another device of yours gets the confirmation, the relay and Apple can
-see that something happened at that moment, and a medication reminder that
-goes over the relay shows them when a dose is due. Apple can link the timing
-to your Apple account. That is why a device that plans its own reminders
+What timing can reveal is said plainly: whenever a dose changes (recorded,
+skipped, undone, deleted or purged with the history), your other devices get
+an alert, a silent sync or both, so the relay and Apple can see that
+something happened at that moment; a medication reminder that goes over the
+relay shows them when a dose is due. Apple can link the timing to your Apple
+account. That is why a device that plans its own reminders
 keeps them off the relay, and why turning the relay on is each person's own
 choice.
 
@@ -195,7 +196,10 @@ only when no relay holds a binding of this server any more.
 
 - the medication reminder, to the devices that get their reminders from this
   server (see below);
-- the confirmation that a dose was recorded on another device;
+- the confirmation that a dose was recorded on another device, and the
+  notice that a dose answered there is open again (`reopened`: undone,
+  edited back to open, moved, or deleted, one by one, in bulk or with a purge
+  of the history), for doses of the last 36 hours;
 - the silent sync that tells another device to refresh. It goes out on every
   dose change, also beside the confirmation, so a confirmation that does not
   arrive never leaves a device with the old state. A device also gets one
@@ -308,6 +312,21 @@ minutes) and retries with backoff; a push past its deadline is dropped, never
 delivered late. After three failed connections in a row the server stops
 trying item by item and checks the relay's status every minute, later every
 five.
+
+Apart from pushes, the server asks the relay once an hour how its instance
+stands (a signed `GET /v1/status`: the relay's state, a notice, the device
+count it holds). The relay sees that this server is there and when it asked,
+nothing about a person or a device.
+
+Security alerts follow the same rule: over the relay one lives 15 minutes,
+like every alert, so a phone that is offline or out of reach for longer than
+that (a flight, a night in flight mode, a relay outage) does not get it
+later. The relay is not their only way. A security alert goes to every
+channel the person has set up, not only to the first one that took it: an
+e-mail address (when the server has SMTP), Telegram, ntfy, a webhook, Web
+Push in a browser. **Settings > Security** lists the account's recent
+security activity and its sessions either way. Anyone who relies on these
+alerts should set up one channel besides the app.
 
 A relay outage never counts against a device or switches a notification
 channel off. Only Apple's "unregistered" answer for a device token deletes
