@@ -91,12 +91,18 @@ const BUDGET = {
   dailyDigest: 134,
   // The target cards; their seven-day means come from the slice when a
   // fresh one is cached, here (evicted) from the slice's window aggregate.
-  insightsTargets: 22,
+  // 22 → 23, health status 59 → 60 (1.49.0): both grade weight and BMI, and
+  // during a pregnancy or its postpartum weeks they must not, so each reads
+  // the state once (one point read of `cycle_profiles`). Once: every reader in
+  // a GET request shares that read (`loadPregnancyFields`), which is what
+  // keeps the summary and the snapshot, with several such readers, at their
+  // old counts. The series reads it only for a weight chart.
+  insightsTargets: 23,
   series30: 6,
   series365: 5,
   series3650: 5,
   dayView: 47,
-  healthStatus: 59,
+  healthStatus: 60,
   correlations: 43,
   batchIngest500: 28,
   // The Apple Health card and the phone's sync read (1.49.0). The newest and

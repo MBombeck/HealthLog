@@ -10,7 +10,10 @@ import { annotate } from "@/lib/logging/context";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { resolveGlucoseUnit } from "@/lib/glucose";
-import { resolveTrendVerdict } from "@/lib/targets/trend-verdict";
+import {
+  resolveTrendVerdict,
+  verdictReadsPregnancy,
+} from "@/lib/targets/trend-verdict";
 import {
   computeSeriesChange,
   seriesDayValues,
@@ -111,7 +114,10 @@ export async function readSeries(args: {
   const dayValues = seriesDayValues(verdictType, points, seriesTz);
   const reference = seriesReferenceValue(dayValues);
   const direction = resolveTrendVerdict(verdictType, {
-    pregnancy: await pregnancyContextActive(prisma, userId, seriesTz),
+    // Only a weight verdict reads the state (`verdictReadsPregnancy`).
+    pregnancy:
+      verdictReadsPregnancy(verdictType) &&
+      (await pregnancyContextActive(prisma, userId, seriesTz)),
     profile: rangeProfile,
     thresholdsJson: record?.thresholdsJson ?? null,
     // The verdict reads stored units: sleep is served in hours here and
