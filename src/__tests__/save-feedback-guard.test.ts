@@ -24,20 +24,16 @@ const ANSWERS =
 
 /** Writers that do not answer through a matched path yet. Only shrinks. */
 const NOT_YET_MATCHED: readonly string[] = [
-  "components/cycle/use-cycle-feed.ts",
   "components/settings/account-section/avatar-section.tsx",
-  "components/settings/ai/ai-consent-card.tsx",
   "components/settings/ai/anthropic-provider-form.tsx",
   "components/settings/ai/compat-provider-form.tsx",
   "components/settings/ai/fallback-chain-card.tsx",
   "components/settings/ai/local-provider-form.tsx",
   "components/settings/ai/openai-provider-form.tsx",
-  "components/settings/care-calendar-feed-card.tsx",
   "components/settings/environment-travel-suggestions.tsx",
   "components/settings/integrations/fitbit-removal-notice.tsx",
   "components/settings/integrations/garmin-card.tsx",
   "components/settings/integrations/nightscout-card.tsx",
-  "components/settings/managed-record-settings-section.tsx",
   "components/settings/notification-status-card.tsx",
   "components/settings/security-section/passkey-upgrade-nudge.tsx",
   "components/settings/security-section/totp-card.tsx",
