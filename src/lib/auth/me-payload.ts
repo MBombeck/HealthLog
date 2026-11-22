@@ -46,6 +46,24 @@ import { storedGlucoseUnit } from "@/lib/glucose";
 import { accountPushState } from "@/lib/push-relay/capability";
 
 /**
+ * The push block and the stored zone. Neither needs the record view, so they
+ * run beside it rather than after it; the caller awaits the result, and it is
+ * never left to reject unobserved if the view throws first.
+ */
+function pushAndZone(
+  userId: string,
+  storedZone: string | null,
+  request: Request | undefined,
+) {
+  const read = Promise.all([
+    accountPushState(userId, request),
+    resolveStoredTimezone(storedZone),
+  ]).then(([push, timezone]) => ({ push, timezone }));
+  read.catch(() => undefined);
+  return read;
+}
+
+/**
  * The account payload for one authenticated caller. `accountAccess` may be
  * passed when the caller already resolved it; otherwise it is resolved here.
  */
@@ -55,6 +73,7 @@ export async function buildAuthMePayload(
   request?: Request,
 ) {
   const { user } = auth;
+  const sidecar = pushAndZone(user.id, user.timezone, request);
   const accountAccess = resolvedAccess ?? (await resolveAccountAccess(auth));
   const {
     onboarding,
@@ -79,7 +98,7 @@ export async function buildAuthMePayload(
     // The zone the server cuts this account's days in: the stored zone, or
     // the instance default when the stored one is unusable. Clients bucket
     // by this value, so it must be the resolved one, not the raw column.
-    timezone: await resolveStoredTimezone(user.timezone),
+    timezone: (await sidecar).timezone,
     onboardingCompletedAt: user.onboardingCompletedAt,
     onboardingTourCompleted: user.onboardingTourCompleted,
     // The needs-based setup flow, published additively:
@@ -244,7 +263,7 @@ export async function buildAuthMePayload(
     // the server supports it, and stays `true`; absence means an older server.
     features: SERVER_FEATURES,
     // Relay offer, plus the `X-Device-Id` device's state (null when server-rendered).
-    push: await accountPushState(user.id, request),
+    push: (await sidecar).push,
   };
   return payload;
 }

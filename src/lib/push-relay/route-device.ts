@@ -85,9 +85,30 @@ export async function loadPushContext(): Promise<PushContext> {
 
 /** The way a push reaches `device`. */
 export function routeOf(device: RoutableDevice, ctx: PushContext): DeviceRoute {
+  return routeFor(device, {
+    apnsConfigured: ctx.apnsConfigured,
+    registration: ctx.registration,
+    canSeal: ctx.keys !== null,
+  });
+}
+
+/**
+ * The one routing rule: the send (`routeOf`) and what `/api/auth/me` says
+ * about the device (`push.device.transport`) both read it, so the app is
+ * never shown a way the push does not take.
+ */
+export function routeFor(
+  device: RoutableDevice,
+  ctx: {
+    apnsConfigured: boolean;
+    registration: Pick<RegistrationRow, "instanceId"> | null;
+    /** The sender keys are there to seal with. */
+    canSeal: boolean;
+  },
+): DeviceRoute {
   if (!device.apnsToken) return "none";
   if (!device.pushKeyPublic) return ctx.apnsConfigured ? "legacy" : "none";
-  if (!ctx.keys) return "none";
+  if (!ctx.canSeal) return "none";
   if (ctx.apnsConfigured) return "direct";
   if (
     ctx.registration?.instanceId &&

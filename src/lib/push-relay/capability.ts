@@ -21,6 +21,7 @@
  * `liveActivityStarted` (`{ medicationId, slotInstant }` | null).
  */
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import { loadApnsConfig } from "@/lib/notifications/senders/apns";
 import {
   ENVELOPE_VERSIONS,
@@ -47,6 +48,11 @@ import {
   loadRegistration,
   type RegistrationRow,
 } from "@/lib/push-relay/registration";
+import {
+  ROUTABLE_DEVICE_SELECT,
+  routeFor,
+  type RoutableDevice,
+} from "@/lib/push-relay/route-device";
 
 /** The event whose dropped delivery makes `intakeSync` degraded. */
 const INTAKE_RECORDED_EVENT = "MEDICATION_INTAKE_RECORDED";
@@ -115,11 +121,35 @@ async function senderKeysFor(
   return publishedSenderKeys(await ensureEnvelopeKeys());
 }
 
-/** `push.relay` of `/api/auth/me`. */
-export async function relayCapability(
+/** What `push.relay` and `push.device` are built from, read once. */
+interface PushStateInputs {
+  config: RelayConfig;
+  registration: RegistrationRow | null;
+  apnsConfigured: boolean;
+  /** Read once per request, shared by `push.relay` and `push.device`. */
+  senderKeys: Promise<PublishedSenderKey[]>;
+}
+
+async function pushStateInputs(
   config: RelayConfig = relayConfig(),
+): Promise<PushStateInputs> {
+  const registration = config.available ? await loadRegistration(config) : null;
+  const senderKeys = senderKeysFor(registration);
+  // Awaited by every reader; never left to reject unobserved.
+  senderKeys.catch(() => undefined);
+  return {
+    config,
+    registration,
+    apnsConfigured: loadApnsConfig() !== null,
+    senderKeys,
+  };
+}
+
+/** `push.relay` of `/api/auth/me`. */
+async function relayCapabilityOf(
+  inputs: PushStateInputs,
 ): Promise<RelayCapability> {
-  const row = config.available ? await loadRegistration(config) : null;
+  const { config, registration: row } = inputs;
   const health = relayHealth(row);
   const docs = config.origin ? relayDocumentUrls(config.origin) : null;
   const sealing = sealsEnvelopes(row);
@@ -131,7 +161,7 @@ export async function relayCapability(
     since: health.since?.toISOString() ?? null,
     reason: health.reason,
     instanceId: row?.instanceId ?? null,
-    senderKeys: await senderKeysFor(row),
+    senderKeys: await inputs.senderKeys,
     envelopeVersions: sealing ? [...ENVELOPE_VERSIONS] : [],
     liveActivity: row
       ? [
@@ -146,21 +176,23 @@ export async function relayCapability(
   };
 }
 
-/** How a push reaches this device: own APNs key, the relay, or not at all. */
-export function deviceTransport(
-  device: { relayState: string; relayConsentAt: Date | null },
-  row: RegistrationRow | null,
-  apnsConfigured: boolean,
+/**
+ * How a push reaches this device, by the rule the real send follows
+ * (`routeFor` in `route-device.ts`). A plaintext push over this server's own
+ * APNs key (a device without a push key) reads `direct`, as it always has:
+ * the app only tells the server's key from the relay.
+ */
+function displayTransport(
+  device: RoutableDevice,
+  inputs: PushStateInputs,
 ): "relay" | "direct" | "none" {
-  if (apnsConfigured) return "direct";
-  if (
-    row?.instanceId &&
-    device.relayConsentAt &&
-    device.relayState === "bound"
-  ) {
-    return "relay";
-  }
-  return "none";
+  const route = routeFor(device, {
+    apnsConfigured: inputs.apnsConfigured,
+    registration: inputs.registration,
+    canSeal: sealsEnvelopes(inputs.registration),
+  });
+  if (route === "legacy") return "direct";
+  return route;
 }
 
 const UNDELIVERED_GRACE_MS = 10 * 60 * 1000;
@@ -177,100 +209,115 @@ export async function intakeSyncOf(
   row: RegistrationRow | null,
 ): Promise<"ok" | "degraded"> {
   if (relayHealth(row).state !== "ok") return "degraded";
-  const lastRecorded = await prisma.pushRelayDelivery.findFirst({
-    where: { deviceId: device.id, eventType: INTAKE_RECORDED_EVENT },
-    orderBy: { createdAt: "desc" },
-    select: { status: true },
-  });
+  // Both questions at once: they read the same ledger independently.
+  const [lastRecorded, undelivered] = await Promise.all([
+    prisma.pushRelayDelivery.findFirst({
+      where: { deviceId: device.id, eventType: INTAKE_RECORDED_EVENT },
+      orderBy: { createdAt: "desc" },
+      select: { status: true },
+    }),
+    device.envelopeReportedAt
+      ? prisma.pushRelayDelivery.count({
+          where: {
+            deviceId: device.id,
+            status: "accepted",
+            confirmedAt: null,
+            pushClass: { in: ["alert", "silent"] },
+            acceptedAt: {
+              lt: new Date(
+                device.envelopeReportedAt.getTime() - UNDELIVERED_GRACE_MS,
+              ),
+            },
+          },
+        })
+      : 0,
+  ]);
   if (lastRecorded?.status === "dropped" || lastRecorded?.status === "failed") {
     return "degraded";
   }
-  if (device.envelopeReportedAt) {
-    const undelivered = await prisma.pushRelayDelivery.count({
-      where: {
-        deviceId: device.id,
-        status: "accepted",
-        confirmedAt: null,
-        pushClass: { in: ["alert", "silent"] },
-        acceptedAt: {
-          lt: new Date(
-            device.envelopeReportedAt.getTime() - UNDELIVERED_GRACE_MS,
-          ),
-        },
-      },
-    });
-    if (undelivered > 0) return "degraded";
-  }
+  if (undelivered > 0) return "degraded";
   return "ok";
 }
+
+/** What the `push.device` block reads of the device row. */
+const DEVICE_BLOCK_SELECT = {
+  ...ROUTABLE_DEVICE_SELECT,
+  envelopeReportedAt: true,
+  liveActivityConsentAt: true,
+  userId: true,
+  laStartedMedicationId: true,
+  laStartedSlot: true,
+} as const;
+
+type DeviceBlockRow = Prisma.DeviceGetPayload<{
+  select: typeof DEVICE_BLOCK_SELECT;
+}>;
 
 /** The `push.device` block for one device row. */
 export async function devicePushBlock(
   deviceId: string,
 ): Promise<DevicePushBlock> {
-  const config = relayConfig();
-  const [device, row] = await Promise.all([
+  const [device, inputs] = await Promise.all([
     prisma.device.findUnique({
       where: { id: deviceId },
-      select: {
-        id: true,
-        pushKeyPublic: true,
-        relayState: true,
-        relayConsentAt: true,
-        envelopeReportedAt: true,
-        liveActivityConsentAt: true,
-        userId: true,
-        laStartedMedicationId: true,
-        laStartedSlot: true,
-      },
+      select: DEVICE_BLOCK_SELECT,
     }),
-    config.available ? loadRegistration(config) : null,
+    pushStateInputs(),
   ]);
-  const transport = device
-    ? deviceTransport(device, row, loadApnsConfig() !== null)
-    : "none";
+  return devicePushBlockOf(device, inputs);
+}
+
+async function devicePushBlockOf(
+  device: DeviceBlockRow | null,
+  inputs: PushStateInputs,
+): Promise<DevicePushBlock> {
+  const row = inputs.registration;
+  const transport = device ? displayTransport(device, inputs) : "none";
+  const [intakeSync, senderKeys, liveActivityStarted] = await Promise.all([
+    device && transport === "relay"
+      ? intakeSyncOf(device, row)
+      : ("ok" as const),
+    inputs.senderKeys,
+    device ? liveActivityStartedOf(device) : null,
+  ]);
   return {
     transport,
     envelope: device?.pushKeyPublic && transport !== "none" ? 1 : null,
     consent: Boolean(device?.relayConsentAt),
     relayState: device?.relayState ?? "none",
-    intakeSync:
-      device && transport === "relay" ? await intakeSyncOf(device, row) : "ok",
-    senderKeys: await senderKeysFor(row),
+    intakeSync,
+    senderKeys,
     relayInstanceId: row?.instanceId ?? null,
     liveActivityConsent: Boolean(
       device?.relayConsentAt && device.liveActivityConsentAt,
     ),
-    liveActivityStarted: device ? await liveActivityStartedOf(device) : null,
+    liveActivityStarted,
   };
-}
-
-/** `push.device` for the device named by `X-Device-Id`, else null. */
-export async function callingDevicePushBlock(
-  userId: string,
-  deviceToken: string | null,
-): Promise<DevicePushBlock | null> {
-  if (!deviceToken) return null;
-  const device = await prisma.device.findFirst({
-    where: { userId, token: deviceToken },
-    select: { id: true },
-  });
-  return device ? devicePushBlock(device.id) : null;
 }
 
 /**
  * The `push` block of `/api/auth/me`: the relay, and the device the request
  * names in `X-Device-Id` (null when it names none of the caller's devices).
+ * The registration, the device row and the sender keys are read once, side
+ * by side; the device's own reads follow in one more round.
  */
 export async function accountPushState(
   userId: string,
   request?: Request,
 ): Promise<{ relay: RelayCapability; device: DevicePushBlock | null }> {
-  return {
-    relay: await relayCapability(),
-    device: await callingDevicePushBlock(
-      userId,
-      request?.headers.get("x-device-id") ?? null,
-    ),
-  };
+  const deviceToken = request?.headers.get("x-device-id") ?? null;
+  const inputs = pushStateInputs();
+  const [relay, device] = await Promise.all([
+    inputs.then(relayCapabilityOf),
+    deviceToken
+      ? Promise.all([
+          prisma.device.findFirst({
+            where: { userId, token: deviceToken },
+            select: DEVICE_BLOCK_SELECT,
+          }),
+          inputs,
+        ]).then(([row, i]) => (row ? devicePushBlockOf(row, i) : null))
+      : null,
+  ]);
+  return { relay, device };
 }
