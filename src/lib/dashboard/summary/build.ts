@@ -8,6 +8,7 @@
  * buckets per type for the sparkline, the all-time counts from the DAY
  * rollups, and the set of local day keys with activity in the streak window.
  */
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { annotate } from "@/lib/logging/context";
@@ -308,7 +309,13 @@ export async function buildDashboardSummary(
     },
     freeWeekdaySpans,
     verdictProfile,
-  ] = await Promise.all([inputs, freeWeekdays, verdictProfileRead]);
+    pregnancy,
+  ] = await Promise.all([
+    inputs,
+    freeWeekdays,
+    verdictProfileRead,
+    pregnancyContextActive(prisma, userId, userTz, now),
+  ]);
 
   const lookups = summaryLookups({
     latestEver,
@@ -386,6 +393,7 @@ export async function buildDashboardSummary(
     },
     highlightInsight: null,
     metrics: withVerdicts(monthTrended, {
+      pregnancy,
       profile: {
         dateOfBirth: verdictProfile?.dateOfBirth ?? null,
         gender: verdictProfile?.gender ?? null,

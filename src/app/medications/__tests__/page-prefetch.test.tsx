@@ -70,7 +70,10 @@ describe("/medications RSC prefetch", () => {
     // The client cell looks up `queryKeys.medications()`; the server MUST have
     // dehydrated under the same hash or the prefetch silently no-ops.
     expect(q!.queryHash).toBe(hashKey(queryKeys.medications()));
-    expect(q!.state.data).toEqual([{ id: "m1", name: "Ramipril" }]);
+    // The route's answer, the caller's registry search included (none here).
+    expect(q!.state.data).toEqual([
+      { id: "m1", name: "Ramipril", leafletSearch: null },
+    ]);
   });
 
   it("JSON-round-trips the value to the wire shape (Dates → ISO strings)", async () => {

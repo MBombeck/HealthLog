@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BookOpen } from "lucide-react";
 
@@ -12,11 +12,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
-import {
-  MEDICINE_REGISTRIES,
-  registryAuthority,
-  type MedicineRegistryChoice,
-} from "@/lib/medications/leaflet-registries";
+import type { MedicineRegistryChoice } from "@/lib/medications/leaflet-registries";
+import { useMedicineRegistryOptions } from "@/components/settings/use-medicine-registry-options";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
@@ -27,16 +24,14 @@ import { queryKeys } from "@/lib/query-keys";
  * `PATCH /api/auth/me/medicine-registry`, then re-reads `/api/auth/me` and the
  * medication reads, whose `leafletSearch` follows the setting.
  *
- * Country names come from the browser's own region names in the interface
- * language (`Intl.DisplayNames`), so every locale reads them natively; the
- * registry's name beside each is a proper name and stays as it is.
+ * The options come from `useMedicineRegistryOptions`, shared with the setup.
  */
 export function MedicineRegistryCard({
   isAuthenticated,
 }: {
   isAuthenticated: boolean;
 }) {
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [optimistic, setOptimistic] = useState<MedicineRegistryChoice | null>(
@@ -45,19 +40,7 @@ export function MedicineRegistryCard({
   const value: MedicineRegistryChoice =
     optimistic ?? user?.medicineRegistry ?? "NONE";
 
-  const options = useMemo(() => {
-    let regionName: (code: string) => string = (code) => code;
-    try {
-      const names = new Intl.DisplayNames([locale], { type: "region" });
-      regionName = (code) => names.of(code) ?? code;
-    } catch {
-      // An engine without region names shows the codes, which still read.
-    }
-    return MEDICINE_REGISTRIES.map((code) => ({
-      code,
-      label: `${regionName(code)} (${registryAuthority(code)})`,
-    })).sort((a, b) => a.label.localeCompare(b.label, locale));
-  }, [locale]);
+  const options = useMedicineRegistryOptions();
 
   const mutation = useMutation({
     mutationFn: async (next: MedicineRegistryChoice) => {

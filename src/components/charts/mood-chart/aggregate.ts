@@ -28,12 +28,10 @@ export function pickMoodBucket(
   entries: MoodEntryDay[],
   range: ChartRangePoints = 0,
 ): ChartBucketType {
-  if (entries.length < 2) return pickRangeBucket(range, 0);
-  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-  const firstTs = dayKeyToTimestamp(sorted[0].date);
-  const lastTs = dayKeyToTimestamp(sorted[sorted.length - 1].date);
-  const spanDays = Math.round((lastTs - firstTs) / (24 * 60 * 60 * 1000));
-  return pickRangeBucket(range, spanDays);
+  return pickRangeBucket(
+    range,
+    entries.map((e) => dayKeyToTimestamp(e.date)),
+  );
 }
 
 export interface MoodBucketPoint {

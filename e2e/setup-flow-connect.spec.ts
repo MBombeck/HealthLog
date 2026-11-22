@@ -24,7 +24,12 @@ import { resetSetupFlow } from "./setup/setup-flow-fixture";
 import type { Page, Response } from "@playwright/test";
 
 import { expect, test } from "./setup/test";
-import { answer, expectScreen, readMe } from "./setup-flow-helpers";
+import {
+  answer,
+  expectScreen,
+  readMe,
+  skipFollowUps,
+} from "./setup-flow-helpers";
 
 function pool(): pg.Pool {
   const url = process.env.DATABASE_URL;
@@ -120,6 +125,7 @@ async function reachFirstResult(
   await page.goto("/onboarding/confirm");
   await expectScreen(page, "confirm");
   await page.locator('[data-slot="onboarding-next"]').click();
+  await skipFollowUps(page, ["ai"]);
   await expectScreen(page, "first-result");
   // Every assertion below is about what the screen says once it KNOWS.
   await settled;

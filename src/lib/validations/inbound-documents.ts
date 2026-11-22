@@ -23,6 +23,7 @@
  *   - `inboundConfirmSchema` — the approve/reject decisions. No `userId` field;
  *     it is always narrowed from the session.
  */
+import type { AiJobFailureDto } from "@/lib/ai/job-failure/types";
 import { z } from "zod/v4";
 import { locales } from "@/lib/i18n/config";
 import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
@@ -51,10 +52,9 @@ export type {
   DocumentVaccinationLinkDto,
 } from "@/lib/documents/document-link-dtos";
 
-// The constants and label lists a client needs live in a zod-free module, so
-// a component that wants the list of document kinds does not pull the schema
-// library into its route. Re-exported here for the server code that already
-// imports them from the schema module.
+// The constants and label lists a client needs live in a zod-free module, so a
+// component does not pull the schema library into its route; re-exported here
+// for the server code that imports them from the schema module.
 export {
   INBOUND_DOCUMENT_KINDS,
   MAX_COACH_ATTACHMENTS,
@@ -87,10 +87,8 @@ export const INBOUND_FACT_TYPES = [
 export type InboundFactType = (typeof INBOUND_FACT_TYPES)[number];
 
 /**
- * Narrow the free-String DB `source` column to the DTO union, or `null` for an
- * absent / unrecognised value. The column is a free String server-side (adding
- * a source needs no migration) so the read path guards it before it hits the
- * contract.
+ * Narrow the free-String DB `source` column (a new source needs no migration)
+ * to the DTO union, or `null` for an absent or unrecognised value.
  */
 export function toContentIndexSource(
   source: string | null | undefined,
@@ -390,6 +388,8 @@ export interface InboundDocumentDetailDto extends InboundDocumentDto {
   summaryState: DocumentSummaryStateValue;
   /** The staged facts may leave part of the document out (last extraction). */
   extractionIncomplete: boolean;
+  /** #1404 — why background AI work on it stopped, per kind, newest first. */
+  aiFailures: AiJobFailureDto[];
 }
 
 // ─── Edit (correction before approval) ─────────────────────────────────────

@@ -24,6 +24,7 @@ import {
 import { codeFact, jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { withBackgroundEvent } from "@/lib/logging/background";
+import { trackAiJob } from "@/lib/ai/job-failure/report";
 import { generateStatusBatchForUser } from "@/lib/insights/status-batch";
 import { findStatusCronCandidates } from "@/lib/jobs/status-cron-candidates";
 import { annotate } from "@/lib/logging/context";
@@ -74,12 +75,18 @@ export async function runStatusBatchCron(
           break;
         }
         try {
-          const result = await generateStatusBatchForUser(user.id, {
-            // The stored locale, then the operator default — the prompt names
-            // the reader's own language from this value.
-            locale: await resolveJobLocale(user.locale),
-            force: false,
-          });
+          // #1404 — a provider failing under the notes is named under
+          // Settings, AI; the cards fall back to their template sentence.
+          const result = await trackAiJob(
+            { userId: user.id, job: "statusText" },
+            async () =>
+              generateStatusBatchForUser(user.id, {
+                // The stored locale, then the operator default — the prompt
+                // names the reader's own language from this value.
+                locale: await resolveJobLocale(user.locale),
+                force: false,
+              }),
+          );
           generated += result.batched + result.fellBackAnswered;
           served += result.served;
         } catch (error) {
@@ -151,9 +158,13 @@ export async function handleInsightPregenerateJob(
       // GERMAN, so a forced warm produced German prose for a French reader.
       const locale = normalizeLocale(job.data.locale);
       try {
-        const summary = await forceWarmUser(getWorkerPrisma(), userId, locale, {
-          today: job.data.today === true,
-        });
+        // #1404 — the briefing's failure is recorded as the briefing's, the
+        // status notes' as theirs (`trackAiJob` sorts by capability).
+        const summary = await trackAiJob({ userId, job: "briefing" }, () =>
+          forceWarmUser(getWorkerPrisma(), userId, locale, {
+            today: job.data.today === true,
+          }),
+        );
         evt.addMeta(
           "force_warm",
           `${summary.comprehensive}:${summary.assessmentsWarmed}+${summary.metricAssessmentsWarmed}`,
@@ -247,7 +258,9 @@ export async function handleInsightStatusGenerate(
         continue;
       }
       try {
-        await runInsightStatusGenerate(job.data);
+        await trackAiJob({ userId: job.data.userId, job: "statusText" }, () =>
+          runInsightStatusGenerate(job.data),
+        );
         generated++;
         evt.addMeta(
           "status_generated",

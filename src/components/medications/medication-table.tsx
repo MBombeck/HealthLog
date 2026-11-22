@@ -23,7 +23,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MedicationStatusPill } from "@/components/medications/card-parts/medication-status-pill";
 import {
@@ -34,10 +33,12 @@ import { useWeekdayLabel } from "@/components/medications/card-parts/medication-
 import { estimateRunwayDays } from "@/lib/medications/supply-runway";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
 import {
-  cardDisplayedSlot,
+  cardTakeSlot,
   cardWindowPill,
   liveDoseState,
 } from "@/lib/medications/dose-state/pill";
+import { shownAdherence } from "@/lib/medications/shown-adherence";
+import { TableComplianceRow } from "@/components/medications/table-compliance-row";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
 import { formatTime } from "@/lib/format";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
@@ -214,8 +215,7 @@ export function MedicationTable({
   const shortRateById = new Map<string, number>(
     (complianceRows ?? []).flatMap((row) => {
       if (row.applicable === false) return [];
-      const rate =
-        row.complianceDisplay?.short.rate ?? row.compliance7?.rate ?? null;
+      const rate = shownAdherence(row).rate7;
       return rate === null ? [] : [[row.medicationId, rate] as const];
     }),
   );
@@ -474,10 +474,13 @@ function MedicationTableRowItem({
   const { data: compliance } = useMedicationComplianceSummary(medication.id);
   const complianceNotApplicable = compliance?.applicable === false;
   const display = compliance?.complianceDisplay ?? undefined;
-  const shortDays = display?.shortDays ?? 7;
-  const longDays = display?.longDays ?? 30;
-  const rateShort = display?.short.rate ?? compliance?.compliance7?.rate ?? 0;
-  const rateLong = display?.long.rate ?? compliance?.compliance30?.rate ?? 0;
+  // A window with no dose to score shows "no doses yet", never a rate.
+  const {
+    shortDays,
+    longDays,
+    rate7: rateShort,
+    rate30: rateLong,
+  } = shownAdherence(compliance);
 
   const sortedSchedules = [...medication.schedules].sort(
     (a, b) =>
@@ -495,11 +498,7 @@ function MedicationTableRowItem({
   const currentDose = display?.currentDose;
   const doseState = liveDoseState(currentDose, now);
   const pill = cardWindowPill(currentDose, now, userTz);
-  const displayedSlot = cardDisplayedSlot(
-    currentDose,
-    medication.nextDueAt,
-    now,
-  );
+  const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
 
   // Status cell in the card's precedence: escalation, then the pill.
   const canAct = medication.active && medication.intakeActionable !== false;
@@ -624,26 +623,8 @@ function MedicationTableRowItem({
     </span>
   ) : compliance ? (
     <div className="flex flex-col gap-1">
-      {(
-        [
-          [shortDays, rateShort],
-          [longDays, rateLong],
-        ] as const
-      ).map(([days, rate]) => (
-        <div key={days} className="flex items-center gap-2 text-xs">
-          <span className="text-muted-foreground w-8 shrink-0 tabular-nums">
-            {t("medications.tableComplianceDays", { days })}
-          </span>
-          <Progress
-            value={rate}
-            className="h-1.5 w-14"
-            aria-label={t("medications.complianceWindow", { days })}
-          />
-          <span className="w-9 text-right font-medium tabular-nums">
-            {fmt.number(Math.round(rate))}%
-          </span>
-        </div>
-      ))}
+      <TableComplianceRow days={shortDays} rate={rateShort} />
+      <TableComplianceRow days={longDays} rate={rateLong} />
     </div>
   ) : (
     <div className="flex flex-col gap-1" aria-hidden="true">
@@ -745,11 +726,14 @@ function MedicationTableRowItem({
             <Button
               size="icon"
               className="size-11 sm:size-9"
-              onClick={() => recordIntake(false, displayedSlot)}
+              onClick={() => recordIntake(false, takeSlot)}
               disabled={!!intakeLoading}
-              aria-label={t("medications.dose.action.takeFor", {
-                name: medication.name,
-              })}
+              aria-label={t(
+                takeSlot?.binding === "extra"
+                  ? "medications.dose.action.takeExtraFor"
+                  : "medications.dose.action.takeFor",
+                { name: medication.name },
+              )}
             >
               {intakeLoading === "take" ? (
                 <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
@@ -761,7 +745,7 @@ function MedicationTableRowItem({
               size="icon"
               variant="outline"
               className="size-11 sm:size-9"
-              onClick={() => recordIntake(true, displayedSlot)}
+              onClick={() => recordIntake(true, takeSlot)}
               disabled={!!intakeLoading}
               aria-label={t("medications.dose.action.skipFor", {
                 name: medication.name,

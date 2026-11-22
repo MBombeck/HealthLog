@@ -67,6 +67,19 @@ export const intakeSchema = z
         "Late-take override: pin this taken dose onto the named scheduled slot instead of orphaning it to an ad-hoc row. Must be a real scheduled slot of this medication on its day (validated server-side against the dose-window band anchors); an instant that is not a slot returns 422. Absent applies the default window-band attribution.",
       ),
     /**
+     * A take the person records as an extra dose outside the plan: it
+     * answers no slot, by the band or by the nearest-slot rule, and readers
+     * never bind it to one afterwards. The intake form sends it when the
+     * person switches "count it for the dose" off, the medication card when
+     * a take now would not count for the dose it names.
+     */
+    extraDose: z
+      .boolean()
+      .optional()
+      .describe(
+        "Since v1.49.0: true records this take as an extra dose outside the plan. It answers no scheduled slot (neither by its time nor by the nearest-slot rule) and is never bound to one later. Only on a taken write; cannot be combined with `scheduledFor` or `forceSlotInstant` (422). Absent or false keeps the default attribution.",
+      ),
+    /**
      * v1.16.4 — per-intake dose override. Free text mirroring
      * `Medication.dose` (max 50 chars). Persisted only on a taken
      * (non-skipped) write. Absent = the configured medication dose
@@ -87,6 +100,21 @@ export const intakeSchema = z
   // windowed replay token. A key that rotates per client launch never
   // matches its own earlier row, so every re-sync logs the dose again.
   .superRefine(assertStableIdempotencyKey)
+  .superRefine((body, ctx) => {
+    if (
+      body.extraDose === true &&
+      (body.skipped === true ||
+        body.scheduledFor !== undefined ||
+        body.forceSlotInstant !== undefined)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["extraDose"],
+        message:
+          "extraDose names no slot and cannot be combined with scheduledFor, forceSlotInstant or a skip",
+      });
+    }
+  })
   .meta({
     id: "MedicationIntakeRequest",
     description:

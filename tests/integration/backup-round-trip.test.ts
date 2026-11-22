@@ -537,12 +537,19 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         medication: "yes",
         sources: ["withings"],
         visit: "within-a-month",
-        units: { glucoseUnit: "mmol/L", unitPreference: "metric" },
+        units: {
+          glucoseUnit: "mmol/L",
+          unitPreference: "metric",
+          timezone: "Europe/Berlin",
+          medicineRegistry: "DE",
+        },
       },
       // The stored blob is a status LOOKUP, and the reader answers with the
-      // full ordered nine — a step the fixture never mentioned comes back
+      // full ordered list — a step the fixture never mentioned comes back
       // `pending` rather than missing, which is what lets the flow grow a
-      // screen without a migration.
+      // screen without a migration. The two 1.49 follow-ups are the one
+      // exception: the fixture's flow was confirmed before they existed, so
+      // they come back passed and the restored setup stays finished.
       steps: [
         { id: "who", status: "done" },
         { id: "areas", status: "done" },
@@ -551,6 +558,8 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         { id: "visit", status: "pending" },
         { id: "units", status: "pending" },
         { id: "confirm", status: "pending" },
+        { id: "reminders", status: "skipped" },
+        { id: "ai", status: "skipped" },
         { id: "first-result", status: "pending" },
         { id: "done", status: "pending" },
       ],
@@ -2651,7 +2660,11 @@ const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {};
  * through that same function: the restore writes the parsed form.
  */
 const READ_THROUGH: Readonly<Record<string, (value: unknown) => unknown>> = {
-  "OnboardingRecord.stepsJson": parseOnboardingSteps,
+  // Read as every reader reads it: beside the record's confirmation stamp,
+  // which decides how a follow-up the stored blob never had reads. The seeded
+  // record is the fixture's one, confirmed at this instant.
+  "OnboardingRecord.stepsJson": (value) =>
+    parseOnboardingSteps(value, "2026-07-01T08:00:00.000Z"),
   // Sealed again on a portable restore, so compared as the code it opens to.
   "DawarichDay.countryCodeEncrypted": (value) =>
     openDayCountry(value as Uint8Array | null),
@@ -3266,10 +3279,22 @@ describe("every column of every two-ended model survives a real restore", () => 
  * Columns of the account row the restore writes for reasons of its own, so
  * "unchanged on the target" does not apply to them.
  */
+/** A settings document's lock token (migration 0554). */
+const REVISION_MOVES =
+  "the database moves the lock token when the restore writes the document, so a token read before the restore is stale";
+
 const USER_ROW_STAMPED: Readonly<Record<string, string>> = {
   updatedAt: "@updatedAt; Prisma stamps it on the restore's write",
   syncResetAt:
     "the restore stamps it so paired clients' delta cursors are refused",
+  dashboardWidgetsRevisedAt: REVISION_MOVES,
+  insightsLayoutRevisedAt: REVISION_MOVES,
+  medicationListLayoutRevisedAt: REVISION_MOVES,
+  moodTagLayoutRevisedAt: REVISION_MOVES,
+  modulePreferencesRevisedAt: REVISION_MOVES,
+  notificationPrefsRevisedAt: REVISION_MOVES,
+  coachPrefsRevisedAt: REVISION_MOVES,
+  healthScoreConfigRevisedAt: REVISION_MOVES,
 };
 
 describe("the account's own settings survive a real restore", () => {

@@ -10,6 +10,7 @@ const OWN_BP = { BLOOD_PRESSURE_SYS: { min: 115, max: 125 } };
 const CTX = {
   profile: { dateOfBirth: null, gender: null, heightCm: null },
   thresholdsJson: OWN_BP,
+  pregnancy: false,
 };
 
 function item(

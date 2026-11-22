@@ -178,6 +178,13 @@ describe("S1 — the direct session-resolution set is frozen", () => {
       "guards the step URL on the actor's own setup state",
     "app/onboarding/page.tsx":
       "resumes or welcomes on the actor's own setup state",
+    // 1.49 — the first-admin server setup. Reads the actor's role to refuse a
+    // non-admin with a 404 and the locale for the frame; the screens' data
+    // comes from cookie-only `requireAdmin` routes.
+    "app/onboarding/server/page.tsx":
+      "admits an admin and opens the first server setup step still owed",
+    "app/onboarding/server/[step]/page.tsx":
+      "admits an admin to one server setup step, in the actor's locale",
   };
 
   /**

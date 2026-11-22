@@ -19,7 +19,8 @@
  */
 import { describe, expect, it } from "vitest";
 
-import type { AppSettings } from "@/generated/prisma/client";
+import { Prisma, type AppSettings } from "@/generated/prisma/client";
+import { readSource } from "@/__tests__/helpers/source-files";
 import { parseWipeSchema } from "@/__tests__/helpers/wipe-schema-shape";
 import { appSettingsBackupSchema } from "@/lib/export/app-settings-backup-schema";
 import {
@@ -56,6 +57,30 @@ describe("AppSettings column backup classification", () => {
     expect(Object.keys(appSettingsBackupSchema.shape).sort()).toEqual(
       [...APP_SETTINGS_CARRIED_COLUMNS].sort(),
     );
+  });
+
+  it("writes every Json column through the json codec, so its null is DbNull", () => {
+    const schema = readSource("prisma/schema.prisma", "model AppSettings {");
+    const block = schema.slice(
+      schema.indexOf("model AppSettings {"),
+      schema.indexOf("\n}", schema.indexOf("model AppSettings {")),
+    );
+    const jsonColumns = [...block.matchAll(/^\s+(\w+)\s+Json\??/gm)].map(
+      (m) => m[1],
+    );
+    expect(jsonColumns.length).toBeGreaterThan(2);
+    const codecs = APP_SETTINGS_COLUMNS as Readonly<
+      Record<string, { codec?: string }>
+    >;
+    expect(
+      jsonColumns.filter(
+        (c) =>
+          verdicts[c].class !== "OPERATIONAL" && codecs[c].codec !== "json",
+      ),
+    ).toEqual([]);
+    expect(
+      appSettingsRowFromFile({ serverSetupStepsJson: null }),
+    ).toMatchObject({ serverSetupStepsJson: Prisma.DbNull });
   });
 
   it("classifies every sealed or token-shaped column as a credential", () => {
@@ -123,6 +148,8 @@ describe("AppSettings column backup classification", () => {
       pulseDayMeanAppliedAt: new Date("2026-09-02T00:00:00.000Z"),
       pulseDayMeanDryRunJson: { changed: 1 },
       workoutClimbBackfillCursor: "cursor",
+      serverSetupCompletedAt: new Date("2026-11-20T00:00:00.000Z"),
+      serverSetupStepsJson: { done: ["registration"] },
     };
     // The fixture is itself held to the schema, so a new column cannot be
     // left out of this case.
@@ -160,5 +187,7 @@ describe("AppSettings column backup classification", () => {
     expect(written).not.toHaveProperty("aiUsageDefaultLevel");
     expect(written).not.toHaveProperty("aiSyncRegenGapHours");
     expect(written).not.toHaveProperty("registrationEnabled");
+    expect(written).not.toHaveProperty("serverSetupCompletedAt");
+    expect(written).not.toHaveProperty("serverSetupStepsJson");
   });
 });

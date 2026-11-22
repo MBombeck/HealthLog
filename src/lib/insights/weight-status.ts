@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import { readNewestRowsPerType } from "@/lib/measurements/newest-per-type";
 import { readRecentMoodScores } from "@/lib/mood/recent-scores";
 import {
@@ -146,7 +147,7 @@ interface WeightInputs {
 async function readWeightInputs(
   ctx: StatusCardContext,
 ): Promise<WeightInputs | ServedBuild<StatusTextResult>> {
-  const { userId } = ctx;
+  const { userId, userTz } = ctx;
   // v1.39 (#1006) — the person's own weight target decides which way is
   // progress. Folded into the input fingerprint so editing the target flips
   // the gate even when no weight row moved.
@@ -154,7 +155,11 @@ async function readWeightInputs(
     where: { id: userId },
     select: { thresholdsJson: true, unitPreference: true },
   });
-  const weightTarget = resolveWeightTargetOverride(userRow?.thresholdsJson);
+  // No target during a pregnancy or its postpartum weeks: weight is data
+  // then, and the note does not measure it against a goal.
+  const weightTarget = (await pregnancyContextActive(prisma, userId, userTz))
+    ? null
+    : resolveWeightTargetOverride(userRow?.thresholdsJson);
   // The note is written in the reader's mass unit. Every weight figure the
   // snapshot carries is converted once, after the canonical arithmetic; the
   // correlations are scale-free and stay as computed.

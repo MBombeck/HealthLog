@@ -18,6 +18,7 @@ import type {
   ReadDayAggregatesOptions,
   SourceDayAggregateRow,
 } from "@/lib/measurements/day-aggregates";
+import { MS_PER_DAY } from "@/lib/time-constants";
 import { userDayKey } from "@/lib/tz/format";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { dayValue } from "@/lib/measurements/day-mean";
@@ -66,6 +67,7 @@ export function foldDayAggregates(
       acc.sum += r.value;
       if (r.value < acc.min) acc.min = r.value;
       if (r.value > acc.max) acc.max = r.value;
+      if (r.measuredAt > acc.lastAt) acc.lastAt = r.measuredAt;
     } else {
       byKey.set(key, {
         day,
@@ -74,6 +76,7 @@ export function foldDayAggregates(
         sum: r.value,
         min: r.value,
         max: r.value,
+        lastAt: r.measuredAt,
       });
     }
   }
@@ -82,10 +85,26 @@ export function foldDayAggregates(
   );
 }
 
+/**
+ * `latestDayOnly`: the rows within a day of the newest qualifying one, so the
+ * fold's last day is the latest day, whole. The fake places every row in the
+ * profile zone, so the SQL's reading-zone slack has nothing to cover here.
+ */
+function latestDayTail(
+  rows: ReadonlyArray<{ measuredAt: Date; value: number }>,
+  opts: ReadDayAggregatesOptions,
+) {
+  const newest = foldDayAggregates(rows, opts).reduce(
+    (t, d) => Math.max(t, d.lastAt.getTime()),
+    -Infinity,
+  );
+  return rows.filter((r) => r.measuredAt.getTime() >= newest - MS_PER_DAY);
+}
+
 export async function fakeReadDayAggregates(
   opts: ReadDayAggregatesOptions,
 ): Promise<DayAggregateRow[]> {
-  const rows = ((await prisma.measurement.findMany({
+  const allRows = ((await prisma.measurement.findMany({
     where: {
       userId: opts.userId,
       type: opts.type,
@@ -95,6 +114,7 @@ export async function fakeReadDayAggregates(
     orderBy: { measuredAt: "asc" },
     select: { measuredAt: true, value: true },
   })) ?? []) as Array<{ measuredAt: Date; value: number }>;
+  const rows = opts.latestDayOnly ? latestDayTail(allRows, opts) : allRows;
   const days = foldDayAggregates(rows, opts);
   if (!usesHourlyMeanDay(opts.type)) return days;
   // Mirror the SQL's hourly-mean day: the mean of the (day, segment)'s local

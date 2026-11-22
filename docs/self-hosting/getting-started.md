@@ -137,7 +137,53 @@ for a username, email, and password. **The first user that registers
 is promoted to admin automatically.** Every subsequent registration
 creates a regular user.
 
-After the first user lands, you can:
+After the first user lands, two short setups are offered. Neither is
+forced, every step can be skipped, and everything stays changeable later.
+
+**The server setup** (for the admin, at `/onboarding/server`). The welcome
+screen of your own setup, its last screen and a notice on the admin start
+page all point at it; you can run it before your own setup or after it.
+Five steps, each one the admin cards you would otherwise find under
+`/admin`, put in an order:
+
+1. **Accounts.** Whether people may sign up on their own (invite links work
+   either way), whether every account needs a second factor, and whether
+   single sign-on (OIDC) is configured in the environment.
+2. **Notifications.** Which channels people may use, whether email (SMTP)
+   is configured and which variables are missing, whether Telegram replies
+   work, and the push relay for the App Store app, which stays off unless
+   you switch it on.
+3. **AI.** Off, people's own keys, this server's key, or a local model, and
+   what leaves the server in each case.
+4. **Privacy.** How sign-in locations are looked up (the local GeoLite2
+   databases, an online service, or off), and the analytics and error
+   reporting switches.
+5. **Setup check.** A read-only list: encryption keys loaded, the
+   `SESSION_COOKIE_SECURE` setting against how you reached the page, the
+   nightly database dump, and `NEXT_PUBLIC_APP_URL` against the address you
+   used. It stays under Admin, System status, where the setup can be opened
+   again. Keep a copy of your encryption keys somewhere other than the
+   server; the recovery kit on the same step walks you through it.
+
+An instance that already had accounts when it was updated to 1.49 counts
+the server setup as done and does not offer it. A demo deploy
+(`DEMO_MODE=true`) never offers it.
+
+**Your own setup** (for every person, at `/onboarding`). A few questions
+(whose record this is, what to keep an eye on, medication, where readings
+come from, a doctor's visit), then **Region & units** when it concerns you:
+the time zone (filled in from the account), the units for glucose and
+weight, and, when you take medication, the medicine registry the "Find
+leaflet" link opens. After the summary come two optional screens, each only
+for people it concerns: **Reminders** (where reminders can reach you on this
+server) for a medication schedule or mood and cycle tracking, and **Coach**
+(a plain yes or no, with what would be sent where) when the server offers
+AI. The getting-started checklist on the dashboard then lists what is left,
+with a collapsed "More you can set up" group for the optional extras
+(emergency card, care calendar, sharing, imports, a regular doctor report,
+the iPhone app).
+
+Then:
 
 - Open `/admin` to review the worker status, audit log, and any
   optional channels you want to configure (Telegram bot, ntfy, Web

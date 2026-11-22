@@ -267,6 +267,7 @@ async function bindUnnamedTake(
   };
   if (
     data.skipped ||
+    data.extraDose === true ||
     data.scheduledFor !== undefined ||
     data.forceSlotInstant !== undefined
   ) {
@@ -321,6 +322,7 @@ export async function recordIntake(
     skipped,
     scheduledFor,
     forceSlotInstant: data.forceSlotInstant,
+    extraDose: data.extraDose,
     resolvedTakenAt,
     incomingScheduledFor,
   });

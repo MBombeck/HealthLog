@@ -26,8 +26,10 @@ import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
 import {
   takeBaseToken,
-  guardedUserUpdate,
+  guardedUserDocumentUpdate,
   invalidBaseTokenError,
+  readUserDocumentToken,
+  userDocumentToken,
 } from "@/lib/optimistic-lock";
 import {
   resolveInsightsLayout,
@@ -40,7 +42,8 @@ import {
 import { Prisma } from "@/generated/prisma/client";
 import { z } from "zod/v4";
 import { invalidateUserInsightsLayout } from "@/lib/cache/invalidate";
-import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { caches, type ServerCache } from "@/lib/cache/server-cache";
+import { cachedAtRevision } from "@/lib/cache/cached-at-revision";
 import { redactForExcerpt } from "@/lib/observability/redact-payload";
 import { shouldEmitAuditRow } from "@/lib/audit-dedup";
 import type { NextRequest } from "next/server";
@@ -106,27 +109,27 @@ async function buildInsightsLayout(
 ): Promise<InsightsLayoutWithToken> {
   const row = await prisma.user.findUnique({
     where: { id: userId },
-    // v1.32.21 — `updatedAt` rides the cached layout so GET hands the
-    // client the optimistic-concurrency token alongside the layout it applies
-    // to. Cached together (and busted on every write) so the (layout, token)
-    // pair a client reads is always consistent — the widgets precedent.
-    select: { insightsLayoutJson: true, updatedAt: true },
+    // The lock token rides with the layout it applies to: the layout's own
+    // revision, never the row's `updatedAt` (the widgets precedent).
+    select: { insightsLayoutJson: true, insightsLayoutRevisedAt: true },
   });
   return {
     ...resolveInsightsLayout(row?.insightsLayoutJson),
-    updatedAt: row?.updatedAt?.toISOString(),
+    updatedAt: userDocumentToken(row, "insightsLayout"),
   };
 }
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
 
-  // 5-minute TTL matches the dashboard-widgets cache; the layout
-  // changes only when the user hits the Settings save button, which
-  // invalidates this cache via `invalidateUserInsightsLayout()`.
-  const layout = await cached(
+  // 5-minute TTL matches the dashboard-widgets cache. The cell is served
+  // only while its token is the layout's current revision, so a writer that
+  // changed the layout without invalidating (record settings, a restore) can
+  // never hand out a stale token.
+  const layout = await cachedAtRevision(
     caches.insightsLayout as ServerCache<InsightsLayoutWithToken>,
     user.id,
+    await readUserDocumentToken(user.id, "insightsLayout"),
     () => buildInsightsLayout(user.id),
     annotate,
   );
@@ -200,8 +203,9 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // 409s and writes NOTHING (so an interleaved edit-mode Save can't be
   // reverted by a Settings pill-order Save that started from an older read,
   // and vice versa); a tokenless request keeps the prior unconditional write.
-  const guarded = await guardedUserUpdate({
+  const guarded = await guardedUserDocumentUpdate({
     userId: user.id,
+    document: "insightsLayout",
     base,
     data: { insightsLayoutJson: toJson(normalized) },
     conflict: {

@@ -1079,6 +1079,14 @@
       "medicationListLayoutJson": null,
       "documentsLayoutJson": null,
       "moodTagLayoutJson": null,
+      "dashboardWidgetsRevisedAt": "<now>",
+      "insightsLayoutRevisedAt": "<now>",
+      "medicationListLayoutRevisedAt": "<now>",
+      "moodTagLayoutRevisedAt": "<now>",
+      "modulePreferencesRevisedAt": "<now>",
+      "notificationPrefsRevisedAt": "<now>",
+      "coachPrefsRevisedAt": "<now>",
+      "healthScoreConfigRevisedAt": "<now>",
       "moduleListLayoutJson": null,
       "activityGoalsJson": null,
       "nutrientTargetsJson": null,
@@ -1202,7 +1210,11 @@
       "pulseDayMeanDryRunJson": {
         "roundTrip": "rt-AppSettings-pulseDayMeanDryRunJson"
       },
-      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor"
+      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor",
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
+      }
     }
   },
   "reexport": {
@@ -1254,7 +1266,11 @@
         "mood": "on"
       },
       "documentMaxFileBytes": 10000000,
-      "documentQuotaBytes": "500000000"
+      "documentQuotaBytes": "500000000",
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
+      }
     },
     "accountSettings": {
       "heightCm": null,

@@ -52,6 +52,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import type { DocumentSummaryState } from "@/generated/prisma/client";
 import { logCaught } from "@/lib/logging/signal";
+import { noteAiJobFailure } from "@/lib/ai/job-failure/witness";
 import {
   DOCUMENT_SUMMARY_EXPIRE_SECONDS,
   DOCUMENT_SUMMARY_QUEUE,
@@ -116,8 +117,7 @@ export async function runDocumentSummaryJob(
   const { userId, documentId } = payload;
   if (!userId || !documentId) return;
 
-  // Idempotency: a document that already has a summary is a cheap no-op (a
-  // re-enqueue after a duplicate upload, or a boot backfill overlap).
+  // A document that already has a summary is a cheap no-op (a re-enqueue).
   const existing = await prisma.inboundDocument.findFirst({
     where: { id: documentId, userId, deletedAt: null },
     select: { id: true, summaryEncrypted: true, aiReadDeferred: true },
@@ -143,9 +143,8 @@ export async function runDocumentSummaryJob(
     return;
   }
 
-  // The opt-in IS the trigger: when it is OFF the auto path does nothing (the
-  // on-demand route stays the only way to summarise). Fail-closed on a missing
-  // row.
+  // The opt-in IS the trigger: OFF, the auto path does nothing (the on-demand
+  // route stays the only way to summarise). Fail-closed on a missing row.
   if (!(await documentAutoReadEnabled(userId))) {
     // Opting out is not a failed attempt — but a claimed PENDING may not
     // outlive this run either. PENDING promises the reader "a job will resolve
@@ -234,9 +233,10 @@ export async function runDocumentSummaryJob(
 
   const vision = await prepareSummaryVision(userId, document, pick);
   if (!vision.ok) {
-    // Cannot read this file with the picked provider (decrypt miss, unsupported
-    // type, a PDF that will not render or, unrenderable here, a scan). No-op.
+    // The picked provider cannot read this file (decrypt miss, unsupported
+    // type, a PDF or scan that will not render); said on the document.
     await markSummaryState(userId, documentId, "UNAVAILABLE");
+    noteAiJobFailure("unreadable_file", pick.providerType);
     annotate({
       action: { name: "documents.summary.autoSkipped" },
       meta: { documentId, reason: vision.reason },
@@ -254,9 +254,10 @@ export async function runDocumentSummaryJob(
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
     "job",
   );
-  // Budget exhausted → skip (no local fallback for a summary).
+  // Budget exhausted: skip, no local fallback for a summary, and say so.
   if (!reservation.allowed) {
     await markSummaryState(userId, documentId, "UNAVAILABLE");
+    noteAiJobFailure("budget_exhausted");
     annotate({
       action: { name: "documents.summary.autoSkipped" },
       meta: { documentId, reason: "budget" },

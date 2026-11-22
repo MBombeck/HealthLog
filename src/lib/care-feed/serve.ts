@@ -30,12 +30,12 @@ import { annotate } from "@/lib/logging/context";
 import { runDetached } from "@/lib/logging/detached";
 import {
   checkUrlCredentialSurface,
-  HOUR_MS,
   icsFeedResponse,
-  matchesEtag,
   urlCredentialNotFound,
   urlCredentialTooMany,
 } from "@/lib/http/url-credential";
+import { matchesEtag } from "@/lib/http/etag";
+import { MS_PER_HOUR } from "@/lib/time-constants";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 import { buildCareFeed } from "./build";
@@ -83,7 +83,7 @@ export async function serveCareFeed(
   const perToken = await checkRateLimit(
     `care-feed:${tokenHash}`,
     TOKEN_LIMIT_PER_HOUR,
-    HOUR_MS,
+    MS_PER_HOUR,
   );
   if (!perToken.allowed) return tooMany(perToken);
 

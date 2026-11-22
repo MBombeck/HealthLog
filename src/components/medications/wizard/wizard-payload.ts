@@ -76,6 +76,8 @@ import {
   isExplicitRange,
   type DoseWindowEntry,
 } from "@/components/medications/scheduling/dose-window";
+import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 // ────────────────────────────────────────────────────────────────────
 // Step 2 — treatment-class taxonomy
@@ -367,13 +369,6 @@ export interface WizardPayload extends WizardExtras {
   activeScheduleIndex: number;
 }
 
-function todayUtc(): Date {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0),
-  );
-}
-
 /** Default draft for a fresh schedule slot. */
 export function emptyScheduleDraft(): ScheduleDraft {
   return {
@@ -384,8 +379,8 @@ export function emptyScheduleDraft(): ScheduleDraft {
   };
 }
 
-/** Sensible defaults for a fresh wizard. */
-export function emptyWizardPayload(): WizardPayload {
+/** Defaults for a fresh wizard; it starts today in the profile zone `tz`. */
+export function emptyWizardPayload(tz = DEFAULT_TIMEZONE): WizardPayload {
   const draft = emptyScheduleDraft();
   return {
     name: "",
@@ -404,7 +399,7 @@ export function emptyWizardPayload(): WizardPayload {
     scheduleDose: draft.dose ?? "",
     scheduleUnitsPerDose: draft.unitsPerDose ?? "",
     doseWindows: draft.doseWindows ?? [],
-    startsOn: todayUtc(),
+    startsOn: dayKeyAsUtcMidnight(userDayKey(new Date(), tz)),
     endsOn: null,
     notificationsEnabled: true,
     trackIntake: true,
@@ -1202,8 +1197,9 @@ function hydrateScheduleDraft(
  */
 export function hydrateWizardPayload(
   initial: MedicationPayload,
+  tz: string = DEFAULT_TIMEZONE,
 ): WizardPayload {
-  const base = emptyWizardPayload();
+  const base = emptyWizardPayload(tz);
   const parsedDose = parseDoseExpression(initial.dose ?? "");
 
   // v1.16.11 — an as-needed medication persists ZERO schedules; hydrate

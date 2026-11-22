@@ -15,6 +15,7 @@
  * a bad scan the guardian deleted is one they can bring back. An adult's
  * share restores nothing at any level.
  */
+import { documentAiJobFailures } from "@/lib/ai/job-failure/read";
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
@@ -116,6 +117,9 @@ export const POST = apiHandler(
         null,
         false,
         visitLinks.get(restored.id) ?? [],
+        undefined,
+        null,
+        await documentAiJobFailures(user.id, restored.id),
       ),
     );
   },

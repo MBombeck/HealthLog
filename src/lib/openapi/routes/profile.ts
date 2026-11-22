@@ -1353,7 +1353,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Replace per-user Coach prompt-tuning preferences",
       description:
-        "Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the documented defaults. Supports optimistic concurrency: echo the `updatedAt` from the last read as `baseUpdatedAt` and the write is refused with 409 if the row changed since; omit it for the legacy unconditional write.",
+        "Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the documented defaults. Supports optimistic concurrency: echo the `updatedAt` from the last read as `baseUpdatedAt` and the write is refused with 409 if the prefs changed since; omit it for the legacy unconditional write.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: coachPrefsPutRequest } },

@@ -12,7 +12,7 @@ import { NextRequest } from "next/server";
 
 interface UserLayoutSelectPayload {
   medicationListLayoutJson: unknown;
-  updatedAt?: Date;
+  medicationListLayoutRevisedAt?: Date;
 }
 
 const { mockUserFindUnique, mockUserUpdate, mockCategoryFindMany } = vi.hoisted(
@@ -247,7 +247,7 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
         groupsOpen: "expanded",
         categoryOrder: [],
       },
-      updatedAt: new Date("2026-07-24T10:00:00.000Z"),
+      medicationListLayoutRevisedAt: new Date("2026-07-24T10:00:00.000Z"),
     });
     mockUserUpdate.mockResolvedValue({});
 
@@ -295,7 +295,7 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
         groupsOpen: "flagged",
         categoryOrder: ["PAIN_RELIEF"],
       },
-      updatedAt: new Date("2026-07-24T10:00:00.000Z"),
+      medicationListLayoutRevisedAt: new Date("2026-07-24T10:00:00.000Z"),
     });
     mockUserUpdate.mockResolvedValue({});
 
@@ -422,7 +422,7 @@ describe("PUT /api/medications/layout — optimistic concurrency", () => {
     const advanced = new Date("2026-07-24T10:05:00.000Z");
     vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      updatedAt: advanced,
+      medicationListLayoutRevisedAt: advanced,
     } as never);
 
     const res = await callPut(makeReq(fullBody(base.toISOString())));
@@ -431,9 +431,11 @@ describe("PUT /api/medications/layout — optimistic concurrency", () => {
     // Conditional write on the exact base token — never unconditional.
     expect(prisma.user.updateMany).toHaveBeenCalledTimes(1);
     const whereArg = vi.mocked(prisma.user.updateMany).mock.calls[0]?.[0]
-      ?.where as { id: string; updatedAt: Date };
+      ?.where as { id: string; medicationListLayoutRevisedAt: Date };
     expect(whereArg.id).toBe("user-1");
-    expect((whereArg.updatedAt as Date).toISOString()).toBe(base.toISOString());
+    expect((whereArg.medicationListLayoutRevisedAt as Date).toISOString()).toBe(
+      base.toISOString(),
+    );
     expect(prisma.user.update).not.toHaveBeenCalled();
 
     const body = (await res.json()) as { data: { updatedAt: string } };
@@ -473,7 +475,7 @@ describe("PUT /api/medications/layout — optimistic concurrency", () => {
 
   it("keeps the unconditional write when the client omits the token (iOS compat)", async () => {
     vi.mocked(prisma.user.update).mockResolvedValue({
-      updatedAt: new Date("2026-07-24T11:00:00.000Z"),
+      medicationListLayoutRevisedAt: new Date("2026-07-24T11:00:00.000Z"),
     } as never);
 
     const res = await callPut(makeReq(fullBody()));
@@ -492,7 +494,7 @@ describe("PUT /api/medications/layout — category order keys", () => {
   it("keeps the account's own custom keys and drops one it does not have", async () => {
     mockUserFindUnique.mockResolvedValue({
       medicationListLayoutJson: null,
-      updatedAt: new Date("2026-07-24T10:00:00.000Z"),
+      medicationListLayoutRevisedAt: new Date("2026-07-24T10:00:00.000Z"),
     });
     mockUserUpdate.mockResolvedValue({});
     mockCategoryFindMany.mockResolvedValue([{ key: OWN }]);
@@ -517,7 +519,7 @@ describe("PUT /api/medications/layout — category order keys", () => {
   it("asks nothing of the category table for an order of built-ins only", async () => {
     mockUserFindUnique.mockResolvedValue({
       medicationListLayoutJson: null,
-      updatedAt: new Date("2026-07-24T10:00:00.000Z"),
+      medicationListLayoutRevisedAt: new Date("2026-07-24T10:00:00.000Z"),
     });
     mockUserUpdate.mockResolvedValue({});
     mockCategoryFindMany.mockClear();

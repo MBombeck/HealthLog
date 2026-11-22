@@ -8,6 +8,7 @@
 import type { Job } from "pg-boss";
 
 import type { CoachMemoryRefreshPayload } from "@/lib/ai/coach/coach-memory-shared";
+import { trackAiJob } from "@/lib/ai/job-failure/report";
 import { runCoachMemoryRefresh } from "@/lib/ai/coach/coach-memory-refresh-worker";
 import { maybeDispatchDailyBriefing } from "@/lib/daily/daily-briefing-push";
 import { runCoachNudgeTick } from "@/lib/jobs/coach-nudge";
@@ -262,7 +263,12 @@ export async function handlePeriodNarrative(
   for (const job of jobs) {
     try {
       if (job.data?.userId) {
-        await warmOneNarrative(job.data);
+        // #1404 — a provider failing under the narrative is named under
+        // Settings, AI.
+        const userId = job.data.userId;
+        await trackAiJob({ userId, job: "periodNarrative" }, () =>
+          warmOneNarrative(job.data),
+        );
         singleUser++;
       } else {
         const summary = await runPeriodNarrativeWarm(getWorkerPrisma(), {
@@ -310,7 +316,9 @@ export async function handleCoachMemoryRefresh(
       continue;
     }
     try {
-      await runCoachMemoryRefresh(job.data);
+      await trackAiJob({ userId: job.data.userId, job: "coachMemory" }, () =>
+        runCoachMemoryRefresh(job.data),
+      );
       refreshed++;
     } catch (err) {
       recordError();

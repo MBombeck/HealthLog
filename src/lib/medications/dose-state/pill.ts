@@ -19,6 +19,7 @@
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 
 import { openDoseStateAt, type DoseState } from "./resolve";
+import { takeReach, type TakeBinding } from "./take-rule";
 import { doseStateFromWire } from "./terms";
 
 type Instant = Date | string | null;
@@ -141,17 +142,28 @@ export function cardDisplayedSlot(
   return next === null ? null : new Date(next);
 }
 
-/** The slot a take records, and when the dose opens if that take is early. */
+/**
+ * The slot a take records, when the dose opens if that take is early, and
+ * how the take binds to it by the one take rule (`./take-rule`).
+ */
 export interface TakeSlot {
   at: Date;
   /** When the dose's window opens, while a take now would be early. */
   earlyFrom: Date | null;
+  /**
+   * `slot` and `pinned` count the take for `at`; `extra` files it as an
+   * extra dose, which the control says before the tap.
+   */
+  binding: TakeBinding;
 }
 
 /**
- * The take button's slot: {@link cardDisplayedSlot}, and the opening of the
- * dose window while the resolved dose on that slot is still pending, so the
- * button can say the take would be early. Null without a slot.
+ * The take button's slot: {@link cardDisplayedSlot}, the opening of the dose
+ * window while the resolved dose on that slot is still pending (so the button
+ * can say the take would be early), and what a take now does for it. A dose
+ * already due, overdue or missed counts by its named slot; a pending one is
+ * measured by the take rule, so a tap at noon on an evening dose never says
+ * "Take (07:00 PM)" and files an extra dose. Null without a slot.
  */
 export function cardTakeSlot(
   dose: ResolvedDoseWire | null | undefined,
@@ -160,10 +172,29 @@ export function cardTakeSlot(
 ): TakeSlot | null {
   const at = cardDisplayedSlot(dose, nextDueAt, now);
   if (!at) return null;
+  const state = liveDoseState(dose, now);
+  const onThisSlot = ms(dose?.targetAt) === at.getTime();
   const dueAt = ms(dose?.dueAt);
-  const early =
-    liveDoseState(dose, now) === "pending" &&
-    ms(dose?.targetAt) === at.getTime() &&
-    dueAt !== null;
-  return { at, earlyFrom: early ? new Date(dueAt) : null };
+  const early = state === "pending" && onThisSlot && dueAt !== null;
+  const open =
+    onThisSlot &&
+    (state === "due" || state === "overdue" || state === "missed");
+  return {
+    at,
+    earlyFrom: early ? new Date(dueAt) : null,
+    binding: open ? "slot" : pendingBinding(at, now),
+  };
+}
+
+/**
+ * A take now on a slot that has not opened. The server does not bind a named
+ * slot that lies ahead of the take, so within the near ceiling the take is
+ * pinned to it (`forceSlotInstant`): it then counts for exactly the slot the
+ * button names, and still reads on time when it falls inside the band's
+ * early grace. Past the ceiling it is an extra dose.
+ */
+function pendingBinding(at: Date, now: Date): TakeBinding {
+  return takeReach((at.getTime() - now.getTime()) / 60_000) === "extra"
+    ? "extra"
+    : "pinned";
 }

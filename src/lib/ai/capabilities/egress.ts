@@ -25,6 +25,7 @@
  */
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { noteAiJobEvent } from "@/lib/ai/job-failure/witness";
 
 import { aiCapabilityForJob, requireAiCapability } from "./gate";
 import { AiUnavailableError } from "./refusal";
@@ -58,6 +59,28 @@ async function hasActiveReceipt(
  *   picked provider for a single-pick read, the whole chain for a cascade.
  */
 export async function aiEgressRefusal(
+  key: AiCapabilityKey,
+  recordId: string,
+  providerTypes: readonly string[],
+): Promise<AiUnavailableError | null> {
+  const refusal = await egressRefusal(key, recordId, providerTypes);
+  // #1404 — the exact answer for the pick, for the background job this runs
+  // inside (`job-failure/witness.ts`): it replaces a presence answer.
+  noteAiJobEvent(
+    refusal
+      ? {
+          type: "refused",
+          capability: key,
+          userId: recordId,
+          reason: refusal.reason,
+          tentative: false,
+        }
+      : { type: "admitted", capability: key, userId: recordId },
+  );
+  return refusal;
+}
+
+async function egressRefusal(
   key: AiCapabilityKey,
   recordId: string,
   providerTypes: readonly string[],

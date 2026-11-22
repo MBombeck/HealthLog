@@ -247,7 +247,10 @@ describe("health profile backup completeness", () => {
   const schema = readFileSync(SCHEMA, "utf8");
   const source = readFileSync(PROFILE_BACKUP_BUILDER, "utf8");
   const models = declaredModels(schema);
-  const excluded = new Set(["userId"]);
+  // `aboutMeRevisedAt` is the about-me lock token (migration 0554): a restore
+  // creates the row afresh and the token starts there, so carrying one would
+  // hand the restored account a token nobody read.
+  const excluded = new Set(["userId", "aboutMeRevisedAt"]);
 
   it.each([
     ["UserHealthProfile", "HealthProfileBackupEntry", "profileRow"],

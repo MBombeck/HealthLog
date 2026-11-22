@@ -9,6 +9,7 @@
  * wheel, predictions panel, and history repaint in lockstep after a quick
  * log.
  */
+import { CONFIRM_SAVED } from "@/lib/api/mutation-feedback";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -484,6 +485,9 @@ export interface CyclePrefsPatch {
 export function useUpdateCyclePrefs() {
   const qc = useQueryClient();
   return useMutation({
+    // Every cycle setting, the pregnancy state among them, confirms once it
+    // lands (`src/lib/api/mutation-feedback.ts`).
+    meta: CONFIRM_SAVED,
     mutationFn: async (patch: CyclePrefsPatch) => {
       return apiPatch<CycleProfileDTO>("/api/auth/me/cycle-prefs", patch);
     },

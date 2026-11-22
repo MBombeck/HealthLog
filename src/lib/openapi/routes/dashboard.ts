@@ -106,7 +106,7 @@ const dashboardLayoutResult = dashboardLayoutSchema
     updatedAt: isoDateTime()
       .optional()
       .describe(
-        "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
+        "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
       ),
   })
   .meta({
@@ -432,7 +432,7 @@ export const dashboardWidgetPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Dashboard"],
       summary: "Replace the calling user's dashboard widget layout",
       description:
-        "Persists the layout with preserve-when-absent semantics and returns the normalised layout plus the advanced `updatedAt` token. Optimistic concurrency (v1.32.16): send `baseUpdatedAt` (the token from a prior read) and the write 409s if the stored row changed since — so a committed Save can never be silently reverted by a later request that started from an older snapshot; omit it for the legacy unconditional write. Invalid bodies return the multi-issue 422 envelope.",
+        "Persists the layout with preserve-when-absent semantics and returns the normalised layout plus the advanced `updatedAt` token. Optimistic concurrency (v1.32.16): send `baseUpdatedAt` (the token from a prior read) and the write 409s if the stored layout changed since — so a committed Save can never be silently reverted by a later request that started from an older snapshot; omit it for the legacy unconditional write. Invalid bodies return the multi-issue 422 envelope.",
       requestBody: {
         required: true,
         content: {

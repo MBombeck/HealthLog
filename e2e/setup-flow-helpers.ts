@@ -17,8 +17,15 @@ export type SetupScreen =
   | "visit"
   | "units"
   | "confirm"
+  | "reminders"
+  | "ai"
   | "first-result"
-  | "done";
+  | "done"
+  // The server setup (1.49), in the same frame.
+  | "accounts"
+  | "notifications"
+  | "privacy"
+  | "health";
 
 export const SHELL = '[data-slot="onboarding-shell"]';
 
@@ -49,6 +56,30 @@ export async function next(page: Page): Promise<void> {
 
 export async function skip(page: Page): Promise<void> {
   await page.locator('[data-slot="onboarding-skip"]').click();
+}
+
+/**
+ * 1.49 — pass the follow-ups the flow shows after confirm, in order, by
+ * skipping each: `reminders` for a medication schedule or a mood or cycle
+ * area, `ai` while the server offers the Coach (it does on the e2e server,
+ * which has AI switched on and no provider, so a person could set one up).
+ * The caller names the ones it expects, so a follow-up that appears or
+ * vanishes unexpectedly fails here rather than being stepped over.
+ */
+export async function skipFollowUps(
+  page: Page,
+  expected: ReadonlyArray<"reminders" | "ai">,
+): Promise<void> {
+  for (const screen of expected) {
+    await expectScreen(page, screen);
+    await skip(page);
+  }
+}
+
+/** The follow-up answers through the API, for specs that jump ahead. */
+export async function passFollowUps(page: Page): Promise<void> {
+  await answer(page, { step: "reminders", status: "skipped" });
+  await answer(page, { step: "ai", status: "skipped" });
 }
 
 /** The welcome screen's acknowledgment plus "Set up". */

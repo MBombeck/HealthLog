@@ -17,12 +17,16 @@ import { cache } from "react";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { readHeldUnitPreferences, type OnboardingStateDto } from "./needs";
+import { serverSetupOpenFor } from "@/lib/admin/server-setup-store";
+import { loadOnboardingOffers } from "./load-offers";
 import { loadOnboardingRecordRow, toOnboardingStateDto } from "./needs-store";
 
 export interface OnboardingFlowPageState {
   userId: string;
   userLocale: string | null;
   state: OnboardingStateDto;
+  /** 1.49 — an admin whose server setup is still open (never on a demo). */
+  serverSetupOpen: boolean;
 }
 
 export const loadOnboardingFlowState = cache(
@@ -30,11 +34,16 @@ export const loadOnboardingFlowState = cache(
     const session = await getSession();
     if (!session) return null;
     const { user } = session;
-    const row = await loadOnboardingRecordRow(prisma, user.id);
+    const [row, offers, serverSetupOpen] = await Promise.all([
+      loadOnboardingRecordRow(prisma, user.id),
+      loadOnboardingOffers(user.id),
+      serverSetupOpenFor(user),
+    ]);
     return {
       userId: user.id,
       userLocale: user.locale ?? null,
-      state: toOnboardingStateDto(row, readHeldUnitPreferences(user)),
+      state: toOnboardingStateDto(row, readHeldUnitPreferences(user), offers),
+      serverSetupOpen,
     };
   },
 );

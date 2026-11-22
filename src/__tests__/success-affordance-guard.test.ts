@@ -142,6 +142,12 @@ const PINNED_AFFORDANCES: Record<
     CheckCircle2: 2,
     "text-success": 1,
   },
+  // 1.49: the setup check paints the server's verdict on its own setup (keys,
+  // cookies, dump, address), like the readiness card above; it writes nothing.
+  "src/components/admin/setup-health-card.tsx": {
+    CheckCircle2: 2,
+    "text-success": 1,
+  },
   "src/components/admin/recent-audit-preview.tsx": {
     CheckCircle2: 2,
     "text-success": 1,

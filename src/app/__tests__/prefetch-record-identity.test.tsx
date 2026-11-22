@@ -228,7 +228,10 @@ describe("the medications prefetch and the record on screen", () => {
     readMedicationsListCached.mockResolvedValue(MEDICATIONS);
 
     const cache = seededCache((await MedicationsPage()) as ReactElement);
-    expect(cache[hashKey(queryKeys.medications())]).toEqual(MEDICATIONS);
+    // The route's rows, with the caller's registry search (none here).
+    expect(cache[hashKey(queryKeys.medications())]).toEqual(
+      MEDICATIONS.map((row) => ({ ...row, leafletSearch: null })),
+    );
   });
 
   it("seeds nothing while the session is acting on another record", async () => {

@@ -1127,8 +1127,9 @@
         "lifeConfirmedJson": {
           "roundTrip": "rt-UserHealthProfile-lifeConfirmedJson"
         },
-        "createdAt": "2026-05-03T13:35:00.000Z",
-        "updatedAt": "2026-05-03T13:36:00.000Z"
+        "aboutMeRevisedAt": "2026-05-03T13:35:00.000Z",
+        "createdAt": "2026-05-03T13:36:00.000Z",
+        "updatedAt": "2026-05-03T13:37:00.000Z"
       }
     ],
     "HealthProfileFactRevision": [
@@ -2406,8 +2407,10 @@
             "sleep"
           ],
           "units": {
+            "timezone": "Europe/Berlin",
             "glucoseUnit": "mmol/L",
-            "unitPreference": "metric"
+            "unitPreference": "metric",
+            "medicineRegistry": "DE"
           },
           "visit": "within-a-month",
           "sources": [
@@ -2649,6 +2652,14 @@
       "moodTagLayoutJson": {
         "roundTrip": "rt-User-moodTagLayoutJson"
       },
+      "dashboardWidgetsRevisedAt": "2026-06-30T12:34:56.789Z",
+      "insightsLayoutRevisedAt": "2026-06-30T12:34:56.789Z",
+      "medicationListLayoutRevisedAt": "2026-06-30T12:34:56.789Z",
+      "moodTagLayoutRevisedAt": "2026-06-30T12:34:56.789Z",
+      "modulePreferencesRevisedAt": "2026-05-07T12:15:00.000Z",
+      "notificationPrefsRevisedAt": "2026-05-07T12:16:00.000Z",
+      "coachPrefsRevisedAt": "2026-05-07T12:17:00.000Z",
+      "healthScoreConfigRevisedAt": "2026-05-07T12:18:00.000Z",
       "moduleListLayoutJson": {
         "roundTrip": "rt-User-moduleListLayoutJson"
       },
@@ -2814,7 +2825,11 @@
       "pulseDayMeanDryRunJson": {
         "roundTrip": "rt-AppSettings-pulseDayMeanDryRunJson"
       },
-      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor"
+      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor",
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
+      }
     }
   }
 }

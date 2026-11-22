@@ -805,7 +805,8 @@
           "streak": 4,
           "taken7": 4,
           "skipped7": 1,
-          "missed7": 2
+          "missed7": 2,
+          "expected30": 26
         }
       ],
       "alerts": [

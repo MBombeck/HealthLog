@@ -82,8 +82,17 @@ describe("onboardingAnswerSchema", () => {
       { step: "medication", medication: "sometimes" },
       { step: "sources", sources: ["nightscout", "manual"] },
       { step: "visit", visit: "later" },
-      { step: "units", units: { glucoseUnit: "mmol/L" } },
+      {
+        step: "units",
+        units: {
+          glucoseUnit: "mmol/L",
+          timezone: "Europe/Warsaw",
+          medicineRegistry: "PL",
+        },
+      },
       { step: "confirm" },
+      { step: "reminders" },
+      { step: "ai" },
       {
         step: "first-result",
         firstResult: {
@@ -101,5 +110,39 @@ describe("onboardingAnswerSchema", () => {
         JSON.stringify(body),
       ).toBe(true);
     }
+  });
+});
+
+describe("1.49 answers", () => {
+  it("refuses a time zone that is not an IANA zone", () => {
+    expect(
+      onboardingAnswerSchema.safeParse({
+        step: "units",
+        units: { timezone: "Mars/Olympus" },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("refuses a medicine registry outside the list", () => {
+    expect(
+      onboardingAnswerSchema.safeParse({
+        step: "units",
+        units: { medicineRegistry: "XX" },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("takes no payload on the follow-ups, which have their own writers", () => {
+    expect(
+      onboardingAnswerSchema.safeParse({ step: "reminders", snoozeMinutes: 30 })
+        .success,
+    ).toBe(false);
+    expect(
+      onboardingAnswerSchema.safeParse({ step: "ai", coach: "yes" }).success,
+    ).toBe(false);
+    expect(
+      onboardingAnswerSchema.safeParse({ step: "ai", status: "skipped" })
+        .success,
+    ).toBe(true);
   });
 });

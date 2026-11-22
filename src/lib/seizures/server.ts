@@ -356,6 +356,51 @@ export interface DiaryReadOptions {
  * the last confirmed event of all time is read on its own, so a diary opened
  * on a quiet quarter still says when the last one was.
  */
+/**
+ * When the diary began: the first recorded seizure (any certainty, by onset,
+ * so a backfilled one counts) or the first seizure type set up, whichever is
+ * earlier. Null for a diary with neither.
+ *
+ * Every figure over a period starts here. "Longest run without a recorded
+ * seizure: 90 days" on the day the diary was opened is a statement a reader
+ * (a doctor among them) takes as an observation, and nothing was observed
+ * before the diary existed.
+ */
+export async function seizureDiaryStart(userId: string): Promise<Date | null> {
+  const [firstEvent, firstType] = await Promise.all([
+    prisma.seizureEvent.findFirst({
+      where: { userId },
+      orderBy: { onsetAt: "asc" },
+      select: { onsetAt: true },
+    }),
+    prisma.seizureTypeProfile.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
+    }),
+  ]);
+  const starts = [firstEvent?.onsetAt, firstType?.createdAt].filter(
+    (d): d is Date => d instanceof Date,
+  );
+  return starts.length === 0
+    ? null
+    : new Date(Math.min(...starts.map((d) => d.getTime())));
+}
+
+/**
+ * The start of a period's figures: the period's own start, or the diary's
+ * when the diary began later. A diary with no start counts from `to`, a
+ * single day, so an empty diary claims no seizure-free run.
+ */
+export function figuresFrom(
+  from: Date,
+  to: Date,
+  diaryStart: Date | null,
+): Date {
+  const start = diaryStart ?? to;
+  return start.getTime() > from.getTime() ? start : from;
+}
+
 export async function readSeizureDiary(
   opts: DiaryReadOptions,
 ): Promise<SeizureDiaryDTO> {
@@ -364,7 +409,7 @@ export async function readSeizureDiary(
   const from =
     opts.from ?? new Date(to.getTime() - DEFAULT_DIARY_DAYS * DAY_MS);
 
-  const [types, rule, rows, lastConfirmed] = await Promise.all([
+  const [types, rule, rows, lastConfirmed, diaryStart] = await Promise.all([
     listSeizureTypes(opts.userId, {
       medicationsVisible: opts.medicationsVisible ?? true,
     }),
@@ -384,13 +429,15 @@ export async function readSeizureDiary(
       orderBy: { onsetAt: "desc" },
       select: { onsetAt: true },
     }),
+    seizureDiaryStart(opts.userId),
   ]);
   const truncated = rows.length > MAX_SEIZURE_EVENTS_PAGE;
   const loggerNames = await readLoggerNames(opts.userId, rows);
   const page = truncated ? rows.slice(0, MAX_SEIZURE_EVENTS_PAGE) : rows;
   const lookup = typeLookupOf(types);
+  // The figures count from the diary's start, and `summary.from` names it.
   const summary = summarise(page, lookup, rule, {
-    from,
+    from: figuresFrom(from, to, diaryStart),
     to,
     tz: opts.tz,
     now,

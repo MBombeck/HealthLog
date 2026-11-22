@@ -12,6 +12,7 @@
  * stays OUT of the cached factory — see v1.18.0 B5 notes on the route).
  */
 import { prisma } from "@/lib/db";
+import { pregnancyDayTest } from "@/lib/cycle/pregnancy-context";
 import { REST_MODE_EPISODE_WHERE } from "@/lib/illness/rest-mode";
 import { requireAuth } from "@/lib/api-handler";
 import type { ModuleKey } from "@/lib/modules/gate";
@@ -226,6 +227,7 @@ function getEventDaySeries(
 function getHealthGreenDaySeries(
   buckets: VitalsHourBucket[],
   heightCm: number | null,
+  inPregnancy: (dayKey: string) => boolean, // no BMI band in a pregnancy
 ) {
   type Acc = { sum: number; count: number };
   const dayStats = new Map<
@@ -258,7 +260,7 @@ function getHealthGreenDaySeries(
   const pulseGreenDays: string[] = [];
 
   for (const [dayKey, slot] of dayStats.entries()) {
-    if (heightCm && slot.weight.count > 0) {
+    if (heightCm && slot.weight.count > 0 && !inPregnancy(dayKey)) {
       const bmi = bmiOf(slot.weight.sum / slot.weight.count, heightCm);
       if (classifyBMI(bmi).severity === "normal") {
         bmiGreenDays.push(dayKey);
@@ -444,13 +446,8 @@ export async function buildAchievementsResult(
   const now = new Date();
   const userId = user.id;
   const startDate = maxDate(user.createdAt, GAMIFICATION_ROLLOUT_AT);
-  // v1.30 (DATAINT M4) — every day-key derivation below anchors on the
-  // BADGE OWNER's own timezone, not a hardcoded Berlin default. Before this,
-  // a non-CET user's evening entries could fold into the wrong calendar day
-  // (or merge two real local days into one), silently breaking every
-  // day-streak badge (login, entry, weekend, miss-free, sleep-log, on-time,
-  // compliance-80) plus the hidden night-owl / early-bird / leap-day
-  // triggers for every non-CET account.
+  // Every day key below is the badge owner's own day (DATAINT M4), never a
+  // Berlin default, which broke every day-streak badge for a non-CET account.
   const tz = validTimezoneOr(user.timezone, DEFAULT_TIMEZONE);
 
   const [
@@ -668,17 +665,19 @@ export async function buildAchievementsResult(
   // are harmless.
   const vitalsDayKeys = vitalsBuckets.map((b) => b.dayKey);
   const vitalsHours = vitalsBuckets.map((b) => b.hour);
-  // Weighted records for the expansion metrics: one record per bucket,
-  // `count` carrying the folded row multiplicity. The `measuredAt` anchor is
-  // never read on this path (day-keys + hours ride the parallel arrays
-  // above) — it only satisfies the record shape.
+  // Weighted records for the expansion metrics: one per bucket, `count` the
+  // folded row multiplicity; `measuredAt` only satisfies the record shape.
   const vitalsRecords = vitalsBuckets.map((b) => ({
     type: b.type,
     measuredAt: dayKeyToDate(b.dayKey),
     count: b.rowCount,
   }));
 
-  const healthSeries = getHealthGreenDaySeries(vitalsBuckets, user.heightCm);
+  const healthSeries = getHealthGreenDaySeries(
+    vitalsBuckets,
+    user.heightCm,
+    await pregnancyDayTest(prisma, userId),
+  );
   const onTimeSeries = getOnTimePerfectDaySeries(
     intakeEvents,
     schedulesByMedicationId,

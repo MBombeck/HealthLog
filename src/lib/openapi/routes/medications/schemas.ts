@@ -514,6 +514,7 @@ export const medicationListEntry = medicationResource
       .describe(
         "v1.43 — whether a composition per unit is stored (`GET /api/medications/{id}` carries it as `ingredients`). Absent on older servers.",
       ),
+    leafletSearch: leafletSearchResource,
   })
   .meta({
     id: "MedicationListEntry",
@@ -1401,7 +1402,7 @@ export const medicationListLayoutResult = medicationListLayoutSchema
     updatedAt: isoDateTime()
       .optional()
       .describe(
-        "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
+        "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
       ),
   })
   .meta({

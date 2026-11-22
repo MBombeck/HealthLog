@@ -129,6 +129,10 @@ export async function readMedicationCompliance(args: {
       taken7: c7.taken,
       skipped7: c7.skipped,
       missed7: c7.missed,
+      // The 30-day rate's denominator: 0 means nothing to score yet, and the
+      // rate beside it is then not adherence (the 7-day one reads
+      // `taken7 + missed7` the same way).
+      expected30: c30.taken + c30.missed,
     });
 
     if ((categoryMap[med.id] ?? "OTHER") === "BLOOD_PRESSURE") {

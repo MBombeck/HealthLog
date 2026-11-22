@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { useLoadMoreSentinel } from "@/hooks/use-load-more-sentinel";
 import type { CoachConversationDTO } from "@/lib/ai/coach/types";
-import { groupConversationsByRecency } from "@/lib/insights/coach-conversation-groups";
+import { useCoachConversationGroups } from "@/hooks/use-coach-conversation-groups";
 
 import { ConversationRename } from "./conversation-rename";
 import {
@@ -104,7 +104,7 @@ export function HistoryRail({
     () => conversations.filter((c) => !pendingDeleteIds.has(c.id)),
     [conversations, pendingDeleteIds],
   );
-  const groups = useMemo(() => groupConversationsByRecency(visible), [visible]);
+  const groups = useCoachConversationGroups(visible);
 
   // A `useState`-backed callback ref so the sentinel hook re-runs once the
   // scroll container exists (null on the very first render).

@@ -22,12 +22,16 @@
  * tried. `capability` is null for the default chain read without one.
  * `failure` is the closed vocabulary of `failure-kind.ts`, `code` a
  * code-shaped string or null; no message, prompt or reply reaches the line.
+ *
+ * The same two outcomes are noted on the witness of the background job the
+ * call runs inside, when there is one (`job-failure/witness.ts`).
  */
 import type { AiCapabilityKey } from "@/lib/ai/capabilities/types";
 import { providerFailureKind } from "@/lib/ai/failure-kind";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import type { ChainSelection } from "@/lib/ai/named-chains";
 import type { AIProvider, CompletionParams } from "@/lib/ai/types";
+import { noteAiJobEvent } from "@/lib/ai/job-failure/witness";
 import { annotate } from "@/lib/logging/context";
 import { emitOutcome, emitSignal } from "@/lib/logging/signal";
 
@@ -75,6 +79,11 @@ export function logChainCalls<P extends AIProvider>(
     provider: providerType,
   };
   const served = () => {
+    noteAiJobEvent({
+      type: "served",
+      capability: label.capability,
+      providerType,
+    });
     emitOutcome({ action: "ai.chain.served", meta });
     annotate({
       meta: { ai_chain: label.chain, ai_chain_capability: label.capability },
@@ -84,6 +93,16 @@ export function logChainCalls<P extends AIProvider>(
     const { failure, code } = providerFailureKind(error);
     // A cancelled call is the caller walking away, not the provider failing.
     if (failure === "aborted") return;
+    // #1404 — and to the background job it ran inside, so the job's reporter
+    // can name it (`job-failure/report.ts`).
+    const status = (error as { httpStatus?: unknown } | null)?.httpStatus;
+    noteAiJobEvent({
+      type: "failed",
+      capability: label.capability,
+      providerType,
+      failure,
+      httpStatus: typeof status === "number" ? status : null,
+    });
     emitSignal({
       action: "ai.chain.failed",
       level: "warn",

@@ -1,5 +1,6 @@
 /**
- * Where a symptom sits against the day's doses: "2 h 10 min after Metformin".
+ * Where a symptom or a seizure sits against the day's doses: "2 h 10 min
+ * after Metformin".
  *
  * A person whose medication timing matters notes a symptom's onset or relief
  * and wants to see it against the dose they took that day. This states the
@@ -15,6 +16,12 @@
  */
 import type { DayEvent } from "./contract";
 
+/** The event kinds placed against the day's doses. */
+export const DOSE_OFFSET_KINDS: ReadonlySet<DayEvent["kind"]> = new Set([
+  "symptom",
+  "seizure",
+]);
+
 export function withDoseOffsets(events: readonly DayEvent[]): DayEvent[] {
   const doses = events
     .filter((e) => e.kind === "intake" && e.at !== null)
@@ -22,7 +29,7 @@ export function withDoseOffsets(events: readonly DayEvent[]): DayEvent[] {
     .sort((a, b) => a.ms - b.ms);
   if (doses.length === 0) return [...events];
   return events.map((e) => {
-    if (e.kind !== "symptom" || e.at === null) return e;
+    if (!DOSE_OFFSET_KINDS.has(e.kind) || e.at === null) return e;
     const at = Date.parse(e.at);
     const before = doses.filter((d) => d.ms <= at).at(-1);
     const anchor = before ?? doses.find((d) => d.ms > at)!;

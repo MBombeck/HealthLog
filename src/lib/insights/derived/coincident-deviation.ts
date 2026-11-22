@@ -41,7 +41,6 @@ import {
   type BaselineProfile,
 } from "./baseline";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
-import { readLatestLocalDayMean } from "@/lib/measurements/dense-bucket-read";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { VITALS_BASELINE_TYPES } from "./registry";
 import type { Derived, DerivedProvenanceSource } from "./types";
@@ -51,9 +50,9 @@ import {
   dayKeyAgeInDays,
   isFromToday,
 } from "@/lib/insights/measurement-freshness";
+import { MS_PER_DAY } from "@/lib/time-constants";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DEFAULT_WINDOW_DAYS = 30;
 /** ≥ this many out-of-band vitals on a day fires the flag. */
 export const COINCIDENT_FIRE_THRESHOLD = 2;
@@ -286,6 +285,8 @@ export interface CoincidentDeviationOpts {
  * The mean runs over every reading of the day in Postgres. It used to mean
  * the newest 50 rows, which on a stream sampled every few minutes is the last
  * hours of the day and not the day.
+ *
+ * The readiness score reads the same day with `plausibleOnly: false`.
  */
 export async function readLatestDayMean(
   userId: string,
@@ -293,14 +294,24 @@ export async function readLatestDayMean(
   windowDays: number,
   now: Date,
   tz: string,
+  opts: { plausibleOnly?: boolean } = {},
 ): Promise<{ value: number; day: string; lastAt: Date } | null> {
-  return readLatestLocalDayMean({
+  const days = await readDayAggregates({
     userId,
     type,
     since: new Date(now.getTime() - windowDays * MS_PER_DAY),
     timeZone: tz,
-    plausibleOnly: true,
+    valueRange:
+      opts.plausibleOnly === false ? undefined : plausibleMetricRange(type),
+    latestDayOnly: true,
   });
+  const latest = days.at(-1);
+  if (!latest) return null;
+  return {
+    value: latest.dayMean ?? latest.sum / latest.n,
+    day: latest.day,
+    lastAt: latest.lastAt,
+  };
 }
 
 /**

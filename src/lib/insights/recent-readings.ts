@@ -13,8 +13,11 @@
  * (`readHourCells`). A watch writing a reading every few seconds holds a
  * million rows in 30 days; the capped row read this replaces returned the
  * newest 60 000 of them, under two days, and every 30-day figure was built
- * on those. The longer tail of every snapshot comes from the rollup tier,
- * not from here.
+ * on those. The two sides of the cap weigh differently: up to it every
+ * reading counts once, beyond it every local hour does, so a 30-day figure of
+ * a stream just over the cap can move against the same stream just under it.
+ * The longer tail of every snapshot comes from the rollup tier, not from
+ * here.
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";

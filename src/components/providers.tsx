@@ -15,10 +15,14 @@ import {
 import { I18nProvider, useTranslations } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/config";
 import { showErrorToast } from "@/lib/errors/error-toast";
+import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { confirmsSaved } from "@/lib/api/mutation-feedback";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import {
   applyThemeColor,
   parseThemeChoice,
+  resolveTheme,
   THEME_STORAGE_KEY,
   type ResolvedTheme,
   type ThemeChoice,
@@ -165,7 +169,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     getSystemThemeSnapshot,
     getServerSystemSnapshot,
   );
-  const resolvedTheme = theme === "system" ? systemTheme : theme;
+  const resolvedTheme = resolveTheme(theme, systemTheme === "dark");
 
   // Keep the <html> class in sync with the resolved theme. This is a DOM write,
   // not a setState — it runs on mount (reconciling the class the inline script
@@ -413,6 +417,46 @@ function OfflineMutationToaster() {
   return null;
 }
 
+// ── Save confirmation ────────────────────────────────
+
+/**
+ * The one place a change confirms itself (`src/lib/api/mutation-feedback.ts`).
+ * A mutation that declares `meta: CONFIRM_SAVED` gets "Saved" once it
+ * succeeds, unless its call site raised a toast of its own meanwhile (an
+ * Undo toast, a named confirmation): the newest toast is compared before and
+ * shortly after, so a call site that toasts after `await mutateAsync()` is
+ * not answered twice.
+ */
+function MutationSavedToaster() {
+  const { t } = useTranslations();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const cache = queryClient.getMutationCache();
+    const lastToastAt = new Map<number, unknown>();
+    const newestToast = () => toast.getHistory().at(-1)?.id;
+    const unsubscribe = cache.subscribe((event) => {
+      if (event.type !== "updated") return;
+      const mutation = event.mutation;
+      if (!confirmsSaved(mutation.options.meta)) return;
+      if (event.action.type === "pending") {
+        lastToastAt.set(mutation.mutationId, newestToast());
+      } else if (event.action.type === "success") {
+        const before = lastToastAt.get(mutation.mutationId);
+        lastToastAt.delete(mutation.mutationId);
+        setTimeout(() => {
+          if (newestToast() === before) {
+            toastWrittenOutcome("success", t("common.saved"));
+          }
+        }, 250);
+      } else if (event.action.type === "error") {
+        lastToastAt.delete(mutation.mutationId);
+      }
+    });
+    return unsubscribe;
+  }, [queryClient, t]);
+  return null;
+}
+
 // ── Root Providers ───────────────────────────────────
 
 /**
@@ -463,6 +507,7 @@ export function Providers({
           <QueryVisibilityRefreshBridge />
           <DashboardSnapshotPreloader />
           <OfflineMutationToaster />
+          <MutationSavedToaster />
           {/* v1.36.0 — a grant that ends while a browser is inside the record
               leaves the session stamped and every read refused. One cache
               subscriber notices the stable errorCode and puts the browser back

@@ -15,7 +15,7 @@
  * account copy does not rebuild a lost host; a database dump and the keys do
  * (`docs/ops/disaster-recovery.md`).
  */
-import type { AppSettings } from "@/generated/prisma/client";
+import { Prisma, type AppSettings } from "@/generated/prisma/client";
 import {
   APP_SETTINGS_CARRIED_COLUMNS,
   APP_SETTINGS_COLUMNS,
@@ -96,7 +96,9 @@ export function appSettingsRowFromFile(
           : new Date(value as string)
         : verdict.codec === "bigint"
           ? BigInt(value as string)
-          : value;
+          : verdict.codec === "json" && value === null
+            ? Prisma.DbNull
+            : value;
   }
   return data;
 }

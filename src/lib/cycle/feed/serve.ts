@@ -39,12 +39,12 @@ import { runDetached } from "@/lib/logging/detached";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import {
   checkUrlCredentialSurface,
-  HOUR_MS,
   icsFeedResponse,
-  matchesEtag,
   urlCredentialNotFound,
   urlCredentialTooMany,
 } from "@/lib/http/url-credential";
+import { matchesEtag } from "@/lib/http/etag";
+import { MS_PER_HOUR } from "@/lib/time-constants";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
   findActiveGrant,
@@ -163,7 +163,7 @@ export async function serveCycleFeed(
   const perToken = await checkRateLimit(
     `cycle-feed:${tokenHash}`,
     TOKEN_LIMIT_PER_HOUR,
-    HOUR_MS,
+    MS_PER_HOUR,
   );
   if (!perToken.allowed) return tooMany(perToken);
 

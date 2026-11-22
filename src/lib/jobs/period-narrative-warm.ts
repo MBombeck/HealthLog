@@ -27,6 +27,7 @@ import {
   mayDispatchProviderWork,
   withProviderWorkAuthority,
 } from "@/lib/sharing/provider-work-authority";
+import { trackAiJob } from "@/lib/ai/job-failure/report";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
 import { userIdsWithModuleOff } from "@/lib/jobs/ai-job-candidates";
 import { annotate } from "@/lib/logging/context";
@@ -231,15 +232,22 @@ export async function runPeriodNarrativeWarm(
     // warm has to write the SAME key the read route reads: the stored
     // locale, then the operator default for an account that never set one.
     const locale = await resolveJobLocale(candidate.locale);
-    for (const period of periods) {
-      const outcome = await generate(candidate.id, {
-        period,
-        locale,
-        force: true,
-        now,
-      });
-      tally(result, outcome);
-    }
+    // #1404 — a provider failing under the narratives is named under
+    // Settings, AI; the narrative falls back to its template text.
+    await trackAiJob(
+      { userId: candidate.id, job: "periodNarrative" },
+      async () => {
+        for (const period of periods) {
+          const outcome = await generate(candidate.id, {
+            period,
+            locale,
+            force: true,
+            now,
+          });
+          tally(result, outcome);
+        }
+      },
+    );
   }
 
   annotate({

@@ -31,6 +31,7 @@ import {
   runThumbnailBackfillForUser,
   type ThumbnailBackfillPayload,
 } from "@/lib/jobs/document-thumbnail-backfill";
+import { trackAiJob } from "@/lib/ai/job-failure/report";
 import { jobBudget, jobDeadline } from "@/lib/jobs/job-budget";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { recordError } from "@/lib/jobs/worker-status";
@@ -66,7 +67,12 @@ export async function handleContentIndexBackfill(
         failed: docsFailed,
         reason,
         stoppedEarly: stopped,
-      } = await runContentIndexBackfillForUser(userId, shouldStop);
+      } = await trackAiJob(
+        // #1404 — the person asked for this pass; why it stopped is said
+        // under Settings, AI.
+        { userId, job: "documentIndex", requested: true },
+        () => runContentIndexBackfillForUser(userId, shouldStop),
+      );
       users++;
       stoppedEarly ||= stopped === true;
       documentsIndexed += indexed;
@@ -141,7 +147,15 @@ export function handleDocumentIndex(
   jobs: Job<DocumentIndexPayload>[],
 ): Promise<JobOutcome> {
   return perDocument<DocumentIndexPayload>("document-index", (payload, job) =>
-    runDocumentIndex(payload, { deadlineAt: jobDeadline(job) }),
+    // #1404 — why the AI read stopped is said on the document.
+    trackAiJob(
+      {
+        userId: payload.userId,
+        job: "documentIndex",
+        documentId: payload.documentId,
+      },
+      () => runDocumentIndex(payload, { deadlineAt: jobDeadline(job) }),
+    ),
   )(jobs);
 }
 
@@ -157,7 +171,18 @@ export const handleDocumentThumbnail = perDocument<DocumentThumbnailPayload>(
  */
 export const handleDocumentSummary = perDocument<DocumentSummaryPayload>(
   "document-summary",
-  runDocumentSummaryJob,
+  // #1404 — the automatic read is something the person switched on, so every
+  // reason it stops for is said on the document.
+  (payload) =>
+    trackAiJob(
+      {
+        userId: payload.userId,
+        job: "documentSummary",
+        documentId: payload.documentId,
+        requested: true,
+      },
+      () => runDocumentSummaryJob(payload),
+    ),
 );
 
 /**

@@ -50,7 +50,11 @@
         "mood": "off"
       },
       "documentMaxFileBytes": 3,
-      "documentQuotaBytes": "5"
+      "documentQuotaBytes": "5",
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
+      }
     },
     "accountSettings": {
       "heightCm": 2.5,
@@ -1370,8 +1374,8 @@
       "allergiesEncrypted": "<sealed:v1:rt-UserHealthProfile-allergiesEncrypted>",
       "coachFocusEncrypted": "<sealed:v1:rt-UserHealthProfile-coachFocusEncrypted>",
       "pendingQuestionsEncrypted": "<sealed:v1:rt-UserHealthProfile-pendingQuestionsEncrypted>",
-      "createdAt": "2026-05-03T13:35:00.000Z",
-      "updatedAt": "2026-05-03T13:36:00.000Z"
+      "createdAt": "2026-05-03T13:36:00.000Z",
+      "updatedAt": "2026-05-03T13:37:00.000Z"
     },
     "healthProfileFacts": [
       {
@@ -1588,7 +1592,9 @@
         "visit": "within-a-month",
         "units": {
           "glucoseUnit": "mmol/L",
-          "unitPreference": "metric"
+          "unitPreference": "metric",
+          "timezone": "Europe/Berlin",
+          "medicineRegistry": "DE"
         }
       },
       "steps": [
@@ -1619,6 +1625,14 @@
         {
           "id": "confirm",
           "status": "pending"
+        },
+        {
+          "id": "reminders",
+          "status": "skipped"
+        },
+        {
+          "id": "ai",
+          "status": "skipped"
         },
         {
           "id": "first-result",
@@ -2765,7 +2779,11 @@
         "mood": "off"
       },
       "documentMaxFileBytes": 3,
-      "documentQuotaBytes": "5"
+      "documentQuotaBytes": "5",
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
+      }
     },
     "accountSettings": {
       "heightCm": 2.5,
@@ -4335,8 +4353,8 @@
       "allergiesEncrypted": "<sealed:v1:rt-UserHealthProfile-allergiesEncrypted>",
       "coachFocusEncrypted": "<sealed:v1:rt-UserHealthProfile-coachFocusEncrypted>",
       "pendingQuestionsEncrypted": "<sealed:v1:rt-UserHealthProfile-pendingQuestionsEncrypted>",
-      "createdAt": "2026-05-03T13:35:00.000Z",
-      "updatedAt": "2026-05-03T13:36:00.000Z"
+      "createdAt": "2026-05-03T13:36:00.000Z",
+      "updatedAt": "2026-05-03T13:37:00.000Z"
     },
     "healthProfileFacts": [
       {
@@ -4550,7 +4568,9 @@
         "visit": "within-a-month",
         "units": {
           "glucoseUnit": "mmol/L",
-          "unitPreference": "metric"
+          "unitPreference": "metric",
+          "timezone": "Europe/Berlin",
+          "medicineRegistry": "DE"
         }
       },
       "steps": [
@@ -4581,6 +4601,14 @@
         {
           "id": "confirm",
           "status": "pending"
+        },
+        {
+          "id": "reminders",
+          "status": "skipped"
+        },
+        {
+          "id": "ai",
+          "status": "skipped"
         },
         {
           "id": "first-result",

@@ -21,6 +21,7 @@ import {
   Stethoscope,
   Syringe,
   Thermometer,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -214,6 +215,8 @@ export function dayTitle(kind: string, title: string, t: Translate): string {
       return t("day.event.illnessBegan", { label: title });
     case "illnessResolved":
       return t("day.event.illnessResolved", { label: title });
+    case "seizure":
+      return title || t("day.seizure");
     case "mood": {
       const key = MOOD_LABEL_KEYS[title];
       return key ? t(key) : t("nav.mood");
@@ -266,6 +269,19 @@ export function dayMeta(
     }
     case "symptom":
       return t("symptoms.intensityPill", { value: meta });
+    case "seizure": {
+      // `<certainty> <count>`: a suspected one says so, a logged run its count.
+      const [certainty, countText] = meta.split(" ");
+      const count = Number(countText);
+      return (
+        [
+          certainty === "SUSPECTED" ? t("seizures.certainty.SUSPECTED") : null,
+          count > 1 ? t("day.seizureCount", { count }) : null,
+        ]
+          .filter(Boolean)
+          .join(", ") || null
+      );
+    }
     case "allergyOnset": {
       const key = keyOf(ALLERGY_SEVERITY_KEY, meta);
       return key ? t(key) : null;
@@ -599,6 +615,7 @@ const EVENT_ICON: Record<DayEventKind, LucideIcon> = {
   illnessResolved: Thermometer,
   illnessDayLog: Thermometer,
   symptom: Activity,
+  seizure: Zap,
   allergyOnset: ShieldAlert,
   labResult: FlaskConical,
   visit: Stethoscope,

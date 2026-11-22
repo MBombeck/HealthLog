@@ -30,6 +30,7 @@
  */
 import type { NextRequest } from "next/server";
 
+import { loadOnboardingOffers } from "@/lib/onboarding/load-offers";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
@@ -103,6 +104,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
 
   return apiSuccess({
-    onboarding: toOnboardingStateDto(written, readHeldUnitPreferences(user)),
+    onboarding: toOnboardingStateDto(
+      written,
+      readHeldUnitPreferences(user),
+      await loadOnboardingOffers(user.id),
+    ),
   });
 });

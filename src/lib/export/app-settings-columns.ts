@@ -31,7 +31,9 @@ type Carried<T> = {
     ? "date"
     : [T] extends [bigint]
       ? "bigint"
-      : "plain";
+      : // `json` for a Json column, whose null is written as `DbNull`; the
+        // classification test holds every Json column to it.
+        "plain" | "json";
   /**
    * What the restore writes when a file older than the column carries
    * nothing for it: the column's default, the value the host ran on when
@@ -86,7 +88,7 @@ export const APP_SETTINGS_COLUMNS = {
   adminCodexTokenExpiresAt: { class: "CREDENTIAL", codec: "date" },
   adminCodexConnectedAt: { class: "CREDENTIAL", codec: "date" },
   adminCodexConnectionStatus: { class: "CREDENTIAL", codec: "plain" },
-  adminAiInsightsFeedbackSummary: { class: "SETTING", codec: "plain" },
+  adminAiInsightsFeedbackSummary: { class: "SETTING", codec: "json" },
   defaultUserTimezone: { class: "SETTING", codec: "plain" },
   assistantEnabled: { class: "SETTING", codec: "plain" },
   assistantCoachEnabled: { class: "SETTING", codec: "plain" },
@@ -109,7 +111,7 @@ export const APP_SETTINGS_COLUMNS = {
     codec: "plain",
     whenAbsent: DEFAULT_REASONING_MAX_EFFORT,
   },
-  moduleAvailabilityJson: { class: "SETTING", codec: "plain" },
+  moduleAvailabilityJson: { class: "SETTING", codec: "json" },
   documentMaxFileBytes: { class: "SETTING", codec: "plain" },
   documentQuotaBytes: { class: "SETTING", codec: "bigint" },
   correlationSeasonalEngineSince: {
@@ -134,6 +136,11 @@ export const APP_SETTINGS_COLUMNS = {
     class: "OPERATIONAL",
     reason: "this host's backfill position",
   },
+  // The server setup, carried so a restored host does not ask its operator to
+  // set it up again. A file from before 1.49 carries none, and the host keeps
+  // its own state.
+  serverSetupCompletedAt: { class: "SETTING", codec: "date" },
+  serverSetupStepsJson: { class: "SETTING", codec: "json" },
 } as const satisfies {
   [K in keyof AppSettings]-?: AppSettingsColumnVerdict<AppSettings[K]>;
 };

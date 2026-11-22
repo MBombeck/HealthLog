@@ -37,19 +37,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
-import { buildLeafletSearch } from "@/lib/medications/leaflet-registries";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
 
 export interface MedicationCardMenuProps {
   onEdit: () => void;
   onOpenHistory: () => void;
   /**
    * #1430 — the medication the leaflet items open for: the saved leaflet
-   * link, and the registry search of the person's chosen registry, built by
-   * the same pure function the detail read uses. Both open in a new tab.
+   * link, and the registry search of the caller's chosen registry as the
+   * list read built it (`leafletSearch`). Both open in a new tab.
    */
-  leaflet?: { name: string; dose: string; leafletUrl?: string | null };
+  leaflet?: {
+    leafletUrl?: string | null;
+    leafletSearch?: LeafletSearch | null;
+  };
 }
 
 export function MedicationCardMenu({
@@ -58,16 +60,13 @@ export function MedicationCardMenu({
   leaflet,
 }: MedicationCardMenuProps) {
   const { t } = useTranslations();
-  const { user } = useAuth();
   // Editing the medication and opening its history editor are owner work, not
   // delegated writes. Without either, the trigger goes too rather than opening
   // onto an empty menu. The card itself is untouched: no wash, no badge, no
   // colour change.
   const { canManageDomain } = useRecordCapabilities();
   if (!canManageDomain("medications")) return null;
-  const search = leaflet
-    ? buildLeafletSearch(user?.medicineRegistry, leaflet)
-    : null;
+  const search = leaflet?.leafletSearch ?? null;
 
   return (
     <DropdownMenu>

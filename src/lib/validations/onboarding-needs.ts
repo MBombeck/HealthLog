@@ -12,6 +12,7 @@
  */
 import { z } from "zod/v4";
 
+import { MEDICINE_REGISTRY_CHOICES } from "@/lib/medications/leaflet-registries";
 import { ONBOARDING_AREA_KEYS } from "@/lib/modules/registry";
 import {
   ONBOARDING_FIRST_RESULT_TASKS,
@@ -20,6 +21,7 @@ import {
   ONBOARDING_SOURCE_KEYS,
   ONBOARDING_VISIT_ANSWERS,
 } from "@/lib/onboarding/needs";
+import { isValidTimezone } from "@/lib/tz/format";
 
 /**
  * One answered step. `status` is optional and only ever `"done"` on this arm —
@@ -47,15 +49,25 @@ function skipped<Id extends string>(id: Id) {
 }
 
 /**
- * The unit answers. Both fields are optional and nullable: the screen
- * only appears when glucose or weight is among the areas, and it may set one
- * without the other. The route writes the record's real display columns from
- * these and records the answer beside them.
+ * The "Region & units" answers. Every field is optional and the unit fields
+ * nullable: the screen asks each one only where it applies (a unit for an area
+ * that needs it, the registry when medication was chosen) and may set one
+ * without the others. The route writes the record's real columns from these
+ * (`glucoseUnit`, `unitPreference`, `timezone`, `medicineRegistry`) and
+ * records the answer beside them. `timezone` and `medicineRegistry` are new in
+ * 1.49; a body without them changes nothing it changed before.
  */
 export const onboardingUnitsSchema = z
   .object({
     glucoseUnit: z.enum(["mg/dL", "mmol/L"]).nullable().optional(),
     unitPreference: z.enum(["metric", "imperial"]).nullable().optional(),
+    timezone: z
+      .string()
+      .trim()
+      .max(64)
+      .refine(isValidTimezone, { message: "Not a valid IANA time zone" })
+      .optional(),
+    medicineRegistry: z.enum(MEDICINE_REGISTRY_CHOICES).optional(),
   })
   .strict();
 
@@ -99,6 +111,11 @@ export const onboardingAnswerSchema = z.union([
   answered("visit", { visit: z.enum(ONBOARDING_VISIT_ANSWERS) }),
   answered("units", { units: onboardingUnitsSchema }),
   answered("confirm", {}),
+  // The two follow-ups (1.49) record only that the screen was answered: what
+  // they change has its own route (the channel cards, the AI consent and the
+  // Coach switch), so the ledger never becomes a second writer of it.
+  answered("reminders", {}),
+  answered("ai", {}),
   answered("first-result", { firstResult: onboardingFirstResultSchema }),
   answered("done", {}),
   skipped("areas"),
@@ -106,6 +123,8 @@ export const onboardingAnswerSchema = z.union([
   skipped("sources"),
   skipped("visit"),
   skipped("units"),
+  skipped("reminders"),
+  skipped("ai"),
   skipped("first-result"),
 ]);
 

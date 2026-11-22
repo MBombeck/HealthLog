@@ -1,8 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { groupConversationsByRecency } from "../coach-conversation-groups";
 
-// The suite runs with TZ=UTC, so local day boundaries are UTC midnights.
 const NOW = new Date("2026-10-04T15:00:00.000Z");
 
 function c(id: string, updatedAt: string) {
@@ -19,6 +18,7 @@ describe("groupConversationsByRecency", () => {
         c("d", "2026-09-28T00:00:00.000Z"), // six days before today
         c("e", "2026-09-27T23:59:59.000Z"), // one second older: earlier
       ],
+      "UTC",
       NOW,
     );
     expect(groups.map((g) => [g.id, g.conversations.map((x) => x.id)])).toEqual(
@@ -34,6 +34,7 @@ describe("groupConversationsByRecency", () => {
   it("drops empty groups and keeps the caller's order inside a group", () => {
     const groups = groupConversationsByRecency(
       [c("x", "2026-01-02T00:00:00.000Z"), c("y", "2026-03-02T00:00:00.000Z")],
+      "UTC",
       NOW,
     );
     expect(groups).toHaveLength(1);
@@ -43,21 +44,22 @@ describe("groupConversationsByRecency", () => {
   });
 
   it("returns nothing for an empty list", () => {
-    expect(groupConversationsByRecency([], NOW)).toEqual([]);
+    expect(groupConversationsByRecency([], "UTC", NOW)).toEqual([]);
   });
 });
 
-// The boundaries are the browser's own midnights. `startOfToday - 24 h` was an
-// hour off yesterday's midnight on the day after a change of clocks, so the
+// The boundaries are the profile zone's midnights. `startOfToday - 24 h` was
+// an hour off yesterday's midnight on the day after a change of clocks, so the
 // first or last hour of yesterday landed in the wrong group.
 describe("groupConversationsByRecency across a change of clocks", () => {
-  let hostZone: string | undefined;
-  beforeEach(() => {
-    hostZone = process.env.TZ;
-    process.env.TZ = "Europe/Berlin";
-  });
-  afterEach(() => {
-    process.env.TZ = hostZone;
+  it("follows the profile zone, not the host's", () => {
+    // 2026-10-04 00:30 in Berlin is still 2026-10-03 on a UTC host.
+    const groups = groupConversationsByRecency(
+      [c("just-after-midnight", "2026-10-03T22:30:00.000Z")],
+      "Europe/Berlin",
+      NOW,
+    );
+    expect(groups.map((g) => g.id)).toEqual(["today"]);
   });
 
   it("keeps all of the 23-hour Sunday in yesterday on Monday", () => {
@@ -67,6 +69,7 @@ describe("groupConversationsByRecency across a change of clocks", () => {
         c("sunday-start", "2026-03-28T23:00:00.000Z"), // Sun 00:00 CET
         c("saturday-late", "2026-03-28T22:30:00.000Z"), // Sat 23:30 CET
       ],
+      "Europe/Berlin",
       new Date("2026-03-30T08:00:00.000Z"),
     );
     expect(groups.map((g) => [g.id, g.conversations.map((x) => x.id)])).toEqual(
@@ -84,6 +87,7 @@ describe("groupConversationsByRecency across a change of clocks", () => {
         c("sunday-start", "2026-10-24T22:00:00.000Z"), // Sun 00:00 CEST
         c("saturday-late", "2026-10-24T21:30:00.000Z"), // Sat 23:30 CEST
       ],
+      "Europe/Berlin",
       new Date("2026-10-26T09:00:00.000Z"),
     );
     expect(groups.map((g) => [g.id, g.conversations.map((x) => x.id)])).toEqual(

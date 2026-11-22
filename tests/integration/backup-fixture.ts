@@ -880,7 +880,12 @@ export async function seedEveryTwoEndedModel(
         medication: "yes",
         sources: ["withings"],
         visit: "within-a-month",
-        units: { glucoseUnit: "mmol/L", unitPreference: "metric" },
+        units: {
+          glucoseUnit: "mmol/L",
+          unitPreference: "metric",
+          timezone: "Europe/Berlin",
+          medicineRegistry: "DE",
+        },
       },
       stepsJson: [
         { id: "who", status: "done" },
@@ -1501,6 +1506,8 @@ export async function seedAdminSession(prisma: PrismaClient) {
  * it left with. An entry here whose column no longer exists fails the run.
  */
 export const COLUMN_EXCLUSIONS: Readonly<Record<string, string>> = {
+  "UserHealthProfile.aboutMeRevisedAt":
+    "the about-me lock token (migration 0554): a restore creates the row afresh and the token starts there, so no client holds a token nobody read",
   "MeasurementReminder.lastNotifiedAt":
     "operational repeat cursor, documented on the column as not in the backup: a restored reminder re-reminds at most once, on its next notify hour",
 };

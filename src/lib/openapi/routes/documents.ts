@@ -14,6 +14,7 @@
  * stores until the confirm route commits the user's approvals; a low-confidence
  * fact fails closed.
  */
+import { aiJobFailure } from "./ai-job-failures";
 import { withRelated } from "./relation-links";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
@@ -354,6 +355,10 @@ const inboundDocumentDetail = inboundDocument
     extractionIncomplete: z.boolean().meta({
       description:
         "Whether the staged facts may leave part of the document out: a part of a long document was cut at the provider's output limit or not read, the text or pages ran past what the reads take, or the document held more facts than one review takes. Kept from the last extraction (the extract route, its background run, or automatic lab staging) until the next one replaces the facts; false for a document never extracted. A review shows it whenever it is opened, not only when the run ends.",
+    }),
+    aiFailures: z.array(aiJobFailure).meta({
+      description:
+        "v1.49 — why the latest background AI work on this document stopped, one entry per kind (`documentSummary`, `documentIndex`, `documentRead`), newest first. Empty when nothing failed or the work succeeded since. Absent on servers older than v1.49.",
     }),
   })
   .meta({

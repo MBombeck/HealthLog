@@ -164,6 +164,11 @@ async function insertStandalone(write: IntakeWrite): Promise<IntakeRow> {
           takenVia: write.intakeSource === "WEB" ? "WEB" : "APP",
         }),
         idempotencyKey: write.idempotencyKey ?? null,
+        // An extra dose is a released pin: USER_PIN on its own instant, so no
+        // reader binds it to a band.
+        ...(write.attributionSource === "USER_PIN" && {
+          attributionSource: "USER_PIN",
+        }),
         // Site only on a resolved taken-injection write.
         ...(resolvedInjectionSite !== null && {
           injectionSite: resolvedInjectionSite,

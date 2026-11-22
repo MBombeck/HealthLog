@@ -22,10 +22,17 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AUDIT_ACTION_FAMILY_KEYS,
+  groupAuditActions,
+  type AuditActionFamily,
+} from "@/lib/auth/audit-families";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
@@ -62,6 +69,13 @@ interface AuditLogResponse {
   };
 }
 
+/** The dropdown value that picks a whole family of actions. */
+const FAMILY_PREFIX = "family:";
+
+function isAuditActionFamily(value: string): value is AuditActionFamily {
+  return (AUDIT_ACTION_FAMILY_KEYS as readonly string[]).includes(value);
+}
+
 function rangeToSince(range: DateRangePreset): string | undefined {
   if (range === "all") return undefined;
   const now = Date.now();
@@ -79,6 +93,11 @@ function rangeToSince(range: DateRangePreset): string | undefined {
  * the two, so keeping `filter=auth` beside a non-auth action (a document
  * upload a guardian made inside a managed profile, #1403) answered zero rows
  * for an action the same dropdown had just offered.
+ *
+ * The dropdown offers each family of `AUDIT_ACTION_FAMILIES` (sign-ins,
+ * documents, sharing and managed profiles, medications) as a whole
+ * (`family:<key>`, sent as `filter=<key>`) and each action the table holds in
+ * it, so a guardian's document upload, with its actor, is one pick away.
  */
 export function buildAuditLogQueryParams(state: {
   page: number;
@@ -91,11 +110,15 @@ export function buildAuditLogQueryParams(state: {
   const params = new URLSearchParams();
   params.set("page", String(state.page));
   params.set("perPage", String(state.perPage));
-  const action =
+  const choice =
     state.actionFilter && state.actionFilter !== "__all__"
       ? state.actionFilter
       : null;
-  if (action) params.set("action", action);
+  const family = choice?.startsWith(FAMILY_PREFIX)
+    ? choice.slice(FAMILY_PREFIX.length)
+    : null;
+  if (family && isAuditActionFamily(family)) params.set("filter", family);
+  else if (choice && !family) params.set("action", choice);
   else params.set("filter", "auth");
   if (state.actor.trim()) params.set("actor", state.actor.trim());
   if (state.target.trim()) params.set("target", state.target.trim());
@@ -285,34 +308,14 @@ export function LoginOverviewSection() {
             }}
             aria-label={t("admin.section.auditLog.filterActor")}
           />
-          <Select
-            value={actionFilter || "__all__"}
-            onValueChange={(v) => {
+          <AuditActionSelect
+            actions={actionsData?.actions ?? []}
+            value={actionFilter}
+            onChange={(v) => {
               setPage(1);
-              setActionFilter(v === "__all__" ? "" : v);
+              setActionFilter(v);
             }}
-          >
-            <SelectTrigger
-              className="w-full"
-              aria-label={t("admin.section.auditLog.filterAction")}
-            >
-              <SelectValue
-                placeholder={t("admin.section.auditLog.filterAction")}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">
-                {t("admin.section.auditLog.filterActionAll")}
-              </SelectItem>
-              {(actionsData?.actions ?? [])
-                .filter((a) => a.startsWith("auth."))
-                .map((a) => (
-                  <SelectItem key={a} value={a}>
-                    {AUTH_ACTION_LABELS[a] ?? a}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+          />
           <Input
             type="search"
             placeholder={t("admin.section.auditLog.filterTarget")}
@@ -638,5 +641,55 @@ function IpCopyButton({
         <Copy className="h-3 w-3 shrink-0 opacity-60" aria-hidden="true" />
       )}
     </button>
+  );
+}
+
+/**
+ * The action picker: each family of `AUDIT_ACTION_FAMILIES` as a whole and
+ * every action the table holds in it (#1403). `""` is no choice.
+ */
+function AuditActionSelect({
+  actions,
+  value,
+  onChange,
+}: {
+  actions: readonly string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const { t } = useTranslations();
+  const AUTH_ACTION_LABELS = useAuthActionLabels();
+  return (
+    <Select
+      value={value || "__all__"}
+      onValueChange={(v) => onChange(v === "__all__" ? "" : v)}
+    >
+      <SelectTrigger
+        className="w-full"
+        aria-label={t("admin.section.auditLog.filterAction")}
+      >
+        <SelectValue placeholder={t("admin.section.auditLog.filterAction")} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__all__">
+          {t("admin.section.auditLog.filterActionAll")}
+        </SelectItem>
+        {groupAuditActions(actions).map((group) => (
+          <SelectGroup key={group.family}>
+            <SelectLabel>
+              {t(`admin.section.auditLog.family.${group.family}`)}
+            </SelectLabel>
+            <SelectItem value={`${FAMILY_PREFIX}${group.family}`}>
+              {t(`admin.section.auditLog.familyAll.${group.family}`)}
+            </SelectItem>
+            {group.actions.map((a) => (
+              <SelectItem key={a} value={a}>
+                {AUTH_ACTION_LABELS[a] ?? a}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

@@ -28,6 +28,7 @@
  * statistics helpers below are exported so the unit test can assert the
  * composed-bucket baseline matches the raw-DAY baseline within tolerance.
  */
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import {
   resolveTrendVerdict,
   type TrendVerdict,
@@ -132,6 +133,13 @@ export interface BaselineProfile {
   thresholdsJson?: unknown;
   /** The record's zone, the day `dateOfBirth` turns a year in. */
   timezone?: string;
+  /**
+   * In a pregnancy or its postpartum weeks today (`pregnancyContextActive`):
+   * the weight verdict then judges no direction against a target. Read by
+   * `loadBaselineProfile`; a caller that builds a profile by hand without it
+   * judges as if there were none.
+   */
+  pregnancy?: boolean;
 }
 
 /**
@@ -159,7 +167,9 @@ export async function loadBaselineProfile(
     },
   });
   const sex = toProfileSex(user?.gender);
+  const timezone = user?.timezone ?? DEFAULT_TIMEZONE;
   return {
+    pregnancy: await pregnancyContextActive(prisma, userId, timezone),
     ageYears: ageInYears(user?.dateOfBirth, user?.timezone ?? DEFAULT_TIMEZONE),
     sex,
     heightCm: user?.heightCm ?? null,
@@ -426,6 +436,7 @@ export async function computeVitalsBaseline(
   const direction =
     profile.dateOfBirth !== undefined
       ? resolveTrendVerdict(type, {
+          pregnancy: profile.pregnancy === true,
           profile: {
             dateOfBirth: profile.dateOfBirth,
             gender: profile.sex,

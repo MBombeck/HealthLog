@@ -146,6 +146,28 @@ describe("GET /api/admin/audit-log — extended filters", () => {
     expect(JSON.stringify(where.action)).toContain("auth.");
   });
 
+  it("narrows to one family of actions (#1403)", async () => {
+    await GET(req("filter=documents"));
+    let where = vi.mocked(prisma.auditLog.findMany).mock.calls[0][0]!
+      .where as Record<string, unknown>;
+    expect(where.action).toEqual({ startsWith: "documents." });
+
+    vi.mocked(prisma.auditLog.findMany).mockClear();
+    await GET(req("filter=sharing"));
+    where = vi.mocked(prisma.auditLog.findMany).mock.calls[0][0]!
+      .where as Record<string, unknown>;
+    expect(where.OR).toEqual([
+      { action: { startsWith: "sharing." } },
+      { action: { startsWith: "share-link." } },
+      { action: { startsWith: "managed_profile." } },
+    ]);
+  });
+
+  it("refuses a family it does not know", async () => {
+    const res = await GET(req("filter=billing"));
+    expect(res.status).toBe(422);
+  });
+
   it("matches `actor` against the acting account too", async () => {
     vi.mocked(prisma.user.findMany).mockResolvedValue(
       users([{ id: "guardian-1" }]),
