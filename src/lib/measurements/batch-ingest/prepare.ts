@@ -33,6 +33,7 @@ import {
 } from "@/lib/mental-health/apple-health-assessment";
 
 import {
+  isStatsExternalId,
   outOfRangeResult,
   type BatchIngestEntry,
   type BatchIngestInput,
@@ -358,6 +359,16 @@ function prepareMeasurementEntry(
       measuredAt: mapped.takenAt,
       externalId: entry.externalId,
       externalSourceVersion: entry.externalSourceVersion ?? null,
+      // A `stats:` total carries when it was computed, and a write without
+      // one clears it: the stored value then no longer has a known time.
+      ...(isStatsExternalId(entry.externalId)
+        ? {
+            statsComputedAt:
+              entry.computedAt === undefined
+                ? null
+                : new Date(entry.computedAt),
+          }
+        : {}),
       sleepStage: mapped.sleepStage ?? null,
       // Categorical events: the device's own verdict / severity for an EVENT
       // row; null for every continuous reading.

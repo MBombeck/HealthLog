@@ -123,6 +123,12 @@ const batchEntrySchema = z.object({
   // @external-id-checked-per-entry: src/lib/measurements/batch-ingest/prepare.ts
   externalId: z.string().min(1).max(120),
   externalSourceVersion: z.string().min(1).max(120).optional(),
+  // When the phone computed a `stats:` day total (iOS #191). A
+  // write of the same row carrying an earlier one than the stored row's is
+  // refused (`duplicate`, reason `stale`), so an out-of-order replay never
+  // replaces a newer total. Ignored on every other entry; absent, the write
+  // overwrites as before.
+  computedAt: isoDateTime().optional(),
   // v1.8.6 — optional per-entry source tag. Defaults to
   // `APPLE_HEALTH` so every pre-W6 caller (web + current iOS) stays
   // byte-for-byte unchanged. The iOS standalone adopt-on-pair backfill

@@ -83,11 +83,7 @@ import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
 import { restoreSeizuresData } from "@/lib/export/seizures-backup";
 import { restoreVaccinationsData } from "@/lib/export/vaccinations-backup";
 import { restoreVisitsData } from "@/lib/export/visits-backup";
-import {
-  clearWorkouts,
-  restoreAppleHealthTombstones,
-  restoreWorkouts,
-} from "@/lib/export/workouts-backup";
+import { clearWorkouts, restoreWorkouts } from "@/lib/export/workouts-backup";
 
 /** One step of the restore transaction. */
 export interface RestoreStep {
@@ -456,13 +452,6 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
           ctx.skips,
           (fn) => ctx.streamed.forEachEcgTrace(fn),
         ),
-      );
-      // The ECG lines of the deletion ledger travel with the recordings.
-      await restoreAppleHealthTombstones(
-        ctx.tx,
-        ctx.ownerId,
-        ctx.payload.appleHealthTombstones,
-        "ecg",
       );
     },
   },

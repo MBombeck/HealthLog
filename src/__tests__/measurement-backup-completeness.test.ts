@@ -128,7 +128,7 @@ function functionBody(source: string, declaration: string): string {
 function serialisedFields(source: string): Set<string> {
   const body = functionBody(source, "function serialiseMeasurement(");
   return new Set(
-    [...body.matchAll(/([a-zA-Z_$][\w$]*): measurement\./g)].map((m) => m[1]),
+    [...body.matchAll(/([a-zA-Z_$][\w$]*):\s+measurement\./g)].map((m) => m[1]),
   );
 }
 

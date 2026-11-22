@@ -108,9 +108,11 @@ function screenEntry(
       state.results.push({ index: i, status: "duplicate", id: existingRowId });
       return true;
     }
-    // A dose deleted earlier stays deleted: the re-post of its Apple Health
-    // dose event (a fresh install reading the whole history, an outbox that
-    // had not drained) writes nothing.
+    // A dose deleted in HealthLog stays deleted: the re-post of its Apple
+    // Health dose event (a fresh install reading the whole history, an
+    // outbox that had not drained) writes nothing and takes no stock. One
+    // the phone reported deleted in Apple Health is not in the set, and
+    // lands as a new dose.
     if (state.tombstonedExternalIds.has(entry.externalId)) {
       state.duplicates += 1;
       state.results.push({ index: i, ...TOMBSTONED_ENTRY });

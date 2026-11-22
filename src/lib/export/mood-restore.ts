@@ -206,6 +206,9 @@ function moodEntryData(entry: BackupMoodEntry) {
       ? {}
       : { syncVersion: entry.syncVersion }),
     deletedAt: entry.deletedAt ? new Date(entry.deletedAt) : null,
+    appleHealthDeletedAt: entry.appleHealthDeletedAt
+      ? new Date(entry.appleHealthDeletedAt)
+      : null,
     ...(entry.syncedAt ? { syncedAt: new Date(entry.syncedAt) } : {}),
     ...(entry.createdAt ? { createdAt: new Date(entry.createdAt) } : {}),
     ...(entry.updatedAt ? { updatedAt: new Date(entry.updatedAt) } : {}),

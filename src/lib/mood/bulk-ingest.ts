@@ -39,7 +39,10 @@ import {
   type DroppedLinkKeys,
   type RatedFactorInput,
 } from "@/lib/mood/tag-links";
-import { TOMBSTONED_ENTRY } from "@/lib/sync/tombstone-repost";
+import {
+  deletedInHealthLog,
+  TOMBSTONED_ENTRY,
+} from "@/lib/sync/tombstone-repost";
 
 /** One entry as the route's batch schema parsed it. */
 export interface BulkMoodEntry {
@@ -96,6 +99,7 @@ export interface BulkMoodIngestResult {
 interface ExistingMoodRow {
   id: string;
   deletedAt: Date | null;
+  appleHealthDeletedAt: Date | null;
 }
 
 interface ExistingRows {
@@ -167,6 +171,7 @@ async function readExistingRows(
           select: {
             id: true,
             deletedAt: true,
+            appleHealthDeletedAt: true,
             source: true,
             externalId: true,
             date: true,
@@ -200,6 +205,8 @@ async function writeEntry(args: {
   date: string;
   levelA: ReturnType<typeof levelAForWrite>;
   context: z.infer<typeof moodContextSchema> | null | undefined;
+  /** The matched row is a tombstone the phone reported: write it back. */
+  revive: boolean;
 }): Promise<{ id: string; droppedKeys: DroppedLinkKeys }> {
   const { userId, tz, entry, date, levelA } = args;
   const score = getScoreForMood(entry.mood);
@@ -257,6 +264,13 @@ async function writeEntry(args: {
         note: null,
         noteEncrypted: encryptNote(entry.note ?? null),
         ...(entry.externalId ? { date, moodLoggedAt: entry.moodLoggedAt } : {}),
+        ...(args.revive
+          ? {
+              deletedAt: null,
+              appleHealthDeletedAt: null,
+              syncVersion: { increment: 1 },
+            }
+          : {}),
       },
     });
 
@@ -385,15 +399,17 @@ async function ingestEntry(args: {
             `${date}::${entry.moodLoggedAt.toISOString()}`,
           )) ?? null;
 
-    // Tombstone suppression: a soft-deleted match stays deleted. The
+    // Tombstone suppression: a match deleted in HealthLog stays deleted. The
     // user-facing DELETE route flips `deletedAt` so the `/api/sync/changes`
     // feed surfaces the deletion to paired clients offline at delete time
     // (see the MoodEntry schema note); an offline client's later re-post of
     // the same entry is stale state, not a recreation, and must not resurrect
     // the row. True no-op: no value churn, no `updatedAt` bump, no tag-link
     // writes on the hidden row; report `duplicate` so the client checkpoints
-    // past it exactly like a live-row match.
-    if (existing?.deletedAt) {
+    // past it exactly like a live-row match. A match the phone reported
+    // deleted in Apple Health is written back below: the sample is in
+    // HealthKit again (`tombstone-repost.ts`).
+    if (existing && deletedInHealthLog(existing)) {
       tally.duplicates += 1;
       tally.results.push({
         index: i,
@@ -411,15 +427,18 @@ async function ingestEntry(args: {
       date,
       levelA,
       context: parsedContext.data,
+      revive: existing?.deletedAt != null,
     });
     tally.droppedTagKeyCount += written.droppedKeys.droppedTagKeys.length;
     tally.droppedFactorKeyCount += written.droppedKeys.droppedFactorKeys.length;
 
-    if (existing) tally.duplicates += 1;
+    // A revived tombstone is a new entry to the client, like a fresh row.
+    const live = existing !== null && existing.deletedAt === null;
+    if (live) tally.duplicates += 1;
     else tally.inserted += 1;
     tally.results.push({
       index: i,
-      status: existing ? "duplicate" : "inserted",
+      status: live ? "duplicate" : "inserted",
       id: written.id,
       ...echoExternalId(entry),
       ...droppedLinkKeysForWire(written.droppedKeys),

@@ -17,7 +17,6 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: vi.fn() },
     workout: { findMany: vi.fn(), createManyAndReturn: vi.fn() },
-    appleHealthTombstone: { findMany: vi.fn(async () => []) },
     $transaction: vi.fn(async (fn: unknown) => {
       if (typeof fn === "function") {
         return (fn as (tx: unknown) => unknown)(txClient);
@@ -30,7 +29,6 @@ const txClient = {
   workout: { createManyAndReturn: vi.fn() },
   workoutRoute: { createManyAndReturn: vi.fn() },
   workoutSamples: { createMany: vi.fn() },
-  appleHealthTombstone: { findMany: vi.fn(async () => []) },
   $queryRaw: vi.fn(async () => []),
 };
 

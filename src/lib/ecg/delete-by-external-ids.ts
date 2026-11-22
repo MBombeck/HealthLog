@@ -5,16 +5,12 @@
  *
  * The recording table carries no tombstone column, so the rows go outright,
  * the encrypted waveform with them. A paired rhythm notification is a
- * measurement of its own and stays. Every reported id is remembered in the
- * Apple Health tombstone ledger in the same transaction, so a later re-post
- * of the same id answers `duplicate` and writes nothing
- * (`src/lib/sync/apple-health-tombstones.ts`).
+ * measurement of its own and stays. Nothing remembers the id: a person
+ * cannot delete a recording in HealthLog, so every deletion is Apple
+ * Health's, and a later re-post of the same sample writes it again
+ * (`src/lib/sync/tombstone-repost.ts`).
  */
 import { prisma } from "@/lib/db";
-import {
-  lockAppleHealthTombstones,
-  recordAppleHealthTombstones,
-} from "@/lib/sync/apple-health-tombstones";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
 
 export async function deleteAppleHealthEcgRecordings(
@@ -22,16 +18,12 @@ export async function deleteAppleHealthEcgRecordings(
   externalIds: readonly string[],
 ): Promise<number> {
   if (externalIds.length === 0) return 0;
-  return prisma.$transaction(async (tx) => {
-    await lockAppleHealthTombstones(tx, userId, "ecg");
-    await recordAppleHealthTombstones(tx, userId, "ecg", externalIds);
-    const { count } = await tx.ecgRecording.deleteMany({
-      where: {
-        userId,
-        source: APP_MINTED_SOURCE,
-        externalRecordingId: { in: [...externalIds] },
-      },
-    });
-    return count;
+  const { count } = await prisma.ecgRecording.deleteMany({
+    where: {
+      userId,
+      source: APP_MINTED_SOURCE,
+      externalRecordingId: { in: [...externalIds] },
+    },
   });
+  return count;
 }

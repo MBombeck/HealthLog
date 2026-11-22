@@ -37,6 +37,7 @@ import { prisma } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import { ensureCycleForBleedingDay } from "@/lib/cycle/cycle-boundaries";
+import { deletedInHealthLog } from "@/lib/sync/tombstone-repost";
 import type { CycleDayLogInput } from "@/lib/validations/cycle";
 import type {
   CervicalMucus,
@@ -66,6 +67,11 @@ export interface DayLogWriteResult {
   existed: boolean;
   /** A pre-existing row whose persisted fields differ from the re-post. */
   changed: boolean;
+  /**
+   * Nothing was written: the Apple Health re-post names a day the person
+   * deleted in HealthLog (`refuseDeletedInHealthLog`).
+   */
+  refused?: true;
 }
 
 /** The five intent-revealing fields the encryption envelope carries. */
@@ -238,6 +244,7 @@ type ExistingRow = {
   sensitiveEncrypted: string | null;
   notesEncrypted: string | null;
   deletedAt: Date | null;
+  appleHealthDeletedAt: Date | null;
 };
 
 const EXISTING_SELECT = {
@@ -260,6 +267,7 @@ const EXISTING_SELECT = {
   sensitiveEncrypted: true,
   notesEncrypted: true,
   deletedAt: true,
+  appleHealthDeletedAt: true,
 } as const;
 
 /**
@@ -278,6 +286,14 @@ export async function upsertCycleDayLog(
   tz: string | null,
   cycleId: string | null = null,
   encryptSensitiveFlag?: boolean,
+  options: {
+    /**
+     * The bulk drain's rule for an Apple Health re-post of a day deleted in
+     * HealthLog: refuse it (`tombstone-repost.ts`). A write the person makes
+     * here revives the day either way.
+     */
+    refuseDeletedInHealthLog?: boolean;
+  } = {},
 ): Promise<DayLogWriteResult> {
   const source = entry.source;
 
@@ -319,10 +335,26 @@ export async function upsertCycleDayLog(
     adopt = existing !== null;
   }
 
-  // A day deleted by its external id (`by-external-ids`) and written again
-  // starts from empty fields: the deleted day's values, note and symptoms do
-  // not come back (iOS #191). The row is reused, so its identity and sync
-  // history stay, but nothing it held is merged into the new write.
+  // An Apple Health re-post of a day the person deleted in HealthLog stays
+  // out: the day the sample names was deleted by its owner, not by Apple
+  // Health. Only the day the externalId itself names counts, not a day
+  // adopted by its date.
+  if (
+    options.refuseDeletedInHealthLog === true &&
+    source === "APPLE_HEALTH" &&
+    existing !== null &&
+    !adopt &&
+    deletedInHealthLog(existing)
+  ) {
+    return { id: existing.id, existed: true, changed: false, refused: true };
+  }
+
+  // A deleted day written again starts from empty fields: the deleted day's
+  // values, note and symptoms do not come back (iOS #191). The row is
+  // reused, so its identity and sync history stay, but nothing it held is
+  // merged into the new write. In the bulk drain that is a day the phone
+  // reported deleted in Apple Health; everywhere else, the person writing
+  // the day again.
   const revived = existing !== null && existing.deletedAt !== null;
 
   const result = await writeDayLog({

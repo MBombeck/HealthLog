@@ -22,6 +22,7 @@
  * one that ran a moment later: its write lands after this no-op either way.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
+import { deletedInHealthLog } from "@/lib/sync/tombstone-repost";
 
 /** `type::source::externalId`, the external identity of a row. */
 export function externalKeyOf(
@@ -32,18 +33,26 @@ export function externalKeyOf(
   return `${type}::${source}::${externalId}`;
 }
 
+/**
+ * A stored row at a sample id. `deleted`: it is a tombstone. `refused`: it
+ * was deleted in HealthLog, so a re-post of its sample is refused; a row the
+ * phone reported deleted in Apple Health is `deleted` but not `refused`, and
+ * its re-post writes it again (`tombstone-repost.ts`).
+ */
+export interface StoredSampleIdentity {
+  measuredAt: Date;
+  sleepStage: unknown;
+  deleted: boolean;
+  refused: boolean;
+}
+
 /** Stored rows (live or tombstoned) at the batch's sample ids. */
 export async function readStoredSampleIdentities(
   db: Pick<PrismaClient, "measurement">,
   userId: string,
   externalIds: readonly string[],
-): Promise<
-  Map<string, { measuredAt: Date; sleepStage: unknown; deleted: boolean }>
-> {
-  const out = new Map<
-    string,
-    { measuredAt: Date; sleepStage: unknown; deleted: boolean }
-  >();
+): Promise<Map<string, StoredSampleIdentity>> {
+  const out = new Map<string, StoredSampleIdentity>();
   if (externalIds.length === 0) return out;
   const rows = await db.measurement.findMany({
     where: { userId, externalId: { in: [...externalIds] } },
@@ -54,6 +63,7 @@ export async function readStoredSampleIdentities(
       measuredAt: true,
       sleepStage: true,
       deletedAt: true,
+      appleHealthDeletedAt: true,
     },
   });
   for (const row of rows) {
@@ -61,6 +71,7 @@ export async function readStoredSampleIdentities(
       measuredAt: row.measuredAt,
       sleepStage: row.sleepStage,
       deleted: row.deletedAt !== null,
+      refused: deletedInHealthLog(row),
     });
   }
   return out;
@@ -83,7 +94,7 @@ const STATS_COLUMNS = [
 export type StoredStatsRow = Record<
   (typeof STATS_COLUMNS)[number] | "aggregationProvenance",
   unknown
-> & { measuredAt: Date };
+> & { measuredAt: Date; statsComputedAt: Date | null };
 
 /** Live stored rows at the batch's `stats:` ids, with every written column. */
 export async function readStoredStatsRows(
@@ -101,6 +112,7 @@ export async function readStoredStatsRows(
       externalId: true,
       measuredAt: true,
       aggregationProvenance: true,
+      statsComputedAt: true,
       ...Object.fromEntries(STATS_COLUMNS.map((c) => [c, true])),
     },
   });

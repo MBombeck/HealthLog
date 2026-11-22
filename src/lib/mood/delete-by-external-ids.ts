@@ -6,15 +6,18 @@
  * `externalId` qualify; a mood logged in HealthLog itself never does. Each
  * goes the way `DELETE /api/mood-entries/{id}` takes one: a soft delete
  * (`deletedAt` + `syncVersion`), the mood caches evicted and each touched
- * day's rollup recomputed. A later re-post of a deleted externalId stays
- * deleted: the bulk route answers `duplicate`, and the single POST updates
- * the hidden row without bringing it back.
+ * day's rollup recomputed. The tombstone is stamped as Apple Health's
+ * deletion, so a later bulk re-post of the sample (it came back in
+ * HealthKit) writes the entry back (`tombstone-repost.ts`); one deleted in
+ * HealthLog stays deleted. The single POST updates a hidden row without
+ * bringing it back either way.
  */
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
 import { recomputeMoodBucketsForEntry } from "@/lib/rollups/mood-rollups";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
+import { appleHealthDeletion } from "@/lib/sync/tombstone-repost";
 
 export async function deleteAppleHealthMoodEntries(
   userId: string,
@@ -34,7 +37,7 @@ export async function deleteAppleHealthMoodEntries(
   });
   const { count } = await prisma.moodEntry.updateMany({
     where,
-    data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
+    data: { ...appleHealthDeletion(), syncVersion: { increment: 1 } },
   });
   if (count === 0) return 0;
 

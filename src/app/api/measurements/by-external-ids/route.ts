@@ -45,6 +45,7 @@ import {
 } from "@/lib/api-response";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
+import { appleHealthDeletion } from "@/lib/sync/tombstone-repost";
 
 const MAX_BATCH_ENTRIES = 500;
 
@@ -144,8 +145,11 @@ async function deleteByExternalIds(request: NextRequest): Promise<Response> {
       externalId: { in: externalIds },
       deletedAt: null,
     },
+    // Stamped as Apple Health's deletion: a re-post of the sample (it came
+    // back in HealthKit) may write it again, unlike one deleted in HealthLog
+    // (`tombstone-repost.ts`).
     data: {
-      deletedAt: new Date(),
+      ...appleHealthDeletion(),
       syncVersion: { increment: 1 },
     },
   });

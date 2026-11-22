@@ -586,6 +586,10 @@ async function restoreIntakeEvents(
           : e.deletedAt
             ? new Date(e.deletedAt)
             : null,
+        appleHealthDeletedAt:
+          !isMerged && e.appleHealthDeletedAt
+            ? new Date(e.appleHealthDeletedAt)
+            : null,
       };
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);

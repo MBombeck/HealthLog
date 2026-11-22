@@ -15,13 +15,14 @@
  *     not an integer 0-10), `implausible_timestamp` (in the future beyond the
  *     shared five-minute skew, before 1900, or ending before it started). All
  *     permanent for the entry as sent.
- *   - `duplicate`: the `(userId, APPLE_HEALTH, externalId)` row exists,
- *     deleted ones included, so a late re-post of a sample the app reported
- *     gone (or the person deleted) never brings it back; that one carries
- *     `reason: "tombstoned"` (`tombstone-repost.ts`). A second entry with an
- *     externalId already in the same batch is a duplicate too.
+ *   - `duplicate`: the `(userId, APPLE_HEALTH, externalId)` row exists. A
+ *     row the person deleted in HealthLog counts too, so a late re-post never
+ *     brings it back; that one carries `reason: "tombstoned"`
+ *     (`tombstone-repost.ts`). A second entry with an externalId already in
+ *     the same batch is a duplicate too.
  *   - `inserted`, or `failed` when the write itself failed (transient: the
- *     app keeps the row and resends it).
+ *     app keeps the row and resends it). A row the phone reported deleted in
+ *     Apple Health is written back and answers `inserted`.
  *
  * The answer has the shape `POST /api/measurements/batch` answers with.
  */
@@ -36,7 +37,10 @@ import type { BatchIngestResult } from "@/lib/measurements/batch-ingest/ingest";
 import { summariseSkips } from "@/lib/measurements/batch-ingest/report";
 import { isP2002 } from "@/lib/prisma-errors";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
-import { TOMBSTONED_ENTRY } from "@/lib/sync/tombstone-repost";
+import {
+  deletedInHealthLog,
+  TOMBSTONED_ENTRY,
+} from "@/lib/sync/tombstone-repost";
 import {
   classifyExternalId,
   unstableExternalIdMeta,
@@ -203,7 +207,9 @@ export async function ingestSymptomBatch(args: {
     accepted.push(verdict);
   });
 
-  // Deleted rows included: the tombstone is what keeps a replay out.
+  // Deleted rows included: a tombstone deleted in HealthLog is what keeps a
+  // replay out, and one the phone reported deleted in Apple Health is
+  // written back, the sample being in HealthKit again (`tombstone-repost.ts`).
   const stored =
     accepted.length === 0
       ? []
@@ -213,20 +219,28 @@ export async function ingestSymptomBatch(args: {
             source: APP_MINTED_SOURCE,
             externalId: { in: accepted.map((p) => p.externalId) },
           },
-          select: { externalId: true, deletedAt: true },
+          select: {
+            id: true,
+            externalId: true,
+            deletedAt: true,
+            appleHealthDeletedAt: true,
+          },
         });
-  const storedIds = new Set(stored.map((r) => r.externalId));
-  const deletedIds = new Set(
-    stored.filter((r) => r.deletedAt !== null).map((r) => r.externalId),
-  );
+  const storedById = new Map(stored.map((r) => [r.externalId, r]));
   const fresh: PreparedSymptom[] = [];
+  /** Tombstones the phone reported, by external id: their row to revive. */
+  const revive = new Map<string, string>();
   for (const p of accepted) {
-    if (deletedIds.has(p.externalId)) {
-      results[p.index] = { index: p.index, ...TOMBSTONED_ENTRY };
-    } else if (storedIds.has(p.externalId)) {
-      results[p.index] = { index: p.index, status: "duplicate" };
-    } else {
+    const row = storedById.get(p.externalId);
+    if (!row) {
       fresh.push(p);
+    } else if (deletedInHealthLog(row)) {
+      results[p.index] = { index: p.index, ...TOMBSTONED_ENTRY };
+    } else if (row.deletedAt !== null) {
+      revive.set(p.externalId, row.id);
+      fresh.push(p);
+    } else {
+      results[p.index] = { index: p.index, status: "duplicate" };
     }
   }
 
@@ -240,10 +254,35 @@ export async function ingestSymptomBatch(args: {
     else results[p.index] = { index: p.index, status: "failed" };
   }
 
-  if (writable.length > 0) {
+  // A revived occurrence takes the sample's fields again; nothing else of the
+  // deleted row (its note, its episode) is touched.
+  for (const p of writable.filter((w) => revive.has(w.externalId))) {
+    const { count } = await prisma.symptomEvent.updateMany({
+      where: {
+        id: revive.get(p.externalId),
+        userId,
+        deletedAt: { not: null },
+      },
+      data: {
+        definitionId: p.definitionId,
+        occurredAt: p.occurredAt,
+        endAt: p.endAt,
+        intensity: p.intensity,
+        deletedAt: null,
+        appleHealthDeletedAt: null,
+      },
+    });
+    results[p.index] = {
+      index: p.index,
+      status: count === 1 ? "inserted" : "duplicate",
+    };
+  }
+  const inserts = writable.filter((p) => !revive.has(p.externalId));
+
+  if (inserts.length > 0) {
     try {
       const created = await prisma.symptomEvent.createManyAndReturn({
-        data: writable.map((p) => ({
+        data: inserts.map((p) => ({
           userId,
           definitionId: p.definitionId,
           occurredAt: p.occurredAt,
@@ -258,7 +297,7 @@ export async function ingestSymptomBatch(args: {
         select: { externalId: true },
       });
       const createdIds = new Set(created.map((r) => r.externalId));
-      for (const p of writable) {
+      for (const p of inserts) {
         results[p.index] = {
           index: p.index,
           status: createdIds.has(p.externalId) ? "inserted" : "duplicate",
@@ -272,7 +311,7 @@ export async function ingestSymptomBatch(args: {
             err instanceof Error ? err.name : "unknown",
         },
       });
-      for (const p of writable) {
+      for (const p of inserts) {
         results[p.index] = { index: p.index, status: "failed" };
       }
     }

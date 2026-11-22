@@ -172,9 +172,6 @@ export const WIPE_MODELS = [
   "WorkoutInsightGenerationClaim",
   "PersonalRecord",
   "StrainTrimpCache",
-  // The Apple Health workout and ECG deletions the phone reported. Nothing
-  // points at them.
-  "AppleHealthTombstone",
 
   // ── Context and engagement ──────────────────────────────────────────────
   "EnvironmentContext",

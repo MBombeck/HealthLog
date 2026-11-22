@@ -1463,16 +1463,6 @@ export async function seedEveryTwoEndedModel(
       },
     ],
   });
-
-  // Last, so the rows above keep the stamps the golden copies hold.
-  await prisma.appleHealthTombstone.create({
-    data: {
-      userId: OWNER_ID,
-      domain: "workout",
-      externalId: "ABCDEF01-2345-6789-ABCD-EF0123456789",
-      createdAt: AT("2026-06-30T08:00:00.000Z"),
-    },
-  });
 }
 
 export async function createOwner(prisma: PrismaClient) {

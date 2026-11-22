@@ -4,10 +4,6 @@
  * enrichments. Statuses are settled from what actually landed.
  */
 import { prisma } from "@/lib/db";
-import {
-  findAppleHealthTombstones,
-  lockAppleHealthTombstones,
-} from "@/lib/sync/apple-health-tombstones";
 import { Prisma } from "@/generated/prisma/client";
 import { lockPersonalRecordsForUser } from "@/lib/personal-records/pr-detection-worker";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
@@ -61,11 +57,7 @@ export async function writeWorkoutPlan(
 
   await prisma.$transaction(async (tx) => {
     await overwriteManualWorkouts(tx, userId, toOverwrite, overwritten);
-    await insertWorkouts(
-      tx,
-      await withoutTombstoned(tx, userId, toInsert),
-      insertedIdByIndex,
-    );
+    await insertWorkouts(tx, toInsert, insertedIdByIndex);
     await insertChildren(tx, plan, insertedIdByIndex, {
       seriesLanded,
       routesLanded,
@@ -343,38 +335,4 @@ async function mergePerformanceFigures(
        WHERE "id" = ${e.workoutId} AND "user_id" = ${userId}`;
     if (merged > 0) figuresLanded.add(e.workoutId);
   }
-}
-
-/**
- * The inserts left once the Apple Health tombstone ledger has been read
- * under its lock, inside the transaction that inserts. The batch already
- * filtered the ledger before planning; this read is the one that holds
- * against a delete committing in between (`lockAppleHealthTombstones`). An
- * entry dropped here inserts nothing and reads `duplicate`, like one the
- * early read caught.
- */
-async function withoutTombstoned(
-  tx: Tx,
-  userId: string,
-  toInsert: WritePlan["toInsert"],
-): Promise<WritePlan["toInsert"]> {
-  const appleHealthIds = toInsert
-    .filter((p) => p.dedupKey?.source === "APPLE_HEALTH")
-    .map((p) => p.dedupKey!.externalId);
-  if (appleHealthIds.length === 0) return toInsert;
-  await lockAppleHealthTombstones(tx, userId, "workout");
-  const deleted = await findAppleHealthTombstones(
-    tx,
-    userId,
-    "workout",
-    appleHealthIds,
-  );
-  if (deleted.size === 0) return toInsert;
-  return toInsert.filter(
-    (p) =>
-      !(
-        p.dedupKey?.source === "APPLE_HEALTH" &&
-        deleted.has(p.dedupKey.externalId)
-      ),
-  );
 }

@@ -68,6 +68,11 @@ export interface SymptomEventBackupEntry {
   externalId: string | null;
   /** Present in a disaster-recovery payload: the tombstone of an import. */
   deletedAt?: string | null;
+  /**
+   * Disaster recovery only, where set: equal to `deletedAt` when the phone
+   * reported the deletion.
+   */
+  appleHealthDeletedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -156,6 +161,12 @@ export async function buildSymptomsBackupSection(
           ? {
               id: event.id,
               deletedAt: event.deletedAt ? event.deletedAt.toISOString() : null,
+              ...(event.appleHealthDeletedAt
+                ? {
+                    appleHealthDeletedAt:
+                      event.appleHealthDeletedAt.toISOString(),
+                  }
+                : {}),
               noteEncrypted: event.noteEncrypted
                 ? base64(event.noteEncrypted)
                 : null,
@@ -222,6 +233,7 @@ export interface SymptomsRestoreInput {
       source?: string | undefined;
       externalId?: string | null | undefined;
       deletedAt?: string | null | undefined;
+      appleHealthDeletedAt?: string | null | undefined;
       createdAt: string;
       updatedAt: string;
     }>;
@@ -328,6 +340,9 @@ export async function restoreSymptomsData(
               source: event.source ?? "MANUAL",
               externalId: event.externalId ?? null,
               deletedAt: event.deletedAt ? new Date(event.deletedAt) : null,
+              appleHealthDeletedAt: event.appleHealthDeletedAt
+                ? new Date(event.appleHealthDeletedAt)
+                : null,
               createdAt: new Date(event.createdAt),
               updatedAt: new Date(event.updatedAt),
             };

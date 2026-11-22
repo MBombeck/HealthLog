@@ -49,6 +49,12 @@ export const measurementSchema = z
     ingestTokenId: z.string().max(64).nullable().optional(),
     syncVersion: z.number().int().optional(),
     deletedAt: isoDateTime.nullable().optional(),
+    // Equal to `deletedAt` when the phone reported the deletion (v1.49.0);
+    // absent otherwise, and in every older file, which reads as deleted in
+    // HealthLog.
+    appleHealthDeletedAt: isoDateTime.nullable().optional(),
+    // When the phone computed a `stats:` day total (v1.49.0).
+    statsComputedAt: isoDateTime.nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
   })

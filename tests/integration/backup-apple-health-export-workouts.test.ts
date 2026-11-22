@@ -113,7 +113,6 @@ describe("restoring export workouts stored under the old keys", () => {
         cleared: {},
         links,
         payload: {
-          appleHealthTombstones: slice.appleHealthTombstones ?? [],
           workouts: slice.workouts,
         },
       } as unknown as RestoreContext;

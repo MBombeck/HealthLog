@@ -422,6 +422,10 @@ function serialiseIntakeEvent(e: BackupIntakeEvent, disasterRecovery: boolean) {
           updatedAt: e.updatedAt.toISOString(),
           syncVersion: e.syncVersion,
           deletedAt: e.deletedAt?.toISOString() ?? null,
+          // Who deleted a tombstone: only where the phone reported it.
+          ...(e.appleHealthDeletedAt
+            ? { appleHealthDeletedAt: e.appleHealthDeletedAt.toISOString() }
+            : {}),
         }
       : // No ids: a portable restore mints fresh ones. The source ids still
         // travel as references, because a medication name is not unique on
