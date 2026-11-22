@@ -13,6 +13,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ApiError, apiFetchRaw, throwApiError } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { statusText, type StatusMessage } from "./account-section-utils";
 import { accountName, nameInitials } from "@/lib/account-name";
 
@@ -31,6 +32,8 @@ export function AvatarSection() {
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
 
   const upload = useMutation({
+    // Confirms in place: the status line under the photo.
+    meta: CONFIRMS_INLINE,
     mutationFn: async (file: File) => {
       const body = new FormData();
       body.append("file", file);
@@ -58,6 +61,8 @@ export function AvatarSection() {
   });
 
   const remove = useMutation({
+    // Confirms in place: the status line under the photo.
+    meta: CONFIRMS_INLINE,
     mutationFn: async () => {
       const res = await apiFetchRaw("/api/user/avatar", { method: "DELETE" });
       if (!res.ok) await throwApiError(res);

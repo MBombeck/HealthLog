@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiPost } from "@/lib/api/api-fetch";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 
 /**
  * One-time, dismissible "add a passkey" prompt. Shown only when the account
@@ -18,6 +19,8 @@ export function PasskeyUpgradeNudge() {
   const queryClient = useQueryClient();
 
   const dismiss = useMutation({
+    // Confirms in place: the prompt goes once the status refetches.
+    meta: CONFIRMS_INLINE,
     mutationFn: async () => {
       await apiPost("/api/auth/me/passkey-nudge/dismiss");
     },
