@@ -36,6 +36,9 @@ vi.mock("@/lib/db", () => ({
       // Shared meds-today builder — latest non-skipped intake per
       // medication (next-due re-anchor for rolling cadences).
       groupBy: vi.fn(),
+      // The dose ledger: the newest take before the window, when the tile
+      // resolves a single medication (`anchorOfOne`). No earlier take here.
+      findFirst: vi.fn(async () => null),
     },
     medication: {
       // v1.4.39 — projection source for the today's-

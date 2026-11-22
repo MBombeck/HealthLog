@@ -5,8 +5,10 @@
  * model list and left the relay holding their bindings to this instance;
  * account deletion queued the unbinds, the wipe did not. Every route that
  * walks a wipe list which includes `Device` must queue them in the same
- * transaction (`queueRelayUnbindsForAccount`). The sweep has a floor (the
- * user wipe and the admin wipe), so a matcher that finds nothing fails.
+ * transaction: `queueRelayUnbindsForAccount` for one account's rows,
+ * `queueRelayUnbindsWhere` for the admin wipe's every row. The sweep has a
+ * floor (the user wipe and the admin wipe), so a matcher that finds nothing
+ * fails. `device-delete-unbind-guard.test.ts` covers the other deleters.
  */
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -38,7 +40,7 @@ describe("wipe routes and the push relay", () => {
     expect(wipes.length).toBeGreaterThanOrEqual(2);
     const missing = wipes.filter(
       (p) =>
-        !/\bqueueRelayUnbindsForAccount\s*\(/.test(
+        !/\bqueueRelayUnbinds(?:ForAccount|Where)\s*\(/.test(
           stripComments(readSourceText(join(SRC, p))),
         ),
     );
