@@ -276,25 +276,12 @@ Steps:
       WHERE conname LIKE '%\\_day\\_key\\_shape' AND NOT convalidated"
    ```
 
-Rollback to v1.48.5: restore the pre-migration dump with the v1.48.5 image.
-Anything written since the update is lost, so decide early. The steps are
-those of disaster-recovery.md, "Going back to before a migration", with the
-image pinned in the `.env` next to the compose file:
-
-```sh
-docker compose stop app
-docker compose exec -T db pg_dump -U healthlog -Fc healthlog > healthlog-1.49.0.dump
-docker compose exec db dropdb -U healthlog healthlog
-docker compose exec db createdb -U healthlog healthlog
-docker compose run --rm db-restore list
-docker compose run --rm db-restore healthlog-<time>-pre-migration.dump
-# in .env: HEALTHLOG_IMAGE_REF=:v1.48.5
-# (or the digest form, HEALTHLOG_IMAGE_REF=@sha256:<digest>)
-docker compose up -d
-```
-
-Stop a separate worker container too, if you run one. Switching the image
-back alone is not enough:
+Rollback to v1.48.5: restore the pre-migration dump with the v1.48.5 image,
+following disaster-recovery.md, "Going back to before a migration", and pin
+the image there with `HEALTHLOG_IMAGE_REF=:v1.48.5` (the leading colon is
+part of the value; `@sha256:<digest>` pins the digest instead). Anything
+written since the update is lost, so decide early. Stop a separate worker
+container too, if you run one. Switching the image back alone is not enough:
 
 - After `0515`, v1.48.5 writes a dose for a slot another source already
   holds as a second row, and the new index refuses it, so that write fails.
