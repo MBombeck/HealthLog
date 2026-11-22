@@ -2140,7 +2140,7 @@
         "loadError": "Nie udało się wczytać historii.",
         "empty": "Brak przyjęć w tym okresie.",
         "summaryEmpty": "Brak dawek do oceny.",
-        "adherenceBarLabel": "{onTime} na czas, {late} z opóźnieniem, {missed} pominięte",
+        "adherenceBarLabel": "{onTime} na czas, {late} z opóźnieniem, {missed} nieprzyjęte",
         "add": "Zarejestruj przyjęcie",
         "rowActionsLabel": "Akcje dla {time}",
         "markAsTaken": "Oznacz jako przyjętą",
@@ -2853,7 +2853,7 @@
     "legendOnTime": "Na czas",
     "legendLate": "Spóźniona",
     "legendVeryLate": "Mocno spóźniona",
-    "legendMissed": "Pominięta",
+    "legendMissed": "Nieprzyjęta",
     "emptyStateTitle": "Zarejestruj więcej pomiarów, aby zobaczyć trendy",
     "emptyStateDescription": "Zarejestruj co najmniej 3 wpisy, aby odblokować linię trendu.",
     "needMoreDistinctDaysTitle": "Potrzeba więcej różnych dni",
@@ -3984,7 +3984,7 @@
     "compliance30d": "Przestrzeganie 30 dni",
     "taken": "Przyjęte",
     "skipped": "Pominięte",
-    "missed": "Pominięte",
+    "missed": "Nieprzyjęte",
     "assessmentTitle": "Ocena",
     "restMode": {
       "title": "Tryb odpoczynku",
@@ -8737,8 +8737,8 @@
     },
     "reminderLateMinutes": "Próg opóźnienia (minuty)",
     "reminderLateMinutesDescription": "Minuty po końcu okna, zanim oznaczenie zmieni kolor z żółtego na pomarańczowy.",
-    "reminderMissedMinutes": "Próg pominięcia (minuty)",
-    "reminderMissedMinutesDescription": "Minuty po końcu okna, zanim przyjęcie zostanie uznane za pominięte.",
+    "reminderMissedMinutes": "Próg nieprzyjęcia (minuty)",
+    "reminderMissedMinutesDescription": "Minuty po końcu okna, zanim dawka zostanie uznana za nieprzyjętą.",
     "notificationTestSend": "Wyślij test",
     "notificationTestSuccess": "Wysłano powiadomienie testowe",
     "notificationTestFailed": "Nie udało się wysłać powiadomienia testowego",
@@ -10005,16 +10005,16 @@
         "description": "Zmieniłeś język aplikacji co najmniej raz."
       },
       "missFree7": {
-        "title": "Bez pominiętej dawki przez 7 dni",
-        "description": "7 kolejnych dni bez pominiętej dawki."
+        "title": "Bez nieprzyjętej dawki przez 7 dni",
+        "description": "7 kolejnych dni bez nieprzyjętej dawki."
       },
       "missFree30": {
-        "title": "Bez pominiętej dawki przez 30 dni",
-        "description": "30 kolejnych dni bez pominiętej dawki."
+        "title": "Bez nieprzyjętej dawki przez 30 dni",
+        "description": "30 kolejnych dni bez nieprzyjętej dawki."
       },
       "missFree90": {
-        "title": "Bez pominiętej dawki przez 90 dni",
-        "description": "90 kolejnych dni bez pominiętej dawki."
+        "title": "Bez nieprzyjętej dawki przez 90 dni",
+        "description": "90 kolejnych dni bez nieprzyjętej dawki."
       },
       "measurementWeeks4": {
         "title": "Rutyna pomiarów",
@@ -10069,7 +10069,7 @@
       "deployFailedBody": "Wystąpił błąd podczas wdrażania {application} (#{deployment}): {error}. Zobacz logi: {logsUrl}",
       "testNotificationTitle": "HealthLog powiadomienie testowe",
       "testNotificationBody": "To powiadomienie testowe zostało wywołane z panelu administracyjnego. Jeśli je widzisz, kanał działa.",
-      "reminderCheckMissedTitle": "Pominięte przypomnienie: {medication}",
+      "reminderCheckMissedTitle": "Nieprzyjęta dawka: {medication}",
       "reminderCheckMissedBody": "{medication} ({dose}) nie zostało zarejestrowane w przedziale {window}.",
       "reminderCheckOverdueTitle": "Dawka opóźniona: {medication}",
       "reminderCheckOverdueBody": "{medication} ({dose}) w przedziale {window} jest opóźnione o {minutes} minut.",
@@ -15629,7 +15629,7 @@
       "UNKNOWN": "Nie wiadomo"
     },
     "trigger": {
-      "MISSED_DOSE": "Pominięta dawka",
+      "MISSED_DOSE": "Nieprzyjęta dawka",
       "SLEEP_DEPRIVATION": "Niedobór snu",
       "FEVER": "Gorączka",
       "ILLNESS": "Choroba",

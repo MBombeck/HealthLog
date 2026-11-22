@@ -807,7 +807,7 @@
     "quickAddLifeEvent": "Enregistrer un événement de vie",
     "customizeDashboard": "Personnaliser le tableau de bord",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Enregistre une dose prise ou sautée, même après coup.",
+      "sheetDescription": "Enregistrez une dose prise ou sautée, même après coup.",
       "emptyTitle": "Aucun médicament pour l’instant",
       "emptyDescription": "Créez d’abord un médicament avec un horaire, puis revenez ici pour saisir la prise.",
       "emptyCta": "Ajouter un médicament",
@@ -1129,7 +1129,7 @@
     "valueOutOfRange": "Saisissez une valeur entre {min} et {max} {unit}.",
     "valueOutOfRangeNoUnit": "Saisissez une valeur entre {min} et {max}.",
     "lastValue": "Dernière valeur : {value}, {when}",
-    "lastValueDeviates": "Très différent de ta dernière mesure. Est-ce correct ?",
+    "lastValueDeviates": "Très différent de votre dernière mesure. Est-ce correct ?",
     "saveAndNext": "Enregistrer et suivant"
   },
   "metricCatalog": {
@@ -2701,18 +2701,18 @@
         "snoozedUntil": "Rappel reporté à {time}"
       },
       "snoozedToast": "{name} : rappel à {time}",
-      "snoozeFailed": "Impossible de reporter {name}. Réessaie",
+      "snoozeFailed": "Impossible de reporter {name}. Réessayez",
       "earlyHint": "En avance : cette dose est prévue à partir de {time}.",
       "extraHint": "Compte comme dose supplémentaire, pas pour la dose de {time}."
     },
     "intakeForm": {
       "title": "Saisir une prise",
-      "description": "Enregistre une dose prise ou sautée, même après coup.",
+      "description": "Enregistrez une dose prise ou sautée, même après coup.",
       "medicationLabel": "Médicament",
       "outcomeLabel": "Ce qui s'est passé",
       "timeLabel": "Heure",
       "doseLabel": "Dose",
-      "doseHint": "Préremplie avec la dose prévue. Ne la change que si tu as pris une autre quantité.",
+      "doseHint": "Préremplie avec la dose prévue. Ne la changez que si vous avez pris une autre quantité.",
       "countsFor": "Compte pour la dose de {time}.",
       "countsForLate": "Compte pour la dose de {time}, comme prise en retard.",
       "countsForEarly": "Compte pour la dose de {time}, prise en avance.",
@@ -2722,7 +2722,7 @@
       "scheduleLoading": "Vérification des doses prévues ce jour-là…",
       "scheduleUnavailable": "Impossible de lire le planning de ce jour, elle est donc enregistrée comme dose supplémentaire.",
       "noMedications": "Ajoutez d’abord un médicament, puis vous pourrez enregistrer des prises pour celui-ci.",
-      "saveError": "Impossible d'enregistrer la prise. Réessaie"
+      "saveError": "Impossible d'enregistrer la prise. Réessayez"
     },
     "phaseGreenHint": "Premier rappel, ce délai avant la fin de la fenêtre.",
     "phaseYellowHint": "Un autre rappel, ce délai avant la fin de la fenêtre.",
@@ -5315,7 +5315,7 @@
     "maxLabel": "Max",
     "unitSuffix": "({unit})",
     "outOfBoundsHint": "Plage autorisée : {min}–{max} {unit}",
-    "overrideWarning": "Des valeurs en dehors des recommandations peuvent conduire à des objectifs malsains. Ne personnalise qu’après avis médical.",
+    "overrideWarning": "Des valeurs en dehors des recommandations peuvent conduire à des objectifs malsains. Ne personnalisez qu’après avis médical.",
     "saveSuccess": "Objectifs mis à jour",
     "saveError": "Impossible d’enregistrer les objectifs",
     "resetSuccess": "Valeur par défaut restaurée",
@@ -5968,7 +5968,7 @@
           "description": "De combien un rappel de dose est reporté, sur la carte du médicament, dans Telegram et dans l'app.",
           "label": "Reporter de",
           "option": "{minutes} min",
-          "saveError": "Enregistrement impossible. Réessaie"
+          "saveError": "Enregistrement impossible. Réessayez"
         },
         "alerts": {
           "heading": "Alertes",
@@ -7251,7 +7251,7 @@
         "failed": "Impossible de supprimer la clé API."
       },
       "coachBudgetHeading": "Budget du Coach pour les modèles auto-hébergés",
-      "coachBudgetBody": "La quantité de tes données que le Coach place dans le prompt et la durée de travail d'une réponse, pour le modèle local et la passerelle. Réduis la taille de l'instantané pour un modèle à petite fenêtre de contexte ; augmente-la avec les limites par réponse pour un grand modèle sur ton propre matériel. Les champs vides gardent les valeurs par défaut affichées. Une réponse du fournisseur partagé du serveur garde toujours les limites par défaut.",
+      "coachBudgetBody": "La quantité de vos données que le Coach place dans le prompt et la durée de travail d'une réponse, pour le modèle local et la passerelle. Réduisez la taille de l'instantané pour un modèle à petite fenêtre de contexte ; augmentez-la avec les limites par réponse pour un grand modèle sur votre propre matériel. Les champs vides gardent les valeurs par défaut affichées. Une réponse du fournisseur partagé du serveur garde toujours les limites par défaut.",
       "coachBudgetProvider": "Fournisseur",
       "coachBudgetLocal": "Modèle local",
       "coachBudgetCompat": "Passerelle",
@@ -8943,7 +8943,7 @@
         "downloadFailed": "Échec du téléchargement",
         "downloadStarted": "Téléchargement démarré",
         "uploadTitle": "Téléverser une sauvegarde",
-        "uploadDescription": "Vérifie une copie de compte et la stocke à côté des copies de ce serveur. Une copie dont le compte n'existe plus sur ce serveur peut aller dans un autre compte. La restauration est une étape distincte.",
+        "uploadDescription": "Vérifiez une copie de compte et stockez-la à côté des copies de ce serveur. Une copie dont le compte n'existe plus sur ce serveur peut aller dans un autre compte. La restauration est une étape distincte.",
         "uploadButton": "Téléverser un fichier",
         "uploadHelp": "Une sauvegarde HealthLog au format .json ou .json.gz. Le fichier est compressé avant l’envoi ; compressé, il peut atteindre 512 Mo.",
         "uploadSuccess": "Sauvegarde téléversée ({count, plural, one {# enregistrement} other {# enregistrements}})",
@@ -9337,8 +9337,8 @@
       "body": "La clé de chiffrement avec laquelle ce serveur a démarré n'est pas celle avec laquelle sa base de données a été écrite. Pour protéger vos données, HealthLog ne sert rien tant que ce n'est pas corrigé.",
       "fixTitle": "Comment corriger",
       "fixRestore": "Remettez la ENCRYPTION_KEY d'origine (ou l'entrée de ENCRYPTION_KEYS) dans les paramètres du serveur.",
-      "fixDatabase": "Ou fais pointer DATABASE_URL vers la base de données qui correspond à cette clé.",
-      "fixFresh": "Ou repars de zéro avec une base vide. Les anciennes données et leurs sauvegardes ne se lisent qu'avec l'ancienne clé.",
+      "fixDatabase": "Ou faites pointer DATABASE_URL vers la base de données qui correspond à cette clé.",
+      "fixFresh": "Ou repartez de zéro avec une base vide. Les anciennes données et leurs sauvegardes ne se lisent qu'avec l'ancienne clé.",
       "restartNote": "Redémarrez HealthLog après la modification.",
       "lastResort": "Dernier recours, seulement si vous êtes sûr que la clé est la bonne et qu'aucune des trois solutions ne convient : définissez {setting} et redémarrez. HealthLog sert alors quand même et se contente de journaliser le constat. Cela désactive une vérification de sécurité : avec une mauvaise clé, chaque valeur chiffrée échoue et les nouvelles données sont écrites sous cette clé.",
       "codes": "Pour l'administrateur : les requêtes API répondent 503 avec le code d'erreur {code}, et /api/health indique la raison {reason}."
@@ -10268,8 +10268,8 @@
     "eventMeasurementAnomalyDesc": "Quand un signe vital comme la fréquence cardiaque au repos ou la tension reste à un nouveau niveau depuis au moins dix jours. Au plus une fois par semaine, le matin, jamais pendant une maladie en cours.",
     "measurementAnomaly": {
       "title": "Un changement durable",
-      "bodyUp": "Ta valeur {metric} reste plus haute depuis le {date}. Insights montre l'avant et l'après.",
-      "bodyDown": "Ta valeur {metric} reste plus basse depuis le {date}. Insights montre l'avant et l'après."
+      "bodyUp": "Votre valeur {metric} reste plus haute depuis le {date}. Insights montre l'avant et l'après.",
+      "bodyDown": "Votre valeur {metric} reste plus basse depuis le {date}. Insights montre l'avant et l'après."
     },
     "relayTest": {
       "title": "Notification de test HealthLog",
@@ -11001,8 +11001,8 @@
         "start_in_future": "Le premier jour ne peut pas être dans le futur.",
         "delivery_in_future": "La date de la naissance ne peut pas être dans le futur.",
         "due_before_start": "La date prévue doit suivre le premier jour.",
-        "delivery_required": "Ajoute la date de la naissance.",
-        "generic": "L'enregistrement a échoué. Réessaie."
+        "delivery_required": "Ajoutez la date de la naissance.",
+        "generic": "L'enregistrement a échoué. Réessayez."
       },
       "banner": {
         "pregnantWeek": "Enceinte, semaine {weeks}+{days}",
@@ -13624,13 +13624,13 @@
       "title": "Bilan énergétique",
       "loadError": "Le bilan énergétique n'a pas pu être chargé.",
       "perDay": "{value} par jour",
-      "trendMeta": "Moyenne des sept derniers jours : ce que tu as mangé moins l'énergie au repos et active.",
-      "meanMeta": "Moyenne sur {days} jours : ce que tu as mangé moins l'énergie au repos et active.",
+      "trendMeta": "Moyenne des sept derniers jours : ce que vous avez mangé moins l'énergie au repos et active.",
+      "meanMeta": "Moyenne sur {days} jours : ce que vous avez mangé moins l'énergie au repos et active.",
       "means": "Sur {days} jours, en moyenne {intake} kcal mangées et {used} kcal dépensées.",
       "dayLine": "{intake} kcal mangées, {used} kcal dépensées",
-      "estimated": "Sur {days} de ces jours, l'énergie au repos est une estimation à partir de ton poids, ta taille, ton âge et ton sexe (Mifflin-St Jeor), faute de mesure.",
-      "needsProfile": "Ton apport est là, mais aucune énergie au repos n'est arrivée. Ajoute ta taille, ta date de naissance et ton sexe au profil, avec une mesure de poids, et le bilan sera estimé.",
-      "needsExpenditure": "Ton apport est là, mais aucune énergie active n'est arrivée les mêmes jours, il n'y a donc pas encore de bilan."
+      "estimated": "Sur {days} de ces jours, l'énergie au repos est une estimation à partir de votre poids, votre taille, votre âge et votre sexe (Mifflin-St Jeor), faute de mesure.",
+      "needsProfile": "Votre apport est là, mais aucune énergie au repos n'est arrivée. Ajoutez votre taille, votre date de naissance et votre sexe au profil, avec une mesure de poids, et le bilan sera estimé.",
+      "needsExpenditure": "Votre apport est là, mais aucune énergie active n'est arrivée les mêmes jours, il n'y a donc pas encore de bilan."
     }
   },
   "daily": {
@@ -14707,9 +14707,9 @@
       "severalHint": "Choisissez-en plusieurs s’ils sont survenus ensemble.",
       "filterPlaceholder": "Chercher un symptôme",
       "filterEmpty": "Aucun symptôme ne correspond.",
-      "whenHint": "Modifie la date et l’heure pour saisir une entrée passée.",
+      "whenHint": "Modifiez la date et l’heure pour saisir une entrée passée.",
       "intensityShort": "{value}/{max}",
-      "intensityPreset": "Réglé sur ta dernière évaluation. Modifie-la si aujourd’hui est différent."
+      "intensityPreset": "Réglé sur votre dernière évaluation. Modifiez-la si aujourd’hui est différent."
     },
     "section": {
       "title": "Vos symptômes",
@@ -15951,12 +15951,12 @@
   },
   "careFeed": {
     "sectionTitle": "Calendrier",
-    "sectionSubtitle": "Tes rendez-vous et ce qui arrive à échéance, dans l'application de calendrier que tu utilises déjà.",
+    "sectionSubtitle": "Vos rendez-vous et ce qui arrive à échéance, dans l'application de calendrier que vous utilisez déjà.",
     "title": "Calendrier santé",
     "description": "Les visites prévues à leur heure, les bilans et les rappels de vaccins le jour de leur échéance.",
     "loadError": "L'abonnement agenda n'a pas pu être chargé.",
-    "linkHidden": "Un lien commençant par {prefix} est actif. Il n'est affiché qu'une fois, à sa création ; désactive puis réactive l'abonnement pour en obtenir un nouveau.",
-    "linkOnce": "Affiché seulement maintenant. Colle-le dans ton application de calendrier.",
+    "linkHidden": "Un lien commençant par {prefix} est actif. Il n'est affiché qu'une fois, à sa création ; désactivez puis réactivez l'abonnement pour en obtenir un nouveau.",
+    "linkOnce": "Affiché seulement maintenant. Collez-le dans votre application de calendrier.",
     "visits": "Visites prévues",
     "checkups": "Bilans à venir",
     "vaccinations": "Rappels de vaccins à venir",
@@ -16016,8 +16016,8 @@
     "dateOfBirth": "Date de naissance",
     "savedOn": "État au {date}",
     "wallet": {
-      "instructions": "Imprime à 100 pour cent, découpe le long du contour, plie sur la ligne pointillée.",
-      "scan": "Scanne pour la carte complète",
+      "instructions": "Imprimez à 100 pour cent, découpez le long du contour, pliez sur la ligne pointillée.",
+      "scan": "Scannez pour la carte complète",
       "cut": "Raccourci pour tenir. La carte complète est derrière le code QR."
     },
     "link": {
@@ -16027,7 +16027,7 @@
       "missBody": "Le lien a peut-être été révoqué ou a expiré. La personne à qui appartient la carte peut en créer un nouveau.",
       "title": "Lien QR",
       "loadError": "Le statut du lien n'a pas pu être chargé.",
-      "disclosure": "Toute personne qui scanne le code voit les éléments cochés, sans se connecter. Tu peux donner une fin au lien et le révoquer à tout moment ; chaque ouverture est enregistrée pour toi.",
+      "disclosure": "Toute personne qui scanne le code voit les éléments cochés, sans se connecter. Vous pouvez donner une fin au lien et le révoquer à tout moment ; chaque ouverture est enregistrée pour vous.",
       "fieldsLabel": "Ce que le lien affiche",
       "expiryLabel": "Fin du lien",
       "expiry": {
@@ -16038,31 +16038,31 @@
       },
       "create": "Créer le lien",
       "qrAlt": "Code QR du lien vers la carte d'urgence",
-      "once": "Le lien et son code n'existent que maintenant. Télécharge la carte avec le code avant de quitter cette page.",
-      "hidden": "Un lien commençant par {prefix} est actif. Il n'a été affiché qu'à sa création ; révoque-le pour en obtenir un nouveau.",
+      "once": "Le lien et son code n'existent que maintenant. Téléchargez la carte avec le code avant de quitter cette page.",
+      "hidden": "Un lien commençant par {prefix} est actif. Il n'a été affiché qu'à sa création ; révoquez-le pour en obtenir un nouveau.",
       "shows": "Affiche : {items}.",
       "expired": "Ce lien a expiré et n'affiche plus rien.",
       "expiresOn": "Expire le {date}.",
-      "noExpiry": "Pas de date de fin. Il fonctionne jusqu'à ce que tu le révoques.",
+      "noExpiry": "Pas de date de fin. Il fonctionne jusqu'à ce que vous le révoquiez.",
       "opened": "Ouvert {count, plural, one {# fois} other {# fois}}, dernière fois {when}.",
       "notOpened": "Pas encore ouvert.",
       "revoke": "Révoquer le lien",
       "revokeTitle": "Révoquer le lien de la carte d'urgence ?",
-      "revokeBody": "Les cartes imprimées avec ce code ne fonctionneront plus. Tu peux créer un nouveau lien et réimprimer la carte.",
-      "error": "Le lien n'a pas pu être modifié. Réessaie."
+      "revokeBody": "Les cartes imprimées avec ce code ne fonctionneront plus. Vous pouvez créer un nouveau lien et réimprimer la carte.",
+      "error": "Le lien n'a pas pu être modifié. Réessayez."
     },
     "page": {
       "title": "Carte d'urgence",
-      "description": "Tes informations d'urgence quand tu n'es pas chez toi.",
+      "description": "Vos informations d'urgence quand vous n'êtes pas chez vous.",
       "loadError": "La carte d'urgence n'a pas pu être chargée.",
-      "editHint": "Le groupe sanguin, les contacts, les implants et les déclarations viennent de tes informations d'urgence.",
+      "editHint": "Le groupe sanguin, les contacts, les implants et les déclarations viennent de vos informations d'urgence.",
       "editLink": "Les modifier",
-      "offlineHint": "L'application ne fonctionne pas hors ligne, volontairement. Enregistre une copie sur ton téléphone pour avoir la carte sans connexion ; elle montre son contenu au jour de l'enregistrement.",
-      "downloadError": "Le téléchargement a échoué. Réessaie.",
+      "offlineHint": "L'application ne fonctionne pas hors ligne, volontairement. Enregistrez une copie sur votre téléphone pour avoir la carte sans connexion ; elle montre son contenu au jour de l'enregistrement.",
+      "downloadError": "Le téléchargement a échoué. Réessayez.",
       "saveOffline": "Enregistrer une copie hors ligne",
       "wallet": "Carte pour le portefeuille (PDF)",
       "walletWithQr": "Carte avec code QR (PDF)",
-      "preview": "Ta carte"
+      "preview": "Votre carte"
     },
     "fields": {
       "BLOOD_TYPE": "Groupe sanguin",
