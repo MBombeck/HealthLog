@@ -112,6 +112,8 @@
     "/onboarding/[step]/page": 397,
     "/onboarding/handover/page": 300,
     "/onboarding/page": 292,
+    "/onboarding/server/[step]/page": 318,
+    "/onboarding/server/page": 290,
     "/page": 368,
     "/privacy/page": 288,
     "/profile/page": 291,
