@@ -114,19 +114,22 @@ function countBuildsPerKey(cache: {
 }
 
 /**
- * The slice's pre-fold remainder is a cell of its own in the same bucket (a
- * closed block, `pre-fold-remainder.ts`), built when the slice takes the
- * rollup path; it is counted apart from the route's two cells.
+ * The closed blocks the route's builders read are cells of their own in the
+ * same bucket (the pre-fold remainder, the 90-day window aggregate's whole
+ * days, the resting-pulse proxy's closed days): every key that carries
+ * `closedBlockKeyPart`. They are counted apart from the route's two cells.
  */
-function preFoldBuildsOf(builds: Map<string, number>, userId: string) {
+const isClosedBlock = (key: string) => /\|before:\d+(?:\||$)/.test(key);
+
+function closedBlockBuildsOf(builds: Map<string, number>, userId: string) {
   return [...builds.entries()]
-    .filter(([k]) => k.startsWith(`${userId}|pre-fold-remainder|`))
+    .filter(([k]) => k.startsWith(userId) && isClosedBlock(k))
     .reduce((n, [, c]) => n + c, 0);
 }
 
 function buildsOf(builds: Map<string, number>, userId: string) {
   const entries = [...builds.entries()].filter(
-    ([k]) => k.startsWith(userId) && !k.includes("|pre-fold-remainder|"),
+    ([k]) => k.startsWith(userId) && !isClosedBlock(k),
   );
   return {
     defaultBody: entries
@@ -171,7 +174,7 @@ describe("v1.4.34 IW-G — server-cache route integration", () => {
       keys: 2,
     });
     const stats = caches.analytics.stats();
-    expect(stats.misses).toBe(2);
+    expect(stats.misses).toBe(2 + closedBlockBuildsOf(builds, user.id));
     expect(stats.stampedes + stats.hits).toBe(9);
     // Subsequent serial reads inside the TTL hit the warm cache.
     const warm = await (GET as unknown as (req: Request) => Promise<Response>)(
@@ -201,7 +204,9 @@ describe("v1.4.34 IW-G — server-cache route integration", () => {
       summaries: 1,
       keys: 2,
     });
-    expect(caches.analytics.stats().misses).toBe(2);
+    expect(caches.analytics.stats().misses).toBe(
+      2 + closedBlockBuildsOf(builds, user.id),
+    );
     expect(caches.analytics.stats().hits).toBe(0);
 
     const second = await (
@@ -240,7 +245,7 @@ describe("v1.4.34 IW-G — server-cache route integration", () => {
       keys: 2,
     });
     expect(caches.analytics.stats().misses).toBe(
-      4 + preFoldBuildsOf(builds, user.id),
+      4 + closedBlockBuildsOf(builds, user.id),
     );
 
     // Sanity: the body reflects the new write.
