@@ -161,6 +161,14 @@ test.describe("setup flow — a child's managed profile", () => {
     await choose(page, "visit", ["within-a-month"]);
     await next(page);
 
+    // A medication schedule brings "Region & units" (time zone and medicine
+    // registry, both prefilled, no unit question for blood pressure alone).
+    await expectScreen(page, "units");
+    await expect(
+      page.locator('[data-slot="onboarding-question-medicine-registry"]'),
+    ).toBeVisible();
+    await next(page);
+
     await expectScreen(page, "confirm");
     await page
       .locator('[data-slot="onboarding-finish-without-profile"]')

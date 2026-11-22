@@ -79,10 +79,9 @@ test.describe("/admin/api-tokens mobile no-overflow", () => {
   // visible "scrollbar" the maintainer reported for the third time as the
   // `<AdminShell>` mobile section strip, NOT the api-tokens table. The
   // strip carries 13 admin sections so its scrollWidth (~1700 CSS px)
-  // permanently exceeds clientWidth (~360 CSS px). Adding the
-  // `no-scrollbar` utility class (`globals.css`) suppresses the
-  // painted bar while preserving swipe + keyboard-arrow scrolling.
-  // This regression guard fails if a future refactor drops the class.
+  // permanently exceeds clientWidth (~360 CSS px). The strip hides the
+  // painted bar while keeping swipe + keyboard-arrow scrolling; this
+  // guard fails if a future refactor brings the bar back.
   test("Pixel-5 viewport: admin section strip suppresses its painted scrollbar", async ({
     page,
   }) => {
@@ -97,17 +96,25 @@ test.describe("/admin/api-tokens mobile no-overflow", () => {
     await page.goto("/admin/api-tokens", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle");
 
-    // Find the mobile strip (`<nav aria-label>` matches both English
-    // "Admin sections" and German "Admin-Bereiche").
-    const strip = page.locator("nav.no-scrollbar.overflow-x-auto").first();
-    await expect(strip).toBeAttached();
+    // Find the mobile strip: since 1.49 the console draws it with the shared
+    // `SubNavRow`, inside the phone-only `<nav>` (the desktop sidebar is an
+    // `<aside>`, so this is the one row on the page).
+    const strip = page.locator('nav [data-slot="sub-nav-row"]').first();
+    await expect(strip).toBeVisible();
 
-    // The strip itself must declare `no-scrollbar` so the painted
-    // horizontal scrollbar — which production showed at Pixel-5 — is
-    // suppressed.
-    const cls = await strip.getAttribute("class");
-    expect(cls ?? "").toContain("no-scrollbar");
-    expect(cls ?? "").toContain("overflow-x-auto");
+    // The strip scrolls sideways and paints no bar. Asserted on the computed
+    // style rather than a class name, so a rename of the utility cannot pass
+    // or fail this by itself — the bar the production probe saw is what is
+    // being ruled out.
+    const style = await strip.evaluate((el) => {
+      const computed = getComputedStyle(el);
+      return {
+        overflowX: computed.overflowX,
+        scrollbarWidth: computed.scrollbarWidth,
+      };
+    });
+    expect(style.overflowX).toBe("auto");
+    expect(style.scrollbarWidth).toBe("none");
 
     // And the strip must still carry useful overflow internally
     // (clientWidth < scrollWidth), proving scroll behaviour isn't
