@@ -563,6 +563,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -639,7 +641,8 @@
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "MoodContext": [],
@@ -802,7 +805,6 @@
       }
     ],
     "EcgRecording": [],
-    "AppleHealthTombstone": [],
     "OnboardingRecord": [],
     "BiomarkerAlias": [],
     "BiomarkerMerge": [],
