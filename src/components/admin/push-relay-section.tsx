@@ -105,6 +105,8 @@ export function PushRelaySection() {
   const status = statusQuery.data;
   const setRelay = useSetPushRelay();
   const [enableOpen, setEnableOpen] = useState(false);
+  // `confirm`: the relay is on and the admin confirms a changed text.
+  const [enableMode, setEnableMode] = useState<"enable" | "confirm">("enable");
   const [disableOpen, setDisableOpen] = useState(false);
   // A fresh dialog, with nothing ticked or entered, each time it opens.
   const [enableKey, setEnableKey] = useState(0);
@@ -119,19 +121,24 @@ export function PushRelaySection() {
       />
     );
   }
-  if (!status || !status.allowed) return null;
+  if (!status) return null;
+  // Switched off by the operator, but still registered somewhere, or owing
+  // the relay unbinds: say so rather than hide it.
+  if (!status.allowed) return <PushRelayOffCard status={status} />;
 
   const reasonKey =
     status.offered && !status.instanceId && status.reason
       ? REASON_LABEL.get(status.reason)
       : undefined;
 
-  function openEnable() {
+  function openEnable(mode: "enable" | "confirm" = "enable") {
+    setEnableMode(mode);
     setEnableKey((key) => key + 1);
     setEnableOpen(true);
   }
 
   function save(body: Parameters<typeof setRelay.mutate>[0]) {
+    const confirming = body.enabled && status?.offered === true;
     setRelay.mutate(body, {
       // The switch took when the server now says what was asked for; on
       // but not yet registered at the relay is a partial result, and a
@@ -149,9 +156,11 @@ export function PushRelaySection() {
               : "success",
           t(
             refusal ??
-              (next.offered
-                ? "admin.pushRelay.enabled"
-                : "admin.pushRelay.disabled"),
+              (confirming && next.offered
+                ? "admin.pushRelay.reconfirm.done"
+                : next.offered
+                  ? "admin.pushRelay.enabled"
+                  : "admin.pushRelay.disabled"),
           ),
         );
       },
@@ -215,7 +224,14 @@ export function PushRelaySection() {
               : ""}
           </p>
         )}
+        {status.termsConfirmationNeeded && (
+          <PushRelayReconfirm
+            onOpen={() => openEnable("confirm")}
+            disabled={setRelay.isPending || !status.available}
+          />
+        )}
         <RelayUsage status={status} />
+        <RelayLeftovers status={status} />
         {reasonKey && (
           <div className="space-y-2" data-slot="push-relay-refusal">
             <p className="text-sm">{t(reasonKey)}</p>
@@ -223,7 +239,7 @@ export function PushRelaySection() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={openEnable}
+                onClick={() => openEnable()}
                 disabled={setRelay.isPending || !status.available}
               >
                 {t("admin.pushRelay.invite.enter")}
@@ -251,6 +267,7 @@ export function PushRelaySection() {
 
       <PushRelayEnableDialog
         key={enableKey}
+        mode={enableMode}
         termsUrl={status.termsUrl}
         privacyUrl={status.privacyUrl}
         open={enableOpen}
@@ -258,25 +275,84 @@ export function PushRelaySection() {
         onConfirm={save}
       />
 
-      <AlertDialog open={disableOpen} onOpenChange={setDisableOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("admin.pushRelay.disableTitle")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("admin.pushRelay.disableBody")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("admin.pushRelay.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => save({ enabled: false })}>
-              {t("admin.pushRelay.disable")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <PushRelayDisableDialog
+        open={disableOpen}
+        onOpenChange={setDisableOpen}
+        onConfirm={() => save({ enabled: false })}
+      />
     </SettingsCard>
+  );
+}
+
+/**
+ * The relay switched off by the operator (`PUSH_RELAY_MODE=off`): hidden,
+ * unless this server is still registered with a relay or owes it unbinds.
+ */
+function PushRelayOffCard({ status }: { status: AdminPushRelayStatus }) {
+  const { t } = useTranslations();
+  if (status.unreachableRegistrations.length === 0 && !status.unbindsPending) {
+    return null;
+  }
+  return (
+    <SettingsCard>
+      <SettingsCardHeader
+        icon={Send}
+        title={t("admin.pushRelay.title")}
+        description={t("admin.pushRelay.unavailable.modeOff")}
+      />
+      <RelayLeftovers status={status} />
+    </SettingsCard>
+  );
+}
+
+/** The relay's text changed since it was turned on: confirm it once. */
+function PushRelayReconfirm({
+  onOpen,
+  disabled,
+}: {
+  onOpen: () => void;
+  disabled: boolean;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div className="space-y-2" data-slot="push-relay-reconfirm">
+      <p className="text-sm">{t("admin.pushRelay.reconfirm.notice")}</p>
+      <Button size="sm" variant="outline" onClick={onOpen} disabled={disabled}>
+        {t("admin.pushRelay.reconfirm.button")}
+      </Button>
+    </div>
+  );
+}
+
+function PushRelayDisableDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {t("admin.pushRelay.disableTitle")}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("admin.pushRelay.disableBody")}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("admin.pushRelay.cancel")}</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>
+            {t("admin.pushRelay.disable")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -375,15 +451,19 @@ function ConfirmationRow({
 
 /**
  * Turning the relay on: the three confirmations, and the relay's invite code
- * for a relay that accepts new servers by invitation only.
+ * for a relay that accepts new servers by invitation only. In `confirm` mode
+ * the relay is on already and the admin confirms a changed text: the same
+ * text and confirmations, no invite code.
  */
 function PushRelayEnableDialog({
+  mode,
   termsUrl,
   privacyUrl,
   open,
   onOpenChange,
   onConfirm,
 }: {
+  mode: "enable" | "confirm";
   termsUrl: string | null;
   privacyUrl: string | null;
   open: boolean;
@@ -407,7 +487,11 @@ function PushRelayEnableDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {t("admin.pushRelay.dialogTitle")}
+            {t(
+              mode === "confirm"
+                ? "admin.pushRelay.reconfirm.title"
+                : "admin.pushRelay.dialogTitle",
+            )}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {t("admin.pushRelay.dialogBody")}
@@ -443,32 +527,34 @@ function PushRelayEnableDialog({
             label={t("admin.pushRelay.householdOnly")}
             link={null}
           />
-          <div className="space-y-1">
-            <Label htmlFor="push-relay-invite">
-              {t("admin.pushRelay.invite.label")}
-            </Label>
-            <Input
-              id="push-relay-invite"
-              data-slot="push-relay-invite"
-              value={invite}
-              onChange={(event) => setInvite(event.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-              maxLength={64}
-              aria-invalid={inviteInvalid || undefined}
-              aria-describedby="push-relay-invite-hint"
-            />
-            <p
-              id="push-relay-invite-hint"
-              className="text-muted-foreground text-xs"
-            >
-              {t(
-                inviteInvalid
-                  ? "admin.pushRelay.invite.invalid"
-                  : "admin.pushRelay.invite.hint",
-              )}
-            </p>
-          </div>
+          {mode === "enable" && (
+            <div className="space-y-1">
+              <Label htmlFor="push-relay-invite">
+                {t("admin.pushRelay.invite.label")}
+              </Label>
+              <Input
+                id="push-relay-invite"
+                data-slot="push-relay-invite"
+                value={invite}
+                onChange={(event) => setInvite(event.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={64}
+                aria-invalid={inviteInvalid || undefined}
+                aria-describedby="push-relay-invite-hint"
+              />
+              <p
+                id="push-relay-invite-hint"
+                className="text-muted-foreground text-xs"
+              >
+                {t(
+                  inviteInvalid
+                    ? "admin.pushRelay.invite.invalid"
+                    : "admin.pushRelay.invite.hint",
+                )}
+              </p>
+            </div>
+          )}
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("admin.pushRelay.cancel")}</AlertDialogCancel>
@@ -485,11 +571,43 @@ function PushRelayEnableDialog({
               })
             }
           >
-            {t("admin.pushRelay.enable")}
+            {t(
+              mode === "confirm"
+                ? "admin.pushRelay.reconfirm.confirm"
+                : "admin.pushRelay.enable",
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+/**
+ * What the relay still holds of this server that the admin should know
+ * about: a registration the current settings cannot reach, and unbinds the
+ * relay has not confirmed.
+ */
+function RelayLeftovers({ status }: { status: AdminPushRelayStatus }) {
+  const { t } = useTranslations();
+  if (status.unreachableRegistrations.length === 0 && !status.unbindsPending) {
+    return null;
+  }
+  return (
+    <div className="space-y-1" data-slot="push-relay-leftovers">
+      {status.unreachableRegistrations.map((host) => (
+        <p key={host} className="text-sm">
+          {t("admin.pushRelay.unreachable", { host })}
+        </p>
+      ))}
+      {status.unbindsPending > 0 && (
+        <p className="text-muted-foreground text-xs">
+          {t("admin.pushRelay.unbindsPending", {
+            count: status.unbindsPending,
+          })}
+        </p>
+      )}
+    </div>
   );
 }
 

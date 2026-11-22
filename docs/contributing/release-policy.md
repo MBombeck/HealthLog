@@ -127,6 +127,12 @@ Quality green for it, tag.
 After any release, `/api/version` is checked on every deploy target
 (`docs/ops/deploy.md`).
 
+The tag build attaches a signed image manifest, its cosign bundle and its
+SLSA provenance to the GitHub release for the tag, and creates that release
+as a draft when it does not exist yet. It never publishes. The release is
+made public by editing the draft (notes, then `--draft=false`), not by
+creating a second one: `docs/ops/deploy.md`, "The GitHub release".
+
 ## Images
 
 | Tag                       | Built from              | For                            |
@@ -170,6 +176,10 @@ one minor and removed no earlier than two minors later.
   commit or adds a heading under `## [Unreleased]` that a patch cannot have.
 - `.github/workflows/edge-image.yml` publishes `:edge` on every push to
   `main`.
+- The `release-manifest`, `release-provenance` and `release-assets` jobs in
+  `docker-publish.yml` attach the signed manifest and its provenance to the
+  release for every `v*` tag, with the shape held by
+  `scripts/__tests__/release-workflows.test.ts`.
 
 What the checks cannot do: they do not catch a feature committed as `fix`. The
 changelog rule catches part of that, review the rest.

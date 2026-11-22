@@ -371,6 +371,11 @@ export async function ensureInstanceRegistered(
  * The operator turns the relay on. Creates the registration with a fresh
  * instance key and registers it; a relay that cannot be reached leaves the
  * row `pending`, and the maintenance pass registers it later.
+ *
+ * On a registration that exists already the same call records a fresh
+ * acceptance (the current terms version, the household confirmation, who)
+ * and touches nothing else: the operator confirming a changed text keeps the
+ * instance, its key, its state and every device binding.
  */
 export async function enableRelay(input: {
   userId: string;
@@ -390,16 +395,16 @@ export async function enableRelay(input: {
       householdConfirmedAt: now,
       enabledByUserId: input.userId,
     },
-    update: {},
+    update: {
+      termsVersion: RELAY_TERMS_VERSION,
+      householdConfirmedAt: now,
+      enabledByUserId: input.userId,
+    },
   });
   if (row.state === "deleting" && row.instanceId) {
     // Switched on again before the relay confirmed the switch-off: the
     // instance still exists there; ask it how things stand.
-    await setState(row.id, "pending", null, {
-      termsVersion: RELAY_TERMS_VERSION,
-      householdConfirmedAt: now,
-      enabledByUserId: input.userId,
-    });
+    await setState(row.id, "pending", null);
     const fresh = await loadRegistration(config);
     if (fresh) await relayCall(fresh, "GET", "/v1/status", undefined, config);
   } else {

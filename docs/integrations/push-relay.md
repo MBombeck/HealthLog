@@ -18,13 +18,13 @@ The relay's source, protocol and test vectors are public in the
 ## What the relay sees, and what it does not
 
 The relay sees delivery metadata (the device's push token while it forwards,
-kept at rest only as a keyed hash; your server's instance id; the kind, size
-and time of each push; the version of the person's consent), never what a
-notification says; the full list, and how long each item is kept, is the
-relay's privacy notice at `https://push.healthlog.dev/privacy`, which is the
-authoritative text. With the separate Live Activity consent (see "Live
-Activity start and update" below), the content state of a Live Activity
-start or update passes the relay and Apple in the clear.
+kept at rest only as a keyed hash; your server's instance id; the class,
+lifetime, size and time of each push; the version of the person's consent),
+never what a notification says; the full list, and how long each item is kept,
+is the relay's privacy notice at `https://push.healthlog.dev/privacy`, which
+is the authoritative text. With the separate Live Activity consent (see "Live
+Activity start and update" below), the content state of a Live Activity start
+or update passes the relay and Apple in the clear.
 
 Every alert and every silent push carries an envelope sealed with HPKE
 (RFC 9180, auth mode, X25519, HKDF-SHA256, ChaCha20-Poly1305) for that one
@@ -32,11 +32,29 @@ device. The envelope has
 a fixed size per class and its header names no key, so envelopes do not tell
 devices or servers apart either.
 
+Within a class the relay cannot tell one kind of push from another. Over the
+relay every alert lives 15 minutes and every silent push an hour, whatever it
+is, and the retry schedule is one per class too. What stays readable beside
+the envelope, because the relay needs it to hand the push to Apple:
+
+- the class (alert, silent, Live Activity), which also sets the APNs
+  priority: 10 for an alert, 5 for a silent push;
+- the remaining lifetime (`ttlSeconds`, rounded down to the minute), which
+  falls with each retry and names nothing finer than the class;
+- the size, which is fixed per class, and the time;
+- an opaque collapse id per device, the same for pushes that replace each
+  other (a reminder and its follow-ups for one dose, a device's intake
+  syncs), so the relay can see that two pushes belong together, never what
+  they are about;
+- for a Live Activity push, its event (start, update or end).
+
 What timing can reveal is said plainly: if you record a dose on one device
 and another device of yours gets the confirmation, the relay and Apple can
-see that something happened at that moment. Apple can link the timing to your
-Apple account. That is why reminders are planned on the iPhone and do not go
-through the relay, and why turning the relay on is each person's own choice.
+see that something happened at that moment, and a medication reminder that
+goes over the relay shows them when a dose is due. Apple can link the timing
+to your Apple account. That is why a device that plans its own reminders
+keeps them off the relay, and why turning the relay on is each person's own
+choice.
 
 The holder of the relay's APNs key (the relay operator, or anybody who steals
 that key) can make a notification appear in the app's name. They cannot read
@@ -66,6 +84,14 @@ The relay is off until the admin turns it on.
    Only "Turn on" creates the keys on the iPhone and binds it. The choice
    stays in the app's notification settings and can be withdrawn there at any
    time, even while your server is unreachable.
+
+When the relay's text changes in an update, as it did in 1.49.0 when
+medication reminders began to go over the relay, the card asks every admin to
+read the new text and confirm it once (**Read and confirm**). The relay keeps
+running until then, and confirming changes nothing at the relay. The version
+of the consent text people see in the app (`push.relay.consentTextVersion` on
+`/api/auth/me`) moves with it, so the app can show its card again; the server
+never unbinds a device over an older version.
 
 Turning the switch off deletes your instance at the relay, which removes every
 device binding with it, and deletes the instance key here. If the relay is not
@@ -136,8 +162,18 @@ background pass, so a relay that is down delays it without blocking the
 deletion; it is retried for 7 days. The app's own "turn off" also revokes its
 binding directly at the relay.
 
+Only the relay's signed answer confirms an unbind. While your server cannot
+reach the relay it registered with (`PUSH_RELAY_MODE=off`, or a
+`PUSH_RELAY_URL` changed after the relay was turned on), the unbinds wait and
+the relay card says how many, and that the server is still registered there.
+That relay keeps the server's device bindings until the server leaves it:
+set the variable back and switch the relay off. An unbind is dropped unsent
+only when no relay holds a binding of this server any more.
+
 ### What goes over the relay
 
+- the medication reminder, to the devices that get their reminders from this
+  server (see below);
 - the confirmation that a dose was recorded on another device;
 - the silent sync that tells another device to refresh;
 - the end of a medication Live Activity, sent with a statement the device
@@ -199,8 +235,13 @@ delivery, a device without its own setting on an account set to server
 delivery, and a device that reminds itself but whose local plan has run out
 (past the runway it reported, or 3 days without a request). A device that
 reminds itself keeps the reminder, and the follow-ups for a dose still open,
-on the iPhone. Notifications about another person's record (guardian
-features) do not go over the relay.
+on the iPhone.
+
+Nothing about another person's record (guardian features) goes over the
+relay: no reminder or other alert about a managed profile, and not the silent
+intake sync a guardian's device gets when a managed profile's dose changes.
+Over the server's own APNs key that sync still reaches the guardian's
+devices; over the relay the app refreshes a managed profile when it opens.
 
 ### Diagnostics on the device
 
@@ -224,12 +265,14 @@ values, computed by the same code, in the admin notification diagnostic.
 
 ### When the relay is down
 
-Nothing is lost that the iPhone does not already have: reminders are local.
-Your server keeps each push with its deadline (an alert at most 6 hours, a
-silent sync 1 hour, a Live Activity end 4 hours) and retries with backoff; a
-push past its deadline is dropped, never delivered late. After three failed
-connections in a row the server stops trying item by item and checks the
-relay's status every minute, later every five.
+A device that plans its own reminders keeps them. A device that gets its
+reminders from this server gets none whose deadline passes during the outage.
+Your server keeps each push with its deadline (an alert 15 minutes, a silent
+push 1 hour, a Live Activity end 4 hours, a Live Activity start or update 15
+minutes) and retries with backoff; a push past its deadline is dropped, never
+delivered late. After three failed connections in a row the server stops
+trying item by item and checks the relay's status every minute, later every
+five.
 
 A relay outage never counts against a device or switches a notification
 channel off. Only Apple's "unregistered" answer for a device token deletes
@@ -258,7 +301,7 @@ All optional, all on the compose whitelist.
 
 | Variable                   | Default                      | Meaning                                                                                                                                                                        |
 | -------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `PUSH_RELAY_MODE`          | `allowed`                    | `off` hides the relay entirely, the admin notice included                                                                                                                      |
+| `PUSH_RELAY_MODE`          | `allowed`                    | `off` hides the relay and its admin notice; a server still registered with a relay keeps the card, saying so, until it has left that relay                                     |
 | `PUSH_RELAY_URL`           | `https://push.healthlog.dev` | the relay origin; `https` only                                                                                                                                                 |
 | `PUSH_RELAY_KEYS`          | the hosted relay's keys      | the relay's identity public keys, Ed25519, unpadded base64url, comma separated                                                                                                 |
 | `PUSH_RELAY_LIVE_ACTIVITY` | off                          | `on` lets Live Activity start and update go over the relay to devices whose owner gave the separate Live Activity consent; leave it off until the app's device test has passed |

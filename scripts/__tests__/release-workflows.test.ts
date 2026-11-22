@@ -3,6 +3,7 @@ import {
   chmodSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -28,12 +29,13 @@ type WorkflowStep = {
 };
 type WorkflowJob = {
   environment?: string;
+  permissions?: Record<string, string>;
   if?: string;
   needs?: string | string[];
   outputs?: Record<string, string>;
   steps?: WorkflowStep[];
   uses?: string;
-  with?: Record<string, string>;
+  with?: Record<string, string | boolean>;
 };
 type Workflow = {
   on?: {
@@ -570,5 +572,283 @@ describe("Coolify promotion policy", () => {
 
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain("COOLIFY_AUTO_DEPLOY=off");
+  });
+});
+
+const INDEX_DIGEST =
+  "sha256:1111111111111111111111111111111111111111111111111111111111111111";
+const AMD64_DIGEST =
+  "sha256:2222222222222222222222222222222222222222222222222222222222222222";
+const ARM64_DIGEST =
+  "sha256:3333333333333333333333333333333333333333333333333333333333333333";
+const ATTESTATION_DIGEST =
+  "sha256:4444444444444444444444444444444444444444444444444444444444444444";
+
+function indexFixture(platforms: [string, string, string][]): string {
+  return JSON.stringify({
+    mediaType: "application/vnd.oci.image.index.v1+json",
+    manifests: platforms.map(([os, architecture, digest]) => ({
+      digest,
+      platform: { os, architecture },
+    })),
+  });
+}
+
+function runManifest(index: string): {
+  result: SpawnSyncReturns<string>;
+  directory: string;
+} {
+  const directory = mkdtempSync(join(tmpdir(), "healthlog-release-manifest-"));
+  temporaryDirectories.push(directory);
+  const binDirectory = join(directory, "bin");
+  mkdirSync(binDirectory);
+  writeFileSync(join(directory, "index.json"), index);
+  writeFileSync(
+    join(binDirectory, "docker"),
+    `#!/bin/sh
+if [ "$1 $2 $3 $4" = "buildx imagetools inspect --raw" ] && [ "$5" = "ghcr.io/mbombeck/healthlog@${INDEX_DIGEST}" ]; then
+  cat "$FIXTURE_INDEX"
+  exit 0
+fi
+exit 1
+`,
+  );
+  chmodSync(join(binDirectory, "docker"), 0o755);
+
+  const workflow = loadWorkflow("docker-publish.yml");
+  const result = spawnSync(
+    "bash",
+    ["-c", stepScript(workflow, "release-manifest", "Write image manifest")],
+    {
+      cwd: directory,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        PATH: `${binDirectory}:${process.env.PATH ?? ""}`,
+        IMAGE_REF: "ghcr.io/mbombeck/healthlog",
+        IMAGE_TAG: "v1.49.0",
+        IMAGE_DIGEST: INDEX_DIGEST,
+        GITHUB_SHA: "0123456789abcdef0123456789abcdef01234567",
+        FIXTURE_INDEX: join(directory, "index.json"),
+      },
+    },
+  );
+  return { result, directory };
+}
+
+function runAssetUpload(releaseExists: boolean): {
+  result: SpawnSyncReturns<string>;
+  commands: string[];
+} {
+  const directory = mkdtempSync(join(tmpdir(), "healthlog-release-assets-"));
+  temporaryDirectories.push(directory);
+  const binDirectory = join(directory, "bin");
+  mkdirSync(binDirectory);
+  mkdirSync(join(directory, "release-assets"));
+  for (const name of [
+    "healthlog-v1.49.0-image.txt",
+    "healthlog-v1.49.0-image.sigstore.json",
+    "healthlog-v1.49.0.intoto.jsonl",
+  ]) {
+    writeFileSync(join(directory, "release-assets", name), "fixture\n");
+  }
+  const commandLog = join(directory, "commands.log");
+  writeFileSync(commandLog, "");
+  writeFileSync(
+    join(binDirectory, "gh"),
+    `#!/bin/sh
+printf '%s\\n' "$*" >> "$FIXTURE_COMMAND_LOG"
+if [ "$1 $2" = "release view" ] && [ "$FIXTURE_RELEASE_EXISTS" != "yes" ]; then exit 1; fi
+exit 0
+`,
+  );
+  chmodSync(join(binDirectory, "gh"), 0o755);
+
+  const workflow = loadWorkflow("docker-publish.yml");
+  const result = spawnSync(
+    "bash",
+    ["-c", stepScript(workflow, "release-assets", "Upload release assets")],
+    {
+      cwd: directory,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        PATH: `${binDirectory}:${process.env.PATH ?? ""}`,
+        GH_TOKEN: "fixture",
+        TAG: "v1.49.0",
+        GITHUB_REPOSITORY: "MBombeck/HealthLog",
+        FIXTURE_COMMAND_LOG: commandLog,
+        FIXTURE_RELEASE_EXISTS: releaseExists ? "yes" : "no",
+      },
+    },
+  );
+  return {
+    result,
+    commands: readFileSync(commandLog, "utf8").split("\n").filter(Boolean),
+  };
+}
+
+describe("signed release assets", () => {
+  const SLSA_GENERATOR =
+    "slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml";
+
+  it("pins every action by commit SHA, the SLSA generator by release tag", () => {
+    const directory = join(
+      dirname(expect.getState().testPath!),
+      "../..",
+      ".github/workflows",
+    );
+    const files = readdirSync(directory).filter((f) => /\.ya?ml$/.test(f));
+    const references = files.flatMap((file) =>
+      [
+        ...readRepoFile(join(".github/workflows", file)).matchAll(
+          /^\s*(?:-\s+)?uses:\s*["']?([^\s"'#]+)/gm,
+        ),
+      ].map((match) => `${file}: ${match[1]}`),
+    );
+    const offenders = references.filter((reference) => {
+      const target = reference.split(": ")[1]!;
+      if (target.startsWith("./")) return false;
+      if (target.startsWith(`${SLSA_GENERATOR}@`)) {
+        return !/@v\d+\.\d+\.\d+$/.test(target);
+      }
+      return !/@[0-9a-f]{40}$/.test(target);
+    });
+
+    expect(references.length).toBeGreaterThan(50);
+    expect(offenders).toEqual([]);
+  });
+
+  it("runs the asset chain on release tags only, after the image is verified", () => {
+    const workflow = loadWorkflow("docker-publish.yml");
+    const manifest = workflow.jobs["release-manifest"];
+
+    expect(manifest?.if).toBe("startsWith(github.ref, 'refs/tags/v')");
+    expect(manifest?.needs).toEqual(["merge", "verify-published-image"]);
+    expect(workflow.jobs["release-provenance"]?.needs).toEqual([
+      "release-manifest",
+    ]);
+    expect(workflow.jobs["release-assets"]?.needs).toEqual([
+      "release-manifest",
+      "release-provenance",
+    ]);
+    // :edge comes from edge-image.yml, which this file does not touch.
+    expect(workflow.on?.push?.branches).toBeUndefined();
+    expect(workflow.on?.push?.tags).toEqual(["v*"]);
+  });
+
+  it("gives each job only the permissions its step needs", () => {
+    const workflow = loadWorkflow("docker-publish.yml");
+
+    expect(workflow.jobs["release-manifest"]?.permissions).toEqual({
+      contents: "read",
+      packages: "read",
+      "id-token": "write",
+    });
+    expect(workflow.jobs["release-provenance"]?.permissions).toEqual({
+      actions: "read",
+      "id-token": "write",
+      contents: "write",
+    });
+    expect(workflow.jobs["release-assets"]?.permissions).toEqual({
+      contents: "write",
+    });
+
+    const holding = (scope: string) =>
+      Object.entries(workflow.jobs)
+        .filter(([, job]) => job.permissions?.[scope] === "write")
+        .map(([name]) => name)
+        .sort();
+    expect(holding("contents")).toEqual([
+      "release-assets",
+      "release-provenance",
+    ]);
+    expect(holding("id-token")).toEqual([
+      "merge",
+      "release-manifest",
+      "release-provenance",
+    ]);
+  });
+
+  it("signs the manifest keyless and hands its hash to the SLSA generator", () => {
+    const workflow = loadWorkflow("docker-publish.yml");
+    const provenance = workflow.jobs["release-provenance"];
+
+    expect(
+      stepScript(workflow, "release-manifest", "Sign image manifest (keyless)"),
+    ).toContain(
+      'cosign sign-blob --yes \\\n  --bundle "healthlog-${IMAGE_TAG}-image.sigstore.json" \\\n  "healthlog-${IMAGE_TAG}-image.txt"',
+    );
+    expect(provenance?.uses).toMatch(
+      new RegExp(
+        `^${SLSA_GENERATOR.replace(/\./g, "\\.")}@v\\d+\\.\\d+\\.\\d+$`,
+      ),
+    );
+    expect(provenance?.with).toEqual({
+      "base64-subjects": "${{ needs.release-manifest.outputs.hashes }}",
+      "provenance-name": "healthlog-${{ github.ref_name }}.intoto.jsonl",
+      "upload-assets": false,
+    });
+  });
+
+  it("writes the index and both platform digests, without attestation manifests", () => {
+    const { result, directory } = runManifest(
+      indexFixture([
+        ["linux", "arm64", ARM64_DIGEST],
+        ["linux", "amd64", AMD64_DIGEST],
+        ["unknown", "unknown", ATTESTATION_DIGEST],
+      ]),
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(
+      readFileSync(join(directory, "healthlog-v1.49.0-image.txt"), "utf8"),
+    ).toBe(
+      [
+        "# HealthLog v1.49.0 container image, built from commit 0123456789abcdef0123456789abcdef01234567",
+        `ghcr.io/mbombeck/healthlog:v1.49.0@${INDEX_DIGEST} index`,
+        `ghcr.io/mbombeck/healthlog:1.49.0@${INDEX_DIGEST} index`,
+        `ghcr.io/mbombeck/healthlog@${AMD64_DIGEST} linux/amd64`,
+        `ghcr.io/mbombeck/healthlog@${ARM64_DIGEST} linux/arm64`,
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("refuses an index that lacks a platform", () => {
+    const { result } = runManifest(
+      indexFixture([
+        ["linux", "amd64", AMD64_DIGEST],
+        ["unknown", "unknown", ATTESTATION_DIGEST],
+      ]),
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("expected linux/amd64 and linux/arm64");
+  });
+
+  it("creates a missing release as a draft and attaches the three files", () => {
+    const { result, commands } = runAssetUpload(false);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(commands).toEqual([
+      "release view v1.49.0 --repo MBombeck/HealthLog",
+      "release create v1.49.0 --repo MBombeck/HealthLog --draft --verify-tag --title v1.49.0 --notes ",
+      "release upload v1.49.0 --repo MBombeck/HealthLog --clobber release-assets/healthlog-v1.49.0-image.txt release-assets/healthlog-v1.49.0-image.sigstore.json release-assets/healthlog-v1.49.0.intoto.jsonl",
+    ]);
+  });
+
+  it("attaches to an existing release and never publishes or edits it", () => {
+    const { result, commands } = runAssetUpload(true);
+    const script = stepScript(
+      loadWorkflow("docker-publish.yml"),
+      "release-assets",
+      "Upload release assets",
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(commands).toHaveLength(2);
+    expect(commands[1]).toContain("release upload v1.49.0");
+    expect(script).not.toMatch(/release edit|--draft=false|--latest/);
   });
 });

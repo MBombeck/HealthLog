@@ -62,16 +62,23 @@ async function relayUsage(now: Date) {
 
 export async function adminRelayStatus(userId: string, now = new Date()) {
   const config = relayConfig();
-  const [row, admin, bound, consented, usage] = await Promise.all([
-    config.available ? loadRegistration(config) : null,
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { adminNoticesDismissed: true },
-    }),
-    prisma.device.count({ where: { relayState: "bound" } }),
-    prisma.device.count({ where: { relayConsentAt: { not: null } } }),
-    relayUsage(now),
-  ]);
+  const [row, admin, bound, consented, usage, unbindsPending, held] =
+    await Promise.all([
+      config.available ? loadRegistration(config) : null,
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { adminNoticesDismissed: true },
+      }),
+      prisma.device.count({ where: { relayState: "bound" } }),
+      prisma.device.count({ where: { relayConsentAt: { not: null } } }),
+      relayUsage(now),
+      prisma.pushRelayUnbind.count(),
+      prisma.pushRelayRegistration.findMany({
+        where: { instanceId: { not: null } },
+        select: { relayHost: true },
+        orderBy: { relayHost: "asc" },
+      }),
+    ]);
   const health = relayHealth(row);
   const docs = config.origin ? relayDocumentUrls(config.origin) : null;
   return {
@@ -90,6 +97,21 @@ export async function adminRelayStatus(userId: string, now = new Date()) {
     devices: { bound, consented },
     usage,
     termsVersion: RELAY_TERMS_VERSION,
+    // The terms text the operator accepted with the switch is older than the
+    // current one: the card asks for the current text to be confirmed once.
+    // The relay keeps running meanwhile; nothing waits on the answer.
+    termsConfirmationNeeded:
+      row !== null && row.termsVersion !== RELAY_TERMS_VERSION,
+    // Unbinds owed to the relay (erased accounts, revoked devices) that it
+    // has not confirmed yet (`unbind-queue.ts`).
+    unbindsPending,
+    // Relays this server is still registered with but cannot reach under
+    // its current settings (`PUSH_RELAY_MODE=off`, a changed
+    // `PUSH_RELAY_URL`): they keep the server's device bindings until it
+    // leaves them.
+    unreachableRegistrations: held
+      .map((h) => h.relayHost)
+      .filter((host) => !config.available || host !== config.host),
     termsUrl: docs?.termsUrl ?? null,
     privacyUrl: docs?.privacyUrl ?? null,
     docsUrl: RELAY_DOCS_URL,

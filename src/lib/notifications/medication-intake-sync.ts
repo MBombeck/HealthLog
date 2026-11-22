@@ -241,7 +241,9 @@ const SYNC_DEVICE_SELECT = {
  * accepted, unexpired MANAGE grant), whose phone shows the profile's doses.
  * Each one only while it takes the sync: not pending deletion, its APNs
  * channel on, the sync not switched off. The push carries no data, so a
- * Guardian's device learns nothing it could not read itself.
+ * Guardian's device learns nothing it could not read itself. It reaches a
+ * Guardian's device over this server's own APNs key only, never over the
+ * relay (`fanOutIntakeSyncApns`).
  */
 async function syncCandidates(userId: string): Promise<string[]> {
   const record = await prisma.user.findUnique({
@@ -515,11 +517,24 @@ async function fanOutIntakeSyncApns(args: {
   const routes: Record<string, number> = {};
   let deferred = 0;
   if (ctx) {
+    // A push about another person's record never goes over the relay, the
+    // silent sync included (`relayCarries` holds the same rule for alerts):
+    // the timing of a managed profile's doses would reach the relay under the
+    // Guardian's device, without the profile's consent. The app refreshes a
+    // managed profile when it opens, so the Guardian loses only the update
+    // while the app is in the background, and only over the relay.
+    const sealedSync = sealedDevices.filter(
+      (d) => !(args.guardians.has(d.userId) && routeOf(d, ctx) === "relay"),
+    );
     for (const device of sealedDevices) {
       const route = routeOf(device, ctx);
       routes[route] = (routes[route] ?? 0) + 1;
     }
-    const sealed = await sendSealedIntakeSync(sealedDevices, ctx, {
+    const guardianRelaySkipped = sealedDevices.length - sealedSync.length;
+    if (guardianRelaySkipped > 0) {
+      routes.guardian_relay_skipped = guardianRelaySkipped;
+    }
+    const sealed = await sendSealedIntakeSync(sealedSync, ctx, {
       confirmationFor: args.confirmationFor,
     });
     deferred = sealed.deferred.length;
