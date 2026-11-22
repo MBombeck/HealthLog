@@ -99,6 +99,7 @@ function buildUser(
     unitPreference: "metric",
     timeFormat: "AUTO",
     dateFormat: "AUTO",
+    medicineRegistry: "NONE",
     disableCoach: false,
     fullName: null,
     insurerName: null,

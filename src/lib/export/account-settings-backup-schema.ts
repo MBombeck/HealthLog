@@ -54,6 +54,7 @@ export const accountSettingsBackupSchema = z
     locale: z.string().nullable().optional(),
     unitPreference: z.string().nullable().optional(),
     glucoseUnit: z.string().nullable().optional(),
+    medicineRegistry: z.string().nullable().optional(),
     timeFormat: z.string().optional(),
     dateFormat: z.string().optional(),
     modulePreferencesJson: z.unknown().optional(),

@@ -42,6 +42,7 @@ import * as centralCodex from "@/app/api/auth/me/use-central-codex/route";
 import * as disableCoach from "@/app/api/auth/me/disable-coach/route";
 import * as unitPreference from "@/app/api/auth/me/unit-preference/route";
 import * as glucoseUnit from "@/app/api/auth/me/glucose-unit/route";
+import * as medicineRegistry from "@/app/api/auth/me/medicine-registry/route";
 import * as injectionSites from "@/app/api/auth/me/injection-site-prefs/route";
 import * as modules from "@/app/api/auth/me/modules/route";
 import * as healthScore from "@/app/api/auth/me/health-score-config/route";
@@ -429,6 +430,19 @@ function entries(user: Pick<User, "id">): Entry[] {
       read: get(glucoseUnit.GET, "/api/auth/me/glucose-unit", "glucoseUnit"),
       expected: "mmol/L",
       me: { pick: (me) => at(me, "glucoseUnit"), expected: "mmol/L" },
+    },
+    {
+      // #1430 — published on /me, which is also its read.
+      columns: ["medicineRegistry"],
+      write: {
+        handler: medicineRegistry.PATCH,
+        method: "PATCH",
+        route: "/api/auth/me/medicine-registry",
+        body: { medicineRegistry: "BE" },
+      },
+      read: get(getMe, "/api/auth/me", "medicineRegistry"),
+      expected: "BE",
+      me: { pick: (me) => at(me, "medicineRegistry"), expected: "BE" },
     },
     {
       columns: ["globalExcludedInjectionSites"],

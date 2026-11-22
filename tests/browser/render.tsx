@@ -46,6 +46,7 @@ export function authUser(overrides: Partial<AuthUser> = {}): AuthUser {
     unitPreference: "metric",
     timeFormat: "AUTO",
     dateFormat: "AUTO",
+    medicineRegistry: "NONE",
     disableCoach: false,
     fullName: null,
     insurerName: null,

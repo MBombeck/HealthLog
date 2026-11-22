@@ -37,6 +37,7 @@
  * verbatim (so the restore's key check sees it), a portable file carries the
  * readable value and the restore seals it under this host's key.
  */
+import { MEDICINE_REGISTRY_CHOICES } from "@/lib/medications/leaflet-registries";
 import { Buffer } from "node:buffer";
 
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
@@ -592,6 +593,8 @@ const ACCOUNT_SETTING_CODECS = {
     glucoseUnitPatchSchema.shape.glucoseUnit.options,
     true,
   ),
+  // #1430 — which medicine registry the leaflet search opens.
+  medicineRegistry: oneOf("medicineRegistry", MEDICINE_REGISTRY_CHOICES, true),
   timeFormat: oneOf("timeFormat", Object.values(TimeFormatPreference), false),
   dateFormat: oneOf("dateFormat", Object.values(DateFormatPreference), false),
   // What is switched on, what is shown where, and what counts as in range.

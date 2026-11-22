@@ -20,6 +20,7 @@
  *
  * Part of the OpenAPI route table; aggregated in `./index.ts`.
  */
+import { medicineRegistryField } from "./medications/leaflet";
 import { HANDOVER_METHODS } from "@/lib/validations/claim-sso";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
@@ -538,6 +539,8 @@ const accountPayload = z
       .describe(
         "The account's chosen glucose display unit, as stored. `null` means the person never chose one (or the stored value is neither unit), and the server then shows glucose in mg/dL.",
       ),
+    // #1430 — enumerated: the medication surfaces and the settings read it.
+    medicineRegistry: medicineRegistryField,
     features: accountFeaturesBlock,
     push: accountPushBlock,
     accountAccess: accountAccessBlock,

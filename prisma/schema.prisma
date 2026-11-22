@@ -445,6 +445,17 @@ model User {
   nutrientTargetsJson      Json?                @map("nutrient_targets_json")
   // Blood-glucose display unit preference. Canonical storage is mg/dL.
   glucoseUnit              String?              @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
+  /// #1430 — which country's (or the EU's) official medicine registry the
+  /// "Find leaflet" link opens: an ISO 3166 alpha-2 code from
+  /// `MEDICINE_REGISTRIES` (`src/lib/medications/leaflet-registries.ts`), or
+  /// `NONE`. Independent of the interface language. NULL means not settled
+  /// yet: the first `/api/auth/me` read derives it once from the locale and
+  /// the time zone where they agree on one registry, otherwise `NONE`, and
+  /// stores it, so a later change of language never moves it. Written by
+  /// `PATCH /api/auth/me/medicine-registry`; read by `/api/auth/me` and the
+  /// medication detail read, which builds the link. The server never fetches
+  /// anything from a registry.
+  medicineRegistry         String?              @map("medicine_registry")
   // v1.18.6 — explicit "I have diabetes / clinician glucose targets" opt-in.
   // When `true`, the glucose target resolver applies the tighter ADA glycemic
   // GOAL bands (fasting 80–130, postprandial < 180) instead of the general
@@ -3214,6 +3225,13 @@ model Medication {
   /// no note. Written by the create and edit routes and the restore only,
   /// trimmed, at most 500 characters.
   noteEncrypted                 Bytes?                 @map("note_encrypted")
+  /// #1430 — the official leaflet the person found and saved for this
+  /// medication: an `https:` URL of at most 2048 characters, any host, because
+  /// the person pastes it. Shown as an external link only; the server never
+  /// fetches it and no page embeds it. NULL = none saved. Written by the
+  /// create and edit routes and the restore; read by the medication reads,
+  /// the backup and the data export.
+  leafletUrl                    String?                @map("leaflet_url")
   /// v1.16.11 — low-stock notification stamp. Set when the daily
   /// low-stock pass dispatched a notification for the current
   /// threshold crossing; cleared (re-armed) when the projected runway

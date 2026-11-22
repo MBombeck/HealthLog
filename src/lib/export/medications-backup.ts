@@ -135,6 +135,9 @@ function serialiseMedicationRow(
             : null,
         }
       : { note: readMedicationNote(m.noteEncrypted) }),
+    // #1430 — the leaflet link the person saved. Both purposes: it is
+    // something they chose, and it reads the same on any host.
+    leafletUrl: m.leafletUrl,
     // Both purposes carry the creation instant: it is the floor of the
     // medication's expected slots, so a restore stamped with the restore
     // time would read the whole restored history as predating the

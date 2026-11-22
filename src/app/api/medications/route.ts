@@ -18,6 +18,7 @@ import {
   withCourseActionAuthority,
 } from "@/lib/medications/course-authority";
 import { createMedication } from "@/lib/medications/create-medication";
+import { resolveMedicineRegistry } from "@/lib/medications/medicine-registry";
 import { withIdempotency } from "@/lib/idempotency";
 import { NextRequest } from "next/server";
 
@@ -63,7 +64,10 @@ async function postMedication(request: NextRequest): Promise<Response> {
   // it afterwards — `PUT /api/medications/[id]` and the DELETE beside it stay
   // on `requireAuth()` and refuse under a switch. Adding is help; rewriting
   // the owner's cabinet is not.
-  const { user, grantId } = await requireRecordAuth("write", "medications");
+  const { user, actor, grantId } = await requireRecordAuth(
+    "write",
+    "medications",
+  );
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 64 * 1024,
@@ -91,6 +95,7 @@ async function postMedication(request: NextRequest): Promise<Response> {
     grantId,
     data: parsed.data,
     ipAddress: getClientIp(request),
+    leafletRegistry: resolveMedicineRegistry(actor),
   });
   switch (outcome.kind) {
     case "refused":

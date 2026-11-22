@@ -50,6 +50,7 @@ function buildUser(unitPreference: "metric" | "imperial"): AuthUser {
     unitPreference,
     timeFormat: "AUTO",
     dateFormat: "AUTO",
+    medicineRegistry: "NONE",
     disableCoach: false,
     fullName: null,
     insurerName: null,

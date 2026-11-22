@@ -9,6 +9,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { sealMedicationNote } from "@/lib/medications/medication-note";
+import { restoredLeafletUrl } from "@/lib/medications/leaflet-url";
 import { toJson } from "@/lib/db";
 import { restoredMedicationCreatedAt } from "@/lib/export/medication-created-at";
 import {
@@ -149,6 +150,7 @@ function medicationRowData(
       m.noteEncrypted != null
         ? decodeEncryptedBytes(m.noteEncrypted)
         : (sealMedicationNote(m.note ?? null) ?? null),
+    leafletUrl: restoredLeafletUrl(m.leafletUrl),
     lowStockNotifiedAt: m.lowStockNotifiedAt
       ? new Date(m.lowStockNotifiedAt)
       : null,

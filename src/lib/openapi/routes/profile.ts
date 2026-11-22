@@ -1186,7 +1186,7 @@ const profileSummaryResponse = z
  * over the cap 413, and one that does not parse 400. All three are answered
  * before validation, and nothing is written.
  */
-const cappedScalarBodyRefusals = {
+export const cappedScalarBodyRefusals = {
   "400": {
     description: "The request body is not parseable JSON. Nothing was written.",
     content: { "application/json": { schema: errorEnvelope } },

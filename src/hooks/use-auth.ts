@@ -21,6 +21,10 @@ import type {
 import { isTimeFormatPreference, storeTimeFormat } from "@/lib/time-format";
 import { isDateFormatPreference, storeDateFormat } from "@/lib/date-format";
 import { storeTimezone } from "@/lib/timezone-mirror";
+import {
+  isMedicineRegistryChoice,
+  type MedicineRegistryChoice,
+} from "@/lib/medications/leaflet-registries";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { AiCapabilities } from "@/lib/ai/capabilities/types";
 import type { CoachReasoningState } from "@/lib/ai/reasoning/resolve";
@@ -161,6 +165,12 @@ export interface AuthUser {
    * Coerced to "AUTO" against a stale /me payload.
    */
   dateFormat: DateFormatPreference;
+  /**
+   * #1430 — which official medicine registry the "Find leaflet" link opens,
+   * or `NONE`. Independent of the interface language; settled once by the
+   * server. Coerced to `NONE` against a stale /me payload.
+   */
+  medicineRegistry: MedicineRegistryChoice;
   /**
    * v1.4.47 — the signed-in person's own stored Coach opt-out. It is
    * the value the Activate-Coach switch and the module toggle edit, and
@@ -507,6 +517,9 @@ export function adoptMePayload(
     unitPreference: data.unitPreference === "imperial" ? "imperial" : "metric",
     timeFormat,
     dateFormat,
+    medicineRegistry: isMedicineRegistryChoice(data.medicineRegistry)
+      ? data.medicineRegistry
+      : "NONE",
     // v1.15.0 — coerce against a stale /me payload so the cycle nav entry
     // stays hidden by default when the field is absent.
     cycleTrackingEnabled: data.cycleTrackingEnabled === true,

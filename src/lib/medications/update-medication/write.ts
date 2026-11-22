@@ -311,6 +311,7 @@ function medicationUpdateData(edit: MedicationEditWrite) {
     atcCode,
     rxNormCode,
     note,
+    leafletUrl,
     oneShot,
     asNeeded,
     trackIntake,
@@ -346,6 +347,8 @@ function medicationUpdateData(edit: MedicationEditWrite) {
     ...(atcCode !== undefined && { atcCode }),
     ...(rxNormCode !== undefined && { rxNormCode }),
     ...(noteEncrypted !== undefined && { noteEncrypted }),
+    // #1430 — the saved leaflet link; NULL or a blank string clears it.
+    ...(leafletUrl !== undefined && { leafletUrl: leafletUrl || null }),
     // Scheduling primitives — pass-through when supplied.
     // `startsOn` / `endsOn` are not written here (#1024): the
     // course writer below writes them together with the course they
