@@ -33,6 +33,7 @@ export const SERVER_FEATURES = [
   "medication.resolved-slots",
   "medication.intake-reopened",
   "push.relay-operator-decision",
+  "measurement.stats-computed-at",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -91,4 +92,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     'MEDICATION_INTAKE_RECORDED carries outcome "reopened" with takenAt and takenVia null when a dose is undone elsewhere, plus asOf (server time) in d and in plaintext; the today list answers with a HealthLog-As-Of header on 200 and 304.',
   "push.relay-operator-decision":
     "/api/auth/me carries push.relay.operatorDecision (undecided | on | off) and push.relay.canDecide; an admin answers the one-time relay question in the web admin (POST /api/admin/push-relay/decision is cookie-only).",
+  "measurement.stats-computed-at":
+    "POST /api/measurements/batch accepts an optional computedAt (ISO 8601) on stats: rows; a write older than the stored one answers skipped with reason stale, and without computedAt the last write wins.",
 };
