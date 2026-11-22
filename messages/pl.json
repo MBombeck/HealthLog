@@ -1578,6 +1578,7 @@
     "complianceWindow": "Przestrzeganie {days} dni",
     "complianceUnavailable": "Nie udało się wczytać danych o przestrzeganiu",
     "complianceNotApplicable": "Przestrzeganie zaleceń nie ma zastosowania",
+    "complianceNoDoses": "Brak dawek",
     "complianceNotApplicableReason": "W HealthLog nie zapisano lokalnego harmonogramu.",
     "complianceInfo": "Udział zarejestrowanych dawek względem oczekiwanych. Plany tygodniowe liczone są tydzień po tygodniu.",
     "complianceInfoLabel": "Co oznacza przestrzeganie zaleceń?",
@@ -1588,6 +1589,8 @@
     "cycleDueToday": "Termin dzisiaj",
     "cycleNoClosedCycles": "Brak zakończonych cykli dawkowania",
     "intakeToastTaken": "{name}: przyjęte, {time}",
+    "intakeToastTakenFor": "{name}: przyjęte, {time}, jako dawka z {slot}",
+    "intakeToastExtra": "{name}: przyjęte, {time}, jako dodatkowa dawka",
     "intakeToastSkipped": "{name}: pominięte",
     "intakeToastFailed": "Nie udało się zapisać {name}. Spróbuj ponownie",
     "intakeUndone": "Wpis cofnięty",
@@ -2675,7 +2678,9 @@
         "undo": "Cofnij",
         "takeFor": "Przyjmij {name}",
         "skipFor": "Pomiń {name}",
-        "takeSlot": "Przyjmij ({time})"
+        "takeSlot": "Przyjmij ({time})",
+        "takeExtra": "Przyjmij dodatkową dawkę",
+        "takeExtraFor": "Przyjmij dodatkową dawkę: {name}"
       },
       "state": {
         "pending": "Oczekujące",
@@ -2690,7 +2695,8 @@
       },
       "snoozedToast": "{name}: przypomnienie o {time}",
       "snoozeFailed": "Nie udało się odłożyć {name}. Spróbuj ponownie",
-      "earlyHint": "Wcześnie: ta dawka przypada od {time}."
+      "earlyHint": "Wcześnie: ta dawka przypada od {time}.",
+      "extraHint": "Liczy się jako dodatkowa dawka, nie jako dawka z {time}."
     },
     "intakeForm": {
       "title": "Zarejestruj przyjęcie",
@@ -2702,6 +2708,7 @@
       "doseHint": "Wstępnie wpisana zaplanowana dawka. Zmień ją tylko, jeśli przyjęto inną ilość.",
       "countsFor": "Liczy się jako dawka z {time}.",
       "countsForLate": "Liczy się jako dawka z {time}, z opóźnieniem.",
+      "countsForEarly": "Liczy się jako dawka z {time}, przyjęta wcześniej.",
       "countNearLabel": "Policz jako dawkę z {time}",
       "skips": "Pomija dawkę z {time}.",
       "extraDose": "Zapisana jako dodatkowa dawka, poza planem. Zostaje w historii i nie wlicza się do przestrzegania planu.",
@@ -6435,6 +6442,8 @@
             "privacyNote": "Hasło jest zapisywane w postaci zaszyfrowanej i nigdy więcej nie jest pokazywane. Każdy plik jest importowany raz: pliku, który HealthLog już ma, nie czyta ponownie. Folder w sieci domowej działa tylko wtedy, gdy osoba zarządzająca serwerem zezwoli na jego adres.",
             "lastAttempt": "Ostatnia próba {when}: {outcome}",
             "fetchNow": "Pobierz teraz",
+            "fetchStarted": "Pobieranie rozpoczęte. Wynik pojawi się na tej karcie.",
+            "removed": "Folder usunięty",
             "remove": "Usuń folder",
             "removeTitle": "Usunąć ten folder?",
             "removeBody": "HealthLog przestanie z niego pobierać i zapomni hasło. To, co już zaimportowano, zostaje."
@@ -14473,6 +14482,8 @@
     "loadFailed": "Nie udało się wczytać tego dnia.",
     "dayOf": "Dzień {n} z {m}",
     "dayN": "Dzień {n}",
+    "seizure": "Napad",
+    "seizureCount": "Napady: {count}",
     "usualRange": "Zwykle od {lo} do {hi}",
     "groups": {
       "scores": "Wyniki",
@@ -15300,6 +15311,7 @@
       "untyped": "Nie zapisano rodzaju",
       "ruleText": "{count} lub więcej w ciągu {hours} h",
       "recorded": "Zapisane napady",
+      "diarySince": "Dziennik prowadzony od",
       "seizureDays": "Dni z napadem",
       "seizureFreeDays": "Dni bez zapisanego napadu",
       "per28Days": "Napady na 28 dni",

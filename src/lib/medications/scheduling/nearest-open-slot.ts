@@ -40,13 +40,19 @@ import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { resolveForcedSlotForWrite } from "@/lib/medications/scheduling/slot-upsert";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import { NEAR_SLOT_CEILING_MINUTES } from "@/lib/medications/dose-state/take-rule";
 import {
   holdsAnswer,
   holdsTake,
 } from "@/lib/medications/scheduling/holds-take";
 
-/** How far from its slot a take still answers it: six hours either side. */
-export const NEAREST_SLOT_REACH_MS = 6 * 60 * 60 * 1000;
+/**
+ * How far from its slot a take still answers it: six hours either side. The
+ * same constant the web's take controls measure by
+ * (`NEAR_SLOT_CEILING_MINUTES`), so a control says "extra dose" exactly when
+ * this rule leaves the take unbound.
+ */
+export const NEAREST_SLOT_REACH_MS = NEAR_SLOT_CEILING_MINUTES * 60 * 1000;
 /** How close to a recorded take a second one is the same dose: two hours. */
 export const REPEAT_WINDOW_MS = 2 * 60 * 60 * 1000;
 

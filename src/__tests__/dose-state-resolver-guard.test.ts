@@ -68,6 +68,8 @@ const MAY_TOUCH_WINDOWS: Record<string, string> = {
   "lib/medications/scheduling/dose-window-plan.ts":
     "the wizard's plain-words window plan, read off the band minter",
   "lib/daily/digest.ts": "the digest's due-soon horizon",
+  "lib/medications/dose-state/take-rule.ts":
+    "how far a take sits from the slot a control names (write side)",
   "components/medications/sections/inventory-section.tsx":
     "passes the thresholds to the card it renders",
 };

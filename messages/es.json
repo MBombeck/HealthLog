@@ -1578,6 +1578,7 @@
     "complianceWindow": "Cumplimiento {days} días",
     "complianceUnavailable": "No se pudo cargar el cumplimiento",
     "complianceNotApplicable": "El cumplimiento no es aplicable",
+    "complianceNoDoses": "Aún sin dosis",
     "complianceNotApplicableReason": "No hay un horario local guardado en HealthLog.",
     "complianceInfo": "Proporción de dosis registradas respecto a las esperadas. Las pautas semanales se cuentan semana a semana.",
     "complianceInfoLabel": "¿Qué significa el cumplimiento?",
@@ -1588,6 +1589,8 @@
     "cycleDueToday": "Pendiente hoy",
     "cycleNoClosedCycles": "Aún no hay ciclos de dosis completados",
     "intakeToastTaken": "{name}: tomada, {time}",
+    "intakeToastTakenFor": "{name}: tomada, {time}, para la dosis de las {slot}",
+    "intakeToastExtra": "{name}: tomada, {time}, como dosis extra",
     "intakeToastSkipped": "{name}: omitida",
     "intakeToastFailed": "No se pudo registrar {name}; inténtalo de nuevo",
     "intakeUndone": "Entrada revertida",
@@ -2675,7 +2678,9 @@
         "undo": "Deshacer",
         "takeFor": "Tomar {name}",
         "skipFor": "Omitir {name}",
-        "takeSlot": "Tomar ({time})"
+        "takeSlot": "Tomar ({time})",
+        "takeExtra": "Tomar una dosis extra",
+        "takeExtraFor": "Tomar una dosis extra de {name}"
       },
       "state": {
         "pending": "Pendiente",
@@ -2690,7 +2695,8 @@
       },
       "snoozedToast": "{name}: te lo recordaremos a las {time}",
       "snoozeFailed": "No se pudo posponer {name}. Inténtalo de nuevo",
-      "earlyHint": "Pronto: esta dosis toca a partir de las {time}."
+      "earlyHint": "Pronto: esta dosis toca a partir de las {time}.",
+      "extraHint": "Cuenta como dosis extra, no para la dosis de las {time}."
     },
     "intakeForm": {
       "title": "Registrar toma",
@@ -2702,6 +2708,7 @@
       "doseHint": "Precargada con la dosis prevista. Cámbiala solo si tomaste otra cantidad.",
       "countsFor": "Cuenta para la dosis de las {time}.",
       "countsForLate": "Cuenta para la dosis de las {time}, como tardía.",
+      "countsForEarly": "Cuenta para la dosis de las {time}, tomada antes de tiempo.",
       "countNearLabel": "Contarla para la dosis de las {time}",
       "skips": "Omite la dosis de las {time}.",
       "extraDose": "Se registra como dosis extra, fuera del horario. Queda en el historial y no cuenta para el cumplimiento.",
@@ -6435,6 +6442,8 @@
             "privacyNote": "La contraseña se guarda cifrada y no se vuelve a mostrar. Cada archivo se importa una vez: un archivo que HealthLog ya tiene no se lee dos veces. Una carpeta en tu red doméstica solo funciona si quien administra el servidor permite su dirección.",
             "lastAttempt": "Último intento {when}: {outcome}",
             "fetchNow": "Recoger ahora",
+            "fetchStarted": "Obteniendo ahora. El resultado aparecerá en esta tarjeta.",
+            "removed": "Carpeta eliminada",
             "remove": "Quitar carpeta",
             "removeTitle": "¿Quitar esta carpeta?",
             "removeBody": "HealthLog deja de recoger de ella y olvida la contraseña. Lo que ya se importó se queda."
@@ -14473,6 +14482,8 @@
     "loadFailed": "No se pudo cargar este día.",
     "dayOf": "Día {n} de {m}",
     "dayN": "Día {n}",
+    "seizure": "Crisis",
+    "seizureCount": "{count} crisis",
     "usualRange": "Habitual de {lo} a {hi}",
     "groups": {
       "scores": "Puntuaciones",
@@ -15300,6 +15311,7 @@
       "untyped": "Sin tipo registrado",
       "ruleText": "{count} o más en {hours} h",
       "recorded": "Crisis registradas",
+      "diarySince": "Diario llevado desde",
       "seizureDays": "Días con crisis",
       "seizureFreeDays": "Días sin crisis registradas",
       "per28Days": "Crisis cada 28 días",

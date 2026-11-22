@@ -1578,6 +1578,7 @@
     "complianceWindow": "Therapietreue ({days} Tage)",
     "complianceUnavailable": "Therapietreue konnte nicht geladen werden",
     "complianceNotApplicable": "Therapietreue nicht anwendbar",
+    "complianceNoDoses": "Noch keine Dosen",
     "complianceNotApplicableReason": "In HealthLog ist kein lokaler Zeitplan gespeichert.",
     "complianceInfo": "Anteil der erfassten an den erwarteten Dosen. Wöchentliche Pläne zählen wochenweise.",
     "complianceInfoLabel": "Was bedeutet Therapietreue?",
@@ -1588,6 +1589,8 @@
     "cycleDueToday": "Heute fällig",
     "cycleNoClosedCycles": "Noch keine abgeschlossenen Dosiszyklen",
     "intakeToastTaken": "{name}: genommen, {time}",
+    "intakeToastTakenFor": "{name}: genommen, {time}, für die Dosis um {slot}",
+    "intakeToastExtra": "{name}: genommen, {time}, als zusätzliche Dosis",
     "intakeToastSkipped": "{name}: übersprungen",
     "intakeToastFailed": "{name} konnte nicht erfasst werden. Bitte erneut versuchen",
     "intakeUndone": "Eintrag zurückgenommen",
@@ -2675,7 +2678,9 @@
         "undo": "Rückgängig",
         "takeFor": "Einnehmen: {name}",
         "skipFor": "Überspringen: {name}",
-        "takeSlot": "Einnehmen ({time})"
+        "takeSlot": "Einnehmen ({time})",
+        "takeExtra": "Zusätzlich einnehmen",
+        "takeExtraFor": "{name} zusätzlich einnehmen"
       },
       "state": {
         "pending": "Ausstehend",
@@ -2690,7 +2695,8 @@
       },
       "snoozedToast": "{name}: Erinnerung wieder um {time}",
       "snoozeFailed": "{name} konnte nicht verschoben werden. Bitte erneut versuchen",
-      "earlyHint": "Früh dran: Diese Dosis ist ab {time} fällig."
+      "earlyHint": "Früh dran: Diese Dosis ist ab {time} fällig.",
+      "extraHint": "Zählt als zusätzliche Dosis, nicht für die Dosis um {time}."
     },
     "intakeForm": {
       "title": "Einnahme erfassen",
@@ -2702,6 +2708,7 @@
       "doseHint": "Vorbelegt mit der geplanten Dosis. Ändere sie nur, wenn du eine andere Menge genommen hast.",
       "countsFor": "Zählt für die Dosis um {time}.",
       "countsForLate": "Zählt für die Dosis um {time}, als verspätet.",
+      "countsForEarly": "Zählt für die Dosis um {time}, früher genommen.",
       "countNearLabel": "Für die Dosis um {time} zählen",
       "skips": "Überspringt die Dosis um {time}.",
       "extraDose": "Wird als zusätzliche Dosis außerhalb des Plans erfasst. Sie bleibt im Verlauf und zählt nicht zur Therapietreue.",
@@ -6435,6 +6442,8 @@
             "privacyNote": "Das Passwort wird verschlüsselt gespeichert und nie wieder angezeigt. Jede Datei wird einmal übernommen: Eine Datei, die HealthLog schon hat, wird nicht doppelt gelesen. Ein Ordner im Heimnetz funktioniert nur, wenn wer den Server betreibt seine Adresse freigibt.",
             "lastAttempt": "Letzter Versuch {when}: {outcome}",
             "fetchNow": "Jetzt abholen",
+            "fetchStarted": "Wird jetzt abgerufen. Das Ergebnis erscheint auf dieser Karte.",
+            "removed": "Ordner entfernt",
             "remove": "Ordner entfernen",
             "removeTitle": "Diesen Ordner entfernen?",
             "removeBody": "HealthLog holt nichts mehr von dort und vergisst das Passwort. Was schon übernommen wurde, bleibt."
@@ -14473,6 +14482,8 @@
     "loadFailed": "Dieser Tag konnte nicht geladen werden.",
     "dayOf": "Tag {n} von {m}",
     "dayN": "Tag {n}",
+    "seizure": "Anfall",
+    "seizureCount": "{count} Anfälle",
     "usualRange": "Üblich {lo} bis {hi}",
     "groups": {
       "scores": "Scores",
@@ -15300,6 +15311,7 @@
       "untyped": "Keine Anfallsart erfasst",
       "ruleText": "{count} oder mehr in {hours} h",
       "recorded": "Erfasste Anfälle",
+      "diarySince": "Tagebuch geführt seit",
       "seizureDays": "Tage mit Anfall",
       "seizureFreeDays": "Tage ohne erfassten Anfall",
       "per28Days": "Anfälle pro 28 Tage",

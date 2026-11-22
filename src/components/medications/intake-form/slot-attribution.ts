@@ -9,9 +9,9 @@
  *
  *   - a take within the on-time half-window of a slot counts for it
  *     (`scheduledFor`, the server's canonical slot upsert);
- *   - a take further off but plausibly that dose (up to four hours) counts
- *     for it as late, unless the person switches that off (`forceSlotInstant`,
- *     the pin the history used to offer after the save);
+ *   - a take further off but plausibly that dose (up to six hours) counts
+ *     for it, early or late, unless the person switches that off
+ *     (`forceSlotInstant`, the pin the history used to offer after the save);
  *   - anything else, or a day without an open slot, is an extra dose
  *     outside the schedule (no slot);
  *   - a skip always names the slot it skips (the nearest one on that day).
@@ -26,6 +26,12 @@
  * Pure.
  */
 
+import {
+  takeFields,
+  takeReach,
+  type TakeReach,
+} from "@/lib/medications/dose-state/take-rule";
+
 /** A ledger row as `GET /api/medications/[id]/dose-history` sends it. */
 export interface DayLedgerRow {
   kind: "slot" | "ad_hoc";
@@ -39,11 +45,6 @@ export interface DaySlot {
   slotHm: string;
   instant: Date;
 }
-
-/** The default on-time half-window in minutes (±1 h, the dose-window default). */
-export const ON_TIME_MINUTES = 60;
-/** Past this gap a take is clearly its own extra dose. */
-export const NEAR_SLOT_CEILING_MINUTES = 240;
 
 /**
  * The slots of one day's ledger a dose can still count for: slot rows inside
@@ -91,19 +92,18 @@ export function nearestSlotForTake(
   return best;
 }
 
-/** How a take sits against its nearest slot. */
-export function classifyTake(
-  nearest: NearestSlot | null,
-): "exact" | "near" | "extra" {
-  if (!nearest) return "extra";
-  if (nearest.gapMinutes <= ON_TIME_MINUTES) return "exact";
-  if (nearest.gapMinutes <= NEAR_SLOT_CEILING_MINUTES) return "near";
-  return "extra";
+/**
+ * How a take sits against its nearest slot, by the one take rule every take
+ * control shares (`@/lib/medications/dose-state/take-rule`).
+ */
+export function classifyTake(nearest: NearestSlot | null): TakeReach {
+  return nearest ? takeReach(nearest.gapMinutes) : "extra";
 }
 
 export type SlotAttribution =
   | { kind: "slot"; slot: NearestSlot }
-  | { kind: "late"; slot: NearestSlot }
+  /** Near, outside the on-time window: pinned, `early` before the slot. */
+  | { kind: "late"; slot: NearestSlot; early: boolean }
   | { kind: "extra"; nearSlot: NearestSlot | null }
   | { kind: "skip"; slot: NearestSlot }
   | { kind: "none" };
@@ -126,23 +126,34 @@ export function attributeIntake(input: {
   if (how === "exact" && nearest) return { kind: "slot", slot: nearest };
   if (how === "near" && nearest) {
     return input.countNear
-      ? { kind: "late", slot: nearest }
+      ? {
+          kind: "late",
+          slot: nearest,
+          early: new Date(input.takenAtLocal) < nearest.instant,
+        }
       : { kind: "extra", nearSlot: nearest };
   }
   return { kind: "extra", nearSlot: null };
 }
 
-/** The slot fields of the intake POST for an attribution. */
+/**
+ * The slot fields of the intake POST for an attribution. An extra dose says
+ * so (`extraDose`): left unnamed, the server would bind a take within reach
+ * of a slot to it, and the form would have said "extra dose" for nothing.
+ */
 export function slotFieldsOf(attribution: SlotAttribution): {
   scheduledFor?: string;
   forceSlotInstant?: string;
+  extraDose?: true;
 } {
   switch (attribution.kind) {
     case "slot":
     case "skip":
-      return { scheduledFor: attribution.slot.instant.toISOString() };
+      return takeFields("slot", attribution.slot.instant);
     case "late":
-      return { forceSlotInstant: attribution.slot.instant.toISOString() };
+      return takeFields("pinned", attribution.slot.instant);
+    case "extra":
+      return takeFields("extra", new Date(0));
     default:
       return {};
   }
