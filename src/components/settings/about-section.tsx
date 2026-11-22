@@ -274,12 +274,7 @@ export function AboutSection() {
             title={t("settings.about.linksHeading")}
           />
           <SettingsCardActions align="start">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-            >
+            <Button asChild variant="outline" size="sm">
               <a
                 href={version.repository}
                 target="_blank"
@@ -290,12 +285,7 @@ export function AboutSection() {
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-            >
+            <Button asChild variant="outline" size="sm">
               <a
                 href={version.changelog}
                 target="_blank"
@@ -306,12 +296,7 @@ export function AboutSection() {
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-            >
+            <Button asChild variant="outline" size="sm">
               <a href={version.docs} target="_blank" rel="noopener noreferrer">
                 <BookOpen className="h-4 w-4" />
                 {t("settings.about.docs")}
@@ -322,12 +307,7 @@ export function AboutSection() {
                 reachable from the running app — this row and the /privacy
                 footer are its two inbound links. Same-app route, so no
                 external-link glyph. */}
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-            >
+            <Button asChild variant="outline" size="sm">
               <Link href="/about" data-slot="settings-about-credits-link">
                 <Info className="h-4 w-4" />
                 {t("settings.about.credits")}

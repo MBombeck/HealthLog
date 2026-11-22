@@ -33,7 +33,8 @@ name into its search box yourself.
 
 ## Pick the country
 
-Open **Settings**, **Medications**, and choose a **Medicine registry**:
+Choose it right in the medication's **Leaflet** section while none is set, or
+later under **Settings > Modules > Medications**, **Medicine registry**:
 Poland, Germany, Spain, France, the United Kingdom, Belgium, the Netherlands,
 the United States, Canada, Australia, Brazil, the European Union, or **None**.
 **None** hides the search.

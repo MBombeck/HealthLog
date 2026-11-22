@@ -494,6 +494,8 @@ function everyEvent(): DayEvent[] {
     event("illnessResolved", "ir", "Erkältung", null),
     event("illnessDayLog", "idl", "Erkältung", "2"),
     event("symptom", "sy", "Kopfschmerz", "7"),
+    event("seizure", "sz-1", "Fokal", "CONFIRMED 1"),
+    event("seizure", "sz-2", "", "SUSPECTED 3"),
     event("allergyOnset", "ao-1", "Penicillin", "SEVERE"),
     event("allergyOnset", "ao-2", "Pollen", "MILD"),
     event("labResult", "lr", "Kreatinin", "1.1 mg/dL"),

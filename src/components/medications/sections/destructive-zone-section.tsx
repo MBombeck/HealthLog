@@ -47,14 +47,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads, queryKeys } from "@/lib/query-keys";
 import { apiDelete, apiPost, apiPut } from "@/lib/api/api-fetch";
 
 const PAUSE_SWITCH_ID = "medication-detail-pause-switch";
-const PAUSE_TITLE_ID = "medication-detail-pause-title";
-const PAUSE_HELPER_ID = "medication-detail-pause-helper";
 
 /**
  * v1.7.0 — reversible lifecycle controls: pause/resume + end course.
@@ -112,33 +110,14 @@ export function LifecycleManageBody({
 
   return (
     <div className="space-y-4" data-slot="destructive-zone-card-a">
-      <label
-        htmlFor={PAUSE_SWITCH_ID}
-        className="flex items-center justify-between gap-3"
-      >
-        <span className="space-y-1">
-          <span
-            id={PAUSE_TITLE_ID}
-            className="text-foreground block text-sm font-medium"
-          >
-            {t("medications.detail.zone.pause.title")}
-          </span>
-          <span
-            id={PAUSE_HELPER_ID}
-            className="text-muted-foreground block text-xs"
-          >
-            {t("medications.detail.zone.pause.helper")}
-          </span>
-        </span>
-        <Switch
-          id={PAUSE_SWITCH_ID}
-          checked={paused}
-          disabled={tier1Busy}
-          onCheckedChange={(checked) => void tier1Toggle(checked)}
-          aria-labelledby={PAUSE_TITLE_ID}
-          aria-describedby={PAUSE_HELPER_ID}
-        />
-      </label>
+      <SwitchRow
+        label={t("medications.detail.zone.pause.title")}
+        description={t("medications.detail.zone.pause.helper")}
+        id={PAUSE_SWITCH_ID}
+        checked={paused}
+        disabled={tier1Busy}
+        onCheckedChange={(checked) => void tier1Toggle(checked)}
+      />
 
       {medication.canEndCourse === true && (
         <EndCourseControl

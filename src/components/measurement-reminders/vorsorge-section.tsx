@@ -11,6 +11,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ContextLinks } from "@/components/layout/context-links";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -233,35 +234,13 @@ export function VorsorgeSection({
           }
         />
       ) : null}
-      {variant === "page" && !inSharedRecord ? (
+      {variant === "page" ? (
         // The reminder switches and the screening hints moved out of the
-        // checkups settings in v1.44 (Notifications, Health profile); both
-        // stay one tap away from the page they are about.
-        <div
-          className="flex flex-wrap gap-2"
-          data-slot="vorsorge-settings-links"
-        >
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
-          >
-            <Link href="/settings/notifications#vorsorge-reminders">
-              {t("notifications.checkupReminders.title")}
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
-          >
-            <Link href="/settings/anamnesis#screening-hints">
-              {t("records.life.screening.cardTitle")}
-            </Link>
-          </Button>
-        </div>
+        // checkups settings in v1.44 (Notifications, Health profile), and the
+        // care calendar these dates feed lives under Health record; all three
+        // stay one tap away from the page they are about. Which of them a
+        // shared record shows is the links' own rule.
+        <ContextLinks page="/checkups" />
       ) : null}
       {variant === "page" ? null : (
         <SettingsCardHeader

@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Info, Loader2, MessageCircle, Save } from "lucide-react";
+import { Info, Loader2, MessageCircle } from "lucide-react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { SettingsInfoTile } from "@/components/settings/_info-tile";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { PasswordInput } from "@/components/ui/password-input";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -107,22 +107,17 @@ export function TelegramCard({
       />
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="tg-enabled">
-            {t("settings.enableNotifications")}
-          </Label>
-          <Switch
-            id="tg-enabled"
-            checked={settings?.enabled ?? false}
-            onCheckedChange={(checked) => toggle.mutate(checked)}
-            disabled={!settings || saving || toggle.isPending}
-          />
-        </div>
+        <SwitchRow
+          label={t("settings.enableNotifications")}
+          id="tg-enabled"
+          checked={settings?.enabled ?? false}
+          onCheckedChange={(checked) => toggle.mutate(checked)}
+          disabled={!settings || saving || toggle.isPending}
+        />
 
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="tg-token">{t("settings.botToken")}</Label>
+            <FieldGroup htmlFor="tg-token" label={t("settings.botToken")}>
               <PasswordInput
                 id="tg-token"
                 value={botToken}
@@ -139,9 +134,8 @@ export function TelegramCard({
                 autoCapitalize="none"
                 enterKeyHint="next"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tg-chatid">{t("settings.chatId")}</Label>
+            </FieldGroup>
+            <FieldGroup htmlFor="tg-chatid" label={t("settings.chatId")}>
               <Input
                 id="tg-chatid"
                 value={chatId}
@@ -154,7 +148,7 @@ export function TelegramCard({
                 autoCapitalize="none"
                 enterKeyHint="done"
               />
-            </div>
+            </FieldGroup>
           </div>
 
           <SettingsInfoTile icon={Info} tone="neutral">
@@ -178,15 +172,13 @@ export function TelegramCard({
               unsavedChanges={dirty}
             />
             <Button
+              size="sm"
               type="submit"
               disabled={saving || toggle.isPending}
-              className="min-h-11"
             >
               {saving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Save className="h-3.5 w-3.5" />
-              )}
+              ) : null}
               {t("common.save")}
             </Button>
           </SettingsCardActions>

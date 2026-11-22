@@ -20,6 +20,7 @@ import { Camera, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { nutrientUnitLabel } from "@/components/insights/nutrients/unit-label";
 import { FieldError } from "@/components/forms/field-error";
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -377,10 +378,10 @@ function CompositionEditor({
                     ))}
                   </NativeSelect>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`${formId}-amount-${row.key}`}>
-                    {t("medications.composition.amountLabel")}
-                  </Label>
+                <FieldGroup
+                  htmlFor={`${formId}-amount-${row.key}`}
+                  label={t("medications.composition.amountLabel")}
+                >
                   <Input
                     id={`${formId}-amount-${row.key}`}
                     inputMode="decimal"
@@ -394,11 +395,11 @@ function CompositionEditor({
                     aria-invalid={row.check || undefined}
                     disabled={busy}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`${formId}-unit-${row.key}`}>
-                    {t("medications.composition.unitLabel")}
-                  </Label>
+                </FieldGroup>
+                <FieldGroup
+                  htmlFor={`${formId}-unit-${row.key}`}
+                  label={t("medications.composition.unitLabel")}
+                >
                   <NativeSelect
                     id={`${formId}-unit-${row.key}`}
                     value={row.unit}
@@ -413,7 +414,7 @@ function CompositionEditor({
                       </option>
                     ))}
                   </NativeSelect>
-                </div>
+                </FieldGroup>
                 <Button
                   type="button"
                   variant="ghost"

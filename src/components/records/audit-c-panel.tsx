@@ -230,7 +230,6 @@ export function AuditCPanel({
           type="button"
           size="sm"
           variant={data.offerDue ? "default" : "outline"}
-          className="min-h-11 sm:min-h-9"
           onClick={() => setOpen(true)}
           data-slot="audit-c-start"
         >

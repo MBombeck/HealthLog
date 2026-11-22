@@ -166,7 +166,6 @@ export function TestConnectionButton({
         type="button"
         variant="outline"
         size="sm"
-        className="min-h-11"
         onClick={handleClick}
         disabled={disabled || testing || unsavedChanges}
       >

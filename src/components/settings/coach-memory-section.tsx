@@ -373,7 +373,6 @@ export function CoachMemorySection({
             pending={forgetAll.isPending}
             disabled={!isAuthenticated}
             size="sm"
-            className="min-h-11 sm:min-h-9"
             icon={<Trash2 className="size-4" aria-hidden />}
             testId="settings-coach-memory-forget-all"
             destructive

@@ -54,7 +54,8 @@ environment variables (`src/lib/notifications/vapid-config.ts`). The admin
 panel is the easiest path because it survives without touching `.env`.
 
 **Admin panel — Generate keys (easiest).** Sign in as the admin user,
-open `/admin`, and find the **Web Push VAPID** card
+open **Admin > Push and channels** (`/admin/services`), and find the
+**Web Push VAPID** card
 (`src/components/admin/web-push-vapid-section.tsx`). Click **Generate
 keys**: the server mints a fresh keypair, stores the private key encrypted
 at rest with your `ENCRYPTION_KEY`, seeds a placeholder subject, and fills

@@ -39,6 +39,16 @@ import type { LucideIcon } from "lucide-react";
 import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import { cn } from "@/lib/utils";
 
+/**
+ * The two paints of a segment. `Tabs` (`ui/tabs.tsx`) is the same control
+ * with panels under it and spells these under its own state selector;
+ * `tabs.test.tsx` holds the two to the same tokens.
+ */
+export const SEGMENT_CHOSEN =
+  "bg-primary text-primary-foreground hover:bg-primary/90";
+export const SEGMENT_REST =
+  "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50";
+
 export interface SegmentedOption<T extends string> {
   value: T;
   label: string;
@@ -157,8 +167,11 @@ export function Segmented<T extends string>({
               checked
                 ? // A faded fill reads ~2:1 in light mode; disabled swaps to
                   // the token pair `Button` uses instead of the opacity.
-                  "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-primary-disabled disabled:text-primary-disabled-foreground disabled:opacity-100"
-                : "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+                  [
+                    SEGMENT_CHOSEN,
+                    "disabled:bg-primary-disabled disabled:text-primary-disabled-foreground disabled:opacity-100",
+                  ]
+                : SEGMENT_REST,
             )}
           >
             {Icon ? (

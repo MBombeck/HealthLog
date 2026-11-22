@@ -31,7 +31,7 @@ export function ModuleSettingsLinkCard({ id }: { id: ModuleSettingsPageId }) {
         )}
       />
       <SettingsCardActions align="start">
-        <Button asChild variant="outline" size="sm" className="min-h-11">
+        <Button asChild variant="outline" size="sm">
           <Link href={`/settings/modules/${id}`}>
             {t("settings.sections.modules.openModuleSettings")}
             <ChevronRight className="size-4" aria-hidden="true" />

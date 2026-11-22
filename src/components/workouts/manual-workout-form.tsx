@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { Check, Loader2, Plus } from "lucide-react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { DateTimeField } from "@/components/ui/date-time-field";
@@ -285,10 +286,10 @@ export function ManualWorkoutForm({
       className="space-y-4"
       data-testid="manual-workout-form"
     >
-      <div className="space-y-2">
-        <Label htmlFor={ids.sport}>
-          {t("insights.workouts.manual.sportLabel")}
-        </Label>
+      <FieldGroup
+        htmlFor={ids.sport}
+        label={t("insights.workouts.manual.sportLabel")}
+      >
         <Select
           value={draft.sportType}
           onValueChange={(value) =>
@@ -318,12 +319,12 @@ export function ManualWorkoutForm({
           id={`${ids.sport}-error`}
           message={fieldError("sportType")}
         />
-      </div>
+      </FieldGroup>
 
-      <div className="space-y-2">
-        <Label htmlFor={ids.start}>
-          {t("insights.workouts.manual.startLabel")}
-        </Label>
+      <FieldGroup
+        htmlFor={ids.start}
+        label={t("insights.workouts.manual.startLabel")}
+      >
         <DateTimeField
           id={ids.start}
           value={draft.start}
@@ -346,7 +347,7 @@ export function ManualWorkoutForm({
           </p>
         )}
         <FieldError id={`${ids.start}-error`} message={fieldError("start")} />
-      </div>
+      </FieldGroup>
 
       <fieldset
         className="space-y-2"
@@ -395,12 +396,12 @@ export function ManualWorkoutForm({
       </fieldset>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor={ids.distance}>
-            {t("insights.workouts.manual.distanceLabel", {
-              unit: distanceUnit,
-            })}
-          </Label>
+        <FieldGroup
+          htmlFor={ids.distance}
+          label={t("insights.workouts.manual.distanceLabel", {
+            unit: distanceUnit,
+          })}
+        >
           <Input
             id={ids.distance}
             inputMode="decimal"
@@ -416,11 +417,11 @@ export function ManualWorkoutForm({
             id={`${ids.distance}-error`}
             message={fieldError("distance")}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={ids.energy}>
-            {t("insights.workouts.manual.energyLabel")}
-          </Label>
+        </FieldGroup>
+        <FieldGroup
+          htmlFor={ids.energy}
+          label={t("insights.workouts.manual.energyLabel")}
+        >
           <Input
             id={ids.energy}
             inputMode="decimal"
@@ -436,7 +437,7 @@ export function ManualWorkoutForm({
             id={`${ids.energy}-error`}
             message={fieldError("energyKcal")}
           />
-        </div>
+        </FieldGroup>
       </div>
 
       {saveError && (

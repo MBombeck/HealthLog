@@ -334,8 +334,8 @@ export function SecurityKeysCard({
 
         <SettingsCardActions>
           <Button
+            size="sm"
             type="button"
-            className="min-h-11 sm:min-h-9"
             onClick={() => add.mutate(undefined)}
             disabled={add.isPending}
           >

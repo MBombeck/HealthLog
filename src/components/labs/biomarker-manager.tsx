@@ -239,14 +239,13 @@ export function BiomarkerManager() {
               size="sm"
               variant="outline"
               onClick={() => setMergeOpen(true)}
-              className="min-h-11 sm:min-h-9"
               data-slot="biomarker-merge-open"
             >
               <Merge className="h-4 w-4" />
               {t("labs.merge.open")}
             </Button>
           ) : null}
-          <Button size="sm" onClick={openNew} className="min-h-11 sm:min-h-9">
+          <Button size="sm" onClick={openNew}>
             <Plus className="h-4 w-4" />
             {t("labs.biomarker.define")}
           </Button>

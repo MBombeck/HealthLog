@@ -259,20 +259,23 @@ describe("what travels over the relay", () => {
       "CYCLE_FERTILE_SOON",
     ]) {
       expect(
-        relayCarries({ ...base, eventType }, { medicationDelivery: "server" }),
+        relayCarries({ ...base, eventType }, { id: "d1" }, new Set(["d1"])),
       ).toBe(false);
     }
   });
 
-  it("carries a medication reminder only to a device that asked for server delivery", () => {
+  it("carries a medication reminder only to a device the dispatch resolved as server-delivered", () => {
     const p = { ...base, eventType: "MEDICATION_REMINDER" };
-    expect(relayCarries(p, { medicationDelivery: null })).toBe(false);
-    expect(relayCarries(p, { medicationDelivery: "client" })).toBe(false);
-    expect(relayCarries(p, { medicationDelivery: "server" })).toBe(true);
+    const resolved = new Set(["server-delivered"]);
+    expect(relayCarries(p, { id: "server-delivered" }, resolved)).toBe(true);
+    expect(relayCarries(p, { id: "local" }, resolved)).toBe(false);
+    // Without the dispatch's decision the relay carries it nowhere.
+    expect(relayCarries(p, { id: "server-delivered" }, undefined)).toBe(false);
     expect(
       relayCarries(
         { ...base, eventType: "MEDICATION_LOW_STOCK" },
-        { medicationDelivery: null },
+        { id: "local" },
+        undefined,
       ),
     ).toBe(true);
   });
@@ -308,7 +311,8 @@ describe("what travels over the relay", () => {
     expect(
       relayCarries(
         { ...base, eventType: "SECURITY_ALERT" },
-        { medicationDelivery: null },
+        { id: "d1" },
+        undefined,
       ),
     ).toBe(true);
   });

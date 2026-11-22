@@ -379,12 +379,11 @@ export function HealthConnectImportCard() {
         )}
       </ImportStatusRegion>
 
-      <SettingsCardActions className="mt-auto" align="start">
+      <SettingsCardActions className="mt-auto">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={busy}
           onClick={() => fileInputRef.current?.click()}
           data-testid="import-action-health-connect"

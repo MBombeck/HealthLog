@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { FieldGroup } from "@/components/ui/field-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
@@ -127,7 +127,6 @@ export function DangerZoneSection() {
               variant="destructive"
               size="sm"
               disabled={wipeAllData.isPending}
-              className="min-h-11"
             >
               {wipeAllData.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
@@ -144,12 +143,12 @@ export function DangerZoneSection() {
                 {t("admin.deleteAllConfirmDescription")}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <div className="space-y-2">
-              <Label htmlFor="wipe-confirm-prompt">
-                {t("admin.deleteAllPromptLabel", {
-                  token: WIPE_CONFIRM_TOKEN,
-                })}
-              </Label>
+            <FieldGroup
+              htmlFor="wipe-confirm-prompt"
+              label={t("admin.deleteAllPromptLabel", {
+                token: WIPE_CONFIRM_TOKEN,
+              })}
+            >
               <Input
                 id="wipe-confirm-prompt"
                 value={typed}
@@ -158,7 +157,7 @@ export function DangerZoneSection() {
                 spellCheck={false}
                 placeholder={WIPE_CONFIRM_TOKEN}
               />
-            </div>
+            </FieldGroup>
             <AlertDialogFooter>
               <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
               <AlertDialogAction

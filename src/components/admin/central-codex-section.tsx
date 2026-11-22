@@ -186,7 +186,7 @@ export function CentralCodexSection() {
               destructive
               variant="destructive"
               size="sm"
-              className="min-h-11 shrink-0 sm:min-h-9"
+              className="shrink-0"
               icon={<Trash2 className="h-4 w-4" />}
               label={t("admin.centralCodex.disconnectButton")}
               title={t("admin.centralCodex.disconnectTitle")}
@@ -255,7 +255,6 @@ export function CentralCodexSection() {
               size="sm"
               onClick={handleConnect}
               disabled={devicePolling}
-              className="min-h-11 w-full sm:min-h-9 sm:w-auto"
               data-slot="admin-central-codex-connect"
             >
               {devicePolling ? (

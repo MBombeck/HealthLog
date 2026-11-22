@@ -179,12 +179,11 @@ export function CsvImportCard() {
         )}
       </div>
 
-      <SettingsCardActions className="mt-auto" align="start">
+      <SettingsCardActions className="mt-auto">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={() => fileInputRef.current?.click()}
           data-testid="import-csv-choose-file"
         >
@@ -195,7 +194,6 @@ export function CsvImportCard() {
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={downloadExample}
           data-testid="import-csv-download-example"
         >
@@ -206,7 +204,6 @@ export function CsvImportCard() {
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={busy || text.trim().length === 0}
           onClick={() => void send(true)}
           data-testid="import-csv-preview"
@@ -219,7 +216,6 @@ export function CsvImportCard() {
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={busy || text.trim().length === 0}
           onClick={() => void send(false)}
           data-testid="import-action-csv"

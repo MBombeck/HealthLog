@@ -433,11 +433,7 @@ export function PasskeyListSection({
         >
           <SettingsCardActions>
             <AlertDialogTrigger asChild>
-              <Button
-                type="button"
-                className="min-h-11 sm:min-h-9"
-                disabled={add.isPending}
-              >
+              <Button size="sm" type="button" disabled={add.isPending}>
                 {add.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
                 ) : (

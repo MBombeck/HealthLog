@@ -8,8 +8,13 @@
  *
  * Over the relay go only pushes a person's action or the server's own state
  * causes. Reminders the app plans itself stay off it: mood, measurement and
- * cycle reminders, and the medication reminder unless the device asked for
- * server delivery (`medicationDelivery: "server"`). A Guardian delivery about
+ * cycle reminders, and the medication reminder to a device that reminds
+ * itself. Which devices get the server's medication reminder is decided once
+ * per dispatch (`resolveApnsDeliveryTargets`, `client-managed-apns.ts`) and
+ * handed in as `serverDeviceIds`; the relay reads that decision and no rule
+ * of its own, so a device the server's own key would remind is reminded over
+ * the relay too. A follow-up for a dose still open travels over the relay
+ * only to those devices as well (#190, section 11). A Guardian delivery about
  * another person's record does not use the relay either.
  *
  * A relay that is down, paused or still holding the push is not a failure of
@@ -21,6 +26,7 @@ import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { sendViaApns } from "@/lib/notifications/senders/apns";
 import { iosMetadataFor } from "@/lib/notifications/senders/ios-metadata";
 import { isManagedGuardianDelivery } from "@/lib/notifications/managed-delivery";
+import { CLIENT_MANAGED_APNS_EVENTS } from "@/lib/notifications/client-managed-apns";
 import { plainPushText } from "@/lib/notifications/strip-emoji";
 import { stripHtml } from "@/lib/notifications/strip-html";
 import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-attempt-record";
@@ -34,7 +40,14 @@ import {
 } from "@/lib/push-relay/route-device";
 
 type ApnsChannelPayload = Parameters<typeof sendViaApns>[1];
-type ApnsChannelOptions = Parameters<typeof sendViaApns>[2];
+type ApnsChannelOptions = NonNullable<Parameters<typeof sendViaApns>[2]> & {
+  /**
+   * The devices that get the server's reminder of an event with per-device
+   * delivery (`ApnsDeliveryTargets.serverDeviceIds`). The relay carries such
+   * an event to these devices alone; absent, to none.
+   */
+  serverDeviceIds?: readonly string[];
+};
 
 /** Reminders the app plans locally; never sent over the relay. */
 const LOCALLY_PLANNED = new Set([
@@ -92,15 +105,20 @@ export function alertMessage(payload: ApnsChannelPayload): EnvelopeMessage {
   };
 }
 
-/** Whether this alert may travel over the relay to this device. */
+/**
+ * Whether this alert may travel over the relay to this device. An event with
+ * per-device delivery goes only to a device the dispatch resolved as getting
+ * the server's reminder (`serverDeviceIds`); without that decision, nowhere.
+ */
 export function relayCarries(
   payload: ApnsChannelPayload,
-  device: { medicationDelivery: string | null },
+  device: { id: string },
+  serverDeviceIds: ReadonlySet<string> | undefined,
 ): boolean {
   if (LOCALLY_PLANNED.has(payload.eventType)) return false;
   if (isManagedGuardianDelivery(payload)) return false;
-  if (payload.eventType === "MEDICATION_REMINDER") {
-    return device.medicationDelivery === "server";
+  if (CLIENT_MANAGED_APNS_EVENTS[payload.eventType]?.perDevice) {
+    return serverDeviceIds?.has(device.id) ?? false;
   }
   return true;
 }
@@ -111,17 +129,19 @@ export async function sendApnsChannel(
   payload: ApnsChannelPayload,
   options?: ApnsChannelOptions,
 ): Promise<SendOutcome> {
-  const only = options?.onlyDeviceIds;
+  const { serverDeviceIds, ...apnsOptions } = options ?? {};
+  const only = apnsOptions.onlyDeviceIds;
   const all = await prisma.device.findMany({
     where: {
       userId,
       apnsToken: { not: null },
       ...(only && { id: { in: [...only] } }),
     },
-    select: { ...ROUTABLE_DEVICE_SELECT, medicationDelivery: true },
+    select: ROUTABLE_DEVICE_SELECT,
   });
   const devices = all.filter((d) => d.pushKeyPublic !== null);
-  if (devices.length === 0) return sendViaApns(userId, payload, options);
+  if (devices.length === 0) return sendViaApns(userId, payload, apnsOptions);
+  const serverReminded = serverDeviceIds && new Set(serverDeviceIds);
 
   const ctx = await loadPushContext();
   const message = alertMessage(payload);
@@ -130,13 +150,16 @@ export async function sendApnsChannel(
       ? payload.metadata.webPushTag
       : undefined;
   const targets: SealedTarget[] = devices
-    .filter((d) => routeOf(d, ctx) !== "relay" || relayCarries(payload, d))
+    .filter(
+      (d) =>
+        routeOf(d, ctx) !== "relay" || relayCarries(payload, d, serverReminded),
+    )
     .map((device) => ({ device, message, collapseKey: slotTag }));
   const sealed = await sendSealed(targets, ctx);
   const legacy =
     all.length > devices.length
       ? await sendViaApns(userId, payload, {
-          ...options,
+          ...apnsOptions,
           excludeDeviceIds: devices.map((d) => d.id),
         })
       : null;
@@ -146,7 +169,7 @@ export async function sendApnsChannel(
     return (
       legacy ??
       sendViaApns(userId, payload, {
-        ...options,
+        ...apnsOptions,
         excludeDeviceIds: devices.map((d) => d.id),
       })
     );

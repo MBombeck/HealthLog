@@ -3,7 +3,7 @@
 import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Languages, Loader2, Save, User } from "lucide-react";
+import { Languages, Loader2, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -28,6 +28,7 @@ import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { ThemeSegmented } from "@/components/layout/theme-choice";
 import { TimezoneSelect } from "@/components/settings/timezone-select";
 import { TimeFormatSelect } from "@/components/settings/time-format-select";
 import { DateFormatSelect } from "@/components/settings/date-format-select";
@@ -665,16 +666,10 @@ export function AccountSection() {
           )}
 
           <SettingsCardActions>
-            <Button
-              type="submit"
-              className="min-h-11 sm:min-h-9"
-              disabled={saving}
-            >
+            <Button size="sm" type="submit" disabled={saving}>
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
+              ) : null}
               {t("common.save")}
             </Button>
           </SettingsCardActions>
@@ -770,6 +765,16 @@ export function DisplayPreferencesCard({
         <TimeFormatSelect isAuthenticated={isAuthenticated} />
         <DateFormatSelect isAuthenticated={isAuthenticated} />
         <TimezoneSelect isAuthenticated={isAuthenticated} />
+      </div>
+      {/* The theme, beside the other display choices. The same control and
+          the same store as the avatar menu (`theme-choice.tsx`); it is kept
+          on this device, like the menu's. */}
+      <div id="theme" className="scroll-mt-28 space-y-2">
+        <p className="text-sm leading-none font-medium">{t("nav.theme")}</p>
+        <ThemeSegmented />
+        <p className="text-muted-foreground text-xs">
+          {t("settings.displayCard.themeDescription")}
+        </p>
       </div>
     </SettingsCard>
   );

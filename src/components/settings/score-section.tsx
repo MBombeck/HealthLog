@@ -509,7 +509,6 @@ export function ScoreSection() {
                 onClick={() => saveMutation.mutate(draft)}
                 disabled={busy || !dirty || configQuery.isLoading}
                 data-slot="score-config-save"
-                className="min-h-11 sm:min-h-9"
               >
                 {busy ? (
                   <Loader2

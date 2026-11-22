@@ -1315,6 +1315,24 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/nav/counts:
+    get:
+      tags:
+        - Dashboard
+      summary: The counts the navigation shows
+      description: Doses and check-ups due now for the caller's own record, read in a fixed number of statements; nothing is
+        written. Cookie session or a full-scope token; a switched record is refused.
+      responses:
+        "200":
+          description: The counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NavCountsResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/settings/report-schedule:
     get:
       tags:
@@ -14181,6 +14199,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/admin/migrations:
+    get:
+      tags:
+        - Admin
+      summary: "Database migrations: applied, pending, failed"
+      description: "Compares the migrations this image ships (`prisma/migrations`) with the finished rows of
+        `_prisma_migrations`. Read-only. Cookie auth only: `requireAdmin()` refuses every Bearer caller."
+      responses:
+        "200":
+          description: The status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMigrationStatusResponse"
+        "401": *a1
+        "403": *a25
         "422": *a4
         "429": *a5
   /api/admin/maintenance/measurements:
@@ -33087,9 +33123,11 @@ components:
             (see `localRunwayUntil`; without one, for 3 days after its last authenticated request), \"server\" pushes it
             to this device whatever the account says, and null / no override follows the account-wide switch
             (`notificationPrefs.medication.clientManaged` or `deliveryDefault: \"client\"`). Since v1.48.0 the server
-            honours it per device on the APNs send; before, it was stored and echoed only. Only the reminder that
-            announces a dose is affected: follow-ups for a dose still open, every other push, and the Telegram, ntfy,
-            webhook, email and Web Push channels are not."
+            honours it per device on the APNs send; before, it was stored and echoed only. Since v1.49.0 the relay
+            follows the same decision as this server's own APNs key. Only the reminder that announces a dose is
+            affected: follow-ups for a dose still open (except over the relay, which carries them only to a device the
+            server reminds), every other push, and the Telegram, ntfy, webhook, email and Web Push channels are not.
+            `GET /api/devices/me/push-diagnostics` shows the resolved value as `medicationReminder`."
           anyOf:
             - type: string
               enum:
@@ -47359,6 +47397,42 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    NavCountsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NavCounts"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    NavCounts:
+      type: object
+      properties:
+        dosesDue:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Today's scheduled doses of active, tracked medications whose resolved state is `due` or `overdue` (the dose
+            resolver's own answer, as the today list gives it), not counting a slot the person snoozed.
+        checkupsDue:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: "Check-up reminders due now: enabled, not snoozed, no booked visit, due today on a long cycle or past their
+            time on a short one, as the daily digest's rail counts them."
+      required:
+        - dosesDue
+        - checkupsDue
       additionalProperties: false
     ReportScheduleStatus:
       type: object
@@ -61905,6 +61979,33 @@ components:
             - nextFreeAt
           additionalProperties: false
           description: The device's silent budget, from the rule the send asks (`src/lib/push-relay/wakes.ts`).
+        medicationReminder:
+          type: object
+          properties:
+            delivery:
+              type: string
+              enum:
+                - server
+                - client
+              description: "Who reminds this device of a dose now, by the same decision the send reads: `server` when the server's
+                medication reminder goes to this device (over `transport`, the relay included), `client` while the app
+                reminds locally. The device's `medicationDelivery`, else the account switch; a device that reminds
+                locally counts as `server` once its local plan has run out (`localRunwayUntil`, else 3 days after its
+                last request)."
+            localUntil:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+              description: "While `delivery` is `client`: when the server takes over unless the device reports a new runway or shows
+                up again. Null while `delivery` is `server`."
+          required:
+            - delivery
+            - localUntil
+          additionalProperties: false
+          description: The medication-reminder delivery resolved for this device. A follow-up for a dose still open goes to every
+            device over this server's own key, and over the relay only while `delivery` is `server`.
         lastDelivery:
           type: object
           properties:
@@ -62106,6 +62207,7 @@ components:
         - relay
         - binding
         - budget
+        - medicationReminder
         - lastDelivery
         - receipt
         - serverTime
@@ -62250,6 +62352,54 @@ components:
             - bound
             - consented
           additionalProperties: false
+        usage:
+          type: object
+          properties:
+            windowDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            accepted:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            pending:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            dropped:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            failed:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            lastFailure:
+              anyOf:
+                - type: object
+                  properties:
+                    reason:
+                      type:
+                        - string
+                        - "null"
+                    at:
+                      type: string
+                  required:
+                    - reason
+                    - at
+                  additionalProperties: false
+                - type: "null"
+          required:
+            - windowDays
+            - accepted
+            - pending
+            - dropped
+            - failed
+            - lastFailure
+          additionalProperties: false
+          description: "What this instance handed the relay in the last `windowDays` days, from its own delivery ledger: counts
+            per outcome and the last failure. Aggregate only."
         termsVersion:
           type: string
         termsUrl:
@@ -62278,6 +62428,7 @@ components:
         - notice
         - lastSuccessAt
         - devices
+        - usage
         - termsVersion
         - termsUrl
         - privacyUrl
@@ -75494,6 +75645,72 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    AdminMigrationStatusResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminMigrationStatus"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminMigrationStatus:
+      type: object
+      properties:
+        shipped:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: Migrations in this image; null when the folder is absent.
+        applied:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        pending:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        pendingNames:
+          type: array
+          items:
+            type: string
+          description: The first 20 pending migrations, in apply order.
+        failedNames:
+          type: array
+          items:
+            type: string
+          description: Migrations that started and did not finish (first 20).
+        lastApplied:
+          anyOf:
+            - type: object
+              properties:
+                name:
+                  type: string
+                at:
+                  type: string
+              required:
+                - name
+                - at
+              additionalProperties: false
+            - type: "null"
+      required:
+        - shipped
+        - applied
+        - pending
+        - pendingNames
+        - failedNames
+        - lastApplied
       additionalProperties: false
     AdminMeasurementMaintenanceStatusResponse:
       type: object

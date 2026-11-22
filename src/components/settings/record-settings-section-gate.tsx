@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import { classifySettingsDestination } from "@/lib/record-settings/classification";
+import { isRecordSurfacePagePresentable } from "@/lib/sharing/record-page-surfaces";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ManagedIntegrationStatus } from "@/components/settings/managed-integration-status";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -73,7 +74,8 @@ export function RecordSettingsSectionGate({
   children: ReactNode;
 }) {
   const { isLoading } = useAuth();
-  const { inSharedRecord, recordKind, level } = useRecordCapabilities();
+  const { inSharedRecord, recordKind, level, sections } =
+    useRecordCapabilities();
   const { t } = useTranslations();
 
   // A shared session must never begin by mounting the actor's Settings
@@ -118,6 +120,22 @@ export function RecordSettingsSectionGate({
       ? RECORD_CONTENT_SECTIONS[section]
       : undefined;
   if (RecordContent) return <RecordContent />;
+
+  // A page of parts (Settings > Health record): the section itself renders,
+  // and each part asks its own routes' rule before it mounts. Open exactly
+  // when one part admits the record on screen, the answer the Settings list
+  // and the shell's page gate read.
+  if (
+    destination.kind === "record-surface" &&
+    isRecordSurfacePagePresentable(`/settings/${section}`, {
+      inSharedRecord,
+      recordKind,
+      level,
+      sections,
+    })
+  ) {
+    return children;
+  }
 
   if (
     recordKind === "managed" &&

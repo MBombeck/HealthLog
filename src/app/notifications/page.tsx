@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
@@ -201,32 +203,9 @@ export default function NotificationsPage() {
     );
   }
 
-  // No channels configured
   if (activeChannels.length === 0) {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title={t("notifications.title")}
-          description={t("notifications.subtitle")}
-          actions={headerActions}
-          stackActionsOnPhone
-        />
-        <EmptyState
-          className="max-w-2xl"
-          icon={<Bell className="size-6" />}
-          title={t("notifications.noChannels")}
-          /* Channel setup lives in Settings → Integrations since v1.25.7;
-             point the CTA at that anchor, not the reminder-types screen. */
-          action={
-            <Button asChild variant="outline">
-              <Link href="/settings/integrations#channels">
-                <Settings className="h-4 w-4" />
-                {t("notifications.goToSettings")}
-              </Link>
-            </Button>
-          }
-        />
-      </div>
+      <NoChannelPage eventTypes={eventTypes} headerActions={headerActions} />
     );
   }
 
@@ -377,6 +356,64 @@ export default function NotificationsPage() {
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * No channel configured yet. The kinds are still listed: a notification that
+ * is off by default (a lasting change in a vital) has to be findable before
+ * anything can deliver it, and an empty page said nothing about what there is
+ * to receive.
+ */
+function NoChannelPage({
+  eventTypes,
+  headerActions,
+}: {
+  eventTypes: string[];
+  headerActions: ReactNode;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={t("notifications.title")}
+        description={t("notifications.subtitle")}
+        actions={headerActions}
+        stackActionsOnPhone
+      />
+      <EmptyState
+        className="max-w-2xl"
+        icon={<Bell className="size-6" />}
+        title={t("notifications.noChannels")}
+        /* Channel setup lives in Settings → Integrations since v1.25.7;
+           point the CTA at that anchor, not the reminder-types screen. */
+        action={
+          <Button asChild variant="outline">
+            <Link href="/settings/integrations#channels">
+              <Settings className="h-4 w-4" />
+              {t("notifications.goToSettings")}
+            </Link>
+          </Button>
+        }
+      />
+      <div
+        data-slot="notifications-kinds-without-channel"
+        className="bg-card border-border overflow-hidden rounded-xl border"
+      >
+        <ul className="divide-border divide-y">
+          {eventTypes.map((eventType) => (
+            <li key={eventType} className="px-4 py-3">
+              <div className="text-sm font-medium">
+                {t(eventTranslationKey(eventType))}
+              </div>
+              <div className="text-muted-foreground text-xs">
+                {t(eventDescriptionTranslationKey(eventType))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

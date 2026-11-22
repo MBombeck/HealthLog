@@ -347,7 +347,6 @@ export function InsightsEditMode({
             slot="insights-edit-reset"
             variant="outline"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             icon={<RotateCcw className="h-3.5 w-3.5" />}
             label={t("insights.editMode.reset")}
             title={t("insights.editMode.resetTitle")}
@@ -359,7 +358,6 @@ export function InsightsEditMode({
           />
           <Button
             size="sm"
-            className="min-h-11 sm:min-h-9"
             onClick={() => saveMutation.mutate(draftSections)}
             disabled={busy || !dirty}
             data-slot="insights-edit-done"

@@ -68,7 +68,9 @@ describe("/admin overview composition", () => {
     // "Monitoring", "Backups", "Maintenance", "Audit log") in headings.
     // The redesigned overview must not paint that grid anymore.
     expect(html).not.toContain(">Maintenance<");
-    expect(html).not.toContain(">Monitoring<");
+    // "Monitoring" is a rail entry now (the former Integrations page), so
+    // the check is on a card heading, not on the word.
+    expect(html).not.toMatch(/<h[1-4][^>]*>Monitoring</);
     // No "Manage users"/"Open backups" CTAs from the StatusCard CTAs.
     expect(html).not.toContain("Manage users");
     expect(html).not.toContain("Open backups");

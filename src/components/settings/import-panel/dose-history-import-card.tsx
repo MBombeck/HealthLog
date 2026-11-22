@@ -283,12 +283,11 @@ export function DoseHistoryImportCard() {
         )}
       </div>
 
-      <SettingsCardActions className="mt-auto" align="start">
+      <SettingsCardActions className="mt-auto">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={() => fileInputRef.current?.click()}
           data-testid="import-dose-history-choose-file"
         >
@@ -299,7 +298,6 @@ export function DoseHistoryImportCard() {
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={busy || text.trim().length === 0}
           onClick={() => void send(true)}
           data-testid="import-dose-history-preview"
@@ -312,7 +310,6 @@ export function DoseHistoryImportCard() {
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={busy || text.trim().length === 0}
           onClick={() => void send(false)}
           data-testid="import-action-dose-history"

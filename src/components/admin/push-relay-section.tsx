@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Send } from "lucide-react";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Disclosure } from "@/components/ui/disclosure";
+import { InlineAction } from "@/components/ui/inline-action";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -24,7 +26,11 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { SettingsToggle } from "./_shared";
-import { usePushRelayStatus, useSetPushRelay } from "./use-push-relay";
+import {
+  usePushRelayStatus,
+  useSetPushRelay,
+  type AdminPushRelayStatus,
+} from "./use-push-relay";
 import { PushRelayTools } from "./push-relay-tools";
 
 const STATE_LABEL = {
@@ -209,6 +215,7 @@ export function PushRelaySection() {
               : ""}
           </p>
         )}
+        <RelayUsage status={status} />
         {reasonKey && (
           <div className="space-y-2" data-slot="push-relay-refusal">
             <p className="text-sm">{t(reasonKey)}</p>
@@ -224,38 +231,23 @@ export function PushRelaySection() {
             )}
           </div>
         )}
-        {status.offered && <PushRelayTools registered={!!status.instanceId} />}
-        <p className="text-muted-foreground flex flex-wrap gap-3 text-xs">
-          <a
-            className="underline"
-            href={status.docsUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
+        <p className="flex flex-wrap gap-x-4 gap-y-1">
+          <RelayLink href={status.docsUrl}>
             {t("admin.pushRelay.docs")}
-          </a>
+          </RelayLink>
           {status.privacyUrl && (
-            <a
-              className="underline"
-              href={status.privacyUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <RelayLink href={status.privacyUrl}>
               {t("admin.pushRelay.privacy")}
-            </a>
+            </RelayLink>
           )}
           {status.termsUrl && (
-            <a
-              className="underline"
-              href={status.termsUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <RelayLink href={status.termsUrl}>
               {t("admin.pushRelay.terms")}
-            </a>
+            </RelayLink>
           )}
         </p>
       </div>
+      {status.offered && <PushRelayTools registered={!!status.instanceId} />}
 
       <PushRelayEnableDialog
         key={enableKey}
@@ -299,36 +291,40 @@ type SwitchBody = Parameters<ReturnType<typeof useSetPushRelay>["mutate"]>[0];
 function PushRelaySeesDetails({ privacyUrl }: { privacyUrl: string }) {
   const { t } = useTranslations();
   return (
-    <details
-      className="border-border rounded-md border px-3 py-2"
+    <Disclosure
+      framed
+      summary={t("admin.pushRelay.seesSummary")}
       data-slot="push-relay-sees"
     >
-      <summary className="cursor-pointer text-sm font-medium">
-        {t("admin.pushRelay.seesSummary")}
-      </summary>
-      <div className="mt-2 space-y-2 text-sm">
-        <p className="font-medium">{t("admin.pushRelay.seesHeading")}</p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t("admin.pushRelay.seesWhen")}</li>
-          <li>{t("admin.pushRelay.seesToken")}</li>
-          <li>{t("admin.pushRelay.seesAddress")}</li>
-          <li>{t("admin.pushRelay.seesConsent")}</li>
-        </ul>
-        <p className="font-medium">{t("admin.pushRelay.notSeesHeading")}</p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t("admin.pushRelay.notSeesContent")}</li>
-        </ul>
-        <p>{t("admin.pushRelay.seesTiming")}</p>
-        <a
-          className="underline"
-          href={privacyUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
+      <p className="font-medium">{t("admin.pushRelay.seesHeading")}</p>
+      <ul className="list-disc space-y-1 pl-5">
+        <li>{t("admin.pushRelay.seesWhen")}</li>
+        <li>{t("admin.pushRelay.seesToken")}</li>
+        <li>{t("admin.pushRelay.seesAddress")}</li>
+        <li>{t("admin.pushRelay.seesConsent")}</li>
+      </ul>
+      <p className="font-medium">{t("admin.pushRelay.notSeesHeading")}</p>
+      <ul className="list-disc space-y-1 pl-5">
+        <li>{t("admin.pushRelay.notSeesContent")}</li>
+      </ul>
+      <p>{t("admin.pushRelay.seesTiming")}</p>
+      <p>
+        <RelayLink href={privacyUrl}>
           {t("admin.pushRelay.seesSource")}
-        </a>
-      </div>
-    </details>
+        </RelayLink>
+      </p>
+    </Disclosure>
+  );
+}
+
+/** A link to one of the relay's own documents, opened beside the console. */
+function RelayLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <InlineAction asChild tone="muted">
+      <a href={href} target="_blank" rel="noreferrer">
+        {children}
+      </a>
+    </InlineAction>
   );
 }
 
@@ -494,5 +490,54 @@ function PushRelayEnableDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+/** What this server handed the relay lately, from its own ledger. */
+function RelayUsage({ status }: { status: AdminPushRelayStatus }) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  const { usage, lastSuccessAt } = status;
+  if (!status.offered || !usage) return null;
+  const counts = [
+    ["accepted", usage.accepted],
+    ["pending", usage.pending],
+    ["dropped", usage.dropped],
+    ["failed", usage.failed],
+  ] as const;
+  return (
+    <div className="space-y-1 text-xs" data-slot="push-relay-usage">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
+        {counts.map(([key, value]) => (
+          <div key={key}>
+            <dt className="text-muted-foreground">
+              {key === "accepted"
+                ? t("admin.pushRelay.usage.accepted")
+                : key === "pending"
+                  ? t("admin.pushRelay.usage.pending")
+                  : key === "dropped"
+                    ? t("admin.pushRelay.usage.dropped")
+                    : t("admin.pushRelay.usage.failed")}
+            </dt>
+            <dd className="font-medium tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-muted-foreground">
+        {t("admin.pushRelay.usage.window", { days: usage.windowDays })}
+        {lastSuccessAt
+          ? ` ${t("admin.pushRelay.usage.lastSuccess", {
+              time: fmt.dateTime(lastSuccessAt),
+            })}`
+          : ""}
+        {usage.lastFailure
+          ? ` ${t("admin.pushRelay.usage.lastFailure", {
+              time: fmt.dateTime(usage.lastFailure.at),
+              reason:
+                usage.lastFailure.reason ?? t("admin.pushRelay.usage.noReason"),
+            })}`
+          : ""}
+      </p>
+    </div>
   );
 }

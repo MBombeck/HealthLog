@@ -20,7 +20,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { AppleHealthCard } from "@/components/settings/integrations/apple-health-card";
 import { DawarichCard } from "@/components/settings/integrations/dawarich-card";
-import { HealthConnectFolderCard } from "@/components/settings/integrations/health-connect-folder-card";
+import { HealthConnectFolder } from "@/components/settings/integrations/health-connect-folder-card";
 import { FitbitRemovalNotice } from "@/components/settings/integrations/fitbit-removal-notice";
 import { GarminCard } from "@/components/settings/integrations/garmin-card";
 import { GoogleHealthCard } from "@/components/settings/integrations/google-health-card";
@@ -368,13 +368,9 @@ export function ConnectionsPanel({
           viewModel={pickStatus(integrationStatus, "nightscout")}
         />
       </div>
-      {pickStatus(integrationStatus, "health-connect-remote")?.configured ? (
-        <div id="health-connect-remote" className="scroll-mt-28">
-          <HealthConnectFolderCard
-            viewModel={pickStatus(integrationStatus, "health-connect-remote")}
-          />
-        </div>
-      ) : null}
+      <HealthConnectFolder
+        viewModel={pickStatus(integrationStatus, "health-connect-remote")}
+      />
       {environmentOn ? (
         <div id="dawarich" className="scroll-mt-28">
           <DawarichCard viewModel={pickStatus(integrationStatus, "dawarich")} />

@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -221,8 +222,7 @@ export function TagEditorSheet({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor={groupSelectId}>{t("mood.manage.tagGroup")}</Label>
+        <FieldGroup htmlFor={groupSelectId} label={t("mood.manage.tagGroup")}>
           <NativeSelect
             id={groupSelectId}
             value={groupKey}
@@ -234,7 +234,7 @@ export function TagEditorSheet({
               </option>
             ))}
           </NativeSelect>
-        </div>
+        </FieldGroup>
 
         <div className="space-y-2">
           <Label>{t("mood.manage.tagIcon")}</Label>

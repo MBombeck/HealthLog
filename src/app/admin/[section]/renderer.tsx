@@ -38,9 +38,12 @@ import { ModuleAvailabilitySection } from "@/components/admin/module-availabilit
 import { RemindersSection } from "@/components/admin/reminders-section";
 import { ServicesSection } from "@/components/admin/services-section";
 import { PushRelaySection } from "@/components/admin/push-relay-section";
+import { NotificationHealthCard } from "@/components/admin/notification-health-card";
+import { WebPushVapidSection } from "@/components/admin/web-push-vapid-section";
 import { SystemStatusSection } from "@/components/admin/system-status-section";
 import { SetupHealthCard } from "@/components/admin/setup-health-card";
 import { SupportReportCard } from "@/components/admin/support-report-card";
+import { VersionMigrationsCard } from "@/components/admin/version-migrations-card";
 import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasurementMaintenanceCard } from "@/components/admin/measurement-maintenance-card";
@@ -75,6 +78,9 @@ export function AdminSectionRenderer({
         >
           <SectionFrame>
             <SystemStatusSection />
+            {/* The running build, its image line, and whether the database
+                caught up with it. */}
+            <VersionMigrationsCard />
             {/* 1.49 — the setup health check list, with the way back into
                 the server setup. */}
             <SetupHealthCard />
@@ -95,10 +101,15 @@ export function AdminSectionRenderer({
       );
     case "services":
       return (
+        // Push in one place: which channels the server offers, the Web Push
+        // keys, the relay for the App Store app, and whether deliveries get
+        // through (with a test push).
         <SectionFrame>
           <ServicesSection />
+          <WebPushVapidSection />
           {/* The push relay switch for the App Store app. */}
           <PushRelaySection />
+          <NotificationHealthCard />
         </SectionFrame>
       );
     case "integrations":

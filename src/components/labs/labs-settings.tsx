@@ -27,9 +27,9 @@ import {
 
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { FieldGroup } from "@/components/ui/field-group";
 import { NativeSelect } from "@/components/ui/native-select";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Segmented } from "@/components/ui/segmented";
 import { Switch } from "@/components/ui/switch";
@@ -111,8 +111,7 @@ export function LabsSettings() {
           title={t("labs.sort.heading")}
           description={t("labs.sort.hint")}
         />
-        <div className="space-y-2">
-          <Label htmlFor="labs-sort">{t("labs.sort.label")}</Label>
+        <FieldGroup htmlFor="labs-sort" label={t("labs.sort.label")}>
           <NativeSelect
             id="labs-sort"
             value={prefs.sortDir}
@@ -124,7 +123,7 @@ export function LabsSettings() {
             <option value="alphaDesc">{t("labs.sort.alphaDesc")}</option>
             <option value="manual">{t("labs.sort.manual")}</option>
           </NativeSelect>
-        </div>
+        </FieldGroup>
       </SettingsCard>
 
       <LabsGroupingCard

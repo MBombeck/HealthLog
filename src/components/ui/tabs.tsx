@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 import { Tabs as TabsPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -25,66 +24,46 @@ function Tabs({
   );
 }
 
-// v1.4.16 Wave-C MED — horizontal tab strips overflow viewport on
-// mobile when more than ~3 tabs render at typical label widths
-// (`/insights`, `/admin`, `/settings/*`). Tab labels are i18n-driven
-// so we cannot truncate them deterministically. Instead, the list
-// becomes horizontally scrollable on mobile via `overflow-x-auto`, and the
-// wrapping tabs preserve
-// `whitespace-nowrap` so labels never word-wrap mid-tab. Desktop
-// looks identical because the inline-flex shrink-wraps inside the
-// wider container.
-//
-// v1.4.19 — `overflow-y-hidden` clamps the y-axis. Browsers couple
-// the two overflow axes once one is `auto`: setting only
-// `overflow-x: auto` silently flips `overflow-y` to `auto` as well.
-// Combined with the fixed `h-9` strip and badge children that ride
-// ~1 px taller than the strip on some glyph stacks, a tiny painted
-// vertical scrollbar appeared on the right edge of short strips
-// (e.g. the admin feedback `Open / Acknowledged / Resolved /
-// Archived` tabs the maintainer reported in v1.4.19). Locking the y-axis hides
-// that bar without affecting horizontal swipe behaviour.
-// Padding sits at `p-1` (4 px) so the 3 px focus-visible ring
-// (`focus-visible:ring-[3px]`) on triggers stays inside the
-// `overflow-y-hidden` clamp without clipping the bottom of the ring.
-// No `touch-action` on the strip: `overflow-x-auto` already pans it sideways
-// under a finger, and the `touch-pan-x` it once carried also refused the
-// vertical pan, so a swipe up or down that began on a tab strip scrolled
-// nothing at all (on a tablet the strip is 52 px of the page under the 44 px
-// touch floor).
-// Under a coarse pointer the strip sizes to its triggers, which take the
-// 44 px touch floor; a mouse keeps the compact 36 px strip.
-const tabsListVariants = cva(
-  "rounded-lg p-1 group-data-[orientation=horizontal]/tabs:h-9 pointer-coarse:group-data-[orientation=horizontal]/tabs:h-auto data-[variant=line]:rounded-none group/tabs-list text-muted-foreground inline-flex w-fit max-w-full items-center justify-center overflow-x-auto overflow-y-hidden scrollbar-thin group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col group-data-[orientation=vertical]/tabs:overflow-x-visible group-data-[orientation=vertical]/tabs:overflow-y-visible",
-  {
-    variants: {
-      variant: {
-        default: "bg-muted",
-        line: "gap-1 bg-transparent",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  },
-);
-
+/**
+ * Views inside one page, each with a panel: the segmented control's look
+ * (`ui/segmented.tsx`), with Radix tabs under it. No track, the chosen tab
+ * filled in the primary colour, the others plain until hovered.
+ *
+ * It used to be a muted track with a raised segment, the look `Segmented`
+ * tried and dropped as heavier than the card around it. Four pages kept it
+ * through this primitive, so "another view of this page" looked one way on
+ * Cycle and Checkups and another everywhere else.
+ *
+ * The strip scrolls sideways when its labels outgrow the width (they are
+ * translated, so they cannot be cut), and never wraps a label.
+ * `overflow-x-auto` clips vertically too, so `overflow-y-hidden` is stated
+ * (a strip a pixel taller than its content painted a tiny scrollbar) and
+ * `px-1 py-1` keeps the focus ring inside the clip box, with `-mx-1 -my-1`
+ * giving that room back to the layout. No `touch-action`: the overflow
+ * already pans the strip sideways, and `touch-pan-x` also refused the
+ * vertical pan, so a swipe that began on a strip scrolled nothing.
+ */
 function TabsList({
   className,
-  variant = "default",
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.List> &
-  VariantProps<typeof tabsListVariants>) {
+}: React.ComponentProps<typeof TabsPrimitive.List>) {
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
-      data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
+      className={cn(
+        "-mx-1 -my-1 inline-flex w-fit max-w-full scrollbar-thin items-center gap-1 overflow-x-auto overflow-y-hidden px-1 py-1 group-data-[orientation=vertical]/tabs:flex-col group-data-[orientation=vertical]/tabs:items-stretch group-data-[orientation=vertical]/tabs:overflow-visible",
+        className,
+      )}
       {...props}
     />
   );
 }
 
+/**
+ * One tab: 36 px under a mouse, 44 px under a finger, like a segment. The
+ * chosen state is spelled under `data-[state=active]`, with the hover and
+ * dark-theme forms named too, so it outranks the rest state in every case.
+ */
 function TabsTrigger({
   className,
   ...props
@@ -93,10 +72,9 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring text-foreground/75 hover:text-foreground dark:text-tab-inactive dark:hover:text-foreground relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-all group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 group-data-[variant=default]/tabs-list:data-[state=active]:shadow-sm group-data-[variant=line]/tabs-list:data-[state=active]:shadow-none pointer-coarse:min-h-11 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent",
-        "data-[state=active]:bg-background dark:data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 data-[state=active]:text-foreground",
-        "after:bg-foreground after:absolute after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100",
+        "focus-visible:ring-ring/50 inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors outline-none group-data-[orientation=vertical]/tabs:justify-start focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none pointer-coarse:min-h-11 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+        "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:hover:bg-primary/90 data-[state=active]:hover:text-primary-foreground dark:data-[state=active]:hover:bg-primary/90",
         className,
       )}
       {...props}
@@ -117,4 +95,4 @@ function TabsContent({
   );
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants };
+export { Tabs, TabsList, TabsTrigger, TabsContent };

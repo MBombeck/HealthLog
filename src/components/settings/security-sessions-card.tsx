@@ -242,12 +242,30 @@ export function SecuritySessionsCard({
           </ul>
         )}
 
+        {status && (
+          <p role="status" className="text-muted-foreground text-right text-sm">
+            {status}
+          </p>
+        )}
+
+        <KeptGrantsList
+          grants={keptGrants}
+          grantList={grantListQuery}
+          revokeGrant={revokeGrant}
+          onRevoked={(id) =>
+            setKeptGrants((current) => current.filter((g) => g.id !== id))
+          }
+          onRevokeFailed={() =>
+            setStatus(t("recordSharing.actionError.revokeFailed"))
+          }
+        />
+
         {data && (
           <SettingsCardActions>
             <ConfirmButton
+              size="sm"
               slot="sign-out-everywhere"
               destructive
-              className="min-h-11 sm:min-h-9"
               label={t("settings.security.signOutEverywhere")}
               title={t("settings.security.signOutEverywhereConfirmTitle")}
               body={t("settings.security.signOutEverywhereConfirmBody")}
@@ -277,24 +295,6 @@ export function SecuritySessionsCard({
             />
           </SettingsCardActions>
         )}
-
-        {status && (
-          <p role="status" className="text-muted-foreground text-right text-sm">
-            {status}
-          </p>
-        )}
-
-        <KeptGrantsList
-          grants={keptGrants}
-          grantList={grantListQuery}
-          revokeGrant={revokeGrant}
-          onRevoked={(id) =>
-            setKeptGrants((current) => current.filter((g) => g.id !== id))
-          }
-          onRevokeFailed={() =>
-            setStatus(t("recordSharing.actionError.revokeFailed"))
-          }
-        />
       </div>
     </SettingsCard>
   );

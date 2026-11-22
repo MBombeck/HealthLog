@@ -63,6 +63,10 @@ const VORSORGE_READ_SITES: ReadonlyArray<{ file: string; surface: string }> = [
     surface: "the daily digest's due list",
   },
   {
+    file: "src/lib/navigation/nav-counts.ts",
+    surface: "the navigation's check-up count",
+  },
+  {
     file: "src/lib/insights/feature-blocks.ts",
     surface: "the insights preventive-care block",
   },
@@ -208,7 +212,7 @@ describe("an appointment reminder is not addressable by id", () => {
 
 describe("appointment reminders are excluded from every Vorsorge read", () => {
   it("names a read set that is not empty (no vacuous pass)", () => {
-    expect(VORSORGE_READ_SITES.length).toBe(4);
+    expect(VORSORGE_READ_SITES.length).toBe(5);
   });
 
   for (const { file, surface } of VORSORGE_READ_SITES) {

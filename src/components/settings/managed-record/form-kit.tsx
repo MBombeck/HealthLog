@@ -78,7 +78,7 @@ export function FormFooter({
         </p>
       ) : null}
       <SettingsCardActions>
-        <Button disabled={disabled} type="submit">
+        <Button size="sm" disabled={disabled} type="submit">
           {label}
         </Button>
       </SettingsCardActions>

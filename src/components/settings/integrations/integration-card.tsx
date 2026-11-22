@@ -325,38 +325,37 @@ export function IntegrationCard({
       {health || menu.length > 0 || primaryButton ? (
         <SettingsCardActions
           data-slot="integration-actions"
-          className="justify-between"
+          leading={
+            health ? (
+              <button
+                type="button"
+                aria-expanded={detailsOpen}
+                aria-controls={detailsId}
+                onClick={() => setDetailsOpen((open) => !open)}
+                data-slot="integration-details-toggle"
+                data-testid={`${provider}-details-toggle`}
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ml-1 flex min-h-11 items-center gap-2 rounded-md px-1 text-sm outline-none focus-visible:ring-[3px] sm:min-h-9"
+              >
+                <ChevronDown
+                  aria-hidden="true"
+                  className={cn(
+                    "size-3.5 shrink-0 transition-transform motion-reduce:transition-none",
+                    detailsOpen && "rotate-180",
+                  )}
+                />
+                {t("settings.integrationCard.details.title")}
+              </button>
+            ) : null
+          }
         >
-          {health ? (
-            <button
-              type="button"
-              aria-expanded={detailsOpen}
-              aria-controls={detailsId}
-              onClick={() => setDetailsOpen((open) => !open)}
-              data-slot="integration-details-toggle"
-              data-testid={`${provider}-details-toggle`}
-              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ml-1 flex min-h-11 items-center gap-2 rounded-md px-1 text-sm outline-none focus-visible:ring-[3px] sm:min-h-9"
-            >
-              <ChevronDown
-                aria-hidden="true"
-                className={cn(
-                  "size-3.5 shrink-0 transition-transform motion-reduce:transition-none",
-                  detailsOpen && "rotate-180",
-                )}
-              />
-              {t("settings.integrationCard.details.title")}
-            </button>
+          {menu.length > 0 ? (
+            <IntegrationMenu
+              provider={provider}
+              providerName={providerName}
+              items={menu}
+            />
           ) : null}
-          <div className="ml-auto flex items-center gap-2">
-            {menu.length > 0 ? (
-              <IntegrationMenu
-                provider={provider}
-                providerName={providerName}
-                items={menu}
-              />
-            ) : null}
-            {primaryButton}
-          </div>
+          {primaryButton}
         </SettingsCardActions>
       ) : null}
     </>,

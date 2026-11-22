@@ -193,6 +193,15 @@ export function CodexProviderForm({
         </p>
       )}
 
+      {msg && (
+        <p
+          role="alert"
+          className={`text-sm ${msgType === "success" ? "text-success" : "text-destructive"}`}
+        >
+          {msg}
+        </p>
+      )}
+
       {settings?.codexOauthConfigured === false ? (
         <p className="text-muted-foreground text-xs italic">
           {t("settings.ai.oauthNotConfigured")}
@@ -265,10 +274,10 @@ export function CodexProviderForm({
       ) : (
         <SettingsCardActions>
           <Button
+            size="sm"
             variant="outline"
             onClick={handleConnect}
             disabled={devicePolling}
-            className="min-h-11 sm:min-h-9"
           >
             {devicePolling ? (
               <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
@@ -278,15 +287,6 @@ export function CodexProviderForm({
             {t("settings.ai.codex.connectButton")}
           </Button>
         </SettingsCardActions>
-      )}
-
-      {msg && (
-        <p
-          role="alert"
-          className={`text-sm ${msgType === "success" ? "text-success" : "text-destructive"}`}
-        >
-          {msg}
-        </p>
       )}
     </div>
   );

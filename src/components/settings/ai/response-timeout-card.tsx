@@ -14,7 +14,7 @@
 import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, Timer } from "lucide-react";
+import { Loader2, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -152,15 +152,12 @@ export function ResponseTimeoutCard({
         <Button
           type="submit"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           aria-busy={saveMutation.isPending || undefined}
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
+          ) : null}
           {t("settings.ai.saveCta")}
         </Button>
       </SettingsCardActions>

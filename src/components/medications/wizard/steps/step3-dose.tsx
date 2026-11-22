@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   INJECTION_SITE_KEYS,
@@ -188,27 +188,19 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
           className="border-border/60 space-y-3 rounded-lg border p-3"
           data-slot="wizard-injection-site"
         >
-          <label className="flex items-start justify-between gap-3">
-            <span className="space-y-0.5">
-              <span className="block text-sm font-medium">
-                {t("medications.trackInjectionSitesToggle")}
-              </span>
-              <span className="text-muted-foreground block text-xs">
-                {t("medications.trackInjectionSitesHint")}
-              </span>
-            </span>
-            <Switch
-              checked={payload.trackInjectionSites}
-              onCheckedChange={(checked) =>
-                applyPartial({
-                  trackInjectionSites: checked,
-                  // Clear the per-med restriction when tracking is turned off.
-                  ...(checked ? {} : { allowedInjectionSites: [] }),
-                })
-              }
-              aria-label={t("medications.trackInjectionSitesToggle")}
-            />
-          </label>
+          <SwitchRow
+            label={t("medications.trackInjectionSitesToggle")}
+            description={t("medications.trackInjectionSitesHint")}
+            checked={payload.trackInjectionSites}
+            onCheckedChange={(checked) =>
+              applyPartial({
+                trackInjectionSites: checked,
+                // Clear the per-med restriction when tracking is turned off.
+                ...(checked ? {} : { allowedInjectionSites: [] }),
+              })
+            }
+            aria-label={t("medications.trackInjectionSitesToggle")}
+          />
 
           {payload.trackInjectionSites && (
             <div className="space-y-2">

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { InlineAction } from "@/components/ui/inline-action";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { PageHeader } from "@/components/ui/page-header";
@@ -114,9 +115,11 @@ export function EmergencyCardPage() {
       <PageHeader
         title={t("emergencyCard.page.title")}
         description={t("emergencyCard.page.description")}
+        // The way back is named after the page it opens: the card is filled
+        // from Medical history.
         backLink={{
           href: "/settings/anamnesis",
-          label: t("emergencyCard.page.back"),
+          label: t("settings.sections.anamnesis.title"),
         }}
       />
 
@@ -144,12 +147,11 @@ export function EmergencyCardPage() {
             )}
             <p className="text-sm">
               {t("emergencyCard.page.editHint")}{" "}
-              <Link
-                href="/settings/anamnesis"
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                {t("emergencyCard.page.editLink")}
-              </Link>
+              <InlineAction size="sm" asChild>
+                <Link href="/settings/anamnesis#emergency">
+                  {t("emergencyCard.page.editLink")}
+                </Link>
+              </InlineAction>
             </p>
             <p className="text-muted-foreground text-sm">
               {t("emergencyCard.page.offlineHint")}

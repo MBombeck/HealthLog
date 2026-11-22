@@ -584,7 +584,7 @@
     "admin": "Consola de administración",
     "logout": "Cerrar sesión",
     "login": "Iniciar sesión",
-    "notifications": "Notificaciones",
+    "notifications": "Notificaciones por canal",
     "theme": "Tema",
     "themeSystem": "Sistema",
     "themeDark": "Oscuro",
@@ -634,7 +634,14 @@
     "vaccinations": "Vacunas",
     "mentalWellbeing": "Bienestar mental",
     "timeline": "Cronología",
-    "seizures": "Crisis"
+    "seizures": "Crisis",
+    "emergencyCard": "Tarjeta de emergencia",
+    "groups": {
+      "tracking": "Seguimiento",
+      "record": "Historial médico",
+      "analysis": "Análisis"
+    },
+    "dueCount": "{label}, {count} pendientes"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -5767,7 +5774,6 @@
       "sectionsNav": "Secciones de ajustes",
       "groups": {
         "account": "Cuenta",
-        "yourData": "Tus datos",
         "healthProfile": "Perfil de salud",
         "ai": "IA",
         "connectivity": "Conectividad",
@@ -5776,7 +5782,8 @@
         "arrangement": "Disposición",
         "notifications": "Notificaciones",
         "connections": "Conexiones",
-        "data": "Datos"
+        "data": "Datos",
+        "serverData": "Datos del servidor"
       },
       "allSections": "Todas las secciones"
     },
@@ -5962,6 +5969,13 @@
           "label": "Posponer",
           "option": "{minutes} min",
           "saveError": "No se pudo guardar. Inténtalo de nuevo"
+        },
+        "alerts": {
+          "heading": "Avisos",
+          "noChannel": "Aún no hay ningún canal de entrega, así que no se puede enviar nada. En cuanto haya uno, este interruptor decide por todos a la vez.",
+          "setUpChannel": "Configurar un canal de entrega",
+          "perChannel": "Elegir por canal",
+          "saveError": "No se pudo guardar el ajuste de notificación. Inténtalo de nuevo."
         }
       },
       "layout": {
@@ -7979,6 +7993,52 @@
         "title": "Sesiones y dispositivos",
         "description": "Dónde tienes la sesión iniciada, qué dispositivos omiten el segundo factor y la actividad de seguridad de tu cuenta.",
         "open": "Abrir seguridad"
+      },
+      "whoHasAccess": {
+        "title": "Quién puede acceder a tu historial",
+        "description": "Cada vía de acceso a tu historial, y dónde verla y cerrarla.",
+        "doors": {
+          "accounts": {
+            "title": "Otras cuentas",
+            "description": "Personas de este servidor con las que compartes tu historial, y los tutores de los perfiles que gestionas.",
+            "link": "Abrir acceso compartido"
+          },
+          "shareLinks": {
+            "title": "Enlaces para profesionales",
+            "description": "Enlaces de solo lectura a tu informe médico que caducan en la fecha que elijas.",
+            "link": "Abrir los enlaces"
+          },
+          "emergencyCard": {
+            "title": "Enlace de la tarjeta de emergencia",
+            "description": "El enlace QR de tu tarjeta de emergencia. Quien lo escanee puede leer la tarjeta hasta que lo revoques.",
+            "link": "Abrir la tarjeta de emergencia"
+          },
+          "careCalendar": {
+            "title": "Calendario de salud",
+            "description": "Una suscripción de calendario con tus citas reservadas y las fechas de cuidados que vencen.",
+            "link": "Abrir el calendario de salud"
+          },
+          "cycleCalendar": {
+            "title": "Calendario del ciclo",
+            "description": "Una suscripción de calendario con las fechas de tu ciclo.",
+            "link": "Abrir los ajustes del ciclo"
+          },
+          "apiTokens": {
+            "title": "Tokens de API",
+            "description": "Tokens con los que aplicaciones y scripts leen o escriben tus datos.",
+            "link": "Abrir los tokens de API"
+          },
+          "mcp": {
+            "title": "Conector MCP",
+            "description": "Los asistentes de IA que conectaste a tu historial.",
+            "link": "Abrir el conector MCP"
+          },
+          "sessions": {
+            "title": "Dispositivos con sesión iniciada",
+            "description": "Navegadores y teléfonos con sesión iniciada en tu cuenta ahora mismo.",
+            "link": "Abrir las sesiones activas"
+          }
+        }
       }
     },
     "mcp": {
@@ -8139,7 +8199,8 @@
     "tokenNameLabel": "Nombre del token",
     "displayCard": {
       "title": "Visualización",
-      "description": "Idioma, unidades y formatos; se guardan en cuanto los cambias."
+      "description": "Idioma, unidades y formatos; se guardan en cuanto los cambias.",
+      "themeDescription": "Sistema sigue a tu dispositivo entre claro y oscuro. La elección se guarda en este dispositivo."
     },
     "integrationCard": {
       "state": {
@@ -8671,7 +8732,8 @@
       "ok": "OK",
       "error": "Fallidas",
       "skipped": "Omitidas",
-      "autoDisabled": "Canales desactivados automáticamente"
+      "autoDisabled": "Canales desactivados automáticamente",
+      "loadError": "No se pudo cargar el estado de entrega."
     },
     "reminderLateMinutes": "Umbral de retraso (minutos)",
     "reminderLateMinutesDescription": "Minutos tras el fin de la ventana hasta que la insignia cambia de amarillo a naranja.",
@@ -8725,12 +8787,12 @@
         "subtitle": "Registro, idioma predeterminado y otros interruptores de toda la aplicación."
       },
       "services": {
-        "title": "Servicios",
-        "subtitle": "Activa o desactiva los canales de notificación y la API en todo el servidor."
+        "title": "Push y canales",
+        "subtitle": "Canales de notificación, claves de Web Push, el relé push y el estado de entrega para todo el servidor."
       },
       "integrations": {
-        "title": "Integraciones",
-        "subtitle": "Configura Umami, GlitchTip, Web Push e informes de errores."
+        "title": "Supervisión",
+        "subtitle": "Configurar Umami, GlitchTip y los informes de errores."
       },
       "coach": {
         "title": "Coach",
@@ -9546,7 +9608,9 @@
       "rotate": {
         "button": "Renovar la clave del relé",
         "done": "La clave del relé se renovó",
-        "failed": "No se pudo renovar ahora la clave del relé; el relé permite una renovación al día"
+        "failed": "No se pudo renovar ahora la clave del relé; el relé permite una renovación al día",
+        "confirmTitle": "¿Renovar ahora la clave del relé?",
+        "confirmBody": "Este servidor sustituye ahora la clave con la que firma sus solicitudes al relé, en lugar de esperar a su ciclo de 30 días. El relé permite una renovación al día."
       },
       "invite": {
         "label": "Código de invitación (opcional)",
@@ -9558,6 +9622,16 @@
         "inviteRequired": "Este relé solo admite servidores nuevos por invitación. Introduce un código de invitación.",
         "inviteRejected": "El relé no aceptó este código de invitación. Puede que haya caducado o que ya se haya usado. Pide uno nuevo e introdúcelo.",
         "registrationPaused": "El relé no admite servidores nuevos en este momento. Este servidor volverá a intentarlo más tarde por sí solo."
+      },
+      "usage": {
+        "accepted": "Aceptados",
+        "pending": "En espera",
+        "dropped": "Descartados",
+        "failed": "Fallidos",
+        "window": "Notificaciones push que este servidor entregó al relé en los últimos {days} días.",
+        "lastSuccess": "Última entrega {time}.",
+        "lastFailure": "Último fallo {time}: {reason}.",
+        "noReason": "sin motivo indicado"
       }
     },
     "serverSetup": {
@@ -9670,6 +9744,25 @@
           "scheduled": "Volcado nocturno programado ({cron})."
         }
       }
+    },
+    "versionMigrations": {
+      "title": "Versión y base de datos",
+      "description": "Qué compilación se ejecuta, de qué línea de imágenes, y si la base de datos tiene todas las migraciones que trae.",
+      "version": "Versión",
+      "channel": {
+        "release": "Publicación",
+        "edge": "Edge",
+        "development": "Compilación de desarrollo"
+      },
+      "built": "Compilación {sha}, {time}",
+      "migrations": "Migraciones de la base de datos",
+      "applied": "{applied} de {shipped} aplicadas",
+      "appliedOnly": "{applied} aplicadas",
+      "pending": "{count} pendientes: {names}",
+      "failed": "Fallidas, y bloquean la actualización: {names}",
+      "upToDate": "Al día",
+      "lastApplied": "Última: {name}, {time}",
+      "loadError": "No se pudo cargar el estado de las migraciones."
     }
   },
   "achievements": {
@@ -9964,7 +10057,7 @@
     }
   },
   "notifications": {
-    "title": "Notificaciones",
+    "title": "Notificaciones por canal",
     "eventColumn": "Evento",
     "subtitle": "Elige qué notificaciones recibes y por qué canal.",
     "loadError": "No se han podido cargar los ajustes de notificación.",
@@ -10072,7 +10165,7 @@
     "eventMedicationIntakeSyncDesc": "Actualización entre dispositivos cuando se registra, toma u omite una dosis.",
     "eventDailyBriefing": "Resumen diario",
     "eventDailyBriefingDesc": "Un resumen matinal y tranquilo de tu día. Desactivado hasta que lo actives.",
-    "eventSecurityAlert": "Seguridad de la cuenta",
+    "eventSecurityAlert": "Alertas de seguridad de la cuenta",
     "eventSecurityAlertDesc": "Se envía al iniciar sesión desde un dispositivo o un lugar desconocidos, al añadir o eliminar una llave de acceso, al revocar un token de acceso y al cerrar la sesión de un dispositivo porque su token de inicio de sesión se usó dos veces.",
     "eventSharedRecordIntake": "Alguien con acceso marca una dosis",
     "eventSharedRecordIntakeDesc": "Solo se envía cuando lo hace otra persona, nunca con tus propias entradas.",
@@ -10105,8 +10198,8 @@
     },
     "loginRequired": "Inicia sesión para gestionar las notificaciones.",
     "someChannelsGloballyDisabled": "Uno o más canales están desactivados en los ajustes y no recibirán notificaciones.",
-    "reminderSettingsLink": "Ajustes de recordatorios",
-    "channelsLink": "Canales",
+    "reminderSettingsLink": "Ajustes de notificaciones",
+    "channelsLink": "Canales de entrega",
     "handover": {
       "claimedTitle": "{name} ya tiene su propia cuenta",
       "claimedEnd": "{name} ha asumido su historial de salud. Tu acceso ha terminado.",
@@ -15158,6 +15251,23 @@
         "measurement": "Nota de una medición",
         "illness": "Diario de enfermedad"
       }
+    },
+    "keywords": {
+      "emergencyCard": "emergencia, ICE, QR, cartera, grupo sanguíneo, en caso de emergencia",
+      "notificationsPerChannel": "canales, matriz, push, Telegram, ntfy",
+      "medicineRegistry": "prospecto, registro, país, base de medicamentos",
+      "snooze": "posponer, más tarde, aplazar, snooze",
+      "securityAlerts": "seguridad, inicio de sesión, dispositivo nuevo, alerta",
+      "lastingChange": "cambio duradero, signo vital, tendencia, pulso en reposo, tensión",
+      "theme": "tema, modo oscuro, modo claro, apariencia, colores",
+      "gadgetbridge": "Gadgetbridge, Android, reloj inteligente, base de datos",
+      "fhirBundle": "FHIR, paquete, historia clínica, importar",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, carpeta, Android",
+      "reportSchedule": "programación, mensual, trimestral, informe médico, automático",
+      "careCalendar": "calendario, ICS, suscripción, citas, revisiones, vacunas",
+      "whoHasAccess": "acceso, quién ve, compartir, enlaces, tokens, sesiones",
+      "adminPush": "push, relé, Web Push, VAPID, APNs, entrega",
+      "adminSystemStatus": "migraciones, versión, actualización, canal, edge, base de datos"
     }
   },
   "shortcuts": {
@@ -15842,7 +15952,7 @@
   "careFeed": {
     "sectionTitle": "Calendario",
     "sectionSubtitle": "Tus citas y lo que vence, en la app de calendario que ya usas.",
-    "title": "Suscripción de calendario de citas y vencimientos",
+    "title": "Calendario de salud",
     "description": "Las visitas reservadas a su hora, y los chequeos y refuerzos de vacunas el día que vencen.",
     "loadError": "No se pudo cargar la suscripción de calendario.",
     "linkHidden": "Hay un enlace activo que empieza por {prefix}. Solo se muestra una vez, al crearlo; desactiva y vuelve a activar la suscripción para obtener uno nuevo.",
@@ -15944,7 +16054,6 @@
     "page": {
       "title": "Tarjeta de emergencia",
       "description": "Tus datos de emergencia para cuando estás fuera de casa.",
-      "back": "Perfil de salud",
       "loadError": "No se pudo cargar la tarjeta de emergencia.",
       "editHint": "El grupo sanguíneo, los contactos, los implantes y las declaraciones vienen de tus datos de emergencia.",
       "editLink": "Editarlos",
@@ -15967,6 +16076,9 @@
       "ORGAN_DONOR": "Donación de órganos",
       "NOTE": "Notas adicionales",
       "DATE_OF_BIRTH": "Fecha de nacimiento"
+    },
+    "entry": {
+      "description": "Grupo sanguíneo, alergias, medicamentos y contactos para una emergencia, con copia sin conexión, tarjeta y enlace QR."
     }
   }
 }

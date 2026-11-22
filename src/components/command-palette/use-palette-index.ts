@@ -66,6 +66,7 @@ export function usePaletteIndex(): PaletteEntry[] {
         navModules,
         inSharedRecord,
         sections,
+        record: { recordKind, level },
         isAdmin: user?.role === "ADMIN",
         settingsListed: inSharedRecord
           ? (slug) =>
@@ -73,6 +74,7 @@ export function usePaletteIndex(): PaletteEntry[] {
                 recordKind,
                 level,
                 manageableDomains: manageableDomains ?? [],
+                sections,
               })
           : () => true,
         canCapture,

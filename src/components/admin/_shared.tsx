@@ -5,8 +5,14 @@ import { StatTile } from "@/components/admin/_stat-tile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
-import { Cpu, Fingerprint, Globe, KeyRound } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import {
+  Cpu,
+  Fingerprint,
+  Globe,
+  KeyRound,
+  type LucideIcon,
+} from "lucide-react";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Badge } from "@/components/ui/badge";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
@@ -304,48 +310,30 @@ export function StatusItem({
 export function SettingsToggle({
   label,
   description,
-  icon: Icon,
+  icon,
   checked,
   onCheckedChange,
   disabled,
 }: {
   label: string;
   description?: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: LucideIcon;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   disabled: boolean;
 }) {
-  // v1.4.27 — stack the toggle row vertically on `<sm` so
-  // the label + description don't have to compete with the switch for
-  // horizontal space on Pixel 5 (the German "Registration enabled — …"
-  // description used to wrap to 4 lines while the switch ate ~52 px on
-  // the right). At `sm:` the original side-by-side layout returns.
-  // The switch self-aligns to the right via `self-end` on the stacked
-  // branch so it stays a familiar tap target.
+  // The admin toggles are `SwitchRow`, like every other switch with a name.
+  // They used to drop the switch into a row of its own under the text on a
+  // phone, which no other surface did.
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <div className="flex min-w-0 items-center gap-2">
-        {Icon && <Icon className="text-muted-foreground h-4 w-4 shrink-0" />}
-        <div className="min-w-0">
-          <p className="text-sm font-medium">{label}</p>
-          {description && (
-            <p className="text-muted-foreground text-xs">{description}</p>
-          )}
-        </div>
-      </div>
-      <Switch
-        // The visible label is a sibling `<p>` with no association to the
-        // Radix switch button, so a screen reader would announce a bare
-        // "switch, on/off". Name it explicitly — one fix covers every admin
-        // toggle that mounts this shared component.
-        aria-label={label}
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        disabled={disabled}
-        className="self-end sm:self-auto"
-      />
-    </div>
+    <SwitchRow
+      label={label}
+      description={description}
+      icon={icon}
+      checked={checked}
+      onCheckedChange={onCheckedChange}
+      disabled={disabled}
+    />
   );
 }
 

@@ -20,7 +20,6 @@ import {
   Loader2,
   Plug,
   RefreshCw,
-  Save,
   Unlink,
   Watch,
 } from "lucide-react";
@@ -513,7 +512,6 @@ function GarminForm({
           type="submit"
           size="sm"
           variant={connected ? "outline" : "default"}
-          className="min-h-11 w-full sm:min-h-9 sm:w-auto"
           disabled={saving || !apiKey.trim()}
           data-slot={connected ? undefined : "integration-primary-action"}
           data-action={connected ? undefined : "connect"}
@@ -521,9 +519,7 @@ function GarminForm({
         >
           {saving ? (
             <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-          ) : connected ? (
-            <Save className="size-3.5" aria-hidden="true" />
-          ) : (
+          ) : connected ? null : (
             <Link2 className="size-3.5" aria-hidden="true" />
           )}
           {connected ? t("settings.garminUpdate") : t("settings.garminConnect")}
@@ -611,15 +607,12 @@ function GarminValidityForm() {
           type="submit"
           size="sm"
           variant="outline"
-          className="min-h-11 w-full sm:min-h-9 sm:w-auto"
           disabled={saving}
           data-testid="garmin-validity-save"
         >
           {saving ? (
             <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Save className="size-3.5" aria-hidden="true" />
-          )}
+          ) : null}
           {t("settings.garminUpdate")}
         </Button>
       </SettingsCardActions>

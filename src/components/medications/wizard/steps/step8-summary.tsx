@@ -5,8 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
@@ -164,80 +163,50 @@ export function Step8Summary({
       <Step8ExtrasFields payload={payload} applyPartial={applyPartial} />
       {/* Intake tracking (#1033): off keeps a record, nothing falls due. */}
       {payload.mode !== "asNeeded" && (
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <Label
-              htmlFor="wizard-track-intake"
-              className="text-sm font-medium"
-            >
-              {t("medications.trackIntake.label")}
-            </Label>
-            <p className="text-muted-foreground text-xs">
-              {payload.trackIntake
-                ? t("medications.trackIntake.helperOn")
-                : t("medications.trackIntake.helperOff")}
-            </p>
-          </div>
-          <Switch
-            id="wizard-track-intake"
-            checked={payload.trackIntake}
-            onCheckedChange={(checked) =>
-              applyPartial({ trackIntake: checked })
-            }
-            data-slot="wizard-track-intake-toggle"
-            aria-label={t("medications.trackIntake.label")}
-          />
-        </div>
+        <SwitchRow
+          label={t("medications.trackIntake.label")}
+          description={
+            payload.trackIntake
+              ? t("medications.trackIntake.helperOn")
+              : t("medications.trackIntake.helperOff")
+          }
+          id="wizard-track-intake"
+          checked={payload.trackIntake}
+          onCheckedChange={(checked) => applyPartial({ trackIntake: checked })}
+          data-slot="wizard-track-intake-toggle"
+          aria-label={t("medications.trackIntake.label")}
+        />
       )}
 
       {/* v1.42.2 — auto-mark-taken. Only meaningful while doses are due:
           hidden for as-needed and record-only medications. */}
       {payload.mode !== "asNeeded" && payload.trackIntake && (
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <Label
-              htmlFor="wizard-auto-mark-taken"
-              className="text-sm font-medium"
-            >
-              {t("medications.autoMarkTaken.label")}
-            </Label>
-            <p className="text-muted-foreground text-xs">
-              {t("medications.autoMarkTaken.helper")}
-            </p>
-          </div>
-          <Switch
-            id="wizard-auto-mark-taken"
-            checked={payload.autoMarkTaken}
-            onCheckedChange={(checked) =>
-              applyPartial({ autoMarkTaken: checked })
-            }
-            data-slot="wizard-auto-mark-taken-toggle"
-            aria-label={t("medications.autoMarkTaken.label")}
-          />
-        </div>
+        <SwitchRow
+          label={t("medications.autoMarkTaken.label")}
+          description={t("medications.autoMarkTaken.helper")}
+          id="wizard-auto-mark-taken"
+          checked={payload.autoMarkTaken}
+          onCheckedChange={(checked) =>
+            applyPartial({ autoMarkTaken: checked })
+          }
+          data-slot="wizard-auto-mark-taken-toggle"
+          aria-label={t("medications.autoMarkTaken.label")}
+        />
       )}
 
       {/* As-needed never reminds: no reminders toggle. */}
       {payload.mode !== "asNeeded" && payload.trackIntake && (
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="wizard-reminders" className="text-sm font-medium">
-              {t("medications.wizard.steps.step8.remindersLabel")}
-            </Label>
-            <p className="text-muted-foreground text-xs">
-              {t("medications.wizard.steps.step8.remindersDescription")}
-            </p>
-          </div>
-          <Switch
-            id="wizard-reminders"
-            checked={payload.notificationsEnabled}
-            onCheckedChange={(checked) =>
-              applyPartial({ notificationsEnabled: checked })
-            }
-            data-slot="wizard-reminders-toggle"
-            aria-label={t("medications.wizard.steps.step8.remindersLabel")}
-          />
-        </div>
+        <SwitchRow
+          label={t("medications.wizard.steps.step8.remindersLabel")}
+          description={t("medications.wizard.steps.step8.remindersDescription")}
+          id="wizard-reminders"
+          checked={payload.notificationsEnabled}
+          onCheckedChange={(checked) =>
+            applyPartial({ notificationsEnabled: checked })
+          }
+          data-slot="wizard-reminders-toggle"
+          aria-label={t("medications.wizard.steps.step8.remindersLabel")}
+        />
       )}
 
       {payload.mode !== "asNeeded" &&
@@ -249,7 +218,7 @@ export function Step8Summary({
           >
             {t("medications.wizard.steps.step8.noChannelHint")}{" "}
             <Link
-              href="/settings/notifications"
+              href="/settings/integrations#channels"
               className="text-primary underline-offset-2 hover:underline"
             >
               {t("medications.wizard.steps.step8.noChannelHintLink")}

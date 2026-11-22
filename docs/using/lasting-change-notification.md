@@ -2,8 +2,10 @@
 
 HealthLog can tell you when one of your vitals has settled at a new level:
 "Resting heart rate has stayed higher since 3 Nov." It is off until you
-switch it on, per channel, under **Notifications** ("Lasting change in a
-vital").
+switch it on in **Settings > Notifications**, under **Alerts** ("Lasting change
+in a vital"), for every delivery channel at once, or per channel under
+**Notifications per channel** in the account menu. The card is there before any
+channel is set up and says where to add one.
 
 ## What counts as a lasting change
 

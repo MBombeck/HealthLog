@@ -66,11 +66,13 @@ updates:
     open-pull-requests-limit: 3
     ignore:
       # The Dockerfile's `pgclient` stage carries pg_dump and pg_restore of
-      # the bundled database's major. A major bump there is part of the same
-      # migration decision as the database itself, and the runner's paths and
-      # version checks name major 18, so it arrives by hand, not as a PR. Its
-      # minor moves with the database's in docker-compose.yml
-      # (runtime-package-pins.test.ts fails while the two differ).
+      # the newest PostgreSQL major this project supports, which is also the
+      # highest server major an install may run. Raising it is a decision
+      # about that support, and the runner's paths and version checks name
+      # the major, so it arrives by hand, not as a PR. Minor updates of the
+      # pinned major still come as PRs, and runtime-package-pins.test.ts
+      # fails if the client ever falls below the bundled database in
+      # docker-compose.yml.
       - dependency-name: "postgres"
         update-types: ["version-update:semver-major"]
       # The Node major in the build and runner stages is the one `engines`,

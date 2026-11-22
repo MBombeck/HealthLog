@@ -3,6 +3,13 @@
 The command palette finds pages and settings, and it searches what you have
 recorded.
 
+Every page with an address and every Settings card with its own anchor is in
+it, by its name in your language and by the words people type for it: "snooze"
+finds **Remind me later**, "dark mode" finds the theme, "Nextcloud" finds the
+Health Connect folder, "ICE" or "QR" the emergency card. The list comes from the
+same registry the navigation and Settings are built from, so a new page is
+searchable the day it ships.
+
 ## Opening it
 
 Press **⌘K** on a Mac or **Ctrl K** elsewhere, or tap the magnifier at the
