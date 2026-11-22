@@ -263,6 +263,15 @@ too many of them:
 - no device gets more than four of these wakes an hour together, and over the
   relay none beyond the relay's own six silent pushes per device and hour.
 
+The relay keeps its own count of those six (it halves its limits for a while
+after a restart). When it refuses a silent push for that budget anyway, the
+push counts as not delivered: the intake sync is owed and the data wake keeps
+its changes, and no silent push goes to that device before the time the relay
+named. The next minute after that, the server sends one fresh intake sync for
+however many changes arrived meanwhile, then the wake. An alert the relay
+refuses for a budget waits for the relay's time and is sent again within its
+15 minutes.
+
 Both wakes go only to app versions that registered a push key; older app
 versions get nothing new. A server with its own APNs key sends the same
 sealed wakes itself.
@@ -292,7 +301,8 @@ the server or the app reminds the device of a dose (and until when the app
 does), and the
 silent budget: how many of the six silent pushes an hour the device has used,
 how many of the four wakes, whether an intake sync is owed and when the next
-one fits. It also lists the newest push of each kind (alert, silent sync,
+one fits (by the server's count, or the later time the relay named when it
+refused one). It also lists the newest push of each kind (alert, silent sync,
 wake, Live Activity) with its outcome, the last receipt the app sent back, and
 the APNs token, masked to its first and last eight characters.
 

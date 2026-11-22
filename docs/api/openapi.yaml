@@ -62118,8 +62118,9 @@ components:
               type: integer
               minimum: -9007199254740991
               maximum: 9007199254740991
-              description: "Intake syncs held back by the budget and waiting, coalesced: 0 or 1, however many changes arrived. Sent
-                once the budget frees up, never dropped."
+              description: "Intake syncs held back by the budget and waiting, coalesced: 0 or 1, however many changes arrived. Held
+                back by this server's count, or refused by the relay for its own (`device_quota`); sent once the budget
+                frees up, never dropped."
             owedSince:
               anyOf:
                 - type: string
@@ -62133,7 +62134,8 @@ components:
                   format: date-time
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
                 - type: "null"
-              description: When the next intake sync fits the budget again (an owed one goes then); null when one fits now.
+              description: "When the next intake sync fits the budget again (an owed one goes then): by this server's count, or later
+                when the relay named a later time with a refusal; null when one fits now."
           required:
             - windowMinutes
             - limit
@@ -62800,6 +62802,8 @@ components:
             - failed
             - waiting
             - no_device
+          description: "`accepted` only when the relay accepted the push to every device; `failed` when one failed for good;
+            `waiting` when the rest waits for a retry. Per device in `results`."
         results:
           type: array
           items:
