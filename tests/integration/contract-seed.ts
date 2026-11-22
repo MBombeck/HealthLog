@@ -1051,6 +1051,19 @@ export async function seedContractAccount(
       achievedAt: daysAgo(6),
     },
   });
+  // A background AI job that stopped, as Settings, AI lists it. Written by
+  // the job's failure reporter, which needs a provider the run has none of.
+  await prisma.aiJobFailure.create({
+    data: {
+      userId: CONTRACT_USER_ID,
+      job: "briefing",
+      code: "rate_limited",
+      providerType: "anthropic",
+      failCount: 2,
+      firstFailedAt: daysAgo(2),
+      lastFailedAt: daysAgo(1),
+    },
+  });
   // A delegate's visit to this record, as the activity list shows it.
   await prisma.auditLog.create({
     data: {
