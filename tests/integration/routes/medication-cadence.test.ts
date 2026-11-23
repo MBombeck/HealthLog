@@ -18,7 +18,15 @@
  * slot is either seeded as taken (its window has opened) or still upcoming,
  * so neither state can turn into a miss on any day the suite runs.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { GET } from "@/app/api/medications/[id]/cadence/route";
 
@@ -58,6 +66,23 @@ interface CadenceBody {
 interface ValidationBody {
   details: { issues: Array<Record<string, unknown>> };
 }
+
+// The dose windows are 08:00 to 10:00 UTC. A run that lands inside today's
+// window counts the open dose differently from one after it, so the clock is
+// pinned to 12:00 UTC on the real day: today's dose is taken, every time.
+beforeAll(() => {
+  const now = new Date();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(
+    new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12),
+    ),
+  );
+});
+
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(async () => {
   await truncateAllTables(prisma);
@@ -156,7 +181,8 @@ describe("GET /api/medications/{id}/cadence", () => {
     // One miss three days ago: the run since covers the two past days, and
     // today once today's dose is recorded.
     expect(res.data.chips.missedLast30).toBe(1);
-    expect(res.data.chips.currentStreak).toBe(takenToday ? 3 : 2);
+    expect(takenToday).toBe(true);
+    expect(res.data.chips.currentStreak).toBe(3);
     const taken = res.data.timeline.filter((p) => p.status === "taken").length;
     expect(res.data.chips.adherenceRate).toBe(
       Math.round((taken / (taken + 1)) * 100),
