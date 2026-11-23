@@ -5,7 +5,7 @@
  * (`MedicationActivityAttributes`) reads seconds since 2001-01-01, so it gets
  * no relay update, only the end, whose fixed state carries no time.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendRelayItems = vi.fn();
 vi.mock("@/lib/push-relay/relay-send", () => ({
@@ -70,6 +70,17 @@ function pendingState() {
   if (!state) throw new Error("no state");
   return { state, dueAtS: slot - 2400 };
 }
+
+// The pass reads the wall clock (the age of a stored statement, the dose
+// state), so the whole file runs on the fixed NOW. Without it the fixture's
+// statement, signed a minute before NOW, aged past its 12 hour limit once the
+// real clock passed 19:55 UTC on the day NOW names, and the end was dropped.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"], now: NOW });
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("who started a registered Activity", () => {
   it("reads the per-token mark", () => {
