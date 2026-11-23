@@ -25,6 +25,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { ImportCardShell, ImportStatusRegion } from "./import-card-shell";
+import { FileInput } from "@/components/ui/file-picker";
 
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
 
@@ -250,9 +251,8 @@ export function HealthConnectImportCard() {
           {t("settings.sections.export.import.healthConnect.dropHint")}
         </span>
       </div>
-      <input
+      <FileInput
         ref={fileInputRef}
-        type="file"
         accept=".zip,application/zip"
         className="sr-only"
         aria-label={t(

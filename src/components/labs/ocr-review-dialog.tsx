@@ -38,6 +38,7 @@ import {
   useOcrExtract,
   useOcrTextExtract,
 } from "./use-ocr-extract";
+import { FileInput } from "@/components/ui/file-picker";
 
 type Stage = "pick" | "review";
 
@@ -384,9 +385,8 @@ export function OcrReviewDialog({
         <DocumentReadingConsentPrompt />
       ) : stage === "pick" ? (
         <div className="relative py-2">
-          <input
+          <FileInput
             id={pickerId}
-            type="file"
             accept={allowPdf ? ACCEPT : ACCEPT_IMAGE_ONLY}
             disabled={extract.isPending}
             className="peer absolute inset-0 z-10 h-full w-full cursor-pointer rounded-lg opacity-0 disabled:cursor-not-allowed"

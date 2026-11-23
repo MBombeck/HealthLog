@@ -1,5 +1,9 @@
 {
   "common": {
+    "filePicker": {
+      "choose": "Choose file",
+      "none": "No file chosen"
+    },
     "listCapped": "Showing the latest {count}; older entries are not listed here.",
     "save": "Save",
     "conflictReloaded": "Reloaded from the server. Please make your change again.",
@@ -1523,7 +1527,6 @@
     "importDescription": "Paste a JSON array with intake data. Expected format:",
     "importUploadFile": "Upload JSON file",
     "importPaste": "Paste JSON here…",
-    "importSelected": "Selected: {name}",
     "importFileLoaded": "File \"{name}\" loaded",
     "importInvalidJson": "File does not contain valid JSON",
     "importNoArray": "No array found",
@@ -1563,6 +1566,7 @@
       "label": "Track intake",
       "helperOn": "Doses fall due on this schedule, with reminders and adherence.",
       "helperOff": "Kept as a record: nothing falls due, no reminders, no adherence.",
+      "helperEnded": "The course has ended, so nothing falls due. A new course picks this schedule up again.",
       "enabledToast": "Intake tracking on",
       "disabledToast": "Intake tracking off",
       "toggleFailed": "Could not change intake tracking."

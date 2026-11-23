@@ -24,6 +24,7 @@ import {
 import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
 import { queryKeys } from "@/lib/query-keys";
 import { ImportCardShell, ImportStatusRegion } from "./import-card-shell";
+import { FileInput } from "@/components/ui/file-picker";
 
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
 
@@ -220,9 +221,8 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
           {copy.choose}
         </Button>
       </SettingsCardActions>
-      <input
+      <FileInput
         ref={inputRef}
-        type="file"
         accept={copy.accept}
         className="sr-only"
         aria-label={copy.fileInputLabel}

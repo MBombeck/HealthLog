@@ -103,6 +103,9 @@ function isFilledVariant(attr, tag) {
 function isHiddenInput(node) {
   if (node.type !== "JSXElement") return false;
   const opening = node.openingElement;
+  // `FileInput` (`ui/file-picker.tsx`) is the one file input in the tree; it
+  // renders nothing visible unless a drop zone lays it out (#1215).
+  if (tagName(opening) === "FileInput") return true;
   if (tagName(opening) !== "input") return false;
   const type = attribute(opening, "type");
   return type?.value?.type === "Literal" && type.value.value === "file";

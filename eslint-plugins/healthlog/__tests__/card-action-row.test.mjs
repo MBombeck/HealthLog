@@ -95,6 +95,10 @@ ruleTester.run("card-action-row", rule, {
       code: '<SettingsCard><SettingsCardActions><Button size="sm">Save</Button></SettingsCardActions><ConfirmDialog open={open} /><input type="file" className="hidden" /></SettingsCard>',
       filename: FILE,
     },
+    {
+      code: '<SettingsCard><SettingsCardActions><Button size="sm">Upload</Button></SettingsCardActions><FileInput ref={inputRef} accept=".csv" /></SettingsCard>',
+      filename: FILE,
+    },
     // A button outside a row is not this rule's business.
     {
       code: '<div><Button className="w-full sm:w-auto">Next</Button></div>',

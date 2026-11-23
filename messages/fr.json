@@ -1,5 +1,9 @@
 {
   "common": {
+    "filePicker": {
+      "choose": "Choisir un fichier",
+      "none": "Aucun fichier choisi"
+    },
     "listCapped": "Seuls les {count} derniers sont affichés ; les entrées plus anciennes ne figurent pas ici.",
     "save": "Enregistrer",
     "conflictReloaded": "Rechargé depuis le serveur. Refaites votre modification.",
@@ -1523,7 +1527,6 @@
     "importDescription": "Collez un tableau JSON contenant les données de prises. Format attendu :",
     "importUploadFile": "Téléverser un fichier JSON",
     "importPaste": "Collez le JSON ici...",
-    "importSelected": "Sélectionné : {name}",
     "importFileLoaded": "Fichier « {name} » chargé",
     "importInvalidJson": "Le fichier ne contient pas de JSON valide",
     "importNoArray": "Aucun tableau trouvé",
@@ -1563,6 +1566,7 @@
       "label": "Suivre les prises",
       "helperOn": "Les doses sont dues selon cet horaire, avec rappels et observance.",
       "helperOff": "Conservé pour mémoire : rien n’est dû, pas de rappel, pas d’observance.",
+      "helperEnded": "Le traitement est terminé, donc rien n’est dû. Un nouveau traitement reprend ce planning.",
       "enabledToast": "Suivi des prises activé",
       "disabledToast": "Suivi des prises désactivé",
       "toggleFailed": "Impossible de modifier le suivi des prises."

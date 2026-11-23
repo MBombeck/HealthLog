@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 
 import { COACH_COMPOSER_ID } from "./composer-focus";
+import { FileInput } from "@/components/ui/file-picker";
 
 /**
  * v1.4.20 — Coach composer.
@@ -273,9 +274,8 @@ export function CoachInput({
   // pipeline). Rendered only when the parent enables it (module-gated).
   const attachButton = attachEnabled ? (
     <>
-      <input
+      <FileInput
         ref={attachFileInputRef}
-        type="file"
         multiple
         className="hidden"
         data-slot="coach-input-attach-file"

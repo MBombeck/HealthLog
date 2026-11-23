@@ -1,5 +1,9 @@
 {
   "common": {
+    "filePicker": {
+      "choose": "Bestand kiezen",
+      "none": "Geen bestand gekozen"
+    },
     "listCapped": "Alleen de laatste {count} worden getoond; oudere items staan hier niet.",
     "save": "Opslaan",
     "conflictReloaded": "Opnieuw geladen van de server. Voer je wijziging opnieuw uit.",
@@ -1523,7 +1527,6 @@
     "importDescription": "Plak een JSON-array met innamegegevens. Verwacht formaat:",
     "importUploadFile": "JSON-bestand uploaden",
     "importPaste": "Plak hier JSON…",
-    "importSelected": "Geselecteerd: {name}",
     "importFileLoaded": "Bestand \"{name}\" geladen",
     "importInvalidJson": "Bestand bevat geen geldige JSON",
     "importNoArray": "Geen array gevonden",
@@ -1563,6 +1566,7 @@
       "label": "Inname bijhouden",
       "helperOn": "Doses worden volgens dit schema gepland, met herinneringen en therapietrouw.",
       "helperOff": "Alleen ter registratie: niets wordt gepland, geen herinneringen, geen therapietrouw.",
+      "helperEnded": "De kuur is afgelopen, dus er wordt niets gepland. Een nieuwe kuur pakt dit schema weer op.",
       "enabledToast": "Inname bijhouden aan",
       "disabledToast": "Inname bijhouden uit",
       "toggleFailed": "Inname bijhouden kon niet worden gewijzigd."

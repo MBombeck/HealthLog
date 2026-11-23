@@ -1,5 +1,9 @@
 {
   "common": {
+    "filePicker": {
+      "choose": "Elegir archivo",
+      "none": "Ningún archivo elegido"
+    },
     "listCapped": "Se muestran los últimos {count}; las entradas anteriores no aparecen aquí.",
     "save": "Guardar",
     "conflictReloaded": "Recargado desde el servidor. Vuelve a aplicar tu cambio.",
@@ -1523,7 +1527,6 @@
     "importDescription": "Pega un array JSON con los datos de tomas. Formato esperado:",
     "importUploadFile": "Subir archivo JSON",
     "importPaste": "Pega el JSON aquí...",
-    "importSelected": "Seleccionado: {name}",
     "importFileLoaded": "Archivo \"{name}\" cargado",
     "importInvalidJson": "El archivo no contiene un JSON válido",
     "importNoArray": "No se encontró ningún array",
@@ -1563,6 +1566,7 @@
       "label": "Registrar tomas",
       "helperOn": "Las dosis tocan según este horario, con recordatorios y adherencia.",
       "helperOff": "Se guarda como registro: nada queda pendiente, sin recordatorios ni adherencia.",
+      "helperEnded": "El tratamiento ha terminado, así que no queda nada pendiente. Un nuevo tratamiento retoma este horario.",
       "enabledToast": "Registro de tomas activado",
       "disabledToast": "Registro de tomas desactivado",
       "toggleFailed": "No se pudo cambiar el registro de tomas."

@@ -42,6 +42,7 @@ import {
   type SupplementLabelProposal,
 } from "./use-composition";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FileInput } from "@/components/ui/file-picker";
 
 /** The categories the composition is offered for without being asked. */
 export const COMPOSITION_CATEGORIES: ReadonlySet<string> = new Set([
@@ -265,9 +266,8 @@ function CompositionEditor({
       <div className="space-y-4" data-slot="medication-composition-editor">
         {labelReadable && (
           <div className="space-y-2">
-            <input
+            <FileInput
               ref={fileInput}
-              type="file"
               // No HEIC: a phone browser then hands over a JPEG.
               accept="image/jpeg,image/png,image/webp,application/pdf"
               className="sr-only"

@@ -1,5 +1,9 @@
 {
   "common": {
+    "filePicker": {
+      "choose": "Escolher arquivo",
+      "none": "Nenhum arquivo escolhido"
+    },
     "listCapped": "Mostrando os {count} mais recentes; registros mais antigos não aparecem aqui.",
     "save": "Salvar",
     "conflictReloaded": "Recarregado do servidor. Faça sua alteração novamente.",
@@ -1523,7 +1527,6 @@
     "importDescription": "Cole um array JSON com dados de tomadas. Formato esperado:",
     "importUploadFile": "Enviar arquivo JSON",
     "importPaste": "Cole o JSON aqui…",
-    "importSelected": "Selecionado: {name}",
     "importFileLoaded": "Arquivo \"{name}\" carregado",
     "importInvalidJson": "O arquivo não contém JSON válido",
     "importNoArray": "Nenhum array encontrado",
@@ -1563,6 +1566,7 @@
       "label": "Acompanhar tomadas",
       "helperOn": "As doses ficam previstas neste cronograma, com lembretes e adesão.",
       "helperOff": "Mantido como registro: nada fica previsto, sem lembretes, sem adesão.",
+      "helperEnded": "O tratamento terminou, então nada fica previsto. Um novo tratamento retoma esta programação.",
       "enabledToast": "Acompanhamento de tomadas ligado",
       "disabledToast": "Acompanhamento de tomadas desligado",
       "toggleFailed": "Não foi possível alterar o acompanhamento de tomadas."

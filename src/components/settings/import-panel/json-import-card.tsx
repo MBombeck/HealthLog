@@ -21,6 +21,7 @@ import {
 } from "./import-examples";
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
+import { FileInput } from "@/components/ui/file-picker";
 
 export interface JsonImportResult {
   measurements: number;
@@ -221,9 +222,8 @@ export function JsonImportCard() {
         </p>
       </div>
 
-      <input
+      <FileInput
         ref={fileInputRef}
-        type="file"
         accept=".json,application/json"
         className="sr-only"
         aria-label={t("settings.sections.export.import.json.fileInputLabel")}
