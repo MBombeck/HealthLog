@@ -32,6 +32,9 @@ import { createWriteStream } from "node:fs";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Readable, Transform } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import type { ReadableStream as NodeWebReadableStream } from "node:stream/web";
 
 import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { decrypt, encrypt } from "@/lib/crypto";
@@ -213,7 +216,18 @@ type Download =
     }
   | { kind: "outcome"; outcome: RemoteOutcome };
 
-/** Stream `body` to a temp file with a byte cap, hashing on the way. */
+/** Thrown inside the pipeline when a download passes the byte cap. */
+class DownloadTooLarge extends Error {}
+
+/**
+ * Stream `body` to a temp file with a byte cap, hashing on the way.
+ *
+ * One `pipeline` owns both ends: a failure on either side (the server hanging
+ * up mid-stream, the cap, a disk error) destroys both and settles only after
+ * the file stream has closed. A hand-rolled read/write loop left a write in
+ * flight when the read side failed, and its late callback surfaced as an
+ * uncaught `ERR_STREAM_DESTROYED`, which takes the worker process down.
+ */
 async function streamToFile(
   body: ReadableStream<Uint8Array>,
 ): Promise<{ path: string; bytes: number; sha256: string } | null> {
@@ -222,32 +236,28 @@ async function streamToFile(
     `healthlog-health-connect-import-${randomUUID()}.bin`,
   );
   const hash = createHash("sha256");
-  const out = createWriteStream(path);
   let bytes = 0;
-  const reader = body.getReader();
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      bytes += value.byteLength;
+  const meter = new Transform({
+    transform(chunk: Buffer, _enc, done) {
+      bytes += chunk.byteLength;
       if (bytes > REMOTE_MAX_BYTES) {
-        await reader.cancel().catch(() => {});
-        out.destroy();
-        await rm(path, { force: true });
-        return null;
+        done(new DownloadTooLarge());
+        return;
       }
-      hash.update(value);
-      if (!out.write(value)) {
-        await new Promise<void>((resolve) => out.once("drain", resolve));
-      }
-    }
-    await new Promise<void>((resolve, reject) =>
-      out.end((err?: Error | null) => (err ? reject(err) : resolve())),
+      hash.update(chunk);
+      done(null, chunk);
+    },
+  });
+  try {
+    await pipeline(
+      Readable.fromWeb(body as unknown as NodeWebReadableStream<Uint8Array>),
+      meter,
+      createWriteStream(path),
     );
     return { path, bytes, sha256: hash.digest("hex") };
   } catch (err) {
-    out.destroy();
     await rm(path, { force: true });
+    if (err instanceof DownloadTooLarge) return null;
     throw err;
   }
 }
