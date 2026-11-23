@@ -109,26 +109,18 @@ export function togglePreset(
   return addTime(current, preset, maxChips);
 }
 
-// ────────────────────────────────────────────────────────────────────
-// Component
-// ────────────────────────────────────────────────────────────────────
-
-export function TimesOfDayChips({
-  value,
-  onChange,
-  maxChips = 8,
-  disabled = false,
-  i18nPrefix = "medications.scheduling.timesOfDay",
-  showPresets = true,
-}: TimesOfDayChipsProps) {
-  const { t } = useTranslations();
-  const fmt = useFormatters();
-  const inputId = useId();
-  const sortedValue = useMemo(() => sortTimes(value), [value]);
+/**
+ * The add field of the chip list. What the field shows, and the time it put
+ * into the value (null once settled, or when the time was already a chip). A
+ * picker commits on every column, so a second commit replaces the first
+ * rather than adding to it.
+ */
+function usePendingTimeEntry(
+  sortedValue: string[],
+  maxChips: number,
+  onChange: (next: string[]) => void,
+) {
   const addRowRef = useRef<HTMLDivElement>(null);
-  // What the add field shows, and the time it put into the value (null once
-  // settled, or when the time was already a chip). A picker commits on every
-  // column, so a second commit replaces the first rather than adding to it.
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<string | null>(null);
   const settled =
@@ -157,6 +149,28 @@ export function TimesOfDayChips({
       ?.querySelector<HTMLInputElement>('input[type="text"]')
       ?.focus();
   };
+
+  return { draft, settled, addRowRef, onFieldChange, settle, onAddPress };
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Component
+// ────────────────────────────────────────────────────────────────────
+
+export function TimesOfDayChips({
+  value,
+  onChange,
+  maxChips = 8,
+  disabled = false,
+  i18nPrefix = "medications.scheduling.timesOfDay",
+  showPresets = true,
+}: TimesOfDayChipsProps) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  const inputId = useId();
+  const sortedValue = useMemo(() => sortTimes(value), [value]);
+  const { draft, settled, addRowRef, onFieldChange, settle, onAddPress } =
+    usePendingTimeEntry(sortedValue, maxChips, onChange);
 
   const onRemove = (target: string) => {
     onChange(removeTime(sortedValue, target));

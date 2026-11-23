@@ -17,8 +17,7 @@
  * Calm, inset-grouped, AA. No card tint.
  */
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
+import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -27,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { TimesOfDayChips } from "@/components/medications/scheduling/times-of-day-chips";
 import { DoseWindowEditor } from "@/components/medications/scheduling/dose-window-editor";
+import { useValueAfterFieldCommit } from "@/components/medications/scheduling/use-value-after-field-commit";
 import {
   type DoseWindowEntry,
   type DoseWindowScale,
@@ -81,6 +81,48 @@ function effectiveTimes(s: EditableSchedule): string[] {
     : [s.windowStart];
 }
 
+/**
+ * One schedule of the PUT body: every cadence field from the snapshot,
+ * field by field, with only the times and windows taken from the edit.
+ */
+function scheduleBody(s: EditableSchedule, edit: ScheduleEdit) {
+  const times = edit.timesOfDay;
+  const recurrence = parseScheduleRecurrence(s.daysOfWeek);
+  // Drop windows whose timeOfDay no longer names a live dose time
+  // (so a removed time can't leave an orphaned window the server
+  // would 422 on).
+  const liveTimes = new Set(times);
+  const windows = edit.doseWindows.filter((w) => liveTimes.has(w.timeOfDay));
+  return {
+    windowStart: s.windowStart,
+    windowEnd: s.windowEnd,
+    label: s.label ?? undefined,
+    dose: s.dose ?? undefined,
+    timesOfDay: times,
+    daysOfWeek: recurrence.daysOfWeek,
+    intervalWeeks: recurrence.intervalWeeks,
+    ...(s.rrule ? { rrule: s.rrule } : {}),
+    ...(typeof s.rollingIntervalDays === "number"
+      ? { rollingIntervalDays: s.rollingIntervalDays }
+      : {}),
+    ...(typeof s.reminderGraceMinutes === "number"
+      ? { reminderGraceMinutes: s.reminderGraceMinutes }
+      : {}),
+    ...(s.scheduleType
+      ? {
+          scheduleType: s.scheduleType as "SCHEDULED" | "PRN" | "CYCLIC",
+        }
+      : {}),
+    ...(typeof s.cyclicOnWeeks === "number"
+      ? { cyclicOnWeeks: s.cyclicOnWeeks }
+      : {}),
+    ...(typeof s.cyclicOffWeeks === "number"
+      ? { cyclicOffWeeks: s.cyclicOffWeeks }
+      : {}),
+    doseWindows: windows,
+  };
+}
+
 export function ScheduleTimesEditor({
   medicationId,
   schedules,
@@ -111,12 +153,7 @@ export function ScheduleTimesEditor({
   const [edits, setEdits] = useState<ScheduleEdit[]>(initial);
   const [busy, setBusy] = useState(false);
   const [missingTimes, setMissingTimes] = useState(false);
-  // The edits as of the last commit, for `save()` to read after it has
-  // flushed a field that was still being typed in.
-  const editsRef = useRef(edits);
-  useLayoutEffect(() => {
-    editsRef.current = edits;
-  });
+  const readEdits = useValueAfterFieldCommit(edits);
 
   function patchSchedule(index: number, patch: Partial<ScheduleEdit>) {
     setMissingTimes(false);
@@ -127,17 +164,8 @@ export function ScheduleTimesEditor({
 
   async function save() {
     if (busy) return;
-    // A time still being typed into a field reaches the edits when the field
-    // blurs. Blur it here, synchronously, so the save reads that time. The
-    // button keeps focus off itself on press (see `onMouseDown` below): a
-    // blur at press time would grow the form with the new chip and its
-    // window row before the release, and the click would land off the
-    // button.
-    const active = document.activeElement;
-    if (active instanceof HTMLElement && active.tagName === "INPUT") {
-      flushSync(() => active.blur());
-    }
-    const edits = editsRef.current;
+    // A time still being typed in lands in the edits first (see the hook).
+    const edits = readEdits();
     // A schedule with every time removed is not saved. It used to fall back
     // to the stored `windowStart`, so the request carried the old time and
     // the tab still said the schedule was saved.
@@ -151,47 +179,7 @@ export function ScheduleTimesEditor({
       // the snapshot field-by-field, change only the times + windows.
       const body = {
         ...(trackIntake !== undefined && { trackIntake }),
-        schedules: schedules.map((s, i) => {
-          const edit = edits[i];
-          const times = edit.timesOfDay;
-          const recurrence = parseScheduleRecurrence(s.daysOfWeek);
-          // Drop windows whose timeOfDay no longer names a live dose time
-          // (so a removed time can't leave an orphaned window the server
-          // would 422 on).
-          const liveTimes = new Set(times);
-          const windows = edit.doseWindows.filter((w) =>
-            liveTimes.has(w.timeOfDay),
-          );
-          return {
-            windowStart: s.windowStart,
-            windowEnd: s.windowEnd,
-            label: s.label ?? undefined,
-            dose: s.dose ?? undefined,
-            timesOfDay: times,
-            daysOfWeek: recurrence.daysOfWeek,
-            intervalWeeks: recurrence.intervalWeeks,
-            ...(s.rrule ? { rrule: s.rrule } : {}),
-            ...(typeof s.rollingIntervalDays === "number"
-              ? { rollingIntervalDays: s.rollingIntervalDays }
-              : {}),
-            ...(typeof s.reminderGraceMinutes === "number"
-              ? { reminderGraceMinutes: s.reminderGraceMinutes }
-              : {}),
-            ...(s.scheduleType
-              ? {
-                  scheduleType: s.scheduleType as
-                    "SCHEDULED" | "PRN" | "CYCLIC",
-                }
-              : {}),
-            ...(typeof s.cyclicOnWeeks === "number"
-              ? { cyclicOnWeeks: s.cyclicOnWeeks }
-              : {}),
-            ...(typeof s.cyclicOffWeeks === "number"
-              ? { cyclicOffWeeks: s.cyclicOffWeeks }
-              : {}),
-            doseWindows: windows,
-          };
-        }),
+        schedules: schedules.map((s, i) => scheduleBody(s, edits[i])),
       };
 
       await apiPut(`/api/medications/${medicationId}`, body);
