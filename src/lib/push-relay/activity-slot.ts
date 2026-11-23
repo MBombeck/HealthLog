@@ -35,7 +35,7 @@ export function sameActivitySlot(named: Date, stored: Date): boolean {
  * shows every dose of its medication.
  */
 export function activityShowsDose(
-  activity: { medicationId: string; slotInstant: Date | null },
+  activity: { medicationId: string | null; slotInstant: Date | null },
   medicationId: string,
   slot: Date,
 ): boolean {

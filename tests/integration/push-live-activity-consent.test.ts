@@ -1157,8 +1157,15 @@ describe("once per dose, from the server's own start record", () => {
     const first = await dueDose(t.session.userId, 30, { start: -30, end: 90 });
     expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
     // A dose with an earlier slot shows up due (its row written late): it
-    // is the earliest now, and its start becomes the device's last one.
+    // is the earliest now. The first one's Activity is not registered yet,
+    // so it cannot be ended, and nothing starts beside it.
     const earlier = await dueDose(t.session.userId, -20);
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    // Once the app registered it, the pass ends it and starts the earlier
+    // dose, which becomes the device's last start.
+    await t.reg({
+      liveActivityTokens: [t.activityEntry({ relayStart: true })],
+    });
     expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
     expect(
       await getPrismaClient().device.findFirstOrThrow({
@@ -1208,5 +1215,203 @@ describe("once per dose, from the server's own start record", () => {
       { medicationId: dose.medication.id },
       { medicationId: next.medication.id },
     ]);
+  });
+});
+
+describe("one relay-started Activity per device", () => {
+  const B_TOKEN = "8d".repeat(32);
+  const events = (from = 0) =>
+    laPushes()
+      .slice(from)
+      .map((p) => [p.token, (p.payload.aps as { event: string }).event]);
+  const tokens = () =>
+    getPrismaClient().liveActivityToken.findMany({
+      orderBy: { pushToken: "asc" },
+      select: { pushToken: true, medicationId: true, slotInstant: true },
+    });
+
+  async function consented() {
+    const t = await setUp();
+    await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(),
+    });
+    return t;
+  }
+
+  /** The end path a take runs (`medication-intake-sync.ts`), for one device. */
+  async function endAnswered(userId: string) {
+    const { ACTIVITY_DEVICE_SELECT, endAnsweredActivities, memoEndState } =
+      await import("@/lib/notifications/live-activity-answered");
+    const { loadPushContext } = await import("@/lib/push-relay/route-device");
+    const device = await getPrismaClient().device.findFirstOrThrow({
+      where: { apnsToken: TOKEN },
+      select: ACTIVITY_DEVICE_SELECT,
+    });
+    return endAnsweredActivities(
+      device,
+      { ctx: await loadPushContext(), bundleId: null },
+      memoEndState(userId),
+    );
+  }
+
+  it("ends the running one before it starts the next dose, and names each token's own dose", async () => {
+    const t = await consented();
+    // C is due now and turns overdue an hour after its slot; B comes 90
+    // minutes after C.
+    const c = await dueDose(t.session.userId, -50);
+    const b = await dueDose(t.session.userId, 40);
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    expect(events()).toEqual([[START_TOKEN, "start"]]);
+    // The app registers C's Activity without its dose: the one relay start
+    // running is C's.
+    await t.reg({
+      liveActivityTokens: [t.activityEntry({ relayStart: true })],
+    });
+    expect(await tokens()).toEqual([
+      {
+        pushToken: LA_TOKEN,
+        medicationId: c.medication.id,
+        slotInstant: c.slot,
+      },
+    ]);
+
+    // C overdue, B startable: C ends first, then B starts, in one pass.
+    const before = laPushes().length;
+    expect(await runLiveActivityRelayPass(c.at(61))).toMatchObject({
+      started: 1,
+    });
+    expect(events(before)).toEqual([
+      [LA_TOKEN, "end"],
+      [START_TOKEN, "start"],
+    ]);
+    expect(await tokens()).toEqual([]);
+
+    // B's Activity, registered without its dose, is B's.
+    await t.reg({
+      liveActivityTokens: [t.activityEntry({ relayStart: true }, B_TOKEN)],
+    });
+    expect(await tokens()).toEqual([
+      {
+        pushToken: B_TOKEN,
+        medicationId: b.medication.id,
+        slotInstant: b.slot,
+      },
+    ]);
+
+    // Taking C ends nothing of B's.
+    await getPrismaClient().medicationIntakeEvent.updateMany({
+      where: { medicationId: c.medication.id },
+      data: { takenAt: new Date() },
+    });
+    const afterC = laPushes().length;
+    expect((await endAnswered(t.session.userId)).activityIds).toEqual([]);
+    expect(await runLiveActivityRelayPass(c.at(62))).toMatchObject({
+      started: 0,
+    });
+    expect(events(afterC).filter(([, e]) => e === "end")).toEqual([]);
+    // Taking B ends B's.
+    await getPrismaClient().medicationIntakeEvent.updateMany({
+      where: { medicationId: b.medication.id },
+      data: { takenAt: new Date() },
+    });
+    expect((await endAnswered(t.session.userId)).activityIds).toHaveLength(1);
+    expect(events(afterC).filter(([, e]) => e === "end")).toEqual([
+      [B_TOKEN, "end"],
+    ]);
+  });
+
+  it("starts nothing new while the running one's end is not taken", async () => {
+    const t = await consented();
+    const c = await dueDose(t.session.userId, -50);
+    await dueDose(t.session.userId, 40);
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    await t.reg({
+      liveActivityTokens: [t.activityEntry({ relayStart: true })],
+    });
+    // The relay refuses the end (a statement it no longer accepts): C keeps
+    // running, so B does not start beside it.
+    await getPrismaClient().liveActivityToken.updateMany({
+      data: { activitySignature: Buffer.alloc(64, 1).toString("base64url") },
+    });
+    const before = laPushes().length;
+    expect(await runLiveActivityRelayPass(c.at(61))).toMatchObject({
+      started: 0,
+    });
+    expect(events(before)).toEqual([]);
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(1);
+  });
+
+  it("names no dose when the records show more than one relay start", async () => {
+    const t = await consented();
+    const c = await dueDose(t.session.userId, -50);
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    // Two relay-started Activities posted without their dose, as a device
+    // left from before this rule reports them: neither is guessed.
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({ relayStart: true }),
+        t.activityEntry({ relayStart: true }, B_TOKEN),
+      ],
+    });
+    expect(await tokens()).toEqual([
+      { pushToken: LA_TOKEN, medicationId: null, slotInstant: null },
+      { pushToken: B_TOKEN, medicationId: null, slotInstant: null },
+    ]);
+    // One registered for C, and a last start for another dose on record:
+    // a third token without its dose is not guessed either.
+    const other = await dueDose(t.session.userId, 30);
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({
+          relayStart: true,
+          medicationId: c.medication.id,
+          slotInstant: c.slot.toISOString(),
+        }),
+      ],
+    });
+    await getPrismaClient().device.updateMany({
+      data: {
+        laStartedMedicationId: other.medication.id,
+        laStartedSlot: other.slot,
+      },
+    });
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({
+          relayStart: true,
+          medicationId: c.medication.id,
+          slotInstant: c.slot.toISOString(),
+        }),
+        t.activityEntry({ relayStart: true }, B_TOKEN),
+      ],
+    });
+    expect((await tokens()).find((r) => r.pushToken === B_TOKEN)).toMatchObject(
+      { medicationId: null },
+    );
+
+    // The pass ends what it cannot name, and both relay-started ones go
+    // before anything new starts.
+    const before = laPushes().length;
+    await runLiveActivityRelayPass();
+    expect(events(before)).toContainEqual([B_TOKEN, "end"]);
+    expect(
+      await getPrismaClient().liveActivityToken.count({
+        where: { medicationId: null },
+      }),
+    ).toBe(0);
+  });
+
+  it("names no dose when no relay start is on record", async () => {
+    const t = await consented();
+    await t.reg({
+      liveActivityTokens: [t.activityEntry({ relayStart: true })],
+    });
+    expect(await tokens()).toEqual([
+      { pushToken: LA_TOKEN, medicationId: null, slotInstant: null },
+    ]);
+    await runLiveActivityRelayPass();
+    expect(events()).toEqual([[LA_TOKEN, "end"]]);
+    expect(await tokens()).toEqual([]);
   });
 });

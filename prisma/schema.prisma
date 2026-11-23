@@ -6556,7 +6556,12 @@ model LiveActivityToken {
   id                String    @id @default(cuid())
   deviceId          String    @map("device_id")
   pushToken         String    @map("push_token")
-  medicationId      String    @map("medication_id")
+  /// The dose's medication; null for a relay-started Activity the app
+  /// registered without its dose while the server's records did not show
+  /// exactly one running relay start to attribute it to (migration 0561).
+  /// The relay pass ends such an Activity. Writer: `POST /api/devices`;
+  /// reader: `push-relay/live-activity.ts`.
+  medicationId      String?   @map("medication_id")
   /// The slot the Activity counts down to; null for a medication-level one.
   slotInstant       DateTime? @map("slot_instant")
   /// The device's `hl-activity-v1` statement for this Activity

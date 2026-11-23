@@ -277,6 +277,9 @@ const DEVICE_SELECT = {
   laStartToken: true,
   laStartStatement: true,
   laStartSignature: true,
+  laStartRef: true,
+  laStartedMedicationId: true,
+  laStartedSlot: true,
   liveActivities: {
     select: {
       id: true,
@@ -602,7 +605,7 @@ export function relayActivityKind(activity: {
  */
 export function supersededRelayActivities<
   T extends {
-    medicationId: string;
+    medicationId: string | null;
     slotInstant: Date | null;
     relayStarted: boolean;
   },
@@ -610,12 +613,13 @@ export function supersededRelayActivities<
   const appStarted = activities.filter(
     (a) => relayActivityKind(a) === "app_started",
   );
-  return activities.filter((relay): relay is T & { slotInstant: Date } => {
-    const slot = relay.slotInstant;
+  return activities.filter((relay) => {
+    const { medicationId, slotInstant: slot } = relay;
     return (
       relayActivityKind(relay) === "relay_started" &&
+      medicationId !== null &&
       slot !== null &&
-      appStarted.some((app) => activityShowsDose(app, relay.medicationId, slot))
+      appStarted.some((app) => activityShowsDose(app, medicationId, slot))
     );
   });
 }
@@ -754,7 +758,7 @@ async function updateItems(
               id: {
                 in: device.liveActivities
                   .filter(relayOwned)
-                  .map((a) => a.medicationId),
+                  .flatMap((a) => (a.medicationId ? [a.medicationId] : [])),
               },
               ...STARTABLE_MEDICATION_WHERE,
             },
@@ -777,26 +781,28 @@ async function updateItems(
   for (const activity of device.liveActivities) {
     const iat = statementIat(activity.activityStatement);
     if (
-      !activity.slotInstant ||
       !activity.activitySignature ||
       iat === null ||
       nowS - iat > ACTIVITY_STATEMENT_MAX_AGE_S
     ) {
       continue;
     }
+    const { medicationId, slotInstant } = activity;
+    // Registered without a dose the server could name (`POST /api/devices`
+    // attributes one only to the single running relay start): it ends.
+    if (medicationId === null) {
+      ending.push(activity);
+      continue;
+    }
+    if (!slotInstant) continue;
     if (
       superseded.has(activity.id) ||
-      (relayOwned(activity) && !startable.has(activity.medicationId))
+      (relayOwned(activity) && !startable.has(medicationId))
     ) {
       ending.push(activity);
       continue;
     }
-    const dose = await doseAt(
-      device.userId,
-      activity.medicationId,
-      activity.slotInstant,
-      now,
-    );
+    const dose = await doseAt(device.userId, medicationId, slotInstant, now);
     // Taken and skipped end the Activity on their own paths: the intake
     // flush at once, and this job's retry of an end the relay did not take
     // (`notifications/live-activity-answered.ts`).
@@ -822,6 +828,39 @@ async function updateItems(
   return { updates, ending };
 }
 
+/**
+ * Whether the device's last relay start may still be running unseen: in
+ * flight or accepted, not yet registered by the app (no registered Activity
+ * shows its dose), and its dose still open for a medication that keeps a
+ * relay Activity. Such an Activity cannot be ended (its token is unknown),
+ * so no other relay start may join it.
+ */
+async function unreportedRelayStart(
+  device: LaDevice,
+  now: Date,
+): Promise<boolean> {
+  const { laStartRef, laStartedMedicationId: medicationId } = device;
+  const slot = device.laStartedSlot;
+  if (!laStartRef || !medicationId || !slot) return false;
+  if (
+    device.liveActivities.some((a) => activityShowsDose(a, medicationId, slot))
+  ) {
+    return false;
+  }
+  const startable = await prisma.medication.count({
+    where: {
+      id: medicationId,
+      userId: device.userId,
+      ...STARTABLE_MEDICATION_WHERE,
+    },
+  });
+  if (startable === 0) return false;
+  const dose = await doseAt(device.userId, medicationId, slot, now);
+  return (
+    dose !== null && ["pending", "due", "overdue"].includes(dose.resolved.state)
+  );
+}
+
 /** Start and update the Live Activities of one device. */
 export async function runDeviceLiveActivities(
   device: LaDevice,
@@ -835,19 +874,48 @@ export async function runDeviceLiveActivities(
     select: { timeFormat: true },
   });
   const timeFormat = user?.timeFormat ?? null;
-  const start = await startItem(device, timeFormat, now);
-  const { updates, ending } = await updateItems(device, timeFormat, now);
-  if (ending.length > 0) {
+  let start = await startItem(device, timeFormat, now);
+  const { updates: proposed, ending } = await updateItems(
+    device,
+    timeFormat,
+    now,
+  );
+  // At most one relay-started Activity per device. An app build that
+  // registers such an Activity without its dose leaves the server to name
+  // it, and the server names the one relay start it has running
+  // (`POST /api/devices`); with two running both got the newer dose. So a
+  // start for a new dose first ends the relay-started Activities still
+  // running, and goes out only once the relay took every one of those ends,
+  // in the same pass; otherwise it waits for a later pass. A start whose
+  // Activity the app has not registered yet cannot be ended: the new one
+  // waits until it is registered or its dose is over. Lift this when the
+  // app echoes a per-start id (1.50).
+  if (start && (await unreportedRelayStart(device, now))) start = null;
+  const making = start
+    ? device.liveActivities.filter(
+        (a) => relayActivityKind(a) === "relay_started" && !ending.includes(a),
+      )
+    : [];
+  const spent = new Set<string>();
+  if (ending.length > 0 || making.length > 0) {
     // A missed dose has nothing left to show, and a medication without the
     // opt-in gets no server-started Activity: end it, and forget the token
     // once the relay took the end or reported the Activity gone.
-    const spent = await endActivitiesOverRelay(device, ending, ctx);
-    if (spent.length > 0) {
+    for (const id of await endActivitiesOverRelay(
+      device,
+      [...ending, ...making],
+      ctx,
+    )) {
+      spent.add(id);
+    }
+    if (spent.size > 0) {
       await prisma.liveActivityToken.deleteMany({
-        where: { id: { in: spent } },
+        where: { id: { in: [...spent] } },
       });
     }
   }
+  if (making.some((a) => !spent.has(a.id))) start = null;
+  const updates = proposed.filter((u) => !spent.has(u.rowId));
   const items = [...(start ? [start.item] : []), ...updates.map((u) => u.item)];
   if (items.length === 0) return { started: 0, updated: 0 };
   if (start) {
