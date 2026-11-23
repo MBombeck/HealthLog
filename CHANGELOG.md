@@ -45,12 +45,12 @@
 - Capture menu: most-used types as rows, "Save and next", the last reading under the field; the save receipt has Undo and Edit.
 - Biomarker page lists its five newest values under the chart.
 - Time zone per reading from the iPhone; the Day view, list and daily charts follow it.
-- The sidebar and the More sheet sort their entries under Tracking, Health record and Analysis. Medications and Checkups show a small number when a dose or a check-up is due; the numbers can be switched off under Settings > Account > Display. No address changes. Thanks to @Cnote43 for the sketch it follows. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
+- The sidebar and the More sheet sort their entries under Tracking, Health record and Analysis. Medications and Care show a small number when a dose or a check-up is due; the numbers can be switched off under Settings > Account > Display. No address changes. Thanks to @Cnote43 for the sketch it follows. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
 - The search finds every page and every settings card, in every language also by keyword ("snooze", "dark mode", "Nextcloud", "ICE").
 - Settings > Notifications has an "Alerts" group with account security and lasting change in a vital, visible before any channel is set up.
 - Settings > Data & privacy opens with "Who can reach your record": accounts and guardians, clinician links, the emergency card link, the care and cycle calendars, API tokens, MCP and sign-ins, each with its link.
 - The theme can be chosen under Settings > Account > Display as well as in the avatar menu.
-- Checkups, Vaccinations and Documents link to the care calendar and the report schedule under their page header.
+- Care, Vaccinations and Documents link to the care calendar and the report schedule under their page header.
 - Admin > System status has a "Version and database" card: the version, the channel (release, edge or development), and the migrations applied, pending or failed.
 - An app can read the push state of its own device (`GET /api/devices/me/push-diagnostics`, feature `push.device-diagnostics`): route, relay binding, the hourly budget for silent pushes with a sync still owed, the last delivery of each kind, the last receipt, a masked APNs token, and whether the server or the app reminds the device of a dose. Only that device, no content.
 - API: `GET /api/version` lists `features`; `POST /api/measurements/batch` takes `timeZone` per entry; workouts carry `performance`; `GET /api/nutrients/energy-balance`; dose rows carry their resolved state and `alreadyTaken`; `medications.lastUpdatedAt` in `/api/sync/state`; `notificationPrefs.medication.snoozeMinutes`; questionnaire history rows carry `source` and `itemsUnavailable`; `push.device.liveActivityStarted` names the dose of a server-started Live Activity.
@@ -79,7 +79,7 @@
 - Admin keeps push in one place: "Push and channels" holds the channel switches, the Web Push keys, the relay and the delivery health with its test push. The sections are regrouped (System, Notifications, AI, Connectivity, Account, Server data) and "Integrations" is now "Monitoring".
 - The page with the switch per kind and channel is called "Notifications per channel" and lists the kinds also when no channel is set up yet. "Manage notification channels" on a medication leads to the channels.
 - Settings cards look alike: the button at the bottom of a card sits on the right at one size, also on a phone, most switches stand to the right of their name, field names have one shape, and status messages stand above the buttons. This covers the emergency card, "Create profile", the guardian's settings, the push relay card, the import cards and the notification rows on a phone.
-- The tabs on Cycle, Checkups, a medication and the recovery kit look like the other view switches; on Checkups the title comes first, then the tabs; the admin's section strip on a phone works like the Insights pills.
+- The tabs on Cycle, Care, a medication and the recovery kit look like the other view switches; on Care the title comes first, then the tabs; the admin's section strip on a phone works like the Insights pills.
 - Every settings save confirms. Cycle settings, the scheduled doctor report, the Health Connect folder, calendar feed options, a guardian's settings, withdrawing AI consent, disconnecting Garmin or Nightscout, the delivery test message and "Forget all devices" used to save without a word.
 - Getting started: with a medication schedule, the notification row comes right after the medication row.
 - The add form opens on the type last saved by hand, read from the account's own readings, instead of browser storage.
