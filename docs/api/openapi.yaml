@@ -62843,6 +62843,11 @@ components:
             - "null"
         docsUrl:
           type: string
+        ownApnsKey:
+          type: boolean
+          description: "This server has an APNs key of its own (`APNS_*`) and uses it: every push goes directly to Apple, and the
+            relay is not used while the key is set, whatever the switch says. Removing the `APNS_*` variables is what
+            lets pushes go over the relay."
         operatorDecision:
           description: "As `push.relay.operatorDecision` of `/api/auth/me`: the relay question is open while it is `undecided`."
           $ref: "#/components/schemas/PushRelayOperatorDecision"
@@ -62870,6 +62875,7 @@ components:
         - termsUrl
         - privacyUrl
         - docsUrl
+        - ownApnsKey
         - operatorDecision
       additionalProperties: false
     PushRelayOperatorDecision:

@@ -345,6 +345,11 @@ const adminRelayStatus = z
     termsUrl: z.string().nullable(),
     privacyUrl: z.string().nullable(),
     docsUrl: z.string(),
+    ownApnsKey: z
+      .boolean()
+      .describe(
+        "This server has an APNs key of its own (`APNS_*`) and uses it: every push goes directly to Apple, and the relay is not used while the key is set, whatever the switch says. Removing the `APNS_*` variables is what lets pushes go over the relay.",
+      ),
     operatorDecision: operatorDecisionSchema.describe(
       "As `push.relay.operatorDecision` of `/api/auth/me`: the relay question is open while it is `undecided`.",
     ),
