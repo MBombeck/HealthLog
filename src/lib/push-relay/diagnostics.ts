@@ -29,8 +29,10 @@ import {
 import { loadApnsConfig } from "@/lib/notifications/senders/apns";
 import {
   deviceRouteOf,
+  intakeSyncOf,
   relayHealth,
   transportOf,
+  type IntakeSyncState,
   type RelayHealth,
 } from "@/lib/push-relay/capability";
 import { relayConfig } from "@/lib/push-relay/config";
@@ -342,6 +344,11 @@ export interface DevicePushDiagnostics {
     delivery: "server" | "client";
     localUntil: string | null;
   };
+  /**
+   * `push.device.intakeSync` with the reason it reads `degraded`
+   * (`intakeSyncOf`); `ok` off the relay, as `push.device` reads.
+   */
+  intakeSync: IntakeSyncState;
   lastDelivery: Record<DeliveryKind, LastDelivery | null>;
   receipt: {
     reportedAt: string;
@@ -389,7 +396,7 @@ export async function devicePushDiagnostics(
     registration,
     apnsConfigured: loadApnsConfig() !== null,
   });
-  const [window, delivered] = await Promise.all([
+  const [window, delivered, intakeSync] = await Promise.all([
     silentWindow(device.id, now),
     route === "relay"
       ? lastRelayDeliveries(device.id, now)
@@ -397,6 +404,9 @@ export async function devicePushDiagnostics(
           deliveries,
           silentHold: null,
         })),
+    route === "relay"
+      ? intakeSyncOf(device, registration, now)
+      : { state: "ok" as const, reason: null },
   ]);
   const lastDelivery = delivered.deliveries;
   const budget = silentBudgetSummary(window, route, delivered.silentHold);
@@ -441,6 +451,7 @@ export async function devicePushDiagnostics(
       delivery: localUntil ? "client" : "server",
       localUntil: localUntil?.toISOString() ?? null,
     },
+    intakeSync,
     lastDelivery,
     receipt: device.envelopeReportedAt
       ? {

@@ -5,9 +5,11 @@
  * On `GET /api/sync/state` the app reports the newest envelope id it opened
  * per class (`openedAlert`, `openedSilent`). Envelope ids are ULIDs, ordered
  * by the time they were sealed, so every relay push to that device of that
- * class with a `ref` not after the reported id counts as confirmed. A push the
- * relay accepted that stays unconfirmed although the device reported well
- * after it was not delivered (`intakeSync: degraded`, `capability.ts`).
+ * class with a `ref` not after the reported id counts as confirmed. When the
+ * newest alert the relay accepted stays unconfirmed although the device
+ * reported well after it, it was not delivered (`intakeSync: degraded`,
+ * `capability.ts`). Silent receipts are recorded too, but never judged: iOS
+ * delivers silent pushes at its discretion.
  *
  * Once an hour the counts, never the ids, go to the relay
  * (`POST /v1/receipts`): of the pushes it accepted more than six hours ago

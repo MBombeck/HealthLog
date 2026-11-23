@@ -260,6 +260,21 @@ const devicePushDiagnostics = z
       .describe(
         "The newest push of each kind to this device, from the ledger that knows the device. Over the relay, the relay outbox. Over this server's own APNs key, the silent ledger for the sync and the wakes; the alert comes from the account's delivery attempts only while this is the account's one APNs device, because that ledger names no device, and is null otherwise. A Live Activity push over this server's own key leaves no per-device record and stays null.",
       ),
+    intakeSync: z
+      .object({
+        state: z
+          .enum(["ok", "degraded"])
+          .describe("The same value as `push.device.intakeSync`."),
+        reason: z
+          .enum(["relay", "intake_recorded_dropped", "alert_unconfirmed"])
+          .nullable()
+          .describe(
+            "Why it reads `degraded`, null while `ok`: the relay is not healthy (`relay`); the last dose confirmation to this device was dropped and no alert opened since (`intake_recorded_dropped`); the newest alert the relay accepted in the last 24 hours was never opened although the device reported receipts well after it (`alert_unconfirmed`). Silent and Live Activity pushes never count (v1.49.0).",
+          ),
+      })
+      .describe(
+        "Whether a dose recorded on another device reaches this one, from the last 24 hours of evidence only.",
+      ),
     receipt: z
       .object({
         reportedAt: isoDateTime(),

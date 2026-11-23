@@ -422,6 +422,117 @@ describe("GET /api/devices/me/push-diagnostics", () => {
     expect(shared.lastDelivery.silentSync).not.toBeNull();
   });
 
+  describe("intakeSync", () => {
+    const HOUR = 60 * MIN;
+    let seq = 0;
+    /** One relay outbox row, created `agoMs` before now. */
+    function delivery(
+      deviceId: string,
+      agoMs: number,
+      fields: {
+        pushClass: "alert" | "silent" | "liveactivity";
+        eventType: string;
+        status: "accepted" | "dropped";
+        confirmed?: boolean;
+      },
+    ) {
+      const at = new Date(Date.now() - agoMs);
+      seq += 1;
+      return prisma.pushRelayDelivery.create({
+        data: {
+          deviceId,
+          ref: `01JINTAKESYNC${String(seq).padStart(13, "0")}`,
+          pushClass: fields.pushClass,
+          eventType: fields.eventType,
+          status: fields.status,
+          expiresAt: at,
+          createdAt: at,
+          acceptedAt: fields.status === "accepted" ? at : null,
+          confirmedAt: fields.confirmed ? at : null,
+        },
+      });
+    }
+    async function reportedNow(deviceId: string) {
+      await prisma.device.update({
+        where: { id: deviceId },
+        data: { envelopeReportedAt: new Date() },
+      });
+    }
+    const alert = (status: "accepted" | "dropped", confirmed = false) => ({
+      pushClass: "alert" as const,
+      eventType: "MEDICATION_LOW_STOCK",
+      status,
+      confirmed,
+    });
+    const intakeRecorded = {
+      pushClass: "alert" as const,
+      eventType: "MEDICATION_INTAKE_RECORDED",
+      status: "dropped" as const,
+    };
+    const sync = async (session: RouteAuth) =>
+      (await read(session, DEVICE_ID_HEADER)).data.intakeSync;
+
+    it("ignores an unconfirmed silent push and an unopened Live Activity push", async () => {
+      const { session, deviceId } = await boundDevice();
+      await delivery(deviceId, 2 * HOUR, {
+        pushClass: "silent",
+        eventType: "DATA_CHANGED",
+        status: "accepted",
+      });
+      await delivery(deviceId, 2 * HOUR, {
+        pushClass: "liveactivity",
+        eventType: "MEDICATION_LIVE_ACTIVITY_UPDATE",
+        status: "accepted",
+      });
+      await reportedNow(deviceId);
+      expect(await sync(session)).toEqual({ state: "ok", reason: null });
+    });
+
+    it("degrades on an unconfirmed newest alert, and a later opened alert clears it", async () => {
+      const { session, deviceId } = await boundDevice();
+      await delivery(deviceId, 2 * HOUR, alert("accepted"));
+      await reportedNow(deviceId);
+      expect(await sync(session)).toEqual({
+        state: "degraded",
+        reason: "alert_unconfirmed",
+      });
+      await delivery(deviceId, HOUR, alert("accepted", true));
+      expect(await sync(session)).toEqual({ state: "ok", reason: null });
+    });
+
+    it("waits for a receipt reported well after the alert", async () => {
+      const { session, deviceId } = await boundDevice();
+      await delivery(deviceId, 2 * MIN, alert("accepted"));
+      await reportedNow(deviceId);
+      expect((await sync(session)).state).toBe("ok");
+    });
+
+    it("degrades on a dropped dose confirmation until an alert after it is opened", async () => {
+      const { session, deviceId } = await boundDevice();
+      await delivery(deviceId, 3 * HOUR, alert("accepted", true));
+      await delivery(deviceId, 2 * HOUR, intakeRecorded);
+      expect(await sync(session)).toEqual({
+        state: "degraded",
+        reason: "intake_recorded_dropped",
+      });
+      await delivery(deviceId, HOUR, alert("accepted", true));
+      await reportedNow(deviceId);
+      expect(await sync(session)).toEqual({ state: "ok", reason: null });
+    });
+
+    it("forgets an old unconfirmed alert followed by opened ones, and anything older than a day", async () => {
+      const { session, deviceId } = await boundDevice();
+      await delivery(deviceId, 30 * HOUR, alert("accepted"));
+      await delivery(deviceId, 26 * HOUR, intakeRecorded);
+      await reportedNow(deviceId);
+      expect((await sync(session)).state).toBe("ok");
+      await delivery(deviceId, 5 * HOUR, alert("accepted"));
+      await delivery(deviceId, 3 * HOUR, alert("accepted", true));
+      await delivery(deviceId, 2 * HOUR, alert("accepted", true));
+      expect(await sync(session)).toEqual({ state: "ok", reason: null });
+    });
+  });
+
   it("allows ten reads a minute per account", async () => {
     const { session } = await boundDevice();
     for (let i = 0; i < 10; i++) {
@@ -441,8 +552,9 @@ describe("GET /api/devices/me/push-diagnostics", () => {
     expect(measured.result.status).toBe(200);
     // The session and its user, the rate-limit upsert, the device, its owed
     // row and its account's reminder switch, the relay registration, one
-    // outbox read per kind and the budget window: a fixed number, whatever
-    // the ledgers hold.
+    // outbox read per kind, the two intake-sync reads (`intakeSyncOf`; a
+    // third only behind a dropped dose confirmation) and the budget window:
+    // a fixed number, whatever the ledgers hold.
     expect(measured.count, measured.statements.join("\n")).toBeLessThanOrEqual(
       BUDGET,
     );
@@ -450,4 +562,4 @@ describe("GET /api/devices/me/push-diagnostics", () => {
 });
 
 /** Statements one read sends on this fixture; see the test above. */
-const BUDGET = 12;
+const BUDGET = 14;

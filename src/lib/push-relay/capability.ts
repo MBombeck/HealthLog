@@ -240,47 +240,134 @@ function displayTransport(
 }
 
 const UNDELIVERED_GRACE_MS = 10 * 60 * 1000;
+/** How far back the receipt and drop evidence reaches. */
+const INTAKE_SYNC_WINDOW_MS = 24 * 3600 * 1000;
+
+/**
+ * Why `intakeSync` reads `degraded`; null while it reads `ok`. Shown in the
+ * device's push diagnostics.
+ * - `relay`: the relay is not healthy.
+ * - `intake_recorded_dropped`: the last dose confirmation to the device was
+ *   dropped or failed, and no alert after it was opened.
+ * - `alert_unconfirmed`: the newest alert the relay accepted was never opened
+ *   although the device reported receipts well after it.
+ */
+export type IntakeSyncReason =
+  "relay" | "intake_recorded_dropped" | "alert_unconfirmed";
+
+export interface IntakeSyncState {
+  state: "ok" | "degraded";
+  reason: IntakeSyncReason | null;
+}
+
+/** The ledger evidence `judgeIntakeSync` reads, all inside the window. */
+export interface IntakeSyncEvidence {
+  relayOk: boolean;
+  envelopeReportedAt: Date | null;
+  /** The newest `MEDICATION_INTAKE_RECORDED` delivery to the device. */
+  lastRecorded: { status: string; createdAt: Date } | null;
+  /** The newest alert-class delivery the relay accepted. */
+  lastAcceptedAlert: {
+    acceptedAt: Date | null;
+    confirmedAt: Date | null;
+  } | null;
+  /** When the newest alert-class delivery the device opened was created. */
+  lastConfirmedAlertAt: Date | null;
+}
 
 /**
  * Whether the confirmation of a dose recorded elsewhere can be trusted to
- * reach this device: `degraded` when the relay is not healthy, when the last
- * `MEDICATION_INTAKE_RECORDED` to the device was dropped, or when a push the
- * relay accepted was never opened although the device reported receipts well
- * after it.
+ * reach this device. Only current evidence counts, so the state clears itself
+ * once the problem is gone:
+ *
+ * - Only alert-class pushes are judged by their receipts. Every relay alert
+ *   carries `mutable-content` (`templateFor`), so the notification service
+ *   extension opens it on arrival and the next receipt confirms it. Silent
+ *   pushes are delivered at iOS's discretion and throttled, and a Live
+ *   Activity push is never opened by the app: a missing receipt for either
+ *   says nothing about the sync.
+ * - Only the newest accepted alert counts. Receipts confirm every push up to
+ *   the newest one opened, so a later opened alert covers an older one.
+ * - A dropped dose confirmation counts until an alert after it was opened.
+ * - Nothing older than a day counts.
  */
+export function judgeIntakeSync(e: IntakeSyncEvidence): IntakeSyncState {
+  if (!e.relayOk) return { state: "degraded", reason: "relay" };
+  const recorded = e.lastRecorded;
+  if (
+    recorded &&
+    (recorded.status === "dropped" || recorded.status === "failed") &&
+    !(e.lastConfirmedAlertAt && e.lastConfirmedAlertAt > recorded.createdAt)
+  ) {
+    return { state: "degraded", reason: "intake_recorded_dropped" };
+  }
+  const alert = e.lastAcceptedAlert;
+  if (
+    alert?.acceptedAt &&
+    !alert.confirmedAt &&
+    e.envelopeReportedAt &&
+    alert.acceptedAt.getTime() <
+      e.envelopeReportedAt.getTime() - UNDELIVERED_GRACE_MS
+  ) {
+    return { state: "degraded", reason: "alert_unconfirmed" };
+  }
+  return { state: "ok", reason: null };
+}
+
+/** `judgeIntakeSync` over the device's relay ledger. */
 export async function intakeSyncOf(
   device: { id: string; envelopeReportedAt: Date | null },
   row: RegistrationRow | null,
-): Promise<"ok" | "degraded"> {
-  if (relayHealth(row).state !== "ok") return "degraded";
-  // Both questions at once: they read the same ledger independently.
-  const [lastRecorded, undelivered] = await Promise.all([
-    prisma.pushRelayDelivery.findFirst({
-      where: { deviceId: device.id, eventType: INTAKE_RECORDED_EVENT },
-      orderBy: { createdAt: "desc" },
-      select: { status: true },
-    }),
-    device.envelopeReportedAt
-      ? prisma.pushRelayDelivery.count({
-          where: {
-            deviceId: device.id,
-            status: "accepted",
-            confirmedAt: null,
-            pushClass: { in: ["alert", "silent"] },
-            acceptedAt: {
-              lt: new Date(
-                device.envelopeReportedAt.getTime() - UNDELIVERED_GRACE_MS,
-              ),
-            },
-          },
-        })
-      : 0,
-  ]);
-  if (lastRecorded?.status === "dropped" || lastRecorded?.status === "failed") {
-    return "degraded";
+  now: Date = new Date(),
+): Promise<IntakeSyncState> {
+  if (relayHealth(row).state !== "ok") {
+    return { state: "degraded", reason: "relay" };
   }
-  if (undelivered > 0) return "degraded";
-  return "ok";
+  const since = new Date(now.getTime() - INTAKE_SYNC_WINDOW_MS);
+  const alerts = { deviceId: device.id, pushClass: "alert" } as const;
+  const [lastRecorded, lastAcceptedAlert] = await Promise.all([
+    prisma.pushRelayDelivery.findFirst({
+      where: {
+        deviceId: device.id,
+        eventType: INTAKE_RECORDED_EVENT,
+        createdAt: { gte: since },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, createdAt: true },
+    }),
+    prisma.pushRelayDelivery.findFirst({
+      where: { ...alerts, status: "accepted", createdAt: { gte: since } },
+      orderBy: { createdAt: "desc" },
+      select: { acceptedAt: true, confirmedAt: true, createdAt: true },
+    }),
+  ]);
+  // The newest opened alert: the newest accepted one when that was opened;
+  // else read only when a dropped dose confirmation asks whether one after
+  // it was opened.
+  const recordedLost =
+    lastRecorded?.status === "dropped" || lastRecorded?.status === "failed";
+  const lastConfirmedAlertAt = lastAcceptedAlert?.confirmedAt
+    ? lastAcceptedAlert.createdAt
+    : recordedLost
+      ? ((
+          await prisma.pushRelayDelivery.findFirst({
+            where: {
+              ...alerts,
+              confirmedAt: { not: null },
+              createdAt: { gte: since },
+            },
+            orderBy: { createdAt: "desc" },
+            select: { createdAt: true },
+          })
+        )?.createdAt ?? null)
+      : null;
+  return judgeIntakeSync({
+    relayOk: true,
+    envelopeReportedAt: device.envelopeReportedAt,
+    lastRecorded,
+    lastAcceptedAlert,
+    lastConfirmedAlertAt,
+  });
 }
 
 /** What the `push.device` block reads of the device row. */
@@ -321,7 +408,7 @@ async function devicePushBlockOf(
   const transport = device ? displayTransport(device, inputs) : "none";
   const [intakeSync, senderKeys, liveActivityStarted] = await Promise.all([
     device && transport === "relay"
-      ? intakeSyncOf(device, row)
+      ? intakeSyncOf(device, row).then((sync) => sync.state)
       : ("ok" as const),
     inputs.senderKeys,
     device ? liveActivityStartedOf(device) : null,
