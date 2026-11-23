@@ -14,6 +14,7 @@
  * tasks) is settled before the window closes, so it is counted with the
  * request that caused it.
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createRequire } from "node:module";
 
 interface PgClientPrototype {
@@ -27,6 +28,15 @@ const pg = createRequire(adapterEntry)("pg") as {
 };
 
 const state = { active: false, statements: [] as string[] };
+
+/**
+ * Marks the async tree of the measured call when a window is scoped to it.
+ * Background work started earlier (an unawaited flush of a previous test, a
+ * coalescing timer that fires inside the window) runs outside that tree and
+ * is not counted; work the call itself starts inherits the mark and is.
+ */
+const callScope = new AsyncLocalStorage<true>();
+let scoped = false;
 const PATCHED = Symbol.for("healthlog.queryCounter");
 
 const proto = pg.Client.prototype as PgClientPrototype & {
@@ -35,7 +45,7 @@ const proto = pg.Client.prototype as PgClientPrototype & {
 if (!proto[PATCHED]) {
   const original = proto.query;
   proto.query = function patchedQuery(this: unknown, ...args: unknown[]) {
-    if (state.active) {
+    if (state.active && (!scoped || callScope.getStore() === true)) {
       const first = args[0] as string | { text?: string } | undefined;
       const text = typeof first === "string" ? first : (first?.text ?? "?");
       state.statements.push(text.replace(/\s+/g, " ").trim().slice(0, 160));
@@ -51,20 +61,28 @@ export interface StatementCount<T> {
   statements: string[];
 }
 
+/**
+ * `scope: "call"` counts only statements caused by `fn` itself, for a test
+ * that compares two windows and must not see detached work another test or
+ * setup step left running. The default counts everything in the window.
+ */
 export async function countStatements<T>(
   fn: () => Promise<T>,
+  options: { scope?: "window" | "call" } = {},
 ): Promise<StatementCount<T>> {
   const { settleBackgroundTasks } =
     await import("@/lib/logging/background-tasks");
   await settleBackgroundTasks();
   state.statements = [];
   state.active = true;
+  scoped = options.scope === "call";
   let result: T;
   try {
-    result = await fn();
+    result = await (scoped ? callScope.run(true, fn) : fn());
     await settleBackgroundTasks();
   } finally {
     state.active = false;
+    scoped = false;
   }
   const statements = state.statements;
   if (statements.length === 0) {

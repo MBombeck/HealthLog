@@ -187,11 +187,14 @@ describe("GET /api/nav/counts", () => {
       });
     const measure = async () =>
       (
-        await countStatements(async () => {
-          const res = await call();
-          expect(res.status).toBe(200);
-          return res.status;
-        })
+        await countStatements(
+          async () => {
+            const res = await call();
+            expect(res.status).toBe(200);
+            return res.status;
+          },
+          { scope: "call" },
+        )
       ).count;
     await seedMedication("One", "08:00", "09:00");
     await call();
