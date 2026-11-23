@@ -178,6 +178,7 @@
 - Posting a single entry again that was deleted in HealthLog (mood, measurement, cycle day, AUDIT-C) answers `410` with the reason `deleted_in_healthlog` instead of bringing it back; a mood entry deleted in Apple Health comes back when Apple Health sends it again.
 
 - The iOS app's "sync with your other devices is disturbed" notice only appears for a real, current problem: a silent push iOS chose not to deliver no longer counts, and the next confirmed alert clears it.
+- Saving a medication without changing its times no longer resets today's open doses or wakes the other devices.
 
 ### Security
 

@@ -50,6 +50,7 @@ import {
   type MedicationEditWrite,
 } from "./write";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { readMedicationNote } from "@/lib/medications/medication-note";
 
 type EditUser = ReadUser;
 type EditedMedication = Awaited<ReturnType<typeof writeMedicationEdit>>;
@@ -299,6 +300,32 @@ async function auditMedicationEdit(
   });
 }
 
+/**
+ * Everything an edit can change on the medication, as one comparable string:
+ * the row (the note decrypted, since the same note re-seals to a different
+ * ciphertext), its schedules without their ids (a replace re-creates them)
+ * and its category. Equal before and after means the save changed nothing a
+ * device shows, so no device is woken for it.
+ */
+async function medicationStateKey(id: string): Promise<string | null> {
+  const row = await prisma.medication.findUnique({
+    where: { id },
+    include: {
+      schedules: true,
+      categoryAssignment: { select: { category: true } },
+    },
+  });
+  if (!row) return null;
+  const { updatedAt: _updatedAt, noteEncrypted, schedules, ...rest } = row;
+  return JSON.stringify({
+    ...rest,
+    note: readMedicationNote(noteEncrypted),
+    schedules: schedules
+      .map(({ id: _scheduleId, ...schedule }) => JSON.stringify(schedule))
+      .sort(),
+  });
+}
+
 /** Edit one medication the route found and authorised. */
 export async function updateMedication(input: {
   user: EditUser;
@@ -316,6 +343,7 @@ export async function updateMedication(input: {
   const plan = await planMedicationEdit(input);
   if (!plan.ok) return plan;
   const { write } = plan;
+  const stateBefore = await medicationStateKey(id);
 
   let medication: EditedMedication;
   try {
@@ -363,8 +391,14 @@ export async function updateMedication(input: {
   // Bust per-user medications + compliance + achievement caches so the next
   // read reflects the schedule change.
   // A schedule, a pause, a course or intake tracking decides what is due on
-  // every device.
-  afterMedicationChange(user.id);
+  // every device. A save that changed nothing (the form echoing the stored
+  // medication back) tells no device: the silent budget is small.
+  if (
+    (write.trail.tombstonedSlotCount ?? 0) > 0 ||
+    (await medicationStateKey(id)) !== stateBefore
+  ) {
+    afterMedicationChange(user.id);
+  }
 
   // The read model, exactly as `GET /api/medications/{id}` answers it.
   const body = await medicationDetail({

@@ -15,7 +15,7 @@ import { annotate } from "@/lib/logging/context";
 import type { SessionUser } from "@/lib/auth/session-user";
 import { setCurrentWindow } from "@/lib/medications/courses";
 import {
-  schedulesMateriallyDiffer,
+  scheduleReplaceChangesCadence,
   toRevisionPayloadEntry,
 } from "@/lib/medications/scheduling/schedule-eras";
 import { moveAutoTakeFloorToNow } from "@/lib/medications/auto-take";
@@ -75,8 +75,8 @@ type RevisionSourceRow = Parameters<typeof toRevisionPayloadEntry>[0];
 
 /**
  * Tombstone today's and future open pending rows of this medication. Runs on
- * a schedule replace (the old anchors are stale) and when intake tracking is
- * switched off (nothing is due any more).
+ * a schedule replace that changes the cadence (the old anchors are stale) and
+ * when intake tracking is switched off (nothing is due any more).
  */
 async function tombstoneOpenSlots(
   db: Prisma.TransactionClient,
@@ -231,15 +231,13 @@ async function replaceSchedules(
   // archives with an empty payload whatever the rows said; and a tracking
   // transition is itself an era boundary even when the rows stay the same.
   const archivedEntries = wasTracked ? previousEntries : [];
-  if (
-    previousRows.length > 0 &&
-    (trackingChanged ||
-      !wasTracked ||
-      schedulesMateriallyDiffer(
-        previousEntries,
-        normalisedSchedules.map((n) => n.snapshot),
-      ))
-  ) {
+  const cadenceChanged = scheduleReplaceChangesCadence({
+    before: previousEntries,
+    after: normalisedSchedules.map((n) => n.snapshot),
+    wasTracked,
+    trackingChanged,
+  });
+  if (previousRows.length > 0 && cadenceChanged) {
     await archiveEra(tx, edit, archivedEntries, {
       schedule_revision_rows: archivedEntries.length,
     });
@@ -260,7 +258,10 @@ async function replaceSchedules(
     // expects nothing there — exactly the as-needed contract.
     await archiveEra(tx, edit, [], { schedule_revision_rows: 0 });
   }
-  await tombstoneOpenSlots(tx, edit);
+  // Only a replace that changes what is due invalidates the open anchors.
+  // An echo of the same schedule leaves them: tombstoning would re-mint the
+  // same instants under new ids and wake every device for nothing.
+  if (cadenceChanged) await tombstoneOpenSlots(tx, edit);
   await tx.medicationSchedule.deleteMany({
     where: { medicationId: id },
   });
