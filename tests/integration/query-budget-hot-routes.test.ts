@@ -92,7 +92,10 @@ const BUDGET = {
   // 101 → 89 (1.49.0): the summaries slice reads the source ladder and the
   // zone once instead of four and two times, and the year-ago baseline of
   // every type in one statement instead of one per type.
-  dashboardSnapshot: 90,
+  // 90 → 88 (1.49.0): the rollup coverage probe is answered once per GET
+  // request (`coverage-inflight.ts`); the score narrative probed again after
+  // the snapshot's own probe had settled.
+  dashboardSnapshot: 88,
   // The digest composes the snapshot (its own cell, rebuilt here) and adds
   // its rail's reads; 143 before the slice change above.
   // 133 → 134, targets 21 → 22 (1.49.0): the 90-day window aggregate folds
@@ -101,7 +104,12 @@ const BUDGET = {
   // sends the block and the edge read where it sent one statement over every
   // raw reading; once the block is cached (a sync of today keeps it) it is
   // the edge read alone, one statement as before.
-  dailyDigest: 134,
+  // 134 → 131 (1.49.0): one coverage probe per GET request. Sharing only the
+  // probe in flight left the count to scheduling: the snapshot, the digest
+  // and their two score readers sent two to four probes on the same fixture,
+  // and a run that sent four failed at 134. The readers of the user's source
+  // order now meet in one batched read instead of two.
+  dailyDigest: 131,
   // The target cards; their seven-day means come from the slice when a
   // fresh one is cached, here (evicted) from the slice's window aggregate.
   // 22 → 23, health status 59 → 60 (1.49.0): both grade weight and BMI, and
@@ -115,7 +123,8 @@ const BUDGET = {
   series365: 5,
   series3650: 5,
   dayView: 47,
-  healthStatus: 60,
+  // 60 → 59: one coverage probe per GET request (see the digest).
+  healthStatus: 59,
   correlations: 43,
   batchIngest500: 28,
   // The Apple Health card and the phone's sync read (1.49.0). The newest and
