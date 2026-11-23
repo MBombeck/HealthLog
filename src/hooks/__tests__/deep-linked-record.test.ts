@@ -1,5 +1,5 @@
 /**
- * `/checkups?visit=<id>` from a search hit. The visits list reads the newest
+ * `/care?visit=<id>` from a search hit. The visits list reads the newest
  * hundred of each arm, and a search reaches back further than that, so a hit
  * can name a visit the list does not hold. That visit is read on its own and
  * opened like a listed one.

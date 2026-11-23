@@ -68,6 +68,7 @@
 - One snooze length per person under Settings > Notifications (10 minutes to two hours, 30 by default) on every surface, Telegram's reminder keyboard included, in the person's language.
 - One intake form for the medications page, the history and the capture menu, which names the dose it counts for; the medication page offers take, skip and snooze for the next dose.
 - The reminder card says in words what will happen; the reminder steps are offered for every scheduled medication.
+- The preventive-care page is called Care in English and lives at `/care` (the practitioners under `/care/practitioners`). Old `/checkups` links, bookmarks and notifications already on a phone redirect there with their query intact. German keeps Vorsorge; Brazilian Portuguese and Russian name it Prevenção and Профилактика.
 - Deleting a dose happens at once with an Undo; "Take all due" has one Undo for the batch.
 - Dose times follow the 12 or 24 hour setting.
 - The medication setup asks less: the category is optional (Other by default), the dose step asks nothing twice, a disabled Next says what is missing, and the summary says from when each dose counts as missed.
@@ -12663,7 +12664,7 @@ A feature release. The Coach reads its replies aloud, can draw the metric it is 
 
 - Insight and Coach assessments are rewritten to connect signals into a motivating narrative rather than restate figures, with substantially expanded score summaries; generated text now renders in paragraphs and carries clearer "updated" timestamps — today with the time, yesterday, and a date for anything older.
 - The daily read folds in labs, preventive care, workouts, and glucose, and correlations surface emerging signals over a recent window alongside more cross-signal links.
-- The preventive-care area is now "Checkups", reached at `/checkups`; the German interface keeps "Vorsorge".
+- The preventive-care area is now "Checkups", reached at `/care`; the German interface keeps "Vorsorge".
 - Settings pages share one consistent layout, and the settings and admin sidebar stays pinned while the content scrolls.
 - Lab biomarkers are a compact, editable list with hide and restore.
 - Local AI servers stream their replies and honour the configurable timeout, so slower self-hosted models finish cleanly.

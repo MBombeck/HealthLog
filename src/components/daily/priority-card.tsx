@@ -230,7 +230,7 @@ export function PriorityCard({
  * The label key a web card shows for an action.
  *
  * The server's `labelKey`, except on an appointment: that item still carries
- * the check-up item's label on the wire ("View check-ups"), because the
+ * the check-up item's label key on the wire (`daily.action.viewCheckups`), because the
  * shipped iOS app resolves the label and routes the intent it already knows.
  * Its `href` already opens the visit, so the web names what it opens.
  */

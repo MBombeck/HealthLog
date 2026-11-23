@@ -147,7 +147,7 @@ const NOT_DESTINATIONS = [
  * always a child of its list and needs no line here.
  */
 const CHILD_PAGES: Readonly<Record<string, string>> = {
-  "/checkups/practitioners": "/checkups",
+  "/care/practitioners": "/care",
   "/coach/conversations": "/coach",
   "/coach/plans": "/coach",
   "/documents/deleted": "/documents",

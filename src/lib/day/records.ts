@@ -730,7 +730,7 @@ async function checkupsPart(frame: DayFrame): Promise<SectionPart> {
         section: "checkups",
         id: row.id,
         title: row.reminder.label,
-        href: "/checkups",
+        href: "/checkups", // /checkups kept on the wire for iOS builds before 1.7; switch to /care in 1.50.
       }),
     ),
   };

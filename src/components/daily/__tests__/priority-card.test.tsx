@@ -158,7 +158,7 @@ describe("<PriorityCard>", () => {
         })}
       />,
     );
-    expect(html).toContain("View check-ups");
+    expect(html).toContain("Open Care");
   });
 
   // An appointment keeps the check-up label on the wire for the shipped iOS
@@ -179,7 +179,7 @@ describe("<PriorityCard>", () => {
       />,
     );
     expect(one).toContain("View appointment");
-    expect(one).not.toContain("View check-ups");
+    expect(one).not.toContain("Open Care");
     expect(one).toContain('href="/checkups?visit=v1"');
     const several = render(
       <PriorityCard

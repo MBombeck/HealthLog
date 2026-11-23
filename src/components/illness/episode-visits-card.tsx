@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useEncounters } from "@/hooks/use-encounters";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { visitPath } from "@/lib/encounters/visit-links";
+import { careVisitPath } from "@/lib/encounters/visit-links";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { EncounterKind } from "@/generated/prisma/client";
 
@@ -96,7 +96,7 @@ export function EpisodeVisitsCard({ episodeId }: { episodeId: string }) {
                 <li key={visit.id}>
                   <ListRow asChild>
                     <Link
-                      href={visitPath(visit.id)}
+                      href={careVisitPath(visit.id)}
                       data-encounter-id={visit.id}
                       className="hover:bg-muted/50 focus-visible:ring-ring/50 flex items-center gap-3 focus-visible:ring-[3px] focus-visible:outline-none"
                     >

@@ -628,7 +628,7 @@
     "cycle": "Cycle",
     "labs": "Labs",
     "profile": "Profile",
-    "vorsorge": "Checkups",
+    "vorsorge": "Care",
     "illness": "Illness",
     "documents": "Documents",
     "vaccinations": "Vaccinations",
@@ -5371,8 +5371,8 @@
           "body": "The illness journal records acute episodes and chronic diagnoses with their flares. Hidden: correlate an episode with your readings, and Rest Mode that pauses reminders. That’s how the Coach understands why values drift for a while."
         },
         "vorsorge": {
-          "title": "Checkups",
-          "body": "Checkups remind you of screenings and vaccinations on their own interval. Tip: “Done” can create a reading or a lab result directly. Due items appear as reminders and in the doctor report."
+          "title": "Care",
+          "body": "Care reminds you of screenings and vaccinations on their own interval. Tip: “Done” can create a reading or a lab result directly. Due items appear as reminders and in the doctor report."
         },
         "cycle": {
           "title": "Cycle",
@@ -6003,7 +6003,7 @@
           "description": "List view and episode order."
         },
         "checkups": {
-          "title": "Checkups",
+          "title": "Care",
           "description": "List view and reminder order."
         },
         "documents": {
@@ -11096,7 +11096,7 @@
     "selectionBarLabel": "Selection actions"
   },
   "measurementReminders": {
-    "sectionTitle": "Checkups",
+    "sectionTitle": "Care",
     "sectionDescription": "Reminders for what to measure or check, when, and where.",
     "markDone": "Done",
     "delete": "Delete",
@@ -11200,7 +11200,7 @@
     "startCheckIn": "Start check-in",
     "nextDueLabel": "Next due:",
     "lastDoneLabel": "Last done:",
-    "customize": "Customize checkups",
+    "customize": "Customize Care",
     "adherence": {
       "label": "Within interval",
       "onTrack": "On track",
@@ -11215,7 +11215,7 @@
     },
     "dashboard": {
       "empty": "No upcoming checkup reminders.",
-      "openLink": "Open checkups"
+      "openLink": "Open Care"
     },
     "showMeasurements": "Show measurements",
     "loadError": "Could not load your reminders.",
@@ -13763,7 +13763,7 @@
     "action": {
       "logDose": "Take",
       "reconnect": "Reconnect",
-      "viewCheckups": "View check-ups",
+      "viewCheckups": "Open Care",
       "viewAppointment": "View appointment",
       "viewAppointments": "View appointments",
       "checkinKeep": "Keep it",
@@ -14559,7 +14559,7 @@
   },
   "checkups": {
     "viewSwitchLabel": "Show checkups, visits, procedures or body sites",
-    "tabVorsorge": "Checkups",
+    "tabVorsorge": "Care",
     "tabVisits": "Visits",
     "tabProcedures": "Procedures",
     "tabBodySites": "Body sites"

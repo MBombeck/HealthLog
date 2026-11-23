@@ -83,7 +83,7 @@ export function useVaultLibrary({
   // persisted per user and changed behind the wrench.
   const { layout, isLayoutLoading } = useDocumentsLayout(moduleEnabled);
 
-  // Pull-to-refresh parity with labs/checkups/mood/
+  // Pull-to-refresh parity with labs/care/mood/
   // measurements/medications. The vault is one of the sharpest PWA-resume-
   // staleness surfaces named in the audit: a document indexed server-side
   // while the tab was backgrounded (auto-index / AI summary) otherwise

@@ -172,7 +172,7 @@ const prefetchingPages = walk(APP_DIR)
  */
 const PREFETCHING_ROUTES = [
   "/",
-  "/checkups",
+  "/care",
   "/coach",
   "/insights",
   "/insights/mood",

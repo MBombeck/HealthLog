@@ -47,6 +47,7 @@ export const NOTIFICATION_TAP_PATHS: Record<SentEventType, string | null> = {
   CYCLE_FERTILE_SOON: "/cycle",
   COACH_NUDGE: "/coach",
   MEDICATION_LOW_STOCK: "/medications",
+  // /checkups kept on the wire for iOS builds before 1.7; switch to /care in 1.50.
   MEASUREMENT_REMINDER: "/checkups",
   MEDICATION_INTAKE_SYNC: null,
   MEDICATION_INTAKE_RECORDED: "/medications",

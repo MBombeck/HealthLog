@@ -69,7 +69,7 @@ describe("nav-model destination list", () => {
       [
         "record",
         [
-          "/checkups",
+          "/care",
           "/labs",
           "/profile",
           "/illness",
@@ -133,14 +133,12 @@ describe("nav-model destination list", () => {
 
   it("gives Checkups a top-level nav home in the clinical spine (N-3)", () => {
     const hrefs = NAV_DESTINATIONS.map((d) => d.href);
-    expect(hrefs).toContain("/checkups");
-    const vorsorge = NAV_DESTINATIONS.find((d) => d.href === "/checkups");
+    expect(hrefs).toContain("/care");
+    const vorsorge = NAV_DESTINATIONS.find((d) => d.href === "/care");
     expect(vorsorge?.tKey).toBe("nav.vorsorge");
     // Checkups opens the Health record group, after the Tracking group.
-    expect(hrefs.indexOf("/medications")).toBeLessThan(
-      hrefs.indexOf("/checkups"),
-    );
-    expect(hrefs.indexOf("/checkups")).toBeLessThan(hrefs.indexOf("/labs"));
+    expect(hrefs.indexOf("/medications")).toBeLessThan(hrefs.indexOf("/care"));
+    expect(hrefs.indexOf("/care")).toBeLessThan(hrefs.indexOf("/labs"));
     expect(hrefs.indexOf("/labs")).toBeLessThan(hrefs.indexOf("/insights"));
   });
 
@@ -183,7 +181,7 @@ describe("visibleNavDestinations module gate", () => {
     expect(off).not.toContain("/cycle");
     expect(on).toContain("/cycle");
     expect(on.indexOf("/mood")).toBeLessThan(on.indexOf("/cycle"));
-    expect(on.indexOf("/cycle")).toBeLessThan(on.indexOf("/checkups"));
+    expect(on.indexOf("/cycle")).toBeLessThan(on.indexOf("/care"));
   });
 
   it("drops a module-gated entry (mood / labs / coach / achievements / medications) when its module is disabled", () => {
@@ -243,7 +241,7 @@ describe("visibleNavDestinations module gate", () => {
     expect(emptyMap).toContain("/measurements");
     expect(emptyMap).toContain("/medications");
     expect(emptyMap).toContain("/insights");
-    expect(emptyMap).toContain("/checkups");
+    expect(emptyMap).toContain("/care");
   });
 });
 
@@ -278,7 +276,7 @@ describe("mobileMoreHubDestinations — the F-1 mobile invariant (feature-only h
     // Feature surfaces that left the always-visible strip stay reachable.
     expect(hub).toContain("/measurements");
     expect(hub).toContain("/mood");
-    expect(hub).toContain("/checkups");
+    expect(hub).toContain("/care");
     // Settings + Notifications are account utilities — they live ONLY in the
     // user/avatar menu, never duplicated into the mobile More hub.
     expect(hub).not.toContain("/settings/account");

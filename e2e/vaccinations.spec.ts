@@ -11,7 +11,7 @@
  *   2. Combination — one Tdap renders a row in each of its three component
  *      groups, the render-only duplication the series design exists for.
  *   3. Mint + satisfy — confirming the booster prompt writes an ordinary
- *      Vorsorge reminder that shows on `/checkups`; logging the next dose moves
+ *      Vorsorge reminder that shows on `/care`; logging the next dose moves
  *      its due date forward through the real satisfy matcher.
  *   4. Module off — turning the module off in settings drops the nav entry and
  *      the direct visit lands on the module-off notice, not a crash.
@@ -226,10 +226,10 @@ test.describe("vaccinations", () => {
     expect(minted!.nextDueAt).toBeTruthy();
     const dueBefore = new Date(minted!.nextDueAt!).getTime();
 
-    // It presents on /checkups like every other Vorsorge reminder — the file-a
+    // It presents on /care like every other Vorsorge reminder — the file-a
     // -visit affordance only paints on a rendered reminder card, so it standing
     // in for "a reminder card is here" is a stable per-card slot.
-    await page.goto("/checkups");
+    await page.goto("/care");
     await expect(
       page.locator('[data-slot="vorsorge-file-visit"]').first(),
     ).toBeVisible({ timeout: 15_000 });
