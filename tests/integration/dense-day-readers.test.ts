@@ -17,7 +17,7 @@
  * statements the chart route sends.
  */
 import { NextRequest } from "next/server";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { Prisma } from "@/generated/prisma/client";
 
@@ -46,7 +46,7 @@ import { caches } from "@/lib/cache/server-cache";
 import { readCumulativeDayProfiles } from "@/lib/measurements/intraday-cumulative-profile";
 import { buildWorkoutHrSeries, foldHrBuckets } from "@/lib/workouts/hr-series";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
-import { localDayWindow } from "@/lib/tz/local-day";
+import { localDayWindow, localHmAsUtc } from "@/lib/tz/local-day";
 import { invalidateUserTimezone } from "@/lib/tz/resolver";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
@@ -90,7 +90,18 @@ const DENSE = "dense-day-owner";
 const SPARSE = "sparse-day-owner";
 const ROWS_PER_DAY = 35_000;
 const DAYS = 30;
-const NOW = new Date(Math.floor(Date.now() / 60_000) * 60_000);
+/**
+ * The file's clock: the last 12:00 in `TZ` at or before the real time. `Date`
+ * is pinned there for the whole file (timers stay real), and every reader and
+ * fixture takes its "now" from it. On the live clock a reading written "ten
+ * minutes ago" as today's was yesterday's in the first ten minutes after
+ * midnight in New York (05:00 to 05:10 UTC in winter), so the sync case saw
+ * its write reach into the closed days and the block go, correctly; and the
+ * module's instant and the routes' own clock could fall on two sides of
+ * midnight. Before the real time, so no fixture lies ahead of the database's
+ * own clock.
+ */
+const NOW = lastNoonInZone(new Date(), TZ);
 /** The viewed day: three local days back, inside every retention window. */
 const DAY = shiftDateKey(userDayKey(NOW, TZ), -3);
 /** Yesterday: inside the two days the cumulative profile folds live. */
@@ -99,6 +110,13 @@ const YESTERDAY = shiftDateKey(userDayKey(NOW, TZ), -1);
 const INTRADAY_BUDGET = 12;
 /** Statements the daily digest sends on a dense account after a sync (measured 89 to 91). */
 const DIGEST_AFTER_SYNC_BUDGET = 95;
+
+function lastNoonInZone(from: Date, timeZone: string): Date {
+  const noon = localHmAsUtc(from, timeZone, 12, 0);
+  return noon <= from
+    ? noon
+    : localHmAsUtc(new Date(from.getTime() - 86_400_000), timeZone, 12, 0);
+}
 
 async function session(userId: string): Promise<void> {
   const s = await prisma.session.create({
@@ -170,6 +188,8 @@ function planText(rows: Array<{ "QUERY PLAN": unknown }>): {
 }
 
 beforeAll(async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
   await truncateAllTables(prisma);
   for (const id of [DENSE, SPARSE]) {
     await prisma.user.create({ data: { id, username: id, timezone: TZ } });
@@ -207,6 +227,10 @@ beforeAll(async () => {
   await recomputeUserRollups(DENSE);
   await prisma.$executeRawUnsafe(`ANALYZE measurements`);
 }, 600_000);
+
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 describe("GET /api/insights/pulse/intraday on a 35 000-row day", () => {
   async function intraday(date: string) {

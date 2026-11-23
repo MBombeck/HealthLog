@@ -38,6 +38,8 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
+  // No request around these reads: the coverage probe holds nothing.
+  getEvent: () => null,
 }));
 
 // v1.11.1 — `buildFromRollups` / `buildFromLiveAggregate` build a
