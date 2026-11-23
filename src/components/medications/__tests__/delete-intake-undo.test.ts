@@ -24,7 +24,14 @@ import {
   runDeleteIntake,
 } from "@/components/medications/use-medication-intake";
 
-const t = (key: string) => key;
+const t = (key: string, params?: Record<string, string | number>) =>
+  params ? `${key}${JSON.stringify(params)}` : key;
+const formatTime = (at: Date) => at.toISOString().slice(11, 16);
+/** The reader's 12-hour clock, as the time setting gives it. */
+const wallTime12 = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+};
 
 beforeEach(() => {
   vi.mocked(toast.success).mockClear();
@@ -81,17 +88,27 @@ describe("runDeleteIntake", () => {
       medicationId: "med-1",
       intake: {
         id: "e1",
-        takenAt: "2026-11-20T07:12:00.000Z",
+        takenAt: "2026-11-20T08:00:00.000Z",
         skipped: false,
-        scheduledFor: "2026-11-20T07:00:00.000Z",
+        scheduledFor: "2026-11-20T09:00:00.000Z",
       },
       t,
+      formatTime,
+      wallTime: (hhmm) => hhmm,
       reconcile,
     });
     expect(apiDelete).toHaveBeenCalledWith("/api/medications/med-1/intake/e1");
     expect(reconcile).toHaveBeenCalledTimes(1);
     const [message, options] = vi.mocked(toast.success).mock.calls[0];
-    expect(message).toBe("medications.detail.intake.deleteRow.toast");
+    // The toast says which dose went: its slot and when it was taken.
+    expect(message).toBe(
+      t("medications.dose.removed", {
+        dose: t("medications.dose.which.slotTaken", {
+          slot: "09:00",
+          taken: "08:00",
+        }),
+      }),
+    );
     const action = (
       options as { action: { label: string; onClick: () => void } }
     ).action;
@@ -101,8 +118,38 @@ describe("runDeleteIntake", () => {
     await vi.waitFor(() => expect(reconcile).toHaveBeenCalledTimes(2));
     expect(apiPost).toHaveBeenCalledWith("/api/medications/med-1/intake", {
       skipped: false,
-      takenAt: "2026-11-20T07:12:00.000Z",
-      scheduledFor: "2026-11-20T07:00:00.000Z",
+      takenAt: "2026-11-20T08:00:00.000Z",
+      scheduledFor: "2026-11-20T09:00:00.000Z",
     });
+    expect(vi.mocked(toast.success).mock.calls[1][0]).toBe(
+      t("medications.dose.restored", {
+        dose: t("medications.dose.which.slotTaken", {
+          slot: "09:00",
+          taken: "08:00",
+        }),
+      }),
+    );
+  });
+
+  it("names the slot by the schedule's own wall time in the reader's clock", async () => {
+    await runDeleteIntake({
+      medicationId: "med-1",
+      intake: {
+        id: "e2",
+        takenAt: null,
+        skipped: true,
+        scheduledFor: "2026-11-20T20:00:00.000Z",
+        slotTime: "21:00",
+      },
+      t,
+      formatTime,
+      wallTime: wallTime12,
+      reconcile: vi.fn().mockResolvedValue(undefined),
+    });
+    expect(vi.mocked(toast.success).mock.calls[0][0]).toBe(
+      t("medications.dose.removed", {
+        dose: t("medications.dose.which.slotSkipped", { slot: "9:00 PM" }),
+      }),
+    );
   });
 });

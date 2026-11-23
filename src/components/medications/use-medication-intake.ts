@@ -12,6 +12,11 @@ import { apiDelete, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
 import type { TakeSlot } from "@/lib/medications/dose-state/pill";
 import { takeFields } from "@/lib/medications/dose-state/take-rule";
+import {
+  intakeRemovedMessage,
+  intakeRestoredMessage,
+  type IntakeDose,
+} from "@/components/medications/intake-dose-label";
 
 /**
  * Every intake write in this hook clears the Today hero + dashboard through
@@ -173,7 +178,11 @@ interface UseMedicationIntakeResult {
    */
   recordIntake: (skipped: boolean, slot?: TakeSlot | null) => Promise<void>;
   /** Reverse a just-recorded intake via the soft-delete route. */
-  undoIntake: (eventId: string, expectedSyncVersion?: number) => Promise<void>;
+  undoIntake: (
+    eventId: string,
+    dose: IntakeDose,
+    expectedSyncVersion?: number,
+  ) => Promise<void>;
 }
 
 /**
@@ -198,6 +207,7 @@ export async function runRecordIntake(deps: {
   setIntakeLoading: (value: string | null) => void;
   undoIntake: (
     eventId: string,
+    dose: IntakeDose,
     expectedSyncVersion?: number,
   ) => void | Promise<void>;
   onRecorded?: (eventId: string | undefined, skipped: boolean) => void;
@@ -274,12 +284,20 @@ export async function runRecordIntake(deps: {
       slot != null &&
       slot.binding !== "extra" &&
       Math.abs(filedAt - slot.at.getTime()) <= SAME_SLOT_MS;
+    const takenAt = created?.takenAt ? new Date(created.takenAt) : new Date();
+    // The dose the Undo names: the slot the server filed it under, else the
+    // one the card named.
+    const dose: IntakeDose = {
+      slotAt: created?.scheduledFor ?? slot?.at ?? null,
+      takenAt: skipped ? null : takenAt,
+      skipped,
+    };
     toast.success(
       intakeToastMessage({
         t,
         name: medication.name,
         skipped,
-        takenAt: created?.takenAt ? new Date(created.takenAt) : new Date(),
+        takenAt,
         formatTime,
         countedFor: counted ? slot.at : null,
         extra: slot != null && !counted,
@@ -288,7 +306,7 @@ export async function runRecordIntake(deps: {
         recordName,
         eventId,
         t,
-        onUndo: (id) => void undoIntake(id, seenVersion),
+        onUndo: (id) => void undoIntake(id, dose, seenVersion),
       }),
     );
     await invalidateMedicationReads(queryClient);
@@ -350,7 +368,7 @@ export async function runLogIntake(deps: {
    * unit tests that don't care about Undo can omit it; the toast simply
    * carries no action when it's absent.
    */
-  undoIntake?: (eventId: string) => void | Promise<void>;
+  undoIntake?: (eventId: string, dose: IntakeDose) => void | Promise<void>;
   /** See {@link runRecordIntake}: names the record, and drops Undo. */
   recordName?: string | null;
   /** The reader's clock for the toast. */
@@ -395,7 +413,9 @@ export async function runLogIntake(deps: {
     const created = (await post(
       `/api/medications/${medication.id}/intake`,
       body,
-    )) as { id?: string; alreadyTaken?: boolean } | undefined;
+    )) as
+      | { id?: string; alreadyTaken?: boolean; scheduledFor?: string | null }
+      | undefined;
     const eventId = created?.id;
     // Started, not awaited: the dialog closes on this answer. A scheduled
     // dose lands on its slot, so a stale card tapped meanwhile only repeats
@@ -424,7 +444,19 @@ export async function runLogIntake(deps: {
       recordName,
       eventId,
       t,
-      onUndo: undoIntake ? (id) => void undoIntake(id) : undefined,
+      onUndo: undoIntake
+        ? (id) =>
+            void undoIntake(id, {
+              // The slot the server filed it under, when it answered one.
+              slotAt:
+                created?.scheduledFor ??
+                scheduledFor ??
+                forceSlotInstant ??
+                null,
+              takenAt: skipped ? null : takenAt,
+              skipped,
+            })
+        : undefined,
     });
     if (options) {
       toast.success(message, options);
@@ -454,12 +486,16 @@ export async function runLogIntake(deps: {
 export async function runUndoIntake(deps: {
   medication: MedicationIntakeIdentity;
   eventId: string;
+  /** The dose being undone, which the toast names. */
+  dose: IntakeDose;
+  /** The reader's clock for the toast. */
+  formatTime: (at: Date) => string;
   /** The row version the take answered with; a newer one refuses the undo. */
   expectedSyncVersion?: number;
   t: Translator;
   queryClient: QueryClient;
 }): Promise<void> {
-  const { medication, eventId, t, queryClient } = deps;
+  const { medication, eventId, dose, formatTime, t, queryClient } = deps;
   const query =
     deps.expectedSyncVersion !== undefined
       ? `?expectedSyncVersion=${deps.expectedSyncVersion}`
@@ -469,10 +505,33 @@ export async function runUndoIntake(deps: {
       `/api/medications/${medication.id}/intake/${eventId}${query}`,
     );
     await invalidateMedicationReads(queryClient);
-    toast.success(t("medications.intakeUndone"));
+    toast.success(intakeRemovedMessage(dose, { t, formatTime }));
   } catch (failure) {
     showErrorToast(t("medications.intakeUndoFailed"), { cause: failure });
   }
+}
+
+/**
+ * The Undo a dialog hands {@link runLogIntake}: the soft delete of the dose
+ * it just recorded, whose toast names that dose.
+ */
+export function logIntakeUndo(deps: {
+  medication: MedicationIntakeIdentity;
+  t: Translator;
+  queryClient: QueryClient;
+  /** The reader's formatters (`useFormatters()`). */
+  fmt: { time: (at: Date) => string };
+}): (eventId: string, dose: IntakeDose) => Promise<void> {
+  const { medication, t, queryClient, fmt } = deps;
+  return (eventId, dose) =>
+    runUndoIntake({
+      medication,
+      eventId,
+      dose,
+      formatTime: (at) => fmt.time(at),
+      t,
+      queryClient,
+    });
 }
 
 /** What a deleted intake recorded, enough to record it again. */
@@ -482,6 +541,8 @@ export interface DeletedIntakeSnapshot {
   skipped: boolean;
   /** The slot the row belonged to (ISO), or null for an off-schedule take. */
   scheduledFor: string | null;
+  /** The slot's own wall time (`HH:mm`), when the row shows one. */
+  slotTime?: string | null;
   doseTaken?: string | null;
   autoMissed?: boolean;
 }
@@ -521,10 +582,20 @@ export async function runDeleteIntake(deps: {
   medicationId: string;
   intake: DeletedIntakeSnapshot;
   t: Translator;
+  /** The reader's clocks, which the toasts name the dose with. */
+  formatTime: (at: Date) => string;
+  wallTime: (hhmm: string) => string;
   /** Refresh the reads after the delete and after an undo. */
   reconcile: () => Promise<void>;
 }): Promise<void> {
   const { medicationId, intake, t, reconcile } = deps;
+  const format = { t, formatTime: deps.formatTime, wallTime: deps.wallTime };
+  const dose: IntakeDose = {
+    slotAt: intake.scheduledFor,
+    slotTime: intake.slotTime,
+    takenAt: intake.takenAt,
+    skipped: intake.skipped,
+  };
   try {
     await apiDelete(`/api/medications/${medicationId}/intake/${intake.id}`);
   } catch (failure) {
@@ -536,7 +607,7 @@ export async function runDeleteIntake(deps: {
   await reconcile();
   const body = restoreIntakeBody(intake);
   toast.success(
-    t("medications.detail.intake.deleteRow.toast"),
+    intakeRemovedMessage(dose, format),
     body
       ? {
           action: {
@@ -548,9 +619,7 @@ export async function runDeleteIntake(deps: {
                     `/api/medications/${medicationId}/intake`,
                     body,
                   );
-                  toast.success(
-                    t("medications.detail.intake.deleteRow.restored"),
-                  );
+                  toast.success(intakeRestoredMessage(dose, format));
                 } catch (failure) {
                   showErrorToast(t("medications.intakeUndoFailed"), {
                     cause: failure,
@@ -575,8 +644,20 @@ export function useMedicationIntake({
   const recordName = useActiveRecordName();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
 
-  const undoIntake = (eventId: string, expectedSyncVersion?: number) =>
-    runUndoIntake({ medication, eventId, expectedSyncVersion, t, queryClient });
+  const undoIntake = (
+    eventId: string,
+    dose: IntakeDose,
+    expectedSyncVersion?: number,
+  ) =>
+    runUndoIntake({
+      medication,
+      eventId,
+      dose,
+      formatTime: (at) => fmt.time(at),
+      expectedSyncVersion,
+      t,
+      queryClient,
+    });
 
   const recordIntake = (skipped: boolean, slot?: TakeSlot | null) =>
     runRecordIntake({

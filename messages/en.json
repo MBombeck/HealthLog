@@ -1604,7 +1604,6 @@
     "intakeToastExtra": "{name}: taken, {time}, as an extra dose",
     "intakeToastSkipped": "{name}: skipped",
     "intakeToastFailed": "Could not record {name}. Try again",
-    "intakeUndone": "Entry reverted",
     "intakeAlreadyTaken": "{name} was already recorded as taken. Nothing new was saved.",
     "intakeUndoFailed": "Could not undo. Open the history to fix it",
     "glp1LastInjection": "{label}",
@@ -2131,9 +2130,7 @@
           "failed": "Could not update the intake."
         },
         "deleteRow": {
-          "toast": "Intake deleted",
-          "failed": "Could not delete the intake.",
-          "restored": "Intake restored"
+          "failed": "Could not delete the intake."
         },
         "viewRecent90": "Last 90 days",
         "viewAll": "Full history",
@@ -2682,6 +2679,17 @@
       "invalidRow": "Choose a nutrient and enter an amount above zero in every line."
     },
     "dose": {
+      "which": {
+        "slotTaken": "the {slot} dose, taken at {taken}",
+        "slotSkipped": "the {slot} dose, skipped",
+        "slot": "the {slot} dose",
+        "taken": "the dose taken at {taken}",
+        "plain": "the dose"
+      },
+      "removed": "Removed {dose}",
+      "restored": "Restored {dose}",
+      "deleteLabel": "Delete {dose}",
+      "removedMany": "Removed {count, plural, one {# dose} other {# doses}}",
       "action": {
         "take": "Take",
         "skip": "Skip",
@@ -9568,6 +9576,11 @@
       "toggleLabel": "Offer the HealthLog push relay to this server's users",
       "toggleDescription": "Off until you turn it on. After that each person decides in their own app.",
       "toggleDescriptionOn": "On. Each person decides in their own app whether their devices use it.",
+      "ownApns": {
+        "inUse": "This server has its own Apple push key (APNs) configured and uses it. Every push goes directly to Apple, so the relay is not used while the key is set.",
+        "useRelay": "To send pushes through the relay instead, remove the APNS_* variables from the server's environment and restart it. The switch for the relay then appears here.",
+        "toggleDescription": "Still registered with the relay, which gets nothing while the key is set. Turn it off to leave the relay."
+      },
       "devices": "{count, plural, one {# device bound} other {# devices bound}}",
       "unbindsPending": "Device unbinds waiting for the relay: {count}",
       "unreachable": "This server is still registered with {host}, but its current settings cannot reach it (PUSH_RELAY_MODE or PUSH_RELAY_URL changed). That relay keeps this server's device bindings until the server leaves it: change the setting back, then turn the relay off here.",

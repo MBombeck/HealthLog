@@ -1604,7 +1604,6 @@
     "intakeToastExtra": "{name}: genommen, {time}, als zusätzliche Dosis",
     "intakeToastSkipped": "{name}: übersprungen",
     "intakeToastFailed": "{name} konnte nicht erfasst werden. Bitte erneut versuchen",
-    "intakeUndone": "Eintrag zurückgenommen",
     "intakeAlreadyTaken": "{name} war schon als genommen erfasst. Nichts Neues gespeichert.",
     "intakeUndoFailed": "Rückgängig fehlgeschlagen. Im Verlauf korrigieren",
     "glp1LastInjection": "{label}",
@@ -2131,9 +2130,7 @@
           "failed": "Einnahme konnte nicht aktualisiert werden."
         },
         "deleteRow": {
-          "toast": "Einnahme gelöscht",
-          "failed": "Einnahme konnte nicht gelöscht werden.",
-          "restored": "Einnahme wiederhergestellt"
+          "failed": "Einnahme konnte nicht gelöscht werden."
         },
         "viewRecent90": "Letzte 90 Tage",
         "viewAll": "Komplette Historie",
@@ -2682,6 +2679,17 @@
       "invalidRow": "Wähl in jeder Zeile einen Nährstoff und trag eine Menge über null ein."
     },
     "dose": {
+      "which": {
+        "slotTaken": "die Dosis um {slot}, genommen um {taken}",
+        "slotSkipped": "die Dosis um {slot}, übersprungen",
+        "slot": "die Dosis um {slot}",
+        "taken": "die um {taken} genommene Dosis",
+        "plain": "die Dosis"
+      },
+      "removed": "Entfernt: {dose}",
+      "restored": "Wiederhergestellt: {dose}",
+      "deleteLabel": "Löschen: {dose}",
+      "removedMany": "{count, plural, one {# Dosis} other {# Dosen}} entfernt",
       "action": {
         "take": "Einnehmen",
         "skip": "Überspringen",
@@ -9568,6 +9576,11 @@
       "toggleLabel": "Das HealthLog-Push-Relay den Nutzern dieses Servers anbieten",
       "toggleDescription": "Aus, bis du es einschaltest. Danach entscheidet jede Person in ihrer eigenen App.",
       "toggleDescriptionOn": "An. Jede Person entscheidet in ihrer eigenen App, ob ihre Geräte es nutzen.",
+      "ownApns": {
+        "inUse": "Dieser Server hat einen eigenen Apple-Push-Schlüssel (APNs) eingerichtet und nutzt ihn. Jede Push-Nachricht geht direkt an Apple, das Relay wird nicht genutzt, solange der Schlüssel gesetzt ist.",
+        "useRelay": "Sollen Push-Nachrichten stattdessen über das Relay gehen, entferne die APNS_*-Variablen aus der Umgebung des Servers und starte ihn neu. Dann erscheint hier der Schalter für das Relay.",
+        "toggleDescription": "Noch beim Relay angemeldet, das nichts bekommt, solange der Schlüssel gesetzt ist. Ausschalten meldet diesen Server beim Relay ab."
+      },
       "devices": "{count, plural, one {# Gerät verbunden} other {# Geräte verbunden}}",
       "unbindsPending": "Geräte-Abmeldungen, die auf das Relay warten: {count}",
       "unreachable": "Dieser Server ist noch bei {host} angemeldet, erreicht es mit seinen jetzigen Einstellungen aber nicht (PUSH_RELAY_MODE oder PUSH_RELAY_URL wurde geändert). Das Relay behält die Gerätebindungen dieses Servers, bis er sich dort abmeldet: Stell die Einstellung zurück und schalte das Relay dann hier aus.",

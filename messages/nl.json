@@ -1604,7 +1604,6 @@
     "intakeToastExtra": "{name}: ingenomen, {time}, als extra dosis",
     "intakeToastSkipped": "{name}: overgeslagen",
     "intakeToastFailed": "{name} kon niet worden geregistreerd. Probeer het opnieuw",
-    "intakeUndone": "Registratie teruggedraaid",
     "intakeAlreadyTaken": "{name} was al als ingenomen vastgelegd. Er is niets nieuws opgeslagen.",
     "intakeUndoFailed": "Ongedaan maken mislukt. Open de geschiedenis om het te corrigeren",
     "glp1LastInjection": "{label}",
@@ -2131,9 +2130,7 @@
           "failed": "De inname kon niet worden bijgewerkt."
         },
         "deleteRow": {
-          "toast": "Inname verwijderd",
-          "failed": "De inname kon niet worden verwijderd.",
-          "restored": "Inname hersteld"
+          "failed": "De inname kon niet worden verwijderd."
         },
         "viewRecent90": "Afgelopen 90 dagen",
         "viewAll": "Volledige geschiedenis",
@@ -2682,6 +2679,17 @@
       "invalidRow": "Kies in elke regel een voedingsstof en voer een hoeveelheid groter dan nul in."
     },
     "dose": {
+      "which": {
+        "slotTaken": "de dosis van {slot}, ingenomen om {taken}",
+        "slotSkipped": "de dosis van {slot}, overgeslagen",
+        "slot": "de dosis van {slot}",
+        "taken": "de dosis ingenomen om {taken}",
+        "plain": "de dosis"
+      },
+      "removed": "Verwijderd: {dose}",
+      "restored": "Hersteld: {dose}",
+      "deleteLabel": "Verwijder {dose}",
+      "removedMany": "{count, plural, one {# dosis verwijderd} other {# doses verwijderd}}",
       "action": {
         "take": "Innemen",
         "skip": "Overslaan",
@@ -9568,6 +9576,11 @@
       "toggleLabel": "De HealthLog-pushrelay aanbieden aan de gebruikers van deze server",
       "toggleDescription": "Uit tot je het aanzet. Daarna beslist iedereen in de eigen app.",
       "toggleDescriptionOn": "Aan. Iedereen beslist in de eigen app of de eigen apparaten het gebruiken.",
+      "ownApns": {
+        "inUse": "Deze server heeft een eigen Apple-pushsleutel (APNs) ingesteld en gebruikt die. Elke pushmelding gaat rechtstreeks naar Apple, dus de relay wordt niet gebruikt zolang de sleutel is ingesteld.",
+        "useRelay": "Wil je pushmeldingen via de relay versturen, verwijder dan de APNS_*-variabelen uit de omgeving van de server en start hem opnieuw. Dan verschijnt hier de schakelaar voor de relay.",
+        "toggleDescription": "Nog aangemeld bij de relay, die niets ontvangt zolang de sleutel is ingesteld. Zet hem uit om de relay te verlaten."
+      },
       "devices": "{count, plural, one {# apparaat gekoppeld} other {# apparaten gekoppeld}}",
       "unbindsPending": "Apparaatafmeldingen die op de relay wachten: {count}",
       "unreachable": "Deze server is nog aangemeld bij {host}, maar kan die met de huidige instellingen niet bereiken (PUSH_RELAY_MODE of PUSH_RELAY_URL is gewijzigd). Die relay houdt de apparaatkoppelingen van deze server tot de server zich afmeldt: zet de instelling terug en zet de relay daarna hier uit.",

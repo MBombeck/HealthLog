@@ -26,6 +26,7 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import type { DeletedIntakeSnapshot } from "@/components/medications/use-medication-intake";
+import { intakeDeleteLabel } from "@/components/medications/intake-dose-label";
 import type { DoseState } from "@/lib/medications/dose-state/resolve";
 import {
   DOSE_ACTION_TERM,
@@ -308,6 +309,19 @@ function LedgerRowMenu({
   const { t } = useTranslations();
   const fmt = useFormatters();
   const intake = row.intake;
+  // What the delete removes, named by its own slot and take time, so the
+  // menu and the toast both say which dose it is.
+  const deleted: DeletedIntakeSnapshot | null = intake?.id
+    ? {
+        id: intake.id,
+        takenAt: intake.takenAt,
+        skipped: intake.skipped,
+        scheduledFor: row.kind === "slot" ? intake.scheduledFor : null,
+        slotTime: row.kind === "slot" ? row.timeOfDay : null,
+        doseTaken: intake.doseTaken ?? null,
+        autoMissed: intake.autoMissed,
+      }
+    : null;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -408,24 +422,31 @@ function LedgerRowMenu({
                   : t("medications.detail.verlauf.markAsSkipped")}
               </DropdownMenuItem>
             )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() =>
-                onDelete({
-                  id: intake.id as string,
-                  takenAt: intake.takenAt,
-                  skipped: intake.skipped,
-                  scheduledFor:
-                    row.kind === "slot" ? intake.scheduledFor : null,
-                  doseTaken: intake.doseTaken ?? null,
-                  autoMissed: intake.autoMissed,
-                })
-              }
-              data-slot="ledger-delete"
-            >
-              <Trash2 aria-hidden="true" className="mr-2 size-4" />
-              {t("medications.detail.intake.rowActions.delete")}
-            </DropdownMenuItem>
+            {deleted && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onDelete(deleted)}
+                  aria-label={intakeDeleteLabel(
+                    {
+                      slotAt: deleted.scheduledFor,
+                      slotTime: deleted.slotTime,
+                      takenAt: deleted.takenAt,
+                      skipped: deleted.skipped,
+                    },
+                    {
+                      t,
+                      formatTime: (at) => fmt.time(at),
+                      wallTime: fmt.wallTime,
+                    },
+                  )}
+                  data-slot="ledger-delete"
+                >
+                  <Trash2 aria-hidden="true" className="mr-2 size-4" />
+                  {t("medications.detail.intake.rowActions.delete")}
+                </DropdownMenuItem>
+              </>
+            )}
           </>
         )}
       </DropdownMenuContent>

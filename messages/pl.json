@@ -1604,7 +1604,6 @@
     "intakeToastExtra": "{name}: przyjęte, {time}, jako dodatkowa dawka",
     "intakeToastSkipped": "{name}: pominięte",
     "intakeToastFailed": "Nie udało się zapisać {name}. Spróbuj ponownie",
-    "intakeUndone": "Wpis cofnięty",
     "intakeAlreadyTaken": "{name} był już zapisany jako przyjęty. Nic nowego nie zapisano.",
     "intakeUndoFailed": "Nie udało się cofnąć. Popraw w historii",
     "glp1LastInjection": "{label}",
@@ -2131,9 +2130,7 @@
           "failed": "Nie udało się zaktualizować przyjęcia."
         },
         "deleteRow": {
-          "toast": "Przyjęcie usunięte",
-          "failed": "Nie udało się usunąć przyjęcia.",
-          "restored": "Przyjęcie przywrócone"
+          "failed": "Nie udało się usunąć przyjęcia."
         },
         "viewRecent90": "Ostatnie 90 dni",
         "viewAll": "Pełna historia",
@@ -2682,6 +2679,17 @@
       "invalidRow": "W każdej linii wybierz składnik i wpisz ilość większą od zera."
     },
     "dose": {
+      "which": {
+        "slotTaken": "dawka z {slot}, przyjęta o {taken}",
+        "slotSkipped": "dawka z {slot}, pominięta",
+        "slot": "dawka z {slot}",
+        "taken": "dawka przyjęta o {taken}",
+        "plain": "dawka"
+      },
+      "removed": "Usunięto: {dose}",
+      "restored": "Przywrócono: {dose}",
+      "deleteLabel": "Usuń: {dose}",
+      "removedMany": "Usunięto {count, plural, one {# dawkę} few {# dawki} many {# dawek} other {# dawki}}",
       "action": {
         "take": "Przyjmij",
         "skip": "Pomiń",
@@ -9568,6 +9576,11 @@
       "toggleLabel": "Udostępnij przekaźnik push HealthLog użytkownikom tego serwera",
       "toggleDescription": "Wyłączone, dopóki go nie włączysz. Potem każda osoba decyduje we własnej aplikacji.",
       "toggleDescriptionOn": "Włączone. Każda osoba decyduje we własnej aplikacji, czy jej urządzenia z niego korzystają.",
+      "ownApns": {
+        "inUse": "Ten serwer ma skonfigurowany własny klucz push Apple (APNs) i go używa. Każde powiadomienie trafia bezpośrednio do Apple, więc przekaźnik nie jest używany, dopóki klucz jest ustawiony.",
+        "useRelay": "Aby zamiast tego wysyłać powiadomienia przez przekaźnik, usuń zmienne APNS_* ze środowiska serwera i uruchom go ponownie. Wtedy pojawi się tu przełącznik przekaźnika.",
+        "toggleDescription": "Nadal zarejestrowany w przekaźniku, który nic nie dostaje, dopóki klucz jest ustawiony. Wyłącz, aby opuścić przekaźnik."
+      },
       "devices": "{count, plural, one {# powiązane urządzenie} few {# powiązane urządzenia} many {# powiązanych urządzeń} other {# powiązanego urządzenia}}",
       "unbindsPending": "Odłączenia urządzeń czekające na przekaźnik: {count}",
       "unreachable": "Ten serwer jest nadal zarejestrowany w {host}, ale przy obecnych ustawieniach nie może się z nim połączyć (zmieniono PUSH_RELAY_MODE lub PUSH_RELAY_URL). Ten przekaźnik przechowuje powiązania urządzeń tego serwera, dopóki serwer się z niego nie wypisze: przywróć ustawienie, a potem wyłącz przekaźnik tutaj.",

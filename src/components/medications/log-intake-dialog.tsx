@@ -35,7 +35,7 @@ import {
 } from "@/lib/medications/default-medication";
 import {
   runLogIntake,
-  runUndoIntake,
+  logIntakeUndo,
 } from "@/components/medications/use-medication-intake";
 import {
   IntakeFormFields,
@@ -115,8 +115,7 @@ export function LogIntakeDialog({
         recordName,
         formatTime: (at) => fmt.time(at),
         onFailure: setError,
-        undoIntake: (eventId) =>
-          runUndoIntake({ medication: med, eventId, t, queryClient }),
+        undoIntake: logIntakeUndo({ medication: med, t, queryClient, fmt }),
       });
       if (ok) onOpenChange(false);
     } finally {

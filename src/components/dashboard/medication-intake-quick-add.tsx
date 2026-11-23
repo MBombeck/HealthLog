@@ -19,7 +19,7 @@ import { apiGet } from "@/lib/api/api-fetch";
 import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import {
   runLogIntake,
-  runUndoIntake,
+  logIntakeUndo,
 } from "@/components/medications/use-medication-intake";
 import {
   IntakeFormFields,
@@ -208,8 +208,7 @@ export function MedicationIntakeQuickAdd({
         formatTime: (at) => fmt.time(at),
         onFailure: setError,
         post: (url, body) => post(url, body),
-        undoIntake: (eventId) =>
-          runUndoIntake({ medication: med, eventId, t, queryClient }),
+        undoIntake: logIntakeUndo({ medication: med, t, queryClient, fmt }),
       });
       if (ok) onSuccess?.();
     } finally {

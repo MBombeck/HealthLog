@@ -50,6 +50,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { apiDelete, apiPost } from "@/lib/api/api-fetch";
 import { intakeToastOptions } from "@/components/medications/use-medication-intake";
+import { intakeRemovedMessage } from "@/components/medications/intake-dose-label";
 import { invalidateMedicationReads } from "@/lib/query-keys";
 import {
   cardDisplayedSlot,
@@ -210,19 +211,26 @@ export async function runTakeAllDue(deps: {
    * other half is a no-op here.
    */
   recordName?: string | null;
+  /** The reader's clock, which the Undo's toast names a dose with. */
+  formatTime: (at: Date) => string;
 }): Promise<{ taken: number; failed: number }> {
-  const { medications, t, queryClient, recordName } = deps;
+  const { medications, t, queryClient, recordName, formatTime } = deps;
   let taken = 0;
   let failed = 0;
   // The rows this sweep wrote, for its one Undo (a slot that already held a
   // take wrote nothing and is not undone).
-  const written: { medicationId: string; id: string; syncVersion?: number }[] =
-    [];
+  const written: WrittenTake[] = [];
 
   for (const med of medications) {
     try {
       const created = await apiPost<
-        | { id?: string; syncVersion?: number; alreadyTaken?: boolean }
+        | {
+            id?: string;
+            syncVersion?: number;
+            alreadyTaken?: boolean;
+            takenAt?: string | null;
+            scheduledFor?: string | null;
+          }
         | undefined
       >(
         `/api/medications/${med.id}/intake`,
@@ -235,6 +243,8 @@ export async function runTakeAllDue(deps: {
           medicationId: med.id,
           id: created.id,
           syncVersion: created.syncVersion,
+          slotAt: created.scheduledFor ?? med.scheduledFor ?? null,
+          takenAt: created.takenAt ?? null,
         });
       }
       taken += 1;
@@ -264,7 +274,8 @@ export async function runTakeAllDue(deps: {
       recordName,
       eventId: written.length > 0 ? written[0].id : undefined,
       t,
-      onUndo: () => void undoTakeAllDue({ written, t, queryClient }),
+      onUndo: () =>
+        void undoTakeAllDue({ written, t, queryClient, formatTime }),
     });
     const message = t("medications.takeAllDue.successToast", { count: taken });
     if (options) {
@@ -281,13 +292,26 @@ export async function runTakeAllDue(deps: {
   return { taken, failed };
 }
 
-/** Reverse a sweep: remove each row it wrote, then one confirmation. */
+/** A take the sweep wrote, enough to remove it and to name it. */
+interface WrittenTake {
+  medicationId: string;
+  id: string;
+  syncVersion?: number;
+  slotAt: string | Date | null;
+  takenAt: string | null;
+}
+
+/**
+ * Reverse a sweep: remove each row it wrote, then one confirmation, which
+ * names the dose when there was one and counts them otherwise.
+ */
 async function undoTakeAllDue(input: {
-  written: { medicationId: string; id: string; syncVersion?: number }[];
+  written: WrittenTake[];
   t: Translator;
   queryClient: QueryClient;
+  formatTime: (at: Date) => string;
 }): Promise<void> {
-  const { written, t, queryClient } = input;
+  const { written, t, queryClient, formatTime } = input;
   let failed = 0;
   for (const row of written) {
     const query =
@@ -306,6 +330,17 @@ async function undoTakeAllDue(input: {
   if (failed > 0) {
     showErrorToast(t("medications.intakeUndoFailed"));
   } else {
-    toast.success(t("medications.intakeUndone"));
+    toast.success(
+      written.length === 1
+        ? intakeRemovedMessage(
+            {
+              slotAt: written[0].slotAt,
+              takenAt: written[0].takenAt ?? new Date(),
+              skipped: false,
+            },
+            { t, formatTime },
+          )
+        : t("medications.dose.removedMany", { count: written.length }),
+    );
   }
 }

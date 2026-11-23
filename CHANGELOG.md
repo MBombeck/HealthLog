@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- The relay card under Admin > Push and channels says when this server has its own Apple push key (APNs) configured: every push then goes directly to Apple and the relay is not used while the key is set. It explains how to use the relay instead (remove the `APNS_*` variables) and no longer shows a switch that would change nothing; a relay turned on before the key can still be turned off there. The admin relay status carries this as `ownApnsKey`.
+- Deleting or undoing a dose names exactly which one it is. The delete control in the dose history reads "Delete the 09:00 dose, taken at 08:00" to assistive technology, and the confirmation says "Removed the 09:00 dose, taken at 08:00" with its Undo; the Undo after recording a dose, after taking all due doses and after restoring a deleted one says the same, in the reader's 12- or 24-hour clock.
+
 ## [1.49.0] — 2026-11-23
 
 ### Added
