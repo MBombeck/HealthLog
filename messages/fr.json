@@ -1604,7 +1604,6 @@
     "intakeToastExtra": "{name} : prise, {time}, en dose supplémentaire",
     "intakeToastSkipped": "{name} : sautée",
     "intakeToastFailed": "Impossible d'enregistrer {name}. Réessayez",
-    "intakeUndone": "Entrée annulée",
     "intakeAlreadyTaken": "{name} était déjà enregistré comme pris. Rien de nouveau n’a été enregistré.",
     "intakeUndoFailed": "Annulation impossible. Corrigez dans l'historique",
     "glp1LastInjection": "{label}",
@@ -2131,9 +2130,7 @@
           "failed": "Impossible de mettre à jour la prise."
         },
         "deleteRow": {
-          "toast": "Prise supprimée",
-          "failed": "Impossible de supprimer la prise.",
-          "restored": "Prise rétablie"
+          "failed": "Impossible de supprimer la prise."
         },
         "viewRecent90": "90 derniers jours",
         "viewAll": "Historique complet",
@@ -2682,6 +2679,17 @@
       "invalidRow": "Choisissez un nutriment et saisissez une quantité supérieure à zéro sur chaque ligne."
     },
     "dose": {
+      "which": {
+        "slotTaken": "la dose de {slot}, prise à {taken}",
+        "slotSkipped": "la dose de {slot}, sautée",
+        "slot": "la dose de {slot}",
+        "taken": "la dose prise à {taken}",
+        "plain": "la dose"
+      },
+      "removed": "Supprimée : {dose}",
+      "restored": "Restaurée : {dose}",
+      "deleteLabel": "Supprimer {dose}",
+      "removedMany": "{count, plural, one {# dose supprimée} other {# doses supprimées}}",
       "action": {
         "take": "Prendre",
         "skip": "Sauter",
@@ -9568,6 +9576,11 @@
       "toggleLabel": "Proposer le relais push HealthLog aux utilisateurs de ce serveur",
       "toggleDescription": "Désactivé tant que vous ne l'activez pas. Ensuite, chaque personne décide dans sa propre app.",
       "toggleDescriptionOn": "Activé. Chaque personne décide dans sa propre app si ses appareils l’utilisent.",
+      "ownApns": {
+        "inUse": "Ce serveur dispose de sa propre clé push Apple (APNs) et l’utilise. Chaque notification part directement chez Apple : le relais n’est pas utilisé tant que la clé est définie.",
+        "useRelay": "Pour passer par le relais, supprimez les variables APNS_* de l’environnement du serveur et redémarrez-le. L’interrupteur du relais apparaît alors ici.",
+        "toggleDescription": "Toujours inscrit auprès du relais, qui ne reçoit rien tant que la clé est définie. Désactivez-le pour quitter le relais."
+      },
       "devices": "{count, plural, one {# appareil lié} other {# appareils liés}}",
       "unbindsPending": "Désinscriptions d’appareils en attente du relais : {count}",
       "unreachable": "Ce serveur est encore inscrit auprès de {host}, mais ses réglages actuels ne lui permettent plus de l’atteindre (PUSH_RELAY_MODE ou PUSH_RELAY_URL a changé). Ce relais garde les liaisons d’appareils de ce serveur jusqu’à ce que le serveur le quitte : remettez le réglage d’avant, puis désactivez le relais ici.",

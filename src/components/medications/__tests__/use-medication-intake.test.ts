@@ -45,6 +45,10 @@ const medication = { id: "med-1", name: "Mounjaro" };
 /** A fixed clock for the toast text; the app passes the reader's formatter. */
 const clock = (at: Date) => at.toISOString().slice(11, 16);
 
+/** A translator that keeps every parameter, for messages built of parts. */
+const named = (key: string, params?: Record<string, string | number>) =>
+  params ? `${key}${JSON.stringify(params)}` : key;
+
 beforeEach(() => {
   vi.restoreAllMocks();
   vi.mocked(toast.success).mockClear();
@@ -146,7 +150,11 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
 
     // Firing the action calls undoIntake with the just-created event id.
     action?.onClick({} as never);
-    expect(undoIntake).toHaveBeenCalledWith("evt-99", undefined);
+    expect(undoIntake).toHaveBeenCalledWith(
+      "evt-99",
+      expect.objectContaining({ skipped: false, slotAt: null }),
+      undefined,
+    );
 
     // The post-success follow-up receives the event id + skipped flag.
     expect(onRecorded).toHaveBeenCalledWith("evt-99", false);
@@ -513,7 +521,18 @@ describe("runUndoIntake — shared soft-delete", () => {
     vi.stubGlobal("fetch", fetchMock);
     const queryClient = fakeQueryClient();
 
-    await runUndoIntake({ medication, eventId: "evt-1", t, queryClient });
+    await runUndoIntake({
+      medication,
+      eventId: "evt-1",
+      dose: {
+        slotAt: "2026-11-20T09:00:00.000Z",
+        takenAt: "2026-11-20T08:00:00.000Z",
+        skipped: false,
+      },
+      formatTime: clock,
+      t: named,
+      queryClient,
+    });
 
     // Method + path are the contract; the shared fetch wrapper may attach
     // transport details (e.g. an abort signal) the undo path doesn't own.
@@ -521,7 +540,15 @@ describe("runUndoIntake — shared soft-delete", () => {
       "/api/medications/med-1/intake/evt-1",
       expect.objectContaining({ method: "DELETE" }),
     );
-    expect(toast.success).toHaveBeenCalledWith("medications.intakeUndone");
+    // The toast names the dose by its slot and its take time.
+    expect(toast.success).toHaveBeenCalledWith(
+      named("medications.dose.removed", {
+        dose: named("medications.dose.which.slotTaken", {
+          slot: "09:00",
+          taken: "08:00",
+        }),
+      }),
+    );
     expect(queryClient.invalidateQueries).toHaveBeenCalled();
   });
 
@@ -531,6 +558,8 @@ describe("runUndoIntake — shared soft-delete", () => {
     await runUndoIntake({
       medication,
       eventId: "evt-1",
+      dose: { slotAt: null, takenAt: null, skipped: false },
+      formatTime: clock,
       t,
       queryClient: fakeQueryClient(),
     });

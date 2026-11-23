@@ -152,6 +152,7 @@ export async function adminRelayStatus(now = new Date()) {
       }),
     ]);
   const health = relayHealth(row);
+  const ownApnsKey = loadApnsConfig() !== null;
   const docs = config.origin ? relayDocumentUrls(config.origin) : null;
   return {
     allowed: config.allowed,
@@ -189,6 +190,11 @@ export async function adminRelayStatus(now = new Date()) {
     termsUrl: docs?.termsUrl ?? null,
     privacyUrl: docs?.privacyUrl ?? null,
     docsUrl: RELAY_DOCS_URL,
+    // An APNs key of this server's own (`APNS_*`) is in use: `routeFor`
+    // sends every push directly to Apple with it and never over the relay,
+    // whatever the switch says. The card says so instead of offering a
+    // switch that would change nothing.
+    ownApnsKey,
     // The operator's one answer for the whole server, as `/api/auth/me`
     // publishes it (`push.relay.operatorDecision`): the relay question is
     // asked while it is `undecided`, and never again once it is `off`.
@@ -197,7 +203,7 @@ export async function adminRelayStatus(now = new Date()) {
       offered: row !== null,
       registered: row?.instanceId != null,
       available: config.available,
-      apnsConfigured: loadApnsConfig() !== null,
+      apnsConfigured: ownApnsKey,
     }),
   };
 }

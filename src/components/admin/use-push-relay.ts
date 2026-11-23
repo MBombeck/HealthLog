@@ -63,6 +63,11 @@ export interface AdminPushRelayStatus {
   termsUrl: string | null;
   privacyUrl: string | null;
   docsUrl: string;
+  /**
+   * An APNs key of this server's own is in use: every push goes directly to
+   * Apple and the relay is not used while it is set.
+   */
+  ownApnsKey: boolean;
   /** The operator's one answer to the relay question (`operator-decision.ts`). */
   operatorDecision: "undecided" | "on" | "off";
 }

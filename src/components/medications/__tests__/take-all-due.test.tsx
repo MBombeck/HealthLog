@@ -85,6 +85,8 @@ function todayAtUtc(hours: number, minutes = 0): Date {
 const t = (key: string, params?: Record<string, string | number>) =>
   params ? `${key}:${JSON.stringify(params)}` : key;
 
+const formatTime = (at: Date) => at.toISOString().slice(11, 16);
+
 function fakeQueryClient(): QueryClientType {
   return {
     invalidateQueries: vi.fn().mockResolvedValue(undefined),
@@ -256,7 +258,12 @@ describe("runTakeAllDue — per-medication loop with failure isolation", () => {
     vi.stubGlobal("fetch", fetchMock);
     const queryClient = fakeQueryClient();
 
-    const result = await runTakeAllDue({ medications: dueTwo, t, queryClient });
+    const result = await runTakeAllDue({
+      medications: dueTwo,
+      t,
+      queryClient,
+      formatTime,
+    });
 
     expect(result).toEqual({ taken: 2, failed: 0 });
     expect(fetchMock.mock.calls[0][0]).toBe("/api/medications/med-a/intake");
@@ -288,7 +295,12 @@ describe("runTakeAllDue — per-medication loop with failure isolation", () => {
     const queryClient = fakeQueryClient();
     vi.mocked(toast.success).mockClear();
 
-    await runTakeAllDue({ medications: dueTwo, t, queryClient });
+    await runTakeAllDue({
+      medications: dueTwo,
+      t,
+      queryClient,
+      formatTime,
+    });
     const options = vi.mocked(toast.success).mock.calls[0][1] as unknown as {
       action: { onClick: () => void };
     };
@@ -301,6 +313,56 @@ describe("runTakeAllDue — per-medication loop with failure isolation", () => {
       "/api/medications/med-b/intake/evt-b",
     );
     expect((fetchMock.mock.calls[2][1] as RequestInit).method).toBe("DELETE");
+    // Two doses went: the confirmation counts them.
+    await vi.waitFor(() =>
+      expect(vi.mocked(toast.success)).toHaveBeenLastCalledWith(
+        'medications.dose.removedMany:{"count":2}',
+      ),
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("names the one dose its Undo removed, by slot and take time", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers(),
+        json: vi.fn(),
+        text: vi.fn().mockResolvedValue(
+          JSON.stringify({
+            data: {
+              id: "evt-a",
+              takenAt: "2026-11-20T08:00:00.000Z",
+              scheduledFor: "2026-11-20T09:00:00.000Z",
+            },
+          }),
+        ),
+      })
+      .mockResolvedValue(okResponse("deleted"));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.mocked(toast.success).mockClear();
+
+    await runTakeAllDue({
+      medications: [dueTwo[0]],
+      t,
+      queryClient: fakeQueryClient(),
+      formatTime,
+    });
+    const options = vi.mocked(toast.success).mock.calls[0][1] as unknown as {
+      action: { onClick: () => void };
+    };
+    options.action.onClick();
+    await vi.waitFor(() =>
+      expect(vi.mocked(toast.success)).toHaveBeenLastCalledWith(
+        t("medications.dose.removed", {
+          dose: t("medications.dose.which.slotTaken", {
+            slot: "09:00",
+            taken: "08:00",
+          }),
+        }),
+      ),
+    );
     vi.unstubAllGlobals();
   });
 
@@ -313,6 +375,7 @@ describe("runTakeAllDue — per-medication loop with failure isolation", () => {
         { id: "med-p", name: "P", dose: "", window: null, scheduledFor: null },
       ],
       t,
+      formatTime,
       queryClient: fakeQueryClient(),
     });
 
@@ -337,7 +400,12 @@ describe("runTakeAllDue — per-medication loop with failure isolation", () => {
     vi.stubGlobal("fetch", fetchMock);
     const queryClient = fakeQueryClient();
 
-    const result = await runTakeAllDue({ medications: dueTwo, t, queryClient });
+    const result = await runTakeAllDue({
+      medications: dueTwo,
+      t,
+      queryClient,
+      formatTime,
+    });
 
     expect(result).toEqual({ taken: 1, failed: 1 });
     expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
@@ -364,6 +432,7 @@ describe("runTakeAllDue — per-medication loop with failure isolation", () => {
     await runTakeAllDue({
       medications: [dueTwo[0]],
       t,
+      formatTime,
       queryClient,
     });
 
@@ -397,7 +466,12 @@ describe("runTakeAllDue — per-medication loop with failure isolation", () => {
     );
     const queryClient = fakeQueryClient();
 
-    const result = await runTakeAllDue({ medications: dueTwo, t, queryClient });
+    const result = await runTakeAllDue({
+      medications: dueTwo,
+      t,
+      queryClient,
+      formatTime,
+    });
 
     expect(result).toEqual({ taken: 0, failed: 2 });
     expect(vi.mocked(toast.error)).toHaveBeenCalledWith(

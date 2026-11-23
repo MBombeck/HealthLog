@@ -1604,7 +1604,6 @@
     "intakeToastExtra": "{name}: tomada, {time}, como dosis extra",
     "intakeToastSkipped": "{name}: omitida",
     "intakeToastFailed": "No se pudo registrar {name}; inténtalo de nuevo",
-    "intakeUndone": "Entrada revertida",
     "intakeAlreadyTaken": "{name} ya estaba registrado como tomado. No se guardó nada nuevo.",
     "intakeUndoFailed": "No se pudo deshacer; corrígelo en el historial",
     "glp1LastInjection": "{label}",
@@ -2131,9 +2130,7 @@
           "failed": "No se pudo actualizar la toma."
         },
         "deleteRow": {
-          "toast": "Toma eliminada",
-          "failed": "No se pudo eliminar la toma.",
-          "restored": "Toma restaurada"
+          "failed": "No se pudo eliminar la toma."
         },
         "viewRecent90": "Últimos 90 días",
         "viewAll": "Historial completo",
@@ -2682,6 +2679,17 @@
       "invalidRow": "Elige un nutriente e introduce una cantidad mayor que cero en cada línea."
     },
     "dose": {
+      "which": {
+        "slotTaken": "la dosis de las {slot}, tomada a las {taken}",
+        "slotSkipped": "la dosis de las {slot}, omitida",
+        "slot": "la dosis de las {slot}",
+        "taken": "la dosis tomada a las {taken}",
+        "plain": "la dosis"
+      },
+      "removed": "Eliminada: {dose}",
+      "restored": "Restaurada: {dose}",
+      "deleteLabel": "Eliminar {dose}",
+      "removedMany": "{count, plural, one {# dosis eliminada} other {# dosis eliminadas}}",
       "action": {
         "take": "Tomar",
         "skip": "Omitir",
@@ -9568,6 +9576,11 @@
       "toggleLabel": "Ofrecer el relé push de HealthLog a los usuarios de este servidor",
       "toggleDescription": "Desactivado hasta que lo actives. Después, cada persona decide en su propia app.",
       "toggleDescriptionOn": "Activado. Cada persona decide en su propia app si sus dispositivos lo usan.",
+      "ownApns": {
+        "inUse": "Este servidor tiene configurada su propia clave push de Apple (APNs) y la usa. Cada notificación va directamente a Apple, así que el relé no se usa mientras la clave esté configurada.",
+        "useRelay": "Para enviar las notificaciones a través del relé, elimina las variables APNS_* del entorno del servidor y reinícialo. Entonces aparecerá aquí el interruptor del relé.",
+        "toggleDescription": "Sigue registrado en el relé, que no recibe nada mientras la clave esté configurada. Desactívalo para salir del relé."
+      },
       "devices": "{count, plural, one {# dispositivo vinculado} other {# dispositivos vinculados}}",
       "unbindsPending": "Bajas de dispositivos que esperan al relé: {count}",
       "unreachable": "Este servidor sigue registrado en {host}, pero con su configuración actual no puede alcanzarlo (cambió PUSH_RELAY_MODE o PUSH_RELAY_URL). Ese relé conserva los vínculos de dispositivos de este servidor hasta que el servidor se dé de baja: vuelve a poner el ajuste anterior y luego desactiva el relé aquí.",

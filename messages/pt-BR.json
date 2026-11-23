@@ -1604,7 +1604,6 @@
     "intakeToastExtra": "{name}: tomada, {time}, como dose extra",
     "intakeToastSkipped": "{name}: pulada",
     "intakeToastFailed": "Não foi possível registrar {name}. Tente novamente",
-    "intakeUndone": "Entrada revertida",
     "intakeAlreadyTaken": "{name} já estava registrado como tomado. Nada de novo foi salvo.",
     "intakeUndoFailed": "Não foi possível desfazer. Abra o histórico para corrigir",
     "glp1LastInjection": "{label}",
@@ -2131,9 +2130,7 @@
           "failed": "Não foi possível atualizar a tomada."
         },
         "deleteRow": {
-          "toast": "Tomada excluída",
-          "failed": "Não foi possível excluir a tomada.",
-          "restored": "Tomada restaurada"
+          "failed": "Não foi possível excluir a tomada."
         },
         "viewRecent90": "Últimos 90 dias",
         "viewAll": "Histórico completo",
@@ -2682,6 +2679,17 @@
       "invalidRow": "Escolha um nutriente e insira uma quantidade acima de zero em cada linha."
     },
     "dose": {
+      "which": {
+        "slotTaken": "a dose das {slot}, tomada às {taken}",
+        "slotSkipped": "a dose das {slot}, pulada",
+        "slot": "a dose das {slot}",
+        "taken": "a dose tomada às {taken}",
+        "plain": "a dose"
+      },
+      "removed": "Removida: {dose}",
+      "restored": "Restaurada: {dose}",
+      "deleteLabel": "Excluir {dose}",
+      "removedMany": "{count, plural, one {# dose removida} other {# doses removidas}}",
       "action": {
         "take": "Tomar",
         "skip": "Pular",
@@ -9568,6 +9576,11 @@
       "toggleLabel": "Oferecer o relay de push do HealthLog aos usuários deste servidor",
       "toggleDescription": "Desligado até você ativar. Depois, cada pessoa decide no próprio app.",
       "toggleDescriptionOn": "Ligado. Cada pessoa decide no próprio app se os dispositivos dela o usam.",
+      "ownApns": {
+        "inUse": "Este servidor tem a própria chave push da Apple (APNs) configurada e a usa. Cada notificação vai direto para a Apple, então o relay não é usado enquanto a chave estiver definida.",
+        "useRelay": "Para enviar as notificações pelo relay, remova as variáveis APNS_* do ambiente do servidor e reinicie-o. Aí o botão do relay aparece aqui.",
+        "toggleDescription": "Ainda registrado no relay, que não recebe nada enquanto a chave estiver definida. Desligue para sair do relay."
+      },
       "devices": "{count, plural, one {# dispositivo vinculado} other {# dispositivos vinculados}}",
       "unbindsPending": "Desvínculos de dispositivos aguardando o relay: {count}",
       "unreachable": "Este servidor ainda está registrado em {host}, mas com as configurações atuais não consegue alcançá-lo (PUSH_RELAY_MODE ou PUSH_RELAY_URL mudou). Esse relay guarda os vínculos de dispositivos deste servidor até que o servidor saia dele: volte a configuração e depois desative o relay aqui.",

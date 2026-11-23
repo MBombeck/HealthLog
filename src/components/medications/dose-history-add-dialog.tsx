@@ -20,7 +20,7 @@ import { invalidateKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
 import { useActiveRecordName } from "@/hooks/use-record-capabilities";
 import {
   runLogIntake,
-  runUndoIntake,
+  logIntakeUndo,
 } from "@/components/medications/use-medication-intake";
 import {
   IntakeFormFields,
@@ -85,8 +85,7 @@ export function LedgerAddDialog({
         recordName,
         formatTime: (at) => fmt.time(at),
         onFailure: setError,
-        undoIntake: (eventId) =>
-          runUndoIntake({ medication: med, eventId, t, queryClient }),
+        undoIntake: logIntakeUndo({ medication: med, t, queryClient, fmt }),
       });
       if (ok) {
         onOpenChange(false);

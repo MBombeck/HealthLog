@@ -1604,7 +1604,6 @@
     "intakeToastExtra": "{name}: 복용함, {time}, 추가 복용",
     "intakeToastSkipped": "{name}: 건너뜀",
     "intakeToastFailed": "기록하지 못했어요: {name}. 다시 시도해 주세요",
-    "intakeUndone": "기록을 되돌렸어요",
     "intakeAlreadyTaken": "{name}은(는) 이미 복용한 것으로 기록되어 있습니다. 새로 저장된 내용은 없습니다.",
     "intakeUndoFailed": "되돌리지 못했어요. 기록에서 수정해 주세요",
     "glp1LastInjection": "{label}",
@@ -2131,9 +2130,7 @@
           "failed": "복용 기록을 수정하지 못했어요."
         },
         "deleteRow": {
-          "toast": "복용 기록을 삭제했어요",
-          "failed": "복용 기록을 삭제하지 못했어요.",
-          "restored": "복용 기록을 되돌렸어요"
+          "failed": "복용 기록을 삭제하지 못했어요."
         },
         "viewRecent90": "최근 90일",
         "viewAll": "전체 기록",
@@ -2682,6 +2679,17 @@
       "invalidRow": "모든 줄에서 영양소를 고르고 0보다 큰 함량을 입력하세요."
     },
     "dose": {
+      "which": {
+        "slotTaken": "{slot} 복용분({taken}에 복용)",
+        "slotSkipped": "{slot} 복용분(건너뜀)",
+        "slot": "{slot} 복용분",
+        "taken": "{taken}에 복용한 분",
+        "plain": "복용분"
+      },
+      "removed": "삭제됨: {dose}",
+      "restored": "복원됨: {dose}",
+      "deleteLabel": "삭제: {dose}",
+      "removedMany": "{count, plural, other {#회분 삭제됨}}",
       "action": {
         "take": "복용",
         "skip": "건너뛰기",
@@ -9568,6 +9576,11 @@
       "toggleLabel": "이 서버 사용자에게 HealthLog 푸시 릴레이 제공",
       "toggleDescription": "켜기 전까지는 꺼져 있습니다. 켠 뒤에는 각자 자신의 앱에서 결정합니다.",
       "toggleDescriptionOn": "켜져 있어요. 기기에서 사용할지는 각자 자신의 앱에서 정해요.",
+      "ownApns": {
+        "inUse": "이 서버에는 자체 Apple 푸시 키(APNs)가 설정되어 있고 그 키를 사용해요. 모든 푸시가 Apple로 바로 가므로 키가 설정되어 있는 동안에는 릴레이를 쓰지 않아요.",
+        "useRelay": "대신 릴레이로 푸시를 보내려면 서버 환경에서 APNS_* 변수를 지우고 서버를 다시 시작하세요. 그러면 여기에 릴레이 스위치가 나타나요.",
+        "toggleDescription": "아직 릴레이에 등록되어 있지만 키가 설정되어 있는 동안에는 아무것도 받지 않아요. 끄면 릴레이에서 등록이 해제돼요."
+      },
       "devices": "연결된 기기 {count, plural, other {#대}}",
       "unbindsPending": "릴레이를 기다리는 기기 연결 해제: {count}",
       "unreachable": "이 서버는 아직 {host}에 등록되어 있지만 지금 설정으로는 연결할 수 없습니다 (PUSH_RELAY_MODE 또는 PUSH_RELAY_URL이 바뀌었습니다). 이 서버가 등록을 해제할 때까지 해당 릴레이는 이 서버의 기기 연결을 보관합니다. 설정을 되돌린 다음 여기에서 릴레이를 끄세요.",

@@ -172,25 +172,33 @@ export function PushRelaySection() {
             {t(UNAVAILABLE_LABEL[status.unavailableReason])}
           </p>
         )}
-        <SettingsToggle
-          label={t("admin.pushRelay.toggleLabel")}
-          description={t(
-            status.offered
-              ? "admin.pushRelay.toggleDescriptionOn"
-              : "admin.pushRelay.toggleDescription",
-          )}
-          checked={status.offered}
-          onCheckedChange={(checked) => {
-            if (checked) {
-              openEnable();
-            } else {
-              setDisableOpen(true);
+        {status.ownApnsKey && <PushRelayOwnApnsKey />}
+        {/* Beside an APNs key of the server's own the relay carries nothing,
+            so there is no switch to turn it on; one already on can still be
+            turned off, which leaves the relay. */}
+        {(!status.ownApnsKey || status.offered) && (
+          <SettingsToggle
+            label={t("admin.pushRelay.toggleLabel")}
+            description={t(
+              status.ownApnsKey
+                ? "admin.pushRelay.ownApns.toggleDescription"
+                : status.offered
+                  ? "admin.pushRelay.toggleDescriptionOn"
+                  : "admin.pushRelay.toggleDescription",
+            )}
+            checked={status.offered}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                openEnable();
+              } else {
+                setDisableOpen(true);
+              }
+            }}
+            disabled={
+              setRelay.isPending || (!status.available && !status.offered)
             }
-          }}
-          disabled={
-            setRelay.isPending || (!status.available && !status.offered)
-          }
-        />
+          />
+        )}
         {status.offered && (
           <p className="text-muted-foreground text-xs">
             {t("admin.pushRelay.devices", { count: status.devices.bound })}
@@ -283,6 +291,22 @@ function PushRelayOffCard({ status }: { status: AdminPushRelayStatus }) {
       />
       <RelayLeftovers status={status} />
     </SettingsCard>
+  );
+}
+
+/**
+ * The server has an APNs key of its own and uses it: `routeFor` sends every
+ * push directly to Apple, so the relay is not used while the key is set.
+ */
+function PushRelayOwnApnsKey() {
+  const { t } = useTranslations();
+  return (
+    <div className="space-y-1" data-slot="push-relay-own-apns">
+      <p className="text-sm">{t("admin.pushRelay.ownApns.inUse")}</p>
+      <p className="text-muted-foreground text-xs">
+        {t("admin.pushRelay.ownApns.useRelay")}
+      </p>
+    </div>
   );
 }
 
