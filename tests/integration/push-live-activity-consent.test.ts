@@ -1402,6 +1402,179 @@ describe("one relay-started Activity per device", () => {
     ).toBe(0);
   });
 
+  /** The state the resolver gives the open dose of `medicationId` at `at`. */
+  async function stateAt(userId: string, medicationId: string, at: Date) {
+    const { openActivityDoses } =
+      await import("@/lib/push-relay/live-activity");
+    const [dose] = await openActivityDoses(userId, at, medicationId);
+    return dose?.resolved.state ?? null;
+  }
+
+  it("lets an upgraded device start again: a last start past its dose's window holds nothing", async () => {
+    const t = await consented();
+    // As a server upgraded across migration 0560 finds it: the device's last
+    // relay start was for B, accepted hours ago, its dose never answered and
+    // now past its window but not yet missed; the app no longer registers
+    // any Activity; and the start rows from before 0560 carry no dose.
+    const b = await dueDose(t.session.userId, -100, { start: -30, end: 30 });
+    const c = await dueDose(t.session.userId, 4);
+    const db = getPrismaClient();
+    const device = await db.device.findFirstOrThrow({
+      where: { apnsToken: TOKEN },
+    });
+    await db.device.update({
+      where: { id: device.id },
+      data: {
+        laStartRef: "las-legacy-b",
+        laStartedMedicationId: b.medication.id,
+        laStartedSlot: b.slot,
+        laStartedAt: b.at(1),
+      },
+    });
+    const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000);
+    for (const [ref, at] of [
+      ["las-legacy-b", hoursAgo(4)],
+      ["las-legacy-2", hoursAgo(4.3)],
+      ["las-legacy-3", hoursAgo(7.5)],
+      ["las-legacy-4", hoursAgo(18)],
+    ] as const) {
+      await db.pushRelayDelivery.create({
+        data: {
+          deviceId: device.id,
+          ref,
+          pushClass: "liveactivity",
+          eventType: "LIVE_ACTIVITY_START",
+          status: "accepted",
+          expiresAt: at,
+          acceptedAt: at,
+          createdAt: at,
+        },
+      });
+    }
+    expect(await db.liveActivityToken.count()).toBe(0);
+    expect(await stateAt(t.session.userId, b.medication.id, new Date())).toBe(
+      "overdue",
+    );
+
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    expect(
+      await db.device.findUniqueOrThrow({ where: { id: device.id } }),
+    ).toMatchObject({
+      laStartedMedicationId: c.medication.id,
+      laStartedSlot: c.slot,
+    });
+  });
+
+  it("holds a second dose while an unreported start's dose is in its window, then starts it", async () => {
+    const t = await consented();
+    const a = await dueDose(t.session.userId, 30, { start: -30, end: 30 });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    // B is the earliest startable dose now, but A's Activity is not
+    // registered: it cannot be ended, so B waits.
+    const b = await dueDose(t.session.userId, 20, { start: -30, end: 90 });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    expect(await runLiveActivityRelayPass(a.at(25))).toMatchObject({
+      started: 0,
+    });
+    // Past A's window nothing more is to be expected of that start: B goes.
+    expect(await stateAt(t.session.userId, a.medication.id, a.at(31))).toBe(
+      "overdue",
+    );
+    expect(await runLiveActivityRelayPass(a.at(31))).toMatchObject({
+      started: 1,
+    });
+    // Once per dose still holds for both.
+    expect(await runLiveActivityRelayPass(a.at(36))).toMatchObject({
+      started: 0,
+    });
+    const starts = await getPrismaClient().pushRelayDelivery.findMany({
+      where: { eventType: "LIVE_ACTIVITY_START" },
+      orderBy: { createdAt: "asc" },
+      select: { medicationId: true },
+    });
+    expect(starts).toEqual([
+      { medicationId: a.medication.id },
+      { medicationId: b.medication.id },
+    ]);
+  });
+
+  it("holds nothing once the app no longer registers the started Activity", async () => {
+    const t = await consented();
+    const a = await dueDose(t.session.userId, 30, { start: -30, end: 30 });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    await t.reg({
+      liveActivityTokens: [t.activityEntry({ relayStart: true })],
+    });
+    expect(await tokens()).toEqual([
+      {
+        pushToken: LA_TOKEN,
+        medicationId: a.medication.id,
+        slotInstant: a.slot,
+      },
+    ]);
+    // The person dismissed it: the app's next post lists no Activity.
+    await t.reg({ liveActivityTokens: [] });
+    const b = await dueDose(t.session.userId, 20, { start: -30, end: 90 });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    expect(
+      await getPrismaClient().device.findFirstOrThrow({
+        where: { apnsToken: TOKEN },
+      }),
+    ).toMatchObject({ laStartedMedicationId: b.medication.id });
+  });
+
+  it("holds nothing past the system's Live Activity lifetime", async () => {
+    const t = await consented();
+    // A dose with a long window, started more than eight hours ago and never
+    // registered: the system has ended that Activity by now.
+    const a = await dueDose(t.session.userId, -500, { start: -30, end: 600 });
+    await getPrismaClient().device.updateMany({
+      data: {
+        laStartRef: "las-old",
+        laStartedMedicationId: a.medication.id,
+        laStartedSlot: a.slot,
+        laStartedAt: a.at(-20),
+      },
+    });
+    expect(await stateAt(t.session.userId, a.medication.id, new Date())).toBe(
+      "due",
+    );
+    // B, earlier still and due, is the dose the pass picks.
+    const b = await dueDose(t.session.userId, -510, { start: -30, end: 600 });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    expect(
+      await getPrismaClient().device.findFirstOrThrow({
+        where: { apnsToken: TOKEN },
+      }),
+    ).toMatchObject({ laStartedMedicationId: b.medication.id });
+  });
+
+  it("is not held back by a registered Activity the relay can no longer end", async () => {
+    const t = await consented();
+    const a = await dueDose(t.session.userId, -50);
+    await dueDose(t.session.userId, 40);
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    await t.reg({
+      liveActivityTokens: [t.activityEntry({ relayStart: true })],
+    });
+    // Registered more than twelve hours ago: past the relay's statement
+    // window and the system's lifetime, it cannot be ended and is over.
+    const db = getPrismaClient();
+    const [row] = await db.liveActivityToken.findMany();
+    await db.liveActivityToken.update({
+      where: { id: row!.id },
+      data: {
+        activityStatement: {
+          ...(row!.activityStatement as Record<string, unknown>),
+          iat: now() - 13 * 3600,
+        },
+      },
+    });
+    expect(await runLiveActivityRelayPass(a.at(61))).toMatchObject({
+      started: 1,
+    });
+  });
+
   it("names no dose when no relay start is on record", async () => {
     const t = await consented();
     await t.reg({

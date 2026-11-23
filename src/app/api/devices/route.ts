@@ -60,7 +60,10 @@ import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { endDeviceLiveActivities } from "@/lib/notifications/live-activity-end";
 import { endSupersededRelayActivities } from "@/lib/push-relay/live-activity";
-import { sameActivitySlot } from "@/lib/push-relay/activity-slot";
+import {
+  activityShowsDose,
+  sameActivitySlot,
+} from "@/lib/push-relay/activity-slot";
 import {
   activityStatementSchema,
   applyPushFields,
@@ -225,31 +228,32 @@ async function replaceLiveActivityTokens(
     storedRelay.map((row) => row.pushToken.toLowerCase()),
   );
   await tx.liveActivityToken.deleteMany({ where: { deviceId } });
-  if (sent.liveActivityTokens.length === 0) return;
+  const idLess = sent.liveActivityTokens.filter((a) => !a.medicationId);
+  const latest =
+    idLess.length === 1 || storedRelay.length > 0
+      ? await tx.device.findUnique({
+          where: { id: deviceId },
+          select: {
+            laStartRef: true,
+            laStartedMedicationId: true,
+            laStartedSlot: true,
+            laStartedAt: true,
+          },
+        })
+      : null;
   // The dose of a relay-started Activity the app registers without one
   // (iOS builds up to 322): the one relay start running on the device, and
   // only when there is exactly one. Anything else is a guess: the token is
   // kept without a dose and the relay pass ends it.
-  const idLess = sent.liveActivityTokens.filter((a) => !a.medicationId);
   const running =
-    idLess.length === 1
-      ? singleRunningRelayStart(
-          storedRelay,
-          await tx.device.findUnique({
-            where: { id: deviceId },
-            select: {
-              laStartRef: true,
-              laStartedMedicationId: true,
-              laStartedSlot: true,
-            },
-          }),
-        )
-      : null;
+    idLess.length === 1 ? singleRunningRelayStart(storedRelay, latest) : null;
   const rows = sent.liveActivityTokens.map((a) => ({
     ...a,
     medicationId: a.medicationId ?? running?.medicationId ?? null,
     slotInstant: a.medicationId ? a.slotInstant : running?.slotInstant,
   }));
+  await forgetDroppedRelayStart(tx, deviceId, storedRelay, rows, latest);
+  if (rows.length === 0) return;
   await tx.liveActivityToken.createMany({
     data: rows.map((a) => ({
       deviceId,
@@ -266,6 +270,54 @@ async function replaceLiveActivityTokens(
         : {}),
     })),
     skipDuplicates: true,
+  });
+}
+
+/**
+ * Forget the device's last relay start once the app dropped its Activity:
+ * a relay-started Activity of that dose was registered, and the set posted
+ * now shows none. The Activity is gone (dismissed, or ended by the system),
+ * so it holds no other relay start back (`unreportedRelayStart` in
+ * `push-relay/live-activity.ts`) and no token is named after it. The dose
+ * itself stays held by its start row (`doseStartHeld`), and
+ * `liveActivityStarted` still names it, so it never starts twice.
+ */
+async function forgetDroppedRelayStart(
+  tx: Prisma.TransactionClient,
+  deviceId: string,
+  stored: ReadonlyArray<{
+    medicationId: string | null;
+    slotInstant: Date | null;
+  }>,
+  posted: ReadonlyArray<{
+    medicationId: string | null;
+    slotInstant?: Date | null;
+  }>,
+  latest: {
+    laStartRef: string | null;
+    laStartedMedicationId: string | null;
+    laStartedSlot: Date | null;
+    laStartedAt: Date | null;
+  } | null,
+): Promise<void> {
+  const medicationId = latest?.laStartedMedicationId;
+  const slot = latest?.laStartedSlot;
+  if (!latest?.laStartRef || !latest.laStartedAt || !medicationId || !slot) {
+    return;
+  }
+  const shows = (a: {
+    medicationId: string | null;
+    slotInstant?: Date | null;
+  }) =>
+    activityShowsDose(
+      { medicationId: a.medicationId, slotInstant: a.slotInstant ?? null },
+      medicationId,
+      slot,
+    );
+  if (!stored.some(shows) || posted.some(shows)) return;
+  await tx.device.updateMany({
+    where: { id: deviceId, laStartRef: latest.laStartRef },
+    data: { laStartRef: null },
   });
 }
 

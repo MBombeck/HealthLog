@@ -109,6 +109,15 @@ const START_STATEMENT_MAX_AGE_S = 30 * 24 * 3600 - 300;
 const ACTIVITY_STATEMENT_MAX_AGE_S = 12 * 3600 - 300;
 /** A start or update is worth nothing late. */
 const PUSH_LIFETIME_S = 15 * 60;
+/**
+ * How long a relay-started Activity can still be running after the relay
+ * accepted its start. ActivityKit ends an Activity eight hours after it
+ * started; an ended one may stay on the lock screen up to twelve hours in
+ * all, but it takes no further update, cannot be ended twice, and is not an
+ * Activity the app reports as running. So past eight hours a start is over
+ * whatever the server's records say, and holds no other start back.
+ */
+export const RELAY_ACTIVITY_RUNNING_MAX_MS = 8 * 3600_000;
 
 const DEVICE_SELECT = {
   ...ROUTABLE_DEVICE_SELECT,
@@ -121,6 +130,7 @@ const DEVICE_SELECT = {
   laStartRef: true,
   laStartedMedicationId: true,
   laStartedSlot: true,
+  laStartedAt: true,
   liveActivities: {
     select: {
       id: true,
@@ -595,19 +605,46 @@ async function updateItems(
 }
 
 /**
- * Whether the device's last relay start may still be running unseen: in
- * flight or accepted, not yet registered by the app (no registered Activity
- * shows its dose), and its dose still open for a medication that keeps a
- * relay Activity. Such an Activity cannot be ended (its token is unknown),
- * so no other relay start may join it.
+ * Whether the device's last relay start may still be running unseen, so
+ * that no other relay start may join it (its token is unknown: it cannot be
+ * ended). That holds only while all of these do:
+ *
+ * - the start is in flight, or the relay accepted it less than
+ *   {@link RELAY_ACTIVITY_RUNNING_MAX_MS} ago (the system has ended it after
+ *   that);
+ * - the app has not registered it (a registered one is ended before the
+ *   next start, or the next start waits for that end), and has not dropped
+ *   it from its registered set either (`POST /api/devices` then forgets the
+ *   start: the Activity is gone);
+ * - its medication still keeps a relay Activity, and its dose is still in
+ *   its window: pending or due.
+ *
+ * The last bound is the grace an unregistered start gets. The app registers
+ * a running Activity whenever it runs; once the dose's own window is over
+ * without that, holding the next dose back would trade a reminder the
+ * person needs for an ambiguity the device route already resolves safely
+ * (two Activities posted without their dose keep none, and the pass ends
+ * both). A start that holds nothing never holds forever: on a server
+ * upgraded with a last start whose dose was left open, every device would
+ * otherwise wait until that dose turned missed, start after start.
  */
 async function unreportedRelayStart(
   device: LaDevice,
   now: Date,
 ): Promise<boolean> {
-  const { laStartRef, laStartedMedicationId: medicationId } = device;
+  const {
+    laStartRef,
+    laStartedAt,
+    laStartedMedicationId: medicationId,
+  } = device;
   const slot = device.laStartedSlot;
   if (!laStartRef || !medicationId || !slot) return false;
+  if (
+    laStartedAt &&
+    now.getTime() - laStartedAt.getTime() > RELAY_ACTIVITY_RUNNING_MAX_MS
+  ) {
+    return false;
+  }
   if (
     device.liveActivities.some((a) => activityShowsDose(a, medicationId, slot))
   ) {
@@ -623,7 +660,23 @@ async function unreportedRelayStart(
   if (startable === 0) return false;
   const dose = await doseAt(device.userId, medicationId, slot, now);
   return (
-    dose !== null && ["pending", "due", "overdue"].includes(dose.resolved.state)
+    dose !== null &&
+    (dose.resolved.state === "pending" || dose.resolved.state === "due")
+  );
+}
+
+/**
+ * Whether the relay can still end `activity`: it carries the Activity's
+ * signed statement, within the window the relay accepts. One past that
+ * window was registered more than twelve hours ago, so the system has ended
+ * it ({@link RELAY_ACTIVITY_RUNNING_MAX_MS}); it holds no start back.
+ */
+function relayEndable(activity: LaActivity, now: Date): boolean {
+  const iat = statementIat(activity.activityStatement);
+  return (
+    activity.activitySignature !== null &&
+    iat !== null &&
+    Math.floor(now.getTime() / 1000) - iat <= ACTIVITY_STATEMENT_MAX_AGE_S
   );
 }
 
@@ -654,12 +707,16 @@ export async function runDeviceLiveActivities(
   // running, and goes out only once the relay took every one of those ends,
   // in the same pass; otherwise it waits for a later pass. A start whose
   // Activity the app has not registered yet cannot be ended: the new one
-  // waits until it is registered or its dose is over. Lift this when the
-  // app echoes a per-start id (1.50).
+  // waits until it is registered, dropped, or its dose's window is over
+  // ({@link unreportedRelayStart}). Lift this when the app echoes a
+  // per-start id (1.50).
   if (start && (await unreportedRelayStart(device, now))) start = null;
   const making = start
     ? device.liveActivities.filter(
-        (a) => relayActivityKind(a) === "relay_started" && !ending.includes(a),
+        (a) =>
+          relayActivityKind(a) === "relay_started" &&
+          !ending.includes(a) &&
+          relayEndable(a, now),
       )
     : [];
   const spent = new Set<string>();
