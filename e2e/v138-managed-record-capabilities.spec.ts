@@ -196,8 +196,15 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
     await expect(sidebar.locator('a[href="/notifications"]')).toHaveCount(0);
 
     // The guardian holds the profile's emergency card, and the page opens for
-    // them exactly as far as its routes admit (`RECORD_PAGE_SURFACES`).
-    await sidebar.locator('a[href="/emergency-card"]').click();
+    // them exactly as far as its routes admit (`RECORD_PAGE_SURFACES`). It
+    // opens from the account menu, not the rail.
+    await expect(sidebar.locator('a[href="/emergency-card"]')).toHaveCount(0);
+    await sidebar
+      .locator('[data-slot="sidebar-account"] [aria-haspopup="menu"]')
+      .click();
+    await page
+      .locator('[data-slot="account-menu-record-link"][href="/emergency-card"]')
+      .click();
     await expect(page).toHaveURL(/\/emergency-card$/);
     await expect(
       page.locator('[data-slot="emergency-card-preview"]'),

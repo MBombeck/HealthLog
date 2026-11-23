@@ -19,10 +19,11 @@ The card is assembled from what you already keep in HealthLog:
   state;
 - your date of birth.
 
-Open **Emergency card** in the navigation (on a phone under **More**), or use
-the button on **Emergency information** in **Settings > Medical history**, the
-row in **Settings > Health record**, or search for "emergency card". The
-address is `/emergency-card`.
+Open **Emergency card** from the account menu (your avatar, at the bottom of
+the sidebar or at the top right on a phone), or use the button on **Emergency
+information** in **Settings > Medical history**, the row in **Settings >
+Health record**, or search for "emergency card". The address is
+`/emergency-card`.
 
 It is the card of the record on screen. In your own record that is yours. The
 guardian of a managed profile holds the profile's card, so inside that profile

@@ -8,10 +8,12 @@
  * prefers the most-specific sibling under `/insights`. (v1.18.0 —
  * Workouts and Recovery left the left nav for their Insights pills.)
  */
+import { HeartPulse } from "lucide-react";
 import { describe, expect, it } from "vitest";
 
 import {
   BOTTOM_NAV_PRIMARY_SLOT_HREFS,
+  NAV_ACCOUNT_MENU_DESTINATIONS,
   NAV_DESTINATIONS,
   NAV_GROUPS,
   groupNavDestinations,
@@ -19,6 +21,7 @@ import {
   NAV_UTILITY_DESTINATIONS,
   isNavDestinationActive,
   mobileMoreHubDestinations,
+  visibleAccountMenuDestinations,
   visibleNavDestinations,
   visibleUtilityDestinations,
 } from "../nav-model";
@@ -76,7 +79,6 @@ describe("nav-model destination list", () => {
           "/seizures",
           "/vaccinations",
           "/documents",
-          "/emergency-card",
         ],
       ],
       ["analysis", ["/timeline", "/insights", "/coach", "/achievements"]],
@@ -325,5 +327,50 @@ describe("isNavDestinationActive most-specific resolution", () => {
     expect(isNavDestinationActive("/insights", "/insights/values/WEIGHT")).toBe(
       true,
     );
+  });
+});
+
+describe("the emergency card opens from the account menu", () => {
+  const menu = (opts: Parameters<typeof visibleAccountMenuDestinations>[0]) =>
+    visibleAccountMenuDestinations(opts).map((d) => d.href);
+
+  it("takes no slot in the rail or the phone's More sheet", () => {
+    expect(NAV_DESTINATIONS.map((d) => d.href)).not.toContain(
+      "/emergency-card",
+    );
+    expect(
+      mobileMoreHubDestinations({ modules: {} }).map((d) => d.href),
+    ).not.toContain("/emergency-card");
+  });
+
+  it("is an account-menu entry with the card's name and icon", () => {
+    const card = NAV_ACCOUNT_MENU_DESTINATIONS.find(
+      (d) => d.href === "/emergency-card",
+    );
+    expect(card?.tKey).toBe("nav.emergencyCard");
+    expect(card?.icon).toBe(HeartPulse);
+  });
+
+  it("shows in one's own record, whatever the module map", () => {
+    expect(menu({})).toEqual(["/emergency-card"]);
+    expect(menu({ sharedRecord: false })).toEqual(["/emergency-card"]);
+  });
+
+  it("follows the card's route rule inside a shared record", () => {
+    // The guardian of a managed profile holds the profile's card.
+    expect(
+      menu({
+        sharedRecord: true,
+        record: { recordKind: "managed", level: "manage" },
+      }),
+    ).toEqual(["/emergency-card"]);
+    // An adult's delegate never does, at any level or scope.
+    for (const level of ["read", "write", "manage"] as const) {
+      expect(
+        menu({ sharedRecord: true, record: { recordKind: "shared", level } }),
+      ).toEqual([]);
+    }
+    // A refused or pending switch carries no kind or level: nothing opens.
+    expect(menu({ sharedRecord: true, sections: [] })).toEqual([]);
   });
 });

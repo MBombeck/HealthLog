@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 
 import {
+  NAV_ACCOUNT_MENU_DESTINATIONS,
+  visibleAccountMenuDestinations,
   visibleNavDestinations,
   type NavRecordContext,
 } from "@/components/layout/nav-model";
@@ -146,6 +148,16 @@ export function buildPaletteIndex(input: PaletteIndexInput): PaletteEntry[] {
     input.record ?? null,
   );
   const navHrefs = new Set(nav.map((d) => d.href));
+  // The record pages the account menu opens, under that menu's own rule.
+  const accountMenuHrefs = new Set(
+    visibleAccountMenuDestinations({
+      sharedRecord: input.inSharedRecord,
+      sections: input.sections,
+      record: input.record ?? null,
+    }).map((d) => d.href),
+  );
+  const isAccountMenuPage = (href: string) =>
+    NAV_ACCOUNT_MENU_DESTINATIONS.some((d) => d.href === href);
 
   // Settings sections the shell lists for the record on screen.
   const sectionTitle = new Map<string, string>();
@@ -167,6 +179,9 @@ export function buildPaletteIndex(input: PaletteIndexInput): PaletteEntry[] {
         if (!navHrefs.has(entry.href)) return null;
         return point.groupKey ? { hint: t(point.groupKey) } : {};
       case "menu":
+        if (isAccountMenuPage(entry.href)) {
+          return accountMenuHrefs.has(entry.href) ? {} : null;
+        }
         return input.inSharedRecord ? null : {};
       case "admin":
         return input.isAdmin && !input.inSharedRecord
