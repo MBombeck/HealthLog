@@ -4,7 +4,7 @@ import {
   ContentStateError,
   doseContentState,
   relayContentState,
-} from "@/lib/push-relay/live-activity";
+} from "@/lib/push-relay/live-activity-content";
 import { resolveDoseState } from "@/lib/medications/dose-state/resolve";
 
 const NOW = 1_795_000_000;

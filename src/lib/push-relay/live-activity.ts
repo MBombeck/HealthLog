@@ -55,7 +55,6 @@ import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { getEvent } from "@/lib/logging/context";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { resolveDosesByRow } from "@/lib/medications/dose-state/today";
-import type { ResolvedDose } from "@/lib/medications/dose-state/resolve";
 import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
@@ -79,6 +78,18 @@ import {
   type RelayItemInput,
 } from "@/lib/push-relay/relay-send";
 import {
+  COUNTDOWN_PAST_S,
+  doseContentState,
+  sameState,
+  type ActivityDose,
+  type RelayContentState,
+} from "@/lib/push-relay/live-activity-content";
+import {
+  relayActivityKind,
+  relayEventAllowed,
+  supersededRelayActivities,
+} from "@/lib/push-relay/live-activity-owner";
+import {
   LA_START_EVENT,
   LA_UPDATE_EVENT,
   refusedRecently,
@@ -86,39 +97,6 @@ import {
   updatesInFlight,
 } from "@/lib/push-relay/live-activity-settle";
 
-export const RELAY_LA_STATUSES = [
-  "pending",
-  "due",
-  "overdue",
-  "snoozed",
-  "taken",
-  "skipped",
-] as const;
-export type RelayLaStatus = (typeof RELAY_LA_STATUSES)[number];
-const TIME_FORMATS = ["AUTO", "H12", "H24"] as const;
-
-/** The relay's closed content-state template. */
-export type RelayContentState = {
-  status: RelayLaStatus;
-  countdownTarget: number;
-  isOverdue: boolean;
-  confirmed: boolean;
-  pendingConfirm: boolean;
-  timeFormatRaw: (typeof TIME_FORMATS)[number];
-};
-
-const KEYS = [
-  "status",
-  "countdownTarget",
-  "isOverdue",
-  "confirmed",
-  "pendingConfirm",
-  "timeFormatRaw",
-] as const;
-
-/** `countdownTarget` bounds around the relay clock (`0` = no countdown). */
-const COUNTDOWN_PAST_S = 24 * 3600;
-const COUNTDOWN_FUTURE_S = 48 * 3600;
 /**
  * How long before its scheduled time a dose gets an Activity. The app owns
  * this: `MedicationLiveActivityPlan.leadWindow` in the iOS client, which
@@ -131,143 +109,6 @@ const START_STATEMENT_MAX_AGE_S = 30 * 24 * 3600 - 300;
 const ACTIVITY_STATEMENT_MAX_AGE_S = 12 * 3600 - 300;
 /** A start or update is worth nothing late. */
 const PUSH_LIFETIME_S = 15 * 60;
-
-export class ContentStateError extends Error {}
-
-/**
- * The content state exactly as the relay accepts it: every one of the six
- * keys, no other key, each in its closed range at `nowS`. Throws
- * {@link ContentStateError} otherwise; nothing outside the template can ever
- * reach a relay item.
- */
-export function relayContentState(
-  input: unknown,
-  nowS: number,
-): RelayContentState {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    throw new ContentStateError("not an object");
-  }
-  const value = input as Record<string, unknown>;
-  const keys = Object.keys(value).sort();
-  if (keys.join() !== [...KEYS].sort().join()) {
-    throw new ContentStateError(`keys ${keys.join()}`);
-  }
-  const { status, countdownTarget, timeFormatRaw } = value;
-  if (!(RELAY_LA_STATUSES as readonly unknown[]).includes(status)) {
-    throw new ContentStateError("status");
-  }
-  if (!(TIME_FORMATS as readonly unknown[]).includes(timeFormatRaw)) {
-    throw new ContentStateError("timeFormatRaw");
-  }
-  if (
-    typeof countdownTarget !== "number" ||
-    !Number.isInteger(countdownTarget) ||
-    (countdownTarget !== 0 &&
-      (countdownTarget < nowS - COUNTDOWN_PAST_S ||
-        countdownTarget > nowS + COUNTDOWN_FUTURE_S))
-  ) {
-    throw new ContentStateError("countdownTarget");
-  }
-  for (const key of ["isOverdue", "confirmed", "pendingConfirm"] as const) {
-    if (typeof value[key] !== "boolean") throw new ContentStateError(key);
-  }
-  return {
-    status: status as RelayLaStatus,
-    countdownTarget,
-    isOverdue: value.isOverdue as boolean,
-    confirmed: value.confirmed as boolean,
-    pendingConfirm: value.pendingConfirm as boolean,
-    timeFormatRaw: timeFormatRaw as RelayContentState["timeFormatRaw"],
-  };
-}
-
-/** Whether a stored state (key order lost in JSONB) equals `state`. */
-function sameState(state: RelayContentState, stored: unknown): boolean {
-  if (!stored || typeof stored !== "object") return false;
-  const other = stored as Record<string, unknown>;
-  return KEYS.every((key) => other[key] === state[key]);
-}
-
-/** A countdown in unix seconds, or 0 when the relay would refuse it. */
-function countdown(at: Date | null, nowS: number): number {
-  if (!at) return 0;
-  const s = Math.floor(at.getTime() / 1000);
-  return s < nowS - COUNTDOWN_PAST_S || s > nowS + COUNTDOWN_FUTURE_S ? 0 : s;
-}
-
-/** One dose an Activity shows: its slot, its resolved state, its snooze. */
-export interface ActivityDose {
-  medicationId: string;
-  scheduledFor: Date;
-  resolved: ResolvedDose;
-  /** The running snooze, only when it holds this slot. */
-  snoozedUntil: Date | null;
-  /** The medication's Live Activity opt-in. */
-  liveActivityEnabled: boolean;
-}
-
-/**
- * The content state of one dose at `now`, inside the template, or null when
- * the dose is missed: then there is nothing left to show, and the Activity
- * ends.
- *
- * `countdownTarget` is the next boundary of the dose's own band, read the
- * way the app reads it: before the target it counts down ("due in"), past it
- * it counts up ("overdue by"). Pending counts to `dueAt`; due counts to
- * `overdueSince`; overdue counts up from `overdueSince`; snoozed counts to
- * the end of the snooze.
- */
-export function doseContentState(
-  dose: Pick<ActivityDose, "resolved" | "snoozedUntil">,
-  timeFormat: string | null | undefined,
-  now: Date,
-): RelayContentState | null {
-  const nowS = Math.floor(now.getTime() / 1000);
-  const format = (TIME_FORMATS as readonly string[]).includes(timeFormat ?? "")
-    ? (timeFormat as RelayContentState["timeFormatRaw"])
-    : "AUTO";
-  const base = {
-    confirmed: false,
-    pendingConfirm: false,
-    timeFormatRaw: format,
-    isOverdue: false,
-  };
-  const { resolved } = dose;
-  let state: RelayContentState;
-  switch (resolved.state) {
-    case "missed":
-      return null;
-    case "taken":
-    case "taken_late":
-      state = { ...base, status: "taken", countdownTarget: 0, confirmed: true };
-      break;
-    case "skipped":
-      state = { ...base, status: "skipped", countdownTarget: 0 };
-      break;
-    default:
-      if (dose.snoozedUntil && dose.snoozedUntil > now) {
-        state = {
-          ...base,
-          status: "snoozed",
-          countdownTarget: countdown(dose.snoozedUntil, nowS),
-        };
-      } else if (resolved.state === "pending") {
-        state = {
-          ...base,
-          status: "pending",
-          countdownTarget: countdown(resolved.dueAt, nowS),
-        };
-      } else {
-        state = {
-          ...base,
-          status: resolved.state,
-          countdownTarget: countdown(resolved.overdueSince, nowS),
-          isOverdue: resolved.state === "overdue",
-        };
-      }
-  }
-  return relayContentState(state, nowS);
-}
 
 const DEVICE_SELECT = {
   ...ROUTABLE_DEVICE_SELECT,
@@ -576,55 +417,6 @@ async function startItem(
 type LaActivity = LaDevice["liveActivities"][number];
 
 /**
- * Who started a registered Activity: the relay, by a push-to-start
- * (`HealthLogDoseAttributes`, registered with `relayStart: true`, the dose
- * the device's `liveActivityStarted` names), or the app itself
- * (`MedicationActivityAttributes`). The mark is kept per token
- * (`relayStarted`, migration 0545) and never changes for an Activity.
- */
-export type RelayActivityKind = "relay_started" | "app_started";
-
-export function relayActivityKind(activity: {
-  relayStarted: boolean;
-}): RelayActivityKind {
-  return activity.relayStarted ? "relay_started" : "app_started";
-}
-
-/**
- * The relay-started Activities that show a dose an app-started Activity of
- * the same device shows too, matched by {@link activityShowsDose}, the
- * match the start and the end path make.
- *
- * One owner per dose. iOS builds up to 1.7 start their own Activity for a
- * dose whatever the relay started, so a relay start that came first stands
- * beside the app's own one, which alone has the Take button. The relay one
- * ends and the app's stays. The dose stays held by its start row
- * (`doseStartHeld`), so no second relay start follows. From the next 1.7 build the app starts none of its own while a
- * relay Activity runs for the dose, and the relay Activity gets a Take
- * button of its own.
- */
-export function supersededRelayActivities<
-  T extends {
-    medicationId: string | null;
-    slotInstant: Date | null;
-    relayStarted: boolean;
-  },
->(activities: readonly T[]): T[] {
-  const appStarted = activities.filter(
-    (a) => relayActivityKind(a) === "app_started",
-  );
-  return activities.filter((relay) => {
-    const { medicationId, slotInstant: slot } = relay;
-    return (
-      relayActivityKind(relay) === "relay_started" &&
-      medicationId !== null &&
-      slot !== null &&
-      appStarted.some((app) => activityShowsDose(app, medicationId, slot))
-    );
-  });
-}
-
-/**
  * End the relay-started Activities of a device that an app-started one of the
  * same dose made redundant ({@link supersededRelayActivities}), and forget
  * their tokens once the relay took the end or reported the Activity gone.
@@ -657,32 +449,6 @@ export async function endSupersededRelayActivities(
     });
   }
   return spent.length;
-}
-
-/**
- * Whether the relay may send `event` to a registered Activity of this kind.
- * Every relay update is built through {@link relayUpdateItem}, which asks
- * this; the end path (`endActivitiesOverRelay`) ends every kind.
- *
- * An end goes to both kinds: the relay writes its own fixed content state
- * into an end (`status: "taken"`, `countdownTarget: 0`, a `dismissal-date`
- * of now; the server may send no state with it), and both attributes types
- * hide the countdown for a taken dose and dismiss at once.
- *
- * An update goes only to an Activity the relay started. The relay template
- * carries `countdownTarget` in unix seconds, which `HealthLogDoseAttributes`
- * reads; `MedicationActivityAttributes` reads it as seconds since
- * 2001-01-01, so an update showed an app-started Activity a time 31 years
- * off. The relay's bounds (one day back, two days ahead of its clock, or 0)
- * leave no room to send it reference-date seconds instead. iOS builds before
- * the next 1.7 build read app-started Activities in reference-date seconds;
- * relaxing this waits until those builds are gone (1.50 at the earliest).
- */
-export function relayEventAllowed(
-  kind: RelayActivityKind,
-  event: "update" | "end",
-): boolean {
-  return event === "end" || kind === "relay_started";
 }
 
 /**

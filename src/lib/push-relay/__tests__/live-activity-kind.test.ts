@@ -24,12 +24,12 @@ vi.mock("@/lib/push-relay/route-device", async (importOriginal) => ({
   routeOf: () => "relay",
 }));
 
+import { relayUpdateItem } from "@/lib/push-relay/live-activity";
+import { doseContentState } from "@/lib/push-relay/live-activity-content";
 import {
-  doseContentState,
   relayActivityKind,
   relayEventAllowed,
-  relayUpdateItem,
-} from "@/lib/push-relay/live-activity";
+} from "@/lib/push-relay/live-activity-owner";
 import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
 import type { PushContext } from "@/lib/push-relay/route-device";
 import { resolveDoseState } from "@/lib/medications/dose-state/resolve";

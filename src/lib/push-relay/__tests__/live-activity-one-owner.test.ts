@@ -11,7 +11,7 @@ import {
   activityShowsDose,
   activitySlotWindow,
 } from "@/lib/push-relay/activity-slot";
-import { supersededRelayActivities } from "@/lib/push-relay/live-activity";
+import { supersededRelayActivities } from "@/lib/push-relay/live-activity-owner";
 
 const SLOT = new Date("2026-11-23T08:00:00Z");
 const off = (s: number) => new Date(SLOT.getTime() + s * 1000);

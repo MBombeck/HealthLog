@@ -489,6 +489,22 @@ async function registrationRateLimited(userId: string) {
   return apiError("Too many device registrations, please slow down", 429);
 }
 
+/**
+ * One owner per dose: a relay-started Activity the app's own one of the same
+ * dose now stands beside ends at once; the Live Activity pass retries an end
+ * the relay did not take. A failure is a warning, never the registration's.
+ */
+async function endSupersededAfterRegistration(deviceId: string) {
+  try {
+    const ended = await endSupersededRelayActivities(deviceId);
+    if (ended > 0) annotate({ meta: { live_activity_superseded: ended } });
+  } catch (err) {
+    getEvent()?.addWarning(
+      `live_activity_superseded_end_failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
+
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
 
@@ -680,17 +696,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const pushBlock = await applyPushFields(id, parsed.data);
   if (parsed.data.liveActivityTokens !== undefined) {
-    // One owner per dose: a relay-started Activity the app's own one of the
-    // same dose now stands beside ends at once; the Live Activity pass
-    // retries an end the relay did not take.
-    try {
-      const ended = await endSupersededRelayActivities(id);
-      if (ended > 0) annotate({ meta: { live_activity_superseded: ended } });
-    } catch (err) {
-      getEvent()?.addWarning(
-        `live_activity_superseded_end_failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
+    await endSupersededAfterRegistration(id);
   }
 
   return apiSuccess({ id, push: pushBlock }, 201);
