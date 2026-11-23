@@ -4,7 +4,7 @@
  * Settings > Health record: the way to the emergency card, beside the other
  * ways the record leaves the app (the report, the clinician links, the care
  * calendar). The card is a page of its own (`/emergency-card`, also in the
- * navigation); this row is here because its QR link is one more door out of
+ * account menu); this row is here because its QR link is one more door out of
  * the record, and that is where people look for those.
  */
 import Link from "next/link";

@@ -107,7 +107,7 @@ function render({
 
 // CORE destinations have no owner in the surface map and always render.
 // `/insights` is one of them: the `insights` key is AI analysis only.
-const CORE_HREFS = ["/", "/measurements", "/checkups", "/insights"] as const;
+const CORE_HREFS = ["/", "/measurements", "/care", "/insights"] as const;
 // A representative slice of the module-gated entries that must stay out of
 // the first-paint markup whatever the module map says.
 const GATED_HREFS = [

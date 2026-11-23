@@ -4,6 +4,7 @@ import { useId, useMemo, useState } from "react";
 import { Download, FileSpreadsheet, FlaskConical, Pill } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { FilePicker } from "@/components/ui/file-picker";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -283,13 +284,13 @@ function RecordCsvImportSheet({
           <Label htmlFor={fileId} className="sr-only">
             {t("recordImport.file")}
           </Label>
-          <input
+          <FilePicker
             id={fileId}
-            type="file"
             accept=".csv,text/csv,text/plain"
             data-slot="record-import-file"
-            className="text-sm"
+            className="flex-1"
             onChange={onFile}
+            fileName={file?.name ?? null}
           />
           <Button
             type="button"

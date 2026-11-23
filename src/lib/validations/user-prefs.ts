@@ -56,6 +56,11 @@ export const workoutRoutesPatchSchema = z.object({
   storeWorkoutRoutes: z.boolean(),
 });
 
+/** `PATCH /api/auth/me/show-nav-counts` — the counts in the navigation. */
+export const showNavCountsPatchSchema = z.object({
+  showNavCounts: z.boolean(),
+});
+
 /** `PATCH /api/auth/me/use-central-codex` — the operator's shared Codex. */
 export const useCentralCodexPatchSchema = z.object({
   useCentralCodex: z.boolean(),

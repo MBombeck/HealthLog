@@ -2,6 +2,7 @@
 
 import { ChevronDown, LogIn, LogOut, Shield } from "lucide-react";
 import { CommandPaletteTrigger } from "@/components/command-palette/command-palette-trigger";
+import { AccountMenuRecordItems } from "@/components/layout/account-menu-record-items";
 import { AccountSwitcherMenuItems } from "@/components/layout/account-switcher-menu";
 import {
   isSettingsUtilityDestination,
@@ -156,6 +157,8 @@ export function TopBar() {
                   </DropdownMenuItem>
                 );
               })}
+              {/* The emergency card, the same slice the sidebar menu mounts. */}
+              <AccountMenuRecordItems />
               {!sharedRecord && isAdmin && (
                 <DropdownMenuItem asChild>
                   <Link href="/admin" className="cursor-pointer">

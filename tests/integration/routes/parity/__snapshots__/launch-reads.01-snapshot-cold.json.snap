@@ -2431,14 +2431,14 @@
             "avg7": 2.86,
             "avg30": 3,
             "slope7": {
-              "slope": -0.024,
+              "slope": -0.143,
               "direction": "down",
-              "confidence": 0
+              "confidence": 0.04
             },
             "slope30": {
-              "slope": 0,
-              "direction": "stable",
-              "confidence": 0
+              "slope": -0.013,
+              "direction": "down",
+              "confidence": 0.01
             },
             "anomalyCount": 0,
             "avg30LastMonth": 3,

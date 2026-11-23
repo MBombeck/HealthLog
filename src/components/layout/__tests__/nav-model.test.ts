@@ -8,10 +8,12 @@
  * prefers the most-specific sibling under `/insights`. (v1.18.0 —
  * Workouts and Recovery left the left nav for their Insights pills.)
  */
+import { HeartPulse } from "lucide-react";
 import { describe, expect, it } from "vitest";
 
 import {
   BOTTOM_NAV_PRIMARY_SLOT_HREFS,
+  NAV_ACCOUNT_MENU_DESTINATIONS,
   NAV_DESTINATIONS,
   NAV_GROUPS,
   groupNavDestinations,
@@ -19,6 +21,7 @@ import {
   NAV_UTILITY_DESTINATIONS,
   isNavDestinationActive,
   mobileMoreHubDestinations,
+  visibleAccountMenuDestinations,
   visibleNavDestinations,
   visibleUtilityDestinations,
 } from "../nav-model";
@@ -69,14 +72,13 @@ describe("nav-model destination list", () => {
       [
         "record",
         [
-          "/checkups",
+          "/care",
           "/labs",
           "/profile",
           "/illness",
           "/seizures",
           "/vaccinations",
           "/documents",
-          "/emergency-card",
         ],
       ],
       ["analysis", ["/timeline", "/insights", "/coach", "/achievements"]],
@@ -133,14 +135,12 @@ describe("nav-model destination list", () => {
 
   it("gives Checkups a top-level nav home in the clinical spine (N-3)", () => {
     const hrefs = NAV_DESTINATIONS.map((d) => d.href);
-    expect(hrefs).toContain("/checkups");
-    const vorsorge = NAV_DESTINATIONS.find((d) => d.href === "/checkups");
+    expect(hrefs).toContain("/care");
+    const vorsorge = NAV_DESTINATIONS.find((d) => d.href === "/care");
     expect(vorsorge?.tKey).toBe("nav.vorsorge");
     // Checkups opens the Health record group, after the Tracking group.
-    expect(hrefs.indexOf("/medications")).toBeLessThan(
-      hrefs.indexOf("/checkups"),
-    );
-    expect(hrefs.indexOf("/checkups")).toBeLessThan(hrefs.indexOf("/labs"));
+    expect(hrefs.indexOf("/medications")).toBeLessThan(hrefs.indexOf("/care"));
+    expect(hrefs.indexOf("/care")).toBeLessThan(hrefs.indexOf("/labs"));
     expect(hrefs.indexOf("/labs")).toBeLessThan(hrefs.indexOf("/insights"));
   });
 
@@ -183,7 +183,7 @@ describe("visibleNavDestinations module gate", () => {
     expect(off).not.toContain("/cycle");
     expect(on).toContain("/cycle");
     expect(on.indexOf("/mood")).toBeLessThan(on.indexOf("/cycle"));
-    expect(on.indexOf("/cycle")).toBeLessThan(on.indexOf("/checkups"));
+    expect(on.indexOf("/cycle")).toBeLessThan(on.indexOf("/care"));
   });
 
   it("drops a module-gated entry (mood / labs / coach / achievements / medications) when its module is disabled", () => {
@@ -243,7 +243,7 @@ describe("visibleNavDestinations module gate", () => {
     expect(emptyMap).toContain("/measurements");
     expect(emptyMap).toContain("/medications");
     expect(emptyMap).toContain("/insights");
-    expect(emptyMap).toContain("/checkups");
+    expect(emptyMap).toContain("/care");
   });
 });
 
@@ -278,7 +278,7 @@ describe("mobileMoreHubDestinations — the F-1 mobile invariant (feature-only h
     // Feature surfaces that left the always-visible strip stay reachable.
     expect(hub).toContain("/measurements");
     expect(hub).toContain("/mood");
-    expect(hub).toContain("/checkups");
+    expect(hub).toContain("/care");
     // Settings + Notifications are account utilities — they live ONLY in the
     // user/avatar menu, never duplicated into the mobile More hub.
     expect(hub).not.toContain("/settings/account");
@@ -327,5 +327,50 @@ describe("isNavDestinationActive most-specific resolution", () => {
     expect(isNavDestinationActive("/insights", "/insights/values/WEIGHT")).toBe(
       true,
     );
+  });
+});
+
+describe("the emergency card opens from the account menu", () => {
+  const menu = (opts: Parameters<typeof visibleAccountMenuDestinations>[0]) =>
+    visibleAccountMenuDestinations(opts).map((d) => d.href);
+
+  it("takes no slot in the rail or the phone's More sheet", () => {
+    expect(NAV_DESTINATIONS.map((d) => d.href)).not.toContain(
+      "/emergency-card",
+    );
+    expect(
+      mobileMoreHubDestinations({ modules: {} }).map((d) => d.href),
+    ).not.toContain("/emergency-card");
+  });
+
+  it("is an account-menu entry with the card's name and icon", () => {
+    const card = NAV_ACCOUNT_MENU_DESTINATIONS.find(
+      (d) => d.href === "/emergency-card",
+    );
+    expect(card?.tKey).toBe("nav.emergencyCard");
+    expect(card?.icon).toBe(HeartPulse);
+  });
+
+  it("shows in one's own record, whatever the module map", () => {
+    expect(menu({})).toEqual(["/emergency-card"]);
+    expect(menu({ sharedRecord: false })).toEqual(["/emergency-card"]);
+  });
+
+  it("follows the card's route rule inside a shared record", () => {
+    // The guardian of a managed profile holds the profile's card.
+    expect(
+      menu({
+        sharedRecord: true,
+        record: { recordKind: "managed", level: "manage" },
+      }),
+    ).toEqual(["/emergency-card"]);
+    // An adult's delegate never does, at any level or scope.
+    for (const level of ["read", "write", "manage"] as const) {
+      expect(
+        menu({ sharedRecord: true, record: { recordKind: "shared", level } }),
+      ).toEqual([]);
+    }
+    // A refused or pending switch carries no kind or level: nothing opens.
+    expect(menu({ sharedRecord: true, sections: [] })).toEqual([]);
   });
 });

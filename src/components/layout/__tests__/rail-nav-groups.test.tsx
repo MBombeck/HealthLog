@@ -56,13 +56,13 @@ describe("RailNavGroups", () => {
     const html = render(NAV_DESTINATIONS, true);
     expect(html).toContain('class="sr-only"');
     expect(html).toMatch(/role="group" aria-labelledby="[^"]+-record"/);
-    expect(html).toContain('aria-label="Checkups"');
+    expect(html).toContain('aria-label="Care"');
   });
 
   it("shows a count only above zero, and names it", () => {
     const html = render(NAV_DESTINATIONS, false, {
       "/medications": 2,
-      "/checkups": 0,
+      "/care": 0,
     });
     expect(html.match(/data-slot="nav-count"/g)).toHaveLength(1);
     expect(html).toContain('aria-label="Medications, 2 due"');
@@ -91,7 +91,7 @@ describe("the counts", () => {
   it("maps the server's counts onto the two entries", () => {
     expect(navCountsByHref({ dosesDue: 2, checkupsDue: 1 })).toEqual({
       "/medications": 2,
-      "/checkups": 1,
+      "/care": 1,
     });
     expect(navCountsByHref(undefined)).toEqual({});
   });

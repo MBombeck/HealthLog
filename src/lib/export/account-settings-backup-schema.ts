@@ -55,6 +55,7 @@ export const accountSettingsBackupSchema = z
     unitPreference: z.string().nullable().optional(),
     glucoseUnit: z.string().nullable().optional(),
     medicineRegistry: z.string().nullable().optional(),
+    showNavCounts: z.boolean().optional(),
     timeFormat: z.string().optional(),
     dateFormat: z.string().optional(),
     modulePreferencesJson: z.unknown().optional(),

@@ -22,6 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { useTranslations } from "@/lib/i18n/context";
 import type { DocumentUsageDto } from "@/lib/validations/inbound-documents";
 import { formatBytes } from "@/lib/format/bytes";
+import { FileInput } from "@/components/ui/file-picker";
 
 /** Usage fraction above which the quota bar appears. */
 const QUOTA_BAR_THRESHOLD = 0.8;
@@ -50,9 +51,8 @@ export function UploadZone({
 
   return (
     <div data-slot="document-upload-zone">
-      <input
+      <FileInput
         ref={inputRef}
-        type="file"
         multiple
         accept={accept}
         className="sr-only"

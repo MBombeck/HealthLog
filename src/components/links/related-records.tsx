@@ -65,7 +65,7 @@ import type { IllnessEpisodeDTO } from "@/lib/illness/dto";
 import type { RelatedLink } from "@/lib/links/related";
 import type { EncounterKind } from "@/generated/prisma/client";
 import { translateOrNull } from "@/lib/i18n/translate-code";
-import { visitPath } from "@/lib/encounters/visit-links";
+import { careVisitPath } from "@/lib/encounters/visit-links";
 
 type Translate = ReturnType<typeof useTranslations>["t"];
 type RelatedKind = RelatedLink["kind"];
@@ -319,7 +319,7 @@ function VisitPicker({ selected, onChange, anchor, known }: PickerProps) {
         label: encounterKindText(t, visit.kind as EncounterKind),
         meta: visit.practitioner?.name ?? null,
         occurredAt: visit.occurredAt,
-        href: visitPath(visit.id),
+        href: careVisitPath(visit.id),
       })),
     anchor,
     {

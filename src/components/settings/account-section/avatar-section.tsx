@@ -16,6 +16,7 @@ import { localizedApiError } from "@/lib/api/localized-error";
 import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { statusText, type StatusMessage } from "./account-section-utils";
 import { accountName, nameInitials } from "@/lib/account-name";
+import { FileInput } from "@/components/ui/file-picker";
 
 // Accepted upload types + byte cap mirror the server contract in
 // `src/app/api/user/avatar/route.ts` so the client rejects an obvious
@@ -125,9 +126,8 @@ export function AvatarSection() {
           </AvatarFallback>
         </Avatar>
         <div className="flex flex-wrap gap-2">
-          <input
+          <FileInput
             ref={fileInputRef}
-            type="file"
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={handleFile}

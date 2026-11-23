@@ -5,7 +5,7 @@
  *
  * A compact chart-row card listing the next few due reminders with an
  * inline primary action per row — the same done-vs-capture branch the
- * dedicated `/checkups` page surfaces, scaled down for the dashboard.
+ * dedicated `/care` page surfaces, scaled down for the dashboard.
  * A free-text / self-planned exam marks done silently; a measurement-
  * linked reminder opens the real measurement-entry form and satisfies
  * the reminder in the same action.
@@ -22,7 +22,7 @@ import { CalendarClock, CheckCircle2, Plus } from "lucide-react";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { encounterKindText } from "@/components/encounters/encounter-labels";
 import { useEncounters } from "@/hooks/use-encounters";
-import { visitPath } from "@/lib/encounters/visit-links";
+import { careVisitPath } from "@/lib/encounters/visit-links";
 import {
   useFormatters,
   useTranslations,
@@ -76,7 +76,7 @@ export function VorsorgeDashboardCard() {
   const displayTz = useDisplayTimezone();
   const format = useFormatters();
   const router = useRouter();
-  // The same answer `/checkups` gives the same action. Satisfying a reminder
+  // The same answer `/care` gives the same action. Satisfying a reminder
   // is not one of the verbs a delegation admits at any level
   // (`POST /api/measurement-reminders/[id]/satisfy` resolves the caller), and
   // the dashboard summary offering what the dedicated page withholds was the
@@ -176,7 +176,7 @@ export function VorsorgeDashboardCard() {
             title={t("measurementReminders.dashboard.empty")}
             action={
               <Button asChild variant="outline" size="sm">
-                <Link href="/checkups">
+                <Link href="/care">
                   {t("measurementReminders.dashboard.openLink")}
                 </Link>
               </Button>
@@ -242,11 +242,11 @@ export function VorsorgeDashboardCard() {
         {/* Visually distinct from a due checkup: a quiet line under the block
             rather than a fourth row with an action, because there is nothing
             to do about an appointment except keep it. It opens the visit
-            itself: a bare `/checkups` lands on the checkups tab, which is
+            itself: a bare `/care` lands on the checkups tab, which is
             exactly where the appointment is not. */}
         {nextAppointment ? (
           <Link
-            href={visitPath(nextAppointment.id)}
+            href={careVisitPath(nextAppointment.id)}
             data-slot="vorsorge-dashboard-next-visit"
             className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex items-center gap-2 rounded-md border-t pt-2 text-xs transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
           >

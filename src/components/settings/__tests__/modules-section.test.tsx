@@ -100,6 +100,7 @@ function buildUser(
     timeFormat: "AUTO",
     dateFormat: "AUTO",
     medicineRegistry: "NONE",
+    showNavCounts: true,
     disableCoach: false,
     fullName: null,
     insurerName: null,

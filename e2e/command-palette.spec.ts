@@ -219,7 +219,7 @@ test.describe("command palette", () => {
     const queries = await mockRecordSearch(page);
     // Start on the page the hit opens, on another tab: the link has to move
     // the open page, not only a fresh one.
-    await page.goto("/checkups");
+    await page.goto("/care");
     await shellReady(page);
     await expect(
       page.locator('[data-testid="checkups-tab-visits"]'),
@@ -245,7 +245,7 @@ test.describe("command palette", () => {
     }
     await expect(hit).toHaveAttribute("aria-selected", "true");
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/checkups\?visit=e2e-visit$/);
+    await expect(page).toHaveURL(/\/care\?visit=e2e-visit$/);
     await expect(palette(page)).toHaveCount(0);
     await expect(
       page.locator('[data-testid="checkups-tab-visits"]'),
@@ -317,6 +317,6 @@ test.describe("command palette", () => {
       .evaluate((el) => el.scrollWidth - el.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
     await hit.click();
-    await expect(page).toHaveURL(/\/checkups\?visit=e2e-visit$/);
+    await expect(page).toHaveURL(/\/care\?visit=e2e-visit$/);
   });
 });

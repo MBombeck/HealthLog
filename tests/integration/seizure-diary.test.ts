@@ -645,6 +645,29 @@ describe("an adult's shared record holds the grant levels", () => {
     expect(dispatched).toHaveLength(1);
   });
 
+  it("still alerts when the next seizure is stored before the notifier looks", async () => {
+    const owner = await person("owner");
+    const carer = await delegateWith(owner.id, "WRITE");
+    const prisma = getPrismaClient();
+    const create = (msAgo: number, loggedByUserId: string | null) =>
+      prisma.seizureEvent.create({
+        data: { userId: owner.id, onsetAt: ago(msAgo), loggedByUserId },
+      });
+    await create(3 * 3_600_000, null);
+    const forming = await create(3_600_000, carer.id);
+    // The carer logs again before the first notifier has read the diary.
+    await create(60_000, carer.id);
+    dispatched.length = 0;
+    const { notifySeizureCluster } =
+      await import("@/lib/seizures/cluster-notify");
+    await notifySeizureCluster({
+      ownerId: owner.id,
+      actorId: carer.id,
+      eventId: forming.id,
+    });
+    expect(dispatched).toHaveLength(1);
+  });
+
   it("lets an illness WRITE delegate log and not edit", async () => {
     const owner = await person("owner");
     await delegateWith(owner.id, "WRITE");

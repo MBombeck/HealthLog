@@ -376,3 +376,23 @@ export function schedulesMateriallyDiffer(
   const b = after.map(cadenceFingerprint).sort();
   return a.some((fp, i) => fp !== b[i]);
 }
+
+/**
+ * Whether a schedule replace changes what is due: a tracking transition, an
+ * untracked stretch, or a cadence that materially differs. The one predicate
+ * for both consequences of a replace, the archived era and the tombstoned
+ * open slots of today and later. A save that repeats the schedule changes
+ * neither, so today's open rows keep their ids and nothing is re-minted.
+ */
+export function scheduleReplaceChangesCadence(input: {
+  before: ScheduleRevisionEntry[];
+  after: ScheduleRevisionEntry[];
+  wasTracked: boolean;
+  trackingChanged: boolean;
+}): boolean {
+  return (
+    input.trackingChanged ||
+    !input.wasTracked ||
+    schedulesMateriallyDiffer(input.before, input.after)
+  );
+}

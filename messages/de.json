@@ -1,5 +1,9 @@
 {
   "common": {
+    "filePicker": {
+      "choose": "Datei auswählen",
+      "none": "Keine Datei ausgewählt"
+    },
     "listCapped": "Hier stehen die letzten {count}; ältere Einträge sind nicht aufgeführt.",
     "save": "Speichern",
     "conflictReloaded": "Vom Server neu geladen. Bitte nimm deine Änderung noch einmal vor.",
@@ -1523,7 +1527,6 @@
     "importDescription": "JSON-Array mit Einnahme-Daten einfügen. Erwartetes Format:",
     "importUploadFile": "JSON-Datei hochladen",
     "importPaste": "JSON hier einfügen…",
-    "importSelected": "Ausgewählt: {name}",
     "importFileLoaded": "Datei „{name}“ geladen",
     "importInvalidJson": "Datei enthält kein gültiges JSON",
     "importNoArray": "Kein Array gefunden",
@@ -1563,6 +1566,7 @@
       "label": "Einnahmen erfassen",
       "helperOn": "Dosen werden nach diesem Plan fällig, mit Erinnerungen und Therapietreue.",
       "helperOff": "Nur dokumentiert: nichts wird fällig, keine Erinnerungen, keine Therapietreue.",
+      "helperEnded": "Die Einnahmephase ist beendet, deshalb wird nichts fällig. Eine neue Einnahmephase greift diesen Plan wieder auf.",
       "enabledToast": "Einnahmen werden erfasst",
       "disabledToast": "Einnahmen werden nicht erfasst",
       "toggleFailed": "Einnahme-Erfassung konnte nicht geändert werden."
@@ -8200,7 +8204,9 @@
     "displayCard": {
       "title": "Darstellung",
       "description": "Sprache, Einheiten und Formate, gespeichert, sobald du sie änderst.",
-      "themeDescription": "System folgt deinem Gerät zwischen hell und dunkel. Die Wahl gilt auf diesem Gerät."
+      "themeDescription": "System folgt deinem Gerät zwischen hell und dunkel. Die Wahl gilt auf diesem Gerät.",
+      "navCountsLabel": "Zahlen in der Navigation",
+      "navCountsDescription": "Zeigt in der Seitenleiste und im Menü „Mehr“ neben den Einträgen, wie viele Einnahmen und Vorsorgetermine fällig sind."
     },
     "integrationCard": {
       "state": {

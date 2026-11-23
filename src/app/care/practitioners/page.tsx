@@ -10,7 +10,7 @@ import { useMounted } from "@/hooks/use-mounted";
  *
  * Deliberately not in Settings. The Settings IA rule is that a settings surface
  * configures behaviour; a list of one's own doctors configures nothing and is
- * record content like every other clinical list. Sitting under `/checkups`
+ * record content like every other clinical list. Sitting under `/care`
  * also means it inherits that page's route-family classification, so a
  * `profile`-scoped delegate reaches it exactly as they reach the visits.
  */

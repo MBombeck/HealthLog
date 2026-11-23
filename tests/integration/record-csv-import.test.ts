@@ -9,6 +9,7 @@
  *   - a refused row is reported by line and does not stop the rest;
  *   - medications take a daily schedule, reminders off, as-needed without
  *     schedule, and a dated window opens a course;
+ *   - a course that ended before the import reads like one ended by hand;
  *   - a medication and its category land together or not at all.
  */
 import { beforeAll, describe, expect, it, vi } from "vitest";
@@ -443,5 +444,90 @@ describe("medication CSV import, a crash between medication and category", () =>
         where: { medicationId: med.id },
       }),
     ).toBe(1);
+  });
+});
+
+describe("medication CSV import of a course that already ended (#1215)", () => {
+  // An imported course that ended before the import must read exactly like a
+  // course the person ended by hand: never due, never reminded, nothing
+  // counted against adherence. Intake tracking stays on for both, so doses
+  // from the past can still be recorded against the medication; the course
+  // window, not the switch, is what keeps an ended course quiet.
+  const ENDED_USER = "csv-import-ended-user";
+  beforeAll(async () => {
+    await prisma.user.create({
+      data: { id: ENDED_USER, username: ENDED_USER, timezone: TZ },
+    });
+  });
+  const dayKey = (offsetDays: number) =>
+    new Date(Date.now() + offsetDays * 86_400_000).toISOString().slice(0, 10);
+  const CSV = [
+    "name,dose,times,start,end",
+    `Amoxicillin,500 mg,08:00 20:00,${dayKey(-20)},${dayKey(-2)}`,
+    `Doxycycline,100 mg,08:00,${dayKey(-20)},`,
+  ].join("\n");
+  const query = medicationsCsvQuerySchema.parse({
+    name: "0",
+    dose: "1",
+    times: "2",
+    startsOn: "3",
+    endsOn: "4",
+    dryRun: "0",
+  });
+
+  it("reads like a course ended by hand: never due, nothing counted", async () => {
+    const result = await importMedicationsCsv({
+      userId: ENDED_USER,
+      tz: TZ,
+      stream: textToStream(CSV),
+      maxBytes: 100_000,
+      query,
+    });
+    expect(result).toMatchObject({ inserted: 2, failed: 0 });
+    const { endCurrentCourse } = await import("@/lib/medications/courses");
+    const running = await prisma.medication.findFirstOrThrow({
+      where: { userId: ENDED_USER, name: "Doxycycline" },
+      select: { id: true },
+    });
+    await endCurrentCourse({
+      userId: ENDED_USER,
+      medicationId: running.id,
+      timeZone: TZ,
+    });
+
+    const { buildMedicationsList } =
+      await import("@/lib/medications/list-read");
+    const { buildCompliancePayload } =
+      await import("@/lib/medications/compliance-payload");
+    const list = await buildMedicationsList(ENDED_USER, TZ);
+    const meds = await prisma.medication.findMany({
+      where: { userId: ENDED_USER },
+      include: { schedules: true },
+    });
+    expect(meds).toHaveLength(2);
+    for (const med of meds) {
+      const row = list.find((r) => r.id === med.id);
+      expect(med.trackIntake, med.name).toBe(true);
+      expect(row, med.name).toMatchObject({
+        courseStatus: "ENDED",
+        intakeActionable: false,
+        canEndCourse: false,
+        nextDueAt: null,
+        nextDueOverdue: false,
+        remindersActive: false,
+      });
+      const payload = await buildCompliancePayload(med, ENDED_USER, TZ);
+      for (const window of [
+        payload.compliance7,
+        payload.compliance30,
+        ...Object.values(payload.reportWindows),
+      ]) {
+        expect(window, med.name).toMatchObject({
+          totalExpected: 0,
+          missed: 0,
+        });
+      }
+      expect(payload.dailyCompliance, med.name).toEqual({});
+    }
   });
 });

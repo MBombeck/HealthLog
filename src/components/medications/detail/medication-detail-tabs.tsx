@@ -536,9 +536,8 @@ export function MedicationDetailTabs({
             dissolved Erinnerung tab). Cadence-kind stays structural (the
             hero's "Vollständig bearbeiten"). */}
         <TabsContent value="schedule" className="space-y-6 pt-2">
-          {/* v1.39.1 (#1033) — the intake-tracking switch leads the tab:
-              it decides whether the times below are a dose plan or a
-              record. */}
+          {/* #1033 — the intake-tracking switch leads the tab: it decides
+              whether the times below are a dose plan or a record. */}
           <MedicationDetailSection
             titleId="medication-zeitplan-track-intake-heading"
             title={t("medications.trackIntake.title")}
@@ -548,6 +547,7 @@ export function MedicationDetailTabs({
               key={recordOnly ? "off" : "on"}
               medicationId={id}
               trackIntake={!recordOnly}
+              courseEnded={served.courseStatus === "ENDED"}
             />
           </MedicationDetailSection>
 

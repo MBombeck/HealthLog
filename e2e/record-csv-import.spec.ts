@@ -73,7 +73,9 @@ test.describe("record CSV import", () => {
       mimeType: "text/csv",
       buffer: Buffer.from(csv()),
     };
-    await page.locator('[data-slot="record-import-file"]').setInputFiles(file);
+    await page
+      .locator('[data-slot="record-import-file"] input[type="file"]')
+      .setInputFiles(file);
     await expect(
       page.locator('[data-slot="record-import-map-analyte"]'),
     ).toHaveValue("0");
@@ -114,7 +116,7 @@ test.describe("record CSV import", () => {
       await page.goto("/settings/export");
       await page.locator('[data-slot="record-import-open-labs"]').click();
       await page
-        .locator('[data-slot="record-import-file"]')
+        .locator('[data-slot="record-import-file"] input[type="file"]')
         .setInputFiles(file);
       await page.locator('[data-slot="record-import-check"]').click();
       await expect(

@@ -82,14 +82,13 @@ describe("target section builders", () => {
   it("keeps mood hidden below the three-entry threshold", () => {
     expect(
       buildMoodTargets({
-        moodRollups: [
+        moodDays: [
           {
             bucketStart: NOW,
             count: 2,
             mean: 4,
           },
         ],
-        recentRawMood: null,
         latestMoodEntry: { score: 4, moodLoggedAt: NOW },
         timezone: TZ,
         now: NOW,

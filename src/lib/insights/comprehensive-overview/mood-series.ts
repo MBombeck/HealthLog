@@ -29,6 +29,10 @@ import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
 } from "@/lib/rollups/mood-rollups";
+import {
+  foldMoodEntriesToDays,
+  type MoodDayRow,
+} from "@/lib/rollups/mood-day-fold";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 
 import type { DailyValue } from "./daily-series";
@@ -44,51 +48,31 @@ export async function readOverviewMoodSeries(
   since: Date,
 ): Promise<OverviewMoodSeries> {
   trackBackgroundTask(runDetached(() => ensureUserMoodRollupsFresh(userId)));
-  const moodRollupDayRows = await readMoodDayRollups(userId, since);
-  if (moodRollupDayRows.length > 0) {
-    return {
-      dailyMoodEntries: moodRollupDayRows.map((r) => ({
-        day: dateOnlyKey(r.bucketStart),
-        value: Math.round(r.mean * 100) / 100,
-      })),
-      moodDataPoints: moodRollupDayRows.map((r) => ({
-        date: r.bucketStart,
-        value: r.mean,
-      })),
-      moodEntryCount: moodRollupDayRows.reduce((s, r) => s + r.count, 0),
-    };
-  }
-  // Coverage-fallback: legacy account with mood entries but no
-  // rollup coverage yet. Bounded by the 90-day window so the walk is
-  // capped even when the rollup miss happens.
-  const moodEntries = await prisma.moodEntry.findMany({
-    // Tombstoned rows are excluded.
-    where: { userId, deletedAt: null, moodLoggedAt: { gte: since } },
-    orderBy: { moodLoggedAt: "asc" },
-    select: { date: true, score: true, moodLoggedAt: true },
-  });
-  const moodByDay = new Map<string, { sum: number; count: number }>();
-  for (const entry of moodEntries) {
-    const current = moodByDay.get(entry.date) ?? { sum: 0, count: 0 };
-    current.sum += entry.score;
-    current.count += 1;
-    moodByDay.set(entry.date, current);
-  }
-  const dailyMoodEntries = Array.from(moodByDay.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, stats]) => ({
-      day,
-      value: Math.round((stats.sum / stats.count) * 100) / 100,
-    }));
+  const rollupDays = await readMoodDayRollups(userId, since);
+  // Coverage-fallback: legacy account with mood entries but no rollup
+  // coverage yet. Bounded by the caller's window so the walk is capped even
+  // when the rollup miss happens, and folded into the rows the tier would
+  // hold so both paths feed `summarize()` the same points.
+  const days: ReadonlyArray<MoodDayRow> =
+    rollupDays.length > 0
+      ? rollupDays
+      : foldMoodEntriesToDays(
+          await prisma.moodEntry.findMany({
+            // Tombstoned rows are excluded.
+            where: { userId, deletedAt: null, moodLoggedAt: { gte: since } },
+            orderBy: { moodLoggedAt: "asc" },
+            select: { date: true, score: true },
+          }),
+        );
   return {
-    dailyMoodEntries,
-    // Per-day means feed `summarize()` so the live-fallback path shares the
-    // rollup-tier semantic (one DataPoint per day, the daily mean), the same
-    // reading mood/analytics uses.
-    moodDataPoints: dailyMoodEntries.map((e) => ({
-      date: new Date(`${e.day}T12:00:00.000Z`),
-      value: e.value,
+    dailyMoodEntries: days.map((r) => ({
+      day: dateOnlyKey(r.bucketStart),
+      value: Math.round(r.mean * 100) / 100,
     })),
-    moodEntryCount: moodEntries.length,
+    moodDataPoints: days.map((r) => ({
+      date: r.bucketStart,
+      value: r.mean,
+    })),
+    moodEntryCount: days.reduce((s, r) => s + r.count, 0),
   };
 }

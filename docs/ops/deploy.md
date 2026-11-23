@@ -214,9 +214,9 @@ always did, and finds nothing in the queue schema it did not create.
 ### v1.49.0 notes
 
 The sequence above covers this release, with one possible stop (`0517`, see
-below). It brings thirty-six migrations, `0514` to `0558` (`0516`, `0523`,
+below). It brings thirty-nine migrations, `0514` to `0561` (`0516`, `0523`,
 `0527`, `0528`, `0541`, `0548`, `0550`, `0552` and `0555` do not exist), so
-the boot log says `36 database migrations pending`. Copy the pre-migration
+the boot log says `39 database migrations pending`. Copy the pre-migration
 dump of step 0 off the host before you start: it is the way back.
 
 Seven migrations touch data you already have:
@@ -338,7 +338,9 @@ quantities (`0514`, `0519`), nullable columns or columns with a default
 `devices.local_runway_until` in `0542`, `push_data_changes.intake_sync_owed_at`
 in `0544`, `live_activity_tokens.relay_started BOOLEAN NOT NULL DEFAULT false`
 in `0545`, `measurements.stats_computed_at` in `0547`, `users.medicine_registry`
-and `medications.leaflet_url` in `0549`), and new tables (`0522`, `0524`,
+and `medications.leaflet_url` in `0549`, `users.show_nav_counts BOOLEAN NOT
+NULL DEFAULT true` in `0559`, `push_relay_deliveries.medication_id` and
+`slot_instant` with their index in `0560`), and new tables (`0522`, `0524`,
 `0531`, `0532`, `0534`, `0535`, and `ai_job_failures` in `0553`, which holds
 why background AI work last stopped for a record: closed reason codes only,
 cleared by the next success, cascading with the account).
@@ -352,7 +354,9 @@ the update gets a single 409 on its next save, reads again, and saves.
 `0545` is metadata-only: existing Live Activity rows read `false`, and relay
 updates go only to an Activity the server started over the relay. `0538`
 only drops an index on `live_activity_tokens` that another index already
-covers. `0518` builds an index on `measurements` `CONCURRENTLY` at boot.
+covers. `0561` only drops `NOT NULL` from
+`live_activity_tokens.medication_id`, a catalog change on a table new in this
+release. `0518` builds an index on `measurements` `CONCURRENTLY` at boot.
 Writes carry on, but on a very large table the build can take a while; the
 app's healthcheck allows ten minutes for the start. If it is interrupted,
 see "A concurrent index build that failed" above.

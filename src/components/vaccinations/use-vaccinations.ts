@@ -229,7 +229,7 @@ export interface BoosterMintBody {
  *
  * The response is an ordinary Vorsorge reminder; the write fans out through the
  * dose dependent-keys and the reminder reads so the new checkup appears on
- * `/checkups` the instant it is confirmed.
+ * `/care` the instant it is confirmed.
  */
 export function useBoosterMint() {
   const qc = useQueryClient();

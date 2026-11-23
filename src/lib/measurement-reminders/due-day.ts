@@ -2,7 +2,7 @@
  * The one place a Vorsorge reminder's next-due instant becomes the words a
  * person reads: "heute" / "morgen" / "in N Tagen" / "überfällig seit N Tagen".
  *
- * It used to live inside the two surfaces that render it — the `/checkups`
+ * It used to live inside the two surfaces that render it — the `/care`
  * page and the dashboard summary card — as two hand-copied bodies. The page
  * copy was fixed to compare CALENDAR days; the dashboard copy was not, and
  * kept differencing raw instants. So the same reminder read "morgen" on one

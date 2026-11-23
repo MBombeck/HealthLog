@@ -51,6 +51,7 @@ function buildUser(unitPreference: "metric" | "imperial"): AuthUser {
     timeFormat: "AUTO",
     dateFormat: "AUTO",
     medicineRegistry: "NONE",
+    showNavCounts: true,
     disableCoach: false,
     fullName: null,
     insurerName: null,

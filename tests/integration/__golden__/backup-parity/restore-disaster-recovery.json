@@ -345,7 +345,7 @@
           "seizureTypes": 0,
           "seizureEvents": 0
         },
-        "accountSettingsApplied": 67,
+        "accountSettingsApplied": 68,
         "skipped": {
           "catalogueKeys": [],
           "links": 0
@@ -3082,6 +3082,7 @@
       },
       "glucoseUnit": "mmol/L",
       "medicineRegistry": "GB",
+      "showNavCounts": false,
       "hasDiabetes": true,
       "labsLocalOcrEnabled": true,
       "storeWorkoutRoutes": true,
@@ -3316,6 +3317,7 @@
       "unitPreference": "imperial",
       "glucoseUnit": "mmol/L",
       "medicineRegistry": "GB",
+      "showNavCounts": false,
       "timeFormat": "H12",
       "dateFormat": "DMY",
       "modulePreferencesJson": {

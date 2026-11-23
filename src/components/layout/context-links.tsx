@@ -43,7 +43,7 @@ export interface ContextLink {
 }
 
 export const CONTEXT_LINKS = {
-  "/checkups": [
+  "/care": [
     {
       surface: "settings:notifications#vorsorge-reminders",
       href: "/settings/notifications#vorsorge-reminders",

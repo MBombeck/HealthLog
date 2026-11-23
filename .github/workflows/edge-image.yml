@@ -102,6 +102,7 @@ jobs:
             NEXT_PUBLIC_APP_VERSION=${{ steps.provenance.outputs.version }}
             NEXT_PUBLIC_APP_BUILD_SHA=${{ steps.provenance.outputs.build_sha }}
             NEXT_PUBLIC_APP_BUILT_AT=${{ steps.provenance.outputs.built_at }}
+            OS_PACKAGES_REFRESH=${{ github.run_id }}-${{ github.run_attempt }}
           cache-from: type=gha,scope=build-amd64-main
           cache-to: type=gha,mode=max,scope=build-amd64-main
           provenance: true

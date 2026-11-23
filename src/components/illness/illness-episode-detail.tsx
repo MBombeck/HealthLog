@@ -81,11 +81,11 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
     ? bodySiteText(t, episode.bodySite, episode.laterality)
     : null;
   const bodySiteHref = episode?.bodySite
-    ? `/checkups?${new URLSearchParams({
+    ? `/care?${new URLSearchParams({
         site: episode.bodySite,
         ...(episode.laterality ? { side: episode.laterality } : {}),
       }).toString()}`
-    : "/checkups";
+    : "/care";
   const isChronic = episode?.lifecycle === "CHRONIC_ONGOING";
 
   return (

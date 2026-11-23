@@ -17,7 +17,9 @@
  * off. The server ends an Activity only in those cases
  * (`liveActivityEndState`, and the relay pass for a server-started Activity
  * whose medication may no longer have one), so an ended Activity reads null
- * too. An Activity
+ * too. A server-started Activity ended because the app's own Activity shows
+ * the same dose (`supersededRelayActivities`) keeps the value: the dose
+ * stays held, so no second start follows. An Activity
  * the person dismissed on the device keeps the value until the slot is
  * answered; the app knows it dismissed it, and the stored dose also keeps
  * the next pass from starting the same dose again.

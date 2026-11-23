@@ -34,6 +34,7 @@ import {
   injectionSitePrefsPatchSchema,
   labsLocalOcrPatchSchema,
   workoutRoutesPatchSchema,
+  showNavCountsPatchSchema,
   unitPreferencePatchSchema,
   glucoseUnitPatchSchema,
   useCentralCodexPatchSchema,
@@ -1048,6 +1049,16 @@ const workoutRoutesPatchRequest = workoutRoutesPatchSchema.meta({
 const workoutRoutesResponse = z
   .object({ storeWorkoutRoutes: z.boolean() })
   .meta({ id: "WorkoutRoutesResponse" });
+
+const showNavCountsPatchRequest = showNavCountsPatchSchema.meta({
+  id: "ShowNavCountsPatchRequest",
+  description:
+    "Show or hide the counts in the navigation (doses due, check-ups due). On by default.",
+});
+
+const showNavCountsResponse = z
+  .object({ showNavCounts: z.boolean() })
+  .meta({ id: "ShowNavCountsResponse" });
 
 const useCentralCodexPatchRequest = useCentralCodexPatchSchema.meta({
   id: "UseCentralCodexPatchRequest",
@@ -2352,6 +2363,33 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 workoutRoutesResponse,
                 "PatchWorkoutRoutesEnvelope",
+              ),
+            },
+          },
+        },
+        ...cappedScalarBodyRefusals,
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/auth/me/show-nav-counts": {
+    patch: {
+      tags: ["Auth"],
+      summary: "Show or hide the navigation counts",
+      description:
+        "Whether the sidebar and the More sheet show their counts: the doses due on Medications and the check-ups due on Checkups. On by default. While it is off a client shows no count and does not call `GET /api/nav/counts`. The current value is `showNavCounts` on `/api/auth/me`.\n\nHard-set, idempotent, audit-logged. Rate-limited 60 / min per user. The caller's own setting: under a switched session it is still the caller's.\n\nThe body is capped at 1 KB and must carry `Content-Type: application/json`. Anything larger is 413, a wrong content type is 415, and a body that is not JSON at all is 400.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: showNavCountsPatchRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The stored flag.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                showNavCountsResponse,
+                "PatchShowNavCountsEnvelope",
               ),
             },
           },

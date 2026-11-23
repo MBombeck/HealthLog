@@ -464,7 +464,7 @@ once per event type, and every channel carries the same target:
 | Mood reminder                                | `/mood`, with the mood entry sheet already open                                    |
 | Morning briefing                             | the dashboard                                                                      |
 | Medication reminder, low supply, shared dose | `/medications` (low supply opens the medication)                                   |
-| Check-up and measurement reminders           | `/checkups`                                                                        |
+| Check-up and measurement reminders           | `/care`                                                                            |
 | Proactive Coach nudge                        | the Coach conversation it started                                                  |
 | Cycle reminders                              | `/cycle` (the dashboard with discreet notifications on)                            |
 | New sign-in                                  | Settings, Security                                                                 |

@@ -29,9 +29,16 @@ const SWITCH_ID = "medication-detail-track-intake-switch";
 export function IntakeTrackingBody({
   medicationId,
   trackIntake,
+  courseEnded = false,
 }: {
   medicationId: string;
   trackIntake: boolean;
+  /**
+   * #1215 — the course has ended (by hand, or imported with a past end
+   * date). The course window already keeps every dose from falling due, so
+   * the switch keeps its value, but the helper must not promise due doses.
+   */
+  courseEnded?: boolean;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -68,9 +75,11 @@ export function IntakeTrackingBody({
     <SwitchRow
       label={t("medications.trackIntake.label")}
       description={
-        localTracked
-          ? t("medications.trackIntake.helperOn")
-          : t("medications.trackIntake.helperOff")
+        !localTracked
+          ? t("medications.trackIntake.helperOff")
+          : courseEnded
+            ? t("medications.trackIntake.helperEnded")
+            : t("medications.trackIntake.helperOn")
       }
       id={SWITCH_ID}
       checked={localTracked}

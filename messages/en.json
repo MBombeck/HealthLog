@@ -1,5 +1,9 @@
 {
   "common": {
+    "filePicker": {
+      "choose": "Choose file",
+      "none": "No file chosen"
+    },
     "listCapped": "Showing the latest {count}; older entries are not listed here.",
     "save": "Save",
     "conflictReloaded": "Reloaded from the server. Please make your change again.",
@@ -628,7 +632,7 @@
     "cycle": "Cycle",
     "labs": "Labs",
     "profile": "Profile",
-    "vorsorge": "Checkups",
+    "vorsorge": "Care",
     "illness": "Illness",
     "documents": "Documents",
     "vaccinations": "Vaccinations",
@@ -1523,7 +1527,6 @@
     "importDescription": "Paste a JSON array with intake data. Expected format:",
     "importUploadFile": "Upload JSON file",
     "importPaste": "Paste JSON here…",
-    "importSelected": "Selected: {name}",
     "importFileLoaded": "File \"{name}\" loaded",
     "importInvalidJson": "File does not contain valid JSON",
     "importNoArray": "No array found",
@@ -1563,6 +1566,7 @@
       "label": "Track intake",
       "helperOn": "Doses fall due on this schedule, with reminders and adherence.",
       "helperOff": "Kept as a record: nothing falls due, no reminders, no adherence.",
+      "helperEnded": "The course has ended, so nothing falls due. A new course picks this schedule up again.",
       "enabledToast": "Intake tracking on",
       "disabledToast": "Intake tracking off",
       "toggleFailed": "Could not change intake tracking."
@@ -5371,8 +5375,8 @@
           "body": "The illness journal records acute episodes and chronic diagnoses with their flares. Hidden: correlate an episode with your readings, and Rest Mode that pauses reminders. That’s how the Coach understands why values drift for a while."
         },
         "vorsorge": {
-          "title": "Checkups",
-          "body": "Checkups remind you of screenings and vaccinations on their own interval. Tip: “Done” can create a reading or a lab result directly. Due items appear as reminders and in the doctor report."
+          "title": "Care",
+          "body": "Care reminds you of screenings and vaccinations on their own interval. Tip: “Done” can create a reading or a lab result directly. Due items appear as reminders and in the doctor report."
         },
         "cycle": {
           "title": "Cycle",
@@ -6003,7 +6007,7 @@
           "description": "List view and episode order."
         },
         "checkups": {
-          "title": "Checkups",
+          "title": "Care",
           "description": "List view and reminder order."
         },
         "documents": {
@@ -8200,7 +8204,9 @@
     "displayCard": {
       "title": "Display",
       "description": "Language, units and formats, saved as soon as you change them.",
-      "themeDescription": "System follows your device between light and dark. The choice is kept on this device."
+      "themeDescription": "System follows your device between light and dark. The choice is kept on this device.",
+      "navCountsLabel": "Counts in the navigation",
+      "navCountsDescription": "Shows how many doses and check-ups are due beside their entries in the sidebar and the More menu."
     },
     "integrationCard": {
       "state": {
@@ -11094,7 +11100,7 @@
     "selectionBarLabel": "Selection actions"
   },
   "measurementReminders": {
-    "sectionTitle": "Checkups",
+    "sectionTitle": "Care",
     "sectionDescription": "Reminders for what to measure or check, when, and where.",
     "markDone": "Done",
     "delete": "Delete",
@@ -11198,7 +11204,7 @@
     "startCheckIn": "Start check-in",
     "nextDueLabel": "Next due:",
     "lastDoneLabel": "Last done:",
-    "customize": "Customize checkups",
+    "customize": "Customize Care",
     "adherence": {
       "label": "Within interval",
       "onTrack": "On track",
@@ -11213,7 +11219,7 @@
     },
     "dashboard": {
       "empty": "No upcoming checkup reminders.",
-      "openLink": "Open checkups"
+      "openLink": "Open Care"
     },
     "showMeasurements": "Show measurements",
     "loadError": "Could not load your reminders.",
@@ -13761,7 +13767,7 @@
     "action": {
       "logDose": "Take",
       "reconnect": "Reconnect",
-      "viewCheckups": "View check-ups",
+      "viewCheckups": "Open Care",
       "viewAppointment": "View appointment",
       "viewAppointments": "View appointments",
       "checkinKeep": "Keep it",
@@ -14557,7 +14563,7 @@
   },
   "checkups": {
     "viewSwitchLabel": "Show checkups, visits, procedures or body sites",
-    "tabVorsorge": "Checkups",
+    "tabVorsorge": "Care",
     "tabVisits": "Visits",
     "tabProcedures": "Procedures",
     "tabBodySites": "Body sites"

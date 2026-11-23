@@ -182,7 +182,19 @@ FROM node:22-trixie-slim@sha256:68c76cfad89921b927eae28ba21407475e29d0ce450afcdb
 # has not absorbed yet (the digest pin stays for build reproducibility;
 # security patches from the Debian archive override it deliberately —
 # CVE-2026-14456 in openssl was the first instance the container scan caught
-# between base-image rebuilds).
+# between base-image rebuilds). That only happens when the step runs. The
+# published builds reuse a layer cache, and the text of this RUN never
+# changes, so on its own BuildKit would serve the layer from the first build
+# and the upgrade would not run again until the base digest moved: a fix
+# Debian published in between stayed out of every image. The
+# OS_PACKAGES_REFRESH build-arg below closes that. The workflows that publish
+# an image (docker-publish.yml, edge-image.yml) pass a value unique to the
+# run, a changed build-arg invalidates the first RUN after its declaration,
+# and so this step fetches the current archive on every published build. The
+# runner instructions after it rebuild too; they are copies and checks, the
+# deps and builder stages keep their cache. A local build without the arg
+# behaves as before: it re-runs the step only when nothing is cached.
+# `src/__tests__/os-package-refresh-guard.test.ts` holds both ends.
 #
 # `pg_dump` and `pg_restore` serve the nightly database dump, the
 # pre-migration dump in the entrypoint and the `db-restore` service
@@ -203,7 +215,9 @@ FROM node:22-trixie-slim@sha256:68c76cfad89921b927eae28ba21407475e29d0ce450afcdb
 # (the Prisma schema engine, libpq) for a TLS connection to the database.
 # `tar` and `gzip` for the GeoLite2 extraction and `sh` (dash) for the
 # entrypoint are part of the Debian base.
+ARG OS_PACKAGES_REFRESH
 RUN set -eux; \
+    echo "OS package refresh: ${OS_PACKAGES_REFRESH:-unset}"; \
     rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
       /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
       /usr/local/bin/yarn /usr/local/bin/yarnpkg /opt/yarn-v*; \

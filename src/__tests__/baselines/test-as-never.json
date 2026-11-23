@@ -320,7 +320,7 @@
     "lib/ai/coach/turn/__tests__/model-stable-prefix.test.ts": 2,
     "lib/ai/prompts/__tests__/output-language-adoption.test.ts": 1,
     "lib/ai/safety/__tests__/outbound-screen-guard2.test.ts": 1,
-    "lib/analytics/__tests__/mood-series.test.ts": 5,
+    "lib/analytics/__tests__/mood-series.test.ts": 4,
     "lib/analytics/__tests__/sleep-stage-composition.test.ts": 2,
     "lib/analytics/score/__tests__/config-change-is-not-a-health-event.test.ts": 1,
     "lib/analytics/score/__tests__/record.test.ts": 2,

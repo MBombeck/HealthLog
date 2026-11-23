@@ -17,7 +17,7 @@
 - An undone take or skip reaches the person's other devices as "Dose updated", so a phone that is not running the app shows the dose as open again instead of answered, for doses of the last 36 hours. It travels like the dose confirmation: the same switch, the same devices, sealed. A deletion in Apple Health stays silent.
 - Silent wakes when a server-side sync stores new readings and when the app's Apple Health upload is six hours behind, rationed per device.
 - Security notifications when a passkey is added or removed, an access or connector token is revoked, or a device is signed out by refresh token reuse; time-sensitive on the iPhone.
-- Emergency card at `/emergency-card`: offline HTML copy, wallet card PDF, and a QR link that shows only the ticked items, can expire, can be revoked, and logs every opening. It has its own entry in the navigation (under More on a phone), a button under Medical history and a card under Settings > Health record. (`docs/using/emergency-card.md`)
+- Emergency card at `/emergency-card`: offline HTML copy, wallet card PDF, and a QR link that shows only the ticked items, can expire, can be revoked, and logs every opening. It opens from the account menu, a button under Medical history and a card under Settings > Health record. (`docs/using/emergency-card.md`)
 - Pregnancy and the weeks after a birth as a cycle state: predictions and their reminders pause, the timeline and doctor report show the week, and the emergency card can show it. While it holds, no page rates the weight: no goal, no BMI category, no trend direction, no Coach hint, no BMI in the doctor report. "Delete all cycle data" clears it. (`docs/using/pregnancy.md`)
 - "Find leaflet" on a medication opens the official medicine registry of the chosen country (Poland, Germany, Spain, France, United Kingdom, Belgium, Netherlands, United States, Canada, Australia, Brazil, EU) in a new tab, with the name already searched for where the registry allows it. The server sends nothing to any registry. The registry is a setting of its own under Settings > Modules > Medications, independent of the app language, and can be picked right on the medication. A medication can keep the link to its official leaflet (https only), which shows as "Official leaflet" and travels with backups and the export. Thanks to @ferges123 for the idea and the registry research. ([#1430](https://github.com/MBombeck/HealthLog/issues/1430))
 - A short server setup for the first admin: who may sign up, how notifications leave the server (with the push relay off unless switched on), what AI may do, what else leaves the server, and a setup check. Every step can be skipped; it is offered once on the admin start page and stays reachable from Admin > System status. Servers that already had accounts are not asked.
@@ -45,12 +45,12 @@
 - Capture menu: most-used types as rows, "Save and next", the last reading under the field; the save receipt has Undo and Edit.
 - Biomarker page lists its five newest values under the chart.
 - Time zone per reading from the iPhone; the Day view, list and daily charts follow it.
-- The sidebar and the More sheet sort their entries under Tracking, Health record and Analysis. Medications and Checkups show a small number when a dose or a check-up is due. No address changes. Thanks to @Cnote43 for the sketch it follows. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
+- The sidebar and the More sheet sort their entries under Tracking, Health record and Analysis. Medications and Care show a small number when a dose or a check-up is due; the numbers can be switched off under Settings > Account > Display. No address changes. Thanks to @Cnote43 for the sketch it follows. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
 - The search finds every page and every settings card, in every language also by keyword ("snooze", "dark mode", "Nextcloud", "ICE").
 - Settings > Notifications has an "Alerts" group with account security and lasting change in a vital, visible before any channel is set up.
 - Settings > Data & privacy opens with "Who can reach your record": accounts and guardians, clinician links, the emergency card link, the care and cycle calendars, API tokens, MCP and sign-ins, each with its link.
 - The theme can be chosen under Settings > Account > Display as well as in the avatar menu.
-- Checkups, Vaccinations and Documents link to the care calendar and the report schedule under their page header.
+- Care, Vaccinations and Documents link to the care calendar and the report schedule under their page header.
 - Admin > System status has a "Version and database" card: the version, the channel (release, edge or development), and the migrations applied, pending or failed.
 - An app can read the push state of its own device (`GET /api/devices/me/push-diagnostics`, feature `push.device-diagnostics`): route, relay binding, the hourly budget for silent pushes with a sync still owed, the last delivery of each kind, the last receipt, a masked APNs token, and whether the server or the app reminds the device of a dose. Only that device, no content.
 - API: `GET /api/version` lists `features`; `POST /api/measurements/batch` takes `timeZone` per entry; workouts carry `performance`; `GET /api/nutrients/energy-balance`; dose rows carry their resolved state and `alreadyTaken`; `medications.lastUpdatedAt` in `/api/sync/state`; `notificationPrefs.medication.snoozeMinutes`; questionnaire history rows carry `source` and `itemsUnavailable`; `push.device.liveActivityStarted` names the dose of a server-started Live Activity.
@@ -68,6 +68,7 @@
 - One snooze length per person under Settings > Notifications (10 minutes to two hours, 30 by default) on every surface, Telegram's reminder keyboard included, in the person's language.
 - One intake form for the medications page, the history and the capture menu, which names the dose it counts for; the medication page offers take, skip and snooze for the next dose.
 - The reminder card says in words what will happen; the reminder steps are offered for every scheduled medication.
+- The preventive-care page is called Care in English and lives at `/care` (the practitioners under `/care/practitioners`). Old `/checkups` links, bookmarks and notifications already on a phone redirect there with their query intact. German keeps Vorsorge; Brazilian Portuguese and Russian name it Prevenção and Профилактика.
 - Deleting a dose happens at once with an Undo; "Take all due" has one Undo for the batch.
 - Dose times follow the 12 or 24 hour setting.
 - The medication setup asks less: the category is optional (Other by default), the dose step asks nothing twice, a disabled Next says what is missing, and the summary says from when each dose counts as missed.
@@ -78,7 +79,7 @@
 - Admin keeps push in one place: "Push and channels" holds the channel switches, the Web Push keys, the relay and the delivery health with its test push. The sections are regrouped (System, Notifications, AI, Connectivity, Account, Server data) and "Integrations" is now "Monitoring".
 - The page with the switch per kind and channel is called "Notifications per channel" and lists the kinds also when no channel is set up yet. "Manage notification channels" on a medication leads to the channels.
 - Settings cards look alike: the button at the bottom of a card sits on the right at one size, also on a phone, most switches stand to the right of their name, field names have one shape, and status messages stand above the buttons. This covers the emergency card, "Create profile", the guardian's settings, the push relay card, the import cards and the notification rows on a phone.
-- The tabs on Cycle, Checkups, a medication and the recovery kit look like the other view switches; on Checkups the title comes first, then the tabs; the admin's section strip on a phone works like the Insights pills.
+- The tabs on Cycle, Care, a medication and the recovery kit look like the other view switches; on Care the title comes first, then the tabs; the admin's section strip on a phone works like the Insights pills.
 - Every settings save confirms. Cycle settings, the scheduled doctor report, the Health Connect folder, calendar feed options, a guardian's settings, withdrawing AI consent, disconnecting Garmin or Nightscout, the delivery test message and "Forget all devices" used to save without a word.
 - Getting started: with a medication schedule, the notification row comes right after the medication row.
 - The add form opens on the type last saved by hand, read from the account's own readings, instead of browser storage.
@@ -96,8 +97,11 @@
 
 ### Fixed
 
+- Editing a dose time keeps a time that was typed but not yet added with Add: saving adds it, and a schedule with no time at all can't be saved. The medication wizard and the schedule change dialog do the same.
+- A seizure cluster alert goes out when the next seizure is logged seconds after the first. Each write used to see the other one in the cluster, took itself for a joiner, and neither sent the alert.
 - The "Pulse through the day" chart and the heart rate curve on a workout page show the whole day and the whole workout again with a dense source. With about 35,000 readings a day they broke off after roughly four hours. Thanks to @sdrburgess. ([#1429](https://github.com/MBombeck/HealthLog/issues/1429))
 - With dense data the live step and energy profile, strain, stress, readiness, the deviation hint, the glucose and SpO2 safety limits, the 30-day figures on the status cards and the mood correlations count every reading instead of a capped slice, and the resting pulse baseline matures again.
+- The mood trend on the dashboard, in the overview, for the Coach and on the targets page reads the same before the daily mood summaries are built as after. Until then each day sat twelve hours later, so the 7- and 30-day trend could take in one day more than the average beside it, and the targets card counted single entries instead of days.
 - The image ships the PostgreSQL 19 client tools. An install that runs its own database on PostgreSQL 19 no longer stops before a migration because the bundled `pg_dump` refused the newer server, and its nightly dumps work again. The client reads 16, 18 and 19 alike, and the upgrade guide now names the ceiling. Thanks to @aw23edfr4. ([#1431](https://github.com/MBombeck/HealthLog/issues/1431), [#1432](https://github.com/MBombeck/HealthLog/issues/1432))
 - The dump before a migration and the nightly dump write the archive and its listing straight to files instead of through a pipe, so a dump no longer depends on that pipe staying writable. The pre-migration dump gates the start, so a dump that fails for no reason of its own would hold up a healthy update.
 - A Take button that names a time counts for that dose, also when taken early. More than six hours ahead the button says "Take an extra dose" and says it will not count for the named dose. The confirmation names what the take counted for.
@@ -158,7 +162,7 @@
 - First SSO sign-in failed when a username existed in other case; changing the e-mail to such an address says it is taken instead of a server error.
 - "Delete all data" unbinds the account's devices at the relay.
 - A device that signs out, is revoked or moves to another account loses its push credentials and its Live Activities; a phone that signed out and moves to another account receives the new account's pushes instead of a refusal.
-- Live Activity updates over the relay go only to Activities the server started.
+- A Live Activity the app started itself no longer shows a wrong time after a server update: updates over the relay go only to Activities the server started.
 - Sender key rotation takes each step once, after its notice period.
 - The import cards and the snooze setting show a failed read with a retry, and a failed folder removal says so.
 - Undo and Edit toasts stay in front of achievement toasts.
@@ -173,10 +177,15 @@
 
 - A dose change on another device always reaches a phone whose silent-push budget at the relay is spent: the relay's refusal is no longer counted as delivered, the sync is owed and goes out the first minute the relay takes one again.
 - A Live Activity started from the server through the push relay appears only for a medication with Live Activity turned on and only for a dose coming up or currently due, never for one that is long overdue or already answered; the earliest such dose gets it.
+- A dose no longer shows two Live Activities when the iOS app already shows its own for it; one the server started through the push relay ends, and the app's, with its Take button, stays. The server also starts at most one for a dose through the relay, by its own record of what it started: a start for another dose in between, the dose turning due, or a restart no longer lead to a second one before the app has reported the first. It also runs at most one such Activity per phone: before it starts one for the next dose it ends the one still running, so the lock screen no longer labels two Activities with the newer dose, and taking the earlier dose no longer ends the newer one's Activity. A start the phone never reported holds the next dose back only while its own dose is still within its window, and not at all once the phone dropped that Activity or the system has ended it, so a dose left open on an updated server no longer keeps the next dose's Activity from appearing until that dose is missed.
 - A dose the iOS app names by its slot binds to that slot on the bulk route exactly as on the single route, also when it is taken early and the windows of two doses overlap.
 - Posting a single entry again that was deleted in HealthLog (mood, measurement, cycle day, AUDIT-C) answers `410` with the reason `deleted_in_healthlog` instead of bringing it back; a mood entry deleted in Apple Health comes back when Apple Health sends it again.
 
 - The iOS app's "sync with your other devices is disturbed" notice only appears for a real, current problem: a silent push iOS chose not to deliver no longer counts, and the next confirmed alert clears it.
+- Saving a medication without changing its times no longer resets today's open doses or wakes the other devices.
+- A dose time typed or picked on a medication's Schedule tab is saved even when Add time was not pressed first. Before, Save schedule sent the old times and still said the schedule was saved. Saving with every time removed now asks for one instead of quietly keeping the stored time.
+- Every file upload shows a real "Choose file" button with the chosen file's name beside it, instead of the browser's own text control that did not look clickable. Thanks to @Cnote43. ([#1215](https://github.com/MBombeck/HealthLog/issues/1215))
+- A medication whose course has ended, by hand or imported with an end date in the past, no longer says under "Track intake" that its doses fall due. Nothing was due or counted for it; the switch now says so, and the import guide lists what every medication row needs and which fields start at their default. Thanks to @Cnote43. ([#1215](https://github.com/MBombeck/HealthLog/issues/1215))
 
 ### Security
 
@@ -196,11 +205,12 @@
 - A saved leaflet link must be https, is never fetched or embedded by the server, and one that is not https in a hand-edited backup is dropped on restore.
 - From this release on, every GitHub release carries a signed image manifest (`healthlog-<tag>-image.txt` with its Sigstore bundle) and SLSA v1 provenance, so the image a release names can be checked without asking the registry. `SECURITY.md` and `docs/ops/deploy.md`, "Verify a release from its assets", have the commands.
 - `glob` and `minimatch`, which arrive through other packages, are lifted past their advisories, and the image installs its migration CLI from a committed lockfile with pinned hashes.
+- The image takes the current Debian security updates on every build. The package upgrade step used to be served from the build cache, so fixes published after the first build (glibc and Kerberos among them) stayed out of the image until the base image moved.
 
 ### Updating
 
 - Take a backup first. With the `backups` volume the container writes a pre-migration dump before it migrates; without it, run `pg_dump` yourself. `docs/ops/deploy.md`, "v1.49.0 notes", has the operator detail.
-- Thirty-six migrations, 0514 to 0558 (0516, 0523, 0527, 0528, 0541, 0548, 0550, 0552 and 0555 do not exist); the boot log says `36 database migrations pending`. Seven touch existing data:
+- Thirty-nine migrations, 0514 to 0561 (0516, 0523, 0527, 0528, 0541, 0548, 0550, 0552 and 0555 do not exist); the boot log says `39 database migrations pending`. Seven touch existing data:
   - 0515 merges dose rows recorded twice for one slot (take, then skip, then the oldest pending row; the rest soft-deleted), refunds the stock of a merged take, clears the auto-miss mark on taken or skipped doses, and rewrites legacy single-time schedules into dose windows.
   - 0517 makes e-mail and username unique regardless of case. On a clash it stops, changes nothing, and the container does not start: list the accounts with the query in `docs/ops/deploy.md` ("Accounts that differ only in case"), ideally before the update, rename one of each pair, run `prisma migrate resolve --rolled-back 0517_case_insensitive_identity_and_retention_indexes` as shown there, and start again. It also drops six duplicate indexes, builds four retention indexes (bounded to five minutes) and checks the shape of text day keys, `NOT VALID` with a warning where old rows do not fit.
   - 0529 lowers APNs tokens; where two devices held one token in different case, the most recently seen keeps it and the other registers again on its next launch.
@@ -12663,7 +12673,7 @@ A feature release. The Coach reads its replies aloud, can draw the metric it is 
 
 - Insight and Coach assessments are rewritten to connect signals into a motivating narrative rather than restate figures, with substantially expanded score summaries; generated text now renders in paragraphs and carries clearer "updated" timestamps — today with the time, yesterday, and a date for anything older.
 - The daily read folds in labs, preventive care, workouts, and glucose, and correlations surface emerging signals over a recent window alongside more cross-signal links.
-- The preventive-care area is now "Checkups", reached at `/checkups`; the German interface keeps "Vorsorge".
+- The preventive-care area is now "Checkups", reached at `/care`; the German interface keeps "Vorsorge".
 - Settings pages share one consistent layout, and the settings and admin sidebar stays pinned while the content scrolls.
 - Lab biomarkers are a compact, editable list with hide and restore.
 - Local AI servers stream their replies and honour the configurable timeout, so slower self-hosted models finish cleanly.

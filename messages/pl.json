@@ -1,5 +1,9 @@
 {
   "common": {
+    "filePicker": {
+      "choose": "Wybierz plik",
+      "none": "Nie wybrano pliku"
+    },
     "listCapped": "Widać tylko ostatnie {count}; starsze wpisy nie są tu wymienione.",
     "save": "Zapisz",
     "conflictReloaded": "Odświeżono z serwera. Wprowadź zmianę jeszcze raz.",
@@ -1523,7 +1527,6 @@
     "importDescription": "Wklej tablicę JSON z danymi przyjęć. Oczekiwany format:",
     "importUploadFile": "Prześlij plik JSON",
     "importPaste": "Wklej tutaj JSON...",
-    "importSelected": "Wybrano: {name}",
     "importFileLoaded": "Plik „{name}” wczytany",
     "importInvalidJson": "Plik nie zawiera prawidłowego JSON",
     "importNoArray": "Nie znaleziono tablicy",
@@ -1563,6 +1566,7 @@
       "label": "Rejestruj przyjęcia",
       "helperOn": "Dawki przypadają według tego harmonogramu, z przypomnieniami i przestrzeganiem.",
       "helperOff": "Tylko zapis: nic nie przypada, bez przypomnień i bez przestrzegania.",
+      "helperEnded": "Kuracja się zakończyła, więc nic nie przypada. Nowa kuracja wznowi ten plan.",
       "enabledToast": "Rejestrowanie przyjęć włączone",
       "disabledToast": "Rejestrowanie przyjęć wyłączone",
       "toggleFailed": "Nie udało się zmienić rejestrowania przyjęć."
@@ -8200,7 +8204,9 @@
     "displayCard": {
       "title": "Wyświetlanie",
       "description": "Język, jednostki i formaty zapisywane od razu po zmianie.",
-      "themeDescription": "Systemowy podąża za urządzeniem między jasnym a ciemnym. Wybór zostaje na tym urządzeniu."
+      "themeDescription": "Systemowy podąża za urządzeniem między jasnym a ciemnym. Wybór zostaje na tym urządzeniu.",
+      "navCountsLabel": "Liczniki w nawigacji",
+      "navCountsDescription": "Pokazuje przy pozycjach na pasku bocznym i w menu Więcej, ile dawek i badań kontrolnych jest do zrobienia."
     },
     "integrationCard": {
       "state": {

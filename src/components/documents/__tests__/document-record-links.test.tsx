@@ -251,7 +251,7 @@ describe("<DocumentRecordLinks>", () => {
           onChange={() => undefined}
         />,
       );
-      expect(html).toContain('href="/checkups?visit=enc-1"');
+      expect(html).toContain('href="/care?visit=enc-1"');
     });
   });
 });

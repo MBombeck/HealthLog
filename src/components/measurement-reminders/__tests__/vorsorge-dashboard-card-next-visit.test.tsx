@@ -2,7 +2,7 @@
  * The dashboard's next-appointment line opens the appointment, on the visits
  * tab, and not the checkups list the card otherwise summarises.
  *
- * The line linked the bare `/checkups`, which opens the preventive-care tab —
+ * The line linked the bare `/care`, which opens the preventive-care tab —
  * the one list an appointment is never on. The negative control is the card's
  * own empty state, whose link is to the checkups and stays there.
  */
@@ -64,9 +64,9 @@ describe("<VorsorgeDashboardCard> — the next appointment", () => {
     );
     expect(html).toContain("Practice Example");
     expect(linkHref(html, "vorsorge-dashboard-next-visit")).toBe(
-      "/checkups?visit=visit-42",
+      "/care?visit=visit-42",
     );
     // The empty state names the checkups and still opens them.
-    expect(html).toContain('href="/checkups"');
+    expect(html).toContain('href="/care"');
   });
 });

@@ -164,6 +164,7 @@ beforeEach(() => {
     async (_id, category) => (category ?? "OTHER") as never,
   );
   vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+    schedules: [],
     id: "m1",
     userId: "user-1",
   } as never);
@@ -314,6 +315,7 @@ describe("PUT /api/medications/[id] — schedule replace archives a revision (v1
   beforeEach(() => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      schedules: [],
       id: "m1",
       userId: "user-1",
       active: true,
@@ -413,6 +415,7 @@ describe("PUT /api/medications/[id] — schedule replace migrates open slots", (
   beforeEach(() => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      schedules: [],
       id: "m1",
       userId: "user-1",
       active: true,
@@ -503,6 +506,7 @@ describe("PUT /api/medications/[id] — window / timesOfDay consistency", () => 
   beforeEach(() => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      schedules: [],
       id: "m1",
       userId: "user-1",
       active: true,
@@ -673,6 +677,7 @@ describe("PUT /api/medications/[id] — as-needed (v1.16.11, #316)", () => {
     scheduleCount?: number;
   }) {
     vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      schedules: [],
       id: "m1",
       userId: "user-1",
       active: true,
@@ -878,6 +883,7 @@ describe("PUT /api/medications/[id] — intake tracking switch (#1033)", () => {
   function arrange(trackIntake: boolean) {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      schedules: [],
       id: "m1",
       userId: "user-1",
       active: true,
@@ -1067,6 +1073,7 @@ describe("PUT /api/medications/[id] — shipped client on a record-only medicati
   function arrange(trackIntake: boolean) {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      schedules: [],
       id: "m1",
       userId: "user-1",
       active: true,

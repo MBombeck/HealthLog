@@ -1,5 +1,9 @@
 {
   "common": {
+    "filePicker": {
+      "choose": "Scegli file",
+      "none": "Nessun file scelto"
+    },
     "listCapped": "Sono mostrati gli ultimi {count}; le voci più vecchie non sono elencate qui.",
     "save": "Salva",
     "conflictReloaded": "Ricaricato dal server. Applica di nuovo la tua modifica.",
@@ -1523,7 +1527,6 @@
     "importDescription": "Incolla un array JSON con i dati delle assunzioni. Formato previsto:",
     "importUploadFile": "Carica file JSON",
     "importPaste": "Incolla il JSON qui...",
-    "importSelected": "Selezionato: {name}",
     "importFileLoaded": "File \"{name}\" caricato",
     "importInvalidJson": "Il file non contiene un JSON valido",
     "importNoArray": "Nessun array trovato",
@@ -1563,6 +1566,7 @@
       "label": "Registra le assunzioni",
       "helperOn": "Le dosi sono dovute secondo questo programma, con promemoria e aderenza.",
       "helperOff": "Solo annotato: nulla è dovuto, niente promemoria, niente aderenza.",
+      "helperEnded": "Il ciclo è terminato, quindi nulla è dovuto. Un nuovo ciclo riprende questo programma.",
       "enabledToast": "Registrazione assunzioni attiva",
       "disabledToast": "Registrazione assunzioni disattivata",
       "toggleFailed": "Impossibile modificare la registrazione delle assunzioni."
@@ -8200,7 +8204,9 @@
     "displayCard": {
       "title": "Visualizzazione",
       "description": "Lingua, unità e formati, salvati appena li modifichi.",
-      "themeDescription": "Sistema segue il dispositivo tra chiaro e scuro. La scelta resta su questo dispositivo."
+      "themeDescription": "Sistema segue il dispositivo tra chiaro e scuro. La scelta resta su questo dispositivo.",
+      "navCountsLabel": "Conteggi nella navigazione",
+      "navCountsDescription": "Mostra accanto alle voci della barra laterale e del menu Altro quante dosi e quanti controlli sono in scadenza."
     },
     "integrationCard": {
       "state": {

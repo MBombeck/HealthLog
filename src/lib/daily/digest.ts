@@ -672,7 +672,7 @@ function buildPreventiveCareItem(
       {
         labelKey: "daily.action.viewCheckups",
         intent: "checkup.view",
-        href: "/checkups",
+        href: "/checkups", // /checkups kept on the wire for iOS builds before 1.7; switch to /care in 1.50.
       },
     ],
   };

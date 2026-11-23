@@ -1110,7 +1110,7 @@
           "previous": {},
           "replacedCadence": "11:30 FREQ=DAILY | 20:00 i2;1,3,5",
           "replacedScheduleCount": 2,
-          "tombstonedSlotCount": 0,
+          "tombstonedSlotCount": null,
           "tombstonedFrom": null,
           "tombstonedTo": null
         },

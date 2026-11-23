@@ -5,9 +5,9 @@ import type { ReactElement } from "react";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
- * The `/checkups` server-prefetch key crux + fail-soft.
+ * The `/care` server-prefetch key crux + fail-soft.
  *
- * The RSC wrapper (`src/app/checkups/page.tsx`) dehydrates the Vorsorge
+ * The RSC wrapper (`src/app/care/page.tsx`) dehydrates the Vorsorge
  * reminder list under the SAME zero-arg factory key the client hook
  * (`useMeasurementReminders`) mounts on, via the shared
  * `listMeasurementReminders` read — so the checkups list paints from the
@@ -27,7 +27,7 @@ vi.mock("@/lib/measurement-reminders/list-read", () => ({
 }));
 vi.mock("../page-client", () => ({ default: () => null }));
 
-import CheckupsPage from "../page";
+import CarePage from "../page";
 
 const SESSION = { user: { id: "u1", timezone: "Europe/Berlin" } };
 
@@ -46,14 +46,14 @@ function queriesOf(
   return props.state?.queries ?? [];
 }
 
-describe("/checkups RSC prefetch", () => {
+describe("/care RSC prefetch", () => {
   it("dehydrates the reminder list under the client's factory key", async () => {
     getUnswitchedSession.mockResolvedValue(SESSION);
     listMeasurementReminders.mockResolvedValue([
       { id: "r1", label: "Blood pressure", nextDueAt: null },
     ]);
 
-    const el = (await CheckupsPage()) as ReactElement;
+    const el = (await CarePage()) as ReactElement;
     const hashes = queriesOf(el).map((q) => q.queryHash);
     expect(hashes).toContain(hashKey(queryKeys.measurementReminders()));
     expect(listMeasurementReminders).toHaveBeenCalledWith("u1");
@@ -64,7 +64,7 @@ describe("/checkups RSC prefetch", () => {
     const createdAt = new Date("2026-07-18T06:00:00.000Z");
     listMeasurementReminders.mockResolvedValue([{ id: "r1", createdAt }]);
 
-    const el = (await CheckupsPage()) as ReactElement;
+    const el = (await CarePage()) as ReactElement;
     const seeded = queriesOf(el).find(
       (q) => q.queryHash === hashKey(queryKeys.measurementReminders()),
     );
@@ -77,7 +77,7 @@ describe("/checkups RSC prefetch", () => {
     getUnswitchedSession.mockResolvedValue(SESSION);
     listMeasurementReminders.mockRejectedValue(new Error("db blip"));
 
-    const el = (await CheckupsPage()) as ReactElement;
+    const el = (await CarePage()) as ReactElement;
     expect(el.type).not.toBe(HydrationBoundary);
   });
 
@@ -85,14 +85,14 @@ describe("/checkups RSC prefetch", () => {
   // collapses both into the same answer, and the page treats them the same.
   it("fails soft when there is no session", async () => {
     getUnswitchedSession.mockResolvedValue(null);
-    const el = (await CheckupsPage()) as ReactElement;
+    const el = (await CarePage()) as ReactElement;
     expect(el.type).not.toBe(HydrationBoundary);
     expect(listMeasurementReminders).not.toHaveBeenCalled();
   });
 
   it("honours the DASHBOARD_SSR_PREFETCH kill-switch", async () => {
     process.env.DASHBOARD_SSR_PREFETCH = "false";
-    const el = (await CheckupsPage()) as ReactElement;
+    const el = (await CarePage()) as ReactElement;
     expect(el.type).not.toBe(HydrationBoundary);
     expect(getUnswitchedSession).not.toHaveBeenCalled();
   });

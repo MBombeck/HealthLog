@@ -19,7 +19,7 @@ import {
  * fail closed in chrome until it has been intentionally classified.
  */
 export const SHARED_RECORD_DOMAIN_ROUTE_FAMILIES = {
-  // `/checkups` carries content from two domains and is listed under both.
+  // `/care` carries content from two domains and is listed under both.
   // The preventive-care list has always been a `measurements` read
   // (`/api/measurement-reminders` declares it), and the page was in neither
   // list — under a whole-record grant it painted anyway, because a null
@@ -31,7 +31,7 @@ export const SHARED_RECORD_DOMAIN_ROUTE_FAMILIES = {
   // domains means a grant naming either presents the page — and the handler
   // still evaluates the grant on every read, because this is a presentation
   // inventory and not an authorization table.
-  measurements: ["/measurements", "/checkups"],
+  measurements: ["/measurements", "/care"],
   medications: ["/medications"],
   labs: ["/labs"],
   // `/vaccinations` joins `profile`: an immunization history is health
@@ -39,7 +39,7 @@ export const SHARED_RECORD_DOMAIN_ROUTE_FAMILIES = {
   // delegate scoped to `profile` must be able to present the page the API
   // already lets them read — without this line the grant reads the data and
   // the chrome hides the only page that shows it.
-  profile: ["/profile", "/checkups", "/vaccinations"],
+  profile: ["/profile", "/care", "/vaccinations"],
   // The seizure diary rides the illness section (`scope.ts`).
   illness: ["/illness", "/seizures"],
   mind: ["/mood", "/mental-wellbeing"],

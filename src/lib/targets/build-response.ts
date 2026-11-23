@@ -32,6 +32,7 @@ import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
 } from "@/lib/rollups/mood-rollups";
+import { foldMoodEntriesToDays } from "@/lib/rollups/mood-day-fold";
 import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
 import { readSevenDayMeans } from "@/lib/analytics/seven-day-means";
 import { readLatestEver } from "@/lib/dashboard/summary-reads";
@@ -47,7 +48,7 @@ import { buildSleepTarget } from "./sleep-builder";
 import { buildTargetPageSummary } from "./summary-builder";
 import { buildVitalTargets } from "./vitals-builder";
 import { weightTargetFor } from "@/lib/cycle/pregnancy-context";
-import type { TargetItem, TargetMoodEntry, TargetValueByType } from "./types";
+import type { TargetItem, TargetMoodRollup, TargetValueByType } from "./types";
 import {
   resolveTrendVerdict,
   trendSentimentOfTrend,
@@ -227,21 +228,10 @@ export async function buildTargetsResponse(user: AuthedUser) {
     limit(() => readSevenDayMeans(userId)),
   ]);
 
-  // Rollup coverage fallback stays an explicit repository read here rather
-  // than hiding persistence inside the pure mood section builder.
-  let recentRawMood: TargetMoodEntry[] | null = null;
-  if (moodRollups.length === 0 && latestMoodEntry !== null) {
-    const thirtyDaysAgoMood = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    recentRawMood = await prisma.moodEntry.findMany({
-      where: {
-        userId,
-        deletedAt: null,
-        moodLoggedAt: { gte: thirtyDaysAgoMood },
-      },
-      orderBy: { moodLoggedAt: "asc" },
-      select: { score: true, moodLoggedAt: true },
-    });
-  }
+  const moodDays =
+    moodRollups.length === 0 && latestMoodEntry !== null
+      ? await readMoodDaysLive(userId, moodSince)
+      : moodRollups;
 
   const now = new Date();
 
@@ -319,8 +309,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
 
   targets.push(
     ...buildMoodTargets({
-      moodRollups,
-      recentRawMood,
+      moodDays,
       latestMoodEntry,
       timezone,
       now,
@@ -409,6 +398,24 @@ export async function buildTargetsResponse(user: AuthedUser) {
  * pulse by the resting heart rate where the account records one (the tile
  * shows that series then).
  */
+/**
+ * Rollup coverage fallback, an explicit repository read rather than
+ * persistence hidden inside the pure mood section builder. It walks the
+ * window the tier read covers and folds the entries into the rows the tier
+ * would hold, so the cards read the same whichever path answered.
+ */
+async function readMoodDaysLive(
+  userId: string,
+  since: Date,
+): Promise<TargetMoodRollup[]> {
+  const entries = await prisma.moodEntry.findMany({
+    where: { userId, deletedAt: null, moodLoggedAt: { gte: since } },
+    orderBy: { moodLoggedAt: "asc" },
+    select: { score: true, date: true },
+  });
+  return foldMoodEntriesToDays(entries);
+}
+
 function summaryKeysFor(type: string): string[] {
   switch (type) {
     case "BLOOD_PRESSURE":
