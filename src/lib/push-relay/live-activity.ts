@@ -574,6 +574,80 @@ async function startItem(
 type LaActivity = LaDevice["liveActivities"][number];
 
 /**
+ * Who started a registered Activity: the relay, by a push-to-start
+ * (`HealthLogDoseAttributes`, registered with `relayStart: true`, the dose
+ * the device's `liveActivityStarted` names), or the app itself
+ * (`MedicationActivityAttributes`). The mark is kept per token
+ * (`relayStarted`, migration 0545) and never changes for an Activity.
+ */
+export type RelayActivityKind = "relay_started" | "app_started";
+
+export function relayActivityKind(activity: {
+  relayStarted: boolean;
+}): RelayActivityKind {
+  return activity.relayStarted ? "relay_started" : "app_started";
+}
+
+/**
+ * Whether the relay may send `event` to a registered Activity of this kind.
+ * Every relay update is built through {@link relayUpdateItem}, which asks
+ * this; the end path (`endActivitiesOverRelay`) ends every kind.
+ *
+ * An end goes to both kinds: the relay writes its own fixed content state
+ * into an end (`status: "taken"`, `countdownTarget: 0`, a `dismissal-date`
+ * of now; the server may send no state with it), and both attributes types
+ * hide the countdown for a taken dose and dismiss at once.
+ *
+ * An update goes only to an Activity the relay started. The relay template
+ * carries `countdownTarget` in unix seconds, which `HealthLogDoseAttributes`
+ * reads; `MedicationActivityAttributes` reads it as seconds since
+ * 2001-01-01, so an update showed an app-started Activity a time 31 years
+ * off. The relay's bounds (one day back, two days ahead of its clock, or 0)
+ * leave no room to send it reference-date seconds instead. iOS builds before
+ * the next 1.7 build read app-started Activities in reference-date seconds;
+ * relaxing this waits until those builds are gone (1.50 at the earliest).
+ */
+export function relayEventAllowed(
+  kind: RelayActivityKind,
+  event: "update" | "end",
+): boolean {
+  return event === "end" || kind === "relay_started";
+}
+
+/**
+ * The relay update item that shows `state` on `activity`, or null when the
+ * relay may not update it ({@link relayEventAllowed}).
+ */
+export function relayUpdateItem(
+  device: Pick<LaDevice, "id" | "relayBindingKey">,
+  activity: Pick<
+    LaActivity,
+    "pushToken" | "relayStarted" | "activityStatement" | "activitySignature"
+  >,
+  state: RelayContentState,
+  now: Date,
+): RelayItemInput | null {
+  if (!relayEventAllowed(relayActivityKind(activity), "update")) return null;
+  if (!activity.activitySignature || !device.relayBindingKey) return null;
+  const nowS = Math.floor(now.getTime() / 1000);
+  return {
+    deviceId: device.id,
+    ref: `lau-${newUlid(now.getTime())}`,
+    pushClass: "liveactivity",
+    eventType: LA_UPDATE_EVENT,
+    activity: {
+      event: "update",
+      state,
+      token: activity.pushToken.toLowerCase(),
+      bindingKey: device.relayBindingKey,
+      statement: activity.activityStatement as Record<string, unknown>,
+      signature: activity.activitySignature,
+    },
+    expiresAt: new Date((nowS + PUSH_LIFETIME_S) * 1000),
+  };
+}
+
+/**
  * The update items for `device`'s running Activities whose state changed,
  * and the Activities that end: those whose dose the resolver calls missed,
  * and those the server started for a medication that may no longer have one
@@ -601,7 +675,9 @@ async function updateItems(
   const nowS = Math.floor(now.getTime() / 1000);
   const updates = [];
   const ending: LaActivity[] = [];
-  const relayStarted = device.liveActivities.some((a) => a.relayStarted);
+  const relayOwned = (a: LaActivity) =>
+    relayActivityKind(a) === "relay_started";
+  const relayStarted = device.liveActivities.some(relayOwned);
   const startable = relayStarted
     ? new Set(
         (
@@ -610,7 +686,7 @@ async function updateItems(
               userId: device.userId,
               id: {
                 in: device.liveActivities
-                  .filter((a) => a.relayStarted)
+                  .filter(relayOwned)
                   .map((a) => a.medicationId),
               },
               ...STARTABLE_MEDICATION_WHERE,
@@ -638,7 +714,7 @@ async function updateItems(
     ) {
       continue;
     }
-    if (activity.relayStarted && !startable.has(activity.medicationId)) {
+    if (relayOwned(activity) && !startable.has(activity.medicationId)) {
       ending.push(activity);
       continue;
     }
@@ -664,28 +740,11 @@ async function updateItems(
       ending.push(activity);
       continue;
     }
-    if (!activity.relayStarted || refused) continue;
+    if (refused) continue;
     if (inFlight.has(activity.pushToken.toLowerCase())) continue;
     if (sameState(state, activity.lastRelayState)) continue;
-    updates.push({
-      rowId: activity.id,
-      state,
-      item: {
-        deviceId: device.id,
-        ref: `lau-${newUlid(now.getTime())}`,
-        pushClass: "liveactivity" as const,
-        eventType: LA_UPDATE_EVENT,
-        activity: {
-          event: "update" as const,
-          state,
-          token: activity.pushToken.toLowerCase(),
-          bindingKey: device.relayBindingKey as string,
-          statement: activity.activityStatement as Record<string, unknown>,
-          signature: activity.activitySignature,
-        },
-        expiresAt: new Date((nowS + PUSH_LIFETIME_S) * 1000),
-      },
-    });
+    const item = relayUpdateItem(device, activity, state, now);
+    if (item) updates.push({ rowId: activity.id, state, item });
   }
   return { updates, ending };
 }

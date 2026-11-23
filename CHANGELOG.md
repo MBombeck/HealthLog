@@ -159,7 +159,7 @@
 - First SSO sign-in failed when a username existed in other case; changing the e-mail to such an address says it is taken instead of a server error.
 - "Delete all data" unbinds the account's devices at the relay.
 - A device that signs out, is revoked or moves to another account loses its push credentials and its Live Activities; a phone that signed out and moves to another account receives the new account's pushes instead of a refusal.
-- Live Activity updates over the relay go only to Activities the server started.
+- A Live Activity the app started itself no longer shows a wrong time after a server update: updates over the relay go only to Activities the server started.
 - Sender key rotation takes each step once, after its notice period.
 - The import cards and the snooze setting show a failed read with a retry, and a failed folder removal says so.
 - Undo and Edit toasts stay in front of achievement toasts.
