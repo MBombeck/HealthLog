@@ -39,9 +39,13 @@ import { cn } from "@/lib/utils";
  * - default: 40 px rows, 4 px apart
  * - max-height 940 px: gaps close (40 px pitch), the list padding tightens
  *   (the account band keeps the logo band's height, `RAIL_ACCOUNT_BAND`)
- * - max-height 820 px: 36 px rows
- * - max-height 740 px: 32 px rows — the one step under 40 px, taken only
- *   where the alternative is rows hidden behind a scroll edge
+ * - max-height 820 px: 36 px rows, the group headings close up
+ * - max-height 780 px: 28 px rows and the headings at their line height.
+ *   A 1366 × 768 window has 640 px between the logo band and the account
+ *   band, and the whole rail with every module on (17 destinations under
+ *   three headings, then Collapse, Admin and Settings) needs 636 of them
+ *   at this step; a 32 px row already leaves no room for the headings.
+ *   Taken only where the alternative is rows hidden behind a scroll edge.
  */
 // Disjoint height ranges, not nested max-heights: two arbitrary media
 // variants on one property cascade in stylesheet order, not by how narrow
@@ -51,7 +55,20 @@ import { cn } from "@/lib/utils";
 // instead. A phone held sideways never sees the rail: it keeps the phone
 // shell (`shell-mobile`).
 export const RAIL_ROW_HEIGHT =
-  "min-h-10 pointer-coarse:min-h-11 [@media(hover:hover)_and_(pointer:fine)_and_(740px<height<=820px)]:min-h-9 [@media(hover:hover)_and_(pointer:fine)_and_(height<=740px)]:min-h-8";
+  "min-h-10 pointer-coarse:min-h-11 [@media(hover:hover)_and_(pointer:fine)_and_(780px<height<=820px)]:min-h-9 [@media(hover:hover)_and_(pointer:fine)_and_(height<=780px)]:min-h-7";
+/**
+ * An expanded row's own padding, which sets its height wherever the floor
+ * above is lower: a 20 px label plus 6 px each side is 32 px, so the 28 px
+ * step drops the padding to 4 px. A finger keeps the 44 px floor regardless.
+ */
+const RAIL_ROW_PY = "py-1.5 [@media(height<=780px)]:py-1";
+/**
+ * The space above an expanded group's heading, and under it. Disjoint ranges
+ * for the same reason as the row heights.
+ */
+const RAIL_GROUP_GAP =
+  "mt-4 [@media(780px<height<=820px)]:mt-2 [@media(height<=780px)]:mt-1";
+const RAIL_HEADING_PB = "pb-1 [@media(height<=780px)]:pb-0";
 export const RAIL_LIST_GAP = "space-y-1 [@media(max-height:940px)]:space-y-0";
 export const RAIL_SHORT_PY = "[@media(max-height:940px)]:py-1.5";
 
@@ -62,7 +79,7 @@ export function railRowClass(collapsed: boolean): string {
     RAIL_ROW_HEIGHT,
     collapsed
       ? "justify-center px-2.5"
-      : "gap-3 px-3 py-1.5 text-sm font-medium",
+      : cn("gap-3 px-3 text-sm font-medium", RAIL_ROW_PY),
   );
 }
 
@@ -169,7 +186,7 @@ export function RailNavGroups({
               index > 0 &&
                 (collapsed
                   ? "before:bg-sidebar-border relative mt-2 pt-2 before:absolute before:inset-x-2.5 before:top-0 before:h-px"
-                  : "mt-4 [@media(max-height:820px)]:mt-2"),
+                  : RAIL_GROUP_GAP),
             )}
           >
             {group.labelKey ? (
@@ -179,7 +196,10 @@ export function RailNavGroups({
                 className={
                   collapsed
                     ? "sr-only"
-                    : "text-muted-foreground px-3 pb-1 text-xs font-medium tracking-wide uppercase"
+                    : cn(
+                        "text-muted-foreground px-3 text-xs font-medium tracking-wide uppercase",
+                        RAIL_HEADING_PB,
+                      )
                 }
               >
                 {t(group.labelKey)}

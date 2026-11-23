@@ -7,15 +7,14 @@
  * this spec is about, and it is the ROUTE half that carries it: 403 inside the
  * record the delegate may only read, 200 inside the one it manages.
  *
- * The UI half proves something narrower, and the file says so rather than
- * implying the route's boundary twice. `/settings/health-record` is a
- * PERSONAL destination: inside SOMEBODY ELSE's record the shell answers it with
- * the "not part of shared access" panel at every adult grant level — READ,
- * WRITE and MANAGE alike — so the export card is never rendered for a delegate
- * to press. That is a property of the destination, not of the level, and the
- * spec asserts it at BOTH levels for exactly that reason: the same two
- * absences inside the MANAGE record, where the route says 200, are what stops
- * "the control is not offered" from being a check that cannot fail.
+ * The UI half follows the route. `/settings/health-record` is a page of parts,
+ * and its doctor-report part answers to the export route's own rule
+ * (`RECORD_PAGE_SURFACES` in `src/lib/sharing/record-page-surfaces.ts`): a
+ * MANAGE delegate on the entire record is offered the export card and its
+ * Generate control, and a READ delegate gets the "not part of shared access"
+ * panel instead. The spec asserts both arms on the same page, so "the control
+ * is not offered" at READ cannot pass because the page is shut for everyone:
+ * the MANAGE arm, where the route says 200, has to show the control.
  *
  * Why both halves at all. A missing button proves nothing about the server, and
  * a 403 proves nothing about what the person is shown; the failure mode this
@@ -143,18 +142,30 @@ async function leaveRecord(page: Page): Promise<void> {
 /**
  * Open the health-record settings page and wait for the shell to decide.
  *
- * Inside somebody else's record the shell answers this destination with the
- * "not part of shared access" panel rather than the section, so the panel is
- * the settled state to gate on — and the thing whose presence says the export
- * card was never offered.
+ * Inside somebody else's record the page shows the export card when the
+ * doctor-report part's rule admits the record, and the "not part of shared
+ * access" panel when no part does. Whichever is expected is the settled state
+ * to gate on; the other must then be absent.
  */
-async function openGesundheitsakte(page: Page): Promise<void> {
+async function openHealthRecordPage(
+  page: Page,
+  expected: "export" | "unavailable",
+): Promise<void> {
   await page.goto("/settings/health-record", {
     waitUntil: "domcontentloaded",
   });
-  await expect(
-    page.locator('[data-slot="shared-record-unavailable"]'),
-  ).toBeVisible({ timeout: 30_000 });
+  const unavailable = page.locator('[data-slot="shared-record-unavailable"]');
+  const panel = page.getByTestId("health-record-export-panel");
+  const generate = page.getByTestId("health-record-generate");
+  if (expected === "export") {
+    await expect(panel).toBeVisible({ timeout: 30_000 });
+    await expect(generate).toBeVisible();
+    await expect(unavailable).toHaveCount(0);
+  } else {
+    await expect(unavailable).toBeVisible({ timeout: 30_000 });
+    await expect(panel).toHaveCount(0);
+    await expect(generate).toHaveCount(0);
+  }
 }
 
 /**
@@ -268,12 +279,10 @@ test.describe.serial("a read-level delegate and the doctor report", () => {
     expect(managed.contentType).toContain("application/pdf");
     expect(managed.magic).toBe("%PDF-");
 
-    // The destination is shut here too, and this is the arm that proves it is
-    // the DESTINATION doing it: the route answered 200 for this very record a
-    // line ago, so the two absences below cannot be the grant level talking.
-    await openGesundheitsakte(page);
-    await expect(page.getByTestId("health-record-export-panel")).toHaveCount(0);
-    await expect(page.getByTestId("health-record-generate")).toHaveCount(0);
+    // The route answered 200 for this very record a line ago, so the page
+    // offers the control here. This is the arm that keeps the READ absence
+    // below from passing because the page is shut for every delegate.
+    await openHealthRecordPage(page, "export");
 
     await leaveRecord(page);
 
@@ -285,12 +294,9 @@ test.describe.serial("a read-level delegate and the doctor report", () => {
     // shows and two below the "manage" this route requires.
     await expect(banner).toHaveAttribute("data-access-level", "view");
 
-    // The same closed door, one level down. Paired with the MANAGE arm above it
-    // says the export card is offered inside NOBODY's record but your own; on
-    // its own it would say nothing about READ.
-    await openGesundheitsakte(page);
-    await expect(page.getByTestId("health-record-export-panel")).toHaveCount(0);
-    await expect(page.getByTestId("health-record-generate")).toHaveCount(0);
+    // One level down the page is shut: no part of it admits a READ grant, so
+    // the export card is not offered where the route refuses.
+    await openHealthRecordPage(page, "unavailable");
 
     // The level-sensitive statement: the same request, the same headers and the
     // same payload that answered 200 inside the managed record are refused
