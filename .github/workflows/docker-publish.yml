@@ -362,7 +362,14 @@ jobs:
   merge:
     name: Merge multi-arch manifest
     runs-on: ubuntu-24.04
-    if: github.event_name != 'pull_request'
+    # A skipped job anywhere upstream (the off-schedule approval on every
+    # scheduled tag) makes GitHub skip every job below it whose condition
+    # leaves the implicit success() in place. Each job after `build` therefore
+    # states its own condition on the results it depends on.
+    if: >-
+      !cancelled() &&
+      github.event_name != 'pull_request' &&
+      needs.build.result == 'success'
     needs: [build]
     timeout-minutes: 10
     outputs:
@@ -483,6 +490,7 @@ jobs:
   verify-published-image:
     name: Verify exact published image
     needs: merge
+    if: "!cancelled() && needs.merge.result == 'success'"
     permissions:
       contents: read
       packages: read
@@ -511,7 +519,11 @@ jobs:
   release-manifest:
     name: Sign release manifest
     needs: [merge, verify-published-image]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: >-
+      !cancelled() &&
+      startsWith(github.ref, 'refs/tags/v') &&
+      needs.merge.result == 'success' &&
+      needs.verify-published-image.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -602,6 +614,7 @@ jobs:
   release-provenance:
     name: SLSA provenance for the release manifest
     needs: [release-manifest]
+    if: "!cancelled() && needs.release-manifest.result == 'success'"
     permissions:
       actions: read
       id-token: write
@@ -619,6 +632,10 @@ jobs:
   release-assets:
     name: Attach signed manifest to the GitHub release
     needs: [release-manifest, release-provenance]
+    if: >-
+      !cancelled() &&
+      needs.release-manifest.result == 'success' &&
+      needs.release-provenance.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -667,6 +684,10 @@ jobs:
   promote:
     name: Promote verified image to Coolify
     needs: [merge, verify-published-image]
+    if: >-
+      !cancelled() &&
+      needs.merge.result == 'success' &&
+      needs.verify-published-image.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:

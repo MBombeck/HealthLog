@@ -726,7 +726,8 @@ describe("signed release assets", () => {
     const workflow = loadWorkflow("docker-publish.yml");
     const manifest = workflow.jobs["release-manifest"];
 
-    expect(manifest?.if).toBe("startsWith(github.ref, 'refs/tags/v')");
+    const manifestIf = (manifest?.if ?? "").replace(/\s+/g, " ");
+    expect(manifestIf).toContain("startsWith(github.ref, 'refs/tags/v')");
     expect(manifest?.needs).toEqual(["merge", "verify-published-image"]);
     expect(workflow.jobs["release-provenance"]?.needs).toEqual([
       "release-manifest",
@@ -854,4 +855,61 @@ describe("signed release assets", () => {
     expect(commands[1]).toContain("release upload v1.49.0");
     expect(script).not.toMatch(/release edit|--draft=false|--latest/);
   });
+});
+
+describe("skipped jobs do not silently end a chain", () => {
+  // GitHub skips a job when ANY job in its dependency chain was skipped,
+  // unless the job's own condition replaces the implicit success(). The
+  // off-schedule approval is skipped on every scheduled tag, so before this
+  // guard every job after `build` was skipped on the first real release:
+  // no manifest, no signature, no provenance, no release assets, all green.
+  const files = readdirSync(
+    join(
+      dirname(new URL(import.meta.url).pathname),
+      "../..",
+      ".github/workflows",
+    ),
+  ).filter((f) => /\.ya?ml$/.test(f));
+
+  it("finds the workflows and the conditional jobs it reasons about", () => {
+    expect(files).toContain("docker-publish.yml");
+    const jobs = loadWorkflow("docker-publish.yml").jobs;
+    expect(jobs["off-schedule-approval"]?.if).toBeTruthy();
+  });
+
+  for (const file of files) {
+    it(`${file}: every job below a skippable job states its own condition`, () => {
+      const jobs = (loadWorkflow(file).jobs ?? {}) as Record<
+        string,
+        { needs?: string | string[]; if?: string; steps?: unknown }
+      >;
+      const needsOf = (id: string): string[] => {
+        const n = jobs[id]?.needs;
+        return n === undefined ? [] : Array.isArray(n) ? n : [n];
+      };
+      const skippable = new Map<string, boolean>();
+      const canSkip = (id: string): boolean => {
+        const known = skippable.get(id);
+        if (known !== undefined) return known;
+        const value =
+          Boolean(jobs[id]?.if) || needsOf(id).some((need) => canSkip(need));
+        skippable.set(id, value);
+        return value;
+      };
+      const offenders: string[] = [];
+      for (const id of Object.keys(jobs)) {
+        const upstream = needsOf(id);
+        if (!upstream.some((need) => canSkip(need))) continue;
+        const condition = (jobs[id]?.if ?? "").replace(/\s+/g, " ");
+        // The results may be checked in the condition or, for an aggregate
+        // job that runs under always(), in its own steps.
+        const body = JSON.stringify(jobs[id]);
+        const explicit =
+          /!cancelled\(\)|always\(\)/.test(condition) &&
+          upstream.every((need) => body.includes(`needs.${need}.result`));
+        if (!explicit) offenders.push(id);
+      }
+      expect(offenders).toEqual([]);
+    });
+  }
 });
