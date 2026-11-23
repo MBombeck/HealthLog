@@ -135,8 +135,9 @@ class Inspector {
       if (msg.method === "HeapProfiler.addHeapSnapshotChunk") {
         this.chunkSink?.(msg.params?.chunk ?? "");
       } else if (msg.id !== undefined) {
-        this.waiting.get(msg.id)?.(msg);
+        const settle = this.waiting.get(msg.id);
         this.waiting.delete(msg.id);
+        if (typeof settle === "function") settle(msg);
       }
     };
   }

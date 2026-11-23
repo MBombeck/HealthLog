@@ -784,7 +784,7 @@ describe("signed release assets", () => {
     );
     expect(provenance?.uses).toMatch(
       new RegExp(
-        `^${SLSA_GENERATOR.replace(/\./g, "\\.")}@v\\d+\\.\\d+\\.\\d+$`,
+        `^${SLSA_GENERATOR.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}@v\\d+\\.\\d+\\.\\d+$`,
       ),
     );
     expect(provenance?.with).toEqual({
