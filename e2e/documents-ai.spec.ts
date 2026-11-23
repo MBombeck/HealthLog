@@ -297,13 +297,13 @@ test.describe("document vault — AI assist + content search", () => {
         request.method() === "POST" &&
         new URL(request.url()).pathname === "/api/documents/inbound/reindex",
     );
-    await Promise.all([
-      reindexRequest,
-      expect(
-        page.getByText("Indexing 5 document(s) in the background."),
-      ).toBeVisible(),
-      indexAll.click(),
-    ]);
+    await Promise.all([reindexRequest, indexAll.click()]);
+    // The queued toast is addressed by its type, not its copy: the count is
+    // an ICU plural and its wording is the bundle's. The enqueued count still
+    // has to reach it.
+    const queued = page.locator('[data-sonner-toast][data-type="success"]');
+    await expect(queued).toBeVisible();
+    await expect(queued).toContainText("5");
     expect(reindexCalls).toBe(1);
   });
 

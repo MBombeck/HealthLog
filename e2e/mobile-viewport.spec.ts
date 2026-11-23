@@ -149,6 +149,21 @@ test.describe("mobile-viewport smoke", () => {
       // scroll to interact, which is its own UX problem the design
       // review handles.
       if (box.y < 0 || box.y > viewportH) continue;
+      // The target is what answers a tap, which is not always the box.
+      // `InlineAction` keeps its text one line tall and takes the 44 px from
+      // an absolutely placed `::before` hit area (ui-standards, "Small text
+      // action"), so measure that hit area where the element draws one.
+      const targetHeight = await btn.evaluate((el) => {
+        const own = el.getBoundingClientRect().height;
+        const before = getComputedStyle(el, "::before");
+        const hitArea =
+          before.position === "absolute" &&
+          before.content !== "none" &&
+          before.content !== "normal"
+            ? parseFloat(before.height) || 0
+            : 0;
+        return Math.max(own, hitArea);
+      });
       // v1.4.37 — enforce the WCAG 2.5.5 height floor only.
       // The original `width < 44 || height < 44` check flagged
       // grouped compact controls (chart-range tabs like "7T"/"30T"
@@ -158,7 +173,7 @@ test.describe("mobile-viewport smoke", () => {
       // primary touch hazard on mobile is vertical mis-tap, so a 44 px
       // height floor is the contract every solo button must clear;
       // grouped pill rows handle width via gap-based spacing instead.
-      if (box.height < 44) {
+      if (targetHeight < 44) {
         // Prefer the accessible name when available; fall back to the
         // trimmed text. A role-based label is more stable across
         // re-skins than the raw `innerText` that brittle selectors
@@ -169,7 +184,7 @@ test.describe("mobile-viewport smoke", () => {
         const innerText = await btn.innerText().catch(() => "");
         const label = ariaLabel || innerText || "(no text)";
         failures.push(
-          `${label.slice(0, 40)} → ${box.width.toFixed(1)}×${box.height.toFixed(1)}`,
+          `${label.slice(0, 40)} → ${box.width.toFixed(1)}×${targetHeight.toFixed(1)}`,
         );
       }
     }
