@@ -94,6 +94,12 @@ import { prisma } from "@/lib/db";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { selectionFromLeaves } from "@/lib/report-selection/selection";
 import type { DoctorReportData } from "@/lib/doctor-report-data";
+// The routes are imported up front, not inside each case: the PDF route pulls
+// in the renderer, and a cold transform of it billed to whichever case ran
+// first timed that case out under a loaded shuffled run, with its render
+// still writing into the capture of the case after it.
+import { GET as getFhir } from "../fhir/route";
+import { GET as getReportPdf } from "../report.pdf/route";
 
 const TOKEN = "hls_deadbeef";
 
@@ -170,7 +176,7 @@ beforeEach(() => {
 
 describe("GET /c/{token}/fhir", () => {
   it("serves the link's frozen scope as a document Bundle", async () => {
-    const { GET } = await import("../fhir/route");
+    const GET = getFhir;
     const res = await GET(req(), params);
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("application/fhir+json");
@@ -185,7 +191,7 @@ describe("GET /c/{token}/fhir", () => {
   });
 
   it("carries no Coverage — the insurance leaf cannot reach this path", async () => {
-    const { GET } = await import("../fhir/route");
+    const GET = getFhir;
     const res = await GET(req(), params);
     const bundle = (await res.json()) as {
       entry: { resource: { resourceType: string } }[];
@@ -197,7 +203,7 @@ describe("GET /c/{token}/fhir", () => {
 
   it("refuses a protected link without the unlock cookie", async () => {
     vi.mocked(verifyUnlockValue).mockReturnValue(false);
-    const { GET } = await import("../fhir/route");
+    const GET = getFhir;
     const res = await GET(req(), params);
     expect(res.status).toBe(404);
     expect(loadShareViewData).not.toHaveBeenCalled();
@@ -205,7 +211,7 @@ describe("GET /c/{token}/fhir", () => {
 
   it("refuses an unknown, revoked or expired token with the same flat 404", async () => {
     vi.mocked(resolveShareGateState).mockResolvedValue(null as never);
-    const { GET } = await import("../fhir/route");
+    const GET = getFhir;
     const res = await GET(req(), params);
     expect(res.status).toBe(404);
     expect(checkRateLimit).not.toHaveBeenCalled();
@@ -222,7 +228,7 @@ describe("GET /c/{token}/fhir", () => {
       documents: [],
       documentOnly: true,
     } as never);
-    const { GET } = await import("../fhir/route");
+    const GET = getFhir;
     const res = await GET(req(), params);
     expect(res.status).toBe(404);
   });
@@ -234,7 +240,7 @@ describe("GET /c/{token}/fhir", () => {
       documents: [],
       documentOnly: false,
     } as never);
-    const { GET } = await import("../fhir/route");
+    const GET = getFhir;
     const res = await GET(req(), params);
     expect(res.status).toBe(404);
   });
@@ -245,14 +251,14 @@ describe("GET /c/{token}/fhir", () => {
       count: 21,
       resetAt: new Date(),
     } as never);
-    const { GET } = await import("../fhir/route");
+    const GET = getFhir;
     const res = await GET(req(), params);
     expect(res.status).toBe(429);
     expect(loadShareViewData).not.toHaveBeenCalled();
   });
 
   it("uses its own rate bucket, not the document route's", async () => {
-    const { GET } = await import("../fhir/route");
+    const GET = getFhir;
     await GET(req(), params);
     // Generating a bundle is far more expensive than serving a stored blob and
     // must not share a budget with it.
@@ -264,7 +270,7 @@ describe("GET /c/{token}/fhir", () => {
   });
 
   it("records an audit row per download, scoped to the owner", async () => {
-    const { GET } = await import("../fhir/route");
+    const GET = getFhir;
     await GET(req(), params);
     expect(auditLog).toHaveBeenCalledWith(
       "share-link.report.download",
@@ -282,7 +288,7 @@ describe("GET /c/{token}/fhir", () => {
 
 describe("GET /c/{token}/report.pdf", () => {
   it("serves the link's frozen scope as a PDF", async () => {
-    const { GET } = await import("../report.pdf/route");
+    const GET = getReportPdf;
     const res = await GET(
       new Request(`http://localhost/c/${TOKEN}/report.pdf`),
       params,
@@ -299,7 +305,7 @@ describe("GET /c/{token}/report.pdf", () => {
     // back to the display default. A reading is dated by the day it was where
     // the person lives, and a practice filing the PDF beside the page it came
     // from must not find two different dates for one reading.
-    const { GET } = await import("../report.pdf/route");
+    const GET = getReportPdf;
     await GET(new Request(`http://localhost/c/${TOKEN}/report.pdf`), params);
 
     expect(pdfOptionsSeen).toHaveLength(1);
@@ -315,7 +321,7 @@ describe("GET /c/{token}/report.pdf", () => {
 
   it("falls back to AUTO when the owner row carries no clock preference", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
-    const { GET } = await import("../report.pdf/route");
+    const GET = getReportPdf;
     const res = await GET(
       new Request(`http://localhost/c/${TOKEN}/report.pdf`),
       params,
@@ -326,7 +332,7 @@ describe("GET /c/{token}/report.pdf", () => {
 
   it("runs the same gate as the bundle beside it", async () => {
     vi.mocked(verifyUnlockValue).mockReturnValue(false);
-    const { GET } = await import("../report.pdf/route");
+    const GET = getReportPdf;
     const res = await GET(
       new Request(`http://localhost/c/${TOKEN}/report.pdf`),
       params,
@@ -335,7 +341,7 @@ describe("GET /c/{token}/report.pdf", () => {
   });
 
   it("records its own format in the audit row", async () => {
-    const { GET } = await import("../report.pdf/route");
+    const GET = getReportPdf;
     await GET(new Request(`http://localhost/c/${TOKEN}/report.pdf`), params);
     expect(auditLog).toHaveBeenCalledWith(
       "share-link.report.download",
