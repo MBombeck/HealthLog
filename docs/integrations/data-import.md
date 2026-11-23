@@ -329,6 +329,32 @@ renders the counts, not the status code: rows written and none skipped is
 a success, a mixed result is a warning, and nothing written is a failure
 with the reasons grouped by count.
 
+### Lab results and medications from a spreadsheet
+
+The **Lab results and medications from a spreadsheet** card takes a CSV
+of lab results or of medications. You pick which column holds what,
+**Check file** runs the whole file without writing anything and lists every
+refused row with its line number and reason, and the import starts only
+after that. **Download template** gives a file with the expected columns.
+
+A medication row maps name, dose, daily intake times, as-needed, and a
+start and end date. Two rules to know before you fill the file:
+
+- **Every row needs either a time or as-needed set to `yes`.** A
+  scheduled medication without a time is refused (`missing_times`), and a
+  row with both is refused too. Several times go in one cell, separated by
+  a space, comma, semicolon or `|` (`08:00 20:00`).
+- **Everything else starts at its default.** After the import, open each
+  medication where these matter and set them by hand: type (Other), route
+  (Oral), pack size (none), tablets or units per dose (1), and how often
+  you take it (every day). Reminders stay off. Intake history is not part
+  of this import; the **Medication dose history** card adds it.
+
+A medication whose end date has already passed lands as an ended course,
+the same as one ended with **End medication**: nothing falls due, nothing is
+reminded and nothing counts against adherence. Intake tracking stays on,
+so doses from that course can still be recorded later.
+
 ## 4. Activity files (FIT)
 
 Watches and bike computers record each workout as a FIT file: Garmin,

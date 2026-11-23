@@ -181,6 +181,8 @@
 - The iOS app's "sync with your other devices is disturbed" notice only appears for a real, current problem: a silent push iOS chose not to deliver no longer counts, and the next confirmed alert clears it.
 - Saving a medication without changing its times no longer resets today's open doses or wakes the other devices.
 - A dose time typed or picked on a medication's Schedule tab is saved even when Add time was not pressed first. Before, Save schedule sent the old times and still said the schedule was saved. Saving with every time removed now asks for one instead of quietly keeping the stored time.
+- Every file upload shows a real "Choose file" button with the chosen file's name beside it, instead of the browser's own text control that did not look clickable. Thanks to @Cnote43. ([#1215](https://github.com/MBombeck/HealthLog/issues/1215))
+- A medication whose course has ended, by hand or imported with an end date in the past, no longer says under "Track intake" that its doses fall due. Nothing was due or counted for it; the switch now says so, and the import guide lists what every medication row needs and which fields start at their default. Thanks to @Cnote43. ([#1215](https://github.com/MBombeck/HealthLog/issues/1215))
 
 ### Security
 
