@@ -54,6 +54,7 @@ const { getMedicationScheduleTool } =
 const { loadDailyDigest } = await import("@/lib/daily/load-digest");
 const { handleReminderCheck } =
   await import("@/lib/jobs/reminder/medication-reminder-check");
+const { caches } = await import("@/lib/cache/server-cache");
 
 const OLD_SLOT = "2026-11-23T20:16:00.000Z"; // 21:16 Berlin
 const NEW_SLOT = "2026-11-23T10:30:00.000Z"; // 11:30 Berlin
@@ -327,6 +328,11 @@ describe("a dose time moved during the day", () => {
         select: { syncVersion: true },
       });
 
+    const staleCell = `${med.userId}|${med.id}|stale-probe`;
+    const staleListCell = `${med.userId}|stale-probe`;
+    caches.medicationCompliance.set(staleCell, { stale: true });
+    caches.medications.set(staleListCell, { stale: true });
+
     // 11:25:45 Berlin: the form saves the same schedule back.
     vi.setSystemTime(new Date("2026-11-23T10:25:45.000Z"));
     await putSchedule(med.id, OLD_SCHEDULE);
@@ -346,6 +352,10 @@ describe("a dose time moved during the day", () => {
     expect(kept).toEqual({ deletedAt: null, syncVersion });
     // ... and no device is woken for it.
     expect(wakes()).toBe(0);
+    // The save still evicts the record's memoised medication cells: a cell
+    // written before the save must not answer the next read.
+    expect(caches.medicationCompliance.get(staleCell)).toBeNull();
+    expect(caches.medications.get(staleListCell)).toBeNull();
 
     // The next projecting read finds the same row.
     await readToday();

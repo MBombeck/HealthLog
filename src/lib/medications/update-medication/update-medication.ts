@@ -9,6 +9,7 @@
  */
 import type { MedicineRegistryChoice } from "@/lib/medications/leaflet-registries";
 import { afterMedicationChange } from "@/lib/medications/after-dose-change";
+import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
   medicationDetail,
   type ReadUser,
@@ -388,16 +389,20 @@ export async function updateMedication(input: {
     },
   });
 
-  // Bust per-user medications + compliance + achievement caches so the next
-  // read reflects the schedule change.
   // A schedule, a pause, a course or intake tracking decides what is due on
   // every device. A save that changed nothing (the form echoing the stored
-  // medication back) tells no device: the silent budget is small.
+  // medication back) tells no device: the silent budget is small. It still
+  // evicts the per-user medications, compliance and achievement caches: a
+  // save is the documented way to make the next read reflect the stored row,
+  // and a cell memoised before an out-of-band edit would otherwise outlive
+  // the save by its full TTL.
   if (
     (write.trail.tombstonedSlotCount ?? 0) > 0 ||
     (await medicationStateKey(id)) !== stateBefore
   ) {
     afterMedicationChange(user.id);
+  } else {
+    invalidateUserMedications(user.id, { evict: true });
   }
 
   // The read model, exactly as `GET /api/medications/{id}` answers it.
