@@ -311,7 +311,7 @@
     "lib/record-activity/activity-verb.ts :: recordActivityVerbLine": 262,
     "lib/strava/sync.ts :: runStravaSync": 219,
     "lib/support/report.ts :: collectSupportReportFacts": 332,
-    "lib/targets/build-response.ts :: buildTargetsResponse": 332,
+    "lib/targets/build-response.ts :: buildTargetsResponse": 320,
     "lib/targets/vitals-builder.ts :: buildVitalTargets": 322,
     "lib/telegram-webhook-handlers.ts :: handleCallback": 443,
     "lib/telegram-webhook-handlers.ts :: handleTextMessage": 321,

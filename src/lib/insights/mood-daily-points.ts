@@ -10,6 +10,7 @@ import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
 } from "@/lib/rollups/mood-rollups";
+import { foldMoodEntriesToDays } from "@/lib/rollups/mood-day-fold";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 
 export interface MoodDayPoint {
@@ -83,39 +84,18 @@ export async function readMoodDailyPoints(
       // Tombstoned rows are not entries.
       where: { userId, deletedAt: null, moodLoggedAt: { gte: moodSince } },
       orderBy: { moodLoggedAt: "asc" },
-      select: { score: true, moodLoggedAt: true, date: true },
+      select: { score: true, date: true },
     });
     if (moodEntriesRaw.length > 0) {
-      // Bucket per `date` (TZ-anchored YYYY-MM-DD label, same key the
-      // rollup tier would emit for Berlin-anchored single-entry days)
-      // so the fallback shape matches the rollup-tier shape.
-      const byDay = new Map<
-        string,
-        { dayKey: string; sum: number; count: number; ts: Date }
-      >();
-      for (const e of moodEntriesRaw) {
-        const k = e.date;
-        const cur = byDay.get(k) ?? {
-          dayKey: k,
-          sum: 0,
-          count: 0,
-          ts: e.moodLoggedAt,
-        };
-        cur.sum += e.score;
-        cur.count += 1;
-        // Pin the bucket's measuredAt to the latest entry's timestamp
-        // — close enough for the trailing-window filters below.
-        if (e.moodLoggedAt > cur.ts) cur.ts = e.moodLoggedAt;
-        byDay.set(k, cur);
-      }
-      moodDailyPoints = Array.from(byDay.values())
-        .map((b) => ({
-          measuredAt: b.ts,
-          dayKey: b.dayKey,
-          value: b.sum / b.count,
-          count: b.count,
-        }))
-        .sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
+      // Folded into the rows the tier would hold, so a point sits on the
+      // same instant whichever path answered and the mood block's trailing
+      // windows hold the same days.
+      moodDailyPoints = foldMoodEntriesToDays(moodEntriesRaw).map((r) => ({
+        measuredAt: r.bucketStart,
+        dayKey: dateOnlyKey(r.bucketStart),
+        value: r.mean,
+        count: r.count,
+      }));
       moodTotalEntries = moodEntriesRaw.length;
       moodLatestScore = moodEntriesRaw[moodEntriesRaw.length - 1].score;
     }

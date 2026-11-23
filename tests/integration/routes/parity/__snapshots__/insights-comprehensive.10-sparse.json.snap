@@ -435,12 +435,12 @@
         "avg7": 3,
         "avg30": 3.04,
         "slope7": {
-          "slope": 0.286,
+          "slope": 0.5,
           "direction": "up",
-          "confidence": 0.14
+          "confidence": 0.25
         },
         "slope30": {
-          "slope": 0,
+          "slope": 0.007,
           "direction": "stable",
           "confidence": 0
         },
