@@ -17,7 +17,8 @@
  * Calm, inset-grouped, AA. No card tint.
  */
 
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -109,8 +110,16 @@ export function ScheduleTimesEditor({
 
   const [edits, setEdits] = useState<ScheduleEdit[]>(initial);
   const [busy, setBusy] = useState(false);
+  const [missingTimes, setMissingTimes] = useState(false);
+  // The edits as of the last commit, for `save()` to read after it has
+  // flushed a field that was still being typed in.
+  const editsRef = useRef(edits);
+  useLayoutEffect(() => {
+    editsRef.current = edits;
+  });
 
   function patchSchedule(index: number, patch: Partial<ScheduleEdit>) {
+    setMissingTimes(false);
     setEdits((prev) =>
       prev.map((e, i) => (i === index ? { ...e, ...patch } : e)),
     );
@@ -118,6 +127,24 @@ export function ScheduleTimesEditor({
 
   async function save() {
     if (busy) return;
+    // A time still being typed into a field reaches the edits when the field
+    // blurs. Blur it here, synchronously, so the save reads that time. The
+    // button keeps focus off itself on press (see `onMouseDown` below): a
+    // blur at press time would grow the form with the new chip and its
+    // window row before the release, and the click would land off the
+    // button.
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.tagName === "INPUT") {
+      flushSync(() => active.blur());
+    }
+    const edits = editsRef.current;
+    // A schedule with every time removed is not saved. It used to fall back
+    // to the stored `windowStart`, so the request carried the old time and
+    // the tab still said the schedule was saved.
+    if (edits.some((e) => e.timesOfDay.length === 0)) {
+      setMissingTimes(true);
+      return;
+    }
     setBusy(true);
     try {
       // Replace schedules wholesale — preserve every cadence field from
@@ -126,8 +153,7 @@ export function ScheduleTimesEditor({
         ...(trackIntake !== undefined && { trackIntake }),
         schedules: schedules.map((s, i) => {
           const edit = edits[i];
-          const times =
-            edit.timesOfDay.length > 0 ? edit.timesOfDay : [s.windowStart];
+          const times = edit.timesOfDay;
           const recurrence = parseScheduleRecurrence(s.daysOfWeek);
           // Drop windows whose timeOfDay no longer names a live dose time
           // (so a removed time can't leave an orphaned window the server
@@ -242,11 +268,22 @@ export function ScheduleTimesEditor({
         );
       })}
 
+      {missingTimes ? (
+        <p
+          role="alert"
+          className="text-destructive text-sm"
+          data-slot="zeitplan-missing-times"
+        >
+          {t("medications.detail.zeitplan.history.validationTimes")}
+        </p>
+      ) : null}
+
       <div className="flex items-center justify-between gap-3">
         <p className="text-muted-foreground text-xs">
           {t("medications.detail.zeitplan.fullEditNote")}
         </p>
         <Button
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => void save()}
           disabled={busy}
           aria-busy={busy || undefined}

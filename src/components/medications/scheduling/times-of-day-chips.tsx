@@ -3,8 +3,14 @@
 /**
  * v1.5.0 — TimesOfDayChips component.
  *
- * Multi-chip HH:mm input. Each chip is removable; adding a chip opens
- * a small native `<input type="time">`. A preset row above the chips
+ * Multi-chip HH:mm input. Each chip is removable. The add field's time is
+ * part of the value from the moment the field commits it (Enter, blur, or a
+ * pick in the picker): it shows as a chip at once, a later pick in the same
+ * field replaces it, and Add time (or leaving a typed field) settles it and
+ * clears the field for the next one. A time in the field is therefore never
+ * left out of the value a surrounding form saves. Before, it waited for the
+ * Add button, and a save pressed straight after typing or picking sent the
+ * times without it. A preset row above the chips
  * offers Morning / Noon / Evening / Night — tapping a preset adds the
  * matching chip if absent, removes it if present.
  *
@@ -29,7 +35,7 @@
  *   .max.reached           — "Maximum reached" copy
  */
 
-import { useCallback, useId, useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -119,14 +125,38 @@ export function TimesOfDayChips({
   const fmt = useFormatters();
   const inputId = useId();
   const sortedValue = useMemo(() => sortTimes(value), [value]);
+  const addRowRef = useRef<HTMLDivElement>(null);
+  // What the add field shows, and the time it put into the value (null once
+  // settled, or when the time was already a chip). A picker commits on every
+  // column, so a second commit replaces the first rather than adding to it.
   const [draft, setDraft] = useState("");
+  const [pending, setPending] = useState<string | null>(null);
+  const settled =
+    pending !== null && sortedValue.includes(pending)
+      ? removeTime(sortedValue, pending)
+      : sortedValue;
 
-  const onAddDraft = useCallback(() => {
-    if (!draft) return;
-    const next = addTime(sortedValue, draft, maxChips);
-    onChange(next);
+  const onFieldChange = (next: string) => {
+    const valid = TIME_RE.test(next);
+    setDraft(valid ? next : "");
+    const added = valid ? addTime(settled, next, maxChips) : settled;
+    setPending(added !== settled ? next : null);
+    if (added !== sortedValue) onChange(added);
+  };
+
+  // Settle the field's time as a chip and clear the field. A typed time is
+  // committed by the field's own blur first, so typing and then pressing Add
+  // (or Save) lands it; the press puts the caret back for the next time.
+  const settle = () => {
     setDraft("");
-  }, [draft, maxChips, onChange, sortedValue]);
+    setPending(null);
+  };
+  const onAddPress = () => {
+    settle();
+    addRowRef.current
+      ?.querySelector<HTMLInputElement>('input[type="text"]')
+      ?.focus();
+  };
 
   const onRemove = (target: string) => {
     onChange(removeTime(sortedValue, target));
@@ -136,7 +166,7 @@ export function TimesOfDayChips({
     onChange(togglePreset(sortedValue, preset, maxChips));
   };
 
-  const atCap = sortedValue.length >= maxChips;
+  const atCap = settled.length >= maxChips;
 
   // One-shot context — render a single time picker, no chip list.
   if (maxChips === 1) {
@@ -248,7 +278,17 @@ export function TimesOfDayChips({
       )}
 
       {/* Add-new row */}
-      <div className="flex items-center gap-2">
+      <div
+        ref={addRowRef}
+        className="flex items-center gap-2"
+        // Enter commits a typed time inside the field; settle it here, where
+        // the key arrives after that commit, so the next time starts fresh.
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+            settle();
+          }
+        }}
+      >
         <Label htmlFor={inputId} className="sr-only">
           {t(`${i18nPrefix}.add`)}
         </Label>
@@ -256,7 +296,9 @@ export function TimesOfDayChips({
           id={inputId}
           value={draft}
           disabled={disabled || atCap}
-          onChange={(v) => setDraft(v)}
+          onChange={onFieldChange}
+          // Leaving a typed field settles what it committed on the way out.
+          onBlur={settle}
           className="h-11 w-32 sm:h-9 sm:min-h-9"
           aria-label={t(`${i18nPrefix}.add`)}
           data-testid="times-of-day-draft-input"
@@ -265,8 +307,8 @@ export function TimesOfDayChips({
           type="button"
           variant="outline"
           size="sm"
-          disabled={disabled || !draft || atCap}
-          onClick={onAddDraft}
+          disabled={disabled || atCap}
+          onClick={onAddPress}
           className="h-11 sm:h-9"
           aria-label={t(`${i18nPrefix}.add`)}
           data-slot="times-of-day-add"

@@ -180,6 +180,7 @@
 
 - The iOS app's "sync with your other devices is disturbed" notice only appears for a real, current problem: a silent push iOS chose not to deliver no longer counts, and the next confirmed alert clears it.
 - Saving a medication without changing its times no longer resets today's open doses or wakes the other devices.
+- A dose time typed or picked on a medication's Schedule tab is saved even when Add time was not pressed first. Before, Save schedule sent the old times and still said the schedule was saved. Saving with every time removed now asks for one instead of quietly keeping the stored time.
 
 ### Security
 
