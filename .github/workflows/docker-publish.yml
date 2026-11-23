@@ -319,10 +319,14 @@ jobs:
           # tag bump invalidates every downstream layer that depends on
           # it (`pnpm build`) and the prior release's version string
           # can never survive a cache hit into the new image.
+          # OS_PACKAGES_REFRESH, unique per run, does the same for the
+          # runner's apt layer, so every published image takes the current
+          # Debian security updates instead of a cached package layer.
           build-args: |
             NEXT_PUBLIC_APP_VERSION=${{ github.ref_name }}
             NEXT_PUBLIC_APP_BUILD_SHA=${{ steps.provenance.outputs.build_sha }}
             NEXT_PUBLIC_APP_BUILT_AT=${{ steps.provenance.outputs.built_at }}
+            OS_PACKAGES_REFRESH=${{ github.run_id }}-${{ github.run_attempt }}
           outputs: |
             type=image,name=${{ env.IMAGE_REF }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
           cache-from: |

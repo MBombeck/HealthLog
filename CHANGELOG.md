@@ -200,6 +200,7 @@
 - A saved leaflet link must be https, is never fetched or embedded by the server, and one that is not https in a hand-edited backup is dropped on restore.
 - From this release on, every GitHub release carries a signed image manifest (`healthlog-<tag>-image.txt` with its Sigstore bundle) and SLSA v1 provenance, so the image a release names can be checked without asking the registry. `SECURITY.md` and `docs/ops/deploy.md`, "Verify a release from its assets", have the commands.
 - `glob` and `minimatch`, which arrive through other packages, are lifted past their advisories, and the image installs its migration CLI from a committed lockfile with pinned hashes.
+- The image takes the current Debian security updates on every build. The package upgrade step used to be served from the build cache, so fixes published after the first build (glibc and Kerberos among them) stayed out of the image until the base image moved.
 
 ### Updating
 
