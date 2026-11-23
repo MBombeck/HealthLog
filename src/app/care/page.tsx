@@ -8,10 +8,10 @@ import { getUnswitchedSession } from "@/lib/auth/acting-carrier";
 import { listMeasurementReminders } from "@/lib/measurement-reminders/list-read";
 import { queryKeys } from "@/lib/query-keys";
 
-import CheckupsPageClient from "./page-client";
+import CarePageClient from "./page-client";
 
 /**
- * Thin RSC wrapper around the (client) checkups page.
+ * Thin RSC wrapper around the (client) Care page.
  *
  * The page's above-the-fold content — the Vorsorge reminder list — waited for
  * the client `queryKeys.measurementReminders()` cell to fetch after hydrate,
@@ -37,12 +37,12 @@ import CheckupsPageClient from "./page-client";
  *  - Fail-soft: no session or a read hiccup renders the page exactly as
  *    before this wrapper existed — the client cell owns the fetch.
  */
-export default async function CheckupsPage() {
+export default async function CarePage() {
   // Global SSR-prefetch kill-switch shared with the dashboard wrapper. The e2e
   // server sets `DASHBOARD_SSR_PREFETCH=false` so Playwright route mocks — which
   // only see CLIENT fetches — keep governing what every prefetched page paints.
   if (process.env.DASHBOARD_SSR_PREFETCH === "false") {
-    return <CheckupsPageClient />;
+    return <CarePageClient />;
   }
 
   let dehydratedState = null;
@@ -64,11 +64,11 @@ export default async function CheckupsPage() {
   }
 
   if (dehydratedState === null) {
-    return <CheckupsPageClient />;
+    return <CarePageClient />;
   }
   return (
     <HydrationBoundary state={dehydratedState}>
-      <CheckupsPageClient />
+      <CarePageClient />
     </HydrationBoundary>
   );
 }

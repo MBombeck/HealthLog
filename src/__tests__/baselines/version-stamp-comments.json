@@ -552,7 +552,7 @@
     "app/auth/register/page.tsx": 3,
     "app/c/[token]/d/[id]/__tests__/route.test.ts": 1,
     "app/c/[token]/d/[id]/route.ts": 1,
-    "app/checkups/page-client.tsx": 4,
+    "app/care/page-client.tsx": 4,
     "app/claim/[token]/page.tsx": 1,
     "app/coach/__tests__/page-launch-params.test.tsx": 1,
     "app/coach/__tests__/page-prefetch.test.tsx": 1,

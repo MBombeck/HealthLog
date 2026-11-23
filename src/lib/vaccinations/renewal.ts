@@ -6,7 +6,7 @@
  * person confirms becomes an ordinary reminder keyed on the antigen
  * (`MeasurementReminder.vaccinationAntigen`, minted in `booster-mint.ts`).
  * Logging the next dose re-anchors it. Its `nextDueAt` is the renewal date.
- * Until now it lived only on `/checkups`, and the vaccination page itself said
+ * Until now it lived only on `/care`, and the vaccination page itself said
  * nothing about it.
  *
  * This module reads that date and resolves it to a state, once, on the
@@ -33,7 +33,7 @@ export type VaccinationRenewalState = "current" | "dueSoon" | "overdue";
 export interface VaccinationRenewalDTO {
   /** The component antigen slug the booster reminder keys on. */
   antigen: string;
-  /** The reminder behind it, for a deep link to `/checkups`. */
+  /** The reminder behind it, for a deep link to `/care`. */
   reminderId: string;
   /** ISO-8601 instant the booster is due. */
   dueAt: string;

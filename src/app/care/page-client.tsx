@@ -21,7 +21,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
 
 /**
- * v1.17.1 — Checkups (preventive-care) reminders page. The dedicated
+ * v1.17.1 — Care (preventive-care) reminders page. The dedicated
  * feature surface for "wann muss ich was wo machen". Auth-gated; the
  * section component owns the list + create flow.
  *
@@ -52,7 +52,7 @@ import { invalidateKeys, queryKeys } from "@/lib/query-keys";
  * is how a page ends up showing a visit that closed a checkup still listed as
  * due.
  */
-export default function CheckupsPageClient() {
+export default function CarePageClient() {
   const { isAuthenticated, isLoading } = useAuth();
   const mounted = useMounted();
   const queryClient = useQueryClient();

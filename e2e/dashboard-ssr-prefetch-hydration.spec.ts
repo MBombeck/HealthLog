@@ -98,7 +98,7 @@ test.describe("dashboard hydration with the SSR prefetch on", () => {
     expect(witness?.replaced).toBe(0);
   });
 
-  // The two list-page prefetch wrappers (`/checkups`, `/mood`) hand TanStack a
+  // The two list-page prefetch wrappers (`/care`, `/mood`) hand TanStack a
   // server-dehydrated state through the same HydrationBoundary mechanism the
   // dashboard uses. Their page-clients render behind a `useMounted` gate, so
   // the streamed HTML is the auth-gate shell by design — the node-identity
@@ -108,8 +108,8 @@ test.describe("dashboard hydration with the SSR prefetch on", () => {
   // mocked suite runs with the prefetch OFF and can never see it).
   for (const target of [
     {
-      path: "/checkups",
-      name: "checkups",
+      path: "/care",
+      name: "care",
       readySelector: '[data-testid="checkups-tab-vorsorge"]',
     },
     {

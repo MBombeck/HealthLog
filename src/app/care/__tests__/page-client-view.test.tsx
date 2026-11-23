@@ -1,5 +1,5 @@
 /**
- * Which tab a link to `/checkups` opens.
+ * Which tab a link to `/care` opens.
  *
  * Visits are the page's second tab. `?visit=<id>` opens one, `?view=visits`
  * the list, and the bare path keeps opening the checkups, which is what the
@@ -12,7 +12,7 @@ let search = new URLSearchParams();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-  usePathname: () => "/checkups",
+  usePathname: () => "/care",
   useSearchParams: () => search,
 }));
 vi.mock("@tanstack/react-query", async (importOriginal) => ({
@@ -43,19 +43,19 @@ vi.mock("@/components/body-sites/body-sites-section", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import CheckupsPageClient from "../page-client";
+import CarePageClient from "../page-client";
 
 function openTab(query: string): string | null {
   search = new URLSearchParams(query);
   const html = renderToStaticMarkup(
     <I18nProvider initialLocale="en">
-      <CheckupsPageClient />
+      <CarePageClient />
     </I18nProvider>,
   );
   return html.match(/data-section="([^"]+)"/)?.[1] ?? null;
 }
 
-describe("/checkups — the tab a link opens", () => {
+describe("/care — the tab a link opens", () => {
   it("opens the checkups on the bare path", () => {
     expect(openTab("")).toBe("vorsorge");
   });

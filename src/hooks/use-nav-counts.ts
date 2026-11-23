@@ -23,7 +23,7 @@ export function navCountsByHref(
   counts: NavCounts | undefined,
 ): Record<string, number> {
   if (!counts) return {};
-  return { "/medications": counts.dosesDue, "/checkups": counts.checkupsDue };
+  return { "/medications": counts.dosesDue, "/care": counts.checkupsDue };
 }
 
 export function useNavCounts(enabled: boolean): Record<string, number> {

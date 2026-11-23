@@ -148,7 +148,7 @@ describe("S1 — the direct session-resolution set is frozen", () => {
     // can only ever hold the caller's own. See
     // `prefetch-page-caching-guard.test.ts` for the rule that keeps a sixth
     // prefetching page from reaching for the bare helper.
-    "app/checkups/page.tsx":
+    "app/care/page.tsx":
       "RSC prefetch of the session user's reminder list, skipped under a switch",
     "app/coach/page.tsx":
       "RSC prefetch of the session user's coach state, skipped under a switch",

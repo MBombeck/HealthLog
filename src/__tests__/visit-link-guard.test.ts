@@ -1,8 +1,9 @@
 /**
  * A link to a visit is built by `src/lib/encounters/visit-links.ts`, and a
- * bare `/checkups` is a link to the checkups, never to a visit.
+ * bare `/care` (or `/checkups`, its spelling on the wire until 1.50) is a link
+ * to the checkups, never to a visit.
  *
- * Visits are the second tab of `/checkups`. The bare path opens the first
+ * Visits are the second tab of `/care`. The bare path opens the first
  * one, the preventive-care list, which never lists an appointment. Four
  * surfaces showed an upcoming appointment and linked it to the bare path —
  * the dashboard's next-appointment line, the Today rail item, the Today
@@ -11,9 +12,9 @@
  *
  * Two rules, both over code lines (comments are skipped):
  *
- *  1. The visit and tab query forms (`/checkups?visit=`, `/checkups?view=`)
- *     appear only in the builder.
- *  2. The bare `/checkups` literal appears only where the target IS the
+ *  1. The visit and tab query forms (`/care?visit=`, `/care?view=`, and the
+ *     same under `/checkups`) appear only in the builder.
+ *  2. The bare `/care` or `/checkups` literal appears only where the target IS the
  *     checkups list, counted per file. A new occurrence fails the run until
  *     someone decides whether it names a checkup (add it here, with the
  *     reason) or a visit (use the builder).
@@ -32,7 +33,7 @@ const SRC = join(__dirname, "..");
 const BUILDER = "lib/encounters/visit-links.ts";
 
 /**
- * Where a bare `/checkups` is right, and how often: each names the
+ * Where a bare `/care` is right, and how often: each names the
  * preventive-care list itself, or lists routes rather than linking one.
  */
 const BARE_CHECKUPS: Record<string, { count: number; why: string }> = {
@@ -61,12 +62,18 @@ const BARE_CHECKUPS: Record<string, { count: number; why: string }> = {
     count: 2,
     why: "route lists for domain visibility, not links",
   },
-  "lib/daily/digest.ts": { count: 1, why: "the due check-ups rail item" },
-  "lib/day/records.ts": { count: 1, why: "a check-up satisfied that day" },
+  "lib/daily/digest.ts": {
+    count: 1,
+    why: "the due check-ups rail item (wire spelling)",
+  },
+  "lib/day/records.ts": {
+    count: 1,
+    why: "a check-up satisfied that day (wire spelling)",
+  },
   "lib/onboarding/tour-state.ts": { count: 1, why: "the checkups tour step" },
   "lib/notifications/tap-target.ts": {
     count: 1,
-    why: "a checkup push; an appointment's names its visit as override",
+    why: "a checkup push (wire spelling); an appointment's names its visit as override",
   },
 };
 
@@ -112,9 +119,9 @@ function codeLines(source: string): string[] {
   return out;
 }
 
-const QUERY_FORM = /\/checkups\?(visit|view)=/;
+const QUERY_FORM = /\/(?:care|checkups)\?(visit|view)=/;
 // The bare page, or the page with a query the builder does not own.
-const BARE = /["'`]\/checkups(?:["'`]|\?(?!visit=|view=))/g;
+const BARE = /["'`]\/(?:care|checkups)(?:["'`]|\?(?!visit=|view=))/g;
 
 function scan(files: { path: string; source: string }[]) {
   const queryForms: string[] = [];
@@ -154,7 +161,7 @@ describe("links to a visit go through the visit-links builder", () => {
     );
     expect(
       bare,
-      "A new bare `/checkups`: if it leads to a visit, use the visit-links builder; if it really is the checkups list, add it to BARE_CHECKUPS with the reason.",
+      "A new bare `/care`: if it leads to a visit, use the visit-links builder; if it really is the checkups list, add it to BARE_CHECKUPS with the reason.",
     ).toEqual(expected);
   });
 
@@ -164,16 +171,16 @@ describe("links to a visit go through the visit-links builder", () => {
         path: "a.tsx",
         source: [
           "/**",
-          " * `/checkups?visit=<id>` in a docblock",
+          " * `/care?visit=<id>` in a docblock",
           " */",
-          '// "/checkups" in a line comment',
-          '{/* a JSX comment naming "/checkups"',
-          '    over two lines "/checkups" */}',
-          'const url = "https://example.test/x"; const bad = "/checkups";',
+          '// "/care" in a line comment',
+          '{/* a JSX comment naming "/care"',
+          '    over two lines "/care" */}',
+          'const url = "https://example.test/x"; const bad = "/care";',
         ].join("\n"),
       },
-      { path: "b.ts", source: "const p = `/checkups?visit=${id}`;" },
-      { path: "c.ts", source: "const q = `/checkups?${params}`;" },
+      { path: "b.ts", source: "const p = `/care?visit=${id}`;" },
+      { path: "c.ts", source: "const q = `/care?${params}`;" },
     ]);
     expect(queryForms).toEqual(["b.ts"]);
     expect(bare).toEqual({ "a.tsx": 1, "c.ts": 1 });

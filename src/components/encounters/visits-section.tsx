@@ -8,7 +8,7 @@
  * ordering lives in one place. A client that split and re-sorted one array
  * would be the second place it lives.
  *
- * No new nav entry and no new route. `/checkups` already owns exactly the right
+ * No new nav entry and no new route. `/care` already owns exactly the right
  * sentence — when do I have to do what, where — and is deliberately not module
  * gated, which is also why a visit carries no module key of its own.
  */
@@ -101,7 +101,7 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
           actions={
             <>
               <Button asChild variant="outline" className="min-h-11">
-                <Link href="/checkups/practitioners">
+                <Link href="/care/practitioners">
                   <ContactRound className="size-4" aria-hidden />
                   {t("practitioners.linkLabel")}
                 </Link>

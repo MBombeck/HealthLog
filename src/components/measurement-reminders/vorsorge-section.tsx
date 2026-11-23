@@ -38,7 +38,7 @@ import {
 import { ReminderFormSheet } from "./checkups/reminder-form-sheet";
 
 /**
- * The checkups surface (the `/checkups` page and its settings card): the
+ * The checkups surface (the `/care` page and its settings card): the
  * reminder list, the create / edit sheet, the value capture that completes a
  * typed reminder with a real reading, and filing a visit against one. The
  * form, the card and the postpone sheet live in `./checkups/`.
@@ -241,7 +241,7 @@ export function VorsorgeSection({
         // profile) and the care calendar (Health record) stay one tap away
         // from the page they are about; the links decide what a shared
         // record shows.
-        <ContextLinks page="/checkups" />
+        <ContextLinks page="/care" />
       ) : null}
       {variant === "page" ? null : (
         <SettingsCardHeader

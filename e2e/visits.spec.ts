@@ -45,13 +45,13 @@ test.describe.configure({ mode: "serial" });
 test.describe("visits", () => {
   // The seeded account owns the visits and the document this flow drives, and
   // both the `page` and the `request` fixture read them under its session.
-  // Without this the whole file runs anonymous: `/checkups` redirects to login
+  // Without this the whole file runs anonymous: `/care` redirects to login
   // and every `/api/*` read answers 401, which is a test-setup gap, not a
   // product one.
   test.use({ storageState: STORAGE_STATE_PATH });
 
   test("a visit saves with a date and nothing else", async ({ page }) => {
-    await page.goto("/checkups");
+    await page.goto("/care");
     await page.getByTestId("checkups-tab-visits").click();
 
     const add = page.locator('[data-slot="visits-add"]').first();

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 
 /**
  * Open the record a link points at: `/vaccinations?dose=<id>`,
- * `/checkups?visit=<id>`.
+ * `/care?visit=<id>`.
  *
  * The link chips on a document name the record they point at, and a chip that
  * lands on a list with nothing selected leaves the person searching the list

@@ -446,7 +446,7 @@ test("a vertical swipe that starts on a tab strip is the page's", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1180, height: 820 });
-  await page.goto("/checkups", { waitUntil: "domcontentloaded" });
+  await page.goto("/care", { waitUntil: "domcontentloaded" });
   const strip = page.locator('#main-content [data-slot="tabs-list"]').first();
   await expect(strip).toBeVisible();
   // `pan-x` here refused the vertical pan, so the page did not move.

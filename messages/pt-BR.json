@@ -628,7 +628,7 @@
     "cycle": "Ciclo",
     "labs": "Exames",
     "profile": "Perfil",
-    "vorsorge": "Check-ups",
+    "vorsorge": "Prevenção",
     "illness": "Doenças",
     "documents": "Documentos",
     "vaccinations": "Vacinas",
@@ -5371,7 +5371,7 @@
           "body": "O diário de doenças registra episódios agudos e diagnósticos crônicos com seus surtos. Oculto: correlacione um episódio com suas leituras e o Modo de Repouso que pausa lembretes. É assim que o Coach entende por que os valores oscilam por um tempo."
         },
         "vorsorge": {
-          "title": "Checks",
+          "title": "Prevenção",
           "body": "Checks lembram você de triagens e vacinas no seu próprio intervalo. Dica: “Concluído” pode criar uma leitura ou resultado laboratorial diretamente. Itens previstos aparecem como lembretes e no relatório médico."
         },
         "cycle": {
@@ -6003,7 +6003,7 @@
           "description": "Visualização em lista e ordem dos episódios."
         },
         "checkups": {
-          "title": "Check-ups",
+          "title": "Prevenção",
           "description": "Visualização em lista e ordem dos lembretes."
         },
         "documents": {
@@ -11094,7 +11094,7 @@
     "selectionBarLabel": "Ações de seleção"
   },
   "measurementReminders": {
-    "sectionTitle": "Check-ups",
+    "sectionTitle": "Prevenção",
     "sectionDescription": "Lembretes para o que medir ou verificar, quando e onde.",
     "markDone": "Concluído",
     "delete": "Excluir",
@@ -11198,7 +11198,7 @@
     "startCheckIn": "Iniciar check-in",
     "nextDueLabel": "Próximo vencimento:",
     "lastDoneLabel": "Última conclusão:",
-    "customize": "Personalizar check-ups",
+    "customize": "Personalizar prevenção",
     "adherence": {
       "label": "Dentro do intervalo",
       "onTrack": "No caminho",
@@ -11213,7 +11213,7 @@
     },
     "dashboard": {
       "empty": "Nenhum lembrete de check-up futuro.",
-      "openLink": "Abrir check-ups"
+      "openLink": "Abrir prevenção"
     },
     "showMeasurements": "Mostrar medições",
     "loadError": "Não foi possível carregar seus lembretes.",
@@ -13761,7 +13761,7 @@
     "action": {
       "logDose": "Tomar",
       "reconnect": "Reconectar",
-      "viewCheckups": "Ver checks",
+      "viewCheckups": "Ver prevenção",
       "viewAppointment": "Ver consulta",
       "viewAppointments": "Ver consultas",
       "checkinKeep": "Manter",
@@ -14557,7 +14557,7 @@
   },
   "checkups": {
     "viewSwitchLabel": "Mostrar check-ups, consultas, procedimentos ou locais do corpo",
-    "tabVorsorge": "Check-ups",
+    "tabVorsorge": "Prevenção",
     "tabVisits": "Consultas",
     "tabProcedures": "Procedimentos",
     "tabBodySites": "Locais do corpo"

@@ -11,7 +11,7 @@
  * ── An ordinary Vorsorge reminder ──────────────────────────────────────────
  *
  * The minted row is `origin: VORSORGE` and carries `vaccinationAntigen` as a
- * match key. Everything else — the cron, the digest, `/checkups`, the insights
+ * match key. Everything else — the cron, the digest, `/care`, the insights
  * block, `get_preventive_care` — reads it with zero new code, because a booster
  * reminder is the engine's native case. That nativeness is the whole Option-A
  * argument; the column is a key, not a behaviour change, and the published

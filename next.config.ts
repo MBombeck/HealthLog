@@ -254,18 +254,30 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       // v1.22.0 — the preventive-care surface moved from the German slug
-      // `/vorsorge` to the English `/checkups` (the feature reads "Checkups"
-      // in every non-German locale now). 301-redirect so bookmarks, the PWA's
-      // cached navigation, and any push deep-link keep resolving. The
-      // persisted internal id stays `vorsorge`; only the URL changes.
+      // `/vorsorge` to the English `/checkups`; it was then renamed Care and
+      // moved to `/care`. Every older address goes straight to the new one
+      // in one hop, query string kept (Next.js carries it over), so bookmarks,
+      // the PWA's cached navigation and every push notification already sitting
+      // on a phone keep resolving. `permanent` answers 308. The persisted
+      // internal id stays `vorsorge`; only the URL changes.
       {
         source: "/vorsorge",
-        destination: "/checkups",
+        destination: "/care",
         permanent: true,
       },
       {
         source: "/vorsorge/:path*",
-        destination: "/checkups/:path*",
+        destination: "/care/:path*",
+        permanent: true,
+      },
+      {
+        source: "/checkups",
+        destination: "/care",
+        permanent: true,
+      },
+      {
+        source: "/checkups/:path*",
+        destination: "/care/:path*",
         permanent: true,
       },
     ];

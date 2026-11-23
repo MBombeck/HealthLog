@@ -56,7 +56,7 @@ describe("moduleOwningPath", () => {
     "/measurements",
     "/insights",
     "/insights/weight",
-    "/checkups",
+    "/care",
     "/coach/plans",
     "/coach/conversations",
   ])("%s belongs to no module", (path) => {

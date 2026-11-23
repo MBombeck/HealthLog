@@ -1,6 +1,6 @@
 /**
  * The one Vorsorge-reminder list read, shared by `GET
- * /api/measurement-reminders` and the `/checkups` RSC prefetch wrapper so the
+ * /api/measurement-reminders` and the `/care` RSC prefetch wrapper so the
  * two cannot drift in filter, order, or DTO shape — the SSR-seeded cell must
  * be byte-compatible with what the client `queryFn` gets from the wire.
  */
