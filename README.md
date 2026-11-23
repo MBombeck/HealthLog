@@ -30,7 +30,7 @@ It is for people who track their health over years, often with a condition and s
 
 The [live demo](https://demo.healthlog.dev) is a working install with sample data. Sign in with `demo` / `demo123demo123`.
 
-<img width="2400" height="1500" alt="The HealthLog dashboard split diagonally between the dark theme (top left) and the light theme (bottom right): today's medications and cycle, the health score ring, worth-a-look cards, and metric tiles with 7-day trends" src="docs/releases/v1.49.0/theme-split-desktop.webp" />
+<img width="1600" height="1000" alt="A short tour of the HealthLog web app in the light theme: the dashboard with today's medications, the health score ring and metric tiles with 7-day trends, then the timeline with lanes for life events, conditions, medications, vaccinations, visits, labs and cycles above blood pressure, weight and resting heart rate, then a medication page with its next dose and adherence" src="docs/assets/tour.webp" />
 <p align="center">
   <img src="docs/assets/timeline.jpeg" alt="Timeline: life events, conditions, medications, vaccinations, labs and cycles on one time axis, above blood pressure, weight and resting heart rate" width="32%">
   <img src="docs/assets/day-panel.jpeg" alt="Blood pressure insights with the day panel open: what was running that day, its values and scores" width="32%">
