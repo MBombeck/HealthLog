@@ -86,6 +86,35 @@ export const PALETTE_SYNONYMS: Readonly<Record<string, ReadonlyArray<string>>> =
     "settings:ai#ai-provider": ["openai", "anthropic", "ollama", "llm", "key"],
     "settings:api#api-tokens": ["token", "api key", "bearer"],
     "settings:modules": ["features", "funktionen", "module"],
+    // The page that generates the doctor report. The words are the task,
+    // in every interface language, so a search for the task finds the page
+    // that does it rather than the module switch that turns it off.
+    "settings:health-record": [
+      "doctor report",
+      "doctor",
+      "report",
+      "pdf",
+      "arztbericht",
+      "arzt",
+      "bericht",
+      "informe médico",
+      "informe",
+      "rapport médical",
+      "rapport",
+      "referto medico",
+      "rapporto",
+      "의사 보고서",
+      "보고서",
+      "artsrapport",
+      "verslag",
+      "raport lekarski",
+      "raport",
+      "relatório médico",
+      "relatório",
+      "отчёт для врача",
+      "отчёт",
+      "врач",
+    ],
     "settings:account": ["profil", "profile", "name", "email"],
 
     // ── Actions ──
@@ -95,3 +124,40 @@ export const PALETTE_SYNONYMS: Readonly<Record<string, ReadonlyArray<string>>> =
     "action:coach": ["chat", "ai", "ki", "ask", "fragen"],
     "action:shortcuts": ["keyboard", "tastatur", "hotkeys", "shortcuts"],
   };
+
+/**
+ * Entries a task word should reach first. The doctor-report page shares
+ * "pdf" with Documents and "doctor report" with the module switch; the boost
+ * puts the page that does the job above both whenever it matches at all.
+ */
+export const PALETTE_TASK_BOOST: Readonly<Record<string, number>> = {
+  "settings:health-record": 100,
+};
+
+/**
+ * Search words in the reader's own language, per entry id: an i18n key under
+ * `palette.keywords.*` holding a comma-separated list, present in every
+ * locale (`surface-registry-guard.test.ts`). Where `PALETTE_SYNONYMS` carries
+ * a few cross-language words, these carry the words a person types in their
+ * interface language for a concept the title names differently ("snooze" for
+ * "Remind me later", "dark mode" for "Theme", "Nextcloud" for the folder).
+ */
+export const PALETTE_KEYWORD_KEYS: Readonly<Record<string, string>> = {
+  "nav:/emergency-card": "palette.keywords.emergencyCard",
+  "nav:/notifications": "palette.keywords.notificationsPerChannel",
+  "settings:modules/medications#medicine-registry":
+    "palette.keywords.medicineRegistry",
+  "settings:notifications#dose-snooze": "palette.keywords.snooze",
+  "settings:notifications#security-alerts": "palette.keywords.securityAlerts",
+  "settings:notifications#lasting-change": "palette.keywords.lastingChange",
+  "settings:account#theme": "palette.keywords.theme",
+  "settings:export#import-gadgetbridge": "palette.keywords.gadgetbridge",
+  "settings:export#import-fhir-bundle": "palette.keywords.fhirBundle",
+  "settings:integrations#import-health-connect-remote":
+    "palette.keywords.healthConnectFolder",
+  "settings:health-record#report-schedule": "palette.keywords.reportSchedule",
+  "settings:health-record#calendar": "palette.keywords.careCalendar",
+  "settings:privacy#who-has-access": "palette.keywords.whoHasAccess",
+  "admin:services": "palette.keywords.adminPush",
+  "admin:system-status": "palette.keywords.adminSystemStatus",
+};

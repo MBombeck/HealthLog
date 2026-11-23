@@ -10,6 +10,15 @@ import { annotate } from "@/lib/logging/context";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
+import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
+import {
+  readLedgerMedications,
+  resolveDosesByRow,
+} from "@/lib/medications/dose-state/today";
+import {
+  serializeResolvedDose,
+  wireDoseState,
+} from "@/lib/medications/dose-state/resolve";
 
 export async function readTodayIntakes(input: {
   userId: string;
@@ -47,7 +56,47 @@ export async function readTodayIntakes(input: {
       ...TRACKED_INTAKE_EVENT_WHERE,
     },
     orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
-    include: { medication: { select: { id: true, snoozedUntil: true } } },
+  });
+  // The rows' medications, read once: the snooze rule and the dose ledgers
+  // both work from these rows.
+  const medications = await readLedgerMedications(
+    userId,
+    events.map((e) => e.medicationId),
+  );
+  const medicationById = new Map(medications.map((m) => [m.id, m]));
+
+  // A snooze answers one dose, not the medication: the slots it holds by the
+  // reminder worker's own rule, per medication.
+  const now = new Date();
+  const heldByMedication = new Map<string, Set<number>>();
+  for (const e of events) {
+    const medication = medicationById.get(e.medicationId);
+    if (!medication || heldByMedication.has(e.medicationId)) continue;
+    heldByMedication.set(
+      e.medicationId,
+      slotsHeldBySnooze({
+        snoozedUntil: medication.snoozedUntil,
+        snoozedAt: medication.updatedAt,
+        schedules: medication.schedules,
+        slotInstants: events
+          .filter((x) => x.medicationId === e.medicationId)
+          .map((x) => x.scheduledFor),
+        tz: userTz,
+        now,
+      }),
+    );
+  }
+
+  // The resolved dose state of each row, from each medication's ledger
+  // (`dose-state/resolve.ts`): one answer for every client.
+  const resolved = await resolveDosesByRow({
+    userId,
+    userTz,
+    medications,
+    takenViaByRow: new Map(events.map((e) => [e.id, e.takenVia])),
+    from: todayStart,
+    to: todayEnd,
+    now,
   });
 
   annotate({
@@ -64,6 +113,12 @@ export async function readTodayIntakes(input: {
     medicationId: e.medicationId,
     scheduledAt: e.scheduledFor.toISOString(),
     takenAt: e.takenAt?.toISOString() ?? null,
+    // The row's version, for an undo with `expectedSyncVersion`.
+    syncVersion: e.syncVersion,
+    // Where the outcome was recorded, so a client can say "already taken at
+    // 07:12 via an integration" before offering a second take.
+    source: e.source,
+    takenVia: e.takenAt ? e.takenVia : null,
     status: e.skipped
       ? "skipped"
       : e.takenAt
@@ -74,9 +129,45 @@ export async function readTodayIntakes(input: {
           // a stale row surfacing in the window reads honestly.)
           e.autoMissed
           ? "missed"
-          : e.medication.snoozedUntil && e.medication.snoozedUntil > new Date()
+          : heldByMedication.get(e.medicationId)?.has(e.scheduledFor.getTime())
             ? "snoozed"
             : "pending",
-    snoozedUntil: e.medication.snoozedUntil?.toISOString() ?? null,
+    snoozedUntil: heldByMedication
+      .get(e.medicationId)
+      ?.has(e.scheduledFor.getTime())
+      ? (medicationById.get(e.medicationId)?.snoozedUntil?.toISOString() ??
+        null)
+      : null,
+    ...todayDoseFields(resolved.get(e.id) ?? null, e.takenAt !== null),
   }));
+}
+
+/**
+ * The resolved fields of a today row. A row the ledger places on no slot (an
+ * ad-hoc take) reads `taken` with no window.
+ */
+function todayDoseFields(
+  dose: Parameters<typeof serializeResolvedDose>[0] | null,
+  taken: boolean,
+) {
+  if (dose) {
+    const s = serializeResolvedDose(dose);
+    return {
+      ...wireDoseState(dose.state),
+      slotInstant: s.slotInstant,
+      dueAt: s.dueAt,
+      overdueSince: dose.state === "overdue" ? s.overdueSince : null,
+      missedAfter: s.missedAfter,
+      lateTakeCounts: s.lateTakeCounts,
+    };
+  }
+  return {
+    state: taken ? ("taken" as const) : null,
+    takenLate: false,
+    slotInstant: null,
+    dueAt: null,
+    overdueSince: null,
+    missedAfter: null,
+    lateTakeCounts: false,
+  };
 }

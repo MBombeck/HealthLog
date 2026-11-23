@@ -12,7 +12,8 @@
  *     token, and we must not enable APNs delivery prematurely.
  *  3. Re-registering the same `apnsToken` is idempotent, including when the
  *     legacy token changes: the route returns 201 and keeps one canonical
- *     device and one channel. Foreign ownership still returns 409.
+ *     device and one channel. A token another account holds is taken over
+ *     (iOS #190, #191): that account's row goes with its push credentials.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
@@ -44,7 +45,41 @@ vi.mock("next/headers", async () => {
   };
 });
 
+// Every dispatch, with the devices its account still held at that moment.
+const dispatched = vi.hoisted(
+  () =>
+    [] as Array<{
+      userId: string;
+      eventType: string;
+      metadata: unknown;
+      deviceIds: string[];
+    }>,
+);
+vi.mock("@/lib/notifications/dispatcher", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/notifications/dispatcher")>();
+  return {
+    ...actual,
+    dispatchNotification: async (
+      input: Parameters<typeof actual.dispatchNotification>[0],
+    ) => {
+      const devices = await getPrismaClient().device.findMany({
+        where: { userId: input.userId },
+        select: { id: true },
+      });
+      dispatched.push({
+        userId: input.userId,
+        eventType: input.eventType,
+        metadata: input.metadata,
+        deviceIds: devices.map((d) => d.id),
+      });
+      return actual.dispatchNotification(input);
+    },
+  };
+});
+
 beforeEach(async () => {
+  dispatched.length = 0;
   await truncateAllTables(getPrismaClient());
   cookieJar.clear();
   headerJar.clear();
@@ -278,8 +313,8 @@ describe("POST /api/devices", () => {
     ).resolves.toEqual({ deviceId: "legacy-token-original" });
   });
 
-  it("rejects an APNs token owned by another user without mutating either account", async () => {
-    const user = await seedSession("device-apns-conflict");
+  it("takes over an APNs token another account holds, with nothing of that account left on it", async () => {
+    const user = await seedSession("device-apns-takeover");
     const prisma = getPrismaClient();
     const owner = await prisma.user.create({
       data: {
@@ -287,36 +322,407 @@ describe("POST /api/devices", () => {
         email: "device-apns-owner@example.test",
       },
     });
+    const apns = "ab".repeat(32);
     const ownedDevice = await prisma.device.create({
       data: {
         userId: owner.id,
         platform: "ios",
-        token: "foreign-legacy-token",
+        token: "owner-install-token",
         bundleId: "io.healthlog.ios",
-        apnsToken: "9999aaaabbbbcccc",
+        apnsToken: apns,
         apnsEnvironment: "sandbox",
+        pushKeyPublic: "A".repeat(43),
+        pushKeySuites: [1],
+        relayState: "bound",
+        relayConsentAt: new Date(),
+        relayConsentVersion: "1",
+        liveActivityPushToken: "cd".repeat(32),
+        laStartToken: "ef".repeat(32),
+      },
+    });
+    // The previous account's second phone keeps its pushes.
+    const otherDevice = await prisma.device.create({
+      data: {
+        userId: owner.id,
+        platform: "ios",
+        token: "owner-second-phone",
+        bundleId: "io.healthlog.ios",
+        apnsToken: "9a".repeat(32),
+        apnsEnvironment: "production",
+      },
+    });
+    const medication = await prisma.medication.create({
+      data: { userId: owner.id, name: "Owner med", dose: "1" },
+    });
+    await prisma.liveActivityToken.create({
+      data: {
+        deviceId: ownedDevice.id,
+        pushToken: "12".repeat(32),
+        medicationId: medication.id,
       },
     });
 
     const response = await registerDevice({
-      token: "requesting-user-token",
+      token: "taker-install-token",
       bundleId: "io.healthlog.ios.changed",
-      apnsToken: "9999aaaabbbbcccc",
+      apnsToken: apns.toUpperCase(),
       apnsEnvironment: "production",
     });
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(201);
+    const body = (await response.json()) as { data: { id: string } };
+
+    // The previous account's row went, with its push key, binding and Live
+    // Activity state.
+    await expect(
+      prisma.device.count({ where: { id: ownedDevice.id } }),
+    ).resolves.toBe(0);
+    await expect(
+      prisma.liveActivityToken.count({ where: { deviceId: ownedDevice.id } }),
+    ).resolves.toBe(0);
+    const taken = await prisma.device.findUniqueOrThrow({
+      where: { id: body.data.id },
+    });
+    expect(taken).toMatchObject({
+      userId: user.id,
+      token: "taker-install-token",
+      apnsToken: apns,
+      apnsEnvironment: "production",
+      pushKeyPublic: null,
+      relayState: "none",
+      relayConsentAt: null,
+      liveActivityPushToken: null,
+      laStartToken: null,
+    });
+    // Both accounts can see what happened, without the token itself.
+    const audits = await prisma.auditLog.findMany({
+      where: {
+        action: {
+          in: ["devices.register.takeover", "devices.register.taken_over"],
+        },
+      },
+      select: { userId: true, action: true, details: true },
+    });
+    expect(audits.map((a) => [a.userId, a.action]).sort()).toEqual(
+      [
+        [owner.id, "devices.register.taken_over"],
+        [user.id, "devices.register.takeover"],
+      ].sort(),
+    );
+    for (const audit of audits) expect(audit.details ?? "").not.toContain(apns);
+    // The previous account hears of it, on what it still has: the taken-over
+    // row is gone before the alert is dispatched.
+    expect(dispatched.filter((d) => d.eventType === "SECURITY_ALERT")).toEqual([
+      {
+        userId: owner.id,
+        eventType: "SECURITY_ALERT",
+        metadata: { securityKind: "device_reassigned" },
+        deviceIds: [otherDevice.id],
+      },
+    ]);
+  });
+
+  it("takes over the same install token (X-Device-Id) another account registered", async () => {
+    const user = await seedSession("device-token-takeover");
+    const prisma = getPrismaClient();
+    const owner = await prisma.user.create({
+      data: {
+        username: "device-token-owner",
+        email: "device-token-owner@example.test",
+      },
+    });
+    const previous = await prisma.device.create({
+      data: {
+        userId: owner.id,
+        platform: "ios",
+        token: "shared-install-token",
+        bundleId: "io.healthlog.ios",
+        medicationDelivery: "client",
+      },
+    });
+
+    const response = await registerDevice({
+      token: "shared-install-token",
+      bundleId: "io.healthlog.ios",
+      apnsToken: "fe".repeat(32),
+      apnsEnvironment: "production",
+    });
+    expect(response.status).toBe(201);
 
     await expect(
-      prisma.device.findUniqueOrThrow({ where: { id: ownedDevice.id } }),
-    ).resolves.toMatchObject({
-      userId: owner.id,
-      token: "foreign-legacy-token",
-      bundleId: "io.healthlog.ios",
-      apnsEnvironment: "sandbox",
+      prisma.device.count({ where: { id: previous.id } }),
+    ).resolves.toBe(0);
+    const rows = await prisma.device.findMany({
+      where: { token: "shared-install-token" },
+    });
+    expect(rows).toHaveLength(1);
+    // The previous account's per-device choice does not carry over.
+    expect(rows[0]).toMatchObject({
+      userId: user.id,
+      medicationDelivery: null,
     });
     await expect(
-      prisma.device.count({ where: { userId: user.id } }),
+      prisma.device.count({ where: { userId: owner.id } }),
     ).resolves.toBe(0);
+  });
+
+  describe("a device still signed in to the other account", () => {
+    const apns = "5c".repeat(32);
+    const HOUR = 3_600_000;
+    /** An install id (`X-Device-Id`) for the tests below. */
+    const installOf = (who: string) => ["install", who, "0001"].join("-");
+
+    /**
+     * The victim: a phone signed in to its account, with push key, relay
+     * binding and a running Live Activity. `signIn` decides what sign-in the
+     * account holds for it.
+     */
+    async function seedSignedInOwner(
+      signIn: "live" | "no-device" | "revoked" | "expired" | "sunset" | "none",
+    ) {
+      const prisma = getPrismaClient();
+      const owner = await prisma.user.create({
+        data: {
+          username: "device-live-owner",
+          email: "live-owner@example.test",
+        },
+      });
+      const device = await prisma.device.create({
+        data: {
+          userId: owner.id,
+          platform: "ios",
+          token: installOf("owner"),
+          bundleId: "io.healthlog.ios",
+          apnsToken: apns,
+          apnsEnvironment: "production",
+          pushKeyPublic: "B".repeat(43),
+          pushKeySuites: [1],
+          relayState: "bound",
+          relayConsentAt: new Date(),
+          relayConsentVersion: "1",
+        },
+      });
+      const medication = await prisma.medication.create({
+        data: { userId: owner.id, name: "Owner med", dose: "1" },
+      });
+      await prisma.liveActivityToken.create({
+        data: {
+          deviceId: device.id,
+          pushToken: "34".repeat(32),
+          medicationId: medication.id,
+        },
+      });
+      const now = Date.now();
+      let n = 0;
+      const refresh = (data: Record<string, unknown>) =>
+        prisma.refreshToken.create({
+          data: {
+            userId: owner.id,
+            tokenHash: ["hash", "refresh", String((n += 1))].join("-"),
+            deviceId: device.token,
+            expiresAt: new Date(now + 30 * 24 * HOUR),
+            ...data,
+          },
+        });
+      if (signIn === "live") await refresh({});
+      if (signIn === "no-device") await refresh({ deviceId: null });
+      if (signIn === "revoked") await refresh({ revokedAt: new Date(now) });
+      if (signIn === "expired") {
+        await refresh({ expiresAt: new Date(now - HOUR) });
+      }
+      if (signIn === "sunset") {
+        // A rotation consumed the pair a moment ago; its access token is in
+        // the short sunset, and the new pair's refresh token is gone.
+        const accessHash = ["hash", "access", "sunset"].join("-");
+        await refresh({ usedAt: new Date(now), accessTokenHash: accessHash });
+        await prisma.apiToken.create({
+          data: {
+            userId: owner.id,
+            name: "sunset",
+            tokenHash: accessHash,
+            permissions: ["*"],
+            expiresAt: new Date(now + 30_000),
+          },
+        });
+      }
+      return { owner, device };
+    }
+
+    async function expectUntouched(deviceId: string, ownerId: string) {
+      const prisma = getPrismaClient();
+      await expect(
+        prisma.device.findUniqueOrThrow({ where: { id: deviceId } }),
+      ).resolves.toMatchObject({
+        userId: ownerId,
+        apnsToken: apns,
+        pushKeyPublic: "B".repeat(43),
+        relayState: "bound",
+      });
+      await expect(
+        prisma.liveActivityToken.count({ where: { deviceId } }),
+      ).resolves.toBe(1);
+      await expect(
+        prisma.pushRelayUnbind.count({ where: { token: apns } }),
+      ).resolves.toBe(0);
+    }
+
+    it("refuses a stolen APNs token with 409 and changes nothing", async () => {
+      const attacker = await seedSession("device-apns-thief");
+      const { owner, device } = await seedSignedInOwner("live");
+
+      const response = await registerDevice({
+        token: installOf("attacker"),
+        bundleId: "io.healthlog.ios",
+        apnsToken: apns,
+        apnsEnvironment: "production",
+      });
+      expect(response.status).toBe(409);
+      const body = (await response.json()) as {
+        meta?: { errorCode?: string };
+      };
+      expect(body.meta?.errorCode).toBe("devices.register.signed_in_elsewhere");
+
+      await expectUntouched(device.id, owner.id);
+      const prisma = getPrismaClient();
+      await expect(
+        prisma.device.count({ where: { userId: attacker.id } }),
+      ).resolves.toBe(0);
+      // No alert, no takeover audit: a refusal on both sides instead.
+      expect(dispatched).toEqual([]);
+      const audits = await prisma.auditLog.findMany({
+        where: { action: { startsWith: "devices.register.take" } },
+        select: { userId: true, action: true, details: true },
+      });
+      expect(audits.map((a) => [a.userId, a.action]).sort()).toEqual(
+        [
+          [attacker.id, "devices.register.takeover_refused"],
+          [owner.id, "devices.register.takeover_refused"],
+        ].sort(),
+      );
+      for (const audit of audits) {
+        expect(JSON.stringify(audit.details)).not.toContain(apns);
+      }
+    });
+
+    it("refuses a stolen install id (X-Device-Id) the same way", async () => {
+      await seedSession("device-token-thief");
+      const { owner, device } = await seedSignedInOwner("live");
+      const response = await registerDevice({
+        token: installOf("owner"),
+        bundleId: "io.healthlog.ios",
+      });
+      expect(response.status).toBe(409);
+      await expectUntouched(device.id, owner.id);
+    });
+
+    it("fails closed on a live sign-in that names no device", async () => {
+      await seedSession("device-legacy-thief");
+      const { owner, device } = await seedSignedInOwner("no-device");
+      const response = await registerDevice({
+        token: installOf("attacker"),
+        bundleId: "io.healthlog.ios",
+        apnsToken: apns,
+        apnsEnvironment: "production",
+      });
+      expect(response.status).toBe(409);
+      await expectUntouched(device.id, owner.id);
+    });
+
+    it("counts the access token of a rotation's sunset as signed in", async () => {
+      await seedSession("device-sunset-thief");
+      const { owner, device } = await seedSignedInOwner("sunset");
+      const response = await registerDevice({
+        token: installOf("attacker"),
+        bundleId: "io.healthlog.ios",
+        apnsToken: apns,
+        apnsEnvironment: "production",
+      });
+      expect(response.status).toBe(409);
+      await expectUntouched(device.id, owner.id);
+    });
+
+    for (const signIn of ["revoked", "expired", "none"] as const) {
+      it(`takes the device over once the other account's sign-in is ${signIn}`, async () => {
+        const user = await seedSession(`device-after-${signIn}`);
+        const { owner, device } = await seedSignedInOwner(signIn);
+        const response = await registerDevice({
+          token: installOf("next"),
+          bundleId: "io.healthlog.ios",
+          apnsToken: apns,
+          apnsEnvironment: "production",
+        });
+        expect(response.status).toBe(201);
+        const prisma = getPrismaClient();
+        await expect(
+          prisma.device.count({ where: { id: device.id } }),
+        ).resolves.toBe(0);
+        await expect(
+          prisma.device.findFirstOrThrow({ where: { apnsToken: apns } }),
+        ).resolves.toMatchObject({
+          userId: user.id,
+          pushKeyPublic: null,
+          relayState: "none",
+        });
+        await expect(
+          prisma.liveActivityToken.count({ where: { deviceId: device.id } }),
+        ).resolves.toBe(0);
+        await expect(
+          prisma.auditLog.count({
+            where: { userId: owner.id, action: "devices.register.taken_over" },
+          }),
+        ).resolves.toBe(1);
+      });
+    }
+  });
+
+  it("stores a bounded localRunwayUntil, clears it on null, keeps it when omitted", async () => {
+    const user = await seedSession("device-local-runway");
+    const prisma = getPrismaClient();
+    const base = {
+      token: "runway-install-token",
+      bundleId: "io.healthlog.ios",
+      medicationDelivery: "client",
+    };
+    const inAWeek = new Date(Date.now() + 7 * 86_400_000);
+    expect(
+      (
+        await registerDevice({
+          ...base,
+          localRunwayUntil: inAWeek.toISOString(),
+        })
+      ).status,
+    ).toBe(201);
+    const stored = () =>
+      prisma.device.findFirstOrThrow({
+        where: { userId: user.id },
+        select: { localRunwayUntil: true },
+      });
+    expect((await stored()).localRunwayUntil?.getTime()).toBe(
+      inAWeek.getTime(),
+    );
+
+    expect((await registerDevice(base)).status).toBe(201);
+    expect((await stored()).localRunwayUntil?.getTime()).toBe(
+      inAWeek.getTime(),
+    );
+
+    for (const outOfBounds of [
+      new Date(Date.now() - 3_600_000),
+      new Date(Date.now() + 15 * 86_400_000),
+    ]) {
+      const refused = await registerDevice({
+        ...base,
+        localRunwayUntil: outOfBounds.toISOString(),
+      });
+      expect(refused.status).toBe(422);
+    }
+    expect((await stored()).localRunwayUntil?.getTime()).toBe(
+      inAWeek.getTime(),
+    );
+
+    expect(
+      (await registerDevice({ ...base, localRunwayUntil: null })).status,
+    ).toBe(201);
+    expect((await stored()).localRunwayUntil).toBeNull();
   });
 
   it("serializes concurrent registration into one canonical device and channel", async () => {
@@ -347,5 +753,63 @@ describe("POST /api/devices", () => {
         where: { userId: user.id, type: "APNS" },
       }),
     ).resolves.toBe(1);
+  });
+});
+
+describe("POST /api/devices — per-Activity Live Activity tokens", () => {
+  const base = {
+    token: "device-la-list-1",
+    bundleId: "io.healthlog.ios",
+    apnsToken: "abcdef0123456789abcdef0123456789",
+    apnsEnvironment: "sandbox",
+  };
+  async function stored(deviceToken: string) {
+    const device = await getPrismaClient().device.findFirstOrThrow({
+      where: { token: deviceToken },
+      include: { liveActivities: { orderBy: { pushToken: "asc" } } },
+    });
+    return device;
+  }
+
+  it("replaces the list when sent, clears it on [], keeps it when omitted, and then ignores the legacy token", async () => {
+    await seedSession("device-la-list");
+    const slot = "2026-11-21T07:00:00.000Z";
+    expect(
+      (
+        await registerDevice({
+          ...base,
+          liveActivityPushToken: "1111111111111111",
+          liveActivityTokens: [
+            {
+              token: "aaaa0000aaaa0000",
+              medicationId: "m-a",
+              slotInstant: slot,
+            },
+            { token: "bbbb0000bbbb0000", medicationId: "m-b" },
+          ],
+        })
+      ).status,
+    ).toBeLessThan(300);
+    let device = await stored(base.token);
+    expect(
+      device.liveActivities.map((a) => [
+        a.pushToken,
+        a.medicationId,
+        a.slotInstant?.toISOString() ?? null,
+      ]),
+    ).toEqual([
+      ["aaaa0000aaaa0000", "m-a", slot],
+      ["bbbb0000bbbb0000", "m-b", null],
+    ]);
+    // The legacy field is ignored when the list is present.
+    expect(device.liveActivityPushToken).toBeNull();
+
+    await registerDevice({ ...base });
+    device = await stored(base.token);
+    expect(device.liveActivities).toHaveLength(2);
+
+    await registerDevice({ ...base, liveActivityTokens: [] });
+    device = await stored(base.token);
+    expect(device.liveActivities).toHaveLength(0);
   });
 });

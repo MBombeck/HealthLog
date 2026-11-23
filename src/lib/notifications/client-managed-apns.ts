@@ -107,16 +107,70 @@ export function hasClientManagedApnsGate(
 }
 
 /**
+ * How long a device that delivers locally is trusted to have a plan without
+ * saying how long it has (`Device.localRunwayUntil`): three days since its
+ * last request. A phone that has not run for longer may have run its local
+ * schedule dry, so the server reminds it again until it shows up.
+ */
+export const CLIENT_DEVICE_QUIET_MS = 3 * 24 * 60 * 60 * 1000;
+
+/** How far ahead a device may report its local runway. */
+export const LOCAL_RUNWAY_MAX_DAYS = 14;
+/** Clock skew a runway may lie in the past by and still be accepted. */
+const LOCAL_RUNWAY_SKEW_MS = 5 * 60 * 1000;
+
+/** Whether a reported `localRunwayUntil` is within the accepted bounds. */
+export function localRunwayInBounds(at: Date, now: Date): boolean {
+  const t = at.getTime();
+  return (
+    t >= now.getTime() - LOCAL_RUNWAY_SKEW_MS &&
+    t <= now.getTime() + LOCAL_RUNWAY_MAX_DAYS * 24 * 60 * 60 * 1000
+  );
+}
+
+/** What the local-delivery decision reads off a device row. */
+export interface LocalDeliveryDevice {
+  medicationDelivery: string | null;
+  lastSeen: Date;
+  localRunwayUntil: Date | null;
+}
+
+/**
  * Does this device deliver the reminder itself? Its own override decides;
- * without one (`null`, shown as "inherit") the account-wide flag does.
+ * without one (`null`, shown as "inherit") the account-wide flag does. A
+ * device that would deliver locally does so only while its plan can still
+ * run: until the runway it reported, or, without one, for three days after
+ * its last request. Past that it counts as `server` until it is seen again.
  */
 export function deviceDeliversLocally(
-  override: string | null,
+  device: LocalDeliveryDevice,
   accountDeliversLocally: boolean,
+  now: Date = new Date(),
 ): boolean {
-  if (override === "client") return true;
-  if (override === "server") return false;
-  return accountDeliversLocally;
+  return localDeliveryUntil(device, accountDeliversLocally, now) !== null;
+}
+
+/**
+ * Until when this device delivers the reminder itself, or null when the
+ * server reminds it now. The instant {@link deviceDeliversLocally} reads, and
+ * what the device's push diagnostics show.
+ */
+export function localDeliveryUntil(
+  device: LocalDeliveryDevice,
+  accountDeliversLocally: boolean,
+  now: Date = new Date(),
+): Date | null {
+  const local =
+    device.medicationDelivery === "client"
+      ? true
+      : device.medicationDelivery === "server"
+        ? false
+        : accountDeliversLocally;
+  if (!local) return null;
+  const until =
+    device.localRunwayUntil?.getTime() ??
+    device.lastSeen.getTime() + CLIENT_DEVICE_QUIET_MS;
+  return now.getTime() <= until ? new Date(until) : null;
 }
 
 /**
@@ -128,6 +182,14 @@ export function deviceDeliversLocally(
  *   otherwise. `localDeviceIds` names the devices left out, for the wide
  *   event.
  *
+ * An event with per-device delivery also names `serverDeviceIds`: the devices
+ * that get the server's reminder, by {@link deviceDeliversLocally}. This is
+ * the one decision both APNs transports read. Over this server's own key it
+ * becomes `onlyDeviceIds` for a dispatch the flag covers; over the relay it
+ * is the only set the event may travel to, for every dispatch of the event,
+ * a follow-up included (`relayCarries`). A follow-up still reaches every
+ * device over the server's own key, as it always has.
+ *
  * An event without per-device overrides keeps the account-wide rule: skip
  * when the account delivers locally, send to every device otherwise.
  */
@@ -137,40 +199,59 @@ export type ApnsDeliveryTargets =
       kind: "send";
       onlyDeviceIds?: string[];
       localDeviceIds: string[];
+      serverDeviceIds?: string[];
     };
 
 export async function resolveApnsDeliveryTargets(
   eventType: string,
   recipientUserId: string,
   accountDeliversLocally: boolean,
+  metadata?: Record<string, unknown>,
 ): Promise<ApnsDeliveryTargets> {
   const gate = CLIENT_MANAGED_APNS_EVENTS[eventType];
+  const covered = hasClientManagedApnsGate(eventType, metadata);
   if (!gate?.perDevice) {
-    return accountDeliversLocally
+    return covered && accountDeliversLocally
       ? { kind: "skip" }
       : { kind: "send", localDeviceIds: [] };
   }
   const devices = await prisma.device.findMany({
     where: { userId: recipientUserId, apnsToken: { not: null } },
-    select: { id: true, medicationDelivery: true },
+    select: {
+      id: true,
+      medicationDelivery: true,
+      lastSeen: true,
+      localRunwayUntil: true,
+    },
   });
+  const local: string[] = [];
+  const server: string[] = [];
+  const now = new Date();
+  for (const device of devices) {
+    (deviceDeliversLocally(device, accountDeliversLocally, now)
+      ? local
+      : server
+    ).push(device.id);
+  }
+  // A dispatch the flag does not cover (a follow-up) goes to every device
+  // over the server's own key; the relay still takes only `server`.
+  if (!covered) {
+    return { kind: "send", localDeviceIds: [], serverDeviceIds: server };
+  }
   // No device to decide for: the account's rule, exactly as before. The
   // sender then reports `apns_no_devices` when it is asked to send.
   if (devices.length === 0) {
     return accountDeliversLocally
       ? { kind: "skip" }
-      : { kind: "send", localDeviceIds: [] };
-  }
-  const local: string[] = [];
-  const server: string[] = [];
-  for (const device of devices) {
-    (deviceDeliversLocally(device.medicationDelivery, accountDeliversLocally)
-      ? local
-      : server
-    ).push(device.id);
+      : { kind: "send", localDeviceIds: [], serverDeviceIds: [] };
   }
   if (server.length === 0) return { kind: "skip" };
   return local.length === 0
-    ? { kind: "send", localDeviceIds: [] }
-    : { kind: "send", onlyDeviceIds: server, localDeviceIds: local };
+    ? { kind: "send", localDeviceIds: [], serverDeviceIds: server }
+    : {
+        kind: "send",
+        onlyDeviceIds: server,
+        localDeviceIds: local,
+        serverDeviceIds: server,
+      };
 }

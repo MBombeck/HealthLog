@@ -31,6 +31,7 @@
  * administration.
  */
 
+import { shownAdherence } from "@/lib/medications/shown-adherence";
 import type { MedicationCourseWire } from "@/components/medications/course-fields";
 import {
   CoursesRow,
@@ -47,13 +48,7 @@ import {
   holdsGuardianSurfaces,
   useRecordCapabilities,
 } from "@/hooks/use-record-capabilities";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useUrlSearch, writeUrlState } from "@/lib/url-state";
@@ -97,26 +92,28 @@ import { PhaseConfigSheet } from "@/components/medications/sections/phase-config
 import { SideEffectsSection } from "@/components/medications/side-effects-section";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { TitrationTimeline } from "@/components/medications/titration-timeline";
-import { estimateRunwayDays } from "@/lib/medications/supply-runway";
-import type { SupplySummary } from "@/lib/medications/inventory/summary";
 import { MedicationWizardDialog } from "@/components/medications/wizard/medication-wizard-dialog";
-import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
-import { formatUnitCount } from "@/components/medications/units-per-dose";
 import { apiGet } from "@/lib/api/api-fetch";
-import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { useTranslations } from "@/lib/i18n/context";
 import { formatDose } from "@/lib/medications/format-dose";
-import type { MedicationPayload } from "@/components/medications/wizard/wizard-payload";
 import type { ComplianceDisplay } from "@/lib/analytics/compliance";
 import { AutoMarkTakenBody } from "@/components/medications/sections/auto-mark-taken-section";
 import { IntakeTrackingBody } from "@/components/medications/sections/intake-tracking-section";
 import { MedicationRelatedSection } from "@/components/medications/detail/medication-related-section";
+import { MedicationLeafletSection } from "@/components/medications/detail/medication-leaflet-section";
+import { snapshotToWizardPayload } from "@/components/medications/detail/snapshot-wizard-payload";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
+import {
+  OverviewStatusSection,
+  ReminderPlanLine,
+} from "@/components/medications/detail/overview-status-section";
 import type { RelatedLink } from "@/lib/links/related";
-import { InlineAction } from "@/components/ui/inline-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   resolveTabSlug,
+  scrollActiveIntoRow,
   TAB_LABEL_KEYS,
   TAB_SLUGS,
   type TabSlug,
@@ -185,12 +182,17 @@ export interface MedicationDetailSnapshot {
   rxNormCode?: string | null;
   /** #1371 — the person's own note on the medication; null = none. */
   note?: string | null;
+  /** #1430 — the saved leaflet link, and the registry search. */
+  leafletUrl?: string | null;
+  leafletSearch?: LeafletSearch | null;
   /**
    * v1.15.20 — server-computed next due instant (the detail GET carries
    * it alongside the row). The Übersicht status surface renders it
    * directly; no client-side recurrence walking.
    */
   nextDueAt?: string | null;
+  /** True while `nextDueAt` is an open slot past its on-time window. */
+  nextDueOverdue?: boolean;
   /**
    * v1.37.19 — server-resolved slot-aware runway (days); null = inventory
    * tracking off or no consuming cadence. Preferred over the client
@@ -245,43 +247,6 @@ const OWNER_ONLY_TABS: ReadonlySet<TabSlug> = new Set([
  */
 const MANAGE_TABS: ReadonlySet<TabSlug> = new Set(["supply"]);
 
-function snapshotToWizardPayload(
-  med: MedicationDetailSnapshot,
-): MedicationPayload {
-  return {
-    id: med.id,
-    name: med.name,
-    dose: med.dose,
-    category: med.category,
-    treatmentClass: med.treatmentClass,
-    deliveryForm: med.deliveryForm,
-    dosesPerUnit: med.dosesPerUnit ?? null,
-    unitsPerDose: med.unitsPerDose ?? 1,
-    trackInjectionSites: med.trackInjectionSites ?? false,
-    allowedInjectionSites: med.allowedInjectionSites ?? [],
-    notificationsEnabled: med.notificationsEnabled,
-    startsOn: med.startsOn ? new Date(med.startsOn) : null,
-    endsOn: med.endsOn ? new Date(med.endsOn) : null,
-    oneShot: med.oneShot ?? false,
-    asNeeded: med.asNeeded ?? false,
-    trackIntake: med.trackIntake !== false,
-    autoMarkTaken: med.autoMarkTaken === true,
-    note: med.note ?? null,
-    schedules: med.schedules.map((s) => ({
-      id: s.id,
-      windowStart: s.windowStart,
-      windowEnd: s.windowEnd,
-      label: s.label ?? null,
-      dose: s.dose ?? null,
-      ...parseScheduleRecurrence(s.daysOfWeek),
-      timesOfDay: s.timesOfDay,
-      rrule: s.rrule ?? null,
-      rollingIntervalDays: s.rollingIntervalDays ?? null,
-      doseWindows: s.doseWindows ?? null,
-    })),
-  };
-}
-
 export function MedicationDetailTabs({
   medication: served,
 }: {
@@ -301,7 +266,6 @@ export function MedicationDetailTabs({
     [served],
   );
   const { t } = useTranslations();
-  const fmt = useFormatters();
   const recordCaps = useRecordCapabilities();
   const { canManageDomain, inSharedRecord } = recordCaps;
   const canManageMedications = canManageDomain("medications");
@@ -397,19 +361,20 @@ export function MedicationDetailTabs({
   );
 
   const activeTab = resolveTabSlug(searchParams?.get("tab"), availableTabs);
+  const scrollActiveTabIntoRow = useCallback(
+    (row: HTMLDivElement | null) => scrollActiveIntoRow(row, activeTab),
+    [activeTab],
+  );
 
   useEffect(() => {
     if (shouldOpenEditFromUrl) {
-      // Drop `?edit=1` (keep any `tab` param) so a refresh after closing
-      // the wizard does not keep reopening it. Made while mounting, so it
-      // waits for the router's history integration (`afterPaint`).
+      // Drop `?edit=1` so a refresh does not reopen the wizard (after paint).
       writeUrlState((params) => params.delete("edit"), { afterPaint: true });
     }
   }, [shouldOpenEditFromUrl]);
 
   const onTabChange = useCallback((next: string) => {
-    // The tab is deep-linkable and survives a reload; a shallow in-place
-    // write keeps the viewport pinned to the tab strip on switch.
+    // Deep-linkable; a shallow write keeps the viewport on the tab strip.
     writeUrlState((params) => params.set("tab", next));
   }, []);
 
@@ -436,76 +401,16 @@ export function MedicationDetailTabs({
         return null;
       }
     },
-    // v1.16.11 — no compliance read for an as-needed medication (the
-    // section is hidden; there is no rate to fetch).
+    // No compliance read for an as-needed medication: no rate to show.
     enabled: activeTab === "overview" && !asNeeded,
     staleTime: 30_000,
   });
 
   const complianceNotApplicable = compliance?.applicable === false;
   const display = compliance?.complianceDisplay ?? undefined;
-  const rate7 = display?.short.rate ?? compliance?.compliance7?.rate ?? 0;
-  const rate30 = display?.long.rate ?? compliance?.compliance30?.rate ?? 0;
-  const streak = display?.short.streak ?? compliance?.compliance7?.streak ?? 0;
-  const shortDays = display?.shortDays ?? 7;
-  const longDays = display?.longDays ?? 30;
-
-  // v1.15.20 — supply readout for the Übersicht status surface. Same
-  // query key the Bestand tab uses, so the two tabs share one cache slot
-  // and the row only renders when the user has actually registered
-  // supply items.
-  const { data: inventory } = useQuery({
-    queryKey: queryKeys.medicationInventory(id),
-    queryFn: async () => {
-      try {
-        return await apiGet<{
-          items: Array<{
-            state: "ACTIVE" | "IN_USE" | "EXPIRED" | "USED_UP";
-          }>;
-          summary?: SupplySummary;
-        } | null>(`/api/medications/${id}/inventory`);
-      } catch {
-        return null;
-      }
-    },
-    enabled: activeTab === "overview",
-    staleTime: 30_000,
-  });
-
-  const inventoryItems = Array.isArray(inventory?.items) ? inventory.items : [];
-  // v1.19.0 (iOS#25) — the supply headline is server-authoritative: the
-  // GET response carries a `summary` computed server-side through the
-  // shared `summariseSupply` helper (ACTIVE / IN_USE with units only —
-  // the list / GLP-1 semantic; EXPIRED surfaced separately, never
-  // available; dose-derived counts floored over the pooled units). The
-  // Übersicht status row renders these ready figures, so web and iOS read
-  // identical numbers from the same DTO. The runway estimate is a UI
-  // projection over the canonical `dosesRemaining`.
-  const {
-    unitsRemaining,
-    unitsTotal,
-    dosesRemaining,
-    dosesTotal,
-    expiredUnits,
-  } = inventory?.summary ?? {
-    unitsRemaining: 0,
-    unitsTotal: 0,
-    dosesRemaining: 0,
-    dosesTotal: 0,
-    expiredUnits: 0,
-  };
-  // v1.16.12 — fractional unitsPerDose (½ tablet per dose) drives the
-  // "show the raw unit tally" toggle below; the canonical figures above
-  // already account for it server-side.
-  const perDose =
-    medication.unitsPerDose && medication.unitsPerDose > 0
-      ? medication.unitsPerDose
-      : 1;
-  // v1.37.19 — prefer the server's slot-aware runway from the detail GET.
-  const runwayDays =
-    medication.runwayDays !== undefined
-      ? medication.runwayDays
-      : estimateRunwayDays(dosesRemaining, medication.schedules);
+  // A window with no dose to score shows "no doses yet", never a rate.
+  const { shortDays, longDays, rate7, rate30, streak } =
+    shownAdherence(compliance);
 
   return (
     <div className="space-y-6" data-slot="medication-detail-page">
@@ -516,10 +421,9 @@ export function MedicationDetailTabs({
         </Link>
       </Button>
 
-      {/* HERO — always-visible read-only summary. The structural edit
-          (wizard) moved out of the header: it lives as a row under
-          Erweitert → Lebenszyklus (the header button read as "edit this
-          page" and misled). `?edit=1` still opens the wizard directly. */}
+      {/* HERO — always-visible read-only summary. The structural edit (wizard)
+          lives under Erweitert → Lebenszyklus, not in the header, where it read
+          as "edit this page"; `?edit=1` still opens the wizard directly. */}
       <MedicationDetailSummary
         name={medication.name}
         dose={formatDose(medication.dose, t)}
@@ -539,9 +443,9 @@ export function MedicationDetailTabs({
         data-slot="medication-detail-tabs"
       >
         <TabsList
-          // Six tabs do not fit a phone in one row; they sit in a three-up
-          // grid there instead of scrolling a label off the edge.
-          className="w-full justify-start max-sm:grid! max-sm:h-auto! max-sm:grid-cols-3"
+          // One row on a phone, scrolling sideways when a locale runs long.
+          ref={scrollActiveTabIntoRow}
+          className="scroll-touch w-full max-w-full justify-start overflow-x-auto"
           aria-label={t("medications.detail.shell.tablistLabel")}
         >
           {availableTabs.map((slug) => (
@@ -549,103 +453,24 @@ export function MedicationDetailTabs({
               key={slug}
               value={slug}
               data-slot={`medication-tab-${slug}`}
+              className="max-sm:flex-none max-sm:text-xs"
             >
               {t(TAB_LABEL_KEYS[slug])}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {/* ÜBERSICHT — the status landing surface: next due dose,
-            reminder state and supply runway (each with a jump link into
-            its owner tab), then the compliance readout. All values come
-            from data the page already holds — no new endpoints. */}
+        {/* ÜBERSICHT — next due dose, reminder state and supply runway
+            (each with a jump link into its owner tab), then compliance. */}
         <TabsContent value="overview" className="space-y-6 pt-2">
-          <MedicationDetailSection
-            titleId="medication-uebersicht-status-heading"
-            title={t("medications.detail.uebersicht.statusTitle")}
-            dataSlot="medication-uebersicht-status"
-          >
-            <ul className="divide-border/60 divide-y">
-              <StatusRow
-                label={t("medications.detail.uebersicht.nextDoseLabel")}
-                value={
-                  !medication.active
-                    ? t("medications.detail.uebersicht.pausedHint")
-                    : recordOnly
-                      ? t("medications.detail.uebersicht.nextDoseNotTracked")
-                      : asNeeded
-                        ? t("medications.detail.uebersicht.nextDoseAsNeeded")
-                        : medication.nextDueAt
-                          ? fmt.dateTime(medication.nextDueAt)
-                          : t("medications.detail.uebersicht.nextDoseNone")
-                }
-                jumpLabel={
-                  asNeeded
-                    ? t("medications.detail.uebersicht.jumpToVerlauf")
-                    : t("medications.detail.uebersicht.jumpToZeitplan")
-                }
-                onJump={jumpTo(asNeeded ? "history" : "schedule")}
-                dataSlot="uebersicht-next-dose"
-              />
-              {/* v1.16.11 — as-needed never reminds; the row would only
-                  mislead (the cron skips schedule-less medications). */}
-              {!asNeeded && !recordOnly && (
-                <StatusRow
-                  label={t("medications.detail.uebersicht.reminderLabel")}
-                  value={
-                    medication.notificationsEnabled
-                      ? t("medications.detail.uebersicht.reminderOn")
-                      : t("medications.detail.uebersicht.reminderOff")
-                  }
-                  jumpLabel={t("medications.detail.uebersicht.jumpToZeitplan")}
-                  onJump={jumpTo("schedule")}
-                  dataSlot="uebersicht-reminder"
-                />
-              )}
-              {inventoryItems.length > 0 && (
-                <StatusRow
-                  label={t("medications.detail.uebersicht.supplyLabel")}
-                  value={
-                    <>
-                      {t("medications.detail.bestand.summary", {
-                        remaining: dosesRemaining,
-                        total: dosesTotal,
-                      })}
-                      {perDose !== 1 && (
-                        <span className="text-muted-foreground">
-                          {" ("}
-                          {t("medications.detail.bestand.unitsDetail", {
-                            remaining: formatUnitCount(unitsRemaining),
-                            total: formatUnitCount(unitsTotal),
-                          })}
-                          {")"}
-                        </span>
-                      )}
-                      {expiredUnits > 0 && (
-                        <span className="text-muted-foreground">
-                          {" · "}
-                          {t("medications.detail.bestand.expiredSuffix", {
-                            units: expiredUnits,
-                          })}
-                        </span>
-                      )}
-                      {runwayDays !== null && (
-                        <span className="text-muted-foreground">
-                          {" · "}
-                          {t("medications.detail.uebersicht.supplyRunway", {
-                            days: runwayDays,
-                          })}
-                        </span>
-                      )}
-                    </>
-                  }
-                  jumpLabel={t("medications.detail.uebersicht.jumpToBestand")}
-                  onJump={jumpTo("supply")}
-                  dataSlot="uebersicht-supply"
-                />
-              )}
-            </ul>
-          </MedicationDetailSection>
+          <OverviewStatusSection
+            medication={medication}
+            recordOnly={recordOnly}
+            asNeeded={asNeeded}
+            courseStatus={served.courseStatus}
+            currentDose={display?.currentDose ?? null}
+            jumpTo={jumpTo}
+          />
 
           {!asNeeded && !recordOnly && (
             <MedicationDetailSection
@@ -686,6 +511,7 @@ export function MedicationDetailTabs({
             startsOn={medication.startsOn ?? null}
             related={medication.related}
           />
+          <MedicationLeafletSection medication={medication} />
         </TabsContent>
 
         {/* WIRKUNG — the per-medication efficacy view: the outcome metric(s)/
@@ -773,7 +599,17 @@ export function MedicationDetailTabs({
                 <NotificationsBody
                   medicationId={id}
                   notificationsEnabled={medication.notificationsEnabled}
+                  autoMarkTaken={medication.autoMarkTaken === true}
+                  plan={
+                    asNeeded ? null : <ReminderPlanLine medicationId={id} />
+                  }
                 />
+                {!asNeeded && medication.autoMarkTaken !== true && (
+                  <PhasesRow
+                    medicationId={id}
+                    onRequestPhaseSheet={() => setPhaseSheetOpen(true)}
+                  />
+                )}
                 <GraceRow
                   medicationId={id}
                   schedules={medication.schedules.map((s) => ({
@@ -870,6 +706,7 @@ export function MedicationDetailTabs({
               <DoseHistoryLedger
                 medicationId={id}
                 medicationName={medication.name}
+                medicationDose={medication.dose}
                 schedules={medication.schedules.map((s) => ({
                   windowStart: s.windowStart,
                   label: s.label,
@@ -966,17 +803,6 @@ export function MedicationDetailTabs({
             {nutrientsOn && !showComposition && (
               <CompositionRow medicationId={id} ownRecord={!inSharedRecord} />
             )}
-            {isGlp1 && (
-              <div className="py-3">
-                <PhasesRow
-                  medicationId={id}
-                  treatmentClass={medication.treatmentClass}
-                  startsOn={medication.startsOn}
-                  endsOn={medication.endsOn}
-                  onRequestPhaseSheet={() => setPhaseSheetOpen(true)}
-                />
-              </div>
-            )}
           </SettingsGroup>
 
           <SettingsGroup
@@ -1043,57 +869,14 @@ export function MedicationDetailTabs({
         onSuccess={() => setEditOpen(false)}
       />
 
-      {/* GLP-1 phase/titration editor — sibling-swapped from the Lifecycle
-          group so the modal stack never exceeds the tab + one sheet. */}
-      {isGlp1 && (
-        <PhaseConfigSheet
-          medicationId={id}
-          open={phaseSheetOpen}
-          onOpenChange={setPhaseSheetOpen}
-        />
-      )}
+      {/* The reminder-phase editor, opened from the Schedule tab's
+          reminder card; one sheet above the tab, never a stack. */}
+      <PhaseConfigSheet
+        medicationId={id}
+        open={phaseSheetOpen}
+        onOpenChange={setPhaseSheetOpen}
+      />
     </div>
-  );
-}
-
-/**
- * One Übersicht status row: label + value on the left, a quiet jump link
- * into the owning tab on the right. The link is a button (the tab switch
- * is shallow URL state, not a navigation) styled as an inline text link.
- */
-function StatusRow({
-  label,
-  value,
-  jumpLabel,
-  onJump,
-  dataSlot,
-}: {
-  label: string;
-  value: ReactNode;
-  jumpLabel: string;
-  /** Absent when the tab it would open is not offered to this viewer. */
-  onJump?: () => void;
-  dataSlot: string;
-}) {
-  return (
-    <li
-      className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
-      data-slot={dataSlot}
-    >
-      <div className="min-w-0 space-y-0.5">
-        <p className="text-muted-foreground text-xs font-medium">{label}</p>
-        <p className="text-foreground text-sm">{value}</p>
-      </div>
-      {onJump && (
-        <InlineAction
-          onClick={onJump}
-          className="shrink-0"
-          data-slot={`${dataSlot}-jump`}
-        >
-          {jumpLabel}
-        </InlineAction>
-      )}
-    </li>
   );
 }
 

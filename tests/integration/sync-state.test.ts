@@ -169,4 +169,36 @@ describe("GET /api/sync/state (real Postgres)", () => {
     expect(json.data.measurements.liveCount).toBe(1);
     expect(json.data.measurements.tombstonedCount).toBe(1);
   });
+
+  it("moves medications.lastUpdatedAt when a medication that was not the newest is deleted", async () => {
+    const prisma = getPrismaClient();
+    const older = await prisma.medication.create({
+      data: { userId: TEST_USER_ID, name: "Older", dose: "1 mg" },
+    });
+    await prisma.medication.create({
+      data: { userId: TEST_USER_ID, name: "Newer", dose: "2 mg" },
+    });
+    const { GET } = await import("@/app/api/sync/state/route");
+    const read = async () =>
+      (
+        (await (await GET(makeRequest())).json()) as {
+          data: { medications: { lastUpdatedAt: string | null } };
+        }
+      ).data.medications.lastUpdatedAt;
+    const before = await read();
+    expect(before).not.toBeNull();
+    await new Promise((r) => setTimeout(r, 5));
+    const { deleteMedication } =
+      await import("@/lib/medications/delete-medication");
+    await deleteMedication({
+      userId: TEST_USER_ID,
+      id: older.id,
+      existing: { name: older.name },
+      ipAddress: null,
+    });
+    const after = await read();
+    expect(new Date(after!).getTime()).toBeGreaterThan(
+      new Date(before!).getTime(),
+    );
+  });
 });

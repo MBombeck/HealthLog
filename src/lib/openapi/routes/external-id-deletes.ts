@@ -81,21 +81,21 @@ export const externalIdDeletePaths: ZodOpenApiObject["paths"] = {
     tag: "Measurements",
     summary: "Delete Apple Health workouts by external ID",
     description:
-      "Removes the workouts whose externalId is listed, with the personal records they set; the records are re-derived afterwards. The rows go outright, and since v1.48.2 every listed id is remembered: a later re-post of the same externalId to `POST /api/workouts/batch` answers `duplicate` and writes nothing, including an id that had not landed yet when the delete arrived. An id is remembered for 75 days, the tombstone retention every Apple Health delete shares; after that a re-post lands again.",
+      "Removes the workouts whose externalId is listed, with the personal records they set; the records are re-derived afterwards. The rows go outright. Since v1.49.0 nothing remembers the ids: a person cannot delete an Apple Health workout in HealthLog, so every deletion is the phone's, and a later re-post of the same externalId to `POST /api/workouts/batch` writes the workout again (it is back in Apple Health). From v1.48.2 to v1.48.x such a re-post answered `duplicate`.",
     responseId: "WorkoutsDeleteByExternalIdsResponse",
   }),
   "/api/insights/ecg/by-external-ids": operation({
     tag: "Insights",
     summary: "Delete Apple Health ECG recordings by external ID",
     description:
-      "Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed, waveform included. A paired rhythm notification is a measurement of its own and stays. The rows go outright, and since v1.48.2 every listed id is remembered: a later re-post of the same id to `POST /api/insights/ecg` answers `duplicate` and writes nothing. An id is remembered for 75 days, the tombstone retention every Apple Health delete shares; after that a re-post lands again.",
+      "Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed, waveform included. A paired rhythm notification is a measurement of its own and stays. The rows go outright. Since v1.49.0 nothing remembers the ids: a recording cannot be deleted in HealthLog, so a later re-post of the same id writes it again (`inserted`). From v1.48.2 to v1.48.x such a re-post answered `duplicate`.",
     responseId: "EcgDeleteByExternalIdsResponse",
   }),
   "/api/cycle/day-logs/by-external-ids": operation({
     tag: "Cycle",
     summary: "Delete Apple Health cycle day-logs by external ID",
     description:
-      "Soft-deletes the day-logs whose externalId is listed, each as `DELETE /api/cycle/day-logs/{id}` does: the tombstone reaches `/api/sync/changes`, and a day that opened a cycle takes that cycle with it, the cycle before it re-anchored. A later re-post of the same externalId through `POST /api/cycle/day-logs/bulk` brings the day back.",
+      'Soft-deletes the day-logs whose externalId is listed, each as `DELETE /api/cycle/day-logs/{id}` does: the tombstone reaches `/api/sync/changes`, and a day that opened a cycle takes that cycle with it, the cycle before it re-anchored. A later re-post of the same externalId through `POST /api/cycle/day-logs/bulk` writes the day again, since a day is fed by many samples; since v1.49.0 it starts from empty fields and no symptoms, so nothing the deleted day held comes back. A day the person deleted in HealthLog is the other case: since v1.49.0 an `APPLE_HEALTH` re-post of its externalId is refused per entry, `skipped` with `reason: "deleted_in_healthlog"`, and the person writing the day again in HealthLog brings it back.',
     responseId: "CycleDayLogsDeleteByExternalIdsResponse",
     extraResponses: {
       "403": {
@@ -109,14 +109,14 @@ export const externalIdDeletePaths: ZodOpenApiObject["paths"] = {
     tag: "Mood",
     summary: "Delete Apple Health State of Mind entries by external ID",
     description:
-      "Soft-deletes the mood entries posted with `source = APPLE_HEALTH` whose externalId is listed, each as `DELETE /api/mood-entries/{id}` does; the tombstone reaches `/api/sync/changes`. A mood logged in HealthLog itself is never touched. A later re-post of a deleted externalId stays deleted: `POST /api/mood-entries/bulk` answers `duplicate`.",
+      'Soft-deletes the mood entries posted with `source = APPLE_HEALTH` whose externalId is listed, each as `DELETE /api/mood-entries/{id}` does; the tombstone reaches `/api/sync/changes`. A mood logged in HealthLog itself is never touched. Since v1.49.0 the tombstone records that the phone deleted it, so a later re-post through `POST /api/mood-entries/bulk` (the entry is back in Apple Health) writes it again, `inserted`; an entry the person deleted in HealthLog stays deleted, `skipped` with `reason: "deleted_in_healthlog"`.',
     responseId: "MoodEntriesDeleteByExternalIdsResponse",
   }),
   "/api/symptoms/events/by-external-ids": operation({
     tag: "Symptoms",
     summary: "Delete Apple Health symptom occurrences by external ID",
     description:
-      "Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is listed. One logged in HealthLog is never touched. A later re-post of a deleted externalId stays deleted: the batch answers `duplicate`. The tombstone is kept for 75 days, the retention every Apple Health delete shares. Owner-only: a session switched into another record is refused 403 `sharing.not_permitted`. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`.",
+      'Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is listed. One logged in HealthLog is never touched. Since v1.49.0 the tombstone records that the phone deleted it, so a later re-post through the batch writes it again (`inserted`); an occurrence the person deleted in HealthLog stays deleted, `skipped` with `reason: "deleted_in_healthlog"`. The tombstone is kept for 75 days, the retention every Apple Health delete shares. Owner-only: a session switched into another record is refused 403 `sharing.not_permitted`. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`.',
     responseId: "SymptomEventsDeleteByExternalIdsResponse",
     extraResponses: {
       "403": {
@@ -129,7 +129,7 @@ export const externalIdDeletePaths: ZodOpenApiObject["paths"] = {
     tag: "Medications",
     summary: "Delete Apple Health dose records by external ID",
     description:
-      "Soft-deletes the intake events posted with `source = APPLE_HEALTH` whose externalId (the HealthKit dose-event UUID) is listed, each as `DELETE /api/medications/{id}/intake/{eventId}` does: the stock it consumed is refunded, the tombstone reaches `/api/sync/changes`, and a one-shot medication whose only dose it was becomes active again. The caller's other devices get one silent intake-sync push (the device named by `x-device-id` is skipped). A later re-post of the same externalId through `POST /api/medications/intake/bulk` inserts a new dose: a tombstone never blocks the ledger.",
+      'Soft-deletes the intake events whose externalId (the HealthKit dose-event UUID) is listed, including a dose that landed on a pending slot row (since v1.49.0; only an Apple Health entry of the bulk route sets the externalId of an intake), each as `DELETE /api/medications/{id}/intake/{eventId}` does: the stock it consumed is refunded, the tombstone reaches `/api/sync/changes`, and a one-shot medication whose only dose it was becomes active again. The caller\'s other devices get one silent intake-sync push (the device named by `x-device-id` is skipped). Since v1.49.0 the tombstone records that the phone deleted the dose, so a later re-post of the same externalId through `POST /api/medications/intake/bulk` (the dose is back in Apple Health) lands as a new dose and takes its stock again. The re-post of an Apple Health dose the person deleted in HealthLog is refused per entry, `skipped` with `reason: "deleted_in_healthlog"`, writes nothing and takes no stock, whatever row the dose had landed on. A fresh install that reads the whole Apple Health history therefore needs no list of deleted ids to skip. The tombstone is kept for 75 days, the retention every Apple Health delete shares.',
     responseId: "MedicationIntakesDeleteByExternalIdsResponse",
   }),
 };

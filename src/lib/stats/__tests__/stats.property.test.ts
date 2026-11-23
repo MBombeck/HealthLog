@@ -17,10 +17,8 @@ import {
   MIN_HAC_LAG,
   neweyWestLag,
 } from "@/lib/stats/segmented-regression";
-import { median as baselineMedian } from "@/lib/insights/derived/baseline";
-import { median as calendarMedian } from "@/lib/activity/calendar-math";
+import { mean, median } from "@/lib/stats/central";
 import { median as cycleMedian } from "@/lib/cycle/prediction";
-import { median as scoreMedian, mean } from "@/lib/analytics/score/shared";
 import { percentile } from "@/lib/insights/strain-score";
 import { quantile } from "@/lib/analytics/mood-prognosis/validate";
 
@@ -48,13 +46,11 @@ describe("medians and quantiles", () => {
   it("every median in the tree says the same number", () => {
     assertProperty(
       fc.property(sampleArb, (values) => {
-        const expected = baselineMedian([...values]);
+        const expected = median(values)!;
         expect(cycleMedian(values)).toBe(expected);
-        expect(scoreMedian(values)).toBe(expected);
         // The interpolating forms compute the middle pair as a + (b − a)/2
         // rather than (a + b)/2, which can differ in the last bit.
         const scale = magnitude(values);
-        close(calendarMedian(values)!, expected, scale);
         close(percentile(values, 50), expected, scale);
         close(quantile(values, 0.5), expected, scale);
       }),
@@ -67,13 +63,13 @@ describe("medians and quantiles", () => {
         sampleArb,
         fc.double({ min: -500, max: 500, noNaN: true }),
         (values, shift) => {
-          const m = scoreMedian(values);
+          const m = median(values)!;
           const reversed = [...values].reverse();
-          expect(scoreMedian(reversed)).toBe(m);
+          expect(median(reversed)).toBe(m);
           expect(m).toBeGreaterThanOrEqual(Math.min(...values));
           expect(m).toBeLessThanOrEqual(Math.max(...values));
           close(
-            scoreMedian(values.map((v) => v + shift)),
+            median(values.map((v) => v + shift))!,
             m + shift,
             magnitude(values) + Math.abs(shift),
           );
@@ -103,7 +99,7 @@ describe("medians and quantiles", () => {
   it("a mean sits between the extremes", () => {
     assertProperty(
       fc.property(sampleArb, (values) => {
-        const m = mean(values);
+        const m = mean(values)!;
         const eps = 1e-9 * magnitude(values);
         expect(m).toBeGreaterThanOrEqual(Math.min(...values) - eps);
         expect(m).toBeLessThanOrEqual(Math.max(...values) + eps);

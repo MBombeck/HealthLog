@@ -9,7 +9,8 @@ import {
 } from "@/lib/ai/coach/about-me";
 import { buildBriefingPersonalisationBlock } from "@/lib/ai/prompts/insight-generator";
 import { buildUserPrompt } from "@/lib/ai/prompts/insight-system-prompt";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
   briefingFormForRecord,
   buildBriefingShortFormBlock,
@@ -73,7 +74,10 @@ export async function buildBriefingPrompt(
   // case) costs nothing.
   const derivedSex = toProfileSex(dbUser?.gender);
   const derivedBriefing = await detectDerivedBriefingSignals(userId, {
-    ageYears: getAgeFromDateOfBirth(dbUser?.dateOfBirth ?? null),
+    ageYears: ageInYears(
+      dbUser?.dateOfBirth,
+      dbUser?.timezone ?? DEFAULT_TIMEZONE,
+    ),
     sex: derivedSex,
     heightCm: dbUser?.heightCm ?? null,
   });

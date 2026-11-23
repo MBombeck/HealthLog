@@ -214,6 +214,10 @@ export async function runHealthConnectImport(
       rows_upserted: result.totals.rowsUpserted,
       duration_ms: result.totals.durationMs,
       rollup_failed: rollupFailed,
+      // The rollup tail fails soft; the run carries it (`FanOutTally`).
+      items_attempted: 1,
+      items_failed: rollupFailed ? 1 : 0,
+      partial_failed: rollupFailed,
     });
   } catch (err) {
     const reason = failureReason(err);

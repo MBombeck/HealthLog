@@ -11,30 +11,42 @@
  * operator runs `prisma migrate resolve --rolled-back`: under a restart
  * policy that is a container that never comes up.
  *
- * `migrate deploy` does not wrap a migration file in a transaction, so a
- * failed file is not necessarily rolled back: statements before the one that
- * failed stay applied. Marking such an attempt rolled back and running it
- * again is only safe when the file was written for it. A migration declares
- * that with a `-- @retry-on-lock-timeout` line, which its author adds only
- * when every statement before the lock-taking one is harmless to repeat and
- * the lock-taking statements form one statement (a `DO` block) that rolls
- * back whole. `src/__tests__/migration-lock-timeout-guard.test.ts` holds the
- * migrations to that.
+ * How `migrate deploy` runs a file decides what a failed one leaves behind,
+ * and it depends on the file (Prisma 7, measured against Postgres 18 by
+ * `tests/integration/migration-file-transaction.test.ts`):
  *
- * A deadlock (40P01) is the same failure seen from the other side: a marked
- * migration's `DO` block holds the locks it took until it commits, and an app
- * transaction that took two of the same tables in the other order makes
- * Postgres cancel one of the two. When the migration is the one cancelled,
- * its block rolled back whole, exactly as on a lock timeout.
+ * - A file with a dollar-quoted body anywhere (a `DO` block, a function) is
+ *   sent as one query, which Postgres runs as one implicit transaction. It
+ *   applies whole or not at all, and every lock it takes is held until its
+ *   last statement has run.
+ * - A file without one is split and sent statement by statement, each
+ *   committing on its own. A failure leaves the statements before it applied,
+ *   and a top-level `SET LOCAL` has no transaction to be local to.
  *
- * So: on a 55P03 or 40P01 failure of a migration carrying the marker, mark
- * that one migration rolled back and run `migrate deploy` again after a
- * backoff (15, 30, 60, 120, 240 seconds). Any other failure, a lock timeout of a migration
- * without the marker, or a fifth lock timeout in a row, ends the boot with
- * Prisma's exit code exactly as before. The failure is read from Prisma's
- * own report (`Migration name:` and `Database error code:`), or, on a boot
- * after a failed one (P3009), from the `logs` Prisma stored on the failed
- * row in `_prisma_migrations`.
+ * Marking a failed attempt rolled back and running it again is therefore
+ * safe for the first kind always, and for the second kind only when every
+ * statement is harmless to repeat. A migration declares that it was written
+ * for the retry with a `-- @retry-on-lock-timeout` line;
+ * `src/__tests__/migration-lock-timeout-guard.test.ts` holds a marked file
+ * that is split by statement to the repeatable-statement rule. A file whose
+ * one statement builds an index concurrently needs no marker: a failed build
+ * leaves only an INVALID index, which the step below drops before the run
+ * that builds it again.
+ *
+ * A deadlock (40P01) is the same failure seen from the other side: the
+ * migration holds the locks it took until it commits, and an app transaction
+ * that took two of the same tables in the other order makes Postgres cancel
+ * one of the two. When the migration is the one cancelled, it rolled back
+ * whole, exactly as on a lock timeout.
+ *
+ * So: on a 55P03 or 40P01 failure of a migration carrying the marker, or of a
+ * lone concurrent index build, mark that one migration rolled back and run
+ * `migrate deploy` again after a backoff (15, 30, 60, 120, 240 seconds). Any
+ * other failure, a lock timeout of any other migration, or a fifth lock
+ * timeout in a row, ends the boot with Prisma's exit code exactly as before.
+ * The failure is read from Prisma's own report (`Migration name:` and
+ * `Database error code:`), or, on a boot after a failed one (P3009), from the
+ * `logs` Prisma stored on the failed row in `_prisma_migrations`.
  *
  * Every Prisma call runs with its session pinned to UTC, the way the app's
  * own connections are (`src/lib/db-session.ts`). Almost every `DateTime`
@@ -72,6 +84,46 @@ const DEFAULT_RETRY_DELAYS_S = [15, 30, 60, 120, 240];
 
 /** The line a migration carries when a lock-timeout retry is safe for it. */
 export const RETRY_MARKER = /^--\s*@retry-on-lock-timeout\s*$/m;
+
+/** A dollar-quoted body's opening tag: `$$`, `$m$`, `$body$`. */
+const DOLLAR_QUOTE = /\$([A-Za-z_][A-Za-z0-9_]*)?\$/;
+
+/**
+ * The file's SQL with its line comments removed.
+ *
+ * @param {string} sql
+ * @returns {string}
+ */
+function withoutComments(sql) {
+  return sql.replace(/--[^\n]*/g, "");
+}
+
+/**
+ * Whether `migrate deploy` sends the file as one query, which Postgres runs
+ * as one implicit transaction: it does whenever a dollar-quoted body appears.
+ *
+ * @param {string} sql
+ * @returns {boolean}
+ */
+export function runsAsOneTransaction(sql) {
+  if (typeof sql !== "string") return false;
+  return DOLLAR_QUOTE.test(withoutComments(sql));
+}
+
+/**
+ * The top-level statements of a file, comments removed, bodies blanked.
+ *
+ * @param {string} sql
+ * @returns {string[]}
+ */
+export function topLevelStatements(sql) {
+  if (typeof sql !== "string") return [];
+  return withoutComments(sql)
+    .replace(/\$([A-Za-z_]*)\$[\s\S]*?\$\1\$/g, "$BODY$")
+    .split(";")
+    .map((statement) => statement.trim().replace(/\s+/g, " "))
+    .filter((statement) => statement.length > 0);
+}
 
 /** Lock timeout and deadlock: both leave a marked migration unapplied. */
 const LOCK_FAILURES = new Set(["55P03", "40P01"]);
@@ -133,7 +185,7 @@ export function decideLockRetry({ output, failedRows, readMigration }) {
   if (sql === null) {
     return { retry: false, reason: `${migration} is not in this image` };
   }
-  if (!RETRY_MARKER.test(sql)) {
+  if (!RETRY_MARKER.test(sql) && !isLoneConcurrentBuild(sql)) {
     return {
       retry: false,
       reason: `${migration} timed out on a lock but is not marked safe to re-run`,
@@ -175,6 +227,21 @@ export function invalidIndexPlan({ invalid, builtBy, applied }) {
     }
   }
   return { drop, report };
+}
+
+/**
+ * Whether the file is one concurrent index build and nothing else. Such a
+ * file runs outside any transaction; a failed build leaves an INVALID index,
+ * which `clearInvalidConcurrentIndexes` drops before the next attempt.
+ *
+ * @param {string} sql
+ * @returns {boolean}
+ */
+export function isLoneConcurrentBuild(sql) {
+  const statements = topLevelStatements(sql);
+  return (
+    statements.length === 1 && concurrentIndexesIn(statements[0]).length === 1
+  );
 }
 
 /** Every concurrently built index in the migrations directory, by name. */

@@ -16,7 +16,7 @@ export const intakeSchema = z
       .transform((s) => new Date(s))
       .optional()
       .describe(
-        "Slot the dose belongs to. Defaults to `takenAt` (or `now()` when both are absent) so the compliance pairing logic can pin the dose to a schedule slot.",
+        "Slot the dose belongs to. Defaults to `takenAt` (or `now()` when both are absent) so the compliance pairing logic can pin the dose to a schedule slot. A take that names a real slot of the medication counts for it when the slot lies behind the take (however late) or the take sits inside the slot's window, from its early grace on (a 20:00 dose taken at 19:30 counts for 20:00). A slot further ahead does not bind: the take answers the slot its own time falls into, or none. For a dose that is not open yet, send `forceSlotInstant`.",
       ),
     takenAt: boundedTakenAtSchema
       .optional()
@@ -67,6 +67,19 @@ export const intakeSchema = z
         "Late-take override: pin this taken dose onto the named scheduled slot instead of orphaning it to an ad-hoc row. Must be a real scheduled slot of this medication on its day (validated server-side against the dose-window band anchors); an instant that is not a slot returns 422. Absent applies the default window-band attribution.",
       ),
     /**
+     * A take the person records as an extra dose outside the plan: it
+     * answers no slot, by the band or by the nearest-slot rule, and readers
+     * never bind it to one afterwards. The intake form sends it when the
+     * person switches "count it for the dose" off, the medication card when
+     * a take now would not count for the dose it names.
+     */
+    extraDose: z
+      .boolean()
+      .optional()
+      .describe(
+        "Since v1.49.0: true records this take as an extra dose outside the plan. It answers no scheduled slot (neither by its time nor by the nearest-slot rule) and is never bound to one later. Only on a taken write; cannot be combined with `scheduledFor` or `forceSlotInstant` (422). Absent or false keeps the default attribution.",
+      ),
+    /**
      * v1.16.4 — per-intake dose override. Free text mirroring
      * `Medication.dose` (max 50 chars). Persisted only on a taken
      * (non-skipped) write. Absent = the configured medication dose
@@ -87,6 +100,21 @@ export const intakeSchema = z
   // windowed replay token. A key that rotates per client launch never
   // matches its own earlier row, so every re-sync logs the dose again.
   .superRefine(assertStableIdempotencyKey)
+  .superRefine((body, ctx) => {
+    if (
+      body.extraDose === true &&
+      (body.skipped === true ||
+        body.scheduledFor !== undefined ||
+        body.forceSlotInstant !== undefined)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["extraDose"],
+        message:
+          "extraDose names no slot and cannot be combined with scheduledFor, forceSlotInstant or a skip",
+      });
+    }
+  })
   .meta({
     id: "MedicationIntakeRequest",
     description:
@@ -256,7 +284,7 @@ export const intakeStatusUpdateSchema = z.object({
     .transform((s) => new Date(s))
     .optional()
     .describe(
-      "How long to defer. Defaults to 30 minutes from now. Deliberately UNBOUNDED — nothing here caps how far out it may sit. Ignored unless the status is `snoozed`.",
+      "How long to defer. Defaults to now plus the user's `notificationPrefs.medication.snoozeMinutes` (30 unless set), the same length the web card and Telegram use; a client that offers the setting's \"Remind me later\" may omit it. Deliberately UNBOUNDED — nothing here caps how far out it may sit. Ignored unless the status is `snoozed`.",
     ),
   injectionSite: injectionSiteEnum
     .optional()

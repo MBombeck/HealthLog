@@ -19,6 +19,7 @@
  * before, so a caller that treated "the last 21 days" and "the 70 days before
  * that" differently keeps exactly the same per-row partition.
  */
+import { readingWallSql } from "@/lib/tz/reading-zone-sql";
 import type {
   MeasurementSource,
   MeasurementType,
@@ -27,6 +28,8 @@ import type {
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { isValidTimezone } from "@/lib/tz/format";
+import { READING_ZONE_SLACK_MS } from "@/lib/tz/reading-zone";
+import { MS_PER_DAY } from "@/lib/time-constants";
 import { dayWeightedRowsSql } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 
@@ -39,6 +42,8 @@ export interface DayAggregateRow {
   sum: number;
   min: number;
   max: number;
+  /** The row's newest reading. */
+  lastAt: Date;
   /**
    * For a type whose day is the mean of its hours' means (pulse, see
    * `day-mean.ts`): `SUM(value * day_weight)` and `SUM(day_weight)` over the
@@ -76,9 +81,16 @@ export interface ReadDayAggregatesOptions {
   valueRange?: { min: number; max: number };
   /** Segment boundaries, newest first. */
   segmentStarts?: readonly Date[];
+  /**
+   * Read only the tail of the window that can hold the latest local day, so
+   * `.at(-1)` is that day, whole, without folding the rest of the window.
+   */
+  latestDayOnly?: boolean;
   /** Client to read through; defaults to the shared one. */
   db?: Pick<PrismaClient, "$queryRaw">;
 }
+
+const LATEST_DAY_TAIL_MS = MS_PER_DAY + 2 * READING_ZONE_SLACK_MS;
 
 /** `HH:MM` or `HH:MM:SS`, 24-hour. */
 const LOCAL_CLOCK = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
@@ -94,10 +106,24 @@ export async function readDayAggregates(
     opts.upToLocalTime && LOCAL_CLOCK.test(opts.upToLocalTime)
       ? Prisma.sql`AND ((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone})::time <= ${opts.upToLocalTime}::time`
       : Prisma.empty;
-  const until = Prisma.sql`${untilInstant} ${clock}`;
   const range = opts.valueRange
     ? Prisma.sql`AND m."value" >= ${opts.valueRange.min} AND m."value" <= ${opts.valueRange.max}`
     : Prisma.empty;
+  // The latest local day holds the newest reading's day or a later one, and
+  // a reading's zone moves its day by at most `READING_ZONE_SLACK_MS` against
+  // another's, so every reading of the latest day lies within a day and two
+  // slacks of the newest qualifying reading. The inner `m` shadows the outer.
+  const tail = opts.latestDayOnly
+    ? Prisma.sql`AND m."measured_at" >= (
+        SELECT MAX(m."measured_at") FROM measurements m
+        WHERE m."user_id" = ${opts.userId}
+          AND m."type" = ${opts.type}::measurement_type
+          AND m."deleted_at" IS NULL
+          AND m."measured_at" >= ${opts.since}
+          ${untilInstant} ${clock} ${range}
+      ) - ${LATEST_DAY_TAIL_MS} * interval '1 millisecond'`
+    : Prisma.empty;
+  const until = Prisma.sql`${untilInstant} ${clock} ${tail}`;
   const starts = opts.segmentStarts ?? [];
   const segment =
     starts.length === 0
@@ -125,13 +151,15 @@ export async function readDayAggregates(
       sum: number;
       min: number;
       max: number;
+      last_at: Date;
     }>
   >`
     WITH src AS (
       SELECT
-        to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}, 'YYYY-MM-DD') AS day,
+        to_char(${readingWallSql("m", timeZone)}, 'YYYY-MM-DD') AS day,
         ${segment} AS segment,
-        m."value" AS value
+        m."value" AS value,
+        m."measured_at" AS measured_at
       FROM measurements m
       WHERE m."user_id" = ${opts.userId}
         AND m."type" = ${opts.type}::measurement_type
@@ -146,7 +174,8 @@ export async function readDayAggregates(
       COUNT(*)::int                AS n,
       SUM(value)::double precision AS sum,
       MIN(value)::double precision AS min,
-      MAX(value)::double precision AS max
+      MAX(value)::double precision AS max,
+      MAX(measured_at)             AS last_at
     FROM src
     GROUP BY day, segment
     ORDER BY day ASC, segment DESC
@@ -158,6 +187,7 @@ export async function readDayAggregates(
     sum: Number(r.sum),
     min: Number(r.min),
     max: Number(r.max),
+    lastAt: r.last_at,
   }));
 }
 
@@ -183,6 +213,7 @@ async function readHourlyMeanDayAggregates(
       max: number;
       wsum: number;
       wdays: number;
+      last_at: Date;
     }>
   >`
     WITH base AS (
@@ -200,6 +231,7 @@ async function readHourlyMeanDayAggregates(
         to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}, 'YYYY-MM-DD') AS day,
         ${segment} AS segment,
         m."value" AS value,
+        m."measured_at" AS measured_at,
         m.day_weight AS day_weight
       FROM ${dayWeightedRowsSql("base", timeZone)} m
     )
@@ -211,7 +243,8 @@ async function readHourlyMeanDayAggregates(
       MIN(value)::double precision             AS min,
       MAX(value)::double precision             AS max,
       SUM(value * day_weight)::double precision AS wsum,
-      SUM(day_weight)::double precision        AS wdays
+      SUM(day_weight)::double precision        AS wdays,
+      MAX(measured_at)                         AS last_at
     FROM src
     GROUP BY day, segment
     ORDER BY day ASC, segment DESC
@@ -223,6 +256,7 @@ async function readHourlyMeanDayAggregates(
     sum: Number(r.sum),
     min: Number(r.min),
     max: Number(r.max),
+    lastAt: r.last_at,
     weightedSum: Number(r.wsum),
     weightSum: Number(r.wdays),
     dayMean: Number(r.wsum) / Number(r.wdays),
@@ -277,7 +311,7 @@ export async function readSourceDayAggregates(opts: {
     WITH src AS (
       SELECT
         m."type"::text AS type,
-        to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}, 'YYYY-MM-DD') AS day,
+        to_char(${readingWallSql("m", timeZone)}, 'YYYY-MM-DD') AS day,
         m."source"::text AS source,
         m."device_type" AS device_type,
         m."value" AS value,

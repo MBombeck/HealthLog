@@ -2,7 +2,6 @@ import {
   Prisma,
   type PrismaClient,
   type Measurement,
-  type MeasurementAggregationProvenance,
   type Prisma as PrismaTypes,
 } from "@/generated/prisma/client";
 import { insertNewMeasurementRows } from "@/lib/export/measurement-bulk-insert";
@@ -12,6 +11,12 @@ import {
   recordRangeRejections,
   type MeasurementRangeRejection,
 } from "@/lib/measurements/plausibility-gate";
+import {
+  aggregationAuthority,
+  isStaleStatsWrite,
+  sameNaturalIdentity,
+} from "@/lib/measurements/reconcile-rules";
+import { deletedInHealthLog } from "@/lib/sync/tombstone-repost";
 
 const SAVEPOINT = "measurement_identity_reconcile";
 
@@ -24,7 +29,9 @@ const rowSelect = {
   sleepStage: true,
   externalId: true,
   deletedAt: true,
+  appleHealthDeletedAt: true,
   aggregationProvenance: true,
+  statsComputedAt: true,
 } satisfies PrismaTypes.MeasurementSelect;
 
 export type ExternalMeasurementWrite = Omit<
@@ -34,6 +41,7 @@ export type ExternalMeasurementWrite = Omit<
   | "updatedAt"
   | "syncVersion"
   | "deletedAt"
+  | "appleHealthDeletedAt"
   | "externalId"
   | "measuredAt"
 > & {
@@ -52,6 +60,17 @@ export type MeasurementReconciliationVerdict =
   | {
       status: "inserted" | "updated" | "resurrected" | "duplicate";
       row: ReconciledMeasurementRow;
+      /**
+       * On a `duplicate`: the row at the entry's external identity was
+       * deleted in HealthLog, so the re-post was refused
+       * (`tombstone-repost.ts`).
+       */
+      tombstoned?: boolean;
+      /**
+       * On a `duplicate`: the stored `stats:` total was computed later than
+       * the entry's (`statsComputedAt`), so the newer one stays.
+       */
+      stale?: boolean;
       retiredCollisionId?: string;
       dirtyIdentities?: DirtyMeasurementIdentity[];
     }
@@ -96,38 +115,12 @@ export interface MeasurementReconciliationOptions {
   exactExternalMatch?: "update" | "duplicate";
 }
 
-const AGGREGATION_AUTHORITY: Readonly<
-  Record<MeasurementAggregationProvenance, number>
-> = {
-  LEGACY_UNKNOWN: 1,
-  EXPORT_XML_SOURCE_MAX: 2,
-  HEALTHKIT_STATISTICS: 3,
-};
-
-function aggregationAuthority(
-  value: MeasurementAggregationProvenance | null | undefined,
-): number {
-  return value === null || value === undefined
-    ? 0
-    : AGGREGATION_AUTHORITY[value];
-}
-
 function errorVerdict(err: unknown): MeasurementReconciliationVerdict {
   const message = err instanceof Error ? err.message : String(err);
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     return { status: "failed", error: { message, code: err.code } };
   }
   return { status: "failed", error: { message } };
-}
-
-function sameNaturalIdentity(
-  row: Pick<Measurement, "measuredAt" | "sleepStage">,
-  desired: ExternalMeasurementWrite,
-): boolean {
-  return (
-    row.measuredAt.getTime() === desired.measuredAt.getTime() &&
-    row.sleepStage === (desired.sleepStage ?? null)
-  );
 }
 
 function lockKeys(desired: ExternalMeasurementWrite): string[] {
@@ -335,10 +328,41 @@ export async function reconcileExternalMeasurement(
       };
     }
 
+    // An immutable sample whose external identity names a row deleted in
+    // HealthLog stays deleted, whatever else matches: a late re-post never
+    // brings it back. One the phone reported deleted in Apple Health is
+    // written again below (`tombstone-repost.ts`). A provider re-score
+    // (`update`) still may revive either.
+    if (
+      options.exactExternalMatch === "duplicate" &&
+      externalHit &&
+      deletedInHealthLog(externalHit)
+    ) {
+      await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${SAVEPOINT}`);
+      return { status: "duplicate", row: externalHit, tombstoned: true };
+    }
+
+    // A newer `stats:` total stays: the entry was computed before the stored
+    // one (an out-of-order replay). Only an entry that states when it was
+    // computed is compared; one without behaves as before.
+    if (isStaleStatsWrite(canonical, desired)) {
+      if (redundant) {
+        await retireCollision(tx, redundant, true);
+      }
+      await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${SAVEPOINT}`);
+      return {
+        status: "duplicate",
+        row: canonical,
+        stale: true,
+        ...(redundant ? { retiredCollisionId: redundant.id } : {}),
+      };
+    }
+
     if (
       options.exactExternalMatch === "duplicate" &&
       exactExternalMatch &&
-      !redundant
+      !redundant &&
+      canonical.deletedAt === null
     ) {
       await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${SAVEPOINT}`);
       return { status: "duplicate", row: canonical };
@@ -356,6 +380,7 @@ export async function reconcileExternalMeasurement(
         ...mutable,
         sleepStage: desired.sleepStage ?? null,
         deletedAt: null,
+        appleHealthDeletedAt: null,
         syncVersion: { increment: 1 },
       },
       select: rowSelect,
@@ -444,7 +469,9 @@ const SET_INSERT_FIELDS = new Set<string>([
   "sleepStage",
   "rhythmClassification",
   "deviceType",
+  "timeZone",
   "notesEncrypted",
+  "statsComputedAt",
 ]);
 
 function setInsertable(desired: ExternalMeasurementWrite): boolean {
@@ -484,7 +511,12 @@ async function insertFresh(
         externalSourceVersion: desired.externalSourceVersion ?? null,
         sleepStage: desired.sleepStage ?? null,
         deviceType: desired.deviceType ?? null,
+        timeZone: desired.timeZone ?? null,
         notesEncrypted: desired.notesEncrypted ?? null,
+        statsComputedAt:
+          desired.statsComputedAt instanceof Date
+            ? desired.statsComputedAt
+            : null,
       })),
     );
     for (const row of rows) {
@@ -538,16 +570,30 @@ async function settleExactMatches(
         measuredAt: row.measuredAt,
         externalId: row.externalId,
       };
-      // The reconciler's two no-write answers for a row holding both
-      // identities: a weaker aggregate than the stored one, or a caller that
-      // keeps the stored row.
+      // The reconciler's no-write answers for a row holding both
+      // identities: a weaker aggregate than the stored one, a newer `stats:`
+      // total, or a caller that keeps the stored row (except one the phone
+      // reported deleted in Apple Health, which is written again).
+      const keeps =
+        options.exactExternalMatch === "duplicate" &&
+        (row.deletedAt === null || deletedInHealthLog(row));
+      const stale = isStaleStatsWrite(row, desired);
       if (
         (desired.aggregationProvenance != null &&
           aggregationAuthority(desired.aggregationProvenance) <
             aggregationAuthority(row.aggregationProvenance)) ||
-        options.exactExternalMatch === "duplicate"
+        stale ||
+        keeps
       ) {
-        settled.push([index, { status: "duplicate", row: reconciled }]);
+        settled.push([
+          index,
+          {
+            status: "duplicate",
+            row: reconciled,
+            ...(keeps && row.deletedAt !== null ? { tombstoned: true } : {}),
+            ...(stale && !keeps ? { stale: true } : {}),
+          },
+        ]);
         continue;
       }
       const { userId: _ownerId, ...mutable } = desired;
@@ -562,11 +608,22 @@ async function settleExactMatches(
           measuredAt: desired.measuredAt,
           sleepStage: desired.sleepStage ?? null,
           deletedAt: row.deletedAt === null ? null : { not: null },
+          // A newer total landing since the read leaves the row alone; the
+          // entry then goes through the reconciler, which answers `stale`.
+          ...(desired.statsComputedAt instanceof Date
+            ? {
+                OR: [
+                  { statsComputedAt: null },
+                  { statsComputedAt: { lte: desired.statsComputedAt } },
+                ],
+              }
+            : {}),
         },
         data: {
           ...mutable,
           sleepStage: desired.sleepStage ?? null,
           deletedAt: null,
+          appleHealthDeletedAt: null,
           syncVersion: { increment: 1 },
         },
       });

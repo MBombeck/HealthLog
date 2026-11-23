@@ -188,6 +188,20 @@ const unitMap: Record<string, string> = {
   STRESS_LEVEL: "score",
   TRAINING_READINESS: "score",
   ACUTE_TRAINING_LOAD: "load",
+  // Apple effort. The scores are dimensionless; physical effort is the
+  // kcal/(hr·kg) rate Apple writes (METs-like), not a kilocalorie total.
+  WORKOUT_EFFORT_SCORE: "score",
+  ESTIMATED_WORKOUT_EFFORT_SCORE: "score",
+  PHYSICAL_EFFORT: "kcal/(hr·kg)",
+  // Apple sport quantities (#1415), in the SI units HealthKit writes.
+  CYCLING_DISTANCE: "m",
+  ROWING_DISTANCE: "m",
+  ROWING_SPEED: "m/s",
+  RUNNING_SPEED: "m/s",
+  RUNNING_POWER: "W",
+  RUNNING_GROUND_CONTACT_TIME: "ms",
+  RUNNING_VERTICAL_OSCILLATION: "cm",
+  RUNNING_STRIDE_LENGTH: "m",
 };
 
 export function getUnitForType(type: string): string {

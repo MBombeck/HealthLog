@@ -88,6 +88,9 @@ export const SOURCE_PROFILES: Record<ConnectionKey, SourceProfile> = {
   // A Garmin watch uploads through the phone app like the rings and straps,
   // so a day without opening it is ordinary.
   garmin: { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
+  // The folder fetch delivers whatever the phone last exported; a phone
+  // that exported nothing new is ordinary. Errors only, like Dawarich.
+  "health-connect-remote": { kind: "on_demand", silenceWindowMs: DAY_MS },
   "apple-health": { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
 };
 

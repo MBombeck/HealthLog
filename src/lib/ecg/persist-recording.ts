@@ -41,7 +41,6 @@ import type {
   PrismaClient,
   RhythmClassification,
 } from "@/generated/prisma/client";
-import { lockAppleHealthTombstones } from "@/lib/sync/apple-health-tombstones";
 import { encryptWaveformToBytes } from "@/lib/withings/ecg-waveform-codec";
 
 /**
@@ -51,9 +50,7 @@ import { encryptWaveformToBytes } from "@/lib/withings/ecg-waveform-codec";
  * - `updated` — a row with this source id already existed and was overwritten.
  * - `duplicate` — this exact recording is already stored under a DIFFERENT
  *   source id (the other door). Nothing was written; `id` names the row that
- *   already holds it. Also the answer for an Apple Health recording the
- *   phone reported deleted (`DELETE /api/insights/ecg/by-external-ids`): it
- *   stays deleted, and `id` then names the deletion record, not a recording.
+ *   already holds it.
  */
 export type EcgPersistOutcome = "inserted" | "updated" | "duplicate";
 
@@ -150,32 +147,6 @@ export async function persistEcgRecording(
 
   try {
     return await db.$transaction(async (tx) => {
-      // A recording the phone reported deleted stays deleted: a late re-post
-      // of its sample id writes nothing (see `apple-health-tombstones.ts`).
-      // Under the ledger lock, so a delete in flight is either seen here or
-      // finds this row once it commits (`lockAppleHealthTombstones`).
-      if (source === "APPLE_HEALTH") {
-        await lockAppleHealthTombstones(tx, userId, "ecg");
-        const tombstone = await tx.appleHealthTombstone.findUnique({
-          where: {
-            userId_domain_externalId: {
-              userId,
-              domain: "ecg",
-              externalId: externalRecordingId,
-            },
-          },
-          select: { id: true },
-        });
-        if (tombstone) {
-          return {
-            outcome: "duplicate" as const,
-            id: tombstone.id,
-            sampleCount,
-            durationSeconds,
-          };
-        }
-      }
-
       const existing = await tx.ecgRecording.findUnique({
         where: sourceKey,
         select: { id: true },

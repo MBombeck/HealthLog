@@ -39,3 +39,9 @@ tests/fixtures/golden-backups/*.json
 # project settings when its CLI or SDK runs; only settings.json is tracked.
 project.inlang/*
 !project.inlang/settings.json
+
+# Fixtures shared byte for byte with the push relay and the iOS app. Their
+# tests pin each file's SHA-256 against the copy in the other repository, so
+# prettier must never rewrite them.
+src/lib/push-relay/__tests__/fixtures/relay-vectors-v1.json
+src/lib/notifications/__tests__/fixtures/app-medication-content-state.json

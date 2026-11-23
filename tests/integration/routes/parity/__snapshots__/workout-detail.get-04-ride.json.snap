@@ -21,6 +21,7 @@
       "source": "APPLE_HEALTH",
       "externalId": "hk-ride-1",
       "metadata": null,
+      "performance": null,
       "route": null,
       "samples": null,
       "hrSeries": null,

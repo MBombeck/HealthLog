@@ -36,6 +36,17 @@ const syncStateResponse = z
       liveCount: z.number().int().nonnegative(),
       tombstonedCount: z.number().int().nonnegative(),
     }),
+    medications: z
+      .object({
+        lastUpdatedAt: isoDateTime()
+          .nullable()
+          .describe(
+            "Newest write to any of the account's medication rows. A snooze, a pause and a schedule change move what is due without touching an intake row; compare this together with `intakes` (on inequality) to know whether the dose list is stale.",
+          ),
+      })
+      .describe(
+        "Freshness of the medication rows the dose state derives from.",
+      ),
     sync: z
       .object({
         incrementalWindowDays: z
@@ -54,11 +65,20 @@ const syncStateResponse = z
           ),
       })
       .describe("Sync-window metadata the client reads instead of hardcoding."),
+    push: z
+      .object({
+        receiptsRecorded: z
+          .boolean()
+          .describe(
+            "Whether the envelope receipts of this request (`openedAlert`, `openedSilent`) were recorded.",
+          ),
+      })
+      .describe("v1.49 — envelope receipts."),
   })
   .meta({
     id: "SyncStateResponse",
     description:
-      "iOS SyncMode handshake. Reports the server-side `lastSyncedAt` checkpoint, which the batch ingest endpoints set when a client push lands; the handshake itself writes nothing. The cheap 'should I sync?' summary; the durable delta cursor lives on `/api/sync/changes`.",
+      "iOS SyncMode handshake. Reports the server-side `lastSyncedAt` checkpoint, which the batch ingest endpoints set when a client push lands; the handshake does not move it, and writes only the envelope receipts it carries. The cheap 'should I sync?' summary; the durable delta cursor lives on `/api/sync/changes`.",
   });
 
 const syncMeasurementUpsert = measurementResource
@@ -205,6 +225,17 @@ const syncIntakeTombstone = z
     syncVersion: z.number().int().nonnegative(),
     deletedAt: isoDateTime(),
     updatedAt: isoDateTime(),
+    externalId: z
+      .string()
+      .nullable()
+      .describe(
+        "Since v1.49.0: the HealthKit dose-event UUID the dose recorded, null for a dose not from Apple Health. Lets a client match a deleted dose to its Apple Health record without holding the server id. Informational: `POST /api/medications/intake/bulk` already refuses the re-post of a dose the person deleted in HealthLog (`skipped`, `deleted_in_healthlog`), and takes one the phone reported deleted in Apple Health.",
+      ),
+    source: z
+      .string()
+      .describe(
+        "Since v1.49.0: the row's `source`, as on the upsert. A dose from Apple Health that landed on a pending slot row keeps that row's source (`REMINDER`), so `externalId`, not `source`, says whether it came from Apple Health.",
+      ),
   })
   .meta({
     id: "SyncIntakeTombstone",
@@ -349,7 +380,25 @@ export const syncPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Sync"],
       summary: "Sync handshake + window metadata",
       description:
-        "Cheap 'should I sync?' summary. Returns the `lastSyncedAt` checkpoint, which the batch ingest endpoints advance when a client push lands; this route is a read and writes nothing. The `sync` block carries the incremental-delta window + tombstone retention so the client reads them rather than hardcoding.",
+        "Cheap 'should I sync?' summary. Returns the `lastSyncedAt` checkpoint, which the batch ingest endpoints advance when a client push lands; the handshake does not move it. The `sync` block carries the incremental-delta window + tombstone retention so the client reads them rather than hardcoding. v1.49: the app reports the newest push envelope id it opened per class in `openedAlert` and `openedSilent`, for the device named by `X-Device-Id`; that is the one thing this request writes, and it confirms the relay pushes that arrived.",
+      requestParams: {
+        query: z.object({
+          openedAlert: z
+            .string()
+            .regex(/^[0-9A-HJKMNP-TV-Z]{26}$/)
+            .optional()
+            .describe(
+              "The newest alert envelope id (ULID) this device opened.",
+            ),
+          openedSilent: z
+            .string()
+            .regex(/^[0-9A-HJKMNP-TV-Z]{26}$/)
+            .optional()
+            .describe(
+              "The newest silent envelope id (ULID) this device opened.",
+            ),
+        }),
+      },
       responses: {
         "200": {
           description: "Sync state summary.",

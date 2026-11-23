@@ -35,11 +35,13 @@ export function restoredMedicationCreatedAt(
   const instants: Array<string | null | undefined> = [];
   for (const event of intakeEvents) {
     // Mirrors how the restore attaches an event: by id when the file names
-    // one, by name otherwise.
+    // one, by a portable file's reference next, by name otherwise.
     const belongs = event.medicationId
       ? event.medicationId === medication.id ||
         (!medication.id && event.medication === medication.name)
-      : event.medication === medication.name;
+      : event.medicationRef
+        ? event.medicationRef === (medication.ref ?? medication.id)
+        : event.medication === medication.name;
     if (!belongs) continue;
     instants.push(event.scheduledFor, event.takenAt, event.createdAt);
   }

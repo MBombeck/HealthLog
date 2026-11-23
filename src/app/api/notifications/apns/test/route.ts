@@ -2,7 +2,9 @@
  * v1.4.47.6 — per-channel APNs test endpoint.
  *
  * Mirrors `/api/notifications/web-push/test`: fires a single self-test
- * push to the calling user's iOS devices via `sendViaApns`. The
+ * push to the calling user's iOS devices on the APNs channel
+ * (`sendApnsTestPush`): sealed to a device with a push key, plaintext only
+ * to one without, exactly as a real alert travels. The
  * `notification-status-card` UI on the Settings page maps the
  * "Test senden" button on the APNS channel row to this endpoint.
  *
@@ -18,7 +20,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
-import { sendViaApns } from "@/lib/notifications/senders/apns";
+import { sendApnsTestPush } from "@/lib/push-relay/apns-channel";
 import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { prisma } from "@/lib/db";
@@ -54,7 +56,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // (which DO use time-sensitive) will surface on the lock screen.
   // The title/body strings still read "Test notification" so the user
   // doesn't mistake this for an actual scheduled dose.
-  const result = await sendViaApns(user.id, {
+  const result = await sendApnsTestPush(user.id, {
     title: t("notifications.admin.testNotificationTitle"),
     message: t("notifications.admin.testNotificationBody"),
     eventType: "MEDICATION_REMINDER",

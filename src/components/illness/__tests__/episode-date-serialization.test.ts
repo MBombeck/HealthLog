@@ -15,8 +15,8 @@ import {
   resolveEpisodeInstant,
   resolveEpisodeWindow,
   serializeEpisodeDate,
-  toLocalDateKey,
 } from "../dates";
+import { userDayKey } from "@/lib/tz/format";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -34,7 +34,7 @@ describe("episode date serialization — before and after noon", () => {
       const onsetAt = serializeEpisodeDate("2026-11-10", tz);
 
       expect(onsetAt).toBe("2026-11-10T07:30:00.000Z");
-      expect(toLocalDateKey(onsetAt, tz)).toBe("2026-11-10");
+      expect(userDayKey(new Date(onsetAt), tz)).toBe("2026-11-10");
 
       const parsed = illnessEpisodeCreateSchema.safeParse({
         label: "Headache",
@@ -55,12 +55,12 @@ describe("episode date serialization — before and after noon", () => {
     // Today after noon anchors to local noon (12:00 CET = 11:00 UTC)
     const todayOnset = serializeEpisodeDate("2026-11-10", tz, now);
     expect(todayOnset).toBe("2026-11-10T11:00:00.000Z");
-    expect(toLocalDateKey(todayOnset, tz)).toBe("2026-11-10");
+    expect(userDayKey(new Date(todayOnset), tz)).toBe("2026-11-10");
 
     // Historical date also anchors to local noon
     const histOnset = serializeEpisodeDate("2026-11-05", tz, now);
     expect(histOnset).toBe("2026-11-05T11:00:00.000Z");
-    expect(toLocalDateKey(histOnset, tz)).toBe("2026-11-05");
+    expect(userDayKey(new Date(histOnset), tz)).toBe("2026-11-05");
   });
 });
 
@@ -72,7 +72,7 @@ describe("episode date serialization — extreme timezones (UTC+14 & UTC-12)", (
     const onsetAt = serializeEpisodeDate("2026-11-10", tz, now);
 
     expect(onsetAt).toBe("2026-11-09T22:00:00.000Z");
-    expect(toLocalDateKey(onsetAt, tz)).toBe("2026-11-10");
+    expect(userDayKey(new Date(onsetAt), tz)).toBe("2026-11-10");
   });
 
   it("preserves calendar date in UTC-12 (Etc/GMT+12)", () => {
@@ -82,7 +82,7 @@ describe("episode date serialization — extreme timezones (UTC+14 & UTC-12)", (
     const onsetAt = serializeEpisodeDate("2026-11-10", tz, now);
 
     expect(onsetAt).toBe("2026-11-11T00:00:00.000Z");
-    expect(toLocalDateKey(onsetAt, tz)).toBe("2026-11-10");
+    expect(userDayKey(new Date(onsetAt), tz)).toBe("2026-11-10");
   });
 });
 
@@ -94,12 +94,12 @@ describe("episode date serialization — daylight saving time (DST)", () => {
     // Summer EDT (UTC-4): noon = 16:00 UTC
     const summerOnset = serializeEpisodeDate("2026-07-01", tz, now);
     expect(summerOnset).toBe("2026-07-01T16:00:00.000Z");
-    expect(toLocalDateKey(summerOnset, tz)).toBe("2026-07-01");
+    expect(userDayKey(new Date(summerOnset), tz)).toBe("2026-07-01");
 
     // Winter EST (UTC-5): noon = 17:00 UTC
     const winterOnset = serializeEpisodeDate("2026-01-15", tz, now);
     expect(winterOnset).toBe("2026-01-15T17:00:00.000Z");
-    expect(toLocalDateKey(winterOnset, tz)).toBe("2026-01-15");
+    expect(userDayKey(new Date(winterOnset), tz)).toBe("2026-01-15");
   });
 });
 
@@ -108,7 +108,7 @@ describe("resolveEpisodeInstant & resolveEpisodeWindow", () => {
     const tz = "America/New_York";
     const now = new Date("2026-11-10T15:00:00.000Z");
     const storedInstant = "2026-11-05T09:42:15.123Z";
-    const calendarDate = toLocalDateKey(storedInstant, tz); // "2026-11-05"
+    const calendarDate = userDayKey(new Date(storedInstant), tz); // "2026-11-05"
 
     const resolved = resolveEpisodeInstant({
       date: calendarDate,

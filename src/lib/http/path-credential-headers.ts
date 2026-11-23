@@ -1,4 +1,7 @@
+import { NextResponse } from "next/server";
+
 import { NATIVE_OIDC_RETURN_PATH } from "@/lib/auth/native-return";
+import { setBaselineSecurityHeaders } from "@/lib/http/proxy-bypass-routes";
 
 /**
  * Edge headers for the paths whose credential is the URL itself.
@@ -25,7 +28,8 @@ import { NATIVE_OIDC_RETURN_PATH } from "@/lib/auth/native-return";
  * share view, but its caching is the route's own: `private, no-cache` plus an
  * ETag, so a provider can ask again with `If-None-Match` instead of
  * downloading the body on every poll. `no-store` here would throw the
- * validator away.
+ * validator away. The care calendar feed (`/api/care/feed/<hlf_token>`) is
+ * the same kind of link and gets the same treatment.
  *
  * The native https return page (`/auth/native-return`, #163 B2) receives a
  * one-time sign-in code or second-factor ticket in its query. The app normally
@@ -38,9 +42,12 @@ export function setPathCredentialHeaders(
   pathname: string,
   headers: Headers,
 ): void {
-  const feed = pathname.startsWith("/api/cycle/feed/");
+  const feed =
+    pathname.startsWith("/api/cycle/feed/") ||
+    pathname.startsWith("/api/care/feed/");
   const page =
     pathname.startsWith("/c/") ||
+    pathname.startsWith("/e/") ||
     pathname.startsWith("/invite/") ||
     pathname === NATIVE_OIDC_RETURN_PATH ||
     pathname.startsWith(`${NATIVE_OIDC_RETURN_PATH}/`);
@@ -48,4 +55,22 @@ export function setPathCredentialHeaders(
   if (page) headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
   headers.set("X-Robots-Tag", "noindex, nofollow");
   headers.set("Referrer-Policy", "no-referrer");
+}
+
+/**
+ * The edge hop off a path whose credential is the URL itself (the invite and
+ * handover links, a clinician share page opened without its gate): a 307 that
+ * is uncacheable, unindexable and never leaked as a `Referer`, because the
+ * secret rides in the path of the request that produced it.
+ */
+export function credentialRedirect(target: URL): NextResponse {
+  const redirected = NextResponse.redirect(target, 307);
+  setBaselineSecurityHeaders(redirected.headers);
+  redirected.headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate",
+  );
+  redirected.headers.set("X-Robots-Tag", "noindex, nofollow");
+  redirected.headers.set("Referrer-Policy", "no-referrer");
+  return redirected;
 }

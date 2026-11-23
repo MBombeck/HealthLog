@@ -95,49 +95,42 @@ RUN node scripts/verify-message-catalogs.mjs --dir messages \
 # and the runner copies `/opt/prisma-cli` over, so npm never reaches the
 # runtime image.
 #
-# The `allowScripts` field is for npm 12 and later, which runs no dependency
-# install scripts unless package.json lists the package there. Three packages
-# here have one: `@prisma/engines` downloads the schema engine `migrate
-# deploy` runs, `prisma` checks its environment, and `esbuild` (under tsx)
-# checks its binary. The npm in this image still runs them without the field;
-# keeping it means a later npm major cannot drop the schema engine quietly.
-# Either way the runner asks for the engine file after the copy.
+# The install is `npm ci` against the committed `docker/prisma-cli/package.json`
+# and `package-lock.json`: every package in the tree arrives at the version and
+# integrity hash the lockfile records, and `npm ci` refuses to start when the
+# two files disagree. Bump a version there, regenerate the lockfile on this
+# base image (`npm install --package-lock-only --omit=dev` inside
+# `docker/prisma-cli`), and commit both. Dependabot watches that directory.
+# The CLI versions move with the app's `prisma` and `dotenv` entries in
+# `package.json`; `scripts/__tests__/release-workflows.test.ts` holds that.
+#
+# The `allowScripts` field in that package.json is for npm 12 and later,
+# which runs no dependency install scripts unless package.json lists the
+# package there. Three packages here have one: `@prisma/engines` downloads the
+# schema engine `migrate deploy` runs, `prisma` checks its environment, and
+# `esbuild` (under tsx) checks its binary. The npm in this image still runs
+# them without the field; keeping it means a later npm major cannot drop the
+# schema engine quietly. Either way the runner asks for the engine file after
+# the copy.
 #
 # This install belongs to npm, not pnpm, so the `overrides` block in
 # `pnpm-workspace.yaml` does not reach it: a package pinned there for the app
 # tree still arrives here at whatever version Prisma asks for. That is not
-# hypothetical. `prisma@7.8.0` resolves `@prisma/config@7.8.0`, which resolves
+# hypothetical. `prisma@7.8.0` resolved `@prisma/config@7.8.0`, which resolved
 # `deepmerge-ts@7.1.5`, and the image scan reported CVE-2026-40345 (HIGH,
 # stack exhaustion on recursive merges) against `/opt/prisma-cli` on a commit
-# whose dependency audit over the app tree was green. Two installs, two
-# override mechanisms, one of them set. `overrides` is npm's own mechanism and
-# `npm pkg set` writes it into the package.json that `npm init -y` just
-# created, before anything resolves.
-#
-# Measured by rebuilding this exact install both ways: without the field
-# `deepmerge-ts@7.1.5` lands, with it `8.0.1` lands and `prisma --version`
-# still reports 7.8.0. Keep the range in step with the entry in
-# `pnpm-workspace.yaml` — they are one decision applied to two package
-# managers, and a fix that lands in only one of them is the defect above.
-#
-# The same class recurred on 2026-09-02: the image scan reported
-# `@hono/node-server@1.19.11` (GHSA-frvp-7c67-39w9, CVE-2026-39406) and
-# `valibot@1.2.0` (CVE-2026-59952) under this path, both reached through
-# `prisma -> @prisma/dev`, while the app tree carried 1.19.17 and a pin the
-# npm install never reads. Rebuilding this install both ways confirms it:
-# without the two fields below npm resolves 1.19.11 and 1.2.0, with them it
-# resolves 1.19.17 and 1.4.2, and `prisma --version` still reports 7.8.0.
+# whose dependency audit over the app tree was green. The same class recurred
+# on 2026-09-02 with `@hono/node-server@1.19.11` (GHSA-frvp-7c67-39w9,
+# CVE-2026-39406) and `valibot@1.2.0` (CVE-2026-59952), both reached through
+# `prisma -> @prisma/dev`. So the stage's package.json carries its own
+# `overrides`, and each range there stays in step with the entry in
+# `pnpm-workspace.yaml`: they are one decision applied to two package
+# managers, and `dependency-override-lockstep-guard.test.ts` fails when they
+# part.
 FROM node:22-trixie-slim@sha256:68c76cfad89921b927eae28ba21407475e29d0ce450afcdbe70c1532db042b64 AS prisma-cli
-RUN mkdir -p /opt/prisma-cli && \
-    cd /opt/prisma-cli && \
-    npm init -y && \
-    npm pkg set 'overrides.deepmerge-ts=^8.0.0' && \
-    npm pkg set 'overrides.mysql2=^3.22.0' && \
-    npm pkg set 'overrides.@hono/node-server=^2.1.3' && \
-    npm pkg set 'overrides.valibot=^1.4.2' && \
-    npm pkg set 'overrides.effect=^3.22.1' && \
-    npm pkg set 'allowScripts.@prisma/engines=true' 'allowScripts.prisma=true' 'allowScripts.esbuild=true' --json && \
-    npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.10 --no-fund --no-audit
+WORKDIR /opt/prisma-cli
+COPY docker/prisma-cli/package.json docker/prisma-cli/package-lock.json ./
+RUN npm ci --omit=dev --no-fund --no-audit
 
 # ── Stage 4: PostgreSQL client ─────────────────────────────
 # pg_dump and pg_restore of the newest PostgreSQL major this project

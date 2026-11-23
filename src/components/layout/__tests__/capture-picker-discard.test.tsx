@@ -50,6 +50,10 @@ vi.mock("react", async (importOriginal) => {
   };
 });
 
+vi.mock("@/components/measurements/entry/use-entry-recall", () => ({
+  useRecentEntryTypes: () => [],
+}));
+
 vi.mock("@/lib/i18n/context", () => ({
   useTranslations: () => ({ t: (key: string) => key }),
 }));

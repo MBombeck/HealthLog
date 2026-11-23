@@ -62,10 +62,21 @@ the cross-source source-priority ladder) and is mirrored onto
 temperature already flows to `WRIST_TEMPERATURE` / `SKIN_TEMPERATURE` and feeds
 the temperature-trend ovulation method directly from `Measurement`.
 
+## Pregnancy and lactation status
+
+`Pregnancy` and `Lactation` are status samples, read from `export.xml` only,
+and never become a day log. They set the `CycleProfile` pregnancy state, and
+only while the profile holds none and its owner never set or cleared one in
+the cycle settings: an ongoing `Pregnancy` sample sets `PREGNANT` with
+its first day as `pregnancyStartDate`; an ongoing `Lactation` sample sets
+`POSTPARTUM` only when a `Pregnancy` sample ended at most 14 days before it
+began, that end becoming `deliveryDate`. An ended pregnancy alone sets nothing.
+Every state set this way is audited (`cycle.profile.pregnancy-imported`). See
+`docs/using/pregnancy.md`.
+
 ## Deferred
 
-| HealthKit category type                                                                                                  | Status                                                                       |
-| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| `Pregnancy`, `Lactation`                                                                                                 | Deferred — no `CycleProfile` column yet (pregnancy-mode is a later release). |
-| `BleedingDuringPregnancy`, `BleedingAfterPregnancy`                                                                      | Deferred — pregnancy-mode.                                                   |
-| `IrregularMenstrualCycles`, `InfrequentMenstrualCycles`, `ProlongedMenstrualPeriods`, `PersistentIntermenstrualBleeding` | Server-derived from the cycle engine, never ingested.                        |
+| HealthKit category type                                                                                                  | Status                                                |
+| ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| `BleedingDuringPregnancy`, `BleedingAfterPregnancy`                                                                      | Not read yet: the pregnancy state stores no bleeding. |
+| `IrregularMenstrualCycles`, `InfrequentMenstrualCycles`, `ProlongedMenstrualPeriods`, `PersistentIntermenstrualBleeding` | Server-derived from the cycle engine, never ingested. |

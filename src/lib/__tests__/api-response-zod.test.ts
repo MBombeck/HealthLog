@@ -164,3 +164,167 @@ describe("returnAllZodIssues", () => {
     });
   });
 });
+
+describe("sanitiseZodIssues — schema bounds", () => {
+  it("names the declared bound of a size issue and never the rejected value", () => {
+    const schema = z.object({
+      value: z.number().positive().max(500),
+      name: z.string().min(3),
+    });
+    const over = schema.safeParse({ value: 9999, name: "abc" });
+    const under = schema.safeParse({ value: 0, name: "x" });
+    expect(over.success || under.success).toBe(false);
+    const [big] = sanitiseZodIssues(over.error!.issues);
+    expect(big).toMatchObject({
+      path: "value",
+      code: "too_big",
+      maximum: 500,
+      inclusive: true,
+      origin: "number",
+    });
+    expect(JSON.stringify(big)).not.toContain("9999");
+    const small = sanitiseZodIssues(under.error!.issues, {
+      stripValuesFromMessage: true,
+    });
+    expect(small).toEqual([
+      {
+        path: "value",
+        code: "too_small",
+        minimum: 0,
+        inclusive: false,
+        origin: "number",
+      },
+      {
+        path: "name",
+        code: "too_small",
+        minimum: 3,
+        inclusive: true,
+        origin: "string",
+      },
+    ]);
+  });
+
+  it("adds nothing to an issue that is not about a size", () => {
+    const parsed = z.object({ v: z.number() }).safeParse({ v: "nope" });
+    const [issue] = sanitiseZodIssues(parsed.error!.issues);
+    expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+  });
+});
+
+describe("sanitiseZodIssues — both ends from the schema", () => {
+  const dose = z.object({ amount: z.number().min(0).max(5000) });
+
+  it("puts the other declared end beside the broken one", () => {
+    const parsed = dose.safeParse({ amount: 6000 });
+    const [issue] = sanitiseZodIssues(parsed.error!.issues, { schema: dose });
+    expect(issue).toMatchObject({
+      path: "amount",
+      code: "too_big",
+      minimum: 0,
+      maximum: 5000,
+      inclusive: true,
+      minimumInclusive: true,
+      maximumInclusive: true,
+      origin: "number",
+    });
+    expect(JSON.stringify(issue)).not.toContain("6000");
+  });
+
+  it("keeps the single bound without the schema, as before", () => {
+    const parsed = dose.safeParse({ amount: 6000 });
+    const [issue] = sanitiseZodIssues(parsed.error!.issues);
+    expect(issue).not.toHaveProperty("minimum");
+    expect(issue).not.toHaveProperty("minimumInclusive");
+    expect(issue).toMatchObject({ maximum: 5000 });
+  });
+
+  it("walks arrays, wrappers and exclusive ends", () => {
+    const schema = z.object({
+      items: z.array(
+        z.object({ v: z.number().gt(0).lte(10).nullable().optional() }),
+      ),
+    });
+    const parsed = schema.safeParse({ items: [{ v: 3 }, { v: 0 }] });
+    const [issue] = sanitiseZodIssues(parsed.error!.issues, {
+      schema,
+      stripValuesFromMessage: true,
+    });
+    expect(issue).toEqual({
+      path: "items.1.v",
+      code: "too_small",
+      minimum: 0,
+      maximum: 10,
+      inclusive: false,
+      minimumInclusive: false,
+      maximumInclusive: true,
+      origin: "number",
+    });
+  });
+
+  it("names a string's and a list's length range", () => {
+    const schema = z.object({
+      label: z.string().trim().min(1).max(40),
+      tags: z.array(z.string()).min(1).max(3),
+    });
+    const parsed = schema.safeParse({ label: "x".repeat(41), tags: [] });
+    const issues = sanitiseZodIssues(parsed.error!.issues, { schema });
+    expect(issues).toEqual([
+      expect.objectContaining({
+        path: "label",
+        code: "too_big",
+        minimum: 1,
+        maximum: 40,
+        origin: "string",
+      }),
+      expect.objectContaining({
+        path: "tags",
+        code: "too_small",
+        minimum: 1,
+        maximum: 3,
+        origin: "array",
+      }),
+    ]);
+  });
+
+  it("takes the branch of a union that declared the broken bound", () => {
+    const schema = z.discriminatedUnion("kind", [
+      z.object({ kind: z.literal("a"), n: z.number().min(0).max(5) }),
+      z.object({ kind: z.literal("b"), n: z.number().min(10).max(20) }),
+    ]);
+    const parsed = schema.safeParse({ kind: "b", n: 30 });
+    const [issue] = sanitiseZodIssues(parsed.error!.issues, { schema });
+    expect(issue).toMatchObject({
+      path: "n",
+      code: "too_big",
+      minimum: 10,
+      maximum: 20,
+    });
+  });
+
+  it("adds nothing for a one-sided field or an exact length", () => {
+    const schema = z.object({
+      max: z.number().max(5),
+      code: z.string().length(3),
+    });
+    const parsed = schema.safeParse({ max: 9, code: "abcd" });
+    const issues = sanitiseZodIssues(parsed.error!.issues, { schema });
+    for (const issue of issues) {
+      expect(issue).not.toHaveProperty("minimumInclusive");
+      expect(issue).not.toHaveProperty("maximumInclusive");
+    }
+    expect(issues[0]).not.toHaveProperty("minimum");
+  });
+
+  it("returnAllZodIssues carries both ends when given the schema", async () => {
+    const parsed = dose.safeParse({ amount: -1 });
+    const response = returnAllZodIssues(parsed.error!, 422, undefined, dose);
+    const body = (await response.json()) as {
+      details: { issues: Array<Record<string, unknown>> };
+    };
+    expect(body.details.issues[0]).toMatchObject({
+      code: "too_small",
+      minimum: 0,
+      maximum: 5000,
+    });
+  });
+});

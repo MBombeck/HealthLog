@@ -10,6 +10,7 @@
  * the cadence-scaled display rows AND the 90-day heatmap.
  */
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import {
   buildComplianceMedicationContext,
   buildMedicationComplianceBundle,
@@ -190,10 +191,98 @@ function bucketLedgerRow(
   }
 }
 
+/** What the payload reads of each intake row. */
+const COMPLIANCE_EVENT_SELECT = {
+  medicationId: true,
+  takenAt: true,
+  skipped: true,
+  scheduledFor: true,
+  // v1.15.9 — a forgotten dose the auto-miss cron flipped counts as a
+  // miss, not a neutral skip.
+  autoMissed: true,
+  // v1.15.20 — pinned takes bind by anchor in the unified ledger so the
+  // % agrees with the history view on a "zugeordnet" dose (taken-late).
+  attributionSource: true,
+} satisfies Prisma.MedicationIntakeEventSelect;
+
+type ComplianceEvent = Prisma.MedicationIntakeEventGetPayload<{
+  select: typeof COMPLIANCE_EVENT_SELECT;
+}>;
+
+/** Reads one medication's intake rows anchored at or after `from`. */
+export type ComplianceEventReader = (
+  medicationId: string,
+  from: Date,
+) => Promise<ComplianceEvent[]>;
+
+/**
+ * The 366-day intake read of every medication one request builds a payload
+ * for, as ONE query: each cold cell asks for its medication, the reads that
+ * arrive in the same tick go out together, and every cell gets its own rows
+ * back (newest first, as the single read returns them). The summary route
+ * used to read each cold cell's rows on its own, three at a time.
+ */
+export function batchedComplianceEvents(userId: string): ComplianceEventReader {
+  let pending: Array<{
+    medicationId: string;
+    from: Date;
+    resolve: (rows: ComplianceEvent[]) => void;
+    reject: (err: unknown) => void;
+  }> = [];
+  const flush = async () => {
+    const batch = pending;
+    pending = [];
+    try {
+      const from = new Date(Math.min(...batch.map((b) => b.from.getTime())));
+      const rows = await prisma.medicationIntakeEvent.findMany({
+        where: {
+          medicationId: { in: [...new Set(batch.map((b) => b.medicationId))] },
+          userId,
+          deletedAt: null,
+          scheduledFor: { gte: from },
+        },
+        orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
+        select: COMPLIANCE_EVENT_SELECT,
+      });
+      for (const b of batch) {
+        b.resolve(
+          rows.filter(
+            (r) =>
+              r.medicationId === b.medicationId && r.scheduledFor >= b.from,
+          ),
+        );
+      }
+    } catch (err) {
+      for (const b of batch) b.reject(err);
+    }
+  };
+  return (medicationId, from) =>
+    new Promise((resolve, reject) => {
+      if (pending.length === 0) setImmediate(() => void flush());
+      pending.push({ medicationId, from, resolve, reject });
+    });
+}
+
+/** One medication's rows, read on their own (the single-medication route). */
+const singleComplianceEvents =
+  (userId: string): ComplianceEventReader =>
+  (medicationId, from) =>
+    prisma.medicationIntakeEvent.findMany({
+      where: {
+        medicationId,
+        userId,
+        deletedAt: null,
+        scheduledFor: { gte: from },
+      },
+      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
+      select: COMPLIANCE_EVENT_SELECT,
+    });
+
 export async function buildCompliancePayload(
   medication: ComplianceMedicationInput,
   userId: string,
   userTz: string,
+  readEvents: ComplianceEventReader = singleComplianceEvents(userId),
 ): Promise<CompliancePayload> {
   // A scheduled medication with ZERO local schedules has no local expected
   // dose grid. This is a real shape for Apple Health mirrors: the source owns
@@ -239,30 +328,10 @@ export async function buildCompliancePayload(
   // Not clamped to the medication's creation: a dose recorded for a slot
   // before the creation still claims that slot in the ledger (#1028).
   const fetchFrom = new Date(now.getTime() - EVENT_FETCH_WINDOW_DAYS * DAY_MS);
-  const events = await prisma.medicationIntakeEvent.findMany({
-    // v1.7.0 sync — exclude tombstoned rows from the compliance read.
-    // Bounded to the 366-day fetch window: every served block is a suffix
-    // of the 365-day ledger window, so older rows can never change the
-    // response.
-    where: {
-      medicationId: medication.id,
-      userId,
-      deletedAt: null,
-      scheduledFor: { gte: fetchFrom },
-    },
-    orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
-    select: {
-      takenAt: true,
-      skipped: true,
-      scheduledFor: true,
-      // v1.15.9 — a forgotten dose the auto-miss cron flipped counts as a
-      // miss, not a neutral skip.
-      autoMissed: true,
-      // v1.15.20 — pinned takes bind by anchor in the unified ledger so the
-      // % agrees with the history view on a "zugeordnet" dose (taken-late).
-      attributionSource: true,
-    },
-  });
+  // v1.7.0 sync — tombstoned rows are excluded from the compliance read.
+  // Bounded to the 366-day fetch window: every served block is a suffix of
+  // the 365-day ledger window, so older rows can never change the response.
+  const events = await readEvents(medication.id, fetchFrom);
 
   // v1.7.0 — thread the medication context so the denominator
   // routes through the canonical engine (RRULE / rolling / one-shot / PRN /

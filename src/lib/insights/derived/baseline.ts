@@ -28,13 +28,15 @@
  * statistics helpers below are exported so the unit test can assert the
  * composed-bucket baseline matches the raw-DAY baseline within tolerance.
  */
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import {
   resolveTrendVerdict,
   type TrendVerdict,
 } from "@/lib/targets/trend-verdict";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { toProfileSex } from "@/lib/profile/sex";
 import {
   clampDerivedLowerBound,
@@ -60,6 +62,7 @@ import {
   type DerivedProvenanceSource,
 } from "./types";
 import { dateOnlyKey } from "@/lib/tz/date-only";
+import { median, medianAbsoluteDeviation } from "@/lib/stats/central";
 
 /** k for the median ± k·MAD band — ≈3σ-equivalent for normal data. */
 const DEFAULT_MAD_K = 3;
@@ -128,13 +131,22 @@ export interface BaselineProfile {
    */
   dateOfBirth?: Date | null;
   thresholdsJson?: unknown;
+  /** The record's zone, the day `dateOfBirth` turns a year in. */
+  timezone?: string;
+  /**
+   * In a pregnancy or its postpartum weeks today (`pregnancyContextActive`):
+   * the weight verdict then judges no direction against a target. Read by
+   * `loadBaselineProfile`; a caller that builds a profile by hand without it
+   * judges as if there were none.
+   */
+  pregnancy?: boolean;
 }
 
 /**
  * Build the `BaselineProfile` the baseline engine + readiness blend need from
  * the `User` row. This is the one loader the persisting score engines and the
  * live `/api/insights/derived` route share — previously each inlined a
- * byte-identical `findUnique` + gender-narrow + `getAgeFromDateOfBirth`. The
+ * byte-identical `findUnique` + gender-narrow + `ageInYears`. The
  * `prisma` arg is the caller's client (the nightly worker passes its shared
  * connection; the route passes the request client) so both reads hit one
  * pool. `now` is unused here but accepted so a future age-as-of-date refinement
@@ -151,15 +163,19 @@ export async function loadBaselineProfile(
       gender: true,
       heightCm: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
   const sex = toProfileSex(user?.gender);
+  const timezone = user?.timezone ?? DEFAULT_TIMEZONE;
   return {
-    ageYears: getAgeFromDateOfBirth(user?.dateOfBirth ?? null),
+    pregnancy: await pregnancyContextActive(prisma, userId, timezone),
+    ageYears: ageInYears(user?.dateOfBirth, user?.timezone ?? DEFAULT_TIMEZONE),
     sex,
     heightCm: user?.heightCm ?? null,
     dateOfBirth: user?.dateOfBirth ?? null,
     thresholdsJson: user?.thresholdsJson ?? null,
+    timezone: user?.timezone ?? DEFAULT_TIMEZONE,
   };
 }
 
@@ -186,26 +202,6 @@ export interface DayMeanPoint {
   mean: number;
 }
 
-// ── pure statistics (exported for the parity test) ───────────────────
-
-/** Median of a numeric array (does not mutate the input). */
-export function median(values: number[]): number {
-  if (values.length === 0) return NaN;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
-}
-
-/** Median absolute deviation about the median (raw, unscaled). */
-export function medianAbsoluteDeviation(values: number[]): number {
-  if (values.length === 0) return NaN;
-  const center = median(values);
-  const deviations = values.map((v) => Math.abs(v - center));
-  return median(deviations);
-}
-
 /**
  * Build the median ± k·MAD band from a per-day mean series. Pure — the
  * caller supplies the already-resolved DAY-native series so this can be
@@ -227,9 +223,9 @@ export function buildBaselineBand(
   type: MeasurementType | null,
   k: number = DEFAULT_MAD_K,
 ): Omit<VitalsBaselineValue, "type" | "series"> | null {
-  if (dayMeans.length === 0) return null;
   const center = median(dayMeans);
   const mad = medianAbsoluteDeviation(dayMeans);
+  if (center === null || mad === null) return null;
   // Scale MAD to a σ-equivalent so the band reads like a robust ±kσ.
   const spread = k * mad * MAD_SIGMA_SCALE;
   // The edges never sit closer than the measurement's own day-to-day wobble:
@@ -440,10 +436,12 @@ export async function computeVitalsBaseline(
   const direction =
     profile.dateOfBirth !== undefined
       ? resolveTrendVerdict(type, {
+          pregnancy: profile.pregnancy === true,
           profile: {
             dateOfBirth: profile.dateOfBirth,
             gender: profile.sex,
             heightCm: profile.heightCm ?? null,
+            timezone: profile.timezone,
           },
           thresholdsJson: profile.thresholdsJson ?? null,
           referenceValue: band.center,

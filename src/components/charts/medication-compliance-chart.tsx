@@ -50,6 +50,7 @@ import { ArrowDown, ArrowRight, ArrowUp, Pill } from "lucide-react";
 import { ComplianceInfoTip } from "@/components/medications/card-parts/compliance-info-tip";
 import { TileHeader } from "@/components/insights/tile-header";
 import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
@@ -59,7 +60,6 @@ import {
   useTranslations,
   useFormatters,
 } from "@/lib/i18n/context";
-import { formatDateShort } from "@/lib/format";
 import { makeFormatters } from "@/lib/format-locale";
 import { cn } from "@/lib/utils";
 import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
@@ -112,13 +112,12 @@ type RangeDays = (typeof RANGE_DAYS)[number];
  *
  * v1.4.25 — the `dateFormatter` argument lets the chart pass a
  * tz-aware formatter so a Pacific/Auckland user's X-axis tick label
- * for "2026-05-15" reads as 15.05. in their tz. Default keeps the
- * legacy `formatDateShort` so the existing unit test (which calls the
- * exported helper without arguments) stays byte-identical.
+ * for "2026-05-15" reads as 15.05. in their tz. The caller always
+ * supplies it, so the helper never guesses a locale.
  */
 export function aggregateMedicationCompliance(
   points: DailyCompliancePoint[],
-  dateFormatter: (date: Date) => string = (d) => formatDateShort(d, false),
+  dateFormatter: (date: Date) => string,
 ): ChartPoint[] {
   return points
     .filter((p) => p.scheduled > 0)
@@ -220,6 +219,31 @@ interface MedicationComplianceChartProps {
    * day-linked chart has (`useChartDayLinks`).
    */
   dayLinks?: boolean;
+}
+
+/** The 7 / 30 / 90 day choice, labelled and named in the reader's locale. */
+function RangeButtons({
+  days,
+  onChange,
+}: {
+  days: RangeDays;
+  onChange: (days: RangeDays) => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <Segmented
+      size="sm"
+      mode="toggle"
+      label={t("charts.rangeLabel")}
+      value={String(days)}
+      onChange={(next) => onChange(Number(next) as RangeDays)}
+      options={RANGE_DAYS.map((r) => ({
+        value: String(r),
+        label: t("charts.daysNLabel", { days: r }),
+        title: t("charts.daysNAria", { days: r }),
+      }))}
+    />
+  );
 }
 
 export function MedicationComplianceChart({
@@ -495,17 +519,7 @@ export function MedicationComplianceChart({
           className="flex flex-nowrap items-center justify-end gap-1 self-end sm:self-auto"
           data-slot="chart-header-controls"
         >
-          {RANGE_DAYS.map((r) => (
-            <Button
-              key={r}
-              variant={days === r ? "default" : "ghost"}
-              size="sm"
-              className="min-h-11 px-2 text-xs sm:px-3"
-              onClick={() => setDays(r)}
-            >
-              {r}T
-            </Button>
-          ))}
+          <RangeButtons days={days} onChange={setDays} />
           {/* v1.4.18 — overlay-controls dropdown next to the range
               tabs.
               v1.4.25 — the compliance card never paints a

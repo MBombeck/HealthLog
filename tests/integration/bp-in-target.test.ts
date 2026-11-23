@@ -132,7 +132,7 @@ describe("BP-in-target % — production data shape", () => {
       select: { measuredAt: true, value: true },
     });
 
-    const targets = getBpTargets(user.dateOfBirth);
+    const targets = getBpTargets(user.dateOfBirth, user.timezone);
     expect(targets).not.toBeNull();
     const result = computeBpInTargetPct(sysData, diaData, targets!);
     expect(result).not.toBeNull();
@@ -163,7 +163,7 @@ describe("BP-in-target % — production data shape", () => {
       select: { measuredAt: true, value: true },
     });
 
-    const targets = getBpTargets(user.dateOfBirth);
+    const targets = getBpTargets(user.dateOfBirth, user.timezone);
     expect(computeBpInTargetPct(sysData, diaData, targets!)).toBeNull();
   });
 
@@ -203,7 +203,7 @@ describe("BP-in-target % — production data shape", () => {
       select: { measuredAt: true, value: true },
     });
 
-    const targets = getBpTargets(user.dateOfBirth);
+    const targets = getBpTargets(user.dateOfBirth, user.timezone);
     expect(computeBpInTargetPct(sysData, diaData, targets!)).toBeNull();
   });
 
@@ -260,7 +260,7 @@ describe("BP-in-target % — production data shape", () => {
       select: { measuredAt: true, value: true },
     });
 
-    const targets = getBpTargets(user.dateOfBirth);
+    const targets = getBpTargets(user.dateOfBirth, user.timezone);
     const result = computeBpInTargetPct(sysData, diaData, targets!);
     expect(result).toEqual({ pct: 50, pairs: 2 });
   });
@@ -352,7 +352,7 @@ describe("BP-in-target % — windowed (7-day + 30-day) — production data shape
       where: { userId: user.id, type: "BLOOD_PRESSURE_DIA" },
       select: { measuredAt: true, value: true },
     });
-    const targets = getBpTargets(user.dateOfBirth);
+    const targets = getBpTargets(user.dateOfBirth, user.timezone);
     expect(targets).not.toBeNull();
 
     const windows = computeBpInTargetWindows(sysData, diaData, targets!, now);
@@ -449,7 +449,7 @@ describe("BP-in-target % — windowed (7-day + 30-day) — production data shape
       where: { userId: user.id, type: "BLOOD_PRESSURE_DIA" },
       select: { measuredAt: true, value: true },
     });
-    const targets = getBpTargets(user.dateOfBirth);
+    const targets = getBpTargets(user.dateOfBirth, user.timezone);
     expect(targets).not.toBeNull();
     const windows = computeBpInTargetWindows(sysData, diaData, targets!, now);
 
@@ -516,7 +516,7 @@ describe("BP-in-target % — windowed (7-day + 30-day) — production data shape
       where: { userId: user.id, type: "BLOOD_PRESSURE_DIA" },
       select: { measuredAt: true, value: true },
     });
-    const targets = getBpTargets(user.dateOfBirth);
+    const targets = getBpTargets(user.dateOfBirth, user.timezone);
     const windows = computeBpInTargetWindows(sysData, diaData, targets!, now);
 
     expect(windows.last7Days).toBeNull();

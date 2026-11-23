@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" font-family="ui-sans-serif, -apple-system, Segoe UI, Roboto, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">HealthLog push relay</title>
+  <desc id="desc">Your server seals the message, the push relay forwards it and cannot read it, Apple delivers it and cannot read it, and the iPhone opens it with its own key. The message is encrypted end to end. The relay and Apple only see that a message went to a device, and when.</desc>
+
+  <rect x="0" y="0" width="1200" height="620" fill="#282a36" />
+
+  <text x="600" y="90" fill="#f8f8f2" font-size="30" font-weight="700" text-anchor="middle">Push relay</text>
+
+  <!-- Encrypted end to end, with a lock -->
+  <g transform="translate(470 196)" fill="none" stroke="#bd93f9" stroke-width="2.5">
+    <path d="M6 0 V -7 a8 8 0 0 1 16 0 V 0" />
+    <rect x="0" y="0" width="28" height="22" rx="4" fill="#bd93f9" />
+  </g>
+  <text x="510" y="216" fill="#bd93f9" font-size="22" font-weight="600">encrypted end to end</text>
+
+  <!-- The path -->
+  <g fill="none" stroke-width="2">
+    <rect x="40" y="250" width="250" height="130" rx="14" stroke="#f8f8f2" />
+    <rect x="330" y="250" width="250" height="130" rx="14" stroke="#f8f8f2" />
+    <rect x="620" y="250" width="250" height="130" rx="14" stroke="#f8f8f2" />
+    <rect x="910" y="250" width="250" height="130" rx="14" stroke="#f8f8f2" />
+  </g>
+  <g font-size="28" font-weight="700" text-anchor="middle">
+    <text x="165" y="306" fill="#f8f8f2">Your server</text>
+    <text x="455" y="306" fill="#f8f8f2">Push relay</text>
+    <text x="745" y="306" fill="#f8f8f2">Apple</text>
+    <text x="1035" y="306" fill="#f8f8f2">iPhone</text>
+  </g>
+  <g font-size="18" fill="#a6a8b5" text-anchor="middle">
+    <text x="165" y="344">seals the message</text>
+    <text x="455" y="344">forwards, cannot read</text>
+    <text x="745" y="344">delivers, cannot read</text>
+    <text x="1035" y="344">opens it with its own key</text>
+  </g>
+
+  <g stroke="#f8f8f2" stroke-width="3" fill="none" marker-end="url(#a10)">
+    <path d="M292 315 L 324 315" />
+    <path d="M582 315 L 614 315" />
+    <path d="M872 315 L 904 315" />
+  </g>
+
+  <text x="600" y="490" fill="#a6a8b5" font-size="22" text-anchor="middle">The relay and Apple only see that a message went to a device, and when.</text>
+
+  <defs>
+    <marker id="a10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f8f8f2" /></marker>
+  </defs>
+</svg>

@@ -19,7 +19,9 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { apiGet, apiDelete } from "@/lib/api/api-fetch";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 
 interface TrustedDeviceRow {
   id: string;
@@ -57,6 +59,8 @@ export function TrustedDevicesCard({
   }
 
   const revokeOne = useMutation({
+    // Confirms in place: the device leaves the list.
+    meta: CONFIRMS_INLINE,
     mutationFn: (id: string) => apiDelete(`/api/auth/me/trusted-devices/${id}`),
     onSuccess: () => {
       setStatus(null);
@@ -68,8 +72,12 @@ export function TrustedDevicesCard({
   const revokeAll = useMutation({
     mutationFn: () =>
       apiDelete<{ revoked: number }>("/api/auth/me/trusted-devices"),
+    // A toast, not the status line: with every device gone the card hides
+    // itself, and a line inside it would vanish with it.
     onSuccess: (res) => {
-      setStatus(
+      setStatus(null);
+      toastWrittenOutcome(
+        "success",
         t("settings.security.trustedDevices.revokeAllDone", {
           count: res?.revoked ?? 0,
         }),
@@ -154,12 +162,18 @@ export function TrustedDevicesCard({
           </ul>
         )}
 
+        {status && (
+          <p role="status" className="text-muted-foreground text-right text-sm">
+            {status}
+          </p>
+        )}
+
         {devices.length > 0 && (
           <SettingsCardActions>
             <ConfirmButton
+              size="sm"
               slot="revoke-all-trusted-devices"
               destructive
-              className="min-h-11 sm:min-h-9"
               label={t("settings.security.trustedDevices.revokeAll")}
               title={t(
                 "settings.security.trustedDevices.revokeAllConfirmTitle",
@@ -170,12 +184,6 @@ export function TrustedDevicesCard({
               pending={revokeAll.isPending}
             />
           </SettingsCardActions>
-        )}
-
-        {status && (
-          <p role="status" className="text-muted-foreground text-right text-sm">
-            {status}
-          </p>
         )}
       </div>
     </SettingsCard>

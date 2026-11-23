@@ -24,7 +24,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTableSort } from "@/hooks/use-table-sort";
 import { apiDelete, apiPatch, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
-import { formatDateShort } from "@/lib/format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -244,7 +243,7 @@ export function CustomMetricHistoryList({
                 {unit ? ` ${unit}` : ""}
               </TableCell>
               <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
-                {formatDateShort(r.measuredAt, true)}
+                {fmt.date(r.measuredAt)}
               </TableCell>
               <TableCell className="text-muted-foreground max-w-[12rem] truncate text-sm">
                 {r.note ?? ""}

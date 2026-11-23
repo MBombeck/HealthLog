@@ -88,7 +88,6 @@ vi.mock("@/lib/ai/provider", async (importOriginal) => ({
       instance: { type: "openai", generateCompletion: vi.fn() },
     },
   ]),
-  resolveProvider: vi.fn(async () => ({ type: "none" })),
 }));
 
 beforeEach(async () => {

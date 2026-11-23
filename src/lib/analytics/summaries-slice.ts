@@ -54,33 +54,25 @@
  * 100`. Slope `direction` is derived from `slope`'s sign with the
  * same 0.01-units-per-day "stable" threshold the JS helper uses.
  */
-import pLimit from "p-limit";
-
 import type { MeasurementType } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
 import { runDetached } from "@/lib/logging/detached";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
-import {
-  HOURLY_MEAN_DAY_TYPES,
-  usesHourlyMeanDay,
-  windowWeighting,
-} from "@/lib/measurements/day-statistic";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import {
   SESSION_DAY_FRAME,
-  dayValue,
   dayWeightedRows,
   isHourlyMeanTypeSql,
   windowMeanSql,
 } from "@/lib/measurements/day-mean";
-import { wireSummary, type DataSummary } from "@/lib/analytics/trends";
+import type { DataSummary } from "@/lib/analytics/trends";
 import {
   liveTrend,
   liveTrendSql,
   type LiveTrendColumns,
 } from "@/lib/analytics/trend-evidence-sql";
 import {
-  avg7Sql,
   boundInstantSql,
   windowMeanColumnsSql,
 } from "@/lib/analytics/request-clock-sql";
@@ -90,11 +82,9 @@ import { caches, type ServerCache } from "@/lib/cache/server-cache";
 import { readPreFoldRemainder } from "@/lib/analytics/pre-fold-remainder";
 import {
   ensureUserRollupsFresh,
-  readRollupBuckets,
   ROLLUP_FOLD_WINDOW_MS,
 } from "@/lib/rollups/measurement-rollups";
 import {
-  aggregateBuckets,
   collapseRollupRowsBySource,
   composeWindowedTrend,
   hasPendingAccumulatorBackfill,
@@ -106,26 +96,20 @@ import {
   buildSourceRankCase,
   canonicalMeasurementsCte,
 } from "@/lib/analytics/source-rank-sql";
+import { readCanonicalWindow } from "@/lib/analytics/canonical-window";
 import { readLatestCanonical } from "@/lib/measurements/latest-canonical";
 import {
   isFullyCovered,
   probeRollupCoverage,
   type RollupCoverageMap,
 } from "@/lib/rollups/measurement-coverage";
+import type { SleepSourceDiscrepancy } from "@/lib/analytics/sleep-night";
 import {
-  summarizeNights,
-  type SleepSourceDiscrepancy,
-} from "@/lib/analytics/sleep-night";
-import { resolveUserTimezone } from "@/lib/tz/resolver";
-import { readSleepNights } from "@/lib/measurements/list/sleep-nights";
-import { userDayKey } from "@/lib/tz/format";
-import { localDayWindow } from "@/lib/tz/local-day";
-import { canonicalRowsOfDay } from "@/lib/mood/linked-context";
+  startSlicePasses,
+  type SlicePasses,
+} from "@/lib/analytics/summaries-slice-passes";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** No account holds this many nights; the walk is uncapped in practice. */
-const ALL_NIGHTS = 100_000;
 
 /**
  * v1.18.10 — upper bound on the cold-fallback `allTime` aggregate's
@@ -299,10 +283,14 @@ export async function computeSummariesSlice(
   // covered. Partial coverage falls back to the live aggregate so the
   // brand-new-type case stays correct.
   const coverage = precomputedCoverage ?? (await probeRollupCoverage(userId));
+  // One read of the user's source ladder for the whole slice; the passes that
+  // need no result of the aggregate round start beside it
+  // (`summaries-slice-passes.ts`).
+  const priorityJson = await loadUserSourcePriority(userId);
+  const passes = startSlicePasses(userId, priorityJson, coverage);
   if (isFullyCovered(coverage)) {
-    return withLatestDayValues(
-      userId,
-      await withSleepNightTotals(userId, await computeFromRollups(userId, now)),
+    return passes.apply(
+      await computeFromRollups(userId, now, priorityJson, passes),
     );
   }
   // v1.4.38.7 — annotate the live fallback with the per-type
@@ -325,12 +313,8 @@ export async function computeSummariesSlice(
       },
     },
   });
-  return withLatestDayValues(
-    userId,
-    await withSleepNightTotals(
-      userId,
-      await computeFromLiveAggregate(userId, now),
-    ),
+  return passes.apply(
+    await computeFromLiveAggregate(userId, now, priorityJson, passes),
   );
 }
 
@@ -364,162 +348,6 @@ export function summariesSliceCacheKey(userId: string): string {
 }
 
 /**
- * `latest` of an hourly-mean type (pulse) is the value of its latest local
- * day, not its latest single reading.
- *
- * The dashboard's pulse tile led with the last reading a watch happened to
- * take, while the day view showed the day's pulse as the mean of its hours'
- * means (`day-mean.ts`). Both say "Pulse"; both now mean the same statistic:
- * the latest day's value, read through the same canonical-source pick and
- * the same day-mean helper the day view uses, in the person's own zone.
- */
-async function withLatestDayValues(
-  userId: string,
-  slice: SummariesSlice,
-): Promise<SummariesSlice> {
-  const types = [...HOURLY_MEAN_DAY_TYPES].filter(
-    (type) =>
-      slice.summaries[type]?.latest != null && slice.lastSeenByType[type],
-  );
-  if (types.length === 0) return slice;
-  const [tz, priorityJson] = await Promise.all([
-    resolveUserTimezone(userId),
-    loadUserSourcePriority(userId),
-  ]);
-  await Promise.all(
-    types.map(async (type) => {
-      const seen = slice.lastSeenByType[type]!;
-      const day = userDayKey(new Date(seen.lastSeenAt), tz);
-      const { dayStart, dayEnd } = localDayWindow(day, tz);
-      const rows = await prisma.measurement.findMany({
-        where: {
-          userId,
-          type,
-          deletedAt: null,
-          measuredAt: { gte: dayStart, lt: dayEnd },
-        },
-        select: {
-          type: true,
-          value: true,
-          unit: true,
-          measuredAt: true,
-          source: true,
-          deviceType: true,
-        },
-        orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
-      });
-      const canonical = canonicalRowsOfDay(rows, type, day, tz, priorityJson);
-      const value = dayValue(type, canonical, tz);
-      if (value !== null) slice.summaries[type].latest = value;
-    }),
-  );
-  return slice;
-}
-
-/**
- * v1.11.4 — replace the per-stage `summaries.SLEEP_DURATION` with a
- * per-NIGHT summary (iOS #1, HIGH).
- *
- * `SLEEP_DURATION` is stored one row per sleep STAGE per night (minutes).
- * The slim slice's generic aggregate therefore treats each stage as an
- * independent reading: `latest` is the most-recent STAGE (not the night),
- * `mean` / `avg7` / `avg30` average across stage rows. For the dashboard
- * sleep tile and the insights overview that is wrong — they want the
- * per-night TIME-ASLEEP total.
- *
- * This post-pass reads the SLEEP_DURATION rows once and overwrites the
- * summary with one computed over per-night asleep totals (one DataPoint
- * per night). The unit stays MINUTES (canonical), so existing consumers
- * that already treat the summary as minutes keep working — they now
- * average nights instead of stages, which is strictly more correct. It
- * covers the whole history, like every other type here (a year's cut left
- * `avg30LastYear` and the all-time count and range short), and is skipped
- * entirely when the user has logged no sleep.
- */
-async function withSleepNightTotals(
-  userId: string,
-  slice: SummariesSlice,
-): Promise<SummariesSlice> {
-  const existing = slice.summaries.SLEEP_DURATION;
-  // No sleep data at all → nothing to recompute (the empty summary stays).
-  if (!existing || existing.count === 0) return slice;
-
-  const [tz, priorityJson] = await Promise.all([
-    resolveUserTimezone(userId),
-    loadUserSourcePriority(userId),
-  ]);
-  // The whole history, as every other type in the slice: the walk names the
-  // nights in Postgres and reconstructs them ninety at a time, so the heap
-  // holds a chunk's rows however long the history is.
-  const nights = await readSleepNights(userId, tz, priorityJson, {
-    maxNights: ALL_NIGHTS,
-  });
-  if (nights.length === 0) return slice;
-  const { summary, latestNight } = summarizeNights(nights);
-  // Preserve the slope tuples the night summary doesn't compute (the
-  // dashboard tile reads slope30); recompute them off the night series is
-  // out of scope here — the per-night `summarize()` already fills slope7 /
-  // slope30 from the night DataPoints, so use them directly.
-  slice.summaries.SLEEP_DURATION = wireSummary(summary);
-  // Additive, observational: the latest night's main session saw two
-  // writer buckets with clearly different asleep totals. Round to whole
-  // minutes, matching the `/api/sleep/night` serialisation.
-  slice.sleepSourceDiscrepancy = latestNight?.sourceDiscrepancy
-    ? {
-        deltaMinutes: Math.round(latestNight.sourceDiscrepancy.deltaMinutes),
-        sources: latestNight.sourceDiscrepancy.sources.map((b) => ({
-          source: b.source,
-          deviceType: b.deviceType,
-          asleepMinutes: Math.round(b.asleepMinutes),
-        })),
-      }
-    : null;
-  return slice;
-}
-
-/**
- * The seven-day mean per type, exactly as the slice computes `avg7` (the same
- * canonical-source CTE, the same day weighting, the same rounding), without
- * the rest of the slice. Sleep is absent: the slice summarises it per night. For a reader that needs only the dashboard's basis,
- * such as the target verdicts: one aggregate query, no reading ever leaves
- * the database as a row.
- */
-export async function readSevenDayMeans(
-  userId: string,
-): Promise<Record<string, number | null>> {
-  const priorityJson = await loadUserSourcePriority(userId);
-  const rankUnqualified = buildSourceRankCase(
-    priorityJson,
-    '"type"',
-    '"source"',
-  );
-  const rows = await prisma.$queryRawUnsafe<
-    Array<{ type: string; avg7: number | null }>
-  >(
-    `
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, { from: boundInstantSql(2), interval: "90 days" })}
-      )
-      SELECT
-        m."type"::text                    AS type,
-        ${avg7Sql(boundInstantSql(2))}::double precision     AS avg7
-      FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
-      GROUP BY m."type"
-    `,
-    userId,
-    new Date(),
-  );
-  const out: Record<string, number | null> = {};
-  for (const row of rows) {
-    // Stored per stage, summarised per night by `withSleepNightTotals`: a
-    // mean over stage rows is not the slice's sleep figure, so it is left
-    // out rather than served wrong. Callers fold the nights themselves.
-    if (row.type === "SLEEP_DURATION") continue;
-    out[row.type] = round2(row.avg7);
-  }
-  return out;
-}
-
-/**
  * Happy path — DAY buckets carry `count / min / max / mean`; a narrow
  * `$queryRaw` carries only the windowed avgs + regression columns the
  * buckets cannot reconstruct.
@@ -536,12 +364,11 @@ export async function readSevenDayMeans(
 async function computeFromRollups(
   userId: string,
   now: Date,
+  priorityJson: unknown,
+  passes: SlicePasses,
 ): Promise<SummariesSlice> {
-  // v1.11.1 — resolve the user's source-priority ladders once, then build the
-  // rank CASE expressions used to collapse overlapping sources to the canonical
-  // reading per (type, day) inside each query. `"type"`/`"source"` variants for
-  // the unqualified rollup + inner-subquery columns.
-  const priorityJson = await loadUserSourcePriority(userId);
+  // The rank CASEs collapse overlapping sources to the canonical reading per
+  // (type, day) inside each query (unqualified and per-source columns).
   const rankUnqualified = buildSourceRankCase(
     priorityJson,
     '"type"',
@@ -573,30 +400,13 @@ async function computeFromRollups(
 
   const [narrows, latests, dayBuckets, accumulatorRows, preFoldRemainder] =
     await Promise.all([
-      // The FROM is restricted to the canonical-source rows per (type, day):
-      // the ladder-winning source for each day, and only that source's
-      // readings, so the 90-day AVG / median / slope never blend two devices
-      // that both reported the same vital.
-      // The window means weigh each day once for an hourly-mean type
-      // (`windowedMean`); the median stays over every reading.
-      prisma.$queryRawUnsafe<NarrowAggregateRow[]>(
-        `
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, { from: boundInstantSql(2), interval: "90 days" })}
-      )
-      SELECT
-        m."type"::text                                                AS type,
-        ${windowMeanColumnsSql(boundInstantSql(2))},
-        -- The canonical set above is already the 90-day window.
-        PERCENTILE_CONT(0.5) WITHIN GROUP (
-          ORDER BY m."value"
-        )::double precision                                           AS median
-      FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
-      GROUP BY m."type"
-    `,
-        userId,
-        now,
-      ),
-      readLatestCanonical(userId, priorityJson),
+      // Over the canonical source per (type, day) only, so the 90-day means
+      // and median never blend two devices that both reported the same
+      // vital; the whole days before today come from a closed block
+      // (`canonical-window.ts`). The window means weigh each day once for an
+      // hourly-mean type; the median stays over every reading.
+      readCanonicalWindow(userId, now, priorityJson, rankUnqualified),
+      passes.withLatests(readLatestCanonical(userId, priorityJson)),
       // v1.4.37.2 — the v1.4.35 implementation read EVERY DAY
       // rollup bucket for the user (`findMany` without a `bucketStart`
       // window) and then composed `count / min / max / mean` in JS.
@@ -866,7 +676,7 @@ async function computeFromRollups(
   // with data in the current window are probed so we don't pay the per-type
   // round-trip on the long tail of unlogged measurement enums. Types with no
   // reading in the year-ago window surface as `null`.
-  const lastYear = await computeAvg30LastYearMap(userId, typesWithData, nowMs);
+  const lastYear = await passes.yearAgo(typesWithData, nowMs);
   let yearOverYearTypeCount = 0;
   for (const [type, value] of lastYear.entries()) {
     if (value === null) continue;
@@ -937,6 +747,8 @@ async function computeFromRollups(
 async function computeFromLiveAggregate(
   userId: string,
   now: Date,
+  priorityJson: unknown,
+  passes: SlicePasses,
 ): Promise<SummariesSlice> {
   const nowMs = now.getTime();
   // v1.11.1 — collapse overlapping sources to the ladder-canonical reading per
@@ -944,7 +756,6 @@ async function computeFromLiveAggregate(
   // coverage-miss tenant gets the same numbers as a warm one (live/rollup
   // parity). `canonicalMeasurementsFrom` swaps `FROM measurements m` for a
   // canonical-source-filtered subquery; the latest read uses the ladder rank.
-  const priorityJson = await loadUserSourcePriority(userId);
   const rankUnqualified = buildSourceRankCase(
     priorityJson,
     '"type"',
@@ -986,7 +797,7 @@ async function computeFromLiveAggregate(
       userId,
       now,
     ),
-    readLatestCanonical(userId, priorityJson),
+    passes.withLatests(readLatestCanonical(userId, priorityJson)),
   ]);
 
   const latestByType = new Map<string, number>();
@@ -1054,7 +865,7 @@ async function computeFromLiveAggregate(
   // the year-ago DAY buckets may already exist because the boot-time
   // backfill folds the whole history once per user, so a partial-coverage
   // cold mount still surfaces `avg30LastYear`.
-  const lastYear = await computeAvg30LastYearMap(userId, typesWithData, nowMs);
+  const lastYear = await passes.yearAgo(typesWithData, nowMs);
   let yearOverYearTypeCount = 0;
   for (const [type, value] of lastYear.entries()) {
     if (value === null) continue;
@@ -1079,100 +890,4 @@ async function computeFromLiveAggregate(
   });
 
   return { summaries, bmi: null, lastSeenByType, sleepSourceDiscrepancy: null };
-}
-
-/**
- * Year-ago 30-day baseline per type, served from the DAY rollup tier.
- *
- * `DataSummary.avg30LastYear` is the mean over the 30 days that start 395
- * days ago, which the dashboard tile uses for "current average vs the same
- * time last year". The window is exactly those 30 UTC days (the DAY-tier
- * grain), read as canonical-source DAY buckets and composed count-weighted,
- * so it is the same per-reading mean `avg30` reports for the last 30 days.
- *
- * Up to v1.39.2 this read the MONTH tier and kept the months whose first day
- * fell inside the window, so the baseline was a whole calendar month that
- * could start up to a month off, or nothing at all when no month began inside
- * the window.
- *
- * Returns `null` when no reading falls in the window; the UI treats that as
- * "no comparison available".
- */
-async function computeAvg30LastYearForType(
-  userId: string,
-  type: MeasurementType,
-  priorityJson: unknown,
-  now: number,
-): Promise<number | null> {
-  const rows = await readRollupBuckets(
-    userId,
-    type,
-    "DAY",
-    startOfUtcDay(new Date(now - 395 * DAY_MS)),
-    startOfUtcDay(new Date(now - 365 * DAY_MS)),
-    priorityJson,
-  );
-  const composed = aggregateBuckets(
-    rows.map((r) => ({
-      day: r.bucketStart,
-      count: r.count,
-      mean: r.mean,
-      minValue: r.minValue,
-      maxValue: r.maxValue,
-    })),
-    windowWeighting(type),
-  );
-  return composed.count > 0 ? composed.mean : null;
-}
-
-/**
- * v1.4.40 — fan out `computeAvg30LastYearForType` across
- * the types the caller actually surfaces. Runs the per-type rollup reads
- * in parallel so the long-tail of types doesn't serialise into a
- * per-type round-trip stack.
- *
- * v1.4.43 — cap concurrent per-type WMY reads at 4.
- *
- * Pre-fix this helper ran an unbounded Promise.all over every type the
- * user has data for. On a 15-type tenant the burst held 15+ Prisma
- * slots simultaneously, and with the slim and thick analytics slices
- * firing in parallel on dashboard mount the combined fan-out drowned
- * the pg.Pool max=20 even after the v1.4.40 W-POOL raise. The cap
- * mirrors the W-POOL `p-limit(4)` discipline v1.4.40 applied to the
- * thick route's per-type live walk (`ANALYTICS_TYPE_FETCH_CONCURRENCY`
- * in `src/app/api/analytics/route.ts`) so both slices behave the same
- * way under burst.
- *
- * Returns a `type → mean | null` map; types with no coverage at any
- * granularity (or no buckets in the year-ago slice) map to `null` so
- * the caller can blanket-assign without per-type null-checking.
- */
-export const WMY_FANOUT_CONCURRENCY = 4;
-
-export async function computeAvg30LastYearMap(
-  userId: string,
-  types: ReadonlyArray<string>,
-  now: number,
-): Promise<Map<string, number | null>> {
-  const out = new Map<string, number | null>();
-  if (types.length === 0) return out;
-  const limit = pLimit(WMY_FANOUT_CONCURRENCY);
-  const priorityJson = await loadUserSourcePriority(userId);
-  const results = await Promise.all(
-    types.map((type) =>
-      limit(async () => {
-        const value = await computeAvg30LastYearForType(
-          userId,
-          type as MeasurementType,
-          priorityJson,
-          now,
-        );
-        return [type, value] as const;
-      }),
-    ),
-  );
-  for (const [type, value] of results) {
-    out.set(type, value);
-  }
-  return out;
 }

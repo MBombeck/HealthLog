@@ -30,6 +30,11 @@ export function computeWeightGoal(args: {
   source: DerivedProvenanceSource;
   asOf: Date;
   readFailed?: boolean;
+  /**
+   * A pregnancy or postpartum state holds: weight is data, not a
+   * distance to a goal, so the card says why it shows none.
+   */
+  pregnancyContext?: boolean;
 }): Derived<WeightGoalValue> {
   const since = new Date(args.asOf.getTime() - 60 * DAY_MS);
   const rowsInWindow = args.rows.filter(
@@ -56,6 +61,13 @@ export function computeWeightGoal(args: {
       coverage,
       provenance: weightProvenance,
       reason: "read_failed",
+    });
+  }
+  if (args.pregnancyContext) {
+    return buildInsufficient({
+      coverage,
+      provenance: weightProvenance,
+      reason: "pregnancy_context",
     });
   }
   if (!args.target || rowsInWindow.length === 0) {

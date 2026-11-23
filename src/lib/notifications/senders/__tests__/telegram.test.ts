@@ -461,3 +461,31 @@ describe("sendViaTelegram — tap target", () => {
     expect(rows.at(-1)?.[0]?.url).toBe("https://health.example/mood?add=1");
   });
 });
+
+describe("sendViaTelegram — a dose reminder without its own keyboard", () => {
+  beforeEach(() => {
+    sendTelegramMessageMock.mockResolvedValue({ ok: true, messageId: 1 });
+    findUniqueMock.mockResolvedValue(null);
+    upsertMock.mockResolvedValue(undefined);
+    scheduleTelegramAutoDeleteMock.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("gets the reminder job's keyboard: the person's locale and snooze length", async () => {
+    userFindUniqueMock.mockResolvedValue({
+      locale: "en",
+      notificationPrefs: { medication: { snoozeMinutes: 45 } },
+    });
+
+    await sendViaTelegram(config, reminderPayload());
+
+    const sent = JSON.stringify(sendTelegramMessageMock.mock.calls[0]);
+    expect(sent).toContain("snooze:med-1:45");
+    expect(sent).not.toContain("snooze:med-1:60");
+    expect(sent).not.toContain("snooze:med-1:180");
+    expect(sent).not.toContain("Genommen");
+  });
+});

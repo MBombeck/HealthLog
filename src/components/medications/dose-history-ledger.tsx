@@ -56,7 +56,7 @@ import {
   useTranslations,
 } from "@/lib/i18n/context";
 
-import { DeleteRowConfirm, PinConfirm } from "./dose-history/ledger-confirms";
+import { PinConfirm } from "./dose-history/ledger-confirms";
 import { LedgerRowItem } from "./dose-history/ledger-row-item";
 import { LedgerSummaryChart } from "./dose-history/ledger-summary-chart";
 import { useDoseHistoryLedger } from "./dose-history/use-dose-history-ledger";
@@ -72,6 +72,8 @@ export interface LedgerSchedule {
 export interface DoseHistoryLedgerProps {
   medicationId: string;
   medicationName: string;
+  /** The configured dose, the add form's starting dose. */
+  medicationDose?: string;
   schedules: LedgerSchedule[];
   /** Trailing window in days the ledger renders. Defaults to 90. */
   windowDays?: number;
@@ -80,6 +82,7 @@ export interface DoseHistoryLedgerProps {
 export function DoseHistoryLedger({
   medicationId,
   medicationName,
+  medicationDose,
   schedules,
   windowDays = 90,
 }: DoseHistoryLedgerProps) {
@@ -112,9 +115,7 @@ export function DoseHistoryLedger({
     markSlot,
     toggleIntakeSkipped,
     setAttribution,
-    pendingDeleteId,
-    setPendingDeleteId,
-    confirmRowDelete,
+    deleteRow,
     pendingPin,
     setPendingPin,
   } = useDoseHistoryLedger({ medicationId, medicationName, windowDays });
@@ -124,7 +125,7 @@ export function DoseHistoryLedger({
       {/* Header: the took/skipped summary chart + the add affordance. */}
       <div className="flex items-start justify-between gap-3">
         {compliance && compliance.denominator > 0 ? (
-          <LedgerSummaryChart compliance={compliance} />
+          <LedgerSummaryChart compliance={compliance} windowDays={windowDays} />
         ) : (
           <p className="text-muted-foreground text-sm">
             {t("medications.detail.verlauf.summaryEmpty")}
@@ -212,7 +213,7 @@ export function DoseHistoryLedger({
                   onMark={markSlot}
                   onToggleSkipped={toggleIntakeSkipped}
                   onEdit={(ev) => setEditingEvent(ev)}
-                  onDelete={(id) => setPendingDeleteId(id)}
+                  onDelete={(intake) => void deleteRow(intake)}
                   onPin={(eventId, slotAt) =>
                     setPendingPin({ eventId, slotAt })
                   }
@@ -235,15 +236,9 @@ export function DoseHistoryLedger({
           onOpenChange={setAddOpen}
           medicationId={medicationId}
           medicationName={medicationName}
+          medicationDose={medicationDose}
           schedules={schedules}
           ledgerKey={queryKey}
-        />
-      )}
-
-      {pendingDeleteId && (
-        <DeleteRowConfirm
-          onConfirm={() => void confirmRowDelete()}
-          onCancel={() => setPendingDeleteId(null)}
         />
       )}
 

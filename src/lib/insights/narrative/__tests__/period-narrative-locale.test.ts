@@ -21,7 +21,10 @@ vi.mock("@/lib/crypto", () => ({
   encrypt: (s: string) => `enc:${s}`,
   decrypt: (s: string) => s.replace(/^enc:/, ""),
 }));
-vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/logging/context", () => ({
+  annotate: vi.fn(),
+  getEvent: () => null,
+}));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
 import { createHash } from "node:crypto";

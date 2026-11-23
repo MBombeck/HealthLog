@@ -21,10 +21,9 @@ primeLocales("de");
 /**
  * v1.16.11 (#316) — "take all due at once" coverage.
  *
- * 1. `deriveDueMedications` — the due set mirrors the card pills by
- *    construction: only ACTIVE, UNPAUSED medications with a non-null
- *    current-window status that is not the day-scale taken-early
- *    downgrade, gated on the server display-due exactly like the cards.
+ * 1. `deriveDueMedications` — the due set mirrors the cards by
+ *    construction: only ACTIVE, UNPAUSED medications whose server-resolved
+ *    open dose is due, overdue or missed, read exactly like the cards.
  * 2. `runTakeAllDue` — per-medication POST loop with failure isolation:
  *    each due medication posts to ITS OWN intake route with the displayed
  *    slot's `scheduledFor`, the summary toast reports the partial-failure
@@ -101,27 +100,39 @@ function makeMed(
     dose: "10 mg",
     active: true,
     pausedAt: null,
-    lastTakenAt: null,
-    todayEventCount: 0,
-    schedules: [
-      {
-        windowStart: "12:00",
-        windowEnd: "12:00",
-        daysOfWeek: null,
-        timesOfDay: ["12:00"],
-        dose: null,
-      },
-    ],
+    schedules: [{ windowStart: "12:00", timesOfDay: ["12:00"], dose: null }],
     ...overrides,
   };
 }
 
-describe("deriveDueMedications — only currently-due, active, unpaused", () => {
-  // Noon UTC today; the 12:00 dose band (±60 min default half-width) is
-  // open, the 20:00 band has not opened, the 08:00 band sits in its
-  // very_late tail (ended 09:00, missedMinutes 240 → until 13:00).
+/** A server-resolved open dose for a slot at `hours` UTC today. */
+function openDose(hours: number, state = "due") {
+  const at = todayAtUtc(hours);
+  const h = 60 * 60 * 1000;
+  return {
+    state,
+    targetAt: at.toISOString(),
+    dueAt: new Date(at.getTime() - h).toISOString(),
+    overdueSince: new Date(at.getTime() + h).toISOString(),
+    missedAfter: new Date(at.getTime() + 5 * h).toISOString(),
+  };
+}
+
+describe("deriveDueMedications — the server-resolved open dose, active and unpaused", () => {
+  // Noon UTC today: the 12:00 dose is due (window 11:00 to 13:00), the
+  // 08:00 dose is overdue until 13:00, the 20:00 dose is pending.
   const now = todayAtUtc(12, 0);
-  const opts = { now, tz: "UTC" };
+  const doses = new Map([
+    ["a", openDose(12)],
+    ["b", openDose(8, "overdue")],
+    ["evening", openDose(20, "upcoming")],
+    ["inactive", openDose(12)],
+    ["paused", openDose(12)],
+    ["ended", openDose(8, "missed")],
+    ["prn", openDose(12)],
+    ["covered", { ...openDose(12), state: "taken" }],
+  ]);
+  const opts = { now, tz: "UTC", currentDoseById: doses };
 
   it("carries the medication's own note into the confirm list (#1371)", () => {
     const [withNote] = deriveDueMedications(
@@ -129,11 +140,9 @@ describe("deriveDueMedications — only currently-due, active, unpaused", () => 
       opts,
     );
     expect(withNote?.note).toBe("With food");
-    const [without] = deriveDueMedications([makeMed({ id: "b" })], opts);
-    expect(without?.note).toBeNull();
   });
 
-  it("includes an in-window medication with its matched band and slot instant", () => {
+  it("includes a due medication with the server's window and slot", () => {
     const due = deriveDueMedications([makeMed({ id: "a" })], opts);
     expect(due).toHaveLength(1);
     expect(due[0]).toMatchObject({
@@ -142,274 +151,77 @@ describe("deriveDueMedications — only currently-due, active, unpaused", () => 
       dose: "10 mg",
       window: { start: "11:00", end: "13:00" },
     });
-    // The displayed slot instant — today's 12:00 UTC dose, the same value
-    // the card's own button would thread as `scheduledFor`.
     expect(due[0].scheduledFor?.toISOString()).toBe(
       todayAtUtc(12, 0).toISOString(),
     );
   });
 
-  it("includes an overdue (very_late) dose still inside its catch-up tail", () => {
+  it("includes an overdue dose, with the dose of the schedule on that slot", () => {
     const due = deriveDueMedications(
       [
         makeMed({
           id: "b",
           schedules: [
-            {
-              windowStart: "08:00",
-              windowEnd: "08:00",
-              daysOfWeek: null,
-              timesOfDay: ["08:00"],
-              dose: "5 mg",
-            },
+            { windowStart: "08:00", timesOfDay: ["08:00"], dose: "5 mg" },
           ],
         }),
       ],
       opts,
     );
     expect(due).toHaveLength(1);
-    // The matched schedule's dose wins over the medication-level dose.
     expect(due[0].dose).toBe("5 mg");
     expect(due[0].scheduledFor?.toISOString()).toBe(
       todayAtUtc(8, 0).toISOString(),
     );
   });
 
-  it("excludes inactive and paused medications", () => {
+  it("excludes inactive, paused, ended, as-needed, pending and taken doses", () => {
     const pausedAt = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
     const due = deriveDueMedications(
       [
         makeMed({ id: "inactive", active: false }),
         makeMed({ id: "paused", pausedAt }),
-        makeMed({ id: "due" }),
-      ],
-      opts,
-    );
-    expect(due.map((d) => d.id)).toEqual(["due"]);
-  });
-
-  it("excludes a medication whose course has ended, even with an escalated dose (#1040)", () => {
-    const due = deriveDueMedications(
-      [
         makeMed({ id: "ended", intakeActionable: false }),
-        makeMed({ id: "on" }),
-      ],
-      {
-        ...opts,
-        doseStatusById: new Map([
-          ["ended", "missed" as const],
-          ["on", "upcoming" as const],
-        ]),
-      },
-    );
-    expect(due.map((d) => d.id)).toEqual(["on"]);
-  });
-
-  it("excludes a medication whose dose band is not currently open", () => {
-    const due = deriveDueMedications(
-      [
-        makeMed({
-          id: "evening",
-          schedules: [
-            {
-              windowStart: "20:00",
-              windowEnd: "20:00",
-              daysOfWeek: null,
-              timesOfDay: ["20:00"],
-              dose: null,
-            },
-          ],
-        }),
+        makeMed({ id: "prn", asNeeded: true, schedules: [] }),
+        makeMed({ id: "evening" }),
+        makeMed({ id: "covered" }),
+        makeMed({ id: "a" }),
       ],
       opts,
     );
-    expect(due).toEqual([]);
+    expect(due.map((d) => d.id)).toEqual(["a"]);
   });
 
-  it("excludes an as-needed medication (no schedules, never due) — v1.16.11 #316", () => {
-    // An as-needed (PRN) medication persists ZERO schedules and the
-    // server computes no next-due, so it can NEVER enter the due set —
-    // even with a recent ad-hoc intake on record.
-    const due = deriveDueMedications(
-      [
-        makeMed({
-          id: "prn",
-          schedules: [],
-          nextDueAt: null,
-          lastTakenAt: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
-          todayEventCount: 1,
-        }),
-        makeMed({ id: "scheduled" }),
-      ],
-      opts,
-    );
-    expect(due.map((m) => m.id)).toEqual(["scheduled"]);
+  it("is empty for a medication whose compliance row has not loaded", () => {
+    expect(deriveDueMedications([makeMed({ id: "nope" })], opts)).toEqual([]);
   });
 
-  it("excludes a dose already covered by an actioned intake in its band", () => {
-    // Taken 30 minutes ago — inside the open 12:00 band; the in-window
-    // suppression (same as the card pill) keeps it out of the due set.
-    const due = deriveDueMedications(
-      [
-        makeMed({
-          id: "covered",
-          lastTakenAt: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
-          todayEventCount: 1,
-        }),
-      ],
-      opts,
-    );
-    expect(due).toEqual([]);
-  });
-
-  it("honours the server display-due gate: a future non-overdue next-due suppresses", () => {
-    const tomorrowNoon = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const due = deriveDueMedications(
-      [
-        makeMed({
-          id: "rolling",
-          nextDueAt: tomorrowNoon.toISOString(),
-          nextDueOverdue: false,
-        }),
-      ],
-      opts,
-    );
-    expect(due).toEqual([]);
-  });
-
-  it("excludes a day-scale dose already taken earlier in its period (taken-early downgrade)", () => {
-    // Weekly cadence on today's weekday; the shot landed yesterday — the
-    // dose is on board, a "take all" inclusion would prompt a double dose.
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const due = deriveDueMedications(
-      [
-        makeMed({
-          id: "weekly",
-          lastTakenAt: yesterday.toISOString(),
-          schedules: [
-            {
-              windowStart: "12:00",
-              windowEnd: "12:00",
-              daysOfWeek: String(now.getUTCDay()),
-              timesOfDay: ["12:00"],
-              dose: null,
-            },
-          ],
-        }),
-      ],
-      opts,
-    );
-    expect(due).toEqual([]);
-  });
-
-  it("preserves the input (page) order", () => {
-    const due = deriveDueMedications(
-      [makeMed({ id: "z" }), makeMed({ id: "a" })],
-      opts,
-    );
-    expect(due.map((d) => d.id)).toEqual(["z", "a"]);
-  });
-});
-
-describe("deriveDueMedications — compliance-escalated medications (band tail closed)", () => {
-  // 14:00 UTC: the 08:00 dose band's catch-up tail closed at 13:00
-  // (missedMinutes 240), so the window-derived status is null — but the
-  // card still renders the red escalation value with an ACTIVE take
-  // button when the batched compliance dose status says overdue/missed.
-  const now = todayAtUtc(14, 0);
-
-  const morning = () =>
-    makeMed({
-      id: "morning",
-      schedules: [
-        {
-          windowStart: "08:00",
-          windowEnd: "08:00",
-          daysOfWeek: null,
-          timesOfDay: ["08:00"],
-          dose: null,
-        },
-      ],
-      // The server still serves the open overdue slot as next-due.
-      nextDueAt: todayAtUtc(8, 0).toISOString(),
-      nextDueOverdue: true,
+  it("moves a fetched dose along its instants: a pending dose turns due on time", () => {
+    const due = deriveDueMedications([makeMed({ id: "evening" })], {
+      ...opts,
+      now: todayAtUtc(19, 30),
     });
+    expect(due.map((d) => d.id)).toEqual(["evening"]);
+  });
 
-  it("includes a missed dose past its catch-up tail, recording the card's own displayed slot", () => {
-    const due = deriveDueMedications([morning()], {
-      now,
-      tz: "UTC",
-      doseStatusById: new Map([["morning", "missed"]]),
+  it("includes a missed dose (a late take still counts) without a window", () => {
+    const due = deriveDueMedications([makeMed({ id: "b" })], {
+      ...opts,
+      now: todayAtUtc(14, 0),
     });
     expect(due).toHaveLength(1);
-    expect(due[0].id).toBe("morning");
-    // Band closed → no matched window for the dialog line.
     expect(due[0].window).toBeNull();
-    // EXACTLY what the card's take button records: the same
-    // `resolveDisplayedSlotInstant` call resolves (status null) to the
-    // server's next-due instant.
     expect(due[0].scheduledFor?.toISOString()).toBe(
       todayAtUtc(8, 0).toISOString(),
     );
   });
 
-  it("matches the count of visible red/due cards: dedupes window-due + escalated, excludes calm doses", () => {
-    const inWindow = makeMed({
-      id: "in-window",
-      schedules: [
-        {
-          windowStart: "14:00",
-          windowEnd: "14:00",
-          daysOfWeek: null,
-          timesOfDay: ["14:00"],
-          dose: null,
-        },
-      ],
-    });
-    const evening = makeMed({
-      id: "evening",
-      schedules: [
-        {
-          windowStart: "20:00",
-          windowEnd: "20:00",
-          daysOfWeek: null,
-          timesOfDay: ["20:00"],
-          dose: null,
-        },
-      ],
-    });
-    const due = deriveDueMedications([inWindow, morning(), evening], {
-      now,
-      tz: "UTC",
-      doseStatusById: new Map([
-        // The open-window med is ALSO compliance-escalated — it must
-        // appear exactly once (the two branches are exclusive).
-        ["in-window", "overdue"],
-        ["morning", "missed"],
-        ["evening", "upcoming"],
-      ]),
-    });
-    expect(due.map((d) => d.id)).toEqual(["in-window", "morning"]);
-  });
-
-  it("never includes an as-needed medication, even with a (bogus) escalated compliance row", () => {
-    const prn = makeMed({
-      id: "prn",
-      asNeeded: true,
-      schedules: [],
-      nextDueAt: null,
-    });
-    const due = deriveDueMedications([prn], {
-      now,
-      tz: "UTC",
-      doseStatusById: new Map([["prn", "missed"]]),
-    });
-    expect(due).toEqual([]);
-  });
-
-  it("does not escalate without a compliance verdict (window-only derivation stays the floor)", () => {
-    const due = deriveDueMedications([morning()], { now, tz: "UTC" });
-    expect(due).toEqual([]);
+  it("preserves the input (page) order", () => {
+    const due = deriveDueMedications(
+      [makeMed({ id: "b" }), makeMed({ id: "a" })],
+      opts,
+    );
+    expect(due.map((d) => d.id)).toEqual(["b", "a"]);
   });
 });
 
@@ -456,9 +268,39 @@ describe("runTakeAllDue — per-medication loop with failure isolation", () => {
       skipped: false,
       scheduledFor: slotA.toISOString(),
     });
+    // One Undo for the whole sweep, as a single take has one.
     expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
       'medications.takeAllDue.successToast:{"count":2}',
+      expect.objectContaining({
+        action: expect.objectContaining({ onClick: expect.any(Function) }),
+      }),
     );
+    vi.unstubAllGlobals();
+  });
+
+  it("its one Undo removes exactly the rows the sweep wrote", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(okResponse("evt-a"))
+      .mockResolvedValueOnce(okResponse("evt-b"))
+      .mockResolvedValue(okResponse("deleted"));
+    vi.stubGlobal("fetch", fetchMock);
+    const queryClient = fakeQueryClient();
+    vi.mocked(toast.success).mockClear();
+
+    await runTakeAllDue({ medications: dueTwo, t, queryClient });
+    const options = vi.mocked(toast.success).mock.calls[0][1] as unknown as {
+      action: { onClick: () => void };
+    };
+    options.action.onClick();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
+    expect(fetchMock.mock.calls[2][0]).toBe(
+      "/api/medications/med-a/intake/evt-a",
+    );
+    expect(fetchMock.mock.calls[3][0]).toBe(
+      "/api/medications/med-b/intake/evt-b",
+    );
+    expect((fetchMock.mock.calls[2][1] as RequestInit).method).toBe("DELETE");
     vi.unstubAllGlobals();
   });
 

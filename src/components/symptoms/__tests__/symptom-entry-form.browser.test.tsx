@@ -57,7 +57,11 @@ beforeEach(() => {
         ],
       },
     })
-    .on("GET", /^\/api\/illness\/episodes/, { data: [] });
+    .on("GET", /^\/api\/illness\/episodes/, { data: [] })
+    // The newest occurrences, for each symptom's preset intensity.
+    .on("GET", /^\/api\/symptoms\/events\?limit=/, {
+      data: { events: [], limit: 200, hasMore: false },
+    });
 });
 
 async function pickAndRate(
@@ -161,6 +165,61 @@ describe("<SymptomEntryForm> with several symptoms", () => {
     await screen.getByRole("button", { name: "Save" }).click();
     await expect.element(screen.getByText("Choose a symptom.")).toBeVisible();
     expect(api.calls("POST", "/api/symptoms/events")).toHaveLength(0);
+  });
+
+  it("lists the symptoms felt most first and focuses the first chip", async () => {
+    api.on("GET", "/api/symptoms/definitions", {
+      data: {
+        limit: 30,
+        definitions: [
+          definition("sd-headache", "Headache", "Brain"),
+          {
+            ...definition("sd-nausea", "Nausea", "Frown"),
+            recent: {
+              count30d: 4,
+              maxIntensity30d: 6,
+              lastOccurredAt: "2026-11-20T08:00:00.000Z",
+            },
+          },
+          definition("sd-dizzy", "Dizziness", "Zap"),
+        ],
+      },
+    });
+    const { screen } = await renderWithApp(<SymptomEntryForm />);
+    const nausea = screen.getByRole("checkbox", { name: "Nausea" });
+    await expect.element(nausea).toHaveFocus();
+    const labels = screen
+      .getByRole("checkbox")
+      .elements()
+      .map((el) => el.textContent);
+    expect(labels).toEqual(["Nausea", "Headache", "Dizziness"]);
+  });
+
+  it("starts a picked symptom on its last intensity, shown as a preset", async () => {
+    api.on("GET", /^\/api\/symptoms\/events\?limit=/, {
+      data: {
+        events: [
+          { id: "e2", definitionId: "sd-nausea", intensity: 6 },
+          { id: "e1", definitionId: "sd-nausea", intensity: 2 },
+        ],
+        limit: 200,
+        hasMore: false,
+      },
+    });
+    api.on("POST", "/api/symptoms/events", { status: 201, data: { id: "ev" } });
+    const { screen } = await renderWithApp(<SymptomEntryForm />);
+    await screen.getByRole("checkbox", { name: "Nausea" }).click();
+    await expect
+      .element(screen.getByTestId("symptom-intensity-preset"))
+      .toBeVisible();
+    await screen.getByRole("button", { name: "Save" }).click();
+    await expect
+      .poll(() => api.calls("POST", "/api/symptoms/events").length)
+      .toBe(1);
+    expect(api.calls("POST", "/api/symptoms/events")[0].body).toMatchObject({
+      definitionId: "sd-nausea",
+      intensity: 6,
+    });
   });
 
   describe("with thirty symptoms on a phone", () => {

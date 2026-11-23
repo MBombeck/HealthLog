@@ -196,8 +196,12 @@ beforeAll(async () => {
   await intake("todayEvening", twice.id, {
     scheduledFor: "2026-10-15T20:00:00.000Z",
   });
+  // A taken dose whose time is corrected into the evening band: a time
+  // correction says which dose it was, so it re-binds. An OPEN row marked
+  // taken keeps its own slot instead (medication-intake-keeps-its-slot).
   await intake("moveMe", twice.id, {
     scheduledFor: "2026-10-14T08:00:00.000Z",
+    takenAt: "2026-10-14T08:05:00.000Z",
     injectionSite: "ABDOMEN_LEFT",
   });
   await intake("pinMe", twice.id, {
@@ -406,9 +410,21 @@ describe("medication-intake-status parity walk", { shuffle: false }, () => {
     });
 
     it("20 a delegate who marks an open dose, a snooze, a correction, a reader and nobody", async () => {
+      // Taken now, the evening dose binds to the morning slot, which already
+      // holds a take: refused, and nothing changes.
       await post(
         "20a-writer-take",
         { intakeId: ev.todayEvening, status: "taken" },
+        { ...writer },
+      );
+      // Taken inside its own window, the missed dose keeps its slot.
+      await post(
+        "20a-writer-take-own-slot",
+        {
+          intakeId: ev.missed,
+          status: "taken",
+          takenAt: "2026-10-15T06:30:00.000Z",
+        },
         { ...writer },
       );
       await post(

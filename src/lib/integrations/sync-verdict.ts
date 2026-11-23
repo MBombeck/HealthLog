@@ -112,6 +112,18 @@ const NIGHTLY_CADENCE: SyncCadence = {
 };
 
 /**
+ * The Health Connect folder fetch runs every six hours after a fetch that
+ * found nothing new or imported, and backs off to a day after failures. An
+ * attempt is overdue after two days; a fetch of an unchanged file is the
+ * freshness, because the phone exporting nothing new is not a failing
+ * connection.
+ */
+const FOLDER_FETCH_CADENCE: SyncCadence = {
+  attemptStaleAfterMs: 2 * ATTEMPT_STALE_AFTER_MS,
+  dataStaleAfterMs: DATA_STALE_AFTER_MS,
+};
+
+/**
  * Every `IntegrationKey` but Dawarich is polled by an hourly cron registered
  * in `src/lib/jobs/reminder/register-integration-sync.ts`; Dawarich nightly.
  * Apple Health is not an `IntegrationKey` — it takes `PUSH_CADENCE` directly.
@@ -126,6 +138,7 @@ export const INTEGRATION_CADENCE: Record<IntegrationKey, SyncCadence> = {
   strava: POLLED_CADENCE,
   dawarich: NIGHTLY_CADENCE,
   garmin: POLLED_CADENCE,
+  "health-connect-remote": FOLDER_FETCH_CADENCE,
 };
 
 export interface SyncVerdictInput {
@@ -293,6 +306,17 @@ export const SPARSE_METRIC_TYPES: ReadonlySet<string> = new Set([
   "PEAK_EXPIRATORY_FLOW",
   // People train irregularly; a quiet training week is not a broken pipe.
   "WORKOUTS",
+  "WORKOUT_EFFORT_SCORE",
+  "ESTIMATED_WORKOUT_EFFORT_SCORE",
+  "PHYSICAL_EFFORT",
+  "CYCLING_DISTANCE",
+  "ROWING_DISTANCE",
+  "ROWING_SPEED",
+  "RUNNING_SPEED",
+  "RUNNING_POWER",
+  "RUNNING_GROUND_CONTACT_TIME",
+  "RUNNING_VERTICAL_OSCILLATION",
+  "RUNNING_STRIDE_LENGTH",
   // As-needed and paused medications leave weeks without a dose by design.
   "MEDICATION_DOSE",
   // A period comes once a month, and not at all in a pregnancy.
@@ -323,6 +347,11 @@ export interface MetricFreshnessSample {
   type: string;
   /** ISO timestamp of the newest (non-deleted) reading for this metric. */
   lastSeenAt: string;
+  /**
+   * ISO timestamp of the oldest (non-deleted) reading, from the same source
+   * and in the same scope as `lastSeenAt`. Apple Health list only.
+   */
+  oldestSeenAt?: string;
   /** How many live rows the source holds. `CYCLE_DAYS` only. */
   count?: number;
 }

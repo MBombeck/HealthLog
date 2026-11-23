@@ -133,9 +133,13 @@ const GATED_ROUTES: Record<string, string> = {
   "POST /api/account/grants": "web",
   "POST /api/admin/backups/[id]/restore": "web",
   "POST /api/admin/backups/upload": "web",
+  "POST /api/care/feed-subscription": "web",
+  "POST /api/emergency-card/link": "web",
   "POST /api/cycle/feed-subscription": "web",
   "POST /api/cycle/feed-subscription/rotate": "web",
   "POST /api/admin/encryption/rotate": "web",
+  "POST /api/admin/push-relay/rotate-sender-key":
+    "the emergency sender-key rotation, an operator action for an exposed key; no web control calls it, the documented path is the admin API with a fresh proof",
   "POST /api/admin/users/[id]/reset-password": "web",
   "POST /api/auth/me/mfa/disable": "web",
   "POST /api/auth/me/mfa/recovery-codes/regenerate": "web",
@@ -152,6 +156,7 @@ const GATED_ROUTES: Record<string, string> = {
   "POST /api/tokens/documents": "web",
   "POST /api/tokens/measurements": "web",
   "POST /api/tokens/workouts": "web",
+  "PUT /api/import/health-connect-remote": "web",
 };
 
 /** The web side: everything under src that is not a route, a test or docs. */

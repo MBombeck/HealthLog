@@ -7,9 +7,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { useAuth } from "@/hooks/use-auth";
 import { apiGet } from "@/lib/api/api-fetch";
-import { formatDateTime } from "@/lib/format";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 import { sleepStageLabel, type Measurement } from "./list-model";
@@ -32,6 +31,7 @@ export function DayDrillDown({
   layout: "desktop" | "mobile";
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const { isAuthenticated } = useAuth();
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.measurementDrilldown(type, dayKey),
@@ -95,7 +95,7 @@ export function DayDrillDown({
             <span className="text-muted-foreground tabular-nums">
               {isSleep
                 ? sleepStageLabel(s.sleepStage, t)
-                : formatDateTime(s.measuredAt)}
+                : fmt.dateTime(s.measuredAt)}
             </span>
             <span className="font-medium tabular-nums">
               {isSleep
@@ -117,7 +117,7 @@ export function DayDrillDown({
           <span className="text-muted-foreground tabular-nums">
             {isSleep
               ? sleepStageLabel(s.sleepStage, t)
-              : formatDateTime(s.measuredAt)}
+              : fmt.dateTime(s.measuredAt)}
           </span>
           <span className="font-medium tabular-nums">
             {isSleep ? formatDurationMinutes(s.value, t) : `${s.value} ${unit}`}

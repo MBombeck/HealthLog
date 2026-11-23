@@ -9,7 +9,10 @@ vi.mock("@/lib/crypto", () => ({
 }));
 
 // Keep the wide-event annotate a no-op.
-vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/logging/context", () => ({
+  annotate: vi.fn(),
+  getEvent: () => null,
+}));
 
 // The default DB import must resolve to something; every test injects its own
 // prisma double, so this is only a guard against accidental real-DB use.

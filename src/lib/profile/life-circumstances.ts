@@ -12,9 +12,10 @@
  *
  * Server-only.
  */
+import { ageInYears } from "@/lib/tz/date-only";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { Prisma } from "@/generated/prisma/client";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
-import { deriveAgeYears } from "@/lib/ai/coach/about-me";
 import {
   AUDIT_C_HISTORY_LIMIT,
   loadNewestReadableAuditC,
@@ -268,7 +269,7 @@ export async function buildLifeCircumstances(
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { dateOfBirth: true, gender: true, locale: true },
+      select: { dateOfBirth: true, gender: true, locale: true, timezone: true },
     }),
     prisma.userHealthProfile.findUnique({
       where: { userId },
@@ -388,7 +389,11 @@ export async function buildLifeCircumstances(
         ? { days: [...freeDays.days].sort((a, b) => a - b), source: "fact" }
         : { days: [...DEFAULT_FREE_WEEKDAYS], source: "default_weekend" },
       screeningHints: screeningHints({
-        ageYears: deriveAgeYears(user?.dateOfBirth ?? null, now),
+        ageYears: ageInYears(
+          user?.dateOfBirth,
+          user?.timezone ?? DEFAULT_TIMEZONE,
+          now,
+        ),
         sex,
         smokingStatus,
         detail: tobacco,
@@ -468,7 +473,8 @@ export async function lockAiSections(
  * Switch life-circumstance sections in or out of the AI inclusion list. Only
  * the named sections change; the other stored values, the five about-me
  * sections among them, stay as they are. `base` is the about-me token
- * (`UserHealthProfile.updatedAt`): a stale one is a conflict, as on about-me.
+ * (`UserHealthProfile.aboutMeRevisedAt`): a stale one is a conflict, as on
+ * about-me.
  * Any change clears the cached briefing in the same transaction, because it
  * may quote a section that just left.
  */
@@ -481,9 +487,9 @@ export async function updateLifeAiSections(
     await lockAiSections(tx, userId);
     const row = await tx.userHealthProfile.findUnique({
       where: { userId },
-      select: { aiIncludedSections: true, updatedAt: true },
+      select: { aiIncludedSections: true, aboutMeRevisedAt: true },
     });
-    if (row && base && row.updatedAt.getTime() !== base.getTime()) {
+    if (row && base && row.aboutMeRevisedAt.getTime() !== base.getTime()) {
       return { conflict: true as const };
     }
     const next = storedSections(row?.aiIncludedSections);
@@ -496,17 +502,17 @@ export async function updateLifeAiSections(
       ? await tx.userHealthProfile.update({
           where: { userId },
           data: { aiIncludedSections },
-          select: { updatedAt: true },
+          select: { aboutMeRevisedAt: true },
         })
       : await tx.userHealthProfile.create({
           data: { userId, aiIncludedSections },
-          select: { updatedAt: true },
+          select: { aboutMeRevisedAt: true },
         });
     await invalidateHealthProfileFactConsumers(userId, tx);
     return {
       conflict: false as const,
       aiSections: lifeSwitches(next),
-      updatedAt: saved.updatedAt.toISOString(),
+      updatedAt: saved.aboutMeRevisedAt.toISOString(),
     };
   });
 }
@@ -568,13 +574,15 @@ const AUDIT_C_SELECT = {
 
 /**
  * Store and score one entry. A repeat `externalId` returns the stored entry
- * (`replayed: true`) and writes nothing.
+ * (`replayed: true`) and writes nothing; `deleted` says the stored entry was
+ * deleted since, and the route refuses the re-post rather than answer it as
+ * a live entry.
  */
 export async function createAuditC(
   userId: string,
   input: AuditCCreateInput,
   now: Date = new Date(),
-): Promise<{ result: AuditCResult; replayed: boolean }> {
+): Promise<{ result: AuditCResult; replayed: boolean; deleted?: true }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { gender: true, locale: true },
@@ -589,7 +597,7 @@ export async function createAuditC(
     if (!externalId) return null;
     const existing = await prisma.mentalHealthAssessment.findFirst({
       where: { userId, instrument: "AUDIT_C", externalId },
-      select: AUDIT_C_SELECT,
+      select: { ...AUDIT_C_SELECT, deletedAt: true },
     });
     if (!existing) return null;
     const opened = openAuditCResponses(existing.responsesEncrypted);
@@ -601,6 +609,7 @@ export async function createAuditC(
         labelLocale,
       ),
       replayed: true,
+      ...(existing.deletedAt !== null && { deleted: true as const }),
     };
   };
 

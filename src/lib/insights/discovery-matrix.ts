@@ -43,6 +43,7 @@ import {
   EXTENDED_BEHAVIOUR_TYPES,
   EXTENDED_OUTCOME_TYPES,
   HYDRATION_CHANNEL_KEY,
+  ENERGY_BALANCE_CHANNEL_KEY,
   INDOOR_CLIMATE_TYPES,
   MEDICATION_COMPLIANCE_CHANNEL_KEY,
   MOVEMENT_AWAY_CHANNEL_KEY,
@@ -70,6 +71,7 @@ import {
   type MoodFactorWindowFetch,
 } from "@/lib/insights/correlation-channel-series";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
+import { fetchEnergyBalanceSeries } from "@/lib/insights/energy-balance-channel";
 import { ENVIRONMENT_FIELDS } from "@/lib/environment/fields";
 import {
   correlationChannelSurfaceId,
@@ -174,6 +176,7 @@ export interface DiscoveryMatrixDiagnostics {
   symptomEventChannels: number;
   /** Stored daily points summed across the intake channels (v1.44). */
   nutrientDays: number;
+  energyBalanceDays: number;
   /** Days in the ALCOHOL series (0 below its tagged-day floor). */
   alcoholDays: number;
   /** Daily points summed across the two training channels. */
@@ -341,6 +344,7 @@ export async function assembleDiscoveryMatrix(
     alcoholSeries,
     trainingSeries,
     indoorSeries,
+    energyBalanceSeries,
   ] = await Promise.all([
     readMeasurementDaily(userId, tz, since, measurementTypes, fetchMode),
     readMood(userId, tz, since, opts.includeMoodFactors === true),
@@ -379,6 +383,9 @@ export async function assembleDiscoveryMatrix(
       : Promise.resolve([] as NamedSeries[]),
     visible(INDOOR_CLIMATE_TYPES[0])
       ? fetchIndoorClimateSeries(userId, tz, since)
+      : Promise.resolve([] as NamedSeries[]),
+    visible(ENERGY_BALANCE_CHANNEL_KEY)
+      ? fetchEnergyBalanceSeries(userId, tz, since)
       : Promise.resolve([] as NamedSeries[]),
   ]);
 
@@ -432,6 +439,9 @@ export async function assembleDiscoveryMatrix(
   series.push(...nutrientSeries);
   if (alcoholSeries) series.push(alcoholSeries);
   series.push(...trainingSeries, ...indoorSeries);
+  // The daily energy balance pairs D → D+1 like the intake channels; it sits
+  // in their family, so it is never paired with the intake it is built from.
+  series.push(...energyBalanceSeries);
   // A factor is plausibly both a lag source ("rated work today → next-day
   // sleep") and a lag target ("steps today → next-day rated energy"), so it
   // enters as both roles. The engine skips self-pairs — every factor shares
@@ -481,6 +491,7 @@ export async function assembleDiscoveryMatrix(
       alcoholDays: alcoholSeries?.points.length ?? 0,
       trainingDays: daysIn(trainingSeries),
       indoorNights: daysIn(indoorSeries),
+      energyBalanceDays: daysIn(energyBalanceSeries),
     },
   };
 }

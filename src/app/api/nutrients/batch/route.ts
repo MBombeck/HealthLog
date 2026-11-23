@@ -43,6 +43,7 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { withIdempotency } from "@/lib/idempotency";
+import { withIngestAdmission } from "@/lib/ingest/admission";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
@@ -83,7 +84,9 @@ interface EntryResult {
   reason?: string;
 }
 
-export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
+export const POST = apiHandler(
+  withIngestAdmission(withIdempotency<[NextRequest]>(postBatch)),
+);
 
 async function postBatch(request: NextRequest): Promise<Response> {
   // Declares the third-party ingest scope, so a narrow `measurements:write`

@@ -5,6 +5,7 @@
  * this module under `src/components/settings/ai/`.
  */
 
+import type { CoachBudget } from "@/lib/ai/coach/coach-budgets";
 import type { ReasoningEffort } from "@/lib/ai/reasoning-effort";
 
 export interface InsightsSettings {
@@ -53,6 +54,10 @@ export interface UserAIProvider {
   // Default). Absent on a payload from a server older than the field.
   localReasoningEffort?: ReasoningEffort | null;
   compatReasoningEffort?: ReasoningEffort | null;
+  /** The Coach budget of the Local provider and of the gateway (null = the
+   *  built-in limits). Absent on a payload from a server older than them. */
+  localCoachBudget?: CoachBudget | null;
+  compatCoachBudget?: CoachBudget | null;
 }
 
 /** #1126 — the `reasoning_effort` values; "Off" is `none`. */

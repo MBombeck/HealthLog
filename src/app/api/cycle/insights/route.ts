@@ -26,6 +26,7 @@ import { predictCycle, type NightlyTempInput } from "@/lib/cycle";
 import { LUTEAL_DEFAULT } from "@/lib/cycle/types";
 import {
   buildPhaseDayMap,
+  forecastActive,
   toCycleInputs,
   toDayLogInputs,
   toProfileInput,
@@ -174,16 +175,15 @@ export const GET = apiHandler(async () => {
     date: moodDateKey(m.measuredAt, tz),
     valueC: m.value,
   }));
-  const prediction =
-    profile.predictionEnabled && !profile.rawChartMode
-      ? predictCycle(
-          toCycleInputs(cycles),
-          toDayLogInputs(dayLogRows),
-          toProfileInput(profile),
-          today,
-          nights,
-        )
-      : null;
+  const prediction = forecastActive(toProfileInput(profile), today)
+    ? predictCycle(
+        toCycleInputs(cycles),
+        toDayLogInputs(dayLogRows),
+        toProfileInput(profile),
+        today,
+        nights,
+      )
+    : null;
 
   const phaseByDay = buildPhaseDayMap(
     cycles,

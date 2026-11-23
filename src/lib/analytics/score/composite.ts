@@ -14,9 +14,10 @@ import {
   type ScorePillarId,
   type ScorePillarResult,
 } from "./types";
-import { mean, provenance, scoreBand } from "./shared";
+import { provenance, scoreBand } from "./shared";
 import { evaluateScoreBreadth, SCORE_RECOMMENDED_DOMAINS } from "./breadth";
 import type { ScoreConfigBoundary } from "./config";
+import { mean } from "@/lib/stats/central";
 
 export const SCORE_ALGORITHM_CHANGED_AT = "2026-08-30T00:00:00.000Z";
 
@@ -116,7 +117,8 @@ export function computeComposite(
     }
     return pillar.result.value;
   });
-  const score = Math.round(mean(values.map((value) => value.score)));
+  // `breadth.ok` above guarantees an eligible pillar.
+  const score = Math.round(mean(values.map((value) => value.score))!);
   const meanBand = scoreBand(score);
   const bandSetterIndex = values.reduce(
     (worstIndex, value, index) =>
@@ -220,8 +222,8 @@ function comparableDynamicPillars(
   });
   if (pairs.length === 0) return null;
   return {
-    current: mean(pairs.map((pair) => pair.current)),
-    previous: mean(pairs.map((pair) => pair.previous)),
+    current: mean(pairs.map((pair) => pair.current))!,
+    previous: mean(pairs.map((pair) => pair.previous))!,
     noiseFloor: Math.ceil(
       Math.sqrt(pairs.reduce((sum, pair) => sum + pair.noiseFloor ** 2, 0)) /
         pairs.length,

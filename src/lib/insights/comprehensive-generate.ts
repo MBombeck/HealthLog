@@ -18,31 +18,20 @@
  * NO synchronous request lifecycle: the cron path runs entirely on
  * pg-boss, never inside an HTTP handler.
  */
-import { withBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import pLimit from "p-limit";
 import { prisma } from "@/lib/db";
 import {
   extractFeatures,
   FeaturesPayloadTooLargeError,
   BRIEFING_FEATURE_WINDOW_DAYS,
-  type SignalOfDay,
-  type AggregatedFeatures,
 } from "@/lib/insights/features";
-import {
-  extractNumbers,
-  findUngroundedBriefingNumbers,
-  readBriefingBlock,
-  buildBriefingGroundingCorrection,
-} from "@/lib/ai/briefing-grounding";
+import { extractNumbers } from "@/lib/ai/briefing-grounding";
 import { buildPlanProgressLines } from "@/lib/ai/coach/memory/contract";
 import {
   USER_TEXT_FENCE_END,
   USER_TEXT_FENCE_START,
   fenceBlock,
 } from "@/lib/ai/coach/data-fence";
-import { screenInsightPayloadProse } from "@/lib/ai/safety/insight-payload-screen";
-import type { OutboundReason } from "@/lib/ai/safety/outbound-screen";
-import { computeCitationCoverage } from "@/lib/ai/citation-coverage";
 import { applyInsightsExcludeFilter } from "@/lib/insights/exclude-filter";
 import { getCachedFeatures } from "@/lib/insights/feature-cache";
 import {
@@ -69,7 +58,6 @@ import {
   buildSystemPromptWithReferences,
   buildBriefingPersonalisationBlock,
 } from "@/lib/ai/prompts/insight-generator";
-import { buildRetryCorrectionMessage } from "@/lib/ai/retry-correction";
 import {
   buildAboutMeInsightBlock,
   getSelfContextTextForUser,
@@ -86,45 +74,42 @@ import {
   resolveDashboardLayout,
   type ComparisonBaseline,
 } from "@/lib/dashboard-layout";
-import type { MeasurementType, Prisma } from "@/generated/prisma/client";
+import type { MeasurementType } from "@/generated/prisma/client";
 import { Prisma as PrismaSql } from "@/generated/prisma/client";
 import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
-import { insightResultSchema, type InsightResult } from "@/lib/ai/types";
 import { resolveProviderChain } from "@/lib/ai/provider";
-import { AllProvidersFailedError } from "@/lib/ai/provider-runner";
-import {
-  chainFailureFacts,
-  type ChainFailureFacts,
-} from "@/lib/insights/chain-failure-facts";
-import {
-  BriefingBudgetExceededError,
-  runBriefingCompletion,
-} from "@/lib/insights/briefing-provider";
+import { type ChainFailureFacts } from "@/lib/insights/chain-failure-facts";
 import { aiCapabilityForRecord } from "@/lib/ai/capabilities/gate";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
-import { invalidateUserInsights } from "@/lib/cache/invalidate";
+import { type SupportedLocale } from "@/lib/insights/status-shared";
 import {
-  stripJsonFences,
-  type SupportedLocale,
-} from "@/lib/insights/status-shared";
-import {
-  applyBriefingShortForm,
   briefingFormForRecord,
   buildBriefingShortFormBlock,
 } from "@/lib/insights/briefing-short-form";
 import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
 import { annotate } from "@/lib/logging/context";
-import { AI_BUDGETS, resolveInsightsMaxTokens } from "@/lib/ai/ai-budgets";
+import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { resolveEffectiveTimeoutMs } from "@/lib/ai/effective-timeout";
-import { providerFailureKind } from "@/lib/ai/failure-kind";
-import { recordBriefingFailure } from "@/lib/insights/briefing-failure-marker";
-import { cachedPayloadCarriesBriefing } from "@/lib/insights/briefing-payload";
 import {
   INSIGHTS_CACHE_SELECT,
-  insightsCacheWrite,
   openInsightsCachedText,
 } from "@/lib/insights/cached-text-cipher";
+import {
+  failBeforeProvider,
+  type PromptScopeAtRead,
+  type ProviderChain,
+  type StepResult,
+} from "@/lib/insights/comprehensive-support";
+import {
+  annotateCitationCoverage,
+  applyBriefingGroundingGate,
+  parseOrRepairReply,
+  persistGeneratedInsight,
+  runFirstPass,
+  screenAndRepairOutbound,
+  tryUnchangedSnapshot,
+} from "@/lib/insights/comprehensive-steps";
 
 // Scope invalidation + refill moved to a sibling module; re-exported so
 // every existing call site keeps importing from here.
@@ -183,181 +168,6 @@ export type GenerateOutcome =
         | "profile-scope-changed";
     }
   | ({ status: "failed"; reason: string } & ChainFailureFacts);
-
-/** Higher, seedless temperature for the daily-briefing phrasing re-roll. */
-const BRIEFING_REROLL_TEMPERATURE = 0.6;
-
-/** UTC YYYY-MM-DD calendar-day key gating the once-per-day briefing re-roll. */
-function buildRerollDateKey(at: Date = new Date()): string {
-  // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: internal once-per-day re-roll gate key, never shown
-  return at.toISOString().slice(0, 10);
-}
-
-/**
- * Re-roll ONLY the daily-briefing paragraph on a hash-unchanged hit.
- *
- * Runs the same comprehensive prompt at a higher, seedless temperature, then
- * keeps the cached payload verbatim and swaps in just the freshly-generated
- * `dailyBriefing.paragraph`. So the structured findings stay byte-stable
- * (reference assessments, monotony is fine) while the prose the user reads at
- * the top of /insights varies day-over-day. Returns null on any miss (no
- * provider success, invalid JSON, no cached/new paragraph) so the caller
- * falls back to the plain timestamp refresh.
- */
-async function rerollBriefingParagraph(args: {
-  userId: string;
-  chain: Awaited<ReturnType<typeof resolveProviderChain>>;
-  systemPrompt: string;
-  userPrompt: string;
-  cachedText: string;
-  locale: SupportedLocale;
-  /**
-   * v1.18.10 — the pre-computed signals the briefing must match.
-   * The reroll runs at a higher, seedless temperature for phrasing variety,
-   * which is exactly the path most prone to drifting a restated number; the
-   * fresh paragraph is rejected (caller keeps the cached one) when a number in
-   * it does not trace to one of these figures.
-   */
-  signals: readonly SignalOfDay[] | null;
-  /**
-   * v1.22 (W6, W8 seam) — the full feature snapshot so the grounding gate also
-   * admits numbers from the W8 aggregate blocks (glucose / labs / preventive-
-   * care / workouts) the reroll may now cite.
-   */
-  features?: AggregatedFeatures | null;
-  /**
-   * The comparison snapshot the SAME `userPrompt` carries as its own section.
-   * The gate walks it for authoritative figures too, so a rerolled paragraph
-   * may narrate the comparison the prompt asked it to narrate.
-   */
-  comparison?: unknown;
-  /**
-   * The upstream provider timeout for this re-roll, resolved from the user's
-   * response-timeout setting (falling back to the comprehensive budget). The
-   * caller resolves it once and threads it in so the re-roll honours the same
-   * slow-backend allowance the main generation does.
-   */
-  effectiveTimeoutMs: number;
-  /** The caller's bound: a re-roll it gave up on sends nothing more. */
-  signal?: AbortSignal;
-}): Promise<{ text: string; providerType: string } | null> {
-  let cached: Record<string, unknown>;
-  try {
-    cached = JSON.parse(args.cachedText) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-  const cachedBriefing = cached.dailyBriefing;
-  // Nothing to re-roll when the cached payload carries no briefing paragraph.
-  if (
-    cachedBriefing === null ||
-    typeof cachedBriefing !== "object" ||
-    typeof (cachedBriefing as { paragraph?: unknown }).paragraph !== "string"
-  ) {
-    return null;
-  }
-
-  let result;
-  let providerType: string;
-  try {
-    const fallback = await runBriefingCompletion({
-      userId: args.userId,
-      chain: args.chain,
-      systemPrompt: args.systemPrompt,
-      userPrompt: args.userPrompt,
-      // Seedless on purpose: the seed would pin the same phrasing, which is
-      // exactly what we are varying. Higher temperature for prose variety.
-      temperature: BRIEFING_REROLL_TEMPERATURE,
-      maxTokens: resolveInsightsMaxTokens(),
-      // v1.21.5 — wider upstream budget so the reasoning-heavy briefing
-      // generation is not clipped at the client's 60 s default mid-stream.
-      // v1.25 — honours the per-user response-timeout setting (see caller).
-      timeoutMs: args.effectiveTimeoutMs,
-      signal: args.signal,
-      stage: "reroll",
-      // v1.41 — the re-roll is a fresh pass at the paragraph, so it may think
-      // like the generation it replaces; the operator's switch still wins.
-      reasoningJob: "daily_briefing",
-    });
-    result = fallback.result;
-    providerType = fallback.workingProvider.providerType;
-  } catch {
-    // Includes `BriefingBudgetExceededError`: a user at the day's ceiling
-    // simply does not get the phrasing re-roll. The caller falls through to
-    // the plain timestamp refresh and keeps the cached paragraph.
-    return null;
-  }
-
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(stripJsonFences(result.content)) as Record<
-      string,
-      unknown
-    >;
-  } catch {
-    return null;
-  }
-  const freshBriefing = parsed.dailyBriefing;
-  const freshParagraph =
-    freshBriefing && typeof freshBriefing === "object"
-      ? (freshBriefing as { paragraph?: unknown }).paragraph
-      : undefined;
-  if (
-    typeof freshParagraph !== "string" ||
-    freshParagraph.trim().length === 0
-  ) {
-    return null;
-  }
-
-  // v1.18.10 — grounding gate on the rerolled paragraph. The higher
-  // seedless temperature can drift a restated figure ("+1.2 kg" → "+1.3 kg");
-  // reject the reroll on any ungrounded number so the caller keeps the cached
-  // (already-grounded) paragraph rather than swapping in a fabricated one.
-  const rerollUngrounded = findUngroundedBriefingNumbers(
-    { paragraph: freshParagraph },
-    args.signals,
-    args.features,
-    args.comparison,
-  );
-  if (rerollUngrounded.length > 0) {
-    return null;
-  }
-
-  // Keep the cached payload verbatim; swap in only the fresh paragraph.
-  const mergedBriefing = {
-    ...(cachedBriefing as Record<string, unknown>),
-    paragraph: freshParagraph,
-  };
-  // A re-rolled paragraph is new text, so it carries a new generation
-  // moment; the plain stamp refresh that a miss falls back to does not.
-  const merged = withBriefingGeneratedAt(
-    { ...cached, dailyBriefing: mergedBriefing },
-    new Date(),
-  );
-  return { text: JSON.stringify(merged), providerType };
-}
-
-/**
- * Parse + (best-effort) validate a comprehensive provider reply. Returns the
- * parsed payload (validated when it matches `insightResultSchema`, which
- * keeps the richer optional blocks, else the raw object), or null when the reply
- * is not valid JSON even after fence-stripping. Null signals the caller to
- * run its one corrective retry.
- */
-function parseComprehensiveResult(
-  content: string,
-): InsightResult | Record<string, unknown> | null {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(stripJsonFences(content));
-  } catch {
-    return null;
-  }
-  const validated = insightResultSchema.safeParse(parsed);
-  return validated.success
-    ? validated.data
-    : (parsed as Record<string, unknown>);
-}
 
 /**
  * The window average of an hourly-mean type (pulse, see `day-mean.ts`) for
@@ -598,115 +408,6 @@ export async function buildComparisonSnapshotForUser(
   return { baseline, metrics };
 }
 
-/**
- * v1.28.30 — typed `failed` return for the pre-provider stages (feature
- * extraction / oversize payload). These paths used to return
- * `{ status: "failed" }` with NO annotation and NO failure marker: the
- * nightly cron counted them into its `failed` tally silently, and the
- * read path could not tell the user the last attempt failed. One helper
- * so every failure return is greppable under the same action name and
- * leaves a dated marker for the briefing card's honest empty state.
- */
-function failBeforeProvider(
-  userId: string,
-  locale: SupportedLocale,
-  reason: "payload-too-large" | "features-error" | "aborted",
-  err?: unknown,
-): GenerateOutcome {
-  const message =
-    err instanceof Error
-      ? err.message.slice(0, 240)
-      : err != null
-        ? String(err).slice(0, 240)
-        : null;
-  annotate({
-    action: { name: "insights.generate.comprehensive_failed" },
-    meta: { locale, reason, provider_status: null, provider_message: message },
-  });
-  void recordBriefingFailure({ userId, reason, locale });
-  return { status: "failed", reason };
-}
-
-type InsightCommitResult =
-  | "committed"
-  | "scope-changed"
-  | "profile-scope-changed"
-  | "no-consent"
-  | "unavailable";
-
-/**
- * The exact User columns (besides `insightsPrivacyMode`, guarded
- * separately) that feed the generation prompt built above. Captured at the
- * same `dbUser` read that starts the generation and required to still
- * match at commit time.
- */
-type PromptScopeAtRead = {
-  insightsExcludeMetrics: string[];
-  gender: string | null;
-  displayName: string | null;
-};
-
-/**
- * Recheck every user-controlled prompt scope immediately before a cache write.
- * The profile text identifies an authoritative profile-scope mismatch. The
- * guarded User columns below catch a privacy-mode / exclude-list / gender /
- * display-name change — the exact set of columns this generation's prompt
- * was built from — without keying on the broad `updatedAt` timestamp, which
- * a provider credential refresh (e.g. `resolveProviderChain()`'s token
- * maintenance) also advances and would otherwise false-positive here.
- *
- * The consent rule runs once more too, against the provider that answered
- * (`servedBy`, `null` for a timestamp-only stamp that writes no text), with a
- * fresh receipt read: a withdrawal that landed while the
- * call was in flight already purged the stored briefing, and this write would
- * bring it back.
- */
-async function commitInsightUnderScope(
-  userId: string,
-  modeAtRead: string,
-  selfContextAtRead: string | null,
-  promptScopeAtRead: PromptScopeAtRead,
-  locale: SupportedLocale,
-  servedBy: string | null,
-  data: Prisma.UserUpdateInput,
-): Promise<InsightCommitResult> {
-  if (servedBy !== null) {
-    const late = await aiEgressRefusal("briefing", userId, [servedBy]);
-    if (late) {
-      return late.reason === "consent_required" ? "no-consent" : "unavailable";
-    }
-  }
-  const currentSelfContext = await getSelfContextTextForUser(userId, locale);
-  if (currentSelfContext !== selfContextAtRead) {
-    return "profile-scope-changed";
-  }
-  const res = await prisma.user.updateMany({
-    where: {
-      id: userId,
-      insightsPrivacyMode: modeAtRead,
-      insightsExcludeMetrics: {
-        equals: promptScopeAtRead.insightsExcludeMetrics,
-      },
-      gender: promptScopeAtRead.gender,
-      displayName: promptScopeAtRead.displayName,
-    },
-    data,
-  });
-  return res.count > 0 ? "committed" : "scope-changed";
-}
-
-function scopeChangedSkip(
-  result: InsightCommitResult,
-  locale: SupportedLocale,
-): GenerateOutcome | null {
-  if (result === "committed") return null;
-  annotate({
-    action: { name: `insights.generate.${result.replaceAll("-", "_")}` },
-    meta: { locale },
-  });
-  return { status: "skipped", reason: result };
-}
-
 interface GenerateOptions {
   /** Resolved UI locale for the prompt + cache row. */
   locale: SupportedLocale;
@@ -779,7 +480,42 @@ export async function generateComprehensiveInsight(
   const force = options.force === true;
   const signal = options.signal;
 
-  const dbUser = await prisma.user.findUnique({
+  const loaded = await loadGenerationInputs(userId, locale, force, signal);
+  if ("stop" in loaded) return loaded.stop;
+  const ctx = loaded.next;
+
+  const unchanged = await tryUnchangedSnapshot(ctx);
+  if (unchanged) return unchanged;
+
+  const first = await runFirstPass(ctx);
+  if ("stop" in first) return first.stop;
+  const parsed = await parseOrRepairReply(ctx, first.next);
+  if ("stop" in parsed) return parsed.stop;
+  const grounded = await applyBriefingGroundingGate(ctx, parsed.next);
+  annotateCitationCoverage(locale, grounded.insights);
+  const screened = await screenAndRepairOutbound(ctx, grounded);
+  if ("stop" in screened) return screened.stop;
+  return persistGeneratedInsight(ctx, screened.next);
+}
+
+type GenerationUser = Awaited<ReturnType<typeof findGenerationUser>>;
+type BriefingFeatures = Awaited<ReturnType<typeof extractFeatures>>;
+
+/** What every step after loading reads: the request, the User row, the prompt. */
+export type GenerationContext = {
+  userId: string;
+  locale: SupportedLocale;
+  signal: AbortSignal | undefined;
+  dbUser: GenerationUser;
+  cachedText: string | null;
+  effectiveTimeoutMs: number;
+  chain: ProviderChain;
+  modeAtRead: string;
+} & Awaited<ReturnType<typeof buildGenerationPrompt>>;
+
+/** The User columns one generation reads, in one query. */
+function findGenerationUser(userId: string) {
+  return prisma.user.findUnique({
     where: { id: userId },
     select: {
       insightsPrivacyMode: true,
@@ -807,6 +543,24 @@ export async function generateComprehensiveInsight(
       glucoseUnit: true,
     },
   });
+}
+
+/**
+ * Read the User row the generation starts from, and stop on a fresh cache
+ * hit in the requested locale.
+ */
+async function readGenerationUser(
+  userId: string,
+  locale: SupportedLocale,
+  force: boolean,
+): Promise<
+  StepResult<{
+    dbUser: GenerationUser;
+    cachedText: string | null;
+    effectiveTimeoutMs: number;
+  }>
+> {
+  const dbUser = await findGenerationUser(userId);
   const cachedText = openInsightsCachedText(dbUser);
 
   // Resolve the upstream provider timeout once from the user's setting,
@@ -832,9 +586,15 @@ export async function generateComprehensiveInsight(
     cachedLocaleMatches &&
     Date.now() - dbUser.insightsCachedAt.getTime() < CACHE_TTL_MS
   ) {
-    return { status: "cached" };
+    return { stop: { status: "cached" } };
   }
+  return { next: { dbUser, cachedText, effectiveTimeoutMs } };
+}
 
+/** The briefing capability, the provider chain, and the wire re-check for it. */
+async function resolveBriefingChain(
+  userId: string,
+): Promise<StepResult<ProviderChain>> {
   // The `briefing` capability at the wire, before the chain is resolved (a
   // Codex chain may refresh a token on resolve). Callers resolve it too (the
   // route before it enqueues, the nightly pass before this call); switches,
@@ -846,19 +606,21 @@ export async function generateComprehensiveInsight(
       meta: { reason: capability.reason },
     });
     return {
-      status: "skipped",
-      reason:
-        capability.reason === "no_provider"
-          ? "no-provider"
-          : capability.reason === "consent_required"
-            ? "no-consent"
-            : "unavailable",
+      stop: {
+        status: "skipped",
+        reason:
+          capability.reason === "no_provider"
+            ? "no-provider"
+            : capability.reason === "consent_required"
+              ? "no-consent"
+              : "unavailable",
+      },
     };
   }
 
   const chain = await resolveProviderChain(userId, "briefing");
   if (chain.length === 0) {
-    return { status: "skipped", reason: "no-provider" };
+    return { stop: { status: "skipped", reason: "no-provider" } };
   }
 
   // The wire re-check for exactly this chain (`aiEgressRefusal`): the
@@ -874,20 +636,25 @@ export async function generateComprehensiveInsight(
   );
   if (refusal) {
     return {
-      status: "skipped",
-      reason:
-        refusal.reason === "consent_required" ? "no-consent" : "unavailable",
+      stop: {
+        status: "skipped",
+        reason:
+          refusal.reason === "consent_required" ? "no-consent" : "unavailable",
+      },
     };
   }
+  return { next: chain };
+}
 
-  const includeRaw = dbUser?.insightsPrivacyMode === "raw";
-  // v1.32.22 — capture the privacy-mode column value read here (a
-  // non-nullable String defaulting to "aggregated"), so every cache commit
-  // below can guard on it. A `PUT /api/insights/settings` flip that lands
-  // between this read and a commit advances the column ("aggregated" ⇄ "raw");
-  // the guarded write then matches zero rows and the generation is skipped
-  // rather than stamping an old-scope payload over the cache the flip nulled.
-  const modeAtRead = dbUser?.insightsPrivacyMode ?? "aggregated";
+/**
+ * The bounded feature read, stepping down to aggregated and then to the
+ * minimal section set when the payload is too large.
+ */
+async function extractBriefingFeatures(
+  userId: string,
+  locale: SupportedLocale,
+  includeRaw: boolean,
+): Promise<StepResult<BriefingFeatures>> {
   // v1.18.11 — bound the briefing's bulk feature read to a recent window
   // (all-time extremes are sourced separately, see features.ts). The downgrade
   // ladder below stays as the safety net for the rare oversize payload.
@@ -927,22 +694,45 @@ export async function generateComprehensiveInsight(
               MAX_DOWNGRADE_TOKENS,
             );
           } catch (finalErr) {
-            return failBeforeProvider(
-              userId,
-              locale,
-              "payload-too-large",
-              finalErr,
-            );
+            return {
+              stop: failBeforeProvider(
+                userId,
+                locale,
+                "payload-too-large",
+                finalErr,
+              ),
+            };
           }
         } else {
-          return failBeforeProvider(userId, locale, "features-error", retryErr);
+          return {
+            stop: failBeforeProvider(
+              userId,
+              locale,
+              "features-error",
+              retryErr,
+            ),
+          };
         }
       }
     } else {
-      return failBeforeProvider(userId, locale, "features-error", err);
+      return {
+        stop: failBeforeProvider(userId, locale, "features-error", err),
+      };
     }
   }
+  return { next: features };
+}
 
+/**
+ * Everything the prompt is built from, the snapshot fingerprint over it, and
+ * the prompts themselves.
+ */
+async function buildGenerationPrompt(
+  userId: string,
+  locale: SupportedLocale,
+  dbUser: GenerationUser,
+  extracted: BriefingFeatures,
+) {
   const excludeList = dbUser?.insightsExcludeMetrics ?? [];
   // v1.34 — snapshot of the exact User columns that feed the prompt below
   // (besides `modeAtRead`, guarded separately), captured at this same
@@ -955,7 +745,7 @@ export async function generateComprehensiveInsight(
     gender: dbUser?.gender ?? null,
     displayName: dbUser?.displayName ?? null,
   };
-  features = applyInsightsExcludeFilter(features, excludeList);
+  let features = applyInsightsExcludeFilter(extracted, excludeList);
   // Every figure below the canonical arithmetic is stated in the reader's
   // units: the prompt, the content hash and the grounding check all read the
   // converted set, so they agree with each other and with the reader.
@@ -1088,573 +878,64 @@ export async function generateComprehensiveInsight(
     locale,
     referenceMetrics,
   );
-
-  // v1.28.30 — the unchanged short-circuit only holds when the cached
-  // payload actually carries a briefing. A grounding-stripped (or model-
-  // omitted) briefing left a briefingless payload WITH a stored hash;
-  // on unchanged data every subsequent warm re-stamped the timestamp and
-  // the briefing never came back — a permanent silent hole. Treating the
-  // briefingless cache as "not unchanged" re-runs the full generation
-  // (bounded by the nightly budget bucket + forced-warm caps).
-  const cachedCarriesBriefing = cachedPayloadCarriesBriefing(cachedText);
-  if (
-    cachedText &&
-    dbUser?.insightsSnapshotHash === snapshotHash &&
-    !cachedCarriesBriefing
-  ) {
-    annotate({
-      action: { name: "insights.generate.briefingless_cache_regenerate" },
-      meta: { locale },
-    });
-  }
-  if (
-    cachedText &&
-    dbUser?.insightsSnapshotHash === snapshotHash &&
-    cachedCarriesBriefing
-  ) {
-    // v1.18.7 — findings are byte-stable, but re-roll the daily-
-    // briefing PARAGRAPH once per calendar day so the prose reads fresh
-    // day-over-day. Gated on `insightsBriefingRerollDate` so it costs at
-    // most one extra call/day; the higher, seedless temperature varies the
-    // phrasing while the structured findings are preserved verbatim from the
-    // cached payload. Any miss falls through to the plain timestamp refresh.
-    const todayKey = buildRerollDateKey();
-    if (dbUser?.insightsBriefingRerollDate !== todayKey) {
-      const rerolled = await rerollBriefingParagraph({
-        userId,
-        chain,
-        systemPrompt,
-        userPrompt,
-        cachedText,
-        locale,
-        signals: features.signalsOfDay ?? null,
-        features,
-        comparison: groundingExtra,
-        effectiveTimeoutMs,
-        signal,
-      });
-      if (rerolled) {
-        // The reroll rewrites content derived from the scope captured before
-        // the provider call. Refuse it if either privacy mode or included
-        // self-context changed in flight.
-        const committed = await commitInsightUnderScope(
-          userId,
-          modeAtRead,
-          aboutMe,
-          promptScopeAtRead,
-          locale,
-          rerolled.providerType,
-          {
-            insightsCachedAt: new Date(),
-            ...insightsCacheWrite(rerolled.text),
-            insightsCachedLocale: locale,
-            insightsBriefingRerollDate: todayKey,
-          },
-        );
-        const skipped = scopeChangedSkip(committed, locale);
-        if (skipped) return skipped;
-        invalidateUserInsights(userId);
-        annotate({
-          action: { name: "insights.generate.briefing_rerolled" },
-          meta: { locale, provider: rerolled.providerType },
-        });
-        return { status: "rerolled", providerType: rerolled.providerType };
-      }
-      // A re-roll miss still stamps the day so a persistently failing
-      // provider cannot be re-driven on every page-open; the next day retries.
-      // Even a timestamp-only stamp must not make a cache cleared by a scope
-      // change look fresh again.
-      const stamped = await commitInsightUnderScope(
-        userId,
-        modeAtRead,
-        aboutMe,
-        promptScopeAtRead,
-        locale,
-        null,
-        {
-          insightsCachedAt: new Date(),
-          // The fingerprint covers the generation locale, so a matching hash
-          // means the stored text is in `locale`; tag it (a pre-tag row gets
-          // its label on its first unchanged night).
-          insightsCachedLocale: locale,
-          insightsBriefingRerollDate: todayKey,
-        },
-      );
-      const skipped = scopeChangedSkip(stamped, locale);
-      if (skipped) return skipped;
-      annotate({
-        action: { name: "insights.generate.skipped_unchanged" },
-        meta: { locale, rerollAttempted: true },
-      });
-      return { status: "unchanged" };
-    }
-    const stamped = await commitInsightUnderScope(
-      userId,
-      modeAtRead,
-      aboutMe,
-      promptScopeAtRead,
-      locale,
-      null,
-      {
-        insightsCachedAt: new Date(),
-        insightsCachedLocale: locale,
-      },
-    );
-    const skipped = scopeChangedSkip(stamped, locale);
-    if (skipped) return skipped;
-    annotate({
-      action: { name: "insights.generate.skipped_unchanged" },
-      meta: { locale },
-    });
-    return { status: "unchanged" };
-  }
-
-  let result;
-  let workingProviderType: string;
-  try {
-    const fallback = await runBriefingCompletion({
-      userId,
-      chain,
-      systemPrompt,
-      userPrompt,
-      temperature: AI_BUDGETS.comprehensive.temperature,
-      maxTokens: resolveInsightsMaxTokens(),
-      // v1.21.5 — wider upstream budget so the reasoning-heavy briefing
-      // generation is not clipped at the client's 60 s default mid-stream.
-      // v1.25 — honours the per-user response-timeout setting.
-      timeoutMs: effectiveTimeoutMs,
-      signal,
-      stage: "generate",
-      // v1.41 — the briefing is one of the few background jobs that may
-      // reason (medium on the person's own provider, low on the operator's,
-      // never above the operator's cap, nothing when switched off). The JSON
-      // and grounding retries below repair a reply and do not reason.
-      reasoningJob: "daily_briefing",
-    });
-    result = fallback.result;
-    workingProviderType = fallback.workingProvider.providerType;
-  } catch (e) {
-    // Over the day's token ceiling — no provider was contacted. Typed as
-    // `skipped`, not `failed`: there is no upstream fault to retry against,
-    // so the caller must not enqueue the 45-minute provider-failure retry or
-    // hold the day provisional waiting for a briefing that will not come
-    // until the ledger rolls over. No failure marker either — the ceiling is
-    // an accounting outcome, not a broken generation.
-    if (e instanceof BriefingBudgetExceededError) {
-      annotate({
-        action: { name: "insights.generate.budget_exceeded" },
-        meta: { locale, stage: e.stage, totalAfter: e.totalAfter },
-      });
-      return { status: "skipped", reason: "budget" };
-    }
-    // v1.21.5 — make the failed generation queryable. This path used to return
-    // a `failed` outcome with NO annotation, so a provider that consistently
-    // failed (e.g. a codex briefing aborted by the 60 s timeout on a large
-    // account) left the cached block empty AND emitted nothing the operator
-    // could grep — the briefing and the insights trend narrative that share
-    // the block stayed blank with no signal. No cache row is written, so the
-    // next warm / visit retries; the wider `timeoutMs` above is what lets that
-    // retry actually land.
-    const reason =
-      e instanceof AllProvidersFailedError
-        ? "all-providers-failed"
-        : "provider-error";
-    const err = e as { httpStatus?: number; message?: string };
-    annotate({
-      action: { name: "insights.generate.comprehensive_failed" },
-      meta: {
-        locale,
-        reason,
-        provider_status:
-          typeof err.httpStatus === "number" ? err.httpStatus : null,
-        provider_message: err.message?.slice(0, 240) ?? null,
-      },
-    });
-    // v1.25 — record a dated failure marker so the read path can surface a
-    // discreet "couldn't refresh" hint alongside the preserved last-good
-    // briefing. No cache row is written here, so `insightsCachedTextEncrypted` (the
-    // last good payload) stays intact and the surface never blanks.
-    void recordBriefingFailure({
-      userId,
-      reason,
-      locale,
-      httpStatus: typeof err.httpStatus === "number" ? err.httpStatus : null,
-      failureKind:
-        e instanceof AllProvidersFailedError
-          ? (e.attempts?.[0]?.failureKind ?? null)
-          : providerFailureKind(e).failure,
-    });
-    return { status: "failed", reason, ...chainFailureFacts(e) };
-  }
-
-  // Anthropic + local have no native JSON mode, so a ```json-fenced or
-  // sentence-prefixed reply would otherwise fail the whole generation.
-  // Strip the fence before parsing; clean JSON passes through unchanged.
-  let insights = parseComprehensiveResult(result.content);
-  if (insights === null) {
-    // v1.18.7 — one corrective retry before declaring failure,
-    // reusing the same `buildRetryCorrectionMessage` the strict insight
-    // wrapper uses next door. The comprehensive path previously failed cold
-    // to `invalid-json` on a first-pass miss even though the recovery helper
-    // sat right there. The retry appends the correction to the user prompt
-    // and re-runs the chain once.
-    annotate({
-      action: { name: "insights.generate.json_retry" },
-      meta: { locale },
-    });
-    try {
-      const retry = await runBriefingCompletion({
-        userId,
-        chain,
-        systemPrompt,
-        userPrompt: `${userPrompt}\n\n${buildRetryCorrectionMessage(
-          "Response was not valid JSON",
-          "The previous reply could not be parsed as a JSON object.",
-        )}`,
-        temperature: AI_BUDGETS.comprehensive.temperature,
-        maxTokens: resolveInsightsMaxTokens(),
-        // v1.21.5 — wider upstream budget; see the first generation call.
-        // v1.25 — honours the per-user response-timeout setting.
-        timeoutMs: effectiveTimeoutMs,
-        signal,
-        stage: "json-retry",
-      });
-      result = retry.result;
-      workingProviderType = retry.workingProvider.providerType;
-    } catch (retryErr) {
-      // The first pass already landed and was charged; the correction pass is
-      // what the ceiling refused. Same `skipped` treatment as the first call —
-      // a budget refusal is not a provider fault to retry against.
-      if (retryErr instanceof BriefingBudgetExceededError) {
-        annotate({
-          action: { name: "insights.generate.budget_exceeded" },
-          meta: {
-            locale,
-            stage: retryErr.stage,
-            totalAfter: retryErr.totalAfter,
-          },
-        });
-        return { status: "skipped", reason: "budget" };
-      }
-      // v1.28.30 — annotate alongside the marker so an invalid-JSON night
-      // is greppable under the same action as every other failure class.
-      annotate({
-        action: { name: "insights.generate.comprehensive_failed" },
-        meta: {
-          locale,
-          reason: "invalid-json",
-          provider_status: null,
-          provider_message:
-            retryErr instanceof Error
-              ? retryErr.message.slice(0, 240)
-              : "retry-transport-failed",
-        },
-      });
-      void recordBriefingFailure({ userId, reason: "invalid-json", locale });
-      return { status: "failed", reason: "invalid-json" };
-    }
-    insights = parseComprehensiveResult(result.content);
-    if (insights === null) {
-      annotate({
-        action: { name: "insights.generate.comprehensive_failed" },
-        meta: {
-          locale,
-          reason: "invalid-json",
-          provider_status: null,
-          // v1.28.28 truncation-aware: a `length` finish means the token
-          // ceiling cut the JSON mid-string — a budget problem, not a
-          // model-quality one.
-          provider_message:
-            result.finishReason === "length"
-              ? "response-truncated-at-token-ceiling"
-              : "unparseable-after-retry",
-        },
-      });
-      void recordBriefingFailure({ userId, reason: "invalid-json", locale });
-      return { status: "failed", reason: "invalid-json" };
-    }
-  }
-
-  // v1.18.10 — daily-briefing number-grounding gate. The cron +
-  // force-warm path produces the same briefing the POST route does, so it
-  // enforces the same cross-check: every number the briefing restates must
-  // trace to a `features.signalsOfDay` figure. One corrective retry, then strip
-  // the briefing rather than persist a fabricated number.
-  // v1.28.30 — true when the grounding gate stripped the briefing HARD (no
-  // previous-cached fallback available). Persisted as a dated marker after
-  // the cache write so the read path can render the honest "briefing
-  // withheld" state instead of a silent generic empty card.
-  let briefingStrippedHard = false;
-  {
-    const signals = features.signalsOfDay ?? null;
-    let retryTransportFailed = false;
-    let ungrounded = findUngroundedBriefingNumbers(
-      readBriefingBlock(insights),
-      signals,
-      features,
-      groundingExtra,
-    );
-    if (ungrounded.length > 0) {
-      annotate({
-        action: { name: "insights.generate.briefing_grounding_retry" },
-        meta: { locale, ungroundedCount: ungrounded.length },
-      });
-      try {
-        const retry = await runBriefingCompletion({
-          userId,
-          chain,
-          systemPrompt,
-          userPrompt: `${userPrompt}\n\n${buildBriefingGroundingCorrection(ungrounded)}`,
-          temperature: AI_BUDGETS.comprehensive.temperature,
-          maxTokens: resolveInsightsMaxTokens(),
-          // v1.21.5 — wider upstream budget; see the first generation call.
-          // v1.25 — honours the per-user response-timeout setting.
-          timeoutMs: effectiveTimeoutMs,
-          signal,
-          stage: "grounding-retry",
-        });
-        const retryInsights = parseComprehensiveResult(retry.result.content);
-        const retryUngrounded = findUngroundedBriefingNumbers(
-          readBriefingBlock(retryInsights),
-          signals,
-          features,
-          groundingExtra,
-        );
-        if (retryInsights !== null && retryUngrounded.length === 0) {
-          insights = retryInsights;
-          result = retry.result;
-          workingProviderType = retry.workingProvider.providerType;
-          ungrounded = [];
-        } else {
-          ungrounded = retryUngrounded;
-        }
-      } catch {
-        // Retry failed on TRANSPORT (provider outage / timeout) or on the
-        // day's budget ceiling, rather than on content. Recorded for the
-        // annotation only — the disposal below no longer forks on it.
-        retryTransportFailed = true;
-      }
-    }
-    if (ungrounded.length > 0 && insights && typeof insights === "object") {
-      // The freshly generated briefing is DISCARDED either way — that is the
-      // anti-fabrication guarantee and it is absolute. The only question left
-      // is what stands in its place, and the answer does not depend on WHY the
-      // retry failed.
-      //
-      // This used to fall back to the previous payload's briefing on a
-      // transport failure but leave a hole on a content failure. The asymmetry
-      // had no justification: the previous briefing passed this identical gate
-      // when it was written, so it carries no fabricated figure in either
-      // case, and the user never sees the rejected text either way. All the
-      // hole did was cost the reader their paragraph, signals-of-day, key
-      // findings and recommendations over one unverifiable number — while the
-      // "briefing withheld" notice told them something had gone wrong without
-      // giving them anything usable. A day-old grounded briefing beats a
-      // vanished one on both paths, and the next successful run replaces it.
-      let fallbackBriefing: unknown = null;
-      if (cachedText) {
-        try {
-          const prev = JSON.parse(cachedText) as Record<string, unknown>;
-          fallbackBriefing = prev.dailyBriefing ?? null;
-        } catch {
-          // Unparseable previous payload — nothing safe to stand in.
-        }
-      }
-      (insights as Record<string, unknown>).dailyBriefing = fallbackBriefing;
-      briefingStrippedHard = fallbackBriefing == null;
-      annotate({
-        action: { name: "insights.generate.briefing_grounding_stripped" },
-        meta: {
-          locale,
-          ungroundedCount: ungrounded.length,
-          retryFailure: retryTransportFailed ? "transport" : "content",
-          briefing_fallback:
-            fallbackBriefing != null ? "previous-cached" : "stripped",
-        },
-      });
-    }
-  }
-
-  // Citation coverage. This annotation is what the admin AI-quality dashboard
-  // slices to track how many normative recommendations carry a curated
-  // medical-reference id. It used to hang off a wrapper that had no production
-  // caller, so the dashboard was reading a metric nothing emitted.
-  // Observational only — an uncited normative rec is a logged warning, never a
-  // reason to fail the generation.
-  if (insights && typeof insights === "object") {
-    const payload = insights as Record<string, unknown>;
-    if (Array.isArray(payload.recommendations)) {
-      // The recommendations are written in `locale`, so the normative-claim
-      // bank has to be the reader's. Grading them against English alone
-      // reported "no normative claims" for four of the six shipped languages.
-      const coverage = computeCitationCoverage(
-        { recommendations: payload.recommendations },
-        locale,
-      );
-      annotate({
-        action: { name: "insights.generate.citation_coverage" },
-        meta: {
-          locale,
-          totalRecommendations: coverage.totalRecommendations,
-          normativeRecommendations: coverage.normativeRecommendations,
-          citedNormativeRecommendations: coverage.citedNormativeRecommendations,
-          uncitedNormativeCount:
-            coverage.uncitedNormativeRecommendationIds.length,
-        },
-      });
-    }
-  }
-
-  // Outbound safety screen over the WHOLE prose surface.
-  //
-  // SURFACE POLICY — WITHHOLD. This payload is generated in the background and
-  // persisted as the cached insight; nobody is waiting on the turn. Unlike the
-  // number-grounding gate above, a safety violation cannot be surgically
-  // stripped: a dose imperative may sit in `recommendations[]`, in `summary`,
-  // or in the briefing, and deleting an arbitrary field would leave a payload
-  // whose remaining prose still refers to it. So the whole generation fails and
-  // persists NOTHING -- the previous cached payload stays, exactly as a
-  // provider outage or an unparseable response already behaves. The next run
-  // regenerates from scratch.
-  //
-  // v1.42 — one bounded repair before giving up, the way the grounding gate
-  // above gets one corrective retry. A withheld generation used to fail
-  // outright, and the nightly pass then queued its 45-minute provider retry,
-  // which asked the same model the same question and was screened again: on
-  // one account that was eight wasted generations a night over a single
-  // causal sentence. The repair names the contract that tripped and asks for
-  // the whole object again; the repaired payload has to pass the same JSON
-  // parse, the same number grounding and the same screen as a first pass, or
-  // nothing is persisted, exactly as before. A screened outcome is final for
-  // the caller: it is not a provider fault, so nothing retries it.
-  const screened = screenInsightPayloadProse(insights, locale);
-  if (screened) {
-    annotate({
-      action: { name: "insights.generate.outbound_blocked" },
-      meta: { locale, reason: screened },
-    });
-    let repaired = false;
-    try {
-      const retry = await runBriefingCompletion({
-        userId,
-        chain,
-        systemPrompt,
-        userPrompt: `${userPrompt}\n\n${buildOutboundScreenCorrection(screened)}`,
-        temperature: AI_BUDGETS.comprehensive.temperature,
-        maxTokens: resolveInsightsMaxTokens(),
-        timeoutMs: effectiveTimeoutMs,
-        signal,
-        stage: "screen-retry",
-      });
-      const retryInsights = parseComprehensiveResult(retry.result.content);
-      const retryUngrounded =
-        retryInsights === null
-          ? []
-          : findUngroundedBriefingNumbers(
-              readBriefingBlock(retryInsights),
-              features.signalsOfDay ?? null,
-              features,
-              groundingExtra,
-            );
-      if (
-        retryInsights !== null &&
-        retryUngrounded.length === 0 &&
-        screenInsightPayloadProse(retryInsights, locale) === null
-      ) {
-        insights = retryInsights;
-        result = retry.result;
-        workingProviderType = retry.workingProvider.providerType;
-        briefingStrippedHard = false;
-        repaired = true;
-      }
-    } catch {
-      // A transport failure or the day's budget on the repair: the first
-      // pass stays withheld, nothing else changes.
-    }
-    annotate({
-      action: { name: "insights.generate.outbound_repair" },
-      meta: { locale, reason: screened, repaired },
-    });
-    if (!repaired) {
-      void recordBriefingFailure({
-        userId,
-        reason: "outbound-screened",
-        locale,
-      });
-      return { status: "failed", reason: "outbound-screened" };
-    }
-  }
-
-  // The caller abandoned this generation (its bound fired). Bail out before
-  // the cache write, annotated and marked like every other failure: an
-  // abandoned generation is a real "no fresh briefing tonight" outcome.
-  if (signal?.aborted) {
-    return failBeforeProvider(userId, locale, "aborted");
-  }
-
-  // v1.43 (#1217) — the short form holds its counts whatever the model wrote.
-  if (briefingForm === "short") {
-    insights = applyBriefingShortForm(insights);
-  }
-
-  // The payload was built under the privacy and profile scope captured before
-  // the provider call. Recheck both before the write so an inclusion change
-  // cannot be overwritten by stale in-flight content.
-  const committed = await commitInsightUnderScope(
-    userId,
-    modeAtRead,
-    aboutMe,
+  return {
+    features,
     promptScopeAtRead,
-    locale,
-    workingProviderType,
-    {
-      insightsCachedAt: new Date(),
-      ...insightsCacheWrite(
-        JSON.stringify(withBriefingGeneratedAt(insights, new Date())),
-      ),
-      insightsCachedLocale: locale,
-      insightsSnapshotHash: snapshotHash,
-    },
-  );
-  const skipped = scopeChangedSkip(committed, locale);
-  if (skipped) return skipped;
-  // v1.16.8 — no blanket per-status eviction here any more. The cards
-  // track their own data through the ingest invalidator and their own
-  // content-hash gates; a fresh comprehensive briefing does not change
-  // what a per-metric card should say, and the old sweep was the reason
-  // every warm had to regenerate ~45 cards across both locales.
-  invalidateUserInsights(userId);
-
-  // v1.28.30 — the generation SUCCEEDED but the grounding gate withheld the
-  // briefing. Record the marker AFTER the cache write so it is newer than
-  // `insightsCachedAt` and the read path surfaces "briefing withheld"
-  // instead of a silent generic empty card until the next generation.
-  if (briefingStrippedHard) {
-    void recordBriefingFailure({
-      userId,
-      reason: "briefing-ungrounded",
-      locale,
-    });
-  }
-
-  return { status: "generated", providerType: workingProviderType };
+    aboutMe,
+    briefingForm,
+    snapshotHash,
+    groundingExtra,
+    userPrompt,
+    systemPrompt,
+  };
 }
 
 /**
- * The correction the one screen repair is sent with. Names the contract the
- * first reply broke, never the sentence that broke it: the model gets the
- * rule, not its own words back.
+ * Load inputs: the User row (stopping on a fresh cache), the provider chain,
+ * the features, and the prompt built from them.
  */
-export function buildOutboundScreenCorrection(reason: OutboundReason): string {
-  const rule =
-    reason === "causal_claim"
-      ? 'It stated that one measurement or habit CAUSES another. Describe co-occurrence and timing only ("was higher on days when", "tends to move together"); never say that something causes, drives, leads to or results in something else.'
-      : reason === "dose_prescription"
-        ? "It told the reader to take, change, stop or dose a medication. Never give a dose or a medication instruction; at most suggest discussing medication with their clinician."
-        : "It gave a risk score, a probability of disease or a diagnosis. Never estimate risk or name a diagnosis; describe the readings and their trend only.";
-  return `
-Your previous reply was withheld by the safety screen. ${rule}
+async function loadGenerationInputs(
+  userId: string,
+  locale: SupportedLocale,
+  force: boolean,
+  signal: AbortSignal | undefined,
+): Promise<StepResult<GenerationContext>> {
+  const user = await readGenerationUser(userId, locale, force);
+  if ("stop" in user) return user;
+  const { dbUser, cachedText, effectiveTimeoutMs } = user.next;
 
-Re-write the whole JSON object with the same structure and the same numbers, changing only the wording that broke this rule. Return the full JSON object again.
-`;
+  const resolved = await resolveBriefingChain(userId);
+  if ("stop" in resolved) return resolved;
+  const chain = resolved.next;
+
+  const includeRaw = dbUser?.insightsPrivacyMode === "raw";
+  // v1.32.22 — capture the privacy-mode column value read here (a
+  // non-nullable String defaulting to "aggregated"), so every cache commit
+  // below can guard on it. A `PUT /api/insights/settings` flip that lands
+  // between this read and a commit advances the column ("aggregated" ⇄ "raw");
+  // the guarded write then matches zero rows and the generation is skipped
+  // rather than stamping an old-scope payload over the cache the flip nulled.
+  const modeAtRead = dbUser?.insightsPrivacyMode ?? "aggregated";
+  const extracted = await extractBriefingFeatures(userId, locale, includeRaw);
+  if ("stop" in extracted) return extracted;
+
+  const prompt = await buildGenerationPrompt(
+    userId,
+    locale,
+    dbUser,
+    extracted.next,
+  );
+  return {
+    next: {
+      userId,
+      locale,
+      signal,
+      dbUser,
+      cachedText,
+      effectiveTimeoutMs,
+      chain,
+      modeAtRead,
+      ...prompt,
+    },
+  };
 }

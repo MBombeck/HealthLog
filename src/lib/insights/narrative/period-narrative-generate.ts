@@ -27,7 +27,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma as defaultPrisma } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/crypto";
-import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { annotate } from "@/lib/logging/context";
 import { AI_BUDGETS, REFERENCE_AI_SEED } from "@/lib/ai/ai-budgets";
 import { dayRotatedSeed } from "@/lib/ai/prompts/opener-archetype";
@@ -53,7 +52,11 @@ import {
   validateNarrativeText,
   buildNarrativeCorrection,
 } from "@/lib/insights/narrative/narrative-grounding";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+import {
+  loadPregnancySnapshotBlock,
+  pregnancyContextPromptBlock,
+} from "@/lib/ai/pregnancy-context";
 
 /**
  * Stable identifier for the narrative prompt revision. Bumped whenever the
@@ -116,12 +119,6 @@ export interface NarrativeProvenancePayload {
   pairsTested: number;
   fdrQ: number;
   computedAt: string;
-}
-
-/** UTC YYYY-MM-DD boundary key for a row, in the user's tz. */
-function dateKeyFor(now: Date, tz: string): string {
-  const { year, month, day } = wallClockInTz(now, tz);
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 // ── prompt ──────────────────────────────────────────────────────────────
@@ -302,6 +299,36 @@ export function buildNarrativeUserPrompt(
  * outcome the caller can log + branch on. Never throws on a provider failure
  * (a cron batch loop must continue to the next user).
  */
+/**
+ * A pregnancy or the weeks after a birth during the period: the frame the
+ * week's weight and vitals read in. Without the week number, because the
+ * grounding check refuses any number the context does not carry.
+ */
+async function narrativePregnancyBlock(
+  userId: string,
+  options: GenerateOptions,
+  tz: string,
+): Promise<string> {
+  const pregnancy = await loadPregnancySnapshotBlock(
+    userId,
+    tz,
+    options.now ?? new Date(),
+    {
+      lookbackDays: options.period === "month" ? 30 : 7,
+      db: options.prisma ?? defaultPrisma,
+    },
+  );
+  return pregnancy
+    ? pregnancyContextPromptBlock(
+        pregnancy,
+        instructionLocale(options.locale),
+        {
+          withWeek: false,
+        },
+      )
+    : "";
+}
+
 export async function generatePeriodNarrative(
   userId: string,
   options: GenerateOptions,
@@ -350,13 +377,14 @@ export async function generatePeriodNarrative(
     select: { timezone: true },
   });
   const tz = profile?.timezone ?? DEFAULT_TIMEZONE;
+  const pregnancyBlock = await narrativePregnancyBlock(userId, options, tz);
 
   const completion = await runCompletion({
     userId,
     cacheAction: `insights.narrative.${period}.${locale}`,
     capability: "periodNarrative",
     systemPrompt: buildNarrativeSystemPrompt(locale),
-    userPrompt: buildNarrativeUserPrompt(context, bodyLocale),
+    userPrompt: buildNarrativeUserPrompt(context, bodyLocale) + pregnancyBlock,
     temperature: AI_BUDGETS.narrative.temperature,
     maxTokens: AI_BUDGETS.narrative.maxTokens,
     // v1.18.7 / v1.22 — the reference/diff path pins the deterministic
@@ -365,7 +393,7 @@ export async function generatePeriodNarrative(
     // near-identical every time (Root cause D — the fixed seed in prod).
     seed: options.referenceSeed
       ? REFERENCE_AI_SEED
-      : dayRotatedSeed(`${userId}:${period}:${dateKeyFor(now, tz)}`),
+      : dayRotatedSeed(`${userId}:${period}:${userDayKey(now, tz)}`),
     // The narrative output is PLAIN TEXT (no markdown, no JSON), so suppress
     // the JSON-mode opt-in the status cards default into.
     responseFormat: "text",
@@ -398,7 +426,7 @@ export async function generatePeriodNarrative(
     fdrQ: context.fdrQ,
     computedAt: context.provenance.computedAt,
   };
-  const dateKey = dateKeyFor(now, tz);
+  const dateKey = userDayKey(now, tz);
 
   // Upsert the single (user, period, locale) row in place — delete/regenerate
   // clean by construction. The prose is held AES-256-GCM at rest.
@@ -470,6 +498,7 @@ export async function generatePeriodNarrative(
       systemPrompt: buildNarrativeSystemPrompt(locale),
       userPrompt:
         buildNarrativeUserPrompt(context, bodyLocale) +
+        pregnancyBlock +
         buildNarrativeCorrection(findings, bodyLocale),
       temperature: AI_BUDGETS.narrative.temperature,
       maxTokens: AI_BUDGETS.narrative.maxTokens,

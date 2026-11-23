@@ -94,11 +94,13 @@ describe("buildCycleBackupSection disaster-recovery mode", () => {
             symptomLinks: [
               {
                 severity: 4,
+                source: "APPLE_HEALTH",
                 symptom: { key: "cramps" },
                 createdAt: new Date("2026-04-10T07:00:00.000Z"),
               },
               {
                 severity: null,
+                source: "MANUAL",
                 symptom: { key: "fatigue" },
                 createdAt: new Date("2026-04-10T07:00:00.000Z"),
               },
@@ -130,6 +132,8 @@ describe("buildCycleBackupSection disaster-recovery mode", () => {
       rawChartMode: false,
       discreetNotifications: true,
       sensitiveCategoryEncryption: true,
+      // A disaster-recovery file carries the sealed state verbatim.
+      pregnancyEncrypted: undefined,
       createdAt: createdAt.toISOString(),
       updatedAt: updatedAt.toISOString(),
     });
@@ -179,6 +183,8 @@ describe("buildCycleBackupSection disaster-recovery mode", () => {
       // Only the rated link is listed. An unrated one is left out rather than
       // written as a zero, so the file says "never rated" and not "rated none".
       symptomSeverities: [{ key: "cramps", severity: 4 }],
+      // Only the link an import wrote is listed; the other is the person's.
+      symptomSources: [{ key: "cramps", source: "APPLE_HEALTH" }],
       // When each link was written, every link, disaster recovery only.
       symptomLinkCreatedAt: [
         { key: "cramps", createdAt: "2026-04-10T07:00:00.000Z" },

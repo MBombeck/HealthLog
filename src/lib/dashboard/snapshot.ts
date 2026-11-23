@@ -36,6 +36,7 @@
  */
 import type { PrismaClient, MeasurementType } from "@/generated/prisma/client";
 import { readSummariesSlice } from "@/lib/analytics/summaries-slice";
+import { weightTargetFor } from "@/lib/cycle/pregnancy-context";
 import type { SleepSourceDiscrepancy } from "@/lib/analytics/sleep-night";
 import { getUnitForType } from "@/lib/validations/measurement";
 import {
@@ -54,10 +55,7 @@ import {
   computeBpInTargetFastPath,
   type BpInTargetEnvelope,
 } from "@/lib/analytics/bp-in-target-fast-path";
-import {
-  resolveEffectiveBpTargets,
-  resolveWeightTargetOverride,
-} from "@/lib/analytics/effective-range";
+import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { deriveBpWindow90 } from "@/lib/analytics/window-confidence";
 import {
   resolveWeightTrend,
@@ -118,7 +116,7 @@ import {
 } from "@/lib/dashboard/score-rings";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { Locale } from "@/lib/i18n/config";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 import {
   binaryReferenceSex,
   toProfileSex,
@@ -648,14 +646,10 @@ async function buildExtras(
   let bpEnvelopePriorTwoWeeks: BpInTargetEnvelope | null = null;
 
   const bpTargets = resolveEffectiveBpTargets(
-    {
-      dateOfBirth: user.dateOfBirth,
-      gender: user.gender,
-      heightCm: user.heightCm ?? null,
-    },
+    { ...user, timezone: userTz },
     user.thresholdsJson,
   );
-  const clinicalBpTargets = getBpTargets(user.dateOfBirth);
+  const clinicalBpTargets = getBpTargets(user.dateOfBirth, userTz, now);
   if (bpTargets) {
     // v1.17 — two runs (current + prior-week), identical to the
     // analytics route, so the dashboard ring's week-over-week delta reflects
@@ -1373,7 +1367,7 @@ export async function buildDashboardSnapshot(
   // healthScore; memory rides the briefing card.
   const narrativeSex = binaryReferenceSex(user.gender);
   const narrativeProfile = {
-    ageYears: getAgeFromDateOfBirth(user.dateOfBirth),
+    ageYears: ageInYears(user.dateOfBirth, userTz, now),
     sex: narrativeSex,
     heightCm: user.heightCm ?? null,
   };
@@ -1408,7 +1402,7 @@ export async function buildDashboardSnapshot(
 
   const gender = toProfileSex(user.gender);
 
-  const weightTargetOverride = resolveWeightTargetOverride(user.thresholdsJson);
+  const framing = await weightTargetFor(prisma, user.id, user, now);
 
   return {
     user: {
@@ -1432,6 +1426,7 @@ export async function buildDashboardSnapshot(
       // body fat). Resolved off the same `thresholdsJson` blob the health
       // score and the tile directions read.
       thresholdsJson: user.thresholdsJson,
+      timezone: userTz,
     }),
     tiles: {
       summaries: slim.summaries,
@@ -1444,18 +1439,14 @@ export async function buildDashboardSnapshot(
       // disabled sleep module carries no sleep annotation either.
       sleepSourceDiscrepancy:
         modules.sleep === false ? null : slimRaw.sleepSourceDiscrepancy,
-      // v1.39 — the weight tile's progress direction, judged against the
-      // stored target from the same summary the tile renders.
+      // The weight tile's direction, against the target (none in a pregnancy).
       weightTrend: resolveWeightTrend(
-        weightTargetOverride,
+        framing.target,
         weightTrendReferenceKg(slim.summaries.WEIGHT),
       ),
       directions: resolveSummaryVerdicts(slim.summaries, {
-        profile: {
-          dateOfBirth: user.dateOfBirth,
-          gender: user.gender,
-          heightCm: user.heightCm ?? null,
-        },
+        pregnancy: framing.pregnancy,
+        profile: { ...user, timezone: userTz },
         thresholdsJson: user.thresholdsJson,
       }),
     },

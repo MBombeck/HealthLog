@@ -8,10 +8,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import { classifySettingsDestination } from "@/lib/record-settings/classification";
+import { isRecordSurfacePagePresentable } from "@/lib/sharing/record-page-surfaces";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ManagedIntegrationStatus } from "@/components/settings/managed-integration-status";
 import { SettingsCard } from "@/components/settings/settings-card";
 import type { SettingsSectionSlug } from "@/lib/settings/section-slugs";
+import type { ManagedRecordSettingsFamily } from "@/lib/record-settings/configuration";
+
+type ManagedSettingsFamily = ManagedRecordSettingsFamily;
 
 // The two record-scoped surfaces load on demand. Both are forms that validate
 // with Zod (the managed settings patch, the allergy and family-history
@@ -52,8 +56,9 @@ const MANAGED_RECORD_SETTINGS_FAMILY_BY_SECTION = {
   thresholds: "thresholds",
   coach: "coach",
   // #1403 — the AI page carries the owner's automatic-reading switch; inside
-  // a managed profile it carries the profile's.
-  ai: "documents",
+  // a managed profile it carries the profile's, below the profile's provider
+  // source.
+  ai: ["aiSource", "documents"],
 } as const;
 
 /**
@@ -69,7 +74,8 @@ export function RecordSettingsSectionGate({
   children: ReactNode;
 }) {
   const { isLoading } = useAuth();
-  const { inSharedRecord, recordKind, level } = useRecordCapabilities();
+  const { inSharedRecord, recordKind, level, sections } =
+    useRecordCapabilities();
   const { t } = useTranslations();
 
   // A shared session must never begin by mounting the actor's Settings
@@ -115,6 +121,22 @@ export function RecordSettingsSectionGate({
       : undefined;
   if (RecordContent) return <RecordContent />;
 
+  // A page of parts (Settings > Health record): the section itself renders,
+  // and each part asks its own routes' rule before it mounts. Open exactly
+  // when one part admits the record on screen, the answer the Settings list
+  // and the shell's page gate read.
+  if (
+    destination.kind === "record-surface" &&
+    isRecordSurfacePagePresentable(`/settings/${section}`, {
+      inSharedRecord,
+      recordKind,
+      level,
+      sections,
+    })
+  ) {
+    return children;
+  }
+
   if (
     recordKind === "managed" &&
     destination.kind === "managed-guardian" &&
@@ -128,11 +150,20 @@ export function RecordSettingsSectionGate({
     destination.kind === "managed-guardian" &&
     section in MANAGED_RECORD_SETTINGS_FAMILY_BY_SECTION
   ) {
-    const family =
+    const mapped: string | readonly string[] =
       MANAGED_RECORD_SETTINGS_FAMILY_BY_SECTION[
         section as keyof typeof MANAGED_RECORD_SETTINGS_FAMILY_BY_SECTION
       ];
-    return <ManagedRecordSettingsSection family={family} />;
+    const families = (
+      typeof mapped === "string" ? [mapped] : mapped
+    ) as readonly ManagedSettingsFamily[];
+    return (
+      <div className="space-y-6">
+        {families.map((family) => (
+          <ManagedRecordSettingsSection key={family} family={family} />
+        ))}
+      </div>
+    );
   }
 
   return (

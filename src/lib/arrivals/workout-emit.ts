@@ -2,8 +2,11 @@
  * Emit an arrival for a workout row a writer proved it freshly inserted.
  *
  * Provider writers must pass only rows returned by their INSERT statement.
- * Existing-row updates and duplicate-race losers never enter this seam.
+ * Existing-row updates and duplicate-race losers never enter this seam. It
+ * also notes a `workouts` DATA_CHANGED wake (`push-relay/data-changed.ts`).
  */
+import { noteDataChanged } from "@/lib/push-relay/data-changed";
+
 import { emitDataArrival } from "./emit-shared";
 
 export interface InsertedWorkoutArrivalRow {
@@ -22,6 +25,9 @@ export async function emitInsertedWorkoutArrival(
   source: string,
   now?: Date,
 ): Promise<void> {
+  // A provider workout wakes the owner's iOS devices; the app's own batch
+  // (`workouts/batch-ingest`) does not come through here.
+  void noteDataChanged(userId, ["workouts"]);
   await emitDataArrival({
     userId,
     kind: "workout",

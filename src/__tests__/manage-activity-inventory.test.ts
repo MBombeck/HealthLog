@@ -56,10 +56,11 @@ import { recordActivityVerbLine } from "@/lib/record-activity/activity-verb";
 const SRC = join(process.cwd(), "src");
 const API = join(SRC, "app/api");
 const MESSAGES = join(process.cwd(), "messages");
-const ACTIVITY_ROUTE = join(
-  process.cwd(),
-  "src/app/api/account/activity/route.ts",
-);
+/**
+ * Where the feed's published entry shape lives. Both feeds, the owner's and a
+ * managed profile's (#1403), publish it from this one module.
+ */
+const ACTIVITY_ROUTE = join(process.cwd(), "src/lib/record-activity/feed.ts");
 const GRANTS_GIVEN_CARD = join(
   process.cwd(),
   "src/components/settings/access/grants-given-card.tsx",
@@ -804,7 +805,7 @@ describe("the activity feed carries no audit detail", () => {
     // absence as a mismatch of the list, which reads like the wrong failure.
     expect(
       members,
-      "RecordActivityEntry not found in the route",
+      "RecordActivityEntry not found in the feed module",
     ).not.toBeNull();
     expect(members).toEqual(["accesses", "action", "actor", "createdAt", "id"]);
   });

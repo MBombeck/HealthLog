@@ -16,11 +16,6 @@
  * rate-limited per actor; reads only
  * `deletedAt: null` rows.
  */
-import {
-  complianceMintWindow,
-  COURSES_COMPLIANCE_SELECT,
-  slotInsideCourses,
-} from "@/lib/analytics/compliance";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
@@ -29,28 +24,19 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiError, apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { lastNonSkippedTakenAt } from "@/lib/analytics/compliance";
-import type { SlotBand } from "@/lib/medications/scheduling/attribution";
-import {
-  type BandFamily,
-  type BandMinterMedication,
-} from "@/lib/medications/scheduling/band-minter";
-import { buildBandsForSchedulesWithEras } from "@/lib/medications/scheduling/schedule-eras";
-import {
-  reconstructDoseHistory,
-  type DoseHistoryRow,
-  type HistoryIntake,
-} from "@/lib/medications/scheduling/dose-history";
-import {
-  buildCanonicalSchedule,
-  buildRecurrenceContext,
-  type WorkerScheduleRow,
-} from "@/lib/medications/scheduling/worker-helpers";
+import type { DoseHistoryRow } from "@/lib/medications/scheduling/dose-history";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
-import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { isoDateTime } from "@/lib/validations/datetime";
-import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import {
+  resolveLedgerSlot,
+  wireDoseState,
+  type WireDoseState,
+} from "@/lib/medications/dose-state/resolve";
+import {
+  DOSE_LEDGER_MEDICATION_INCLUDE,
+  loadDoseLedger,
+} from "@/lib/medications/dose-state/ledger";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -82,6 +68,14 @@ interface SerializedDoseHistoryRow {
   at: string;
   timeOfDay: string | null;
   status: DoseHistoryRow["status"];
+  /**
+   * The slot's resolved dose state (`dose-state/resolve.ts`) in the published
+   * vocabulary, so an open slot reads upcoming, due or overdue the way the
+   * card and the today list say it. Null on an ad-hoc row.
+   */
+  state: WireDoseState | null;
+  /** True for a take after the on-time window (`state` is then `taken`). */
+  takenLate: boolean;
   /** v1.15.20 — slot served by a deliberate user pin ("zugeordnet"). */
   pinned?: boolean;
   /** v1.15.20 — due-context for an ad-hoc take: the nearest slot it could
@@ -103,59 +97,39 @@ interface SerializedDoseHistoryRow {
   } | null;
 }
 
-/**
- * The intakes a window needs: the rows anchored in it or taken in it (a late
- * take on an older slot is an intake instant of the window), and of all the
- * rows before it only the latest take, the anchor a rolling grid re-starts
- * from and the last intake when none falls in the window. Earlier takes place
- * no slot in the window. The whole history used to be read on every open, so
- * a medication taken for years read thousands of rows to show at most a year.
- */
-async function readWindowIntakes(
-  medicationId: string,
-  userId: string,
-  from: Date,
-) {
-  const [events, takenBefore] = await Promise.all([
-    prisma.medicationIntakeEvent.findMany({
-      where: {
-        medicationId,
-        userId,
-        deletedAt: null,
-        OR: [{ scheduledFor: { gte: from } }, { takenAt: { gte: from } }],
-      },
-      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
-      select: {
-        id: true,
-        scheduledFor: true,
-        takenAt: true,
-        skipped: true,
-        autoMissed: true,
-        // v1.15.20 — USER_PIN rows bind by anchor in the read ledger.
-        attributionSource: true,
-        // v1.16.4 — per-intake dose override for the ledger's deviation hint.
-        doseTaken: true,
-        // v1.32.8 (iOS #64) — write provenance so the client can label how
-        // each dose was recorded (Web / API / Reminder / Import / AppleHealth).
-        source: true,
-        // v1.42.2 — the history labels an automatically recorded dose.
-        autoRecorded: true,
+/** One ledger row for the wire, with its resolved state beside it. */
+function serializeRow(
+  row: DoseHistoryRow,
+  wire: { state: WireDoseState | null; takenLate: boolean },
+): SerializedDoseHistoryRow {
+  return {
+    kind: row.kind,
+    at: row.at.toISOString(),
+    timeOfDay: row.timeOfDay,
+    status: row.status,
+    state: wire.state,
+    takenLate: wire.takenLate,
+    ...(row.pinned && { pinned: true }),
+    ...(row.nearestSlot && {
+      nearestSlot: {
+        at: row.nearestSlot.at.toISOString(),
+        timeOfDay: row.nearestSlot.timeOfDay,
+        filled: row.nearestSlot.filled,
       },
     }),
-    prisma.medicationIntakeEvent.findFirst({
-      where: {
-        medicationId,
-        userId,
-        deletedAt: null,
-        skipped: false,
-        scheduledFor: { lt: from },
-        takenAt: { lt: from },
-      },
-      orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-      select: { takenAt: true },
-    }),
-  ]);
-  return { events, anchorBefore: takenBefore?.takenAt ?? null };
+    intake: row.intake
+      ? {
+          id: row.intake.id ?? null,
+          scheduledFor: row.intake.scheduledFor.toISOString(),
+          takenAt: row.intake.takenAt?.toISOString() ?? null,
+          skipped: row.intake.skipped,
+          autoMissed: row.intake.autoMissed ?? false,
+          doseTaken: row.intake.doseTaken ?? null,
+          source: row.intake.source ?? null,
+          autoRecorded: row.intake.autoRecorded ?? false,
+        }
+      : null,
+  };
 }
 
 export const GET = apiHandler(
@@ -189,15 +163,7 @@ export const GET = apiHandler(
 
     const medication = await prisma.medication.findUnique({
       where: { id },
-      include: {
-        schedules: { orderBy: MEDICATION_SCHEDULE_ORDER },
-        // v1.16.3 — archived schedule eras: past days mint against the
-        // schedule that was live THEN.
-        scheduleRevisions: { orderBy: { validFrom: "asc" } },
-        // v1.40 (#1024) — the courses, so the history shows every course's
-        // slots, the same ones the compliance rate counts.
-        courses: COURSES_COMPLIANCE_SELECT,
-      },
+      include: DOSE_LEDGER_MEDICATION_INCLUDE,
     });
     if (!medication) {
       return apiError("Medication not found", 404);
@@ -222,163 +188,22 @@ export const GET = apiHandler(
       Math.max(requestedFrom.getTime(), spanFloor.getTime()),
     );
 
-    const { events, anchorBefore } = await readWindowIntakes(id, user.id, from);
-
-    const mapped = events.map((e) => ({
-      id: e.id,
-      scheduledFor: e.scheduledFor,
-      takenAt: e.takenAt,
-      skipped: e.skipped,
-      autoMissed: e.autoMissed,
-      pinned: e.attributionSource === "USER_PIN",
-      doseTaken: e.doseTaken,
-      source: e.source,
-      autoRecorded: e.autoRecorded,
-    }));
-
-    const lastIntakeAt = lastNonSkippedTakenAt([
-      ...mapped,
-      ...(anchorBefore ? [{ takenAt: anchorBefore, skipped: false }] : []),
-    ]);
-
-    // A dose may be recorded before its slot's own time: the dose window opens
-    // up to two hours early, and a skip can be logged ahead. Such a row is
-    // stored on the slot's anchor, which still lies after `to`, so a window
-    // that ends at `to` dropped a dose the user had just recorded until the
-    // slot's clock time passed (#1028). Extend the read horizon to the latest
-    // anchor of a recorded row (taken or skipped) within a day of `to`, and no
-    // further: pending reminder rows record nothing and never stretch it.
-    const horizon = new Date(
-      mapped.reduce((latest, e) => {
-        const t = e.scheduledFor.getTime();
-        const recorded = e.skipped || (e.takenAt !== null && e.takenAt <= to);
-        return recorded && t > latest && t <= to.getTime() + DAY_MS
-          ? t
-          : latest;
-      }, to.getTime()),
-    );
-
-    // v1.40 (#1024) — mint over the span of every course and keep only the
-    // slots on a course day, the rule the compliance ledger applies, so the
-    // history lists exactly the misses the rate counts.
-    const courseCtx = {
-      startsOn: medication.startsOn,
-      endsOn: medication.endsOn,
-      timeZone: userTz,
-      courses: medication.courses,
-    };
-    const mintWindow = complianceMintWindow(courseCtx);
-    const bandMedication: BandMinterMedication = {
-      id: medication.id,
-      startsOn: mintWindow.startsOn,
-      endsOn: mintWindow.endsOn,
-      oneShot: medication.oneShot,
-      createdAt: medication.createdAt,
-    };
-    const ctx = buildRecurrenceContext({
-      medication: { ...bandMedication, endedAt: medication.endedAt },
+    const { rows, horizon, family, bands } = await loadDoseLedger({
+      medication,
+      userId: user.id,
       userTz,
-      lastIntakeAt,
-    });
-    // A legacy daily schedule carrying only `windowStart` surfaces it as the
-    // single time-of-day so the minter mints its daily band (mirrors the
-    // compliance route + the ledger tally).
-    // v1.39.1 (#1033) — with intake tracking off the live era expects
-    // nothing: the ledger shows the doses that were recorded and the slots
-    // of archived eras, never a missed slot minted from the record.
-    const canonicalSchedules = dueSchedules(medication).map((s) => {
-      const canonical = buildCanonicalSchedule(s as WorkerScheduleRow);
-      if (
-        canonical.timesOfDay.length === 0 &&
-        canonical.rrule === null &&
-        canonical.rollingIntervalDays === null &&
-        canonical.scheduleType !== "PRN" &&
-        !medication.oneShot
-      ) {
-        return { ...canonical, timesOfDay: [canonical.windowStart] };
-      }
-      return canonical;
-    });
-
-    // Rolling cadences anchor their retrospective grid AT each logged intake.
-    const intakeInstants = mapped
-      .filter((e) => !e.skipped && e.takenAt !== null && e.takenAt <= to)
-      .map((e) => e.takenAt as Date)
-      .concat(anchorBefore ? [anchorBefore] : [])
-      .sort((a, b) => a.getTime() - b.getTime());
-
-    const groups = buildBandsForSchedulesWithEras({
-      medication: bandMedication,
-      schedules: canonicalSchedules,
-      revisions: medication.scheduleRevisions ?? [],
-      ctx,
-      userTz,
-      range: { from, to: horizon },
+      from,
+      to,
       now,
-      intakeInstants,
     });
-    const bands: SlotBand[] = [];
-    let family: BandFamily = "none";
-    for (const g of groups) {
-      if (g.hasExpectedSlots) {
-        bands.push(
-          ...g.bands.filter((b) => slotInsideCourses(courseCtx, b.at)),
-        );
-        if (family === "none") family = g.family;
-      }
-    }
 
-    // Intakes whose slot anchor falls in the window. An ad-hoc take buckets on
-    // its real time, but the ledger reads `scheduledFor` for the membership
-    // partition, so filter on the stored anchor (a take snapped to an
-    // out-of-window slot is excluded, matching the compliance read).
-    const historyIntakes: HistoryIntake[] = mapped
-      .filter((e) => e.scheduledFor >= from && e.scheduledFor <= horizon)
-      .map((e) => ({
-        id: e.id,
-        scheduledFor: e.scheduledFor,
-        takenAt: e.takenAt,
-        skipped: e.skipped,
-        autoMissed: e.autoMissed,
-        pinned: e.pinned,
-        doseTaken: e.doseTaken,
-        source: e.source,
-        autoRecorded: e.autoRecorded,
-      }));
-
-    const rows = reconstructDoseHistory(
-      bands,
-      historyIntakes,
-      now,
-      medication.createdAt,
-    );
-
-    const serialized: SerializedDoseHistoryRow[] = rows.map((row) => ({
-      kind: row.kind,
-      at: row.at.toISOString(),
-      timeOfDay: row.timeOfDay,
-      status: row.status,
-      ...(row.pinned && { pinned: true }),
-      ...(row.nearestSlot && {
-        nearestSlot: {
-          at: row.nearestSlot.at.toISOString(),
-          timeOfDay: row.nearestSlot.timeOfDay,
-          filled: row.nearestSlot.filled,
-        },
-      }),
-      intake: row.intake
-        ? {
-            id: row.intake.id ?? null,
-            scheduledFor: row.intake.scheduledFor.toISOString(),
-            takenAt: row.intake.takenAt?.toISOString() ?? null,
-            skipped: row.intake.skipped,
-            autoMissed: row.intake.autoMissed ?? false,
-            doseTaken: row.intake.doseTaken ?? null,
-            source: row.intake.source ?? null,
-            autoRecorded: row.intake.autoRecorded ?? false,
-          }
-        : null,
-    }));
+    const serialized: SerializedDoseHistoryRow[] = rows.map((row) => {
+      const resolved = resolveLedgerSlot(row, now);
+      const wire = resolved
+        ? wireDoseState(resolved.state)
+        : { state: null, takenLate: false };
+      return serializeRow(row, wire);
+    });
 
     annotate({
       action: {

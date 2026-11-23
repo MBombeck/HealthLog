@@ -3,9 +3,11 @@ import {
   classifyBodyFat,
   classifyBP,
   classifySteps,
+  bmiOf,
   getBpTargetsByAge,
   getStepsRange,
   getWeightRange,
+  heightSquaredM2,
 } from "@/lib/analytics/classifications";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import { pairByTimestamp } from "@/lib/analytics/correlations";
@@ -81,6 +83,11 @@ interface VitalTargetsInput {
    * card names no band, and neither names a category. Absent means they do.
    */
   adultBands?: boolean;
+  /**
+   * In a pregnancy or its postpartum weeks (`weightTargetFor`): no WHO weight
+   * or BMI band and no category; the caller passes no own target either.
+   */
+  pregnancy?: boolean;
 }
 
 export interface VitalTargetsResult {
@@ -178,6 +185,7 @@ export function buildVitalTargets({
   weightTargetOverride,
   bpTargetOverride = null,
   adultBands = true,
+  pregnancy = false,
 }: VitalTargetsInput): VitalTargetsResult {
   const targets: TargetItem[] = [];
   const consistencyClock = { timezone, now };
@@ -186,18 +194,14 @@ export function buildVitalTargets({
   // answers a null with a neutral value, never with one of the two sides.
   const referenceSex = binaryReferenceSex(gender);
 
-  // v1.34 — a user-set target outranks the WHO BMI band. The BMI
-  // classification below stays WHO-derived either way: it names which BMI
-  // category a reading falls in, which is a reference fact and not a goal.
-  const whoHeightCm = adultBands ? heightCm : null;
+  // A user-set target outranks the WHO BMI band; the BMI category stays
+  // WHO-derived (a reference fact, not a goal). None in a pregnancy.
+  const whoHeightCm = adultBands && !pregnancy ? heightCm : null;
   const weightRange =
     weightTargetOverride ?? (whoHeightCm ? getWeightRange(whoHeightCm) : null);
   let weightClassification: TargetItem["classification"] = null;
   if (latestByType.WEIGHT != null && whoHeightCm) {
-    const heightM = whoHeightCm / 100;
-    const classification = classifyBMI(
-      latestByType.WEIGHT / (heightM * heightM),
-    );
+    const classification = classifyBMI(bmiOf(latestByType.WEIGHT, whoHeightCm));
     weightClassification = {
       category: classification.category,
       color: classification.color,
@@ -385,8 +389,7 @@ export function buildVitalTargets({
   });
 
   if (heightCm) {
-    const heightM = heightCm / 100;
-    const heightSquared = heightM * heightM;
+    const heightSquared = heightSquaredM2(heightCm);
     const latestWeight = latestByType.WEIGHT ?? null;
     const currentBmi =
       latestWeight != null
@@ -398,14 +401,14 @@ export function buildVitalTargets({
         ? Math.round((averageWeight / heightSquared) * 10) / 10
         : null;
     let bmiClassification: TargetItem["classification"] = null;
-    if (currentBmi != null && adultBands) {
+    if (currentBmi != null && whoHeightCm) {
       const classification = classifyBMI(currentBmi);
       bmiClassification = {
         category: classification.category,
         color: classification.color,
       };
     }
-    const bmiRange = adultBands ? { min: 18.5, max: 24.9 } : null;
+    const bmiRange = whoHeightCm ? { min: 18.5, max: 24.9 } : null;
     targets.push({
       type: "BMI",
       label: "BMI",

@@ -6,31 +6,56 @@ import { bucketCaptionKey } from "@/lib/charts/bucket-caption";
 import type { makeBucketLabelFormatters } from "@/lib/charts/bucket-label";
 import {
   bucketTimeSeries,
-  pickBucket,
   type ChartBucketType,
 } from "@/lib/charts/bucket-time-series";
+import {
+  bucketPeriod,
+  firstWindowDayUtc,
+  PERIOD_END_KEY,
+  PERIOD_START_KEY,
+  pickRangeBucket,
+  READINGS_KEY,
+} from "@/lib/charts/range-grain";
+import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { userDayKey } from "@/lib/tz/format";
 import { shiftDailySeriesForward } from "@/lib/charts/comparison-shift";
 import {
   computeWindowStats,
   type MetricWindowStats,
 } from "@/lib/charts/window-stats";
-import type { ComparisonBaseline } from "@/lib/dashboard-layout";
+import type {
+  ChartRangePoints,
+  ComparisonBaseline,
+} from "@/lib/dashboard-layout";
 import { computePaddedYDomain, niceYAxis } from "@/lib/insights/chart-y-domain";
 import { trendLineByTime } from "@/lib/stats/linear-fit";
 
-import { movingAverageByPoints } from "./series-math";
+import { movingAverageByPoints, readingsKey } from "./series-math";
 import type { ChartDataPoint } from "./types";
+
+/** The visible window at its grain, as `useHealthChartView` derives it. */
+interface VisibleSlice {
+  /** The daily points inside the window. */
+  sliced: ChartDataPoint[];
+  bucketType: ChartBucketType;
+  /** The window's first and last day, for clipping a week or month. */
+  period: { firstDay: number | null; lastDay: number };
+}
 
 /**
  * The visible slice at its grain, indexed for the x axis, with the 7-day
  * moving average and the trend line stamped on as `${type}_ma` and
  * `${type}_trend` when those overlays are on.
+ *
+ * A week or month point is the mean of its days, with the spread of its days
+ * as the range band, the summed reading count, and the days it covers inside
+ * the window, so the tooltip and the table can name a week still running as
+ * the shorter stretch it is. The 7-day moving average is drawn on daily
+ * points only: over weekly means it would be a seven-week average under a
+ * "7-day" label, and over monthly means a seven-month one.
  */
 function bucketVisibleSeries(
-  {
-    sliced,
-    bucketType,
-  }: { sliced: ChartDataPoint[]; bucketType: ChartBucketType },
+  { sliced, bucketType, period }: VisibleSlice,
   {
     types,
     userTimezone,
@@ -52,20 +77,50 @@ function bucketVisibleSeries(
           sliced.map((p) => ({
             timestamp: p.timestamp,
             values: Object.fromEntries(
-              types.map((type) => [type, p[type] as number | undefined]),
+              types.flatMap((type) => {
+                const range = p[`${type}__range`];
+                const readings = p[readingsKey(type)];
+                return [
+                  [type, p[type] as number | undefined],
+                  [readingsKey(type), readings as number | undefined],
+                  ...(Array.isArray(range)
+                    ? [
+                        [`${type}__lo`, range[0]],
+                        [`${type}__hi`, range[1]],
+                      ]
+                    : []),
+                ];
+              }),
             ),
           })),
           { bucket: bucketType, timeZone: userTimezone },
-        ).points.map<ChartDataPoint>((point) => {
+        ).points.flatMap<ChartDataPoint>((point) => {
           const date = new Date(point.timestamp);
+          const covered = bucketPeriod(point.timestamp, bucketType, period);
           const out: ChartDataPoint = {
             date: tzFmt.dateShortSmart(date),
             timestamp: point.timestamp,
+            [PERIOD_START_KEY]: covered.start,
+            [PERIOD_END_KEY]: covered.end,
           };
-          for (const [type, value] of Object.entries(point.values)) {
+          let readings = 0;
+          for (const type of types) {
+            const value = point.values[type];
+            if (value === undefined) continue;
             out[type] = value;
+            const lo = point.mins[`${type}__lo`];
+            const hi = point.maxs[`${type}__hi`];
+            if (lo !== undefined && hi !== undefined) {
+              out[`${type}__range`] = [lo, hi];
+            }
+            readings = Math.max(
+              readings,
+              point.sums[readingsKey(type)] ?? point.counts[type] ?? 0,
+            );
           }
-          return out;
+          if (types.every((type) => out[type] === undefined)) return [];
+          out[READINGS_KEY] = readings;
+          return [out];
         });
 
   const enriched: ChartDataPoint[] = bucketed.map((d, index) => ({
@@ -73,7 +128,7 @@ function bucketVisibleSeries(
     pointIndex: index,
   }));
 
-  if (showMA) {
+  if (showMA && bucketType === "day") {
     for (const type of types) {
       const typeData = enriched
         .filter((d) => d[type] !== undefined)
@@ -126,9 +181,10 @@ function bucketVisibleSeries(
 
 /**
  * The prior period stamped onto the visible points as `${type}_compare`: the
- * fetched daily series shifted forward by 30 / 365 days, matched on the same
- * day key the chart uses. A prior point paints only where its shifted day is
- * a visible day.
+ * fetched daily series shifted forward by 30 / 365 days. On daily points a
+ * prior point paints only where its shifted day is a visible day. On week or
+ * month points the shifted days fold into the same buckets first, so a week
+ * is compared with the mean of the shifted week, not with its Monday alone.
  */
 function mergePriorPeriod(
   chartData: ChartDataPoint[],
@@ -137,10 +193,14 @@ function mergePriorPeriod(
     types,
     tzFmt,
     baseline,
+    bucketType,
+    userTimezone,
   }: {
     types: string[];
     tzFmt: ReturnType<typeof makeBucketLabelFormatters>;
     baseline: Exclude<ComparisonBaseline, "none">;
+    bucketType: ChartBucketType;
+    userTimezone: string;
   },
 ): ChartDataPoint[] {
   const shifted = shiftDailySeriesForward(
@@ -153,21 +213,36 @@ function mergePriorPeriod(
     baseline,
   );
 
-  // Indexed by the same day key the chart already uses.
-  const shiftedByDay = new Map<string, Record<string, number>>();
-  for (const row of shifted) {
-    const dayKey = tzFmt.dateShortSmart(new Date(row.timestamp));
-    const slot = shiftedByDay.get(dayKey) ?? {};
+  // Keyed by what identifies a visible point: its day label on daily
+  // points, its bucket start on week and month points.
+  const priorByKey = new Map<string | number, Record<string, number>>();
+  const rows =
+    bucketType === "day"
+      ? shifted.map((row) => ({
+          key: tzFmt.dateShortSmart(new Date(row.timestamp)) as string | number,
+          values: row.values,
+        }))
+      : bucketTimeSeries(shifted, {
+          bucket: bucketType,
+          timeZone: userTimezone,
+        }).points.map((point) => ({
+          key: point.timestamp as string | number,
+          values: point.values as Record<string, number | undefined>,
+        }));
+  for (const row of rows) {
+    const slot = priorByKey.get(row.key) ?? {};
     for (const [type, value] of Object.entries(row.values)) {
       if (typeof value === "number" && Number.isFinite(value)) {
         slot[type] = value;
       }
     }
-    shiftedByDay.set(dayKey, slot);
+    priorByKey.set(row.key, slot);
   }
 
   return chartData.map((point) => {
-    const compareValues = shiftedByDay.get(point.date);
+    const compareValues = priorByKey.get(
+      bucketType === "day" ? point.date : point.timestamp,
+    );
     if (!compareValues) return point;
     const merged: ChartDataPoint = { ...point };
     for (const type of types) {
@@ -200,7 +275,7 @@ export function useHealthChartView({
   onVisibleStats,
 }: {
   data: ChartDataPoint[] | undefined;
-  rangePoints: number;
+  rangePoints: ChartRangePoints;
   types: string[];
   userTimezone: string;
   tzFmt: ReturnType<typeof makeBucketLabelFormatters>;
@@ -212,29 +287,36 @@ export function useHealthChartView({
   isError: boolean;
   onVisibleStats?: (stats: Record<string, MetricWindowStats> | null) => void;
 }) {
-  // The grain (day / week / month) is picked from the VISIBLE range, so a
-  // 30-day tab stays daily on a five-year-old account, and it has ONE source:
-  // the points, the caption chip and the data table all read it. The slice
+  // The grain (day / week / month) is the range tab's (`pickRangeBucket`):
+  // 7 and 30 days daily, 90 days weekly, All by the span of the data. It has
+  // ONE source: the points, the caption chip, the tooltip and the data table
+  // all read it. The slice
   // is a calendar-day window, as the range tabs promise and the fetch
   // requests, on the self-fetched and the batched path alike.
-  const visibleSlice = useMemo(() => {
+  const visibleSlice = useMemo<VisibleSlice | null>(() => {
     if (!data?.length) return null;
-    const cutoff = new Date().getTime() - rangePoints * 86_400_000;
+    const now = new Date().getTime();
+    const cutoff = now - rangePoints * 86_400_000;
     const sliced =
       rangePoints > 0
         ? data.filter((point) => point.timestamp >= cutoff)
         : [...data];
     // An empty window stays an empty slice ("no data in this range");
     // returning null would quietly widen the window to the whole series.
-    const rangeDays =
-      sliced.length < 2
-        ? 0
-        : Math.round(
-            (sliced[sliced.length - 1].timestamp - sliced[0].timestamp) /
-              (24 * 60 * 60 * 1000),
-          );
-    return { sliced, bucketType: pickBucket(rangeDays) };
-  }, [data, rangePoints]);
+    return {
+      sliced,
+      bucketType: pickRangeBucket(
+        rangePoints,
+        sliced.map((point) => point.timestamp),
+      ),
+      period: {
+        firstDay: rangePoints > 0 ? firstWindowDayUtc(cutoff) : null,
+        lastDay: dayKeyAsUtcMidnight(
+          userDayKey(new Date(now), userTimezone),
+        ).getTime(),
+      },
+    };
+  }, [data, rangePoints, userTimezone]);
 
   const chartData = useMemo(() => {
     if (!data?.length || !visibleSlice) return data;
@@ -247,23 +329,25 @@ export function useHealthChartView({
     });
   }, [data, visibleSlice, showMA, showTrend, types, tzFmt, userTimezone]);
 
-  // Min / max / median / mean of what is visible under the active range tab,
-  // for the stat strip a sub-page lifts the callback into. Mini mode has no
-  // stat strip.
+  // Min / max / median / mean of the days under the active range tab, for
+  // the stat strip a sub-page lifts the callback into. Read from the daily
+  // slice, not from the drawn points, so the strip does not change meaning
+  // with the grain: on the 90-day tab "Min" is still the lowest day, not the
+  // lowest weekly mean. Mini mode has no stat strip.
   const visibleStatsByType = useMemo<Record<
     string,
     MetricWindowStats
   > | null>(() => {
-    if (mini || !chartData?.length) return null;
+    if (mini || !chartData?.length || !visibleSlice) return null;
     const out: Record<string, MetricWindowStats> = {};
     for (const type of types) {
       const stats = computeWindowStats(
-        chartData.map((point) => point[type] as number | undefined),
+        visibleSlice.sliced.map((point) => point[type] as number | undefined),
       );
       if (stats.count > 0) out[type] = stats;
     }
     return Object.keys(out).length > 0 ? out : null;
-  }, [mini, chartData, types]);
+  }, [mini, chartData, visibleSlice, types]);
 
   // An effect, so the parent's state update never runs during this render,
   // and only once the read settled: a report during the first fetch would
@@ -284,8 +368,18 @@ export function useHealthChartView({
       types,
       tzFmt,
       baseline: effectiveCompareBaseline,
+      bucketType: visibleSlice?.bucketType ?? "day",
+      userTimezone,
     });
-  }, [chartData, effectiveCompareBaseline, data, types, tzFmt]);
+  }, [
+    chartData,
+    effectiveCompareBaseline,
+    data,
+    types,
+    tzFmt,
+    visibleSlice,
+    userTimezone,
+  ]);
 
   // True when at least one visible day has a prior value. A partial overlay
   // counts as available, so the "comparison unavailable" caption never sits
@@ -307,6 +401,10 @@ export function useHealthChartView({
   // total's average for steps and the like), named on the caption chip and
   // in the tooltip.
   const bucketCaption = bucketCaptionKey(activeBucket, types);
+  // The 7-day average is a daily overlay: over weekly or monthly means it
+  // would be a seven-week or seven-month average under a "7-day" label, so
+  // it is drawn on daily points only and leaves no legend entry behind.
+  const drawMA = showMA && activeBucket === "day";
 
   const yAxis = useMemo<
     { domain: [number, number]; ticks: number[] } | undefined
@@ -345,6 +443,7 @@ export function useHealthChartView({
     hasComparisonData,
     activeBucket,
     bucketCaption,
+    drawMA,
     yDomain: yAxis?.domain,
     yTicks: yAxis?.ticks,
   };

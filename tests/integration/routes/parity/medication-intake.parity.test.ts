@@ -411,7 +411,7 @@ describe("medication-intake parity walk", { shuffle: false }, () => {
         { skipped: true, scheduledFor: "2026-10-14T20:00:00.000Z" },
         { ...writer, settle: () => refusalRows(2) },
       );
-      await post("09b-owner-skip-flip", {
+      await post("09b-owner-skip-already-taken", {
         skipped: true,
         scheduledFor: "2026-10-14T20:00:00.000Z",
       });

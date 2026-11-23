@@ -2,20 +2,24 @@
  * Which slot one bulk intake entry binds to.
  *
  * Taken writes attribute through the window-band engine (the SAME minter the
- * read ledger + the compliance % consume), so a bulk-synced take binds to a
- * slot identically to the single-route write. The optional
+ * read ledger + the compliance % consume) and the shared named-slot rule, so
+ * a bulk-synced take binds to a slot identically to the single-route write. The optional
  * `forceSlotInstant` pins an off-window take onto a named real slot. Pending
  * echoes and skips carry no take to attribute by, so they keep the canonical
  * anchor snap that binds them to the projector/worker-minted slot row.
  */
 import type { SessionUser } from "@/lib/auth/session-user";
 import {
-  findPinConflict,
+  findPinConflictRow,
+  pinConflictWire,
+} from "@/lib/medications/scheduling/pin-conflict";
+import {
   resolveForcedSlotForWrite,
   resolveSlotForWriteByBand,
   resolveSlotInstantForWrite,
-  slotHeldByAnotherDose,
 } from "@/lib/medications/scheduling/slot-upsert";
+import { slotHeldByAnotherDose } from "@/lib/medications/scheduling/extra-dose";
+import { bindNamedTake } from "@/lib/medications/scheduling/named-slot";
 import type { BulkIntakeEntry } from "./batch-state";
 
 export interface EntryAttribution {
@@ -39,10 +43,19 @@ interface EntryContext {
   incomingScheduledFor: Date;
 }
 
+/**
+ * A per-entry refusal. An occupied pin also says what holds the slot, the
+ * way an `alreadyTaken` entry does.
+ */
+interface EntryRefusal {
+  reason: string;
+  held?: ReturnType<typeof pinConflictWire>;
+}
+
 async function attributePin(
   ctx: EntryContext,
   forceSlotInstant: Date,
-): Promise<EntryAttribution | { reason: string }> {
+): Promise<EntryAttribution | EntryRefusal> {
   const { user, entry } = ctx;
   const canonicalSlot = await resolveForcedSlotForWrite({
     userId: user.id,
@@ -60,15 +73,14 @@ async function attributePin(
   // already serves: the explicit-write last-write-wins rule would
   // silently overwrite that dose record. Per-entry skip, mirroring
   // the single route's 422 `medications.intake.force_slot.occupied`.
-  if (
-    await findPinConflict({
-      userId: user.id,
-      medicationId: entry.medicationId,
-      canonicalSlot,
-      incomingTakenAt: entry.takenAt ?? null,
-    })
-  ) {
-    return { reason: "force_slot_occupied" };
+  const held = await findPinConflictRow({
+    userId: user.id,
+    medicationId: entry.medicationId,
+    canonicalSlot,
+    incomingTakenAt: entry.takenAt ?? null,
+  });
+  if (held) {
+    return { reason: "force_slot_occupied", held: pinConflictWire(held) };
   }
   return {
     canonicalSlot,
@@ -79,13 +91,24 @@ async function attributePin(
 
 async function attributeTake(ctx: EntryContext): Promise<EntryAttribution> {
   const { user, entry } = ctx;
+  const takenAt = entry.takenAt as Date;
   const attribution = await resolveSlotForWriteByBand({
     userId: user.id,
     medicationId: entry.medicationId,
     userTz: user.timezone,
-    takenAt: entry.takenAt as Date,
+    takenAt,
   });
-  let canonicalSlot = attribution.slotInstant;
+  // A named slot binds the way it does on the single route: behind the take
+  // however late, ahead of it from the slot's window on (`named-slot.ts`).
+  const bound = await bindNamedTake({
+    userId: user.id,
+    medicationId: entry.medicationId,
+    userTz: user.timezone,
+    takenAt,
+    bandSlot: attribution.slotInstant,
+    namedSlot: entry.scheduledFor,
+  });
+  let canonicalSlot = bound.canonicalSlot;
   let heldByAnotherDose = false;
   // An external dose record (a HealthKit dose event) whose band slot
   // already carries a different recorded dose is an extra dose, not a
@@ -99,7 +122,7 @@ async function attributeTake(ctx: EntryContext): Promise<EntryAttribution> {
       userId: user.id,
       medicationId: entry.medicationId,
       canonicalSlot,
-      takenAt: entry.takenAt as Date,
+      takenAt,
       externalId: entry.externalId,
       scheduledFor: entry.scheduledFor ?? null,
       userTz: user.timezone,
@@ -108,7 +131,11 @@ async function attributeTake(ctx: EntryContext): Promise<EntryAttribution> {
     canonicalSlot = null;
     heldByAnotherDose = true;
   }
-  return { canonicalSlot, attributionSource: "AUTO", heldByAnotherDose };
+  return {
+    canonicalSlot,
+    attributionSource: bound.attributionSource,
+    heldByAnotherDose,
+  };
 }
 
 /**
@@ -121,7 +148,7 @@ async function attributeTake(ctx: EntryContext): Promise<EntryAttribution> {
 export async function attributeEntry(
   ctx: EntryContext,
   flags: { isExplicitTaken: boolean; isExplicitSkip: boolean },
-): Promise<EntryAttribution | { reason: string }> {
+): Promise<EntryAttribution | EntryRefusal> {
   const { user, entry, incomingScheduledFor } = ctx;
   if (flags.isExplicitTaken && entry.forceSlotInstant !== undefined) {
     return attributePin(ctx, entry.forceSlotInstant);

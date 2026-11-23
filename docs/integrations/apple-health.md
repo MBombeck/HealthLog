@@ -39,7 +39,7 @@ read in full.
 
 ## 2. Upload to HealthLog
 
-Open **Settings → Export & Import** in the app and drop the
+Open **Settings > Export & import** in the app and drop the
 `export.zip` onto the Apple Health upload control (or click to pick the
 file). The browser streams the body directly to the server; nothing is
 buffered into memory on either side. A progress indicator polls the
@@ -47,12 +47,14 @@ job until it reports the imported / skipped counts.
 
 The endpoint is `POST /api/import/apple-health-export`. The handler:
 
-1. Rate-limits to **three uploads per minute per user** to protect
-   against a flood of multi-gigabyte uploads
-   (`src/app/api/import/apple-health-export/route.ts:43-46`).
+1. Rate-limits to **five uploads per minute per user** to protect
+   against a flood of multi-gigabyte uploads. Every file import
+   shares this rule and the rest of the upload path
+   (`src/lib/import/staged-upload.ts`).
 2. Enforces the **1.5 GB cap** twice — once cheaply against the
    declared `Content-Length`, then a second time at the streaming
-   sink so a missing/wrong header cannot bypass it.
+   sink so a missing/wrong header cannot bypass it. Both answer `413`
+   with `errorCode` `import.file.too_large`.
 3. Streams the body to a temp file at `/tmp/healthlog-apple-health-import-*`
    while computing a SHA-256 of the bytes inline.
 4. Looks up any prior `ImportJob` row with the same `userId` +
@@ -129,6 +131,41 @@ Heart-rate variability comes in two measures, and they stay two types.
 up to 300 ms are accepted. When both arrive, the HRV page charts each on
 its own and the Coach reads them apart, because one is not a stand-in for
 the other.
+
+Workout effort and physical effort are stored apart from energy, and the
+logged score is stored apart from the watch's estimate.
+`WorkoutEffortScore` (iOS 18, the rating you logged, 0–10) becomes
+`WORKOUT_EFFORT_SCORE`. `EstimatedWorkoutEffortScore` (the watch's
+estimate of that score) becomes `ESTIMATED_WORKOUT_EFFORT_SCORE`. A day
+mean of one cannot blend the other. `PhysicalEffort` (iOS 17) is the
+intensity of the effort in kilocalories per hour per kilogram, the same
+family as METs, and becomes `PHYSICAL_EFFORT`. None of the three is added
+to active or resting energy.
+
+Cycling and rowing distance, rowing speed and the running dynamics come
+in as their own types. `DistanceCycling` becomes `CYCLING_DISTANCE` and
+`DistanceRowing` becomes `ROWING_DISTANCE`, both in metres and summed per
+day like walking and running distance. `RowingSpeed` and `RunningSpeed`
+(m/s), `RunningPower` (W), `RunningGroundContactTime` (ms),
+`RunningVerticalOscillation` (cm) and `RunningStrideLength` (m) are
+per-sample readings taken during a workout, so their day value is the
+mean. A record in another unit, such as kilometres in an export from a
+metric account, is converted on the way in. Cycling speed, power and
+cadence, swimming, paddling and skiing stay on the deferred list.
+
+### Readings taken in another time zone
+
+The app can send the time zone a sample was taken in (`timeZone`, HealthKit's
+`HKMetadataKeyTimeZone`). A reading that carries one is placed on the local
+day of that zone, and one without it on the day of your profile's zone, which
+is what every older reading keeps meaning. So a night slept in New York on a
+Berlin profile is filed under the New York wake day, and the night timeline
+reads its clock in New York time. The sleep list and night view, the day
+view, the measurement list's day groups and the daily charts follow this
+rule. The cached long-range totals are kept per UTC day and are not moved by
+it, and the pulse day mean, the intraday heart-rate chart and the Coach's
+context still read the profile zone. A zone name the server cannot read is
+dropped and the reading is kept.
 
 ### ECG archive safety, privacy, and idempotency
 
@@ -365,7 +402,7 @@ Override per-user via Settings → Source priority (`/settings/sources`).
 | Archive is encrypted                                | `failureReason: "Encrypted ZIP entries are not supported"`                      | Apple does not encrypt the export — this means the file was repacked by a third-party tool. Re-export from iOS directly.                                             |
 | Unsupported compression method                      | `failureReason: "Unsupported ZIP compression method <n> for export.xml"`        | Same recovery — re-export from iOS, which always emits method 0 (stored) or method 8 (deflate).                                                                      |
 | Worker is not running                               | `503 Background worker is not running` from the kick-off endpoint               | The worker process is down. Check `docker compose ps` for the `app-worker` container (or `HEALTHLOG_PROCESS_TYPE=all` mode on the main `app` container) and restart. |
-| Rate-limited                                        | `429 Too many import uploads, try again later`                                  | Wait sixty seconds; the limit is three uploads per minute per user.                                                                                                  |
+| Rate-limited                                        | `429 Too many import uploads, try again later`                                  | Wait sixty seconds; the limit is five uploads per minute per user.                                                                                                   |
 
 The wide-event log line `import.apple-health.kickoff` (or
 `import.apple-health.kickoff.denied` on failure) captures every

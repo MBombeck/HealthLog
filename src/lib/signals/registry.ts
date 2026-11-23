@@ -2128,6 +2128,245 @@ export const SIGNALS: Record<string, SignalDefinition> = {
       category: "activity",
     },
   },
+  // Apple effort. Stored and readable over MCP, off the Coach snapshot and
+  // the correlations: a session's intensity is not a daily vital, and no
+  // score or total is built from any of the three. The logged score and the
+  // watch's estimate are separate types so a mean of one cannot blend the
+  // other.
+  WORKOUT_EFFORT_SCORE: {
+    key: "WORKOUT_EFFORT_SCORE",
+    kind: "measurement",
+    source: { measurementType: "WORKOUT_EFFORT_SCORE" },
+    displayName: "Workout effort",
+    unit: "score",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierWorkoutEffortScore",
+      display: "Workout effort score",
+      unit: "{score}",
+      category: "activity",
+    },
+  },
+  ESTIMATED_WORKOUT_EFFORT_SCORE: {
+    key: "ESTIMATED_WORKOUT_EFFORT_SCORE",
+    kind: "measurement",
+    source: { measurementType: "ESTIMATED_WORKOUT_EFFORT_SCORE" },
+    displayName: "Estimated workout effort",
+    unit: "score",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
+      display: "Estimated workout effort score",
+      unit: "{score}",
+      category: "activity",
+    },
+  },
+  PHYSICAL_EFFORT: {
+    key: "PHYSICAL_EFFORT",
+    kind: "measurement",
+    source: { measurementType: "PHYSICAL_EFFORT" },
+    displayName: "Physical effort",
+    unit: "kcal/(hr·kg)",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierPhysicalEffort",
+      display: "Physical effort",
+      unit: "kcal/(kg.h)",
+      category: "activity",
+    },
+  },
+  // Apple sport quantities (#1415). Stored and readable over MCP, off the
+  // Coach snapshot, the detail pages and the correlations: they describe
+  // one sport's sessions, context next to VO2 max, not a daily vital.
+  CYCLING_DISTANCE: {
+    key: "CYCLING_DISTANCE",
+    kind: "measurement",
+    source: { measurementType: "CYCLING_DISTANCE" },
+    displayName: "Cycling distance",
+    unit: "m/day",
+    direction: "higher-better",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierDistanceCycling",
+      display: "Distance cycling",
+      unit: "m",
+      category: "activity",
+    },
+  },
+  ROWING_DISTANCE: {
+    key: "ROWING_DISTANCE",
+    kind: "measurement",
+    source: { measurementType: "ROWING_DISTANCE" },
+    displayName: "Rowing distance",
+    unit: "m/day",
+    direction: "higher-better",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierDistanceRowing",
+      display: "Distance rowing",
+      unit: "m",
+      category: "activity",
+    },
+  },
+  ROWING_SPEED: {
+    key: "ROWING_SPEED",
+    kind: "measurement",
+    source: { measurementType: "ROWING_SPEED" },
+    displayName: "Rowing speed",
+    unit: "m/s",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierRowingSpeed",
+      display: "Rowing speed",
+      unit: "m/s",
+      category: "activity",
+    },
+  },
+  RUNNING_SPEED: {
+    key: "RUNNING_SPEED",
+    kind: "measurement",
+    source: { measurementType: "RUNNING_SPEED" },
+    displayName: "Running speed",
+    unit: "m/s",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierRunningSpeed",
+      display: "Running speed",
+      unit: "m/s",
+      category: "activity",
+    },
+  },
+  RUNNING_POWER: {
+    key: "RUNNING_POWER",
+    kind: "measurement",
+    source: { measurementType: "RUNNING_POWER" },
+    displayName: "Running power",
+    unit: "W",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierRunningPower",
+      display: "Running power",
+      unit: "W",
+      category: "activity",
+    },
+  },
+  RUNNING_GROUND_CONTACT_TIME: {
+    key: "RUNNING_GROUND_CONTACT_TIME",
+    kind: "measurement",
+    source: { measurementType: "RUNNING_GROUND_CONTACT_TIME" },
+    displayName: "Ground contact time",
+    unit: "ms",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierRunningGroundContactTime",
+      display: "Running ground contact time",
+      unit: "ms",
+      category: "activity",
+    },
+  },
+  RUNNING_VERTICAL_OSCILLATION: {
+    key: "RUNNING_VERTICAL_OSCILLATION",
+    kind: "measurement",
+    source: { measurementType: "RUNNING_VERTICAL_OSCILLATION" },
+    displayName: "Vertical oscillation",
+    unit: "cm",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierRunningVerticalOscillation",
+      display: "Running vertical oscillation",
+      unit: "cm",
+      category: "activity",
+    },
+  },
+  RUNNING_STRIDE_LENGTH: {
+    key: "RUNNING_STRIDE_LENGTH",
+    kind: "measurement",
+    source: { measurementType: "RUNNING_STRIDE_LENGTH" },
+    displayName: "Running stride length",
+    unit: "m",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierRunningStrideLength",
+      display: "Running stride length",
+      unit: "m",
+      category: "activity",
+    },
+  },
 };
 
 /** Type guard: narrow an arbitrary string to a registered signal key. */
@@ -2143,21 +2382,4 @@ export function getSignal(key: string): SignalDefinition | null {
 /** Every registered signal, in declaration order. */
 export function allSignals(): SignalDefinition[] {
   return Object.values(SIGNALS);
-}
-
-/** Reverse index: DB `MeasurementType` → the signal it backs (built once). */
-const MEASUREMENT_TYPE_TO_SIGNAL = new Map<MeasurementType, SignalDefinition>(
-  allSignals()
-    .filter(
-      (s): s is Extract<SignalDefinition, { kind: "measurement" | "score" }> =>
-        s.kind === "measurement" || s.kind === "score",
-    )
-    .map((s) => [s.source.measurementType, s]),
-);
-
-/** Resolve the signal a `MeasurementType` backs, or null when unregistered. */
-export function signalForMeasurementType(
-  type: MeasurementType,
-): SignalDefinition | null {
-  return MEASUREMENT_TYPE_TO_SIGNAL.get(type) ?? null;
 }

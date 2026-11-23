@@ -24,7 +24,7 @@ const {
     },
     measurement: {
       findMany: vi.fn<(...a: unknown[]) => Promise<unknown[]>>(async () => []),
-      deleteMany: vi.fn<(...a: unknown[]) => Promise<unknown>>(async () => ({
+      updateMany: vi.fn<(...a: unknown[]) => Promise<unknown>>(async () => ({
         count: 0,
       })),
     },
@@ -151,13 +151,16 @@ describe("syncUserBody — profile weight is not ingested (v1.16.11)", () => {
       [legacyRow],
       { source: "sync", label: "whoop-body" },
     );
-    expect(prismaMock.measurement.deleteMany).toHaveBeenCalledWith({
+    // A tombstone, so a paired client's mirror learns of the removal.
+    expect(prismaMock.measurement.updateMany).toHaveBeenCalledWith({
       where: {
         userId: "user1",
         type: "WEIGHT",
         source: "WHOOP",
         externalId: WHOOP_BODY_WEIGHT_EXTERNAL_ID,
+        deletedAt: null,
       },
+      data: { deletedAt: expect.any(Date), syncVersion: { increment: 1 } },
     });
   });
 });
@@ -271,10 +274,10 @@ describe("syncUserBody — legacy row already gone", () => {
     fetchBodyMeasurementMock.mockResolvedValue({ weight_kilogram: 80 });
     prismaMock.user.findUnique.mockResolvedValue({ heightCm: 170 });
     prismaMock.measurement.findMany.mockResolvedValueOnce([]);
-    prismaMock.measurement.deleteMany.mockClear();
+    prismaMock.measurement.updateMany.mockClear();
 
     await syncUserBody("user1");
 
-    expect(prismaMock.measurement.deleteMany).not.toHaveBeenCalled();
+    expect(prismaMock.measurement.updateMany).not.toHaveBeenCalled();
   });
 });

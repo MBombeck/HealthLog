@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { createAdHocIntake } from "@/lib/medications/ad-hoc-intake";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -29,7 +30,11 @@ import {
   resolveSlotForWriteByBand,
 } from "@/lib/medications/scheduling/slot-upsert";
 import { consumeForIntake } from "@/lib/medications/inventory/consumption";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
+import { recordedEventOf } from "@/lib/notifications/medication-intake-recorded";
+import { resolveNewTake } from "@/lib/medications/scheduling/nearest-open-slot";
+import { isP2002 } from "@/lib/prisma-errors";
+import type { MedicationIntakeEvent } from "@/generated/prisma/client";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { isRecordOnly } from "@/lib/medications/intake-tracking";
 import { refuseUntrackedIntake } from "@/lib/medications/route-guards";
@@ -77,6 +82,146 @@ async function refuseUnauthenticated(request: NextRequest, message: string) {
  * Rate limit: 60 requests per minute per TOKEN (per client IP for a request
  * that presents no valid one).
  */
+/**
+ * The tails of an ingested dose, the same as a web take's: the caches (the
+ * ingest is an interactive dose record; the next read must reflect it rather
+ * than wait out the TTL), the cross-device intake sync (the hook is no
+ * device, so none is excluded), and the compliance rollup of its day.
+ */
+async function afterIngestedDose(input: {
+  userId: string;
+  medicationId: string;
+  scheduledFor: Date;
+  tz: string | null;
+  event: MedicationIntakeEvent;
+}): Promise<void> {
+  afterDoseChange({
+    scope: "intakes",
+    userId: input.userId,
+    originDeviceToken: null,
+    recorded: recordedEventOf(input.event, "INTEGRATION"),
+  });
+  await refreshDoseSlot(input);
+}
+
+/**
+ * The active medication `name` names for this token. The name is matched
+ * case-insensitively with surrounding and repeated whitespace folded, so
+ * "Ramipril " and "ramipril" both find "Ramipril". Of several active
+ * medications of one name, the one in the token's scope wins, then the
+ * oldest, so the choice is stable. Null when none in scope matches.
+ */
+async function findIngestMedication(
+  token: { userId: string; permissions: string[] },
+  name: string,
+) {
+  const fullAccess = token.permissions.includes("*");
+  const inScope = (id: string) =>
+    fullAccess || token.permissions.includes(`medication:${id}:ingest`);
+  const wanted = foldMedicationName(name);
+  const candidates = (
+    await prisma.medication.findMany({
+      where: { userId: token.userId, active: true },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    })
+  ).filter((m) => foldMedicationName(m.name) === wanted);
+  return candidates.find((m) => inScope(m.id)) ?? null;
+}
+
+/**
+ * The answer to a key already stored: the row itself for a retry of the
+ * same take (200), a refusal for a key of another medication, and a refusal
+ * by name for a key that comes back a day later. A retry arrives within
+ * moments; a key reused a day later is a fixed key used for a new take, and
+ * answering it as a replay recorded nothing and left the day's dose open.
+ */
+async function replayAnswer(
+  userId: string,
+  medicationId: string,
+  idempotencyKey: string,
+) {
+  const existing = await prisma.medicationIntakeEvent.findFirst({
+    where: { idempotencyKey, userId },
+  });
+  if (!existing) return null;
+  if (existing.medicationId !== medicationId) {
+    return apiError("Idempotency key already used for another medication", 409);
+  }
+  if (
+    existing.createdAt instanceof Date &&
+    Date.now() - existing.createdAt.getTime() > KEY_REPLAY_WINDOW_MS
+  ) {
+    return apiError(
+      "idempotencyKey was used for an earlier take; send one key per take",
+      409,
+      { errorCode: "ingest.idempotencyKey.reused" },
+    );
+  }
+  return apiSuccess({ ...existing, alreadyTaken: false });
+}
+
+/** How long a key answers as a replay of its own take: one day. */
+const KEY_REPLAY_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function foldMedicationName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLocaleLowerCase("en");
+}
+
+/** A dose reported twice: nothing written, the recorded row (see OpenAPI). */
+function alreadyTakenAnswer(row: MedicationIntakeEvent) {
+  annotate({
+    action: { name: "ingest.medication.already_taken" },
+    meta: { medication_id: row.medicationId, event_id: row.id },
+  });
+  return apiSuccess({ ...row, alreadyTaken: true });
+}
+
+/**
+ * The standalone row of a take no slot answers. Two openings of the box
+ * within a minute are one dose, and two requests racing on one key are one
+ * row: the second answers with the first.
+ */
+async function createAdHocIngest(input: {
+  userId: string;
+  medicationId: string;
+  takenAt: Date;
+  idempotencyKey: string;
+}): Promise<{ kind: "created" | "existing"; row: MedicationIntakeEvent }> {
+  const recent = await prisma.medicationIntakeEvent.findFirst({
+    where: {
+      userId: input.userId,
+      medicationId: input.medicationId,
+      deletedAt: null,
+      skipped: false,
+      takenAt: {
+        gte: new Date(input.takenAt.getTime() - 60_000),
+        lte: new Date(input.takenAt.getTime() + 60_000),
+      },
+    },
+  });
+  if (recent) return { kind: "existing", row: recent };
+  try {
+    const row = await createAdHocIntake(prisma, {
+      userId: input.userId,
+      medicationId: input.medicationId,
+      scheduledFor: input.takenAt,
+      takenAt: input.takenAt,
+      skipped: false,
+      source: "API",
+      takenVia: "INTEGRATION",
+      idempotencyKey: input.idempotencyKey,
+    });
+    return { kind: "created", row };
+  } catch (err) {
+    if (!isP2002(err)) throw err;
+    const raced = await prisma.medicationIntakeEvent.findFirst({
+      where: { userId: input.userId, idempotencyKey: input.idempotencyKey },
+    });
+    if (!raced) throw err;
+    return { kind: "existing", row: raced };
+  }
+}
+
 export const POST = apiHandler(async (request: NextRequest) => {
   annotate({ action: { name: "ingest.medication" } });
 
@@ -184,37 +329,23 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const { medicationName, takenAt, idempotencyKey } = parsed.data;
 
-  // Find medication by name for this user
-  const medication = await prisma.medication.findFirst({
-    where: {
-      userId: apiToken.userId,
-      name: { equals: medicationName, mode: "insensitive" },
-      active: true,
-    },
-  });
-
-  // A scoped token gets one answer for unknown and out-of-scope names; only a
-  // full-access token, which can list them anyway, learns a name is unknown.
-  const fullAccess = apiToken.permissions.includes("*");
-  if (
-    !medication ||
-    (!fullAccess &&
-      !apiToken.permissions.includes(`medication:${medication.id}:ingest`))
-  ) {
-    return !medication && fullAccess
-      ? apiError("Medication not found", 404)
-      : apiError("API endpoint for this medication is disabled", 403);
+  const medication = await findIngestMedication(apiToken, medicationName);
+  // Unknown and out-of-scope names get one answer, so nothing leaks.
+  if (!medication) {
+    return apiError(
+      "No active medication this token may record matches medicationName",
+      404,
+      { errorCode: "ingest.medication.notFound" },
+    );
   }
 
   // Replay after the scope check, for this medication only (key is per user).
-  const existing = await prisma.medicationIntakeEvent.findFirst({
-    where: { idempotencyKey, userId: apiToken.userId },
-  });
-  if (existing) {
-    return existing.medicationId === medication.id
-      ? apiSuccess(existing)
-      : apiError("Idempotency key already used for another medication", 409);
-  }
+  const replay = await replayAnswer(
+    apiToken.userId,
+    medication.id,
+    idempotencyKey,
+  );
+  if (replay) return replay;
 
   // A record-only medication takes no new dose — the same refusal every
   // dose-writing route gives (iOS #116, item 15). Checked after the scope
@@ -245,6 +376,19 @@ export const POST = apiHandler(async (request: NextRequest) => {
     takenAt: effectiveTakenAt,
   });
 
+  // Outside every band the nearest open slot still answers the take, and a
+  // repeat writes nothing (`nearest-open-slot.ts`).
+  const resolution = await resolveNewTake({
+    userId: apiToken.userId,
+    medicationId: medication.id,
+    userTz,
+    takenAt: effectiveTakenAt,
+    bandSlot: attribution.slotInstant,
+  });
+  if (resolution.kind === "alreadyTaken") {
+    return alreadyTakenAnswer(resolution.row);
+  }
+
   let event;
   // v1.16.10 — only the genuine pending→taken transition consumes
   // inventory units (the slot upsert's `consumedTransition` flag). A
@@ -252,7 +396,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // pre-v1.16.10 row that predates the consumption stamp — must not
   // decrement stock again. A fresh ad-hoc create is always a take.
   let consumed = true;
-  if (attribution.slotInstant) {
+  if (resolution.kind === "slot") {
     // Scheduled dose — converge onto the one canonical slot row (the
     // pending REMINDER row when one exists) through the shared upsert:
     // H1 deterministic selection, C2 no-downgrade, P2002-safe create.
@@ -260,31 +404,30 @@ export const POST = apiHandler(async (request: NextRequest) => {
       client: prisma,
       userId: apiToken.userId,
       medicationId: medication.id,
-      canonicalSlot: attribution.slotInstant,
+      canonicalSlot: resolution.slot,
       takenAt: effectiveTakenAt,
       skipped: false,
       isExplicitTaken: true,
       isExplicitSkip: false,
       idempotencyKey,
       createSource: "API",
-      attributionSource: "AUTO",
+      attributionSource: resolution.attributionSource,
+      takenVia: "INTEGRATION",
     });
+    if (applied.alreadyTaken) return alreadyTakenAnswer(applied.row);
     event = applied.row;
     consumed = applied.consumedTransition;
   } else {
     // Ad-hoc / PRN / off-window — standalone row under the documented
     // contract (`scheduledFor = takenAt`).
-    event = await prisma.medicationIntakeEvent.create({
-      data: {
-        userId: apiToken.userId,
-        medicationId: medication.id,
-        scheduledFor: effectiveTakenAt,
-        takenAt: effectiveTakenAt,
-        skipped: false,
-        source: "API",
-        idempotencyKey,
-      },
+    const adHoc = await createAdHocIngest({
+      userId: apiToken.userId,
+      medicationId: medication.id,
+      takenAt: effectiveTakenAt,
+      idempotencyKey,
     });
+    if (adHoc.kind === "existing") return alreadyTakenAnswer(adHoc.row);
+    event = adHoc.row;
   }
 
   // v1.16.10 — the external ingest records a take; consume inventory
@@ -316,23 +459,17 @@ export const POST = apiHandler(async (request: NextRequest) => {
     meta: {
       medication_id: medication.id,
       event_id: event.id,
-      slot_resolved: attribution.slotInstant !== null,
+      slot_resolved: resolution.kind === "slot",
     },
   });
 
-  // v1.16.9 — the ingest is an interactive dose record; the next read
-  // (today feed, card pill, compliance heatmap) must reflect it rather
-  // than wait out the TTL.
-  invalidateUserMedications(apiToken.userId, { evict: true });
-
-  // v1.4.39 — refresh the compliance rollup for the ingested
-  // event's user-day.
-  await refreshDoseSlot({
+  await afterIngestedDose({
     userId: apiToken.userId,
     medicationId: medication.id,
     scheduledFor: event.scheduledFor,
     tz: ingestUser?.timezone ?? null,
+    event,
   });
 
-  return apiSuccess(event, 201);
+  return apiSuccess({ ...event, alreadyTaken: false }, 201);
 });

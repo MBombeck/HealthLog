@@ -6,15 +6,14 @@
 import { optionalDisplayNameSchema } from "@/lib/validations/display-name";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
+import { findUserIdByEmail } from "@/lib/auth/identity-lookup";
+import { isP2002 } from "@/lib/prisma-errors";
 import { profileSchema } from "@/lib/validations/auth";
 import { dateOfBirthForStorage } from "@/lib/tz/date-only";
 import { isValidTimezone } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { encrypt } from "@/lib/crypto";
-import {
-  invalidateUserMedications,
-  invalidateUserProfile,
-} from "@/lib/cache/invalidate";
+import { afterIdentityFieldsChanged } from "@/lib/auth/identity-change";
 import { sanitiseZodIssues, type SanitisedZodIssue } from "@/lib/api-response";
 import { checkProfileEmailRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
@@ -202,6 +201,30 @@ async function storedDateOfBirth(
   if (!data.dateOfBirth) return null;
   const timezone = data.timezone ?? (await resolveUserTimezone(userId));
   return dateOfBirthForStorage(data.dateOfBirth, timezone) ?? undefined;
+}
+
+/**
+ * The answer to an address another account holds. The informative answer is
+ * the one worth recording: it says an account holds that address. The
+ * ordinary save's `profile.update` row is never reached on this path, so
+ * without a row here the only probes in the ledger would be the ones that
+ * came back negative.
+ */
+async function emailInUse(
+  userId: string,
+  ipAddress: string | null | undefined,
+): Promise<ApplyProfileError> {
+  annotate({ action: { name: "profile.email.conflict" } });
+  await auditLog("profile.email.conflict", {
+    userId,
+    ipAddress: ipAddress ?? null,
+  });
+  return {
+    ok: false,
+    status: 409,
+    message: "Email already in use",
+    errorCode: "profile.update.emailInUse",
+  };
 }
 
 /**
@@ -416,32 +439,14 @@ export async function applyProfileUpdate(
           };
         }
       } else {
-        // Case-sensitive, because the column is: registration writes the
-        // address as typed, so `Mixed@Example.com` and `mixed@example.com`
-        // are two rows this probe cannot see as one. Pre-existing and not
-        // widened here — the fix is a normalisation pass on the register
-        // write, which is where the two spellings are created.
-        const existing = await prisma.user.findUnique({
-          where: { email: normalizedEmail },
-          select: { id: true },
+        // Regardless of case, like the unique key the address is held to
+        // (migration 0517): an address stored as `Anna@Example.com` blocks
+        // `anna@example.com`.
+        const existingId = await findUserIdByEmail(normalizedEmail, {
+          excludeId: userId,
         });
-        if (existing && existing.id !== userId) {
-          // The informative answer is the one worth recording: it says an
-          // account holds that address. The ordinary save's `profile.update`
-          // row is written further down and this path never reaches it, so
-          // without a row here the only probes in the ledger would be the
-          // ones that came back negative.
-          annotate({ action: { name: "profile.email.conflict" } });
-          await auditLog("profile.email.conflict", {
-            userId,
-            ipAddress: ipAddress ?? null,
-          });
-          return {
-            ok: false,
-            status: 409,
-            message: "Email already in use",
-            errorCode: "profile.update.emailInUse",
-          };
+        if (existingId !== null) {
+          return emailInUse(userId, ipAddress);
         }
       }
     }
@@ -507,31 +512,40 @@ export async function applyProfileUpdate(
         )?.locale ?? null)
       : null;
 
-  const updatedUser = await prisma.user.update({
-    where: { id: userId },
-    data: updates,
+  const priorTimezone =
+    data.timezone !== undefined
+      ? ((
+          await prisma.user.findUnique({
+            where: { id: userId },
+            select: { timezone: true },
+          })
+        )?.timezone ?? null)
+      : null;
+
+  let updatedUser;
+  try {
+    updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updates,
+    });
+  } catch (err) {
+    // Another account took the address between the check above and this
+    // write; the unique key refuses it, and the answer is the same 409.
+    if (data.email !== undefined && isP2002(err)) {
+      return emailInUse(userId, ipAddress);
+    }
+    throw err;
+  }
+
+  // Only those fields matter here: a display-name or email edit must not
+  // cold-rebuild the analytics caches.
+  await afterIdentityFieldsChanged(userId, {
+    anthropometrics:
+      data.heightCm !== undefined ||
+      data.dateOfBirth !== undefined ||
+      data.gender !== undefined,
+    timezone: data.timezone !== undefined && data.timezone !== priorTimezone,
   });
-
-  // Anthropometrics feed the cached targets grid (BMI band, BP-by-age
-  // range, body-fat band), the derived-score baseline profile (age /
-  // sex / height) and the analytics snapshot. Only those three fields
-  // matter here — a display-name or email edit must not cold-rebuild
-  // the analytics caches.
-  if (
-    data.heightCm !== undefined ||
-    data.dateOfBirth !== undefined ||
-    data.gender !== undefined
-  ) {
-    invalidateUserProfile(userId);
-  }
-
-  // v1.16.9 — the medication payloads (list next-due, today counts, the
-  // compliance day buckets) are computed in the user's timezone, but the
-  // list cache key carries only the userId. A timezone change must evict
-  // the bucket or the next read serves the previous zone's day grid.
-  if (data.timezone !== undefined) {
-    invalidateUserMedications(userId, { evict: true });
-  }
 
   await auditLog("profile.update", {
     userId: updatedUser.id,

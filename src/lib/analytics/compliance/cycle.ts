@@ -171,9 +171,29 @@ export function buildCurrentCycle(
           userDayKey(fromIntake, ctx.timeZone) >= dayKeyOfDate(ctx.startsOn))
           ? fromIntake
           : (ctx.startsOn ?? ctx.createdAt);
-      if (ctx.endsOn && anchor.getTime() > ctx.endsOn.getTime()) continue;
+      // A skip or an auto-miss closes the occurrence without a take, so it
+      // does not re-anchor the cadence; the next occurrence follows it by
+      // the same interval (the list's next-due does the same). Without this
+      // the open cycle stayed on a closed occurrence.
+      let open = anchor;
+      for (
+        let step = 0;
+        step < 64 &&
+        slotIsResolved(
+          open,
+          allIntakes,
+          canonical,
+          canonicals,
+          recurrenceCtx,
+          nearestCache,
+        );
+        step++
+      ) {
+        open = new Date(open.getTime() + n * DAY_MS);
+      }
+      if (ctx.endsOn && open.getTime() > ctx.endsOn.getTime()) continue;
       const graceMs = (canonical.reminderGraceMinutes ?? 60) * 60 * 1000;
-      consider(anchor, new Date(anchor.getTime() + graceMs));
+      consider(open, new Date(open.getTime() + graceMs));
       continue;
     }
     // v1.15.10 — advance past slots the user has already resolved. The

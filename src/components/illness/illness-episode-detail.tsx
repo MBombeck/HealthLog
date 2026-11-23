@@ -39,7 +39,7 @@ import { LogDaySheet, useLastLoggableDay } from "./log-day-sheet";
 import { NewEpisodeSheet } from "./new-episode-sheet";
 import { EpisodeMenu } from "./episode-menu";
 import { useIllnessEpisode, useResolveEpisode } from "./use-illness";
-import { toLocalDateKey } from "./dates";
+import { userDayKey } from "@/lib/tz/format";
 
 export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
   const { t } = useTranslations();
@@ -226,7 +226,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
             onOpenChange={setLogOpen}
             episodeId={episode.id}
             date={logLastDay}
-            onsetDate={toLocalDateKey(episode.onsetAt, timeZone)}
+            onsetDate={userDayKey(new Date(episode.onsetAt), timeZone)}
           />
           <NewEpisodeSheet
             open={editOpen}

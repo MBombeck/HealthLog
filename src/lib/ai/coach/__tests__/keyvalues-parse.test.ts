@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  parseKeyValueLine,
-  parseKeyValuesSentinel,
-  tryParseKeyValueLine,
-} from "../keyvalues";
+import { parseKeyValuesSentinel, tryParseKeyValueLine } from "../keyvalues";
+
+/** The line parser's success value, or null on any failure. */
+function parseKeyValueLine(line: string) {
+  const outcome = tryParseKeyValueLine(line);
+  return outcome.ok ? outcome.value : null;
+}
 
 /**
  * v1.4.22 — Coach evidence-block sentinel parser.

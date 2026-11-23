@@ -36,7 +36,6 @@ import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import { formatDate } from "@/lib/format";
 import { useAchievementsQuery } from "@/lib/queries/use-achievements-query";
 import {
   ACHIEVEMENT_CATEGORY_ORDER,
@@ -133,6 +132,7 @@ interface AchievementCardProps {
 }
 
 function AchievementCard({ achievement, t, tCount }: AchievementCardProps) {
+  const fmt = useFormatters();
   const i18n = { t, tCount };
   const Icon = iconMap[achievement.icon] ?? Star;
   const unlocked = achievement.unlocked;
@@ -261,7 +261,7 @@ function AchievementCard({ achievement, t, tCount }: AchievementCardProps) {
           <span>
             {achievement.completedAt
               ? t("achievements.completedOn", {
-                  date: formatDate(achievement.completedAt),
+                  date: fmt.date(achievement.completedAt),
                 })
               : t("achievements.goalReached")}
           </span>

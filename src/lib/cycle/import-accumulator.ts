@@ -24,10 +24,22 @@ import { upsertCycleDayLog } from "@/lib/cycle/day-log-write";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
 import { auditLog } from "@/lib/auth/audit";
 import {
+  HK_LACTATION,
+  HK_PREGNANCY,
   mapHkCycleSample,
   isCycleHkIdentifier,
   type CycleDayLogFields,
 } from "@/lib/cycle/healthkit-mapping";
+import {
+  decideImportedPregnancyState,
+  type StatusSample,
+} from "@/lib/cycle/pregnancy-import";
+import {
+  PREGNANCY_PROFILE_SELECT,
+  pregnancyFieldsOf,
+  pregnancyWriteData,
+} from "@/lib/cycle/pregnancy-store";
+import { userDayKey } from "@/lib/tz/format";
 import type { CycleDayLogInput } from "@/lib/validations/cycle";
 import type { ContraceptiveKind } from "@/generated/prisma/client";
 
@@ -43,6 +55,7 @@ export const EMPTY_CYCLE_IMPORT_STATS: CycleImportStats = {
   daysFailed: 0,
   firstFailureReason: null,
   goalNudged: false,
+  pregnancyStateSet: null,
 };
 
 /** Per-day merge state held during the parse. */
@@ -77,6 +90,11 @@ export interface CycleImportStats {
   firstFailureReason: string | null;
   /** Whether a CycleProfile goal nudge fired. */
   goalNudged: boolean;
+  /**
+   * The state the pregnancy / lactation samples set on a profile
+   * that held none (`pregnancy-import.ts`), or null.
+   */
+  pregnancyStateSet: "PREGNANT" | "POSTPARTUM" | null;
 }
 
 /**
@@ -86,6 +104,8 @@ export interface CycleImportStats {
  */
 export class CycleImportAccumulator {
   private readonly byDay = new Map<string, DayBucket>();
+  private readonly pregnancySamples: StatusSample[] = [];
+  private readonly lactationSamples: StatusSample[] = [];
   private samplesConsumed = 0;
   private gated: boolean | null = null;
 
@@ -99,9 +119,30 @@ export class CycleImportAccumulator {
     return isCycleHkIdentifier(hkIdentifier);
   }
 
-  /** True once at least one reproductive sample folded into a day-bucket. */
+  /** Is this a pregnancy / lactation STATUS sample? */
+  static handlesStatus(hkIdentifier: string): boolean {
+    return hkIdentifier === HK_PREGNANCY || hkIdentifier === HK_LACTATION;
+  }
+
+  /** True once at least one reproductive sample was taken in. */
   hasSamples(): boolean {
-    return this.byDay.size > 0;
+    return (
+      this.byDay.size > 0 ||
+      this.pregnancySamples.length > 0 ||
+      this.lactationSamples.length > 0
+    );
+  }
+
+  /**
+   * Hold one pregnancy or lactation status sample (user-local first
+   * and last day, `end` null while open) for the decision at flush.
+   */
+  consumeStatus(hkIdentifier: string, start: string, end: string | null): void {
+    const sample = { start, end };
+    if (hkIdentifier === HK_PREGNANCY) this.pregnancySamples.push(sample);
+    else if (hkIdentifier === HK_LACTATION) this.lactationSamples.push(sample);
+    else return;
+    this.samplesConsumed += 1;
   }
 
   /** Samples consumed so far — for the module-disabled skip accounting. */
@@ -210,6 +251,7 @@ export class CycleImportAccumulator {
       daysFailed: 0,
       firstFailureReason: null,
       goalNudged: false,
+      pregnancyStateSet: await this.applyPregnancyStatus(),
     };
     if (this.byDay.size === 0) return stats;
 
@@ -316,5 +358,69 @@ export class CycleImportAccumulator {
     }
 
     return stats;
+  }
+
+  /**
+   * Set the pregnancy state from the status samples, on a profile that holds
+   * none and whose owner never set or cleared one (`pregnancy-import.ts` has
+   * the rules). A record with no cycle settings yet gets them. Audited, like the
+   * goal nudge: a server-side change to an intent-revealing setting is never
+   * invisible.
+   */
+  private async applyPregnancyStatus(): Promise<
+    "PREGNANT" | "POSTPARTUM" | null
+  > {
+    if (this.pregnancySamples.length + this.lactationSamples.length === 0) {
+      return null;
+    }
+    const today = userDayKey(new Date(), this.userTimezone);
+    const decision = decideImportedPregnancyState(
+      this.pregnancySamples,
+      this.lactationSamples,
+      today,
+    );
+    if (!decision) return null;
+    const data = pregnancyWriteData({
+      reproductiveState: decision.state,
+      pregnancyStartDate:
+        decision.state === "PREGNANT" ? decision.startDate : null,
+      pregnancyDueDate: null,
+      deliveryDate:
+        decision.state === "POSTPARTUM" ? decision.deliveryDate : null,
+      postpartumWeeks: null,
+    });
+    const profile = await prisma.cycleProfile.findUnique({
+      where: { userId: this.userId },
+      select: PREGNANCY_PROFILE_SELECT,
+    });
+    if (!profile) {
+      // No cycle settings yet, so no choice of the owner's to respect.
+      await prisma.cycleProfile.create({
+        data: { userId: this.userId, ...data },
+      });
+    } else {
+      // A state the owner holds, or ever set or cleared, is theirs: an
+      // import never sets it behind them. Both live in the sealed state, so
+      // a profile without one is the only one an import may write, and the
+      // write claims exactly that.
+      const opened = pregnancyFieldsOf(profile);
+      if (opened.reproductiveState !== null || opened.ownerDecided) {
+        return null;
+      }
+      const written = await prisma.cycleProfile.updateMany({
+        where: {
+          userId: this.userId,
+          pregnancyEncrypted: profile.pregnancyEncrypted,
+        },
+        data: { pregnancyEncrypted: data.pregnancyEncrypted },
+      });
+      if (written.count === 0) return null;
+    }
+    await prisma.cyclePrediction.deleteMany({ where: { userId: this.userId } });
+    await auditLog("cycle.profile.pregnancy-imported", {
+      userId: this.userId,
+      details: { to: decision.state, via: "apple-health-import" },
+    });
+    return decision.state;
   }
 }

@@ -13,16 +13,20 @@
  *     OvulationTestResult / SexualActivity / Pregnancy/Progesterone test
  *     results → fields on a `CycleDayLog` (the day-log write helper), NOT
  *     `Measurement`.
- *   - Pregnancy / Lactation / Contraceptive STATUS → `CycleProfile` flags
- *     (post-partum / contraception mode), NOT day-logs.
+ *   - Pregnancy / Lactation STATUS → the `CycleProfile` pregnancy state
+ *     (`pregnancy-import.ts`); Contraceptive STATUS → the goal
+ *     nudge. NOT day-logs.
  *   - Symptom category types → seeded `CycleSymptom` keys via the
  *     `CycleSymptomLink` join.
  *   - BBT (`basalBodyTemperature`) stays a `Measurement(BODY_TEMPERATURE)`
  *     AND mirrors `CycleDayLog.basalBodyTempC`; it is NOT routed here (it
  *     is a quantity sample handled by the measurement mapping + the cycle
  *     day-log mirror).
- *   - BleedingDuringPregnancy / BleedingAfterPregnancy stay DEFERRED
- *     (pregnancy-mode is a later release).
+ *   - BleedingDuringPregnancy / BleedingAfterPregnancy stay unmapped. The
+ *     pregnancy state is set by the owner, or from the pregnancy and
+ *     lactation status samples (`pregnancy-import.ts`); bleeding in or after
+ *     a pregnancy is not a period and must not start a cycle, and the day
+ *     log has no field of its own for it.
  *
  * Apple's `export.xml` writes a category sample's `value` as the symbolic
  * `HKCategoryValue…` name; the live HealthKit API uses the integer
@@ -350,10 +354,9 @@ export function mapHkCycleSample(
         profile: { contraceptive },
       };
     }
-    // HK_PREGNANCY / HK_LACTATION carry no v1.15.0 schema destination
-    // (pregnancy-mode is deferred); they fall through to skip and the
-    // importer leaves them in its `deferred` tally rather than inventing a
-    // status column.
+    // HK_PREGNANCY / HK_LACTATION are status, not day logs: the importer
+    // hands them to `CycleImportAccumulator.consumeStatus` before this
+    // mapping runs (v1.49), so here they fall through to skip.
     default:
       return { kind: "skip" };
   }

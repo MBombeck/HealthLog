@@ -22,6 +22,7 @@ import {
   APPLE_HEALTH_IMPORT_PARSER_REVISION,
   APPLE_HEALTH_IMPORT_SEND_OPTIONS,
 } from "../apple-health-import-worker";
+import { APPLE_HEALTH_STAGED_IMPORT } from "@/lib/import/apple-health-upload";
 import {
   APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
   APPLE_HEALTH_IMPORT_V2_QUEUE,
@@ -70,10 +71,16 @@ describe("apple health import — pg-boss send policy", () => {
   });
 
   it("both kick-off routes send with the shared policy", () => {
+    // The routes hand the one Apple Health spec to the shared upload, which
+    // sends with the spec's queue and options.
+    expect(APPLE_HEALTH_STAGED_IMPORT.queue).toBe(APPLE_HEALTH_IMPORT_V2_QUEUE);
+    expect(APPLE_HEALTH_STAGED_IMPORT.sendOptions).toBe(
+      APPLE_HEALTH_IMPORT_SEND_OPTIONS,
+    );
     for (const file of ROUTE_FILES) {
       const source = readFileSync(join(process.cwd(), file), "utf8");
       expect(source).toMatch(
-        /boss\.send\(\s*APPLE_HEALTH_IMPORT_V2_QUEUE,\s*payload,\s*APPLE_HEALTH_IMPORT_SEND_OPTIONS,?\s*\)/,
+        /handleStagedUpload\([\s\S]*?import:\s*APPLE_HEALTH_STAGED_IMPORT\b/,
       );
     }
   });

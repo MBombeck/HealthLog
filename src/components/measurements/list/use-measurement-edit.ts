@@ -8,6 +8,7 @@ import { ApiError, apiPut } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { toCanonicalMgdl } from "@/lib/glucose";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { transformRescales } from "@/lib/measurements/display-transform";
 import { getUnitForType } from "@/lib/measurements/unit-map";
 import {
   VALUE_RANGES,
@@ -33,10 +34,13 @@ import type { MeasurementListData } from "./use-measurement-list-data";
 import type { MeasurementRowDisplay } from "./use-measurement-row-display";
 
 /**
- * The edit input's seed, in the preferred unit, so an imperial reader edits
- * in lb / in / °F (converted back on save), rounded so the input shows "210"
- * rather than a long float. Metric readers and legacy rows see the stored
- * value.
+ * The edit input's seed: the number the row shows, in the unit the label
+ * names. Every converted type seeds through the same display transform the
+ * list renders with, rounded to that transform's decimals, so a metric
+ * distance seeds "8.73" under "km" and an imperial weight seeds "210" under
+ * "lb". A metric reader used to get the stored value (8733 metres under a
+ * km label) because only the imperial branch was converted. A legacy row
+ * whose stored unit is not the type's canonical one keeps its stored value.
  */
 export function editSeedValue(
   {
@@ -49,19 +53,21 @@ export function editSeedValue(
   >,
   measurement: Measurement,
 ): number {
-  const rd = rowDisplay(measurement);
-  return editsConvertedGlucose(measurement)
-    ? rd.value
-    : unitDisplay.preference === "imperial" &&
-        unitDisplay.isTransformed(measurement.type) &&
-        measurement.unit === getUnitForType(measurement.type)
-      ? Math.round(rd.value * 100) / 100
-      : measurement.value;
+  if (editsConvertedGlucose(measurement)) return rowDisplay(measurement).value;
+  if (
+    unitDisplay.isTransformed(measurement.type) &&
+    measurement.unit === getUnitForType(measurement.type)
+  ) {
+    // `toDisplay` rounds a rescaling transform to its decimals and leaves an
+    // identity transform (metric kg, cm, °C) at the stored number.
+    return rowDisplay(measurement).value;
+  }
+  return measurement.value;
 }
 
 /**
  * The input's display-unit value inverted to the stored unit before the
- * request. Metric readers and legacy rows pass unchanged.
+ * request. Legacy rows pass unchanged.
  */
 export function storedValueFor(
   {
@@ -81,7 +87,9 @@ export function storedValueFor(
     editing.unit === getUnitForType(editing.type)
   ) {
     const inverted = unitDisplay.fromDisplay(editing.type, parsedValue);
-    return unitDisplay.preference === "imperial"
+    // A rescaled entry (lb, mi, km, km/h) lands on the canonical dialect's
+    // two decimals; an identity transform passes the typed number through.
+    return transformRescales(unitDisplay.transformFor(editing.type))
       ? Math.round(inverted * 100) / 100
       : inverted;
   }

@@ -67,7 +67,7 @@ describe("describeChannelTestFailures", () => {
 
   it("is what the admin toast renders", () => {
     const src = readFileSync(
-      join(process.cwd(), "src/components/admin/reminders-section.tsx"),
+      join(process.cwd(), "src/components/admin/notification-health-card.tsx"),
       "utf8",
     );
     expect(src).toMatch(/describeChannelTestFailures\(data\?\.results/);

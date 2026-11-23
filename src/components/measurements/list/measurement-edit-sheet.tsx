@@ -5,6 +5,7 @@ import { Loader2, MoreHorizontal, Trash2 } from "lucide-react";
 
 import { FieldError } from "@/components/forms/field-error";
 import { SeededFormDiscardDialog } from "@/components/forms/use-seeded-form-dismissal";
+import { FieldGroup } from "@/components/ui/field-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +33,7 @@ import { GlucoseContextSelect } from "../glucose-context-select";
 import { MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS } from "../measurement-list-meta";
 
 import { MAX_COMMENT_LENGTH, toDateTimeLocalValue } from "./list-model";
+import { deleteConfirmDescription } from "./row-actions";
 import type { MeasurementEdit } from "./use-measurement-edit";
 import type { MeasurementRowDisplay } from "./use-measurement-row-display";
 
@@ -94,12 +96,12 @@ export function MeasurementEditSheet({
               </span>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="edit-value">
-                {t("measurements.valueWithUnit", {
-                  unit: rowDisplay(editing).unit,
-                })}
-              </Label>
+            <FieldGroup
+              htmlFor="edit-value"
+              label={t("measurements.valueWithUnit", {
+                unit: rowDisplay(editing).unit,
+              })}
+            >
               <Input
                 id="edit-value"
                 type="number"
@@ -115,13 +117,13 @@ export function MeasurementEditSheet({
                 }
               />
               <FieldError id={editValueErrorId} message={editValueError} />
-            </div>
+            </FieldGroup>
 
             {editing.type === "BLOOD_GLUCOSE" && (
-              <div className="space-y-2">
-                <Label htmlFor="edit-glucose-context">
-                  {t("measurements.glucoseContext")}
-                </Label>
+              <FieldGroup
+                htmlFor="edit-glucose-context"
+                label={t("measurements.glucoseContext")}
+              >
                 <GlucoseContextSelect
                   id="edit-glucose-context"
                   value={editGlucoseContext}
@@ -130,13 +132,13 @@ export function MeasurementEditSheet({
                   // saving its note must not force one onto it.
                   allowNone
                 />
-              </div>
+              </FieldGroup>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="edit-measuredAt">
-                {t("measurements.timestamp")}
-              </Label>
+            <FieldGroup
+              htmlFor="edit-measuredAt"
+              label={t("measurements.timestamp")}
+            >
               <DateTimeField
                 id="edit-measuredAt"
                 value={editMeasuredAt}
@@ -148,12 +150,12 @@ export function MeasurementEditSheet({
                 aria-invalid={!!editError || undefined}
                 aria-describedby={editErrorDescriptor}
               />
-            </div>
+            </FieldGroup>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="edit-notes">
-                  {t("measurements.notes")} ({t("common.optional")})
+                  {t("common.note")} ({t("common.optional")})
                 </Label>
                 <span className="text-muted-foreground text-xs">
                   {editNotes.length}/{MAX_COMMENT_LENGTH}
@@ -194,7 +196,7 @@ export function MeasurementEditSheet({
                     {t("measurements.deleteConfirmTitle")}
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    {t("measurements.deleteConfirmDescription")}
+                    {deleteConfirmDescription(editing, t)}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

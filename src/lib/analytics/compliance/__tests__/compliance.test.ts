@@ -24,13 +24,17 @@
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import {
+  legacyDoseStatus,
+  resolveDoseState,
+} from "@/lib/medications/dose-state/resolve";
+import {
   DOSE_WINDOW_DEFAULTS,
   MIN_STABLE_DOSES,
   buildComplianceDisplay,
   buildComplianceMedicationContext,
   calculateCompliance,
   classifyIntakeTiming,
-  deriveDoseStatus,
+  defaultDoseBand,
   doseCadenceFamily,
   expectedSlotCountForDay,
   expectedSlotsBetween,
@@ -2535,9 +2539,32 @@ describe("calculateCompliance — irregular twice-daily taker (BUG 3 verify)", (
 });
 
 // ────────────────────────────────────────────────────────────────────
-// v1.15.9 — cadence-aware per-dose grace/miss window model. The card
-// reads `deriveDoseStatus` to render on-time / overdue / missed states.
+// v1.15.9 — cadence-aware per-dose grace/miss window model: the default
+// band of a dose the ledger has not minted, resolved by the dose resolver
+// (the path `currentDose` takes for such a dose).
 // ────────────────────────────────────────────────────────────────────
+
+function deriveDoseStatus(
+  targetAt: Date,
+  cadence: "daily" | "weekly",
+  now: Date,
+  options?: {
+    takenAt?: Date | null;
+    skipped?: boolean;
+    nextDoseAt?: Date | null;
+  },
+) {
+  return legacyDoseStatus(
+    resolveDoseState(
+      defaultDoseBand(targetAt, cadence, options),
+      {
+        takenAt: options?.takenAt ?? null,
+        skipped: options?.skipped ?? false,
+      },
+      now,
+    ).state,
+  );
+}
 
 describe("deriveDoseStatus — daily / intraday windows", () => {
   const target = new Date("2025-01-15T08:00:00Z");

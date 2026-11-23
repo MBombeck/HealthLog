@@ -18,10 +18,8 @@ import {
   buildWeightRangeFromHeight,
   getBodyFatTargetRange,
 } from "@/lib/analytics/value-bands";
-import {
-  getAgeFromDateOfBirth,
-  getPersonalizedPulseTarget,
-} from "@/lib/analytics/pulse-targets";
+import { getPersonalizedPulseTarget } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 
 /** Re-derive bands exactly as `page.tsx` did before v1.18.6. */
 function clientBands(profile: {
@@ -30,9 +28,9 @@ function clientBands(profile: {
   heightCm: number | null;
 }) {
   const bpTargets = profile.dateOfBirth
-    ? getBpTargets(profile.dateOfBirth)
+    ? getBpTargets(profile.dateOfBirth, "UTC")
     : null;
-  const pulseAge = getAgeFromDateOfBirth(profile.dateOfBirth);
+  const pulseAge = ageInYears(profile.dateOfBirth, "UTC");
   const pulseTarget = getPersonalizedPulseTarget(pulseAge, profile.gender);
   const bodyFatRange = getBodyFatTargetRange(profile.gender);
   const weightRange = profile.heightCm
@@ -107,6 +105,7 @@ describe("buildTargetBands — server/client parity", () => {
     gender: "MALE" | "FEMALE" | null;
     heightCm: number | null;
     thresholdsJson: unknown;
+    timezone: string;
   }> = [
     {
       name: "male 180cm with DOB",
@@ -114,6 +113,7 @@ describe("buildTargetBands — server/client parity", () => {
       gender: "MALE",
       heightCm: 180,
       thresholdsJson: null,
+      timezone: "UTC",
     },
     {
       name: "female 165cm with DOB",
@@ -121,6 +121,7 @@ describe("buildTargetBands — server/client parity", () => {
       gender: "FEMALE",
       heightCm: 165,
       thresholdsJson: null,
+      timezone: "UTC",
     },
     {
       name: "no-profile user (null DOB / gender / height)",
@@ -128,6 +129,7 @@ describe("buildTargetBands — server/client parity", () => {
       gender: null,
       heightCm: null,
       thresholdsJson: null,
+      timezone: "UTC",
     },
   ];
 
@@ -148,12 +150,14 @@ describe("buildTargetBands — server/client parity", () => {
       gender: "OTHER",
       heightCm: 180,
       thresholdsJson: null,
+      timezone: "UTC",
     });
     const unanswered = buildTargetBands({
       dateOfBirth: new Date("1985-06-15T00:00:00.000Z"),
       gender: null,
       heightCm: 180,
       thresholdsJson: null,
+      timezone: "UTC",
     });
     expect(other).toEqual(unanswered);
     const male = buildTargetBands({
@@ -161,6 +165,7 @@ describe("buildTargetBands — server/client parity", () => {
       gender: "MALE",
       heightCm: 180,
       thresholdsJson: null,
+      timezone: "UTC",
     });
     expect(other.bodyFatBands).not.toEqual(male.bodyFatBands);
   });
@@ -171,6 +176,7 @@ describe("buildTargetBands — server/client parity", () => {
       gender: null,
       heightCm: null,
       thresholdsJson: null,
+      timezone: "UTC",
     });
     expect(bands.bpTargets).toBeNull();
     expect(bands.bpSysRange).toBeNull();
@@ -200,6 +206,7 @@ describe("buildTargetBands — user weight target", () => {
     const withTarget = buildTargetBands({
       ...profile,
       thresholdsJson: { WEIGHT: { min: 74, max: 78 } },
+      timezone: "UTC",
     });
     expect(withTarget.weightRange?.greenMin).toBe(74);
     expect(withTarget.weightRange?.greenMax).toBe(78);
@@ -207,6 +214,7 @@ describe("buildTargetBands — user weight target", () => {
     const heightDerived = buildTargetBands({
       ...profile,
       thresholdsJson: null,
+      timezone: "UTC",
     });
     expect(heightDerived.weightRange).not.toEqual(withTarget.weightRange);
     // The chart bands follow the same range, so tile and chart agree.
@@ -223,6 +231,7 @@ describe("buildTargetBands — user weight target", () => {
       gender: null,
       heightCm: null,
       thresholdsJson: { WEIGHT: { min: 60, max: 65 } },
+      timezone: "UTC",
     });
     expect(bands.weightRange?.greenMin).toBe(60);
     expect(bands.weightBands?.length).toBeGreaterThan(0);
@@ -232,10 +241,12 @@ describe("buildTargetBands — user weight target", () => {
     const withTarget = buildTargetBands({
       ...profile,
       thresholdsJson: { WEIGHT: { min: 74, max: 78 } },
+      timezone: "UTC",
     });
     const without = buildTargetBands({
       ...profile,
       thresholdsJson: null,
+      timezone: "UTC",
     });
     expect(withTarget.bpTargets).toEqual(without.bpTargets);
     expect(withTarget.pulseBands).toEqual(without.pulseBands);
@@ -254,6 +265,7 @@ describe("buildTargetBands — the user's own targets on every shaded metric", (
     dateOfBirth: new Date("1985-06-15T00:00:00.000Z"),
     gender: "MALE" as const,
     heightCm: 180,
+    timezone: "UTC",
   };
   const without = buildTargetBands({ ...profile, thresholdsJson: null });
   const greenOf = (bands: Array<{ min: number; max: number; color: string }>) =>
@@ -266,6 +278,7 @@ describe("buildTargetBands — the user's own targets on every shaded metric", (
         BLOOD_PRESSURE_SYS: { min: 115, max: 125 },
         BLOOD_PRESSURE_DIA: { min: 70, max: 78 },
       },
+      timezone: "UTC",
     });
     expect(bands.bpTargets).toEqual({
       sysLow: 115,
@@ -286,6 +299,7 @@ describe("buildTargetBands — the user's own targets on every shaded metric", (
     const bands = buildTargetBands({
       ...profile,
       thresholdsJson: { BLOOD_PRESSURE_SYS: { min: 110, max: 128 } },
+      timezone: "UTC",
     });
     expect(bands.bpTargets?.sysLow).toBe(110);
     expect(bands.bpTargets?.sysHigh).toBe(128);
@@ -303,6 +317,7 @@ describe("buildTargetBands — the user's own targets on every shaded metric", (
         BLOOD_PRESSURE_SYS: { min: 115, max: 125 },
         BLOOD_PRESSURE_DIA: { min: 70, max: 78 },
       },
+      timezone: "UTC",
     });
     expect(bands.bpTargets).toEqual({
       sysLow: 115,
@@ -316,6 +331,7 @@ describe("buildTargetBands — the user's own targets on every shaded metric", (
     const bands = buildTargetBands({
       ...profile,
       thresholdsJson: { PULSE: { min: 48, max: 58 } },
+      timezone: "UTC",
     });
     expect(bands.pulseDisplayRange).toEqual(
       expect.objectContaining({ greenMin: 48, greenMax: 58 }),
@@ -330,6 +346,7 @@ describe("buildTargetBands — the user's own targets on every shaded metric", (
     const bands = buildTargetBands({
       ...profile,
       thresholdsJson: { BODY_FAT: { min: 12, max: 16 } },
+      timezone: "UTC",
     });
     expect(bands.bodyFatRange).toEqual({ min: 12, max: 16 });
     expect(greenOf(bands.bodyFatBands)).toEqual(
@@ -354,6 +371,7 @@ describe("buildTargetBands — the user's own targets on every shaded metric", (
     const bands = buildTargetBands({
       ...profile,
       thresholdsJson: { BLOOD_PRESSURE_SYS: { min: 115, max: 125 } },
+      timezone: "UTC",
     });
     expect(bands.pulseBands).toEqual(without.pulseBands);
     expect(bands.bodyFatBands).toEqual(without.bodyFatBands);

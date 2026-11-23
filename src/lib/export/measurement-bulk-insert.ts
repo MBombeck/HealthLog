@@ -68,8 +68,14 @@ export interface MeasurementInsertRow {
   deviceType: string | null;
   /** The token an EXTERNAL row came from (#1272); null when absent. */
   ingestTokenId?: string | null;
+  /** The IANA zone the reading was taken in; null means the profile zone. */
+  timeZone?: string | null;
   syncVersion: number;
   deletedAt: Date | null;
+  /** Equal to `deletedAt` when the phone reported the deletion. */
+  appleHealthDeletedAt?: Date | null;
+  /** When the phone computed a `stats:` day total. */
+  statsComputedAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -101,8 +107,11 @@ const COLUMNS: { [K in keyof MeasurementInsertRow]-?: [string, Kind] } = {
   rhythmClassification: ["rhythm_classification", "enum:rhythm_classification"],
   deviceType: ["device_type", "text"],
   ingestTokenId: ["ingest_token_id", "text"],
+  timeZone: ["time_zone", "text"],
   syncVersion: ["sync_version", "int4"],
   deletedAt: ["deleted_at", "timestamp"],
+  appleHealthDeletedAt: ["apple_health_deleted_at", "timestamp"],
+  statsComputedAt: ["stats_computed_at", "timestamp"],
   createdAt: ["created_at", "timestamp"],
   updatedAt: ["updated_at", "timestamp"],
 };
@@ -228,6 +237,8 @@ export type NewMeasurementRow = Omit<
   | "rhythmClassification"
   | "syncVersion"
   | "deletedAt"
+  | "appleHealthDeletedAt"
+  | "statsComputedAt"
   | "createdAt"
   | "updatedAt"
 > &
@@ -240,6 +251,7 @@ export type NewMeasurementRow = Omit<
       | "aggregationProvenance"
       | "glucoseContext"
       | "rhythmClassification"
+      | "statsComputedAt"
     >
   >;
 
@@ -280,8 +292,11 @@ export async function insertNewMeasurementRows(
     sleepStage: row.sleepStage,
     rhythmClassification: row.rhythmClassification ?? null,
     deviceType: row.deviceType,
+    timeZone: row.timeZone ?? null,
     syncVersion: 1,
     deletedAt: null,
+    appleHealthDeletedAt: null,
+    statsComputedAt: row.statsComputedAt ?? null,
     createdAt: now,
     updatedAt: now,
   }));

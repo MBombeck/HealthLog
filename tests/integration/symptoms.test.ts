@@ -256,6 +256,53 @@ describe("symptom definitions", () => {
     ).toBe(false);
   });
 
+  it("puts a new definition after the built-in ones Apple Health created", async () => {
+    const prisma = getPrismaClient();
+    for (const [i, code] of ["FEVER", "COUGH", "HEADACHE"].entries()) {
+      await prisma.symptomDefinition.create({
+        data: {
+          userId: OWNER_ID,
+          labelEncrypted: encryptToBytes(code),
+          code,
+          sortOrder: i,
+        },
+      });
+    }
+    const id = await defineSymptom("Aura");
+    const row = await prisma.symptomDefinition.findUniqueOrThrow({
+      where: { id },
+    });
+    expect(row.sortOrder).toBe(3);
+  });
+
+  it("admits one of several concurrent creates at the last free slot", async () => {
+    const prisma = getPrismaClient();
+    for (let i = 0; i < MAX_ACTIVE_SYMPTOM_DEFINITIONS - 1; i += 1) {
+      await prisma.symptomDefinition.create({
+        data: {
+          userId: OWNER_ID,
+          labelEncrypted: encryptToBytes(`S${i}`),
+          sortOrder: i,
+        },
+      });
+    }
+    const { POST } = await import("@/app/api/symptoms/definitions/route");
+    const labels = ["A", "B", "C", "D", "E", "F"];
+    const responses = await Promise.all(
+      labels.map((label) =>
+        call(POST, "POST", "/api/symptoms/definitions", { label }),
+      ),
+    );
+    expect(responses.map((r) => r.status).sort()).toEqual([
+      201, 422, 422, 422, 422, 422,
+    ]);
+    expect(
+      await prisma.symptomDefinition.count({
+        where: { userId: OWNER_ID, isActive: true, code: null },
+      }),
+    ).toBe(MAX_ACTIVE_SYMPTOM_DEFINITIONS);
+  });
+
   it("purges a definition with every occurrence of it", async () => {
     const id = await defineSymptom("Aura");
     await logEvent({ definitionId: id, intensity: 4 });
@@ -353,6 +400,47 @@ describe("symptom occurrences", () => {
     expect(
       await getPrismaClient().symptomEvent.count({ where: { id: event.id } }),
     ).toBe(0);
+  });
+
+  it("reads one occurrence by id, and is a 404 for another account's", async () => {
+    const id = await defineSymptom("Nausea");
+    const created = await logEvent({
+      definitionId: id,
+      intensity: 4,
+      occurredAt: "2026-09-02T07:15:00.000Z",
+      note: "after breakfast",
+    });
+    const eventId = (await json<Envelope<{ id: string }>>(created)).data.id;
+    const { GET } = await import("@/app/api/symptoms/events/[id]/route");
+    const read = await call(
+      GET,
+      "GET",
+      `/api/symptoms/events/${eventId}`,
+      undefined,
+      {
+        id: eventId,
+      },
+    );
+    expect(read.status).toBe(200);
+    expect(
+      (await json<Envelope<Record<string, unknown>>>(read)).data,
+    ).toMatchObject({
+      id: eventId,
+      definitionId: id,
+      intensity: 4,
+      note: "after breakfast",
+      occurredAt: "2026-09-02T07:15:00.000Z",
+    });
+
+    await signIn(OTHER_ID);
+    const foreign = await call(
+      GET,
+      "GET",
+      `/api/symptoms/events/${eventId}`,
+      undefined,
+      { id: eventId },
+    );
+    expect(foreign.status).toBe(404);
   });
 
   it("says hasMore only when an occurrence past the page exists", async () => {
@@ -682,6 +770,50 @@ describe("symptom occurrences", () => {
     ).toBe(cold.id);
   });
 
+  it("refuses to move a linked occurrence out of its resolved episode", async () => {
+    const id = await defineSymptom("Aura");
+    const db = getPrismaClient();
+    const cold = await db.illnessEpisode.create({
+      data: {
+        userId: OWNER_ID,
+        label: "Cold",
+        type: "INFECTION",
+        onsetAt: new Date("2026-10-01T00:00:00.000Z"),
+        resolvedAt: new Date("2026-10-08T00:00:00.000Z"),
+      },
+    });
+    const created = await logEvent({
+      definitionId: id,
+      intensity: 5,
+      occurredAt: "2026-10-05T09:00:00.000Z",
+      episodeId: cold.id,
+    });
+    const eventId = (await json<Envelope<{ id: string }>>(created)).data.id;
+    const { PATCH } = await import("@/app/api/symptoms/events/[id]/route");
+    const patch = (body: Record<string, unknown>) =>
+      call(PATCH, "PATCH", `/api/symptoms/events/${eventId}`, body, {
+        id: eventId,
+      });
+
+    const out = await patch({ occurredAt: "2026-10-12T09:00:00.000Z" });
+    expect(out.status).toBe(422);
+    expect((await json<Envelope<null>>(out)).meta?.errorCode).toBe(
+      "symptoms.episode.notOpen",
+    );
+    const row = await db.symptomEvent.findUniqueOrThrow({
+      where: { id: eventId },
+    });
+    expect(row.occurredAt.toISOString()).toBe("2026-10-05T09:00:00.000Z");
+    // Inside the episode it moves; and moved out with the link cleared too.
+    expect(
+      (await patch({ occurredAt: "2026-10-06T09:00:00.000Z" })).status,
+    ).toBe(200);
+    expect(
+      (await patch({ occurredAt: "2026-10-12T09:00:00.000Z", episodeId: null }))
+        .status,
+    ).toBe(200);
+  });
+
   it("opens a link from the day view only to a live episode", async () => {
     const id = await defineSymptom("Aura");
     const db = getPrismaClient();
@@ -732,6 +864,104 @@ describe("symptom occurrences", () => {
       .sort((a, b) => a.at.localeCompare(b.at))
       .map((e) => e.href);
     expect(hrefs).toEqual([`/illness/${live.id}`, "/illness"]);
+  });
+
+  it("carries the day view's doseOffset on every listed occurrence", async () => {
+    const id = await defineSymptom("Headache");
+    const db = getPrismaClient();
+    const med = await db.medication.create({
+      data: { userId: OWNER_ID, name: "Metformin", dose: "500 mg" },
+    });
+    // The evening dose of the 9th (22:00 Berlin) is another local day.
+    await db.medicationIntakeEvent.create({
+      data: {
+        userId: OWNER_ID,
+        medicationId: med.id,
+        scheduledFor: new Date("2026-03-09T21:00:00.000Z"),
+        takenAt: new Date("2026-03-09T21:00:00.000Z"),
+      },
+    });
+    const intake = await db.medicationIntakeEvent.create({
+      data: {
+        userId: OWNER_ID,
+        medicationId: med.id,
+        scheduledFor: new Date("2026-03-10T07:00:00.000Z"),
+        takenAt: new Date("2026-03-10T07:05:00.000Z"),
+      },
+    });
+    // 07:00 and 10:15 Berlin on the 10th, and 23:30 Berlin on the 11th,
+    // a day with no dose.
+    for (const at of [
+      "2026-03-10T06:00:00.000Z",
+      "2026-03-10T09:15:00.000Z",
+      "2026-03-11T22:30:00.000Z",
+    ]) {
+      const response = await logEvent({
+        definitionId: id,
+        intensity: 5,
+        occurredAt: at,
+      });
+      expect(response.status).toBe(201);
+    }
+
+    type Listed = Envelope<{
+      events: Array<{
+        id: string;
+        occurredAt: string;
+        doseOffset?: { intakeId: string; title: string; minutes: number };
+      }>;
+    }>;
+    const { GET } = await import("@/app/api/symptoms/events/route");
+    const listed = await json<Listed>(
+      await call(GET, "GET", "/api/symptoms/events"),
+    );
+    const byTime = Object.fromEntries(
+      listed.data.events.map((e) => [e.occurredAt, e.doseOffset]),
+    );
+    expect(byTime).toEqual({
+      "2026-03-10T06:00:00.000Z": {
+        intakeId: intake.id,
+        title: "Metformin",
+        minutes: -65,
+      },
+      "2026-03-10T09:15:00.000Z": {
+        intakeId: intake.id,
+        title: "Metformin",
+        minutes: 130,
+      },
+      "2026-03-11T22:30:00.000Z": undefined,
+    });
+
+    // The same values the day view carries for the same occurrences.
+    const dayRoute = await import("@/app/api/day/[date]/route");
+    const day = await json<
+      Envelope<{
+        events: Array<{ kind: string; id: string; doseOffset?: unknown }>;
+      }>
+    >(
+      await call(dayRoute.GET, "GET", "/api/day/2026-03-10", undefined, {
+        date: "2026-03-10",
+      }),
+    );
+    for (const e of day.data.events.filter((x) => x.kind === "symptom")) {
+      expect(listed.data.events.find((l) => l.id === e.id)?.doseOffset).toEqual(
+        e.doseOffset,
+      );
+    }
+
+    // Medications switched off: no dose is named.
+    await db.user.update({
+      where: { id: OWNER_ID },
+      data: { modulePreferencesJson: { medications: false } },
+    });
+    const off = await json<Listed>(
+      await call(GET, "GET", "/api/symptoms/events"),
+    );
+    expect(off.data.events.map((e) => e.doseOffset)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+    ]);
   });
 
   it("answers illness.disabled with the module off", async () => {

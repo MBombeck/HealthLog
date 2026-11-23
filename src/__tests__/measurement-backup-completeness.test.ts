@@ -128,7 +128,7 @@ function functionBody(source: string, declaration: string): string {
 function serialisedFields(source: string): Set<string> {
   const body = functionBody(source, "function serialiseMeasurement(");
   return new Set(
-    [...body.matchAll(/([a-zA-Z_$][\w$]*): measurement\./g)].map((m) => m[1]),
+    [...body.matchAll(/([a-zA-Z_$][\w$]*):\s+measurement\./g)].map((m) => m[1]),
   );
 }
 
@@ -247,7 +247,10 @@ describe("health profile backup completeness", () => {
   const schema = readFileSync(SCHEMA, "utf8");
   const source = readFileSync(PROFILE_BACKUP_BUILDER, "utf8");
   const models = declaredModels(schema);
-  const excluded = new Set(["userId"]);
+  // `aboutMeRevisedAt` is the about-me lock token (migration 0554): a restore
+  // creates the row afresh and the token starts there, so carrying one would
+  // hand the restored account a token nobody read.
+  const excluded = new Set(["userId", "aboutMeRevisedAt"]);
 
   it.each([
     ["UserHealthProfile", "HealthProfileBackupEntry", "profileRow"],

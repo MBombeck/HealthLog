@@ -23,6 +23,7 @@ import {
   APP_MINTED_SOURCE,
   parseExternalIdDelete,
 } from "@/lib/sync/external-id-delete";
+import { appleHealthDeletion } from "@/lib/sync/tombstone-repost";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,7 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
             externalId: { in: body.externalIds },
             deletedAt: null,
           },
-          data: { deletedAt: new Date() },
+          data: appleHealthDeletion(),
         });
   if (deleted > 0) invalidateUserHealthContext(user.id);
 

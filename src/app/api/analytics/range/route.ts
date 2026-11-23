@@ -15,6 +15,8 @@
  * its own per-(type, range) cache slot on the client (`queryKeys.analyticsRange`).
  *
  * iOS-safe: additive new route, no change to the `/api/analytics` envelope.
+ * Every number is in the account's display unit, named by `unit`
+ * (`src/lib/analytics/range-display.ts`).
  */
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -30,6 +32,9 @@ import {
   type AnalyticsRange,
 } from "@/lib/analytics/range-delta";
 import type { MeasurementType } from "@/generated/prisma/client";
+import { rangeDeltaInUnit } from "@/lib/analytics/range-display";
+import { prisma } from "@/lib/db";
+import { resolveUnitPreferences } from "@/lib/measurements/display-transform";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +67,20 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const type = parsed.data.type as MeasurementType;
   const range = parsed.data.range as AnalyticsRange;
 
-  const result = await computeRangeDelta(user.id, type, range);
+  const [stored, prefs] = await Promise.all([
+    computeRangeDelta(user.id, type, range),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { unitPreference: true, glucoseUnit: true },
+    }),
+  ]);
+  // The answer is in the account's unit, and says which: glucose follows
+  // the glucose unit, the metric/imperial types the unit system.
+  const result = rangeDeltaInUnit(
+    stored,
+    type,
+    resolveUnitPreferences(prefs ?? {}),
+  );
 
   annotate({
     action: { name: "analytics.range.read" },
@@ -72,6 +90,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       granularity: result.granularity,
       current_count: result.current.count,
       previous_count: result.previous.count,
+      unit: result.unit,
     },
   });
 

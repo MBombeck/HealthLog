@@ -94,26 +94,25 @@ export function ApiTokensRow({
     typeof window !== "undefined" ? window.location.origin : "https://...";
   const endpoint = `${baseUrl}/api/ingest/medication`;
 
-  // The minted token is wired straight into the snippets the moment it
-  // exists; before that the templates carry a `YOUR_TOKEN` placeholder.
-  // The idempotency key uses an `intake-` prefix so a re-POST of the
-  // same logical intake collapses to one row.
+  // The minted token goes into the snippets once it exists.
+  // One idempotency key per take (a fixed one is refused from the next day).
   const tokenForExample = mintedToken ?? "YOUR_TOKEN";
-  const examplePayload = `{"medicationName":"${medicationName}","idempotencyKey":"intake-202602191230"}`;
+  const shellPayload = `{"medicationName":"${medicationName}","idempotencyKey":"intake-'"$(date +%s)"'"}`;
+  const powershellPayload = `('{"medicationName":"${medicationName}","idempotencyKey":"intake-' + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() + '"}')`;
   const exampleMap: Record<ExampleType, { label: string; value: string }> = {
     curl: {
       label: "cURL",
       value: `curl -X POST ${endpoint} \\
   -H "Authorization: Bearer ${tokenForExample}" \\
   -H "Content-Type: application/json" \\
-  -d '${examplePayload}'`,
+  -d '${shellPayload}'`,
     },
     wget: {
       label: "wget",
       value: `wget --method=POST "${endpoint}" \\
   --header="Authorization: Bearer ${tokenForExample}" \\
   --header="Content-Type: application/json" \\
-  --body-data='${examplePayload}' \\
+  --body-data='${shellPayload}' \\
   -O -`,
     },
     fetch: {
@@ -135,7 +134,7 @@ export function ApiTokensRow({
       value: `Invoke-RestMethod -Method Post -Uri "${endpoint}" \`
   -Headers @{ Authorization = "Bearer ${tokenForExample}" } \`
   -ContentType "application/json" \`
-  -Body '${examplePayload}'`,
+  -Body ${powershellPayload}`,
     },
   };
   const selectedExample = exampleMap[exampleType];

@@ -256,6 +256,20 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   // this overlay.
   ["MENOPAUSAL_STATE", "body"],
   ["BLEEDING_AFTER_MENOPAUSE", "body"],
+  // Apple effort. The scores join the other effort indices; the rate joins
+  // the activity quantities it is not added into.
+  ["WORKOUT_EFFORT_SCORE", "scores"],
+  ["ESTIMATED_WORKOUT_EFFORT_SCORE", "scores"],
+  ["PHYSICAL_EFFORT", "activity"],
+  // Apple sport quantities (#1415) sit with the other movement quantities.
+  ["CYCLING_DISTANCE", "activity"],
+  ["ROWING_DISTANCE", "activity"],
+  ["ROWING_SPEED", "activity"],
+  ["RUNNING_SPEED", "activity"],
+  ["RUNNING_POWER", "activity"],
+  ["RUNNING_GROUND_CONTACT_TIME", "activity"],
+  ["RUNNING_VERTICAL_OSCILLATION", "activity"],
+  ["RUNNING_STRIDE_LENGTH", "activity"],
 ]);
 
 /**
@@ -268,20 +282,4 @@ export function getMeasurementCategory(
   type: MeasurementType,
 ): MeasurementCategory | undefined {
   return MEASUREMENT_CATEGORIES.get(type);
-}
-
-/**
- * List every `MeasurementType` belonging to a given category. Useful
- * for the iOS picker fan-out and the web Insights nav grouping. The
- * return order is the insertion order in `MEASUREMENT_CATEGORIES`
- * above — kept deterministic so the picker UX has a stable layout.
- */
-export function measurementTypesForCategory(
-  category: MeasurementCategory,
-): MeasurementType[] {
-  const out: MeasurementType[] = [];
-  for (const [type, cat] of MEASUREMENT_CATEGORIES) {
-    if (cat === category) out.push(type);
-  }
-  return out;
 }

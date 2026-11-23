@@ -8,6 +8,7 @@ import type { User } from "@/generated/prisma/client";
 import { GET, PATCH } from "@/app/api/nutrients/targets/route";
 import { GET as GET_DAILY } from "@/app/api/nutrients/daily/route";
 import { MEASUREMENTS_WRITE_SCOPE } from "@/lib/measurements/scopes";
+import { NUTRIENT_CATALOG } from "@/lib/nutrients/catalog";
 
 import { callRoute, type RouteAuth } from "../../kit/call-route";
 import { makeSession, makeToken, makeUser } from "../../kit/factories";
@@ -104,6 +105,42 @@ describe("/api/nutrients/targets", () => {
       expect(res.status, JSON.stringify(targets)).toBe(422);
     }
     expect(await stored(user)).toBeNull();
+  });
+
+  it("names each refused value's plausibility bounds, and never the value", async () => {
+    const user = await nutrientUser();
+    const session = await makeSession(user);
+    // A value whose digits appear in no bound, so the echo check below
+    // cannot match a bound by accident (sodium's maximum is 50000).
+    const res = await patch(
+      {
+        protein: { value: 4321, direction: "target" },
+        sodium: { value: 0, direction: "limit" },
+      },
+      session,
+    );
+    expect(res.status).toBe(422);
+    const issues = (res.body as { details: { issues: unknown[] } }).details
+      .issues;
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "targets.protein.value",
+          code: "too_big",
+          maximum: NUTRIENT_CATALOG.protein.plausibleDailyMax,
+          inclusive: true,
+          minimum: 0,
+        }),
+        expect.objectContaining({
+          path: "targets.sodium.value",
+          code: "too_small",
+          minimum: 0,
+          inclusive: false,
+          maximum: NUTRIENT_CATALOG.sodium.plausibleDailyMax,
+        }),
+      ]),
+    );
+    expect(JSON.stringify(issues)).not.toContain("4321");
   });
 
   it("refuses with module.disabled while the module is off", async () => {

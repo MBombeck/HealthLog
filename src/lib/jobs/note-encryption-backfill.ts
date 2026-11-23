@@ -128,6 +128,7 @@ export async function runNoteEncryptionBackfillForUser(
   // Each migration nulls `notes`, so a migrated row drops out of the next
   // `notes: { not: null }, notesEncrypted: null` page.
   for (;;) {
+    // dense-take: a batch of a loop that runs until no legacy note is left.
     const rows = await prisma.measurement.findMany({
       where: { userId, notes: { not: null }, notesEncrypted: null },
       select: { id: true },

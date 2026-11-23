@@ -129,8 +129,12 @@
  * correct. Callers that want hours convert at the edge (`/ 60`).
  */
 import type { MeasurementSource, SleepStage } from "@/generated/prisma/client";
-import { userDayKey } from "@/lib/tz/format";
-import { wallClockInTz } from "@/lib/tz/wall-clock";
+import {
+  asleepMidpointMinutes,
+  isDaytimeNap,
+  sessionZoneOf,
+  wakeDayOf,
+} from "./sleep-session-clock";
 import { summarize, type DataSummary } from "@/lib/analytics/trends";
 import {
   getDeviceTypeLadder,
@@ -276,69 +280,7 @@ function inBedEnvelopeMinutes(rows: readonly SleepStageRow[]): number | null {
  */
 export const SESSION_GAP_MS = 3 * 60 * 60 * 1000;
 
-/**
- * Below this much asleep time a session can be a nap. Three hours is where
- * wearables draw the line between a nap and a main sleep (Oura types a
- * period `long_sleep` from three hours on).
- */
-export const MAIN_SLEEP_MIN_MINUTES = 180;
-
-/**
- * The night window, in local minutes-of-day: a session whose midpoint falls
- * from 20:00 to 10:00 is night sleep however short it is. Wide enough for a
- * late chronotype (asleep 04:00 to 12:00 has its midpoint at 08:00) and for
- * an early one, and clear of the afternoon where naps sit.
- */
-export const NIGHT_WINDOW_START_MINUTES = 20 * 60;
-export const NIGHT_WINDOW_END_MINUTES = 10 * 60;
-
-/**
- * True for a session that is a nap rather than a main sleep: short (under
- * `MAIN_SLEEP_MIN_MINUTES` asleep) AND centred in the daytime. A short night
- * is still the night (insomnia, a newborn, split sleep); a long daytime sleep
- * (after a night shift) is still a main sleep. The one nap rule: the nap
- * convention, the sleep score's midpoint and every list read it. Pure.
- */
-export function isDaytimeNap(
-  asleepMinutes: number,
-  midpointMinutes: number,
-): boolean {
-  if (asleepMinutes >= MAIN_SLEEP_MIN_MINUTES) return false;
-  const atNight =
-    midpointMinutes >= NIGHT_WINDOW_START_MINUTES ||
-    midpointMinutes < NIGHT_WINDOW_END_MINUTES;
-  return !atNight;
-}
-
-/**
- * The centre of a session's asleep span as local minutes-of-day: its wake
- * instant minus half its asleep minutes, read on the sleeper's wall clock.
- */
-export function asleepMidpointMinutes(
-  end: Date,
-  asleepMinutes: number,
-  tz: string,
-): number {
-  const mid = new Date(end.getTime() - (asleepMinutes / 2) * 60_000);
-  if (tz === "UTC") return mid.getUTCHours() * 60 + mid.getUTCMinutes();
-  const { hour, minute } = wallClockInTz(mid, tz);
-  return hour * 60 + minute;
-}
-
-/**
- * The wake day a session is filed under: the local day its last row ends on,
- * over every writer in the session. One rule for every reader, the SQL page
- * cut of the sleep list included, which sees every writer and cannot know the
- * winning one. Filing by the winner alone named a different day whenever a
- * losing writer's in-bed span ran past midnight after the winner stopped, and
- * the list and the night view then disagreed about which day the night was.
- */
-function wakeDayOf(rows: readonly SleepStageRow[], tz: string): string {
-  let end = rows[0].measuredAt;
-  for (const r of rows)
-    if (r.measuredAt.getTime() > end.getTime()) end = r.measuredAt;
-  return userDayKey(end, tz);
-}
+export { asleepMidpointMinutes, isDaytimeNap } from "./sleep-session-clock";
 
 export interface SleepStageRow {
   value: number;
@@ -361,6 +303,12 @@ export interface SleepStageRow {
    * row stored before v1.4.25) collapse per source exactly as before.
    */
   deviceType?: string | null;
+  /**
+   * The IANA zone the row was taken in (iOS #181); null or absent reads
+   * the row in the profile zone. Optional so callers that do not select the
+   * column file every night by the profile zone, as before.
+   */
+  timeZone?: string | null;
 }
 
 /** One reconstructed night: the asleep total + the per-stage breakdown. */
@@ -409,7 +357,12 @@ export interface SleepNight {
    * is not dragged into the afternoon by it. Null when no session carries
    * asleep minutes, and on a day whose only sleep is daytime naps.
    */
-  mainSession: { end: Date; asleepMinutes: number } | null;
+  mainSession: {
+    end: Date;
+    asleepMinutes: number;
+    /** The zone the session's clock reads in (its own, or the profile's). */
+    timeZone: string;
+  } | null;
 }
 
 /** Sentinel for rows that carry no source — collapses to one bucket. */
@@ -812,7 +765,11 @@ export function reconstructSleepNights(
         sessionAsleep > 0 &&
         !isDaytimeNap(
           sessionAsleep,
-          asleepMidpointMinutes(new Date(sessionEnd), sessionAsleep, tz),
+          asleepMidpointMinutes(
+            new Date(sessionEnd),
+            sessionAsleep,
+            sessionZoneOf(all, tz),
+          ),
         ) &&
         (sessionAsleep > mainSessionAsleep ||
           (sessionAsleep === mainSessionAsleep && sessionEnd > mainSessionEnd))
@@ -837,6 +794,7 @@ export function reconstructSleepNights(
           ? {
               end: new Date(mainSessionEnd),
               asleepMinutes: mainSessionAsleep,
+              timeZone: sessionZoneOf(mainSessionRows, tz),
             }
           : null,
     });
@@ -869,8 +827,13 @@ export interface SleepSegment {
  * under one key for the headline number.
  */
 export interface SleepSession {
-  /** Wake-day key (YYYY-MM-DD) of the session's last segment, in user tz. */
+  /**
+   * Wake-day key (YYYY-MM-DD) of the session's last segment, in that row's
+   * own zone when it has one, in the user tz otherwise.
+   */
   night: string;
+  /** The zone the session is read in when it is not the profile zone. */
+  timeZone: string | null;
   /** The canonical ingest source whose segments were kept (null = none). */
   source: MeasurementSource | null;
   /** Session start instant — earliest segment start. */
@@ -1167,8 +1130,12 @@ export function reconstructSleepSessions(
     }
     const asleep = asleepMinutesOf(pool);
     const canonicalSource = sourceOfWriterKey(canonical);
+    const zone = sessionZoneOf(session, tz);
     sessions.push({
       night: wakeDayOf(session, tz),
+      // The session's own zone when its rows carry one; null means the
+      // profile zone (the night was not slept elsewhere, or not marked).
+      timeZone: zone === tz ? null : zone,
       source:
         canonicalSource === NO_SOURCE
           ? null
@@ -1192,7 +1159,7 @@ export function reconstructSleepSessions(
       sourceDiscrepancy: sessionSourceDiscrepancy(session),
       daytimeNap: isDaytimeNap(
         asleep,
-        asleepMidpointMinutes(latest, asleep, tz),
+        asleepMidpointMinutes(latest, asleep, zone),
       ),
     });
   }

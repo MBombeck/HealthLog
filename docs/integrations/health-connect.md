@@ -2,8 +2,9 @@
 
 HealthLog reads the export file of Android's Health Connect and folds
 it into the same timeline as every other source. There is no Android
-app and no live sync: you export from the phone, upload the file, and
-a background job imports it. Rows from this path carry the source
+app and no live sync: you export from the phone, and either upload the
+file or let HealthLog fetch the scheduled export from a WebDAV or
+Nextcloud folder (see the last section); a background job imports it. Rows from this path carry the source
 `HEALTH_CONNECT`.
 
 ## What you need
@@ -25,8 +26,8 @@ a background job imports it. Rows from this path carry the source
 2. Go to **Manage data**, then **Export and import**, then
    **Scheduled export** or **Export now**, depending on the version.
 3. Pick the cloud storage app as the destination. You can choose how
-   often Health Connect exports again; HealthLog only ever reads the
-   file you upload.
+   often Health Connect exports again; HealthLog reads the file you
+   upload, or the one it fetches from a folder you set up.
 
 The result is a ZIP file named `Health Connect.zip` with a single
 entry, `health_connect_export.db`. That entry is a copy of the phone's
@@ -37,15 +38,16 @@ data.
 ## 2. Upload to HealthLog
 
 Download the ZIP from the cloud to the computer or phone you use
-HealthLog on, open **Settings → Export & Import** and drop the file
+HealthLog on, open **Settings > Export & import** and drop the file
 onto the **Health Connect export** card.
 
 The endpoint is `POST /api/import/health-connect-export`
 (`multipart/form-data`, field `file`). It:
 
-1. Allows three uploads per minute per account.
+1. Allows five uploads per minute per account.
 2. Refuses anything above **1 GiB**, once against the declared
-   `Content-Length` and again while the body streams to disk.
+   `Content-Length` and again while the body streams to disk, with
+   `413` and `errorCode` `import.file.too_large` either way.
 3. Streams the body to a temp file and hashes it with SHA-256 on the
    way. Uploading the same bytes again returns the earlier job
    (`idempotent: true`) instead of importing twice; a failed job never
@@ -161,6 +163,85 @@ is never counted twice.
   160 MB of heap in total.
 - Split web and worker containers need a shared staging directory,
   exactly as for the Apple Health import.
-- The status of a running job shows up under **Settings → Export &
+- The status of a running job shows up under **Settings > Export &
   Import**; a job interrupted by a restart is marked failed by the
   same reconcile pass that watches Apple Health imports.
+
+## Fetching the scheduled export from a folder
+
+Health Connect can export on a schedule into a cloud app. When that cloud is
+a WebDAV server or Nextcloud, HealthLog can fetch the file on its own, so
+nothing has to be downloaded and uploaded by hand.
+
+1. On the phone, set up a **Scheduled export** into the Nextcloud app (or
+   any app that writes to a WebDAV folder), for example daily.
+2. In Nextcloud, create an **app password** under **Personal settings >
+   Security**. Use it instead of the account password.
+3. In HealthLog open **Settings > Integrations > Health Connect from a
+   folder** (it sits with the other connections, since HealthLog fetches the
+   file on its own) and enter:
+   - the folder's WebDAV address, for Nextcloud
+     `https://cloud.example/remote.php/dav/files/<user>/<folder>` (no user
+     name or password inside the address);
+   - the file name, `Health Connect.zip` unless the phone names it
+     differently;
+   - the WebDAV user name and the app password.
+
+HealthLog then reads the file about every six hours, and at once on **Fetch
+now**:
+
+- The request goes through the app's outbound wrapper with a timeout and no
+  redirects followed, so the credentials cannot be bounced to another host.
+  The last `ETag` is sent back, so an unchanged file is not downloaded again.
+- The download streams to disk, hashed on the way, and stops at 1 GiB.
+- A file whose SHA-256 matches one already imported is skipped. Any other
+  goes through the same queue and importer as an upload, so the import, its
+  limits and its summary are the ones described above.
+- A failure (file not found, credentials refused, server down) waits thirty
+  minutes, then doubles up to a day, and the card names the last outcome.
+  An import that is already running for the account is retried in thirty
+  minutes.
+- Every fetch is also recorded as a connection, `health-connect-remote`, so
+  its state shows on **Settings > Integrations**, in
+  `GET /api/integrations/status` and in the assistant's integration status
+  like any other source. A refused user name or app password reads as
+  "action needed" until a new password is saved; a missing file, a redirect
+  or an address the server does not allow is reported as a lasting problem;
+  a timeout or a server error is retried. Pausing or removing the folder
+  ends the connection.
+
+The password is stored encrypted with the app's encryption key and never
+shown again. Removing the folder deletes it; the imports stay. It only ever
+goes to the server it was entered for: moving the folder to another server
+asks for the password again, and saving a password asks you to confirm it is
+you (sign in again, or re-enter your password or second factor) when the
+session is older than five minutes. A public folder address must start with
+`https://`, because the password travels with every fetch.
+
+The folder is not part of a backup, like the other connections to systems
+of your own (Nightscout, Dawarich, Paperless-ngx): a backup file is not a
+credential store, and on another server the address would point somewhere
+that server's operator never allowed. The imported data travels as usual;
+after a restore, enter the folder once more. A file that was imported
+before the restore is not imported twice: its rows are recognised by their
+identity.
+
+**A folder on your own network.** A public address works without any
+setting. A Nextcloud reachable only on the home network or a VPN needs its
+exact origin listed by the person running the server, in
+`HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS` (comma-separated
+`scheme://host[:port]`, never a suffix or a range), the same rule as
+Nightscout and Dawarich. Link-local and cloud metadata addresses stay
+refused even when listed. A listed origin may be `http://` (a home
+Nextcloud without a certificate); the grant names the scheme, so only that
+exact plain-http origin is allowed, and the password then crosses the home
+network unencrypted.
+
+The fetch answers with an outcome (`not found`, `refused the password`,
+`server error`) for any path on an allowed server. It returns no content, but
+it does tell an account whether a path exists on a server the operator listed.
+
+The endpoints are `GET`, `PUT` and `DELETE /api/import/health-connect-remote`
+and `POST /api/import/health-connect-remote/fetch`; the background pass is the
+`health-connect-remote-fetch` queue, hourly, reading only the folders that are
+due.

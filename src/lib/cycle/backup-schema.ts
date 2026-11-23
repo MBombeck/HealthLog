@@ -21,6 +21,13 @@ import {
   SecondarySymptom,
 } from "@/generated/prisma/enums";
 import { isoDateTime } from "@/lib/export/backup-schema-kit";
+import {
+  POSTPARTUM_WEEKS_MAX,
+  POSTPARTUM_WEEKS_MIN,
+} from "@/lib/cycle/pregnancy";
+
+/** A `YYYY-MM-DD` calendar day. */
+const dateKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 /* ── v1.15.0 cycle-tracking backup shapes ──────────────────────────── */
 
@@ -118,12 +125,23 @@ export const cycleDayLogSchema = z
     tz: z.string().nullable().optional(),
     syncVersion: z.number().int().optional(),
     deletedAt: isoDateTime.nullable().optional(),
+    appleHealthDeletedAt: isoDateTime.nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
     symptomKeys: z.array(z.string()).default([]),
     symptomSeverities: z.array(cycleSymptomSeveritySchema).default([]),
     symptomLinkCreatedAt: z
       .array(z.object({ key: z.string().min(1), createdAt: isoDateTime }))
+      .optional(),
+    // Which write each link came from, sparse: only links an import wrote
+    // are listed, every other link is the person's own (`MANUAL`). A file
+    // without it restores every link as `MANUAL`. The source is read as a
+    // plain string and checked at the write, so an unknown one costs that
+    // link its provenance, not the restore.
+    symptomSources: z
+      .array(
+        z.object({ key: z.string().min(1), source: z.string() }).passthrough(),
+      )
       .optional(),
   })
   .passthrough();
@@ -141,6 +159,22 @@ export const cycleProfileSchema = z
     rawChartMode: z.boolean().optional(),
     discreetNotifications: z.boolean().optional(),
     sensitiveCategoryEncryption: z.boolean().optional(),
+    reproductiveState: z.enum(["PREGNANT", "POSTPARTUM"]).nullable().optional(),
+    pregnancyStartDate: dateKey.nullable().optional(),
+    pregnancyDueDate: dateKey.nullable().optional(),
+    deliveryDate: dateKey.nullable().optional(),
+    postpartumWeeks: z
+      .number()
+      .int()
+      .min(POSTPARTUM_WEEKS_MIN)
+      .max(POSTPARTUM_WEEKS_MAX)
+      .optional(),
+    // The owner set or cleared the state at least once, so an import does
+    // not set it behind them. Absent in files written before v1.49.0.
+    pregnancyOwnerDecided: z.boolean().optional(),
+    // A disaster-recovery file's sealed pregnancy state, verbatim. Absent in
+    // a portable file and in files written before v1.49.0.
+    pregnancyEncrypted: z.string().min(1).nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
   })

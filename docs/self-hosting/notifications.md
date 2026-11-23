@@ -54,7 +54,8 @@ environment variables (`src/lib/notifications/vapid-config.ts`). The admin
 panel is the easiest path because it survives without touching `.env`.
 
 **Admin panel — Generate keys (easiest).** Sign in as the admin user,
-open `/admin`, and find the **Web Push VAPID** card
+open **Admin > Push and channels** (`/admin/services`), and find the
+**Web Push VAPID** card
 (`src/components/admin/web-push-vapid-section.tsx`). Click **Generate
 keys**: the server mints a fresh keypair, stores the private key encrypted
 at rest with your `ENCRYPTION_KEY`, seeds a placeholder subject, and fills
@@ -97,10 +98,11 @@ only ones the loader reads.
 ### 3. Subscribe a device
 
 Each user enables Web Push for their own browser from
-`/settings/notifications` — the **Browser Push** card has a Subscribe
-button, and a Test button to fire a one-off push once subscribed. The
-browser prompts for notification permission on first subscribe; once
-granted, that browser receives every enabled event.
+`/settings/integrations#channels` (Settings > Integrations, Delivery
+channels): the **Browser Push** card has an **Enable push** button, and
+a Test button to fire a one-off push once subscribed. The browser
+prompts for notification permission on first subscribe; once granted,
+that browser receives every enabled event.
 
 ## The PWA path — install to the Home Screen
 
@@ -125,10 +127,10 @@ A regular Safari tab cannot subscribe. So on iPhone:
 2. Tap the Share button, then **Add to Home Screen**.
 3. Launch HealthLog from the new Home Screen icon (not from the Safari
    tab).
-4. Open `/settings/notifications` inside that installed app and tap
-   Subscribe; accept the permission prompt.
+4. Open `/settings/integrations#channels` inside that installed app and tap
+   **Enable push**; accept the permission prompt.
 
-Android and desktop browsers have no such step — Subscribe and grant the
+Android and desktop browsers have no such step: enable push and grant the
 permission, and push works.
 
 ### The inherent limit
@@ -150,7 +152,7 @@ you already live in Telegram or want push without running a browser.
 2. Send `/start` to your new bot so it can message you.
 3. Find your **chat ID** — send a message to **@userinfobot**, or read it
    from the Bot API.
-4. In HealthLog open `/settings/notifications`, fill the Telegram card's
+4. In HealthLog open `/settings/integrations#channels`, fill the Telegram card's
    **Bot Token** and **Chat ID**, toggle it on, and save.
 
 One bot can serve every user on the instance; each user pairs their own
@@ -167,7 +169,7 @@ HealthLog publishes to that topic.
    public `ntfy.sh` — anyone who knows the string can read it, so treat
    it like a secret).
 2. Subscribe to that topic in the ntfy app or at `https://ntfy.sh/<topic>`.
-3. In HealthLog open `/settings/notifications`, set the ntfy card's
+3. In HealthLog open `/settings/integrations#channels`, set the ntfy card's
    **Server URL** (defaults to `https://ntfy.sh`; point it at your own
    server if you self-host ntfy) and **Topic**, then save.
 
@@ -192,7 +194,7 @@ wire it into your own automation (Home Assistant, n8n, a Discord/Slack
 relay, whatever routes the payload). You supply the URL and,
 optionally, one custom header (e.g. an auth token).
 
-1. In HealthLog open `/settings/notifications`, fill the Webhook card's
+1. In HealthLog open `/settings/integrations#channels`, fill the Webhook card's
    **URL** and, if your endpoint expects one, a single **header name** +
    **header value**.
 2. Save. A Test button fires a one-off POST so you can confirm routing.
@@ -351,7 +353,7 @@ are not user-supplied.
 The email channel sends reminders to a mailbox over an SMTP transport you
 operate or rent. It is configured **instance-wide by the operator** (one
 transport serves every user); each user then enables the channel and sets
-their destination address from `/settings/notifications`.
+their destination address from `/settings/integrations#channels`.
 
 Set the SMTP transport in `.env` / the compose `environment:` block:
 
@@ -494,6 +496,19 @@ A discreet notification opens the dashboard as well, so its link names
 nothing. The silent background sync push for medication intake is the only
 notification without a link.
 
+### "Remind me later" on a dose reminder
+
+A dose reminder can be put off with "Remind me later": on the medication
+card, on Telegram's reminder button and in the app's notification action.
+How long it waits is one setting per person, under Settings > Notifications,
+shared by all three: 10, 15, 30, 45, 60, 90 or 120 minutes, 30 when unset
+(`notificationPrefs.medication.snoozeMinutes` on
+`PATCH /api/auth/me/notification-prefs`, which accepts 5 to 240). A snooze
+holds one dose, the one whose reminder was open when it was set, or the next
+one to open; a later dose of the same medication is reminded as usual. A
+Telegram button from an older message keeps the length it was sent with,
+held to the same range.
+
 ### Health figures in notifications
 
 Settings, Notifications, **Health figures in notifications** decides what a
@@ -589,4 +604,4 @@ it registers for the mood reminder.
 
 Mixing channels is fine and common — e.g. Web Push on the laptop and
 ntfy on the phone. Each user configures their own set from
-`/settings/notifications`.
+`/settings/integrations#channels`.

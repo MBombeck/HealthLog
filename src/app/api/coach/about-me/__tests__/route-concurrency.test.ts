@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
  * v1.32.21 — optimistic concurrency on `PUT /api/coach/about-me`
- * (issue #581 family). The write guards on `UserHealthProfile.updatedAt`:
+ * (issue #581 family). The write guards on `UserHealthProfile.aboutMeRevisedAt`:
  *
  *   - a stale base token → 409 `about_me_conflict`, no write;
  *   - a matched base token → conditional update, fresh token echoed;
@@ -143,7 +143,7 @@ describe("about-me — optimistic concurrency", () => {
     const base = new Date("2026-07-24T10:00:00.000Z");
     const advanced = new Date("2026-07-24T10:05:00.000Z");
     profile.updateMany.mockResolvedValue({ count: 1 });
-    profile.findUnique.mockResolvedValue({ updatedAt: advanced });
+    profile.findUnique.mockResolvedValue({ aboutMeRevisedAt: advanced });
 
     const res = await put(putReq(base.toISOString()));
     expect(res.status).toBe(200);
@@ -152,10 +152,12 @@ describe("about-me — optimistic concurrency", () => {
     expect(profile.updateMany).toHaveBeenCalledTimes(1);
     const whereArg = profile.updateMany.mock.calls[0]?.[0]?.where as {
       userId: string;
-      updatedAt: Date;
+      aboutMeRevisedAt: Date;
     };
     expect(whereArg.userId).toBe("u1");
-    expect((whereArg.updatedAt as Date).toISOString()).toBe(base.toISOString());
+    expect((whereArg.aboutMeRevisedAt as Date).toISOString()).toBe(
+      base.toISOString(),
+    );
     expect(profile.upsert).not.toHaveBeenCalled();
     expect(res.data?.updatedAt).toBe(advanced.toISOString());
   });
@@ -165,20 +167,20 @@ describe("about-me — optimistic concurrency", () => {
     const afterQuestions = new Date("2026-07-24T10:06:00.000Z");
     const secondProfileWrite = new Date("2026-07-24T10:07:00.000Z");
     const secondQuestions = new Date("2026-07-24T10:08:00.000Z");
-    profile.upsert.mockResolvedValue({ updatedAt: afterProfileWrite });
+    profile.upsert.mockResolvedValue({ aboutMeRevisedAt: afterProfileWrite });
     profile.updateMany.mockResolvedValue({ count: 1 });
     profile.findUnique
       .mockResolvedValueOnce({
-        updatedAt: afterProfileWrite,
+        aboutMeRevisedAt: afterProfileWrite,
         aiIncludedSections: ["ABOUT_ME"],
       })
-      .mockResolvedValueOnce({ updatedAt: afterQuestions })
-      .mockResolvedValueOnce({ updatedAt: secondProfileWrite })
+      .mockResolvedValueOnce({ aboutMeRevisedAt: afterQuestions })
+      .mockResolvedValueOnce({ aboutMeRevisedAt: secondProfileWrite })
       .mockResolvedValueOnce({
-        updatedAt: secondProfileWrite,
+        aboutMeRevisedAt: secondProfileWrite,
         aiIncludedSections: ["ABOUT_ME"],
       })
-      .mockResolvedValueOnce({ updatedAt: secondQuestions });
+      .mockResolvedValueOnce({ aboutMeRevisedAt: secondQuestions });
 
     const first = await put(putReq());
     expect(first.data?.updatedAt).toBe(afterQuestions.toISOString());
@@ -187,7 +189,7 @@ describe("about-me — optimistic concurrency", () => {
     expect(second.status).toBe(200);
     expect(profile.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { userId: "u1", updatedAt: afterQuestions },
+        where: { userId: "u1", aboutMeRevisedAt: afterQuestions },
       }),
     );
     expect(second.data?.updatedAt).toBe(secondQuestions.toISOString());
@@ -196,7 +198,7 @@ describe("about-me — optimistic concurrency", () => {
   it("a stale inclusion save 409s before it can clobber newer About Me text", async () => {
     profile.updateMany.mockResolvedValue({ count: 0 });
     profile.findUnique.mockResolvedValue({
-      updatedAt: new Date("2026-07-24T10:05:00.000Z"),
+      aboutMeRevisedAt: new Date("2026-07-24T10:05:00.000Z"),
     });
 
     const res = await put(
@@ -216,7 +218,7 @@ describe("about-me — optimistic concurrency", () => {
     profile.updateMany.mockResolvedValue({ count: 0 });
     profile.findUnique.mockResolvedValue(null);
     profile.create.mockResolvedValue({
-      updatedAt: new Date("2026-07-24T12:00:00.000Z"),
+      aboutMeRevisedAt: new Date("2026-07-24T12:00:00.000Z"),
     });
 
     const res = await put(putReq("2026-07-24T09:00:00.000Z"));
@@ -227,7 +229,7 @@ describe("about-me — optimistic concurrency", () => {
 
   it("updates inclusion controls without rewriting encrypted profile text", async () => {
     profile.upsert.mockResolvedValue({
-      updatedAt: new Date("2026-07-24T11:00:00.000Z"),
+      aboutMeRevisedAt: new Date("2026-07-24T11:00:00.000Z"),
     });
 
     const res = await put(
@@ -249,7 +251,7 @@ describe("about-me — optimistic concurrency", () => {
 
   it("keeps the unconditional upsert when the token is omitted (iOS compat)", async () => {
     profile.upsert.mockResolvedValue({
-      updatedAt: new Date("2026-07-24T11:00:00.000Z"),
+      aboutMeRevisedAt: new Date("2026-07-24T11:00:00.000Z"),
     });
 
     const res = await put(putReq());
@@ -283,12 +285,12 @@ describe("about-me — optimistic concurrency", () => {
     let currentSections = ["ABOUT_ME"];
     let storedQuestions = [] as string[];
 
-    profile.upsert.mockResolvedValue({ updatedAt: versionA });
+    profile.upsert.mockResolvedValue({ aboutMeRevisedAt: versionA });
     profile.findUnique.mockImplementation(
       async (args: { select: Record<string, boolean> }) =>
         args.select.aiIncludedSections
           ? { aiIncludedSections: currentSections }
-          : { updatedAt: currentUpdatedAt },
+          : { aboutMeRevisedAt: currentUpdatedAt },
     );
     vi.mocked(getSelfContextForUser).mockResolvedValueOnce({
       aboutMe: "I run daily",

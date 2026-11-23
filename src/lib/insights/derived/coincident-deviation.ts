@@ -25,7 +25,6 @@
  * classifier is exported for tests.
  */
 import type { MeasurementType } from "@/generated/prisma/client";
-import { prisma } from "@/lib/db";
 import {
   probeRollupCoverage,
   type RollupCoverageMap,
@@ -46,25 +45,15 @@ import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { VITALS_BASELINE_TYPES } from "./registry";
 import type { Derived, DerivedProvenanceSource } from "./types";
 import { hasActiveIllnessEpisode } from "@/lib/illness/rest-mode";
-import {
-  isPlausibleMetricValue,
-  plausibleMetricRange,
-} from "@/lib/measurements/value-domain";
+import { plausibleMetricRange } from "@/lib/measurements/value-domain";
 import {
   dayKeyAgeInDays,
   isFromToday,
 } from "@/lib/insights/measurement-freshness";
+import { MS_PER_DAY } from "@/lib/time-constants";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DEFAULT_WINDOW_DAYS = 30;
-/**
- * Row cap for the latest-day mean read — see `readiness.ts`. A dense intra-day
- * day can hold hundreds of rows; the latest-day mean only needs a bounded
- * sample of the most-recent rows (the dense-intraday retention reasoning). The
- * common single-reading-per-day case is unaffected.
- */
-const MAX_LATEST_DAY_ROWS = 50;
 /** ≥ this many out-of-band vitals on a day fires the flag. */
 export const COINCIDENT_FIRE_THRESHOLD = 2;
 /** Need ≥ this many banded vitals before the flag can even coincide. */
@@ -277,15 +266,27 @@ export interface CoincidentDeviationOpts {
 }
 
 /**
- * The most recent DAY mean for a type within the window, plus its day key.
- * Bounded raw read; null when no reading in the window.
+ * The most recent DAY mean for a type within the window, plus its day key;
+ * null when no plausible reading is in the window.
  *
- * Day keys are minted in the user's timezone (`userDayKey`), not UTC
- * (`toISOString().slice(0,10)`), so a late-evening / early-morning reading for
- * a non-UTC user is grouped under the right calendar "today" — the same
- * tz-aware basis `readiness.ts` already uses. Without this, the fired
- * coincident flag could compare a vital from the wrong calendar day against
- * its band and narrate "≥2 vitals out of band TODAY" on the wrong day.
+ * Day keys are minted in the user's timezone, not UTC, so a late-evening /
+ * early-morning reading for a non-UTC user is grouped under the right
+ * calendar "today" — the same tz-aware basis `readiness.ts` uses. Without
+ * this, the fired coincident flag could compare a vital from the wrong
+ * calendar day against its band and narrate "≥2 vitals out of band TODAY" on
+ * the wrong day.
+ *
+ * Readings outside the metric's declared plausibility domain are not means
+ * material. This side of the comparison had no gate at all, so one impossible
+ * stored value became "your pulse today" and was then held against a band the
+ * same value had already inflated. A day left with no plausible reading
+ * contributes nothing and the vital drops out of the comparison.
+ *
+ * The mean runs over every reading of the day in Postgres. It used to mean
+ * the newest 50 rows, which on a stream sampled every few minutes is the last
+ * hours of the day and not the day.
+ *
+ * The readiness score reads the same day with `plausibleOnly: false`.
  */
 export async function readLatestDayMean(
   userId: string,
@@ -293,48 +294,23 @@ export async function readLatestDayMean(
   windowDays: number,
   now: Date,
   tz: string,
+  opts: { plausibleOnly?: boolean } = {},
 ): Promise<{ value: number; day: string; lastAt: Date } | null> {
-  const since = new Date(now.getTime() - windowDays * MS_PER_DAY);
-  const rows = await prisma.measurement.findMany({
-    where: { userId, type, deletedAt: null, measuredAt: { gte: since } },
-    orderBy: { measuredAt: "desc" },
-    take: MAX_LATEST_DAY_ROWS,
-    select: { value: true, measuredAt: true },
+  const days = await readDayAggregates({
+    userId,
+    type,
+    since: new Date(now.getTime() - windowDays * MS_PER_DAY),
+    timeZone: tz,
+    valueRange:
+      opts.plausibleOnly === false ? undefined : plausibleMetricRange(type),
+    latestDayOnly: true,
   });
-  return latestDayMeanFromRows(rows, type, tz);
-}
-
-/**
- * The pure half of the read above: pick the most recent day present in the
- * rows and mean that day's readings.
- *
- * Readings outside the metric's declared plausibility domain are not means
- * material. This side of the comparison had no gate at all, so one impossible
- * stored value became "your pulse today" and was then held against a band the
- * same value had already inflated — the two numbers in the sentence were both
- * wrong, and wrong by different amounts, which is why the line read as
- * nonsense rather than as an exaggeration. A day left with no plausible
- * reading contributes nothing and the vital drops out of the comparison.
- */
-export function latestDayMeanFromRows(
-  rows: readonly { value: number; measuredAt: Date }[],
-  type: MeasurementType,
-  tz: string,
-): { value: number; day: string; lastAt: Date } | null {
-  const usable = rows.filter((r) => isPlausibleMetricValue(type, r.value));
-  if (usable.length === 0) return null;
-  // Derive the most-recent day defensively (do not assume the DB ordering)
-  // so the "today" reading is always the genuine latest, then mean its rows.
-  let day = "";
-  for (const r of usable) {
-    const d = userDayKey(r.measuredAt, tz);
-    if (d > day) day = d;
-  }
-  const sameDay = usable.filter((r) => userDayKey(r.measuredAt, tz) === day);
+  const latest = days.at(-1);
+  if (!latest) return null;
   return {
-    value: sameDay.reduce((s, r) => s + r.value, 0) / sameDay.length,
-    day,
-    lastAt: new Date(Math.max(...sameDay.map((r) => r.measuredAt.getTime()))),
+    value: latest.dayMean ?? latest.sum / latest.n,
+    day: latest.day,
+    lastAt: latest.lastAt,
   };
 }
 

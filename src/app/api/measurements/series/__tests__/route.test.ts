@@ -57,40 +57,27 @@ vi.mock("@/lib/db", () => ({
 }));
 
 // The route's dense read is one statement (`dense-series-read.ts`, held to
-// the two statements it replaced by an integration parity test). Here it
-// issues those two statements again, so the route's shaping of buckets and
-// figures is pinned against the same queued results as before.
-vi.mock("@/lib/measurements/dense-series-read", async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("@/lib/measurements/dense-series-read")
-    >();
-  const { usesHourlyMeanDay } =
-    await import("@/lib/measurements/day-statistic");
+// the statements over the raw rows it replaced by an integration parity
+// test). Here it takes two queued results, the buckets and the figures, so
+// the route's shaping of both is pinned against the same results as before.
+vi.mock("@/lib/measurements/dense-series-read", () => {
   return {
-    ...actual,
     readDenseSeries: async (args: {
       userId: string;
-      type: Parameters<typeof usesHourlyMeanDay>[0];
       grain: "day" | "hour";
       userTz: string;
       since: Date;
-      seriesRows: string;
     }) => {
       const { prisma } = await import("@/lib/db");
-      const hourWeighted = args.grain === "day" && usesHourlyMeanDay(args.type);
       const bucketRows = await prisma.$queryRawUnsafe(
-        actual.denseBucketsSql(
-          hourWeighted,
-          `${args.seriesRows} WHERE m."measured_at" >= $4`,
-        ),
+        "-- buckets: GROUP BY bucket_start",
         args.userId,
         args.grain,
         args.userTz,
         args.since,
       );
       const [rawAgg] = (await prisma.$queryRawUnsafe(
-        `WITH src AS (SELECT m.* FROM ${args.seriesRows} WHERE m."measured_at" >= $4) ${actual.denseFiguresSql(usesHourlyMeanDay(args.type))}`,
+        "-- figures: STDDEV_POP",
         args.userId,
         args.grain,
         args.userTz,
@@ -1087,7 +1074,14 @@ describe("GET /api/measurements/series — 422 multi-issue (v1.4.43 W6)", () => 
     expect(body.error).toBe("Validation failed");
     expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
     for (const issue of body.details.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
   });
 
@@ -1148,7 +1142,14 @@ describe("GET /api/measurements/series — 422 multi-issue (v1.4.43 W6)", () => 
     expect(Array.isArray(issues)).toBe(true);
     expect(issues.length).toBeGreaterThanOrEqual(2);
     for (const issue of issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
   });
 
@@ -1216,7 +1217,14 @@ describe("GET /api/measurements/series — 422 multi-issue (v1.4.43 W6)", () => 
       ]
     )[1].details;
     for (const issue of parsed.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "path"]);
     }
   });
 });

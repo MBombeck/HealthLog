@@ -14,6 +14,7 @@
  * stores until the confirm route commits the user's approvals; a low-confidence
  * fact fails closed.
  */
+import { aiJobFailure } from "./ai-job-failures";
 import { withRelated } from "./relation-links";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
@@ -27,6 +28,7 @@ import {
   DOCUMENT_SOURCE_ID_MAX,
   DOCUMENT_SOURCE_INSTANCE_MAX,
   DOCUMENT_SOURCE_SYSTEMS,
+  DOCUMENT_UPLOAD_SOURCE_SYSTEMS,
   DOCUMENT_SUMMARY_STATES,
   INBOUND_DOCUMENT_KINDS,
   INBOUND_DOCUMENT_STATUSES,
@@ -337,7 +339,7 @@ const inboundDocument = z
   .meta({
     id: "InboundDocument",
     description:
-      "A stored document. The raw bytes are stored encrypted at rest and never returned; this is the metadata + staging summary. `status` is STORED for a freshly uploaded file (no extraction run). `title` is the user label (plaintext); `documentDate` is the user filing date; `reportDate` is the model-transcribed date (null until extraction runs). `servingClass` says how `/original` delivers the file — render inline (`inline`) or download-only (`attachment`); render/download by it, never by MIME guess. `hasContentIndex` is true when the document has a content-search index (auto-indexed on upload); `contentIndexSource` says how that index was produced — `vision` means an AI provider read the original, the other values are provider-free local extractions, and it is null when `hasContentIndex` is false. `lastIndexAttemptAt` is when the most recent index attempt finished (successful or not; null when none ran); `lastIndexOutcome` says why that attempt produced no index, and is null when the attempt succeeded or none ran. `hasThumbnail` is true when a preview thumbnail has been rendered in the background (fetch it from `/api/documents/inbound/{id}/thumbnail`); false means no preview yet or an unsupported type — show a placeholder. `sourceSystem` / `sourceId` say where an imported document came from and its id there (both null for a document added in HealthLog); treat an unknown `sourceSystem` as OTHER when decoding. `sourceUrl` is the document's page in the Paperless-ngx or Papra archive the owner has connected (http or https), built by the server from that connection; it is filled on the list (`GET /api/documents/inbound`) and on the detail read and edit (`GET` / `PATCH /api/documents/inbound/{id}`), only for the owner acting on their own record and only while the connection, the id and the operator's origin list allow it; it is null for a delegate or a guardian and in every other response. Open it in a browser; never send credentials to it. Treat an unknown `kind` value as OTHER when decoding.",
+      "A stored document. The raw bytes are stored encrypted at rest and never returned; this is the metadata + staging summary. `status` is STORED for a freshly uploaded file (no extraction run). `title` is the user label (plaintext); `documentDate` is the user filing date; `reportDate` is the model-transcribed date (null until extraction runs). `servingClass` says how `/original` delivers the file — render inline (`inline`) or download-only (`attachment`); render/download by it, never by MIME guess. `hasContentIndex` is true when the document has a content-search index (auto-indexed on upload); `contentIndexSource` says how that index was produced — `vision` means an AI provider read the original, the other values are provider-free local extractions, and it is null when `hasContentIndex` is false. `lastIndexAttemptAt` is when the most recent index attempt finished (successful or not; null when none ran); `lastIndexOutcome` says why that attempt produced no index, and is null when the attempt succeeded or none ran. `hasThumbnail` is true when a preview thumbnail has been rendered in the background (fetch it from `/api/documents/inbound/{id}/thumbnail`); false means no preview yet or an unsupported type — show a placeholder. `sourceSystem` / `sourceId` say where an imported document came from and its id there (both null for a document added in HealthLog); `REPORT_SCHEDULE` marks a doctor report the server filed on the owner's schedule (no `sourceUrl`); treat an unknown `sourceSystem` as OTHER when decoding. `sourceUrl` is the document's page in the Paperless-ngx or Papra archive the owner has connected (http or https), built by the server from that connection; it is filled on the list (`GET /api/documents/inbound`) and on the detail read and edit (`GET` / `PATCH /api/documents/inbound/{id}`), only for the owner acting on their own record and only while the connection, the id and the operator's origin list allow it; it is null for a delegate or a guardian and in every other response. Open it in a browser; never send credentials to it. Treat an unknown `kind` value as OTHER when decoding.",
   });
 
 const inboundDocumentDetail = inboundDocument
@@ -353,6 +355,10 @@ const inboundDocumentDetail = inboundDocument
     extractionIncomplete: z.boolean().meta({
       description:
         "Whether the staged facts may leave part of the document out: a part of a long document was cut at the provider's output limit or not read, the text or pages ran past what the reads take, or the document held more facts than one review takes. Kept from the last extraction (the extract route, its background run, or automatic lab staging) until the next one replaces the facts; false for a document never extracted. A review shows it whenever it is opened, not only when the run ends.",
+    }),
+    aiFailures: z.array(aiJobFailure).meta({
+      description:
+        "v1.49 — why the latest background AI work on this document stopped, one entry per kind (`documentSummary`, `documentIndex`, `documentRead`), newest first. Empty when nothing failed or the work succeeded since. Absent on servers older than v1.49.",
     }),
   })
   .meta({
@@ -651,7 +657,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           name: "sourceSystem",
           in: "query",
           required: false,
-          schema: { type: "string", enum: [...DOCUMENT_SOURCE_SYSTEMS] },
+          schema: { type: "string", enum: [...DOCUMENT_UPLOAD_SOURCE_SYSTEMS] },
           description:
             "Import source key, first half. Sent here (and, if also in the form, agreeing with it), a key the vault already holds is answered at once: the file is not stored or processed and the request does not count toward the hourly upload limit, only toward the lookup allowance shared with `GET /api/documents/inbound/source`.",
         },
@@ -708,10 +714,13 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 description:
                   "Optional visit pre-links (repeat the field per id). Every id must be a live visit of the caller; an unknown one refuses the upload rather than dropping the link the person asked for.",
               }),
-              sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS).optional().meta({
-                description:
-                  "Optional. The system an imported document comes from. Shown on the detail view.",
-              }),
+              sourceSystem: z
+                .enum(DOCUMENT_UPLOAD_SOURCE_SYSTEMS)
+                .optional()
+                .meta({
+                  description:
+                    "Optional. The system an imported document comes from. Shown on the detail view.",
+                }),
               sourceId: z.string().max(DOCUMENT_SOURCE_ID_MAX).optional().meta({
                 description:
                   "Optional. The document's id in `sourceSystem`; requires it. Unique per account across live and deleted documents.",
@@ -788,7 +797,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           name: "sourceSystem",
           in: "query",
           required: true,
-          schema: { type: "string", enum: [...DOCUMENT_SOURCE_SYSTEMS] },
+          schema: { type: "string", enum: [...DOCUMENT_UPLOAD_SOURCE_SYSTEMS] },
         },
         {
           name: "sourceId",

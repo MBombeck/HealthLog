@@ -32,7 +32,6 @@ vi.mock("@/lib/insights/derived/baseline", () => ({
 }));
 
 import {
-  stressDayKey,
   stressExternalId,
   stressMeasuredAt,
   stressProxyFromSdnn,
@@ -51,18 +50,27 @@ function okBaseline(center: number, spread: number) {
 }
 
 function makePrisma(sdnnValues: number[]) {
-  const sdnnRows = sdnnValues.map((value, i) => ({ value, id: `s${i}` }));
-  const findMany = vi.fn().mockResolvedValue(sdnnRows);
+  // The day's intra-day SDNN is counted and averaged in SQL; the fake
+  // aggregates the fixture values the same way.
+  const aggregate = vi.fn().mockResolvedValue({
+    _count: { _all: sdnnValues.length },
+    _avg: {
+      value:
+        sdnnValues.length === 0
+          ? null
+          : sdnnValues.reduce((s, v) => s + v, 0) / sdnnValues.length,
+    },
+  });
   const upsert = vi.fn().mockResolvedValue({});
   const findUnique = vi
     .fn()
     .mockResolvedValue({ dateOfBirth: null, gender: "MALE", heightCm: 180 });
   return {
     prisma: {
-      measurement: { findMany, upsert },
+      measurement: { aggregate, upsert },
       user: { findUnique },
     } as unknown as Parameters<typeof persistStressScore>[0],
-    findMany,
+    aggregate,
     upsert,
   };
 }
@@ -75,7 +83,6 @@ describe("stress-score helpers", () => {
   it("scores the PREVIOUS UTC day (cron fires in the small hours)", () => {
     // NOW is 2026-06-02 → the scored day is the just-completed 2026-06-01,
     // whose intra-day SDNN set is complete rather than a few hours old.
-    expect(stressDayKey(NOW)).toBe("2026-06-01");
     expect(stressExternalId(NOW)).toBe(
       `${STRESS_SCORE_EXTERNAL_ID_PREFIX}2026-06-01`,
     );

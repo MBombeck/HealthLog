@@ -144,13 +144,13 @@ export function describeStep(
   if (step.granularity)
     meta.push(t(coachGranularityLabelKey(step.granularity)));
   if (step.status === "done" && step.count !== undefined) {
-    const base =
+    meta.push(
       step.tool === "snapshot"
-        ? "coach.step.metrics"
+        ? tCount("coach.step.metrics", step.count)
         : step.tool === "get_labs"
-          ? "coach.step.rows"
-          : "coach.step.readings";
-    meta.push(tCount(base, step.count));
+          ? tCount("coach.step.rows", step.count)
+          : tCount("coach.step.readings", step.count),
+    );
   } else if (step.status !== "running" && step.reason) {
     meta.push(t(COACH_STEP_REASON_KEYS[step.reason]));
   }

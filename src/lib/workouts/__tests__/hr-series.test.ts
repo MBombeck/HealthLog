@@ -5,6 +5,12 @@ const findMany = vi.fn();
 vi.mock("@/lib/db", () => ({
   prisma: { measurement: { findMany: (...a: unknown[]) => findMany(...a) } },
 }));
+// The window folds in SQL; the fake folds the rows `findMany` hands back.
+vi.mock("@/lib/measurements/dense-bucket-read", async () => {
+  const { makeFakeDenseBucketRead } =
+    await import("@/lib/measurements/__tests__/fake-dense-bucket-read");
+  return makeFakeDenseBucketRead((args) => findMany(args));
+});
 
 import {
   adaptiveBucketSec,

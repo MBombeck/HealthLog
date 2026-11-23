@@ -24,7 +24,7 @@ import {
   useDeleteCoachConversationWithUndo,
 } from "@/components/insights/coach-panel/use-coach";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
-import { groupConversationsByRecency } from "@/lib/insights/coach-conversation-groups";
+import { useCoachConversationGroups } from "@/hooks/use-coach-conversation-groups";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useAiCapabilityAnswer } from "@/hooks/use-ai-capability";
 import { useLoadMoreSentinel } from "@/hooks/use-load-more-sentinel";
@@ -87,7 +87,7 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
   );
   const isSearching = debouncedFilter.trim().length > 0;
 
-  const groups = useMemo(() => groupConversationsByRecency(visible), [visible]);
+  const groups = useCoachConversationGroups(visible);
 
   // Same callback-ref pattern as the rail: a `useState` setter (not a plain
   // `useRef`) so the sentinel hook's `root` re-fires its effect once the

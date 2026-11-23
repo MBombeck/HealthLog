@@ -27,6 +27,16 @@ export const accountUsernameSchema = z
     `A username cannot start with "${MANAGED_USERNAME_PREFIX}"`,
   );
 
+/**
+ * The stored form of an account e-mail address: trimmed and lower-cased.
+ * Sign-in and SSO linking match addresses regardless of case, and the
+ * database holds them unique regardless of case (migration 0517), so every
+ * write stores the one form.
+ */
+export function normaliseAccountEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 /** A first password: registration and claiming a profile. */
 export const newAccountPasswordSchema = z
   .string()

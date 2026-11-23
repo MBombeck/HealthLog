@@ -440,6 +440,7 @@ describe("Observation.effective[x]", () => {
         cycleLengthVariabilityDays: 0.5,
         averagePeriodLengthDays: 5,
         currentPhase: "LUTEAL",
+        pregnancy: null,
       },
     });
     const cycleObservations = resourcesOf(bundle).filter(

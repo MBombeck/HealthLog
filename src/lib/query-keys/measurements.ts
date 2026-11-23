@@ -43,6 +43,22 @@ export const measurementKeys = {
     ] as const,
 
   /**
+   * The person's latest manual readings (`GET /api/measurements?sourceEq=
+   * MANUAL`), from which the add form and the capture picker read which
+   * types they log by hand. Under the `["measurements"]` prefix, so a save
+   * re-orders them.
+   */
+  measurementsRecentManual: () => ["measurements", "recent-manual"] as const,
+
+  /**
+   * The latest readings of one type (`GET /api/measurements?type=`), for
+   * the add form's "Last …" line and the glucose context default. Under the
+   * `["measurements"]` prefix.
+   */
+  measurementsTypeHistory: (type: string) =>
+    ["measurements", "type-history", type] as const,
+
+  /**
    * v1.11.5 — last-night hypnogram (`GET /api/sleep/night`). The `date`
    * discriminator lets the night-picker step back through recent nights
    * without colliding caches; `undefined` is the most-recent night.

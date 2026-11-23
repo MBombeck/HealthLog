@@ -1,5 +1,236 @@
 # Changelog
 
+## [Unreleased]
+
+## [1.49.0] — 2026-11-23
+
+### Added
+
+- Push relay for the iPhone app: a server without the App Store app's Apple key can reach the app through the optional, voluntary HealthLog push relay, run on a server in Germany. Off until an admin turns it on under Admin > Push and channels; then each person decides on their iPhone. Alerts and silent pushes are sealed for their one device, so the relay sees when a device gets something and of which kind, never what it says. For private and household use only, not a medical service. Source in `MBombeck/healthlog-push` (Apache-2.0); details in `docs/integrations/push-relay.md`.
+- An admin is asked once, for the whole server, whether to send push notifications through the relay: on the dashboard after signing in, on the admin start page and in the server setup. No keeps it off and nobody is asked again; it can still be turned on under Admin > Push and channels. Yes opens the relay's confirmations, and the answer counts once the registration succeeded. A server with its own Apple key, or with `PUSH_RELAY_MODE=off`, is not asked. Backups carry the answer.
+- Admin relay card with a test push to your own devices, a relay key rotation that asks before it acts, the relay's deliveries of the last seven days, and an invite code field for when the relay asks for one; erasing an account removes its devices at the relay.
+- The relay card says how the relay is doing. The server asks the relay for its status once an hour and shows the last check, the relay's own notice and how many of this server's devices the relay holds. A disruption or maintenance at the relay, an Apple key the relay cannot use, and a relay that refuses this server's signature show as disrupted, with the reason. The card also lists device unbinds still waiting for the relay and a registration the current settings can no longer reach, also with `PUSH_RELAY_MODE=off`.
+- Hand-off time on the relay card: median and 95th percentile over the pushes accepted in the last 24 hours, from queueing on this server to the relay's answer, which comes once Apple has accepted the push, and how many needed a retry.
+- The relay keeps a device reachable without anyone's help: a newly bound device gets one silent sync, which makes its binding active at the relay; a binding the relay could not take just now, or a conflict left unsettled for 30 minutes, asks the app for a fresh one; a dose sync dropped at its deadline is sent again by the minute pass; and a device unbind counts only on the relay's answer.
+- Medication reminders go over the relay to every iPhone the server is meant to remind: a device set to server delivery, a device that follows an account set to it, and a device whose own reminder plan has run out. A device that still reminds itself gets none.
+- Live Activity start and update over the relay, behind `PUSH_RELAY_LIVE_ACTIVITY=on` and a second consent per device, off by default. Its content carries only state and countdown, never a medication name, so the relay and Apple can see when a dose is due. It follows the medication's own dose windows. A start or an update counts once the relay has accepted it: a start that failed is tried again after 30 minutes, and an end the relay did not take is sent again by the five-minute job.
+- An undone take or skip reaches the person's other devices as "Dose updated", so a phone that is not running the app shows the dose as open again instead of answered, for doses of the last 36 hours. It travels like the dose confirmation: the same switch, the same devices, sealed. A deletion in Apple Health stays silent.
+- Silent wakes when a server-side sync stores new readings and when the app's Apple Health upload is six hours behind, rationed per device.
+- Security notifications when a passkey is added or removed, an access or connector token is revoked, or a device is signed out by refresh token reuse; time-sensitive on the iPhone.
+- Emergency card at `/emergency-card`: offline HTML copy, wallet card PDF, and a QR link that shows only the ticked items, can expire, can be revoked, and logs every opening. It has its own entry in the navigation (under More on a phone), a button under Medical history and a card under Settings > Health record. (`docs/using/emergency-card.md`)
+- Pregnancy and the weeks after a birth as a cycle state: predictions and their reminders pause, the timeline and doctor report show the week, and the emergency card can show it. While it holds, no page rates the weight: no goal, no BMI category, no trend direction, no Coach hint, no BMI in the doctor report. "Delete all cycle data" clears it. (`docs/using/pregnancy.md`)
+- "Find leaflet" on a medication opens the official medicine registry of the chosen country (Poland, Germany, Spain, France, United Kingdom, Belgium, Netherlands, United States, Canada, Australia, Brazil, EU) in a new tab, with the name already searched for where the registry allows it. The server sends nothing to any registry. The registry is a setting of its own under Settings > Modules > Medications, independent of the app language, and can be picked right on the medication. A medication can keep the link to its official leaflet (https only), which shows as "Official leaflet" and travels with backups and the export. Thanks to @ferges123 for the idea and the registry research. ([#1430](https://github.com/MBombeck/HealthLog/issues/1430))
+- A short server setup for the first admin: who may sign up, how notifications leave the server (with the push relay off unless switched on), what AI may do, what else leaves the server, and a setup check. Every step can be skipped; it is offered once on the admin start page and stays reachable from Admin > System status. Servers that already had accounts are not asked.
+- A setup check on Admin > System status: encryption keys loaded, the secure-cookie setting against how the page was reached, the nightly database dump, and the public address.
+- Personal setup: "Region & units" confirms the time zone and, with medication, the medicine registry; two optional screens after the summary, only for people they concern, say where reminders reach you and ask a plain yes or no to the Coach.
+- Getting started: a collapsed "More you can set up" group with the emergency card, the care calendar, sharing, imports, a regular doctor report and the iPhone app. None of it counts towards the list.
+- Gadgetbridge database import (steps, pulse, SpO2, resting heart rate, sleep, weight), read without stalling the server on a large file. (`docs/integrations/gadgetbridge.md`)
+- FHIR R4 Bundle import: labs, vital signs, conditions, vaccinations, medications without reminders, and visits; a second import writes nothing twice, also after a restore. (`docs/integrations/fhir-bundle-import.md`)
+- Scheduled Health Connect export fetched from a WebDAV or Nextcloud folder about every six hours, several folders at a time, with the app password stored encrypted. A download that breaks off shows the reason on the source and waits before the next try. A private network folder needs its origin in `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS`.
+- A managed profile uses the AI provider its guardian picks for it: the server's AI key, one of the guardian's own chains, or none. Picking one of their chains counts as the guardian's consent for the profile; the server's key and reading documents still ask for the profile's consent, and "No AI provider" switches AI off for it. Thanks to @ch3funio. ([#1403](https://github.com/MBombeck/HealthLog/issues/1403))
+- A managed profile's activity can be read from the guardian's own account, on the managed profile card. Thanks to @ch3funio. ([#1403](https://github.com/MBombeck/HealthLog/issues/1403))
+- The admin audit log picks its actions by family (sign-ins, documents, sharing and managed profiles, medications), so a guardian's upload into a managed profile is one pick away. Thanks to @ch3funio. ([#1403](https://github.com/MBombeck/HealthLog/issues/1403))
+- Background AI work that stops says why, on the document and on a card in the AI settings: provider not reachable, timeout, a refused key, a chain with no provider set up, a spent daily allowance, a model that reasoned without answering. "Try again" sits beside it and the entry goes once the work succeeds. Only a fixed reason code is stored. Thanks to @ch3funio. ([#1404](https://github.com/MBombeck/HealthLog/issues/1404))
+- Medication list grouped by category, with search, category and treatment period filters, and the group open mode and category order in Settings. Thanks to @ferges123. ([#1425](https://github.com/MBombeck/HealthLog/issues/1425))
+- Night timeline on the sleep page; WHOOP and Polar, which report only stage totals, get a note. Thanks to @kruemelro. ([#1419](https://github.com/MBombeck/HealthLog/issues/1419))
+- FIT import reads training effect, training load, recovery time, sweat loss and running dynamics, fills them into workouts already stored, and synced Garmin runs gain recovery time and running dynamics. Thanks to @kruemelro. ([#1343](https://github.com/MBombeck/HealthLog/issues/1343))
+- Apple Health cycling and rowing distance, rowing speed, running speed, power, ground contact time, vertical oscillation and stride length, and workout effort separate from estimated effort. Thanks to @camiracode. ([#1415](https://github.com/MBombeck/HealthLog/issues/1415), [#1416](https://github.com/MBombeck/HealthLog/issues/1416))
+- Energy balance on the nutrients page (intake against resting and active energy, seven-day trend), in the correlations, and as a two-week line for the Coach. ([#1116](https://github.com/MBombeck/HealthLog/discussions/1116))
+- Scheduled doctor report filed into documents monthly, quarterly or yearly, off by default. ([#1116](https://github.com/MBombeck/HealthLog/discussions/1116))
+- Coach limits for local providers and OpenAI-compatible gateways (data read, tokens, steps, time per answer), on the "Coach budget for self-hosted models" card. A turn that falls back to the operator's key is held to the built-in limits. ([#1116](https://github.com/MBombeck/HealthLog/discussions/1116))
+- Day view shows a symptom's distance in time from the nearest dose. Thanks to @2q2code. ([#1116](https://github.com/MBombeck/HealthLog/discussions/1116))
+- Day view shows the day's seizures, each with its distance from the nearest dose, when the seizure diary is on.
+- Calendar feed for booked visits, check-ups coming due and vaccination boosters, with neutral titles by default.
+- Notification for a lasting change in a vital (held ten days, at most weekly, off by default). A notice no channel could deliver is tried again the next morning instead of using up the week.
+- Capture menu: most-used types as rows, "Save and next", the last reading under the field; the save receipt has Undo and Edit.
+- Biomarker page lists its five newest values under the chart.
+- Time zone per reading from the iPhone; the Day view, list and daily charts follow it.
+- The sidebar and the More sheet sort their entries under Tracking, Health record and Analysis. Medications and Checkups show a small number when a dose or a check-up is due. No address changes. Thanks to @Cnote43 for the sketch it follows. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
+- The search finds every page and every settings card, in every language also by keyword ("snooze", "dark mode", "Nextcloud", "ICE").
+- Settings > Notifications has an "Alerts" group with account security and lasting change in a vital, visible before any channel is set up.
+- Settings > Data & privacy opens with "Who can reach your record": accounts and guardians, clinician links, the emergency card link, the care and cycle calendars, API tokens, MCP and sign-ins, each with its link.
+- The theme can be chosen under Settings > Account > Display as well as in the avatar menu.
+- Checkups, Vaccinations and Documents link to the care calendar and the report schedule under their page header.
+- Admin > System status has a "Version and database" card: the version, the channel (release, edge or development), and the migrations applied, pending or failed.
+- An app can read the push state of its own device (`GET /api/devices/me/push-diagnostics`, feature `push.device-diagnostics`): route, relay binding, the hourly budget for silent pushes with a sync still owed, the last delivery of each kind, the last receipt, a masked APNs token, and whether the server or the app reminds the device of a dose. Only that device, no content.
+- API: `GET /api/version` lists `features`; `POST /api/measurements/batch` takes `timeZone` per entry; workouts carry `performance`; `GET /api/nutrients/energy-balance`; dose rows carry their resolved state and `alreadyTaken`; `medications.lastUpdatedAt` in `/api/sync/state`; `notificationPrefs.medication.snoozeMinutes`; questionnaire history rows carry `source` and `itemsUnavailable`; `push.device.liveActivityStarted` names the dose of a server-started Live Activity.
+- API, added late: `extraDose` on `POST /api/medications/{id}/intake`; `leafletUrl` and `leafletSearch` on medications and `medicineRegistry` on `/api/auth/me` (`PATCH /api/auth/me/medicine-registry`); a `seizures` section and a `seizure` event on `GET /api/day/{date}`; `expected30` on the medications of `GET /api/insights/comprehensive`; `GET /api/nav/counts`; `GET /api/ai/job-failures` and `aiFailures` on a document; the setup steps `reminders` and `ai`, `onboarding.offers.ai` and `GET /api/onboarding/extras`.
+- A GLP-1 titration step can be removed by its client id: `DELETE /api/medications/{id}/glp1/dose-changes?clientId=` answers 204 whether or not the step reached the server, and spends the id so a late upload of the same step answers 410.
+- API, for the relay and the dose answers: `push.relay.operatorDecision` (`undecided`, `on`, `off`) and `push.relay.canDecide` on `/api/auth/me`, and `POST /api/admin/push-relay/decision` (admin, signed in through the browser); `slotInstant` on every dose answer of `POST /api/medications/{id}/intake` and `POST /api/medications/intake/bulk` and on the medication reminder push; a pin refused because the slot is taken names the take that holds it (`slotInstant`, `takenAt`, `takenVia`); `GET /api/medications/resolved-slots` returns the scheduled doses of every medication in one read; `GET /api/medications/intake?scope=today` answers with a `HealthLog-As-Of` header; a dose confirmation carries `asOf` and knows `outcome: "reopened"`; intake tombstones in `GET /api/sync/changes` carry `externalId` and `source`; a sample deleted in HealthLog answers `skipped` with `reason: "deleted_in_healthlog"` on the bulk routes, an older day total `skipped` with `stale`; the admin relay status carries `relayCheck`, `handoff`, `termsConfirmationNeeded`, `unbindsPending` and `unreachableRegistrations`.
+
+### Changed
+
+- Releases follow a calendar: a minor on the first Saturday of the month, fixes on other Saturdays, and off-schedule only for security, data loss or a broken install. Every push to `main` publishes an `:edge` image (amd64). See `docs/contributing/release-policy.md`.
+- The theme follows the system setting unless light or dark was chosen, and switches with it live. Until now a device with no stored choice got the dark theme. Anyone who never chose a theme and whose device is set to light sees HealthLog turn light with this update; choosing Dark once keeps it dark. The offline page follows the same rule.
+- The 90-day chart range draws weekly averages again, for measurements and mood, with the number of readings per week in the table. A week or month point names the days it covers, so the first week of the window and the week still running read as the shorter stretches they are.
+- The 7-day moving average is drawn on daily points only. On weekly and monthly points (90 days, All) it is left out instead of showing a seven-week average under a 7-day label, the range band spans the week's days, and the comparison period compares each week with the shifted week's average.
+- One vocabulary for doses: Take and Skip on dose cards; pending, due, overdue, taken, taken late, skipped and missed as states, also in Telegram and the doctor report. In Russian and Polish the states skipped and missed have separate words.
+- One snooze length per person under Settings > Notifications (10 minutes to two hours, 30 by default) on every surface, Telegram's reminder keyboard included, in the person's language.
+- One intake form for the medications page, the history and the capture menu, which names the dose it counts for; the medication page offers take, skip and snooze for the next dose.
+- The reminder card says in words what will happen; the reminder steps are offered for every scheduled medication.
+- Deleting a dose happens at once with an Undo; "Take all due" has one Undo for the batch.
+- Dose times follow the 12 or 24 hour setting.
+- The medication setup asks less: the category is optional (Other by default), the dose step asks nothing twice, a disabled Next says what is missing, and the summary says from when each dose counts as missed.
+- One word per dose state and action in every language, push and Telegram included; the extra dose sentence says it does not count toward adherence.
+- The relay opt-in asks for the terms and the privacy notice separately and shows what the relay sees. It says plainly that medication reminders go over the relay to every device that gets its reminders from the server, so the relay and Apple can see when a dose is due.
+- Every file import shares one size limit, one "too large" message and five uploads a minute.
+- A Health Connect folder is set up under Settings > Integrations, no longer under Export & import, and is marked there when its password was refused.
+- Admin keeps push in one place: "Push and channels" holds the channel switches, the Web Push keys, the relay and the delivery health with its test push. The sections are regrouped (System, Notifications, AI, Connectivity, Account, Server data) and "Integrations" is now "Monitoring".
+- The page with the switch per kind and channel is called "Notifications per channel" and lists the kinds also when no channel is set up yet. "Manage notification channels" on a medication leads to the channels.
+- Settings cards look alike: the button at the bottom of a card sits on the right at one size, also on a phone, most switches stand to the right of their name, field names have one shape, and status messages stand above the buttons. This covers the emergency card, "Create profile", the guardian's settings, the push relay card, the import cards and the notification rows on a phone.
+- The tabs on Cycle, Checkups, a medication and the recovery kit look like the other view switches; on Checkups the title comes first, then the tabs; the admin's section strip on a phone works like the Insights pills.
+- Every settings save confirms. Cycle settings, the scheduled doctor report, the Health Connect folder, calendar feed options, a guardian's settings, withdrawing AI consent, disconnecting Garmin or Nightscout, the delivery test message and "Forget all devices" used to save without a word.
+- Getting started: with a medication schedule, the notification row comes right after the medication row.
+- The add form opens on the type last saved by hand, read from the account's own readings, instead of browser storage.
+- Ages count on the person's own calendar everywhere.
+- A search for "doctor" or "report" lands on the page that makes the report.
+- A seizure cluster notification opens the seizure that formed it, and a lasting change notification opens its vital's insights page where there is one.
+- The timeline's Add button matches the other pages.
+- A 422 names the bounds a value missed in `details.issues[]`; `GET /api/analytics/range` answers in the account's units with `unit`.
+- Protected pages arrive with the account in the first HTML; the dashboard's largest paint on a slow phone connection went from 4.3 s to about 1 s.
+- The onboarding tour loads on demand, the translation script is cached for good, and the recovery kit banner no longer shifts the dashboard.
+- Scanner probes such as `/.env` get a 9-byte 404, and the quarter-hour jobs start minutes apart.
+- After a sync the dashboard and daily overview load about three times faster; the today list reads every medication's doses in one batch and answers an unchanged list with an ETag and 304; independent launch reads start together.
+- With a dense source (a Fitbit through Google Health writes about 35,000 pulse readings a day), the daily overview, the dashboard and the targets load in 0.1 to 0.3 s after a sync instead of 1 to 4 s, a pulse chart over 30 to 90 days in about 0.5 s instead of 1.5 to 2.5 s, and the insights overview in milliseconds instead of seconds.
+- Six duplicate indexes dropped and indexes added for retention purges and external id prefix lookups; Telegram reminder messages are kept 30 days and Coach usage 180 days.
+
+### Fixed
+
+- The "Pulse through the day" chart and the heart rate curve on a workout page show the whole day and the whole workout again with a dense source. With about 35,000 readings a day they broke off after roughly four hours. Thanks to @sdrburgess. ([#1429](https://github.com/MBombeck/HealthLog/issues/1429))
+- With dense data the live step and energy profile, strain, stress, readiness, the deviation hint, the glucose and SpO2 safety limits, the 30-day figures on the status cards and the mood correlations count every reading instead of a capped slice, and the resting pulse baseline matures again.
+- The image ships the PostgreSQL 19 client tools. An install that runs its own database on PostgreSQL 19 no longer stops before a migration because the bundled `pg_dump` refused the newer server, and its nightly dumps work again. The client reads 16, 18 and 19 alike, and the upgrade guide now names the ceiling. Thanks to @aw23edfr4. ([#1431](https://github.com/MBombeck/HealthLog/issues/1431), [#1432](https://github.com/MBombeck/HealthLog/issues/1432))
+- The dump before a migration and the nightly dump write the archive and its listing straight to files instead of through a pipe, so a dump no longer depends on that pipe staying writable. The pre-migration dump gates the start, so a dump that fails for no reason of its own would hold up a healthy update.
+- A Take button that names a time counts for that dose, also when taken early. More than six hours ahead the button says "Take an extra dose" and says it will not count for the named dose. The confirmation names what the take counted for.
+- The intake form and the server share that six-hour rule, switching off "count for the dose" is honoured, and a take bound ahead of its time reads as taken early, not late.
+- A medication card shows a dose with its own window the same window as the Today list.
+- A medication without a dose behind it shows "No doses yet" instead of 100 % adherence, and no streak before the first answered dose.
+- A take logged on the web in the first minute after the page loaded, "Take an extra dose" included, is stored. It could be answered with the open dose and never written. A take logged for an earlier time, or right after an undo, is a dose of its own, and a real double tap answers that the dose was already taken.
+- An extra dose logged on the exact minute of a scheduled dose is stored instead of failing, and two Apple Health doses in the same minute both arrive.
+- The seizure diary and the doctor report count from the day the diary began and name that day.
+- Layout, module, notification, Coach and score settings save at once, also right after another change to the account. A save could answer "reloaded, try again" for up to five minutes.
+- A portable export carries everything a medication and a dose say: form and class of the drug, as-needed and one-time, the reminder and Live Activity switches, injection sites, codes and reorder lead time, every schedule field, and for each dose the injection site, the amount taken, a slot assigned by hand and the missed marker. Restored on another instance, an injection used to come back as a tablet and a plan without its times.
+- Restoring a portable file keeps each visit's lab results attached, and an illness day keeps its time zone.
+- Restoring the instance settings brings back the AI usage bounds and the regeneration gap instead of defaults. A backup no longer carries this server's error-report delivery state, applied pulse method or backfill positions.
+- Background runs that carry on past a failed item (push wakes, Live Activity updates, scheduled reports, nightly measurement folds, workout routes and rollups after an import, off-host backups, relay unbinds, Health Connect folders) appear on the admin failing-jobs card with how many items failed, instead of reading as successful.
+- A Telegram dose reminder sent without a keyboard of its own had German buttons with fixed one and three hour snoozes. It gets the same keyboard as every other reminder, in the person's language and with their snooze length.
+- An OpenAI-compatible gateway that has no `seed` field, such as Google Gemini, no longer fails the briefing, status and summary calls: the request goes out again without it, and the endpoint is remembered. A model listing that names models as `models/<id>` counts the bare name as listed. (`docs/integrations/ai-providers.md`)
+- Postponing a check-up to tomorrow in the last hour before the clocks go forward no longer fails, and postponing to today in the first hour after they go back is refused as on every other day.
+- "Yesterday" on Coach messages, the "Updated yesterday" caption, the medication card's last intake and the GLP-1 card's last injection name the right day around a clock change and in a browser set to another zone than the profile. Coach conversations are grouped by the profile's days, and the medication setup starts on today in the profile's calendar.
+- Doses recorded by several sources land on one slot: a second take changes nothing, an undo cannot remove another device's take, and existing duplicates are merged (a take wins over a skip).
+- A late take or a skip after a dose was marked missed left it missed in the timeline, streak and achievements.
+- An undone dose comes back as pending in the Today list and on the dashboard.
+- A snooze holds only the dose it answers; skipping in Telegram no longer snoozes the medication for the day.
+- The streak breaks on a missed day.
+- Marking a missed dose as taken in the history records when it was reported, not the scheduled time.
+- An extra dose no longer counts as a scheduled dose on the dashboard.
+- An older schedule stored with a range was reminded and scored an hour off.
+- A card whose dose time had just passed showed no due or overdue badge.
+- A dose recorded anywhere reaches every relay device as a silent sync, and as a confirmation as well when those are on.
+- A take more than two hours after the recorded one counts for the next open dose instead of being dropped as a repeat.
+- The web intake form offers only the slots that exist on the chosen day, read from the server; a weekly medication's off day no longer offers its time and then answers 422.
+- Paired iPhones refresh when the server marks a dose missed, and the end of a Live Activity reaches the app in a form it decodes.
+- The medication hook matches names regardless of case and spacing, answers 404 for an unknown name, and folds two box openings within a minute into one dose; the copied examples no longer send a fixed key.
+- Withings readings that reach the cloud late are imported, because incremental syncs ask by upload time.
+- A device signed itself out when two refreshes raced; the second now gets `409 auth.refresh.superseded`.
+- With the cycle module off, a paired app no longer rebuilds every 75 days, and deleting all cycle data reaches paired apps.
+- A portable restore keeps each dose on its own medication when two share a name.
+- Entering a reading again after deleting it no longer answers 409, and the delete dialog says when a sync will bring it back.
+- Editing a managed profile's time zone, birth date or sex refreshes its day grid and targets at once.
+- Lab results stored at midnight UTC show on their own day west of UTC.
+- Glucose imported from Apple Health in mmol/L reads back as entered.
+- The hour after a clock change no longer shifts yesterday and tomorrow in the morning refresh, the target strip, the Google Health day total, the integration card and the symptom severity chart.
+- Symptoms: a new one of your own sorts last, the limit holds when several are added at once, and moving an occurrence checks its episode.
+- Editing a walking distance or speed in metric units seeds the value in the unit the label shows.
+- The FHIR endpoint and the MCP doctor visit read the saved report selection again instead of an empty one.
+- A relay outage no longer counts toward switching the iPhone channel off.
+- Every change to a dose or a medication (a moved time, a pause, an ended course, a deletion or restore) reaches paired devices and a guardian's devices at once; an intake sync over the hourly push budget is sent later instead of dropped. Over the relay a guardian's device is left out, so the relay does not learn when another person's doses are recorded; the app refreshes a managed profile when it opens.
+- A phone woken by a dose change is answered with the state after the change. After a Telegram snooze, a course ending or restarting, or the automatic miss pass it could be answered with the state before.
+- A take or skip recorded by a person replaces one filled in automatically, and the skip gives back the stock.
+- Restoring a backup made before 1.49.0 failed when it held a dose recorded twice; duplicates are merged and their stock refunded, as on the update.
+- A dose, reading, mood entry, symptom or cycle day deleted in HealthLog stays deleted when the iPhone app reads the whole Apple Health history again, and a deleted dose takes no stock a second time, also when it had been recorded on a scheduled dose. One deleted in Apple Health is removed in HealthLog too, also on a scheduled dose, and is written again when it comes back there, workouts and ECGs included. Deletions the iPhone reported before this release are recognised where the audit log proves them.
+- A day whose Apple Health values were all deleted shows 0, and a late older daily total no longer overwrites a newer one (from the app version that sends `computedAt`); `oldestSeenAt` lets the app fill old history faster.
+- Hand-logged cycle symptoms survive Apple Health day writes.
+- The pregnancy state holds only within its dates, so earlier reports and a card after the birth no longer show it; the lasting change notice stays quiet while it holds, and every AI text knows about it.
+- The Coach knows the seizure diary; with medications excluded from the Coach, it leaves the rescue doses out.
+- The doctor report and the blood pressure status place a reading on the day of its own time zone.
+- A guardian can create and manage a managed profile's emergency card, care calendar feed and report schedule, and their pages open inside the profile. Someone who shares an adult's record with manage rights can make the doctor report.
+- The emergency card lists only medications running today, and the report shows no deleted dose as the last one.
+- First SSO sign-in failed when a username existed in other case; changing the e-mail to such an address says it is taken instead of a server error.
+- "Delete all data" unbinds the account's devices at the relay.
+- A device that signs out, is revoked or moves to another account loses its push credentials and its Live Activities; a phone that signed out and moves to another account receives the new account's pushes instead of a refusal.
+- Live Activity updates over the relay go only to Activities the server started.
+- Sender key rotation takes each step once, after its notice period.
+- The import cards and the snooze setting show a failed read with a retry, and a failed folder removal says so.
+- Undo and Edit toasts stay in front of achievement toasts.
+- Reading a Health Connect export no longer blocks the server.
+- A phone's first Apple Health sync no longer runs a small server out of memory. The bulk sync routes take a bounded number of uploads at once, two per signed-in client and four per server process, let the rest wait up to five seconds and then ask them to retry (429 with `Retry-After`).
+- A large sync queues one personal-record scan and one reminder check per account every few seconds instead of one per batch.
+- The server caches are held to a share of the heap by size, not only by entry count, and no entry lives longer than fifteen minutes. With a separate worker process, the resting pulse and long timeline ranges show new imports within fifteen minutes instead of up to six hours.
+- Every sentence with a count agrees with its number in all ten languages ("Opened once", "1 device bound"), with the Russian and Polish forms for 2 to 4 and for 5 and more. French and Russian address the reader formally throughout.
+- A share link opened in a browser that refuses cookies shows a page saying the link needs cookies instead of failing with too many redirects.
+- The documentation link on the relay card and in its dialog leads to the push relay page.
+- The admin relay card shows a failed status read instead of nothing.
+
+- A dose change on another device always reaches a phone whose silent-push budget at the relay is spent: the relay's refusal is no longer counted as delivered, the sync is owed and goes out the first minute the relay takes one again.
+- A Live Activity started from the server through the push relay appears only for a medication with Live Activity turned on and only for a dose coming up or currently due, never for one that is long overdue or already answered; the earliest such dose gets it.
+- A dose the iOS app names by its slot binds to that slot on the bulk route exactly as on the single route, also when it is taken early and the windows of two doses overlap.
+- Posting a single entry again that was deleted in HealthLog (mood, measurement, cycle day, AUDIT-C) answers `410` with the reason `deleted_in_healthlog` instead of bringing it back; a mood entry deleted in Apple Health comes back when Apple Health sends it again.
+
+- The iOS app's "sync with your other devices is disturbed" notice only appears for a real, current problem: a silent push iOS chose not to deliver no longer counts, and the next confirmed alert clears it.
+
+### Security
+
+- Pages rendered for a signed-in request are `private, no-store` on every path, public ones included, and the service worker caches only pages answered to an anonymous request. The account data in a page's first HTML leaves out name, birth date, insurance and saved report fields; `/api/auth/me` answers `private, no-store`.
+- Account lookups by e-mail or username (sign-in, registration, invites, single sign-on) compare exactly, regardless of case; `_` and `%` no longer act as wildcards. Not an account takeover path: single sign-on never links on e-mail alone and sign-in still needs the password. Case-insensitive search filters escape `_` and `%`.
+- E-mail address and username are unique regardless of case; new and changed addresses are stored in lower case.
+- Moving a Health Connect WebDAV folder to another server requires the password again, saving a password asks for a fresh confirmation, and a public folder must use https.
+- Another account can take over a device only when the previous account is signed out on it. While it is still signed in there, the registration is refused (409 `devices.register.signed_in_elsewhere`) with an audit entry on both accounts, so knowing a phone's APNs token or install id is not enough to steer its pushes. After a takeover the previous account gets a `device_reassigned` security alert on its other devices and channels.
+- A dead, revoked or expired emergency card or clinician share link answers one identical not-found page with a real 404, and the card's QR page installs no service worker. The card can no longer be locked by repeated openings.
+- The pregnancy state and its dates are stored encrypted.
+- Pushes to an iPhone that registered a key are sealed for that device, also when the server sends with its own Apple key, and the test pushes from the settings and the admin panel are sealed the same way.
+- Over the relay every alert is sealed with one lifetime (15 minutes) and every silent push with another (one hour), at one size per class, so the relay cannot tell a reminder from a dose confirmation or a security alert. An iPhone that is offline for longer does not get the older alert through the relay. With the server's own Apple key each kind keeps its own lifetime.
+- The relay switch and both key rotations are rate limited. The emergency sender-key rotation asks for a fresh proof of sign-in: a second factor where one is set up, otherwise the password or a passkey.
+- APNs tokens are compared and stored in lower case, so one token cannot be held by two accounts in different spellings.
+- The calendar feed and emergency card links are stored only as a hash, rate limited, need a fresh sign-in to create, and stay out of backups; a link a guardian made ends with their access.
+- The server pins a third identity key of the hosted relay, held offline, so the relay can recover if its current and next key are both lost, without waiting for a server and app release.
+- A saved leaflet link must be https, is never fetched or embedded by the server, and one that is not https in a hand-edited backup is dropped on restore.
+- From this release on, every GitHub release carries a signed image manifest (`healthlog-<tag>-image.txt` with its Sigstore bundle) and SLSA v1 provenance, so the image a release names can be checked without asking the registry. `SECURITY.md` and `docs/ops/deploy.md`, "Verify a release from its assets", have the commands.
+- `glob` and `minimatch`, which arrive through other packages, are lifted past their advisories, and the image installs its migration CLI from a committed lockfile with pinned hashes.
+
+### Updating
+
+- Take a backup first. With the `backups` volume the container writes a pre-migration dump before it migrates; without it, run `pg_dump` yourself. `docs/ops/deploy.md`, "v1.49.0 notes", has the operator detail.
+- Thirty-six migrations, 0514 to 0558 (0516, 0523, 0527, 0528, 0541, 0548, 0550, 0552 and 0555 do not exist); the boot log says `36 database migrations pending`. Seven touch existing data:
+  - 0515 merges dose rows recorded twice for one slot (take, then skip, then the oldest pending row; the rest soft-deleted), refunds the stock of a merged take, clears the auto-miss mark on taken or skipped doses, and rewrites legacy single-time schedules into dose windows.
+  - 0517 makes e-mail and username unique regardless of case. On a clash it stops, changes nothing, and the container does not start: list the accounts with the query in `docs/ops/deploy.md` ("Accounts that differ only in case"), ideally before the update, rename one of each pair, run `prisma migrate resolve --rolled-back 0517_case_insensitive_identity_and_retention_indexes` as shown there, and start again. It also drops six duplicate indexes, builds four retention indexes (bounded to five minutes) and checks the shape of text day keys, `NOT VALID` with a warning where old rows do not fit.
+  - 0529 lowers APNs tokens; where two devices held one token in different case, the most recently seen keeps it and the other registers again on its next launch.
+  - 0543 adds and backfills the source of each cycle symptom link.
+  - 0546 records who deleted a synced row and drops the workout and ECG deletion ledger of 0511.
+  - 0551 marks the first-admin server setup as finished on a server that already has accounts, so an update never offers it. A fresh install offers it to its first admin.
+  - 0557 stamps Apple Health rows that were deleted before the update as deleted in Apple Health, where the audit log proves it: the rows lie in the window of one delete request from the phone and their number matches what that request deleted. Any other count leaves them refused, as 0546 set them. It writes only `apple_health_deleted_at` on `measurements`, `mood_entries`, `symptom_events`, `medication_intake_events` and `cycle_day_logs`, in one transaction with a ten-minute statement timeout, locks only the rows it stamps, and sends no tombstone down the sync feed again.
+- 0539 (pregnancy state encrypted), 0540 (maker of a guardian's link), 0556 and 0558 change data only on a host that ran a 1.49 pre-release. 0556 adds `app_settings.push_relay_decision` with a CHECK and stamps `on` where the server was already registered at the relay, so its admin is not asked again. 0558 adds two nullable columns to `devices` and three columns to `push_relay_registrations` for what the relay reports, and gives a device in a binding conflict the full 30 minutes from the migration. Neither rewrites a table; both wait at most 5 s for their lock and are retried on a timeout.
+- 0553 adds the table behind the background AI reasons. 0554 gives each settings document its own lock token: nine columns and two triggers on `users` and `user_health_profiles`, without a rewrite. A browser or app that read such a setting before the update gets one 409 on its next save and reads again.
+- 0517 and 0529 hold writes to `users` and `devices` until they commit, so a 1.48.5 container still running cannot add a clashing row.
+- 0518 builds an index on `measurements` `CONCURRENTLY` during the start, before the app serves; on a large instance the first start takes longer. Do not restart it midway; if it fails, see "A concurrent index build that failed" in `docs/ops/deploy.md`.
+- Going back to 1.48.5 means restoring the pre-migration dump with the 1.48.5 image (`HEALTHLOG_IMAGE_REF=:v1.48.5`; `docs/ops/disaster-recovery.md`, "Going back to before a migration"), not starting the old image on the migrated database.
+- The image carries `pg_dump` and `pg_restore` of PostgreSQL 19. The bundled database stays on 18 and nothing moves on disk. With your own PostgreSQL, 16, 18 and 19 work; keep the server at or below the client major of the image you run, which `docker run --rm --entrypoint pg_dump ghcr.io/mbombeck/healthlog:latest --version` prints (`docs/ops/postgres-major-upgrade.md`).
+- A server that turned the relay on under a 1.49 pre-release is asked once, on the relay card, to read and confirm the updated relay text. The relay keeps working until then.
+- New optional environment variables, all on the compose whitelist and reported by `pnpm check-env`: `PUSH_RELAY_MODE` (`off` hides the relay), `PUSH_RELAY_URL` and `PUSH_RELAY_KEYS` (another relay), `PUSH_RELAY_LIVE_ACTIVITY` (`on` allows Live Activity start and update over the relay; default off), `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS` (exact origins of private WebDAV folders).
+- The iPhone app 1.7 is the version the relay and the new dose behaviour on the phone need.
+
+### Thanks
+
+- @camiracode for the cycling, rowing and running types and the workout effort code. ([#1415](https://github.com/MBombeck/HealthLog/issues/1415), [#1416](https://github.com/MBombeck/HealthLog/issues/1416))
+- @kruemelro for the night timeline and FIT requests and real files to test against. ([#1419](https://github.com/MBombeck/HealthLog/issues/1419), [#1343](https://github.com/MBombeck/HealthLog/issues/1343))
+- @2q2code for the notes on daily medication and symptom tracking. ([#1116](https://github.com/MBombeck/HealthLog/discussions/1116))
+- @ljcasaai for the Coach limits, energy balance, scheduled report and lasting change requests. ([#1116](https://github.com/MBombeck/HealthLog/discussions/1116))
+- @ferges123 for the grouped and filtered medication list and for the leaflet idea with its registry research. ([#1425](https://github.com/MBombeck/HealthLog/issues/1425), [#1430](https://github.com/MBombeck/HealthLog/issues/1430))
+- @ch3funio for the guardian requests behind the profile activity feed and the audit log families, and for pointing out that background AI work stopped without a word. ([#1403](https://github.com/MBombeck/HealthLog/issues/1403), [#1404](https://github.com/MBombeck/HealthLog/issues/1404))
+- @Cnote43 for the sidebar sketch the new grouping follows, and @mills1975 for the discussion around it. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
+- @sdrburgess for the precise report of the pulse chart that broke off. ([#1429](https://github.com/MBombeck/HealthLog/issues/1429))
+- @aw23edfr4 for finding why an install on PostgreSQL 19 stopped booting and sending the fix. ([#1431](https://github.com/MBombeck/HealthLog/issues/1431), [#1432](https://github.com/MBombeck/HealthLog/issues/1432))
+- Everyone who donated or supported the project, among them @ljcasaai and @ch3funio; the push relay runs on that support.
+
 ## [1.48.5] — 2026-11-21
 
 ### Fixed

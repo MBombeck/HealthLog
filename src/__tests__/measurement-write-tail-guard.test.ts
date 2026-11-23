@@ -90,12 +90,14 @@ const WRITE_SITES: Record<string, string> = {
   // verdicts' dirty identities and run the tail once per batch.
   "lib/measurements/reconcile-external-measurement.ts":
     "a primitive; every caller runs the tail over the verdicts' dirty identities",
-  "lib/measurements/import-apple-health-export.ts":
+  "lib/measurements/import-apple-health-export-writer.ts":
     "the import worker refolds the import's span and re-warms every imported type",
   "lib/measurements/import-unchanged-rows.ts":
     "the Apple export import's natural-key rescue, inside the import; its worker runs both legs once over the whole import",
   "lib/import/health-connect/import.ts":
     "the Health Connect import worker refolds the import's span and re-warms every imported type",
+  "lib/import/file-import/write-measurements.ts":
+    "the record-file import worker refolds the import's span and re-warms every imported type (afterBulkImport)",
   "lib/export/measurements-restore.ts":
     "a restore replaces the whole record: it refolds the whole window and drops every per-user cache",
   // Value-preserving reshapes: the same readings folded into daily or hourly
@@ -210,12 +212,13 @@ describe("measurement write tail", () => {
     const handRolled = Object.entries(WRITE_SITES)
       .filter(([, reason]) => reason.includes("re-warms"))
       .map(([file]) => file)
-      // The two export importers leave both legs to their workers, which
-      // run them once over the whole import.
+      // The export and file importers leave both legs to their workers,
+      // which run them once over the whole import.
       .filter(
         (file) =>
-          file !== "lib/measurements/import-apple-health-export.ts" &&
-          file !== "lib/import/health-connect/import.ts",
+          file !== "lib/measurements/import-apple-health-export-writer.ts" &&
+          file !== "lib/import/health-connect/import.ts" &&
+          file !== "lib/import/file-import/write-measurements.ts",
       );
     expect(handRolled.length).toBeGreaterThan(0);
     const missing = handRolled.filter((file) => {

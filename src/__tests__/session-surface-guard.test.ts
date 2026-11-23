@@ -164,6 +164,11 @@ describe("S1 — the direct session-resolution set is frozen", () => {
       "RSC prefetch of the session user's mood list, skipped under a switch",
     "app/page.tsx":
       "RSC prefetch of the session user's dashboard snapshot, skipped under a switch",
+    // The account payload for the first HTML, built by the `/api/auth/me`
+    // route's own builder for the caller's own session (an actor surface,
+    // like the route), so the shell renders the page instead of a spinner.
+    "app/layout.tsx":
+      "RSC seed of the caller's own /api/auth/me payload, built by the route's builder",
     // Onboarding routing. Reads the actor's OWN setup state through
     // `loadOnboardingFlowState` (a `getSession` wrapper, listed in the regex
     // below) to guard the step URL and to render the screens; the three
@@ -173,6 +178,13 @@ describe("S1 — the direct session-resolution set is frozen", () => {
       "guards the step URL on the actor's own setup state",
     "app/onboarding/page.tsx":
       "resumes or welcomes on the actor's own setup state",
+    // 1.49 — the first-admin server setup. Reads the actor's role to refuse a
+    // non-admin with a 404 and the locale for the frame; the screens' data
+    // comes from cookie-only `requireAdmin` routes.
+    "app/onboarding/server/page.tsx":
+      "admits an admin and opens the first server setup step still owed",
+    "app/onboarding/server/[step]/page.tsx":
+      "admits an admin to one server setup step, in the actor's locale",
   };
 
   /**
@@ -251,7 +263,11 @@ describe("S2 — the URL-token authentication set is frozen", () => {
    */
   const URL_TOKEN_ALLOWLIST: Record<string, string> = {
     // Clinician share link: the `hls_` path segment is the whole credential.
-    "app/c/[token]/page.tsx": "serves the shared record view",
+    // Its entry: looks the token up first, answers every miss with a real
+    // 404 and sends a live link on to the page below with the gate cookie.
+    "app/c/[token]/route.ts":
+      "the share link's entry: gate lookup, uniform 404 on a miss, 307 to the view",
+    "app/c/[token]/view/page.tsx": "serves the shared record view",
     "app/c/[token]/d/[id]/route.ts": "serves a shared document's bytes",
     "app/c/[token]/fhir/route.ts": "serves the shared record as a FHIR bundle",
     "app/c/[token]/report.pdf/route.ts": "serves the shared record as a PDF",
@@ -303,6 +319,20 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     // logs by `PATH_SECRET_PATHS`.
     "app/api/cycle/feed/[token]/route.ts":
       "calendar provider polls without a session; the hlf_ path token is the credential",
+    // The care calendar feed: visits, check-ups and boosters coming due,
+    // built like the cycle feed. The `hlf_` path segment is the credential,
+    // rate limited before the lookup, HMAC-hashed at rest, the account and
+    // the operator switch re-read per fetch behind one 404, and scrubbed from
+    // logs by `PATH_SECRET_PATHS`.
+    "app/api/care/feed/[token]/route.ts":
+      "the hlf_ path segment is the care calendar feed's only credential",
+    // The emergency card's read-only view behind a wallet card's QR
+    // code. The `hlm_` path segment is the credential: rate limited before
+    // the lookup, HMAC-hashed at rest, revocable, optionally expiring, every
+    // access audited on the owner's trail, the items frozen at mint, and
+    // scrubbed from logs by `PATH_SECRET_PATHS`.
+    "app/e/[token]/route.ts":
+      "the hlm_ path segment is the emergency card link's only credential",
     // The native https return (#163 B2). A sign-in in the app finishes here
     // with a one-time, PKCE-locked handoff code or a second-factor ticket in
     // the query; the app intercepts the address before it loads. In a browser
@@ -362,6 +392,7 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     expect(bySegment.length).toBeGreaterThan(0);
     expect(bySegment).toEqual([
       "app/api/c/[token]/unlock/route.ts",
+      "app/api/care/feed/[token]/route.ts",
       "app/api/cycle/feed/[token]/route.ts",
       "app/api/notifications/action/[token]/route.ts",
       "app/api/whoop/webhook/[token]/route.ts",
@@ -369,9 +400,11 @@ describe("S2 — the URL-token authentication set is frozen", () => {
       "app/c/[token]/d/[id]/route.ts",
       "app/c/[token]/fhir/route.ts",
       "app/c/[token]/not-found.tsx",
-      "app/c/[token]/page.tsx",
       "app/c/[token]/report.pdf/route.ts",
+      "app/c/[token]/route.ts",
+      "app/c/[token]/view/page.tsx",
       "app/claim/[token]/page.tsx",
+      "app/e/[token]/route.ts",
       "app/invite/[token]/page.tsx",
     ]);
   });
@@ -384,8 +417,9 @@ describe("S2 — the URL-token authentication set is frozen", () => {
       "app/api/c/[token]/unlock/route.ts",
       "app/c/[token]/d/[id]/route.ts",
       "app/c/[token]/fhir/route.ts",
-      "app/c/[token]/page.tsx",
       "app/c/[token]/report.pdf/route.ts",
+      "app/c/[token]/route.ts",
+      "app/c/[token]/view/page.tsx",
     ]);
   });
 

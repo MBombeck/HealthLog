@@ -28,6 +28,7 @@
       "criticalAlarmEnabled": false,
       "atcCode": null,
       "rxNormCode": null,
+      "leafletUrl": null,
       "lowStockNotifiedAt": null,
       "lowStockNotifiedThresholdDays": null,
       "reorderLeadDays": null,
@@ -75,6 +76,7 @@
       "stockDosesRemaining": null,
       "runwayDays": null,
       "ingredients": [],
+      "leafletSearch": null,
       "related": []
     },
     "error": null
@@ -123,6 +125,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -159,6 +162,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,

@@ -5,9 +5,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyThemeColor,
+  parseThemeChoice,
+  resolveTheme,
   THEME_BOOT_SCRIPT,
   THEME_COLOR,
 } from "@/lib/pwa/theme-color";
+
+/** Every stored value a browser can hold, the odd ones included. */
+const STORED_VALUES = [null, "light", "dark", "system", "", "auto"] as const;
 
 function fakeMeta(content: string) {
   const attrs = new Map<string, string>([["content", content]]);
@@ -19,7 +24,7 @@ function fakeMeta(content: string) {
 
 describe("applyThemeColor", () => {
   it("rewrites both media-keyed tags to the theme the page painted", () => {
-    // A phone in light mode, the app in its dark default: the light tag is
+    // A phone in light mode, the app set to dark: the light tag is
     // the one the browser applies, and it must carry the dark colour.
     const light = fakeMeta(THEME_COLOR.light);
     const dark = fakeMeta(THEME_COLOR.dark);
@@ -52,7 +57,11 @@ describe("applyThemeColor", () => {
 });
 
 describe("THEME_BOOT_SCRIPT", () => {
-  function boot(stored: string | null, systemDark: boolean) {
+  function boot(
+    stored: string | null,
+    systemDark: boolean,
+    { storageThrows = false } = {},
+  ) {
     const metas = [fakeMeta(THEME_COLOR.light), fakeMeta(THEME_COLOR.dark)];
     const classes = new Set<string>();
     const listeners = new Map<string, () => void>();
@@ -65,7 +74,12 @@ describe("THEME_BOOT_SCRIPT", () => {
     const window = {
       matchMedia: () => ({ matches: systemDark }),
     };
-    const localStorage = { getItem: () => stored };
+    const localStorage = {
+      getItem: () => {
+        if (storageThrows) throw new Error("SecurityError");
+        return stored;
+      },
+    };
     new Function("window", "document", "localStorage", THEME_BOOT_SCRIPT)(
       window,
       document,
@@ -74,13 +88,39 @@ describe("THEME_BOOT_SCRIPT", () => {
     return { metas, classes, listeners };
   }
 
-  it("paints the status bar in the app's theme before hydration", () => {
-    // A light system, the app in its dark default: the light-keyed tag is
-    // the one the browser applies, so it must carry the dark colour already.
-    const { metas, classes } = boot(null, false);
+  it("follows the device with nothing stored", () => {
+    expect([...boot(null, false).classes]).toEqual(["light"]);
+    expect([...boot(null, true).classes]).toEqual(["dark"]);
+  });
+
+  it("keeps a stored dark choice on a light device", () => {
+    // The light-keyed tag is the one the browser applies, so it must carry
+    // the dark colour before hydration.
+    const { metas, classes } = boot("dark", false);
     expect([...classes]).toEqual(["dark"]);
     for (const meta of metas) {
       expect(meta.attrs.get("content")).toBe(THEME_COLOR.dark);
+    }
+  });
+
+  it("still follows the device when storage is refused", () => {
+    expect([...boot(null, false, { storageThrows: true }).classes]).toEqual([
+      "light",
+    ]);
+  });
+
+  it("paints what the app resolves, for every stored value and device", () => {
+    for (const stored of STORED_VALUES) {
+      for (const systemDark of [false, true]) {
+        const expected = resolveTheme(stored, systemDark);
+        const { classes, metas } = boot(stored, systemDark);
+        expect([...classes], `${stored} / dark=${systemDark}`).toEqual([
+          expected,
+        ]);
+        for (const meta of metas) {
+          expect(meta.attrs.get("content")).toBe(THEME_COLOR[expected]);
+        }
+      }
     }
   });
 
@@ -95,5 +135,19 @@ describe("THEME_BOOT_SCRIPT", () => {
   it("repeats the rewrite once the document is parsed", () => {
     const { listeners } = boot("system", true);
     expect(listeners.has("DOMContentLoaded")).toBe(true);
+  });
+});
+
+describe("resolveTheme", () => {
+  it("follows the system unless light or dark was chosen", () => {
+    expect(parseThemeChoice(null)).toBe("system");
+    expect(parseThemeChoice("system")).toBe("system");
+    expect(parseThemeChoice("auto")).toBe("system");
+    expect(parseThemeChoice("dark")).toBe("dark");
+    expect(parseThemeChoice("light")).toBe("light");
+    expect(resolveTheme(null, false)).toBe("light");
+    expect(resolveTheme(null, true)).toBe("dark");
+    expect(resolveTheme("dark", false)).toBe("dark");
+    expect(resolveTheme("light", true)).toBe("light");
   });
 });

@@ -34,8 +34,7 @@
  * Pure over already-fetched rows — the DB reads live in the caller (the route),
  * mirroring how the engine itself is pure over `NamedSeries[]`.
  */
-import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
-import { shiftDateKey } from "@/lib/tz/format";
+import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { foldNutrientDays } from "@/lib/nutrients/day-total";
 import {
   NUTRIENT_CATALOG,
@@ -55,8 +54,6 @@ import {
   type DailySeriesPoint,
   type NamedSeries,
 } from "@/lib/insights/correlation-discovery";
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Build the daily MEDICATION_COMPLIANCE behaviour series from the user's pooled
@@ -88,7 +85,7 @@ export function buildComplianceDailySeries(
     const isMissed = row.status === "missed";
     if (!isTaken && !isMissed) continue;
 
-    const day = dayKeyForUserTz(row.at, tz);
+    const day = userDayKey(row.at, tz);
     const bucket = byDay.get(day) ?? { taken: 0, missed: 0 };
     if (isTaken) bucket.taken += 1;
     else bucket.missed += 1;
@@ -126,7 +123,7 @@ export interface SymptomEpisodeSpan {
 
 /** Inclusive `YYYY-MM-DD` day key for an instant in the user's tz. */
 function dayKey(at: Date, tz: string): string {
-  return dayKeyForUserTz(at, tz);
+  return userDayKey(at, tz);
 }
 
 /**
@@ -174,14 +171,19 @@ export function buildSymptomSeverityDailySeries(args: {
     const from = Math.max(epStart, windowStart.getTime());
     const to = Math.min(epEnd, windowEnd.getTime());
     if (from > to) continue;
-    // Walk calendar days from `from` to `to`, keying each in the user's tz.
-    // Step by a day in ms; the tz-key collapses any DST hour drift to the
-    // right local day (we never index by the raw ms, only by the day key).
-    for (let t = from; t <= to + MS_PER_DAY; t += MS_PER_DAY) {
-      const key = dayKey(new Date(t), tz);
+    // Walk the local calendar days from the one `from` falls on to the one
+    // `to` falls on, by day key. A walk in 24-hour steps of milliseconds
+    // skipped a 23-hour day when it started in the last local hour before
+    // one, and ran a day past the end whenever the onset's clock time was
+    // earlier than the resolution's.
+    const lastKey = dayKey(new Date(to), tz);
+    for (
+      let key = dayKey(new Date(from), tz);
+      key <= lastKey;
+      key = shiftDateKey(key, 1)
+    ) {
       if (key < startKey || key > endKey) continue;
       if (!byDay.has(key)) byDay.set(key, 0);
-      if (key === endKey) break;
     }
   }
 

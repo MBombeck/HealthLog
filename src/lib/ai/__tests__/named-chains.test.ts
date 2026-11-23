@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_NAMED_CHAINS,
   chainSelectionFor,
-  detachChain,
   parseNamedChains,
   serializeNamedChains,
 } from "../named-chains";
@@ -94,24 +93,6 @@ describe("chainSelectionFor", () => {
       entries: ["openai", "local"],
     });
     expect(chainSelectionFor(withDefault, "documentAi").kind).toBe("pinned");
-  });
-});
-
-describe("detachChain", () => {
-  it("returns attached capabilities and the default to the main chain", () => {
-    const config = parseNamedChains({
-      chains: [
-        { id: "a", name: "A", entries: ["local"] },
-        { id: "b", name: "B", entries: ["openai"] },
-      ],
-      defaultChainId: "a",
-      attachments: { documentAi: "a", coach: "b" },
-    });
-    expect(detachChain(config, "a")).toEqual({
-      chains: [{ id: "b", name: "B", entries: ["openai"] }],
-      defaultChainId: null,
-      attachments: { coach: "b" },
-    });
   });
 });
 

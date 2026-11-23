@@ -115,7 +115,7 @@ describe("<PriorityCard>", () => {
       />,
     );
     expect(html).toContain("<button");
-    expect(html).toContain("Log dose");
+    expect(html).toContain(">Take<");
   });
 
   it("omits a non-navigation action entirely when no handler is passed", () => {
@@ -138,7 +138,7 @@ describe("<PriorityCard>", () => {
         })}
       />,
     );
-    expect(html).not.toContain("Log dose");
+    expect(html).not.toContain(">Take<");
     // Navigation is untouched — reading is never what a delegation withholds.
     expect(html).toContain('href="/checkups"');
   });

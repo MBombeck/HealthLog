@@ -7,6 +7,7 @@ import {
   atcCodeField,
   injectionSiteEnum,
   INJECTION_SITE_VALUES,
+  leafletUrlField,
   medicationNoteField,
   rxNormCodeField,
 } from "./base";
@@ -174,7 +175,7 @@ export const createMedicationSchema = z
       .boolean()
       .optional()
       .describe(
-        "iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+        "iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client plans its own Activities by it; a server start over the push relay requires it, and a server-started Activity ends once it is off.",
       ),
     /** v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. */
     criticalAlarmEnabled: z
@@ -189,6 +190,8 @@ export const createMedicationSchema = z
     rxNormCode: rxNormCodeField,
     /** #1371 — the person's own note (directions). */
     note: medicationNoteField,
+    /** #1430 — the official leaflet link the person saved. */
+    leafletUrl: leafletUrlField,
     /**
      * v1.28 — mirrored-medication provenance. Only APPLE_HEALTH is
      * accepted here (the iOS 26+ HealthKit Medications sync); the other
@@ -330,7 +333,7 @@ export const updateMedicationSchema = z
       .boolean()
       .optional()
       .describe(
-        "iOS Live Activity opt-in for this medication's reminders. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+        "iOS Live Activity opt-in for this medication's reminders. The iOS client plans its own Activities by it; a server start over the push relay requires it, and a server-started Activity ends once it is off.",
       ),
     /** v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. */
     criticalAlarmEnabled: z
@@ -345,6 +348,8 @@ export const updateMedicationSchema = z
     rxNormCode: rxNormCodeField,
     /** #1371 — the person's own note (directions). */
     note: medicationNoteField,
+    /** #1430 — the official leaflet link the person saved. */
+    leafletUrl: leafletUrlField,
     ...courseWindowFields,
     schedules: z.array(scheduleSchema).optional(),
     /**

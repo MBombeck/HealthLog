@@ -278,6 +278,8 @@ export function formatMedicationsForExport(
     trackIntake: boolean;
     /** #1371 — the person's own note, decrypted; NULL when there is none. */
     note: string | null;
+    /** #1430 — the leaflet link the person saved; NULL when there is none. */
+    leafletUrl: string | null;
     schedules: Array<{
       windowStart: string;
       windowEnd: string;
@@ -298,6 +300,7 @@ export function formatMedicationsForExport(
       )
       .join("; "),
     note: m.note ?? "",
+    leafletUrl: m.leafletUrl ?? "",
   }));
 }
 

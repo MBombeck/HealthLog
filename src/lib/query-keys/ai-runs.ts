@@ -6,4 +6,6 @@
 export const aiRunKeys = {
   aiRuns: () => ["ai-runs"] as const,
   aiRun: (runId: string) => ["ai-runs", runId] as const,
+  /** #1404 — why background AI work stopped (Settings, AI). */
+  aiJobFailures: () => ["ai-job-failures"] as const,
 };

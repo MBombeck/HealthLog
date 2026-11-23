@@ -47,7 +47,6 @@ vi.mock("@/lib/documents/document-settings", () => ({
 
 const providerMocks = vi.hoisted(() => ({
   hasAnyConfiguredProvider: vi.fn(async () => true),
-  resolveProvider: vi.fn(async () => ({ type: "none" })),
   resolveProviderChain: vi.fn(async () => [] as unknown[]),
 }));
 vi.mock("@/lib/ai/provider", () => providerMocks);
@@ -108,7 +107,6 @@ beforeEach(() => {
   provider = makeProvider();
   activeKinds.kinds = new Set();
   providerMocks.hasAnyConfiguredProvider.mockResolvedValue(true);
-  providerMocks.resolveProvider.mockResolvedValue({ type: "none" });
   budgetMocks.reserveBudget.mockResolvedValue({
     allowed: true,
     reserved: 300,
@@ -214,11 +212,11 @@ describe("deriveClarifyingQuestions — server-managed consent gate", () => {
     expect(provider.generateCompletion).not.toHaveBeenCalled();
   });
 
-  it("sends nothing on an empty chain, even where the single-provider resolver has one", async () => {
-    // The chain is the person's switches; an empty one means no provider. The
-    // single-provider resolver ignores those switches, so it must not be asked.
+  it("sends nothing on an empty chain, even with a provider configured", async () => {
+    // The chain is the person's switches; an empty one means no provider,
+    // whatever the presence probe says.
+    providerMocks.hasAnyConfiguredProvider.mockResolvedValue(true);
     providerMocks.resolveProviderChain.mockResolvedValue([]);
-    providerMocks.resolveProvider.mockResolvedValue(provider);
 
     const out = await deriveClarifyingQuestions(
       "user-1",

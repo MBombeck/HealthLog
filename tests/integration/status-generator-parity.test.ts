@@ -70,7 +70,6 @@ vi.mock("@/lib/ai/provider", async (importOriginal) => ({
       },
     },
   ],
-  resolveProvider: async () => ({ type: "none" }),
 }));
 
 /**

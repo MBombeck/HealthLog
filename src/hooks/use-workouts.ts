@@ -1,5 +1,6 @@
 "use client";
 
+import type { WorkoutPerformance } from "@/lib/workouts/performance-metrics";
 import type { TrainingLoad } from "@/lib/insights/training-load";
 import { useMemo } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -324,6 +325,8 @@ export interface WorkoutDetailPayload extends WorkoutListEntry {
   elevationM: number | null;
   pauseDurationSec: number | null;
   metadata: unknown;
+  /** The watch's own figures for the session; null when it carries none. */
+  performance?: WorkoutPerformance | null;
   route: {
     geometry: unknown;
     sampleTimestamps: RouteSample[] | null;

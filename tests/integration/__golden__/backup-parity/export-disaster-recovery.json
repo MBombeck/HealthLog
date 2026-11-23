@@ -21,9 +21,6 @@
       "glitchtipEnabled": true,
       "glitchtipDsn": "rt-AppSettings-glitchtipDsn",
       "glitchtipEnvironment": "rt-AppSettings-glitchtipEnvironment",
-      "glitchtipLastOkAt": "2026-06-30T12:34:56.789Z",
-      "glitchtipLastFailureAt": "2026-06-30T12:34:56.789Z",
-      "glitchtipLastFailureReason": "rt-AppSettings-glitchtipLastFailureReason",
       "reminderLateMinutes": 3,
       "reminderMissedMinutes": 3,
       "adminAiKeyEncrypted": "<sealed:v1:rt-AppSettings-adminAiKeyEncrypted>",
@@ -54,13 +51,11 @@
       },
       "documentMaxFileBytes": 3,
       "documentQuotaBytes": "5",
-      "correlationSeasonalEngineSince": "2026-06-30T12:34:56.789Z",
-      "pulseDayMeanMethod": "hour_mean_v1",
-      "pulseDayMeanAppliedAt": "2026-06-30T12:34:56.789Z",
-      "pulseDayMeanDryRunJson": {
-        "roundTrip": "rt-AppSettings-pulseDayMeanDryRunJson"
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
       },
-      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor"
+      "pushRelayDecision": "off"
     },
     "accountSettings": {
       "heightCm": 2.5,
@@ -85,6 +80,7 @@
       "locale": "fr",
       "unitPreference": "imperial",
       "glucoseUnit": "mmol/L",
+      "medicineRegistry": "GB",
       "timeFormat": "H12",
       "dateFormat": "DMY",
       "modulePreferencesJson": {
@@ -137,6 +133,9 @@
       "reportSelectionJson": {
         "roundTrip": "rt-User-reportSelectionJson"
       },
+      "reportScheduleJson": {
+        "roundTrip": "rt-User-reportScheduleJson"
+      },
       "globalExcludedInjectionSites": [
         "THIGH_LEFT"
       ],
@@ -160,6 +159,9 @@
         "roundTrip": "rt-User-aiNamedChains"
       },
       "aiResponseTimeoutSeconds": 3,
+      "aiCoachBudgets": {
+        "roundTrip": "rt-User-aiCoachBudgets"
+      },
       "useCentralCodex": true,
       "insightsPrivacyMode": "raw",
       "insightsExcludeMetrics": [
@@ -201,11 +203,12 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:03.000Z",
-        "updatedAt": "2026-05-01T08:21:03.000Z"
+        "createdAt": "2026-05-01T08:23:03.000Z",
+        "updatedAt": "2026-05-01T08:24:03.000Z"
       },
       {
         "id": "<id:2>",
@@ -225,11 +228,12 @@
         "sleepStage": "DEEP",
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:04.000Z",
-        "updatedAt": "2026-05-01T08:21:04.000Z"
+        "createdAt": "2026-05-01T08:23:04.000Z",
+        "updatedAt": "2026-05-01T08:24:04.000Z"
       },
       {
         "id": "<id:3>",
@@ -249,11 +253,12 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": "America/New_York",
         "ingestTokenId": null,
         "syncVersion": 4,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-01T08:20:01.000Z",
-        "updatedAt": "2026-05-01T08:21:01.000Z"
+        "createdAt": "2026-05-01T08:23:01.000Z",
+        "updatedAt": "2026-05-01T08:24:01.000Z"
       },
       {
         "id": "<id:4>",
@@ -273,11 +278,14 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": "rt-Measurement-deviceType",
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:00.000Z",
-        "updatedAt": "2026-05-01T08:21:00.000Z"
+        "appleHealthDeletedAt": "2026-06-30T12:34:56.789Z",
+        "statsComputedAt": "2026-06-30T12:34:56.789Z",
+        "createdAt": "2026-05-01T08:23:00.000Z",
+        "updatedAt": "2026-05-01T08:24:00.000Z"
       },
       {
         "id": "<id:5>",
@@ -297,11 +305,12 @@
         "sleepStage": null,
         "rhythmClassification": "IRREGULAR",
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:02.000Z",
-        "updatedAt": "2026-05-01T08:21:02.000Z"
+        "createdAt": "2026-05-01T08:23:02.000Z",
+        "updatedAt": "2026-05-01T08:24:02.000Z"
       }
     ],
     "customMedicationCategories": [
@@ -318,14 +327,20 @@
     "medications": [
       {
         "id": "<id:6>",
+        "startsOn": "2026-06-10T00:00:00.000Z",
+        "endsOn": "2026-06-16T00:00:00.000Z",
+        "snoozedUntil": "2026-06-30T12:34:56.789Z",
+        "lowStockNotifiedAt": "2026-06-30T12:34:56.789Z",
+        "lowStockNotifiedThresholdDays": 3,
+        "externalSource": "WEB",
+        "externalId": "rt-Medication-externalId",
+        "updatedAt": "2026-05-01T11:54:00.000Z",
+        "categoryUpdatedAt": "2026-05-01T21:22:00.000Z",
         "treatmentClass": "GLP1",
         "dosesPerUnit": 3,
         "unitsPerDose": "2.5",
         "notificationsEnabled": false,
         "pausedAt": "2026-06-30T12:34:56.789Z",
-        "snoozedUntil": "2026-06-30T12:34:56.789Z",
-        "startsOn": "2026-06-10T00:00:00.000Z",
-        "endsOn": "2026-06-16T00:00:00.000Z",
         "oneShot": true,
         "asNeeded": false,
         "deliveryForm": "INJECTION",
@@ -337,13 +352,7 @@
         "criticalAlarmEnabled": true,
         "atcCode": "rt-Medication-atcCode",
         "rxNormCode": "rt-Medication-rxNormCode",
-        "lowStockNotifiedAt": "2026-06-30T12:34:56.789Z",
-        "lowStockNotifiedThresholdDays": 3,
         "reorderLeadDays": 3,
-        "externalSource": "WEB",
-        "externalId": "rt-Medication-externalId",
-        "updatedAt": "2026-05-01T11:53:00.000Z",
-        "categoryUpdatedAt": "2026-05-01T21:22:00.000Z",
         "name": "Round-trip tablet",
         "dose": "5 mg",
         "active": false,
@@ -352,7 +361,8 @@
         "autoMarkTakenSince": "2026-06-30T12:34:56.789Z",
         "category": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
         "noteEncrypted": "<sealed:v1:before breakfast, with water>",
-        "createdAt": "2026-05-01T11:52:00.000Z",
+        "leafletUrl": "https://medicinesdatabase.be/human-use/medicines/12345/leaflet",
+        "createdAt": "2026-05-01T11:53:00.000Z",
         "schedules": [
           {
             "id": "<id:7>",
@@ -484,13 +494,13 @@
             "unitsTotal": "30",
             "unitsRemaining": "21",
             "firstUseAt": "2026-07-01T08:00:00.000Z",
-            "expiresAt": "2026-05-05T13:48:00.000Z",
+            "expiresAt": "2026-05-05T15:28:00.000Z",
             "printedExpiry": "2026-06-30T12:34:56.789Z",
             "purchasedAt": "2026-06-30T12:34:56.789Z",
             "manufacturer": "Fixture Pharma",
             "doseStrength": "10 mg",
-            "createdAt": "2026-05-05T13:55:00.000Z",
-            "updatedAt": "2026-05-05T13:56:00.000Z"
+            "createdAt": "2026-05-05T15:35:00.000Z",
+            "updatedAt": "2026-05-05T15:36:00.000Z"
           },
           {
             "id": "<id:16>",
@@ -506,8 +516,8 @@
             "purchasedAt": null,
             "manufacturer": null,
             "doseStrength": null,
-            "createdAt": "2026-05-05T13:55:01.000Z",
-            "updatedAt": "2026-05-05T13:56:01.000Z"
+            "createdAt": "2026-05-05T15:35:01.000Z",
+            "updatedAt": "2026-05-05T15:36:01.000Z"
           }
         ],
         "phaseConfig": {
@@ -549,7 +559,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T14:47:00.000Z"
+            "createdAt": "2026-05-06T16:27:00.000Z"
           },
           {
             "id": "<id:21>",
@@ -564,7 +574,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": 2,
-            "createdAt": "2026-05-06T14:47:02.000Z"
+            "createdAt": "2026-05-06T16:27:02.000Z"
           },
           {
             "id": "<id:22>",
@@ -579,14 +589,14 @@
             ],
             "source": "MANUAL",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T14:47:01.000Z"
+            "createdAt": "2026-05-06T16:27:01.000Z"
           }
         ],
         "efficacyTargets": [
           {
             "id": "<id:23>",
-            "createdAt": "2026-05-06T16:25:00.000Z",
-            "updatedAt": "2026-05-06T16:26:00.000Z",
+            "createdAt": "2026-05-06T18:05:00.000Z",
+            "updatedAt": "2026-05-06T18:06:00.000Z",
             "measurementType": "WEIGHT",
             "biomarkerName": "Ferritin",
             "primary": false
@@ -595,14 +605,20 @@
       },
       {
         "id": "<id:24>",
+        "startsOn": null,
+        "endsOn": null,
+        "snoozedUntil": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "updatedAt": "2026-05-01T11:54:01.000Z",
+        "categoryUpdatedAt": null,
         "treatmentClass": "GENERIC",
         "dosesPerUnit": null,
         "unitsPerDose": "1",
         "notificationsEnabled": true,
         "pausedAt": null,
-        "snoozedUntil": null,
-        "startsOn": null,
-        "endsOn": null,
         "oneShot": false,
         "asNeeded": true,
         "deliveryForm": "ORAL",
@@ -612,13 +628,7 @@
         "criticalAlarmEnabled": false,
         "atcCode": null,
         "rxNormCode": null,
-        "lowStockNotifiedAt": null,
-        "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
-        "externalSource": null,
-        "externalId": null,
-        "updatedAt": "2026-05-01T11:53:01.000Z",
-        "categoryUpdatedAt": null,
         "name": "Buccal midazolam",
         "dose": "10 mg",
         "active": true,
@@ -627,7 +637,8 @@
         "autoMarkTakenSince": null,
         "category": "OTHER",
         "noteEncrypted": null,
-        "createdAt": "2026-05-01T11:52:01.000Z",
+        "leafletUrl": null,
+        "createdAt": "2026-05-01T11:53:01.000Z",
         "schedules": [],
         "sideEffects": [],
         "pauseEras": [],
@@ -645,15 +656,11 @@
       {
         "id": "<id:25>",
         "medicationId": "<id:6>",
-        "autoMissed": false,
-        "attributionSource": "AUTO",
         "idempotencyKey": null,
-        "createdAt": "2026-05-01T14:51:02.000Z",
-        "injectionSite": null,
-        "doseTaken": null,
+        "createdAt": "2026-05-01T14:52:02.000Z",
         "inventoryConsumption": null,
         "externalId": null,
-        "updatedAt": "2026-05-01T14:56:02.000Z",
+        "updatedAt": "2026-05-01T14:57:02.000Z",
         "syncVersion": 0,
         "deletedAt": "<tombstone>",
         "medication": "Round-trip tablet",
@@ -661,43 +668,46 @@
         "takenAt": "2026-07-02T08:03:00.000Z",
         "skipped": false,
         "source": "WEB",
-        "autoRecorded": false
+        "takenVia": null,
+        "autoRecorded": false,
+        "injectionSite": null,
+        "doseTaken": null,
+        "attributionSource": "AUTO",
+        "autoMissed": false
       },
       {
         "id": "<id:26>",
         "medicationId": "<id:6>",
-        "autoMissed": true,
-        "attributionSource": "USER_PIN",
         "idempotencyKey": "rt-MedicationIntakeEvent-idempotencyKey",
-        "createdAt": "2026-05-01T14:51:00.000Z",
-        "injectionSite": "ABDOMEN_LEFT",
-        "doseTaken": "rt-MedicationIntakeEvent-doseTaken",
+        "createdAt": "2026-05-01T14:52:00.000Z",
         "inventoryConsumption": {
           "roundTrip": "rt-MedicationIntakeEvent-inventoryConsumption"
         },
         "externalId": "rt-MedicationIntakeEvent-externalId",
-        "updatedAt": "2026-05-01T14:56:00.000Z",
+        "updatedAt": "2026-05-01T14:57:00.000Z",
         "syncVersion": 3,
         "deletedAt": null,
+        "appleHealthDeletedAt": "2026-06-30T12:34:56.789Z",
         "medication": "Round-trip tablet",
         "scheduledFor": "2026-07-01T08:00:00.000Z",
         "takenAt": "2026-07-01T08:04:00.000Z",
         "skipped": true,
         "source": "API",
-        "autoRecorded": true
+        "takenVia": "WEB",
+        "autoRecorded": true,
+        "injectionSite": "ABDOMEN_LEFT",
+        "doseTaken": "rt-MedicationIntakeEvent-doseTaken",
+        "attributionSource": "USER_PIN",
+        "autoMissed": false
       },
       {
         "id": "<id:27>",
         "medicationId": "<id:24>",
-        "autoMissed": false,
-        "attributionSource": "AUTO",
         "idempotencyKey": null,
-        "createdAt": "2026-05-01T14:51:01.000Z",
-        "injectionSite": null,
-        "doseTaken": null,
+        "createdAt": "2026-05-01T14:52:01.000Z",
         "inventoryConsumption": null,
         "externalId": null,
-        "updatedAt": "2026-05-01T14:56:01.000Z",
+        "updatedAt": "2026-05-01T14:57:01.000Z",
         "syncVersion": 0,
         "deletedAt": null,
         "medication": "Buccal midazolam",
@@ -705,7 +715,12 @@
         "takenAt": "2026-06-22T07:06:00.000Z",
         "skipped": false,
         "source": "WEB",
-        "autoRecorded": false
+        "takenVia": null,
+        "autoRecorded": false,
+        "injectionSite": null,
+        "doseTaken": null,
+        "attributionSource": "AUTO",
+        "autoMissed": false
       }
     ],
     "moodEntries": [
@@ -741,6 +756,7 @@
         "noteEncrypted": "<sealed:v1:rt-MoodEntry-noteEncrypted>",
         "syncedAt": "2026-05-02T04:17:00.000Z",
         "syncVersion": 3,
+        "appleHealthDeletedAt": "2026-06-30T12:34:56.789Z",
         "createdAt": "2026-05-02T04:18:00.000Z",
         "updatedAt": "2026-05-02T04:19:00.000Z",
         "linkCreatedAt": [
@@ -809,7 +825,7 @@
     "hiddenMoodTags": [
       {
         "key": "grateful",
-        "createdAt": "2026-05-05T18:42:00.000Z"
+        "createdAt": "2026-05-05T20:22:00.000Z"
       }
     ],
     "customMoodTags": [
@@ -830,8 +846,8 @@
     ],
     "cycleProfile": {
       "id": "<id:32>",
-      "createdAt": "2026-05-03T15:12:00.000Z",
-      "updatedAt": "2026-05-03T15:13:00.000Z",
+      "createdAt": "2026-05-03T16:54:00.000Z",
+      "updatedAt": "2026-05-03T16:55:00.000Z",
       "goal": "AVOID_PREGNANCY",
       "cycleTrackingEnabled": true,
       "typicalCycleLength": 3,
@@ -841,7 +857,9 @@
       "predictionEnabled": false,
       "rawChartMode": true,
       "discreetNotifications": true,
-      "sensitiveCategoryEncryption": false
+      "sensitiveCategoryEncryption": false,
+      "postpartumWeeks": 3,
+      "pregnancyEncrypted": "<sealed:v1:{\"state\":\"POSTPARTUM\",\"startDate\":\"2026-03-02\",\"dueDate\":\"2026-12-07\",\"deliveryDate\":\"2026-11-30\",\"ownerDecided\":true}>"
     },
     "cycles": [
       {
@@ -850,8 +868,8 @@
         "syncVersion": 0,
         "deletedAt": "<tombstone>",
         "absorbedIntoId": null,
-        "createdAt": "2026-05-03T16:53:02.000Z",
-        "updatedAt": "2026-05-03T16:54:02.000Z",
+        "createdAt": "2026-05-03T18:33:02.000Z",
+        "updatedAt": "2026-05-03T18:34:02.000Z",
         "startDate": "2026-05-04",
         "endDate": null,
         "periodEndDate": null,
@@ -866,13 +884,13 @@
         "syncVersion": 3,
         "deletedAt": null,
         "absorbedIntoId": null,
-        "createdAt": "2026-05-03T16:53:00.000Z",
-        "updatedAt": "2026-05-03T16:54:00.000Z",
+        "createdAt": "2026-05-03T18:33:00.000Z",
+        "updatedAt": "2026-05-03T18:34:00.000Z",
         "startDate": "2026-06-01",
-        "endDate": "rt-MenstrualCycle-endDate",
-        "periodEndDate": "rt-MenstrualCycle-periodEndDate",
+        "endDate": "2026-10-28",
+        "periodEndDate": "2026-10-05",
         "lengthDays": 3,
-        "ovulationDate": "rt-MenstrualCycle-ovulationDate",
+        "ovulationDate": "2026-10-15",
         "ovulationConfirmed": true,
         "tz": "rt-MenstrualCycle-tz"
       },
@@ -882,8 +900,8 @@
         "syncVersion": 0,
         "deletedAt": "2026-06-04T07:00:00.000Z",
         "absorbedIntoId": "<id:34>",
-        "createdAt": "2026-05-03T16:53:01.000Z",
-        "updatedAt": "2026-05-03T16:54:01.000Z",
+        "createdAt": "2026-05-03T18:33:01.000Z",
+        "updatedAt": "2026-05-03T18:34:01.000Z",
         "startDate": "2026-06-03",
         "endDate": null,
         "periodEndDate": null,
@@ -899,8 +917,9 @@
         "cycleId": "<id:34>",
         "syncVersion": 3,
         "deletedAt": null,
-        "createdAt": "2026-05-03T18:45:00.000Z",
-        "updatedAt": "2026-05-03T18:46:00.000Z",
+        "appleHealthDeletedAt": "2026-06-30T12:34:56.789Z",
+        "createdAt": "2026-05-03T20:26:00.000Z",
+        "updatedAt": "2026-05-03T20:27:00.000Z",
         "date": "2026-06-02",
         "flow": "HEAVY",
         "intermenstrualBleeding": true,
@@ -916,7 +935,7 @@
         "pregnancyTest": "NEGATIVE",
         "progesteroneTest": "NEGATIVE",
         "contraceptive": "NONE",
-        "sensitiveEncrypted": "<sealed:v1:rt-CycleDayLog-sensitiveEncrypted>",
+        "sensitiveEncrypted": "<sealed:v1:{\"sexualActivity\":true}>",
         "notesEncrypted": "<sealed:v1:rt-CycleDayLog-notesEncrypted>",
         "source": "WITHINGS",
         "externalId": "rt-CycleDayLog-externalId",
@@ -930,10 +949,16 @@
             "severity": 3
           }
         ],
+        "symptomSources": [
+          {
+            "key": "custom:round-trip-cramps",
+            "source": "WITHINGS"
+          }
+        ],
         "symptomLinkCreatedAt": [
           {
             "key": "custom:round-trip-cramps",
-            "createdAt": "2026-05-03T21:43:00.000Z"
+            "createdAt": "2026-05-03T23:23:00.000Z"
           }
         ]
       },
@@ -942,8 +967,8 @@
         "cycleId": "<id:34>",
         "syncVersion": 0,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-03T18:45:01.000Z",
-        "updatedAt": "2026-05-03T18:46:01.000Z",
+        "createdAt": "2026-05-03T20:26:01.000Z",
+        "updatedAt": "2026-05-03T20:27:01.000Z",
         "date": "2026-06-03",
         "flow": "LIGHT",
         "intermenstrualBleeding": false,
@@ -966,6 +991,7 @@
         "tz": null,
         "symptomKeys": [],
         "symptomSeverities": [],
+        "symptomSources": [],
         "symptomLinkCreatedAt": []
       }
     ],
@@ -1036,8 +1062,8 @@
     "biomarkers": [
       {
         "id": "<id:40>",
-        "createdAt": "2026-05-02T14:10:00.000Z",
-        "updatedAt": "2026-05-02T14:11:00.000Z",
+        "createdAt": "2026-05-02T15:50:00.000Z",
+        "updatedAt": "2026-05-02T15:51:00.000Z",
         "name": "Ferritin",
         "unit": "ng/mL",
         "lowerBound": 2.5,
@@ -1075,6 +1101,14 @@
         "createdAt": "2026-07-04T09:00:00.000Z"
       }
     ],
+    "fhirImportedResources": [
+      {
+        "resourceType": "Immunization",
+        "resourceKey": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "recordId": "round-trip-vaccination",
+        "createdAt": "2026-07-04T10:00:00.000Z"
+      }
+    ],
     "illnessEpisodes": [
       {
         "id": "<id:44>",
@@ -1089,8 +1123,8 @@
         "bodySite": null,
         "bodySiteEncrypted": null,
         "laterality": null,
-        "createdAt": "2026-05-02T19:11:03.000Z",
-        "updatedAt": "2026-05-02T19:12:03.000Z",
+        "createdAt": "2026-05-02T20:51:03.000Z",
+        "updatedAt": "2026-05-02T20:52:03.000Z",
         "deletedAt": null,
         "dayLogs": []
       },
@@ -1107,8 +1141,8 @@
         "bodySite": null,
         "bodySiteEncrypted": null,
         "laterality": null,
-        "createdAt": "2026-05-02T19:11:00.000Z",
-        "updatedAt": "2026-05-02T19:12:00.000Z",
+        "createdAt": "2026-05-02T20:51:00.000Z",
+        "updatedAt": "2026-05-02T20:52:00.000Z",
         "deletedAt": null,
         "dayLogs": [
           {
@@ -1120,14 +1154,14 @@
             "note": null,
             "noteEncrypted": "<sealed:v1:rt-IllnessDayLog-noteEncrypted>",
             "tz": "rt-IllnessDayLog-tz",
-            "createdAt": "2026-05-02T20:48:00.000Z",
-            "updatedAt": "2026-05-02T20:49:00.000Z",
+            "createdAt": "2026-05-02T22:28:00.000Z",
+            "updatedAt": "2026-05-02T22:29:00.000Z",
             "deletedAt": null,
             "symptoms": [
               {
                 "key": "round_trip_cough",
                 "severity": 2,
-                "createdAt": "2026-05-02T22:23:00.000Z"
+                "createdAt": "2026-05-03T00:03:00.000Z"
               }
             ]
           },
@@ -1140,8 +1174,8 @@
             "note": null,
             "noteEncrypted": null,
             "tz": null,
-            "createdAt": "2026-05-02T20:48:01.000Z",
-            "updatedAt": "2026-05-02T20:49:01.000Z",
+            "createdAt": "2026-05-02T22:28:01.000Z",
+            "updatedAt": "2026-05-02T22:29:01.000Z",
             "deletedAt": "<tombstone>",
             "symptoms": []
           }
@@ -1160,8 +1194,8 @@
         "bodySite": null,
         "bodySiteEncrypted": null,
         "laterality": null,
-        "createdAt": "2026-05-02T19:11:02.000Z",
-        "updatedAt": "2026-05-02T19:12:02.000Z",
+        "createdAt": "2026-05-02T20:51:02.000Z",
+        "updatedAt": "2026-05-02T20:52:02.000Z",
         "deletedAt": "<tombstone>",
         "dayLogs": []
       },
@@ -1178,8 +1212,8 @@
         "bodySite": null,
         "bodySiteEncrypted": "<sealed:v1:Stomach>",
         "laterality": "BOTH",
-        "createdAt": "2026-05-02T19:11:01.000Z",
-        "updatedAt": "2026-05-02T19:12:01.000Z",
+        "createdAt": "2026-05-02T20:51:01.000Z",
+        "updatedAt": "2026-05-02T20:52:01.000Z",
         "deletedAt": null,
         "dayLogs": []
       }
@@ -1197,8 +1231,8 @@
         "note": null,
         "reactionEncrypted": null,
         "notesEncrypted": null,
-        "createdAt": "2026-05-02T15:50:01.000Z",
-        "updatedAt": "2026-05-02T15:51:01.000Z",
+        "createdAt": "2026-05-02T17:30:01.000Z",
+        "updatedAt": "2026-05-02T17:31:01.000Z",
         "deletedAt": "<tombstone>"
       },
       {
@@ -1213,8 +1247,8 @@
         "note": null,
         "reactionEncrypted": "<sealed:v1:rt-Allergy-reactionEncrypted>",
         "notesEncrypted": "<sealed:v1:rt-Allergy-notesEncrypted>",
-        "createdAt": "2026-05-02T15:50:00.000Z",
-        "updatedAt": "2026-05-02T15:51:00.000Z",
+        "createdAt": "2026-05-02T17:30:00.000Z",
+        "updatedAt": "2026-05-02T17:31:00.000Z",
         "deletedAt": null
       }
     ],
@@ -1226,8 +1260,8 @@
         "ageAtOnset": null,
         "note": null,
         "notesEncrypted": "<sealed:v1:diagnosed at fifty>",
-        "createdAt": "2026-05-02T17:26:01.000Z",
-        "updatedAt": "2026-05-02T17:27:01.000Z",
+        "createdAt": "2026-05-02T19:06:01.000Z",
+        "updatedAt": "2026-05-02T19:07:01.000Z",
         "deletedAt": "<tombstone>"
       },
       {
@@ -1237,16 +1271,16 @@
         "ageAtOnset": 3,
         "note": null,
         "notesEncrypted": "<sealed:v1:rt-FamilyHistoryEntry-notesEncrypted>",
-        "createdAt": "2026-05-02T17:26:00.000Z",
-        "updatedAt": "2026-05-02T17:27:00.000Z",
+        "createdAt": "2026-05-02T19:06:00.000Z",
+        "updatedAt": "2026-05-02T19:07:00.000Z",
         "deletedAt": null
       }
     ],
     "workouts": [
       {
         "id": "<id:54>",
-        "createdAt": "2026-05-04T06:18:00.000Z",
-        "updatedAt": "2026-05-04T06:19:00.000Z",
+        "createdAt": "2026-05-04T07:58:00.000Z",
+        "updatedAt": "2026-05-04T07:59:00.000Z",
         "metadata": {
           "roundTrip": "rt-Workout-metadata"
         },
@@ -1267,13 +1301,6 @@
         "externalId": "rt-Workout-externalId"
       }
     ],
-    "appleHealthTombstones": [
-      {
-        "domain": "workout",
-        "externalId": "ABCDEF01-2345-6789-ABCD-EF0123456789",
-        "createdAt": "2026-06-30T08:00:00.000Z"
-      }
-    ],
     "documents": [
       {
         "id": "<id:55>",
@@ -1288,8 +1315,8 @@
         "sourceSystem": "PAPERLESS",
         "sourceId": "4711",
         "sourceInstance": "https://paperless.example.test",
-        "createdAt": "2026-05-04T09:45:00.000Z",
-        "updatedAt": "2026-05-04T09:46:00.000Z",
+        "createdAt": "2026-05-04T11:25:00.000Z",
+        "updatedAt": "2026-05-04T11:26:00.000Z",
         "contentEncrypted": "<sealed:v1:bytes:cm91bmQtdHJpcCBkb2N1bWVudCBieXRlcw==>",
         "contentSha256": "0a738470f0945033965858e9895ee721ce981a25f013514d587d0a7a1946be7a",
         "contentCodec": "binary2",
@@ -1348,20 +1375,20 @@
       "allergiesEncrypted": "<sealed:v1:rt-UserHealthProfile-allergiesEncrypted>",
       "coachFocusEncrypted": "<sealed:v1:rt-UserHealthProfile-coachFocusEncrypted>",
       "pendingQuestionsEncrypted": "<sealed:v1:rt-UserHealthProfile-pendingQuestionsEncrypted>",
-      "createdAt": "2026-05-03T11:55:00.000Z",
-      "updatedAt": "2026-05-03T11:56:00.000Z"
+      "createdAt": "2026-05-03T13:36:00.000Z",
+      "updatedAt": "2026-05-03T13:37:00.000Z"
     },
     "healthProfileFacts": [
       {
         "id": "<id:57>",
         "kind": "SMOKING_STATUS",
         "value": null,
-        "valueEncrypted": "<sealed:v1:never>",
+        "valueEncrypted": "<sealed:v1:NEVER>",
         "validFrom": "2026-01-01T00:00:00.000Z",
         "validUntil": "2026-06-30T12:34:56.789Z",
         "provenance": "USER_CORRECTION",
         "supersededByRevisionId": "<id:58>",
-        "createdAt": "2026-05-03T13:28:00.000Z"
+        "createdAt": "2026-05-03T15:08:00.000Z"
       },
       {
         "id": "<id:58>",
@@ -1372,14 +1399,14 @@
         "validUntil": null,
         "provenance": "USER_REPORTED",
         "supersededByRevisionId": null,
-        "createdAt": "2026-05-03T13:28:01.000Z"
+        "createdAt": "2026-05-03T15:08:01.000Z"
       }
     ],
     "customMetrics": [
       {
         "id": "<id:59>",
-        "createdAt": "2026-05-03T23:29:00.000Z",
-        "updatedAt": "2026-05-03T23:30:00.000Z",
+        "createdAt": "2026-05-04T01:09:00.000Z",
+        "updatedAt": "2026-05-04T01:10:00.000Z",
         "deletedAt": null,
         "name": "Grip strength",
         "unit": "kg",
@@ -1391,7 +1418,7 @@
         "entries": [
           {
             "id": "<id:60>",
-            "createdAt": "2026-05-04T01:08:02.000Z",
+            "createdAt": "2026-05-04T02:48:02.000Z",
             "deletedAt": "<tombstone>",
             "noteEncrypted": null,
             "value": 40,
@@ -1401,7 +1428,7 @@
           },
           {
             "id": "<id:61>",
-            "createdAt": "2026-05-04T01:08:00.000Z",
+            "createdAt": "2026-05-04T02:48:00.000Z",
             "deletedAt": null,
             "noteEncrypted": null,
             "value": 44,
@@ -1411,7 +1438,7 @@
           },
           {
             "id": "<id:62>",
-            "createdAt": "2026-05-04T01:08:01.000Z",
+            "createdAt": "2026-05-04T02:48:01.000Z",
             "deletedAt": null,
             "noteEncrypted": "<sealed:v1:right hand, rested>",
             "value": 45,
@@ -1423,8 +1450,8 @@
       },
       {
         "id": "<id:63>",
-        "createdAt": "2026-05-03T23:29:01.000Z",
-        "updatedAt": "2026-05-03T23:30:01.000Z",
+        "createdAt": "2026-05-04T01:09:01.000Z",
+        "updatedAt": "2026-05-04T01:10:01.000Z",
         "deletedAt": "<tombstone>",
         "name": "Plank (deleted)",
         "unit": "s",
@@ -1439,8 +1466,8 @@
     "correlationPatterns": [
       {
         "id": "<id:64>",
-        "updatedAt": "2026-05-04T02:59:00.000Z",
-        "createdAt": "2026-05-04T02:58:00.000Z",
+        "updatedAt": "2026-05-04T04:39:00.000Z",
+        "createdAt": "2026-05-04T04:38:00.000Z",
         "canonicalKey": "p1:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
         "family": "sleep",
         "factorKey": "sleep_duration",
@@ -1529,7 +1556,7 @@
     "healthScoreRecords": [
       {
         "id": "<id:66>",
-        "createdAt": "2026-05-04T04:33:00.000Z",
+        "createdAt": "2026-05-04T06:13:00.000Z",
         "dayKey": "2026-07-01",
         "timezone": "Europe/Berlin",
         "composite": 71,
@@ -1546,7 +1573,7 @@
         "inputFingerprint": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
         "configVersion": 3,
         "configChangedAt": "2026-06-30T12:34:56.789Z",
-        "computedAt": "2026-05-04T04:32:00.000Z"
+        "computedAt": "2026-05-04T06:12:00.000Z"
       }
     ],
     "onboardingRecord": {
@@ -1566,7 +1593,9 @@
         "visit": "within-a-month",
         "units": {
           "glucoseUnit": "mmol/L",
-          "unitPreference": "metric"
+          "unitPreference": "metric",
+          "timezone": "Europe/Berlin",
+          "medicineRegistry": "DE"
         }
       },
       "steps": [
@@ -1599,6 +1628,14 @@
           "status": "pending"
         },
         {
+          "id": "reminders",
+          "status": "skipped"
+        },
+        {
+          "id": "ai",
+          "status": "skipped"
+        },
+        {
           "id": "first-result",
           "status": "pending"
         },
@@ -1626,8 +1663,8 @@
         "locationEncrypted": null,
         "phoneEncrypted": null,
         "noteEncrypted": null,
-        "createdAt": "2026-05-04T11:10:01.000Z",
-        "updatedAt": "2026-05-04T11:11:01.000Z",
+        "createdAt": "2026-05-04T12:50:01.000Z",
+        "updatedAt": "2026-05-04T12:51:01.000Z",
         "deletedAt": "<tombstone>"
       },
       {
@@ -1640,8 +1677,8 @@
         "locationEncrypted": "<sealed:v1:rt-Practitioner-locationEncrypted>",
         "phoneEncrypted": "<sealed:v1:rt-Practitioner-phoneEncrypted>",
         "noteEncrypted": "<sealed:v1:ring the upper bell>",
-        "createdAt": "2026-05-04T11:10:00.000Z",
-        "updatedAt": "2026-05-04T11:11:00.000Z",
+        "createdAt": "2026-05-04T12:50:00.000Z",
+        "updatedAt": "2026-05-04T12:51:00.000Z",
         "deletedAt": null
       }
     ],
@@ -1657,8 +1694,8 @@
         "bodySiteEncrypted": "<sealed:v1:rt-Encounter-bodySiteEncrypted>",
         "laterality": "LEFT",
         "reminderId": "<id:71>",
-        "createdAt": "2026-05-04T12:51:00.000Z",
-        "updatedAt": "2026-05-04T12:52:00.000Z",
+        "createdAt": "2026-05-04T14:31:00.000Z",
+        "updatedAt": "2026-05-04T14:32:00.000Z",
         "deletedAt": null
       },
       {
@@ -1672,8 +1709,8 @@
         "bodySiteEncrypted": null,
         "laterality": null,
         "reminderId": null,
-        "createdAt": "2026-05-04T12:51:01.000Z",
-        "updatedAt": "2026-05-04T12:52:01.000Z",
+        "createdAt": "2026-05-04T14:31:01.000Z",
+        "updatedAt": "2026-05-04T14:32:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],
@@ -1681,21 +1718,21 @@
       {
         "encounterId": "<id:70>",
         "targetId": "<id:55>",
-        "createdAt": "2026-05-04T14:24:00.000Z"
+        "createdAt": "2026-05-04T16:04:00.000Z"
       }
     ],
     "encounterLabLinks": [
       {
         "encounterId": "<id:70>",
         "targetId": "<id:39>",
-        "createdAt": "2026-05-04T16:04:00.000Z"
+        "createdAt": "2026-05-04T17:44:00.000Z"
       }
     ],
     "encounterConditionLinks": [
       {
         "encounterId": "<id:70>",
         "targetId": "<id:46>",
-        "createdAt": "2026-05-04T17:44:00.000Z"
+        "createdAt": "2026-05-04T19:24:00.000Z"
       }
     ],
     "customVaccines": [
@@ -1707,8 +1744,8 @@
         ],
         "typicalSeriesDoses": null,
         "boosterIntervalMonths": null,
-        "createdAt": "2026-05-04T22:47:01.000Z",
-        "updatedAt": "2026-05-04T22:48:01.000Z",
+        "createdAt": "2026-05-05T00:27:01.000Z",
+        "updatedAt": "2026-05-05T00:28:01.000Z",
         "deletedAt": "<tombstone>"
       },
       {
@@ -1720,8 +1757,8 @@
         ],
         "typicalSeriesDoses": 2,
         "boosterIntervalMonths": 36,
-        "createdAt": "2026-05-04T22:47:00.000Z",
-        "updatedAt": "2026-05-04T22:48:00.000Z",
+        "createdAt": "2026-05-05T00:27:00.000Z",
+        "updatedAt": "2026-05-05T00:28:00.000Z",
         "deletedAt": null
       }
     ],
@@ -1740,8 +1777,8 @@
         "reminderId": "<id:71>",
         "customVaccineId": "<id:74>",
         "noteEncrypted": "<sealed:v1:sore arm for a day, nothing else>",
-        "createdAt": "2026-05-04T19:34:00.000Z",
-        "updatedAt": "2026-05-04T19:35:00.000Z",
+        "createdAt": "2026-05-04T21:14:00.000Z",
+        "updatedAt": "2026-05-04T21:15:00.000Z",
         "deletedAt": null
       },
       {
@@ -1758,8 +1795,8 @@
         "reminderId": null,
         "customVaccineId": null,
         "noteEncrypted": null,
-        "createdAt": "2026-05-04T19:34:01.000Z",
-        "updatedAt": "2026-05-04T19:35:01.000Z",
+        "createdAt": "2026-05-04T21:14:01.000Z",
+        "updatedAt": "2026-05-04T21:15:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],
@@ -1767,7 +1804,7 @@
       {
         "vaccinationId": "<id:75>",
         "targetId": "<id:55>",
-        "createdAt": "2026-05-04T21:04:00.000Z"
+        "createdAt": "2026-05-04T22:44:00.000Z"
       }
     ],
     "measurementReminders": [
@@ -1789,8 +1826,8 @@
         "snoozedUntil": "2026-07-08T06:00:00.000Z",
         "lastSkippedAt": "2026-06-24T06:00:00.000Z",
         "skipCount": 2,
-        "createdAt": "2026-05-05T00:39:00.000Z",
-        "updatedAt": "2026-05-05T00:40:00.000Z",
+        "createdAt": "2026-05-05T02:19:00.000Z",
+        "updatedAt": "2026-05-05T02:20:00.000Z",
         "deletedAt": null
       },
       {
@@ -1811,8 +1848,8 @@
         "snoozedUntil": null,
         "lastSkippedAt": null,
         "skipCount": 0,
-        "createdAt": "2026-05-05T00:39:01.000Z",
-        "updatedAt": "2026-05-05T00:40:01.000Z",
+        "createdAt": "2026-05-05T02:19:01.000Z",
+        "updatedAt": "2026-05-05T02:20:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],
@@ -1824,7 +1861,7 @@
         "occurredAt": "2026-06-24T06:00:00.000Z",
         "onTime": false,
         "source": "skip",
-        "createdAt": "2026-05-05T02:07:01.000Z"
+        "createdAt": "2026-05-05T03:47:01.000Z"
       },
       {
         "id": "<id:79>",
@@ -1833,7 +1870,7 @@
         "occurredAt": "2026-07-01T06:05:00.000Z",
         "onTime": true,
         "source": "manual",
-        "createdAt": "2026-05-05T02:07:00.000Z"
+        "createdAt": "2026-05-05T03:47:00.000Z"
       }
     ],
     "coachConversations": [
@@ -1844,8 +1881,8 @@
         "summaryEncrypted": "<sealed:v1:earlier turns: weight trend and evening walks>",
         "summaryUpdatedAt": "2026-07-20T10:00:00.000Z",
         "summaryTurnCount": 4,
-        "createdAt": "2026-05-05T03:44:00.000Z",
-        "updatedAt": "2026-05-05T03:45:00.000Z",
+        "createdAt": "2026-05-05T05:24:00.000Z",
+        "updatedAt": "2026-05-05T05:25:00.000Z",
         "messages": [
           {
             "id": "<id:81>",
@@ -1883,8 +1920,8 @@
         "summaryEncrypted": null,
         "summaryUpdatedAt": null,
         "summaryTurnCount": 0,
-        "createdAt": "2026-05-05T03:44:01.000Z",
-        "updatedAt": "2026-05-05T03:45:01.000Z",
+        "createdAt": "2026-05-05T05:24:01.000Z",
+        "updatedAt": "2026-05-05T05:25:01.000Z",
         "messages": [
           {
             "id": "<id:84>",
@@ -1919,8 +1956,8 @@
         "source": "user",
         "lastUsedAt": "2026-07-20T10:00:00.000Z",
         "sourceMessageId": "<id:82>",
-        "createdAt": "2026-05-05T08:46:00.000Z",
-        "updatedAt": "2026-05-05T08:47:00.000Z"
+        "createdAt": "2026-05-05T10:26:00.000Z",
+        "updatedAt": "2026-05-05T10:27:00.000Z"
       },
       {
         "id": "<id:86>",
@@ -1932,8 +1969,8 @@
         "source": "user",
         "lastUsedAt": null,
         "sourceMessageId": null,
-        "createdAt": "2026-05-05T08:46:01.000Z",
-        "updatedAt": "2026-05-05T08:47:01.000Z"
+        "createdAt": "2026-05-05T10:26:01.000Z",
+        "updatedAt": "2026-05-05T10:27:01.000Z"
       }
     ],
     "coachPlans": [
@@ -1948,8 +1985,8 @@
         "status": "active",
         "reviewDate": "2026-10-01T00:00:00.000Z",
         "sourceConversationId": "<id:80>",
-        "createdAt": "2026-05-05T10:30:00.000Z",
-        "updatedAt": "2026-05-05T10:31:00.000Z"
+        "createdAt": "2026-05-05T12:10:00.000Z",
+        "updatedAt": "2026-05-05T12:11:00.000Z"
       },
       {
         "id": "<id:88>",
@@ -1962,8 +1999,8 @@
         "status": "active",
         "reviewDate": null,
         "sourceConversationId": null,
-        "createdAt": "2026-05-05T10:30:01.000Z",
-        "updatedAt": "2026-05-05T10:31:01.000Z"
+        "createdAt": "2026-05-05T12:10:01.000Z",
+        "updatedAt": "2026-05-05T12:11:01.000Z"
       }
     ],
     "coachReminders": [
@@ -1981,8 +2018,8 @@
         "sourceConversationId": "<id:80>",
         "lastSurfacedAt": "2026-06-30T12:34:56.789Z",
         "surfaceCount": 2,
-        "createdAt": "2026-05-05T12:13:00.000Z",
-        "updatedAt": "2026-05-05T12:14:00.000Z"
+        "createdAt": "2026-05-05T13:53:00.000Z",
+        "updatedAt": "2026-05-05T13:54:00.000Z"
       },
       {
         "id": "<id:90>",
@@ -1998,8 +2035,8 @@
         "sourceConversationId": null,
         "lastSurfacedAt": null,
         "surfaceCount": 0,
-        "createdAt": "2026-05-05T12:13:01.000Z",
-        "updatedAt": "2026-05-05T12:14:01.000Z"
+        "createdAt": "2026-05-05T13:53:01.000Z",
+        "updatedAt": "2026-05-05T13:54:01.000Z"
       }
     ],
     "mentalHealthAssessments": [
@@ -2020,8 +2057,8 @@
         "externalId": null,
         "syncVersion": 0,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-05T22:17:01.000Z",
-        "updatedAt": "2026-05-05T22:18:01.000Z"
+        "createdAt": "2026-05-05T23:57:01.000Z",
+        "updatedAt": "2026-05-05T23:58:01.000Z"
       },
       {
         "id": "<id:92>",
@@ -2040,8 +2077,8 @@
         "externalId": "rt-MentalHealthAssessment-externalId",
         "syncVersion": 3,
         "deletedAt": null,
-        "createdAt": "2026-05-05T22:17:00.000Z",
-        "updatedAt": "2026-05-05T22:18:00.000Z"
+        "createdAt": "2026-05-05T23:57:00.000Z",
+        "updatedAt": "2026-05-05T23:58:00.000Z"
       }
     ],
     "consentReceipts": [
@@ -2051,7 +2088,7 @@
         "artefact": "JVBERi0xLjQKJWZpeHR1cmU=",
         "signedAt": "2026-06-01T09:00:00.000Z",
         "revokedAt": null,
-        "createdAt": "2026-05-05T23:46:00.000Z"
+        "createdAt": "2026-05-06T01:26:00.000Z"
       },
       {
         "id": "<id:94>",
@@ -2059,7 +2096,7 @@
         "artefact": "eyJhbGciOiJub25lIn0.e30.",
         "signedAt": "2026-06-02T09:00:00.000Z",
         "revokedAt": "2026-07-10T11:00:00.000Z",
-        "createdAt": "2026-05-05T23:46:01.000Z"
+        "createdAt": "2026-05-06T01:26:01.000Z"
       }
     ],
     "documentConditionLinks": [
@@ -2081,8 +2118,8 @@
         "committedRecordType": "labResult",
         "dataEncrypted": "<sealed:v1:{\"label\":\"Ferritin\",\"code\":null,\"codeSystem\":null,\"value\":91,\"valueText\":null,\"unit\":\"ng/mL\",\"referenceLow\":30,\"referenceHigh\":400,\"effectiveDate\":\"2026-06-30\"}>",
         "provenanceEncrypted": "<sealed:v1:{\"sourceText\":\"Ferritin  91 ng/mL   (30 - 400)\",\"anchored\":true,\"sourceOffset\":412,\"page\":2,\"confidence\":0.94}>",
-        "createdAt": "2026-05-06T03:11:00.000Z",
-        "updatedAt": "2026-05-06T03:12:00.000Z"
+        "createdAt": "2026-05-06T04:51:00.000Z",
+        "updatedAt": "2026-05-06T04:52:00.000Z"
       }
     ],
     "documentImportKeys": [
@@ -2104,7 +2141,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-5km",
-        "createdAt": "2026-05-06T06:31:01.000Z"
+        "createdAt": "2026-05-06T08:11:01.000Z"
       },
       {
         "metricType": "WALKING_RUNNING_DISTANCE",
@@ -2116,7 +2153,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-10km",
-        "createdAt": "2026-05-06T06:31:02.000Z"
+        "createdAt": "2026-05-06T08:11:02.000Z"
       },
       {
         "metricType": "WEIGHT",
@@ -2128,19 +2165,19 @@
         "sourceMeasurementId": "<id:4>",
         "source": "MANUAL",
         "externalId": null,
-        "createdAt": "2026-05-06T06:31:00.000Z"
+        "createdAt": "2026-05-06T08:11:00.000Z"
       }
     ],
     "userAchievements": [
       {
         "achievementId": "retired-badge-from-an-older-release",
         "unlockedAt": "2025-11-05T08:00:00.000Z",
-        "createdAt": "2026-05-06T08:04:01.000Z"
+        "createdAt": "2026-05-06T09:44:01.000Z"
       },
       {
         "achievementId": "intake-total-10",
         "unlockedAt": "2026-02-21T10:15:00.000Z",
-        "createdAt": "2026-05-06T08:04:00.000Z"
+        "createdAt": "2026-05-06T09:44:00.000Z"
       }
     ],
     "environmentContexts": [
@@ -2186,8 +2223,8 @@
         "aqHours": 3,
         "aqFetchedAt": "2026-06-30T12:34:56.789Z",
         "fetchedAt": "2026-06-16T03:15:00.000Z",
-        "createdAt": "2026-05-06T10:20:00.000Z",
-        "updatedAt": "2026-05-06T10:21:00.000Z"
+        "createdAt": "2026-05-06T12:00:00.000Z",
+        "updatedAt": "2026-05-06T12:01:00.000Z"
       },
       {
         "date": "2026-07-01",
@@ -2231,8 +2268,8 @@
         "aqHours": null,
         "aqFetchedAt": null,
         "fetchedAt": "2026-07-02T03:15:00.000Z",
-        "createdAt": "2026-05-06T10:20:01.000Z",
-        "updatedAt": "2026-05-06T10:21:01.000Z"
+        "createdAt": "2026-05-06T12:00:01.000Z",
+        "updatedAt": "2026-05-06T12:01:01.000Z"
       }
     ],
     "environmentTravelLocations": [
@@ -2243,8 +2280,8 @@
         "lon": null,
         "label": null,
         "locationEncrypted": "<sealed:v1:{\"lat\":41.4,\"lon\":2.2,\"label\":\"Barcelona\"}>",
-        "createdAt": "2026-05-06T11:25:00.000Z",
-        "updatedAt": "2026-05-06T11:26:00.000Z"
+        "createdAt": "2026-05-06T13:05:00.000Z",
+        "updatedAt": "2026-05-06T13:06:00.000Z"
       }
     ],
     "dawarichDays": [
@@ -2259,8 +2296,8 @@
         "countryCodeEncrypted": "<sealed:v1:country:ES>",
         "isTravelDay": true,
         "fetchedAt": "2026-06-16T03:20:00.000Z",
-        "createdAt": "2026-05-06T13:11:00.000Z",
-        "updatedAt": "2026-05-06T13:12:00.000Z"
+        "createdAt": "2026-05-06T14:51:00.000Z",
+        "updatedAt": "2026-05-06T14:52:00.000Z"
       }
     ],
     "ecgRecordings": [
@@ -2277,8 +2314,8 @@
         "averageHeartRate": 88,
         "rhythmClassification": "IRREGULAR",
         "measurementId": "<id:5>",
-        "createdAt": "2026-05-06T18:13:00.000Z",
-        "updatedAt": "2026-05-06T18:14:00.000Z"
+        "createdAt": "2026-05-06T19:53:00.000Z",
+        "updatedAt": "2026-05-06T19:54:00.000Z"
       }
     ],
     "symptomDefinitions": [
@@ -2289,12 +2326,13 @@
         "sortOrder": 0,
         "isActive": true,
         "code": "FEVER",
-        "createdAt": "2026-05-03T00:07:00.000Z",
-        "updatedAt": "2026-05-03T00:08:00.000Z",
+        "createdAt": "2026-05-03T01:47:00.000Z",
+        "updatedAt": "2026-05-03T01:48:00.000Z",
         "events": [
           {
             "id": "<id:98>",
             "deletedAt": null,
+            "appleHealthDeletedAt": "2026-06-30T12:34:56.789Z",
             "noteEncrypted": null,
             "occurredAt": "2026-06-21T09:00:00.000Z",
             "intensity": 4,
@@ -2302,8 +2340,8 @@
             "endAt": "2026-06-30T12:34:56.789Z",
             "source": "rt-SymptomEvent-source",
             "externalId": "rt-SymptomEvent-externalId",
-            "createdAt": "2026-05-03T01:51:00.000Z",
-            "updatedAt": "2026-05-03T01:52:00.000Z"
+            "createdAt": "2026-05-03T03:32:00.000Z",
+            "updatedAt": "2026-05-03T03:33:00.000Z"
           },
           {
             "id": "<id:99>",
@@ -2315,8 +2353,8 @@
             "endAt": null,
             "source": "MANUAL",
             "externalId": null,
-            "createdAt": "2026-05-03T01:51:02.000Z",
-            "updatedAt": "2026-05-03T01:52:02.000Z"
+            "createdAt": "2026-05-03T03:32:02.000Z",
+            "updatedAt": "2026-05-03T03:33:02.000Z"
           }
         ]
       },
@@ -2327,8 +2365,8 @@
         "sortOrder": 1,
         "isActive": false,
         "code": null,
-        "createdAt": "2026-05-03T00:07:01.000Z",
-        "updatedAt": "2026-05-03T00:08:01.000Z",
+        "createdAt": "2026-05-03T01:47:01.000Z",
+        "updatedAt": "2026-05-03T01:48:01.000Z",
         "events": [
           {
             "id": "<id:101>",
@@ -2340,8 +2378,8 @@
             "endAt": null,
             "source": "MANUAL",
             "externalId": null,
-            "createdAt": "2026-05-03T01:51:01.000Z",
-            "updatedAt": "2026-05-03T01:52:01.000Z"
+            "createdAt": "2026-05-03T03:32:01.000Z",
+            "updatedAt": "2026-05-03T03:33:01.000Z"
           }
         ]
       }
@@ -2359,8 +2397,8 @@
         "rescueRoute": "BUCCAL",
         "sortOrder": 3,
         "archivedAt": "2026-06-30T12:34:56.789Z",
-        "createdAt": "2026-05-03T03:32:00.000Z",
-        "updatedAt": "2026-05-03T03:33:00.000Z"
+        "createdAt": "2026-05-03T05:12:00.000Z",
+        "updatedAt": "2026-05-03T05:13:00.000Z"
       }
     ],
     "seizureEvents": [
@@ -2405,8 +2443,8 @@
         "loggedByUserId": null,
         "source": "DEVICE_ALERT",
         "noteEncrypted": "<sealed:v1:woke from a nap>",
-        "createdAt": "2026-05-03T05:30:00.000Z",
-        "updatedAt": "2026-05-03T05:31:00.000Z",
+        "createdAt": "2026-05-03T07:10:00.000Z",
+        "updatedAt": "2026-05-03T07:11:00.000Z",
         "rescueDoses": [
           {
             "id": "<id:104>",
@@ -2420,8 +2458,8 @@
             "effect": "STOPPED",
             "seizureEndedAt": "2026-06-30T12:34:56.789Z",
             "intakeEventId": "<id:27>",
-            "createdAt": "2026-05-03T06:53:00.000Z",
-            "updatedAt": "2026-05-03T06:54:00.000Z"
+            "createdAt": "2026-05-03T08:33:00.000Z",
+            "updatedAt": "2026-05-03T08:34:00.000Z"
           }
         ]
       },
@@ -2456,16 +2494,16 @@
         "loggedByUserId": null,
         "source": "MANUAL",
         "noteEncrypted": null,
-        "createdAt": "2026-05-03T05:30:01.000Z",
-        "updatedAt": "2026-05-03T05:31:01.000Z",
+        "createdAt": "2026-05-03T07:10:01.000Z",
+        "updatedAt": "2026-05-03T07:11:01.000Z",
         "rescueDoses": []
       }
     ],
     "seizureSettings": {
       "clusterCount": 3,
       "clusterWindowHours": 12,
-      "createdAt": "2026-05-03T08:23:00.000Z",
-      "updatedAt": "2026-05-03T08:24:00.000Z"
+      "createdAt": "2026-05-03T10:03:00.000Z",
+      "updatedAt": "2026-05-03T10:04:00.000Z"
     },
     "lifeEvents": [
       {
@@ -2476,8 +2514,8 @@
         "startDate": "2023-09-01",
         "endDate": null,
         "precision": "MONTH",
-        "createdAt": "2026-05-03T10:08:00.000Z",
-        "updatedAt": "2026-05-03T10:09:00.000Z",
+        "createdAt": "2026-05-03T11:48:00.000Z",
+        "updatedAt": "2026-05-03T11:49:00.000Z",
         "deletedAt": null
       },
       {
@@ -2488,8 +2526,8 @@
         "startDate": "2025-12-01",
         "endDate": null,
         "precision": "DAY",
-        "createdAt": "2026-05-03T10:08:02.000Z",
-        "updatedAt": "2026-05-03T10:09:02.000Z",
+        "createdAt": "2026-05-03T11:48:02.000Z",
+        "updatedAt": "2026-05-03T11:49:02.000Z",
         "deletedAt": "<tombstone>"
       },
       {
@@ -2500,8 +2538,8 @@
         "startDate": "2026-03-02",
         "endDate": "2026-05-29",
         "precision": "DAY",
-        "createdAt": "2026-05-03T10:08:01.000Z",
-        "updatedAt": "2026-05-03T10:09:01.000Z",
+        "createdAt": "2026-05-03T11:48:01.000Z",
+        "updatedAt": "2026-05-03T11:49:01.000Z",
         "deletedAt": null
       }
     ],
@@ -2548,8 +2586,8 @@
         "unit": "ml",
         "source": "MANUAL",
         "externalSourceVersion": "rt-NutrientIntakeDay-externalSourceVersion",
-        "createdAt": "2026-05-04T07:47:00.000Z",
-        "updatedAt": "2026-05-04T07:48:00.000Z"
+        "createdAt": "2026-05-04T09:27:00.000Z",
+        "updatedAt": "2026-05-04T09:28:00.000Z"
       }
     ]
   },
@@ -2573,6 +2611,7 @@
     "nutrientDays": 1,
     "labResults": 2,
     "labResultImportKeys": 1,
+    "fhirImportedResources": 1,
     "biomarkers": 1,
     "illnessEpisodes": 4,
     "illnessDayLogs": 2,
@@ -2641,6 +2680,7 @@
     "nutrientDays": 1,
     "labResults": 2,
     "labResultImportKeys": 1,
+    "fhirImportedResources": 1,
     "biomarkers": 1,
     "illnessEpisodes": 4,
     "illnessDayLogs": 2,
@@ -2733,24 +2773,19 @@
       "assistantDocumentAiEnabled": false,
       "aiReasoningEnabled": false,
       "aiReasoningMaxEffort": "low",
+      "aiUsageMaxLevel": "FRUGAL",
+      "aiUsageDefaultLevel": "FRUGAL",
+      "aiSyncRegenGapHours": 3,
       "moduleAvailabilityJson": {
         "mood": "off"
       },
       "documentMaxFileBytes": 3,
       "documentQuotaBytes": "5",
-      "glitchtipLastOkAt": "2026-06-30T12:34:56.789Z",
-      "glitchtipLastFailureAt": "2026-06-30T12:34:56.789Z",
-      "glitchtipLastFailureReason": "rt-AppSettings-glitchtipLastFailureReason",
-      "aiUsageMaxLevel": "FRUGAL",
-      "aiUsageDefaultLevel": "FRUGAL",
-      "aiSyncRegenGapHours": 3,
-      "correlationSeasonalEngineSince": "2026-06-30T12:34:56.789Z",
-      "pulseDayMeanMethod": "hour_mean_v1",
-      "pulseDayMeanAppliedAt": "2026-06-30T12:34:56.789Z",
-      "pulseDayMeanDryRunJson": {
-        "roundTrip": "rt-AppSettings-pulseDayMeanDryRunJson"
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
       },
-      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor"
+      "pushRelayDecision": "off"
     },
     "accountSettings": {
       "heightCm": 2.5,
@@ -2775,6 +2810,7 @@
       "locale": "fr",
       "unitPreference": "imperial",
       "glucoseUnit": "mmol/L",
+      "medicineRegistry": "GB",
       "timeFormat": "H12",
       "dateFormat": "DMY",
       "modulePreferencesJson": {
@@ -2827,6 +2863,9 @@
       "reportSelectionJson": {
         "roundTrip": "rt-User-reportSelectionJson"
       },
+      "reportScheduleJson": {
+        "roundTrip": "rt-User-reportScheduleJson"
+      },
       "globalExcludedInjectionSites": [
         "THIGH_LEFT"
       ],
@@ -2848,6 +2887,9 @@
       },
       "aiNamedChains": {
         "roundTrip": "rt-User-aiNamedChains"
+      },
+      "aiCoachBudgets": {
+        "roundTrip": "rt-User-aiCoachBudgets"
       },
       "aiResponseTimeoutSeconds": 3,
       "useCentralCodex": true,
@@ -2891,11 +2933,12 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:03.000Z",
-        "updatedAt": "2026-05-01T08:21:03.000Z"
+        "createdAt": "2026-05-01T08:23:03.000Z",
+        "updatedAt": "2026-05-01T08:24:03.000Z"
       },
       {
         "id": "<id:2>",
@@ -2915,11 +2958,12 @@
         "sleepStage": "DEEP",
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:04.000Z",
-        "updatedAt": "2026-05-01T08:21:04.000Z"
+        "createdAt": "2026-05-01T08:23:04.000Z",
+        "updatedAt": "2026-05-01T08:24:04.000Z"
       },
       {
         "id": "<id:3>",
@@ -2939,11 +2983,12 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": "America/New_York",
         "ingestTokenId": null,
         "syncVersion": 4,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-01T08:20:01.000Z",
-        "updatedAt": "2026-05-01T08:21:01.000Z"
+        "createdAt": "2026-05-01T08:23:01.000Z",
+        "updatedAt": "2026-05-01T08:24:01.000Z"
       },
       {
         "id": "<id:4>",
@@ -2963,11 +3008,14 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": "rt-Measurement-deviceType",
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:00.000Z",
-        "updatedAt": "2026-05-01T08:21:00.000Z"
+        "appleHealthDeletedAt": "2026-06-30T12:34:56.789Z",
+        "statsComputedAt": "2026-06-30T12:34:56.789Z",
+        "createdAt": "2026-05-01T08:23:00.000Z",
+        "updatedAt": "2026-05-01T08:24:00.000Z"
       },
       {
         "id": "<id:5>",
@@ -2987,11 +3035,12 @@
         "sleepStage": null,
         "rhythmClassification": "IRREGULAR",
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:02.000Z",
-        "updatedAt": "2026-05-01T08:21:02.000Z"
+        "createdAt": "2026-05-01T08:23:02.000Z",
+        "updatedAt": "2026-05-01T08:24:02.000Z"
       }
     ],
     "medications": [
@@ -3025,13 +3074,14 @@
         "atcCode": "rt-Medication-atcCode",
         "rxNormCode": "rt-Medication-rxNormCode",
         "noteEncrypted": "<sealed:v1:before breakfast, with water>",
+        "leafletUrl": "https://medicinesdatabase.be/human-use/medicines/12345/leaflet",
         "lowStockNotifiedAt": "2026-06-30T12:34:56.789Z",
         "lowStockNotifiedThresholdDays": 3,
         "reorderLeadDays": 3,
         "externalSource": "WEB",
         "externalId": "rt-Medication-externalId",
-        "createdAt": "2026-05-01T11:52:00.000Z",
-        "updatedAt": "2026-05-01T11:53:00.000Z",
+        "createdAt": "2026-05-01T11:53:00.000Z",
+        "updatedAt": "2026-05-01T11:54:00.000Z",
         "schedules": [
           {
             "id": "<id:7>",
@@ -3141,15 +3191,15 @@
             "unitsTotal": "30",
             "unitsRemaining": "21",
             "firstUseAt": "2026-07-01T08:00:00.000Z",
-            "expiresAt": "2026-05-05T13:48:00.000Z",
+            "expiresAt": "2026-05-05T15:28:00.000Z",
             "printedExpiry": "2026-06-30T12:34:56.789Z",
             "purchasedAt": "2026-06-30T12:34:56.789Z",
             "manufacturer": "Fixture Pharma",
             "doseStrength": "10 mg",
             "notes": "rt-MedicationInventoryItem-notes",
             "notesEncrypted": "<sealed:v1:second pack, kept in the kitchen drawer>",
-            "createdAt": "2026-05-05T13:55:00.000Z",
-            "updatedAt": "2026-05-05T13:56:00.000Z"
+            "createdAt": "2026-05-05T15:35:00.000Z",
+            "updatedAt": "2026-05-05T15:36:00.000Z"
           },
           {
             "id": "<id:16>",
@@ -3165,8 +3215,8 @@
             "doseStrength": null,
             "notes": null,
             "notesEncrypted": null,
-            "createdAt": "2026-05-05T13:55:01.000Z",
-            "updatedAt": "2026-05-05T13:56:01.000Z"
+            "createdAt": "2026-05-05T15:35:01.000Z",
+            "updatedAt": "2026-05-05T15:36:01.000Z"
           }
         ],
         "inventoryEvents": [
@@ -3200,8 +3250,8 @@
             "measurementType": "WEIGHT",
             "biomarkerName": "Ferritin",
             "primary": false,
-            "createdAt": "2026-05-06T16:25:00.000Z",
-            "updatedAt": "2026-05-06T16:26:00.000Z"
+            "createdAt": "2026-05-06T18:05:00.000Z",
+            "updatedAt": "2026-05-06T18:06:00.000Z"
           }
         ],
         "scheduleRevisions": [
@@ -3218,7 +3268,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T14:47:00.000Z"
+            "createdAt": "2026-05-06T16:27:00.000Z"
           },
           {
             "id": "<id:21>",
@@ -3233,7 +3283,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": 2,
-            "createdAt": "2026-05-06T14:47:02.000Z"
+            "createdAt": "2026-05-06T16:27:02.000Z"
           },
           {
             "id": "<id:22>",
@@ -3248,7 +3298,7 @@
             ],
             "source": "MANUAL",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T14:47:01.000Z"
+            "createdAt": "2026-05-06T16:27:01.000Z"
           }
         ],
         "courses": [
@@ -3300,13 +3350,14 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
         "externalSource": null,
         "externalId": null,
-        "createdAt": "2026-05-01T11:52:01.000Z",
-        "updatedAt": "2026-05-01T11:53:01.000Z",
+        "createdAt": "2026-05-01T11:53:01.000Z",
+        "updatedAt": "2026-05-01T11:54:01.000Z",
         "schedules": [],
         "sideEffects": [],
         "pauseEras": [],
@@ -3343,13 +3394,14 @@
         "autoRecorded": false,
         "attributionSource": "AUTO",
         "source": "WEB",
+        "takenVia": null,
         "idempotencyKey": null,
-        "createdAt": "2026-05-01T14:51:02.000Z",
+        "createdAt": "2026-05-01T14:52:02.000Z",
         "injectionSite": null,
         "doseTaken": null,
         "inventoryConsumption": null,
         "externalId": null,
-        "updatedAt": "2026-05-01T14:56:02.000Z",
+        "updatedAt": "2026-05-01T14:57:02.000Z",
         "syncVersion": 0,
         "deletedAt": "<tombstone>"
       },
@@ -3360,21 +3412,23 @@
         "scheduledFor": "2026-07-01T08:00:00.000Z",
         "takenAt": "2026-07-01T08:04:00.000Z",
         "skipped": true,
-        "autoMissed": true,
+        "autoMissed": false,
         "autoRecorded": true,
         "attributionSource": "USER_PIN",
         "source": "API",
+        "takenVia": "WEB",
         "idempotencyKey": "rt-MedicationIntakeEvent-idempotencyKey",
-        "createdAt": "2026-05-01T14:51:00.000Z",
+        "createdAt": "2026-05-01T14:52:00.000Z",
         "injectionSite": "ABDOMEN_LEFT",
         "doseTaken": "rt-MedicationIntakeEvent-doseTaken",
         "inventoryConsumption": {
           "roundTrip": "rt-MedicationIntakeEvent-inventoryConsumption"
         },
         "externalId": "rt-MedicationIntakeEvent-externalId",
-        "updatedAt": "2026-05-01T14:56:00.000Z",
+        "updatedAt": "2026-05-01T14:57:00.000Z",
         "syncVersion": 3,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": "2026-06-30T12:34:56.789Z"
       },
       {
         "id": "<id:27>",
@@ -3387,13 +3441,14 @@
         "autoRecorded": false,
         "attributionSource": "AUTO",
         "source": "WEB",
+        "takenVia": null,
         "idempotencyKey": null,
-        "createdAt": "2026-05-01T14:51:01.000Z",
+        "createdAt": "2026-05-01T14:52:01.000Z",
         "injectionSite": null,
         "doseTaken": null,
         "inventoryConsumption": null,
         "externalId": null,
-        "updatedAt": "2026-05-01T14:56:01.000Z",
+        "updatedAt": "2026-05-01T14:57:01.000Z",
         "syncVersion": 0,
         "deletedAt": null
       }
@@ -3446,6 +3501,7 @@
         "syncedAt": "2026-05-02T04:17:00.000Z",
         "syncVersion": 3,
         "deletedAt": null,
+        "appleHealthDeletedAt": "2026-06-30T12:34:56.789Z",
         "createdAt": "2026-05-02T04:18:00.000Z",
         "updatedAt": "2026-05-02T04:19:00.000Z",
         "factors": [
@@ -3497,8 +3553,10 @@
       "rawChartMode": true,
       "discreetNotifications": true,
       "sensitiveCategoryEncryption": false,
-      "createdAt": "2026-05-03T15:12:00.000Z",
-      "updatedAt": "2026-05-03T15:13:00.000Z"
+      "postpartumWeeks": 3,
+      "pregnancyEncrypted": "<sealed:v1:{\"state\":\"POSTPARTUM\",\"startDate\":\"2026-03-02\",\"dueDate\":\"2026-12-07\",\"deliveryDate\":\"2026-11-30\",\"ownerDecided\":true}>",
+      "createdAt": "2026-05-03T16:54:00.000Z",
+      "updatedAt": "2026-05-03T16:55:00.000Z"
     },
     "cycles": [
       {
@@ -3514,24 +3572,24 @@
         "syncVersion": 0,
         "deletedAt": "<tombstone>",
         "absorbedIntoId": null,
-        "createdAt": "2026-05-03T16:53:02.000Z",
-        "updatedAt": "2026-05-03T16:54:02.000Z"
+        "createdAt": "2026-05-03T18:33:02.000Z",
+        "updatedAt": "2026-05-03T18:34:02.000Z"
       },
       {
         "id": "<id:34>",
         "startDate": "2026-06-01",
-        "endDate": "rt-MenstrualCycle-endDate",
-        "periodEndDate": "rt-MenstrualCycle-periodEndDate",
+        "endDate": "2026-10-28",
+        "periodEndDate": "2026-10-05",
         "lengthDays": 3,
-        "ovulationDate": "rt-MenstrualCycle-ovulationDate",
+        "ovulationDate": "2026-10-15",
         "ovulationConfirmed": true,
         "isPredicted": true,
         "tz": "rt-MenstrualCycle-tz",
         "syncVersion": 3,
         "deletedAt": null,
         "absorbedIntoId": null,
-        "createdAt": "2026-05-03T16:53:00.000Z",
-        "updatedAt": "2026-05-03T16:54:00.000Z"
+        "createdAt": "2026-05-03T18:33:00.000Z",
+        "updatedAt": "2026-05-03T18:34:00.000Z"
       },
       {
         "id": "<id:35>",
@@ -3546,8 +3604,8 @@
         "syncVersion": 0,
         "deletedAt": "2026-06-04T07:00:00.000Z",
         "absorbedIntoId": "<id:34>",
-        "createdAt": "2026-05-03T16:53:01.000Z",
-        "updatedAt": "2026-05-03T16:54:01.000Z"
+        "createdAt": "2026-05-03T18:33:01.000Z",
+        "updatedAt": "2026-05-03T18:34:01.000Z"
       }
     ],
     "cycleDayLogs": [
@@ -3569,15 +3627,16 @@
         "pregnancyTest": "NEGATIVE",
         "progesteroneTest": "NEGATIVE",
         "contraceptive": "NONE",
-        "sensitiveEncrypted": "<sealed:v1:rt-CycleDayLog-sensitiveEncrypted>",
+        "sensitiveEncrypted": "<sealed:v1:{\"sexualActivity\":true}>",
         "notesEncrypted": "<sealed:v1:rt-CycleDayLog-notesEncrypted>",
         "source": "WITHINGS",
         "externalId": "rt-CycleDayLog-externalId",
         "tz": "rt-CycleDayLog-tz",
         "syncVersion": 3,
         "deletedAt": null,
-        "createdAt": "2026-05-03T18:45:00.000Z",
-        "updatedAt": "2026-05-03T18:46:00.000Z",
+        "appleHealthDeletedAt": "2026-06-30T12:34:56.789Z",
+        "createdAt": "2026-05-03T20:26:00.000Z",
+        "updatedAt": "2026-05-03T20:27:00.000Z",
         "symptomKeys": [
           "custom:round-trip-cramps"
         ],
@@ -3590,7 +3649,13 @@
         "symptomLinkCreatedAt": [
           {
             "key": "custom:round-trip-cramps",
-            "createdAt": "2026-05-03T21:43:00.000Z"
+            "createdAt": "2026-05-03T23:23:00.000Z"
+          }
+        ],
+        "symptomSources": [
+          {
+            "key": "custom:round-trip-cramps",
+            "source": "WITHINGS"
           }
         ]
       },
@@ -3619,11 +3684,12 @@
         "tz": null,
         "syncVersion": 0,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-03T18:45:01.000Z",
-        "updatedAt": "2026-05-03T18:46:01.000Z",
+        "createdAt": "2026-05-03T20:26:01.000Z",
+        "updatedAt": "2026-05-03T20:27:01.000Z",
         "symptomKeys": [],
         "symptomSeverities": [],
-        "symptomLinkCreatedAt": []
+        "symptomLinkCreatedAt": [],
+        "symptomSources": []
       }
     ],
     "customSymptoms": [
@@ -3652,7 +3718,7 @@
     "hiddenMoodTags": [
       {
         "key": "grateful",
-        "createdAt": "2026-05-05T18:42:00.000Z"
+        "createdAt": "2026-05-05T20:22:00.000Z"
       }
     ],
     "customMoodTags": [
@@ -3743,8 +3809,8 @@
             "createdAt": "2026-05-06T23:06:00.000Z"
           }
         ],
-        "createdAt": "2026-05-02T14:10:00.000Z",
-        "updatedAt": "2026-05-02T14:11:00.000Z"
+        "createdAt": "2026-05-02T15:50:00.000Z",
+        "updatedAt": "2026-05-02T15:51:00.000Z"
       }
     ],
     "biomarkerMerges": [
@@ -3765,6 +3831,14 @@
         "createdAt": "2026-07-04T09:00:00.000Z"
       }
     ],
+    "fhirImportedResources": [
+      {
+        "resourceType": "Immunization",
+        "resourceKey": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "recordId": "round-trip-vaccination",
+        "createdAt": "2026-07-04T10:00:00.000Z"
+      }
+    ],
     "illnessEpisodes": [
       {
         "id": "<id:44>",
@@ -3775,13 +3849,13 @@
         "resolvedAt": null,
         "parentConditionId": "<id:45>",
         "note": null,
-        "createdAt": "2026-05-02T19:11:03.000Z",
+        "createdAt": "2026-05-02T20:51:03.000Z",
         "noteEncrypted": null,
         "bodySite": null,
         "bodySiteEncrypted": null,
         "laterality": null,
         "deletedAt": null,
-        "updatedAt": "2026-05-02T19:12:03.000Z",
+        "updatedAt": "2026-05-02T20:52:03.000Z",
         "dayLogs": []
       },
       {
@@ -3793,13 +3867,13 @@
         "resolvedAt": "2026-06-30T12:34:56.789Z",
         "parentConditionId": null,
         "note": null,
-        "createdAt": "2026-05-02T19:11:00.000Z",
+        "createdAt": "2026-05-02T20:51:00.000Z",
         "noteEncrypted": "<sealed:v1:rt-IllnessEpisode-noteEncrypted>",
         "bodySite": null,
         "bodySiteEncrypted": null,
         "laterality": null,
         "deletedAt": null,
-        "updatedAt": "2026-05-02T19:12:00.000Z",
+        "updatedAt": "2026-05-02T20:52:00.000Z",
         "dayLogs": [
           {
             "id": "<id:47>",
@@ -3811,14 +3885,14 @@
               {
                 "key": "round_trip_cough",
                 "severity": 2,
-                "createdAt": "2026-05-02T22:23:00.000Z"
+                "createdAt": "2026-05-03T00:03:00.000Z"
               }
             ],
             "note": null,
-            "updatedAt": "2026-05-02T20:49:00.000Z",
+            "updatedAt": "2026-05-02T22:29:00.000Z",
             "noteEncrypted": "<sealed:v1:rt-IllnessDayLog-noteEncrypted>",
             "tz": "rt-IllnessDayLog-tz",
-            "createdAt": "2026-05-02T20:48:00.000Z",
+            "createdAt": "2026-05-02T22:28:00.000Z",
             "deletedAt": null
           },
           {
@@ -3829,10 +3903,10 @@
             "feverC": null,
             "symptoms": [],
             "note": null,
-            "updatedAt": "2026-05-02T20:49:01.000Z",
+            "updatedAt": "2026-05-02T22:29:01.000Z",
             "noteEncrypted": null,
             "tz": null,
-            "createdAt": "2026-05-02T20:48:01.000Z",
+            "createdAt": "2026-05-02T22:28:01.000Z",
             "deletedAt": "<tombstone>"
           }
         ]
@@ -3846,13 +3920,13 @@
         "resolvedAt": null,
         "parentConditionId": null,
         "note": null,
-        "createdAt": "2026-05-02T19:11:02.000Z",
+        "createdAt": "2026-05-02T20:51:02.000Z",
         "noteEncrypted": null,
         "bodySite": null,
         "bodySiteEncrypted": null,
         "laterality": null,
         "deletedAt": "<tombstone>",
-        "updatedAt": "2026-05-02T19:12:02.000Z",
+        "updatedAt": "2026-05-02T20:52:02.000Z",
         "dayLogs": []
       },
       {
@@ -3864,13 +3938,13 @@
         "resolvedAt": null,
         "parentConditionId": null,
         "note": null,
-        "createdAt": "2026-05-02T19:11:01.000Z",
+        "createdAt": "2026-05-02T20:51:01.000Z",
         "noteEncrypted": null,
         "bodySite": null,
         "bodySiteEncrypted": "<sealed:v1:Stomach>",
         "laterality": "BOTH",
         "deletedAt": null,
-        "updatedAt": "2026-05-02T19:12:01.000Z",
+        "updatedAt": "2026-05-02T20:52:01.000Z",
         "dayLogs": []
       }
     ],
@@ -3882,8 +3956,8 @@
         "sortOrder": 0,
         "isActive": true,
         "code": "FEVER",
-        "createdAt": "2026-05-03T00:07:00.000Z",
-        "updatedAt": "2026-05-03T00:08:00.000Z",
+        "createdAt": "2026-05-03T01:47:00.000Z",
+        "updatedAt": "2026-05-03T01:48:00.000Z",
         "events": [
           {
             "id": "<id:98>",
@@ -3895,8 +3969,9 @@
             "source": "rt-SymptomEvent-source",
             "externalId": "rt-SymptomEvent-externalId",
             "deletedAt": null,
-            "createdAt": "2026-05-03T01:51:00.000Z",
-            "updatedAt": "2026-05-03T01:52:00.000Z"
+            "appleHealthDeletedAt": "2026-06-30T12:34:56.789Z",
+            "createdAt": "2026-05-03T03:32:00.000Z",
+            "updatedAt": "2026-05-03T03:33:00.000Z"
           },
           {
             "id": "<id:99>",
@@ -3908,8 +3983,8 @@
             "source": "MANUAL",
             "externalId": null,
             "deletedAt": null,
-            "createdAt": "2026-05-03T01:51:02.000Z",
-            "updatedAt": "2026-05-03T01:52:02.000Z"
+            "createdAt": "2026-05-03T03:32:02.000Z",
+            "updatedAt": "2026-05-03T03:33:02.000Z"
           }
         ]
       },
@@ -3920,8 +3995,8 @@
         "sortOrder": 1,
         "isActive": false,
         "code": null,
-        "createdAt": "2026-05-03T00:07:01.000Z",
-        "updatedAt": "2026-05-03T00:08:01.000Z",
+        "createdAt": "2026-05-03T01:47:01.000Z",
+        "updatedAt": "2026-05-03T01:48:01.000Z",
         "events": [
           {
             "id": "<id:101>",
@@ -3933,8 +4008,8 @@
             "source": "MANUAL",
             "externalId": null,
             "deletedAt": null,
-            "createdAt": "2026-05-03T01:51:01.000Z",
-            "updatedAt": "2026-05-03T01:52:01.000Z"
+            "createdAt": "2026-05-03T03:32:01.000Z",
+            "updatedAt": "2026-05-03T03:33:01.000Z"
           }
         ]
       }
@@ -3948,8 +4023,8 @@
         "precision": "MONTH",
         "titleEncrypted": "<sealed:v1:Moved to the coast>",
         "noteEncrypted": "<sealed:v1:the flat with the long hallway>",
-        "createdAt": "2026-05-03T10:08:00.000Z",
-        "updatedAt": "2026-05-03T10:09:00.000Z",
+        "createdAt": "2026-05-03T11:48:00.000Z",
+        "updatedAt": "2026-05-03T11:49:00.000Z",
         "deletedAt": null
       },
       {
@@ -3960,8 +4035,8 @@
         "precision": "DAY",
         "titleEncrypted": "<sealed:v1:an event the person deleted>",
         "noteEncrypted": null,
-        "createdAt": "2026-05-03T10:08:02.000Z",
-        "updatedAt": "2026-05-03T10:09:02.000Z",
+        "createdAt": "2026-05-03T11:48:02.000Z",
+        "updatedAt": "2026-05-03T11:49:02.000Z",
         "deletedAt": "<tombstone>"
       },
       {
@@ -3972,8 +4047,8 @@
         "precision": "DAY",
         "titleEncrypted": "<sealed:v1:Parental leave>",
         "noteEncrypted": null,
-        "createdAt": "2026-05-03T10:08:01.000Z",
-        "updatedAt": "2026-05-03T10:09:01.000Z",
+        "createdAt": "2026-05-03T11:48:01.000Z",
+        "updatedAt": "2026-05-03T11:49:01.000Z",
         "deletedAt": null
       }
     ],
@@ -3990,8 +4065,8 @@
         "rescueRoute": "BUCCAL",
         "sortOrder": 3,
         "archivedAt": "2026-06-30T12:34:56.789Z",
-        "createdAt": "2026-05-03T03:32:00.000Z",
-        "updatedAt": "2026-05-03T03:33:00.000Z"
+        "createdAt": "2026-05-03T05:12:00.000Z",
+        "updatedAt": "2026-05-03T05:13:00.000Z"
       }
     ],
     "seizureEvents": [
@@ -4036,8 +4111,8 @@
         "loggedByUserId": null,
         "source": "DEVICE_ALERT",
         "noteEncrypted": "<sealed:v1:woke from a nap>",
-        "createdAt": "2026-05-03T05:30:00.000Z",
-        "updatedAt": "2026-05-03T05:31:00.000Z",
+        "createdAt": "2026-05-03T07:10:00.000Z",
+        "updatedAt": "2026-05-03T07:11:00.000Z",
         "rescueDoses": [
           {
             "id": "<id:104>",
@@ -4051,8 +4126,8 @@
             "effect": "STOPPED",
             "seizureEndedAt": "2026-06-30T12:34:56.789Z",
             "intakeEventId": "<id:27>",
-            "createdAt": "2026-05-03T06:53:00.000Z",
-            "updatedAt": "2026-05-03T06:54:00.000Z"
+            "createdAt": "2026-05-03T08:33:00.000Z",
+            "updatedAt": "2026-05-03T08:34:00.000Z"
           }
         ]
       },
@@ -4087,16 +4162,16 @@
         "loggedByUserId": null,
         "source": "MANUAL",
         "noteEncrypted": null,
-        "createdAt": "2026-05-03T05:30:01.000Z",
-        "updatedAt": "2026-05-03T05:31:01.000Z",
+        "createdAt": "2026-05-03T07:10:01.000Z",
+        "updatedAt": "2026-05-03T07:11:01.000Z",
         "rescueDoses": []
       }
     ],
     "seizureSettings": {
       "clusterCount": 3,
       "clusterWindowHours": 12,
-      "createdAt": "2026-05-03T08:23:00.000Z",
-      "updatedAt": "2026-05-03T08:24:00.000Z"
+      "createdAt": "2026-05-03T10:03:00.000Z",
+      "updatedAt": "2026-05-03T10:04:00.000Z"
     },
     "allergies": [
       {
@@ -4109,11 +4184,11 @@
         "onsetAt": null,
         "reaction": null,
         "note": null,
-        "createdAt": "2026-05-02T15:50:01.000Z",
+        "createdAt": "2026-05-02T17:30:01.000Z",
         "reactionEncrypted": null,
         "notesEncrypted": null,
         "deletedAt": "<tombstone>",
-        "updatedAt": "2026-05-02T15:51:01.000Z"
+        "updatedAt": "2026-05-02T17:31:01.000Z"
       },
       {
         "id": "<id:51>",
@@ -4125,11 +4200,11 @@
         "onsetAt": "2026-06-30T12:34:56.789Z",
         "reaction": null,
         "note": null,
-        "createdAt": "2026-05-02T15:50:00.000Z",
+        "createdAt": "2026-05-02T17:30:00.000Z",
         "reactionEncrypted": "<sealed:v1:rt-Allergy-reactionEncrypted>",
         "notesEncrypted": "<sealed:v1:rt-Allergy-notesEncrypted>",
         "deletedAt": null,
-        "updatedAt": "2026-05-02T15:51:00.000Z"
+        "updatedAt": "2026-05-02T17:31:00.000Z"
       }
     ],
     "familyHistory": [
@@ -4140,8 +4215,8 @@
         "ageAtOnset": null,
         "note": null,
         "notesEncrypted": "<sealed:v1:diagnosed at fifty>",
-        "createdAt": "2026-05-02T17:26:01.000Z",
-        "updatedAt": "2026-05-02T17:27:01.000Z",
+        "createdAt": "2026-05-02T19:06:01.000Z",
+        "updatedAt": "2026-05-02T19:07:01.000Z",
         "deletedAt": "<tombstone>"
       },
       {
@@ -4151,8 +4226,8 @@
         "ageAtOnset": 3,
         "note": null,
         "notesEncrypted": "<sealed:v1:rt-FamilyHistoryEntry-notesEncrypted>",
-        "createdAt": "2026-05-02T17:26:00.000Z",
-        "updatedAt": "2026-05-02T17:27:00.000Z",
+        "createdAt": "2026-05-02T19:06:00.000Z",
+        "updatedAt": "2026-05-02T19:07:00.000Z",
         "deletedAt": null
       }
     ],
@@ -4177,15 +4252,8 @@
         "metadata": {
           "roundTrip": "rt-Workout-metadata"
         },
-        "createdAt": "2026-05-04T06:18:00.000Z",
-        "updatedAt": "2026-05-04T06:19:00.000Z"
-      }
-    ],
-    "appleHealthTombstones": [
-      {
-        "domain": "workout",
-        "externalId": "ABCDEF01-2345-6789-ABCD-EF0123456789",
-        "createdAt": "2026-06-30T08:00:00.000Z"
+        "createdAt": "2026-05-04T07:58:00.000Z",
+        "updatedAt": "2026-05-04T07:59:00.000Z"
       }
     ],
     "documents": [
@@ -4214,8 +4282,8 @@
         "sourceInstance": "https://paperless.example.test",
         "aiReadDeferred": true,
         "extractionIncomplete": true,
-        "createdAt": "2026-05-04T09:45:00.000Z",
-        "updatedAt": "2026-05-04T09:46:00.000Z"
+        "createdAt": "2026-05-04T11:25:00.000Z",
+        "updatedAt": "2026-05-04T11:26:00.000Z"
       }
     ],
     "documentConditionLinks": [
@@ -4237,8 +4305,8 @@
         "committedRecordType": "labResult",
         "dataEncrypted": "<sealed:v1:{\"label\":\"Ferritin\",\"code\":null,\"codeSystem\":null,\"value\":91,\"valueText\":null,\"unit\":\"ng/mL\",\"referenceLow\":30,\"referenceHigh\":400,\"effectiveDate\":\"2026-06-30\"}>",
         "provenanceEncrypted": "<sealed:v1:{\"sourceText\":\"Ferritin  91 ng/mL   (30 - 400)\",\"anchored\":true,\"sourceOffset\":412,\"page\":2,\"confidence\":0.94}>",
-        "createdAt": "2026-05-06T03:11:00.000Z",
-        "updatedAt": "2026-05-06T03:12:00.000Z"
+        "createdAt": "2026-05-06T04:51:00.000Z",
+        "updatedAt": "2026-05-06T04:52:00.000Z"
       }
     ],
     "documentImportKeys": [
@@ -4257,8 +4325,8 @@
         "unit": "ml",
         "source": "MANUAL",
         "externalSourceVersion": "rt-NutrientIntakeDay-externalSourceVersion",
-        "createdAt": "2026-05-04T07:47:00.000Z",
-        "updatedAt": "2026-05-04T07:48:00.000Z"
+        "createdAt": "2026-05-04T09:27:00.000Z",
+        "updatedAt": "2026-05-04T09:28:00.000Z"
       }
     ],
     "healthProfile": {
@@ -4287,20 +4355,20 @@
       "allergiesEncrypted": "<sealed:v1:rt-UserHealthProfile-allergiesEncrypted>",
       "coachFocusEncrypted": "<sealed:v1:rt-UserHealthProfile-coachFocusEncrypted>",
       "pendingQuestionsEncrypted": "<sealed:v1:rt-UserHealthProfile-pendingQuestionsEncrypted>",
-      "createdAt": "2026-05-03T11:55:00.000Z",
-      "updatedAt": "2026-05-03T11:56:00.000Z"
+      "createdAt": "2026-05-03T13:36:00.000Z",
+      "updatedAt": "2026-05-03T13:37:00.000Z"
     },
     "healthProfileFacts": [
       {
         "id": "<id:57>",
         "kind": "SMOKING_STATUS",
         "value": null,
-        "valueEncrypted": "<sealed:v1:never>",
+        "valueEncrypted": "<sealed:v1:NEVER>",
         "validFrom": "2026-01-01T00:00:00.000Z",
         "validUntil": "2026-06-30T12:34:56.789Z",
         "provenance": "USER_CORRECTION",
         "supersededByRevisionId": "<id:58>",
-        "createdAt": "2026-05-03T13:28:00.000Z"
+        "createdAt": "2026-05-03T15:08:00.000Z"
       },
       {
         "id": "<id:58>",
@@ -4311,7 +4379,7 @@
         "validUntil": null,
         "provenance": "USER_REPORTED",
         "supersededByRevisionId": null,
-        "createdAt": "2026-05-03T13:28:01.000Z"
+        "createdAt": "2026-05-03T15:08:01.000Z"
       }
     ],
     "customMetrics": [
@@ -4324,8 +4392,8 @@
         "decimals": 3,
         "description": "rt-CustomMetric-description",
         "correlationEnabled": true,
-        "createdAt": "2026-05-03T23:29:00.000Z",
-        "updatedAt": "2026-05-03T23:30:00.000Z",
+        "createdAt": "2026-05-04T01:09:00.000Z",
+        "updatedAt": "2026-05-04T01:10:00.000Z",
         "deletedAt": null,
         "entries": [
           {
@@ -4335,7 +4403,7 @@
             "measuredAt": "2026-06-28T18:00:00.000Z",
             "note": null,
             "noteEncrypted": null,
-            "createdAt": "2026-05-04T01:08:02.000Z",
+            "createdAt": "2026-05-04T02:48:02.000Z",
             "deletedAt": "<tombstone>"
           },
           {
@@ -4345,7 +4413,7 @@
             "measuredAt": "2026-07-01T18:00:00.000Z",
             "note": "left hand, after the long ride",
             "noteEncrypted": null,
-            "createdAt": "2026-05-04T01:08:00.000Z",
+            "createdAt": "2026-05-04T02:48:00.000Z",
             "deletedAt": null
           },
           {
@@ -4355,7 +4423,7 @@
             "measuredAt": "2026-07-02T18:00:00.000Z",
             "note": null,
             "noteEncrypted": "<sealed:v1:right hand, rested>",
-            "createdAt": "2026-05-04T01:08:01.000Z",
+            "createdAt": "2026-05-04T02:48:01.000Z",
             "deletedAt": null
           }
         ]
@@ -4369,8 +4437,8 @@
         "decimals": null,
         "description": null,
         "correlationEnabled": false,
-        "createdAt": "2026-05-03T23:29:01.000Z",
-        "updatedAt": "2026-05-03T23:30:01.000Z",
+        "createdAt": "2026-05-04T01:09:01.000Z",
+        "updatedAt": "2026-05-04T01:10:01.000Z",
         "deletedAt": "<tombstone>",
         "entries": []
       }
@@ -4394,8 +4462,8 @@
         "dismissedEvidenceHash": "abababababababababababababababababababababababababababababababab",
         "dismissedEffectSize": 2.5,
         "dismissedSampleSize": 3,
-        "createdAt": "2026-05-04T02:58:00.000Z",
-        "updatedAt": "2026-05-04T02:59:00.000Z"
+        "createdAt": "2026-05-04T04:38:00.000Z",
+        "updatedAt": "2026-05-04T04:39:00.000Z"
       }
     ],
     "intradayProfiles": [
@@ -4483,8 +4551,8 @@
         "inputFingerprint": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
         "configVersion": 3,
         "configChangedAt": "2026-06-30T12:34:56.789Z",
-        "computedAt": "2026-05-04T04:32:00.000Z",
-        "createdAt": "2026-05-04T04:33:00.000Z"
+        "computedAt": "2026-05-04T06:12:00.000Z",
+        "createdAt": "2026-05-04T06:13:00.000Z"
       }
     ],
     "onboardingRecord": {
@@ -4502,7 +4570,9 @@
         "visit": "within-a-month",
         "units": {
           "glucoseUnit": "mmol/L",
-          "unitPreference": "metric"
+          "unitPreference": "metric",
+          "timezone": "Europe/Berlin",
+          "medicineRegistry": "DE"
         }
       },
       "steps": [
@@ -4535,6 +4605,14 @@
           "status": "pending"
         },
         {
+          "id": "reminders",
+          "status": "skipped"
+        },
+        {
+          "id": "ai",
+          "status": "skipped"
+        },
+        {
           "id": "first-result",
           "status": "pending"
         },
@@ -4564,8 +4642,8 @@
         "locationEncrypted": null,
         "phoneEncrypted": null,
         "noteEncrypted": null,
-        "createdAt": "2026-05-04T11:10:01.000Z",
-        "updatedAt": "2026-05-04T11:11:01.000Z",
+        "createdAt": "2026-05-04T12:50:01.000Z",
+        "updatedAt": "2026-05-04T12:51:01.000Z",
         "deletedAt": "<tombstone>"
       },
       {
@@ -4578,8 +4656,8 @@
         "locationEncrypted": "<sealed:v1:rt-Practitioner-locationEncrypted>",
         "phoneEncrypted": "<sealed:v1:rt-Practitioner-phoneEncrypted>",
         "noteEncrypted": "<sealed:v1:ring the upper bell>",
-        "createdAt": "2026-05-04T11:10:00.000Z",
-        "updatedAt": "2026-05-04T11:11:00.000Z",
+        "createdAt": "2026-05-04T12:50:00.000Z",
+        "updatedAt": "2026-05-04T12:51:00.000Z",
         "deletedAt": null
       }
     ],
@@ -4595,8 +4673,8 @@
         "bodySiteEncrypted": "<sealed:v1:rt-Encounter-bodySiteEncrypted>",
         "laterality": "LEFT",
         "reminderId": "<id:71>",
-        "createdAt": "2026-05-04T12:51:00.000Z",
-        "updatedAt": "2026-05-04T12:52:00.000Z",
+        "createdAt": "2026-05-04T14:31:00.000Z",
+        "updatedAt": "2026-05-04T14:32:00.000Z",
         "deletedAt": null
       },
       {
@@ -4610,8 +4688,8 @@
         "bodySiteEncrypted": null,
         "laterality": null,
         "reminderId": null,
-        "createdAt": "2026-05-04T12:51:01.000Z",
-        "updatedAt": "2026-05-04T12:52:01.000Z",
+        "createdAt": "2026-05-04T14:31:01.000Z",
+        "updatedAt": "2026-05-04T14:32:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],
@@ -4619,21 +4697,21 @@
       {
         "encounterId": "<id:70>",
         "targetId": "<id:55>",
-        "createdAt": "2026-05-04T14:24:00.000Z"
+        "createdAt": "2026-05-04T16:04:00.000Z"
       }
     ],
     "encounterLabLinks": [
       {
         "encounterId": "<id:70>",
         "targetId": "<id:39>",
-        "createdAt": "2026-05-04T16:04:00.000Z"
+        "createdAt": "2026-05-04T17:44:00.000Z"
       }
     ],
     "encounterConditionLinks": [
       {
         "encounterId": "<id:70>",
         "targetId": "<id:46>",
-        "createdAt": "2026-05-04T17:44:00.000Z"
+        "createdAt": "2026-05-04T19:24:00.000Z"
       }
     ],
     "customVaccines": [
@@ -4645,8 +4723,8 @@
         ],
         "typicalSeriesDoses": null,
         "boosterIntervalMonths": null,
-        "createdAt": "2026-05-04T22:47:01.000Z",
-        "updatedAt": "2026-05-04T22:48:01.000Z",
+        "createdAt": "2026-05-05T00:27:01.000Z",
+        "updatedAt": "2026-05-05T00:28:01.000Z",
         "deletedAt": "<tombstone>"
       },
       {
@@ -4658,8 +4736,8 @@
         ],
         "typicalSeriesDoses": 2,
         "boosterIntervalMonths": 36,
-        "createdAt": "2026-05-04T22:47:00.000Z",
-        "updatedAt": "2026-05-04T22:48:00.000Z",
+        "createdAt": "2026-05-05T00:27:00.000Z",
+        "updatedAt": "2026-05-05T00:28:00.000Z",
         "deletedAt": null
       }
     ],
@@ -4678,8 +4756,8 @@
         "reminderId": "<id:71>",
         "customVaccineId": "<id:74>",
         "noteEncrypted": "<sealed:v1:sore arm for a day, nothing else>",
-        "createdAt": "2026-05-04T19:34:00.000Z",
-        "updatedAt": "2026-05-04T19:35:00.000Z",
+        "createdAt": "2026-05-04T21:14:00.000Z",
+        "updatedAt": "2026-05-04T21:15:00.000Z",
         "deletedAt": null
       },
       {
@@ -4696,8 +4774,8 @@
         "reminderId": null,
         "customVaccineId": null,
         "noteEncrypted": null,
-        "createdAt": "2026-05-04T19:34:01.000Z",
-        "updatedAt": "2026-05-04T19:35:01.000Z",
+        "createdAt": "2026-05-04T21:14:01.000Z",
+        "updatedAt": "2026-05-04T21:15:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],
@@ -4705,7 +4783,7 @@
       {
         "vaccinationId": "<id:75>",
         "targetId": "<id:55>",
-        "createdAt": "2026-05-04T21:04:00.000Z"
+        "createdAt": "2026-05-04T22:44:00.000Z"
       }
     ],
     "labResultDocumentLinks": [
@@ -4751,8 +4829,8 @@
         "summaryEncrypted": "<sealed:v1:earlier turns: weight trend and evening walks>",
         "summaryUpdatedAt": "2026-07-20T10:00:00.000Z",
         "summaryTurnCount": 4,
-        "createdAt": "2026-05-05T03:44:00.000Z",
-        "updatedAt": "2026-05-05T03:45:00.000Z",
+        "createdAt": "2026-05-05T05:24:00.000Z",
+        "updatedAt": "2026-05-05T05:25:00.000Z",
         "messages": [
           {
             "id": "<id:81>",
@@ -4790,8 +4868,8 @@
         "summaryEncrypted": null,
         "summaryUpdatedAt": null,
         "summaryTurnCount": 0,
-        "createdAt": "2026-05-05T03:44:01.000Z",
-        "updatedAt": "2026-05-05T03:45:01.000Z",
+        "createdAt": "2026-05-05T05:24:01.000Z",
+        "updatedAt": "2026-05-05T05:25:01.000Z",
         "messages": [
           {
             "id": "<id:84>",
@@ -4833,8 +4911,8 @@
         "externalId": null,
         "syncVersion": 0,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-05T22:17:01.000Z",
-        "updatedAt": "2026-05-05T22:18:01.000Z"
+        "createdAt": "2026-05-05T23:57:01.000Z",
+        "updatedAt": "2026-05-05T23:58:01.000Z"
       },
       {
         "id": "<id:92>",
@@ -4853,8 +4931,8 @@
         "externalId": "rt-MentalHealthAssessment-externalId",
         "syncVersion": 3,
         "deletedAt": null,
-        "createdAt": "2026-05-05T22:17:00.000Z",
-        "updatedAt": "2026-05-05T22:18:00.000Z"
+        "createdAt": "2026-05-05T23:57:00.000Z",
+        "updatedAt": "2026-05-05T23:58:00.000Z"
       }
     ],
     "consentReceipts": [
@@ -4864,7 +4942,7 @@
         "artefact": "JVBERi0xLjQKJWZpeHR1cmU=",
         "signedAt": "2026-06-01T09:00:00.000Z",
         "revokedAt": null,
-        "createdAt": "2026-05-05T23:46:00.000Z"
+        "createdAt": "2026-05-06T01:26:00.000Z"
       },
       {
         "id": "<id:94>",
@@ -4872,7 +4950,7 @@
         "artefact": "eyJhbGciOiJub25lIn0.e30.",
         "signedAt": "2026-06-02T09:00:00.000Z",
         "revokedAt": "2026-07-10T11:00:00.000Z",
-        "createdAt": "2026-05-05T23:46:01.000Z"
+        "createdAt": "2026-05-06T01:26:01.000Z"
       }
     ],
     "coachFacts": [
@@ -4885,8 +4963,8 @@
         "source": "user",
         "lastUsedAt": "2026-07-20T10:00:00.000Z",
         "sourceMessageId": "<id:82>",
-        "createdAt": "2026-05-05T08:46:00.000Z",
-        "updatedAt": "2026-05-05T08:47:00.000Z",
+        "createdAt": "2026-05-05T10:26:00.000Z",
+        "updatedAt": "2026-05-05T10:27:00.000Z",
         "deletedAt": null
       },
       {
@@ -4898,8 +4976,8 @@
         "source": "user",
         "lastUsedAt": null,
         "sourceMessageId": null,
-        "createdAt": "2026-05-05T08:46:01.000Z",
-        "updatedAt": "2026-05-05T08:47:01.000Z",
+        "createdAt": "2026-05-05T10:26:01.000Z",
+        "updatedAt": "2026-05-05T10:27:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],
@@ -4914,8 +4992,8 @@
         "status": "active",
         "reviewDate": "2026-10-01T00:00:00.000Z",
         "sourceConversationId": "<id:80>",
-        "createdAt": "2026-05-05T10:30:00.000Z",
-        "updatedAt": "2026-05-05T10:31:00.000Z",
+        "createdAt": "2026-05-05T12:10:00.000Z",
+        "updatedAt": "2026-05-05T12:11:00.000Z",
         "deletedAt": null
       },
       {
@@ -4928,8 +5006,8 @@
         "status": "active",
         "reviewDate": null,
         "sourceConversationId": null,
-        "createdAt": "2026-05-05T10:30:01.000Z",
-        "updatedAt": "2026-05-05T10:31:01.000Z",
+        "createdAt": "2026-05-05T12:10:01.000Z",
+        "updatedAt": "2026-05-05T12:11:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],
@@ -4947,8 +5025,8 @@
         "sourceConversationId": "<id:80>",
         "lastSurfacedAt": "2026-06-30T12:34:56.789Z",
         "surfaceCount": 2,
-        "createdAt": "2026-05-05T12:13:00.000Z",
-        "updatedAt": "2026-05-05T12:14:00.000Z",
+        "createdAt": "2026-05-05T13:53:00.000Z",
+        "updatedAt": "2026-05-05T13:54:00.000Z",
         "deletedAt": null
       },
       {
@@ -4964,8 +5042,8 @@
         "sourceConversationId": null,
         "lastSurfacedAt": null,
         "surfaceCount": 0,
-        "createdAt": "2026-05-05T12:13:01.000Z",
-        "updatedAt": "2026-05-05T12:14:01.000Z",
+        "createdAt": "2026-05-05T13:53:01.000Z",
+        "updatedAt": "2026-05-05T13:54:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],
@@ -4988,8 +5066,8 @@
         "snoozedUntil": "2026-07-08T06:00:00.000Z",
         "lastSkippedAt": "2026-06-24T06:00:00.000Z",
         "skipCount": 2,
-        "createdAt": "2026-05-05T00:39:00.000Z",
-        "updatedAt": "2026-05-05T00:40:00.000Z",
+        "createdAt": "2026-05-05T02:19:00.000Z",
+        "updatedAt": "2026-05-05T02:20:00.000Z",
         "deletedAt": null
       },
       {
@@ -5010,8 +5088,8 @@
         "snoozedUntil": null,
         "lastSkippedAt": null,
         "skipCount": 0,
-        "createdAt": "2026-05-05T00:39:01.000Z",
-        "updatedAt": "2026-05-05T00:40:01.000Z",
+        "createdAt": "2026-05-05T02:19:01.000Z",
+        "updatedAt": "2026-05-05T02:20:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],
@@ -5023,7 +5101,7 @@
         "occurredAt": "2026-06-24T06:00:00.000Z",
         "onTime": false,
         "source": "skip",
-        "createdAt": "2026-05-05T02:07:01.000Z"
+        "createdAt": "2026-05-05T03:47:01.000Z"
       },
       {
         "id": "<id:79>",
@@ -5032,7 +5110,7 @@
         "occurredAt": "2026-07-01T06:05:00.000Z",
         "onTime": true,
         "source": "manual",
-        "createdAt": "2026-05-05T02:07:00.000Z"
+        "createdAt": "2026-05-05T03:47:00.000Z"
       }
     ],
     "personalRecords": [
@@ -5046,7 +5124,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-5km",
-        "createdAt": "2026-05-06T06:31:01.000Z"
+        "createdAt": "2026-05-06T08:11:01.000Z"
       },
       {
         "metricType": "WALKING_RUNNING_DISTANCE",
@@ -5058,7 +5136,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-10km",
-        "createdAt": "2026-05-06T06:31:02.000Z"
+        "createdAt": "2026-05-06T08:11:02.000Z"
       },
       {
         "metricType": "WEIGHT",
@@ -5070,19 +5148,19 @@
         "sourceMeasurementId": "<id:4>",
         "source": "MANUAL",
         "externalId": null,
-        "createdAt": "2026-05-06T06:31:00.000Z"
+        "createdAt": "2026-05-06T08:11:00.000Z"
       }
     ],
     "userAchievements": [
       {
         "achievementId": "retired-badge-from-an-older-release",
         "unlockedAt": "2025-11-05T08:00:00.000Z",
-        "createdAt": "2026-05-06T08:04:01.000Z"
+        "createdAt": "2026-05-06T09:44:01.000Z"
       },
       {
         "achievementId": "intake-total-10",
         "unlockedAt": "2026-02-21T10:15:00.000Z",
-        "createdAt": "2026-05-06T08:04:00.000Z"
+        "createdAt": "2026-05-06T09:44:00.000Z"
       }
     ],
     "environmentContexts": [
@@ -5128,8 +5206,8 @@
         "aqHours": 3,
         "aqFetchedAt": "2026-06-30T12:34:56.789Z",
         "fetchedAt": "2026-06-16T03:15:00.000Z",
-        "createdAt": "2026-05-06T10:20:00.000Z",
-        "updatedAt": "2026-05-06T10:21:00.000Z"
+        "createdAt": "2026-05-06T12:00:00.000Z",
+        "updatedAt": "2026-05-06T12:01:00.000Z"
       },
       {
         "date": "2026-07-01",
@@ -5173,8 +5251,8 @@
         "aqHours": null,
         "aqFetchedAt": null,
         "fetchedAt": "2026-07-02T03:15:00.000Z",
-        "createdAt": "2026-05-06T10:20:01.000Z",
-        "updatedAt": "2026-05-06T10:21:01.000Z"
+        "createdAt": "2026-05-06T12:00:01.000Z",
+        "updatedAt": "2026-05-06T12:01:01.000Z"
       }
     ],
     "environmentTravelLocations": [
@@ -5185,8 +5263,8 @@
         "lon": null,
         "label": null,
         "locationEncrypted": "<sealed:v1:{\"lat\":41.4,\"lon\":2.2,\"label\":\"Barcelona\"}>",
-        "createdAt": "2026-05-06T11:25:00.000Z",
-        "updatedAt": "2026-05-06T11:26:00.000Z"
+        "createdAt": "2026-05-06T13:05:00.000Z",
+        "updatedAt": "2026-05-06T13:06:00.000Z"
       }
     ],
     "dawarichDays": [
@@ -5201,8 +5279,8 @@
         "countryCodeEncrypted": "<sealed:v1:country:ES>",
         "isTravelDay": true,
         "fetchedAt": "2026-06-16T03:20:00.000Z",
-        "createdAt": "2026-05-06T13:11:00.000Z",
-        "updatedAt": "2026-05-06T13:12:00.000Z"
+        "createdAt": "2026-05-06T14:51:00.000Z",
+        "updatedAt": "2026-05-06T14:52:00.000Z"
       }
     ],
     "ecgRecordings": [
@@ -5219,8 +5297,8 @@
         "averageHeartRate": 88,
         "rhythmClassification": "IRREGULAR",
         "measurementId": "<id:5>",
-        "createdAt": "2026-05-06T18:13:00.000Z",
-        "updatedAt": "2026-05-06T18:14:00.000Z"
+        "createdAt": "2026-05-06T19:53:00.000Z",
+        "updatedAt": "2026-05-06T19:54:00.000Z"
       }
     ],
     "manifest": {
@@ -5259,6 +5337,7 @@
     "nutrientDays": 1,
     "labResults": 2,
     "labResultImportKeys": 1,
+    "fhirImportedResources": 1,
     "biomarkers": 1,
     "illnessEpisodes": 4,
     "illnessDayLogs": 2,
@@ -5316,6 +5395,7 @@
       "cycleDayLogs": 2,
       "labResults": 2,
       "labResultImportKeys": 1,
+      "fhirImportedResources": 1,
       "nutrientDays": 1,
       "biomarkers": 1,
       "illnessEpisodes": 4,

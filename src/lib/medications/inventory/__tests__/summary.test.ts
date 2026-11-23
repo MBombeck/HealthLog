@@ -165,7 +165,8 @@ describe("supply surfaces — server computes, the detail-page clients render th
 
   it("the Übersicht client renders the server summary and never imports the helper as a value", () => {
     const src = read(
-      "src/components/medications/detail/medication-detail-tabs.tsx",
+      // The Overview status moved into its own section component.
+      "src/components/medications/detail/overview-status-section.tsx",
     );
     // Type-only import is allowed; a value import of the helper is not.
     expect(src).toContain(

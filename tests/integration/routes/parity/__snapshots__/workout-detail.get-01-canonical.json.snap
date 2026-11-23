@@ -21,6 +21,7 @@
       "source": "APPLE_HEALTH",
       "externalId": "hk-run-1",
       "metadata": null,
+      "performance": null,
       "route": {
         "geometry": {
           "type": "LineString",

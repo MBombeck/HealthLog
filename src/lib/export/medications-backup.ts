@@ -82,26 +82,16 @@ function serialiseMedicationRow(
     ...(disasterRecovery
       ? {
           id: m.id,
-          treatmentClass: m.treatmentClass,
-          dosesPerUnit: m.dosesPerUnit,
-          unitsPerDose: m.unitsPerDose.toString(),
-          notificationsEnabled: m.notificationsEnabled,
-          pausedAt: m.pausedAt?.toISOString() ?? null,
-          snoozedUntil: m.snoozedUntil?.toISOString() ?? null,
+          // The projection of the courses, which both purposes carry; a
+          // portable restore projects it again from them.
           startsOn: m.startsOn?.toISOString() ?? null,
           endsOn: m.endsOn?.toISOString() ?? null,
-          oneShot: m.oneShot,
-          asNeeded: m.asNeeded,
-          deliveryForm: m.deliveryForm,
-          trackInjectionSites: m.trackInjectionSites,
-          allowedInjectionSites: m.allowedInjectionSites,
-          liveActivityEnabled: m.liveActivityEnabled,
-          criticalAlarmEnabled: m.criticalAlarmEnabled,
-          atcCode: m.atcCode,
-          rxNormCode: m.rxNormCode,
+          // A reminder snoozed for the next hour, the low-stock notice's
+          // cursor and the importer's own reference: this host's state
+          // around the drug, not what the drug is.
+          snoozedUntil: m.snoozedUntil?.toISOString() ?? null,
           lowStockNotifiedAt: m.lowStockNotifiedAt?.toISOString() ?? null,
           lowStockNotifiedThresholdDays: m.lowStockNotifiedThresholdDays,
-          reorderLeadDays: m.reorderLeadDays,
           externalSource: m.externalSource,
           externalId: m.externalId,
           updatedAt: m.updatedAt.toISOString(),
@@ -111,6 +101,25 @@ function serialiseMedicationRow(
       : // No id: a portable restore mints a fresh one. The relation links
         // still name this drug, so the file says which row they mean.
         { ref: m.id }),
+    // What the drug is and how the person set it up, so both purposes: a
+    // portable restore without them brought an injection back as a tablet,
+    // an as-needed drug back as a scheduled one, and every reminder switch
+    // back at its default.
+    treatmentClass: m.treatmentClass,
+    dosesPerUnit: m.dosesPerUnit,
+    unitsPerDose: m.unitsPerDose.toString(),
+    notificationsEnabled: m.notificationsEnabled,
+    pausedAt: m.pausedAt?.toISOString() ?? null,
+    oneShot: m.oneShot,
+    asNeeded: m.asNeeded,
+    deliveryForm: m.deliveryForm,
+    trackInjectionSites: m.trackInjectionSites,
+    allowedInjectionSites: m.allowedInjectionSites,
+    liveActivityEnabled: m.liveActivityEnabled,
+    criticalAlarmEnabled: m.criticalAlarmEnabled,
+    atcCode: m.atcCode,
+    rxNormCode: m.rxNormCode,
+    reorderLeadDays: m.reorderLeadDays,
     name: m.name,
     dose: m.dose,
     active: m.active,
@@ -135,6 +144,9 @@ function serialiseMedicationRow(
             : null,
         }
       : { note: readMedicationNote(m.noteEncrypted) }),
+    // #1430 — the leaflet link the person saved. Both purposes: it is
+    // something they chose, and it reads the same on any host.
+    leafletUrl: m.leafletUrl,
     // Both purposes carry the creation instant: it is the floor of the
     // medication's expected slots, so a restore stamped with the restore
     // time would read the whole restored history as predating the
@@ -149,25 +161,23 @@ function serialiseMedicationHistory(
   disasterRecovery: boolean,
 ) {
   return {
+    // The plan itself, so every field in both purposes: a portable restore
+    // without the days, the times or the rule kept the window and lost when
+    // the drug is due.
     schedules: m.schedules.map((s) => ({
-      ...(disasterRecovery
-        ? {
-            id: s.id,
-            daysOfWeek: s.daysOfWeek,
-            timesOfDay: s.timesOfDay,
-            reminderGraceMinutes: s.reminderGraceMinutes,
-            rrule: s.rrule,
-            rollingIntervalDays: s.rollingIntervalDays,
-            scheduleType: s.scheduleType,
-            cyclicOnWeeks: s.cyclicOnWeeks,
-            cyclicOffWeeks: s.cyclicOffWeeks,
-            doseWindows: s.doseWindows,
-            // #219 — per-schedule units per dose. Decimal → string like the
-            // medication-level column; NULL (inherit) stays NULL.
-            unitsPerDose:
-              s.unitsPerDose == null ? null : s.unitsPerDose.toString(),
-          }
-        : {}),
+      ...(disasterRecovery ? { id: s.id } : {}),
+      daysOfWeek: s.daysOfWeek,
+      timesOfDay: s.timesOfDay,
+      reminderGraceMinutes: s.reminderGraceMinutes,
+      rrule: s.rrule,
+      rollingIntervalDays: s.rollingIntervalDays,
+      scheduleType: s.scheduleType,
+      cyclicOnWeeks: s.cyclicOnWeeks,
+      cyclicOffWeeks: s.cyclicOffWeeks,
+      doseWindows: s.doseWindows,
+      // #219 — per-schedule units per dose. Decimal → string like the
+      // medication-level column; NULL (inherit) stays NULL.
+      unitsPerDose: s.unitsPerDose == null ? null : s.unitsPerDose.toString(),
       windowStart: s.windowStart,
       windowEnd: s.windowEnd,
       label: s.label,
@@ -411,28 +421,50 @@ function serialiseIntakeEvent(e: BackupIntakeEvent, disasterRecovery: boolean) {
       ? {
           id: e.id,
           medicationId: e.medicationId,
-          autoMissed: e.autoMissed,
-          attributionSource: e.attributionSource,
           idempotencyKey: e.idempotencyKey,
           createdAt: e.createdAt.toISOString(),
-          injectionSite: e.injectionSite,
-          doseTaken: e.doseTaken,
+          // The pack lots the take came off, by their ids. A portable
+          // restore mints fresh pack ids, so the stamp would point at
+          // nothing there; the pack's own count already carries the stock.
           inventoryConsumption: e.inventoryConsumption,
           externalId: e.externalId,
           updatedAt: e.updatedAt.toISOString(),
           syncVersion: e.syncVersion,
           deletedAt: e.deletedAt?.toISOString() ?? null,
+          // Who deleted a tombstone: only where the phone reported it.
+          ...(e.appleHealthDeletedAt
+            ? { appleHealthDeletedAt: e.appleHealthDeletedAt.toISOString() }
+            : {}),
         }
-      : {}),
+      : // No ids: a portable restore mints fresh ones. The source ids still
+        // travel as references, because a medication name is not unique on
+        // an account (one drug in two strengths), and a seizure rescue dose
+        // names the intake it wrote.
+        { ref: e.id, medicationRef: e.medicationId }),
+    // The name stays beside the reference: an older reader and a person
+    // reading the file both resolve a dose by it.
     medication: e.medication.name,
     scheduledFor: e.scheduledFor.toISOString(),
     takenAt: e.takenAt?.toISOString() ?? null,
     skipped: e.skipped,
     source: e.source,
+    // Both purposes: the today list reads it to warn before a second take,
+    // and a restore that dropped it would lose where each take came from.
+    takenVia: e.takenVia,
     // Both purposes: the history labels the dose "recorded
     // automatically", and a restore that dropped the marker would relabel
     // it as one the person confirmed.
     autoRecorded: e.autoRecorded,
+    // What the dose itself says, so both purposes, the rule the measurements
+    // follow: where it was injected, the amount actually taken where it
+    // differed from the plan, whether it was pinned to its slot by hand
+    // (without it a restored dose falls back to the clock's attribution),
+    // and whether the system marked it missed rather than the person
+    // skipping it.
+    injectionSite: e.injectionSite,
+    doseTaken: e.doseTaken,
+    attributionSource: e.attributionSource,
+    autoMissed: e.autoMissed,
   };
 }
 

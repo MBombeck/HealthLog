@@ -8,14 +8,6 @@ import { userDayKey } from "@/lib/tz/format";
 import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
 
 /**
- * Format a stored ISO instant to a `YYYY-MM-DD` calendar date string in the
- * target timezone.
- */
-export function toLocalDateKey(iso: string, timeZone: string): string {
-  return userDayKey(new Date(iso), timeZone);
-}
-
-/**
  * Serialize a date-only input (`YYYY-MM-DD`) to an ISO 8601 instant.
  * Anchors to local noon in the user's timezone, or now if noon is still in the future.
  */
@@ -50,7 +42,7 @@ export function resolveEpisodeInstant({
 }): string {
   if (
     storedInstant != null &&
-    date === toLocalDateKey(storedInstant, timeZone)
+    date === userDayKey(new Date(storedInstant), timeZone)
   ) {
     return storedInstant;
   }

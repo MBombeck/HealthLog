@@ -175,6 +175,7 @@ import {
   PR_DETECTION_EXPIRE_SECONDS,
   PR_DETECTION_FALLBACK_CRON,
   PR_DETECTION_QUEUE,
+  PR_DETECTION_QUEUE_POLICY,
   type PrDetectionPayload,
 } from "@/lib/jobs/pr-detection";
 import { PULSE_DAY_MEAN_QUEUE } from "@/lib/jobs/pulse-day-mean";
@@ -199,11 +200,12 @@ import {
 import {
   INTAKE_SLOT_DEDUP_CONCURRENCY,
   INTAKE_SLOT_DEDUP_QUEUE,
-} from "@/lib/medications/intake-slot-dedup";
+} from "@/lib/jobs/intake-slot-dedup-queue";
 
 import { MAINTENANCE_DISCOVERY } from "./maintenance-discovery";
 import { MAINTENANCE_FILE_IMPORT_JOBS } from "./maintenance-file-imports";
 import { MAINTENANCE_REPAIR_JOBS } from "./maintenance-repairs";
+import { MAINTENANCE_RETENTION_JOBS } from "./maintenance-retention";
 import {
   defineJob,
   type JobDefinition,
@@ -433,11 +435,10 @@ const jobs: readonly JobDefinition[] = [
     async () => (await ops()).handleTlsPinMonitor,
     { retry: "default" },
   ),
-  // An ingest job is one account; the fallback rescan every 30 minutes walks
-  // every account, one run at a time.
   defineJob({
     queue: PR_DETECTION_QUEUE,
     cron: PR_DETECTION_FALLBACK_CRON,
+    policy: PR_DETECTION_QUEUE_POLICY,
     scheduleOptions: { expireInSeconds: PR_DETECTION_EXPIRE_SECONDS },
     work: { localConcurrency: PR_DETECTION_CONCURRENCY },
     lock: (job: Job<PrDetectionPayload>) => {
@@ -528,6 +529,7 @@ const jobs: readonly JobDefinition[] = [
         .handleMeasurementFoldRepair,
   }),
   ...MAINTENANCE_REPAIR_JOBS,
+  ...MAINTENANCE_RETENTION_JOBS,
   // The nightly check vacuums when dead rows pile up; the same singleton key
   // as the operator's run, so the two collapse.
   defineJob({

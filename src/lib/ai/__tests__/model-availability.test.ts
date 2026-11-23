@@ -96,6 +96,33 @@ describe("probeModelListing", () => {
     ).resolves.toBe("unknown");
   });
 
+  it("matches a listing that names models as `models/<id>`", async () => {
+    // Google's Gemini endpoint lists `models/gemini-…` and serves the bare
+    // name; either spelling of the configured model is the same model.
+    stubEndpoint(["models/gemini-3.8-flash", "models/gemini-2.5-flash"]);
+    await expect(
+      probeModelListing({
+        baseUrl: PROXY,
+        apiKey: "k",
+        model: "gemini-3.8-flash",
+      }),
+    ).resolves.toBe("listed");
+    await expect(
+      probeModelListing({
+        baseUrl: PROXY,
+        apiKey: "k",
+        model: "models/gemini-2.5-flash",
+      }),
+    ).resolves.toBe("listed");
+    await expect(
+      probeModelListing({
+        baseUrl: PROXY,
+        apiKey: "k",
+        model: "gemini-1.0-pro",
+      }),
+    ).resolves.toBe("not_listed");
+  });
+
   it("asks the endpoint once per model for a burst of failures", async () => {
     const fetchMock = stubEndpoint(["gpt-6"]);
     for (let i = 0; i < 3; i += 1) {

@@ -134,6 +134,14 @@ const ROUTE_PARAMS = { params: Promise.resolve({ id: "med-1" }) };
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // The slot write runs in a transaction holding the slot's lock; a
+  // callback runs against the same mocked client.
+  vi.mocked(prisma.$transaction).mockImplementation((async (arg: unknown) =>
+    Array.isArray(arg)
+      ? Promise.all(arg)
+      : (arg as (c: unknown) => unknown)(
+          prisma,
+        )) as unknown as typeof prisma.$transaction);
   // v1.36.0 — the GET's validation breadcrumb goes through the `auditLog`
   // helper, whose promise the route attaches a `.catch` to. `resetAllMocks`
   // clears the factory's implementation, so it is restored here.
@@ -366,7 +374,9 @@ describe("POST /api/medications/[id]/intake — one-shot lifecycle", () => {
       takenAt: new Date(),
       skipped: false,
     };
-    vi.mocked(prisma.$transaction).mockResolvedValue([createdEvent] as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValue(
+      createdEvent as never,
+    );
     // v1.8.2 — slot-snap resolver loads the med; no schedules → null slot
     // → original insert + dedup path preserved.
     vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce({
@@ -377,9 +387,6 @@ describe("POST /api/medications/[id]/intake — one-shot lifecycle", () => {
       createdAt: new Date(),
       schedules: [],
     } as never);
-    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValueOnce(
-      null as never, // dedup probe
-    );
     // Reconcile probes — first call is the medication shape, second is
     // the live-intake probe (a live intake exists because the POST just
     // created one), and the update fires with active:false.
@@ -408,10 +415,9 @@ describe("POST /api/medications/[id]/intake — one-shot lifecycle", () => {
     // (#22) — the logged dose queues exactly one cross-device sync
     // fan-out; the web caller carries no X-Device-Id.
     expect(queueMedicationIntakeSync).toHaveBeenCalledTimes(1);
-    expect(queueMedicationIntakeSync).toHaveBeenCalledWith({
-      userId: "user-1",
-      originDeviceToken: null,
-    });
+    expect(queueMedicationIntakeSync).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "user-1", originDeviceToken: null }),
+    );
   });
 });
 
@@ -506,12 +512,12 @@ describe("POST /api/medications/[id]/intake — v1.8.2 reconcile (M2 inventory)"
       }),
       ROUTE_PARAMS,
     );
-    expect(res.status).toBe(201);
-    // Re-post of an already-taken slot → no pending→taken transition →
-    // inventory must NOT be consumed.
+    // Re-post of an already-taken slot is the same dose reported again:
+    // 200 with `alreadyTaken`, nothing written, no inventory consumed.
+    expect(res.status).toBe(200);
+    expect((await res.json()).data.alreadyTaken).toBe(true);
     expect(consumeForIntake).not.toHaveBeenCalled();
-    // The row was updated, not duplicated.
-    expect(prisma.medicationIntakeEvent.update).toHaveBeenCalledTimes(1);
+    expect(prisma.medicationIntakeEvent.update).not.toHaveBeenCalled();
     expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
   });
 
@@ -687,7 +693,9 @@ describe("POST /api/medications/[id]/intake — as-needed (schedule-less) medica
       takenAt,
       skipped: false,
     };
-    vi.mocked(prisma.$transaction).mockResolvedValue([createdEvent] as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValue(
+      createdEvent as never,
+    );
     // Slot-snap resolver loads the med: an as-needed medication carries
     // ZERO schedules, so band attribution yields no slot → standalone
     // ad-hoc insert (the documented PRN path).
@@ -699,10 +707,7 @@ describe("POST /api/medications/[id]/intake — as-needed (schedule-less) medica
       createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
       schedules: [],
     } as never);
-    // Dedup probe — no recent duplicate.
-    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValueOnce(
-      null as never,
-    );
+    // The repeat check reads `findMany` (default: no recorded dose).
     // One-shot reconcile probe — not a one-shot.
     vi.mocked(prisma.medication.findUnique).mockResolvedValue({
       id: "med-1",
@@ -722,8 +727,9 @@ describe("POST /api/medications/[id]/intake — as-needed (schedule-less) medica
 
     // Standalone insert anchored on the intake instant — the ad-hoc
     // contract (`scheduledFor = takenAt`), no slot attribution.
-    const txArg = vi.mocked(prisma.$transaction).mock.calls[0][0];
-    expect(Array.isArray(txArg)).toBe(true);
+    expect(prisma.medicationIntakeEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ scheduledFor: takenAt, takenAt }),
+    });
 
     // Inventory consumption fires exactly as for a scheduled medication —
     // the seam is medication-level (eventId + intakeAt), no schedule input.
@@ -749,7 +755,9 @@ describe("POST /api/medications/[id]/intake — as-needed (schedule-less) medica
       takenAt: null,
       skipped: true,
     };
-    vi.mocked(prisma.$transaction).mockResolvedValue([skipEvent] as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValue(
+      skipEvent as never,
+    );
     vi.mocked(prisma.medication.findFirst).mockResolvedValue({
       id: "med-1",
       startsOn: null,
@@ -830,16 +838,14 @@ describe("POST /api/medications/[id]/intake — idempotency-key stability floor"
 
   it("accepts a stable caller-issued key and records the dose", async () => {
     const takenAt = new Date(Date.now() - 60 * 60 * 1000);
-    vi.mocked(prisma.$transaction).mockResolvedValue([
-      {
-        id: "evt-idem-1",
-        userId: "user-1",
-        medicationId: "med-1",
-        scheduledFor: takenAt,
-        takenAt,
-        skipped: false,
-      },
-    ] as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValue({
+      id: "evt-idem-1",
+      userId: "user-1",
+      medicationId: "med-1",
+      scheduledFor: takenAt,
+      takenAt,
+      skipped: false,
+    } as never);
     vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce({
       id: "med-1",
       startsOn: null,

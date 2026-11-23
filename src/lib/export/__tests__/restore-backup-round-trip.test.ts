@@ -62,7 +62,11 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
   getEvent: vi.fn(() => null),
 }));
-vi.mock("@/lib/cache/invalidate", () => ({ invalidateUserData: vi.fn() }));
+vi.mock("@/lib/cache/invalidate", () => ({
+  invalidateUserData: vi.fn(),
+  // The dose seam evicts these after a restore (`after-dose-change.ts`).
+  invalidateUserMedications: vi.fn(),
+}));
 vi.mock("@/lib/rollups/mood-rollups", () => ({
   recomputeUserMoodRollups: vi.fn(),
 }));
@@ -142,6 +146,8 @@ function sourceClient() {
           symptomLinks: [
             {
               symptom: { key: "custom:jaw_tension" },
+              // A hand-logged link: every row carries its source (NOT NULL).
+              source: "MANUAL",
               createdAt: new Date("2026-07-19T08:00:00.000Z"),
             },
           ],
@@ -168,10 +174,10 @@ function sourceClient() {
     biomarkerAlias: empty,
     biomarkerMerge: empty,
     labResultImportKey: empty,
+    fhirImportedResource: empty,
     illnessEpisode: empty,
     allergy: empty,
     familyHistoryEntry: empty,
-    appleHealthTombstone: empty,
     workout: {
       findMany: vi.fn().mockResolvedValue([
         {

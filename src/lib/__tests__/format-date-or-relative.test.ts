@@ -9,7 +9,10 @@
  */
 import { describe, it, expect } from "vitest";
 
-import { formatDateOrRelative } from "../format";
+import { makeFormatters } from "../format-locale";
+import { formatDateOrRelative } from "../i18n/relative-time";
+
+const fmt = makeFormatters("en", undefined, "AUTO", "AUTO");
 
 function fakeT(key: string, params?: Record<string, string | number>): string {
   // Deterministic stand-in — just echo the key + params so the
@@ -30,14 +33,14 @@ const DAY = 24 * HOUR;
 describe("formatDateOrRelative", () => {
   it("returns just-now for < 60 seconds (lower boundary)", () => {
     const iso = new Date(NOW - 15 * SECOND).toISOString();
-    expect(formatDateOrRelative(iso, fakeT, NOW)).toBe(
+    expect(formatDateOrRelative(iso, fakeT, fmt, NOW)).toBe(
       "insights.relativeJustNow",
     );
   });
 
   it("returns just-now at the 59-second edge", () => {
     const iso = new Date(NOW - 59 * SECOND).toISOString();
-    expect(formatDateOrRelative(iso, fakeT, NOW)).toBe(
+    expect(formatDateOrRelative(iso, fakeT, fmt, NOW)).toBe(
       "insights.relativeJustNow",
     );
   });
@@ -49,66 +52,66 @@ describe("formatDateOrRelative", () => {
   // assertions now pin the correct dispatch.
   it("returns minutesAgoOne at exactly the 1-minute mark", () => {
     const iso = new Date(NOW - 1 * MINUTE).toISOString();
-    expect(formatDateOrRelative(iso, fakeT, NOW)).toBe(
+    expect(formatDateOrRelative(iso, fakeT, fmt, NOW)).toBe(
       "insights.relativeMinutesAgoOne:count=1",
     );
   });
 
   it("returns minutesAgoOther within the [2m, 1h) window", () => {
     const iso = new Date(NOW - 30 * MINUTE).toISOString();
-    expect(formatDateOrRelative(iso, fakeT, NOW)).toBe(
+    expect(formatDateOrRelative(iso, fakeT, fmt, NOW)).toBe(
       "insights.relativeMinutesAgoOther:count=30",
     );
   });
 
   it("returns hoursAgoOne at exactly the 1-hour mark", () => {
     const iso = new Date(NOW - 1 * HOUR).toISOString();
-    expect(formatDateOrRelative(iso, fakeT, NOW)).toBe(
+    expect(formatDateOrRelative(iso, fakeT, fmt, NOW)).toBe(
       "insights.relativeHoursAgoOne:count=1",
     );
   });
 
   it("returns hoursAgoOther at the 23h59m edge", () => {
     const iso = new Date(NOW - (23 * HOUR + 59 * MINUTE)).toISOString();
-    expect(formatDateOrRelative(iso, fakeT, NOW)).toBe(
+    expect(formatDateOrRelative(iso, fakeT, fmt, NOW)).toBe(
       "insights.relativeHoursAgoOther:count=23",
     );
   });
 
   it("falls back to absolute formatting at exactly 24h", () => {
     const iso = new Date(NOW - 24 * HOUR).toISOString();
-    const result = formatDateOrRelative(iso, fakeT, NOW);
+    const result = formatDateOrRelative(iso, fakeT, fmt, NOW);
     // The absolute branch does NOT route through the translator, so
     // it never produces an `insights.relative*` string.
     expect(result).not.toContain("insights.relative");
-    // It returns a date+time formatted via the legacy formatter, which
+    // It returns a date+time formatted via `fmt.dateTime`, which
     // contains digits separated by punctuation.
     expect(result).toMatch(/\d/);
   });
 
   it("falls back to absolute for a 7-day-old timestamp", () => {
     const iso = new Date(NOW - 7 * DAY).toISOString();
-    const result = formatDateOrRelative(iso, fakeT, NOW);
+    const result = formatDateOrRelative(iso, fakeT, fmt, NOW);
     expect(result).not.toContain("insights.relative");
     expect(result).toMatch(/\d/);
   });
 
   it("falls back to absolute for future timestamps (never paints 'in 3 min')", () => {
     const iso = new Date(NOW + 5 * MINUTE).toISOString();
-    const result = formatDateOrRelative(iso, fakeT, NOW);
+    const result = formatDateOrRelative(iso, fakeT, fmt, NOW);
     // No relative copy — the absolute formatter handles it.
     expect(result).not.toContain("insights.relative");
     expect(result).toMatch(/\d/);
   });
 
   it("returns empty string for unparseable input", () => {
-    expect(formatDateOrRelative("not a date", fakeT, NOW)).toBe("");
+    expect(formatDateOrRelative("not a date", fakeT, fmt, NOW)).toBe("");
   });
 
   it("accepts a Date instance as well as ISO string", () => {
-    expect(formatDateOrRelative(new Date(NOW - 30 * MINUTE), fakeT, NOW)).toBe(
-      "insights.relativeMinutesAgoOther:count=30",
-    );
+    expect(
+      formatDateOrRelative(new Date(NOW - 30 * MINUTE), fakeT, fmt, NOW),
+    ).toBe("insights.relativeMinutesAgoOther:count=30");
   });
 
   // v1.4.49.2 — regression guard. The helper's `t()` calls must dispatch
@@ -132,26 +135,31 @@ describe("formatDateOrRelative", () => {
     formatDateOrRelative(
       new Date(NOW - 30 * SECOND).toISOString(),
       collectingT,
+      fmt,
       NOW,
     );
     formatDateOrRelative(
       new Date(NOW - 1 * MINUTE).toISOString(),
       collectingT,
+      fmt,
       NOW,
     );
     formatDateOrRelative(
       new Date(NOW - 30 * MINUTE).toISOString(),
       collectingT,
+      fmt,
       NOW,
     );
     formatDateOrRelative(
       new Date(NOW - 1 * HOUR).toISOString(),
       collectingT,
+      fmt,
       NOW,
     );
     formatDateOrRelative(
       new Date(NOW - 12 * HOUR).toISOString(),
       collectingT,
+      fmt,
       NOW,
     );
     expect(bundleKeysCalled.size).toBeGreaterThan(0);

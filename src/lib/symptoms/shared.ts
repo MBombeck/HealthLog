@@ -91,6 +91,11 @@ export interface SymptomEventDTO {
   externalId: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * List reads only: the day view's dose offset for this occurrence, absent
+   * when its local day holds no timed dose or medications are not readable.
+   */
+  doseOffset?: { intakeId: string; title: string; minutes: number };
 }
 
 /**
@@ -102,7 +107,8 @@ export interface SymptomEventDTO {
  * names it.
  *
  * The one rule. The server checks it before writing a new link
- * (`isLinkableEpisode`), and the entry and edit sheets offer exactly the
+ * (`isLinkableEpisode`) and before moving the time of a linked occurrence,
+ * and the entry and edit sheets offer exactly the
  * episodes it admits, so the selector never offers what the server refuses.
  */
 export function isEpisodeLinkableAt(

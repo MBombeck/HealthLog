@@ -4,6 +4,13 @@ import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { decrypt } from "@/lib/crypto";
 import type { ChannelType } from "@/lib/notifications/types";
+import {
+  DIAGNOSTIC_DEVICE_SELECT,
+  diagnosticDevice,
+  diagnosticPushAttempt,
+  type DiagnosticDevice,
+  type DiagnosticPushAttempt,
+} from "@/lib/push-relay/diagnostics";
 
 export const dynamic = "force-dynamic";
 
@@ -38,18 +45,11 @@ export const dynamic = "force-dynamic";
  *
  * Security: admin-only (cookie auth, never Bearer). The route never
  * returns the full APNs token — only an 8-char hex prefix + 8-char
- * suffix so the operator can correlate with iOS-side diagnostics.
+ * suffix so the operator can correlate with iOS-side diagnostics. The
+ * device and attempt shapes and the mask come from
+ * `src/lib/push-relay/diagnostics.ts`, which the device's own read
+ * (`GET /api/devices/me/push-diagnostics`) shares.
  */
-
-interface DiagnosticDevice {
-  id: string;
-  platform: string;
-  hasApnsToken: boolean;
-  apnsTokenPrefix: string | null;
-  apnsTokenSuffix: string | null;
-  apnsEnvironment: string | null;
-  lastSeenAt: string;
-}
 
 interface DiagnosticChannel {
   type: ChannelType | string;
@@ -57,40 +57,10 @@ interface DiagnosticChannel {
   configPresent: boolean;
 }
 
-interface DiagnosticPushAttempt {
-  recordUserId: string;
-  recipientUserId: string;
-  eventType: string;
-  channel: string;
-  result: string;
-  reason: string | null;
-  at: string;
-}
-
 interface DiagnosticPayload {
   devices: DiagnosticDevice[];
   notificationChannels: DiagnosticChannel[];
   recentPushAttempts: DiagnosticPushAttempt[];
-}
-
-/**
- * Map an APNs hex token to its 8-char prefix + 8-char suffix. APNs
- * device tokens are 64-char hex strings; we surface 8 + 8 = 16 chars
- * total (25 % of the token), which is enough for the operator to
- * cross-check against an iOS-side log line without disclosing the
- * delivery target. Tokens shorter than 16 chars are treated as opaque
- * (prefix / suffix both null) — that shape never appears in
- * production, but defensive against partial inserts during testing.
- */
-function maskApnsToken(token: string | null): {
-  prefix: string | null;
-  suffix: string | null;
-} {
-  if (!token || token.length < 16) return { prefix: null, suffix: null };
-  return {
-    prefix: token.slice(0, 8),
-    suffix: token.slice(-8),
-  };
 }
 
 /**
@@ -158,13 +128,7 @@ export const GET = apiHandler(async () => {
   const [devices, channels, pushAttempts] = await Promise.all([
     prisma.device.findMany({
       where: { userId: user.id },
-      select: {
-        id: true,
-        platform: true,
-        apnsToken: true,
-        apnsEnvironment: true,
-        lastSeen: true,
-      },
+      select: DIAGNOSTIC_DEVICE_SELECT,
       orderBy: { lastSeen: "desc" },
     }),
     prisma.notificationChannel.findMany({
@@ -193,18 +157,7 @@ export const GET = apiHandler(async () => {
     }),
   ]);
 
-  const diagnosticDevices: DiagnosticDevice[] = devices.map((d) => {
-    const { prefix, suffix } = maskApnsToken(d.apnsToken);
-    return {
-      id: d.id,
-      platform: d.platform,
-      hasApnsToken: d.apnsToken !== null && d.apnsToken !== "",
-      apnsTokenPrefix: prefix,
-      apnsTokenSuffix: suffix,
-      apnsEnvironment: d.apnsEnvironment,
-      lastSeenAt: d.lastSeen.toISOString(),
-    };
-  });
+  const diagnosticDevices: DiagnosticDevice[] = devices.map(diagnosticDevice);
 
   const diagnosticChannels: DiagnosticChannel[] = channels.map((c) => ({
     type: c.type,
@@ -212,19 +165,10 @@ export const GET = apiHandler(async () => {
     configPresent: isChannelConfigPresent(c.type, c.config),
   }));
 
-  // v1.4.49 — backed by the `push_attempts` table. Map `createdAt`
-  // → `at` ISO string so the response shape matches the
-  // `DiagnosticPushAttempt` interface above (the existing consumer
-  // contract uses `at`, not `createdAt`).
-  const recentPushAttempts: DiagnosticPushAttempt[] = pushAttempts.map((a) => ({
-    recordUserId: a.recordUserId ?? a.userId,
-    recipientUserId: a.recipientUserId ?? a.userId,
-    eventType: a.eventType,
-    channel: a.channel,
-    result: a.result,
-    reason: a.reason,
-    at: a.createdAt.toISOString(),
-  }));
+  // Backed by the `push_attempts` table; `createdAt` reads `at`.
+  const recentPushAttempts: DiagnosticPushAttempt[] = pushAttempts.map(
+    diagnosticPushAttempt,
+  );
 
   const payload: DiagnosticPayload = {
     devices: diagnosticDevices,

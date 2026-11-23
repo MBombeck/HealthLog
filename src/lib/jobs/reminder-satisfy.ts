@@ -30,6 +30,15 @@ export interface ReminderSatisfyPayload {
 }
 
 /**
+ * How long a send waits before it runs, in seconds. Every ingest path sends
+ * one per write, so a first sync used to queue a job per batch; a send now
+ * waits this long and every send for the same account while it waits joins
+ * it (the queue's `short` policy on `singletonKey`). A send after the run has
+ * started queues the next one, so the newest reading is always matched.
+ */
+export const REMINDER_SATISFY_DEBOUNCE_SECONDS = 5;
+
+/**
  * Submit a reminder-satisfaction job for one user after a measurement /
  * lab write. Best-effort: when no boss instance is attached (the route
  * runs in a context without the worker — typically tests, scripts), the
@@ -44,6 +53,8 @@ export async function enqueueReminderSatisfy(userId: string): Promise<void> {
     triggeredAt: new Date().toISOString(),
   };
   await boss.send(REMINDER_SATISFY_QUEUE, payload, {
+    singletonKey: `reminder-satisfy|${userId}`,
+    startAfter: REMINDER_SATISFY_DEBOUNCE_SECONDS,
     // Gentle retry — the resolver is read-heavy on the user's own data; a
     // stampede of failed jobs against a briefly-flaky DB would compound the
     // problem. The cron is the ultimate backstop anyway.

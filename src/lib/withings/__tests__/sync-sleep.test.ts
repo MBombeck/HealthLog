@@ -511,7 +511,10 @@ describe("syncUserSleep — segment writes + idempotency", () => {
         ],
       },
     });
-    expect(arg.data).toEqual({ deletedAt: expect.any(Date) });
+    expect(arg.data).toEqual({
+      deletedAt: expect.any(Date),
+      syncVersion: { increment: 1 },
+    });
 
     // A legacy running-index row for this session falls inside the sweep:
     // under the session prefix, never in the fresh start-keyed set.

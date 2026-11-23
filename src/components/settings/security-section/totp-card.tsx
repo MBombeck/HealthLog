@@ -11,6 +11,7 @@ import {
   Smartphone,
 } from "lucide-react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { RecoveryCodesPanel } from "./recovery-codes-panel";
 import { describeStepUp } from "./security-keys-card";
 import {
@@ -85,34 +87,26 @@ export function TotpCard({
     "totp",
   );
 
-  // Both confirmations are controlled rather than left to Radix.
-  //
-  // The confirming click has to `preventDefault()` — that is what keeps the
-  // dialog up, and the button disabled, while the request is in flight. But
-  // suppressing the close means nothing closes it afterwards either, and on a
-  // REFUSAL the branch below survives the answer: the dialog stayed open over
-  // a card whose message the overlay covered, with the confirm button live
-  // again, so the same refusal could be re-triggered forever with no way to
-  // read why. On success it went unnoticed only because the fresh-codes panel
-  // replaces this branch and the dialog unmounts with it.
-  //
-  // So each mutation puts its own dialog down when the request settles,
-  // whatever the answer was, and the message lands on an uncovered card.
+  // Both confirmations are controlled rather than left to Radix. The
+  // confirming click `preventDefault()`s to keep the dialog up and the button
+  // disabled while the request runs, so nothing closes it afterwards either:
+  // on a refusal the dialog stayed open over a card whose message it covered,
+  // the confirm button live again, and the refusal could repeat with no way
+  // to read why. So each mutation puts its own dialog down when the request
+  // settles, whatever the answer, and the message lands on an uncovered card.
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [disableOpen, setDisableOpen] = useState(false);
 
   // Disabling the factor and rotating the recovery codes both need the second
-  // factor proved within five minutes. When it is older, the server names the
-  // proofs that clear it and the shared dialog collects one, then the action
-  // runs again.
+  // factor proved within five minutes; when it is older, the server names the
+  // proofs that clear it and the shared dialog collects one, then retries.
   const recentProof = useRecentProof({
     description: t("settings.reproof.descriptionChange"),
   });
 
-  // Disabling is asked BEFORE the confirmation opens, not after its code was
-  // typed: the route checks the session's proof before it reads the code, and
-  // a code typed first and then spent on the re-proof would be refused as a
-  // replay when the disable is sent again.
+  // Disabling is asked BEFORE the confirmation opens: the route checks the
+  // session's proof before it reads the code, and a code typed first and spent
+  // on the re-proof would be refused as a replay when the disable is resent.
   async function openDisable() {
     setError(null);
     try {
@@ -148,6 +142,8 @@ export function TotpCard({
   ]);
 
   const beginSetup = useMutation({
+    // Confirms in place: the QR code and the secret appear.
+    meta: CONFIRMS_INLINE,
     mutationFn: async (proof?: ExistingFactorProof) => {
       return apiPost<SetupData>("/api/auth/me/mfa/totp/setup", proof);
     },
@@ -189,6 +185,8 @@ export function TotpCard({
   });
 
   const confirm = useMutation({
+    // Confirms in place: the recovery codes appear and the badge turns active.
+    meta: CONFIRMS_INLINE,
     mutationFn: async () => {
       return apiPost<ConfirmResult>("/api/auth/me/mfa/totp/confirm", { code });
     },
@@ -209,6 +207,8 @@ export function TotpCard({
   });
 
   const disable = useMutation({
+    // Confirms in place: the badge turns inactive and the enable button returns.
+    meta: CONFIRMS_INLINE,
     mutationFn: async () => {
       await recentProof.run(() =>
         apiPost("/api/auth/me/mfa/disable", {
@@ -236,6 +236,8 @@ export function TotpCard({
   });
 
   const regenerate = useMutation({
+    // Confirms in place: the new recovery codes appear.
+    meta: CONFIRMS_INLINE,
     mutationFn: async () => {
       return recentProof.run(() =>
         apiPost<{ recoveryCodes: string[] }>(
@@ -294,11 +296,12 @@ export function TotpCard({
         {/* The enable CTA is the card's primary, right-aligned in the one
             action row like every other Settings card (design standards §12). */}
         {!enabled && !setup && !freshCodes && (
+          // eslint-disable-next-line healthlog/card-action-row -- the row shows only before setup starts; the steps below take its place
           <SettingsCardActions>
             <Button
+              size="sm"
               type="button"
               data-testid="totp-setup-start"
-              className="min-h-11 sm:min-h-9"
               onClick={() => beginSetup.mutate(undefined)}
               disabled={beginSetup.isPending}
             >
@@ -421,10 +424,10 @@ export function TotpCard({
             <RecoveryCodesPanel codes={freshCodes} />
             <SettingsCardActions>
               <Button
+                size="sm"
                 type="button"
                 data-testid="recovery-codes-dismiss"
                 variant="outline"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setFreshCodes(null)}
               >
                 {t("settings.security.recovery.savedIt")}
@@ -451,10 +454,10 @@ export function TotpCard({
               >
                 <AlertDialogTrigger asChild>
                   <Button
+                    size="sm"
                     type="button"
                     data-testid="recovery-regenerate"
                     variant="outline"
-                    className="min-h-11 sm:min-h-9"
                     disabled={regenerate.isPending}
                   >
                     {regenerate.isPending && (
@@ -501,11 +504,7 @@ export function TotpCard({
                 }}
               >
                 <AlertDialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="min-h-11 sm:min-h-9"
-                  >
+                  <Button size="sm" type="button" variant="destructive">
                     {t("settings.security.totp.disable")}
                   </Button>
                 </AlertDialogTrigger>
@@ -518,10 +517,10 @@ export function TotpCard({
                       {t("settings.security.totp.disableConfirm")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
-                  <div className="space-y-2">
-                    <Label htmlFor={disableCodeId}>
-                      {t("settings.security.totp.currentCode")}
-                    </Label>
+                  <FieldGroup
+                    htmlFor={disableCodeId}
+                    label={t("settings.security.totp.currentCode")}
+                  >
                     <Input
                       id={disableCodeId}
                       value={disableCode}
@@ -551,7 +550,7 @@ export function TotpCard({
                         ? t("settings.security.useRecoveryCode")
                         : t("settings.security.useAuthenticator")}
                     </InlineAction>
-                  </div>
+                  </FieldGroup>
                   <AlertDialogFooter>
                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                     <AlertDialogAction

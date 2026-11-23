@@ -67,13 +67,11 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 
-const { resolveProviderChain, resolveProvider } = vi.hoisted(() => ({
+const { resolveProviderChain } = vi.hoisted(() => ({
   resolveProviderChain: vi.fn(),
-  resolveProvider: vi.fn(),
 }));
 vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain,
-  resolveProvider,
   probeProviderPresence: vi.fn(async () => true),
 }));
 
@@ -137,7 +135,6 @@ beforeEach(() => {
   ledgerOperator = 0;
   noteWindow = null;
   resolveProviderChain.mockResolvedValue(OPERATOR_CHAIN);
-  resolveProvider.mockResolvedValue({ type: "none" });
   aiCapabilityForRecord.mockResolvedValue({
     available: true,
     reason: null,
@@ -161,7 +158,6 @@ describe("runStatusCompletion — capability at the wire", () => {
     expect(outcome).toEqual({ kind: "none", reason: "user_disabled" });
     expect(aiCapabilityForRecord).toHaveBeenCalledWith("u1", "periodNarrative");
     expect(resolveProviderChain).not.toHaveBeenCalled();
-    expect(resolveProvider).not.toHaveBeenCalled();
     expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
     // Nothing reserved against the day's ledger either.
     expect(ledgerTotal).toBe(0);
@@ -225,12 +221,10 @@ describe("runStatusCompletion — capability at the wire", () => {
 
   it("returns none with reason no_provider when the chain is empty", async () => {
     // The chain carries the person's provider switches; an empty one is no
-    // provider, never a quiet hop to the single-provider resolver's pick.
+    // provider, never a quiet hop to some other pick.
     resolveProviderChain.mockResolvedValue([]);
-    resolveProvider.mockResolvedValue({ type: "admin-key" });
     const outcome = await runStatusCompletion(completionArgs() as never);
     expect(outcome).toEqual({ kind: "none", reason: "no_provider" });
-    expect(resolveProvider).not.toHaveBeenCalled();
     expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
   });
 });

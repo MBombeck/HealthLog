@@ -31,6 +31,7 @@ import {
 } from "@/lib/cycle/custom-symptoms-shared";
 import {
   dataEnvelope,
+  deletedInHealthLogResponse,
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
@@ -280,6 +281,29 @@ const cycleVerdictDto = z
       "The resolved cycle verdict for the user's own timezone day. Render these values; do not recompute them. The grace window that decides OVERDUE is deliberately not published — read `state` and `overdueDays`.",
   });
 
+const pregnancyDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+const cyclePregnancyDto = z
+  .object({
+    storedState: z.enum(["PREGNANT", "POSTPARTUM"]).nullable(),
+    state: z.enum(["PREGNANT", "POSTPARTUM"]).nullable(),
+    startDate: pregnancyDate.nullable(),
+    dueDate: pregnancyDate.nullable(),
+    deliveryDate: pregnancyDate.nullable(),
+    postpartumWeeks: z.number().int(),
+    gestationalWeeks: z.number().int().nullable(),
+    gestationalDays: z.number().int().nullable(),
+    postpartumWeek: z.number().int().nullable(),
+    postpartumEndsOn: pregnancyDate.nullable(),
+    predictionsPaused: z.boolean(),
+    lapsed: z.boolean(),
+  })
+  .meta({
+    id: "CyclePregnancyDTO",
+    description:
+      "The pregnancy / postpartum state, resolved on the owner's calendar day. `storedState` is what the owner set; `state` is what holds today (POSTPARTUM past `postpartumEndsOn` reads null). `gestationalWeeks`+`gestationalDays` count completed weeks from `startDate`, or from `dueDate` less 280 days. While `predictionsPaused` is true the period and fertility forecast is empty on every surface and no prediction push is sent. The state is bounded by its dates: PREGNANT holds from `startDate` (or `dueDate` less 280 days) and no longer than four weeks past the due date; past that `state` is null and `lapsed` is true, so a client can ask whether the entry is still current. Render these values; do not recompute them.",
+  });
+
 const cycleProfileDto = z
   .object({
     goal: cycleTrackingGoalEnumOpenapi,
@@ -293,6 +317,7 @@ const cycleProfileDto = z
     typicalPeriodLength: z.number().int().nullable(),
     lutealPhaseLength: z.number().int().nullable(),
     updatedAt: isoDateTime(),
+    pregnancy: cyclePregnancyDto,
   })
   .meta({
     id: "CycleProfileDTO",
@@ -306,6 +331,8 @@ const cycleCalendarResponse = z.object({
     predictionEnabled: z.boolean(),
     cyclesObserved: z.number().int(),
   }),
+  // Additive (v1.49).
+  pregnancy: cyclePregnancyDto,
   prediction: cyclePredictionDto.nullable(),
   // The resolved verdict — required, never optional. An optional verdict is a
   // plausible default that invites a client to fall back to deriving its own,
@@ -496,7 +523,7 @@ const cycleBulkEntryResult = z.object({
     .string()
     .optional()
     .describe(
-      "On a `skipped` entry. `unstable_external_id` is a verdict on the entry and terminal: resending it unchanged is skipped again. `constraint` means the write met a database constraint (a key another write claimed at the same moment, or a reference that no longer exists). `upsert_failed` is a write failure on the server's side: nothing was stored, the entry should be sent again, and the response carrying it is `Cache-Control: no-store`, so a retry under the same `Idempotency-Key` writes again rather than replaying the failure.",
+      "On a `skipped` entry. `deleted_in_healthlog` (since v1.49.0): an `APPLE_HEALTH` re-post of a `cycle-hk:<day>` externalId whose day the person deleted in HealthLog; nothing is written, the day stays deleted, and resending gives the same answer. A day the phone reported deleted through `DELETE /api/cycle/day-logs/by-external-ids` is written again from empty fields. `unstable_external_id` is a verdict on the entry and terminal: resending it unchanged is skipped again. `constraint` means the write met a database constraint (a key another write claimed at the same moment, or a reference that no longer exists). `upsert_failed` is a write failure on the server's side: nothing was stored, the entry should be sent again, and the response carrying it is `Cache-Control: no-store`, so a retry under the same `Idempotency-Key` writes again rather than replaying the failure.",
     ),
 });
 
@@ -767,7 +794,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Capture a single cycle day-log (v1.15.0)",
       description:
-        "Upserts on `(userId, source, externalId)` when externalId present, else `(userId, date)`. `note` encrypts at rest. 201 on insert, 200 on update. Gated: `cycle.disabled` 403 when the feature is off.",
+        "Upserts on `(userId, source, externalId)` when externalId present, else `(userId, date)`. `note` encrypts at rest. 201 on insert, 200 on update. An `APPLE_HEALTH` re-post whose `externalId` names a day the person deleted in HealthLog answers 410 (`cycle.day-log.deleted_in_healthlog`) and writes nothing; a `MANUAL` write revives the day from empty fields. Gated: `cycle.disabled` 403 when the feature is off.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
         required: true,
@@ -794,6 +821,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
+        ...deletedInHealthLogResponse("cycle.day-log.deleted_in_healthlog"),
         ...cycleDisabledOnADelegableRoute,
         ...stdResponses,
         ...recordWriteRateLimitResponse,
@@ -1088,7 +1116,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Update cycle preferences (v1.15.0)",
       description:
-        "Deep-merges the supplied fields. `enabled` flips `cycleTrackingEnabled`. Returns the merged CycleProfileDTO. NOT gated.",
+        "Deep-merges the supplied fields. `enabled` flips `cycleTrackingEnabled`. `pregnancy` sets or clears the pregnancy / postpartum state (v1.49): `state: null` clears every pregnancy date with it; a date omitted keeps its stored value; the merged result is checked as a whole and answers 422 with `cycle-prefs.pregnancy.*` when a first day or delivery lies in the future, the due date is not after the first day, or POSTPARTUM has no delivery date. Returns the merged CycleProfileDTO. NOT gated.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: cyclePrefsRequest } },

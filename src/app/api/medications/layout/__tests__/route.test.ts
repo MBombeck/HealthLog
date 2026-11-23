@@ -10,15 +10,33 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+interface UserLayoutSelectPayload {
+  medicationListLayoutJson: unknown;
+  medicationListLayoutRevisedAt?: Date;
+}
+
+const { mockUserFindUnique, mockUserUpdate, mockCategoryFindMany } = vi.hoisted(
+  () => ({
+    mockCategoryFindMany:
+      vi.fn<(args?: unknown) => Promise<{ key: string }[]>>(),
+    mockUserFindUnique:
+      vi.fn<(args?: unknown) => Promise<UserLayoutSelectPayload | null>>(),
+    mockUserUpdate: vi.fn<(args?: unknown) => Promise<unknown>>(),
+  }),
+);
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
+      findUnique: mockUserFindUnique,
+      update: mockUserUpdate,
       updateMany: vi.fn(),
     },
     auditLog: {
       create: vi.fn(),
+    },
+    medicationCategoryLabel: {
+      findMany: mockCategoryFindMany,
     },
   },
   toJson: (v: unknown) => v,
@@ -139,16 +157,33 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
     vi.mocked(prisma.user.update).mockResolvedValue({} as never);
 
     const res = await callPut(
-      makeReq({ version: 1, view: "table", order: ["med-a", "med-b"] }),
+      makeReq({
+        version: 1,
+        view: "table",
+        order: ["med-a", "med-b"],
+        groupBy: "category",
+        groupsOpen: "collapsed",
+        categoryOrder: ["VITAMIN", "PAIN_RELIEF"],
+      }),
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      data: { version: number; view: string; order: string[] };
+      data: {
+        version: number;
+        view: string;
+        order: string[];
+        groupBy: string;
+        groupsOpen: string;
+        categoryOrder: string[];
+      };
     };
     expect(body.data).toEqual({
       version: 1,
       view: "table",
       order: ["med-a", "med-b"],
+      groupBy: "category",
+      groupsOpen: "collapsed",
+      categoryOrder: ["VITAMIN", "PAIN_RELIEF"],
       // v1.32.21 — the write now echoes the fresh optimistic-concurrency token.
       updatedAt: expect.any(String),
     });
@@ -163,17 +198,23 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
       version: 1,
       view: "table",
       order: ["med-a", "med-b"],
+      groupBy: "category",
+      groupsOpen: "collapsed",
+      categoryOrder: ["VITAMIN", "PAIN_RELIEF"],
     });
-    // No stored-blob read needed — both fields were on the body.
+    // No stored-blob read needed — all fields were on the body.
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
-  it("a view-only PUT preserves the stored manual order", async () => {
+  it("a view-only PUT preserves stored order, grouping and category order", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       medicationListLayoutJson: {
         version: 1,
         view: "cards",
         order: ["med-z", "med-a"],
+        groupBy: "category",
+        groupsOpen: "flagged",
+        categoryOrder: ["PAIN_RELIEF"],
       },
     } as never);
     vi.mocked(prisma.user.update).mockResolvedValue({} as never);
@@ -181,15 +222,55 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
     const res = await callPut(makeReq({ version: 1, view: "table" }));
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      data: { view: string; order: string[] };
+      data: {
+        view: string;
+        order: string[];
+        groupBy: string;
+        groupsOpen: string;
+        categoryOrder: string[];
+      };
     };
     expect(body.data.view).toBe("table");
     expect(body.data.order).toEqual(["med-z", "med-a"]);
+    expect(body.data.groupBy).toBe("category");
+    expect(body.data.groupsOpen).toBe("flagged");
+    expect(body.data.categoryOrder).toEqual(["PAIN_RELIEF"]);
+  });
+
+  it("a groupBy-only PUT preserves stored view and order", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      medicationListLayoutJson: {
+        version: 1,
+        view: "table",
+        order: ["med-1"],
+        groupBy: "none",
+        groupsOpen: "expanded",
+        categoryOrder: [],
+      },
+      medicationListLayoutRevisedAt: new Date("2026-07-24T10:00:00.000Z"),
+    });
+    mockUserUpdate.mockResolvedValue({});
+
+    const res = await callPut(makeReq({ version: 1, groupBy: "category" }));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { view: string; order: string[]; groupBy: string };
+    };
+    expect(body.data.view).toBe("table");
+    expect(body.data.order).toEqual(["med-1"]);
+    expect(body.data.groupBy).toBe("category");
   });
 
   it("an order-only PUT preserves the stored view", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      medicationListLayoutJson: { version: 1, view: "table", order: [] },
+      medicationListLayoutJson: {
+        version: 1,
+        view: "table",
+        order: [],
+        groupBy: "none",
+        groupsOpen: "expanded",
+        categoryOrder: [],
+      },
     } as never);
     vi.mocked(prisma.user.update).mockResolvedValue({} as never);
 
@@ -202,6 +283,40 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
     };
     expect(body.data.view).toBe("table");
     expect(body.data.order).toEqual(["med-1", "med-2"]);
+  });
+
+  it("a categoryOrder-only PUT preserves stored medication order, view, and grouping", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      medicationListLayoutJson: {
+        version: 1,
+        view: "table",
+        order: ["med-alpha", "med-beta"],
+        groupBy: "category",
+        groupsOpen: "flagged",
+        categoryOrder: ["PAIN_RELIEF"],
+      },
+      medicationListLayoutRevisedAt: new Date("2026-07-24T10:00:00.000Z"),
+    });
+    mockUserUpdate.mockResolvedValue({});
+
+    const res = await callPut(
+      makeReq({ version: 1, categoryOrder: ["THYROID", "PAIN_RELIEF"] }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        view: string;
+        order: string[];
+        groupBy: string;
+        groupsOpen: string;
+        categoryOrder: string[];
+      };
+    };
+    expect(body.data.view).toBe("table");
+    expect(body.data.order).toEqual(["med-alpha", "med-beta"]);
+    expect(body.data.groupBy).toBe("category");
+    expect(body.data.groupsOpen).toBe("flagged");
+    expect(body.data.categoryOrder).toEqual(["THYROID", "PAIN_RELIEF"]);
   });
 
   it("dedupes a repeated id in the submitted order", async () => {
@@ -232,6 +347,17 @@ describe("PUT /api/medications/layout — 422 multi-issue envelope", () => {
     const paths = body.details.issues.map((i) => i.path);
     expect(paths.some((p) => p.startsWith("view"))).toBe(true);
     expect(paths.some((p) => p.startsWith("order"))).toBe(true);
+  });
+
+  it("refuses a category order key that is neither built in nor custom:<uuid>", async () => {
+    for (const key of ["PAIN", "custom:not-a-uuid", "", "x".repeat(80)]) {
+      const res = await callPut(makeReq({ version: 1, categoryOrder: [key] }));
+      expect(res.status, key).toBe(422);
+    }
+    const tooMany = Array.from({ length: 65 }, () => "VITAMIN");
+    const res = await callPut(makeReq({ version: 1, categoryOrder: tooMany }));
+    expect(res.status).toBe(422);
+    expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
   it("rejects a wrong version", async () => {
@@ -296,7 +422,7 @@ describe("PUT /api/medications/layout — optimistic concurrency", () => {
     const advanced = new Date("2026-07-24T10:05:00.000Z");
     vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      updatedAt: advanced,
+      medicationListLayoutRevisedAt: advanced,
     } as never);
 
     const res = await callPut(makeReq(fullBody(base.toISOString())));
@@ -305,9 +431,11 @@ describe("PUT /api/medications/layout — optimistic concurrency", () => {
     // Conditional write on the exact base token — never unconditional.
     expect(prisma.user.updateMany).toHaveBeenCalledTimes(1);
     const whereArg = vi.mocked(prisma.user.updateMany).mock.calls[0]?.[0]
-      ?.where as { id: string; updatedAt: Date };
+      ?.where as { id: string; medicationListLayoutRevisedAt: Date };
     expect(whereArg.id).toBe("user-1");
-    expect((whereArg.updatedAt as Date).toISOString()).toBe(base.toISOString());
+    expect((whereArg.medicationListLayoutRevisedAt as Date).toISOString()).toBe(
+      base.toISOString(),
+    );
     expect(prisma.user.update).not.toHaveBeenCalled();
 
     const body = (await res.json()) as { data: { updatedAt: string } };
@@ -347,7 +475,7 @@ describe("PUT /api/medications/layout — optimistic concurrency", () => {
 
   it("keeps the unconditional write when the client omits the token (iOS compat)", async () => {
     vi.mocked(prisma.user.update).mockResolvedValue({
-      updatedAt: new Date("2026-07-24T11:00:00.000Z"),
+      medicationListLayoutRevisedAt: new Date("2026-07-24T11:00:00.000Z"),
     } as never);
 
     const res = await callPut(makeReq(fullBody()));
@@ -356,5 +484,50 @@ describe("PUT /api/medications/layout — optimistic concurrency", () => {
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
     const body = (await res.json()) as { data: { updatedAt: string } };
     expect(body.data.updatedAt).toBe("2026-07-24T11:00:00.000Z");
+  });
+});
+
+describe("PUT /api/medications/layout — category order keys", () => {
+  const OWN = "custom:0f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10";
+  const FOREIGN = "custom:9a9c6a52-6a43-4f63-9b39-0c1f4d7e2a10";
+
+  it("keeps the account's own custom keys and drops one it does not have", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      medicationListLayoutJson: null,
+      medicationListLayoutRevisedAt: new Date("2026-07-24T10:00:00.000Z"),
+    });
+    mockUserUpdate.mockResolvedValue({});
+    mockCategoryFindMany.mockResolvedValue([{ key: OWN }]);
+
+    const res = await callPut(
+      makeReq({
+        version: 1,
+        categoryOrder: [FOREIGN, OWN, "VITAMIN", "OTHER"],
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { categoryOrder: string[] } };
+    expect(body.data.categoryOrder).toEqual([OWN, "VITAMIN", "OTHER"]);
+    // The lookup is scoped to the caller and to the keys the body names.
+    expect(mockCategoryFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: expect.any(String), key: { in: [FOREIGN, OWN] } },
+      }),
+    );
+  });
+
+  it("asks nothing of the category table for an order of built-ins only", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      medicationListLayoutJson: null,
+      medicationListLayoutRevisedAt: new Date("2026-07-24T10:00:00.000Z"),
+    });
+    mockUserUpdate.mockResolvedValue({});
+    mockCategoryFindMany.mockClear();
+
+    const res = await callPut(
+      makeReq({ version: 1, categoryOrder: ["VITAMIN", "OTHER"] }),
+    );
+    expect(res.status).toBe(200);
+    expect(mockCategoryFindMany).not.toHaveBeenCalled();
   });
 });

@@ -40,8 +40,7 @@ import {
   type ShareLinkSummary,
 } from "@/components/settings/share-link-create-form";
 import { useAuth } from "@/hooks/use-auth";
-import { formatDate, formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiDelete, apiGet } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -85,7 +84,7 @@ function prefillFrom(link: ShareLinkSummary) {
 }
 
 function ShareLinksCard() {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
@@ -225,13 +224,13 @@ function ShareLinksCard() {
                         <span className="font-medium">
                           {t("settings.sharing.created")}:
                         </span>{" "}
-                        {formatDate(link.createdAt)}
+                        {fmt.date(link.createdAt)}
                       </p>
                       <p className="text-muted-foreground text-xs">
                         <span className="font-medium">
                           {t("settings.sharing.expires")}:
                         </span>{" "}
-                        {formatDateTime(link.expiresAt)}
+                        {fmt.dateTime(link.expiresAt)}
                       </p>
                       <p className="text-muted-foreground text-xs">
                         <span className="font-medium">
@@ -239,7 +238,7 @@ function ShareLinksCard() {
                         </span>{" "}
                         {link.accessCount}
                         {link.lastAccessAt
-                          ? ` · ${formatDateTime(link.lastAccessAt)}`
+                          ? ` · ${fmt.dateTime(link.lastAccessAt)}`
                           : ""}
                       </p>
                       {/* §12 — a right-aligned row action, not a full-width

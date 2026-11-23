@@ -29,9 +29,12 @@ export type ChannelType = (typeof CHANNEL_TYPES)[number];
 
 export const EVENT_TYPES = [
   "MEDICATION_REMINDER",
-  // The next three and PERSONAL_RECORD are never sent; see
-  // `UNSENT_EVENT_TYPES`.
+  // A sustained level shift in a stable vital, from the health-status
+  // changepoint scan (`src/lib/jobs/measurement-anomaly-check.ts`). Default
+  // OFF, at most once a week, once per shift, in the local morning.
   "MEASUREMENT_ANOMALY",
+  // The next two and PERSONAL_RECORD are never sent; see
+  // `UNSENT_EVENT_TYPES`.
   "COMPLIANCE_LOW",
   "WITHINGS_SYNC_FAILED",
   "SYSTEM_ALERT",
@@ -95,6 +98,14 @@ export const EVENT_TYPES = [
   // user-visible Telegram message on every dose would be noise). Routed
   // through the dedicated intake-sync sender, not the alert cascade.
   "MEDICATION_INTAKE_SYNC",
+  // A visible, quiet confirmation that a dose was recorded on ANOTHER
+  // device or integration (a pill box, the web, Telegram). Silent pushes are
+  // throttled and never reach a force-quit app, and only a remote alert lets
+  // the iOS Notification Service Extension withdraw a local reminder, so
+  // this one is an `alert` push at `passive` interruption level. APNs-only,
+  // sent by `medication-intake-sync.ts` beside the silent push, one per slot
+  // per coalescing window.
+  "MEDICATION_INTAKE_RECORDED",
   // v1.23 — account-security alert (new-device / new-location sign-in). Fired
   // by the login completion path on the first sighting of a coarse device
   // fingerprint. ON by default at the channel layer: a sign-in the user did
@@ -164,7 +175,9 @@ export type ManagedGuardianFanoutEvent =
  */
 export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   MEDICATION_REMINDER: true,
-  MEASUREMENT_ANOMALY: true,
+  // OFF by default (the PERSONAL_RECORD precedent): a push about one's own
+  // vitals is something a person asks for, per channel, or never gets.
+  MEASUREMENT_ANOMALY: false,
   COMPLIANCE_LOW: true,
   WITHINGS_SYNC_FAILED: true,
   SYSTEM_ALERT: true,
@@ -205,6 +218,12 @@ export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   // toggle: this is plumbing that keeps the user's own devices coherent,
   // not a notification the user chooses to receive.
   MEDICATION_INTAKE_SYNC: true,
+  // OFF at the channel layer, ON in effect for an account whose phone keeps
+  // its own medication reminders (`clientManaged`, or a device that asks for
+  // client delivery): those reminders can only be withdrawn by a remote
+  // alert. An explicit per-channel row wins either way
+  // (`medication-intake-sync.ts`, `recordedConfirmationEnabled`).
+  MEDICATION_INTAKE_RECORDED: false,
   // v1.23 — ON by default; a new-device sign-in is a security event the user
   // needs surfaced. An explicit per-channel `NotificationPreference` row
   // (enabled=false) still suppresses it for a user who opts out.
@@ -243,7 +262,6 @@ export const ADMIN_ONLY_EVENT_TYPES: readonly EventType[] = ["BACKUP_HEALTH"];
  * `SYSTEM_ALERT`.
  */
 export const UNSENT_EVENT_TYPES = [
-  "MEASUREMENT_ANOMALY",
   "COMPLIANCE_LOW",
   "WITHINGS_SYNC_FAILED",
   "PERSONAL_RECORD",

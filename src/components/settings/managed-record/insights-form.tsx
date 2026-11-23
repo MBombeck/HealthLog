@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 
 import { SUB_PAGE_TABS } from "@/components/insights/insights-tab-strip";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/lib/i18n/context";
 import { normalizeInsightsTileId } from "@/lib/insights-layout";
 
@@ -100,17 +101,18 @@ export function InsightsSettingsForm({
       {items.map((item) => (
         <div className="flex items-center gap-3 text-sm" key={item.id}>
           <ManagedSwitchRow
-            className="flex flex-1 items-center justify-between gap-2 text-sm"
+            className="flex-1"
             name={`${kind}-visible-${item.id}`}
             label={insightItemLabel(t, kind, item.id)}
             defaultChecked={item.visible}
             disabled={disabled}
           />
-          <label
-            className="flex items-center gap-2"
-            htmlFor={`${kind}-order-${item.id}`}
-          >
-            {t("settings.sharedRecord.managedSettings.insights.order")}
+          {/* A name beside a short number, inside a list row: the kit's
+              Label, laid out inline rather than over the control. */}
+          <div className="flex items-center gap-2">
+            <Label htmlFor={`${kind}-order-${item.id}`} className="pl-0">
+              {t("settings.sharedRecord.managedSettings.insights.order")}
+            </Label>
             <Input
               className="w-16"
               defaultValue={item.order}
@@ -120,7 +122,7 @@ export function InsightsSettingsForm({
               name={`${kind}-order-${item.id}`}
               type="number"
             />
-          </label>
+          </div>
         </div>
       ))}
     </fieldset>

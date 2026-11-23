@@ -5,6 +5,7 @@
  * the stored Activity Insight while it may be served. The route owns
  * authentication, the module gate and the AI capability.
  */
+import { readWorkoutPerformance } from "@/lib/workouts/performance-metrics";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -16,7 +17,7 @@ import {
   type WorkoutStartBounds,
 } from "@/lib/workouts/canonical-read";
 import type { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { buildWorkoutHrSeries } from "@/lib/workouts/hr-series";
 import {
@@ -177,6 +178,7 @@ async function resolveIdentity(userId: string, row: StoredWorkout) {
   return {
     readSameSport,
     userRow,
+    timezone,
     dayKey,
     cluster,
     canonical,
@@ -190,7 +192,7 @@ async function readEnrichment(
   row: StoredWorkout,
   identity: Awaited<ReturnType<typeof resolveIdentity>>,
 ) {
-  const { readSameSport, userRow, cluster, canonical } = identity;
+  const { readSameSport, userRow, timezone, cluster, canonical } = identity;
   // ── Enrichment reads (all over existing tables — no migration) ────
 
   // Heart-rate curve: stored series first, pulse-window fallback
@@ -212,7 +214,7 @@ async function readEnrichment(
 
   // Effort zones: WHOOP device durations win; else %HRmax fold from
   // the series when profile age exists; else null.
-  const ageYears = getAgeFromDateOfBirth(userRow?.dateOfBirth ?? null);
+  const ageYears = ageInYears(userRow?.dateOfBirth, timezone);
   const zones = computeZones({
     hrMax: hrMaxFromAge(ageYears),
     series: hrSeries?.points ?? [],
@@ -378,6 +380,12 @@ function shapeDetail(
     source: row.source,
     externalId: row.externalId,
     metadata: row.metadata,
+    // #1343 — the watch's own figures for the session, read by name from
+    // the metadata (FIT import keys, Garmin's as a fallback). Null when
+    // the workout carries none.
+    performance:
+      readWorkoutPerformance(row.metadata) ??
+      readWorkoutPerformance(canonical?.metadata),
     route,
     samples,
     // #67 enrichment — all additive, all over existing tables.

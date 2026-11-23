@@ -158,6 +158,7 @@ const SUMMARY_COUNTS = [
   "cycleDayLogs",
   "labResults",
   "labResultImportKeys",
+  "fhirImportedResources",
   "nutrientDays",
   "biomarkers",
   "illnessEpisodes",

@@ -132,8 +132,10 @@ describe("the shell owns the safe area", () => {
   it("the More sheet's grid scrolls inside the sheet's height cap", () => {
     // Held sideways a phone keeps the bottom bar, and 90 dvh of a 393 px
     // screen is shorter than the hub: the last rows sat below the edge.
-    const nav = code(read("src/components/layout/bottom-nav.tsx"));
-    const grid = nav.match(/"grid [^"]*grid-cols-2[^"]*"/)?.[0] ?? "";
+    // The sheet's body lives in `more-hub-groups.tsx`: the grouped list is
+    // the scroller, each group's grid inside it.
+    const hub = code(read("src/components/layout/more-hub-groups.tsx"));
+    const grid = hub.match(/"min-h-0 [^"]*overflow-y-auto[^"]*"/)?.[0] ?? "";
     expect(grid).toMatch(/\bmin-h-0\b/);
     expect(grid).toMatch(/\boverflow-y-auto\b/);
     expect(grid).toMatch(/\boverscroll-contain\b/);

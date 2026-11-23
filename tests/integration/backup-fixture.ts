@@ -140,6 +140,9 @@ export async function seedEveryTwoEndedModel(
       measuredAt: AT("2026-07-02T06:30:00.000Z"),
       source: "APPLE_HEALTH",
       externalId: "round-trip-deleted-sample",
+      // The zone the reading was taken in (iOS #181) rides the round
+      // trip like every other column of the reading.
+      timeZone: "America/New_York",
       syncVersion: 4,
       deletedAt: AT(TOMBSTONE_DELETED_AT),
     },
@@ -200,6 +203,9 @@ export async function seedEveryTwoEndedModel(
       dose: "5 mg",
       // #1371 — the person's own note on the medication.
       noteEncrypted: encryptToBytes("before breakfast, with water"),
+      // #1430 — the leaflet link the person saved.
+      leafletUrl:
+        "https://medicinesdatabase.be/human-use/medicines/12345/leaflet",
       startsOn: AT("2026-06-10T00:00:00.000Z"),
       endsOn: AT("2026-06-16T00:00:00.000Z"),
       endedAt: AT("2026-06-16T09:30:00.000Z"),
@@ -563,6 +569,17 @@ export async function seedEveryTwoEndedModel(
       createdAt: AT("2026-07-04T09:00:00.000Z"),
     },
   });
+  // A FHIR Bundle resource already imported: without it in the file, the
+  // same Bundle imported after a restore would write its record again.
+  await prisma.fhirImportedResource.create({
+    data: {
+      userId: OWNER_ID,
+      resourceType: "Immunization",
+      resourceKey: "e".repeat(40),
+      recordId: "round-trip-vaccination",
+      createdAt: AT("2026-07-04T10:00:00.000Z"),
+    },
+  });
   // What the drug above is FOR, pinned to the analyte just created. The two
   // rows are seeded at opposite ends of this fixture on purpose: the drug is
   // restored hundreds of lines before the analyte, so this pairing is what
@@ -778,7 +795,9 @@ export async function seedEveryTwoEndedModel(
     data: {
       userId: OWNER_ID,
       kind: "SMOKING_STATUS",
-      valueEncrypted: encryptToBytes("never"),
+      // A value of the kind's closed set: a portable export carries only a
+      // value a reader of the fact accepts.
+      valueEncrypted: encryptToBytes("NEVER"),
       validFrom: AT("2026-01-01T00:00:00.000Z"),
     },
   });
@@ -861,7 +880,12 @@ export async function seedEveryTwoEndedModel(
         medication: "yes",
         sources: ["withings"],
         visit: "within-a-month",
-        units: { glucoseUnit: "mmol/L", unitPreference: "metric" },
+        units: {
+          glucoseUnit: "mmol/L",
+          unitPreference: "metric",
+          timezone: "Europe/Berlin",
+          medicineRegistry: "DE",
+        },
       },
       stepsJson: [
         { id: "who", status: "done" },
@@ -1449,16 +1473,6 @@ export async function seedEveryTwoEndedModel(
       },
     ],
   });
-
-  // Last, so the rows above keep the stamps the golden copies hold.
-  await prisma.appleHealthTombstone.create({
-    data: {
-      userId: OWNER_ID,
-      domain: "workout",
-      externalId: "ABCDEF01-2345-6789-ABCD-EF0123456789",
-      createdAt: AT("2026-06-30T08:00:00.000Z"),
-    },
-  });
 }
 
 export async function createOwner(prisma: PrismaClient) {
@@ -1492,6 +1506,8 @@ export async function seedAdminSession(prisma: PrismaClient) {
  * it left with. An entry here whose column no longer exists fails the run.
  */
 export const COLUMN_EXCLUSIONS: Readonly<Record<string, string>> = {
+  "UserHealthProfile.aboutMeRevisedAt":
+    "the about-me lock token (migration 0554): a restore creates the row afresh and the token starts there, so no client holds a token nobody read",
   "MeasurementReminder.lastNotifiedAt":
     "operational repeat cursor, documented on the column as not in the backup: a restored reminder re-reminds at most once, on its next notify hour",
 };
@@ -1535,6 +1551,26 @@ export const FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
     { length: 24 },
     (_, hour) => (hour < 6 ? -1 : 350),
   ),
+  // CHECK in migration 0517: text day keys are `YYYY-MM-DD`.
+  "MenstrualCycle.endDate": "2026-10-28",
+  "MenstrualCycle.periodEndDate": "2026-10-05",
+  "MenstrualCycle.ovulationDate": "2026-10-15",
+  // The sensitive-category envelope is one sealed JSON object; a value the
+  // export cannot parse travels as the unreadable marker.
+  "CycleDayLog.sensitiveEncrypted": () =>
+    encrypt(JSON.stringify({ sexualActivity: true })),
+  // The pregnancy state is one sealed envelope the store opens; a tag it
+  // cannot read would restore as no state (`pregnancy-store.ts`).
+  "CycleProfile.pregnancyEncrypted": () =>
+    encrypt(
+      JSON.stringify({
+        state: "POSTPARTUM",
+        startDate: "2026-03-02",
+        dueDate: "2026-12-07",
+        deliveryDate: "2026-11-30",
+        ownerDecided: true,
+      }),
+    ),
 };
 
 /**
@@ -1666,6 +1702,7 @@ export const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "User.homeTimezone": "Asia/Tokyo",
   "User.unitPreference": "imperial",
   "User.glucoseUnit": "mmol/L",
+  "User.medicineRegistry": "GB",
   "User.insightsPrivacyMode": "raw",
   "User.aiProvider": "LOCAL",
   "User.aiLocalBaseUrl": "https://llm.example.com/v1",

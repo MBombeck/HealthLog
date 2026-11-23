@@ -87,6 +87,7 @@ const CHANNEL_LABEL_KEY: Record<string, string> = {
   MINDFUL_MINUTES: "measurements.typeMindfulMinutes",
   HYDRATION: "nutrients.names.water",
   CAFFEINE: "nutrients.names.caffeine",
+  ENERGY_BALANCE: "nutrients.energyBalance.title",
   ALCOHOL: "insights.mood.discovery.channel.ALCOHOL",
   WORKOUT_MINUTES: "insights.mood.discovery.channel.WORKOUT_MINUTES",
   TRAINING_LOAD: "insights.mood.discovery.channel.TRAINING_LOAD",

@@ -36,7 +36,7 @@
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 import { FEVER_RED_FLAG_C, SPO2_RED_FLAG_PCT } from "@/lib/clinical-floors";
-import { buildBaselineBand, median } from "@/lib/insights/derived/baseline";
+import { buildBaselineBand } from "@/lib/insights/derived/baseline";
 import {
   buildInsufficient,
   buildOk,
@@ -45,6 +45,7 @@ import {
 } from "@/lib/insights/derived/coverage";
 import type { Derived } from "@/lib/insights/derived/types";
 import { daysBetweenDateKeys } from "@/lib/tz/format";
+import { median } from "@/lib/stats/central";
 
 /* ── tunables (documented invariants) ────────────────────────────────── */
 
@@ -406,9 +407,8 @@ export interface IllnessRedFlag {
 
 /* ── red-flag thresholds (clinical floors, conservative) ─────────────── */
 
-// D3-H1: sustained-fever + sustained-low-SpO2 escalation floors come from the
-// one source of truth so the illness engine, the status registry's fever band,
-// and the hero/Coach never carry divergent magic numbers.
+// The sustained-fever and sustained-low-SpO2 escalation floors have one source,
+// shared by the illness engine, the status fever band and the hero and Coach.
 /** SpO2 at/below this for ≥ RED_FLAG_RUN_DAYS escalates. */
 const SPO2_RED_FLAG = SPO2_RED_FLAG_PCT;
 /** Body temperature at/above this (°C) for ≥ RED_FLAG_RUN_DAYS escalates. */
@@ -645,7 +645,7 @@ export function computeIllnessCorrelation(
   const recoveryGapDays =
     window.lifecycle === "CHRONIC_ONGOING" || gaps.length === 0
       ? null
-      : Math.round(median(gaps));
+      : Math.round(median(gaps)!);
 
   // Name the per-episode driver: among the ADVERSE return tracks that produced
   // a real gap, the one whose own gap sits closest to the headline median (it
@@ -911,7 +911,7 @@ function computeSleepContext(
     return null;
   }
 
-  const baselineMeanMinutes = Math.round(median(baseMinutes));
+  const baselineMeanMinutes = Math.round(median(baseMinutes)!);
   const episodeMeanMinutes = Math.round(
     episodeMinutes.reduce((s, v) => s + v, 0) / episodeMinutes.length,
   );

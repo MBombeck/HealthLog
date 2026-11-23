@@ -55,6 +55,8 @@ import type { ModuleKey } from "@/lib/modules/registry";
  *    readiness inventory leaves it out the same way.
  *  - `search`: a source the in-app record search reads, by its
  *    `SearchSourceKey`. A source whose owner is off is not read at all.
+ *  - `checklist`: an optional row of the getting-started checklist's "More"
+ *    group (1.49), by its `ChecklistExtraId`.
  */
 export const SURFACE_KINDS = [
   "nav",
@@ -73,6 +75,7 @@ export const SURFACE_KINDS = [
   "day-section",
   "timeline-lane",
   "search",
+  "checklist",
 ] as const;
 
 export type SurfaceKind = (typeof SURFACE_KINDS)[number];
@@ -247,6 +250,7 @@ const STATIC_SURFACE_MODULE = {
   // ambient movement like steps and carry no owner.
   "correlation:HYDRATION": "nutrients",
   "correlation:CAFFEINE": "nutrients",
+  "correlation:ENERGY_BALANCE": "nutrients",
   "correlation:NUTRIENT": "nutrients",
   "correlation:ALCOHOL": "mood",
   "correlation:WORKOUT_MINUTES": "workouts",
@@ -269,6 +273,7 @@ const STATIC_SURFACE_MODULE = {
   "day-section:illness": "illness",
   // Person-defined symptoms ride the illness module, as everywhere else.
   "day-section:symptoms": "illness",
+  "day-section:seizures": "seizures",
   "day-section:labs": "labs",
   "day-section:vaccinations": "vaccinations",
   "day-section:documents": "inboundDocuments",
@@ -305,6 +310,11 @@ const STATIC_SURFACE_MODULE = {
   "search:workout": "workouts",
   "search:moodNote": "mood",
   "search:illnessNote": "illness",
+
+  // ── Getting-started checklist, optional rows (1.49) ──
+  // The emergency card, the care feed, sharing, imports and the iPhone app
+  // belong to no module; the report schedule is the doctor report's.
+  "checklist:reportSchedule": "doctorReport",
 } as const satisfies Record<string, ModuleKey>;
 
 /** A surface id the map declares literally. */

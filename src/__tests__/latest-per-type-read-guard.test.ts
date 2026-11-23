@@ -46,7 +46,7 @@ const SLICE_BUILDER_CALL = /\bcomputeSummariesSlice\s*\(/;
 
 /** Grouped presence reads that ask something the per-type probe cannot. */
 const GROUPBY_ALLOWED: Record<string, string> = {
-  "lib/measurements/import-apple-health-export.ts":
+  "lib/measurements/import-apple-health-export-writer.ts":
     "Which types hold a MANUAL reading: a source-filtered presence the per-type probe does not take.",
   "lib/jobs/insight-pregenerate.ts":
     "Which types exist at all, with no type list to drive a per-type probe; a nightly job, not a request path.",

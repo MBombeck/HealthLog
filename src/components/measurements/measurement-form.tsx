@@ -1,14 +1,16 @@
 "use client";
 
 import { localDateTimeValue } from "@/components/day/prefill";
-import { useActiveRecordName } from "@/hooks/use-record-capabilities";
-import { useId, useState } from "react";
+import {
+  useActiveRecordName,
+  useRecordCapabilities,
+} from "@/hooks/use-record-capabilities";
+import { useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { FieldGroup } from "@/components/ui/field-group";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -16,17 +18,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
-import { useTranslations } from "@/lib/i18n/context";
+import { showEntrySavedToast } from "@/components/forms/entry-saved-toast";
+import { removeSavedMeasurements } from "@/components/forms/entry-undo";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { useAuth } from "@/hooks/use-auth";
-import { resolveGlucoseUnit, toCanonicalMgdl } from "@/lib/glucose";
-import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
+import { resolveGlucoseUnit } from "@/lib/glucose";
 import {
   durationEntryUnit,
   entryValueToCanonical,
   parseDecimalEntry,
 } from "@/lib/measurements/entry-units";
+import { defaultGlucoseContext } from "@/lib/measurements/glucose-context-default";
+import {
+  nextUsualType,
+  orderByRecent,
+} from "@/lib/measurements/recent-entry-types";
 import { parseDurationEntry } from "@/lib/measurements/parse-duration";
 import {
   invalidateKeys,
@@ -36,225 +43,31 @@ import {
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/measurements/notes-limit";
-import {
-  getLastUsedMeasurementType,
-  setLastUsedMeasurementType,
-} from "@/lib/measurements/last-used-type";
 
 import { DurationReadAs } from "./duration-read-as";
+import { useEntryType } from "./entry/use-entry-type";
+import { LastValueLine, lastValuePlaceholder } from "./entry/last-value-line";
+import {
+  canonicalEntryValue,
+  useMeasurementEntryAssist,
+} from "./entry/use-measurement-entry-assist";
+import { useMeasurementRowDisplay } from "./list/use-measurement-row-display";
+import {
+  MEASUREMENT_TYPES,
+  measurementFormTypes,
+} from "./measurement-form-types";
 import {
   GlucoseContextSelect,
   type GlucoseContextValue,
 } from "./glucose-context-select";
 import { ketoneFingerstickBatch } from "./ketone-fingerstick";
 import {
+  BloodPressureFields,
   MeasurementFormFooter,
   PairedGlucoseField,
 } from "./measurement-form-parts";
 
 const MAX_COMMENT_LENGTH = MEASUREMENT_NOTES_MAX_LENGTH;
-
-export const MEASUREMENT_TYPES = [
-  {
-    value: "BLOOD_PRESSURE",
-    labelKey: "measurements.typeBloodPressure",
-    unit: "mmHg",
-  },
-  {
-    value: "WEIGHT",
-    labelKey: "measurements.typeWeight",
-    unit: "kg",
-    placeholder: "75.5",
-    placeholderImperial: "165",
-  },
-  {
-    value: "PULSE",
-    labelKey: "measurements.typePulse",
-    unit: "bpm",
-    placeholder: "72",
-  },
-  // The resting heart rate has its own chart and series; a value read off a
-  // watch or taken on waking belongs there rather than among spot pulses.
-  {
-    value: "RESTING_HEART_RATE",
-    labelKey: "measurements.typeRestingHeartRate",
-    unit: "bpm",
-    placeholder: "58",
-  },
-  {
-    value: "BODY_FAT",
-    labelKey: "measurements.typeBodyFat",
-    unit: "%",
-    placeholder: "22",
-  },
-  {
-    value: "SLEEP_DURATION",
-    labelKey: "measurements.typeSleep",
-    unitKey: "measurements.unitHours",
-    placeholder: "7.5",
-  },
-  {
-    value: "ACTIVITY_STEPS",
-    labelKey: "measurements.typeSteps",
-    unitKey: "measurements.unitSteps",
-    placeholder: "8000",
-  },
-  {
-    value: "BLOOD_GLUCOSE",
-    labelKey: "measurements.typeBloodGlucose",
-    unit: "mg/dL",
-    placeholder: "95",
-  },
-  // #1367 — ketones, with the same fingerstick's glucose (one entry).
-  {
-    value: "BLOOD_KETONES",
-    labelKey: "measurements.typeBloodKetones",
-    unit: "mmol/L",
-    placeholder: "1.2",
-  },
-  {
-    value: "TOTAL_BODY_WATER",
-    labelKey: "measurements.typeTotalBodyWater",
-    unit: "kg",
-    placeholder: "42",
-    placeholderImperial: "93",
-  },
-  {
-    value: "BONE_MASS",
-    labelKey: "measurements.typeBoneMass",
-    unit: "kg",
-    placeholder: "3.2",
-    placeholderImperial: "7",
-  },
-  // The rest of what a body-composition scale reports. The server has
-  // accepted all of these since the Withings and Apple Health work; only this
-  // list lagged, so a reading typed off the scale's display had no row. The
-  // guard in `measurement-form-body-composition.test.ts` keeps the two lists
-  // from drifting again.
-  {
-    value: "FAT_MASS",
-    labelKey: "measurements.typeFatMass",
-    unit: "kg",
-    placeholder: "18",
-    placeholderImperial: "40",
-  },
-  {
-    value: "FAT_FREE_MASS",
-    labelKey: "measurements.typeFatFreeMass",
-    unit: "kg",
-    placeholder: "58",
-    placeholderImperial: "128",
-  },
-  {
-    value: "LEAN_BODY_MASS",
-    labelKey: "measurements.typeLeanBodyMass",
-    unit: "kg",
-    placeholder: "55",
-    placeholderImperial: "121",
-  },
-  {
-    value: "MUSCLE_MASS",
-    labelKey: "measurements.typeMuscleMass",
-    unit: "kg",
-    placeholder: "52",
-    placeholderImperial: "115",
-  },
-  {
-    // A scale's own rating (Withings prints 1-12), not a percent.
-    value: "VISCERAL_FAT",
-    labelKey: "measurements.typeVisceralFat",
-    unitKey: "measurements.unitRating",
-    placeholder: "7",
-  },
-  {
-    value: "OXYGEN_SATURATION",
-    labelKey: "measurements.typeOxygenSaturation",
-    unit: "%",
-    placeholder: "98",
-  },
-  {
-    value: "BODY_TEMPERATURE",
-    labelKey: "measurements.typeBodyTemperature",
-    unit: "°C",
-    placeholder: "36.6",
-    placeholderImperial: "97.9",
-  },
-  // v1.25 — physical / clinical signals. Manual web capture so a web-only
-  // self-hoster can log them (the iOS client + measurements API already do).
-  {
-    value: "WAIST_CIRCUMFERENCE",
-    labelKey: "measurements.typeWaistCircumference",
-    unit: "cm",
-    placeholder: "84",
-    placeholderImperial: "33",
-  },
-  {
-    value: "WAIST_TO_HEIGHT",
-    labelKey: "measurements.typeWaistToHeight",
-    unitKey: "measurements.unitRatio",
-    placeholder: "0.48",
-  },
-  {
-    value: "GRIP_STRENGTH",
-    labelKey: "measurements.typeGripStrength",
-    unit: "kg",
-    placeholder: "38",
-    placeholderImperial: "84",
-  },
-  {
-    value: "PAIN_NRS",
-    labelKey: "measurements.typePainNrs",
-    unitKey: "measurements.unitScore",
-    placeholder: "0",
-  },
-] as const;
-
-// v1.4.34 — single source of truth for the `/measurements?add=<TYPE>`
-// deep link the Insights empty-state CTAs ship. Derived from the form's
-// MEASUREMENT_TYPES so a new row in the form is immediately usable as
-// a deep-link target.
-export const MEASUREMENT_FORM_TYPE_VALUES = MEASUREMENT_TYPES.map(
-  (t) => t.value,
-) as readonly string[];
-
-/**
- * The types the form offers for a module map: a type a module owns
- * (`summary:<type>` in the surface map, the same ownership the server gates
- * measurement types on) is left out while that module is off. An unknown map
- * (the account still loading) offers every type.
- */
-export function measurementFormTypes(
-  modules: SurfaceModuleMap | null | undefined,
-): ReadonlyArray<(typeof MEASUREMENT_TYPES)[number]> {
-  return MEASUREMENT_TYPES.filter((mt) =>
-    isSurfaceVisible(`summary:${mt.value}`, modules),
-  );
-}
-
-// Legacy / Insights-internal tokens that predate the canonical enum.
-// Older empty-state CTAs and a handful of dashboard tiles still emit
-// these — translate them to the form's canonical value so the link
-// keeps working without forcing every caller to rename in lockstep.
-export const ADD_TOKEN_ALIASES: Readonly<Record<string, string>> = {
-  GLUCOSE: "BLOOD_GLUCOSE",
-  TEMPERATURE: "BODY_TEMPERATURE",
-  HEART_RATE: "PULSE",
-  BMI: "WEIGHT",
-};
-
-/**
- * Resolve a `?add=<token>` deep-link value to a real form type, or
- * `null` when the token has no canonical mapping. Centralised so the
- * page-level dispatcher and the F-1 contract test consume the same
- * resolver.
- */
-export function resolveAddToken(
-  token: string | null | undefined,
-): string | null {
-  if (!token) return null;
-  const aliased = ADD_TOKEN_ALIASES[token] ?? token;
-  return MEASUREMENT_FORM_TYPE_VALUES.includes(aliased) ? aliased : null;
-}
 
 interface MeasurementFormProps {
   onSuccess?: () => void;
@@ -274,7 +87,19 @@ interface MeasurementFormProps {
    * `<form>` via the HTML `form` attribute.
    */
   footerSlot?: HTMLElement | null;
+  /**
+   * Offer "Save and next value": save, keep the form open, clear the value
+   * and move on to the next type the person usually logs. For the capture
+   * sheets; a form whose save completes something else (a reminder, an
+   * onboarding step) leaves it off.
+   */
+  chain?: boolean;
+  /** Focus the first value field on mount (default). */
+  autoFocus?: boolean;
 }
+
+/** What the create route answers: the stored row, or the rows of a batch. */
+type SavedRows = { id: string } | Array<{ id: string }>;
 
 function getDefaultMeasuredAtValue() {
   const now = new Date();
@@ -283,40 +108,19 @@ function getDefaultMeasuredAtValue() {
   return local.toISOString().slice(0, 16);
 }
 
-/**
- * Field label that keeps the "Name (unit)" translation on a single line even
- * in the narrow three-column blood-pressure grid: the metric name truncates if
- * it must, while the unit renders as a small muted affix that never wraps. The
- * label strings stay localised — we split the trailing "(unit)" the catalogue
- * already carries rather than dropping it (so "mmHg" / "bpm" / locale variants
- * like "lpm" survive).
- */
-function UnitLabel({ htmlFor, label }: { htmlFor: string; label: string }) {
-  const match = /^(.*?)\s*\(([^)]*)\)\s*$/.exec(label);
-  const name = match ? match[1] : label;
-  const unit = match ? match[2] : null;
-  return (
-    // `after:-ml-1` pulls the label's colon back against the unit: the colon
-    // is a flex item of its own here, and the row gap set it apart.
-    <Label htmlFor={htmlFor} className="flex items-baseline gap-1 after:-ml-1">
-      <span className="truncate">{name}</span>
-      {unit ? (
-        <span className="text-muted-foreground shrink-0 text-xs font-normal">
-          {unit}
-        </span>
-      ) : null}
-    </Label>
-  );
-}
-
 export function MeasurementForm({
   onSuccess,
   onCancel,
   defaultType,
   footerSlot,
   defaultDate,
+  chain = false,
+  autoFocus = true,
 }: MeasurementFormProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
+  const { canManageDomain } = useRecordCapabilities();
+  const { rowDisplay } = useMeasurementRowDisplay();
   const recordName = useActiveRecordName();
   const queryClient = useQueryClient();
   const post = useIdempotentPost();
@@ -336,35 +140,31 @@ export function MeasurementForm({
       ? "BLOOD_PRESSURE"
       : defaultType;
 
-  // v1.30.1 — an explicit deep-link default always wins; absent one,
-  // seed from the last type the user actually saved rather than always
-  // landing on BLOOD_PRESSURE. Lazy initializer so the localStorage read
-  // happens once, at mount, not on every render.
-  const [selectedType, setType] = useState(
-    () =>
-      normalizedDefault ||
-      getLastUsedMeasurementType(MEASUREMENT_FORM_TYPE_VALUES) ||
-      "BLOOD_PRESSURE",
-  );
   // Only types whose module is on. A default, a deep link or the last-used
   // type that is switched off falls back to the first offered type.
-  const offeredTypes = measurementFormTypes(user?.modules);
-  const type = offeredTypes.some((mt) => mt.value === selectedType)
-    ? selectedType
-    : (offeredTypes[0]?.value ?? "BLOOD_PRESSURE");
+  const moduleTypes = measurementFormTypes(user?.modules);
   const [value, setValue] = useState("");
   const [valueError, setValueError] = useState<string | null>(null);
   const [sysBp, setSysBp] = useState("");
   const [diaBp, setDiaBp] = useState("");
   const [pulse, setPulse] = useState("");
+  const { type, setType } = useEntryType(
+    moduleTypes.map((mt) => mt.value),
+    normalizedDefault,
+    value !== "" || sysBp !== "" || diaBp !== "" || pulse !== "",
+  );
   // The glucose of a fingerstick entered with its ketones; optional.
   const [pairedGlucose, setPairedGlucose] = useState("");
   const [notes, setNotes] = useState("");
   const [measuredAt, setMeasuredAt] = useState(() =>
     localDateTimeValue(defaultDate),
   );
-  const [glucoseContext, setGlucoseContext] =
-    useState<GlucoseContextValue>("FASTING");
+  // Null until the person picks one: the shown context is then the default
+  // for the reading's time (`defaultGlucoseContext`), not a fixed "fasting".
+  const [pickedGlucoseContext, setGlucoseContext] =
+    useState<GlucoseContextValue | null>(null);
+  // Set by "Save and next value" for the one submit it starts.
+  const chainNext = useRef(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -379,10 +179,39 @@ export function MeasurementForm({
   // its `<form>` association via the HTML `form` attribute.
   const formId = useId();
 
+  const assist = useMeasurementEntryAssist({
+    type,
+    offered: moduleTypes.map((mt) => mt.value),
+    value,
+    sys: sysBp,
+    dia: diaBp,
+    unitDisplay,
+    glucoseUnit,
+  });
+  // The person's recently logged types first, then the catalogue order.
+  const offeredTypes = orderByRecent(moduleTypes, assist.recent);
+  const glucoseContext =
+    pickedGlucoseContext ??
+    defaultGlucoseContext(new Date(measuredAt), assist.history);
+  const nextType = chain ? nextUsualType(assist.recent, type) : null;
+  const placeholder = lastValuePlaceholder(assist.last, rowDisplay, fmt.number);
+
   const typeInfo = MEASUREMENT_TYPES.find((t) => t.value === type);
   const isBpMode = type === "BLOOD_PRESSURE";
   const isGlucoseMode = type === "BLOOD_GLUCOSE";
   const isKetoneMode = type === "BLOOD_KETONES";
+  // For a type with a metric/imperial transform the unit follows the user's
+  // preference (kg↔lb, cm↔in, °C↔°F); everything else keeps its static
+  // catalogue unit.
+  const valueUnit = isGlucoseMode
+    ? glucoseUnit
+    : typeInfo
+      ? unitDisplay.isTransformed(type)
+        ? unitDisplay.unitFor(type)
+        : "unitKey" in typeInfo
+          ? t(typeInfo.unitKey)
+          : typeInfo.unit
+      : "";
   // A duration field (sleep, in hours) also reads "7:30" and "7h 30m"; the
   // hint under it says how the entry was understood.
   const durationUnit = durationEntryUnit(type);
@@ -390,7 +219,7 @@ export function MeasurementForm({
     durationUnit !== null ? parseDurationEntry(value, durationUnit) : null;
 
   function resetForm() {
-    setType(normalizedDefault || "BLOOD_PRESSURE");
+    setType(normalizedDefault || null);
     setValue("");
     setSysBp("");
     setDiaBp("");
@@ -398,16 +227,20 @@ export function MeasurementForm({
     setPairedGlucose("");
     setNotes("");
     setMeasuredAt(localDateTimeValue(defaultDate));
+    setGlucoseContext(null);
     setError(null);
     setValueError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const goOn = chainNext.current;
+    chainNext.current = false;
     setError(null);
     setLoading(true);
 
     try {
+      let created: SavedRows;
       const timestamp = new Date(measuredAt).toISOString();
 
       if (isBpMode) {
@@ -441,7 +274,7 @@ export function MeasurementForm({
           });
         }
 
-        await post("/api/measurements", batch);
+        created = await post<SavedRows>("/api/measurements", batch);
       } else if (isKetoneMode) {
         // One fingerstick, posted as one transaction (`ketone-fingerstick.ts`).
         const batch = ketoneFingerstickBatch({
@@ -456,20 +289,12 @@ export function MeasurementForm({
           setError(t("measurements.saveError"));
           return;
         }
-        await post("/api/measurements", batch);
+        created = await post<SavedRows>("/api/measurements", batch);
       } else {
-        // Single measurement. Canonical storage stays SI: an imperial user
-        // types in lb / in / °F and we invert to the canonical unit at the
-        // entry boundary. A metric user (or an untransformed type) takes the
-        // identity path — `fromDisplay` returns the typed number unchanged, so
-        // the payload is byte-identical to before. Round only the converted
-        // imperial value so 210 lb stores as 95.25 kg, not 95.25439770….
-        //
-        // A second boundary sits beside it: a few types are stored in a unit
-        // the form does not ask for. Sleep is entered in hours and stored in
-        // minutes, and sending the typed number through unconverted filed a
-        // 7.5-hour night as seven and a half minutes — inside the column's
-        // plausibility band, so nothing objected.
+        // Single measurement, converted at the entry boundary
+        // (`canonicalEntryValue`). Sleep is entered in hours and stored in
+        // minutes; sending the typed number through unconverted filed a
+        // 7.5-hour night as seven and a half minutes.
         let typed: number | null;
         if (durationRead) {
           if (!durationRead.ok) {
@@ -490,18 +315,10 @@ export function MeasurementForm({
           setError(t("measurements.saveError"));
           return;
         }
-        let canonicalValue = typed;
-        if (isGlucoseMode) {
-          canonicalValue = toCanonicalMgdl(typed, glucoseUnit);
-        } else if (unitDisplay.isTransformed(type)) {
-          const inverted = unitDisplay.fromDisplay(type, typed);
-          canonicalValue =
-            unitDisplay.preference === "imperial"
-              ? Math.round(inverted * 100) / 100
-              : inverted;
-        }
-        canonicalValue = entryValueToCanonical(type, canonicalValue);
-        await post("/api/measurements", {
+        const canonicalValue = durationRead
+          ? entryValueToCanonical(type, typed)
+          : canonicalEntryValue(type, typed, unitDisplay, glucoseUnit);
+        created = await post<SavedRows>("/api/measurements", {
           type,
           value: canonicalValue,
           measuredAt: timestamp,
@@ -510,31 +327,47 @@ export function MeasurementForm({
         });
       }
 
-      // v1.30.1 — remember this type as the next mount's smart
-      // default (deep links still override it).
-      setLastUsedMeasurementType(type);
-
-      // Reset form
+      const savedValue = isBpMode
+        ? `${sysBp}/${diaBp} mmHg`
+        : `${value.trim()} ${valueUnit}`.trim();
+      const ids = (Array.isArray(created) ? created : [created]).map(
+        (row) => row.id,
+      );
       setValue("");
       setSysBp("");
       setDiaBp("");
       setPulse("");
       setPairedGlucose("");
       setNotes("");
-      // v1.36.x — a delegate's receipt names the record. "Saved" alone is
-      // the one confirmation somebody acting for another person does not
-      // need, and the reading has just left their own history for good.
-      toast.success(
-        t("common.saved"),
-        recordName
-          ? {
-              description: t("recordSharing.toast.savedTo", {
-                name: recordName,
-              }),
+      setGlucoseContext(null);
+      // v1.36.x — a delegate's receipt names the record.
+      showEntrySavedToast({
+        t,
+        label: typeInfo ? t(typeInfo.labelKey) : t("measurements.title"),
+        value: savedValue,
+        recordName,
+        // Undo removes what was just written through the list's own bulk
+        // delete; a delegate who may write but not delete gets no Undo.
+        undo: canManageDomain("measurements")
+          ? async () => {
+              await removeSavedMeasurements(ids);
+              void invalidateKeys(queryClient, measurementDependentKeys);
+              void refetchInactiveDailyReads(queryClient);
             }
           : undefined,
-      );
-      onSuccess?.();
+        edit: { kind: "measurement", ids: ids.slice(0, 1) }, // BP: systolic
+      });
+      if (goOn && nextType) {
+        setType(nextType);
+        // The next field takes the focus, ready to type.
+        setTimeout(() => {
+          document
+            .getElementById(nextType === "BLOOD_PRESSURE" ? "sys" : "value")
+            ?.focus();
+        }, 0);
+      } else {
+        onSuccess?.();
+      }
       // The reading is stored; the sheet does not wait for every read that
       // shows it to come back.
       void invalidateKeys(queryClient, measurementDependentKeys);
@@ -552,6 +385,8 @@ export function MeasurementForm({
       formId={formId}
       onReset={resetForm}
       onCancel={onCancel}
+      onSaveNext={nextType ? () => (chainNext.current = true) : undefined}
+      onSave={() => (chainNext.current = false)}
     />
   );
 
@@ -579,86 +414,44 @@ export function MeasurementForm({
       </FieldGroup>
 
       {isBpMode ? (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-2">
-            <UnitLabel htmlFor="sys" label={t("measurements.systolicLabel")} />
-            <Input
-              id="sys"
-              type="number"
-              inputMode="numeric"
-              enterKeyHint="next"
-              step="1"
-              value={sysBp}
-              onChange={(e) => setSysBp(e.target.value)}
-              placeholder="120"
-              required
-              aria-required="true"
-              aria-invalid={!!error || undefined}
-              aria-describedby={errorDescriptor}
-              min={60}
-              max={280}
-            />
-          </div>
-          <div className="space-y-2">
-            <UnitLabel htmlFor="dia" label={t("measurements.diastolicLabel")} />
-            <Input
-              id="dia"
-              type="number"
-              inputMode="numeric"
-              enterKeyHint="next"
-              step="1"
-              value={diaBp}
-              onChange={(e) => setDiaBp(e.target.value)}
-              placeholder="80"
-              required
-              aria-required="true"
-              aria-invalid={!!error || undefined}
-              aria-describedby={errorDescriptor}
-              min={30}
-              max={200}
-            />
-          </div>
-          <div className="space-y-2">
-            <UnitLabel htmlFor="puls" label={t("measurements.pulseLabel")} />
-            <Input
-              id="puls"
-              type="number"
-              inputMode="numeric"
-              enterKeyHint="next"
-              step="1"
-              value={pulse}
-              onChange={(e) => setPulse(e.target.value)}
-              placeholder="72"
-              aria-invalid={!!error || undefined}
-              aria-describedby={errorDescriptor}
-              min={30}
-              max={220}
-            />
-          </div>
-        </div>
+        <BloodPressureFields
+          sys={sysBp}
+          dia={diaBp}
+          pulse={pulse}
+          onSys={setSysBp}
+          onDia={setDiaBp}
+          onPulse={setPulse}
+          placeholders={{
+            sys: placeholder,
+            dia: assist.lastDia
+              ? lastValuePlaceholder(assist.lastDia, rowDisplay, fmt.number)
+              : undefined,
+          }}
+          autoFocus={autoFocus}
+          invalid={!!error}
+          describedBy={errorDescriptor}
+          lastLine={
+            assist.last ? (
+              <LastValueLine
+                last={assist.last}
+                lastDia={assist.lastDia}
+                deviates={assist.deviates}
+              />
+            ) : null
+          }
+        />
       ) : (
         <FieldGroup
           htmlFor="value"
           hint={
             durationRead?.ok === true ? (
               <DurationReadAs minutes={durationRead.minutes} />
+            ) : assist.last ? (
+              <LastValueLine last={assist.last} deviates={assist.deviates} />
             ) : null
           }
           error={valueError}
-          label={t("measurements.valueWithUnit", {
-            // For a type with a metric/imperial transform the label follows the
-            // user's preference (kg↔lb, cm↔in, °C↔°F); everything else keeps
-            // its static catalogue unit.
-            unit: isGlucoseMode
-              ? glucoseUnit
-              : typeInfo
-                ? unitDisplay.isTransformed(type)
-                  ? unitDisplay.unitFor(type)
-                  : "unitKey" in typeInfo
-                    ? t(typeInfo.unitKey)
-                    : typeInfo.unit
-                : "",
-          })}
+          label={t("measurements.valueWithUnit", { unit: valueUnit })}
         >
           <Input
             id="value"
@@ -676,18 +469,9 @@ export function MeasurementForm({
               setValue(e.target.value);
               setValueError(null);
             }}
-            placeholder={
-              isGlucoseMode && glucoseUnit === "mmol/L"
-                ? "5.3"
-                : typeInfo
-                  ? unitDisplay.preference === "imperial" &&
-                    "placeholderImperial" in typeInfo
-                    ? typeInfo.placeholderImperial
-                    : "placeholder" in typeInfo
-                      ? typeInfo.placeholder
-                      : undefined
-                  : undefined
-            }
+            // The person's own last reading, never a stranger's example.
+            placeholder={placeholder}
+            autoFocus={autoFocus}
             required
             aria-required="true"
             aria-invalid={!!error || !!valueError || undefined}
@@ -752,7 +536,7 @@ export function MeasurementForm({
         htmlFor="notes"
         label={
           <>
-            {t("measurements.notes")}
+            {t("common.note")}
             <span className="text-muted-foreground ml-1 font-normal">
               ({t("common.optional")})
             </span>

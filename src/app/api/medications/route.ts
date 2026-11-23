@@ -18,11 +18,16 @@ import {
   withCourseActionAuthority,
 } from "@/lib/medications/course-authority";
 import { createMedication } from "@/lib/medications/create-medication";
+import { withLeafletSearch } from "@/lib/medications/leaflet-registries";
+import { resolveMedicineRegistry } from "@/lib/medications/medicine-registry";
 import { withIdempotency } from "@/lib/idempotency";
 import { NextRequest } from "next/server";
 
 export const GET = apiHandler(async () => {
-  const { user, grantId } = await requireRecordAuth("read", "medications");
+  const { user, actor, grantId } = await requireRecordAuth(
+    "read",
+    "medications",
+  );
 
   // Cache the list shape on userId. The 60 s fresh TTL bounds the
   // cross-midnight staleness window for `todayEventCount` and the
@@ -37,8 +42,12 @@ export const GET = apiHandler(async () => {
   const cached = await readMedicationsListCached(user);
   // The cell is the record's; End and Start are narrowed to the caller after
   // it, so one caller's authority never lands in another's answer (#1280).
+  // So is the registry search, which is the caller's registry (#1430).
   const authority = await courseActionAuthority(grantId);
-  const result = cached.map((row) => withCourseActionAuthority(row, authority));
+  const registry = resolveMedicineRegistry(actor);
+  const result = cached.map((row) =>
+    withLeafletSearch(withCourseActionAuthority(row, authority), registry),
+  );
 
   annotate({
     action: { name: "medication.list" },
@@ -63,7 +72,10 @@ async function postMedication(request: NextRequest): Promise<Response> {
   // it afterwards — `PUT /api/medications/[id]` and the DELETE beside it stay
   // on `requireAuth()` and refuse under a switch. Adding is help; rewriting
   // the owner's cabinet is not.
-  const { user, grantId } = await requireRecordAuth("write", "medications");
+  const { user, actor, grantId } = await requireRecordAuth(
+    "write",
+    "medications",
+  );
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 64 * 1024,
@@ -91,6 +103,7 @@ async function postMedication(request: NextRequest): Promise<Response> {
     grantId,
     data: parsed.data,
     ipAddress: getClientIp(request),
+    leafletRegistry: resolveMedicineRegistry(actor),
   });
   switch (outcome.kind) {
     case "refused":

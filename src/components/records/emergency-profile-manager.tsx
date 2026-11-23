@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -217,11 +218,17 @@ export function EmergencyProfileManager() {
         {t("records.emergency.reportHint")}
       </p>
 
+      {/* The card these details fill: a page of its own, so the way there is
+          a button in the action row (ui-standards §12), secondary to Save. */}
       <SettingsCardActions>
+        <Button asChild type="button" variant="outline" size="sm">
+          <Link href="/emergency-card" data-slot="emergency-card-entry">
+            {t("records.emergency.cardLink")}
+          </Link>
+        </Button>
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={disabled || !dirty}
           onClick={() => current && save.mutate(current)}
         >

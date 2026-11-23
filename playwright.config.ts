@@ -97,13 +97,11 @@ export default defineConfig({
     // without weakening the shipped SW behaviour. Real users keep the
     // offline data cache; only the test harness opts out.
     serviceWorkers: "block",
-    // HealthLog ships dark mode as the default (Dracula theme) — `globals.css`
-    // sets `color-scheme: dark` on the root and the `<ThemeProvider>` defaults
-    // to "system". Playwright's stock context is `colorScheme: "light"`, which
-    // means axe-core was scanning a layout users never actually see (Dracula
-    // greens on a light card → 1.18 contrast). Forcing the test theme to dark
-    // matches what real users render on first paint and is the only honest
-    // a11y baseline for this app.
+    // The app follows the device's scheme unless a person chose a theme, so
+    // the scheme the context emulates is the theme a spec renders. The suite
+    // pins dark as its baseline, which keeps the screenshots and the axe runs
+    // comparable across runs; specs that check the light theme set it
+    // themselves (`theme-follows-system.spec.ts`, the coach theme loops).
     colorScheme: "dark",
     // Issue #490 — pin the browser timezone. Without this the context
     // inherits the HOST zone (UTC on CI, Europe/Berlin on a local Mac),

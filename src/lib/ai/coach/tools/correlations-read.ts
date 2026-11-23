@@ -46,12 +46,12 @@ import type { Locale } from "@/lib/i18n/config";
 import { annotate } from "@/lib/logging/context";
 import { isModuleEnabled, resolveModuleMap } from "@/lib/modules/gate";
 import { isSurfaceVisible } from "@/lib/modules/surface";
-import { wallClockInTz } from "@/lib/tz/wall-clock";
 import {
   discoverCorrelations,
   discoverEmergingCorrelations,
   withoutModelFencedPairs,
   CAFFEINE_CHANNEL_KEY,
+  ENERGY_BALANCE_CHANNEL_KEY,
   HYDRATION_CHANNEL_KEY,
   NUTRIENT_CHANNEL_PREFIX,
   discoverLabOutcomeCorrelations,
@@ -66,7 +66,7 @@ import {
   loadBaselineProfile,
   isDerivedOk,
 } from "@/lib/insights/derived";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Trailing window for the discovery scan — mirrors the insight route. */
@@ -146,12 +146,6 @@ export interface CoachCorrelationsResult {
   reason?: string;
 }
 
-/** Day key (YYYY-MM-DD) for an instant in the user's display timezone. */
-function tzDayKey(at: Date, tz: string): string {
-  const { year, month, day } = wallClockInTz(at, tz);
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
 /**
  * Natural labels for the non-measurement channel keys (read cleanly in prose).
  *
@@ -164,6 +158,7 @@ const CHANNEL_LABELS: Record<string, string> = {
   [SYMPTOM_SEVERITY_CHANNEL_KEY]: "symptom severity",
   [HYDRATION_CHANNEL_KEY]: "water intake",
   [CAFFEINE_CHANNEL_KEY]: "caffeine intake",
+  [ENERGY_BALANCE_CHANNEL_KEY]: "daily energy balance",
   ...Object.fromEntries(
     ENVIRONMENT_FIELDS.map((field) => [field.key, field.narrationLabel]),
   ),
@@ -309,7 +304,7 @@ export async function readCoachCorrelations(
     // the already-built series). Emerging pairs exclude anything the 180-day
     // scan already established, so the Coach never narrates the same pattern as
     // both "established" and "emerging".
-    const recentFromDayKey = tzDayKey(
+    const recentFromDayKey = userDayKey(
       new Date(Date.now() - earlyDays * MS_PER_DAY),
       tz,
     );

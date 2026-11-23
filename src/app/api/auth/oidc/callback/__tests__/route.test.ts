@@ -19,6 +19,9 @@ vi.mock("@/lib/crypto", () => ({
   encrypt: vi.fn((s: string) => `enc(${s})`),
 }));
 
+vi.mock("@/lib/auth/identity-lookup", () => ({
+  findUserIdByEmail: vi.fn(),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
@@ -88,6 +91,7 @@ vi.mock("@/lib/auth/oidc-native-handoff", async (importOriginal) => ({
 import { GET } from "../route";
 import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
+import { findUserIdByEmail } from "@/lib/auth/identity-lookup";
 import { auditLog } from "@/lib/auth/audit";
 import {
   createSession,
@@ -132,26 +136,37 @@ function userRow(overrides: Record<string, unknown> = {}) {
 }
 
 /**
- * The callback's `prisma.user.findFirst` calls are distinguishable by
- * their `where` shape: the (issuer, sub) identity lookup, the display-
- * email collision probe (`NOT`), and the link/provision email match.
+ * The callback's account lookups: the (issuer, sub) identity lookup is a
+ * `prisma.user.findFirst`; the e-mail lookups go through the exact, case-blind
+ * `@/lib/auth/identity-lookup` — the display-email collision probe passes
+ * `excludeId`, the link/provision match does not and then reads the row by id.
  */
 function mockUserLookups(opts: {
   byIdentity?: ReturnType<typeof userRow> | null;
   byEmail?: ReturnType<typeof userRow> | null;
   emailTaken?: boolean;
 }) {
-  vi.mocked(prisma.user.findFirst).mockImplementation(((args: {
-    where: Record<string, unknown>;
-  }) => {
+  // One reader for both row reads: the (issuer, sub) lookup and the read by
+  // id of the account the e-mail lookup named.
+  const rows = ((args: { where: Record<string, unknown> }) => {
     if (args.where.oidcIssuer !== undefined) {
       return Promise.resolve(opts.byIdentity ?? null);
     }
-    if (args.where.NOT !== undefined) {
-      return Promise.resolve(opts.emailTaken ? { id: "user-other" } : null);
-    }
-    return Promise.resolve(opts.byEmail ?? null);
-  }) as never);
+    const byEmail = opts.byEmail;
+    return Promise.resolve(
+      byEmail && args.where.id === byEmail.id ? byEmail : null,
+    );
+  }) as never;
+  vi.mocked(prisma.user.findFirst).mockImplementation(rows);
+  vi.mocked(prisma.user.findUnique).mockImplementation(rows);
+  vi.mocked(findUserIdByEmail).mockImplementation(
+    async (_email: string, options: { excludeId?: string } = {}) => {
+      if (options.excludeId !== undefined) {
+        return opts.emailTaken ? "user-other" : null;
+      }
+      return opts.byEmail?.id ?? null;
+    },
+  );
 }
 
 function makeRequest(opts: { query?: string; cookie?: string }): NextRequest {

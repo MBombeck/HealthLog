@@ -90,6 +90,8 @@ export async function runDenseIntradayRetentionForUser(
   daysConsolidated: number;
   perSampleRowsSoftDeleted: number;
   derivedRestingRowsUpserted: number;
+  /** Days whose fold threw and were stepped over; retried next run. */
+  daysFailed: number;
   /** The job's budget ran out first; the next run continues from here. */
   stoppedEarly: boolean;
 }> {
@@ -100,6 +102,7 @@ export async function runDenseIntradayRetentionForUser(
       daysConsolidated: 0,
       perSampleRowsSoftDeleted: 0,
       derivedRestingRowsUpserted: 0,
+      daysFailed: 0,
       stoppedEarly: false,
     };
   }
@@ -126,6 +129,7 @@ export async function runDenseIntradayRetentionForUser(
         // Backlog days of a server-pulled source that expired the account's
         // delta cursors rather than leave millions of tombstones.
         sync_resets_stamped: summary.totals.syncResetsStamped,
+        days_failed: summary.totals.daysFailed,
         stopped_early: summary.stoppedEarly,
       },
     },
@@ -134,6 +138,7 @@ export async function runDenseIntradayRetentionForUser(
     daysConsolidated: summary.totals.daysConsolidated,
     perSampleRowsSoftDeleted: summary.totals.perSampleRowsSoftDeleted,
     derivedRestingRowsUpserted: summary.totals.derivedRestingRowsUpserted,
+    daysFailed: summary.totals.daysFailed,
     stoppedEarly: summary.stoppedEarly,
   };
 }

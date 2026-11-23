@@ -1,13 +1,13 @@
 "use client";
 
-import { type ReactNode } from "react";
-import { AlertTriangle } from "lucide-react";
+import { type ComponentProps, type ReactNode } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { MedicationCardHeader } from "@/components/medications/medication-card-header";
 import { MedicationStatusPill } from "@/components/medications/card-parts/medication-status-pill";
+import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import {
   MedicationComplianceBars,
   MedicationComplianceError,
@@ -18,9 +18,10 @@ import { MedicationCycleStatus } from "@/components/medications/card-parts/medic
 import { MedicationIntakeActions } from "@/components/medications/card-parts/medication-intake-actions";
 import { MedicationNextLastSlot } from "@/components/medications/card-parts/medication-next-last-slot";
 import { MedicationNote } from "@/components/medications/medication-note";
-import { useTranslations } from "@/lib/i18n/context";
-import type { CurrentCycle, DoseStatus } from "@/lib/analytics/compliance";
-import type { MedicationWindowStatus } from "@/lib/medications/window-status";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import type { CurrentCycle } from "@/lib/analytics/compliance";
+import type { DoseState } from "@/lib/medications/dose-state/resolve";
+import type { MedicationWindowStatus } from "@/lib/medications/dose-state/pill";
 
 /**
  * v1.15.9 — the ONE shared medication-card body.
@@ -44,12 +45,13 @@ import type { MedicationWindowStatus } from "@/lib/medications/window-status";
  *     never tints the card background or border. A whole card washing green
  *     reads as "take it now everywhere" and drowns the page; status is shown
  *     ONLY through the discreet top line / pill below.
- *   - `on_time_window` → the discreet "Take now" pill (success-toned text +
+ *   - `due` → the discreet "Take now" pill (success-toned text +
  *     glyph), no card wash.
  *   - `overdue` → a calm top status line; `missed` (at / past the miss
  *     cutoff) escalates to "Stark überfällig" in the destructive tone — both
  *     are a single text line with an icon, not a surface tint.
- *   - `upcoming` / `taken_*` / `skipped` → no escalation; the card stays calm.
+ *   - `pending` / `taken` / `taken_late` / `skipped` → no escalation; the
+ *     card stays calm.
  */
 export interface MedicationCardBodyProps {
   /**
@@ -88,15 +90,13 @@ export interface MedicationCardBodyProps {
     status: Exclude<MedicationWindowStatus, null>;
     windowStart: string;
     windowEnd: string;
-    /** v1.16.9 — day-scale last-dose context in whole days (see the pill). */
-    takenEarlyDaysAgo?: number | null;
   } | null;
 
   /**
-   * The open dose's server-derived {@link DoseStatus}. Drives the green
-   * take-window highlight and the overdue / heavily-overdue top line.
+   * The open dose's server-resolved state at render time (`liveDoseState`),
+   * null when there is none. Drives the overdue / missed top line.
    */
-  doseStatus: DoseStatus;
+  doseState: DoseState | null;
 
   /** Upcoming-intake line value, or null when there is nothing to show. */
   nextLine: ReactNode | null;
@@ -108,8 +108,8 @@ export interface MedicationCardBodyProps {
    * flight (the body then renders the constant-height skeleton).
    */
   compliance: {
-    rate7: number;
-    rate30: number;
+    rate7: number | null;
+    rate30: number | null;
     streak: number;
     shortDays: number;
     longDays: number;
@@ -173,6 +173,10 @@ export interface MedicationCardBodyProps {
   intakeLoading: string | null;
   /** Record the displayed dose (the card binds the slot instant). */
   onRecordIntake: (skipped: boolean) => void;
+  /** The slot the take records, named on the button (`cardTakeSlot`). */
+  takeSlot?: ComponentProps<typeof MedicationIntakeActions>["slot"];
+  /** The card's "Remind me later" and snoozed state (`useDoseSnooze`). */
+  snooze?: ComponentProps<typeof MedicationIntakeActions>["snooze"];
 
   /** GLP-1 variant mounts its post-dose injection-site dialog here. */
   children?: ReactNode;
@@ -198,7 +202,7 @@ export function MedicationCardBody({
   stateBadges,
   headerActions,
   windowStatus,
-  doseStatus,
+  doseState,
   nextLine,
   lastLine,
   compliance,
@@ -212,69 +216,33 @@ export function MedicationCardBody({
   lowStockRunwayDays = null,
   intakeLoading,
   onRecordIntake,
+  takeSlot = null,
+  snooze = null,
   children,
   highlighted = false,
 }: MedicationCardBodyProps) {
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
 
-  // Overdue escalation line: a dose past its on-time window. `missed` (at /
-  // past the clinical miss cutoff) reads "Stark überfällig"; the still-takeable
-  // `overdue` tail reads the calmer "Überfällig". Both use the destructive
-  // tone so the urgency is unmistakable; suppressed on an inactive med.
+  // Escalation of the open dose past its on-time window, in the shared
+  // vocabulary: "Overdue" while the late window runs, "Missed" past the miss
+  // cutoff. A missed dose still counts (late) when taken now, and the card
+  // says so under the row, so "missed" and the Take button beside it never
+  // contradict each other. Suppressed on an inactive med.
   const canAct = active && intakeActionable;
-  const overdueLabel =
-    canAct && doseStatus === "missed"
-      ? t("medications.veryOverdue")
-      : canAct && doseStatus === "overdue"
-        ? t("medications.overdue")
+  const escalation: "missed" | "overdue" | null =
+    canAct && doseState === "missed"
+      ? "missed"
+      : canAct && doseState === "overdue"
+        ? "overdue"
         : null;
 
-  // v1.16.11 — EVERY dose state rides the "next intake" row as its
-  // right-aligned value: green take-now, amber late, red escalation.
-  // The former standalone status line above the slot is gone — it
-  // reserved a blank row on every settled card (the overdue tier rides
-  // the async compliance query) and broke the card's label/value
-  // grammar. Urgency still reads at a glance through the value's
-  // colour + glyph.
-  //
-  // Taken-early (v1.16.9 double-dose guard) suppresses every prompt
-  // tier: the row falls through to the plain schedule value and the
-  // "last intake" line directly below already names the recent dose —
-  // the guard's job is that no take prompt renders, not a louder line.
-  //
-  // The escalation value keeps the due time: the red badge alone evicted
-  // the window / time the amber tier used to carry, leaving the user
-  // with urgency but no anchor. The matched window rides along when one
-  // is still open; otherwise the card's own next-intake value (the
-  // overdue slot time) fills the gap.
-  const nextValueOverride =
-    windowStatus?.takenEarlyDaysAgo != null ? null : overdueLabel ? (
-      <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm">
-        <span className="text-destructive inline-flex items-center gap-1 font-medium">
-          <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
-          {overdueLabel}
-        </span>
-        {windowStatus !== null ? (
-          <span className="text-muted-foreground">
-            —{" "}
-            {formatTimeWindowRange(
-              windowStatus.windowStart,
-              windowStatus.windowEnd,
-              locale,
-            )}
-          </span>
-        ) : nextLine !== null ? (
-          <span className="text-muted-foreground">— {nextLine}</span>
-        ) : null}
-      </span>
-    ) : windowStatus !== null ? (
-      <MedicationStatusPill
-        status={windowStatus.status}
-        windowStart={windowStatus.windowStart}
-        windowEnd={windowStatus.windowEnd}
-        inline
-      />
-    ) : null;
+  const nextValueOverride = (
+    <NextDoseValue
+      windowStatus={windowStatus}
+      escalation={escalation}
+      nextLine={nextLine}
+    />
+  );
 
   return (
     <Card
@@ -315,9 +283,21 @@ export function MedicationCardBody({
             next-intake value when present; the schedule value fills the
             row otherwise. */}
         <MedicationNextLastSlot
-          next={nextValueOverride ?? nextLine}
+          next={
+            hasNextDoseValue(windowStatus, escalation)
+              ? nextValueOverride
+              : nextLine
+          }
           last={lastLine}
         />
+        {escalation === "missed" && !recordOnly && (
+          <p
+            className="text-muted-foreground text-xs"
+            data-slot="medication-missed-still-counts"
+          >
+            {t("medications.dose.state.missedStillCounts")}
+          </p>
+        )}
 
         {/* Compliance bars — always two rows; constant-height skeleton holds
             the slot while the query is in flight so the grid row stays even.
@@ -377,6 +357,8 @@ export function MedicationCardBody({
             <MedicationIntakeActions
               intakeLoading={intakeLoading}
               onRecordIntake={onRecordIntake}
+              slot={takeSlot}
+              snooze={snooze}
             />
           </div>
         )}
@@ -384,5 +366,65 @@ export function MedicationCardBody({
 
       {children}
     </Card>
+  );
+}
+
+/** Whether the next-intake row shows the dose state instead of the schedule. */
+function hasNextDoseValue(
+  windowStatus: MedicationCardBodyProps["windowStatus"],
+  escalation: "missed" | "overdue" | null,
+): boolean {
+  return escalation !== null || windowStatus !== null;
+}
+
+/**
+ * The "next intake" row's value when a dose state rides it (v1.16.11): the
+ * due pill inside the window, the escalation past it. The former standalone
+ * status line above the slot reserved a blank row on every settled card and
+ * broke the label/value grammar. Taken-early (the v1.16.9 double-dose
+ * guard) suppresses every prompt: the row falls back to the schedule and the
+ * "last intake" line below names the recent dose. The escalation keeps the
+ * due time beside it: the matched window while one is open, else the card's
+ * own next-intake value (the overdue slot time).
+ */
+function NextDoseValue({
+  windowStatus,
+  escalation,
+  nextLine,
+}: {
+  windowStatus: MedicationCardBodyProps["windowStatus"];
+  escalation: "missed" | "overdue" | null;
+  nextLine: ReactNode | null;
+}) {
+  const { locale } = useTranslations();
+  const fmt = useFormatters();
+  if (escalation) {
+    return (
+      <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm">
+        <DoseStateLabel state={escalation} emphasis />
+        {windowStatus !== null ? (
+          <span className="text-muted-foreground">
+            —{" "}
+            {formatTimeWindowRange(
+              windowStatus.windowStart,
+              windowStatus.windowEnd,
+              locale,
+              fmt.wallTime,
+            )}
+          </span>
+        ) : nextLine !== null ? (
+          <span className="text-muted-foreground">— {nextLine}</span>
+        ) : null}
+      </span>
+    );
+  }
+  if (windowStatus === null) return null;
+  return (
+    <MedicationStatusPill
+      status={windowStatus.status}
+      windowStart={windowStatus.windowStart}
+      windowEnd={windowStatus.windowEnd}
+      inline
+    />
   );
 }

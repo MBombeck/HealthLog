@@ -186,27 +186,6 @@ export function chainSelectionFor(
   return { kind: "main" };
 }
 
-/**
- * The configuration after deleting one chain: every capability attached to it
- * returns to the default chain, and when it was the default, the main chain
- * becomes the default again.
- */
-export function detachChain(
-  config: NamedChainsConfig,
-  chainId: string,
-): NamedChainsConfig {
-  const attachments: Partial<Record<AiCapabilityKey, string>> = {};
-  for (const [key, id] of Object.entries(config.attachments)) {
-    if (id !== chainId) attachments[key as AiCapabilityKey] = id;
-  }
-  return {
-    chains: config.chains.filter((chain) => chain.id !== chainId),
-    defaultChainId:
-      config.defaultChainId === chainId ? null : config.defaultChainId,
-    attachments,
-  };
-}
-
 /** Whether a resolved chain is a capability's pinned named chain. */
 export function isPinnedChain(
   providers: readonly Pick<ProviderChainResolved, "pinned">[],

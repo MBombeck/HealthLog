@@ -2,6 +2,8 @@
 
 import { useId, useState } from "react";
 import Link from "next/link";
+
+import { InlineAction } from "@/components/ui/inline-action";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -43,7 +45,17 @@ import { queryKeys } from "@/lib/query-keys";
  * finished: it offers the questions again (through the restart route, which
  * resets the ledger and keeps the answers as prefill) or the dashboard.
  */
-export function WelcomeScreen({ variant }: { variant: "fresh" | "again" }) {
+export function WelcomeScreen({
+  variant,
+  serverSetupOpen = false,
+}: {
+  variant: "fresh" | "again";
+  /**
+   * 1.49 — an admin whose server setup is not finished (never on a demo
+   * deploy): one line offers it, before or after this person's own setup.
+   */
+  serverSetupOpen?: boolean;
+}) {
   const { t } = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
@@ -141,6 +153,17 @@ export function WelcomeScreen({ variant }: { variant: "fresh" | "again" }) {
       />
 
       <p className="text-sm">{t("onboarding.flow.welcome.changeLater")}</p>
+
+      {serverSetupOpen ? (
+        <p className="text-sm" data-slot="onboarding-server-setup-line">
+          {t("onboarding.flow.welcome.serverSetup")}{" "}
+          <InlineAction asChild size="sm" className="underline">
+            <Link href="/onboarding/server">
+              {t("onboarding.flow.welcome.serverSetupCta")}
+            </Link>
+          </InlineAction>
+        </p>
+      ) : null}
 
       {/* One-time medical-disclaimer acknowledgment; the full text stays
           reachable on the public privacy page. */}

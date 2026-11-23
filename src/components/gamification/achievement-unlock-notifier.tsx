@@ -3,6 +3,7 @@
 import { Sparkles, Trophy } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
+import { showInformationalToast } from "@/lib/toast/priority";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { useAchievementsQuery } from "@/lib/queries/use-achievements-query";
@@ -119,21 +120,31 @@ export function AchievementUnlockNotifier({
     }
 
     for (const achievement of newlyUnlocked) {
+      // Informational and unasked-for: it waits while a save's Undo / Edit
+      // toast is open rather than covering it (`showInformationalToast`).
       // v1.4.18 — hidden Easter-eggs get a celebration toast that
       // names them "hidden". The real title/description are revealed
       // *only* on the unlock toast (and afterwards on the unlocked
       // card) so the surprise lands.
       if (achievement.isHidden) {
-        toast(t("achievements.hiddenUnlockToast.title"), {
-          description: `${t(achievement.titleKey)}: ${t(achievement.descriptionKey)}`,
-          icon: <Sparkles className="size-4" />,
-          duration: 8000,
-        });
+        const title = t("achievements.hiddenUnlockToast.title");
+        const description = `${t(achievement.titleKey)}: ${t(achievement.descriptionKey)}`;
+        showInformationalToast(() =>
+          toast(title, {
+            description,
+            icon: <Sparkles className="size-4" />,
+            duration: 8000,
+          }),
+        );
       } else {
-        toast(t(achievement.titleKey), {
-          description: t(achievement.descriptionKey),
-          icon: <Trophy className="size-4" />,
-        });
+        const title = t(achievement.titleKey);
+        const description = t(achievement.descriptionKey);
+        showInformationalToast(() =>
+          toast(title, {
+            description,
+            icon: <Trophy className="size-4" />,
+          }),
+        );
       }
       seenIdsRef.current.add(achievement.id);
     }

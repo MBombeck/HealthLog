@@ -50,6 +50,7 @@ const CYCLE_SUMMARY: NonNullable<DoctorReportData["cycle"]> = {
   cycleLengthVariabilityDays: 0.5,
   averagePeriodLengthDays: 5,
   currentPhase: "LUTEAL",
+  pregnancy: null,
 };
 
 describe("fhir/cycle observations", () => {

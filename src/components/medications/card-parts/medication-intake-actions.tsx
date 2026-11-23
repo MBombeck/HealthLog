@@ -1,8 +1,16 @@
-import { Check, Loader2, SkipForward } from "lucide-react";
+import { BellRing, Check, Loader2, SkipForward } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useTranslations } from "@/lib/i18n/context";
+import { InlineAction } from "@/components/ui/inline-action";
+import {
+  useDisplayTimezone,
+  useFormatters,
+  useTranslations,
+} from "@/lib/i18n/context";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import { DOSE_ACTION_TERM } from "@/lib/medications/dose-state/terms";
+import type { TakeSlot } from "@/lib/medications/dose-state/pill";
+import { userDayKey } from "@/lib/tz/format";
 
 interface MedicationIntakeActionsProps {
   /** "take" | "skip" while the matching request is in flight, else null. */
@@ -13,6 +21,26 @@ interface MedicationIntakeActionsProps {
    * here just forward the skip flag.
    */
   onRecordIntake: (skipped: boolean) => void;
+  /**
+   * The slot the take records (`cardTakeSlot`): named on the button, so a
+   * tap says which dose it answers, with an "early" line under the buttons
+   * while that dose's window has not opened. When a take now would not count
+   * for that dose (`binding: "extra"`), the button says it logs an extra
+   * dose and the line says which dose it does not count for. Null keeps the
+   * plain label.
+   */
+  slot?: TakeSlot | null;
+  /**
+   * The card's snooze ("Remind me later (30 min)") and its snoozed state,
+   * from {@link useDoseSnooze}. Omitted where a snooze means nothing.
+   */
+  snooze?: {
+    minutes: number;
+    snoozedUntil: string | null;
+    canSnooze: boolean;
+    busy: boolean;
+    snooze: () => void;
+  } | null;
 }
 
 /**
@@ -31,8 +59,12 @@ interface MedicationIntakeActionsProps {
 export function MedicationIntakeActions({
   intakeLoading,
   onRecordIntake,
+  slot = null,
+  snooze = null,
 }: MedicationIntakeActionsProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
+  const tz = useDisplayTimezone();
   // v1.36.x — marking a dose taken or skipped is the verb the delegation was
   // written for. A read-only delegate sees the card and its schedule and no
   // action row; the card is otherwise unchanged.
@@ -40,11 +72,41 @@ export function MedicationIntakeActions({
   const canRecordIntake = canWriteDomain("medications");
   if (!canRecordIntake) return null;
 
-  return (
+  // A clock time, with its day when it is not today.
+  const instantLabel = (at: Date) =>
+    userDayKey(at, tz) === userDayKey(new Date(), tz)
+      ? fmt.time(at)
+      : `${fmt.dateShortSmart(at)}, ${fmt.time(at)}`;
+  const slotLabel = slot ? instantLabel(slot.at) : null;
+  const extra = slot?.binding === "extra";
+  const earlyHint = slot ? (
+    extra ? (
+      <p
+        className="text-muted-foreground text-xs"
+        data-slot="medication-intake-extra"
+      >
+        {t("medications.dose.extraHint", { time: slotLabel ?? "" })}
+      </p>
+    ) : slot.earlyFrom ? (
+      <p
+        className="text-muted-foreground text-xs"
+        data-slot="medication-intake-early"
+      >
+        {t("medications.dose.earlyHint", {
+          time: instantLabel(slot.earlyFrom),
+        })}
+      </p>
+    ) : null
+  ) : null;
+
+  const buttons = (
     <div className="flex gap-2">
+      {/* The take button gives way first: a label that names the slot
+          ("Einnehmen (21. Nov., 08:00)") wraps inside it rather than pushing
+          the card past a phone's width. */}
       <Button
         data-slot="medication-intake-take"
-        className="min-h-11 flex-1"
+        className="h-auto min-h-11 min-w-0 flex-1 shrink py-2 text-center leading-tight whitespace-normal"
         onClick={() => onRecordIntake(false)}
         disabled={!!intakeLoading}
       >
@@ -53,7 +115,11 @@ export function MedicationIntakeActions({
         ) : (
           <Check className="h-4 w-4" />
         )}
-        {t("medications.taken")}
+        {extra
+          ? t("medications.dose.action.takeExtra")
+          : slotLabel
+            ? t("medications.dose.action.takeSlot", { time: slotLabel })
+            : t(DOSE_ACTION_TERM.take)}
       </Button>
       <Button
         data-slot="medication-intake-skip"
@@ -67,8 +133,51 @@ export function MedicationIntakeActions({
         ) : (
           <SkipForward className="h-4 w-4" />
         )}
-        {t("medications.skipped")}
+        {t(DOSE_ACTION_TERM.skip)}
       </Button>
+    </div>
+  );
+
+  if (!snooze || (!snooze.canSnooze && !snooze.snoozedUntil)) {
+    return earlyHint ? (
+      <div className="space-y-1">
+        {buttons}
+        {earlyHint}
+      </div>
+    ) : (
+      buttons
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      {buttons}
+      {earlyHint}
+      {/* The snooze rides under the two buttons: one length for every
+          surface, named in the label, and the held state in its place once
+          set, so a card never hides that the reminder was pushed back. */}
+      {snooze.snoozedUntil ? (
+        <p
+          className="text-muted-foreground flex min-h-11 items-center gap-1.5 text-xs sm:min-h-9"
+          data-slot="medication-snoozed"
+        >
+          <BellRing className="size-3.5 shrink-0" aria-hidden="true" />
+          {t("medications.dose.state.snoozedUntil", {
+            time: fmt.time(snooze.snoozedUntil),
+          })}
+        </p>
+      ) : (
+        <InlineAction
+          tone="muted"
+          size="xs"
+          onClick={snooze.snooze}
+          disabled={snooze.busy || !!intakeLoading}
+          data-slot="medication-intake-snooze"
+        >
+          <BellRing className="size-3.5" aria-hidden="true" />
+          {t(DOSE_ACTION_TERM.snooze, { minutes: snooze.minutes })}
+        </InlineAction>
+      )}
     </div>
   );
 }

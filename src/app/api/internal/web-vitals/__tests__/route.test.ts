@@ -74,6 +74,22 @@ describe("POST /api/internal/web-vitals", () => {
     expect(res.status).toBe(204);
   });
 
+  it("accepts every navigation type the web-vitals library reports", async () => {
+    for (const navigationType of [
+      "navigate",
+      "reload",
+      "back-forward",
+      "back-forward-cache",
+      "prerender",
+      "restore",
+    ]) {
+      const res = await POST(
+        postRequest({ name: "INP", value: 80, id: "v1-1", navigationType }),
+      );
+      expect(res.status).toBe(204);
+    }
+  });
+
   it("returns 400 when the name is not in the documented set", async () => {
     const res = await POST(
       postRequest({

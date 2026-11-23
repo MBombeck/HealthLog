@@ -21,8 +21,7 @@ import {
 import Link from "next/link";
 import { useAccountOnceMounted, useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
-import { useTranslations } from "@/lib/i18n/context";
-import { formatDate } from "@/lib/format";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useAchievementsQuery } from "@/lib/queries/use-achievements-query";
 import type { AchievementProgress } from "@/lib/gamification/achievements";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -87,6 +86,7 @@ const RECENT_LIMIT = 3;
  */
 export function RecentAchievementsCard() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const { isAuthenticated } = useAuth();
   // Withheld until mounted for the same reason the skeleton gate below is:
   // this card paints inside the dashboard's streamed boundary, and a module
@@ -198,7 +198,7 @@ export function RecentAchievementsCard() {
                   </div>
                   {achievement.completedAt && (
                     <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                      {formatDate(achievement.completedAt)}
+                      {fmt.date(achievement.completedAt)}
                     </span>
                   )}
                 </li>

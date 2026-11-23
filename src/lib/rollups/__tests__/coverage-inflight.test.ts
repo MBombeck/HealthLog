@@ -4,7 +4,15 @@ const { queryRaw } = vi.hoisted(() => ({ queryRaw: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: { $queryRaw: queryRaw } }));
 
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import { eventStorage } from "@/lib/logging/context";
+import { WideEventBuilder } from "@/lib/logging/event-builder";
 import { probeRollupCoverage } from "../measurement-coverage";
+
+function inRequest<T>(method: string, fn: () => Promise<T>): Promise<T> {
+  const event = new WideEventBuilder();
+  event.setHttp({ method, path: "/api/x", route: "/api/x", status: 200 });
+  return eventStorage.run(event, fn);
+}
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -79,5 +87,68 @@ describe("probeRollupCoverage single-flight", () => {
     await expect(b).rejects.toThrow("db down");
 
     expect((await probeRollupCoverage("u1")).get("PULSE")).toBe(true);
+  });
+});
+
+/**
+ * In a GET request the first answer holds for every later probe, so the
+ * number of statements a request sends does not depend on whether its
+ * readers' probes happened to overlap. The budgets of the hot routes saw the
+ * digest send one more statement in one run in eight on the same fixture.
+ */
+describe("probeRollupCoverage within one GET request", () => {
+  it("answers probes that start after the first one settled from it", async () => {
+    queryRaw.mockResolvedValue([{ type: "PULSE", has_buckets: true }]);
+    await inRequest("GET", async () => {
+      const first = await probeRollupCoverage("u1");
+      const later = await probeRollupCoverage("u1");
+      await Promise.all([probeRollupCoverage("u1"), probeRollupCoverage("u1")]);
+      expect(later).toEqual(first);
+      // Still a copy per caller.
+      expect(later).not.toBe(first);
+    });
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it("probes again in the next request, for another account, and outside a GET", async () => {
+    queryRaw.mockResolvedValue([{ type: "PULSE", has_buckets: true }]);
+    await inRequest("GET", () => probeRollupCoverage("u1"));
+    await inRequest("GET", async () => {
+      await probeRollupCoverage("u1");
+      await probeRollupCoverage("u2");
+    });
+    await inRequest("POST", async () => {
+      await probeRollupCoverage("u1");
+      await probeRollupCoverage("u1");
+    });
+    expect(queryRaw).toHaveBeenCalledTimes(5);
+  });
+
+  it("never answers from before a measurement write in the same request", async () => {
+    queryRaw
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: false }]);
+    await inRequest("GET", async () => {
+      expect((await probeRollupCoverage("u1")).size).toBe(0);
+      invalidateUserMeasurements("u1");
+      expect(Object.fromEntries(await probeRollupCoverage("u1"))).toEqual({
+        WEIGHT: false,
+      });
+      // The fresh answer is the one held from here on.
+      await probeRollupCoverage("u1");
+    });
+    expect(queryRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not hold a failed probe", async () => {
+    queryRaw
+      .mockRejectedValueOnce(new Error("db down"))
+      .mockResolvedValueOnce([{ type: "PULSE", has_buckets: true }]);
+    await inRequest("GET", async () => {
+      await expect(probeRollupCoverage("u1")).rejects.toThrow("db down");
+      expect((await probeRollupCoverage("u1")).get("PULSE")).toBe(true);
+      await probeRollupCoverage("u1");
+    });
+    expect(queryRaw).toHaveBeenCalledTimes(2);
   });
 });

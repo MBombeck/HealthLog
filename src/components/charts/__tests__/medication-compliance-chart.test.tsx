@@ -47,48 +47,60 @@ function render(node: React.ReactNode) {
 }
 
 describe("aggregateMedicationCompliance()", () => {
+  const label = (d: Date) => d.toISOString();
   it("computes rate as taken/scheduled rounded to nearest integer", () => {
-    const out = aggregateMedicationCompliance([
-      { date: "2026-05-01", scheduled: 4, taken: 4 }, // 100 %
-      { date: "2026-05-02", scheduled: 4, taken: 3 }, // 75 %
-      { date: "2026-05-03", scheduled: 4, taken: 2 }, // 50 %
-      { date: "2026-05-04", scheduled: 4, taken: 0 }, // 0 %
-    ]);
+    const out = aggregateMedicationCompliance(
+      [
+        { date: "2026-05-01", scheduled: 4, taken: 4 }, // 100 %
+        { date: "2026-05-02", scheduled: 4, taken: 3 }, // 75 %
+        { date: "2026-05-03", scheduled: 4, taken: 2 }, // 50 %
+        { date: "2026-05-04", scheduled: 4, taken: 0 }, // 0 %
+      ],
+      label,
+    );
     expect(out.map((p) => p.rate)).toEqual([100, 75, 50, 0]);
   });
 
   it("skips days where no doses were scheduled (rate undefined)", () => {
-    const out = aggregateMedicationCompliance([
-      { date: "2026-05-01", scheduled: 0, taken: 0 }, // skipped
-      { date: "2026-05-02", scheduled: 2, taken: 2 }, // 100 %
-      { date: "2026-05-03", scheduled: 0, taken: 0 }, // skipped
-    ]);
+    const out = aggregateMedicationCompliance(
+      [
+        { date: "2026-05-01", scheduled: 0, taken: 0 }, // skipped
+        { date: "2026-05-02", scheduled: 2, taken: 2 }, // 100 %
+        { date: "2026-05-03", scheduled: 0, taken: 0 }, // skipped
+      ],
+      label,
+    );
     expect(out).toHaveLength(1);
     expect(out[0].rate).toBe(100);
   });
 
   it("clamps over-100 % rates (e.g. extra ad-hoc takes) to 100", () => {
-    const out = aggregateMedicationCompliance([
-      { date: "2026-05-01", scheduled: 2, taken: 5 },
-    ]);
+    const out = aggregateMedicationCompliance(
+      [{ date: "2026-05-01", scheduled: 2, taken: 5 }],
+      label,
+    );
     expect(out[0].rate).toBe(100);
   });
 
   it("sorts by date ascending regardless of input order", () => {
-    const out = aggregateMedicationCompliance([
-      { date: "2026-05-03", scheduled: 1, taken: 1 },
-      { date: "2026-05-01", scheduled: 1, taken: 1 },
-      { date: "2026-05-02", scheduled: 1, taken: 1 },
-    ]);
+    const out = aggregateMedicationCompliance(
+      [
+        { date: "2026-05-03", scheduled: 1, taken: 1 },
+        { date: "2026-05-01", scheduled: 1, taken: 1 },
+        { date: "2026-05-02", scheduled: 1, taken: 1 },
+      ],
+      label,
+    );
     expect(out.map((p) => p.timestamp)).toEqual(
       [...out.map((p) => p.timestamp)].sort((a, b) => a - b),
     );
   });
 
   it("emits an empty array when all input days have no scheduled doses", () => {
-    const out = aggregateMedicationCompliance([
-      { date: "2026-05-01", scheduled: 0, taken: 0 },
-    ]);
+    const out = aggregateMedicationCompliance(
+      [{ date: "2026-05-01", scheduled: 0, taken: 0 }],
+      label,
+    );
     expect(out).toEqual([]);
   });
 });

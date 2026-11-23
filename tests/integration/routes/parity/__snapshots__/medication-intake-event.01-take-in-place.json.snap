@@ -11,6 +11,7 @@
       "autoMissed": false,
       "autoRecorded": false,
       "attributionSource": "AUTO",
+      "takenVia": null,
       "source": "WEB",
       "idempotencyKey": null,
       "createdAt": "<createdAt>",
@@ -20,7 +21,8 @@
       "externalId": null,
       "updatedAt": "<updatedAt>",
       "syncVersion": "<syncVersion>",
-      "deletedAt": null
+      "deletedAt": null,
+      "appleHealthDeletedAt": null
     },
     "error": null
   },
@@ -85,6 +87,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -121,6 +124,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -200,6 +204,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -209,7 +214,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:10>",
@@ -221,6 +227,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -230,7 +237,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:11>",
@@ -242,6 +250,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -251,7 +260,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:12>",
@@ -263,6 +273,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -272,7 +283,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": "2026-10-12T09:00:00.000Z"
+        "deletedAt": "2026-10-12T09:00:00.000Z",
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:1>",
@@ -284,6 +296,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -298,7 +311,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:13>",
@@ -310,6 +324,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -319,7 +334,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:14>",
@@ -331,6 +347,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -340,7 +357,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:15>",
@@ -352,6 +370,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -361,7 +380,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "doseChanges": [],

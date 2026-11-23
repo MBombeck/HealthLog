@@ -217,7 +217,6 @@ function AiUsageForm({ bounds }: { bounds: AiUsageBounds }) {
           <Button
             type="submit"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             disabled={save.isPending || !gapValid || defaultAbove}
           >
             {t("common.save")}

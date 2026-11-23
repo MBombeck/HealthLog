@@ -5,8 +5,9 @@ import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   takeBaseToken,
-  guardedUserUpdate,
+  guardedUserDocumentUpdate,
   invalidBaseTokenError,
+  userDocumentToken,
 } from "@/lib/optimistic-lock";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -65,11 +66,15 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   const row = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { moodTagLayoutJson: true, updatedAt: true },
+    select: { moodTagLayoutJson: true, moodTagLayoutRevisedAt: true },
   });
   const stored = parseStoredMoodTagLayout(row?.moodTagLayoutJson);
   return apiSuccess(
-    await resolveLayoutResponse(user.id, stored, row?.updatedAt?.toISOString()),
+    await resolveLayoutResponse(
+      user.id,
+      stored,
+      userDocumentToken(row, "moodTagLayout"),
+    ),
   );
 });
 
@@ -109,8 +114,9 @@ export const PUT = apiHandler(async (request: NextRequest) => {
       : {}),
   });
 
-  const guarded = await guardedUserUpdate({
+  const guarded = await guardedUserDocumentUpdate({
     userId: user.id,
+    document: "moodTagLayout",
     base,
     data: { moodTagLayoutJson: toJson(merged) },
     conflict: {

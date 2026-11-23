@@ -144,20 +144,18 @@ describe("every exported resolver binds", () => {
 
   it("finds the resolvers (an empty set is a failure, not a pass)", () => {
     expect(resolvers.map((r) => r.name).sort()).toEqual([
-      "resolveProvider",
       "resolveProviderChain",
       "resolveProviderForTest",
     ]);
   });
 
-  it.each([
-    "resolveProvider",
-    "resolveProviderChain",
-    "resolveProviderForTest",
-  ])("%s calls bindResponseTimeout", (name) => {
-    const resolver = resolvers.find((r) => r.name === name);
-    expect(resolver?.body ?? "").toMatch(/\bbindResponseTimeout\s*\(/);
-  });
+  it.each(["resolveProviderChain", "resolveProviderForTest"])(
+    "%s calls bindResponseTimeout",
+    (name) => {
+      const resolver = resolvers.find((r) => r.name === name);
+      expect(resolver?.body ?? "").toMatch(/\bbindResponseTimeout\s*\(/);
+    },
+  );
 });
 
 describe("clients are built only where a resolver binds them", () => {
@@ -271,7 +269,17 @@ describe("outer bounds around model work allow every call they wait on", () => {
     // run one after another, and the Local and gateway clients may ask the
     // first again once. A new stage means a longer generation: recount
     // COMPREHENSIVE_MODEL_CALLS before adding it here.
-    expect(stagesIn("lib/insights/comprehensive-generate.ts").sort()).toEqual([
+    // The generator's steps live in two siblings of the entry point; the
+    // stages are counted across all three.
+    expect(
+      [
+        "lib/insights/comprehensive-generate.ts",
+        "lib/insights/comprehensive-steps.ts",
+        "lib/insights/comprehensive-support.ts",
+      ]
+        .flatMap(stagesIn)
+        .sort(),
+    ).toEqual([
       "generate",
       "grounding-retry",
       "json-retry",

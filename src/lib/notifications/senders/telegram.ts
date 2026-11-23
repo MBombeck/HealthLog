@@ -6,6 +6,8 @@ import type {
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { classifyTelegramError } from "@/lib/notifications/retry-policy";
 import { prisma } from "@/lib/db";
+import { getPhaseKeyboard } from "@/lib/jobs/reminder-phases";
+import { resolveSnoozeMinutes } from "@/lib/validations/notification-prefs";
 import type { ReminderPhase } from "@/generated/prisma/client";
 import { getEvent } from "@/lib/logging/context";
 import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-attempt-record";
@@ -178,36 +180,33 @@ export async function sendViaTelegram(
     }
   }
 
-  // Build reply markup
+  // Build reply markup. A dose reminder that arrives without its own
+  // keyboard gets the same one the reminder job builds: localised, with the
+  // person's snooze length, never a second hand-written copy.
+  const doseKeyboard =
+    selfDelivery &&
+    !replyMarkup &&
+    !interactiveKeyboard &&
+    payload.eventType === "MEDICATION_REMINDER" &&
+    medicationId
+      ? getPhaseKeyboard(
+          "GREEN",
+          medicationId,
+          await resolveSenderLocale(userId),
+          resolveSnoozeMinutes(
+            (
+              await prisma.user.findUnique({
+                where: { id: userId },
+                select: { notificationPrefs: true },
+              })
+            )?.notificationPrefs,
+          ),
+        )
+      : undefined;
   const keyboard =
     (selfDelivery ? replyMarkup : undefined) ??
     interactiveKeyboard ??
-    (selfDelivery && payload.eventType === "MEDICATION_REMINDER" && medicationId
-      ? {
-          inline_keyboard: [
-            [
-              {
-                text: "Genommen",
-                callback_data: `taken:${medicationId}`,
-              },
-            ],
-            [
-              {
-                text: "\u{1F550} 1h",
-                callback_data: `snooze:${medicationId}:60`,
-              },
-              {
-                text: "\u{1F550} 3h",
-                callback_data: `snooze:${medicationId}:180`,
-              },
-              {
-                text: "\u23ED Überspringen",
-                callback_data: `skip:${medicationId}`,
-              },
-            ],
-          ],
-        }
-      : undefined);
+    doseKeyboard;
 
   // Tap target. Telegram has no "tap opens a URL" for a message, so the
   // target rides an inline URL button under it (below any action row), or a

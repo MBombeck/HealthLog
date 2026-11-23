@@ -295,7 +295,6 @@ export function PulseDayMeanCard() {
         <Button
           size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-9"
           disabled={!s || active || run.isPending}
           onClick={() => run.mutate("dry_run")}
           data-testid="admin-pulse-day-mean-dry-run"
@@ -307,7 +306,6 @@ export function PulseDayMeanCard() {
           <Button
             size="sm"
             variant="outline"
-            className="min-h-11 sm:min-h-9"
             disabled={run.isPending}
             onClick={() => run.mutate("rebuild")}
             data-testid="admin-pulse-day-mean-rebuild"
@@ -319,7 +317,6 @@ export function PulseDayMeanCard() {
           <AlertDialogTrigger asChild>
             <Button
               size="sm"
-              className="min-h-11 sm:min-h-9"
               disabled={!canApply || run.isPending}
               data-testid="admin-pulse-day-mean-apply"
             >

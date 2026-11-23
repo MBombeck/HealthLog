@@ -35,7 +35,6 @@ vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain: vi.fn(async () => [
     { providerType: "local", instance: {} },
   ]),
-  resolveProvider: vi.fn(async () => ({ type: "none" })),
   probeProviderPresence: vi.fn(async () => true),
 }));
 

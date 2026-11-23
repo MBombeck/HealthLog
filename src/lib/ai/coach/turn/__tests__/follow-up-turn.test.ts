@@ -184,7 +184,16 @@ function modelPath(prefs = DEFAULT_COACH_PREFS) {
     coachPrefs: prefs,
     snapshot: { provenance: { windows: [], metrics: [] } },
   });
-  m.resolveTurnChain.mockResolvedValue({ ok: true, chain: [], toolMode: true });
+  m.resolveTurnChain.mockResolvedValue({
+    ok: true,
+    chain: [],
+    toolMode: true,
+    limits: {
+      snapshotChars: 14_000,
+      turn: { tokens: 165_000, wallMs: 200_000, maxRounds: 16 },
+      custom: false,
+    },
+  });
   m.reserveTurnBudget.mockResolvedValue({ ok: true, ledger: stubLedger() });
   const table = { ...STORED, chart: null, chartKind: null, displayed: true };
   m.runTurnModel.mockResolvedValue({

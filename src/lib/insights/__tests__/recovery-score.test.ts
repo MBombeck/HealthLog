@@ -44,7 +44,6 @@ const restModeMock = vi.hoisted(() => ({
 vi.mock("@/lib/illness/rest-mode", () => restModeMock);
 
 import {
-  recoveryDayKey,
   recoveryExternalId,
   recoveryMeasuredAt,
   computeRecoveryScore,
@@ -122,7 +121,6 @@ beforeEach(() => {
 describe("recovery-score helpers", () => {
   it("scores the PREVIOUS UTC day (cron fires in the small hours)", () => {
     // NOW is 2026-06-02 → the scored day is the just-completed 2026-06-01.
-    expect(recoveryDayKey(NOW)).toBe("2026-06-01");
     expect(recoveryExternalId(NOW)).toBe(
       `${RECOVERY_SCORE_EXTERNAL_ID_PREFIX}2026-06-01`,
     );

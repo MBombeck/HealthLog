@@ -11,6 +11,7 @@ import {
   InjectionSite,
   IntakeAttributionSource,
   IntakeSource,
+  IntakeTakenVia,
   MeasurementType,
   MedicationCategory,
   MedicationContainerType,
@@ -330,6 +331,10 @@ export const medicationSchema = z
     // before the note existed, which restores as no note.
     note: z.string().max(MEDICATION_NOTE_MAX_CHARS).nullable().optional(),
     noteEncrypted: base64BytesSchema.nullable().optional(),
+    // #1430 — the saved leaflet link. Absent in a file written before it
+    // existed, which restores as none; a link the write routes would refuse
+    // (not `https:`, too long) is dropped by the restore rather than stored.
+    leafletUrl: z.string().nullable().optional(),
     lowStockNotifiedAt: isoDateTime.nullable().optional(),
     lowStockNotifiedThresholdDays: z.number().int().nullable().optional(),
     reorderLeadDays: z.number().int().nullable().optional(),
@@ -369,6 +374,12 @@ export const intakeEventSchema = z
   .object({
     id: z.string().min(1).optional(),
     medicationId: z.string().min(1).optional(),
+    // A portable file's source ids, which it carries instead of `id` and
+    // `medicationId`: `medicationRef` matches the medication's own `ref`, and
+    // `ref` is what a seizure rescue dose's `intakeEventId` names. Absent in
+    // files written before v1.49.0, which resolve the medication by name.
+    ref: z.string().min(1).optional(),
+    medicationRef: z.string().min(1).optional(),
     medication: z.string().min(1),
     scheduledFor: isoDateTime,
     takenAt: isoDateTime.nullable().optional(),
@@ -378,6 +389,9 @@ export const intakeEventSchema = z
     autoRecorded: z.boolean().optional(),
     attributionSource: z.enum(IntakeAttributionSource).optional(),
     source: z.enum(IntakeSource).optional(),
+    // Where the take was recorded. Absent in files written before v1.49.0,
+    // and null on a row no take reached.
+    takenVia: z.enum(IntakeTakenVia).nullable().optional(),
     idempotencyKey: z.string().nullable().optional(),
     createdAt: isoDateTime.optional(),
     injectionSite: z.enum(InjectionSite).nullable().optional(),
@@ -387,5 +401,6 @@ export const intakeEventSchema = z
     updatedAt: isoDateTime.optional(),
     syncVersion: z.number().int().optional(),
     deletedAt: isoDateTime.nullable().optional(),
+    appleHealthDeletedAt: isoDateTime.nullable().optional(),
   })
   .passthrough();

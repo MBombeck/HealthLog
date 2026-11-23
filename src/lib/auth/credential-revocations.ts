@@ -16,6 +16,8 @@ type CredentialStore = Pick<
   | "mcpOAuthConnection"
   | "clinicianShareLink"
   | "cycleCalendarFeed"
+  | "careCalendarFeed"
+  | "emergencyCardLink"
   | "stepUpElevation"
 >;
 
@@ -62,6 +64,19 @@ export function credentialRevocations(
     // record and the ones this account minted on a record it manages end here,
     // so a remediation never leaves a link it cannot see.
     db.cycleCalendarFeed.updateMany({
+      where: { OR: [{ userId }, { createdById: userId }], revokedAt: null },
+      data: { revokedAt: now },
+    }),
+    // The care calendar feed is the same kind of door for visits and dates
+    // coming due: the feeds on this record and the ones this account minted
+    // as the guardian of a managed profile.
+    db.careCalendarFeed.updateMany({
+      where: { OR: [{ userId }, { createdById: userId }], revokedAt: null },
+      data: { revokedAt: now },
+    }),
+    // The emergency card's QR link opens the card without signing in. A
+    // printed card goes dark with it; the owner prints a fresh one.
+    db.emergencyCardLink.updateMany({
       where: { OR: [{ userId }, { createdById: userId }], revokedAt: null },
       data: { revokedAt: now },
     }),

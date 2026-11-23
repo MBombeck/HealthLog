@@ -87,7 +87,10 @@ export function Step5Cadence({ payload, applyPartial }: StepProps) {
               aria-label={label}
             />
             <div className="text-sm font-medium">{label}</div>
-            <p className="text-muted-foreground mt-0.5 text-xs">
+            <p
+              className="text-muted-foreground mt-0.5 text-xs"
+              data-slot="wizard-cadence-description"
+            >
               {description}
             </p>
           </label>

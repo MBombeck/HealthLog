@@ -149,7 +149,6 @@ export function AllergyFreeTextNote({
           <Button
             type="button"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             data-testid="records-allergy-free-text-save"
             disabled={save.isPending || !dirty}
             onClick={() => save.mutate({ allergies: value })}

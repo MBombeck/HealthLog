@@ -11,6 +11,7 @@
  * of the seed is that the lists the contract run reads are not empty.
  */
 import { NextRequest } from "next/server";
+import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 
 import type { PrismaClient } from "@/generated/prisma/client";
@@ -31,6 +32,8 @@ export interface ContractFixture {
 }
 
 export const CONTRACT_USER_ID = "user-openapi-get-contract";
+/** The seeded device's `token`, which reads name in `X-Device-Id`. */
+export const CONTRACT_DEVICE_TOKEN = "contract-device-token";
 const MANAGED_PROFILE_ID = "user-openapi-get-contract-managed";
 
 type Handler = (req: NextRequest, ctx: unknown) => Promise<Response>;
@@ -418,11 +421,14 @@ export async function seedContractAccount(
     ? definition[0]?.id
     : definition?.definitions?.[0]?.id;
   if (definitionId) {
-    await write("symptom", "POST", "api/symptoms/events", {
-      definitionId,
-      occurredAt: daysAgo(2).toISOString(),
-      intensity: 4,
-    });
+    keep(
+      "symptomEvent",
+      await write("symptom", "POST", "api/symptoms/events", {
+        definitionId,
+        occurredAt: daysAgo(2).toISOString(),
+        intensity: 4,
+      }),
+    );
   } else {
     failures.push(
       `symptom: no definition ${JSON.stringify(definitions.body).slice(0, 300)}`,
@@ -454,6 +460,15 @@ export async function seedContractAccount(
     },
   });
   ids.managedProfile = MANAGED_PROFILE_ID;
+  // One thing the guardian did inside the profile, for its activity feed.
+  await prisma.auditLog.create({
+    data: {
+      userId: MANAGED_PROFILE_ID,
+      actorUserId: CONTRACT_USER_ID,
+      action: "record-settings.profile.update",
+      details: JSON.stringify({ changed: ["displayName"] }),
+    },
+  });
 
   // ── Medication detail ──────────────────────────────────────────────────
   if (ids.medication) {
@@ -542,7 +557,7 @@ export async function seedContractAccount(
     });
   }
   await write("device", "POST", "api/devices", {
-    token: "contract-device-token",
+    token: CONTRACT_DEVICE_TOKEN,
     bundleId: "dev.healthlog.contract",
     apnsToken: "a".repeat(64),
     apnsEnvironment: "sandbox",
@@ -1037,6 +1052,19 @@ export async function seedContractAccount(
       achievedAt: daysAgo(6),
     },
   });
+  // A background AI job that stopped, as Settings, AI lists it. Written by
+  // the job's failure reporter, which needs a provider the run has none of.
+  await prisma.aiJobFailure.create({
+    data: {
+      userId: CONTRACT_USER_ID,
+      job: "briefing",
+      code: "rate_limited",
+      providerType: "anthropic",
+      failCount: 2,
+      firstFailedAt: daysAgo(2),
+      lastFailedAt: daysAgo(1),
+    },
+  });
   // A delegate's visit to this record, as the activity list shows it.
   await prisma.auditLog.create({
     data: {
@@ -1056,6 +1084,23 @@ export async function seedContractAccount(
       tokenHash: "contract-trusted-device-hash",
       label: "Phone",
       expiresAt: new Date(Date.now() + 20 * DAY),
+    },
+  });
+  // A relay this server registered with before its settings pointed
+  // elsewhere, which the admin relay status lists as out of reach. Written by
+  // the admin switch, which needs a relay to answer.
+  const { encrypt } = await import("@/lib/crypto");
+  const { toBase64Url } = await import("@/lib/push-relay/encoding");
+  const { RELAY_TERMS_VERSION } = await import("@/lib/push-relay/config");
+  await prisma.pushRelayRegistration.create({
+    data: {
+      relayHost: "relay.previous.example",
+      instanceId: "contract-instance",
+      instanceKeyEncrypted: encrypt(toBase64Url(randomBytes(32))),
+      state: "ok",
+      termsVersion: RELAY_TERMS_VERSION,
+      householdConfirmedAt: daysAgo(30),
+      enabledByUserId: CONTRACT_USER_ID,
     },
   });
   if (ids.biomarker) {
@@ -1147,6 +1192,8 @@ const PATH_PARAM_SOURCES: Record<string, Record<string, string>> = {
   "/api/managed-profiles/{id}": { id: "managedProfile" },
   "/api/managed-profiles/{id}/guardians": { id: "managedProfile" },
   "/api/managed-profiles/{id}/handover": { id: "managedProfile" },
+  "/api/managed-profiles/{id}/activity": { id: "managedProfile" },
+  "/api/symptoms/events/{id}": { id: "symptomEvent" },
   "/api/workouts/{id}": { id: "workout" },
   "/api/biomarkers/{id}": { id: "biomarker" },
   "/api/biomarkers/{id}/series": { id: "biomarker" },

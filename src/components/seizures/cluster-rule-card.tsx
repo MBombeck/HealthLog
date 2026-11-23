@@ -99,7 +99,6 @@ export function ClusterRuleCard({
           <SettingsCardActions>
             <Button
               size="sm"
-              className="min-h-11 sm:min-h-9"
               disabled={!valid || !changed || save.isPending}
               onClick={async () => {
                 setError(null);

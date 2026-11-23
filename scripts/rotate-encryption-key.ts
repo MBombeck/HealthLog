@@ -366,6 +366,16 @@ async function main() {
     ),
   );
 
+  // ───── Health Connect folder fetch (String) ─────
+  // Column: "credentialsEncrypted" — the WebDAV user name and app password.
+  results.push(
+    await rotateStringColumn(
+      "HealthConnectRemoteSource",
+      "credentialsEncrypted",
+      prisma.healthConnectRemoteSource,
+    ),
+  );
+
   // ───── AppSettings — operator credentials (String) ─────
   // Columns: "adminAiKeyEncrypted" "webPushVapidPrivateKeyEncrypted"
   // "adminCodexAccessTokenEncrypted" "adminCodexRefreshTokenEncrypted"
@@ -379,6 +389,34 @@ async function main() {
   ]) {
     results.push(
       await rotateStringColumn("AppSettings", field, prisma.appSettings),
+    );
+  }
+
+  // ───── Push relay — instance keys, sender key, collapse secret (String) ─────
+  for (const field of [
+    "instanceKeyEncrypted",
+    "pendingInstanceKeyEncrypted",
+    "previousInstanceKeyEncrypted",
+  ]) {
+    results.push(
+      await rotateStringColumn(
+        "PushRelayRegistration",
+        field,
+        prisma.pushRelayRegistration,
+      ),
+    );
+  }
+  for (const field of [
+    "senderKeyEncrypted",
+    "nextSenderKeyEncrypted",
+    "collapseSecretEncrypted",
+  ]) {
+    results.push(
+      await rotateStringColumn(
+        "PushEnvelopeKeys",
+        field,
+        prisma.pushEnvelopeKeys,
+      ),
     );
   }
 
@@ -453,6 +491,15 @@ async function main() {
       await rotateStringColumn("CycleDayLog", field, prisma.cycleDayLog),
     );
   }
+
+  // ───── CycleProfile — "pregnancyEncrypted" (String) ─────
+  results.push(
+    await rotateStringColumn(
+      "CycleProfile",
+      "pregnancyEncrypted",
+      prisma.cycleProfile,
+    ),
+  );
 
   // ───── Coach (Bytes columns) ─────
   // "encryptedContent" "resultsEncrypted" "trailEncrypted" "summaryEncrypted"

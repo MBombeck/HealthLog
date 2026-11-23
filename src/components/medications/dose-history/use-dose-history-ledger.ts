@@ -10,11 +10,13 @@ import { toast } from "sonner";
 
 import {
   intakeToastOptions,
+  runDeleteIntake,
   runUndoIntake,
+  type DeletedIntakeSnapshot,
 } from "@/components/medications/use-medication-intake";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveRecordName } from "@/hooks/use-record-capabilities";
-import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import {
@@ -217,7 +219,7 @@ export function useDoseHistoryLedger({
 
 /**
  * The owner's edits from the row menu: the skipped/taken toggle, pinning and
- * releasing a take, and the confirmed row delete.
+ * releasing a take, and the row delete (with undo).
  */
 function useDoseHistoryEdits({
   medicationId,
@@ -228,7 +230,6 @@ function useDoseHistoryEdits({
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   // The pending "Slot zuordnen" confirm: which intake to pin
   // onto which slot. The confirm names the consequence (counts as late).
   const [pendingPin, setPendingPin] = useState<{
@@ -299,27 +300,18 @@ function useDoseHistoryEdits({
     [medicationId, queryClient, queryKey, t],
   );
 
-  async function confirmRowDelete() {
-    if (!pendingDeleteId) return;
-    const id = pendingDeleteId;
-    setPendingDeleteId(null);
-    try {
-      await apiDelete(`/api/medications/${medicationId}/intake/${id}`);
-      toast.success(t("medications.detail.intake.deleteRow.toast"));
-      await reconcileLedger(queryClient, queryKey);
-    } catch (failure) {
-      showErrorToast(t("medications.detail.intake.deleteRow.failed"), {
-        cause: failure,
-      });
-    }
-  }
+  const deleteRow = (intake: DeletedIntakeSnapshot) =>
+    runDeleteIntake({
+      medicationId,
+      intake,
+      t,
+      reconcile: () => reconcileLedger(queryClient, queryKey),
+    });
 
   return {
     toggleIntakeSkipped,
     setAttribution,
-    pendingDeleteId,
-    setPendingDeleteId,
-    confirmRowDelete,
+    deleteRow,
     pendingPin,
     setPendingPin,
   };

@@ -121,6 +121,7 @@ describe("GET /api/version", () => {
       "builtAt",
       "changelog",
       "docs",
+      "features",
       "geoProviderHost",
       "license",
       "offlineGeoEnabled",

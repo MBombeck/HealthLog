@@ -139,14 +139,16 @@ describe("events nothing sends", () => {
     const channel = await prisma.notificationChannel.findFirstOrThrow({
       where: { userId },
     });
-    // Rows written while the four switches were still offered.
+    // Rows written while the switches of unsent events were still offered,
+    // beside two events that are sent (the anomaly push is sent again, opt-in).
     await prisma.notificationPreference.createMany({
       data: [
         { channelId: channel.id, eventType: "PERSONAL_RECORD", enabled: true },
+        { channelId: channel.id, eventType: "COMPLIANCE_LOW", enabled: false },
         {
           channelId: channel.id,
           eventType: "MEASUREMENT_ANOMALY",
-          enabled: false,
+          enabled: true,
         },
         {
           channelId: channel.id,
@@ -169,7 +171,16 @@ describe("events nothing sends", () => {
     for (const unsent of UNSENT_EVENT_TYPES) {
       expect(body.data.eventTypes).not.toContain(unsent);
     }
-    expect(body.data.preferences).toEqual([
+    expect(body.data.eventTypes).toContain("MEASUREMENT_ANOMALY");
+    expect(
+      [...body.data.preferences].sort((a, b) =>
+        a.eventType.localeCompare(b.eventType),
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        eventType: "MEASUREMENT_ANOMALY",
+        enabled: true,
+      }),
       expect.objectContaining({
         eventType: "MEDICATION_REMINDER",
         enabled: false,

@@ -20,10 +20,8 @@
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import {
-  computeSummariesSlice,
-  readSevenDayMeans,
-} from "@/lib/analytics/summaries-slice";
+import { readSevenDayMeans } from "@/lib/analytics/seven-day-means";
+import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { readActivityDayKeys } from "@/lib/dashboard/summary-reads";
 import { buildComprehensiveAggregate } from "@/lib/insights/comprehensive-aggregator";
 import { settleBackgroundTasks } from "@/lib/logging/background-tasks";

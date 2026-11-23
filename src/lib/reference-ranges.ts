@@ -25,7 +25,7 @@
  * disagree the disagreement is surfaced (`conflicts`), never silently
  * resolved.
  */
-import { CITATIONS, type CitationId, citationLabel } from "./medical-citations";
+import { type CitationId, citationLabel } from "./medical-citations";
 
 /**
  * A single named reference band. `low`/`high` are inclusive display
@@ -510,12 +510,4 @@ export function classifyReference(
   // above an open-high last band). Either way it is outside the covered
   // bands → attention.
   return "outside";
-}
-
-/**
- * Convenience: the citation entry backing a metric's headline band, for
- * surfaces that want the url + caveat rather than the formatted label.
- */
-export function referenceCitation(metric: ReferenceMetric) {
-  return CITATIONS[REFERENCE_RANGES[metric].referenceId];
 }

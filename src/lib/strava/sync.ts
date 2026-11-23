@@ -31,6 +31,7 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
+import { batchDataChanges } from "@/lib/push-relay/data-changed";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { annotate, getEvent } from "@/lib/logging/context";
 import {
@@ -395,6 +396,14 @@ async function summaryOnlyUpdate<
  * watermark past a partially persisted batch.
  */
 export async function upsertStravaWorkouts(
+  userId: string,
+  rows: readonly StravaWorkoutRow[],
+): Promise<number> {
+  // One DATA_CHANGED note for the batch, not one per row.
+  return batchDataChanges(() => writeStravaWorkouts(userId, rows));
+}
+
+async function writeStravaWorkouts(
   userId: string,
   rows: readonly StravaWorkoutRow[],
 ): Promise<number> {

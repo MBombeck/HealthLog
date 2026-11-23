@@ -25,16 +25,17 @@
  *     entry count). Read these via `stats()` for the wide-event
  *     annotations the route handlers attach to each request.
  *
- *   - The cache is process-local. A multi-instance Coolify deploy keeps
- *     each container's cache isolated; the TTL bounds the staleness
- *     window. The Redis migration path is sketched in the blueprint
- *     (`.planning/research/v1434-r-cache-aggregation.md` §7).
+ *   - The cache is process-local: another container's or the worker's
+ *     write cannot evict an entry here, so the TTL bounds the staleness
+ *     window, and no entry outlives `PROCESS_CACHE_MAX_TTL_MS`.
  *
  *   - `__resetForTests()` matches the snapshot pattern's escape hatch so
  *     vitest's afterEach can clear every instance between tests without
  *     reaching into the private `Map`.
  */
 
+import { approxBytes, bucketByteBudget } from "@/lib/cache/approx-bytes";
+import { assertBucketTtl, cappedTtl } from "@/lib/cache/ttl-ceiling";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { runDetached } from "@/lib/logging/detached";
 import type { WorkoutsProjection } from "@/lib/workouts/list-read";
@@ -45,14 +46,12 @@ export interface ServerCacheOptions<T = unknown> {
   /** Time-to-live in milliseconds. Expired entries miss on read. */
   readonly ttlMs: number;
   /**
-   * Optional hard cap on the combined weight of resident entries.
-   * Entries are evicted from the LRU end until both caps are satisfied.
+   * Hard cap on the combined weight of resident entries, with `weightOf`
+   * weighing one entry; entries are evicted from the LRU end until both caps
+   * are satisfied. Omitted, the cap is the bucket's byte budget and the
+   * weight is the entry's estimated bytes (`approx-bytes.ts`).
    */
   readonly maxWeight?: number;
-  /**
-   * Returns a positive capacity weight for one entry. Defaults to 1, making
-   * `maxWeight` equivalent to a second entry-count cap when omitted.
-   */
   readonly weightOf?: (value: T, key: string) => number;
   /**
    * v1.12.1 — stale-while-revalidate window in milliseconds. When set,
@@ -109,8 +108,32 @@ export class ServerCache<T> {
   private evictions = 0;
   private stampedes = 0;
   private totalWeight = 0;
+  private readonly maxWeight: number;
+  private readonly weightOf: (value: T, key: string) => number;
+  private sweptAt = Date.now();
 
-  constructor(private readonly opts: ServerCacheOptions<T>) {}
+  constructor(private readonly opts: ServerCacheOptions<T>) {
+    assertBucketTtl(opts.ttlMs, opts.name);
+    this.maxWeight = opts.maxWeight ?? bucketByteBudget(opts.name);
+    this.weightOf =
+      opts.maxWeight === undefined ? approxBytes : (opts.weightOf ?? (() => 1));
+  }
+
+  /**
+   * Drop every entry past its last servable moment, once a minute at most.
+   * A key nobody reads again otherwise stays until the entry cap pushes it
+   * out, which for a quiet bucket is never.
+   */
+  private sweepDead(now: number): void {
+    if (now - this.sweptAt < 60_000) return;
+    this.sweptAt = now;
+    for (const [key, entry] of this.map) {
+      if (entry.staleUntil <= now) {
+        this.map.delete(key);
+        this.totalWeight -= entry.weight;
+      }
+    }
+  }
 
   /**
    * Fence + detach the in-flight builder for one key (no-op when none).
@@ -175,8 +198,7 @@ export class ServerCache<T> {
    * and from the test escape hatch.
    */
   private entryWeight(key: string, value: T): number {
-    if (this.opts.maxWeight === undefined) return 1;
-    const weight = this.opts.weightOf?.(value, key) ?? 1;
+    const weight = this.weightOf(value, key);
     return Number.isFinite(weight) && weight > 0 ? Math.ceil(weight) : 1;
   }
 
@@ -203,27 +225,24 @@ export class ServerCache<T> {
    * instance — used by the dashboard-snapshot key, which must outlive
    * the 60 s analytics default so the client's 120 s refetch interval
    * lands on a warm entry, while still sharing the bucket's `${userId}|`
-   * prefix-sweep invalidation.
+   * prefix-sweep invalidation. Capped at the ceiling (`ttl-ceiling.ts`).
    */
   set(key: string, value: T, ttlMsOverride?: number): void {
     const weight = this.entryWeight(key, value);
-    if (this.opts.maxWeight !== undefined && weight > this.opts.maxWeight) {
-      return;
-    }
-    // The key might already exist. Remove its old weight before replacing it,
-    // then reinsert at the most-recently-used end.
+    if (weight > this.maxWeight) return;
+    // Replace an existing key: drop its weight, reinsert at the MRU end.
     const existing = this.map.get(key);
     if (existing) {
       this.map.delete(key);
       this.totalWeight -= existing.weight;
     }
     const now = Date.now();
-    const expiresAt = now + (ttlMsOverride ?? this.opts.ttlMs);
+    this.sweepDead(now);
+    const expiresAt = now + cappedTtl(ttlMsOverride ?? this.opts.ttlMs);
     this.map.set(key, {
       expiresAt,
-      // The stale window extends past the fresh TTL only when the
-      // bucket opted into SWR; otherwise `staleUntil === expiresAt`
-      // so `getAllowStale` behaves exactly like `get`.
+      // Past the fresh TTL only for an SWR bucket; otherwise equal to
+      // `expiresAt`, so `getAllowStale` behaves exactly like `get`.
       staleUntil: expiresAt + (this.opts.staleTtlMs ?? 0),
       value,
       weight,
@@ -232,8 +251,7 @@ export class ServerCache<T> {
 
     while (
       this.map.size > this.opts.maxEntries ||
-      (this.opts.maxWeight !== undefined &&
-        this.totalWeight > this.opts.maxWeight)
+      this.totalWeight > this.maxWeight
     ) {
       const oldest = this.map.keys().next().value;
       if (oldest === undefined) break;
@@ -497,16 +515,12 @@ function createServerCaches() {
      * background recompute. The stale window bounds how old a served
      * snapshot can be when no reader triggers a revalidation.
      *
-     * v1.16.12 — stale window widened 10 min → 1 h. A single self-hoster
-     * visits the dashboard / insights every ~20-30 min; the old 10-minute
-     * window meant nearly every return landed PAST it (a `miss`, ~1.5 s of
-     * synchronous rebuild) instead of inside it (a `stale`, instant + one
-     * background refresh). Each stale-serve re-inserts, so an active session
-     * stays warm regardless of the exact window; the value only governs how
-     * long an ABSENCE still gets an instant response. 1 h covers a normal
-     * break while keeping the dashboard's time-derived `nextDueOverdue` /
-     * tally drift bounded — and that field already self-corrects within the
-     * snapshot client's 120 s poll and the immediate background refresh.
+     * v1.16.12 — stale window 10 min → 1 h. A self-hoster returns every
+     * ~20-30 min, and a return past the window paid a ~1.5 s rebuild instead
+     * of an instant stale serve plus one background refresh. The window only
+     * governs how long an absence still gets an instant answer; the
+     * dashboard's time-derived `nextDueOverdue` self-corrects within the
+     * snapshot client's 120 s poll and the background refresh.
      */
     analytics: new ServerCache<unknown>({
       name: "analytics",
@@ -515,15 +529,11 @@ function createServerCaches() {
       staleTtlMs: 3_600_000,
     }),
     /**
-     * v1.16.8 — stale-while-revalidate on the list bucket. The 60 s fresh
-     * TTL meant every visit minutes apart paid the full cold list build
-     * (five parallel reads + the next-due engine per medication). The list
-     * GET reads via `cachedSwr` now: inside the 10-minute stale window the
-     * prior list serves immediately while one background recompute warms a
-     * fresh one. Interactive writes hard-evict the bucket through
-     * `invalidateUserMedications({ evict: true })`, so the window only
-     * bounds wall-clock drift (`todayEventCount`, `nextDueAt`), never
-     * user-action staleness.
+     * v1.16.8 — stale-while-revalidate: the list GET reads via `cachedSwr`,
+     * so a visit minutes after the last serves the prior list while one
+     * background recompute warms a fresh one. Interactive writes hard-evict
+     * (`invalidateUserMedications({ evict: true })`), so the window only
+     * bounds wall-clock drift (`todayEventCount`, `nextDueAt`).
      */
     medications: new ServerCache<unknown>({
       name: "medications",
@@ -558,16 +568,13 @@ function createServerCaches() {
       maxEntries: 500,
       ttlMs: 300_000,
     }),
-    // Retain at most 50k canonical workout rows across all filter projections.
-    // The selected row shape is fixed and narrow, so row count is a stable
-    // byte proxy without serializing or walking every field on each cache set.
-    // A projection larger than the entire budget is returned to its caller but
-    // immediately evicted rather than monopolizing process memory.
+    // At most 50k canonical workout rows across all filter projections: the
+    // row shape is fixed and narrow, so the row count is a stable byte proxy
+    // that costs no walk. A projection over the whole budget is returned to
+    // its caller and not kept.
     workouts: new ServerCache<WorkoutsProjection>({
       name: "workouts",
       maxEntries: 1000,
-      // A row-weight budget prevents a handful of full-history projections
-      // from looking as cheap as tiny lists under the entry-count cap.
       maxWeight: 50_000,
       ttlMs: 60_000,
       weightOf: (projection) => Math.max(1, projection.canonical.length),
@@ -590,16 +597,11 @@ function createServerCaches() {
      * wall-clock drift (a dose flipping overdue), never user-action
      * staleness. Sized for a few hundred users × a handful of meds.
      *
-     * v1.16.8 — stale-while-revalidate. Both compliance routes (the per-id
-     * detail read and the batched card read) consume via `cachedSwr`:
-     * inside the 10-minute stale window an expired cell serves the prior
-     * payload immediately while one coalesced rebuild warms it. Interactive
-     * intake / medication writes — including the iOS bulk-intake endpoint,
-     * which carries the phone user's own taken/skipped doses — hard-evict
-     * (the user must see their own dose on the next read); the genuinely
-     * background writers (the auto-miss cron, slot dedup) mark stale so a
-     * high-frequency pass never busts every card into an inline cold
-     * rebuild.
+     * v1.16.8 — stale-while-revalidate: both compliance routes read via
+     * `cachedSwr`. Interactive intake / medication writes, the iOS bulk
+     * intake included, hard-evict (the person sees their own dose on the next
+     * read); background writers (the auto-miss cron, slot dedup) mark stale,
+     * so a high-frequency pass never busts every card into a cold rebuild.
      */
     medicationCompliance: new ServerCache<unknown>({
       name: "medicationCompliance",
@@ -641,15 +643,10 @@ function createServerCaches() {
      * all hit a warm cache. Invalidated alongside the analytics bucket
      * on measurement / mood / medication writes.
      *
-     * v1.16.8 — stale-while-revalidate. The 60 s fresh TTL meant every
-     * Insights mount more than a minute after the last one re-paid the
-     * full multi-query build inline (>1 s cold). The route reads via
-     * `cachedSwr` now: inside the 10-minute stale window the prior body
-     * serves immediately while one coalesced background rebuild warms a
-     * fresh one. Writes keep their hard evict (`deleteByPrefix`) so a
-     * user's own measurement / mood / medication action is always
-     * reflected on the very next read — the window only bounds
-     * wall-clock drift, never user-action staleness.
+     * v1.16.8 — stale-while-revalidate: the route reads via `cachedSwr`, so
+     * a mount more than a minute after the last serves the prior body while
+     * one background rebuild warms a fresh one (>1 s cold). Writes keep their
+     * hard evict, so a person's own action shows on the very next read.
      */
     insightsTargets: new ServerCache<unknown>({
       name: "insightsTargets",

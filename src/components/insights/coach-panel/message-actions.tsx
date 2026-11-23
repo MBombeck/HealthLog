@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { resolveIntlLocale } from "@/lib/format-locale";
+import { previousDayLabel } from "@/lib/tz/format";
 import type { Formatters } from "@/lib/format-locale";
 import { apiPost } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
@@ -57,8 +58,6 @@ type Translate = (
   key: string,
   params?: Record<string, string | number>,
 ) => string;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** The quiet-until-hover reveal, scoped to the message's own group. */
 const REVEAL = {
@@ -89,7 +88,7 @@ export function messageTimeText(
   const day = formatters.dateShortSmart(iso);
   const time = formatters.time(iso);
   if (day === formatters.dateShortSmart(new Date(now))) return time;
-  if (day === formatters.dateShortSmart(new Date(now - DAY_MS))) {
+  if (day === previousDayLabel(new Date(now), formatters.dateShortSmart)) {
     return t("insights.coach.answer.timeYesterday", { time });
   }
   return t("insights.coach.answer.timeEarlier", { date: day, time });

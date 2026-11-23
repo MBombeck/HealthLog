@@ -51,6 +51,10 @@ export async function probeModelListing(input: {
   return value;
 }
 
+function bareModelId(id: string): string {
+  return id.trim().replace(/^models\//, "");
+}
+
 async function probeOnce(input: {
   baseUrl: string;
   apiKey: string;
@@ -83,7 +87,12 @@ async function probeOnce(input: {
       )
       .filter((id): id is string => typeof id === "string");
     if (ids.length === 0) return "unknown";
-    return ids.includes(input.model) ? "listed" : "not_listed";
+    // Google's Gemini endpoint lists `models/gemini-…` and serves the bare
+    // `gemini-…` name, so the resource prefix is not part of the comparison.
+    const wanted = bareModelId(input.model);
+    return ids.some((id) => bareModelId(id) === wanted)
+      ? "listed"
+      : "not_listed";
   } catch {
     // The probe is a diagnosis, never a gate: a failed probe says nothing.
     return "unknown";

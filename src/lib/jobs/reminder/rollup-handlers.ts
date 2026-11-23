@@ -251,6 +251,7 @@ export async function handleMeanConsolidation(
   const shouldStop = jobBudget(jobs);
   let daysTotal = 0;
   let perSampleRowsTotal = 0;
+  let daysFailedTotal = 0;
   let stoppedEarly = false;
   for (const job of jobs) {
     const { userId } = job.data;
@@ -259,16 +260,22 @@ export async function handleMeanConsolidation(
     stoppedEarly ||= summary.stoppedEarly;
     daysTotal += daysConsolidated;
     perSampleRowsTotal += perSampleRowsSoftDeleted;
+    daysFailedTotal += summary.daysFailed;
     workerLog(
       "info",
       `[mean-consolidation] user=${userId} days=${daysConsolidated} perSampleRowsSoftDeleted=${perSampleRowsSoftDeleted}`,
     );
   }
+  // A day whose fold threw is stepped over and retried by the next run; the
+  // run counts it, so the failing jobs card shows it (`FanOutTally`).
   return jobDone({
     users: jobs.length,
     days_consolidated: daysTotal,
     per_sample_rows_soft_deleted: perSampleRowsTotal,
     stopped_early: stoppedEarly,
+    items_attempted: daysTotal + daysFailedTotal,
+    items_failed: daysFailedTotal,
+    partial_failed: daysFailedTotal > 0,
   });
 }
 
@@ -285,6 +292,7 @@ export async function handleDenseIntradayRetention(
   let daysTotal = 0;
   let perSampleRowsTotal = 0;
   let derivedRestingRowsTotal = 0;
+  let daysFailedTotal = 0;
   let stoppedEarly = false;
   for (const job of jobs) {
     const { userId } = job.data;
@@ -302,6 +310,7 @@ export async function handleDenseIntradayRetention(
       daysTotal += daysConsolidated;
       perSampleRowsTotal += perSampleRowsSoftDeleted;
       derivedRestingRowsTotal += derivedRestingRowsUpserted;
+      daysFailedTotal += summary.daysFailed;
       workerLog(
         "info",
         `[dense-intraday-retention] user=${userId} days=${daysConsolidated} perSampleRowsSoftDeleted=${perSampleRowsSoftDeleted} derivedRestingRowsUpserted=${derivedRestingRowsUpserted}`,
@@ -322,6 +331,9 @@ export async function handleDenseIntradayRetention(
     per_sample_rows_soft_deleted: perSampleRowsTotal,
     derived_resting_rows_upserted: derivedRestingRowsTotal,
     stopped_early: stoppedEarly,
+    items_attempted: daysTotal + daysFailedTotal,
+    items_failed: daysFailedTotal,
+    partial_failed: daysFailedTotal > 0,
   });
 }
 
@@ -340,6 +352,7 @@ export async function handleDenseIntradayHourlyRebuild(
   let hourlyRowsTotal = 0;
   let dailyRowsRetiredTotal = 0;
   let daysSkippedTotal = 0;
+  let daysFailedTotal = 0;
   for (const job of jobs) {
     const { userId } = job.data;
     try {
@@ -358,6 +371,7 @@ export async function handleDenseIntradayHourlyRebuild(
       hourlyRowsTotal += hourlyRowsUpserted;
       dailyRowsRetiredTotal += dailyRowsRetired;
       daysSkippedTotal += daysSkippedNoTombstones;
+      daysFailedTotal += summary.daysFailed;
       workerLog(
         "info",
         `[dense-intraday-hourly-rebuild] user=${userId} daysRebuilt=${daysRebuilt} hourlyRowsUpserted=${hourlyRowsUpserted} dailyRowsRetired=${dailyRowsRetired} daysSkippedNoTombstones=${daysSkippedNoTombstones}`,
@@ -379,6 +393,9 @@ export async function handleDenseIntradayHourlyRebuild(
     hourly_rows_upserted: hourlyRowsTotal,
     daily_rows_retired: dailyRowsRetiredTotal,
     days_skipped_no_tombstones: daysSkippedTotal,
+    items_attempted: daysRebuiltTotal + daysFailedTotal,
+    items_failed: daysFailedTotal,
+    partial_failed: daysFailedTotal > 0,
   };
   if (stoppedEarly) {
     return jobFailed(
@@ -465,6 +482,9 @@ export function drainCumulativeHandler(
     let denseRowsSoftDeleted = 0;
     let denseSkipped = false;
     let rollupDaysRefolded = 0;
+    // Days a drain stepped over because their fold threw (each drain retries
+    // them next night), counted for the run (`FanOutTally`).
+    let daysFailed = 0;
 
     for (const job of jobs) {
       try {
@@ -477,6 +497,7 @@ export function drainCumulativeHandler(
         stoppedEarly ||= summary.stoppedEarly;
         bucketsCollapsed += summary.totals.bucketsCollapsed;
         perSampleRowsDeleted += summary.totals.perSampleRowsDeleted;
+        daysFailed += summary.totals.daysFailed;
         workerLog(
           "info",
           `[drain-cumulative] triggeredAt=${job.data.triggeredAt} usersScanned=${summary.totals.usersScanned} bucketsCollapsed=${summary.totals.bucketsCollapsed} perSampleRowsDeleted=${summary.totals.perSampleRowsDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted}`,
@@ -501,6 +522,7 @@ export function drainCumulativeHandler(
         stoppedEarly ||= meanSummary.stoppedEarly;
         meanDaysConsolidated += meanSummary.totals.daysConsolidated;
         meanRowsSoftDeleted += meanSummary.totals.perSampleRowsSoftDeleted;
+        daysFailed += meanSummary.totals.daysFailed;
         workerLog(
           "info",
           `[mean-consolidation] triggeredAt=${job.data.triggeredAt} usersScanned=${meanSummary.totals.usersScanned} daysConsolidated=${meanSummary.totals.daysConsolidated} perSampleRowsSoftDeleted=${meanSummary.totals.perSampleRowsSoftDeleted} dailyRowsUpserted=${meanSummary.totals.dailyRowsUpserted} daysFailed=${meanSummary.totals.daysFailed}`,
@@ -537,6 +559,7 @@ export function drainCumulativeHandler(
           stoppedEarly ||= denseSummary.stoppedEarly;
           denseDaysConsolidated += denseSummary.totals.daysConsolidated;
           denseRowsSoftDeleted += denseSummary.totals.perSampleRowsSoftDeleted;
+          daysFailed += denseSummary.totals.daysFailed;
           workerLog(
             "info",
             `[dense-intraday-retention] triggeredAt=${job.data.triggeredAt} usersScanned=${denseSummary.totals.usersScanned} daysConsolidated=${denseSummary.totals.daysConsolidated} perSampleRowsSoftDeleted=${denseSummary.totals.perSampleRowsSoftDeleted} hourlyRowsUpserted=${denseSummary.totals.hourlyRowsUpserted} dailyRowsRetired=${denseSummary.totals.dailyRowsRetired}`,
@@ -613,6 +636,13 @@ export function drainCumulativeHandler(
       dense_rows_soft_deleted: denseRowsSoftDeleted,
       dense_skipped: denseSkipped,
       rollup_days_refolded: rollupDaysRefolded,
+      items_attempted:
+        bucketsCollapsed +
+        meanDaysConsolidated +
+        denseDaysConsolidated +
+        daysFailed,
+      items_failed: daysFailed,
+      partial_failed: daysFailed > 0,
     };
 
     if (firstFailure) {

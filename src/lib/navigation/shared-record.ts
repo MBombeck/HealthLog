@@ -1,4 +1,8 @@
 import {
+  isRecordSurfacePagePresentable,
+  type RecordViewer,
+} from "@/lib/sharing/record-page-surfaces";
+import {
   ENTIRE_RECORD,
   SHARE_DOMAINS,
   type ShareDomain,
@@ -131,4 +135,22 @@ export function isSharedRecordPathPresentable(
   sections: readonly ShareDomain[] | null,
 ): boolean {
   return resolveSharedRecordNavigation(sections).allowsPath(pathname);
+}
+
+/**
+ * Does the browser paint this path inside the record on screen: a page of a
+ * section the grant covers, or a page whose parts answer to their own guard
+ * and admit this viewer (`RECORD_PAGE_SURFACES`). The shell's page gate and
+ * the navigation both ask this one question.
+ *
+ * Presentation only, like the function above.
+ */
+export function isSharedRecordPathOpen(
+  pathname: string,
+  viewer: RecordViewer,
+): boolean {
+  return (
+    isSharedRecordPathPresentable(pathname, viewer.sections) ||
+    isRecordSurfacePagePresentable(pathname, viewer)
+  );
 }

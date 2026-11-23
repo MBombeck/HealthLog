@@ -92,7 +92,7 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { fetchMeasurements } from "../client";
+import { fetchMeasurements, type WithingsMeasure } from "../client";
 import { withingsOAuth } from "../oauth";
 import {
   recordSyncFailure,
@@ -275,5 +275,71 @@ describe("syncUserMeasurements — watermark hold on hard row failure (F4)", () 
       "user-1",
       { touchedFrom: new Date("2026-05-16T08:00:00Z") },
     );
+  });
+});
+
+/**
+ * A reading taken on the device and uploaded to the Withings cloud hours later
+ * (a Bluetooth cuff or a scale that syncs when the phone app opens) keeps its
+ * original measure date. The watermark advances on wall-clock time, so the
+ * incremental read must ask for what Withings received since the watermark
+ * (`lastupdate`), not for what was measured since it (`startdate`). The mocked
+ * cloud answers the way `getmeas` documents it: `startdate` filters on the
+ * measure date, `lastupdate` on the upload time.
+ */
+describe("syncUserMeasurements — late uploads", () => {
+  type CloudReading = WithingsMeasure & { uploadedAt: Date };
+  let cloud: CloudReading[] = [];
+
+  beforeEach(() => {
+    cloud = [];
+    vi.mocked(fetchMeasurements).mockImplementation(
+      async (_token, startDate, _endDate, opts = {}) =>
+        cloud
+          .filter((m) =>
+            opts.updatedSince
+              ? m.uploadedAt.getTime() > opts.updatedSince.getTime()
+              : !startDate || m.measuredAt.getTime() >= startDate.getTime(),
+          )
+          .map(({ type, value, measuredAt }) => ({ type, value, measuredAt })),
+    );
+  });
+
+  it("imports a reading measured before the watermark but uploaded after it", async () => {
+    const takenAt = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    cloud = [
+      {
+        type: "WEIGHT",
+        value: 80,
+        measuredAt: takenAt,
+        uploadedAt: new Date(Date.now() - 5 * 60 * 1000),
+      },
+    ];
+
+    // `beforeEach`: the last clean poll stamped lastSyncedAt one hour ago.
+    const result = await syncUserMeasurements("user-1");
+
+    expect(result).toEqual({ imported: 1, failed: false });
+    const created = vi.mocked(prisma.measurement.createManyAndReturn).mock
+      .calls[0]![0] as { data: Array<{ type: string; measuredAt: Date }> };
+    expect(created.data).toEqual([
+      expect.objectContaining({ type: "WEIGHT", measuredAt: takenAt }),
+    ]);
+  });
+
+  it("reads by upload time, without a measure-date bound", async () => {
+    await syncUserMeasurements("user-1");
+
+    const call = vi.mocked(fetchMeasurements).mock.calls[0]!;
+    expect(call[1]).toBeUndefined();
+    expect(call[3]?.updatedSince).toBeInstanceOf(Date);
+  });
+
+  it("keeps the measure-date read for a full sync", async () => {
+    await syncUserMeasurements("user-1", { fullSync: true });
+
+    const call = vi.mocked(fetchMeasurements).mock.calls[0]!;
+    expect(call[1]).toBeUndefined();
+    expect(call[3]?.updatedSince).toBeUndefined();
   });
 });

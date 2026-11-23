@@ -13,7 +13,8 @@
  * to say anything honest, it reports the count but withholds the "typical
  * gap" (asserts nothing thin).
  */
-import { median } from "@/lib/insights/derived/baseline";
+
+import { median } from "@/lib/stats/central";
 
 /**
  * Minimum episodes that each clear the per-episode signal floor before a
@@ -150,7 +151,7 @@ export function summarizeIllnessRetrospective(
 
   const medianGap =
     gaps.length >= MIN_EPISODES_FOR_TYPICAL_GAP
-      ? Math.round(median(gaps))
+      ? Math.round(median(gaps)!)
       : null;
 
   // Magnitude gate: a 0/±1-day gap is the coincidental-data baseline and

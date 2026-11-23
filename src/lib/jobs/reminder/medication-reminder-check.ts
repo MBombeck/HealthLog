@@ -4,6 +4,10 @@
  * Extracted from reminder-worker.ts, which owns the queue names, cron
  * schedules, and boss.work registrations.
  */
+import {
+  nextSlotHeldBySnooze,
+  snoozeHoldsSlot,
+} from "@/lib/medications/snooze-scope";
 import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { type Job } from "pg-boss";
 import type { Locale } from "@/lib/i18n/config";
@@ -44,9 +48,11 @@ import { sendsMedicationReminders } from "@/lib/medications/auto-mark-taken";
 import {
   LIVE_ERA_REVISION_ARGS,
   liveEraStart as liveEraStartOf,
+  predatesMedication,
 } from "@/lib/medications/scheduling/live-era";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { resolveSnoozeMinutes } from "@/lib/validations/notification-prefs";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { getEvent } from "@/lib/logging/context";
 import {
@@ -101,6 +107,8 @@ async function loadRemindableMedications(
           // How the slot time is spelled (`slotClock`).
           timeFormat: true,
           dateFormat: true,
+          // The snooze length the Telegram "Remind me later" button offers.
+          notificationPrefs: true,
         },
       },
     },
@@ -139,54 +147,8 @@ export function slotClock(
     );
 }
 
-/**
- * Whether a medication-level snooze holds the reminder of one slot. It
- * holds only while it runs (`now < snoozedUntil`), and only for a slot whose
- * reminder window had opened when the snooze was set (`snoozedAt`, the
- * medication row's @updatedAt of the snooze write), or for the slot the
- * snooze was set ahead of (`heldNextWindowStart`, see
- * {@link nextSlotHeldBySnooze}). A later edit to the row moves `snoozedAt`
- * forward, which can only widen the hold back to the old medication-wide
- * behaviour, never lose a snooze.
- */
-export function snoozeHoldsSlot(
-  snoozedUntil: Date | null,
-  snoozedAt: Date,
-  slotWindowStart: Date,
-  now: Date,
-  heldNextWindowStart: Date | null = null,
-): boolean {
-  if (!snoozedUntil || now.getTime() >= snoozedUntil.getTime()) return false;
-  if (slotWindowStart.getTime() <= snoozedAt.getTime()) return true;
-  return (
-    heldNextWindowStart !== null &&
-    slotWindowStart.getTime() === heldNextWindowStart.getTime()
-  );
-}
-
-/**
- * The window start of the slot a snooze was set ahead of, or `null`. A
- * snooze set while one of the medication's reminder windows was open answers
- * that slot, and a later slot stays reminded (a morning "skip" that snoozes
- * to the end of the day must not silence the evening dose). A snooze set
- * while no window was open, such as "remind me later" on a dose that is
- * not due yet, answers the next slot to open, so that one is held too.
- */
-export function nextSlotHeldBySnooze(
-  windows: ReadonlyArray<{ start: Date; end: Date }>,
-  snoozedAt: Date,
-): Date | null {
-  const at = snoozedAt.getTime();
-  let next: Date | null = null;
-  for (const window of windows) {
-    const start = window.start.getTime();
-    if (start <= at && at <= window.end.getTime()) return null;
-    if (start > at && (next === null || start < next.getTime())) {
-      next = window.start;
-    }
-  }
-  return next;
-}
+// The snooze scope is shared with the today list (`snooze-scope.ts`).
+export { nextSlotHeldBySnooze, snoozeHoldsSlot };
 
 /**
  * Check all active medications for each user and determine reminder phases.
@@ -453,18 +415,12 @@ export async function handleReminderCheck(
             occurrencesByScheduleId.get(canonicalSchedule.id) ?? [];
           if (scheduleOccurrences.length === 0) continue;
 
-          // v1.7.0 — multi-time-of-day dispatch. A schedule
-          // with `timesOfDay = ["08:00","20:00"]` is two distinct dose
-          // slots per day; the pre-v1.7 worker keyed phase + dedup on the
-          // single `windowStart`, so the evening dose never reminded.
-          // Each slot resolves its own phase bounds. Logged-dose suppression
-          // uses the same dose bands as intake attribution and history.
-          //
-          // The legacy single-window contract is preserved: a schedule
-          // with no first-class `timesOfDay` emits exactly one slot at
-          // `windowStart` with `timeOfDay = ""`, which dedupes against
-          // pre-v1.7 rows (backfilled to "") byte-for-byte.
+          // Each `timesOfDay` entry is its own slot with its own phase bounds;
+          // logged-dose suppression uses the dose bands of intake attribution.
+          // A schedule without `timesOfDay` emits one slot at `windowStart`
+          // with `timeOfDay = ""` (byte-stable against legacy rows).
           const nowMs = now.getTime();
+          const rolling = canonicalSchedule.rollingIntervalDays !== null;
 
           const hasFirstClassTimes =
             schedule.timesOfDay && schedule.timesOfDay.length > 0;
@@ -546,7 +502,12 @@ export async function handleReminderCheck(
               followUp,
             } = phaseCandidate;
             const slotInstant = slotScheduledFor.getTime();
-            if (liveEraStart !== null && slotInstant < liveEraStart) {
+            // Not owed: before the live era, or before the medication existed.
+            const early = predatesMedication(slotScheduledFor, med, rolling);
+            if (
+              early ||
+              (liveEraStart !== null && slotInstant < liveEraStart)
+            ) {
               continue;
             }
 
@@ -710,10 +671,10 @@ export async function handleReminderCheck(
                 currentPhase,
                 med.id,
                 recipientLocale,
+                resolveSnoozeMinutes(med.user.notificationPrefs),
               );
 
-              // v0.5.4 — surface the slot time as an ISO 8601 string so
-              // the iOS snooze action pins against the actual slot.
+              // The slot as ISO 8601: the iOS snooze pins to it.
               const scheduledAtIso = slotScheduledFor.toISOString();
 
               evt.addMeta(

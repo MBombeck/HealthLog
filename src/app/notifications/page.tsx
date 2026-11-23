@@ -1,10 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -201,32 +203,9 @@ export default function NotificationsPage() {
     );
   }
 
-  // No channels configured
   if (activeChannels.length === 0) {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title={t("notifications.title")}
-          description={t("notifications.subtitle")}
-          actions={headerActions}
-          stackActionsOnPhone
-        />
-        <EmptyState
-          className="max-w-2xl"
-          icon={<Bell className="size-6" />}
-          title={t("notifications.noChannels")}
-          /* Channel setup lives in Settings → Integrations since v1.25.7;
-             point the CTA at that anchor, not the reminder-types screen. */
-          action={
-            <Button asChild variant="outline">
-              <Link href="/settings/integrations#channels">
-                <Settings className="h-4 w-4" />
-                {t("notifications.goToSettings")}
-              </Link>
-            </Button>
-          }
-        />
-      </div>
+      <NoChannelPage eventTypes={eventTypes} headerActions={headerActions} />
     );
   }
 
@@ -331,34 +310,28 @@ export default function NotificationsPage() {
                   const disabled = !ch.enabled;
                   const switchId = `notification-${eventType}-${ch.id}`;
                   return (
-                    <div
+                    <SwitchRow
                       key={ch.id}
-                      className="flex items-center justify-between"
-                    >
-                      <Label
-                        htmlFor={switchId}
-                        className={`text-sm ${disabled ? "text-muted-foreground" : ""}`}
-                      >
-                        {ch.label}
-                        {disabled && (
-                          <span className="text-muted-foreground ml-1 text-xs">
-                            ({t("notifications.channelDisabled")})
-                          </span>
-                        )}
-                      </Label>
-                      <Switch
-                        id={switchId}
-                        checked={enabled && !disabled}
-                        disabled={disabled || toggleMutation.isPending}
-                        onCheckedChange={(checked: boolean) =>
-                          toggleMutation.mutate({
-                            channelId: ch.id,
-                            eventType,
-                            enabled: checked,
-                          })
-                        }
-                      />
-                    </div>
+                      id={switchId}
+                      label={ch.label}
+                      // The same name as the desktop matrix cell: the event
+                      // and the channel, since each card repeats the channels.
+                      aria-label={`${t(nameKey)} - ${ch.label}`}
+                      description={
+                        disabled
+                          ? t("notifications.channelDisabled")
+                          : undefined
+                      }
+                      checked={enabled && !disabled}
+                      disabled={disabled || toggleMutation.isPending}
+                      onCheckedChange={(checked: boolean) =>
+                        toggleMutation.mutate({
+                          channelId: ch.id,
+                          eventType,
+                          enabled: checked,
+                        })
+                      }
+                    />
                   );
                 })}
               </CardContent>
@@ -377,6 +350,64 @@ export default function NotificationsPage() {
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * No channel configured yet. The kinds are still listed: a notification that
+ * is off by default (a lasting change in a vital) has to be findable before
+ * anything can deliver it, and an empty page said nothing about what there is
+ * to receive.
+ */
+function NoChannelPage({
+  eventTypes,
+  headerActions,
+}: {
+  eventTypes: string[];
+  headerActions: ReactNode;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={t("notifications.title")}
+        description={t("notifications.subtitle")}
+        actions={headerActions}
+        stackActionsOnPhone
+      />
+      <EmptyState
+        className="max-w-2xl"
+        icon={<Bell className="size-6" />}
+        title={t("notifications.noChannels")}
+        /* Channel setup lives in Settings → Integrations since v1.25.7;
+           point the CTA at that anchor, not the reminder-types screen. */
+        action={
+          <Button asChild variant="outline">
+            <Link href="/settings/integrations#channels">
+              <Settings className="h-4 w-4" />
+              {t("notifications.goToSettings")}
+            </Link>
+          </Button>
+        }
+      />
+      <div
+        data-slot="notifications-kinds-without-channel"
+        className="bg-card border-border overflow-hidden rounded-xl border"
+      >
+        <ul className="divide-border divide-y">
+          {eventTypes.map((eventType) => (
+            <li key={eventType} className="px-4 py-3">
+              <div className="text-sm font-medium">
+                {t(eventTranslationKey(eventType))}
+              </div>
+              <div className="text-muted-foreground text-xs">
+                {t(eventDescriptionTranslationKey(eventType))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

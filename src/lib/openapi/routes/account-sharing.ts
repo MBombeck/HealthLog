@@ -20,9 +20,12 @@
  *
  * Part of the OpenAPI route table; aggregated in `./index.ts`.
  */
+import { medicineRegistryField } from "./medications/leaflet";
 import { HANDOVER_METHODS } from "@/lib/validations/claim-sso";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
+import { accountFeaturesBlock } from "./account-features";
+import { accountPushBlock } from "./push-relay";
 
 import { accountAccessBlockSchema } from "@/lib/sharing/account-access-schema";
 import { SHARE_DOMAINS } from "@/lib/sharing/scope";
@@ -366,6 +369,18 @@ const recordActivityResponse = z
       "The owner's record of what somebody else did in their record, bounded by the instance's audit retention.",
   });
 
+const managedProfileActivityResponse = z
+  .object({
+    entries: z.array(recordActivityEntry),
+    retentionDays: z
+      .number()
+      .int()
+      .describe(
+        "How far back this feed can see, in days: the instance's audit retention setting, the same number `GET /api/account/activity` sends.",
+      ),
+  })
+  .meta({ id: "ManagedProfileActivity" });
+
 const sharingRefusal = {
   description:
     "Refused. `meta.errorCode` is `sharing.not_permitted` when the request was made while acting on another account (grant management is never delegable), or `sharing.access.denied` when the caller may not act as the account they named. The latter is byte-identical for an account that does not exist and one that granted nothing — the refusal is not an enumeration oracle.",
@@ -524,57 +539,10 @@ const accountPayload = z
       .describe(
         "The account's chosen glucose display unit, as stored. `null` means the person never chose one (or the stored value is neither unit), and the server then shows glucose in mg/dL.",
       ),
-    features: z
-      .object({
-        trackIntake: z
-          .literal(true)
-          .describe(
-            "Medications take `trackIntake`: a medication can be kept as a record whose doses are never due, and a dose written against one is refused with `medication.intake.notTracked`.",
-          ),
-        cumulativeHourBuckets: z
-          .boolean()
-          .optional()
-          .describe(
-            "v1.43 — `POST /api/measurements/batch` takes hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` rows for steps, active energy, walking and running distance and flights climbed. Send them only when this is `true`: an older server stores every hour as its own measurement.",
-          ),
-        syncTriggerBackfill: z
-          .boolean()
-          .optional()
-          .describe(
-            'v1.43 — `syncTrigger: "backfill"` is accepted on the measurement batch and the intake bulk. Send it only when this is `true`: an older server refuses the whole batch.',
-          ),
-        biomarkerMerge: z
-          .boolean()
-          .optional()
-          .describe("v1.43 — `POST /api/biomarkers/{id}/merge` is available."),
-        lifeCircumstances: z
-          .boolean()
-          .optional()
-          .describe(
-            "v1.43 — the life-circumstances routes under `/api/anamnesis/life-circumstances` and `/api/anamnesis/audit-c` are available.",
-          ),
-        appleHealthSymptoms: z
-          .boolean()
-          .optional()
-          .describe(
-            "v1.48.2 — `POST /api/symptoms/events/batch` with the built-in symptom codes and `DELETE /api/symptoms/events/by-external-ids` are available. Send Apple Health symptoms only when this is `true`.",
-          ),
-        appleHealthDeletes: z
-          .boolean()
-          .optional()
-          .describe(
-            'v1.48.2 — the by-external-ids deletes for workouts, ECG recordings, cycle day-logs, mood entries and medication doses are available, and mood-entry writes take `source: "APPLE_HEALTH"` with an `externalId`. The routes shipped in v1.48.0; since v1.48.2 a deleted Apple Health workout or ECG recording also stays deleted when the same sample is posted again (`duplicate`).',
-          ),
-        nutrientMacros: z
-          .boolean()
-          .optional()
-          .describe(
-            "v1.48.2 — `POST /api/nutrients/batch` takes the macro codes (energy, protein, carbohydrates, the fats, sugar, fibre, cholesterol, sodium, potassium). The codes shipped in v1.48.0.",
-          ),
-      })
-      .describe(
-        "What this server understands, for a client released apart from it. Constant across accounts. A flag that is absent or `false` means this server does not have the feature; a client checks for `true` before it calls a route or sends a request form the flag names. Absent on servers older than v1.42.0. A client that meets a flag it does not know ignores it.",
-      ),
+    // #1430 — enumerated: the medication surfaces and the settings read it.
+    medicineRegistry: medicineRegistryField,
+    features: accountFeaturesBlock,
+    push: accountPushBlock,
     accountAccess: accountAccessBlock,
     moduleAccess: moduleAccessMap,
     // v1.39 — enumerated because every AI surface decides on it: a client
@@ -1228,6 +1196,36 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "404": {
           description:
             "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`). The two are byte-identical, so the refusal is not an enumeration oracle — and an ordinary record whose owner granted somebody MANAGE is not a managed profile, so it answers here too.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/managed-profiles/{id}/activity": {
+    get: {
+      tags: ["Account sharing"],
+      summary: "Who did what in a managed profile",
+      description:
+        "The audit rows filed under one managed profile that a person performed, newest first: every Guardian's acts, the caller's own included, because nobody signs in to a managed profile and every act on it is a Guardian's. Reads coalesce to one row per Guardian per day with a count, as on `GET /api/account/activity`; the entry shape and the window are the same, and `meta.truncated` says whether the row ceiling was hit. Only the action, the actor and the instant are published, never a row's details. Cookie transport only, an ACTOR surface like the roster beside it. Anyone who is not an active Guardian of THIS managed profile gets the same 404 as an unknown id, an adult's record shared at manage level included.",
+      requestParams: {
+        path: z.object({ id: z.string() }),
+      },
+      responses: {
+        ...stdResponses,
+        "200": {
+          description: "The profile's activity, and how far back it can see.",
+          content: {
+            "application/json": {
+              schema: listEnvelope(
+                managedProfileActivityResponse,
+                "ManagedProfileActivityEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`). The two are byte-identical.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

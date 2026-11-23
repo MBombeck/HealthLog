@@ -7,8 +7,8 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   recomputeBucketsForMeasurement,
 }));
 
+import { iterateDayBuckets } from "../consolidation-base";
 import {
-  bucketMeanRows,
   consolidateDailyMean,
   meanBucketValue,
 } from "../consolidate-daily-mean";
@@ -47,8 +47,26 @@ beforeEach(() => {
   recomputeBucketsForMeasurement.mockClear();
 });
 
+/** Drain the production day-bucket stream over one ascending page of rows. */
+async function bucketMeanRows(
+  rows: readonly PerSampleRow[],
+  tz: string,
+): Promise<Map<string, PerSampleRow[]>> {
+  const sorted = [...rows].sort(
+    (a, b) => a.measuredAt.getTime() - b.measuredAt.getTime(),
+  );
+  async function* pages() {
+    yield sorted;
+  }
+  const byDay = new Map<string, PerSampleRow[]>();
+  for await (const [key, day] of iterateDayBuckets(pages(), tz, "stats:")) {
+    byDay.set(key, day);
+  }
+  return byDay;
+}
+
 describe("consolidate-daily-mean — reducer + bucketing", () => {
-  it("computes the arithmetic mean of a per-day bucket", () => {
+  it("computes the arithmetic mean of a per-day bucket", async () => {
     const rows = [
       row("a", 1.2, "2026-05-01T08:00:00.000Z"),
       row("b", 1.4, "2026-05-01T09:00:00.000Z"),
@@ -58,23 +76,23 @@ describe("consolidate-daily-mean — reducer + bucketing", () => {
     expect(meanBucketValue(rows)).toBeCloseTo(1.2, 6);
   });
 
-  it("returns 0 for an empty bucket", () => {
+  it("returns 0 for an empty bucket", async () => {
     expect(meanBucketValue([])).toBe(0);
   });
 
-  it("buckets per-sample rows by the user's local calendar day", () => {
+  it("buckets per-sample rows by the user's local calendar day", async () => {
     const rows = [
       row("a", 1.0, "2026-05-01T08:00:00.000Z"),
       row("b", 2.0, "2026-05-01T20:00:00.000Z"),
       row("c", 3.0, "2026-05-02T06:00:00.000Z"),
     ];
-    const byDay = bucketMeanRows(rows, "Europe/Berlin");
+    const byDay = await bucketMeanRows(rows, "Europe/Berlin");
     expect(byDay.size).toBe(2);
     expect(byDay.get("2026-05-01")?.length).toBe(2);
     expect(byDay.get("2026-05-02")?.length).toBe(1);
   });
 
-  it("skips rows already in the daily-stats shape (idempotent re-run)", () => {
+  it("skips rows already in the daily-stats shape (idempotent re-run)", async () => {
     const rows = [
       row(
         "stats",
@@ -84,7 +102,7 @@ describe("consolidate-daily-mean — reducer + bucketing", () => {
       ),
       row("a", 1.1, "2026-05-01T08:00:00.000Z"),
     ];
-    const byDay = bucketMeanRows(rows, "Europe/Berlin");
+    const byDay = await bucketMeanRows(rows, "Europe/Berlin");
     // Only the raw row enters a bucket; the stats row is never re-folded.
     expect(byDay.get("2026-05-01")?.length).toBe(1);
     expect(byDay.get("2026-05-01")?.[0].id).toBe("a");

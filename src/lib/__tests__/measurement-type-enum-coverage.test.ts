@@ -143,10 +143,23 @@ const EXPECTED_TYPES = [
   "FEV1",
   "FVC",
   "PEAK_EXPIRATORY_FLOW",
+  // Apple effort: logged score, watch estimate, and physical-effort rate.
+  "WORKOUT_EFFORT_SCORE",
+  "ESTIMATED_WORKOUT_EFFORT_SCORE",
+  "PHYSICAL_EFFORT",
+  // Apple sport quantities (#1415).
+  "CYCLING_DISTANCE",
+  "ROWING_DISTANCE",
+  "ROWING_SPEED",
+  "RUNNING_SPEED",
+  "RUNNING_POWER",
+  "RUNNING_GROUND_CONTACT_TIME",
+  "RUNNING_VERTICAL_OSCILLATION",
+  "RUNNING_STRIDE_LENGTH",
 ] as const;
 
 describe("measurementTypeEnum coverage", () => {
-  it("exposes the 92 canonical measurement types", () => {
+  it("exposes the canonical measurement types", () => {
     expect([...measurementTypeEnum.options].sort()).toEqual(
       [...EXPECTED_TYPES].sort(),
     );

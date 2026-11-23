@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { locales, type Locale } from "@/lib/i18n/config";
 import { makeFormatters } from "@/lib/format-locale";
@@ -57,6 +57,18 @@ function translator(locale: Locale) {
 
 const NOW = new Date("2026-10-15T12:00:00.000Z");
 const fmt = makeFormatters("de", "Europe/Berlin", "AUTO", "AUTO");
+
+// The short date leaves the year out only inside the reader's current year,
+// and that year comes from the wall clock, not from the `now` each call is
+// handed. Pin the wall clock to the same instant, or every expectation below
+// gains a year the day the calendar leaves 2026.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 const t = translator("de");
 
 describe("formatHealthInstant", () => {
@@ -70,6 +82,24 @@ describe("formatHealthInstant", () => {
     expect(formatHealthInstant("2026-10-12T12:00:00.000Z", t, fmt, NOW)).toBe(
       "12.10., 14:00",
     );
+  });
+
+  it("reads yesterday across a change of clocks", () => {
+    // Monday 2026-03-30 00:30 CEST, after the 23-hour Sunday: 24 hours back
+    // is Saturday.
+    const afterSpring = new Date("2026-03-29T22:30:00.000Z");
+    expect(
+      formatHealthInstant("2026-03-29T18:00:00.000Z", t, fmt, afterSpring),
+    ).toBe("gestern, 20:00");
+    expect(
+      formatHealthInstant("2026-03-28T18:00:00.000Z", t, fmt, afterSpring),
+    ).toBe("28.03., 19:00");
+    // Sunday 2026-10-25 23:30 CET, late in the 25-hour day: 24 hours back is
+    // still the 25th.
+    const lateFallBack = new Date("2026-10-25T22:30:00.000Z");
+    expect(
+      formatHealthInstant("2026-10-24T18:00:00.000Z", t, fmt, lateFallBack),
+    ).toBe("gestern, 20:00");
   });
 
   it("buckets the day in the reader's zone, not UTC", () => {

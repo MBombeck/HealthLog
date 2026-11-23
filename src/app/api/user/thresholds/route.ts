@@ -42,6 +42,7 @@ async function loadProfileAndOverrides(userId: string) {
       dateOfBirth: true,
       gender: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
   if (!profile) return null;

@@ -96,7 +96,7 @@ export async function buildOnboardingBackupSection(
           }
         : {}),
       needs: parseOnboardingNeeds(row.needsJson),
-      steps: parseOnboardingSteps(row.stepsJson),
+      steps: parseOnboardingSteps(row.stepsJson, row.completedAt),
       firstResult: parseOnboardingFirstResult(row.firstResultJson),
       modulesDerivedAt: row.modulesDerivedAt?.toISOString() ?? null,
       completedAt: row.completedAt?.toISOString() ?? null,
@@ -180,6 +180,7 @@ export async function restoreOnboardingData(
         ) as unknown as Prisma.InputJsonValue,
         stepsJson: parseOnboardingSteps(
           entry.steps,
+          entry.completedAt,
         ) as unknown as Prisma.InputJsonValue,
         firstResultJson:
           firstResult === null

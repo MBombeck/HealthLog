@@ -7,6 +7,11 @@ import "./fonts/inter";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AuthShell } from "@/components/layout/auth-shell";
+import { AuthMeSeed } from "@/components/layout/auth-me-seed";
+import { getSession } from "@/lib/auth/session";
+import { buildAuthMePayload } from "@/lib/auth/me-payload";
+import { toAccountSeed, type AccountSeed } from "@/lib/auth/account-seed";
+import { ACCOUNT_SEED_REQUEST_HEADER } from "@/lib/http/page-cache-headers";
 import { MonitoringBootstrap } from "@/components/monitoring/bootstrap";
 import { getPublicMonitoringSettings } from "@/lib/monitoring-settings";
 import { WebVitalsReporter } from "@/components/monitoring/web-vitals-reporter";
@@ -82,16 +87,21 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const requestHeaders = await headers();
   const nonce =
     process.env.NODE_ENV === "production"
-      ? ((await headers()).get("x-nonce") ?? undefined)
+      ? (requestHeaders.get("x-nonce") ?? undefined)
       : undefined;
+  // The proxy marks the session-gated pages; a public page (sign-in, legal,
+  // the token views) carries no account in its document at all.
+  const seedAllowed = requestHeaders.get(ACCOUNT_SEED_REQUEST_HEADER) === "1";
 
   // The monitoring switches ride the document render instead of a request
   // from every page load; the key-mismatch page reads no data.
-  const [initialLocale, monitoring] = await Promise.all([
+  const [initialLocale, monitoring, me] = await Promise.all([
     resolveInitialLocale(),
     isKeyMismatch() ? null : getPublicMonitoringSettings(),
+    isKeyMismatch() || !seedAllowed ? null : serverAccount(),
   ]);
 
   return (
@@ -159,6 +169,7 @@ export default async function RootLayout({
               block mutations. Resolve it here (server component) and
               thread the boolean into the client shell so the demo
               banner can render without a client-side detection path. */}
+            <AuthMeSeed payload={me} />
             <AuthShell demoMode={process.env.DEMO_MODE === "true"}>
               {children}
             </AuthShell>
@@ -167,4 +178,30 @@ export default async function RootLayout({
       </body>
     </html>
   );
+}
+
+/**
+ * The signed-in account's seed: the `/api/auth/me` payload built by the
+ * route's own builder, in its wire shape (JSON semantics: dates as ISO
+ * strings), cut down to what the first paint reads (`toAccountSeed`), or null
+ * when there is no session or it cannot be built. An accelerator only: on
+ * null the shell fetches the payload itself, exactly as before.
+ */
+async function serverAccount(): Promise<AccountSeed | null> {
+  // The server-prefetch escape hatch covers the account too: with
+  // `DASHBOARD_SSR_PREFETCH=false` every page falls back to pure client
+  // fetching, the shell included. The e2e server sets it so Playwright route
+  // mocks, which only see client fetches, decide the account a page renders.
+  if (process.env.DASHBOARD_SSR_PREFETCH === "false") return null;
+  try {
+    const session = await getSession();
+    if (!session) return null;
+    const payload = await buildAuthMePayload({
+      ...session,
+      authMethod: "cookie",
+    });
+    return toAccountSeed(JSON.parse(JSON.stringify(payload)));
+  } catch {
+    return null;
+  }
 }

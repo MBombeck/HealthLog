@@ -13,6 +13,7 @@ import {
 } from "@/components/settings/security-section/use-recent-proof";
 import { ManagedProfileCreateForm } from "@/components/settings/access/managed-profile-create-form";
 import { ManagedProfileEditForm } from "@/components/settings/access/managed-profile-edit-form";
+import { ManagedProfileActivityEntry } from "@/components/settings/access/managed-profile-activity";
 import { ManagedProfileGuardians } from "@/components/settings/access/managed-profile-guardians";
 import { ManagedProfileHandover } from "@/components/settings/access/managed-profile-handover";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -245,6 +246,11 @@ function ManagedProfileRow({
           roster={guardians.data}
         />
       )}
+      {/* #1403 — who did what in the profile, before the handover. */}
+      <ManagedProfileActivityEntry
+        profileId={profile.accountId}
+        profileName={name}
+      />
       {/* v1.42 (#959) — the handover, last in the row and on a line of its
           own: it is the weightiest and rarest act on a profile, and the row's
           action strip beside the name has no room for a third control at

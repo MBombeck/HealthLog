@@ -8,7 +8,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
       count: vi.fn().mockResolvedValue(1),
-      findUnique: vi.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn(),
     },
     appSettings: {
@@ -124,7 +124,22 @@ describe("POST /api/auth/register — 422 multi-issue (v1.4.43 W6)", () => {
     expect(body.error).toBe("Validation failed");
     expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
     for (const issue of body.details.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) =>
+              ![
+                "minimum",
+                "maximum",
+                "inclusive",
+                "origin",
+                "minimumInclusive",
+                "maximumInclusive",
+              ].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
   });
 
@@ -157,7 +172,7 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
     } as never);
     vi.mocked(hashPassword).mockResolvedValue("hashed");
     vi.mocked(createSession).mockResolvedValue(undefined as never);
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.user.findFirst).mockResolvedValue(null as never);
     vi.mocked(prisma.user.create).mockImplementation((async (args: {
       data: Record<string, unknown>;
     }) => ({
@@ -178,6 +193,39 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
     username: "newuser",
     password: "a-very-strong-password-123",
   };
+
+  it("stores the e-mail lower-cased and looks both names up regardless of case", async () => {
+    vi.mocked(prisma.user.count).mockResolvedValue(1);
+
+    const res = await postPathThrough({
+      ...validBody,
+      email: "New.Person@Example.COM",
+      username: "NewUser",
+    });
+    expect(res.status).toBe(201);
+    const createArgs = vi.mocked(prisma.user.create).mock.calls[0]?.[0] as {
+      data: { email: string; username: string };
+    };
+    expect(createArgs.data.email).toBe("new.person@example.com");
+    // The chosen spelling of the name is kept; only its uniqueness ignores case.
+    expect(createArgs.data.username).toBe("NewUser");
+    // Both names go through the exact, case-blind lookup: `lower(col) =
+    // lower($1)`, never a pattern match.
+    const lookups = vi
+      .mocked(prisma.$queryRaw)
+      .mock.calls.map(([strings, ...values]) => ({
+        sql: (strings as unknown as string[]).join("$"),
+        values,
+      }));
+    expect(lookups).toContainEqual({
+      sql: expect.stringContaining('lower("email") = lower($)'),
+      values: ["new.person@example.com"],
+    });
+    expect(lookups).toContainEqual({
+      sql: expect.stringContaining('lower("username") = lower($)'),
+      values: ["NewUser"],
+    });
+  });
 
   it("mints ADMIN when the in-transaction count is 0 (genuine first user)", async () => {
     // Early gate count and in-tx count both 0.
@@ -311,7 +359,7 @@ describe("POST /api/auth/register — refuses a live session (v1.38.19)", () => 
       inviteId: "inv-1",
     } as never);
     vi.mocked(prisma.user.count).mockResolvedValue(1 as never);
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.user.findFirst).mockResolvedValue(null as never);
     vi.mocked(checkPasswordStrength).mockReturnValue({
       isAcceptable: true,
       feedback: [],

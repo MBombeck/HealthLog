@@ -45,18 +45,17 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import type { Locale } from "@/lib/i18n/config";
 import { annotate } from "@/lib/logging/context";
-import { wallClockInTz } from "@/lib/tz/wall-clock";
 import {
   discoverCorrelations,
   withoutModelFencedPairs,
   type DailySeriesPoint,
   type NamedSeries,
 } from "@/lib/insights/correlation-discovery";
-import { buildBaselineBand, median } from "@/lib/insights/derived/baseline";
+import { buildBaselineBand } from "@/lib/insights/derived/baseline";
 import { VITALS_BASELINE_TYPES } from "@/lib/insights/derived/registry";
 import { assembleDiscoveryMatrix } from "@/lib/insights/discovery-matrix";
 import { resolveModuleMap } from "@/lib/modules/gate";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import {
   applyDisplayTransform,
   applyDisplayTransformDelta,
@@ -65,6 +64,7 @@ import {
   resolveUnitPreferences,
   type UnitPreferences,
 } from "@/lib/measurements/display-transform";
+import { median } from "@/lib/stats/central";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -259,12 +259,6 @@ export type PeriodNarrativeResult =
 
 // ── pure helpers ──────────────────────────────────────────────────────────
 
-/** YYYY-MM-DD day key for an instant in the user's display timezone. */
-function tzDayKey(at: Date, tz: string): string {
-  const { year, month, day } = wallClockInTz(at, tz);
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
 /** Round to 2 decimals. */
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
@@ -405,7 +399,7 @@ export function assemblePeriodNarrativeContext(
     if (current.length < MIN_COVERED_DAYS_PER_METRIC) continue;
     const band = buildBaselineBand(prior, type);
     if (!band) continue;
-    const center = median(current);
+    const center = median(current)!;
     const above = center > band.high;
     const below = center < band.low;
     const shown = narratedUnit(type, units);
@@ -576,11 +570,11 @@ export async function buildPeriodNarrativeContext(
     glucoseUnit: profile?.glucoseUnit,
   });
 
-  const currentFrom = tzDayKey(
+  const currentFrom = userDayKey(
     new Date(now.getTime() - periodDays * MS_PER_DAY),
     tz,
   );
-  const priorFrom = tzDayKey(
+  const priorFrom = userDayKey(
     new Date(now.getTime() - periodDays * 2 * MS_PER_DAY),
     tz,
   );

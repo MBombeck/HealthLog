@@ -49,15 +49,10 @@ import {
   dailyStatsExternalId,
   hkIdentifierForType,
 } from "./apple-health-mapping";
-import {
-  bucketRowsByDay,
-  runConsolidation,
-  type DayWriteOutcome,
-} from "./consolidation-base";
+import { runConsolidation, type DayWriteOutcome } from "./consolidation-base";
 import {
   CONSOLIDATION_GRACE_CUTOFF_HOURS,
   canonicalDailyTimestamp,
-  dayKeyForUserTz,
   type PerSampleRow,
 } from "./consolidation-tz";
 import {
@@ -72,7 +67,7 @@ import {
 // keeps resolving them from here. The definitions moved to the
 // dependency-free leaf `consolidation-tz.ts` to break the init-order
 // cycle with `consolidation-base.ts`.
-export { canonicalDailyTimestamp, dayKeyForUserTz };
+export { canonicalDailyTimestamp };
 export type { PerSampleRow };
 
 /** Prefix marking an already-collapsed daily-stats row. */
@@ -172,22 +167,6 @@ export interface DrainOptions {
    * summary then reports `stoppedEarly`. See `ConsolidationOptions`.
    */
   shouldStop?: () => boolean;
-}
-
-export interface BucketedRows {
-  /** Map keyed by `YYYY-MM-DD` (user TZ). */
-  byDay: Map<string, PerSampleRow[]>;
-}
-
-export function bucketRowsByUserDay(
-  rows: readonly PerSampleRow[],
-  tz: string,
-): BucketedRows {
-  // Skip rows already in the daily-stats shape — re-running the drain
-  // on a previously-collapsed bucket is a no-op. Delegates to the shared
-  // bucketing primitive; wrapped in `{ byDay }` for the established
-  // return shape.
-  return { byDay: bucketRowsByDay(rows, tz, DAILY_STATS_PREFIX) };
 }
 
 /**

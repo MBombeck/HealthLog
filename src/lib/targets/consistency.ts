@@ -1,7 +1,7 @@
+import { shiftDateKey } from "@/lib/tz/format";
 import { userDayKey } from "@/lib/tz/resolver";
 import type { DayBand, TargetConsistency } from "./types";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const EMPTY_STRIP = [null, null, null, null, null, null, null] as const;
 
 const EMPTY_CONSISTENCY: TargetConsistency = {
@@ -32,7 +32,10 @@ interface RollupDayMapInput extends ConsistencyClock {
 }
 
 function dayKeyAtOffset(now: Date, timezone: string, daysAgo: number): string {
-  return userDayKey(new Date(now.getTime() - daysAgo * DAY_MS), timezone);
+  // By calendar day, not by `now − n·24 h`: across a 23- or 25-hour day the
+  // millisecond step lands on the wrong local day, which repeats one day of
+  // the week and drops another.
+  return shiftDateKey(userDayKey(now, timezone), -daysAgo);
 }
 
 function last7DayKeys(now: Date, timezone: string): string[] {

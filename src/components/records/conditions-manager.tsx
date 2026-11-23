@@ -150,7 +150,6 @@ export function ConditionsManager() {
             <Button
               type="button"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               data-testid="records-conditions-save"
               disabled={disabled || !dirty}
               onClick={() => save.mutate(value)}

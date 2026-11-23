@@ -62,7 +62,7 @@ import { satisfyReminder } from "@/lib/measurement-reminders/satisfy";
 import { evaluateCoachContextReminders } from "@/lib/ai/coach/context-reminders";
 import { calendarDaysUntil } from "@/lib/measurement-reminders/due-day";
 import { holdsOpenAfterReminder } from "@/lib/measurement-reminders/holds-open";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import {
   APPOINTMENT_REMINDER_ADDRESS_INCLUDE,
   appointmentReminderAddress,
@@ -460,9 +460,7 @@ export async function runMeasurementReminderTick(
       // same one the medication tick accepts: a crash mid-dispatch burns
       // the slot for this local day rather than risking a repeat, and the
       // next local day starts clean.
-      const localDate = new Date(now).toLocaleDateString("sv-SE", {
-        timeZone: timezone,
-      });
+      const localDate = userDayKey(new Date(now), timezone);
       // A multi-hour rule sends more than once a day, so its claim is per
       // slot hour; a single-hour reminder keeps the per-day key.
       const slotSuffix =

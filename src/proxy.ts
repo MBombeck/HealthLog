@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { shouldRunWeb } from "@/lib/process-type";
+import { isScannerProbe, scannerProbeResponse } from "@/lib/http/scanner-probe";
 import { readSessionCookie } from "@/lib/auth/session-cookie";
 import {
   findRetiredRoute,
@@ -7,7 +8,18 @@ import {
   RETIRED_ROUTE_STATUS,
 } from "@/lib/http/retired-routes";
 import { setBaselineSecurityHeaders } from "@/lib/http/proxy-bypass-routes";
-import { setPathCredentialHeaders } from "@/lib/http/path-credential-headers";
+import {
+  credentialRedirect,
+  setPathCredentialHeaders,
+} from "@/lib/http/path-credential-headers";
+import {
+  SHARE_VIEW_GATE_COOKIE,
+  shareViewGateBounce,
+} from "@/lib/clinician-share/view-gate";
+import {
+  forwardAccountSeedPermission,
+  setPageCachePolicy,
+} from "@/lib/http/page-cache-headers";
 import { DEMO_REFUSAL_BODY } from "@/lib/demo-refusal";
 import { resolveRequestId } from "@/lib/http/request-id";
 import { redactSecrets } from "@/lib/logging/redact";
@@ -47,11 +59,13 @@ export const PUBLIC_PATHS = [
   "/api/notifications/vapid",
   // v1.42.2 — notification quick answers. A notification app (ntfy's `http`
   // action) calls this with no session; the signed, single-use, short-lived
-  // token in the path is the whole credential, verified by the route after
-  // its rate limit. Trailing slash: admits only `/action/<token>`.
+  // path token is the credential, verified after the route's rate limit.
   "/api/notifications/action/",
-  // #1350 — the calendar feed; the `hlf_` path token is the credential.
+  // #1350 — the calendar feeds; the `hlf_` path token is the credential.
+  // `/e/<hle_token>`, the emergency card's read-only QR view, the same.
   "/api/cycle/feed/",
+  "/api/care/feed/",
+  "/e/",
   "/api/monitoring/",
   "/api/withings/webhook",
   // v1.11.0 — WHOOP webhook (`recovery.updated` / `sleep.updated` /
@@ -61,13 +75,11 @@ export const PUBLIC_PATHS = [
   "/api/whoop/webhook",
   "/api/telegram/webhook",
   "/api/ingest/",
-  // v1.4.26 — `/privacy` is a public legal page. iOS App Store Connect
-  // requires a publicly reachable Privacy-Policy URL during submission;
-  // GDPR Art. 13 expects the same for any visitor before they sign up.
+  // v1.4.26 — `/privacy` is a public legal page. App Store Connect needs a
+  // public privacy-policy URL; GDPR Art. 13 expects one before sign-up.
   "/privacy",
-  // v1.4.27 — `/about` carries the GeoLite2 CC BY-SA 4.0 attribution
-  // alongside the project credits. The CC licence requires the
-  // attribution to be reachable without a sign-in.
+  // v1.4.27 — `/about` carries the GeoLite2 CC BY-SA 4.0 attribution beside
+  // the credits; the licence requires it to be reachable without a sign-in.
   "/about",
   // v1.11.0 — `/c/<token>` is the public clinician view (Epic C). It is
   // authenticated solely by the unguessable `hls_` token in the path, NOT
@@ -263,7 +275,7 @@ const LEGACY_ADMIN_ANCHORS: Record<string, string> = {
   "/admin/section-admin-services": "/admin/services",
   "/admin/section-admin-umami": "/admin/integrations",
   "/admin/section-admin-glitchtip": "/admin/integrations",
-  "/admin/section-admin-webpush": "/admin/integrations",
+  "/admin/section-admin-webpush": "/admin/services",
   "/admin/section-admin-reminders": "/admin/reminders",
   "/admin/section-user-management": "/admin/users",
   "/admin/section-api-tokens": "/admin/api-tokens",
@@ -383,13 +395,9 @@ export function proxy(request: NextRequest) {
     );
   }
 
-  // A Server Action call. HealthLog defines no Server Actions (no module
-  // carries `"use server"`, which `no-server-actions-guard.test.ts` holds), so
-  // no bundle of this app, old or new, ever sends `Next-Action`: the requests
-  // that do are scanners probing the Server Action surface, nightly and in
-  // bursts. Left to Next, each one printed "Failed to find Server Action" at
-  // error level, unstructured, an error with no user behind it. Refused here
-  // instead, with one countable `warn` line: a refusal by design.
+  // A Server Action call. HealthLog defines none (`no-server-actions-guard`),
+  // so only scanners send `Next-Action`. Left to Next, each printed "Failed to
+  // find Server Action" at error level; refused here with one `warn` line.
   if (request.headers.has(SERVER_ACTION_HEADER)) {
     console.warn(
       JSON.stringify({
@@ -418,6 +426,9 @@ export function proxy(request: NextRequest) {
       ),
     );
   }
+
+  // Scanner probes get a few bytes, not a rendered not-found page.
+  if (isScannerProbe(pathname)) return scannerProbeResponse();
 
   // 301 redirects for renamed routes
   const redirect = LEGACY_REDIRECTS[pathname];
@@ -521,19 +532,9 @@ export function proxy(request: NextRequest) {
     if (/^hlv_[0-9a-f]{64}$/.test(token)) {
       target.searchParams.set("invite", token);
     }
-    const redirected = applyBaselineSecurityHeaders(
-      NextResponse.redirect(target, 307),
-    );
-    // The secret rides in the path of the request that produced this hop, so
-    // the hop itself carries the same defence the landing page earned in
-    // v1.17.0: uncacheable, unindexable, and never leaked as a `Referer`.
-    redirected.headers.set(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate",
-    );
-    redirected.headers.set("X-Robots-Tag", "noindex, nofollow");
-    redirected.headers.set("Referrer-Policy", "no-referrer");
-    return redirected;
+    // The secret rides in the path of this hop: uncacheable, unindexable,
+    // never leaked as a `Referer`.
+    return credentialRedirect(target);
   }
 
   // v1.42 (#959) — the managed-profile handover link answers at the edge for
@@ -547,17 +548,16 @@ export function proxy(request: NextRequest) {
     if (/^hlp_[0-9a-f]{64}$/.test(token)) {
       target.searchParams.set("token", token);
     }
-    const redirected = applyBaselineSecurityHeaders(
-      NextResponse.redirect(target, 307),
-    );
-    redirected.headers.set(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate",
-    );
-    redirected.headers.set("X-Robots-Tag", "noindex, nofollow");
-    redirected.headers.set("Referrer-Policy", "no-referrer");
-    return redirected;
+    return credentialRedirect(target);
   }
+
+  // The share page without its gate cookie goes back to `/c/<token>`.
+  const shareBack = shareViewGateBounce(
+    pathname,
+    request.nextUrl.searchParams,
+    request.cookies.has(SHARE_VIEW_GATE_COOKIE),
+  );
+  if (shareBack) return credentialRedirect(new URL(shareBack, request.url));
 
   // Server-side route protection for pages (not API routes — those have their own getSession checks)
   const isApiRoute = pathname.startsWith("/api/");
@@ -625,6 +625,7 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("x-request-id", requestId);
+  forwardAccountSeedPermission(requestHeaders, isSessionGatedPage);
 
   const response = NextResponse.next({
     request: {
@@ -663,27 +664,6 @@ export function proxy(request: NextRequest) {
   // Both serve routes take the narrow, document-only header posture.
   const isServeRoute = isDocumentServeRoute || isShareDocumentServeRoute;
 
-  // Session-gated pages carry one account's health record in the document
-  // itself. Several of them server-prefetch their data and serialise it into
-  // the HTML through a TanStack `HydrationBoundary` — the dashboard, Insights,
-  // the workouts list, the medications list, the Coach. Those pages are
-  // dynamic today only as a side effect of reading the session cookie, which
-  // is a property of the page code, not a guarantee: a stray `revalidate`
-  // export, a `force-static` segment, or a caching proxy in front of the app
-  // would be enough to retain one account's record and hand it to the next
-  // caller. Pin the guarantee at the edge instead, where no page-level change
-  // can weaken it.
-  //
-  // `private` bars shared caches (CDN, reverse proxy) outright; `no-store`
-  // additionally stops the browser's own disk cache and the bfcache snapshot,
-  // so a back-navigation after logout cannot repaint the record. The public
-  // surfaces (`/auth/*`, `/privacy`, `/about`, `/i18n/*`) are excluded by the
-  // same predicate that governs the auth redirect, so the statically
-  // rendered marketing/legal pages stay cacheable.
-  if (isSessionGatedPage) {
-    response.headers.set("Cache-Control", "private, no-store");
-  }
-
   // Security headers. Framing is refused by the CSP's `frame-ancestors`; a
   // browser that reads it ignores X-Frame-Options, kept for older ones.
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -696,6 +676,13 @@ export function proxy(request: NextRequest) {
 
   // Paths whose credential is the URL itself (share view, invite, feed).
   setPathCredentialHeaders(pathname, response.headers);
+  // A page rendered for a session is `private, no-store`, path or cookie;
+  // only an anonymous one may be kept by the worker (see the module).
+  setPageCachePolicy(response.headers, {
+    sessionGated: isSessionGatedPage,
+    isPage: !isApiRoute && !isStaticFile && !pathname.startsWith("/i18n/"),
+    carriesSession: readSessionCookie(request.cookies) !== null,
+  });
   // COOP isolates this BrowsingContextGroup from cross-origin popups,
   // closing the Spectre-class side-channel surface a stray
   // `window.opener` reference would otherwise carry. CORP narrows the
@@ -841,6 +828,6 @@ export const config = {
     // the matcher and `apiHandler` performs the proxy's duties for it. The
     // alternation must stay equal to that list; `proxy-body-limit.test.ts`
     // compiles this exactly as Next does and checks.
-    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|robots\\.txt|sitemap\\.xml|api/(?:import(?:/csv|/labs-csv|/medications-csv|/apple-health-export|/health-connect-export|/fit)?|admin/import-apple-health-export|admin/backups/upload|documents/inbound|medications/intake/(?:dose-history-import|bulk)|labs/ocr/extract|medications/[^/]+/ingredients/extract|user/avatar|measurements/batch|workouts/batch|insights/ecg|mood-entries/bulk|cycle/day-logs/bulk)/?$|(?!api/).*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|xml)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|robots\\.txt|sitemap\\.xml|api/(?:import(?:/csv|/labs-csv|/medications-csv|/apple-health-export|/health-connect-export|/fit|/gadgetbridge|/fhir-bundle)?|admin/import-apple-health-export|admin/backups/upload|documents/inbound|medications/intake/(?:dose-history-import|bulk)|labs/ocr/extract|medications/[^/]+/ingredients/extract|user/avatar|measurements/batch|workouts/batch|insights/ecg|mood-entries/bulk|cycle/day-logs/bulk)/?$|(?!api/).*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|xml)$).*)",
   ],
 };

@@ -44,7 +44,10 @@ import {
   type StatusCardPlugin,
   type StatusTextResult,
 } from "@/lib/insights/status-pipeline";
+import type { MeasurementType } from "@/generated/prisma/client";
 import { annotate } from "@/lib/logging/context";
+import { isCumulativeDaySumType } from "@/lib/measurements/cumulative-day-sum";
+import { readHourCells } from "@/lib/measurements/dense-bucket-read";
 import { readNewestRowsPerType } from "@/lib/measurements/newest-per-type";
 import { createCustomLabelResolver } from "@/lib/mood/custom-tags";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
@@ -179,7 +182,7 @@ async function buildMoodSnapshot(
     entries.length > 0 ? entries[entries.length - 1].moodLoggedAt : null,
   );
 
-  const measurements = await readCrossMetricMeasurements(userId, now);
+  const measurements = await readCrossMetricMeasurements(userId, now, userTz);
   const relations = await computeMoodRelations({
     userId,
     entries,
@@ -402,7 +405,11 @@ function readMoodEntriesForStatus(userId: string) {
  * The cross-metric measurements the correlations and the factor crosstab
  * pair against, bounded to the ~365-day window they can pair in.
  */
-async function readCrossMetricMeasurements(userId: string, now: Date) {
+async function readCrossMetricMeasurements(
+  userId: string,
+  now: Date,
+  timeZone: string,
+) {
   // Fetch cross-metric context for enrichment. v1.4.28 FB-D2 — cap at
   // 1095 = 365 d × 3 channels so power users do not pull unbounded
   // rows. Order desc + reverse so the downstream filters see oldest-
@@ -444,16 +451,58 @@ async function readCrossMetricMeasurements(userId: string, now: Date) {
       since: crossMetricWindowStart,
     },
   );
-  if (cappedTypes.length > 0) {
+  // A channel that reached the cap is read again over the whole window as one
+  // cell per local hour, source and device type (`readHourCells`): its year
+  // pairs with the mood days instead of its newest days only. A pulse day is
+  // the mean of its hours' means, so the cells give the day value the rows
+  // would; a summed channel's day total is their sum. Sleep is stored one row
+  // per stage and never folds; it cannot reach the cap (a few rows a night).
+  const refolded: MeasurementType[] = cappedTypes.filter(
+    (type) => type !== "SLEEP_DURATION",
+  );
+  if (refolded.length < cappedTypes.length) {
     annotate({ meta: { cross_metric_truncated: true } });
   }
-  const measurements = rows.map((row) => ({
-    type: row.type,
-    value: row.value,
-    measuredAt: row.measuredAt,
-    source: row.source,
-    deviceType: row.deviceType,
-  }));
+  const cellsByType = new Map(
+    await Promise.all(
+      refolded.map(
+        async (type) =>
+          [
+            type,
+            await readHourCells({
+              userId,
+              type,
+              since: crossMetricWindowStart,
+              timeZone,
+              summed: isCumulativeDaySumType(type),
+              bySource: true,
+            }),
+          ] as const,
+      ),
+    ),
+  );
+  const measurements = rows
+    .filter((row) => !cellsByType.has(row.type))
+    .map((row) => ({
+      type: row.type,
+      value: row.value,
+      measuredAt: row.measuredAt,
+      source: row.source,
+      deviceType: row.deviceType,
+    }));
+  for (const [type, cells] of cellsByType) {
+    for (const cell of cells) {
+      measurements.push({
+        type,
+        value: cell.value,
+        measuredAt: cell.measuredAt,
+        // `bySource` sets the source on every cell.
+        source: cell.source!,
+        deviceType: cell.deviceType,
+      });
+    }
+  }
+  measurements.sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
 
   return measurements;
 }

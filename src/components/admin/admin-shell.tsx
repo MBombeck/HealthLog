@@ -38,6 +38,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import { SubNavLink, SubNavRow } from "@/components/ui/sub-nav";
 import { SUB_SHELL_GRID_FLOOR } from "@/components/layout/shell-metrics";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
@@ -52,20 +53,26 @@ interface AdminSection {
 }
 
 type AdminSectionGroup =
-  "system" | "connectivity" | "ai" | "account" | "yourData";
+  "system" | "notifications" | "ai" | "connectivity" | "account" | "serverData";
 
 const ADMIN_SECTION_GROUP_LABEL_KEYS: Record<AdminSectionGroup, string> = {
   system: "settings.shell.groups.system",
-  connectivity: "settings.shell.groups.connectivity",
+  notifications: "settings.shell.groups.notifications",
   ai: "settings.shell.groups.ai",
+  connectivity: "settings.shell.groups.connectivity",
   account: "settings.shell.groups.account",
-  yourData: "settings.shell.groups.yourData",
+  serverData: "settings.shell.groups.serverData",
 };
 
 /**
  * Source of truth for the admin section list. Order matches the in-app
  * navigation order so the sidebar, mobile strip, and `generateStaticParams()`
  * all line up. Don't reorder without updating tests.
+ *
+ * Each group holds one subject: push lives in one place (channels,
+ * Web Push keys, the relay and delivery health under Notifications), the AI
+ * group holds only the Coach, server-wide module availability sits with the
+ * system, and the group for what the server stores is "Server data".
  */
 export const ADMIN_SECTIONS: readonly AdminSection[] = [
   {
@@ -80,10 +87,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     icon: Settings,
     group: "system",
   },
+  // v1.18.6 — server-wide module availability; it gates every module, so it
+  // is a property of the server rather than of the AI.
   {
-    slug: "services",
-    titleKey: "admin.section.services.title",
-    icon: Radio,
+    slug: "module-availability",
+    titleKey: "admin.section.module-availability.title",
+    icon: Blocks,
     group: "system",
   },
   // v1.4.36 — About / version / update check folded into Admin.
@@ -92,6 +101,27 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     titleKey: "admin.section.about.title",
     icon: Info,
     group: "system",
+  },
+  {
+    slug: "services",
+    titleKey: "admin.section.services.title",
+    icon: Radio,
+    group: "notifications",
+  },
+  {
+    slug: "reminders",
+    titleKey: "admin.section.reminders.title",
+    icon: Bell,
+    group: "notifications",
+  },
+  // v1.18.1 — single "Coach" entry replacing the former ai-quality,
+  // assistant, and coach-feedback trio. The section body stacks all
+  // three surfaces so the coach-quality picture lives in one place.
+  {
+    slug: "coach",
+    titleKey: "admin.section.coach.title",
+    icon: Sparkles,
+    group: "ai",
   },
   {
     slug: "integrations",
@@ -104,29 +134,6 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     titleKey: "admin.section.api-tokens.title",
     icon: KeyRound,
     group: "connectivity",
-  },
-  // v1.18.1 — single "Coach" entry replacing the former ai-quality,
-  // assistant, and coach-feedback trio. The section body stacks all
-  // three surfaces so the coach-quality picture lives in one place.
-  {
-    slug: "coach",
-    titleKey: "admin.section.coach.title",
-    icon: Sparkles,
-    group: "ai",
-  },
-  // v1.18.6 — server-wide module availability split out of Coach into
-  // its own entry, sitting next to it.
-  {
-    slug: "module-availability",
-    titleKey: "admin.section.module-availability.title",
-    icon: Blocks,
-    group: "ai",
-  },
-  {
-    slug: "reminders",
-    titleKey: "admin.section.reminders.title",
-    icon: Bell,
-    group: "ai",
   },
   {
     slug: "users",
@@ -152,26 +159,26 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     slug: "app-logs",
     titleKey: "admin.section.app-logs.title",
     icon: FileText,
-    group: "yourData",
+    group: "serverData",
   },
   {
     slug: "backups",
     titleKey: "admin.section.backups.title",
     icon: Database,
-    group: "yourData",
+    group: "serverData",
   },
   // v1.23 — encryption coverage + key-rotation status / safe trigger.
   {
     slug: "encryption",
     titleKey: "admin.section.encryption.title",
     icon: ShieldCheck,
-    group: "yourData",
+    group: "serverData",
   },
   {
     slug: "danger-zone",
     titleKey: "admin.section.danger-zone.title",
     icon: ShieldAlert,
-    group: "yourData",
+    group: "serverData",
   },
 ] as const;
 
@@ -199,25 +206,15 @@ function deriveActiveSlug(
   return isAdminSectionSlug(candidate) ? candidate : null;
 }
 
-export function AdminShell({ active, children }: AdminShellProps) {
-  const pathname = usePathname();
-  const { t } = useTranslations();
-  const { user } = useAuth();
-  const activeSlug = deriveActiveSlug(pathname, active);
-  const isConfirmedAdmin = user?.role === "ADMIN";
-  // Apply the existing fail-closed authorization predicate before grouping.
-  // The filtered list is the only render source, so an unavailable item can
-  // never leave a group heading without an allowed destination below it.
-  const visibleSections = isConfirmedAdmin ? ADMIN_SECTIONS : [];
-
+function useActivePillInView(activeSlug: string | null) {
   // v1.4.34 — mirror the settings-shell auto-scroll pattern so
   // the active chip stays in view when the user lands on a deeper
   // admin route. Without it the 16-chip strip stays scrolled to the
   // left and the active chip lives off-screen, reading as a broken nav.
-  const mobileStripRef = React.useRef<HTMLElement | null>(null);
+  const stripRef = React.useRef<HTMLDivElement | null>(null);
   React.useEffect(() => {
     if (typeof window === "undefined") return;
-    const strip = mobileStripRef.current;
+    const strip = stripRef.current;
     if (!strip) return;
     const activeChip = strip.querySelector<HTMLElement>(
       '[aria-current="page"]',
@@ -229,10 +226,33 @@ export function AdminShell({ active, children }: AdminShellProps) {
     // reset `scrollLeft: 0` to the target on every tap — an unwanted "scroll
     // from the start" sweep. `scrollTo({ left, behavior: "auto" })` confines
     // the motion to the strip's horizontal axis and jumps without animation.
+    // The pill lands on the page gutter, not on the screen edge: the strip
+    // bleeds to the edge and pads itself back to the gutter.
+    const gutter = parseFloat(getComputedStyle(strip).paddingLeft) || 0;
+    const offset =
+      activeChip.getBoundingClientRect().left -
+      strip.getBoundingClientRect().left +
+      strip.scrollLeft -
+      gutter;
     const maxScroll = strip.scrollWidth - strip.clientWidth;
-    const target = Math.max(0, Math.min(activeChip.offsetLeft, maxScroll));
+    const target = Math.max(0, Math.min(offset, maxScroll));
     strip.scrollTo({ left: target, behavior: "auto" });
   }, [activeSlug]);
+  return stripRef;
+}
+
+export function AdminShell({ active, children }: AdminShellProps) {
+  const pathname = usePathname();
+  const { t } = useTranslations();
+  const { user } = useAuth();
+  const activeSlug = deriveActiveSlug(pathname, active);
+  const isConfirmedAdmin = user?.role === "ADMIN";
+  // Apply the existing fail-closed authorization predicate before grouping.
+  // The filtered list is the only render source, so an unavailable item can
+  // never leave a group heading without an allowed destination below it.
+  const visibleSections = isConfirmedAdmin ? ADMIN_SECTIONS : [];
+
+  const mobileStripRef = useActivePillInView(activeSlug);
 
   // The section bodies are already role-gated, but the shell frame
   // itself (the full section nav in two layouts) used to paint for a
@@ -276,80 +296,49 @@ export function AdminShell({ active, children }: AdminShellProps) {
           renders inside the grid (row 1 / content column). */}
       <div className="mb-4 md:hidden">{headingBlock(true)}</div>
 
-      {/* Mobile section strip — horizontal scroll, hidden on md+.
-          `no-scrollbar` (defined in `globals.css`) suppresses the
-          painted scrollbar at the top of every admin page; the
-          horizontal swipe + keyboard arrow scrolling still work, the
-          bar just doesn't draw. Without this the 13-section strip
-          would render an always-on scrollbar that the maintainer kept
-          mis-attributing to the api-tokens table below it.
-
-          v1.4.34 — `snap-x snap-mandatory` plus per-chip
-          `snap-start` lets a swipe-flick land on the next chip's
-          leading edge instead of the in-between dead zone, matching
-          the settings-shell polish. */}
-      <nav
-        ref={mobileStripRef}
-        aria-label={t("admin.shell.sectionsNav")}
-        className="no-scrollbar relative -mx-4 mb-4 snap-x snap-mandatory overflow-x-auto px-4 md:hidden"
-      >
-        <ul className="flex min-w-max gap-2">
-          <li className="snap-start">
-            <Link
-              href="/admin"
-              aria-current={activeSlug === null ? "page" : undefined}
-              className={cn(
-                // v1.4.25 — chip strip is the primary mobile-admin
-                // navigation surface. Pad to WCAG 2.5.5 44 px so the
-                // chips can be tapped without zoom on a Pixel-5.
-                "flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                activeSlug === null
-                  ? "border-primary/40 bg-primary/10 text-primary"
-                  : "border-border text-foreground hover:bg-accent",
-              )}
-            >
-              <ScrollText className="h-4 w-4" aria-hidden="true" />
-              {t("admin.shell.overview")}
-            </Link>
-          </li>
+      {/* Phone section strip, hidden on md+: the app's sub-navigation pills
+          (`SubNav`, the Insights pages' row), so the console's "other pages
+          here" reads like every other area's. The row scrolls sideways
+          without a painted bar and bleeds to the screen edge; each pill
+          snaps to the leading edge after a flick. */}
+      <nav aria-label={t("admin.shell.sectionsNav")} className="mb-4 md:hidden">
+        <SubNavRow
+          ref={mobileStripRef}
+          className="-mx-4 snap-x snap-mandatory scroll-px-4 px-4"
+        >
+          <SubNavLink
+            href="/admin"
+            active={activeSlug === null}
+            className="snap-start gap-1.5"
+          >
+            <ScrollText className="size-3.5" aria-hidden="true" />
+            {t("admin.shell.overview")}
+          </SubNavLink>
           {visibleSections.map((section, index) => {
-            const isActive = section.slug === activeSlug;
             const Icon = section.icon;
             const startsNewGroup =
               index > 0 && visibleSections[index - 1].group !== section.group;
             return (
               <React.Fragment key={section.slug}>
                 {startsNewGroup ? (
-                  <li
+                  <span
                     aria-hidden="true"
                     data-slot="admin-nav-group-separator"
-                    className="shrink-0"
-                  >
-                    <span className="bg-border block h-6 w-px" />
-                  </li>
+                    className="bg-border h-6 w-px shrink-0 self-center"
+                  />
                 ) : null}
-                <li className="snap-start">
-                  <Link
-                    href={`/admin/${section.slug}`}
-                    aria-current={isActive ? "page" : undefined}
-                    className={cn(
-                      // v1.4.25 — chip strip is the primary mobile-admin
-                      // navigation surface. Pad to WCAG 2.5.5 44 px so the
-                      // chips can be tapped without zoom on a Pixel-5.
-                      "flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                      isActive
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-border text-foreground hover:bg-accent",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                    {t(section.titleKey)}
-                  </Link>
-                </li>
+                <SubNavLink
+                  href={`/admin/${section.slug}`}
+                  active={section.slug === activeSlug}
+                  className="snap-start gap-1.5"
+                >
+                  <Icon className="size-3.5" aria-hidden="true" />
+                  {t(section.titleKey)}
+                </SubNavLink>
               </React.Fragment>
             );
           })}
-        </ul>
+        </SubNavRow>
       </nav>
 
       {/* v1.18.6.1 — two-row grid: heading in row 1 / col 2, nav in row 2 /

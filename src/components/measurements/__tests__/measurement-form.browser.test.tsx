@@ -16,6 +16,8 @@ import {
   type FetchStub,
 } from "../../../../tests/browser/fetch-stub";
 import { renderWithApp } from "../../../../tests/browser/render";
+import { defaultGlucoseContext } from "@/lib/measurements/glucose-context-default";
+
 import { MeasurementForm } from "../measurement-form";
 
 const NOW = "2026-09-15T10:00:00.000Z";
@@ -24,7 +26,24 @@ let api: FetchStub;
 
 beforeEach(() => {
   pinDate(NOW);
-  api = stubFetch().on("POST", "/api/measurements", { status: 201, data: {} });
+  api = stubFetch()
+    .on("POST", "/api/measurements", { status: 201, data: { id: "m1" } })
+    // The form's own reads: recent manual types and the type's last reading.
+    .on("GET", /^\/api\/measurements\?/, { data: { measurements: [] } });
+});
+
+/** Every request but the form's reads. */
+const writes = () => api.requests.filter((r) => r.method !== "GET");
+
+/** A stored reading as the list route answers it. */
+const reading = (type: string, value: number, unit: string, at: string) => ({
+  id: `${type}-${at}`,
+  type,
+  value,
+  unit,
+  source: "MANUAL",
+  measuredAt: at,
+  notes: null,
 });
 
 async function mount(
@@ -50,7 +69,7 @@ describe("<MeasurementForm> blood pressure", () => {
     await screen.getByLabelText(/^Systolic/).fill("128");
     await screen.getByLabelText(/^Diastolic/).fill("84");
     await screen.getByLabelText(/^Pulse/).fill("66");
-    await screen.getByLabelText(/^Notes/).fill("after the stairs");
+    await screen.getByLabelText(/^Note/).fill("after the stairs");
     await save.click();
 
     await expect.poll(() => onSuccess.mock.calls.length).toBe(1);
@@ -73,7 +92,7 @@ describe("<MeasurementForm> blood pressure", () => {
       ],
     ]);
     // Only the write: nothing else in the cache needed refetching.
-    expect(api.requests.map((r) => `${r.method} ${r.path}`)).toEqual([
+    expect(writes().map((r) => `${r.method} ${r.path}`)).toEqual([
       "POST /api/measurements",
     ]);
     await expect.element(screen.getByLabelText(/^Systolic/)).toHaveValue(null);
@@ -104,7 +123,7 @@ describe("<MeasurementForm> blood pressure", () => {
       .getByLabelText(/^Systolic/)
       .element() as HTMLInputElement;
     expect(sys.validity.valueMissing).toBe(true);
-    expect(api.requests).toEqual([]);
+    expect(writes()).toEqual([]);
     expect(onSuccess).not.toHaveBeenCalled();
   });
 
@@ -162,7 +181,8 @@ describe("<MeasurementForm> units on the way out", () => {
       { unitPreference: "imperial" },
     );
     const field = screen.getByLabelText("Value (lb)");
-    await expect.element(field).toHaveAttribute("placeholder", "165");
+    // No reading yet: no stranger's example number either.
+    await expect.element(field).not.toHaveAttribute("placeholder");
     await field.fill("210");
     await save.click();
     await expect.poll(() => onSuccess.mock.calls.length).toBe(1);
@@ -174,7 +194,6 @@ describe("<MeasurementForm> units on the way out", () => {
   it("reads a decimal comma for a metric reader", async () => {
     const { screen, save, onSuccess } = await mount({ defaultType: "WEIGHT" });
     const field = screen.getByLabelText("Value (kg)");
-    await expect.element(field).toHaveAttribute("placeholder", "75.5");
     await field.fill("75,5");
     await save.click();
     await expect.poll(() => onSuccess.mock.calls.length).toBe(1);
@@ -188,7 +207,6 @@ describe("<MeasurementForm> units on the way out", () => {
       defaultType: "BLOOD_GLUCOSE",
     });
     const field = screen.getByLabelText("Value (mg/dL)");
-    await expect.element(field).toHaveAttribute("placeholder", "95");
     await field.fill("104");
     await save.click();
     await expect.poll(() => onSuccess.mock.calls.length).toBe(1);
@@ -197,7 +215,8 @@ describe("<MeasurementForm> units on the way out", () => {
         type: "BLOOD_GLUCOSE",
         value: 104,
         measuredAt: NOW,
-        glucoseContext: "FASTING",
+        // The context follows the hour of the reading, not a fixed default.
+        glucoseContext: defaultGlucoseContext(new Date(NOW)),
       },
     ]);
   });
@@ -208,7 +227,6 @@ describe("<MeasurementForm> units on the way out", () => {
       { glucoseUnit: "mmol/L" },
     );
     const field = screen.getByLabelText("Value (mmol/L)");
-    await expect.element(field).toHaveAttribute("placeholder", "5.3");
     await field.fill("5.5");
     await screen.getByRole("combobox", { name: /^Context/ }).click();
     await screen
@@ -248,7 +266,7 @@ describe("<MeasurementForm> units on the way out", () => {
       .element(screen.getByText("Enter a duration like 7.5, 7:30 or 7h 30m."))
       .toBeVisible();
     await expect.element(field).toHaveAttribute("aria-invalid", "true");
-    expect(api.requests).toEqual([]);
+    expect(writes()).toEqual([]);
     await field.fill("7.5");
     await expect
       .element(screen.getByText("Enter a duration like 7.5, 7:30 or 7h 30m."))
@@ -284,29 +302,110 @@ describe("<MeasurementForm> type", () => {
     await userEvent.keyboard("{Escape}");
   });
 
-  it("opens on the type saved last when no type is asked for", async () => {
-    const first = await mount({ defaultType: "WEIGHT" });
-    await first.screen.getByLabelText("Value (kg)").fill("80");
-    await first.save.click();
-    await expect.poll(() => first.onSuccess.mock.calls.length).toBe(1);
-    // Awaited: the unmount runs inside `act`, and one left running overlaps
-    // the next render's `act`, after which React commits nothing for the
-    // rest of the file (every later case finds an empty container).
-    await first.screen.unmount();
-
+  it("opens on the type saved last by hand when no type is asked for", async () => {
+    api.on("GET", /^\/api\/measurements\?sourceEq=MANUAL/, {
+      data: {
+        measurements: [
+          reading("WEIGHT", 82.3, "kg", "2026-09-15T07:00:00.000Z"),
+          reading("BLOOD_GLUCOSE", 95, "mg/dL", "2026-09-14T07:00:00.000Z"),
+        ],
+      },
+    });
     const { screen } = await mount();
     await expect
       .element(screen.getByRole("combobox", { name: /^Type/ }))
       .toHaveTextContent("Weight");
+    // Read from the person's readings, never kept in browser storage.
+    expect(Object.values(window.localStorage)).not.toContain("WEIGHT");
   });
 
   it("clears every field from the menu's Reset", async () => {
     const { screen } = await mount({ defaultType: "BLOOD_PRESSURE" });
     await screen.getByLabelText(/^Systolic/).fill("120");
-    await screen.getByLabelText(/^Notes/).fill("left arm");
+    await screen.getByLabelText(/^Note/).fill("left arm");
     await screen.getByRole("button", { name: "More options" }).click();
     await screen.getByRole("menuitem", { name: "Reset form" }).click();
     await expect.element(screen.getByLabelText(/^Systolic/)).toHaveValue(null);
-    await expect.element(screen.getByLabelText(/^Notes/)).toHaveValue("");
+    await expect.element(screen.getByLabelText(/^Note/)).toHaveValue("");
+  });
+});
+
+describe("<MeasurementForm> the person's own habits", () => {
+  it("focuses the value field, or systolic, when it opens", async () => {
+    const weight = await mount({ defaultType: "WEIGHT" });
+    await expect
+      .element(weight.screen.getByLabelText("Value (kg)"))
+      .toHaveFocus();
+    await weight.screen.unmount();
+    const bp = await mount({ defaultType: "BLOOD_PRESSURE" });
+    await expect.element(bp.screen.getByLabelText(/^Systolic/)).toHaveFocus();
+  });
+
+  it("shows the last reading under the field and as the placeholder", async () => {
+    api.on("GET", /^\/api\/measurements\?type=WEIGHT/, {
+      data: {
+        measurements: [
+          reading("WEIGHT", 82.3, "kg", "2026-09-12T08:00:00.000Z"),
+        ],
+      },
+    });
+    const { screen } = await mount({ defaultType: "WEIGHT" });
+    const field = screen.getByLabelText("Value (kg)");
+    await expect.element(field).toHaveAttribute("placeholder", "82.3");
+    await expect
+      .element(screen.getByText("Last 82.3 kg, 3 days ago"))
+      .toBeVisible();
+    await field.fill("8.23");
+    await expect
+      .element(screen.getByText(/Quite different from your last reading/))
+      .toBeVisible();
+    await field.fill("82.9");
+    await expect
+      .element(screen.getByText(/Quite different from your last reading/))
+      .not.toBeInTheDocument();
+  });
+
+  it("lists recently logged types first and saves on to the next one", async () => {
+    api.on("GET", /^\/api\/measurements\?sourceEq=MANUAL/, {
+      data: {
+        measurements: [
+          reading("WEIGHT", 82.3, "kg", "2026-09-15T07:00:00.000Z"),
+          reading(
+            "BLOOD_PRESSURE_SYS",
+            120,
+            "mmHg",
+            "2026-09-14T07:00:00.000Z",
+          ),
+          reading("BLOOD_PRESSURE_DIA", 80, "mmHg", "2026-09-14T07:00:00.000Z"),
+        ],
+      },
+    });
+    const { screen, onSuccess } = await mount({
+      defaultType: "WEIGHT",
+      chain: true,
+    });
+    const type = screen.getByRole("combobox", { name: /^Type/ });
+    await type.click();
+    const options = screen.getByRole("option").elements();
+    expect(options.slice(0, 2).map((o) => o.textContent)).toEqual([
+      "Weight",
+      "Blood Pressure",
+    ]);
+    await userEvent.keyboard("{Escape}");
+
+    await screen.getByLabelText("Value (kg)").fill("82.1");
+    await screen.getByTestId("measurement-save-next").click();
+    await expect.element(screen.getByLabelText(/^Systolic/)).toBeVisible();
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(posted()).toEqual([
+      { type: "WEIGHT", value: 82.1, measuredAt: NOW },
+    ]);
+  });
+
+  it("offers no next value outside a capture sheet", async () => {
+    const { screen } = await mount({ defaultType: "WEIGHT" });
+    await expect
+      .element(screen.getByTestId("measurement-save-next"))
+      .not.toBeInTheDocument();
   });
 });

@@ -32,7 +32,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { ConfirmButton } from "@/components/ui/confirm-button";
-import { formatDateTime } from "@/lib/format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   apiDelete,
@@ -630,7 +629,7 @@ export function EnvironmentSection() {
               data.lastFetchFailure.failures,
               {
                 count: data.lastFetchFailure.failures,
-                when: formatDateTime(data.lastFetchFailure.lastFailedAt),
+                when: fmt.dateTime(data.lastFetchFailure.lastFailedAt),
               },
             )}
           </p>
@@ -640,7 +639,6 @@ export function EnvironmentSection() {
           <Button
             type="button"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             disabled={
               !home ||
               effectiveBackfillStart.length === 0 ||
@@ -662,7 +660,7 @@ export function EnvironmentSection() {
             icon={Wind}
             title={t("settings.sections.environment.airQuality.title")}
             status={
-              <label className="flex min-h-11 items-center gap-3">
+              <div className="flex min-h-11 items-center gap-3">
                 <Switch
                   checked={
                     data.airQuality.enabled && !data.airQuality.operatorDisabled
@@ -675,7 +673,7 @@ export function EnvironmentSection() {
                     "settings.sections.environment.airQuality.toggle",
                   )}
                 />
-              </label>
+              </div>
             }
           />
           <p className="text-sm leading-relaxed">

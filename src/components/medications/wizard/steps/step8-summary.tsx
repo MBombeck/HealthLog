@@ -5,8 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
@@ -17,7 +16,12 @@ import {
   summariseScheduleDraft,
   type WizardPayload,
 } from "../wizard-payload";
-import { Step8NoteField } from "./step8-note-field";
+import { Step8ExtrasFields } from "./step8-note-field";
+import { scaleForCadence } from "./step7-times";
+import {
+  dayScaleLateDays,
+  intradayDoseWindowPlan,
+} from "@/lib/medications/scheduling/dose-window-plan";
 
 export interface Step8SummaryProps {
   payload: WizardPayload;
@@ -58,30 +62,15 @@ export function Step8Summary({
 }: Step8SummaryProps) {
   const { t } = useTranslations();
   const formatters = useFormatters();
-  const topSummary = summariseCadence(payload, t, formatters.date);
+  const topSummary = summariseCadence(
+    payload,
+    t,
+    formatters.date,
+    formatters.wallTime,
+  );
   const canRemove = payload.schedules.length > 1;
 
-  // Reminders need at least one delivery channel. Fetch the channel
-  // list only while the toggle is on; when the server reports zero
-  // enabled channels, a small hint below the toggle links to
-  // `/settings/notifications` so the user learns BEFORE saving that
-  // the reminder would have nowhere to go. Query errors / loading
-  // render no hint — a false "no channel" warning is worse than none.
-  const { data: notificationChannels } = useQuery({
-    queryKey: queryKeys.notificationsStatus(),
-    queryFn: async () => {
-      const data = await apiGet<{ channels: Array<{ enabled: boolean }> }>(
-        "/api/notifications/status",
-      );
-      return data.channels;
-    },
-    enabled: payload.notificationsEnabled,
-    staleTime: 60_000,
-  });
-  const showNoChannelHint =
-    payload.notificationsEnabled &&
-    Array.isArray(notificationChannels) &&
-    !notificationChannels.some((channel) => channel.enabled);
+  const showNoChannelHint = useNoChannelHint(payload.notificationsEnabled);
 
   return (
     <div className="space-y-4" data-slot="wizard-step8">
@@ -93,11 +82,16 @@ export function Step8Summary({
           {t("medications.wizard.summary.title")}
         </p>
         <p>{topSummary}</p>
+        {payload.schedules.length <= 1 && <DoseWindowPlan draft={payload} />}
       </div>
 
       <div className="space-y-2" data-slot="wizard-schedule-list">
         {payload.schedules.map((draft, index) => {
-          const cardSummary = summariseScheduleDraft(draft, t);
+          const cardSummary = summariseScheduleDraft(
+            draft,
+            t,
+            formatters.wallTime,
+          );
           return (
             <div
               key={index}
@@ -106,6 +100,7 @@ export function Step8Summary({
               data-index={index}
             >
               <p className="text-sm">{cardSummary}</p>
+              {payload.schedules.length > 1 && <DoseWindowPlan draft={draft} />}
               <div className="mt-2 flex items-center gap-2">
                 <Button
                   type="button"
@@ -146,10 +141,7 @@ export function Step8Summary({
           </p>
         )}
 
-        {/* v1.16.11 — an as-needed medication carries no parallel
-            schedules; the single "Bei Bedarf" card stays as the route
-            back into Step 5 (mirroring the one-shot edit path), but the
-            add affordance is hidden alongside one-shot. */}
+        {/* As-needed and one-shot carry one schedule: no "add another". */}
         {payload.mode !== "oneShot" && payload.mode !== "asNeeded" && (
           <button
             type="button"
@@ -168,86 +160,53 @@ export function Step8Summary({
         )}
       </div>
 
-      <Step8NoteField payload={payload} applyPartial={applyPartial} />
-      {/* v1.39.1 (#1033) — intake tracking. Off keeps the medication and
-          its schedule as a record; nothing is due, so the reminders toggle
-          below goes with it. As-needed is never due either way. */}
+      <Step8ExtrasFields payload={payload} applyPartial={applyPartial} />
+      {/* Intake tracking (#1033): off keeps a record, nothing falls due. */}
       {payload.mode !== "asNeeded" && (
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <Label
-              htmlFor="wizard-track-intake"
-              className="text-sm font-medium"
-            >
-              {t("medications.trackIntake.label")}
-            </Label>
-            <p className="text-muted-foreground text-xs">
-              {payload.trackIntake
-                ? t("medications.trackIntake.helperOn")
-                : t("medications.trackIntake.helperOff")}
-            </p>
-          </div>
-          <Switch
-            id="wizard-track-intake"
-            checked={payload.trackIntake}
-            onCheckedChange={(checked) =>
-              applyPartial({ trackIntake: checked })
-            }
-            data-slot="wizard-track-intake-toggle"
-            aria-label={t("medications.trackIntake.label")}
-          />
-        </div>
+        <SwitchRow
+          label={t("medications.trackIntake.label")}
+          description={
+            payload.trackIntake
+              ? t("medications.trackIntake.helperOn")
+              : t("medications.trackIntake.helperOff")
+          }
+          id="wizard-track-intake"
+          checked={payload.trackIntake}
+          onCheckedChange={(checked) => applyPartial({ trackIntake: checked })}
+          data-slot="wizard-track-intake-toggle"
+          aria-label={t("medications.trackIntake.label")}
+        />
       )}
 
       {/* v1.42.2 — auto-mark-taken. Only meaningful while doses are due:
           hidden for as-needed and record-only medications. */}
       {payload.mode !== "asNeeded" && payload.trackIntake && (
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <Label
-              htmlFor="wizard-auto-mark-taken"
-              className="text-sm font-medium"
-            >
-              {t("medications.autoMarkTaken.label")}
-            </Label>
-            <p className="text-muted-foreground text-xs">
-              {t("medications.autoMarkTaken.helper")}
-            </p>
-          </div>
-          <Switch
-            id="wizard-auto-mark-taken"
-            checked={payload.autoMarkTaken}
-            onCheckedChange={(checked) =>
-              applyPartial({ autoMarkTaken: checked })
-            }
-            data-slot="wizard-auto-mark-taken-toggle"
-            aria-label={t("medications.autoMarkTaken.label")}
-          />
-        </div>
+        <SwitchRow
+          label={t("medications.autoMarkTaken.label")}
+          description={t("medications.autoMarkTaken.helper")}
+          id="wizard-auto-mark-taken"
+          checked={payload.autoMarkTaken}
+          onCheckedChange={(checked) =>
+            applyPartial({ autoMarkTaken: checked })
+          }
+          data-slot="wizard-auto-mark-taken-toggle"
+          aria-label={t("medications.autoMarkTaken.label")}
+        />
       )}
 
-      {/* v1.16.11 — an as-needed medication never reminds (no slots),
-          so the reminders toggle is hidden alongside the schedules. */}
+      {/* As-needed never reminds: no reminders toggle. */}
       {payload.mode !== "asNeeded" && payload.trackIntake && (
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="wizard-reminders" className="text-sm font-medium">
-              {t("medications.wizard.steps.step8.remindersLabel")}
-            </Label>
-            <p className="text-muted-foreground text-xs">
-              {t("medications.wizard.steps.step8.remindersDescription")}
-            </p>
-          </div>
-          <Switch
-            id="wizard-reminders"
-            checked={payload.notificationsEnabled}
-            onCheckedChange={(checked) =>
-              applyPartial({ notificationsEnabled: checked })
-            }
-            data-slot="wizard-reminders-toggle"
-            aria-label={t("medications.wizard.steps.step8.remindersLabel")}
-          />
-        </div>
+        <SwitchRow
+          label={t("medications.wizard.steps.step8.remindersLabel")}
+          description={t("medications.wizard.steps.step8.remindersDescription")}
+          id="wizard-reminders"
+          checked={payload.notificationsEnabled}
+          onCheckedChange={(checked) =>
+            applyPartial({ notificationsEnabled: checked })
+          }
+          data-slot="wizard-reminders-toggle"
+          aria-label={t("medications.wizard.steps.step8.remindersLabel")}
+        />
       )}
 
       {payload.mode !== "asNeeded" &&
@@ -259,7 +218,7 @@ export function Step8Summary({
           >
             {t("medications.wizard.steps.step8.noChannelHint")}{" "}
             <Link
-              href="/settings/notifications"
+              href="/settings/integrations#channels"
               className="text-primary underline-offset-2 hover:underline"
             >
               {t("medications.wizard.steps.step8.noChannelHintLink")}
@@ -277,5 +236,72 @@ export function Step8Summary({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * When a dose of this schedule counts as on time, late and missed, in plain
+ * words, from the same bands the history and the reminders use. Nothing for
+ * an as-needed schedule, which has no window.
+ */
+function DoseWindowPlan({
+  draft,
+}: {
+  draft: Pick<WizardPayload, "mode" | "cadence" | "timesOfDay"> & {
+    doseWindows?: WizardPayload["doseWindows"];
+  };
+}) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  if (draft.mode === null || draft.mode === "asNeeded") return null;
+  if (scaleForCadence(draft) === "dayScale") {
+    return (
+      <p className="mt-2" data-slot="wizard-window-plan">
+        {t("medications.wizard.summary.windowDays", {
+          days: dayScaleLateDays(),
+        })}
+      </p>
+    );
+  }
+  const lines = intradayDoseWindowPlan(
+    draft.timesOfDay,
+    draft.doseWindows ?? [],
+  );
+  if (lines.length === 0) return null;
+  return (
+    <ul className="mt-2 space-y-0.5" data-slot="wizard-window-plan">
+      {lines.map((line) => (
+        <li key={line.timeOfDay}>
+          {t("medications.wizard.summary.windowLine", {
+            time: fmt.wallTime(line.timeOfDay),
+            onTime: fmt.wallTime(line.onTimeUntil),
+            late: fmt.wallTime(line.lateUntil),
+          })}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * A reminder needs a delivery channel: with none enabled a hint below the
+ * toggle says so before saving (no hint on a failed or loading read).
+ */
+function useNoChannelHint(remindersOn: boolean): boolean {
+  const { data: notificationChannels } = useQuery({
+    queryKey: queryKeys.notificationsStatus(),
+    queryFn: async () => {
+      const data = await apiGet<{ channels: Array<{ enabled: boolean }> }>(
+        "/api/notifications/status",
+      );
+      return data.channels;
+    },
+    enabled: remindersOn,
+    staleTime: 60_000,
+  });
+  return (
+    remindersOn &&
+    Array.isArray(notificationChannels) &&
+    !notificationChannels.some((channel) => channel.enabled)
   );
 }

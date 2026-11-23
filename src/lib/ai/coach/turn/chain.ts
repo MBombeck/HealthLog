@@ -5,6 +5,13 @@
 import { annotate } from "@/lib/logging/context";
 import { resolveProviderChain } from "@/lib/ai/provider";
 import { assertConsentForChain } from "@/lib/ai/consent-guard";
+import { resolveCostOwner } from "@/lib/ai/coach/budget";
+import {
+  parseCoachBudgets,
+  resolveCoachLimits,
+  type CoachLimits,
+} from "@/lib/ai/coach/coach-budgets";
+import { prisma } from "@/lib/db";
 
 import { streamProviderError } from "./sse";
 
@@ -13,7 +20,7 @@ export type TurnChain = Awaited<ReturnType<typeof resolveProviderChain>>;
 export async function resolveTurnChain(
   userId: string,
 ): Promise<
-  | { ok: true; chain: TurnChain; toolMode: boolean }
+  | { ok: true; chain: TurnChain; toolMode: boolean; limits: CoachLimits }
   | { ok: false; response: Response }
 > {
   // v1.20.0 — provider capabilities select tool retrieval or the legacy
@@ -46,5 +53,30 @@ export async function resolveTurnChain(
   // as before — the snapshot builder stays alive as the no-tools floor.
   const toolMode = chain.every((c) => c.instance.supportsTools !== false);
 
-  return { ok: true, chain, toolMode };
+  // The budget the turn runs under: the person's own for a self-hosted
+  // provider they set one for, the built-in one otherwise
+  // (`coach-budgets.ts`). Resolved here, before the context is built,
+  // because the snapshot in the prompt is sized by it.
+  const row = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { aiCoachBudgets: true },
+  });
+  const limits = resolveCoachLimits({
+    payer: resolveCostOwner(chain),
+    chain,
+    budgets: parseCoachBudgets(row?.aiCoachBudgets),
+  });
+  if (limits.custom) {
+    annotate({
+      action: { name: "insights.coach.budget.custom" },
+      meta: {
+        snapshotChars: limits.snapshotChars,
+        turnTokens: limits.turn.tokens,
+        maxRounds: limits.turn.maxRounds,
+        turnMs: limits.turn.wallMs,
+      },
+    });
+  }
+
+  return { ok: true, chain, toolMode, limits };
 }

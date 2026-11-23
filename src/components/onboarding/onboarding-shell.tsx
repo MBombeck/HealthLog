@@ -1,14 +1,10 @@
-import { cn } from "@/lib/utils";
-import { Logo } from "@/components/ui/logo";
+import { SetupFrame } from "@/components/onboarding/setup-frame";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
-import type {
-  OnboardingStateDto,
-  OnboardingStepId,
-} from "@/lib/onboarding/needs";
+import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import {
-  screenOrder,
   stepCounter,
+  stepTrack,
   type OnboardingScreenId,
 } from "@/lib/onboarding/wizard-steps";
 
@@ -47,68 +43,28 @@ export async function OnboardingShell({
   const locale = await resolveServerLocale({ userLocale });
   const { t } = getServerTranslator(locale);
 
+  // Counter and bar from the same track, so they always agree.
   const counter = stepCounter(state, screen);
-  const steps = screenOrder(state).filter(
-    (id): id is OnboardingStepId => id !== "welcome",
-  );
-  const currentIndex = (steps as readonly string[]).indexOf(screen);
+  const steps = stepTrack(state);
 
   return (
-    <div
-      className={cn(
-        "mx-auto flex min-h-[100svh] w-full max-w-xl flex-col",
-        // Safe-area-respecting bottom padding for the iOS PWA — the home
-        // bar overlaps the primary action otherwise.
-        "px-4 pt-6 pb-[max(env(safe-area-inset-bottom),1rem)]",
-      )}
-      data-slot="onboarding-shell"
-      data-screen={screen}
+    <SetupFrame
+      screen={screen}
+      counter={
+        counter
+          ? t("onboarding.shell.stepOf", {
+              current: counter.current,
+              total: counter.total,
+            })
+          : null
+      }
+      stepsLabel={t("onboarding.shell.stepsLabel")}
+      steps={steps.map((id) => ({
+        id,
+        label: t(`onboarding.steps.${id}`),
+      }))}
     >
-      <header className="mb-6 flex items-center justify-between gap-3">
-        <Logo size={32} />
-        <p
-          className="text-muted-foreground text-sm font-medium"
-          aria-live="polite"
-          data-slot="onboarding-step-counter"
-        >
-          {counter
-            ? t("onboarding.shell.stepOf", {
-                current: counter.current,
-                total: counter.total,
-              })
-            : null}
-        </p>
-      </header>
-
-      {/* A landmark of its own: every piece of page content sits inside one
-          (axe `region`), and the step list is the flow's navigation. */}
-      <nav aria-label={t("onboarding.shell.stepsLabel")} className="mb-8">
-        <ol
-          className="flex items-center gap-2"
-          data-slot="onboarding-step-list"
-        >
-          {steps.map((id, index) => {
-            const reached = currentIndex >= index;
-            return (
-              <li
-                key={id}
-                aria-current={id === screen ? "step" : undefined}
-                data-reached={reached}
-                className={cn(
-                  "h-1.5 flex-1 rounded-full transition-colors",
-                  reached ? "bg-primary" : "bg-muted",
-                )}
-              >
-                <span className="sr-only">{t(`onboarding.steps.${id}`)}</span>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
-
-      {/* The page's one `<main>`: the auth shell's onboarding branch renders
-          no landmark of its own around this frame. */}
-      <main className="flex-1">{children}</main>
-    </div>
+      {children}
+    </SetupFrame>
   );
 }

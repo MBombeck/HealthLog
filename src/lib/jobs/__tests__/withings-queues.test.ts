@@ -38,7 +38,7 @@ const handlerSource = readFileSync(
 describe("Withings activity + sleep v2 queues", () => {
   it("declares the activity-sync queue at the documented cadence", () => {
     expect(WITHINGS_ACTIVITY_QUEUE).toBe("withings-activity-sync");
-    expect(WITHINGS_ACTIVITY_CRON).toBe("0 * * * *");
+    expect(WITHINGS_ACTIVITY_CRON).toBe("3 * * * *");
   });
 
   it("declares the sleep-sync queue at the offset cadence", () => {

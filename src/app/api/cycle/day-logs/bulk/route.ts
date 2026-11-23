@@ -27,6 +27,7 @@ import {
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { withIdempotency } from "@/lib/idempotency";
+import { withIngestAdmission } from "@/lib/ingest/admission";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import {
@@ -39,7 +40,11 @@ import {
   UNSTABLE_EXTERNAL_ID_REASON,
   type UnstableExternalIdShape,
 } from "@/lib/validations/external-id";
-import { upsertCycleDayLog } from "@/lib/cycle/day-log-write";
+import {
+  upsertCycleDayLog,
+  type DayLogWriteResult,
+} from "@/lib/cycle/day-log-write";
+import { DELETED_IN_HEALTHLOG_ENTRY } from "@/lib/sync/tombstone-repost";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -54,7 +59,27 @@ interface EntryResult {
   reason?: string;
 }
 
-export const POST = apiHandler(withIdempotency<[NextRequest]>(postBulk));
+/**
+ * The entry's answer for one write. A refused write is an Apple Health
+ * re-post of a day the person deleted in HealthLog: nothing was written
+ * (`tombstone-repost.ts`).
+ */
+function entryOutcome(r: DayLogWriteResult): {
+  status: EntryStatus;
+  reason?: string;
+} {
+  if (r.refused) return DELETED_IN_HEALTHLOG_ENTRY;
+  if (!r.existed) return { status: "inserted" };
+  return { status: r.changed ? "updated" : "duplicate" };
+}
+
+function countOf(results: EntryResult[], status: EntryStatus): number {
+  return results.filter((r) => r.status === status).length;
+}
+
+export const POST = apiHandler(
+  withIngestAdmission(withIdempotency<[NextRequest]>(postBulk)),
+);
 
 async function postBulk(request: NextRequest): Promise<Response> {
   // Metered by this route's own bulk bucket below, not the shared per-account
@@ -127,10 +152,6 @@ async function postBulk(request: NextRequest): Promise<Response> {
   const encryptSensitive = gate.profile.sensitiveCategoryEncryption;
 
   const results: EntryResult[] = [];
-  let inserted = 0;
-  let updated = 0;
-  let duplicates = 0;
-  let skipped = 0;
   const unstableShapes: UnstableExternalIdShape[] = [];
 
   for (let i = 0; i < entries.length; i++) {
@@ -148,7 +169,6 @@ async function postBulk(request: NextRequest): Promise<Response> {
         : classifyExternalId(entry.externalId);
     if (unstable) {
       unstableShapes.push(unstable);
-      skipped += 1;
       results.push({
         index: i,
         status: "skipped",
@@ -166,23 +186,14 @@ async function postBulk(request: NextRequest): Promise<Response> {
         tz,
         cycleId,
         encryptSensitive,
+        { refuseDeletedInHealthLog: true },
       );
 
-      let status: EntryStatus;
-      if (!r.existed) {
-        status = "inserted";
-        inserted += 1;
-      } else if (r.changed) {
-        status = "updated";
-        updated += 1;
-      } else {
-        status = "duplicate";
-        duplicates += 1;
-      }
-
+      const { status, reason } = entryOutcome(r);
       results.push({
         index: i,
         status,
+        ...(reason ? { reason } : {}),
         id: r.id,
         ...(entry.externalId ? { externalId: entry.externalId } : {}),
       });
@@ -210,7 +221,6 @@ async function postBulk(request: NextRequest): Promise<Response> {
           error_code: typeof code === "string" ? code : "unknown",
         },
       });
-      skipped += 1;
       results.push({
         index: i,
         status: "skipped",
@@ -219,6 +229,11 @@ async function postBulk(request: NextRequest): Promise<Response> {
       });
     }
   }
+
+  const inserted = countOf(results, "inserted");
+  const updated = countOf(results, "updated");
+  const duplicates = countOf(results, "duplicate");
+  const skipped = countOf(results, "skipped");
 
   await auditLog("cycle.bulk.ingest", {
     userId: user.id,

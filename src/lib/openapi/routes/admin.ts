@@ -29,6 +29,24 @@ const adminDiagnosticDevice = z
     apnsTokenSuffix: z.string().nullable(),
     apnsEnvironment: z.string().nullable(),
     lastSeenAt: isoDateTime(),
+    relayState: z
+      .string()
+      .describe(
+        "v1.49.0 — `none` | `bound` | `rebind_needed` | `conflict`, as `push.device.relayState` reads it (a `conflict` older than 30 minutes reads `rebind_needed`).",
+      ),
+    relayBoundAt: isoDateTime()
+      .nullable()
+      .describe("v1.49.0 — when the relay last confirmed the binding."),
+    liveActivityStartedAt: isoDateTime()
+      .nullable()
+      .describe(
+        "v1.49.0 — when the relay accepted the server's last Live Activity start on the device; null while a start is in flight or after one the relay refused.",
+      ),
+    envelopesReportedAt: isoDateTime()
+      .nullable()
+      .describe(
+        "v1.49.0 — when the device last reported which sealed pushes it opened (`GET /api/sync/state`).",
+      ),
   })
   .meta({
     id: "AdminDiagnosticDevice",
@@ -312,7 +330,48 @@ const adminMeasurementMaintenanceStatus = z
   })
   .meta({ id: "AdminMeasurementMaintenanceStatus" });
 
+const adminMigrationStatus = z
+  .object({
+    shipped: z
+      .number()
+      .int()
+      .nullable()
+      .describe("Migrations in this image; null when the folder is absent."),
+    applied: z.number().int(),
+    pending: z.number().int(),
+    pendingNames: z
+      .array(z.string())
+      .describe("The first 20 pending migrations, in apply order."),
+    failedNames: z
+      .array(z.string())
+      .describe("Migrations that started and did not finish (first 20)."),
+    lastApplied: z.object({ name: z.string(), at: z.string() }).nullable(),
+  })
+  .meta({ id: "AdminMigrationStatus" });
+
 export const adminDiagnosticPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/admin/migrations": {
+    get: {
+      tags: ["Admin"],
+      summary: "Database migrations: applied, pending, failed",
+      description:
+        "Compares the migrations this image ships (`prisma/migrations`) with the finished rows of `_prisma_migrations`. Read-only. Cookie auth only: `requireAdmin()` refuses every Bearer caller.",
+      responses: {
+        "200": {
+          description: "The status.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                adminMigrationStatus,
+                "AdminMigrationStatusResponse",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/admin/maintenance/measurements": {
     get: {
       tags: ["Admin"],

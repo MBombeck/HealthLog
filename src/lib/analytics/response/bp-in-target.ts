@@ -53,10 +53,11 @@ export async function readBpInTargetBlock(
       dateOfBirth: user.dateOfBirth,
       gender: user.gender,
       heightCm: user.heightCm ?? null,
+      timezone: userTz,
     },
     user.thresholdsJson,
   );
-  const clinicalBpTargets = getBpTargets(user.dateOfBirth);
+  const clinicalBpTargets = getBpTargets(user.dateOfBirth, userTz);
   if (bpTargets) {
     const now = new Date();
     // Probe-gated dispatcher replaces the inline chunked

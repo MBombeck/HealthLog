@@ -1,10 +1,20 @@
 import { describe, it, expect } from "vitest";
 import {
+  bmiCategory,
+  bmiOf,
+  bpCategory,
   classifyBMI,
   classifyBP,
   classifyBodyFat,
   generateAlerts,
+  heightSquaredM2,
+  type BmiCategory,
+  type BpCategory,
 } from "../classifications";
+import {
+  getBmiClassificationKey,
+  getBpClassificationKey,
+} from "@/lib/doctor-report-pdf/clinical-summary";
 
 describe("classifyBMI", () => {
   it("classifies underweight", () => {
@@ -217,5 +227,60 @@ describe("classifyBodyFat (ACE bands)", () => {
   it("classifies obesity by ACE upper bound", () => {
     expect(classifyBodyFat(30, "MALE").category).toBe("Obese");
     expect(classifyBodyFat(35, "FEMALE").category).toBe("Obese");
+  });
+});
+
+describe("one ladder per classification", () => {
+  const bpGrid: Array<[number, number, BpCategory]> = [
+    [119, 79, "optimal"],
+    [120, 79, "normal"],
+    [129, 84, "normal"],
+    [130, 84, "highNormal"],
+    [139, 89, "highNormal"],
+    [139, 90, "grade1"],
+    [159, 99, "grade1"],
+    [160, 99, "grade2"],
+    [179, 109, "grade2"],
+    [179, 110, "grade3"],
+  ];
+
+  it("files every cut point of the ESH ladder once", () => {
+    for (const [sys, dia, category] of bpGrid) {
+      expect(bpCategory(sys, dia)).toBe(category);
+    }
+  });
+
+  it("gives the doctor report the same BP grade the app shows", () => {
+    const keyOf: Record<BpCategory, string> = {
+      optimal: "doctorReport.bpOptimal",
+      normal: "doctorReport.bpNormal",
+      highNormal: "doctorReport.bpHighNormal",
+      grade1: "doctorReport.bpHypertensionGrade1",
+      grade2: "doctorReport.bpHypertensionGrade2",
+      grade3: "doctorReport.bpHypertensionGrade3",
+    };
+    for (const [sys, dia, category] of bpGrid) {
+      expect(getBpClassificationKey(sys, dia)).toBe(keyOf[category]);
+    }
+  });
+
+  it("gives the doctor report the same BMI class the app shows", () => {
+    const pairs: Array<[number, BmiCategory, string]> = [
+      [18.4, "underweight", "doctorReport.bmiUnderweight"],
+      [18.5, "normal", "doctorReport.bmiNormal"],
+      [25, "overweight", "doctorReport.bmiOverweight"],
+      [30, "obese1", "doctorReport.bmiObeseGrade1"],
+      [35, "obese2", "doctorReport.bmiObeseGrade2"],
+      [40, "obese3", "doctorReport.bmiObeseGrade3"],
+    ];
+    for (const [bmi, category, key] of pairs) {
+      expect(bmiCategory(bmi)).toBe(category);
+      expect(getBmiClassificationKey(bmi)).toBe(key);
+    }
+  });
+
+  it("computes BMI as kg over metres squared", () => {
+    expect(bmiOf(81, 180)).toBeCloseTo(25, 10);
+    expect(heightSquaredM2(180)).toBeCloseTo(3.24, 10);
   });
 });

@@ -33,6 +33,13 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// The daily extremes fold in SQL; the fake folds the rows `findMany` serves.
+vi.mock("@/lib/measurements/day-aggregates", async () => ({
+  readDayAggregates: (
+    await import("@/lib/measurements/__tests__/fake-day-aggregates")
+  ).fakeReadDayAggregates,
+}));
+
 vi.mock("@/lib/logging/context", () => ({
   getEvent: () => ({ addMeta: vi.fn(), addWarning: vi.fn() }),
 }));

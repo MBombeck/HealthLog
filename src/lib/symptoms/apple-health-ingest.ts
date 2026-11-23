@@ -6,8 +6,8 @@
  * code and an intensity on the diary's 0-10 scale. It lands on the account's
  * built-in definition for that code, created here on first use, labelled in
  * the person's language (`symptoms.builtin.<CODE>`). Built-in definitions
- * hold no slot of the eight-definition cap, so a sample is never refused for
- * it.
+ * hold no slot of the definition cap (`MAX_ACTIVE_SYMPTOM_DEFINITIONS`), so
+ * a sample is never refused for it.
  *
  * Per entry, in this order:
  *   - `skipped`: `unsupported_source` (anything but `APPLE_HEALTH`),
@@ -15,12 +15,15 @@
  *     not an integer 0-10), `implausible_timestamp` (in the future beyond the
  *     shared five-minute skew, before 1900, or ending before it started). All
  *     permanent for the entry as sent.
- *   - `duplicate`: the `(userId, APPLE_HEALTH, externalId)` row exists,
- *     deleted ones included, so a late re-post of a sample the app reported
- *     gone (or the person deleted) never brings it back. A second entry with
- *     an externalId already in the same batch is a duplicate too.
+ *   - `skipped` with `deleted_in_healthlog`: the row was deleted by the
+ *     person in HealthLog, so a late re-post never brings it back
+ *     (`tombstone-repost.ts`).
+ *   - `duplicate`: the `(userId, APPLE_HEALTH, externalId)` row exists. A
+ *     second entry with an externalId already in the same batch is a
+ *     duplicate too.
  *   - `inserted`, or `failed` when the write itself failed (transient: the
- *     app keeps the row and resends it).
+ *     app keeps the row and resends it). A row the phone reported deleted in
+ *     Apple Health is written back and answers `inserted`.
  *
  * The answer has the shape `POST /api/measurements/batch` answers with.
  */
@@ -36,6 +39,10 @@ import { summariseSkips } from "@/lib/measurements/batch-ingest/report";
 import { isP2002 } from "@/lib/prisma-errors";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
 import {
+  deletedInHealthLog,
+  DELETED_IN_HEALTHLOG_ENTRY,
+} from "@/lib/sync/tombstone-repost";
+import {
   classifyExternalId,
   unstableExternalIdMeta,
   UNSTABLE_EXTERNAL_ID_REASON,
@@ -49,7 +56,7 @@ import {
   symptomBuiltinLabelKey,
   type SymptomBuiltinCode,
 } from "./builtin";
-import { encryptSymptomText } from "./server";
+import { encryptSymptomText, nextSymptomDefinitionSortOrder } from "./server";
 import { SYMPTOM_INTENSITY_MAX, SYMPTOM_INTENSITY_MIN } from "./shared";
 
 /** One entry as the route's schema hands it over (types checked, not values). */
@@ -140,11 +147,7 @@ async function resolveBuiltinDefinitions(
   if (missing.length === 0) return byCode;
 
   const translator = getServerTranslator(coerceLocale(locale));
-  const last = await prisma.symptomDefinition.aggregate({
-    where: { userId },
-    _max: { sortOrder: true },
-  });
-  let sortOrder = (last._max.sortOrder ?? -1) + 1;
+  let sortOrder = await nextSymptomDefinitionSortOrder(userId);
   for (const code of missing) {
     try {
       const created = await prisma.symptomDefinition.create({
@@ -205,7 +208,9 @@ export async function ingestSymptomBatch(args: {
     accepted.push(verdict);
   });
 
-  // Deleted rows included: the tombstone is what keeps a replay out.
+  // Deleted rows included: a tombstone deleted in HealthLog is what keeps a
+  // replay out, and one the phone reported deleted in Apple Health is
+  // written back, the sample being in HealthKit again (`tombstone-repost.ts`).
   const stored =
     accepted.length === 0
       ? []
@@ -215,15 +220,28 @@ export async function ingestSymptomBatch(args: {
             source: APP_MINTED_SOURCE,
             externalId: { in: accepted.map((p) => p.externalId) },
           },
-          select: { externalId: true },
+          select: {
+            id: true,
+            externalId: true,
+            deletedAt: true,
+            appleHealthDeletedAt: true,
+          },
         });
-  const storedIds = new Set(stored.map((r) => r.externalId));
+  const storedById = new Map(stored.map((r) => [r.externalId, r]));
   const fresh: PreparedSymptom[] = [];
+  /** Tombstones the phone reported, by external id: their row to revive. */
+  const revive = new Map<string, string>();
   for (const p of accepted) {
-    if (storedIds.has(p.externalId)) {
-      results[p.index] = { index: p.index, status: "duplicate" };
-    } else {
+    const row = storedById.get(p.externalId);
+    if (!row) {
       fresh.push(p);
+    } else if (deletedInHealthLog(row)) {
+      results[p.index] = { index: p.index, ...DELETED_IN_HEALTHLOG_ENTRY };
+    } else if (row.deletedAt !== null) {
+      revive.set(p.externalId, row.id);
+      fresh.push(p);
+    } else {
+      results[p.index] = { index: p.index, status: "duplicate" };
     }
   }
 
@@ -237,10 +255,35 @@ export async function ingestSymptomBatch(args: {
     else results[p.index] = { index: p.index, status: "failed" };
   }
 
-  if (writable.length > 0) {
+  // A revived occurrence takes the sample's fields again; nothing else of the
+  // deleted row (its note, its episode) is touched.
+  for (const p of writable.filter((w) => revive.has(w.externalId))) {
+    const { count } = await prisma.symptomEvent.updateMany({
+      where: {
+        id: revive.get(p.externalId),
+        userId,
+        deletedAt: { not: null },
+      },
+      data: {
+        definitionId: p.definitionId,
+        occurredAt: p.occurredAt,
+        endAt: p.endAt,
+        intensity: p.intensity,
+        deletedAt: null,
+        appleHealthDeletedAt: null,
+      },
+    });
+    results[p.index] = {
+      index: p.index,
+      status: count === 1 ? "inserted" : "duplicate",
+    };
+  }
+  const inserts = writable.filter((p) => !revive.has(p.externalId));
+
+  if (inserts.length > 0) {
     try {
       const created = await prisma.symptomEvent.createManyAndReturn({
-        data: writable.map((p) => ({
+        data: inserts.map((p) => ({
           userId,
           definitionId: p.definitionId,
           occurredAt: p.occurredAt,
@@ -255,7 +298,7 @@ export async function ingestSymptomBatch(args: {
         select: { externalId: true },
       });
       const createdIds = new Set(created.map((r) => r.externalId));
-      for (const p of writable) {
+      for (const p of inserts) {
         results[p.index] = {
           index: p.index,
           status: createdIds.has(p.externalId) ? "inserted" : "duplicate",
@@ -269,7 +312,7 @@ export async function ingestSymptomBatch(args: {
             err instanceof Error ? err.name : "unknown",
         },
       });
-      for (const p of writable) {
+      for (const p of inserts) {
         results[p.index] = { index: p.index, status: "failed" };
       }
     }

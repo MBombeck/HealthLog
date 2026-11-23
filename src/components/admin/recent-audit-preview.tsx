@@ -20,10 +20,9 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
-import { formatDateTime } from "@/lib/format";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import {
   type AdminAuditEntry,
@@ -42,6 +41,7 @@ interface AuditLogResponse {
 
 export function RecentAuditPreview() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.adminAuditOverview(),
@@ -146,7 +146,7 @@ export function RecentAuditPreview() {
                       </span>
                     )}
                     <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
-                      {formatDateTime(entry.createdAt)}
+                      {fmt.dateTime(entry.createdAt)}
                     </span>
                   </Link>
                 </li>

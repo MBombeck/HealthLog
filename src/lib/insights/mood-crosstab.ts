@@ -31,6 +31,7 @@ import {
 } from "@/lib/insights/mood-tag-influence";
 import type { MeasurementType } from "@/generated/prisma/enums";
 import type { MeasurementSource } from "@/generated/prisma/client";
+import { median } from "@/lib/stats/central";
 
 // --- Tag × health-metric crosstab (v1.12.0) ------------------------------
 
@@ -252,11 +253,6 @@ export function metricDayMap(
   return out;
 }
 
-/** Add `lagDays` to a YYYY-MM-DD day key (UTC-anchored, DST-immune). */
-export function shiftDayKey(day: string, lagDays: number): string {
-  return shiftDateKey(day, lagDays);
-}
-
 /** Convert a raw metric value to the row's display unit. */
 function toDisplayUnit(value: number, display: CrosstabMetricDisplay): number {
   return display === "hours" ? value / 60 : value;
@@ -329,7 +325,7 @@ export function computeTagMetricCrosstab(args: {
       const withoutVals: number[] = [];
       for (const [dayKey, day] of dayMap) {
         const metricKeyDay =
-          cfg.mode === "nextDay" ? shiftDayKey(dayKey, 1) : dayKey;
+          cfg.mode === "nextDay" ? shiftDateKey(dayKey, 1) : dayKey;
         const metricValue = metricByDay.get(metricKeyDay);
         if (metricValue == null || !Number.isFinite(metricValue)) continue;
         const display = toDisplayUnit(metricValue, cfg.display);
@@ -519,16 +515,6 @@ function toFactorDisplayUnit(
   return display === "hours" ? value / 60 : value;
 }
 
-/** Median of a numeric array (sorted-copy, mean-of-two for even length). */
-function median(values: number[]): number {
-  if (values.length === 0) return Number.NaN;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
-}
-
 /** Reference data for one RATED factor's daily series + its meta. */
 interface FactorDailySeries {
   ref: Pick<
@@ -649,13 +635,13 @@ export function computeFactorMetricCrosstab(args: {
       ) {
         continue;
       }
-      const split = median(ratedDays);
+      const split = median(ratedDays)!;
 
       const lowVals: number[] = [];
       const highVals: number[] = [];
       for (const [dayKey, score] of series.byDay) {
         const metricDayKey =
-          cfg.mode === "nextDay" ? shiftDayKey(dayKey, 1) : dayKey;
+          cfg.mode === "nextDay" ? shiftDateKey(dayKey, 1) : dayKey;
         const metricValue = metricByDay.get(metricDayKey);
         if (metricValue == null || !Number.isFinite(metricValue)) continue;
         const display = toFactorDisplayUnit(metricValue, cfg.display);

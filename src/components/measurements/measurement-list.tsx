@@ -26,6 +26,7 @@ import { MeasurementTable } from "./list/measurement-table";
 import type { Measurement } from "./list/list-model";
 import type { MeasurementRowContext } from "./list/row-actions";
 import { useMeasurementEdit } from "./list/use-measurement-edit";
+import { useEntryEditLink } from "@/components/forms/use-entry-edit-link";
 import { useMeasurementListData } from "./list/use-measurement-list-data";
 import { useMeasurementListFilters } from "./list/use-measurement-list-filters";
 import { useMeasurementRowDisplay } from "./list/use-measurement-row-display";
@@ -141,6 +142,12 @@ export function MeasurementList({
     display,
     deleteMutation: list.deleteMutation,
   });
+  // `?reading=<id>` — a save receipt's Edit opens that reading's sheet.
+  useEntryEditLink(
+    "measurement",
+    data?.measurements,
+    canManage ? edit.startEdit : undefined,
+  );
 
   if (!isAuthenticated) {
     return (

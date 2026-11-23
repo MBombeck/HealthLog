@@ -9,7 +9,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildGroupOrder,
-  buildPlacements,
   moveTagToGroup,
   removeTag,
   reorderGroupTags,
@@ -145,12 +144,8 @@ describe("reorderGroupTags / reorderGroups", () => {
   });
 });
 
-describe("buildPlacements / buildGroupOrder", () => {
-  it("emits the complete map in display order", () => {
-    expect(buildPlacements(catalog())).toEqual({
-      feelings: ["happy", "stressed"],
-      "customcat:g1": ["custom:1", "custom:2"],
-    });
+describe("buildGroupOrder", () => {
+  it("emits the group keys in display order", () => {
     expect(buildGroupOrder(catalog())).toEqual(["feelings", "customcat:g1"]);
   });
 });

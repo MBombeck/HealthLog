@@ -24,6 +24,8 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {
       findMany: vi.fn(),
+      // No tombstone at the key: the duplicate below is a live row.
+      findFirst: vi.fn(async () => null),
       count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -113,7 +115,14 @@ describe("GET /api/measurements — 422 multi-issue (v1.4.43 W6)", () => {
     expect(body.error).toBe("Validation failed");
     expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
     for (const issue of body.details.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
   });
 
@@ -167,7 +176,14 @@ describe("POST /api/measurements — single — 422 multi-issue (v1.4.43 W6)", (
     expect(body.error).toBe("Validation failed");
     expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
     for (const issue of body.details.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
     expect(body.meta?.errorCode).toBe("measurement.create.invalid");
   });

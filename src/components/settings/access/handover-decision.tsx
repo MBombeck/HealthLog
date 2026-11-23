@@ -154,7 +154,6 @@ export function HandoverDecisionForm({
         <Button
           type="submit"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           data-slot="handover-decision-submit"
           disabled={decide.isPending}
         >

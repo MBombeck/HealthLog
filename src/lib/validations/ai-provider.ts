@@ -31,6 +31,7 @@ import {
   isReasoningProviderType,
   REASONING_EFFORTS,
 } from "@/lib/ai/reasoning-effort";
+import { coachBudgetInputSchema } from "@/lib/ai/coach/coach-budgets";
 
 /** The five provider kinds a user may select. */
 export const AI_PROVIDER_KINDS = [
@@ -148,6 +149,12 @@ export const aiProviderPatchSchema = z.object({
     .describe(
       "Reasoning setting of the OpenAI-compatible gateway entry, stored on that entry of the provider chain. `none` = Off, `null` = Default (nothing sent). Omitted leaves it untouched.",
     ),
+  /**
+   * The Coach budget of the Local provider and of the gateway. Each field is
+   * refused outside `COACH_BUDGET_BOUNDS`; omitted leaves the budget alone.
+   */
+  localCoachBudget: coachBudgetInputSchema.optional(),
+  compatCoachBudget: coachBudgetInputSchema.optional(),
 });
 
 export type AiProviderPatchInput = z.infer<typeof aiProviderPatchSchema>;

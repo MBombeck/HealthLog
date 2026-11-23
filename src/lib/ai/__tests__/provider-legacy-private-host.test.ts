@@ -38,7 +38,7 @@ vi.mock("@/lib/logging/context", () => ({
 
 import {
   AITestConfigError,
-  resolveProvider,
+  resolveProviderChain,
   resolveProviderForTest,
 } from "../provider";
 import { _resetAiGrantsForTests } from "../local-host-allowlist";
@@ -57,14 +57,20 @@ function row(role: "ADMIN" | "USER", overrides: Record<string, unknown>) {
     aiCompatKeyEncrypted: null,
     aiCompatModel: null,
     managedProfileAt: null,
+    aiProviderChain: null,
+    aiNamedChains: null,
+    useCentralCodex: false,
+    aiResponseTimeoutSeconds: null,
     role,
     ...overrides,
   } as never;
 }
 
+/** The one entry the chain resolves for the row, dialled once. */
 async function dialOptions(): Promise<Record<string, unknown>> {
-  const provider = await resolveProvider("u-1");
-  await provider
+  const chain = await resolveProviderChain("u-1", null);
+  expect(chain).toHaveLength(1);
+  await chain[0].instance
     .generateCompletion(singleUserTurn({ system: "s", user: "u" }))
     .catch(() => undefined);
   return safeFetch.mock.calls[0][2] as Record<string, unknown>;

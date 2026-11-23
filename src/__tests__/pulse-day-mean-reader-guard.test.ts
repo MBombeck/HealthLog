@@ -15,7 +15,8 @@
  * file that no longer matches fails):
  *
  *   1. Database means over measurement values: `AVG(value)`, the per-day
- *      folds `SUM(total) / SUM(cnt)` and `SUM(count * mean)`, and Prisma's
+ *      folds `SUM(total) / SUM(cnt)` and `SUM(count * mean)`, the mean of
+ *      folded cells `SUM(value * n) / SUM(n)`, and Prisma's
  *      `_avg: { value }`. A file that holds one imports the shared statistic
  *      (it averages pulse among other types and the helper's CASE keeps the
  *      others on the plain mean).
@@ -52,11 +53,12 @@ const HELPER_IMPORT =
 
 /**
  * Database means over a measurement value: SQL `AVG(value)`, the per-day folds
- * `SUM(total) / SUM(cnt)` and `SUM(count * mean)`, and Prisma's
+ * `SUM(total) / SUM(cnt)` and `SUM(count * mean)`, the mean of folded cells
+ * `SUM(value * n) / SUM(n)`, and Prisma's
  * `_avg: { value: ... }`.
  */
 const SQL_MEAN =
-  /_avg\s*:\s*\{\s*value\s*:|\bAVG\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?value"?\s*\)|\bSUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?total"?\s*\)\s*\/\s*SUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?cnt"?\s*\)|\bSUM\s*\(\s*"?count"?\s*\*\s*"?mean"?\s*\)/gi;
+  /_avg\s*:\s*\{\s*value\s*:|\bAVG\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?value"?\s*\)|\bSUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?total"?\s*\)\s*\/\s*SUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?cnt"?\s*\)|\bSUM\s*\(\s*"?count"?\s*\*\s*"?mean"?\s*\)|\bSUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?value"?\s*\*\s*(?:[a-z_]+\s*\.\s*)?n\s*\)\s*\/\s*(?:NULLIF\s*\(\s*)?SUM\s*\(\s*(?:[a-z_]+\s*\.\s*)?n\s*\)/gi;
 
 /** In-memory means and the folds that make them, counted in files that name pulse. */
 const TS_MEAN =
@@ -98,6 +100,10 @@ const SQL_READERS: Record<string, Entry> = {
   "lib/measurements/dense-series-read.ts": HELPER,
   "lib/rollups/measurement-rollups.ts": HELPER,
   "lib/rollups/tiered-context.ts": HELPER,
+  "lib/insights/stress-score.ts": {
+    exempt:
+      "the scored day's mean SDNN over HEART_RATE_VARIABILITY rows only; pulse never enters",
+  },
   "lib/insights/correlation-channel-series.ts": {
     exempt:
       "the one SQL mean is the room-climate hour mean, over INDOOR_CO2 / INDOOR_TEMPERATURE / INDOOR_HUMIDITY only; pulse reaches the correlation channels through `dayValueRows` and the rollup compose",
@@ -108,7 +114,6 @@ const SQL_READERS: Record<string, Entry> = {
 const TS_READERS: Record<string, Entry> = {
   "lib/measurements/series/read-raw.ts": HELPER,
   "lib/doctor-report/collect.ts": HELPER,
-  "lib/doctor-report-pdf/clinical-summary.ts": HELPER,
   "lib/insights/comprehensive-generate.ts": HELPER,
   "lib/insights/features.ts": HELPER,
   "lib/insights/mood-status.ts": {
@@ -135,9 +140,6 @@ const TS_READERS: Record<string, Entry> = {
   "components/charts/health-chart/series-math.ts": {
     exempt:
       "a rolling average over the points the chart draws: display smoothing, not a stated figure",
-  },
-  "lib/analytics/correlations-fast-path.ts": {
-    exempt: "mood mean; pulse enters as the resting series, never a day mean",
   },
   "lib/dashboard/summary/cards.ts": {
     exempt:
@@ -278,6 +280,8 @@ describe("pulse day-mean reader guard", () => {
     ).toHaveLength(1);
     expect(`(SUM(c.total) /  SUM(c.cnt))`.match(SQL_MEAN)).toHaveLength(1);
     expect(`SUM("count" * "mean")`.match(SQL_MEAN)).toHaveLength(1);
+    expect(`SUM(c."value" * c.n) / SUM(c.n)`.match(SQL_MEAN)).toHaveLength(1);
+    expect(`SUM(k."value" * k.n) AS total`.match(SQL_MEAN)).toBeNull();
     expect(`aggregate({ _avg: { value: true } })`.match(SQL_MEAN)).toHaveLength(
       1,
     );

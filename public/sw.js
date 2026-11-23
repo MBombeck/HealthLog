@@ -1,7 +1,7 @@
 /**
- * HealthLog service worker: Web Push, a page cache for public pages, and a
- * static cache for catalogs, icons, fonts and images. API answers and app
- * chunks are never stored here.
+ * HealthLog service worker: Web Push, a page cache for public pages opened
+ * signed out, and a static cache for catalogs, icons, fonts and images. API
+ * answers, app chunks and signed-in pages are never stored here.
  */
 
 // Cache names carry the release, so `activate` drops every older cache. The
@@ -16,7 +16,7 @@ try {
 }
 const CACHE_VERSION =
   (typeof self !== "undefined" && self.__APP_VERSION__) ||
-  /* @sw-version-fallback */ "v1.48.5";
+  /* @sw-version-fallback */ "v1.49.0";
 const STATIC_CACHE = `healthlog-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `healthlog-pages-${CACHE_VERSION}`;
 // Every HealthLog cache, current and legacy, and nothing another app on the
@@ -27,6 +27,10 @@ const HEALTHLOG_CACHE_NAME_RE = /^healthlog-(?:static|pages|data)-/;
 const CURRENT_HEALTHLOG_CACHES = new Set([STATIC_CACHE, PAGE_CACHE]);
 // Set by `src/proxy.ts` on every HealthLog page; same name as there.
 const HEALTHLOG_PAGE_MARKER_HEADER = "X-HealthLog-Page";
+// Set by `src/proxy.ts`, value `anonymous`, only on a page answered to a
+// request without a session cookie; same name as there. The page cache keeps
+// nothing else.
+const HEALTHLOG_PAGE_CACHE_HEADER = "X-HealthLog-Page-Cache";
 // While set, the fetch handler declines every request. Set when a page looks
 // like another app, cleared unless the probe confirms another app.
 let foreignOrigin = false;
@@ -63,6 +67,9 @@ self.addEventListener("activate", (event) => {
               .map((k) => caches.delete(k)),
           ),
         ),
+      // A page kept by an earlier worker of the same release, before the
+      // page cache required the anonymous permit, goes too.
+      dropPagesWithoutPermit(),
       // The browser starts the navigation while the worker boots;
       // `networkFirst` uses `event.preloadResponse`.
       self.registration.navigationPreload
@@ -128,21 +135,53 @@ async function cacheFirst(request, cacheName) {
   return response;
 }
 
+/** Delete every page-cache entry that does not carry the anonymous permit. */
+async function dropPagesWithoutPermit() {
+  try {
+    const cache = await caches.open(PAGE_CACHE);
+    const requests = await cache.keys();
+    await Promise.all(
+      requests.map(async (request) => {
+        const response = await cache.match(request);
+        if (
+          !response ||
+          response.headers.get(HEALTHLOG_PAGE_CACHE_HEADER) !== "anonymous"
+        ) {
+          await cache.delete(request);
+        }
+      }),
+    );
+  } catch {
+    // CacheStorage unavailable; nothing was kept then either.
+  }
+}
+
 /**
- * Which navigation responses may land in the page cache. Signed-in pages
- * never do: the proxy sends them `private, no-store` because some carry one
- * account's record in the HTML. Two paths are skipped by name as well: the
- * clinician share view `/c/*` (no-store too; a revoked share must never
- * render back offline) and `/onboarding/*`. What is left are the public
- * pages (sign-in, legal), so a navigation to an app page without a
- * connection gets the offline page, never somebody's cached record.
+ * Which navigation responses may land in the page cache: only a page the
+ * proxy answered to a request WITHOUT a session cookie, which it marks with
+ * `X-HealthLog-Page-Cache: anonymous`. That is an allowlist: anything
+ * rendered for a session (every app page, and a public page such as `/about`
+ * opened while signed in) carries `private, no-store` and no permit, and a
+ * response without the permit is never kept, whatever else it says. The
+ * worker cannot read the HttpOnly session cookie itself, so the proxy's mark
+ * is the only reliable signal. Three paths are skipped by name as well: the
+ * clinician share view `/c/*`, the emergency card `/e/*` (both no-store; a
+ * revoked link must never render back offline) and `/onboarding/*`. What is
+ * left are the anonymous public pages (sign-in, legal), so a navigation to an
+ * app page without a connection gets the data-free offline page, never
+ * somebody's cached record.
  */
 function isCacheableNavigation(request, response) {
+  if (response.headers.get(HEALTHLOG_PAGE_CACHE_HEADER) !== "anonymous") {
+    return false;
+  }
   const cacheControl = response.headers.get("Cache-Control") || "";
   if (/no-store/i.test(cacheControl)) return false;
   try {
     const { pathname } = new URL(request.url);
     if (pathname === "/c" || pathname.startsWith("/c/")) return false;
+    // The emergency card's read-only view: a revoked card stays revoked.
+    if (pathname.startsWith("/e/")) return false;
     // Public to the proxy, so not no-store, but rendered for a signed-in
     // account during its setup.
     if (pathname === "/onboarding" || pathname.startsWith("/onboarding/")) {
@@ -273,7 +312,8 @@ async function retireFromForeignOrigin() {
 /**
  * Network-first for pages: the navigation-preload response when the browser
  * already started it, else a fetch. Without a connection, a page from this
- * release's page cache (only public pages are there), else the offline page.
+ * release's page cache (only anonymous public pages are there), else the
+ * static, data-free offline page.
  * The lookup is scoped to this release's cache name: a page from an older
  * release would reference chunks that no longer exist.
  */
@@ -312,11 +352,25 @@ async function networkFirst(event, cacheName) {
 
 // Language-neutral, because the worker ships no catalog: the wordmark, the
 // word "Offline" and a 64 px retry link. It reloads itself when the
-// connection returns, follows the device scheme and keeps clear of the notch.
+// connection returns and keeps clear of the notch. It follows the theme the
+// person chose in the app: the worker cannot read it, but the page is served
+// on the app's origin, so its head script reads the same `healthlog-theme`
+// entry the app's theme bootstrap reads, with the same rule (light, dark, or
+// anything else, nothing stored included = the device scheme), and sets
+// `data-theme` before the body paints. The worker's own response carries no
+// Content-Security-Policy, so the inline script is not refused; without
+// script the device scheme stands.
+const OFFLINE_THEME_SCRIPT =
+  '(function(){var t=null,c="dark";try{t=localStorage.getItem("healthlog-theme")}catch(e){}if(t==="light"||t==="dark"){c=t}else{try{c=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}catch(e){}}document.documentElement.setAttribute("data-theme",c);var m=document.querySelector(\'meta[name="theme-color"]\');if(m)m.setAttribute("content",c==="light"?"#f3f2f5":"#282a36")})()';
+
 const OFFLINE_PAGE =
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark light"><title>HealthLog — Offline</title><style>' +
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#282a36"><title>HealthLog — Offline</title><script>' +
+  OFFLINE_THEME_SCRIPT +
+  "</script><style>" +
   ":root{--bg:#282a36;--fg:#f8f8f2;--accent:#bd93f9;--muted:#a4a9c9;color-scheme:dark}" +
   "@media (prefers-color-scheme:light){:root{--bg:#f3f2f5;--fg:#1f2030;--accent:#6b46c1;--muted:#5b5e78;color-scheme:light}}" +
+  ":root[data-theme=dark]{--bg:#282a36;--fg:#f8f8f2;--accent:#bd93f9;--muted:#a4a9c9;color-scheme:dark}" +
+  ":root[data-theme=light]{--bg:#f3f2f5;--fg:#1f2030;--accent:#6b46c1;--muted:#5b5e78;color-scheme:light}" +
   "body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--fg);display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;margin:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);box-sizing:border-box}" +
   "main{text-align:center;padding:2rem}h1{color:var(--accent);margin:0 0 .5rem;font-size:2rem;letter-spacing:.05em}p{color:var(--muted);margin:.25rem 0 1.5rem;font-size:1rem}" +
   "a{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:9999px;color:var(--accent);border:2px solid currentColor}a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}svg{width:28px;height:28px}" +

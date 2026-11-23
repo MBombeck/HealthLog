@@ -21,6 +21,10 @@ import type {
 import { isTimeFormatPreference, storeTimeFormat } from "@/lib/time-format";
 import { isDateFormatPreference, storeDateFormat } from "@/lib/date-format";
 import { storeTimezone } from "@/lib/timezone-mirror";
+import {
+  isMedicineRegistryChoice,
+  type MedicineRegistryChoice,
+} from "@/lib/medications/leaflet-registries";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { AiCapabilities } from "@/lib/ai/capabilities/types";
 import type { CoachReasoningState } from "@/lib/ai/reasoning/resolve";
@@ -67,6 +71,14 @@ export type AuthTourProgress = TourProgress;
 export interface AuthUser {
   id: string;
   username: string;
+  /**
+   * Set only on the account the root layout wrote into the page
+   * (`src/lib/auth/account-seed.ts`): the identity, insurance and saved-report
+   * fields are `null` there because they were withheld, not because they are
+   * unset. Gone once the shell's own `/api/auth/me` read lands. Read it
+   * through `useAuth().profileLoaded`.
+   */
+  accountSeed?: true;
   /**
    * When the account was created (ISO). Absent from an older server image,
    * which every reader treats as an established account.
@@ -153,6 +165,12 @@ export interface AuthUser {
    * Coerced to "AUTO" against a stale /me payload.
    */
   dateFormat: DateFormatPreference;
+  /**
+   * #1430 — which official medicine registry the "Find leaflet" link opens,
+   * or `NONE`. Independent of the interface language; settled once by the
+   * server. Coerced to `NONE` against a stale /me payload.
+   */
+  medicineRegistry: MedicineRegistryChoice;
   /**
    * v1.4.47 — the signed-in person's own stored Coach opt-out. It is
    * the value the Activate-Coach switch and the module toggle edit, and
@@ -298,6 +316,20 @@ export interface AuthUser {
    * safe.
    */
   recordSession?: { epoch: number; scope: string | null } | null;
+  /**
+   * The push block. The web reads one thing of it: the operator's answer to
+   * the relay question (`push.relay.operatorDecision`, `canDecide`) and the
+   * relay's documents the question links, for `PushRelayQuestion`. The rest
+   * is the native app's.
+   */
+  push?: {
+    relay?: {
+      operatorDecision?: "undecided" | "on" | "off";
+      canDecide?: boolean;
+      termsUrl?: string | null;
+      privacyUrl?: string | null;
+    } | null;
+  } | null;
 }
 
 /**
@@ -370,7 +402,7 @@ export function isAuthVerdictUnknown(error: unknown): boolean {
  */
 const SUPERSEDED_ME_RETRIES = 3;
 
-type MePayload = Partial<AuthUser> & {
+export type MePayload = Partial<AuthUser> & {
   id: string;
   username: string;
   role: string;
@@ -403,6 +435,22 @@ async function getCurrentMe(): Promise<MePayload> {
 }
 
 export async function fetchMe(): Promise<AuthUser> {
+  return adoptMePayload(await getCurrentMe());
+}
+
+/**
+ * Turn a `/api/auth/me` payload into the cached account, and (in the browser)
+ * act on it: mirror the display preferences, adopt the record-session
+ * context, set the cache scope and release a held transition.
+ *
+ * `apply: false` is the server render's form (`AuthMeSeed`): the same account
+ * value, with none of the browser-side effects, which would otherwise write
+ * module state shared by every request the server renders.
+ */
+export function adoptMePayload(
+  data: MePayload,
+  { apply = true }: { apply?: boolean } = {},
+): AuthUser {
   // v1.16.4 — routed through the typed wrapper; a non-OK /me (401)
   // throws `ApiError`, which `useAuth` treats as "not authenticated"
   // exactly like the old hand-rolled throw.
@@ -410,7 +458,6 @@ export async function fetchMe(): Promise<AuthUser> {
   // v1.4.47 — coerce `disableCoach` against `undefined` so a stale
   // /me payload from a partial-deploy rollback (older server image
   // without the field) keeps the Coach surface visible by default.
-  const data = await getCurrentMe();
   // Hour-cycle preference: coerce against a stale /me payload, then mirror
   // into localStorage so `useFormatters()` and the legacy format helpers
   // (which cannot reach the query cache) render the same clock.
@@ -419,7 +466,7 @@ export async function fetchMe(): Promise<AuthUser> {
   )
     ? data.timeFormat
     : "AUTO";
-  storeTimeFormat(timeFormat);
+  if (apply) storeTimeFormat(timeFormat);
   // Date-order preference: coerce against a stale /me payload, then mirror
   // into localStorage so `useFormatters()` and the `<DateField>` primitive
   // (which cannot reach the query cache) render the same field order.
@@ -428,15 +475,17 @@ export async function fetchMe(): Promise<AuthUser> {
   )
     ? data.dateFormat
     : "AUTO";
-  storeDateFormat(dateFormat);
+  if (apply) storeDateFormat(dateFormat);
   // Profile timezone (issue #490): mirror into localStorage so
   // `useFormatters()` and the legacy format helpers render timestamps in
   // the user's zone. `storeTimezone` validates the IANA name and CLEARS
   // the mirror on garbage, so a poison value falls back to Berlin instead
   // of reaching `Intl.DateTimeFormat` (RangeError).
-  storeTimezone(typeof data.timezone === "string" ? data.timezone : "");
+  if (apply) {
+    storeTimezone(typeof data.timezone === "string" ? data.timezone : "");
+  }
   // A confirmed session: refresh the non-sensitive offline-relaunch marker.
-  storeWasAuthenticated();
+  if (apply) storeWasAuthenticated();
   // v1.36.0 — the record this browser is reading, straight from the server's
   // resolved answer. This is the correcting write for the cache-scope mirror:
   // whatever the switch flow stamped before its reload, the block is what the
@@ -448,22 +497,24 @@ export async function fetchMe(): Promise<AuthUser> {
   // the shell back on screen with every subsequent request still asserting
   // `bootstrap`. Adoption first means a released hold is always released onto
   // a context the next request can prove.
-  adoptRecordFenceState(data.recordSession);
   const { accountAccess, status: accountAccessStatus } =
     resolveAccountAccess(data);
-  if (accountAccessStatus === "invalid") {
-    setRefusedRecordScope();
-  } else {
-    setRecordScope(accountAccess.active?.accountId ?? null);
-  }
-  // A cross-tab switch holds the shell until this server-resolved payload
-  // confirms the record the transition committed. The malformed branch has
-  // already installed its refusal sentinel, so it may release only into the
-  // refusal door rather than being mistaken for the caller's own record.
-  if (accountAccessStatus === "invalid") {
-    settleRefusedRecordSessionTransition();
-  } else {
-    settleRecordSessionTransition(accountAccess.active?.accountId ?? null);
+  if (apply) {
+    adoptRecordFenceState(data.recordSession);
+    if (accountAccessStatus === "invalid") {
+      setRefusedRecordScope();
+    } else {
+      setRecordScope(accountAccess.active?.accountId ?? null);
+    }
+    // A cross-tab switch holds the shell until this server-resolved payload
+    // confirms the record the transition committed. The malformed branch has
+    // already installed its refusal sentinel, so it may release only into the
+    // refusal door rather than being mistaken for the caller's own record.
+    if (accountAccessStatus === "invalid") {
+      settleRefusedRecordSessionTransition();
+    } else {
+      settleRecordSessionTransition(accountAccess.active?.accountId ?? null);
+    }
   }
   return {
     ...(data as AuthUser),
@@ -480,6 +531,9 @@ export async function fetchMe(): Promise<AuthUser> {
     unitPreference: data.unitPreference === "imperial" ? "imperial" : "metric",
     timeFormat,
     dateFormat,
+    medicineRegistry: isMedicineRegistryChoice(data.medicineRegistry)
+      ? data.medicineRegistry
+      : "NONE",
     // v1.15.0 — coerce against a stale /me payload so the cycle nav entry
     // stays hidden by default when the field is absent.
     cycleTrackingEnabled: data.cycleTrackingEnabled === true,
@@ -550,6 +604,16 @@ function resolveAccountAccess(value: object): {
     : { accountAccess: NO_ACCOUNT_ACCESS, status: "invalid" };
 }
 
+/**
+ * Whether `user` is the full `/api/auth/me` payload rather than the
+ * server-rendered seed (`src/lib/auth/account-seed.ts`), which writes the
+ * identity, insurance and saved-report fields as `null` because it withholds
+ * them. Read a withheld field only once this is true.
+ */
+export function isFullAccount(user: AuthUser | null): user is AuthUser {
+  return user !== null && user.accountSeed !== true;
+}
+
 export function useAuth() {
   const query = useQuery({
     // v1.4.40 — factory-routed to `queryKeys.authMe()`. Pre-fix
@@ -585,6 +649,14 @@ export function useAuth() {
     user,
     isLoading: query.isLoading,
     isAuthenticated,
+    /**
+     * True once `user` is the full `/api/auth/me` payload rather than the
+     * server-rendered seed, which withholds the identity, insurance and
+     * saved-report fields (`ACCOUNT_SEED_WITHHELD`). A reader of one of those
+     * fields waits for this before it seeds a form or draws a conclusion
+     * from a `null`: in the seed, `null` means "not sent", not "not set".
+     */
+    profileLoaded: isFullAccount(user),
     /**
      * True while the session question is genuinely unanswered — the auth
      * probe failed at the transport level (or 5xx) and no cached `/me`

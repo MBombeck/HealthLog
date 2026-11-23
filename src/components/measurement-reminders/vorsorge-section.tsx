@@ -11,6 +11,8 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ContextLinks } from "@/components/layout/context-links";
+import { InHeaderSlot } from "@/components/layout/header-slot";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -213,55 +215,33 @@ export function VorsorgeSection({
   return (
     <section aria-labelledby="vorsorge-section-title" className="space-y-4">
       {variant === "page" ? (
-        <PageHeader
-          titleId="vorsorge-section-title"
-          title={
-            <span data-tour-id="vorsorge-hero">
-              {t("measurementReminders.sectionTitle")}
-            </span>
-          }
-          description={t("measurementReminders.sectionDescription")}
-          actions={
-            <>
-              {wrenchButton}
-              {/* The empty state carries the add action while there is
-                  nothing to list. */}
-              {!isLoading && !isError && (reminders?.length ?? 0) === 0
-                ? null
-                : addButton}
-            </>
-          }
-        />
+        <InHeaderSlot>
+          <PageHeader
+            titleId="vorsorge-section-title"
+            title={
+              <span data-tour-id="vorsorge-hero">
+                {t("measurementReminders.sectionTitle")}
+              </span>
+            }
+            description={t("measurementReminders.sectionDescription")}
+            actions={
+              <>
+                {wrenchButton}
+                {/* The empty state carries the add action when empty. */}
+                {!isLoading && !isError && (reminders?.length ?? 0) === 0
+                  ? null
+                  : addButton}
+              </>
+            }
+          />
+        </InHeaderSlot>
       ) : null}
-      {variant === "page" && !inSharedRecord ? (
-        // The reminder switches and the screening hints moved out of the
-        // checkups settings in v1.44 (Notifications, Health profile); both
-        // stay one tap away from the page they are about.
-        <div
-          className="flex flex-wrap gap-2"
-          data-slot="vorsorge-settings-links"
-        >
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
-          >
-            <Link href="/settings/notifications#vorsorge-reminders">
-              {t("notifications.checkupReminders.title")}
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
-          >
-            <Link href="/settings/anamnesis#screening-hints">
-              {t("records.life.screening.cardTitle")}
-            </Link>
-          </Button>
-        </div>
+      {variant === "page" ? (
+        // The reminder switches and screening hints (Notifications, Health
+        // profile) and the care calendar (Health record) stay one tap away
+        // from the page they are about; the links decide what a shared
+        // record shows.
+        <ContextLinks page="/checkups" />
       ) : null}
       {variant === "page" ? null : (
         <SettingsCardHeader

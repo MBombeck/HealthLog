@@ -6,6 +6,7 @@ import { readSyncTriggerBody } from "@/lib/integrations/sync-request";
 import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
 import { syncUserWhoop } from "@/lib/whoop/sync";
 import { NextRequest } from "next/server";
+import { withDataChangeOrigin } from "@/lib/push-relay/data-changed";
 
 /**
  * Manually trigger a WHOOP sync for the current user (v1.11.0).
@@ -50,6 +51,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   // Resolved server-side so the card and the native client cannot disagree on
   // how the same run reads.
-  const result = await syncUserWhoop(user.id, { fullSync });
+  const result = await withDataChangeOrigin(
+    request.headers.get("x-device-id"),
+    () => syncUserWhoop(user.id, { fullSync }),
+  );
   return apiSuccess({ ...resolveSyncOutcome(result), fullSync });
 });

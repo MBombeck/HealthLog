@@ -44,12 +44,17 @@ import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { dayDiff } from "@/lib/cycle/day-math";
+import { predictionsPausedOn } from "@/lib/cycle/pregnancy";
+import {
+  PREGNANCY_PROFILE_SELECT,
+  pregnancyFieldsOf,
+} from "@/lib/cycle/pregnancy-store";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import type { EventType } from "@/lib/notifications/types";
 import { isCycleReminderClientManaged } from "@/lib/validations/notification-prefs";
 import { getEvent } from "@/lib/logging/context";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { logCaught } from "@/lib/logging/signal";
 
 /**
@@ -93,6 +98,12 @@ export interface CycleReminderSummary {
   skippedNoChannel: number;
   skippedOutsideWindow: number;
   skippedPredictionDisabled: number;
+  /**
+   * A pregnancy or postpartum state pauses every prediction push. The refresh
+   * job drops a paused account's cached forecast, but a row written before
+   * the state was set can still be scanned until it runs; the tick checks.
+   */
+  skippedPregnancyPaused: number;
   skippedModuleDisabled: number;
   skippedAlreadyLogged: number;
   failed: number;
@@ -125,6 +136,7 @@ function emptySummary(): CycleReminderSummary {
     skippedNoChannel: 0,
     skippedOutsideWindow: 0,
     skippedPredictionDisabled: 0,
+    skippedPregnancyPaused: 0,
     skippedModuleDisabled: 0,
     skippedAlreadyLogged: 0,
     failed: 0,
@@ -141,11 +153,9 @@ export function cycleReminderLocalDate(
   now: Date,
   timezone: string,
 ): string | null {
-  const parts = wallClockInTz(now, timezone || DEFAULT_TIMEZONE);
-  if (parts.hour !== CYCLE_REMINDER_LOCAL_HOUR) return null;
-  return `${parts.year.toString().padStart(4, "0")}-${parts.month
-    .toString()
-    .padStart(2, "0")}-${parts.day.toString().padStart(2, "0")}`;
+  const tz = timezone || DEFAULT_TIMEZONE;
+  if (wallClockInTz(now, tz).hour !== CYCLE_REMINDER_LOCAL_HOUR) return null;
+  return userDayKey(now, tz);
 }
 
 /**
@@ -358,6 +368,7 @@ export async function runCycleReminderTick(
               cycleTrackingEnabled: true,
               predictionEnabled: true,
               discreetNotifications: true,
+              ...PREGNANCY_PROFILE_SELECT,
             },
           },
         },
@@ -371,15 +382,10 @@ export async function runCycleReminderTick(
     try {
       const profile = user.cycleProfile;
 
-      // Gate on the FULLY-resolved cycle module — the per-user toggle
-      // (gender-derived or explicit opt-in) AND the operator server-wide
-      // kill-switch. v1.18.0: the `cycle` ModuleKey resolves through
-      // `isModuleEnabled`, so an operator who disables the Cycle module
-      // (`AppSettings.moduleAvailabilityJson.cycle = false`) suppresses
-      // every CYCLE_PERIOD push for every account — the same two-layer gate
-      // the routes and the coach cycle block read. A per-user-disabled
-      // account is likewise skipped. The `profile` row read below still
-      // applies the `predictionEnabled` opt-out.
+      // Gate on the FULLY-resolved cycle module (`isModuleEnabled`): the
+      // per-user toggle AND the operator's switch, the same two-layer gate the
+      // routes and the Coach block read. The `profile` row below still applies
+      // the `predictionEnabled` opt-out.
       if (!(await moduleGate(user.id, "cycle"))) {
         summary.skippedModuleDisabled += 1;
         getEvent()?.addMeta("cycle_reminder.skipped_module_disabled", user.id);
@@ -399,6 +405,11 @@ export async function runCycleReminderTick(
         continue;
       }
 
+      // No push in a pregnancy or after a birth, even off a stale cache row.
+      if (profile && predictionsPausedOn(pregnancyFieldsOf(profile), today)) {
+        summary.skippedPregnancyPaused += 1;
+        continue;
+      }
       summary.inWindow += 1;
 
       const timezoneForBounds = timezone;
@@ -412,9 +423,8 @@ export async function runCycleReminderTick(
       const dayEndExclusive = new Date(dayEndInclusive.getTime() + 1);
 
       // Shared dispatch tail: clientManaged suppression → idempotency →
-      // discreet body → dispatch → counter. Reused verbatim by the
-      // period-soon / period-confirm nudge and the fertile-window nudge so a
-      // change to the suppression cascade can never drift between them.
+      // discreet body → dispatch → counter, reused by the period and the
+      // fertile-window nudges so the suppression cascade cannot drift.
       const dispatchEvent = async (
         event: CycleReminderEvent,
       ): Promise<void> => {

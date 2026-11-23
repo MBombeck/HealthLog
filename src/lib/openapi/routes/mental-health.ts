@@ -144,9 +144,28 @@ const assessmentTrend = z
       "v1.44 — the latest total against the previous and the first administration, classified against the instrument's meaningful-change threshold in its own direction. A change below the threshold is `within_threshold`. Server-computed over the whole history, not the page.",
   });
 
+const assessmentListRow = assessmentRow
+  .extend({
+    source: z
+      .string()
+      .describe(
+        "Where the administration came from: `WEB`, `IOS` or `APPLE_HEALTH`, as on the detail read. Decode unknown values leniently.",
+      ),
+    itemsUnavailable: z
+      .boolean()
+      .describe(
+        'The detail read\'s own verdict, without its answers: true when the detail read would answer `items: null`, for a score-only `APPLE_HEALTH` row whose answers were never shared or a row whose answers no longer decrypt. Lets a history say "answers not shared" without a detail read per row.',
+      ),
+  })
+  .meta({
+    id: "MentalHealthAssessmentListRow",
+    description:
+      "One row of the screener history: the administration plus `source` and `itemsUnavailable`. No item answer.",
+  });
+
 const listResponse = z
   .object({
-    assessments: z.array(assessmentRow),
+    assessments: z.array(assessmentListRow),
     trends: z
       .array(assessmentTrend)
       .optional()

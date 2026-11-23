@@ -6,15 +6,13 @@ import {
   getPulseUserPrompt,
 } from "@/lib/ai/prompts/pulse";
 import { computeSteadyRun } from "@/lib/insights/assessment-context";
-import {
-  getAgeFromDateOfBirth,
-  getPersonalizedPulseTarget,
-} from "@/lib/analytics/pulse-targets";
+import { getPersonalizedPulseTarget } from "@/lib/analytics/pulse-targets";
 import {
   getEffectiveRange,
   resolveThresholdOverride,
 } from "@/lib/analytics/effective-range";
-import { resolveRestingPulseSeries } from "@/lib/analytics/resting-pulse";
+import { mergeRestingWithProxy } from "@/lib/analytics/resting-pulse";
+import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
 import { getNoKeyPulseStatusText } from "@/lib/insights/no-key-fallbacks";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
 import {
@@ -38,6 +36,7 @@ import {
   type StatusTextResult,
 } from "@/lib/insights/status-pipeline";
 import { binaryReferenceSex } from "@/lib/profile/sex";
+import { ageInYears } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/resolver";
 
 /**
@@ -81,6 +80,7 @@ async function buildPulseSnapshot(
       dateOfBirth: true,
       gender: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
 
@@ -93,7 +93,7 @@ async function buildPulseSnapshot(
 
   // The latest 365 readings, and never less than the last 30 days: a dense
   // pulse stream holds 365 readings in a few hours (`readRecentReadings`).
-  const measurements = await readRecentReadings(userId, "PULSE");
+  const measurements = await readRecentReadings(userId, "PULSE", userTz);
 
   // v1.15.12 — the RESTING band is judged against the RESTING series,
   // not the raw PULSE stream (Apple fills PULSE with workout HR). Pull
@@ -164,13 +164,13 @@ async function buildPulseSnapshot(
       ? getEffectiveRange("PULSE", user, { PULSE: ownPulse }).range
       : null) ??
     getPersonalizedPulseTarget(
-      getAgeFromDateOfBirth(user?.dateOfBirth ?? null),
+      ageInYears(user?.dateOfBirth, userTz),
       binaryReferenceSex(user?.gender),
     );
 
-  const inTargetPctLast30DailyPoints = restingInTargetPct({
+  const inTargetPctLast30DailyPoints = await restingInTargetPct({
+    userId,
     restingMeasurements,
-    measurements,
     target: pulseTarget,
     now,
     userTz,
@@ -275,26 +275,31 @@ async function buildPulseSnapshot(
  * daily buckets which mix in workout HR. Scoring the raw stream against a
  * resting band counted a workout day as "over target" and tanked the %.
  */
-function restingInTargetPct(args: {
+async function restingInTargetPct(args: {
+  userId: string;
   restingMeasurements: ReadonlyArray<{ measuredAt: Date; value: number }>;
-  measurements: ReadonlyArray<{ measuredAt: Date; value: number }>;
   target: { greenMin: number; greenMax: number };
   now: Date;
   userTz: string;
-}): number | null {
+}): Promise<number | null> {
   const { target, now, userTz } = args;
-  const restingResolved = resolveRestingPulseSeries({
+  const thirtyDaysAgoMs = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+  // The proxy for the days without a resting row is the day's low percentile
+  // of every PULSE reading, folded in Postgres: the snapshot's readings can be
+  // hour cells on a dense stream, and a percentile of hour means is not the
+  // day's floor.
+  const restingResolved = mergeRestingWithProxy({
     restingSamples: args.restingMeasurements.map((m) => ({
       measuredAt: m.measuredAt,
       value: m.value,
     })),
-    pulseSamples: args.measurements.map((m) => ({
-      measuredAt: m.measuredAt,
-      value: m.value,
-    })),
+    proxySamples: await readRestingPulseProxy({
+      userId: args.userId,
+      since: new Date(thirtyDaysAgoMs),
+      timeZone: userTz,
+    }),
     dayKeyOf: (d: Date) => userDayKey(d, userTz),
   });
-  const thirtyDaysAgoMs = now.getTime() - 30 * 24 * 60 * 60 * 1000;
   const recentResting = restingResolved.series.filter(
     (p) => p.measuredAt.getTime() >= thirtyDaysAgoMs,
   );

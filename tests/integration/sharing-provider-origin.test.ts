@@ -48,7 +48,6 @@ import { runInsightStatusGenerate } from "@/lib/jobs/insight-status-generate";
 import type { InsightStatusGeneratePayload } from "@/lib/jobs/insight-status-generate";
 import {
   hasAnyConfiguredProvider,
-  resolveProvider,
   resolveProviderAvailability,
   resolveProviderChain,
 } from "@/lib/ai/provider";
@@ -131,9 +130,9 @@ const enqueueFromSharedMutation: (request: NextRequest) => Promise<Response> =
 const resolveFromSharedRead: (request: NextRequest) => Promise<Response> =
   apiHandler(async () => {
     const { user } = await requireRecordAuth("manage", "record");
-    const provider = await resolveProvider(user.id);
+    const chain = await resolveProviderChain(user.id, null);
     return NextResponse.json({
-      data: { provider: provider.type },
+      data: { provider: chain[0]?.instance.type ?? "none" },
       error: null,
     });
   });
@@ -309,11 +308,11 @@ describe("sharing provider origin", () => {
       actorUserId: "guardian-actor",
     });
 
-    const provider = await withProviderWorkAuthority(guardian, () =>
-      resolveProvider("managed-record"),
+    const chain = await withProviderWorkAuthority(guardian, () =>
+      resolveProviderChain("managed-record", null),
     );
 
-    expect(provider.type).toBe("none");
+    expect(chain).toEqual([]);
   });
 
   it("returns no personal provider from the shared comprehensive-read origin", async () => {
@@ -396,17 +395,16 @@ describe("sharing provider origin", () => {
       grantId: null,
     });
 
-    const [provider, chain, configured, availability] =
-      await withProviderWorkAuthority(system, async () =>
+    const [chain, configured, availability] = await withProviderWorkAuthority(
+      system,
+      async () =>
         Promise.all([
-          resolveProvider("managed-system-record"),
           resolveProviderChain("managed-system-record", null),
           hasAnyConfiguredProvider("managed-system-record"),
           resolveProviderAvailability("managed-system-record"),
         ]),
-      );
+    );
 
-    expect(provider.type).toBe("none");
     expect(chain).toEqual([]);
     expect(configured).toBe(false);
     expect(availability).toEqual({ aiAvailable: false, managedBy: null });

@@ -29,6 +29,8 @@ import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
+import { afterIdentityFieldsChanged } from "@/lib/auth/identity-change";
+import { loadOnboardingOffers } from "@/lib/onboarding/load-offers";
 import { applyOnboardingAnswer } from "@/lib/onboarding/needs-apply";
 import { readHeldUnitPreferences } from "@/lib/onboarding/needs";
 import {
@@ -88,13 +90,29 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   // second source of truth. What is kept beside them in `needs.units` is the
   // answer as given, so a restart can show it back without re-deriving it from
   // a column Settings may have changed since.
-  const unitData: { glucoseUnit?: string; unitPreference?: string } = {};
+  //
+  // 1.49 adds the region half of the same screen, the time zone and the
+  // medicine registry, under the same rule: the columns every reader uses are
+  // written, the answer is kept beside them, and the audit rows carry the
+  // event names of their own settings routes.
+  const unitData: {
+    glucoseUnit?: string;
+    unitPreference?: string;
+    timezone?: string;
+    medicineRegistry?: string;
+  } = {};
   if (answer.step === "units" && answer.status !== "skipped") {
     if (answer.units.glucoseUnit) {
       unitData.glucoseUnit = answer.units.glucoseUnit;
     }
     if (answer.units.unitPreference) {
       unitData.unitPreference = answer.units.unitPreference;
+    }
+    if (answer.units.timezone) {
+      unitData.timezone = answer.units.timezone;
+    }
+    if (answer.units.medicineRegistry) {
+      unitData.medicineRegistry = answer.units.medicineRegistry;
     }
   }
 
@@ -130,6 +148,17 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
         ])
       : await prisma.$transaction([upsert]);
 
+  // The zone feeds caches and day grids keyed by the local day; the same
+  // refresh every writer of the zone runs, after the write it follows.
+  const timezoneChanged =
+    unitData.timezone !== undefined && unitData.timezone !== user.timezone;
+  if (timezoneChanged) {
+    await afterIdentityFieldsChanged(user.id, {
+      anthropometrics: false,
+      timezone: true,
+    });
+  }
+
   const held = readHeldUnitPreferences({
     glucoseUnit: unitData.glucoseUnit ?? user.glucoseUnit,
     unitPreference: unitData.unitPreference ?? user.unitPreference,
@@ -161,6 +190,32 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     });
   }
 
+  if (timezoneChanged) {
+    await auditLog("user.timezone.update", {
+      userId: user.id,
+      ipAddress: getClientIp(request),
+      details: {
+        previous: user.timezone,
+        next: unitData.timezone,
+        source: "onboarding",
+      },
+    });
+  }
+  if (
+    unitData.medicineRegistry !== undefined &&
+    unitData.medicineRegistry !== user.medicineRegistry
+  ) {
+    await auditLog("user.medicine-registry.update", {
+      userId: user.id,
+      ipAddress: getClientIp(request),
+      details: {
+        previous: user.medicineRegistry,
+        next: unitData.medicineRegistry,
+        source: "onboarding",
+      },
+    });
+  }
+
   annotate({
     action: { name: "onboarding.needs.save" },
     meta: {
@@ -169,5 +224,11 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  return apiSuccess({ onboarding: toOnboardingStateDto(written, held) });
+  return apiSuccess({
+    onboarding: toOnboardingStateDto(
+      written,
+      held,
+      await loadOnboardingOffers(user.id),
+    ),
+  });
 });

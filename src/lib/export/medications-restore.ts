@@ -9,6 +9,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { sealMedicationNote } from "@/lib/medications/medication-note";
+import { restoredLeafletUrl } from "@/lib/medications/leaflet-url";
 import { toJson } from "@/lib/db";
 import { restoredMedicationCreatedAt } from "@/lib/export/medication-created-at";
 import {
@@ -26,6 +27,8 @@ import {
   dateOfDayKey,
   projectCourseWindow,
 } from "@/lib/medications/course-window";
+import { restoreForIntake } from "@/lib/medications/inventory/consumption";
+import { mergedIntakeEvents } from "@/lib/export/intake-slot-merge";
 import { DEFAULT_TIMEZONE, userDayKey, validTimezoneOr } from "@/lib/tz/format";
 import type { BackupPayload } from "@/lib/validations/backup";
 
@@ -147,6 +150,7 @@ function medicationRowData(
       m.noteEncrypted != null
         ? decodeEncryptedBytes(m.noteEncrypted)
         : (sealMedicationNote(m.note ?? null) ?? null),
+    leafletUrl: restoredLeafletUrl(m.leafletUrl),
     lowStockNotifiedAt: m.lowStockNotifiedAt
       ? new Date(m.lowStockNotifiedAt)
       : null,
@@ -507,18 +511,28 @@ async function restoreIntakeEvents(
   ctx: RestoreContext,
   medByName: ReadonlyMap<string, string>,
 ): Promise<void> {
-  const { tx, ownerId, payload } = ctx;
-  const restoredMedicationIds = ctx.links.restoredMedicationIds;
+  const { tx, ownerId, payload, links } = ctx;
   if (payload.intakeEvents.length === 0) return;
+  // An event finds its medication by the source id: a disaster-recovery
+  // file's `medicationId`, which the drug kept, or a portable file's
+  // `medicationRef`, which matches the drug's `ref`. The name is only the
+  // fallback for a portable file written before the reference travelled:
+  // two drugs may share one, and resolving by it put every dose on the first.
+  const medicationFor = (
+    e: BackupPayload["intakeEvents"][number],
+  ): string | undefined => {
+    if (e.medicationId && links.restoredMedicationIds.has(e.medicationId)) {
+      return e.medicationId;
+    }
+    if (e.medicationRef)
+      return links.medicationIdBySourceId.get(e.medicationRef);
+    return medByName.get(e.medication);
+  };
   const unresolvedMedications = [
     ...new Set(
       payload.intakeEvents
-        .filter(
-          (e) =>
-            !(e.medicationId && restoredMedicationIds.has(e.medicationId)) &&
-            !medByName.has(e.medication),
-        )
-        .map((e) => e.medicationId ?? e.medication),
+        .filter((e) => !medicationFor(e))
+        .map((e) => e.medicationId ?? e.medicationRef ?? e.medication),
     ),
   ];
   if (unresolvedMedications.length > 0) {
@@ -528,13 +542,23 @@ async function restoreIntakeEvents(
       )}. The backup records doses against medications it does not carry.`,
     );
   }
+  // A file written before migration 0515 can hold two live rows for one
+  // slot (a pill box and a Telegram button that both found it empty), and
+  // the live slot is unique now. The rows are merged here by the rule the
+  // migration used, and the merged ones come back as tombstones.
+  const restoredAt = new Date();
+  const merged = mergedIntakeEvents(payload.intakeEvents, medicationFor);
   const rows = payload.intakeEvents
     .map((e) => {
-      const medId =
-        e.medicationId && restoredMedicationIds.has(e.medicationId)
-          ? e.medicationId
-          : medByName.get(e.medication);
+      const medId = medicationFor(e);
       if (!medId) return null;
+      if (e.ref && !e.id) {
+        links.intakeSlotBySourceId.set(e.ref, {
+          medicationId: medId,
+          scheduledFor: new Date(e.scheduledFor),
+        });
+      }
+      const isMerged = merged.has(e);
       return {
         ...(e.id ? { id: e.id } : {}),
         userId: ownerId,
@@ -546,20 +570,49 @@ async function restoreIntakeEvents(
         autoRecorded: e.autoRecorded ?? false,
         attributionSource: e.attributionSource ?? "AUTO",
         source: e.source ?? "WEB",
+        takenVia: e.takenVia ?? null,
         idempotencyKey: e.idempotencyKey ?? null,
         ...(e.createdAt ? { createdAt: new Date(e.createdAt) } : {}),
         injectionSite: e.injectionSite ?? null,
         doseTaken: e.doseTaken ?? null,
         inventoryConsumption: (e.inventoryConsumption ?? null) as never,
         externalId: e.externalId ?? null,
-        ...(e.updatedAt ? { updatedAt: new Date(e.updatedAt) } : {}),
-        syncVersion: e.syncVersion ?? 0,
-        deletedAt: e.deletedAt ? new Date(e.deletedAt) : null,
+        ...(isMerged
+          ? { updatedAt: restoredAt }
+          : e.updatedAt
+            ? { updatedAt: new Date(e.updatedAt) }
+            : {}),
+        syncVersion: (e.syncVersion ?? 0) + (isMerged ? 1 : 0),
+        deletedAt: isMerged
+          ? restoredAt
+          : e.deletedAt
+            ? new Date(e.deletedAt)
+            : null,
+        appleHealthDeletedAt:
+          !isMerged && e.appleHealthDeletedAt
+            ? new Date(e.appleHealthDeletedAt)
+            : null,
       };
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
   if (rows.length > 0) {
     await tx.medicationIntakeEvent.createMany({ data: rows });
+  }
+  // A merged take took stock off a pack a second time, and the pack count in
+  // the file carries both. Its stamp is refunded the way deleting the dose
+  // refunds it; the derived supplement days are refreshed after the commit.
+  for (const e of merged) {
+    const medicationId = medicationFor(e);
+    if (!medicationId) continue;
+    if (e.id && e.inventoryConsumption != null) {
+      await restoreForIntake({ client: tx, userId: ownerId, eventId: e.id });
+    }
+    if (e.takenAt && !e.skipped) {
+      ctx.outputs.mergedDoseSlots.push({
+        medicationId,
+        scheduledFor: new Date(e.scheduledFor),
+      });
+    }
   }
 }
 
@@ -582,6 +635,9 @@ export async function restoreMedications(ctx: RestoreContext): Promise<void> {
   const medByName = new Map<string, string>();
   const unresolvedRevisionLinks: string[] = [];
   const categoryKeyRemap = await restoreCustomCategories(ctx);
+  for (const [from, to] of categoryKeyRemap) {
+    links.medicationCategoryKeyBySourceKey.set(from, to);
+  }
 
   // The zone a derived course's creation day is read in: the file's own
   // account settings, else the account's stored one.

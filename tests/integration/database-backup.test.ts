@@ -67,7 +67,16 @@ function containerId(): string {
  * `pg_dump` / `pg_restore` that run inside the database container. The
  * connection comes from the PG* variables the core sets; host and port become
  * the container's own. A file argument that exists on this machine is sent on
- * standard input, which both tools read when no file is named.
+ * standard input, which both tools read when no file is named. A `--file`
+ * names a path on this machine, which the container cannot see, so the
+ * forwarder takes it off the command and writes the tool's output there
+ * itself.
+ *
+ * The docker client's standard output is always a pipe this forwarder owns,
+ * never a descriptor handed down from the caller. Handed down, it is shared
+ * with whatever opened it, and a non-blocking flag set there made the
+ * client's write fail with EAGAIN ("write /dev/stdout: resource temporarily
+ * unavailable"): the dump before migrating failed on a working database.
  */
 function writeShims(container: string): void {
   for (const tool of ["pg_dump", "pg_restore"]) {
@@ -76,8 +85,18 @@ function writeShims(container: string): void {
       path,
       `#!/usr/bin/env node
 const { spawn } = require("node:child_process");
-const { createReadStream, existsSync } = require("node:fs");
+const { createReadStream, createWriteStream, existsSync } = require("node:fs");
 const args = process.argv.slice(2);
+let output = null;
+for (let i = 0; i < args.length; i++) {
+  if (args[i].startsWith("--file=")) {
+    output = args[i].slice("--file=".length);
+    args.splice(i--, 1);
+  } else if (args[i] === "-f" || args[i] === "--file") {
+    output = args[i + 1];
+    args.splice(i--, 2);
+  }
+}
 let input = null;
 if (args.length && !args[args.length - 1].startsWith("-") && existsSync(args[args.length - 1])) {
   input = args.pop();
@@ -91,7 +110,7 @@ env.push("-e", "PGHOST=127.0.0.1", "-e", "PGPORT=5432");
 // input that is already at its end, the docker client can close the stream
 // before all of the tool's output has arrived.
 const child = spawn("docker", ["exec", ...(input ? ["-i"] : []), ...env, ${JSON.stringify(container)}, ${JSON.stringify(tool)}, ...args], {
-  stdio: [input ? "pipe" : "ignore", "inherit", "inherit"],
+  stdio: [input ? "pipe" : "ignore", "pipe", "inherit"],
 });
 // A docker client that exits before it has read all of the input closes the
 // pipe under us; that is the tool's failure to report, not a crash of this
@@ -104,7 +123,25 @@ if (input) {
   child.stdin.on("error", (err) => process.stderr.write("shim stdin: " + err.code + "\\n"));
   createReadStream(input).pipe(child.stdin);
 }
-child.on("exit", (code, signal) => process.exit(code ?? (signal ? 1 : 0)));
+// The file exists (the caller creates it owner-only); "w" truncates and
+// keeps its mode, as the tool's own --file does.
+const sink = output ? createWriteStream(output, { flags: "w" }) : process.stdout;
+child.stdout.pipe(sink);
+const sinkDone = output
+  ? new Promise((resolve, reject) => {
+      sink.once("finish", resolve);
+      sink.once("error", reject);
+    })
+  : new Promise((resolve) => child.stdout.once("end", resolve));
+child.on("close", (code, signal) => {
+  sinkDone.then(
+    () => { process.exitCode = code ?? (signal ? 1 : 0); },
+    (err) => {
+      process.stderr.write("shim output: " + err.message + "\\n");
+      process.exitCode = 1;
+    },
+  );
+});
 `,
     );
     chmodSync(path, 0o755);

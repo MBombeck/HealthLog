@@ -51,6 +51,7 @@ import type {
   ActivityGoalKey,
   ActivityGoals,
 } from "@/lib/validations/activity-goals";
+import { median } from "@/lib/stats/central";
 
 /** Days before the period whose spread defines a usual day. */
 export const BASELINE_DAYS = 84;
@@ -108,12 +109,6 @@ export function quantileSorted(sorted: readonly number[], q: number): number {
   const hi = Math.ceil(pos);
   if (lo === hi) return sorted[lo];
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
-}
-
-export function median(values: readonly number[]): number | null {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  return quantileSorted(sorted, 0.5);
 }
 
 export function baselineStats(values: readonly number[]): BaselineStats | null {

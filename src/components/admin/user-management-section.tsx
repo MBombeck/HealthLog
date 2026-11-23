@@ -32,11 +32,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { formatDate } from "@/lib/format";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ListRow } from "@/components/ui/list-row";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { type AdminUser, PasswordInput } from "./_shared";
 import { PendingDeletionControls } from "./pending-deletion-controls";
@@ -65,7 +64,7 @@ function quotaGbInput(bytes: number | null): string {
 }
 
 export function UserManagementSection() {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const currentUserId = useAuth().user?.id ?? "";
   const queryClient = useQueryClient();
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
@@ -409,7 +408,7 @@ export function UserManagementSection() {
                         {u.passkeyCount}
                       </td>
                       <td className="text-muted-foreground px-3 py-2 text-right text-xs whitespace-nowrap">
-                        {formatDate(u.createdAt)}
+                        {fmt.date(u.createdAt)}
                       </td>
                       <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -458,7 +457,7 @@ export function UserManagementSection() {
                         </p>
                         <p className="text-muted-foreground text-xs">
                           {t("admin.userPasskeys")}: {u.passkeyCount} ·{" "}
-                          {formatDate(u.createdAt)}
+                          {fmt.date(u.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -577,7 +576,6 @@ export function UserManagementSection() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setEditingUser(null)}
               >
                 {t("common.cancel")}
@@ -585,7 +583,6 @@ export function UserManagementSection() {
               <Button
                 type="submit"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 disabled={updateUser.isPending}
                 aria-busy={updateUser.isPending || undefined}
               >
@@ -627,14 +624,12 @@ export function UserManagementSection() {
               <Button
                 variant="outline"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setResetUser(null)}
               >
                 {t("common.cancel")}
               </Button>
               <Button
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 disabled={resetPw.isPending || !resetPassword}
                 onClick={() =>
                   resetPw.mutate({

@@ -18,12 +18,7 @@ vi.mock("@/lib/rollups/measurement-read-wmy", () => ({
   readBestGranularityRollups: vi.fn(),
 }));
 
-import {
-  median,
-  medianAbsoluteDeviation,
-  buildBaselineBand,
-  computeVitalsBaseline,
-} from "../baseline";
+import { buildBaselineBand, computeVitalsBaseline } from "../baseline";
 import { prisma } from "@/lib/db";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { readBestGranularityRollups } from "@/lib/rollups/measurement-read-wmy";
@@ -50,16 +45,6 @@ beforeEach(() => {
 });
 
 describe("pure statistics", () => {
-  it("median handles odd + even lengths", () => {
-    expect(median([3, 1, 2])).toBe(2);
-    expect(median([4, 1, 3, 2])).toBe(2.5);
-  });
-
-  it("MAD is the median of absolute deviations about the median", () => {
-    // values 1,2,3,4,5 → median 3 → |dev| 2,1,0,1,2 → MAD = 1
-    expect(medianAbsoluteDeviation([1, 2, 3, 4, 5])).toBe(1);
-  });
-
   it("buildBaselineBand returns a symmetric MAD band", () => {
     const band = buildBaselineBand([50, 52, 54, 56, 58], "PULSE", 3);
     expect(band).not.toBeNull();

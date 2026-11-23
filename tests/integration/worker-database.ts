@@ -64,19 +64,19 @@ function withDatabase(url: string, database: string): string {
 }
 
 /**
- * Make sure this worker's clone exists and carries no runtime schema left by
- * an earlier file, then return its URL.
+ * Copy the migrated template into `name` unless it exists, under the clone
+ * lock, and return its URL. `templateUrl` is any URL on the run's server.
  *
- * Runtime schemas are the ones a fresh install does not have: pg-boss creates
- * `pgboss` the first time a queue starts, and a few migration tests create
- * probe schemas. A file starts without them, so whether a queue table exists
- * never depends on which file happened to run earlier in the same worker.
+ * Besides the worker clones, a file that must see exactly what the
+ * migrations built (the schema drift check) takes a fresh copy of its own:
+ * the worker's clone carries whatever earlier files in that worker did to it,
+ * such as a migration test that replays an old migration and so rebuilds an
+ * index a later one dropped.
  */
-export async function prepareWorkerDatabase(
+export async function cloneTemplateDatabase(
   templateUrl: string,
-  plan: IntegrationDatabasePlan,
+  name: string,
 ): Promise<string> {
-  const name = workerDatabaseName();
   const maintenance = new Client({
     connectionString: withDatabase(templateUrl, "postgres"),
   });
@@ -108,8 +108,39 @@ export async function prepareWorkerDatabase(
   } finally {
     await maintenance.end();
   }
+  return withDatabase(templateUrl, name);
+}
 
-  const url = withDatabase(templateUrl, name);
+/** Drop a database `cloneTemplateDatabase` made, closing its connections. */
+export async function dropClonedDatabase(
+  templateUrl: string,
+  name: string,
+): Promise<void> {
+  const maintenance = new Client({
+    connectionString: withDatabase(templateUrl, "postgres"),
+  });
+  await maintenance.connect();
+  try {
+    await maintenance.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
+  } finally {
+    await maintenance.end();
+  }
+}
+
+/**
+ * Make sure this worker's clone exists and carries no runtime schema left by
+ * an earlier file, then return its URL.
+ *
+ * Runtime schemas are the ones a fresh install does not have: pg-boss creates
+ * `pgboss` the first time a queue starts, and a few migration tests create
+ * probe schemas. A file starts without them, so whether a queue table exists
+ * never depends on which file happened to run earlier in the same worker.
+ */
+export async function prepareWorkerDatabase(
+  templateUrl: string,
+  plan: IntegrationDatabasePlan,
+): Promise<string> {
+  const url = await cloneTemplateDatabase(templateUrl, workerDatabaseName());
   const db = new Client({ connectionString: url });
   await db.connect();
   try {

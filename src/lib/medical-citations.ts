@@ -480,11 +480,6 @@ export const CITATIONS = {
 
 export type CitationId = keyof typeof CITATIONS;
 
-/** Returns the URL for the given citation id. */
-export function citationUrl(id: CitationId): string {
-  return CITATIONS[id].url;
-}
-
 /**
  * Returns a localized "source: NAME (YEAR)" string for UI use.
  * Locale-agnostic for now (English-first); German UI consumers can

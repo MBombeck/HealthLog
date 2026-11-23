@@ -41,6 +41,7 @@ import { withBackgroundEvent } from "@/lib/logging/background";
 import { resolveProviderChain } from "@/lib/ai/provider";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
+import { trackAiJob } from "@/lib/ai/job-failure/report";
 import {
   buildDateKey,
   reconcileSpend,
@@ -122,13 +123,10 @@ export function sanitiseReactionLine(
 ): string | null {
   let text = (raw ?? "").trim();
   if (!text) return null;
-  // v1.32.20 — the same structured-envelope detection the status cards run
-  // (`extractAssessmentSummary`). A hero line is one plain sentence; a
-  // brace-led or fenced `{"line":"…"}` reply — or a truncated envelope under
-  // the char cap — is a broken contract, not a sentence, and must resolve to
-  // the deterministic lead rather than render raw JSON. Only genuine prose
-  // (`kind === "prose"`) passes; a parsed `{ summary }`/`{ line }` object or an
-  // unparseable brace-led attempt both reject here.
+  // The status cards' envelope detection (`extractAssessmentSummary`): a
+  // brace-led or fenced `{"line":"…"}` reply, or a truncated envelope under
+  // the char cap, is no sentence and resolves to the deterministic lead
+  // instead of raw JSON. Only `kind === "prose"` passes.
   if (extractAssessmentSummary(text).kind !== "prose") return null;
   text = text
     .replace(/^["“”'`]+/, "")
@@ -769,7 +767,10 @@ export async function handleReactionLine(
     let skipped = 0;
     for (const job of jobs) {
       try {
-        const outcome = await runReactionLine(job.data);
+        const outcome = await trackAiJob(
+          { userId: job.data.userId, job: "reactionLine" },
+          () => runReactionLine(job.data),
+        );
 
         if (outcome.status === "skipped") {
           skipped++;
@@ -788,9 +789,8 @@ export async function handleReactionLine(
         });
         evt.addMeta("reaction_line", "generated");
       } catch (err) {
-        // Only a pre-provider transient fault reaches here. The durable
-        // reservation is reused on retry; a provider-invoked marker returns a
-        // terminal skipped outcome instead of spending twice.
+        // Only a pre-provider transient fault reaches here; a retry reuses
+        // the reservation, and a provider-invoked marker never spends twice.
         workerLog("error", "[reaction-line] pass failed", err);
         throw err;
       }

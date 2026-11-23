@@ -10,12 +10,15 @@
  * by one would.
  *
  * A later re-post of a deleted externalId through the day-log bulk route
- * brings the day back: the upsert there treats a re-post as the newer state.
+ * writes the day again, since many samples feed one day, but from empty
+ * fields: nothing the deleted day held comes back (`day-log-write.ts`,
+ * `tombstone-repost.ts`).
  */
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { removeCycleStartedOn } from "@/lib/cycle/cycle-boundaries";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
+import { appleHealthDeletion } from "@/lib/sync/tombstone-repost";
 
 export async function deleteAppleHealthCycleDayLogs(
   userId: string,
@@ -39,7 +42,7 @@ export async function deleteAppleHealthCycleDayLogs(
     const removed = await prisma.$transaction(async (db) => {
       const { count } = await db.cycleDayLog.updateMany({
         where: { id: row.id, deletedAt: null },
-        data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
+        data: { ...appleHealthDeletion(), syncVersion: { increment: 1 } },
       });
       if (count === 0) return { count, cycle: null };
       return { count, cycle: await removeCycleStartedOn(db, userId, row.date) };

@@ -98,6 +98,22 @@ const METRIC_STATUS_MODULE_OWNERS: Partial<Record<MeasurementType, ModuleKey>> =
     BREATHING_DISTURBANCES: "sleep",
     DAY_STRAIN: "workouts",
     WORKOUT_STRAIN: "workouts",
+    // A property of one workout, the same domain workout strain belongs to.
+    // The logged score and the watch's estimate are separate types and both
+    // follow the module. Physical effort stays unscoped below: it is an
+    // intensity sample, like active energy, not the session itself.
+    WORKOUT_EFFORT_SCORE: "workouts",
+    ESTIMATED_WORKOUT_EFFORT_SCORE: "workouts",
+    // Apple sport quantities (#1415): every one is recorded during a
+    // workout of its sport, so they follow the workouts module.
+    CYCLING_DISTANCE: "workouts",
+    ROWING_DISTANCE: "workouts",
+    ROWING_SPEED: "workouts",
+    RUNNING_SPEED: "workouts",
+    RUNNING_POWER: "workouts",
+    RUNNING_GROUND_CONTACT_TIME: "workouts",
+    RUNNING_VERTICAL_OSCILLATION: "workouts",
+    RUNNING_STRIDE_LENGTH: "workouts",
     CARDIO_LOAD: "workouts",
     ACUTE_TRAINING_LOAD: "workouts",
     ANS_CHARGE: "recovery",
@@ -181,6 +197,9 @@ export const UNSCOPED_REVIEWED_TYPES: ReadonlySet<MeasurementType> =
     "ACTIVE_ENERGY_BURNED",
     "BASAL_ENERGY_BURNED",
     "ENERGY_EXPENDITURE_KJ",
+    // Intensity during activity (kcal/(hr·kg)), not a workout session and
+    // not a kilocalorie total. The workouts module does not claim it.
+    "PHYSICAL_EFFORT",
     // v1.44 — the exercise and stand rings are ambient movement like steps,
     // not workout sessions.
     "EXERCISE_MINUTES",

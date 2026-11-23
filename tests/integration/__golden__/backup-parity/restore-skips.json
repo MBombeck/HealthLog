@@ -19,6 +19,7 @@
         "nutrientDays": 0,
         "labResults": 0,
         "labResultImportKeys": 0,
+        "fhirImportedResources": 0,
         "biomarkers": 0,
         "illnessEpisodes": 1,
         "illnessDayLogs": 1,
@@ -138,6 +139,7 @@
         "cycleProfile": 0,
         "labResults": 0,
         "labResultImportKeys": 0,
+        "fhirImportedResources": 0,
         "biomarkers": 0,
         "nutrientDays": 0,
         "illnessEpisodes": 0,
@@ -358,6 +360,7 @@
           "cycleProfile": 0,
           "labResults": 0,
           "labResultImportKeys": 0,
+          "fhirImportedResources": 0,
           "biomarkers": 0,
           "nutrientDays": 0,
           "illnessEpisodes": 0,
@@ -548,6 +551,7 @@
         "unit": "kg",
         "source": "MANUAL",
         "measuredAt": "2026-07-01T07:00:00.000Z",
+        "timeZone": null,
         "notes": null,
         "notesEncrypted": null,
         "externalId": null,
@@ -559,6 +563,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -594,6 +600,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -635,7 +642,8 @@
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "MoodContext": [],
@@ -659,6 +667,7 @@
     ],
     "LabResult": [],
     "LabResultImportKey": [],
+    "FhirImportedResource": [],
     "Biomarker": [],
     "Allergy": [],
     "FamilyHistoryEntry": [],
@@ -797,7 +806,6 @@
       }
     ],
     "EcgRecording": [],
-    "AppleHealthTombstone": [],
     "OnboardingRecord": [],
     "BiomarkerAlias": [],
     "BiomarkerMerge": [],
@@ -921,10 +929,19 @@
       "medicationListLayoutJson": null,
       "documentsLayoutJson": null,
       "moodTagLayoutJson": null,
+      "dashboardWidgetsRevisedAt": "<now>",
+      "insightsLayoutRevisedAt": "<now>",
+      "medicationListLayoutRevisedAt": "<now>",
+      "moodTagLayoutRevisedAt": "<now>",
+      "modulePreferencesRevisedAt": "<now>",
+      "notificationPrefsRevisedAt": "<now>",
+      "coachPrefsRevisedAt": "<now>",
+      "healthScoreConfigRevisedAt": "<now>",
       "moduleListLayoutJson": null,
       "activityGoalsJson": null,
       "nutrientTargetsJson": null,
       "glucoseUnit": null,
+      "medicineRegistry": null,
       "hasDiabetes": false,
       "labsLocalOcrEnabled": false,
       "storeWorkoutRoutes": false,
@@ -943,7 +960,11 @@
       "aiCompatModel": null,
       "aiProviderChain": null,
       "aiNamedChains": null,
+      "managedAiSource": "INSTANCE",
+      "managedAiGuardianId": null,
+      "managedAiChainId": null,
       "aiResponseTimeoutSeconds": null,
+      "aiCoachBudgets": null,
       "documentsAutoAiRead": false,
       "onboardingCompletedAt": null,
       "onboardingTourCompleted": false,
@@ -962,6 +983,7 @@
       "syncResetAt": "<now>",
       "moodReminderEnabled": false,
       "reportSelectionJson": null,
+      "reportScheduleJson": null,
       "notificationPrefs": null,
       "disableCoach": false,
       "aiUsageLevel": null,
@@ -977,6 +999,7 @@
       "totpLastStep": null,
       "mfaEnforced": false,
       "passkeyUpgradeNudgeDismissed": false,
+      "adminNoticesDismissed": [],
       "fullName": null,
       "insurerName": null,
       "insuranceNumberEncrypted": null,
@@ -1037,7 +1060,12 @@
       "pulseDayMeanDryRunJson": {
         "roundTrip": "rt-AppSettings-pulseDayMeanDryRunJson"
       },
-      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor"
+      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor",
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
+      },
+      "pushRelayDecision": "off"
     }
   }
 }

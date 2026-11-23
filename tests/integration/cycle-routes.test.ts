@@ -330,6 +330,111 @@ describe("cycle day-logs — bulk drain", () => {
   });
 });
 
+describe("cycle day-logs — source-aware symptom links (iOS #191)", () => {
+  async function catalogue(keys: string[]) {
+    const prisma = getPrismaClient();
+    const cat = await prisma.cycleSymptomCategory.upsert({
+      where: { key: "physical" },
+      create: { key: "physical", labelKey: "cycle.symptomCategory.physical" },
+      update: {},
+    });
+    for (const key of keys) {
+      await prisma.cycleSymptom.upsert({
+        where: { key },
+        create: {
+          key,
+          categoryId: cat.id,
+          labelKey: `cycle.symptom.${key}`,
+          isActive: true,
+        },
+        update: { isActive: true },
+      });
+    }
+  }
+
+  async function links(date: string) {
+    const rows = await getPrismaClient().cycleSymptomLink.findMany({
+      where: { dayLog: { date } },
+      include: { symptom: { select: { key: true } } },
+    });
+    return rows
+      .map((l) => [l.symptom.key, l.source, l.severity] as const)
+      .sort((a, b) => a[0].localeCompare(b[0]));
+  }
+
+  it("lets an Apple Health write replace only its own links, keeping the hand-logged ones and the day's fields", async () => {
+    await loginAs(FEMALE_USER_ID);
+    await catalogue(["cramps", "headache", "acne"]);
+    const single = await import("@/app/api/cycle/day-logs/route");
+    const bulk = await import("@/app/api/cycle/day-logs/bulk/route");
+    const date = "2026-03-12";
+
+    // Logged by hand: a flow, a note and a rated symptom.
+    const manual = await single.POST(
+      jsonRequest("/api/cycle/day-logs", "POST", {
+        date,
+        flow: "LIGHT",
+        note: "by hand",
+        symptoms: [{ key: "headache", severity: 2 }],
+        loggedAt: `${date}T08:00:00.000Z`,
+      }),
+    );
+    expect(manual.status).toBe(201);
+
+    const appleHealth = (symptoms: Array<{ key: string }>) =>
+      bulk.POST(
+        jsonRequest("/api/cycle/day-logs/bulk", "POST", {
+          entries: [
+            {
+              date,
+              source: "APPLE_HEALTH",
+              externalId: "hk-sym-1",
+              loggedAt: `${date}T09:00:00.000Z`,
+              symptoms,
+            },
+          ],
+        }),
+      );
+
+    // A symptoms-only Apple Health write adopts the day: the hand-made flow
+    // and note stay, the hand-made symptom stays, Apple Health's is added.
+    expect(
+      (await appleHealth([{ key: "cramps" }, { key: "headache" }])).status,
+    ).toBe(200);
+    expect(await links(date)).toEqual([
+      ["cramps", "APPLE_HEALTH", null],
+      ["headache", "MANUAL", 2],
+    ]);
+    const day = await getPrismaClient().cycleDayLog.findFirstOrThrow({
+      where: { userId: FEMALE_USER_ID, date },
+    });
+    expect(day.flow).toBe("LIGHT");
+    expect(day.notesEncrypted).not.toBeNull();
+
+    // The next Apple Health write drops cramps and names acne: only its own
+    // link goes, the hand-made headache stays.
+    expect((await appleHealth([{ key: "acne" }])).status).toBe(200);
+    expect(await links(date)).toEqual([
+      ["acne", "APPLE_HEALTH", null],
+      ["headache", "MANUAL", 2],
+    ]);
+
+    // A hand-made write sets the whole set: acne kept unchanged keeps its
+    // source, so Apple Health can still take it away.
+    const edit = await single.POST(
+      jsonRequest("/api/cycle/day-logs", "POST", {
+        date,
+        symptoms: [{ key: "acne" }],
+        loggedAt: `${date}T10:00:00.000Z`,
+      }),
+    );
+    expect(edit.status).toBeLessThan(300);
+    expect(await links(date)).toEqual([["acne", "APPLE_HEALTH", null]]);
+    expect((await appleHealth([])).status).toBe(200);
+    expect(await links(date)).toEqual([]);
+  });
+});
+
 describe("cycle period shortcut", () => {
   it("opens a cycle + writes the boundary day-log", async () => {
     await loginAs(FEMALE_USER_ID);
@@ -746,5 +851,78 @@ describe("back-filling an entry months into the past", () => {
     // The flag the log sheet reads to say what a delete would take.
     expect(days.find((d) => d.date === BACK_DATED)?.isCycleStart).toBe(true);
     expect(days.filter((d) => d.isCycleStart)).toHaveLength(1);
+  });
+});
+
+describe("DELETE /api/cycle/all and the sync feed", () => {
+  it("expires every cursor a paired client holds", async () => {
+    await loginAs(FEMALE_USER_ID);
+    const prisma = getPrismaClient();
+    const { POST } = await import("@/app/api/cycle/day-logs/route");
+    const logged = await POST(
+      jsonRequest("/api/cycle/day-logs", "POST", {
+        date: "2026-03-01",
+        flow: "MEDIUM",
+        loggedAt: "2026-03-01T08:00:00.000Z",
+      }),
+    );
+    expect(logged.status).toBeLessThan(300);
+
+    const { pullSyncChanges, syncChangesFromNow } =
+      await import("@/lib/sync/changes/pull");
+    // A client that mirrored the row holds a cursor issued before the purge.
+    const issuedAt = new Date(Date.now() - 1000);
+    const cursor = syncChangesFromNow(issuedAt).cursor!;
+
+    const { DELETE } = await import("@/app/api/cycle/all/route");
+    const purged = await DELETE(jsonRequest("/api/cycle/all", "DELETE"));
+    expect(purged.status).toBe(200);
+    expect(await prisma.cycleDayLog.count()).toBe(0);
+    // The rows left without tombstones, so only a reset tells the client.
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: FEMALE_USER_ID },
+    });
+    expect(user.syncResetAt).not.toBeNull();
+
+    const pulled = await pullSyncChanges({
+      userId: FEMALE_USER_ID,
+      token: cursor,
+      limit: 100,
+      serverNow: new Date(),
+    });
+    expect(pulled.cursorExpired).toBe(true);
+  });
+});
+
+describe("DELETE /api/cycle/all and the pregnancy state", () => {
+  it("leaves no pregnancy or postpartum state behind", async () => {
+    await loginAs(FEMALE_USER_ID);
+    const prisma = getPrismaClient();
+    const { pregnancyWriteData } = await import("@/lib/cycle/pregnancy-store");
+    const pregnant = pregnancyWriteData({
+      reproductiveState: "PREGNANT",
+      pregnancyStartDate: "2026-01-05",
+      pregnancyDueDate: null,
+      deliveryDate: null,
+      postpartumWeeks: 20,
+    });
+    await prisma.cycleProfile.upsert({
+      where: { userId: FEMALE_USER_ID },
+      create: { userId: FEMALE_USER_ID, ...pregnant },
+      update: pregnant,
+    });
+
+    const { DELETE } = await import("@/app/api/cycle/all/route");
+    const purged = await DELETE(jsonRequest("/api/cycle/all", "DELETE"));
+    expect(purged.status).toBe(200);
+
+    // The emergency card, the report and the Coach read the state from here:
+    // after "delete all cycle data" there is nothing for them to say.
+    const profile = await prisma.cycleProfile.findUniqueOrThrow({
+      where: { userId: FEMALE_USER_ID },
+      select: { pregnancyEncrypted: true, postpartumWeeks: true },
+    });
+    expect(profile.pregnancyEncrypted).toBeNull();
+    expect(profile.postpartumWeeks).toBe(12);
   });
 });

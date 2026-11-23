@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, apiPatch } from "@/lib/api/api-fetch";
 import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
@@ -267,21 +267,14 @@ export function CustomMetricForm({
             rows={2}
           />
         </div>
-        <div className="flex items-start justify-between gap-4 sm:col-span-2">
-          <div className="space-y-1">
-            <Label htmlFor="custom-metric-correlation-enabled">
-              {t("customMetrics.form.correlationEnabled")}
-            </Label>
-            <p className="text-muted-foreground text-xs">
-              {t("customMetrics.form.correlationEnabledHint")}
-            </p>
-          </div>
-          <Switch
-            id="custom-metric-correlation-enabled"
-            checked={correlationEnabled}
-            onCheckedChange={setCorrelationEnabled}
-          />
-        </div>
+        <SwitchRow
+          className="sm:col-span-2"
+          label={t("customMetrics.form.correlationEnabled")}
+          description={t("customMetrics.form.correlationEnabledHint")}
+          id="custom-metric-correlation-enabled"
+          checked={correlationEnabled}
+          onCheckedChange={setCorrelationEnabled}
+        />
       </div>
 
       <p className="text-muted-foreground text-xs">

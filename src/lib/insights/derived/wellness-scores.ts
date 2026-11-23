@@ -24,8 +24,8 @@ import { computeReadiness, type ReadinessComponent } from "./readiness";
 import { resolveCanonicalRecovery } from "./recovery-resolve";
 import { SPARKLINE_MAX_POINTS, type Derived } from "./types";
 import { dateOnlyKey } from "@/lib/tz/date-only";
-import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
+import { userDayKey } from "@/lib/tz/format";
 
 /** A 0–100 wellness score band. Higher is better for recovery; for stress a
  *  higher score is worse, so the band direction flips (see `WELLNESS_DIR`). */
@@ -346,7 +346,7 @@ export function deviceStrainDays(
     { sum: number; count: number; measuredAt: Date }
   >();
   for (const row of rows) {
-    const key = dayKeyForUserTz(row.measuredAt, tz);
+    const key = userDayKey(row.measuredAt, tz);
     const day = byDay.get(key);
     if (!day) {
       byDay.set(key, { sum: row.value, count: 1, measuredAt: row.measuredAt });

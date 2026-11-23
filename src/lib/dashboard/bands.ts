@@ -25,10 +25,8 @@ import {
   type ValueBand,
   type TrafficRange,
 } from "@/lib/analytics/value-bands";
-import {
-  getAgeFromDateOfBirth,
-  getPersonalizedPulseTarget,
-} from "@/lib/analytics/pulse-targets";
+import { getPersonalizedPulseTarget } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 import { binaryReferenceSex, type ProfileSex } from "@/lib/profile/sex";
 import {
   getEffectiveRange,
@@ -92,16 +90,14 @@ export interface DashboardTargetBands {
  * v1.34 introduced this for weight alone; the other three kept the age / sex
  * default regardless of the person's own target until v1.44.1.
  */
-export function buildDashboardBands(profile: {
-  dateOfBirth: Date | null;
-  gender: ProfileSex;
-  heightCm: number | null;
-  thresholdsJson: unknown;
-}): DashboardTargetBands {
+export function buildDashboardBands(
+  profile: BandProfile,
+): DashboardTargetBands {
   const rangeProfile = {
     heightCm: profile.heightCm,
     dateOfBirth: profile.dateOfBirth,
     gender: profile.gender,
+    timezone: profile.timezone,
   };
   const ownTarget = (metric: ThresholdMetric) =>
     resolveThresholdOverride(profile.thresholdsJson, metric);
@@ -116,7 +112,7 @@ export function buildDashboardBands(profile: {
     rangeProfile,
     profile.thresholdsJson,
   );
-  const pulseAge = getAgeFromDateOfBirth(profile.dateOfBirth);
+  const pulseAge = ageInYears(profile.dateOfBirth, profile.timezone);
   // The percentile and body-fat tables carry two sexes and no third row;
   // both helpers answer a null with a neutral midpoint rather than a side.
   const referenceSex = binaryReferenceSex(profile.gender);
@@ -182,6 +178,8 @@ export interface BandProfile {
   gender: ProfileSex;
   heightCm: number | null;
   thresholdsJson: unknown;
+  /** The owner's zone: the day their birthday turns over in. */
+  timezone: string;
 }
 
 /**
@@ -215,5 +213,6 @@ export function viewerBandProfile(
     gender: null,
     heightCm: null,
     thresholdsJson: null,
+    timezone: profile.timezone,
   };
 }

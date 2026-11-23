@@ -19,6 +19,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { rangeWindowDays } from "../chart-range-tabs";
 
 import { dayKeyToTimestamp, toDayKey } from "./series-math";
+import { readingsKey } from "./series-math";
 import type { ChartDataPoint, MeasurementApiRow } from "./types";
 
 type BucketValues = Record<
@@ -30,6 +31,9 @@ type BucketValues = Record<
     // columns; null when the row carries none (raw rows, cumulative metric).
     min: number | null;
     max: number | null;
+    // The raw readings behind the day (a rollup row's `count`, else one per
+    // row), summed again when the chart folds days into weeks or months.
+    readings: number;
   }
 >;
 
@@ -98,9 +102,11 @@ async function readDailySeries({
         count: 0,
         min: null,
         max: null,
+        readings: 0,
       };
       current.sum += value;
       current.count += 1;
+      current.readings += 1;
       bucket.values["SLEEP_DURATION"] = current;
       dailyAggregates.set(dayKey, bucket);
     }
@@ -147,9 +153,14 @@ async function readDailySeries({
         count: 0,
         min: null,
         max: null,
+        readings: 0,
       };
       current.sum += value;
       current.count += 1;
+      current.readings +=
+        typeof measurement.count === "number" && measurement.count > 0
+          ? measurement.count
+          : 1;
       // The rollup bucket's spread, scaled like the value so the band
       // tracks the line. The 7-day range never draws the band.
       if (
@@ -183,6 +194,7 @@ async function readDailySeries({
         // daylight) add up within a day; everything else averages.
         const isCumulative = CUMULATIVE_HK_TYPES.has(type as MeasurementType);
         point[type] = isCumulative ? stats.sum : stats.sum / stats.count;
+        point[readingsKey(type)] = stats.readings;
         // The day's spread as a `[min, max]` tuple for the range band,
         // when the rollup supplied both bounds and the metric is not a
         // sum (a total has no meaningful intra-day spread).

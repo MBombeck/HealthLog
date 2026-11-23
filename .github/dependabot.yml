@@ -45,6 +45,21 @@ updates:
     # address bar and a step waits for the layer. Measured after both fixes:
     # 200 of 200 repeated runs of the three journeys, and another 80 of 80
     # each for the `?doc=` and day-key journeys.
+  # The Dockerfile's `prisma-cli` stage installs from its own npm lockfile
+  # under docker/prisma-cli, which the root entry above never reads. Versions
+  # there move with the app's `prisma` and `dotenv` entries, and
+  # release-workflows.test.ts fails when they part, so a bump here usually
+  # arrives together with the matching root bump.
+  - package-ecosystem: "npm"
+    directory: "/docker/prisma-cli"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      prisma-cli-weekly:
+        update-types:
+          - "patch"
+          - "minor"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

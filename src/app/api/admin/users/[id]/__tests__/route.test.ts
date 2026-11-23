@@ -170,7 +170,8 @@ describe("PUT /api/admin/users/[id]", () => {
     const res = await PUT(
       jsonReq({
         username: "renamed",
-        email: "new@example.com",
+        // Stored lower-cased: addresses are unique regardless of case.
+        email: "New@Example.com",
         role: "ADMIN",
       }),
       params("u1"),
@@ -194,6 +195,17 @@ describe("PUT /api/admin/users/[id]", () => {
         details: expect.objectContaining({ targetUserId: "u1" }),
       }),
     );
+
+    // Another account holds the address (the case-blind key refuses it):
+    // a 409, not a 500.
+    vi.mocked(prisma.user.update).mockRejectedValueOnce(
+      Object.assign(new Error("Unique constraint failed"), { code: "P2002" }),
+    );
+    const taken = await PUT(
+      jsonReq({ email: "Taken@Example.com" }),
+      params("u1"),
+    );
+    expect(taken.status).toBe(409);
   });
 
   it("supports clearing email by passing null", async () => {
@@ -243,7 +255,22 @@ describe("PUT /api/admin/users/[id]", () => {
       expect(body.error).toBe("Validation failed");
       expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
       for (const issue of body.details.issues) {
-        expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+        expect(
+          // The declared bounds of a size issue come from the schema.
+          Object.keys(issue)
+            .filter(
+              (k) =>
+                ![
+                  "minimum",
+                  "maximum",
+                  "inclusive",
+                  "origin",
+                  "minimumInclusive",
+                  "maximumInclusive",
+                ].includes(k),
+            )
+            .sort(),
+        ).toEqual(["code", "message", "path"]);
       }
     });
 

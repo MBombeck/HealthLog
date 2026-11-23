@@ -812,21 +812,6 @@ function tokenizeMagnitudes(prose: string, locale: Locale): ProseMagnitude[] {
   return out;
 }
 
-/**
- * Recursively collect every finite numeric leaf from a tool-result payload as
- * a plain magnitude set. Retained for callers that only need magnitudes (the
- * eval harness); the runtime verifier uses the typed `collectEntries` above.
- */
-export function collectNumericLeaves(value: unknown, out: Set<number>): void {
-  const entries: AuthEntry[] = [];
-  collectEntries(value, entries, {
-    metricKind: null,
-    keyHint: null,
-    inArray: false,
-  });
-  for (const e of entries) out.add(e.value);
-}
-
 /* ──────────────────────────────────────────────────────────────────────────
  * Rung 2 — the reference-sentence exemption. A sentence framed as population
  * guidance ("adults generally need 7 to 9 hours", "die normale Ruheherzfrequenz

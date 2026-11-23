@@ -21,6 +21,7 @@
           "sleepStage": null,
           "rhythmClassification": null,
           "deviceType": null,
+          "timeZone": null,
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",

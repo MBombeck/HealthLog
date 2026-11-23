@@ -145,7 +145,6 @@ export function AutoReadCard() {
               type="button"
               size="sm"
               variant="outline"
-              className="min-h-11 sm:min-h-9"
               disabled={save.isPending}
               onClick={() => setPendingEnable(false)}
             >
@@ -154,7 +153,6 @@ export function AutoReadCard() {
             <Button
               type="button"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               disabled={save.isPending}
               onClick={() => save.mutate(true)}
               data-slot="documents-auto-read-confirm-cta"

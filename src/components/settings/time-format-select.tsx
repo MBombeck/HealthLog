@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
-import { Label } from "@/components/ui/label";
+import { FieldGroup } from "@/components/ui/field-group";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useAuth } from "@/hooks/use-auth";
 import type { TimeFormatPreference } from "@/lib/format-locale";
@@ -80,8 +80,7 @@ export function TimeFormatSelect({
   }
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{t("settings.timeFormat.title")}</Label>
+    <FieldGroup htmlFor={id} label={t("settings.timeFormat.title")}>
       <NativeSelect
         id={id}
         data-testid="settings-time-format-select"
@@ -96,6 +95,6 @@ export function TimeFormatSelect({
       <p className="text-muted-foreground text-xs">
         {t("settings.timeFormat.description")}
       </p>
-    </div>
+    </FieldGroup>
   );
 }

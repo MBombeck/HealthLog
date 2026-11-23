@@ -253,6 +253,10 @@ const UNIT_FIXED_AUDIO_SPL =
   "Sound-pressure level: Apple emits `dBASPL` only, and a decibel is logarithmic — a sibling unit would need its own formula, never a factor.";
 const UNIT_FIXED_COMPOSITE_VO2 =
   "Compound rate Apple emits verbatim as `mL/(kg*min)`; the Health app exposes no other spelling and the compound has no sibling unit to convert from.";
+const UNIT_FIXED_PHYSICAL_EFFORT =
+  "Compound intensity Apple emits verbatim as `kcal/(hr*kg)` (METs-like); the Health app offers no sibling spelling, so there is nothing to convert from.";
+const UNIT_FIXED_RUNNING_POWER =
+  "Running power rides in watts (`W`), the only power unit HealthKit offers for it and the Health app displays, so no record unit can rescale the reading.";
 const UNIT_FIXED_STAND_HOUR =
   "Stand hours are a tally of hour samples: the importer maps `Stood` to 1 and drops `Idle`, and a daily row carries the count, so no record unit can rescale it.";
 const UNIT_FIXED_VALENCE =
@@ -406,6 +410,109 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     dbUnit: "kcal",
     convertToDbUnit: (v) => v,
     aggregation: "sum",
+  },
+  // Workout effort (iOS 18). The person's own rating and the watch's
+  // estimate are the same 0–10 scale but different readings, so they are
+  // different types: a day mean of one cannot blend the other in. A mean,
+  // never a sum.
+  HKQuantityTypeIdentifierWorkoutEffortScore: {
+    hkIdentifier: "HKQuantityTypeIdentifierWorkoutEffortScore",
+    measurementType: "WORKOUT_EFFORT_SCORE",
+    hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
+    dbUnit: "score",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierEstimatedWorkoutEffortScore: {
+    hkIdentifier: "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
+    measurementType: "ESTIMATED_WORKOUT_EFFORT_SCORE",
+    hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
+    dbUnit: "score",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  // Physical effort (iOS 17+). A rate of energy per hour per kilogram,
+  // kept apart from active and resting energy, which are kilocalories.
+  HKQuantityTypeIdentifierPhysicalEffort: {
+    hkIdentifier: "HKQuantityTypeIdentifierPhysicalEffort",
+    measurementType: "PHYSICAL_EFFORT",
+    hkUnit: "kcal/(hr*kg)",
+    unitFixedReason: UNIT_FIXED_PHYSICAL_EFFORT,
+    dbUnit: "kcal/(hr·kg)",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  // Apple sport quantities (#1415). Raw SI on the wire, identity
+  // conversion (see the convention block at the top of this file). The two
+  // distances are day sums of per-workout increments, like walking +
+  // running distance; speeds, power and the stride measures are per-sample
+  // readings whose day reduction is the mean.
+  HKQuantityTypeIdentifierDistanceCycling: {
+    hkIdentifier: "HKQuantityTypeIdentifierDistanceCycling",
+    measurementType: "CYCLING_DISTANCE",
+    hkUnit: "m",
+    dbUnit: "m",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+  },
+  HKQuantityTypeIdentifierDistanceRowing: {
+    hkIdentifier: "HKQuantityTypeIdentifierDistanceRowing",
+    measurementType: "ROWING_DISTANCE",
+    hkUnit: "m",
+    dbUnit: "m",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+  },
+  HKQuantityTypeIdentifierRowingSpeed: {
+    hkIdentifier: "HKQuantityTypeIdentifierRowingSpeed",
+    measurementType: "ROWING_SPEED",
+    hkUnit: "m/s",
+    dbUnit: "m/s",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierRunningSpeed: {
+    hkIdentifier: "HKQuantityTypeIdentifierRunningSpeed",
+    measurementType: "RUNNING_SPEED",
+    hkUnit: "m/s",
+    dbUnit: "m/s",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierRunningPower: {
+    hkIdentifier: "HKQuantityTypeIdentifierRunningPower",
+    measurementType: "RUNNING_POWER",
+    hkUnit: "W",
+    unitFixedReason: UNIT_FIXED_RUNNING_POWER,
+    dbUnit: "W",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierRunningGroundContactTime: {
+    hkIdentifier: "HKQuantityTypeIdentifierRunningGroundContactTime",
+    measurementType: "RUNNING_GROUND_CONTACT_TIME",
+    hkUnit: "ms",
+    dbUnit: "ms",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierRunningVerticalOscillation: {
+    hkIdentifier: "HKQuantityTypeIdentifierRunningVerticalOscillation",
+    measurementType: "RUNNING_VERTICAL_OSCILLATION",
+    hkUnit: "cm",
+    dbUnit: "cm",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierRunningStrideLength: {
+    hkIdentifier: "HKQuantityTypeIdentifierRunningStrideLength",
+    measurementType: "RUNNING_STRIDE_LENGTH",
+    hkUnit: "m",
+    dbUnit: "m",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
   },
   HKQuantityTypeIdentifierFlightsClimbed: {
     hkIdentifier: "HKQuantityTypeIdentifierFlightsClimbed",
@@ -1052,6 +1159,10 @@ export const CUMULATIVE_HK_TYPES: ReadonlySet<MeasurementType> =
     "STAND_MINUTES",
     "STAND_HOURS",
     "MINDFUL_MINUTES",
+    // #1415 — cycling and rowing distance accrue per workout, like walking
+    // + running distance.
+    "CYCLING_DISTANCE",
+    "ROWING_DISTANCE",
   ]);
 
 /**
@@ -1104,6 +1215,15 @@ export const HIGH_FREQUENCY_MEAN_TYPES: ReadonlySet<MeasurementType> =
     // CUMULATIVE_HK_TYPES by construction.
     "STAIR_ASCENT_SPEED",
     "STAIR_DESCENT_SPEED",
+    // #1415 — the running dynamics and rowing speed arrive per sample
+    // during a workout (tens of thousands a year); the day MEAN is the
+    // consolidation, like walking speed.
+    "ROWING_SPEED",
+    "RUNNING_SPEED",
+    "RUNNING_POWER",
+    "RUNNING_GROUND_CONTACT_TIME",
+    "RUNNING_VERTICAL_OSCILLATION",
+    "RUNNING_STRIDE_LENGTH",
   ]);
 
 /**
@@ -1329,38 +1449,32 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // v1.10.0 — `HeartRateRecoveryOneMinute` + `AppleSleepingWristTemperature`
   // moved into the mapping table (CARDIO_RECOVERY + WRIST_TEMPERATURE).
   // `BasalEnergyBurned` moved into the mapping table as BASAL_ENERGY_BURNED
-  // (#1340).
+  // (#1340). `WorkoutEffortScore`, `EstimatedWorkoutEffortScore` and
+  // `PhysicalEffort` moved into the mapping table as WORKOUT_EFFORT_SCORE,
+  // ESTIMATED_WORKOUT_EFFORT_SCORE and PHYSICAL_EFFORT.
   // Running / walking form — v1.5+
   // v1.5.5 — `WalkingStepLength` + `WalkingSpeed` moved into the
   // mapping table (raw SI on the wire — metres and m/s respectively).
   // v1.10.0 — `StairAscentSpeed`, `StairDescentSpeed`, and
   // `SixMinuteWalkTestDistance` moved into the mapping table
   // (STAIR_ASCENT_SPEED / STAIR_DESCENT_SPEED / SIX_MINUTE_WALK_DISTANCE).
-  "HKQuantityTypeIdentifierRunningSpeed",
-  "HKQuantityTypeIdentifierRunningPower",
-  "HKQuantityTypeIdentifierRunningStrideLength",
-  "HKQuantityTypeIdentifierRunningGroundContactTime",
-  "HKQuantityTypeIdentifierRunningVerticalOscillation",
+  // #1415 — `RunningSpeed`, `RunningPower`, `RunningStrideLength`,
+  // `RunningGroundContactTime` and `RunningVerticalOscillation` moved into
+  // the mapping table, as did `DistanceCycling`, `DistanceRowing` and
+  // `RowingSpeed`.
   // Cycling (iOS 17) — v1.5
   "HKQuantityTypeIdentifierCyclingCadence",
   "HKQuantityTypeIdentifierCyclingFunctionalThresholdPower",
   "HKQuantityTypeIdentifierCyclingPower",
   "HKQuantityTypeIdentifierCyclingSpeed",
-  "HKQuantityTypeIdentifierDistanceCycling",
   // Sport-specific distances + speeds (iOS 18) — v1.5+
   "HKQuantityTypeIdentifierDistanceCrossCountrySkiing",
   "HKQuantityTypeIdentifierCrossCountrySkiingSpeed",
   "HKQuantityTypeIdentifierDistancePaddleSports",
   "HKQuantityTypeIdentifierPaddleSportsSpeed",
-  "HKQuantityTypeIdentifierDistanceRowing",
-  "HKQuantityTypeIdentifierRowingSpeed",
   "HKQuantityTypeIdentifierDistanceSkatingSports",
   "HKQuantityTypeIdentifierDistanceSwimming",
   "HKQuantityTypeIdentifierSwimmingStrokeCount",
-  // Workout-effort scores (iOS 18) — v1.5+
-  "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
-  "HKQuantityTypeIdentifierWorkoutEffortScore",
-  "HKQuantityTypeIdentifierPhysicalEffort",
   // Sleep apnea + breathing (iOS 18) — v1.5+
   // v1.10.0 — both signals now mapped, so neither stays deferred:
   // `AppleSleepingBreathingDisturbances` (the per-night quantity) →
@@ -1454,11 +1568,11 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // Reproductive / fertility — v1.15.0 promoted Contraceptive,
   // PregnancyTestResult, ProgesteroneTestResult and SexualActivity OUT of
   // this list (they route into CYCLE day-logs via the cycle accumulator).
-  // Pregnancy + Lactation STATUS stay deferred: the v1.15.0 CycleProfile
-  // has no pregnant/lactating column (pregnancy-mode is a later release),
-  // so there is no destination yet — promoting them would only grow the
-  // importer's skip tally. The four awareness types are server-DERIVED
-  // from the cycle engine, never ingested.
+  // Pregnancy + Lactation STATUS: since v1.49 the `export.xml` importer
+  // routes them to the cycle's pregnancy state before this list is read
+  // (`CycleImportAccumulator.handlesStatus`); they never become a
+  // Measurement, so for every other path they stay deferred. The four
+  // awareness types are server-DERIVED from the cycle engine, never ingested.
   "HKCategoryTypeIdentifierLactation",
   "HKCategoryTypeIdentifierPregnancy",
   "HKCategoryTypeIdentifierPersistentIntermenstrualBleeding",

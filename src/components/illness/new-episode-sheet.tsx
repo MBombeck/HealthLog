@@ -32,8 +32,9 @@ import {
   useIllnessEpisodes,
   useUpdateEpisode,
 } from "./use-illness";
-import { resolveEpisodeWindow, toLocalDateKey } from "./dates";
+import { resolveEpisodeWindow } from "./dates";
 import type { IllnessEpisodeDTO, IllnessLifecycle, IllnessType } from "./types";
+import { userDayKey } from "@/lib/tz/format";
 
 const TYPES: IllnessType[] = [
   "INFECTION",
@@ -67,9 +68,9 @@ function episodeForm(
     label: episode?.label ?? "",
     type: episode?.type ?? ("INFECTION" as IllnessType),
     lifecycle: episode?.lifecycle ?? ("ACUTE" as IllnessLifecycle),
-    onset: episode ? toLocalDateKey(episode.onsetAt, timeZone) : today,
+    onset: episode ? userDayKey(new Date(episode.onsetAt), timeZone) : today,
     resolved: episode?.resolvedAt
-      ? toLocalDateKey(episode.resolvedAt, timeZone)
+      ? userDayKey(new Date(episode.resolvedAt), timeZone)
       : "",
     parentId: episode?.parentConditionId ?? null,
     note: episode?.note ?? "",

@@ -11,6 +11,12 @@
  *   record positions           → the GPS track, only when the account keeps
  *                                tracks, thinned like an Apple Health track
  *
+ *   session + activity metrics → the watch's own figures for the session
+ *                                (training effect, training load, recovery
+ *                                time, sweat loss, running dynamics), into
+ *                                `metadata` under the keys of
+ *                                `src/lib/workouts/performance-metrics.ts`
+ *
  * Beat-to-beat (`hrv`) messages are not read: nothing in HealthLog consumes
  * R-R intervals. Neither are lap details beyond their count, device serial
  * numbers, or anything a developer field carries.
@@ -28,6 +34,11 @@ import type { WorkoutSportType } from "@/lib/validations/workout";
 import { FitImportError } from "./errors";
 import type { DecodedFit } from "./parse";
 import { mapFitSportType } from "./sport-map";
+import { mean } from "@/lib/stats/central";
+import {
+  plausibleFigure,
+  type WorkoutPerformanceKey,
+} from "@/lib/workouts/performance-metrics";
 
 /** Sessions one file may describe (a multisport race has a handful). */
 export const FIT_MAX_SESSIONS = 16;
@@ -149,11 +160,6 @@ function maxOf(values: readonly number[]): number | null {
   let max = values[0]!;
   for (const v of values) if (v > max) max = v;
   return max;
-}
-
-function mean(values: number[]): number | null {
-  if (values.length === 0) return null;
-  return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
 /**
@@ -293,6 +299,12 @@ export function mapFitActivity(
     .map((lap) => instantMs(own(lap, "start_time"), nowMs))
     .filter((v): v is number => v !== null);
   const device = deviceMetadata(decoded);
+  // `activity_metrics` describes the whole file, not one session, so it is
+  // only read into a file that holds exactly one.
+  const activityMetrics =
+    sessions.length === 1
+      ? (list(decoded, "activity_metrics")[0] ?? null)
+      : null;
 
   const drafts: FitWorkoutDraft[] = [];
   let sessionsSkipped = 0;
@@ -301,6 +313,7 @@ export function mapFitActivity(
       points,
       laps,
       device,
+      activityMetrics,
       nowMs,
       opts,
     });
@@ -321,6 +334,7 @@ function mapSession(
     points: readonly RecordPoint[];
     laps: readonly number[];
     device: Record<string, string | number>;
+    activityMetrics: unknown;
     nowMs: number;
     opts: FitMapOptions;
   },
@@ -379,6 +393,10 @@ function mapSession(
     FIT_PLAUSIBLE.cadence,
   );
   if (avgCadence !== null) draft.metadata.avgCadence = Math.round(avgCadence);
+  Object.assign(
+    draft.metadata,
+    sessionPerformance(session, ctx.activityMetrics),
+  );
 
   const kcal = inRange(
     own(session, "total_calories"),
@@ -439,4 +457,58 @@ function mapSession(
     }
   }
   return draft;
+}
+
+/**
+ * The FIT field each performance figure is read from: the session's own
+ * field first, then the file's `activity_metrics` message (Garmin writes
+ * recovery time only there). Scales are the decoder's: training effect as
+ * the 0–5 score, vertical oscillation and step data in millimetres, stance
+ * time in milliseconds, sweat loss in millilitres, recovery time in minutes.
+ */
+const PERFORMANCE_FIELDS: ReadonlyArray<
+  [WorkoutPerformanceKey, string | null, string | null]
+> = [
+  ["aerobicTrainingEffect", "total_training_effect", "aerobic_training_effect"],
+  [
+    "anaerobicTrainingEffect",
+    "total_anaerobic_training_effect",
+    "anaerobic_training_effect",
+  ],
+  ["trainingLoad", "training_load_peak", null],
+  ["recoveryTimeMin", null, "recovery_time"],
+  ["sweatLossMl", "est_sweat_loss", null],
+  ["avgVerticalOscillationMm", "avg_vertical_oscillation", null],
+  ["avgGroundContactTimeMs", "avg_stance_time", null],
+  ["avgGroundContactBalancePct", "avg_stance_time_balance", null],
+];
+
+/** One decimal for the scores and the dynamics, whole numbers otherwise. */
+const ONE_DECIMAL: ReadonlySet<WorkoutPerformanceKey> = new Set([
+  "aerobicTrainingEffect",
+  "anaerobicTrainingEffect",
+  "trainingLoad",
+  "avgVerticalOscillationMm",
+  "avgGroundContactBalancePct",
+]);
+
+export function sessionPerformance(
+  session: unknown,
+  activityMetrics: unknown,
+): Partial<Record<WorkoutPerformanceKey, number>> {
+  const out: Partial<Record<WorkoutPerformanceKey, number>> = {};
+  for (const [key, sessionField, metricsField] of PERFORMANCE_FIELDS) {
+    const value =
+      (sessionField
+        ? plausibleFigure(key, own(session, sessionField))
+        : null) ??
+      (metricsField
+        ? plausibleFigure(key, own(activityMetrics, metricsField))
+        : null);
+    if (value === null) continue;
+    out[key] = ONE_DECIMAL.has(key)
+      ? Math.round(value * 10) / 10
+      : Math.round(value);
+  }
+  return out;
 }

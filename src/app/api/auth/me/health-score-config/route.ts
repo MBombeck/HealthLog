@@ -53,8 +53,9 @@ import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
   takeBaseToken,
-  guardedUserUpdate,
+  guardedUserDocumentUpdate,
   invalidBaseTokenError,
+  userDocumentToken,
 } from "@/lib/optimistic-lock";
 import { evaluateScoreBreadth } from "@/lib/analytics/score/breadth";
 import {
@@ -97,13 +98,16 @@ export const GET = apiHandler(async () => {
 
   const row = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { healthScoreConfigJson: true, updatedAt: true },
+    select: { healthScoreConfigJson: true, healthScoreConfigRevisedAt: true },
   });
   const resolved = resolveHealthScoreConfig(row?.healthScoreConfigJson);
   // A person who never chose has nothing to guard a write against, so
   // they get no token — the first save is the unconditional write.
   if (row?.healthScoreConfigJson == null) return apiSuccess(resolved);
-  return apiSuccess({ ...resolved, updatedAt: row.updatedAt?.toISOString() });
+  return apiSuccess({
+    ...resolved,
+    updatedAt: userDocumentToken(row, "healthScoreConfig"),
+  });
 });
 
 export const PATCH = apiHandler(async (req: Request) => {
@@ -178,8 +182,9 @@ export const PATCH = apiHandler(async (req: Request) => {
     changedAt: new Date(),
   });
 
-  const guarded = await guardedUserUpdate({
+  const guarded = await guardedUserDocumentUpdate({
     userId: user.id,
+    document: "healthScoreConfig",
     base,
     data: { healthScoreConfigJson: config },
     conflict: {

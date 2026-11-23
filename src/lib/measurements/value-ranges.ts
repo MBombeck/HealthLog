@@ -254,6 +254,27 @@ export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   // AFib burden as a percent of the week, after the ×100 scaling. A client
   // that already scaled sends 2 for 2 %, which lands at 200 and is refused.
   AFIB_BURDEN: { min: 0, max: 100 },
+  // Apple's workout-effort scale is 1–10, for both the logged score and the
+  // watch's estimate. The band starts at 0 so a client that sends a zero is
+  // kept, and stops at 10 so a slipped unit is refused.
+  WORKOUT_EFFORT_SCORE: { min: 0, max: 10 },
+  ESTIMATED_WORKOUT_EFFORT_SCORE: { min: 0, max: 10 },
+  // Physical effort is a MET-like rate. Rest sits near 1 and a hard effort
+  // in the teens; 50 still refuses a reading that arrived as kilocalories.
+  PHYSICAL_EFFORT: { min: 0, max: 50 },
+  // Apple sport quantities (#1415). A distance row is a part of a day, so
+  // the ceiling is a long day on the bike or the water, not one sample.
+  // Speeds stop above any human pace (25 m/s running is a car), power above
+  // a sprinter's peak, and the stride measures above what a slipped unit
+  // (mm for cm, cm for m) would produce.
+  CYCLING_DISTANCE: { min: 0, max: 1_000_000 },
+  ROWING_DISTANCE: { min: 0, max: 300_000 },
+  ROWING_SPEED: { min: 0, max: 10 },
+  RUNNING_SPEED: { min: 0, max: 15 },
+  RUNNING_POWER: { min: 0, max: 2000 },
+  RUNNING_GROUND_CONTACT_TIME: { min: 0, max: 2000 },
+  RUNNING_VERTICAL_OSCILLATION: { min: 0, max: 50 },
+  RUNNING_STRIDE_LENGTH: { min: 0, max: 5 },
   // ── v1.44 — room climate. CO2: outdoor air sits near 420 ppm and a closed
   // bedroom can pass 3000; consumer sensors top out at 5000–10000 ppm.
   INDOOR_CO2: { min: 0, max: 10000 },

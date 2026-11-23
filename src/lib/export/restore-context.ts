@@ -64,6 +64,7 @@ export const RESTORE_CLEARED_KEYS = [
   "cycleProfile",
   "labResults",
   "labResultImportKeys",
+  "fhirImportedResources",
   "biomarkers",
   "nutrientDays",
   "illnessEpisodes",
@@ -119,6 +120,12 @@ export interface PendingEfficacyTarget {
   target: BackupPayload["medications"][number]["efficacyTargets"][number];
 }
 
+/** The live slot one restored intake event occupies. */
+export interface RestoredIntakeSlot {
+  medicationId: string;
+  scheduledFor: Date;
+}
+
 /**
  * What one domain wrote that a later one points at. Each field is filled by
  * the step named beside it and read only after that step has run.
@@ -136,6 +143,20 @@ export interface RestoreLinks {
    * portable file's `ref`) to the id it got here.
    */
   medicationIdBySourceId: Map<string, string>;
+  /**
+   * Medications: a custom category key the file carries to the key it got
+   * here, only for a key the restore had to re-mint (held by another account
+   * on this instance). The account settings step reads it so the list
+   * layout's category order follows the restored categories.
+   */
+  medicationCategoryKeyBySourceKey: Map<string, string>;
+  /**
+   * Intake events: a portable file's intake `ref` to the slot the restored
+   * row occupies. The row gets a fresh id the restore never sees (the rows
+   * go in with one `createMany`), and the live slot is unique, so a seizure
+   * rescue dose naming the intake finds the row through it.
+   */
+  intakeSlotBySourceId: Map<string, RestoredIntakeSlot>;
   /** Medications: targets written once the markers exist (labs step). */
   pendingEfficacyTargets: PendingEfficacyTarget[];
   /** Labs: marker name to the id it got. */
@@ -178,6 +199,12 @@ export interface RestoreOutputs {
   /** Whether the fold repair marker was taken away and must be queued. */
   foldRepairReset: boolean;
   accountSettings: AccountSettingsRestoreResult;
+  /**
+   * The slots where the file held a second take the slot rule merged away
+   * (`slot-merge.ts`); their derived supplement days are refreshed after the
+   * commit.
+   */
+  mergedDoseSlots: { medicationId: string; scheduledFor: Date }[];
 }
 
 export interface RestoreContext {
@@ -209,6 +236,8 @@ export function emptyRestoreLinks(): RestoreLinks {
     writtenReferencedMeasurementIds: new Set(),
     restoredMedicationIds: new Set(),
     medicationIdBySourceId: new Map(),
+    medicationCategoryKeyBySourceKey: new Map(),
+    intakeSlotBySourceId: new Map(),
     pendingEfficacyTargets: [],
     biomarkerByName: new Map(),
     restoredBiomarkerIds: new Set(),

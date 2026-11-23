@@ -1,10 +1,10 @@
 "use client";
 
+import { CONFIRM_SAVED } from "@/lib/api/mutation-feedback";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Droplet, Info } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
@@ -51,6 +51,7 @@ export function GlucoseReferenceCard() {
   });
 
   const toggle = useMutation({
+    meta: CONFIRM_SAVED,
     mutationFn: async (hasDiabetes: boolean) =>
       apiPatch<DiabetesPrefShape>("/api/auth/me/diabetes", { hasDiabetes }),
     onSuccess: (next) => {
@@ -72,18 +73,13 @@ export function GlucoseReferenceCard() {
         description={t("settings.glucoseReference.description")}
       />
       <div className="space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <Label htmlFor="glucose-reference-diabetes" className="text-sm">
-            {t("settings.glucoseReference.enable")}
-          </Label>
-          <Switch
-            id="glucose-reference-diabetes"
-            checked={enabled}
-            disabled={toggle.isPending || data == null}
-            onCheckedChange={(v) => toggle.mutate(v)}
-            className="mt-0.5 shrink-0"
-          />
-        </div>
+        <SwitchRow
+          label={t("settings.glucoseReference.enable")}
+          id="glucose-reference-diabetes"
+          checked={enabled}
+          disabled={toggle.isPending || data == null}
+          onCheckedChange={(v) => toggle.mutate(v)}
+        />
 
         <p className="text-sm">{t("settings.glucoseReference.explainer")}</p>
 

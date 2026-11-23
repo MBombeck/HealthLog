@@ -48,7 +48,8 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: mocks.getGlobalBoss,
 }));
 
-vi.mock("@/lib/multipart/stream-to-disk", () => ({
+vi.mock("@/lib/multipart/stream-to-disk", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/multipart/stream-to-disk")>()),
   streamMultipartToDisk: mocks.streamToDisk,
 }));
 

@@ -55,6 +55,7 @@ describe("planDayValue", () => {
     sum: 9000,
     min: 0,
     max: 0,
+    lastAt: new Date("2026-10-01T20:00:00.000Z"),
   };
 
   it("reads a step day as its total, not the mean of its samples", () => {

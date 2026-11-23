@@ -48,6 +48,7 @@ const readDashboardSnapshotCached = vi.fn();
 const loadDailyDigest = vi.fn();
 const readSeriesBatch = vi.fn();
 const readMedicationsListCached = vi.fn();
+const readRecoveryKit = vi.fn();
 
 // The acting-carrier module is deliberately NOT mocked. The property under
 // test is what a real switched session does to a real page, so the only thing
@@ -79,6 +80,9 @@ vi.mock("@/lib/daily/load-digest", () => ({
 }));
 vi.mock("@/lib/measurements/series-batch-read", () => ({
   readSeriesBatch: (...args: unknown[]) => readSeriesBatch(...args),
+}));
+vi.mock("@/lib/recovery/kit", () => ({
+  readRecoveryKit: () => readRecoveryKit(),
 }));
 vi.mock("@/lib/medications/list-read", () => ({
   readMedicationsListCached: (u: unknown) => readMedicationsListCached(u),
@@ -171,6 +175,30 @@ describe("the dashboard prefetch and the record on screen", () => {
     ).toMatchObject(SERIES);
   });
 
+  it("seeds the recovery-kit status for an admin only", async () => {
+    // The banner above the hero reads it; seeded, it is in the first HTML
+    // instead of pushing the page down once it arrives.
+    primeDashboard();
+    readRecoveryKit.mockResolvedValue({ due: true, keys: [], unconfirmed: [] });
+
+    getSession.mockResolvedValue({
+      ...OWN_SESSION,
+      user: { ...OWN_SESSION.user, role: "ADMIN" },
+    });
+    const admin = seededCache((await DashboardPage()) as ReactElement);
+    expect(admin[hashKey(queryKeys.adminRecoveryKit())]).toEqual({
+      due: true,
+      keys: [],
+      unconfirmed: [],
+    });
+
+    readRecoveryKit.mockClear();
+    getSession.mockResolvedValue(OWN_SESSION);
+    const user = seededCache((await DashboardPage()) as ReactElement);
+    expect(user[hashKey(queryKeys.adminRecoveryKit())]).toBeUndefined();
+    expect(readRecoveryKit).not.toHaveBeenCalled();
+  });
+
   it("seeds nothing while the session is acting on another record", async () => {
     // The session row carries the owner's id, which is what a switch IS on the
     // cookie transport. Asserted on the CACHE rather than on a call count: a
@@ -200,7 +228,10 @@ describe("the medications prefetch and the record on screen", () => {
     readMedicationsListCached.mockResolvedValue(MEDICATIONS);
 
     const cache = seededCache((await MedicationsPage()) as ReactElement);
-    expect(cache[hashKey(queryKeys.medications())]).toEqual(MEDICATIONS);
+    // The route's rows, with the caller's registry search (none here).
+    expect(cache[hashKey(queryKeys.medications())]).toEqual(
+      MEDICATIONS.map((row) => ({ ...row, leafletSearch: null })),
+    );
   });
 
   it("seeds nothing while the session is acting on another record", async () => {

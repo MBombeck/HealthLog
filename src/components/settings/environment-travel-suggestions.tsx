@@ -5,6 +5,7 @@ import { Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -54,6 +55,8 @@ export function TravelSuggestions({
       ),
   });
   const dismiss = useMutation({
+    // Confirms in place: the dismissed suggestion leaves the list.
+    meta: CONFIRMS_INLINE,
     mutationFn: (id: string) =>
       apiPost(
         `/api/environment/travel/suggestions/${encodeURIComponent(id)}/dismiss`,

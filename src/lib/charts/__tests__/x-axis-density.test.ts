@@ -4,38 +4,7 @@ import {
   chooseTickInterval,
   computeTickGrid,
   computeTickPositions,
-  resolveTargetTickCount,
 } from "../x-axis-density";
-
-describe("resolveTargetTickCount (v1.4.19 legacy cap helper)", () => {
-  it("caps Galaxy Fold compact (≤360px) at 4 ticks", () => {
-    expect(resolveTargetTickCount(280)).toBe(4);
-    expect(resolveTargetTickCount(360)).toBe(4);
-  });
-
-  it("caps Pixel 5 / iPhone 12 (≤480px) at 6 ticks", () => {
-    expect(resolveTargetTickCount(361)).toBe(6);
-    expect(resolveTargetTickCount(390)).toBe(6);
-    expect(resolveTargetTickCount(393)).toBe(6);
-    expect(resolveTargetTickCount(480)).toBe(6);
-  });
-
-  it("caps small tablet (≤768px) at 8 ticks", () => {
-    expect(resolveTargetTickCount(481)).toBe(8);
-    expect(resolveTargetTickCount(768)).toBe(8);
-  });
-
-  it("caps desktop (>768px) at 10 ticks", () => {
-    expect(resolveTargetTickCount(1024)).toBe(10);
-    expect(resolveTargetTickCount(1920)).toBe(10);
-  });
-
-  it("falls back to desktop default for invalid input", () => {
-    expect(resolveTargetTickCount(0)).toBe(10);
-    expect(resolveTargetTickCount(-100)).toBe(10);
-    expect(resolveTargetTickCount(Number.NaN)).toBe(10);
-  });
-});
 
 describe("chooseTickInterval (v1.4.25 W3b day-aware policy)", () => {
   // v1.4.25 W3b tunes the policy to calendar-aware buckets so the

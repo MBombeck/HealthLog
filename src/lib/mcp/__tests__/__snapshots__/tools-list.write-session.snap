@@ -593,7 +593,8 @@
                 "enum": [
                   "PAPERLESS",
                   "PAPRA",
-                  "OTHER"
+                  "OTHER",
+                  "REPORT_SCHEDULE"
                 ]
               },
               "sourceId": {
@@ -2437,6 +2438,7 @@
                       "medications",
                       "illness",
                       "symptoms",
+                      "seizures",
                       "allergies",
                       "labs",
                       "visits",
@@ -2576,6 +2578,7 @@
                       "illnessResolved",
                       "illnessDayLog",
                       "symptom",
+                      "seizure",
                       "allergyOnset",
                       "labResult",
                       "visit",
@@ -2601,6 +2604,7 @@
                       "medications",
                       "illness",
                       "symptoms",
+                      "seizures",
                       "allergies",
                       "labs",
                       "visits",
@@ -2834,6 +2838,7 @@
                       "medications",
                       "illness",
                       "symptoms",
+                      "seizures",
                       "allergies",
                       "labs",
                       "visits",
@@ -2984,7 +2989,7 @@
   {
     "name": "get_medication_schedule",
     "title": "Get the medication schedule",
-    "description": "Fetch when the user's active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: its id (med:<id>, which fetch accepts), name, dose, the person's own note on it (directions such as when to take it relative to food; null when none), next-due instant, an overdue flag, an as-needed (PRN) flag, an intakeTracked flag, and its directly linked records (links: conditions, documents and visits, each with an id fetch accepts, a label, a date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId; [] when none; at most 25 with linksTruncated; documents only while the Documents module is on). As-needed medications and medications whose intake tracking is off (intakeTracked: false, kept as a record only) have no due time (nextDueAt: null). Returns { present: false } when no medications are tracked, and { present: false, reason: \"module_disabled\" } when the medications module is switched off.",
+    "description": "Fetch when the user's active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: its id (med:<id>, which fetch accepts), name, dose, the person's own note on it (directions such as when to take it relative to food; null when none), next-due instant, an overdue flag, the next dose's resolved state (doseState: upcoming, due, overdue, taken, skipped or missed, with takenLate for a late take; a missed dose taken now still counts, late), an as-needed (PRN) flag, an intakeTracked flag, and its directly linked records (links: conditions, documents and visits, each with an id fetch accepts, a label, a date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId; [] when none; at most 25 with linksTruncated; documents only while the Documents module is on). As-needed medications and medications whose intake tracking is off (intakeTracked: false, kept as a record only) have no due time (nextDueAt: null). Returns { present: false } when no medications are tracked, and { present: false, reason: \"module_disabled\" } when the medications module is switched off.",
     "inputSchema": {
       "type": "object",
       "properties": {}
@@ -3030,6 +3035,27 @@
               "overdue": {
                 "type": "boolean"
               },
+              "doseState": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "upcoming",
+                      "due",
+                      "overdue",
+                      "taken",
+                      "skipped",
+                      "missed"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "takenLate": {
+                "type": "boolean"
+              },
               "asNeeded": {
                 "type": "boolean"
               },
@@ -3072,7 +3098,8 @@
                       "enum": [
                         "PAPERLESS",
                         "PAPRA",
-                        "OTHER"
+                        "OTHER",
+                        "REPORT_SCHEDULE"
                       ]
                     },
                     "sourceId": {
@@ -3099,6 +3126,8 @@
               "note",
               "nextDueAt",
               "overdue",
+              "doseState",
+              "takenLate",
               "asNeeded",
               "intakeTracked",
               "links",
@@ -3126,7 +3155,7 @@
   {
     "name": "get_integration_status",
     "title": "Get device & service sync status",
-    "description": "Fetch the sync health of the user's connected devices and services (Withings, WHOOP, Nightscout, Polar, Oura, Strava, Google Health, Garmin, Dawarich) — which are connected, when each last synced, and whether one needs reconnecting or is failing. Answers 'why is my data stale?'. Reuses the integration-status ledger; carries no secrets or tokens. `connected` means only 'not explicitly disconnected'; `verdict` is the liveness truth (fresh / stale / stalled / failing / reauth_required / parked / pending_first_sync / disconnected), where `stalled` means the sync has stopped even attempting. Returns { present: false } when no integration has ever attempted a sync.",
+    "description": "Fetch the sync health of the user's connected devices and services (Withings, WHOOP, Nightscout, Polar, Oura, Strava, Google Health, Garmin, Dawarich, and the Health Connect export fetched from a WebDAV folder as `health-connect-remote`) — which are connected, when each last synced, and whether one needs reconnecting or is failing. Answers 'why is my data stale?'. Reuses the integration-status ledger; carries no secrets or tokens. `connected` means only 'not explicitly disconnected'; `verdict` is the liveness truth (fresh / stale / stalled / failing / reauth_required / parked / pending_first_sync / disconnected), where `stalled` means the sync has stopped even attempting. Returns { present: false } when no integration has ever attempted a sync.",
     "inputSchema": {
       "type": "object",
       "properties": {}

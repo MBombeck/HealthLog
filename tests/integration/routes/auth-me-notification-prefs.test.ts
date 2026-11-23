@@ -39,6 +39,7 @@ const DEFAULTS = {
     deliveryDefault: "server",
     lowStockRunwayDays: 7,
     reorderLeadDays: 10,
+    snoozeMinutes: 30,
   },
   mood: { reminderHour: 22 },
   cycle: { clientManaged: false },
@@ -60,6 +61,7 @@ type Prefs = {
     deliveryDefault: string;
     lowStockRunwayDays: number | null;
     reorderLeadDays: number;
+    snoozeMinutes: number;
   };
   mood: { reminderHour: number };
   content: { detail: string };
@@ -79,9 +81,9 @@ async function stored(userId: string): Promise<unknown> {
 async function storedUpdatedAt(userId: string): Promise<string> {
   const row = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { updatedAt: true },
+    select: { notificationPrefsRevisedAt: true },
   });
-  return row.updatedAt.toISOString();
+  return row.notificationPrefsRevisedAt.toISOString();
 }
 
 function userWithPrefs(prefs?: Prisma.InputJsonValue) {
@@ -240,6 +242,19 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
     });
   });
 
+  it("stores medication.snoozeMinutes beside the other medication prefs", async () => {
+    const user = await userWithPrefs({ medication: { clientManaged: true } });
+    const res = await patch(await makeSession(user), {
+      medication: { snoozeMinutes: 45 },
+    });
+    expect(res.status).toBe(200);
+    expect(res.data.medication).toEqual({
+      ...DEFAULTS.medication,
+      clientManaged: true,
+      snoozeMinutes: 45,
+    });
+  });
+
   it("stores content.detail and keeps the siblings", async () => {
     const user = await userWithPrefs({ mood: { reminderHour: 7 } });
     const res = await patch(await makeSession(user), {
@@ -290,6 +305,8 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
     ["a mood.reminderHour of 24", { mood: { reminderHour: 24 } }],
     ["a lowStockRunwayDays of 0", { medication: { lowStockRunwayDays: 0 } }],
     ["a lowStockRunwayDays of 61", { medication: { lowStockRunwayDays: 61 } }],
+    ["a snoozeMinutes of 4", { medication: { snoozeMinutes: 4 } }],
+    ["a snoozeMinutes of 241", { medication: { snoozeMinutes: 241 } }],
   ])("refuses %s with 422 and stores nothing", async (_, body) => {
     const user = await userWithPrefs();
     const res = await patch(await makeSession(user), body);

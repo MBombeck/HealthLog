@@ -9,23 +9,38 @@ import type {
   DoctorReportTranslator,
 } from "./render-context";
 import { dayValueRows } from "@/lib/measurements/day-mean";
+import { mean } from "@/lib/stats/central";
+import {
+  bmiCategory,
+  bpCategory,
+  type BmiCategory,
+  type BpCategory,
+} from "@/lib/analytics/classifications";
+
+const BMI_KEYS: Record<BmiCategory, string> = {
+  underweight: "doctorReport.bmiUnderweight",
+  normal: "doctorReport.bmiNormal",
+  overweight: "doctorReport.bmiOverweight",
+  obese1: "doctorReport.bmiObeseGrade1",
+  obese2: "doctorReport.bmiObeseGrade2",
+  obese3: "doctorReport.bmiObeseGrade3",
+};
+
+const BP_KEYS: Record<BpCategory, string> = {
+  optimal: "doctorReport.bpOptimal",
+  normal: "doctorReport.bpNormal",
+  highNormal: "doctorReport.bpHighNormal",
+  grade1: "doctorReport.bpHypertensionGrade1",
+  grade2: "doctorReport.bpHypertensionGrade2",
+  grade3: "doctorReport.bpHypertensionGrade3",
+};
 
 export function getBmiClassificationKey(bmi: number): string {
-  if (bmi < 18.5) return "doctorReport.bmiUnderweight";
-  if (bmi < 25) return "doctorReport.bmiNormal";
-  if (bmi < 30) return "doctorReport.bmiOverweight";
-  if (bmi < 35) return "doctorReport.bmiObeseGrade1";
-  if (bmi < 40) return "doctorReport.bmiObeseGrade2";
-  return "doctorReport.bmiObeseGrade3";
+  return BMI_KEYS[bmiCategory(bmi)];
 }
 
 export function getBpClassificationKey(sys: number, dia: number): string {
-  if (sys < 120 && dia < 80) return "doctorReport.bpOptimal";
-  if (sys < 130 && dia < 85) return "doctorReport.bpNormal";
-  if (sys < 140 && dia < 90) return "doctorReport.bpHighNormal";
-  if (sys < 160 && dia < 100) return "doctorReport.bpHypertensionGrade1";
-  if (sys < 180 && dia < 110) return "doctorReport.bpHypertensionGrade2";
-  return "doctorReport.bpHypertensionGrade3";
+  return BP_KEYS[bpCategory(sys, dia)];
 }
 
 /** Primary vitals that get a trend sparkline + a summary trend arrow. */
@@ -55,9 +70,9 @@ export function trendArrow(values: number[]): "↑" | "↓" | "→" {
   const mid = Math.floor(values.length / 2);
   const firstHalf = values.slice(0, mid);
   const secondHalf = values.slice(mid);
-  const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
-  const delta = mean(secondHalf) - mean(firstHalf);
-  const threshold = Math.abs(mean(firstHalf)) * 0.01;
+  // Both halves hold at least one value once there are two.
+  const delta = mean(secondHalf)! - mean(firstHalf)!;
+  const threshold = Math.abs(mean(firstHalf)!) * 0.01;
   if (delta > threshold) return "↑";
   if (delta < -threshold) return "↓";
   return "→";

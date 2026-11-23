@@ -31,6 +31,7 @@ import {
   expectScreen,
   SHELL,
   type SetupScreen,
+  passFollowUps,
 } from "./setup-flow-helpers";
 
 const LOCALES = [
@@ -58,6 +59,8 @@ const SCREENS: Array<{ screen: SetupScreen; path: string }> = [
   { screen: "visit", path: "/onboarding/visit" },
   { screen: "units", path: "/onboarding/units" },
   { screen: "confirm", path: "/onboarding/confirm" },
+  { screen: "reminders", path: "/onboarding/reminders" },
+  { screen: "ai", path: "/onboarding/ai" },
   { screen: "first-result", path: "/onboarding/first-result" },
   { screen: "done", path: "/onboarding/done" },
 ];
@@ -199,6 +202,7 @@ test.describe("setup flow — every locale at 30% longer strings", () => {
           units: { glucoseUnit: "mg/dL", unitPreference: "metric" },
         });
         await complete(page);
+        await passFollowUps(page);
         await answer(page, { step: "first-result", status: "skipped" });
 
         const baseURL =

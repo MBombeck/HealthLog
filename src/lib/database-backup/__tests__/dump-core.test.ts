@@ -53,6 +53,7 @@ import {
   resolveBackupSchedule,
   resolveDailyKeep,
   selectForDeletion,
+  runTool,
   verifyArchive,
   instanceIdFromEnv,
   isWritableDirectory,
@@ -107,6 +108,7 @@ describe("dump names", () => {
       [`${base}.manifest.json.partial`, "manifest", "partial"],
       [`${base}.dump.enc`, "dump", "encrypted"],
       [`${base}.manifest.json.enc`, "manifest", "encrypted"],
+      [`${base}.list.partial`, "list", "partial"],
     ];
     for (const [name, role, variant] of cases) {
       const parsed = parseDumpFileName(name);
@@ -130,6 +132,8 @@ describe("dump names", () => {
       "healthlog-20261025-daily.dump",
       "healthlog-20261025T013007Z-daily.sql",
       "healthlog-20261025T013007Z-daily.dump.bak",
+      "healthlog-20261025T013007Z-daily.list",
+      "healthlog-20261025T013007Z-daily.list.enc",
       "healthlog-20261399T013007Z-daily.dump",
       "notes.txt",
     ]) {
@@ -151,28 +155,126 @@ function openHandlesOn(path: string): number {
   }).length;
 }
 
+/**
+ * A `pg_restore` that behaves like the real one on a custom-format archive
+ * (reads the table of contents and exits) and refuses to write its listing
+ * to standard output, the way a client did whose standard output was a pipe
+ * left non-blocking. The listing must therefore come through `--file`.
+ */
+function fakePgRestore(bin: string, listing: string, exit = 0): void {
+  writeFileSync(
+    join(bin, "pg_restore"),
+    `#!/bin/sh
+out=""
+for a in "$@"; do
+  case "$a" in --file=*) out="\${a#--file=}" ;; esac
+done
+if [ -z "$out" ]; then
+  echo 'write /dev/stdout: resource temporarily unavailable' >&2
+  exit 1
+fi
+printf '${listing}' >"$out"
+exit ${exit}
+`,
+  );
+  chmodSync(join(bin, "pg_restore"), 0o755);
+}
+
 describe("reading an archive back", () => {
+  const TWO_ENTRIES =
+    "; header\\n1; 2615 2200 TABLE public a\\n2; 2615 2201 TABLE public b\\n";
+
+  function setup() {
+    const dir = tempDir();
+    const bin = join(dir, "bin");
+    mkdirSync(bin);
+    vi.stubEnv("PATH", `${bin}:${process.env.PATH ?? ""}`);
+    return { dir, bin };
+  }
+
   // The worker lives for weeks and checks a dump every night. A handle it
   // keeps on a checked dump keeps that dump's blocks allocated after
   // retention deletes it, so the volume fills with "deleted" dumps.
   it("leaves no handle open on the dump once the listing is read", async () => {
-    const dir = tempDir();
-    const bin = join(dir, "bin");
-    mkdirSync(bin);
-    // A pg_restore that does what the real one does with a custom-format
-    // archive: read the table of contents and exit without reading the rest.
-    writeFileSync(
-      join(bin, "pg_restore"),
-      `#!/bin/sh\nprintf '; header\\n1; 2615 2200 TABLE public a\\n2; 2615 2201 TABLE public b\\n'\n`,
-    );
-    chmodSync(join(bin, "pg_restore"), 0o755);
-    vi.stubEnv("PATH", `${bin}:${process.env.PATH ?? ""}`);
+    const { dir, bin } = setup();
+    fakePgRestore(bin, TWO_ENTRIES);
     const dump = join(dir, "big.dump");
     writeFileSync(dump, Buffer.alloc(16 * 1024 * 1024, 7));
 
     expect(await verifyArchive(dump)).toBe(2);
     await new Promise((resolve) => setTimeout(resolve, 200));
     expect(openHandlesOn(dump)).toBe(0);
+  });
+
+  it("reads the listing from its file, never from standard output, and removes the file", async () => {
+    const { dir, bin } = setup();
+    fakePgRestore(bin, TWO_ENTRIES);
+    const dump = join(dir, "a.dump");
+    writeFileSync(dump, "x");
+    const listing = join(dir, "healthlog-20261025T013007Z-daily.list.partial");
+
+    expect(await verifyArchive(dump, listing)).toBe(2);
+    expect(readdirSync(dir).sort()).toEqual(["a.dump", "bin"]);
+  });
+
+  it("removes the listing file when the tool fails, and keeps its reason", async () => {
+    const { dir, bin } = setup();
+    writeFileSync(
+      join(bin, "pg_restore"),
+      "#!/bin/sh\necho 'pg_restore: error: input file does not appear to be a valid archive' >&2\nexit 1\n",
+    );
+    chmodSync(join(bin, "pg_restore"), 0o755);
+    const dump = join(dir, "a.dump");
+    writeFileSync(dump, "x");
+
+    await expect(verifyArchive(dump)).rejects.toThrow(
+      "pg_restore exited 1: pg_restore: error: input file does not appear to be a valid archive",
+    );
+    expect(readdirSync(dir).sort()).toEqual(["a.dump", "bin"]);
+  });
+
+  it("removes the listing file when the archive lists nothing", async () => {
+    const { dir, bin } = setup();
+    fakePgRestore(bin, "; header only\\n");
+    const dump = join(dir, "a.dump");
+    writeFileSync(dump, "x");
+
+    await expect(verifyArchive(dump)).rejects.toThrow("lists no entries");
+    expect(readdirSync(dir).sort()).toEqual(["a.dump", "bin"]);
+  });
+
+  it("refuses to write through a listing name that is already taken", async () => {
+    const { dir, bin } = setup();
+    fakePgRestore(bin, TWO_ENTRIES);
+    const dump = join(dir, "a.dump");
+    writeFileSync(dump, "x");
+    writeFileSync(`${dump}.list`, "not ours");
+
+    await expect(verifyArchive(dump)).rejects.toThrow(/EEXIST/);
+    expect(statSync(`${dump}.list`).size).toBe("not ours".length);
+  });
+});
+
+describe("running a client tool", () => {
+  it("discards standard output unless asked to capture it", async () => {
+    const dir = tempDir();
+    const tool = join(dir, "chatty");
+    writeFileSync(tool, "#!/bin/sh\necho hello\n");
+    chmodSync(tool, 0o755);
+
+    expect(await runTool(tool, [])).toBe("");
+    expect(await runTool(tool, [], { capture: true })).toBe("hello\n");
+  });
+
+  it("stops a tool that writes more than a few lines to a captured output", async () => {
+    const dir = tempDir();
+    const tool = join(dir, "flood");
+    writeFileSync(tool, "#!/bin/sh\nhead -c 1048576 /dev/zero\n");
+    chmodSync(tool, 0o755);
+
+    await expect(runTool(tool, [], { capture: true })).rejects.toThrow(
+      /wrote more than 65536 bytes/,
+    );
   });
 });
 

@@ -18,6 +18,12 @@ import { median, mad } from "@/lib/cycle/prediction";
 import { phaseForDay } from "@/lib/cycle/phase";
 import { dayDiff, addDays } from "@/lib/cycle/day-math";
 import { LUTEAL_DEFAULT, type CyclePhase } from "@/lib/cycle/types";
+import {
+  resolvePregnancyState,
+  resolvePregnancyStateDuring,
+} from "@/lib/cycle/pregnancy";
+import { loadPregnancyFields } from "@/lib/cycle/pregnancy-store";
+import { userDayKey } from "@/lib/tz/format";
 
 /** One observed cycle in the recent-cycles table. */
 export interface CycleExportCycle {
@@ -48,6 +54,72 @@ export interface CycleExportSummary {
   averagePeriodLengthDays: number | null;
   /** The phase the report date falls in, or null when it can't be resolved. */
   currentPhase: CyclePhase | null;
+  /**
+   * The pregnancy or postpartum state that holds on the report date,
+   * or null. Dates and counts only; while it holds `currentPhase` is null.
+   */
+  pregnancy: CycleExportPregnancy | null;
+}
+
+/** The pregnancy block of the export summary (v1.49). */
+export interface CycleExportPregnancy {
+  state: "PREGNANT" | "POSTPARTUM";
+  startDate: string | null;
+  dueDate: string | null;
+  deliveryDate: string | null;
+  /** Completed weeks and days on the report date (PREGNANT only). */
+  gestationalWeeks: number | null;
+  gestationalDays: number | null;
+  /** Completed weeks since the delivery on the report date (POSTPARTUM). */
+  postpartumWeek: number | null;
+}
+
+/**
+ * The pregnancy block of a report over `[from, asOf]`: the state as it stood
+ * on the last day of the range it held (`resolvePregnancyStateDuring`), or
+ * null when it held on none of them. `heldOnAsOf` says whether it still held
+ * on the report's last day, which is what pauses the current phase.
+ */
+async function exportPregnancy(
+  userId: string,
+  from: string,
+  asOf: string,
+): Promise<{ block: CycleExportPregnancy; heldOnAsOf: boolean } | null> {
+  const profile = await loadPregnancyFields(prisma, userId);
+  if (!profile) return null;
+  const resolved = resolvePregnancyStateDuring(profile, from, asOf);
+  if (!resolved.state) return null;
+  return {
+    block: {
+      state: resolved.state,
+      startDate: profile.pregnancyStartDate,
+      dueDate: resolved.dueDate,
+      deliveryDate: resolved.deliveryDate,
+      gestationalWeeks: resolved.gestationalAge?.weeks ?? null,
+      gestationalDays: resolved.gestationalAge?.days ?? null,
+      postpartumWeek: resolved.postpartumWeek,
+    },
+    heldOnAsOf: resolvePregnancyState(profile, asOf).state !== null,
+  };
+}
+
+/**
+ * The cycle summary of a doctor report over `[start, end]`, read in the
+ * report zone: the phase on the last day, the pregnancy as it stood in the
+ * range.
+ */
+export function buildCycleReportSummary(
+  userId: string,
+  start: Date,
+  end: Date,
+  reportTz: string,
+): Promise<CycleExportSummary | null> {
+  return buildCycleExportSummary(
+    userId,
+    userDayKey(end, reportTz),
+    LUTEAL_DEFAULT,
+    userDayKey(start, reportTz),
+  );
 }
 
 /** Max observed cycles surfaced in the recent-cycles table. */
@@ -62,6 +134,7 @@ export async function buildCycleExportSummary(
   userId: string,
   asOf: string,
   lutealLength: number = LUTEAL_DEFAULT,
+  from: string = asOf,
 ): Promise<CycleExportSummary | null> {
   const cycles = await prisma.menstrualCycle.findMany({
     where: { userId, deletedAt: null, isPredicted: false },
@@ -75,7 +148,23 @@ export async function buildCycleExportSummary(
     },
   });
 
-  if (cycles.length === 0) return null;
+  const pregnancyRead = await exportPregnancy(userId, from, asOf);
+  const pregnancy = pregnancyRead?.block ?? null;
+  if (cycles.length === 0) {
+    // A pregnancy with no logged cycle is still the section's content.
+    return pregnancy
+      ? {
+          lastPeriodStart: null,
+          recentCycles: [],
+          observedCycleCount: 0,
+          averageCycleLengthDays: null,
+          cycleLengthVariabilityDays: null,
+          averagePeriodLengthDays: null,
+          currentPhase: null,
+          pregnancy,
+        }
+      : null;
+  }
 
   // Observed length: prefer the stored lengthDays, else derive from the
   // next cycle's start (the canonical start→next-start definition).
@@ -113,7 +202,7 @@ export async function buildCycleExportSummary(
   // Current phase: resolve against the cycle whose window contains `asOf`.
   let currentPhase: CyclePhase | null = null;
   const last = cycles[cycles.length - 1];
-  if (last) {
+  if (last && !pregnancyRead?.heldOnAsOf) {
     // The open cycle's nextStart is unknown; estimate it from the median
     // length so the phase math has a window.
     const estLength = averageCycleLengthDays ?? 28;
@@ -139,5 +228,6 @@ export async function buildCycleExportSummary(
     cycleLengthVariabilityDays,
     averagePeriodLengthDays,
     currentPhase,
+    pregnancy,
   };
 }

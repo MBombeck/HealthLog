@@ -46,15 +46,37 @@ notes, and machine-readable specs that ship alongside the source:
   record search: opening it, what it finds, how matching works, and its
   limits on very large and shared records.
   [`using/cycle-calendar-feed.md`](./using/cycle-calendar-feed.md) covers
-  subscribing to the cycle forecast from Google, Apple or Outlook.
+  subscribing to the cycle forecast from Google, Apple or Outlook, and
+  [`using/care-calendar-feed.md`](./using/care-calendar-feed.md) the same for
+  booked visits, check-ups and vaccination boosters coming due.
+  [`using/pregnancy.md`](./using/pregnancy.md) covers the pregnancy and
+  postpartum state of cycle tracking, and
+  [`using/emergency-card.md`](./using/emergency-card.md) the emergency card,
+  its offline copy, the wallet card and its QR link.
+  [`using/energy-balance.md`](./using/energy-balance.md) explains the daily
+  energy balance, when a day has none, and how it reaches the correlations
+  and the Coach.
+  [`using/scheduled-doctor-report.md`](./using/scheduled-doctor-report.md)
+  covers filing the doctor report into the documents every month, quarter
+  or year.
+  [`using/lasting-change-notification.md`](./using/lasting-change-notification.md)
+  covers the opt-in notification about a vital that settled at a new level.
+  [`using/seizure-diary.md`](./using/seizure-diary.md) covers the seizure
+  diary.
+  [`using/medication-leaflets.md`](./using/medication-leaflets.md) covers
+  finding a medication's official leaflet and saving its link.
 - [`migration/`](./migration/) — migration notes. Currently only
   v1.3 to v1.4; later releases are covered by `CHANGELOG.md` and
   <https://docs.healthlog.dev>.
 - [`integrations/`](./integrations/) — per-integration reference:
   Withings, WHOOP, Google Health, Strava, Nightscout, Dawarich and Garmin;
-  the Apple Health, Health Connect, document and data imports; AI
-  providers; and Home Assistant with its blueprint. Oura and Polar are
-  covered on the docs site only.
+  the Apple Health, Health Connect (upload or a WebDAV folder), Gadgetbridge
+  ([`gadgetbridge.md`](./integrations/gadgetbridge.md)), FHIR R4 Bundle
+  ([`fhir-bundle-import.md`](./integrations/fhir-bundle-import.md)),
+  document and data imports; AI providers; the push relay for the App Store
+  iPhone app ([`push-relay.md`](./integrations/push-relay.md)); and Home
+  Assistant with its blueprint. Oura and Polar are covered on the docs site
+  only.
 - [`adr/`](./adr/) — architecture decision records.
 - [`security/`](./security/) — threat-model notes.
 - [`diagrams/`](./diagrams/) — architecture diagrams rendered through
@@ -64,6 +86,9 @@ notes, and machine-readable specs that ship alongside the source:
   — the iOS submission gate.
 - [`codex-protocol-spec.md`](./codex-protocol-spec.md) — Codex / ChatGPT
   OAuth protocol reverse-engineering notes.
+- [`contributing/release-policy.md`](./contributing/release-policy.md): when
+  a release happens, what a patch may contain, and the out-of-schedule
+  exceptions.
 - [`contributing/ui-standards.md`](./contributing/ui-standards.md) — the
   binding UI standards: card anatomy, spacing, text colour, tokens and
   which primitive to use where. Read before touching any surface.

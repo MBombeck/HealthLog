@@ -24,6 +24,11 @@ import {
   SymptomEntryForm,
 } from "@/components/dashboard/quick-entry-forms.lazy";
 import { LifeEventForm } from "@/components/timeline/life-event-form.lazy";
+import {
+  MEASUREMENT_TYPES,
+  measurementFormTypes,
+} from "@/components/measurements/measurement-form-types";
+import { useRecentEntryTypes } from "@/components/measurements/entry/use-entry-recall";
 import { useTranslations } from "@/lib/i18n/context";
 import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
 import type { ShareDomain } from "@/lib/sharing/scope";
@@ -175,6 +180,8 @@ function captureOption(
     label: string;
     description: string;
     icon: typeof Activity;
+    /** A quick row for one measurement type, beside the kind's own row. */
+    measurementType?: string;
   },
   onChoose: () => void,
   onLeave: () => void,
@@ -192,10 +199,13 @@ function captureOption(
       </span>
     </>
   );
-  const testId = `capture-picker-${option.kind}`;
+  const testId = option.measurementType
+    ? `capture-picker-measurement-${option.measurementType}`
+    : `capture-picker-${option.kind}`;
+  const key = option.measurementType ?? option.kind;
   return option.kind === "seizure" ? (
     <Link
-      key={option.kind}
+      key={key}
       href="/seizures"
       data-testid={testId}
       onClick={onLeave}
@@ -205,7 +215,7 @@ function captureOption(
     </Link>
   ) : (
     <button
-      key={option.kind}
+      key={key}
       type="button"
       data-testid={testId}
       onClick={onChoose}
@@ -216,65 +226,45 @@ function captureOption(
   );
 }
 
-interface CapturePickerProps {
-  /** Whether the picker chooser sheet is open. */
-  open: boolean;
-  /** Open-state setter for the chooser sheet. */
-  onOpenChange: (open: boolean) => void;
-  /**
-   * v1.42 — the day the picker was opened from ("Capture for this day" in the
-   * day view), `YYYY-MM-DD`. Every form starts on it. Omitted, they start now.
-   */
-  defaultDate?: string;
+type Translate = ReturnType<typeof useTranslations>["t"];
+
+interface CaptureOptionRow {
+  kind: CaptureKind;
+  label: string;
+  description: string;
+  icon: typeof Activity;
+  measurementType?: string;
 }
 
-export function CapturePicker({
-  open,
-  onOpenChange,
-  defaultDate,
-}: CapturePickerProps) {
-  const { t } = useTranslations();
-  const capabilities = useRecordCapabilities();
-  const { user } = useAuth();
-  const offered = visibleCaptureKinds(
-    capabilities,
-    CAPTURE_KIND_ORDER,
-    user?.modules,
-  );
-  const [kind, setKind] = useState<CaptureKind | null>(null);
-  // Re-derived on every render, never latched: the offer can shrink under a
-  // sheet that is already open. See `admittedCaptureKind`.
-  const openKind = admittedCaptureKind(kind, offered);
-  const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
-
-  function chooseKind(next: CaptureKind) {
-    if (!offered.includes(next)) return;
-    // Close the chooser first, then open the form sheet so only one
-    // bottom-sheet is mounted at a time (no stacked backdrops).
-    onOpenChange(false);
-    setKind(next);
-  }
-
-  function closeForm() {
-    setKind(null);
-  }
-
-  function handleFormOpenChange(next: boolean) {
-    if (!next) closeForm();
-  }
-
-  const allOptions: ReadonlyArray<{
-    kind: CaptureKind;
-    label: string;
-    description: string;
-    icon: typeof Activity;
-  }> = [
+/**
+ * Every row the chooser can show, in order: each kind, with the person's
+ * recently logged measurement types as quick rows right under Measurement.
+ */
+function captureOptions(
+  t: Translate,
+  recentTypes: ReadonlyArray<string>,
+): CaptureOptionRow[] {
+  return [
     {
       kind: "measurement",
       label: t("nav.capture.measurement"),
       description: t("nav.capture.measurementDescription"),
       icon: Activity,
     },
+    ...recentTypes.flatMap((type) => {
+      const row = MEASUREMENT_TYPES.find((mt) => mt.value === type);
+      return row
+        ? [
+            {
+              kind: "measurement" as const,
+              label: t(row.labelKey),
+              description: t("nav.capture.recentMeasurementDescription"),
+              icon: Activity,
+              measurementType: type,
+            },
+          ]
+        : [];
+    }),
     {
       kind: "medication",
       label: t("nav.capture.medication"),
@@ -312,6 +302,82 @@ export function CapturePicker({
       icon: Flag,
     },
   ];
+}
+
+interface CapturePickerProps {
+  /** Whether the picker chooser sheet is open. */
+  open: boolean;
+  /** Open-state setter for the chooser sheet. */
+  onOpenChange: (open: boolean) => void;
+  /**
+   * v1.42 — the day the picker was opened from ("Capture for this day" in the
+   * day view), `YYYY-MM-DD`. Every form starts on it. Omitted, they start now.
+   */
+  defaultDate?: string;
+}
+
+/**
+ * The line under a capture form's title. The intake sheet says what it
+ * records, as the medications page's own "Log intake" sheet does; the other
+ * forms speak for themselves.
+ */
+export function captureFormDescription(
+  kind: CaptureKind | null,
+  t: (key: string) => string,
+): string | undefined {
+  return kind === "medication"
+    ? t("medications.intakeForm.description")
+    : undefined;
+}
+
+export function CapturePicker({
+  open,
+  onOpenChange,
+  defaultDate,
+}: CapturePickerProps) {
+  const { t } = useTranslations();
+  const capabilities = useRecordCapabilities();
+  const { user } = useAuth();
+  const offered = visibleCaptureKinds(
+    capabilities,
+    CAPTURE_KIND_ORDER,
+    user?.modules,
+  );
+  const [kind, setKind] = useState<CaptureKind | null>(null);
+  // The type a quick row opened the measurement form on.
+  const [measurementType, setMeasurementType] = useState<string | undefined>(
+    undefined,
+  );
+  // The two or three types the person logs by hand most recently, each a
+  // row of its own under Measurement, so a morning weight + blood pressure
+  // routine skips the type list.
+  const recentTypes = useRecentEntryTypes(
+    measurementFormTypes(user?.modules).map((mt) => mt.value),
+    open && offered.includes("measurement"),
+  );
+  // Re-derived on every render, never latched: the offer can shrink under a
+  // sheet that is already open. See `admittedCaptureKind`.
+  const openKind = admittedCaptureKind(kind, offered);
+  const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
+
+  function chooseKind(next: CaptureKind, type?: string) {
+    if (!offered.includes(next)) return;
+    setMeasurementType(type);
+    // Close the chooser first, then open the form sheet so only one
+    // bottom-sheet is mounted at a time (no stacked backdrops).
+    onOpenChange(false);
+    setKind(next);
+  }
+
+  function closeForm() {
+    setKind(null);
+  }
+
+  function handleFormOpenChange(next: boolean) {
+    if (!next) closeForm();
+  }
+
+  const allOptions = captureOptions(t, recentTypes);
   const options = allOptions.filter((opt) => offered.includes(opt.kind));
 
   // One title per kind, the same verb phrase the dashboard's add menu
@@ -348,7 +414,7 @@ export function CapturePicker({
           {options.map((opt) =>
             captureOption(
               opt,
-              () => chooseKind(opt.kind),
+              () => chooseKind(opt.kind, opt.measurementType),
               () => onOpenChange(false),
             ),
           )}
@@ -361,6 +427,7 @@ export function CapturePicker({
         onOpenChange={handleFormOpenChange}
         dirty={sheetBodyHasUnsavedInput}
         title={formTitle}
+        description={captureFormDescription(openKind, t)}
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
         {openKind === "measurement" && (
@@ -369,6 +436,8 @@ export function CapturePicker({
             onCancel={closeForm}
             footerSlot={footerEl}
             defaultDate={defaultDate}
+            defaultType={measurementType}
+            chain
           />
         )}
         {openKind === "medication" && (

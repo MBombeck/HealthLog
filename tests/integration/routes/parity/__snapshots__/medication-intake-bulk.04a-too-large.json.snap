@@ -50,6 +50,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -89,6 +90,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -125,6 +127,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -161,6 +164,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -266,6 +270,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APPLE_HEALTH",
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -275,7 +280,8 @@
         "externalId": "hk-dose-0004",
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:11>",
@@ -287,6 +293,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "USER_PIN",
+        "takenVia": "APP",
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -301,7 +308,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:13>",
@@ -313,6 +321,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APPLE_HEALTH",
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -322,7 +331,8 @@
         "externalId": "hk-dose-0003",
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:14>",
@@ -334,6 +344,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -343,7 +354,8 @@
         "externalId": "hk-dose-0000",
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:15>",
@@ -355,6 +367,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APPLE_HEALTH",
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -364,7 +377,8 @@
         "externalId": "hk-dose-0002",
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:16>",
@@ -376,6 +390,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -385,7 +400,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:17>",
@@ -397,6 +413,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APP",
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -411,7 +428,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:18>",
@@ -423,6 +441,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APPLE_HEALTH",
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -432,28 +451,31 @@
         "externalId": "hk-dose-0001",
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:19>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-15T10:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-15T10:00:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APP",
         "source": "API",
         "idempotencyKey": "bulk-key-0001",
         "createdAt": "<createdAt>",
         "injectionSite": "ABDOMEN_LEFT",
         "doseTaken": "0.5 pen",
-        "inventoryConsumption": null,
+        "inventoryConsumption": [],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:20>",
@@ -465,6 +487,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -474,7 +497,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:21>",
@@ -486,6 +510,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -495,7 +520,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "doseChanges": [],
@@ -557,8 +583,8 @@
         "details": {
           "processed": 18,
           "inserted": 0,
-          "updated": 5,
-          "duplicates": 6,
+          "updated": 2,
+          "duplicates": 9,
           "skipped": 7
         },
         "ipAddress": null
@@ -570,8 +596,8 @@
         "details": {
           "processed": 18,
           "inserted": 6,
-          "updated": 2,
-          "duplicates": 3,
+          "updated": 1,
+          "duplicates": 4,
           "skipped": 7
         },
         "ipAddress": null

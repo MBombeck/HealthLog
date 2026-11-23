@@ -42,6 +42,9 @@ function fakeQueryClient(): QueryClient {
 
 const medication = { id: "med-1", name: "Mounjaro" };
 
+/** A fixed clock for the toast text; the app passes the reader's formatter. */
+const clock = (at: Date) => at.toISOString().slice(11, 16);
+
 beforeEach(() => {
   vi.restoreAllMocks();
   vi.mocked(toast.success).mockClear();
@@ -63,6 +66,7 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
     const onRecorded = vi.fn();
 
     await runRecordIntake({
+      formatTime: clock,
       medication,
       skipped: false,
       t,
@@ -89,6 +93,7 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
     const setIntakeLoading = vi.fn();
 
     await runRecordIntake({
+      formatTime: clock,
       medication,
       skipped: true,
       t,
@@ -121,6 +126,7 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
     const onRecorded = vi.fn();
 
     await runRecordIntake({
+      formatTime: clock,
       medication,
       skipped: false,
       t,
@@ -136,11 +142,11 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
     expect(message).toBe("medications.intakeToastTaken:Mounjaro");
     const action = opts?.action as
       { label: string; onClick: (e: never) => void } | undefined;
-    expect(action?.label).toBe("medications.intakeUndo");
+    expect(action?.label).toBe("medications.dose.action.undo");
 
     // Firing the action calls undoIntake with the just-created event id.
     action?.onClick({} as never);
-    expect(undoIntake).toHaveBeenCalledWith("evt-99");
+    expect(undoIntake).toHaveBeenCalledWith("evt-99", undefined);
 
     // The post-success follow-up receives the event id + skipped flag.
     expect(onRecorded).toHaveBeenCalledWith("evt-99", false);
@@ -165,6 +171,7 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
     const queryClient = fakeQueryClient();
 
     await runRecordIntake({
+      formatTime: clock,
       medication,
       skipped: false,
       t,
@@ -198,6 +205,7 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
     const queryClient = fakeQueryClient();
 
     await runRecordIntake({
+      formatTime: clock,
       medication,
       skipped: false,
       t,
@@ -227,9 +235,10 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
     const morningSlot = new Date("2026-06-05T05:00:00.000Z");
 
     await runRecordIntake({
+      formatTime: clock,
       medication,
       skipped: false,
-      scheduledFor: morningSlot,
+      slot: { at: morningSlot, earlyFrom: null, binding: "slot" },
       t,
       queryClient: fakeQueryClient(),
       setIntakeLoading: vi.fn(),
@@ -257,18 +266,20 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
     const eveningSlot = new Date("2026-06-05T17:00:00.000Z"); // 19:00 Berlin
 
     await runRecordIntake({
+      formatTime: clock,
       medication,
       skipped: false,
-      scheduledFor: morningSlot,
+      slot: { at: morningSlot, earlyFrom: null, binding: "slot" },
       t,
       queryClient: fakeQueryClient(),
       setIntakeLoading: vi.fn(),
       undoIntake: vi.fn(),
     });
     await runRecordIntake({
+      formatTime: clock,
       medication,
       skipped: false,
-      scheduledFor: eveningSlot,
+      slot: { at: eveningSlot, earlyFrom: null, binding: "slot" },
       t,
       queryClient: fakeQueryClient(),
       setIntakeLoading: vi.fn(),
@@ -296,9 +307,10 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await runRecordIntake({
+      formatTime: clock,
       medication,
       skipped: false,
-      scheduledFor: null,
+      slot: null,
       t,
       queryClient: fakeQueryClient(),
       setIntakeLoading: vi.fn(),
@@ -324,6 +336,7 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
     );
 
     await runRecordIntake({
+      formatTime: clock,
       medication,
       skipped: false,
       t,
@@ -349,6 +362,7 @@ describe("runLogIntake — manual backdated intake from the Add choice", () => {
     const queryClient = fakeQueryClient();
 
     const ok = await runLogIntake({
+      formatTime: clock,
       medication,
       skipped: false,
       takenAt: "2026-06-01T08:30:00.000Z",
@@ -394,6 +408,7 @@ describe("runLogIntake — manual backdated intake from the Add choice", () => {
 
     await expect(
       runLogIntake({
+        formatTime: clock,
         medication,
         skipped: false,
         takenAt: "2026-06-01T08:30:00.000Z",
@@ -416,6 +431,7 @@ describe("runLogIntake — manual backdated intake from the Add choice", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await runLogIntake({
+      formatTime: clock,
       medication,
       skipped: false,
       takenAt: "2026-06-01T05:10:00.000Z",
@@ -444,6 +460,7 @@ describe("runLogIntake — manual backdated intake from the Add choice", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await runLogIntake({
+      formatTime: clock,
       medication,
       skipped: true,
       takenAt: "2026-06-01T08:30:00.000Z",
@@ -469,6 +486,7 @@ describe("runLogIntake — manual backdated intake from the Add choice", () => {
     const queryClient = fakeQueryClient();
 
     const ok = await runLogIntake({
+      formatTime: clock,
       medication,
       skipped: false,
       takenAt: "2026-06-01T08:30:00.000Z",
@@ -546,7 +564,7 @@ describe("intakeToastOptions — the shared toast decision", () => {
       intakeToastOptions({ recordName: null, eventId: "evt-1", t, onUndo }),
     ).toEqual({
       action: {
-        label: "medications.intakeUndo",
+        label: "medications.dose.action.undo",
         onClick: expect.any(Function),
       },
     });

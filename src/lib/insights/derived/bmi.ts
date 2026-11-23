@@ -25,7 +25,10 @@
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import {
+  bmiOf,
   classifyBMI,
   type BmiClassification,
 } from "@/lib/analytics/classifications";
@@ -37,6 +40,7 @@ import {
 } from "./coverage";
 import type { BaselineProfile } from "./baseline";
 import { SPARKLINE_MAX_POINTS, type Derived } from "./types";
+import { roundTo } from "@/lib/stats/central";
 
 const WEIGHT_TYPE: MeasurementType = "WEIGHT";
 /** A weight reading older than this no longer reflects current BMI. */
@@ -130,9 +134,39 @@ export async function computeBmi(
     });
   }
 
+  // During a pregnancy or its postpartum weeks a BMI category frames a body
+  // that is supposed to change, so there is no BMI to show.
+  if (
+    await pregnancyContextActive(
+      prisma,
+      userId,
+      profile.timezone ?? DEFAULT_TIMEZONE,
+      now,
+    )
+  ) {
+    const { coverage } = deriveCoverage({
+      requiredInputs: 2,
+      presentInputs: 1,
+      historyDays: 0,
+      missing: [],
+      fullHistoryDays: 1,
+    });
+    return buildInsufficient<BmiValue>({
+      coverage,
+      provenance: {
+        inputs: ["HEIGHT"],
+        source: "none",
+        windowDays,
+        computedAt,
+      },
+      reason: "pregnancy",
+    });
+  }
+
   const since = new Date(now.getTime() - windowDays * 24 * 60 * 60 * 1000);
   // Bounded read of the recent weights — the latest backs the BMI value, the
   // trailing set backs the inline sparkline (a small cap, not a per-day walk).
+  // dense-take: WEIGHT_TYPE is the scale, a few readings a day; the newest few back the sparkline only.
   const weights = await prisma.measurement.findMany({
     where: {
       userId,
@@ -168,14 +202,13 @@ export async function computeBmi(
   }
 
   const weightKg = latest.value;
-  const heightM = heightCm / 100;
-  const bmi = weightKg / (heightM * heightM);
+  const bmi = bmiOf(weightKg, heightCm);
   const { category, band } = classifyBmi(bmi);
 
   // BMI series from the recent weights at the fixed height; rows are
   // newest-first, the sparkline wants oldest → newest.
   const series = weights
-    .map((w) => Math.round((w.value / (heightM * heightM)) * 10) / 10)
+    .map((w) => roundTo(bmiOf(w.value, heightCm), 1))
     .reverse();
 
   const { coverage, confidence } = deriveCoverage({

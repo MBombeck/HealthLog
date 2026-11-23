@@ -8,6 +8,15 @@ vi.mock("@/lib/measurements/day-aggregates", async () => ({
   ).fakeReadDayAggregates,
 }));
 
+// The latest-day mean folds in SQL; the fake folds the same rows.
+vi.mock("@/lib/measurements/dense-bucket-read", async () => {
+  const { makeFakeDenseBucketRead } =
+    await import("@/lib/measurements/__tests__/fake-dense-bucket-read");
+  const { prisma } = await import("@/lib/db");
+  return makeFakeDenseBucketRead((args) =>
+    (prisma.measurement.findMany as (a: unknown) => never)(args),
+  );
+});
 vi.mock("@/lib/db", () => ({
   prisma: { measurement: { findMany: vi.fn() } },
 }));

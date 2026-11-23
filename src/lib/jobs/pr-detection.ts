@@ -120,6 +120,38 @@ export interface PrDetectionPayload {
 }
 
 /**
+ * How long an ingest send waits before it runs, in seconds. A first sync
+ * posts a batch every second or two for minutes on end, and each batch used
+ * to queue a job of its own that walked the account's whole history; most
+ * of them found the lock held and did nothing. A send now waits this long,
+ * and every send for the same account and mode while it waits joins it
+ * (the queue's `short` policy on `singletonKey`), so a burst queues one run
+ * per window and that run reads everything the window wrote. A send after
+ * the run has started queues the next one, so the last batch is never left
+ * to the fallback cron.
+ */
+export const PR_DETECTION_DEBOUNCE_SECONDS = 10;
+
+/**
+ * The queue's policy, what makes {@link PR_DETECTION_DEBOUNCE_SECONDS}
+ * coalesce. An ingest job is one account; the fallback rescan every 30
+ * minutes walks every account, one run at a time (the binding's lock).
+ */
+export const PR_DETECTION_QUEUE_POLICY = {
+  policy: "short",
+  reason:
+    "Per-account singleton key; a burst of ingest sends joins the one queued run, and a send during a run queues the next.",
+} as const;
+
+/** The coalescing key of one account's ingest sends, apart per mode. */
+export function prDetectionSingletonKey(
+  userId: string,
+  silent: boolean,
+): string {
+  return `pr-detection|${userId}|${silent ? "silent" : "loud"}`;
+}
+
+/**
  * Submit a PR detection job for one user. Best-effort: when no boss
  * instance is attached (the route runs in a context without the
  * worker process — typically tests), the call is a silent no-op and
@@ -138,6 +170,8 @@ export async function enqueuePrDetection(
   };
   await boss.send(PR_DETECTION_QUEUE, payload, {
     expireInSeconds: PR_DETECTION_EXPIRE_SECONDS,
+    singletonKey: prDetectionSingletonKey(userId, payload.silent),
+    startAfter: PR_DETECTION_DEBOUNCE_SECONDS,
     // Stagger retries gently — the detector is purely read-heavy on
     // the user's own data, but a stampede of failed jobs against a
     // briefly-flaky DB would compound the problem.

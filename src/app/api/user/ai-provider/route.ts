@@ -27,6 +27,11 @@ import { reasoningEffortFor } from "@/lib/ai/reasoning-effort";
 import { forgetProviderHealth } from "@/lib/ai/provider-health-ledger";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { clearStatusNegativeWindows } from "@/lib/insights/status-negative-window";
+import {
+  coachBudgetsAfterWrite,
+  parseCoachBudgets,
+} from "@/lib/ai/coach/coach-budgets";
+import { Prisma } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -106,6 +111,7 @@ export const GET = apiHandler(async () => {
       aiResponseTimeoutSeconds: true,
       // #1126 — the reasoning settings live on the chain entries.
       aiProviderChain: true,
+      aiCoachBudgets: true,
       // v1.38.19 — a managed profile is never the party that gives
       // consent for itself; the offer below has to know.
       managedProfileAt: true,
@@ -217,6 +223,11 @@ export const GET = apiHandler(async () => {
       u?.aiProviderChain,
       "openai-compatible",
     ),
+    // The Coach budget of each self-hosted provider, clamped as a turn
+    // reads it; a field it does not carry runs on the built-in value.
+    localCoachBudget: parseCoachBudgets(u?.aiCoachBudgets).local ?? null,
+    compatCoachBudget:
+      parseCoachBudgets(u?.aiCoachBudgets)["openai-compatible"] ?? null,
     // v1.38.19 — see the block above. A tri-state and two booleans;
     // no count, no timestamp and no other account is inferable from them.
     serverProviderHealth,
@@ -268,6 +279,53 @@ async function chainAfterReasoningSave(
   return serializeProviderChain(parseProviderChain(chain)) !== before
     ? chain
     : undefined;
+}
+
+/** The four stored provider keys: the slot the audit names, the body
+ *  field, and the column. */
+function keySlotsOf(body: z.infer<typeof aiProviderPatchSchema>) {
+  return [
+    ["anthropic", body.anthropicKey, "aiAnthropicKeyEncrypted"],
+    ["openai", body.openaiKey, "aiOpenaiKeyEncrypted"],
+    ["local", body.localKey, "aiLocalKeyEncrypted"],
+    ["openai-compatible", body.compatKey, "aiCompatKeyEncrypted"],
+  ] as const;
+}
+
+/**
+ * The Coach budgets column after the body's budget fields, or undefined when
+ * the body carries none. Local and the gateway share one column; each write
+ * merges into what is stored, and an empty result clears it.
+ */
+async function coachBudgetsAfterPatch(
+  userId: string,
+  body: Pick<
+    z.infer<typeof aiProviderPatchSchema>,
+    "localCoachBudget" | "compatCoachBudget"
+  >,
+): Promise<unknown> {
+  if (
+    body.localCoachBudget === undefined &&
+    body.compatCoachBudget === undefined
+  ) {
+    return undefined;
+  }
+  const stored = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { aiCoachBudgets: true },
+  });
+  let next: unknown = stored?.aiCoachBudgets ?? null;
+  if (body.localCoachBudget !== undefined) {
+    next = coachBudgetsAfterWrite(next, "local", body.localCoachBudget);
+  }
+  if (body.compatCoachBudget !== undefined) {
+    next = coachBudgetsAfterWrite(
+      next,
+      "openai-compatible",
+      body.compatCoachBudget,
+    );
+  }
+  return next === null ? Prisma.DbNull : next;
 }
 
 export const PATCH = apiHandler(async (request: NextRequest) => {
@@ -381,32 +439,11 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       body.compatModel === null ? null : body.compatModel.trim() || null;
   }
 
-  if (body.compatKey !== undefined) {
-    updates.aiCompatKeyEncrypted =
-      body.compatKey === null || body.compatKey === ""
-        ? null
-        : encrypt(body.compatKey.trim());
-  }
-
-  if (body.anthropicKey !== undefined) {
-    updates.aiAnthropicKeyEncrypted =
-      body.anthropicKey === null || body.anthropicKey === ""
-        ? null
-        : encrypt(body.anthropicKey.trim());
-  }
-
-  if (body.localKey !== undefined) {
-    updates.aiLocalKeyEncrypted =
-      body.localKey === null || body.localKey === ""
-        ? null
-        : encrypt(body.localKey.trim());
-  }
-
-  if (body.openaiKey !== undefined) {
-    updates.aiOpenaiKeyEncrypted =
-      body.openaiKey === null || body.openaiKey === ""
-        ? null
-        : encrypt(body.openaiKey.trim());
+  // Each key slot: `null` / `""` clears it, anything else is encrypted.
+  for (const [, value, column] of keySlotsOf(body)) {
+    if (value === undefined) continue;
+    updates[column] =
+      value === null || value === "" ? null : encrypt(value.trim());
   }
 
   // ── v1.22 (#89) — response timeout (seconds) ──────────────────
@@ -415,6 +452,9 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   if (body.responseTimeoutSeconds !== undefined) {
     updates.aiResponseTimeoutSeconds = body.responseTimeoutSeconds;
   }
+
+  const coachBudgets = await coachBudgetsAfterPatch(user.id, body);
+  if (coachBudgets !== undefined) updates.aiCoachBudgets = coachBudgets;
 
   const reasoningTouched =
     body.localReasoningEffort !== undefined ||
@@ -446,12 +486,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   // and never the value. A removal used to leave no trace at all. Clearing a
   // slot that held no key removes nothing and is not audited, so the slots a
   // removal names are read before the write.
-  const keySlots = [
-    ["anthropic", body.anthropicKey, "aiAnthropicKeyEncrypted"],
-    ["openai", body.openaiKey, "aiOpenaiKeyEncrypted"],
-    ["local", body.localKey, "aiLocalKeyEncrypted"],
-    ["openai-compatible", body.compatKey, "aiCompatKeyEncrypted"],
-  ] as const;
+  const keySlots = keySlotsOf(body);
   const isRemoval = (value: string | null | undefined) =>
     value === null || value === "";
   const storedKeys = keySlots.some(([, value]) => isRemoval(value))

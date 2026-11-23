@@ -11,6 +11,7 @@
       "unit": "minutes",
       "source": "MANUAL",
       "measuredAt": "2026-10-14T02:30:00.000Z",
+      "timeZone": null,
       "notes": null,
       "externalId": "bridge-sleep-1",
       "externalSourceVersion": null,

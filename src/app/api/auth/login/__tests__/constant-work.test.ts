@@ -23,6 +23,12 @@ import { NextRequest } from "next/server";
 
 // The per-account throttle has its own suite (login-throttle.test.ts); here
 // it lets every attempt through and counts nothing.
+// The exact, case-blind lookup (`@/lib/auth/identity-lookup`) answers with an
+// id; the row read by that id is what each case below decides.
+vi.mock("@/lib/auth/identity-lookup", () => ({
+  findUserIdBySignInName: vi.fn(async () => "matched-account"),
+}));
+
 vi.mock("@/lib/auth/login-throttle", () => ({
   beginAccountLoginAttempt: vi.fn(async () => ({
     waiting: null,
@@ -33,7 +39,7 @@ vi.mock("@/lib/auth/login-throttle", () => ({
 }));
 vi.mock("@/lib/db", () => ({
   prisma: {
-    user: { findFirst: vi.fn() },
+    user: { findUnique: vi.fn() },
     webauthnMfaCredential: { count: vi.fn().mockResolvedValue(0) },
   },
 }));
@@ -96,7 +102,7 @@ beforeEach(() => {
 
 describe("POST /api/auth/login — constant work across the refusals", () => {
   it("verifies even when no account matches the identifier", async () => {
-    vi.mocked(prisma.user.findFirst).mockResolvedValue(null as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
 
     const res = await POST(makeRequest());
 
@@ -109,7 +115,7 @@ describe("POST /api/auth/login — constant work across the refusals", () => {
   });
 
   it("verifies for a passkey-only account, which carries no password hash", async () => {
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "user-1",
       passwordHash: null,
       totpConfirmedAt: null,
@@ -127,7 +133,7 @@ describe("POST /api/auth/login — constant work across the refusals", () => {
   });
 
   it("verifies for an account that does carry a password hash", async () => {
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "user-2",
       passwordHash: "$argon2id$stored",
       totpConfirmedAt: null,
@@ -153,7 +159,7 @@ describe("POST /api/auth/login — constant work across the refusals", () => {
       { id: "user-2", passwordHash: "$argon2id$stored" },
     ];
     for (const account of accounts) {
-      vi.mocked(prisma.user.findFirst).mockResolvedValue(account as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(account as never);
       const res = await POST(makeRequest());
       statuses.push(res.status);
       bodies.push(await bodyWithoutRequestId(res));

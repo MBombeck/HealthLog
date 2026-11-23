@@ -30,6 +30,7 @@ import {
   readMe,
   readTileOrder,
   skip,
+  skipFollowUps,
 } from "./setup-flow-helpers";
 
 test.describe("setup flow — a daily medication with a reminder", () => {
@@ -59,9 +60,27 @@ test.describe("setup flow — a daily medication with a reminder", () => {
     await expectScreen(page, "visit");
     await skip(page);
 
-    // No unit-bearing area was ticked, so Q6 is not in this flow.
+    // No unit-bearing area, but a schedule: "Region & units" asks for the
+    // time zone and the medicine registry, both already filled, and no unit.
+    await expectScreen(page, "units");
+    await expect(
+      page.locator('[data-slot="onboarding-question-medicine-registry"]'),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-slot="onboarding-question-glucose-unit"]'),
+    ).toHaveCount(0);
+    await next(page);
+
     await expectScreen(page, "confirm");
     await next(page);
+
+    // A schedule brings the reminders follow-up; the Coach follows it.
+    await expectScreen(page, "reminders");
+    await expect(
+      page.locator('[data-slot="notification-channels-panel"]'),
+    ).toBeVisible();
+    await next(page);
+    await skipFollowUps(page, ["ai"]);
 
     await expectScreen(page, "first-result");
     await expect(page.locator("section[data-task]")).toHaveAttribute(

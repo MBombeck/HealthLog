@@ -38,8 +38,8 @@
  * ingest surface.
  */
 import { prisma as defaultPrisma } from "@/lib/db";
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
-import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
 import {
   iterateDayBuckets,
   iterateSourcePages,
@@ -61,7 +61,7 @@ import {
   type MeasurementType,
   type PrismaClient,
 } from "@/generated/prisma/client";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 /**
  * Minimum sample count per metric before the worker writes its first
@@ -222,16 +222,10 @@ export async function detectPersonalRecordsForUser(
   let ties = 0;
   let scanned = 0;
 
-  // v1.29.6 — resolved once per run and threaded into the cumulative-day
-  // picker: the source-collapse ladder needs the user's priority JSON, and
-  // the day bucketing needs the user's IANA timezone so a "best day" lines
-  // up with the calendar day the user actually experienced, matching every
-  // other cumulative-day surface (the `groupBy=day` list branch, the
-  // dashboard tile). Read directly via the injected `prisma` client
-  // (not `resolveUserTimezone` / `loadUserSourcePriority`, which both
-  // reach for the module-level singleton) so the worker's Prisma
-  // dependency injection — the whole reason `options.prisma` exists —
-  // stays intact for tests.
+  // v1.29.6 — resolved once per run for the cumulative-day picker: the
+  // priority JSON for the source ladder, the IANA zone so a "best day" is the
+  // user's calendar day like every other cumulative-day surface. Read through
+  // the injected `prisma` (not the singleton-bound resolvers) for the tests.
   const userRow = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -263,8 +257,12 @@ export async function detectPersonalRecordsForUser(
     });
     latestWeightKg = latestWeight?.value ?? null;
   }
+  // No weight or BMI record in a pregnancy or after a birth.
+  const pregnant = await pregnancyContextActive(prisma, userId, tz);
   const directionContext: PRDirectionContext = {
-    weightGoal: resolveWeightGoalDirection(weightTarget, latestWeightKg),
+    weightGoal: pregnant
+      ? null
+      : resolveWeightGoalDirection(weightTarget, latestWeightKg),
   };
 
   // ── Measurement-driven PRs (metricSlot = null) ─────────────
@@ -619,7 +617,7 @@ async function findBestCumulativeDay(
           dayRows.map((r) => ({ ...r, type })),
           metricKey,
           priorityJson,
-          (d) => dayKeyForUserTz(d, tz),
+          (d) => userDayKey(d, tz),
         ).canonicalRows
       : dayRows;
     if (canonicalRows.length === 0) continue;

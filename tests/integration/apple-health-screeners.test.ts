@@ -223,6 +223,25 @@ describe("Apple Health PHQ-9 / GAD-7 on the measurement batch", () => {
       items: null,
       itemsUnavailable: true,
     });
+
+    // The history row says the same as the detail read, without a detail
+    // read per row and without carrying an answer.
+    const listRows = (
+      listBody.data.assessments as unknown as Array<Record<string, unknown>>
+    ).map((a) => [a.id, a]);
+    const byId = Object.fromEntries(listRows) as Record<
+      string,
+      Record<string, unknown>
+    >;
+    expect(byId[phqRow.id]).toMatchObject({
+      source: "APPLE_HEALTH",
+      itemsUnavailable: false,
+    });
+    expect(byId[gadRow.id]).toMatchObject({
+      source: "APPLE_HEALTH",
+      itemsUnavailable: true,
+    });
+    expect(byId[phqRow.id]).not.toHaveProperty("items");
   });
 
   it("answers duplicate for a re-sent sample and for one whose administration was deleted", async () => {

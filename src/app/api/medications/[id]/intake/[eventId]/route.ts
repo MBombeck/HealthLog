@@ -17,6 +17,7 @@ import {
 import {
   deleteIntakeEvent,
   findDeletableIntakeEvent,
+  readUndoPrecondition,
 } from "@/lib/medications/delete-intake-event";
 import { NextRequest } from "next/server";
 
@@ -86,7 +87,14 @@ export const PUT = apiHandler(
       originDeviceToken: request.headers.get("x-device-id"),
     });
     if (!outcome.ok) {
-      return apiError(outcome.message, 422, { errorCode: outcome.errorCode });
+      return apiError(
+        outcome.message,
+        "status" in outcome ? outcome.status : 422,
+        {
+          errorCode: outcome.errorCode,
+          ...("meta" in outcome && outcome.meta),
+        },
+      );
     }
 
     return apiSuccess(outcome.row);
@@ -101,6 +109,19 @@ export const DELETE = apiHandler(
 
     const { id, eventId } = await params;
 
+    // An undo names the version of the row it saw. When another writer
+    // changed the row since (a pill box take this tap converged onto), the
+    // undo would remove a dose that is not its own: 409, nothing deleted. A
+    // precondition that is sent but unreadable is refused, never ignored: an
+    // undo that dropped it would go through unchecked.
+    const precondition = readUndoPrecondition(request.nextUrl.searchParams);
+    if (!precondition.ok) {
+      return apiError(precondition.message, 422, {
+        errorCode: "medications.intake.invalidPrecondition",
+      });
+    }
+    const { expectedSyncVersion, expectedIdempotencyKey } = precondition;
+
     const event = await findDeletableIntakeEvent({
       userId: user.id,
       medicationId: id,
@@ -110,14 +131,21 @@ export const DELETE = apiHandler(
       return apiError("Intake not found", 404);
     }
 
-    await deleteIntakeEvent({
+    const deleted = await deleteIntakeEvent({
       user,
       medicationId: id,
       eventId,
       event,
+      expectedSyncVersion,
+      expectedIdempotencyKey,
       ipAddress: getClientIp(request) ?? "unknown",
       originDeviceToken: request.headers.get("x-device-id"),
     });
+    if (deleted === "changedSinceSeen") {
+      return apiError("The dose changed since it was read", 409, {
+        errorCode: "medications.intake.changedSinceSeen",
+      });
+    }
 
     return apiSuccess({ deleted: true });
   },

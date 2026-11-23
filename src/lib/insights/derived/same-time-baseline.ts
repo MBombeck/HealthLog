@@ -30,19 +30,19 @@ import { prisma } from "@/lib/db";
 import {
   PROFILE_HOURS,
   readCumulativeDayProfiles,
-  localDateKey,
   type CumulativeDayProfile,
 } from "@/lib/measurements/intraday-cumulative-profile";
 import { hourOfDayForUserTz } from "@/lib/measurements/consolidation-tz";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
-import { buildBaselineBand, median, type BaselineProfile } from "./baseline";
+import { buildBaselineBand, type BaselineProfile } from "./baseline";
 import { buildInsufficient, buildOk, deriveCoverage } from "./coverage";
 import {
   SAME_TIME_BASELINE_MIN_HISTORY_DAYS,
   SAME_TIME_BASELINE_WINDOW_DAYS,
 } from "./registry";
 import type { Derived } from "./types";
+import { median } from "@/lib/stats/central";
 
 /**
  * Raw per-sample rows a stored day must have been folded from before it counts
@@ -148,7 +148,7 @@ export async function computeSameTimeBaseline(
     select: { timezone: true },
   });
   const timezone = user?.timezone || DEFAULT_TIMEZONE;
-  const dateKey = localDateKey(now, timezone);
+  const dateKey = userDayKey(now, timezone);
 
   const gate = (reason: string, historyDays: number) =>
     buildInsufficient<SameTimeBaselineValue>({
@@ -203,7 +203,7 @@ export async function computeSameTimeBaseline(
   const todayCurve = today.hourlyCumulative.slice(0, hours);
   const typicalCurve: number[] = [];
   for (let h = 0; h < hours; h += 1) {
-    typicalCurve.push(median(history.map((p) => p.hourlyCumulative[h])));
+    typicalCurve.push(median(history.map((p) => p.hourlyCumulative[h]))!);
   }
 
   const todayValue = todayCurve[asOfHour];

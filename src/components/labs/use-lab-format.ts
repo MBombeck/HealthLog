@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback } from "react";
+import { createElement, useCallback, type ComponentProps } from "react";
+
+import { DayLinkStated } from "@/components/day/day-link";
 
 import { useCalendarDate } from "@/hooks/use-calendar-date";
-import { useFormatters } from "@/lib/i18n/context";
+import { useDisplayTimezone, useFormatters } from "@/lib/i18n/context";
 import { formatLabValue, type LabNumberFormat } from "@/lib/labs/format-value";
-import { isNoonUtcAnchor } from "@/lib/tz/date-only";
+import { isLabDateOnly, labReadingDay } from "@/lib/labs/reading-day";
 
 /**
  * A lab value in the reader's number format, with every digit the reading
@@ -24,8 +26,9 @@ export function useLabNumber(): LabNumberFormat {
 /**
  * The date a lab reading was taken. A reading entered by hand carries its
  * time of day and is dated in the reader's zone; one imported from a report
- * that states only the date is stored at noon UTC and is dated by that
- * calendar date, so it does not move to the next day east of UTC+12.
+ * that states only the date is stored at noon (older rows: midnight) UTC and
+ * is dated by that calendar date (`isLabDateOnly`), the same day the server
+ * files it under.
  */
 export function useLabDate(): (takenAt: string) => string {
   const fmt = useFormatters();
@@ -33,10 +36,23 @@ export function useLabDate(): (takenAt: string) => string {
   return useCallback(
     (takenAt: string) => {
       const instant = new Date(takenAt);
-      return isNoonUtcAnchor(instant)
-        ? calendarDate(instant)
-        : fmt.date(instant);
+      return isLabDateOnly(instant) ? calendarDate(instant) : fmt.date(instant);
     },
     [fmt, calendarDate],
   );
+}
+
+/**
+ * A link that opens the day a lab reading belongs to, by the same rule the
+ * server files it under (`labReadingDay`).
+ */
+export function LabDayLink({
+  takenAt,
+  ...props
+}: Omit<ComponentProps<typeof DayLinkStated>, "at"> & { takenAt: string }) {
+  const timeZone = useDisplayTimezone();
+  return createElement(DayLinkStated, {
+    ...props,
+    at: labReadingDay(takenAt, timeZone),
+  });
 }

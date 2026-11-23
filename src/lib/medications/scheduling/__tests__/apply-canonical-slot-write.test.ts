@@ -13,6 +13,11 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/lib/medications/inventory/consumption", () => ({
+  restoreForIntake: vi.fn(async () => undefined),
+}));
+
+import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { applyCanonicalSlotWrite, type SlotIntakeRow } from "../slot-upsert";
 
 const SLOT = new Date("2026-06-15T05:00:00.000Z");
@@ -38,7 +43,9 @@ function row(overrides: Partial<SlotIntakeRow> = {}): SlotIntakeRow {
     externalId: null,
     updatedAt: createdAt,
     syncVersion: 0,
+    takenVia: null,
     deletedAt: null,
+    appleHealthDeletedAt: null,
     ...overrides,
   };
 }
@@ -193,7 +200,7 @@ describe("applyCanonicalSlotWrite — C2 no-downgrade", () => {
     expect(res.row.takenAt).not.toBeNull();
   });
 
-  it("an EXPLICIT skip still applies (last-write-wins) onto a taken slot", async () => {
+  it("an explicit skip onto a taken slot answers alreadyTaken and writes nothing", async () => {
     const taken = row({
       id: "taken-2",
       takenAt: new Date("2026-06-15T05:00:00Z"),
@@ -202,6 +209,100 @@ describe("applyCanonicalSlotWrite — C2 no-downgrade", () => {
     const client = makeClient({
       findManyResult: [[taken]],
       updateImpl: async (id) => row({ id, takenAt: null, skipped: true }),
+    });
+    const res = await applyCanonicalSlotWrite({
+      ...BASE,
+      client: client as unknown as UpsertClient,
+      takenAt: null,
+      skipped: true,
+      isExplicitTaken: false,
+      isExplicitSkip: true,
+    });
+    expect(res.alreadyTaken).toBe(true);
+    expect(res.row.id).toBe("taken-2");
+    expect(client.medicationIntakeEvent.update).not.toHaveBeenCalled();
+  });
+
+  it("a real take replaces an automatic one instead of answering alreadyTaken", async () => {
+    const auto = row({
+      id: "auto-1",
+      takenAt: new Date("2026-06-15T05:00:00Z"),
+      source: "REMINDER",
+      autoRecorded: true,
+      takenVia: "AUTO",
+    });
+    const client = makeClient({
+      findManyResult: [[auto]],
+      updateImpl: async (id) =>
+        row({ id, takenAt: new Date("2026-06-15T05:25:00Z") }),
+    });
+    const res = await applyCanonicalSlotWrite({
+      ...BASE,
+      client: client as unknown as UpsertClient,
+      takenAt: new Date("2026-06-15T05:25:00Z"),
+      skipped: false,
+      isExplicitTaken: true,
+      isExplicitSkip: false,
+      takenVia: "INTEGRATION",
+    });
+    expect(res.alreadyTaken).toBeUndefined();
+    // The automatic take already took the stock; the real one does not again.
+    expect(res.consumedTransition).toBe(false);
+    const data = (
+      vi.mocked(client.medicationIntakeEvent.update).mock
+        .calls[0][0] as unknown as {
+        data: Record<string, unknown>;
+      }
+    ).data;
+    expect(data.takenAt).toEqual(new Date("2026-06-15T05:25:00Z"));
+    expect(data.autoRecorded).toBe(false);
+    expect(data.takenVia).toBe("INTEGRATION");
+    expect(restoreForIntake).not.toHaveBeenCalled();
+  });
+
+  it("a skip corrects an automatic take and gives its stock back", async () => {
+    vi.mocked(restoreForIntake).mockClear();
+    const auto = row({
+      id: "auto-2",
+      takenAt: new Date("2026-06-15T05:00:00Z"),
+      source: "REMINDER",
+      autoRecorded: true,
+      takenVia: "AUTO",
+    });
+    const client = makeClient({
+      findManyResult: [[auto]],
+      updateImpl: async (id) => row({ id, takenAt: null, skipped: true }),
+    });
+    const res = await applyCanonicalSlotWrite({
+      ...BASE,
+      client: {
+        ...client,
+        medicationInventoryItem: {},
+      } as unknown as UpsertClient,
+      takenAt: null,
+      skipped: true,
+      isExplicitTaken: false,
+      isExplicitSkip: true,
+    });
+    expect(res.alreadyTaken).toBeUndefined();
+    const data = (
+      vi.mocked(client.medicationIntakeEvent.update).mock
+        .calls[0][0] as unknown as {
+        data: Record<string, unknown>;
+      }
+    ).data;
+    expect(data.skipped).toBe(true);
+    expect(data.autoRecorded).toBe(false);
+    expect(restoreForIntake).toHaveBeenCalledWith(
+      expect.objectContaining({ eventId: "auto-2" }),
+    );
+  });
+
+  it("an explicit skip still applies onto a skipped slot's take-less row", async () => {
+    const skippedRow = row({ id: "skipped-2", skipped: true, source: "WEB" });
+    const client = makeClient({
+      findManyResult: [[skippedRow]],
+      updateImpl: async (id) => row({ id, skipped: true }),
     });
     const res = await applyCanonicalSlotWrite({
       ...BASE,
@@ -283,7 +384,7 @@ describe("applyCanonicalSlotWrite — auto-miss reset", () => {
     expect(updateArg.data.autoMissed).toBe(false);
   });
 
-  it("does NOT touch autoMissed on a write without a takenAt (skip)", async () => {
+  it("clears autoMissed on a deliberate skip too: a skip answers the dose", async () => {
     const pending = row({ id: "pend-skip", source: "REMINDER" });
     const client = makeClient({
       findManyResult: [[pending]],
@@ -299,14 +400,14 @@ describe("applyCanonicalSlotWrite — auto-miss reset", () => {
     });
     const updateArg = vi.mocked(client.medicationIntakeEvent.update).mock
       .calls[0][0] as unknown as { data: Record<string, unknown> };
-    expect("autoMissed" in updateArg.data).toBe(false);
+    expect(updateArg.data.autoMissed).toBe(false);
   });
 });
 
 describe("applyCanonicalSlotWrite — H1 deterministic selection", () => {
   it("updates the ACTIONED row, not the pending one, when both exist", async () => {
-    // Pending REMINDER row created first, taken WEB row created later. The
-    // upsert must converge onto the actioned (taken) row.
+    // Pending REMINDER row created first, skipped WEB row created later. The
+    // upsert must converge onto the actioned (skipped) row.
     const pending = row({
       id: "pending-old",
       source: "REMINDER",
@@ -315,7 +416,7 @@ describe("applyCanonicalSlotWrite — H1 deterministic selection", () => {
     const actioned = row({
       id: "taken-new",
       source: "WEB",
-      takenAt: new Date("2026-06-15T05:02:00Z"),
+      skipped: true,
       createdAt: new Date("2026-06-15T05:02:00Z"),
     });
     // findMany returns in (createdAt asc, id asc) order: pending first.
@@ -324,6 +425,8 @@ describe("applyCanonicalSlotWrite — H1 deterministic selection", () => {
       updateImpl: async (id) =>
         row({ id, takenAt: new Date("2026-06-15T05:05:00Z") }),
     });
+    // A take is a decision that still applies over a skip, so it writes;
+    // it lands on the actioned row.
     const res = await applyCanonicalSlotWrite({
       ...BASE,
       client: client as unknown as UpsertClient,
@@ -336,6 +439,30 @@ describe("applyCanonicalSlotWrite — H1 deterministic selection", () => {
     const updateArg = vi.mocked(client.medicationIntakeEvent.update).mock
       .calls[0][0] as { where: { id: string } };
     expect(updateArg.where.id).toBe("taken-new");
+  });
+
+  it("answers alreadyTaken for a take on a taken slot and writes nothing", async () => {
+    const taken = row({
+      id: "taken-first",
+      source: "API",
+      takenAt: new Date("2026-06-15T05:01:00Z"),
+      idempotencyKey: "box-1",
+    });
+    const client = makeClient({ findManyResult: [[taken]] });
+    const res = await applyCanonicalSlotWrite({
+      ...BASE,
+      client: client as unknown as UpsertClient,
+      takenAt: new Date("2026-06-15T05:04:00Z"),
+      skipped: false,
+      isExplicitTaken: true,
+      isExplicitSkip: false,
+      idempotencyKey: "phone-1",
+    });
+    expect(res.alreadyTaken).toBe(true);
+    expect(res.consumedTransition).toBe(false);
+    expect(res.row.takenAt?.toISOString()).toBe("2026-06-15T05:01:00.000Z");
+    expect(res.row.idempotencyKey).toBe("box-1");
+    expect(client.medicationIntakeEvent.update).not.toHaveBeenCalled();
   });
 
   it("prefers the first row in (createdAt asc, id asc) order when none actioned", async () => {

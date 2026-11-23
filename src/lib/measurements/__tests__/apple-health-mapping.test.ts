@@ -15,6 +15,8 @@ import {
   validateMeasurementRange,
 } from "@/lib/validations/measurement";
 import type { MeasurementType } from "@/generated/prisma/client";
+import effortSamples from "./fixtures/apple-health-effort-samples.json";
+import sportSamples from "./fixtures/apple-health-sport-samples.json";
 
 /**
  * MeasurementType values that Apple HealthKit has no native counterpart
@@ -802,6 +804,9 @@ describe("dailyStatsExternalId (v1.4.30 — R-A Option A handoff lock)", () => {
         "HKQuantityTypeIdentifierAppleStandTime",
         "HKCategoryTypeIdentifierAppleStandHour",
         "HKCategoryTypeIdentifierMindfulSession",
+        // #1415 — cycling and rowing distance.
+        "HKQuantityTypeIdentifierDistanceCycling",
+        "HKQuantityTypeIdentifierDistanceRowing",
       ].sort(),
     );
   });
@@ -910,6 +915,13 @@ describe("HIGH_FREQUENCY_MEAN_TYPES (v1.7.0)", () => {
         // granularity; the per-day mean is the right consolidation.
         "STAIR_ASCENT_SPEED",
         "STAIR_DESCENT_SPEED",
+        // #1415 — running dynamics and rowing speed, per sample in a workout.
+        "ROWING_SPEED",
+        "RUNNING_SPEED",
+        "RUNNING_POWER",
+        "RUNNING_GROUND_CONTACT_TIME",
+        "RUNNING_VERTICAL_OSCILLATION",
+        "RUNNING_STRIDE_LENGTH",
       ].sort(),
     );
   });
@@ -1368,5 +1380,180 @@ describe("Apple Health ingest v2 types", () => {
       value: 455,
     });
     expect(out).toMatchObject({ value: 455, unit: "L/min" });
+  });
+});
+
+describe("Apple effort — logged score, watch estimate, physical effort", () => {
+  const identifiers = [
+    "HKQuantityTypeIdentifierWorkoutEffortScore",
+    "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
+    "HKQuantityTypeIdentifierPhysicalEffort",
+  ] as const;
+
+  it("maps every fixture sample onto its own type and keeps the number", () => {
+    const types = new Set<string>();
+    for (const sample of effortSamples.samples) {
+      const out = mapAppleHealthEntry({
+        hkIdentifier: sample.hkIdentifier,
+        value: sample.value,
+        unit: sample.unit,
+        startDate: sample.startDate,
+        endDate: sample.endDate,
+      });
+      expect(out, sample.hkIdentifier).toMatchObject({
+        ...sample.expected,
+        takenAt: new Date(sample.endDate),
+      });
+      expect(HK_QUANTITY_TYPE_DEFERRED.has(sample.hkIdentifier)).toBe(false);
+      types.add(sample.expected.type);
+    }
+    // A day mean is per type. Three samples of one workout must not collapse
+    // onto one series.
+    expect(types.size).toBe(effortSamples.samples.length);
+  });
+
+  it("keeps the logged score and the watch estimate on different types", () => {
+    expect(
+      APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierWorkoutEffortScore
+        .measurementType,
+    ).toBe("WORKOUT_EFFORT_SCORE");
+    expect(
+      APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierEstimatedWorkoutEffortScore
+        .measurementType,
+    ).toBe("ESTIMATED_WORKOUT_EFFORT_SCORE");
+    expect(
+      APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierPhysicalEffort
+        .measurementType,
+    ).toBe("PHYSICAL_EFFORT");
+    expect(hkIdentifierForType("WORKOUT_EFFORT_SCORE")).toBe(
+      "HKQuantityTypeIdentifierWorkoutEffortScore",
+    );
+    expect(hkIdentifierForType("ESTIMATED_WORKOUT_EFFORT_SCORE")).toBe(
+      "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
+    );
+    expect(hkIdentifierForType("PHYSICAL_EFFORT")).toBe(
+      "HKQuantityTypeIdentifierPhysicalEffort",
+    );
+  });
+
+  it("averages them and never sums them into a day total", () => {
+    for (const id of identifiers) {
+      expect(APPLE_HEALTH_TYPE_MAP[id].aggregation).toBe("mean");
+      expect(
+        CUMULATIVE_HK_TYPES.has(APPLE_HEALTH_TYPE_MAP[id].measurementType),
+      ).toBe(false);
+      expect(
+        HIGH_FREQUENCY_MEAN_TYPES.has(
+          APPLE_HEALTH_TYPE_MAP[id].measurementType,
+        ),
+      ).toBe(false);
+    }
+  });
+
+  it("keeps a score inside 0–10 and a physical-effort rate inside 0–50", () => {
+    for (const type of [
+      "WORKOUT_EFFORT_SCORE",
+      "ESTIMATED_WORKOUT_EFFORT_SCORE",
+    ] as const) {
+      expect(validateMeasurementRange(type, 0)).toBeNull();
+      expect(validateMeasurementRange(type, 10)).toBeNull();
+      expect(validateMeasurementRange(type, 6.4)).toBeNull();
+      expect(validateMeasurementRange(type, -0.1)).not.toBeNull();
+      expect(validateMeasurementRange(type, 10.1)).not.toBeNull();
+    }
+    expect(validateMeasurementRange("PHYSICAL_EFFORT", 0)).toBeNull();
+    expect(validateMeasurementRange("PHYSICAL_EFFORT", 8.5)).toBeNull();
+    expect(validateMeasurementRange("PHYSICAL_EFFORT", 50)).toBeNull();
+    expect(validateMeasurementRange("PHYSICAL_EFFORT", -1)).not.toBeNull();
+    expect(validateMeasurementRange("PHYSICAL_EFFORT", 50.1)).not.toBeNull();
+  });
+});
+
+describe("Apple sport quantities (#1415)", () => {
+  it("maps every fixture sample onto its own type and keeps the number", () => {
+    const types = new Set<string>();
+    for (const sample of sportSamples.samples) {
+      const out = mapAppleHealthEntry({
+        hkIdentifier: sample.hkIdentifier,
+        value: sample.value,
+        unit: sample.unit,
+        startDate: sample.startDate,
+        endDate: sample.endDate,
+      });
+      expect(out, sample.hkIdentifier).toMatchObject({
+        ...sample.expected,
+        takenAt: new Date(sample.endDate),
+      });
+      expect(HK_QUANTITY_TYPE_DEFERRED.has(sample.hkIdentifier)).toBe(false);
+      expect(
+        validateMeasurementRange(
+          sample.expected.type as MeasurementType,
+          sample.expected.value,
+        ),
+        sample.hkIdentifier,
+      ).toBeNull();
+      types.add(sample.expected.type);
+    }
+    expect(types.size).toBe(sportSamples.samples.length);
+  });
+
+  it("sums the two distances per day and averages everything else", () => {
+    for (const type of ["CYCLING_DISTANCE", "ROWING_DISTANCE"] as const) {
+      expect(CUMULATIVE_HK_TYPES.has(type)).toBe(true);
+      expect(HIGH_FREQUENCY_MEAN_TYPES.has(type)).toBe(false);
+    }
+    for (const type of [
+      "ROWING_SPEED",
+      "RUNNING_SPEED",
+      "RUNNING_POWER",
+      "RUNNING_GROUND_CONTACT_TIME",
+      "RUNNING_VERTICAL_OSCILLATION",
+      "RUNNING_STRIDE_LENGTH",
+    ] as const) {
+      expect(HIGH_FREQUENCY_MEAN_TYPES.has(type)).toBe(true);
+      expect(CUMULATIVE_HK_TYPES.has(type)).toBe(false);
+      const hk = hkIdentifierForType(type);
+      expect(hk).not.toBeNull();
+      expect(APPLE_HEALTH_TYPE_MAP[hk!]!.aggregation).toBe("mean");
+    }
+  });
+
+  it("converts an archive record written in the account's display unit", () => {
+    // A metric account writes cycling distance in km and ground contact
+    // time can arrive in seconds; both land in the canonical unit.
+    expect(
+      mapAppleHealthEntry(
+        {
+          hkIdentifier: "HKQuantityTypeIdentifierDistanceCycling",
+          value: 12.5,
+          unit: "km",
+          startDate: "2026-06-02T06:00:00.000Z",
+          endDate: "2026-06-02T06:40:00.000Z",
+        },
+        { convertRecordUnit: true },
+      ),
+    ).toMatchObject({ type: "CYCLING_DISTANCE", value: 12500, unit: "m" });
+    expect(
+      mapAppleHealthEntry(
+        {
+          hkIdentifier: "HKQuantityTypeIdentifierRunningGroundContactTime",
+          value: 0.25,
+          unit: "s",
+          startDate: "2026-06-03T05:30:00.000Z",
+          endDate: "2026-06-03T05:30:05.000Z",
+        },
+        { convertRecordUnit: true },
+      ),
+    ).toMatchObject({ type: "RUNNING_GROUND_CONTACT_TIME", value: 250 });
+  });
+
+  it("refuses a stride measure that slipped a unit", () => {
+    expect(
+      validateMeasurementRange("RUNNING_VERTICAL_OSCILLATION", 86),
+    ).not.toBeNull();
+    expect(
+      validateMeasurementRange("RUNNING_STRIDE_LENGTH", 112),
+    ).not.toBeNull();
+    expect(validateMeasurementRange("RUNNING_SPEED", 30)).not.toBeNull();
   });
 });

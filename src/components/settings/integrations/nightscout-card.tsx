@@ -20,7 +20,6 @@ import {
   Loader2,
   Plug,
   RefreshCw,
-  Save,
   Unlink,
 } from "lucide-react";
 
@@ -30,7 +29,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { TagChip } from "@/components/ui/tag-chip";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { apiFetchRaw, apiPost } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   invalidateKeys,
@@ -83,7 +84,22 @@ export function NightscoutCard({
       queryClient.invalidateQueries({
         queryKey: queryKeys.integrationsStatus(),
       });
+      toastWrittenOutcome(
+        "success",
+        t("settings.integrationDisconnected", {
+          provider: t("settings.nightscout"),
+        }),
+      );
     },
+    // The confirmation has closed by now; a refused disconnect would leave
+    // the card connected without a word.
+    onError: (failure) =>
+      showErrorToast(
+        t("settings.integrationDisconnectFailed", {
+          provider: t("settings.nightscout"),
+        }),
+        { cause: failure },
+      ),
   });
 
   // A pause or a lapsed token is resolved by submitting the address again:
@@ -352,7 +368,6 @@ function NightscoutForm({
           type="submit"
           size="sm"
           variant={connected ? "outline" : "default"}
-          className="min-h-11 w-full sm:min-h-9 sm:w-auto"
           disabled={saving || !url.trim()}
           data-slot={connected ? undefined : "integration-primary-action"}
           data-action={connected ? undefined : "connect"}
@@ -360,9 +375,7 @@ function NightscoutForm({
         >
           {saving ? (
             <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-          ) : connected ? (
-            <Save className="size-3.5" aria-hidden="true" />
-          ) : (
+          ) : connected ? null : (
             <Link2 className="size-3.5" aria-hidden="true" />
           )}
           {connected

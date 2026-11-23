@@ -383,7 +383,6 @@ function SourceForm({
                 type="button"
                 variant="destructive"
                 size="sm"
-                className="min-h-11"
                 disabled={busy}
               >
                 <Unlink className="size-4" aria-hidden />
@@ -415,7 +414,6 @@ function SourceForm({
             type="button"
             variant="outline"
             size="sm"
-            className="min-h-11"
             disabled={busy || dirty || !connection.originAllowed}
             onClick={() => test.mutate()}
           >
@@ -429,12 +427,7 @@ function SourceForm({
           </Button>
         ) : null}
         {editable ? (
-          <Button
-            type="submit"
-            size="sm"
-            className="min-h-11"
-            disabled={busy || !canSave}
-          >
+          <Button type="submit" size="sm" disabled={busy || !canSave}>
             {save.isPending ? (
               <Loader2
                 className="size-4 animate-spin motion-reduce:animate-none"

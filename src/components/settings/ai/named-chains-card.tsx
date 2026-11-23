@@ -18,7 +18,7 @@ import {
   useQueryClient,
   type UseQueryResult,
 } from "@tanstack/react-query";
-import { Loader2, PlusCircle, Route, Save } from "lucide-react";
+import { Loader2, PlusCircle, Route } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -338,16 +338,13 @@ function NamedChainsEditor({ data }: { data: NamedChainsData }) {
       <SettingsCardActions>
         <Button
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={() => save.mutate(draft)}
           disabled={save.isPending || nameIssue !== null}
           data-testid="ai-named-chains-save"
         >
           {save.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
+          ) : null}
           {t("settings.ai.namedChains.save")}
         </Button>
       </SettingsCardActions>

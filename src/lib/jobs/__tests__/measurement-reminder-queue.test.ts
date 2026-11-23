@@ -47,7 +47,7 @@ describe("measurement-reminder registration", () => {
 
   it("schedules the measurement-reminder cron, single-flight", () => {
     const job = jobOf(MEASUREMENT_REMINDER_QUEUE);
-    expect(job.cron).toBe("*/15 * * * *");
+    expect(job.cron).toBe("6-59/15 * * * *");
     expect(job.work).toEqual({ localConcurrency: 1 });
   });
 

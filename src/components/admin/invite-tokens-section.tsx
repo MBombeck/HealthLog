@@ -70,8 +70,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate, formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { apiDelete, apiGet, apiPost } from "@/lib/api/api-fetch";
@@ -184,7 +183,7 @@ function StatusChip({
 }
 
 export function InviteTokensSection() {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [ttlDays, setTtlDays] = useState<number>(7);
@@ -380,7 +379,7 @@ export function InviteTokensSection() {
                       <TableCell>
                         <div className="leading-tight">
                           <div className="text-sm tabular-nums">
-                            {formatDate(invite.createdAt)}
+                            {fmt.date(invite.createdAt)}
                           </div>
                           <div className="text-muted-foreground text-xs">
                             {t("admin.invites.byCreator", {
@@ -394,11 +393,11 @@ export function InviteTokensSection() {
                           <div className="text-sm tabular-nums">
                             {relative !== "—"
                               ? relative
-                              : formatDate(invite.expiresAt)}
+                              : fmt.date(invite.expiresAt)}
                           </div>
                           {relative !== "—" && (
                             <div className="text-muted-foreground text-xs tabular-nums">
-                              {formatDate(invite.expiresAt)}
+                              {fmt.date(invite.expiresAt)}
                             </div>
                           )}
                         </div>
@@ -465,14 +464,14 @@ export function InviteTokensSection() {
                     <div className="flex justify-between gap-2">
                       <dt>{t("admin.invites.colCreated")}</dt>
                       <dd className="text-right tabular-nums">
-                        {formatDate(invite.createdAt)}
+                        {fmt.date(invite.createdAt)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-2">
                       <dt>{t("admin.invites.colExpires")}</dt>
                       <dd className="text-right tabular-nums">
                         {relative !== "—" ? `${relative} · ` : ""}
-                        {formatDate(invite.expiresAt)}
+                        {fmt.date(invite.expiresAt)}
                       </dd>
                     </div>
                     {invite.redemptions.length > 0 && (
@@ -697,7 +696,6 @@ export function InviteTokensSection() {
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={openCreateDialog}
           data-testid="admin-invites-open-create"
         >
@@ -722,6 +720,7 @@ function RedemptionsCell({
   summary: string;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   if (invite.redemptions.length === 0) {
     return <span className="text-muted-foreground text-sm">—</span>;
   }
@@ -733,7 +732,7 @@ function RedemptionsCell({
           {entry.user?.username ?? t("admin.invites.redeemerDeleted")}
         </div>
         <div className="text-muted-foreground text-xs tabular-nums">
-          {formatDateTime(entry.redeemedAt)}
+          {fmt.dateTime(entry.redeemedAt)}
         </div>
       </div>
     );
@@ -774,7 +773,7 @@ function RedemptionsCell({
                 )}
               </div>
               <div className="text-muted-foreground text-xs tabular-nums">
-                {formatDateTime(entry.redeemedAt)}
+                {fmt.dateTime(entry.redeemedAt)}
               </div>
             </li>
           ))}

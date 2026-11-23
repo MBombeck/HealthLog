@@ -319,7 +319,6 @@ export function EncryptionSection() {
               <Button
                 variant="outline"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 disabled={running}
                 data-testid="admin-encryption-rotate"
               >

@@ -75,7 +75,7 @@ model User {
   /// `src/lib/api-handler.ts` reads it on every guardian request, and the
   /// creation flow is what writes it. A later notification plan may add
   /// delivery fanout after it defines consent and preference semantics.
-  managedProfileAt DateTime? @map("managed_profile_at")
+  managedProfileAt DateTime? @map("managed_profile_at") @db.Timestamptz(3)
 
   /// When deletion of this account was asked for. Non-null means the
   /// account is pending deletion: it is locked (every session, refresh token
@@ -388,10 +388,10 @@ model User {
   //   { "WEIGHT": { "min": 70, "max": 85 },
   //     "BLOOD_PRESSURE_SYS": { "min": 110, "max": 130 }, ... }
   // Null or missing metric → use computed default.
-  thresholdsJson           Json?                @map("thresholds_json")
+  thresholdsJson                Json?                @map("thresholds_json")
   // Per-user dashboard layout — widget visibility + ordering.
   // Shape: { "widgets": [{ "id": "weight", "visible": true, "order": 0 }, ...], "version": 1 }
-  dashboardWidgetsJson     Json?                @map("dashboard_widgets_json")
+  dashboardWidgetsJson          Json?                @map("dashboard_widgets_json")
   // Per-user insights tile layout — tile visibility + ordering for the
   // `/insights` surface. Mirrors `dashboardWidgetsJson` so the iOS
   // client and the web Settings UI can persist insights tile order +
@@ -400,7 +400,7 @@ model User {
   // endpoint never lazy-writes — the column only carries data once
   // the user has explicitly saved a layout.
   // Shape: { "tiles": [{ "id": "blutdruck", "visible": true, "order": 0 }, ...], "version": 1 }
-  insightsLayoutJson       Json?                @map("insights_layout_json")
+  insightsLayoutJson            Json?                @map("insights_layout_json")
   // Per-user medications list presentation — the card/table view choice
   // plus the user-defined manual medication order shared by BOTH views.
   // Follows the per-surface-column convention of `dashboardWidgetsJson` /
@@ -408,20 +408,33 @@ model User {
   // The GET endpoint never lazy-writes — the column only carries data
   // once the user has explicitly toggled the view or saved an order.
   // Shape: { "version": 1, "view": "table", "order": ["<medicationId>", ...] }
-  medicationListLayoutJson Json?                @map("medication_list_layout_json")
+  medicationListLayoutJson      Json?                @map("medication_list_layout_json")
   // v1.42 — per-user document vault presentation: the card/list view and
   // the stacked/flowing month arrangement. Display-only, preserve-when-absent
   // PUT on `/api/documents/inbound/layout`, resolved field by field on read
   // (`src/lib/documents/documents-layout.ts`). Null = defaults (cards, stacked).
   // Shape: { "version": 1, "view": "list", "arrangement": "flow" }
-  documentsLayoutJson      Json?                @map("documents_layout_json")
+  documentsLayoutJson           Json?                @map("documents_layout_json")
   // v1.17.0 — per-user mood-tag presentation: group order + per-group tag
   // placement (catalogue tags "moved" into a group live here only — their
   // `categoryId` never changes). Display-only, preserve-when-absent PUT,
   // unknown keys dropped at read. Null = seeded defaults.
   // Shape: { "groupOrder": ["<categoryKey>", ...],
   //          "placements": { "<categoryKey>": ["<tagKey>", ...] } }
-  moodTagLayoutJson        Json?                @map("mood_tag_layout_json")
+  moodTagLayoutJson             Json?                @map("mood_tag_layout_json")
+  // v1.49 — one optimistic-lock token per settings document. The database
+  // moves each on any write that changes its document (trigger
+  // `users_document_revision_bump`, migration 0554), so a write to another
+  // column of this row never makes a settings save answer 409. Read and
+  // compared only by `src/lib/optimistic-lock.ts`.
+  dashboardWidgetsRevisedAt     DateTime             @default(now()) @map("dashboard_widgets_revised_at")
+  insightsLayoutRevisedAt       DateTime             @default(now()) @map("insights_layout_revised_at")
+  medicationListLayoutRevisedAt DateTime             @default(now()) @map("medication_list_layout_revised_at")
+  moodTagLayoutRevisedAt        DateTime             @default(now()) @map("mood_tag_layout_revised_at")
+  modulePreferencesRevisedAt    DateTime             @default(now()) @map("module_preferences_revised_at")
+  notificationPrefsRevisedAt    DateTime             @default(now()) @map("notification_prefs_revised_at")
+  coachPrefsRevisedAt           DateTime             @default(now()) @map("coach_prefs_revised_at")
+  healthScoreConfigRevisedAt    DateTime             @default(now()) @map("health_score_config_revised_at")
   // Per-user list presentation for the labs, illness and checkups lists:
   // card/list view, manual order, and (labs only) the sort. One blob keyed by
   // list, resolved field by field on read (`src/lib/settings/module-list-layout.ts`),
@@ -429,29 +442,40 @@ model User {
   // defaults. Earlier releases kept the same choices in the browser; the client
   // copies a stored browser value up once when the server has none for that list.
   // Shape: { "version": 1, "labs": { "view": "list", "order": ["<id>"], "sortDir": "manual" }, ... }
-  moduleListLayoutJson     Json?                @map("module_list_layout_json")
+  moduleListLayoutJson          Json?                @map("module_list_layout_json")
   /// Optional activity goals the person set for themselves: workouts, active
   /// minutes and steps per week, steps per month. Null or an absent key = no
   /// goal. Parsed by `src/lib/validations/activity-goals.ts`, written through
   /// `/api/activity/goals`, read by the activity calendar
   /// (`/api/activity/calendar`), which reports progress against each goal set.
-  activityGoalsJson        Json?                @map("activity_goals_json")
+  activityGoalsJson             Json?                @map("activity_goals_json")
   /// Optional daily nutrient targets the person set for themselves, keyed by
   /// catalog code: `{ value, direction: "target" | "limit" }` in the code's
   /// canonical unit. Null or an absent key = no target. Parsed by
   /// `src/lib/validations/nutrient-targets.ts`, written through
   /// `/api/nutrients/targets`, read by `/api/nutrients/daily` and the MCP
   /// `get_nutrients` tool, whose charts prefer it over the dietary reference.
-  nutrientTargetsJson      Json?                @map("nutrient_targets_json")
+  nutrientTargetsJson           Json?                @map("nutrient_targets_json")
   // Blood-glucose display unit preference. Canonical storage is mg/dL.
-  glucoseUnit              String?              @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
+  glucoseUnit                   String?              @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
+  /// #1430 — which country's (or the EU's) official medicine registry the
+  /// "Find leaflet" link opens: an ISO 3166 alpha-2 code from
+  /// `MEDICINE_REGISTRIES` (`src/lib/medications/leaflet-registries.ts`), or
+  /// `NONE`. Independent of the interface language. NULL means not settled
+  /// yet: the first `/api/auth/me` read derives it once from the locale and
+  /// the time zone where they agree on one registry, otherwise `NONE`, and
+  /// stores it, so a later change of language never moves it. Written by
+  /// `PATCH /api/auth/me/medicine-registry`; read by `/api/auth/me` and the
+  /// medication detail read, which builds the link. The server never fetches
+  /// anything from a registry.
+  medicineRegistry              String?              @map("medicine_registry")
   // v1.18.6 — explicit "I have diabetes / clinician glucose targets" opt-in.
   // When `true`, the glucose target resolver applies the tighter ADA glycemic
   // GOAL bands (fasting 80–130, postprandial < 180) instead of the general
   // non-diabetic normal bands. NEVER auto-inferred from values, NEVER a
   // diagnosis — purely a user-declared preference that selects which target
   // band the user is judged against. Default `false`.
-  hasDiabetes              Boolean              @default(false) @map("has_diabetes")
+  hasDiabetes                   Boolean              @default(false) @map("has_diabetes")
   // v1.18.10 — opt-in local (in-browser) OCR for lab-report scans. When `true`,
   // a user whose AI provider cannot read images (e.g. ChatGPT-OAuth/Codex, a
   // text-only model) can still scan a report: the image is OCR'd in the browser
@@ -459,32 +483,32 @@ model User {
   // provider for structuring. Less accurate than native vision — the mandatory
   // review screen remains the safety backstop. Default `false`; vision-capable
   // users keep the higher-accuracy native path and never pay the WASM download.
-  labsLocalOcrEnabled      Boolean              @default(false) @map("labs_local_ocr_enabled")
+  labsLocalOcrEnabled           Boolean              @default(false) @map("labs_local_ocr_enabled")
   /// v1.44 — keep the GPS track of a workout. OFF by default: a route is
   /// where a person lives, works and runs, so it is stored only after they
   /// opt in. Read by the workout batch route and the export.zip import, which
   /// drop the track while it is off (the workout itself is always kept).
   /// Never read by any AI path; the AI egress guard freezes the route readers.
-  storeWorkoutRoutes       Boolean              @default(false) @map("store_workout_routes")
+  storeWorkoutRoutes            Boolean              @default(false) @map("store_workout_routes")
   // v1.7.0 unit pref — global metric/imperial display preference.
   // Canonical storage stays SI; this only selects the display-time
   // transform branch (km/h vs mph, km vs mi). Null = default "metric".
-  unitPreference           String?              @map("unit_preference") // "metric" | "imperial" | null = default "metric"
+  unitPreference                String?              @map("unit_preference") // "metric" | "imperial" | null = default "metric"
   // Hour-cycle display preference. AUTO follows the locale convention
   // (en → AM/PM, de → 24h), H12 forces AM/PM, H24 forces 24-hour.
   // Display-time only — canonical storage stays UTC instants.
-  timeFormat               TimeFormatPreference @default(AUTO) @map("time_format")
+  timeFormat                    TimeFormatPreference @default(AUTO) @map("time_format")
   // Date display preference. AUTO follows the active locale convention
   // (de → dd.MM.yyyy, en → MM/dd/yyyy); DMY pins day-month-year,
   // MDY pins month-day-year, YMD pins ISO yyyy-MM-dd. Display-time only —
   // canonical storage stays UTC instants.
-  dateFormat               DateFormatPreference @default(AUTO) @map("date_format")
+  dateFormat                    DateFormatPreference @default(AUTO) @map("date_format")
   // AI provider selection for insights. Null = OPENAI fallback.
-  aiProvider               String?              @map("ai_provider") // "OPENAI" | "ANTHROPIC" | "LOCAL" | "CHATGPT_OAUTH"
+  aiProvider                    String?              @map("ai_provider") // "OPENAI" | "ANTHROPIC" | "LOCAL" | "CHATGPT_OAUTH"
   /// The model of the OpenAI and Anthropic providers (and the gateway's
   /// fallback when `aiCompatModel` is empty). Not read for Local, which has
   /// `aiLocalModel`.
-  aiModel                  String?              @map("ai_model")
+  aiModel                       String?              @map("ai_model")
   /// #1417 — the Local provider's base URL, and nothing else's. The column is
   /// the former `aiBaseUrl` (kept as `ai_base_url`, so no copy and a rollback
   /// finds it): it was only ever read for Local, but the field name read as
@@ -493,17 +517,17 @@ model User {
   /// provider switch. A cloud key can never reach it because no other
   /// provider's resolution reads this field: OpenAI pins api.openai.com,
   /// Anthropic takes no base URL, the gateway reads `aiCompatBaseUrl`.
-  aiLocalBaseUrl           String?              @map("ai_base_url")
+  aiLocalBaseUrl                String?              @map("ai_base_url")
   /// #1417 — the Local provider's own model (migration 0512 copied it out of
   /// the shared `aiModel`), so saving another provider never changes it.
-  aiLocalModel             String?              @map("ai_local_model")
-  aiAnthropicKeyEncrypted  String?              @map("ai_anthropic_key_encrypted")
-  aiLocalKeyEncrypted      String?              @map("ai_local_key_encrypted")
+  aiLocalModel                  String?              @map("ai_local_model")
+  aiAnthropicKeyEncrypted       String?              @map("ai_anthropic_key_encrypted")
+  aiLocalKeyEncrypted           String?              @map("ai_local_key_encrypted")
   // v1.4.3: per-user OpenAI API key for the OPENAI provider — previously
   // the schema only stored Anthropic and Local keys, leaving OPENAI without
   // a credential surface. Encrypted with the active ENCRYPTION_KEYS entry
   // before storage.
-  aiOpenaiKeyEncrypted     String?              @map("ai_openai_key_encrypted")
+  aiOpenaiKeyEncrypted          String?              @map("ai_openai_key_encrypted")
 
   // v1.33.1 (#470) — the OpenAI-compatible gateway provider (LiteLLM,
   // OpenRouter, vLLM, any endpoint speaking `/v1/chat/completions`).
@@ -533,6 +557,23 @@ model User {
   // every capability reads the main chain under today's rules.
   aiNamedChains Json? @map("ai_named_chains")
 
+  /// #1403 — where a managed profile's AI work gets its provider. Read only
+  /// while `managedProfileAt` is set (`src/lib/ai/managed-ai-source.ts`):
+  /// `INSTANCE` is the operator's key alone (the default, and the behaviour
+  /// before this column), `NONE` is no provider at all, and `GUARDIAN` is a
+  /// chain the guardian named in `managedAiGuardianId` configured on their own
+  /// account. Ignored on every other account.
+  managedAiSource     ManagedAiSource @default(INSTANCE) @map("managed_ai_source")
+  /// The guardian whose chain serves the profile under `GUARDIAN`. A plain id,
+  /// not a relation: the guardian's own deletion must not touch this row, and
+  /// the resolver serves nothing unless this account still holds an active
+  /// MANAGE grant on the profile.
+  managedAiGuardianId String?         @map("managed_ai_guardian_id")
+  /// Which of that guardian's chains: a named chain id
+  /// (`User.aiNamedChains`), or null for the guardian's default chain. A chain
+  /// that no longer exists serves nothing rather than a wider set.
+  managedAiChainId    String?         @map("managed_ai_chain_id")
+
   // v1.22 (#89) — per-user response timeout for AI generation, in SECONDS.
   // Threaded onto `CompletionParams.timeoutMs` (×1000). Null = the generous
   // built-in default (~180 s). Surfaced in Settings → AI mainly for
@@ -540,6 +581,13 @@ model User {
   // first request while it loads the model), where the legacy 60 s client
   // default timed the Coach out before the first token landed.
   aiResponseTimeoutSeconds Int? @map("ai_response_timeout_seconds")
+
+  /// The Coach budget of each self-hosted provider (Local and the
+  /// OpenAI-compatible gateway): snapshot characters, tokens, rounds and
+  /// seconds per turn, as `{ "local": {...}, "openai-compatible": {...} }`.
+  /// Parsed and clamped by `parseCoachBudgets`
+  /// (`src/lib/ai/coach/coach-budgets.ts`); null = the built-in limits.
+  aiCoachBudgets Json? @map("ai_coach_budgets")
 
   // Automatic AI reading of uploaded vault documents. OFF by default: the vault
   // stays local-first — a newly stored document is only read externally when the
@@ -704,6 +752,13 @@ model User {
   // here — absence is exclusion, and there is no defaults constant to drift.
   reportSelectionJson Json? @map("report_selection_json")
 
+  // The scheduled doctor report: `{ v: 1, cadence, window, lastPeriod,
+  // lastOutcome, lastRunAt }` (`src/lib/doctor-report/schedule.ts`). NULL is
+  // off, the default. The daily `report-schedule` job files the report of each
+  // closed period into the document vault once and stamps `lastPeriod`; the
+  // settings card reads the stamp and the outcome back.
+  reportScheduleJson Json? @map("report_schedule_json")
+
   // v1.4.49 M-DOUBLE-REMINDER — per-user notification preferences blob.
   //
   // Opt-in suppression for redundant server-side pushes. Shape:
@@ -866,6 +921,13 @@ model User {
   totpLastStep                 BigInt?   @map("totp_last_step")
   mfaEnforced                  Boolean   @default(false) @map("mfa_enforced")
   passkeyUpgradeNudgeDismissed Boolean   @default(false) @map("passkey_upgrade_nudge_dismissed")
+  /// One-time admin notices this admin account has dismissed, by id
+  /// (`server_setup_available`). Reader: the admin start page, which shows a
+  /// notice only while its id is absent here. The push relay's notice
+  /// (`push_relay_available`) gave way to the relay question in 1.49, which
+  /// is answered once for the server (`AppSettings.pushRelayDecision`); an id
+  /// already stored is inert.
+  adminNoticesDismissed        String[]  @default([]) @map("admin_notices_dismissed")
 
   // Relations
   passkeys                                  Passkey[]
@@ -976,6 +1038,8 @@ model User {
   // pg-boss job state so the polling endpoint can read live per-
   // phase progress without round-tripping through pg-boss internals.
   importJobs                                ImportJob[]
+  fhirImportedResources                     FhirImportedResource[]
+  healthConnectRemoteSource                 HealthConnectRemoteSource?
   medicationIntakeImportJobs                MedicationIntakeImportJob[]       @relation("MedicationIntakeImportRecord")
   // v1.5.0 — persistent measurement rollup table. Carries the
   // count/min/max/mean/sd/slope/r2 stats per (type, granularity,
@@ -1015,6 +1079,7 @@ model User {
   // 20 attempts ordered by recency. Daily prune at 03:35 Europe/Berlin
   // retires rows older than 90 days (see `handlePushAttemptCleanup` in
   // `reminder-worker.ts`).
+  pushAttempts                              PushAttempt[]                     @relation("PushAttemptUser")
   pushAttemptsForRecord                     PushAttempt[]                     @relation("PushAttemptRecordUser")
   pushAttemptsReceived                      PushAttempt[]                     @relation("PushAttemptRecipientUser")
   notificationEvents                        NotificationEvent[]
@@ -1128,6 +1193,7 @@ model User {
   // instance for the document picker. See DocumentSourceConnection.
   documentSourceConnections                 DocumentSourceConnection[]
   documentAiRuns                            DocumentAiRun[]
+  aiJobFailures                             AiJobFailure[]
   extractedFacts                            ExtractedFact[]
   documentConditionLinks                    DocumentConditionLink[]
   documentContentIndexes                    DocumentContentIndex[]
@@ -1136,9 +1202,6 @@ model User {
   // The paired AFib verdict still lands as an IRREGULAR_RHYTHM_NOTIFICATION
   // Measurement EVENT row (v1.18.11); this holds the raw signal samples.
   ecgRecordings                             EcgRecording[]
-  // The Apple Health workouts and ECG recordings the phone reported
-  // deleted, so a late re-post of the same sample stays deleted.
-  appleHealthTombstones                     AppleHealthTombstone[]
   // v1.38.0 — visits. `Encounter` is one contact with the healthcare
   // system (happened or booked), `Practitioner` the account's own address
   // book, and the three link tables are what the visit produced. No
@@ -1220,6 +1283,10 @@ model User {
   // managed profile.
   cycleCalendarFeeds       CycleCalendarFeed[] @relation("CycleCalendarFeedSubject")
   cycleCalendarFeedsMinted CycleCalendarFeed[] @relation("CycleCalendarFeedCreator")
+  careCalendarFeeds        CareCalendarFeed[]  @relation("CareCalendarFeedSubject")
+  careCalendarFeedsMinted  CareCalendarFeed[]  @relation("CareCalendarFeedCreator")
+  emergencyCardLinks       EmergencyCardLink[] @relation("EmergencyCardLinkSubject")
+  emergencyCardLinksMinted EmergencyCardLink[] @relation("EmergencyCardLinkCreator")
 
   // v1.39 — the needs-based onboarding's answers and step ledger for THIS
   // record. 1:1, and keyed by record rather than by the person at the
@@ -1245,6 +1312,7 @@ model User {
   // unique indexes ignore NULL pairs).
   @@unique([oidcIssuer, oidcSub])
   @@index([deletionPurgeAt], map: "users_deletion_purge_at_idx")
+  @@index([ouraUserId])
   @@map("users")
 }
 
@@ -1878,6 +1946,23 @@ enum MeasurementType {
   FEV1 // litres — HealthKit `forcedExpiratoryVolume1`. Forced expiratory volume in the first second of a spirometry manoeuvre; spot reading.
   FVC // litres — HealthKit `forcedVitalCapacity`. Forced vital capacity from a spirometry manoeuvre; spot reading.
   PEAK_EXPIRATORY_FLOW // L/min — HealthKit `peakExpiratoryFlowRate`. Peak flow from a peak-flow meter or spirometer; spot reading.
+  // Apple effort. Spot readings, never summed into energy: a score is not
+  // kilocalories, and physical effort is a rate. The logged score and the
+  // watch's estimate stay apart so a day mean cannot blend them.
+  WORKOUT_EFFORT_SCORE // score (0–10) — HealthKit `workoutEffortScore` (iOS 18). How hard a workout felt, logged by the person.
+  ESTIMATED_WORKOUT_EFFORT_SCORE // score (0–10) — HealthKit `estimatedWorkoutEffortScore` (iOS 18). The watch's estimate of that score. Not the logged one.
+  PHYSICAL_EFFORT // kcal/(hr·kg) — HealthKit `physicalEffort` (iOS 17+). Intensity during activity, in the same family as METs.
+  // Apple sport quantities (#1415). Distances are day totals of per-workout
+  // increments; the running dynamics and rowing speed are per-sample means.
+  // Context next to VO2 max and training load, never a training plan.
+  CYCLING_DISTANCE // m — HealthKit `distanceCycling`. Summed per day like walking + running distance.
+  ROWING_DISTANCE // m — HealthKit `distanceRowing` (iOS 18). Summed per day.
+  ROWING_SPEED // m/s — HealthKit `rowingSpeed` (iOS 18). Per-sample speed; daily MEAN.
+  RUNNING_SPEED // m/s — HealthKit `runningSpeed` (iOS 16). Per-sample speed; daily MEAN.
+  RUNNING_POWER // W — HealthKit `runningPower` (iOS 16). Per-sample power; daily MEAN.
+  RUNNING_GROUND_CONTACT_TIME // ms — HealthKit `runningGroundContactTime` (iOS 16). Per-sample mean.
+  RUNNING_VERTICAL_OSCILLATION // cm — HealthKit `runningVerticalOscillation` (iOS 16). Per-sample mean.
+  RUNNING_STRIDE_LENGTH // m — HealthKit `runningStrideLength` (iOS 16). Per-sample mean.
 
   @@map("measurement_type")
 }
@@ -2171,6 +2256,14 @@ model Measurement {
   unit                  String // kg, mmHg, bpm, %, minutes (sleep), steps, mg/dL, kcal, m, ms, mL/(kg·min), celsius
   source                MeasurementSource                 @default(MANUAL)
   measuredAt            DateTime                          @map("measured_at")
+  /// The IANA time zone the reading was taken in, when the writer knows it
+  /// (HealthKit `HKMetadataKeyTimeZone`, sent by the iOS app on the batch
+  /// route). NULL means "the profile zone", which is every row written before
+  /// the column and every writer that does not send one. The local day of a
+  /// reading is its own zone's day when set, the profile zone's otherwise
+  /// (`readingZone()` in src/lib/tz/reading-zone.ts, `readingWallSql()` for
+  /// SQL). Rollup buckets are UTC and do not read it.
+  timeZone              String?                           @map("time_zone")
   notes                 String? // LEGACY plaintext — superseded by `notesEncrypted` (v1.23). New writes go to the encrypted column and null this; the boot-time backfill migrates the remaining rows. Column drop is a follow-up release once the backfill reports zero remaining.
   // v1.23 — free-text measurement note, AES-256-GCM at rest (Bytes, matching
   // the IllnessDayLog / CycleDayLog / LabResult note convention). Registered
@@ -2239,6 +2332,18 @@ model Measurement {
   // recorded instant. The unique-by-externalId index keeps both
   // states distinguishable for the bulk-backfill UPSERT path.
   deletedAt             DateTime?                         @map("deleted_at")
+  /// When the phone reported this row deleted in Apple Health (the
+  /// `by-external-ids` delete). The deletion is Apple Health's while this
+  /// equals `deletedAt`; any other deletion (the person in HealthLog, the
+  /// server's own housekeeping) leaves it null or different. A re-post of a
+  /// row deleted in HealthLog is refused, one deleted in Apple Health may
+  /// come back (`src/lib/sync/tombstone-repost.ts`).
+  appleHealthDeletedAt  DateTime?                         @map("apple_health_deleted_at")
+  /// When the phone computed this `stats:` day total (`computedAt` on the
+  /// batch entry). A write of the same row carrying an earlier `computedAt`
+  /// is refused as `stale`, so an out-of-order replay never replaces a newer
+  /// total. Null on every other row, and on a total written without one.
+  statsComputedAt       DateTime?                         @map("stats_computed_at")
   createdAt             DateTime                          @default(now()) @map("created_at")
   updatedAt             DateTime                          @updatedAt @map("updated_at")
   /// The `measurements:write` token that carried this reading, set on every
@@ -2248,12 +2353,13 @@ model Measurement {
   /// mirrored.
   ingestTokenId         String?                           @map("ingest_token_id")
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ingestToken   ApiToken?      @relation(fields: [ingestTokenId], references: [id], onDelete: SetNull)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingestToken     ApiToken?        @relation(fields: [ingestTokenId], references: [id], onDelete: SetNull)
   // v1.19.0 — optional back-relation to the full ECG waveform recording(s)
   // paired with this EVENT row. SET NULL on the FK side keeps the trace if
   // the EVENT row is re-keyed / removed.
-  ecgRecordings EcgRecording[]
+  ecgRecordings   EcgRecording[]
+  personalRecords PersonalRecord[]
 
   // Original measuredAt-based dedup — kept for legacy Withings ingest
   // and the manual UI's "no duplicate at the same wall-clock" guard.
@@ -2336,6 +2442,11 @@ model Measurement {
   // without this one the purge planned a sequential scan and could not finish
   // inside statement_timeout. Raw SQL only (partial predicate not expressible
   // in Prisma).
+  // `measurements_user_source_external_id_live_idx` is a partial index over
+  // `(user_id, source, external_id text_pattern_ops) WHERE deleted_at IS NULL
+  // AND external_id IS NOT NULL` (migration 0518): the integration deletes and
+  // sweeps that match an external-id prefix read it instead of every live
+  // reading of the account. Partial and opclass-specific, so raw SQL only.
   // `measurements_user_id_deleted_at_tombstone_idx` is a partial index over
   // `(user_id, deleted_at) WHERE deleted_at IS NOT NULL` (migration 0505,
   // v1.48.0): the sync handshake counts one account's tombstones through it
@@ -2429,37 +2540,6 @@ model EcgRecording {
   @@map("ecg_recordings")
 }
 
-/// The Apple Health samples the phone reported deleted through
-/// `DELETE /api/workouts/by-external-ids` and
-/// `DELETE /api/insights/ecg/by-external-ids`.
-///
-/// Neither `Workout` nor `EcgRecording` has a tombstone column, and adding one
-/// would put a `deletedAt: null` on every reader of two widely read tables. The
-/// rows therefore still go outright, and this ledger remembers the HealthKit
-/// sample id instead, so a late re-post of a deleted sample answers
-/// `duplicate` and writes nothing: the rule mood entries keep with their
-/// `deletedAt`. Only `source = APPLE_HEALTH` rows are ever recorded, and no
-/// reader of workouts or recordings looks here.
-///
-/// `domain` is a closed set in app code: "workout" | "ecg"
-/// (`src/lib/sync/apple-health-tombstones.ts`).
-model AppleHealthTombstone {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  domain     String
-  /// The HealthKit sample UUID: `Workout.externalId` or
-  /// `EcgRecording.externalRecordingId` of the deleted row.
-  externalId String   @map("external_id")
-  /// When the phone reported the sample deleted. Named `createdAt` because
-  /// the row is the record of that deletion, not a soft-deleted row.
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, domain, externalId])
-  @@map("apple_health_tombstones")
-}
-
 // ─── Measurement rollups (v1.5.0) ──────────────────────────
 //
 // Persistent rollup table — second cache tier behind the 60-s LRU.
@@ -2543,7 +2623,6 @@ model MeasurementRollup {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, type, granularity, bucketStart, source])
-  @@index([userId, type, granularity, bucketStart(sort: Desc)])
   @@map("measurement_rollups")
 }
 
@@ -2616,8 +2695,7 @@ model IntradayCumulativeProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, type, dateKey])
-  @@index([userId, type, dateKey(sort: Desc)])
+  @@unique([userId, type, dateKey], map: "intraday_cumulative_profiles_user_type_date_key")
   @@index([dateKey])
   @@map("intraday_cumulative_profiles")
 }
@@ -2669,7 +2747,7 @@ model Workout {
   createdAt             DateTime          @default(now()) @map("created_at")
   updatedAt             DateTime          @updatedAt @map("updated_at")
 
-  user                   User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                   User                           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   route                  WorkoutRoute?
   samples                WorkoutSamples?
   insight                WorkoutInsight?
@@ -2697,11 +2775,11 @@ model Workout {
   /// has no `deletedAt` (workout deletes are hard deletes), so this stays
   /// a full unique — there is no tombstone to collide with and no
   /// resurrection gap to close.
-  @@unique([userId, source, externalId])
+  @@unique([userId, source, externalId], map: "workouts_user_source_external_key")
   /// Dashboard "recent workouts" query path.
-  @@index([userId, startedAt])
+  @@index([userId, startedAt], map: "workouts_user_started_idx")
   /// "Show me my last 10 runs" — per-sport history.
-  @@index([userId, sportType, startedAt])
+  @@index([userId, sportType, startedAt], map: "workouts_user_sport_started_idx")
   @@map("workouts")
 }
 
@@ -2729,7 +2807,7 @@ model WorkoutRoute {
   sampleTimestamps  Json?    @map("sample_timestamps")
   createdAt         DateTime @default(now()) @map("created_at")
 
-  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   // `workout_routes_geometry_backfill_idx` is a partial index over
   // `(workout_id) WHERE geometry IS NOT NULL` — see migration 0361 for the
@@ -2772,7 +2850,7 @@ model WorkoutSamples {
   sampleCount Int      @map("sample_count")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("workout_samples")
 }
@@ -2888,7 +2966,6 @@ model StrainTrimpCache {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, day])
-  @@index([userId, day(sort: Desc)])
   @@map("strain_trimp_cache")
 }
 
@@ -2925,7 +3002,7 @@ model PersonalRecord {
   /// SURFACE selects it: the record row itself carries the value, unit and
   /// achievedAt a reader sees. The backup does select it
   /// (`src/lib/export/awards-backup.ts`), because the column is a real foreign
-  /// key in the database even though no relation is declared here, so a
+  /// key, so a
   /// restore has to resolve it against the measurements it wrote instead of
   /// writing it blind and failing the constraint.
   sourceMeasurementId String?                 @map("source_measurement_id")
@@ -2933,15 +3010,16 @@ model PersonalRecord {
   externalId          String?                 @map("external_id")
   createdAt           DateTime                @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sourceMeasurement Measurement? @relation(fields: [sourceMeasurementId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   /// Idempotency guard for the detection worker — re-running it on
   /// the same (user, metric, slot, achievedAt) triple is a no-op.
-  @@unique([userId, metricType, metricSlot, achievedAt])
+  @@unique([userId, metricType, metricSlot, achievedAt], map: "personal_records_dedup_key")
   /// Hot read pattern — "current PR for this metric":
   /// ORDER BY value DESC LIMIT 1 (MAX direction) /
   /// ASC LIMIT 1 (MIN direction). Index covers both.
-  @@index([userId, metricType, value])
+  @@index([userId, metricType, value], map: "personal_records_user_metric_idx")
   // The foreign key's own lookup: deleting a reading checks this column once
   // per deleted row (migration 0362).
   @@index([sourceMeasurementId])
@@ -3137,9 +3215,10 @@ model Medication {
   /// set and 422s on a disallowed value.
   allowedInjectionSites         InjectionSite[]        @default([]) @map("allowed_injection_sites")
   /// v1.7.0 — iOS Live Activity opt-in for this medication's reminders.
-  /// Default false; existing rows backfill false. The server stores +
-  /// echoes the flag; the iOS client owns the ActivityKit lifecycle. No
-  /// server-side behaviour hangs off it.
+  /// Default false; existing rows backfill false. The iOS client plans its
+  /// own Activities by it, and the push relay's server-side start honours
+  /// it too: no relay start without it, and a server-started Activity ends
+  /// once it is turned off (`push-relay/live-activity.ts`).
   liveActivityEnabled           Boolean                @default(false) @map("live_activity_enabled")
   /// v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. Critical alarms
   /// bypass the device mute switch / Focus. Default false; the server
@@ -3164,6 +3243,13 @@ model Medication {
   /// no note. Written by the create and edit routes and the restore only,
   /// trimmed, at most 500 characters.
   noteEncrypted                 Bytes?                 @map("note_encrypted")
+  /// #1430 — the official leaflet the person found and saved for this
+  /// medication: an `https:` URL of at most 2048 characters, any host, because
+  /// the person pastes it. Shown as an external link only; the server never
+  /// fetches it and no page embeds it. NULL = none saved. Written by the
+  /// create and edit routes and the restore; read by the medication reads,
+  /// the backup and the data export.
+  leafletUrl                    String?                @map("leaflet_url")
   /// v1.16.11 — low-stock notification stamp. Set when the daily
   /// low-stock pass dispatched a notification for the current
   /// threshold crossing; cleared (re-armed) when the projected runway
@@ -3586,6 +3672,21 @@ enum IntakeSource {
 /// ("Zuordnung lösen") counterpart that stays a standalone ad-hoc take
 /// (`scheduledFor === takenAt`). The nightly slot dedup never folds a
 /// USER_PIN row into a snap cluster, so neither decision is reverted.
+/// Where a take was recorded: the web app, a Bearer client (the iOS app),
+/// the ingest hook (a pill box, home automation), a Telegram button, the
+/// Apple Health medication sync, a file import, or the server's auto-take.
+enum IntakeTakenVia {
+  WEB
+  APP
+  INTEGRATION
+  TELEGRAM
+  APPLE_HEALTH
+  IMPORT
+  AUTO
+
+  @@map("intake_taken_via")
+}
+
 enum IntakeAttributionSource {
   AUTO
   USER_PIN
@@ -3662,6 +3763,13 @@ model MedicationIntakeEvent {
   /// never on-time-washed — and surfaces released rows as ad-hoc; the
   /// nightly dedup leaves both standalone.
   attributionSource    IntakeAttributionSource @default(AUTO) @map("attribution_source")
+  /// How the dose on this row was recorded as taken. `source` names the
+  /// writer that created the row, which for a projected or reminder slot is
+  /// the server, so it cannot say where a take came from. Set by every take
+  /// write that knows its origin, null before migration 0515 and on rows no
+  /// take reached. Read by the today list (`takenVia`) so a client can warn
+  /// before a second take of the same dose.
+  takenVia             IntakeTakenVia?         @map("taken_via")
   source               IntakeSource            @default(WEB)
   /// v1.32.37 — client-supplied replay anchor, unique PER USER (migration
   /// 0273). It carried a GLOBAL unique from 0001_init, which let one
@@ -3698,7 +3806,7 @@ model MedicationIntakeEvent {
   // v1.7.0 sync — server-set mutation timestamp. The model had no
   // `updatedAt`; the offline-sync keyset feed orders on it, so it is
   // added here. `@updatedAt` makes Prisma maintain it on every write.
-  updatedAt            DateTime                @updatedAt @map("updated_at")
+  updatedAt            DateTime                @default(now()) @updatedAt @map("updated_at")
   // v1.7.0 sync — reconciliation counter. An intake is an immutable
   // fact, so a "correction" is a tombstone + re-insert rather than an
   // in-place edit; syncVersion still bumps on the soft-delete write so
@@ -3710,6 +3818,13 @@ model MedicationIntakeEvent {
   // keyed on the server `id`. NULL = live; non-NULL = tombstoned.
   // Read paths (today / compliance / lists) filter `deletedAt: null`.
   deletedAt            DateTime?               @map("deleted_at")
+  /// When the phone reported this row deleted in Apple Health (the
+  /// `by-external-ids` delete). The deletion is Apple Health's while this
+  /// equals `deletedAt`; any other deletion (the person in HealthLog, the
+  /// server's own housekeeping) leaves it null or different. A re-post of a
+  /// row deleted in HealthLog is refused, one deleted in Apple Health may
+  /// come back (`src/lib/sync/tombstone-repost.ts`).
+  appleHealthDeletedAt DateTime?               @map("apple_health_deleted_at")
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
@@ -3723,17 +3838,17 @@ model MedicationIntakeEvent {
   /// and idempotently `createMany`-backfill missing rows. Without a
   /// unique constraint the two reads could race a duplicate REMINDER
   /// row in for the same `(medicationId, scheduledFor)` between the
-  /// existence probe and the insert. `source` is in the key so the
-  /// reminder worker (REMINDER) doesn't collide with manual user
-  /// inserts (WEB / TELEGRAM / IMPORT) on the same slot.
+  /// existence probe and the insert.
   /// v1.12.1 — this is a partial live-row unique in the DB (`WHERE
   /// deleted_at IS NULL`, migration 0121, replacing the 0073 table
   /// constraint). A slot the user previously deleted (tombstoned) no
   /// longer blocks a re-take: `applyCanonicalSlotWrite` can re-create the
-  /// row instead of P2002-ing against the tombstone. Schema keeps the
-  /// full `@@unique` for the `userId_medicationId_scheduledFor_source`
-  /// compound where-key.
-  @@unique([userId, medicationId, scheduledFor, source])
+  /// row instead of P2002-ing against the tombstone. The schema keeps a
+  /// full `@@unique` so Prisma knows the key.
+  /// v1.49.0 — migration 0515 drops `source` from the key: one live row per
+  /// slot, whoever writes it, so two writers can no longer hold the same
+  /// slot twice. Still a partial live-row unique in the DB.
+  @@unique([userId, medicationId, scheduledFor], map: "medication_intake_events_user_med_slot_live_key")
   /// v1.28 — `medication_intake_events_user_external_id_live_key` is a
   /// partial UNIQUE index over `(user_id, external_id) WHERE external_id
   /// IS NOT NULL AND deleted_at IS NULL` — see migration 0239. The bulk
@@ -3743,7 +3858,7 @@ model MedicationIntakeEvent {
   /// can't express a partial-predicate unique (same as the live-row slot
   /// unique above, migration 0121), so the schema keeps the full
   /// `@@unique` for the `userId_externalId` compound where-key.
-  @@unique([userId, externalId])
+  @@unique([userId, externalId], map: "medication_intake_events_user_external_id_live_key")
   @@unique([userId, idempotencyKey])
   @@index([userId, medicationId, scheduledFor])
   // v1.7.0 sync — keyset support for the `/api/sync/changes` intake feed
@@ -3942,13 +4057,13 @@ model MedicationInventoryItem {
   /// rows; the plaintext drop is DEFERRED to a later release.
   notesEncrypted Bytes?                   @map("notes_encrypted")
   createdAt      DateTime                 @default(now()) @map("created_at")
-  updatedAt      DateTime                 @updatedAt @map("updated_at")
+  updatedAt      DateTime                 @default(now()) @updatedAt @map("updated_at")
 
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([userId, medicationId, state])
-  @@index([userId, expiresAt])
+  @@index([userId, medicationId, state], map: "medication_inventory_items_user_med_state_idx")
+  @@index([userId, expiresAt], map: "medication_inventory_items_user_expires_idx")
   // `medication_inventory_items_note_backfill_idx` is a partial index over
   // `(user_id) WHERE notes IS NOT NULL AND notes_encrypted IS NULL` — see
   // migration 0243 (v1.28.46 H4) for the med-notes boot-discovery scan. Raw
@@ -4009,11 +4124,11 @@ model MedicationSideEffect {
   notesEncrypted Bytes?                       @map("notes_encrypted")
   createdAt      DateTime                     @default(now()) @map("created_at")
 
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([userId, medicationId, occurredAt])
-  @@index([userId, occurredAt])
+  @@index([userId, medicationId, occurredAt], map: "medication_side_effects_user_med_occurred_idx")
+  @@index([userId, occurredAt], map: "medication_side_effects_user_occurred_idx")
   // `medication_side_effects_note_backfill_idx` is a partial index over
   // `(user_id) WHERE notes IS NOT NULL AND notes_encrypted IS NULL` — see
   // migration 0243 (v1.28.46 H4) for the med-notes boot-discovery scan. Raw
@@ -4113,6 +4228,8 @@ model TelegramReminderMessage {
   @@index([medicationId, date])
   // Leads the foreign key, so a cascade from the parent row is an index lookup.
   @@index([scheduleId])
+  // The ledger retention purge reads by send time (migration 0517).
+  @@index([sentAt])
   @@map("telegram_reminder_messages")
 }
 
@@ -4837,11 +4954,11 @@ model OAuthCallbackClaim {
 // ─── Mood Entries ─────────────────────────────────────────────
 
 model MoodEntry {
-  id            String    @id @default(cuid())
-  userId        String    @map("user_id")
-  date          String // YYYY-MM-DD — anchored to `tz` when not null, else legacy Europe/Berlin
-  mood          String // SUPER_GUT, GUT, OKAY, SCHLECHT, LAUSIG
-  score         Int // 1-5
+  id                   String    @id @default(cuid())
+  userId               String    @map("user_id")
+  date                 String // YYYY-MM-DD — anchored to `tz` when not null, else legacy Europe/Berlin
+  mood                 String // SUPER_GUT, GUT, OKAY, SCHLECHT, LAUSIG
+  score                Int // 1-5
   /// v1.37 — the five level-A self-state values, each 0-10 with its own
   /// anchors. `MOOD_DIMENSIONS` (`src/lib/mood/dimensions.ts`) is the one
   /// table binding a column to its label, its anchors and its orientation.
@@ -4879,12 +4996,12 @@ model MoodEntry {
   /// evidence, and averaging the two would weaken the line that makes the
   /// score worth showing to a doctor. The reasoning is written out at
   /// `src/lib/analytics/score/wellbeing.ts`.
-  moodA1        Int?      @map("mood_a1") // 0-10, pleasantness
-  stressA2      Int?      @map("stress_a2") // 0-10, inverse-oriented
-  energyA3      Int?      @map("energy_a3") // 0-10
-  connectionA4  Int?      @map("connection_a4") // 0-10
-  stabilityA5   Int?      @map("stability_a5") // 0-10
-  tags          String? // JSON array of tag keys
+  moodA1               Int?      @map("mood_a1") // 0-10, pleasantness
+  stressA2             Int?      @map("stress_a2") // 0-10, inverse-oriented
+  energyA3             Int?      @map("energy_a3") // 0-10
+  connectionA4         Int?      @map("connection_a4") // 0-10
+  stabilityA5          Int?      @map("stability_a5") // 0-10
+  tags                 String? // JSON array of tag keys
   /// v1.4.30 — first-class free-text note. Replaces the
   /// `tags: ["note:<text>"]` workaround the iOS app shipped through
   /// v0.4.1.1 (per R-E H-5); the prior pattern contaminated the
@@ -4897,16 +5014,16 @@ model MoodEntry {
   /// the encrypted column and null this; the boot-time backfill migrates the
   /// remaining rows. Column drop is a follow-up release once the backfill
   /// reports zero remaining.
-  note          String?   @db.Text
+  note                 String?   @db.Text
   /// v1.23 — free-text mood note, AES-256-GCM at rest (Bytes, matching the
   /// IllnessDayLog / CycleDayLog / LabResult note convention). Registered in
   /// ENCRYPTED_COLUMNS + the rotation script.
-  noteEncrypted Bytes?    @map("note_encrypted")
+  noteEncrypted        Bytes?    @map("note_encrypted")
   // Provenance. MANUAL / WEB / TELEGRAM / DAYLIO / MCP, plus the legacy
   // MOODLOG value carried by rows the retired moodLog bridge imported —
   // those rows are user history and keep their label. The column default
   // is legacy too; every writer sets `source` explicitly.
-  source        String    @default("MOODLOG")
+  source               String    @default("MOODLOG")
   // v1.12.1 — stable per-source dedup id. NULL for native / MANUAL
   // entries (those dedup on the legacy `(userId, date, moodLoggedAt)`
   // key). When an importer receives a source-stable id (an iOS row
@@ -4915,23 +5032,23 @@ model MoodEntry {
   // idempotent even when `moodLoggedAt` re-rounds / re-zones. Postgres
   // treats NULLs as distinct in that unique, so MANUAL rows never
   // collide on it. See migration 0122.
-  externalId    String?   @map("external_id")
-  moodLoggedAt  DateTime  @map("mood_logged_at")
+  externalId           String?   @map("external_id")
+  moodLoggedAt         DateTime  @map("mood_logged_at")
   /// v1.4.25 W7b — per-row IANA timezone that the `date` string is
   /// anchored to. Nullable for backward compatibility: legacy rows
   /// (`tz IS NULL`) were written under the Europe/Berlin assumption
   /// and read-paths interpret them as such. New rows always carry the
   /// user's `displayTimezone` at write time.
-  tz            String?
-  syncedAt      DateTime  @default(now()) @map("synced_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  tz                   String?   @db.VarChar(64)
+  syncedAt             DateTime  @default(now()) @map("synced_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
   // v1.7.0 sync — LWW reconciliation counter for the offline-sync feed.
   // Monotonically bumped on every server-side mutation (update +
   // soft-delete). Mood is last-writer-wins by syncVersion: the higher
   // value wins. Default 0 for the additive migration so legacy rows
   // round-trip unchanged.
-  syncVersion   Int       @default(0) @map("sync_version")
+  syncVersion          Int       @default(0) @map("sync_version")
   // v1.7.0 sync — soft-delete tombstone. The user-facing DELETE route
   // flips this (and bumps syncVersion) rather than removing the row, so
   // the `/api/sync/changes` feed surfaces the deletion as a tombstone
@@ -4939,7 +5056,14 @@ model MoodEntry {
   // NULL = live row; non-NULL = tombstoned at the recorded instant.
   // Every list / detail / analytics / rollup read filters
   // `deletedAt: null` so tombstoned rows never surface in normal reads.
-  deletedAt     DateTime? @map("deleted_at")
+  deletedAt            DateTime? @map("deleted_at")
+  /// When the phone reported this row deleted in Apple Health (the
+  /// `by-external-ids` delete). The deletion is Apple Health's while this
+  /// equals `deletedAt`; any other deletion (the person in HealthLog, the
+  /// server's own housekeeping) leaves it null or different. A re-post of a
+  /// row deleted in HealthLog is refused, one deleted in Apple Health may
+  /// come back (`src/lib/sync/tombstone-repost.ts`).
+  appleHealthDeletedAt DateTime? @map("apple_health_deleted_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -5061,7 +5185,7 @@ model MoodContext {
   eventType    String?   @map("event_type")
   eventValence Int?      @map("event_valence") // -5 to +5
   /// When it happened, if the person knew. Absent is common and means absent.
-  eventAt      DateTime? @map("event_at")
+  eventAt      DateTime? @map("event_at") @db.Timestamptz(3)
 
   /// One free-text note for the whole context, AES-256-GCM at rest (Bytes, the
   /// shared codec every other note column uses). One column rather than one
@@ -5070,8 +5194,8 @@ model MoodContext {
   /// `scripts/rotate-encryption-key.ts`.
   notesEncrypted Bytes? @map("notes_encrypted")
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   moodEntry MoodEntry @relation(fields: [moodEntryId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -5134,7 +5258,7 @@ model MoodPrediction {
   /// JSON array of `{ feature, contribution }` — the standardised coefficient
   /// times that day's standardised value, per feature.
   features     String
-  computedAt   DateTime @map("computed_at")
+  computedAt   DateTime @map("computed_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -5343,7 +5467,6 @@ model MoodEntryRollup {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, granularity, bucketStart])
-  @@index([userId, granularity, bucketStart(sort: Desc)])
   @@map("mood_entry_rollups")
 }
 
@@ -5641,6 +5764,24 @@ model AppSettings {
   /// (`src/lib/workouts/climb-backfill.ts`): the last workout id scanned,
   /// `done` when finished, NULL before it starts. Operational, never shown.
   workoutClimbBackfillCursor String?   @map("workout_climb_backfill_cursor")
+
+  /// 1.49 — when the first-admin server setup was finished; NULL while it is
+  /// offered. Migration 0551 stamps instances that already had accounts, so an
+  /// upgrade never offers it. Written by `PATCH /api/admin/server-setup`, read
+  /// by its GET (the setup screens, the admin notice, the done screen line).
+  serverSetupCompletedAt DateTime? @map("server_setup_completed_at")
+  /// 1.49 — each server setup step's state, `[{ id, status }]` with the ids of
+  /// `SERVER_SETUP_STEP_IDS` (`src/lib/admin/server-setup.ts`); NULL before
+  /// the first step. Same writer and readers as the stamp above.
+  serverSetupStepsJson   Json?     @map("server_setup_steps_json")
+  /// 1.49 — the operator's answer to "Send push notifications through the
+  /// HealthLog relay?": `on` once a registration at the relay succeeded, `off`
+  /// once the admin said no or switched the relay off, NULL while nobody
+  /// answered (CHECK in migration 0556). Written by `registration.ts`
+  /// (`recordRelayDecision`) and the answer route; read by
+  /// `operatorDecisionOf` (`operator-decision.ts`) for `/api/auth/me`
+  /// `push.relay.operatorDecision` and the admin relay status.
+  pushRelayDecision      String?   @map("push_relay_decision")
 
   @@map("app_settings")
 }
@@ -6256,7 +6397,7 @@ model ImportJob {
   /// non-terminal row whose heartbeat has gone stale as orphaned, so a
   /// job still actively parsing in another worker (fresh heartbeat) is
   /// never flipped to `failed` (issue #486 follow-up).
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
   /// JSON envelope mirroring `ImportJobProgress` (`src/lib/measurements/
   /// import-apple-health-export.ts`). Updated mid-run.
   progress           Json      @default("{}")
@@ -6297,7 +6438,7 @@ model MedicationIntakeImportJob {
   startedAt     DateTime? @map("started_at")
   completedAt   DateTime? @map("completed_at")
   createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
 
   recordUser User        @relation("MedicationIntakeImportRecord", fields: [recordUserId], references: [id], onDelete: Cascade)
   medication Medication? @relation(fields: [medicationId], references: [id], onDelete: Cascade)
@@ -6381,7 +6522,7 @@ model IdempotencyKey {
   expiresAt          DateTime @map("expires_at")
   createdAt          DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([userId, key, method, path])
   @@index([expiresAt])
@@ -6401,17 +6542,55 @@ model IdempotencyKey {
 /// Loose-typed `apnsEnvironment` (sandbox|production) leaves headroom
 /// for whatever new gateway labels Apple ships next without a forced
 /// migration.
+/// One running medication Live Activity of a device: its ActivityKit push
+/// token and the dose it shows, so the server ends exactly that Activity once
+/// that dose is answered (`medication-intake-sync.ts`). The token addresses
+/// the Activity; nothing else about the dose leaves in the push.
+model LiveActivityToken {
+  id                String    @id @default(cuid())
+  deviceId          String    @map("device_id")
+  pushToken         String    @map("push_token")
+  medicationId      String    @map("medication_id")
+  /// The slot the Activity counts down to; null for a medication-level one.
+  slotInstant       DateTime? @map("slot_instant")
+  /// The device's `hl-activity-v1` statement for this Activity
+  /// (`{ instanceId, tokenTag, laTokenTag, iat }`) and its signature. The
+  /// relay ends an Activity only with them, and they reach the relay only
+  /// inside that end push. Reader: `push-relay/route-device.ts`.
+  activityStatement Json?     @map("activity_statement")
+  activitySignature String?   @map("activity_signature")
+  /// The content state the last relay update sent, so an unchanged state is
+  /// not sent again. Reader and writer: `push-relay/live-activity.ts`.
+  lastRelayState    Json?     @map("last_relay_state")
+  /// The server started this Activity over the relay (the app registered it
+  /// with `relayStart: true`; the mark sticks to the token on later
+  /// registrations). Only these get relay updates: an Activity the app
+  /// started itself has another attributes type, and gets only the direct
+  /// path and the end push. Writer: `POST /api/devices`; reader:
+  /// `push-relay/live-activity.ts`.
+  relayStarted      Boolean   @default(false) @map("relay_started")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  // The unique key leads with `deviceId`, so it serves every lookup by
+  // device; a separate index on it alone would be a prefix of it.
+  @@unique([deviceId, pushToken])
+  @@map("live_activity_tokens")
+}
+
 model Device {
-  id                    String   @id @default(cuid())
-  userId                String   @map("user_id")
-  platform              String // "ios"
-  token                 String   @unique
-  bundleId              String   @map("bundle_id")
-  locale                String?
-  appVersion            String?  @map("app_version")
-  model                 String?
-  apnsToken             String?  @map("apns_token")
-  apnsEnvironment       String?  @map("apns_environment") // "sandbox" | "production"
+  id                         String              @id @default(cuid())
+  userId                     String              @map("user_id")
+  platform                   String // "ios"
+  token                      String              @unique
+  bundleId                   String              @map("bundle_id")
+  locale                     String?
+  appVersion                 String?             @map("app_version")
+  model                      String?
+  apnsToken                  String?             @map("apns_token")
+  apnsEnvironment            String?             @map("apns_environment") // "sandbox" | "production"
   /// v1.7.0 — per-device medication-delivery override. NULL = inherit the
   /// user-level roaming default
   /// (`User.notificationPrefs.medication.deliveryDefault`). "server"
@@ -6419,7 +6598,16 @@ model Device {
   /// v1.48.0 (#179) the dispatcher's APNs send honours it per device for the
   /// medication reminder that announces a dose; NULL there follows the
   /// account-wide client-managed flag (`deviceDeliversLocally`).
-  medicationDelivery    String?  @map("medication_delivery")
+  medicationDelivery         String?             @map("medication_delivery")
+  /// Until when a device that delivers its own medication reminders has
+  /// them planned (`POST /api/devices` `localRunwayUntil`, at most 14 days
+  /// ahead; null clears it, omitted keeps it). A device delivers locally
+  /// only while `now <= localRunwayUntil`, or, without a runway, while it
+  /// was seen in the last 3 days (`lastSeen`, which every request on its
+  /// sign-in token moves): a quiet phone whose plan ran dry gets the
+  /// server's reminder push again until it shows up. Reader: the dispatcher's
+  /// APNs branch (`client-managed-apns.ts`, `deviceDeliversLocally`).
+  localRunwayUntil           DateTime?           @map("local_runway_until")
   /// v1.17.1 (#22) — APNs push token for the iOS Live Activity update/end
   /// channel. ActivityKit issues a per-Activity push token distinct from the
   /// device APNs token; the server stores the most recent one so the worker
@@ -6427,12 +6615,91 @@ model Device {
   /// the device has no active Live Activity. The iOS client owns the
   /// ActivityKit lifecycle and registers/clears this token; no server-side
   /// behaviour hangs off it beyond addressing the update push.
-  liveActivityPushToken String?  @map("live_activity_push_token")
-  lastSeen              DateTime @default(now()) @map("last_seen")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
+  liveActivityPushToken      String?             @map("live_activity_push_token")
+  /// The device's running medication Live Activities, one row each, with
+  /// the dose it shows. Replaced as a set by `POST /api/devices`
+  /// (`liveActivities`); a row goes when its end push goes out.
+  liveActivities             LiveActivityToken[]
+  /// The device's X25519 push key (raw 32 bytes, base64url), the recipient
+  /// of every sealed push envelope. Set only with the device's consent, from
+  /// `POST /api/devices` `pushKey`; null for a device that takes plaintext
+  /// pushes. Readers: the push builders (`push-relay/route-device.ts`).
+  pushKeyPublic              String?             @map("push_key_public")
+  /// The envelope suites the device opens (`pushKey.suites`). Reader: the
+  /// sealer, which refuses to seal with a suite the device cannot open.
+  pushKeySuites              Int[]               @default([]) @map("push_key_suites")
+  /// When and under which consent text the person turned the relay on for
+  /// this device (`relayConsent`). Readers: the relay binding (the consent
+  /// record the relay stores) and `/api/auth/me` `push.device.consent`.
+  relayConsentAt             DateTime?           @map("relay_consent_at")
+  relayConsentVersion        String?             @map("relay_consent_version")
+  /// The device's signed relay binding, forwarded to the relay unchanged:
+  /// the Ed25519 binding key, the `hl-bind-v1` statement fields and the
+  /// signature. Kept so a rebind after `404 binding_unknown` can resubmit the
+  /// last statement. Reader: `push-relay/binding.ts`.
+  relayBindingKey            String?             @map("relay_binding_key")
+  relayBindingStatement      Json?               @map("relay_binding_statement")
+  relayBindingSignature      String?             @map("relay_binding_signature")
+  /// `none` | `bound` | `rebind_needed` | `conflict`. Reader: `/api/auth/me`
+  /// `push.device.relayState` and the push routing, which sends over the
+  /// relay only for `bound`.
+  relayState                 String              @default("none") @map("relay_state")
+  /// When the relay answered the binding with `409 binding_conflict`. A
+  /// conflict still unsettled after 30 minutes reads and becomes
+  /// `rebind_needed` (`push-relay/binding.ts`, `relayStateAt`).
+  relayConflictAt            DateTime?           @map("relay_conflict_at")
+  /// The person's second, separate consent to Live Activity start and
+  /// update over the relay (`liveActivityConsent`), whose content the relay
+  /// and Apple can see. Distinct from the relay consent, off until given.
+  /// Readers: the Live Activity relay sender (`push-relay/live-activity.ts`)
+  /// and `/api/auth/me` `push.device.liveActivityConsent`.
+  liveActivityConsentAt      DateTime?           @map("live_activity_consent_at")
+  /// @internal: consent evidence, the text version the person agreed to;
+  /// kept as the record of that consent, never surfaced.
+  liveActivityConsentVersion String?             @map("live_activity_consent_version")
+  /// The ActivityKit push-to-start token and the device's `hl-la-start-v1`
+  /// statement over it (`liveActivityStart`), handed to the relay only
+  /// inside a start push. Reader: `push-relay/live-activity.ts`.
+  laStartToken               String?             @map("la_start_token")
+  laStartStatement           Json?               @map("la_start_statement")
+  laStartSignature           String?             @map("la_start_signature")
+  /// The dose the last relay start was for, so a dose starts once and the
+  /// app's registration of the started Activity (`relayStart: true`) finds
+  /// its dose. Reader and writer: `push-relay/live-activity.ts`.
+  laStartedMedicationId      String?             @map("la_started_medication_id")
+  laStartedSlot              DateTime?           @map("la_started_slot")
+  /// When the relay accepted the last start; null while it is in flight.
+  /// `liveActivityStarted` names the dose only once this is set. Readers: the
+  /// admin diagnostic (`/api/admin/notifications/diagnostic`,
+  /// `liveActivityStartedAt`) and `push-relay/live-activity-started.ts`.
+  laStartedAt                DateTime?           @map("la_started_at")
+  /// The outbox ref of the last start, so its final answer settles exactly
+  /// that start: accepted sets `laStartedAt`, a failure for good clears the
+  /// dose so the next pass tries again. Writer and reader:
+  /// `push-relay/live-activity-settle.ts`.
+  laStartRef                 String?             @map("la_start_ref")
+  /// When the relay last confirmed the binding. Reader: the admin diagnostic
+  /// (`relayBoundAt`).
+  relayBoundAt               DateTime?           @map("relay_bound_at")
+  /// The newest envelope ids this device reports it opened, per class
+  /// (`GET /api/sync/state`), and when it reported them. Reader: the receipt
+  /// write (`push-relay/receipts.ts`), which keeps the newer of the stored and
+  /// the reported id, so a late report cannot move them back; the time is
+  /// read by `intakeSync` (`capability.ts`) and the admin diagnostic.
+  envelopeOpenedAlertId      String?             @map("envelope_opened_alert_id")
+  envelopeOpenedSilentId     String?             @map("envelope_opened_silent_id")
+  envelopeReportedAt         DateTime?           @map("envelope_reported_at")
+  relayDeliveries            PushRelayDelivery[]
+  /// The silent wakes this server sent the device (DATA_CHANGED,
+  /// HEALTHKIT_CATCH_UP), for their rate limits (`push-relay/wakes.ts`).
+  pushWakes                  PushWake[]
+  /// The DATA_CHANGED wake owed to the device (`push-relay/data-changed.ts`).
+  pushDataChange             PushDataChange?
+  lastSeen                   DateTime            @default(now()) @map("last_seen")
+  createdAt                  DateTime            @default(now()) @map("created_at")
+  updatedAt                  DateTime            @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId])
   // `devices_apns_token_unique` is a partial UNIQUE index over
@@ -7056,7 +7323,6 @@ model HealthScoreRecord {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dayKey])
-  @@index([userId, dayKey(sort: Desc)])
   @@map("health_score_records")
 }
 
@@ -7301,6 +7567,8 @@ model CoachMessage {
   // planner do an index-backed per-conversation merge instead of gathering +
   // sorting every assistant row in the user's threads on each global poll.
   @@index([conversationId, role, createdAt(sort: Desc)])
+  // The retention purge reads by age alone (migration 0517).
+  @@index([createdAt])
   @@map("coach_messages")
 }
 
@@ -7498,6 +7766,12 @@ model UserHealthProfile {
   /// `lastConfirmedAt` / `reviewDue` by the life-circumstances read route.
   /// Plaintext: section keys and timestamps only, never an answer.
   lifeConfirmedJson          Json?                    @map("life_confirmed_json")
+  /// v1.49 — the optimistic-lock token of the about-me document (the four
+  /// texts and `aiIncludedSections`). Moved by the database on any write that
+  /// changes one of them (trigger `user_health_profiles_about_me_revision_bump`,
+  /// migration 0554), so an emergency-profile or pending-question write never
+  /// makes an about-me save answer 409.
+  aboutMeRevisedAt           DateTime                 @default(now()) @map("about_me_revised_at")
   createdAt                  DateTime                 @default(now()) @map("created_at")
   updatedAt                  DateTime                 @updatedAt @map("updated_at")
 
@@ -7627,12 +7901,11 @@ model HealthProfileFactRevision {
   createdAt              DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user         User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  supersededBy HealthProfileFactRevision?  @relation("HealthProfileFactSupersession", fields: [supersededByRevisionId], references: [id], onDelete: SetNull)
+  supersededBy HealthProfileFactRevision?  @relation("HealthProfileFactSupersession", fields: [supersededByRevisionId], references: [id], onDelete: SetNull, map: "health_profile_fact_revisions_superseded_by_fkey")
   supersedes   HealthProfileFactRevision[] @relation("HealthProfileFactSupersession")
 
-  @@unique([userId, kind, validFrom])
-  @@index([userId, kind, validFrom(sort: Desc)])
-  @@index([supersededByRevisionId])
+  @@unique([userId, kind, validFrom], map: "health_profile_fact_revisions_user_kind_valid_from_key")
+  @@index([supersededByRevisionId], map: "health_profile_fact_revisions_superseded_by_idx")
   @@map("health_profile_fact_revisions")
 }
 
@@ -7661,6 +7934,8 @@ model CoachUsage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dateKey])
+  // The ledger retention purge reads by last write (migration 0517).
+  @@index([updatedAt])
   @@map("coach_usage")
 }
 
@@ -7745,7 +8020,7 @@ model NotificationEvent {
 
   recordUser User @relation(fields: [recordUserId], references: [id], onDelete: Cascade)
 
-  @@index([recordUserId, eventType, dedupKey, createdAt(sort: Desc)])
+  @@index([recordUserId, eventType, dedupKey, createdAt(sort: Desc)], map: "notification_events_record_user_id_event_type_dedup_key_created")
   @@index([createdAt], map: "notification_events_created_at_idx")
   @@map("notification_events")
 }
@@ -7772,7 +8047,7 @@ model NotificationEgressAuthorization {
   recipientUser User @relation("NotificationEgressAuthorizationRecipientUser", fields: [recipientUserId], references: [id], onDelete: Cascade)
 
   @@index([authorizedAt], map: "notification_egress_authorizations_authorized_at_idx")
-  @@index([recordUserId, recipientUserId, authorizedAt(sort: Desc)])
+  @@index([recordUserId, recipientUserId, authorizedAt(sort: Desc)], map: "notification_egress_authorizations_record_user_id_recipient_use")
   @@index([recipientUserId, authorizedAt(sort: Desc)], map: "notification_egress_auth_recipient_authorized_at_idx")
   @@map("notification_egress_authorizations")
 }
@@ -7802,22 +8077,23 @@ model PushAttempt {
   /// the difference because it cannot see the trigger — that report is expected,
   /// and `notification-attribution.test.ts` ("persistence maps an omitted pair
   /// from the legacy recipient") is what proves the accommodation still works.
-  recordUserId    String?  @map("record_user_id")
+  recordUserId    String   @map("record_user_id")
   /// The account whose channel, preferences, and locale receive the delivery.
   /// Nullable for the same reason as `recordUserId` above.
-  recipientUserId String?  @map("recipient_user_id")
+  recipientUserId String   @map("recipient_user_id")
   channel         String // "APNS" | "WEB_PUSH" | "TELEGRAM" | "NTFY"
   eventType       String   @map("event_type") // dispatcher event-type string
   result          String // "ok" | "error" | "skipped"
   reason          String? // sender-side reason on error/skip; null on ok
   createdAt       DateTime @default(now()) @map("created_at")
 
-  recordUser    User? @relation("PushAttemptRecordUser", fields: [recordUserId], references: [id], onDelete: Cascade)
-  recipientUser User? @relation("PushAttemptRecipientUser", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  user          User @relation("PushAttemptUser", fields: [userId], references: [id], onDelete: Cascade)
+  recordUser    User @relation("PushAttemptRecordUser", fields: [recordUserId], references: [id], onDelete: Cascade)
+  recipientUser User @relation("PushAttemptRecipientUser", fields: [recipientUserId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([recordUserId, createdAt(sort: Desc)])
-  @@index([recipientUserId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)], map: "push_attempts_user_id_created_at_desc_idx")
+  @@index([recordUserId, createdAt(sort: Desc)], map: "push_attempts_record_user_id_created_at_desc_idx")
+  @@index([recipientUserId, createdAt(sort: Desc)], map: "push_attempts_recipient_user_id_created_at_desc_idx")
   @@map("push_attempts")
 }
 
@@ -8018,15 +8294,15 @@ model AccountGrant {
   /// invitation on the same pending row moves it; `createdAt` below is row
   /// bookkeeping and never moves. They agree the day the row is written and
   /// are allowed to disagree afterwards.
-  invitedAt  DateTime  @default(now()) @map("invited_at")
+  invitedAt  DateTime  @default(now()) @map("invited_at") @db.Timestamptz(3)
   /// When the delegate accepted. NULL = pending, which confers nothing.
   /// One-shot: an accepted grant can never be accepted again.
-  acceptedAt DateTime? @map("accepted_at")
+  acceptedAt DateTime? @map("accepted_at") @db.Timestamptz(3)
 
   /// When access ended, and who ended it. Written together, never cleared —
   /// a re-invitation is a NEW row. The database enforces that the two are
   /// either both set or both null.
-  revokedAt DateTime?            @map("revoked_at")
+  revokedAt DateTime?            @map("revoked_at") @db.Timestamptz(3)
   revokedBy AccountGrantRevoker? @map("revoked_by")
 
   /// Optional lapse date. Checked live on every resolution, so an expired
@@ -8034,13 +8310,13 @@ model AccountGrant {
   /// managed-profile invitation may carry an expiry while awaiting consent;
   /// accepting its MANAGE grant clears this field because an active Guardian
   /// ends only through an explicit lifecycle transition.
-  expiresAt  DateTime? @map("expires_at")
+  expiresAt  DateTime? @map("expires_at") @db.Timestamptz(3)
   /// Refreshed fire-and-forget when the grant is exercised, the same posture
   /// as `ApiToken.lastUsedAt`. The owner's panel reads it to answer "is this
   /// access still being used, or is it a grant nobody remembers".
-  lastUsedAt DateTime? @map("last_used_at")
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(3)
 
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   grantor User @relation("AccountGrantsGiven", fields: [grantorId], references: [id], onDelete: Cascade)
   grantee User @relation("AccountGrantsReceived", fields: [granteeId], references: [id], onDelete: Cascade)
@@ -8450,6 +8726,27 @@ model CycleProfile {
   /// application layer in addition to the always-encrypted notes.
   sensitiveCategoryEncryption Boolean @default(true) @map("sensitive_category_encryption")
 
+  /// Pregnancy and postpartum as a cycle state, set by the owner (or
+  /// once, conservatively, by an Apple Health import; see
+  /// `src/lib/cycle/pregnancy.ts`). NULL is the ordinary cycle. While the
+  /// resolved state is PREGNANT, or POSTPARTUM inside its window, the period
+  /// and fertility forecast pauses everywhere it is shown and every
+  /// prediction push is suppressed. The goal above is kept untouched, so the
+  /// ordinary cycle resumes with the goal the owner had.
+  ///
+  /// AES-256-GCM ciphertext of the state and its three calendar days
+  /// (`{ state, startDate, dueDate, deliveryDate }`, `YYYY-MM-DD` in the
+  /// owner's zone), sealed and opened only by `src/lib/cycle/pregnancy-store.ts`.
+  /// Always encrypted, whatever `sensitiveCategoryEncryption` says: that
+  /// switch exists so the day-log fields can stay queryable for the rollups
+  /// and correlations, and no query reads this state. Every reader resolves
+  /// it in the application on a given day, so nothing of it needs to be
+  /// plaintext. NULL is no state.
+  pregnancyEncrypted String? @map("pregnancy_encrypted")
+  /// How many weeks after `deliveryDate` the postpartum state lasts before
+  /// the ordinary cycle (and its forecast) resumes on its own.
+  postpartumWeeks    Int     @default(12) @map("postpartum_weeks")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -8541,6 +8838,127 @@ model CycleCalendarFeed {
   @@index([userId, createdAt(sort: Desc)])
   @@index([createdById])
   @@map("cycle_calendar_feeds")
+}
+
+/// How the care calendar feed titles its events. DISCREET is one dot, so a
+/// glance at a shared screen or a lock screen says nothing; DESCRIPTIVE names
+/// the appointment's practitioner or the check-up's own label.
+enum CareCalendarFeedTitleMode {
+  DISCREET
+  DESCRIPTIVE
+
+  @@map("care_calendar_feed_title_mode")
+}
+
+/// A subscribable calendar feed of one record's care dates: booked visits,
+/// check-ups coming due and vaccination boosters coming due.
+///
+/// The row is a URL credential, built like `CycleCalendarFeed`: only the HMAC
+/// of the raw `hlf_` token is stored, the raw token is returned once at mint,
+/// and the feed is computed live on every fetch, so nothing about the dates is
+/// stored here. Only the record's owner mints one, from their own session; a
+/// feed is never minted on a managed profile or a shared record.
+///
+/// At most one live feed per record: a partial unique index on `user_id WHERE
+/// revoked_at IS NULL`, written in the migration. Revocation stamps
+/// `revokedAt` and never deletes. Not in the backup, for the reason the cycle
+/// feed is not (`backup-plan.ts`).
+model CareCalendarFeed {
+  id          String @id @default(cuid())
+  /// The record whose care dates the feed serves.
+  userId      String @map("user_id")
+  /// Who minted it: the owner, or the guardian of a managed profile. A
+  /// guardian's feed is re-checked against their live MANAGE grant and the
+  /// managed-profile marker on every fetch, and ends with a handover.
+  createdById String @map("created_by_id")
+
+  /// HMAC-SHA256 of the raw `hlf_` token.
+  tokenHash   String @unique @map("token_hash")
+  /// The first 8 characters of the raw token, shown in settings.
+  tokenPrefix String @map("token_prefix")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  /// Fetch statistics, written fire-and-forget by the feed route.
+  lastFetchedAt DateTime? @map("last_fetched_at")
+  fetchCount    Int       @default(0) @map("fetch_count")
+  /// The last fetcher's User-Agent, truncated to 80 characters.
+  lastFetcherUa String?   @map("last_fetcher_ua")
+
+  /// SHA-256 of the last served body without its timestamps; it moves
+  /// `contentChangedAt`, and both drive DTSTAMP, LAST-MODIFIED and the ETag.
+  bodyHash         String?  @map("body_hash")
+  contentChangedAt DateTime @default(now()) @map("content_changed_at")
+
+  /// Which dates the feed carries.
+  includeVisits       Boolean                   @default(true) @map("include_visits")
+  includeCheckups     Boolean                   @default(true) @map("include_checkups")
+  includeVaccinations Boolean                   @default(true) @map("include_vaccinations")
+  titleMode           CareCalendarFeedTitleMode @default(DISCREET) @map("title_mode")
+
+  user      User @relation("CareCalendarFeedSubject", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User @relation("CareCalendarFeedCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdById])
+  @@map("care_calendar_feeds")
+}
+
+/// What one emergency-card link shows. The owner ticks each item at
+/// mint; nothing that is not ticked is ever read for the link.
+enum EmergencyCardField {
+  BLOOD_TYPE
+  ALLERGIES
+  CONDITIONS
+  MEDICATIONS
+  CONTACTS
+  IMPLANTS
+  ADVANCE_DIRECTIVE
+  ORGAN_DONOR
+  NOTE
+  DATE_OF_BIRTH
+  PREGNANCY
+
+  @@map("emergency_card_field")
+}
+
+/// The emergency card's QR link: a read-only view of the items the
+/// owner ticked, for a first responder who scans a wallet card. Built like the
+/// calendar feeds: only the HMAC of the raw `hlm_` token is stored, the view
+/// is computed on every access and never persisted, and revocation stamps
+/// `revokedAt`. At most one live link per record (a partial index in
+/// migration 0534, which Prisma cannot express). `fields` and `expiresAt` are
+/// frozen at mint: a link never widens; a new choice is a new link. Every
+/// access writes an audit row on the owner's trail and bumps the counters.
+model EmergencyCardLink {
+  id          String               @id @default(cuid())
+  userId      String               @map("user_id")
+  /// Who minted it: the owner, or the guardian of a managed profile. A
+  /// guardian's link is re-checked against their live MANAGE grant and the
+  /// managed-profile marker on every scan, and ends with a handover.
+  createdById String               @map("created_by_id")
+  /// HMAC-SHA256 of the raw `hlm_` token.
+  tokenHash   String               @unique @map("token_hash")
+  /// The first 8 characters of the raw token, shown so the owner can tell
+  /// which link is live. Not enough to rebuild it.
+  tokenPrefix String               @map("token_prefix")
+  /// The items the view shows. Frozen at mint.
+  fields      EmergencyCardField[] @map("fields")
+  /// Optional end; NULL lasts until revoked. Frozen at mint.
+  expiresAt   DateTime?            @map("expires_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  revokedAt   DateTime?            @map("revoked_at")
+
+  lastAccessAt DateTime? @map("last_access_at")
+  accessCount  Int       @default(0) @map("access_count")
+
+  user      User @relation("EmergencyCardLinkSubject", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User @relation("EmergencyCardLinkCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdById])
+  @@map("emergency_card_links")
 }
 
 /// One row per menstrual cycle (a period-start anchor + derived span).
@@ -8672,9 +9090,16 @@ model CycleDayLog {
   /// distinct so MANUAL rows never collide on it.
   externalId String?           @map("external_id")
 
-  tz          String?
-  syncVersion Int       @default(0) @map("sync_version")
-  deletedAt   DateTime? @map("deleted_at")
+  tz                   String?
+  syncVersion          Int       @default(0) @map("sync_version")
+  deletedAt            DateTime? @map("deleted_at")
+  /// When the phone reported this row deleted in Apple Health (the
+  /// `by-external-ids` delete). The deletion is Apple Health's while this
+  /// equals `deletedAt`; any other deletion (the person in HealthLog, the
+  /// server's own housekeeping) leaves it null or different. A re-post of a
+  /// row deleted in HealthLog is refused, one deleted in Apple Health may
+  /// come back (`src/lib/sync/tombstone-repost.ts`).
+  appleHealthDeletedAt DateTime? @map("apple_health_deleted_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -8754,13 +9179,20 @@ model CycleSymptom {
 /// pairing unique; cascade on both sides so deleting a day-log (or a
 /// catalog symptom) cleans up its links.
 model CycleSymptomLink {
-  dayLogId  String   @map("day_log_id")
-  symptomId String   @map("symptom_id")
+  dayLogId  String            @map("day_log_id")
+  symptomId String            @map("symptom_id")
   /// Optional 1-4 Likert intensity for this symptom on this day. NULL = a
   /// plain presence link (the pre-severity contract). Surfaced in
   /// CycleDayLogDTO so the log-day sheet can pre-fill the severity chips.
-  severity  Int?     @map("severity")
-  createdAt DateTime @default(now()) @map("created_at")
+  severity  Int?              @map("severity")
+  createdAt DateTime          @default(now()) @map("created_at")
+  /// Which write the link came from: `MANUAL` for the log-day sheet and every
+  /// hand-made write, `APPLE_HEALTH` / `HEALTH_CONNECT` for an import. An
+  /// import's day write replaces only the links of its own source, so a
+  /// symptom logged by hand on the same day stays; a hand-made write sets the
+  /// day's whole set and keeps the source of the links it leaves in place
+  /// (`replaceSymptomLinks`). Carried by the backup (`symptomSources`).
+  source    MeasurementSource @default(MANUAL)
 
   dayLog  CycleDayLog  @relation(fields: [dayLogId], references: [id], onDelete: Cascade)
   symptom CycleSymptom @relation(fields: [symptomId], references: [id], onDelete: Cascade)
@@ -8970,35 +9402,42 @@ model SymptomDefinition {
 /// same numeric rating scale the pain score uses), an optional note, and an
 /// optional link to the illness episode it happened during. v1.40.
 model SymptomEvent {
-  id            String    @id @default(cuid())
-  userId        String    @map("user_id")
-  definitionId  String    @map("definition_id")
+  id                   String    @id @default(cuid())
+  userId               String    @map("user_id")
+  definitionId         String    @map("definition_id")
   /// The instant it happened (UTC). Day grouping is the reader's concern.
-  occurredAt    DateTime  @map("occurred_at")
+  occurredAt           DateTime  @map("occurred_at")
   /// 0-10, CHECK-constrained in the migration.
-  intensity     Int
+  intensity            Int
   /// Optional free-text note, AES-256-GCM encrypted at rest.
-  noteEncrypted Bytes?    @map("note_encrypted")
+  noteEncrypted        Bytes?    @map("note_encrypted")
   /// The episode the person said this happened during. Only an open episode
   /// of the same account can be linked (the route checks); deleting the
   /// episode row keeps the event and drops the link.
-  episodeId     String?   @map("episode_id")
+  episodeId            String?   @map("episode_id")
   /// When it ended, for an occurrence imported with a duration (an Apple
   /// Health sample's `endDate`). NULL for a moment, and for every manual entry.
-  endAt         DateTime? @map("end_at")
+  endAt                DateTime? @map("end_at")
   /// `MANUAL` (logged in HealthLog) or `APPLE_HEALTH` (imported through
   /// `POST /api/symptoms/events/batch`). Never settable by a manual write.
-  source        String    @default("MANUAL")
+  source               String    @default("MANUAL")
   /// The HealthKit sample UUID of an imported occurrence; NULL for a manual
   /// one. Half of the `(userId, source, externalId)` dedup key.
-  externalId    String?   @map("external_id")
+  externalId           String?   @map("external_id")
   /// Tombstone. Only an imported occurrence is ever soft-deleted (by the app's
   /// deletion reconciliation or the person's own delete), so a late re-post of
   /// its sample answers `duplicate` instead of bringing it back. Every reader
   /// filters `deletedAt: null`.
-  deletedAt     DateTime? @map("deleted_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt            DateTime? @map("deleted_at")
+  /// When the phone reported this row deleted in Apple Health (the
+  /// `by-external-ids` delete). The deletion is Apple Health's while this
+  /// equals `deletedAt`; any other deletion (the person in HealthLog, the
+  /// server's own housekeeping) leaves it null or different. A re-post of a
+  /// row deleted in HealthLog is refused, one deleted in Apple Health may
+  /// come back (`src/lib/sync/tombstone-repost.ts`).
+  appleHealthDeletedAt DateTime? @map("apple_health_deleted_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   definition SymptomDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
@@ -9881,7 +10320,7 @@ model DocumentSourceAlias {
   // NULLS NOT DISTINCT in migration 0356 (hand-written; Prisma would
   // regenerate it NULLS DISTINCT): a key stored without an instance still
   // collides with the same key without one.
-  @@unique([userId, sourceSystem, sourceInstance, sourceId])
+  @@unique([userId, sourceSystem, sourceInstance, sourceId], map: "document_source_aliases_user_id_source_system_source_instance_s")
   @@index([documentId])
   @@map("document_source_aliases")
 }
@@ -9908,7 +10347,7 @@ model DocumentImportKey {
   // NULLS NOT DISTINCT in migration 0356 (hand-written; Prisma would
   // regenerate it NULLS DISTINCT): a key stored without an instance still
   // collides with the same key without one.
-  @@unique([userId, sourceSystem, sourceInstance, sourceId])
+  @@unique([userId, sourceSystem, sourceInstance, sourceId], map: "document_import_keys_user_id_source_system_source_instance_sour")
   @@map("document_import_keys")
 }
 
@@ -10053,7 +10492,7 @@ model DocumentContentIndex {
   verbatimTextEncrypted Bytes?   @map("verbatim_text_encrypted")
   /// Deduped HMAC-SHA256 (truncated hex) of the normalised tokens — the blind
   /// index. One-way: opaque without the server-held index subkey. GIN-indexed
-  /// (raw SQL in the migration; Prisma cannot express a GIN index).
+  /// (`document_content_index_search_tokens_gin`, migration 0228).
   searchTokens          String[] @default([]) @map("search_tokens")
   /// Provenance of the indexed text: "vision" (provider transcription of the
   /// stored original), "text-ocr" (browser-OCR text posted by the client),
@@ -10079,6 +10518,7 @@ model DocumentContentIndex {
   user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([searchTokens], type: Gin, map: "document_content_index_search_tokens_gin")
   @@map("document_content_index")
 }
 
@@ -10786,6 +11226,38 @@ model DocumentAiRun {
   @@map("document_ai_runs")
 }
 
+/// v1.49 (#1404) — why the latest background AI work of one kind stopped for
+/// a record, so the person reads the reason where they look: on the document
+/// and under Settings, AI. One row per record, job kind and subject (a
+/// document id, or "" for work that has none); a later success deletes it, a
+/// later failure overwrites it and counts up. Written only by the shared
+/// reporter (`src/lib/ai/job-failure/report.ts`), which stores closed codes
+/// and nothing else: no message, no prompt, no reply, no provider payload.
+/// Status of this host's runs, not part of the record: never in a backup.
+model AiJobFailure {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  /// The job kind, closed in code (`AI_JOB_KINDS`).
+  job           String
+  /// The document the work was for, or "" when it had none. No foreign key:
+  /// a deleted document's row is skipped on read and ages out.
+  subjectId     String   @default("") @map("subject_id")
+  /// Why it stopped, closed in code (`AI_JOB_FAILURE_CODES`).
+  code          String
+  /// The provider type that failed (a closed chain type), when one was called.
+  providerType  String?  @map("provider_type")
+  /// Failures in a row since the last success.
+  failCount     Int      @default(1) @map("fail_count")
+  firstFailedAt DateTime @default(now()) @map("first_failed_at")
+  lastFailedAt  DateTime @default(now()) @map("last_failed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, job, subjectId])
+  @@index([userId, lastFailedAt])
+  @@map("ai_job_failures")
+}
+
 /// A dated anchor in the person's life for the timeline (v1.42, #613): a move,
 /// a birth, a new job, a loss. Not a health reading and not a symptom; it gives
 /// the years around the readings something to hang on.
@@ -11133,4 +11605,275 @@ model FitbitOAuthState {
   @@index([expiresAt])
   @@index([userId])
   @@map("fitbit_oauth_states")
+}
+
+/// This instance at one push relay host: present while the operator offers
+/// the relay (the admin switch), deleted with its keys when it is switched
+/// off. `instanceId` is null until the relay accepted the registration.
+/// Readers: `push-relay/registration.ts`, the relay client and the
+/// `/api/auth/me` capability.
+model PushRelayRegistration {
+  id                           String    @id @default(cuid())
+  relayHost                    String    @unique @map("relay_host")
+  instanceId                   String?   @map("instance_id")
+  /// The Ed25519 instance key seed, base64url, encrypted at rest.
+  instanceKeyEncrypted         String    @map("instance_key_encrypted")
+  /// When the current instance key was made; rotated every 30 days.
+  instanceKeyCreatedAt         DateTime  @default(now()) @map("instance_key_created_at")
+  /// A rotation in flight: the new key, kept until the relay confirmed it,
+  /// so a lost answer cannot lock the instance out. Encrypted at rest.
+  pendingInstanceKeyEncrypted  String?   @map("pending_instance_key_encrypted")
+  /// The key before the last rotation, kept for 7 days as the overlap: a
+  /// request the relay refuses as `bad_signature` is retried with it once.
+  previousInstanceKeyEncrypted String?   @map("previous_instance_key_encrypted")
+  previousInstanceKeyUntil     DateTime? @map("previous_instance_key_until")
+  tier                         String?
+  /// `pending` | `ok` | `degraded` | `down` | `suspended` | `revoked`.
+  state                        String    @default("pending")
+  stateReason                  String?   @map("state_reason")
+  stateSince                   DateTime  @default(now()) @map("state_since")
+  /// The breaker: consecutive transport failures, when it opened, when the
+  /// next status probe is due.
+  circuitFailures              Int       @default(0) @map("circuit_failures")
+  circuitOpenedAt              DateTime? @map("circuit_opened_at")
+  nextProbeAt                  DateTime? @map("next_probe_at")
+  /// A request-level pause the relay asked for (`429` at instance, tier or
+  /// global scope, `503` with a retry hint).
+  pausedUntil                  DateTime? @map("paused_until")
+  /// Seconds to add to this server's clock, learnt from `stale_timestamp`.
+  clockOffsetSeconds           Int       @default(0) @map("clock_offset_seconds")
+  noticeId                     String?   @map("notice_id")
+  noticeLevel                  String?   @map("notice_level")
+  /// Consecutive answers in which the relay refused this server's signature
+  /// on a push or status request; three make the state `degraded` with the
+  /// reason `bad_signature`. Reset by any other signed answer.
+  badSignatureCount            Int       @default(0) @map("bad_signature_count")
+  /// When this server last asked `GET /v1/status` (hourly,
+  /// `push-relay/relay-status.ts`), and what the relay last answered there:
+  /// `{ at, state, registration, devices: { active, provisional, limit },
+  /// keyRotatedDay }`. Reader: the admin relay card.
+  statusCheckedAt              DateTime? @map("status_checked_at")
+  relayStatus                  Json?     @map("relay_status")
+  /// The server-side cap on deletions after `410 unregistered`.
+  unregisteredSince            DateTime? @map("unregistered_since")
+  unregisteredCount            Int       @default(0) @map("unregistered_count")
+  deletionHoldUntil            DateTime? @map("deletion_hold_until")
+  receiptsSentAt               DateTime? @map("receipts_sent_at")
+  lastSuccessAt                DateTime? @map("last_success_at")
+  /// The operator's acceptance: terms version, household confirmation, who.
+  /// Reader: the admin card, which asks for the current terms text to be
+  /// confirmed once while this is older (`termsConfirmationNeeded`).
+  termsVersion                 String    @map("terms_version")
+  /// @internal: acceptance evidence, kept as the record of who accepted
+  /// which terms when.
+  householdConfirmedAt         DateTime  @map("household_confirmed_at")
+  /// @internal: acceptance evidence, see `householdConfirmedAt`.
+  enabledByUserId              String?   @map("enabled_by_user_id")
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+
+  @@map("push_relay_registrations")
+}
+
+/// The keys this server seals push envelopes with: the current X25519 sender
+/// key (private part encrypted at rest), the announced next one, the previous
+/// public key for 30 days after it retired, and the secret the per-device
+/// collapse ids are derived from. One row. Readers: the sealer and `/api/auth/me`
+/// `push.relay.senderKeys`.
+model PushEnvelopeKeys {
+  id                      String    @id @default("singleton")
+  senderKeyEncrypted      String    @map("sender_key_encrypted")
+  senderPublicKey         String    @map("sender_public_key")
+  senderCreatedAt         DateTime  @map("sender_created_at")
+  /// The announced key: published as `next` for at least 7 days before it
+  /// seals anything, so every device has pinned it by then.
+  nextSenderKeyEncrypted  String?   @map("next_sender_key_encrypted")
+  nextSenderPublicKey     String?   @map("next_sender_public_key")
+  nextAnnouncedAt         DateTime? @map("next_announced_at")
+  previousSenderPublicKey String?   @map("previous_sender_public_key")
+  previousRetiredAt       DateTime? @map("previous_retired_at")
+  collapseSecretEncrypted String    @map("collapse_secret_encrypted")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  @@map("push_envelope_keys")
+}
+
+/// One push handed to the relay for one device: the outbox while it waits or
+/// retries (the finished envelope is resent, never resealed), then the
+/// delivery ledger the envelope receipts confirm. Readers: the retry pass,
+/// `intakeSync` and the hourly receipt report (`push-relay/receipts.ts`).
+model PushRelayDelivery {
+  id                String    @id @default(cuid())
+  deviceId          String    @map("device_id")
+  ref               String
+  /// `alert` | `silent` | `liveactivity`.
+  pushClass         String    @map("push_class")
+  eventType         String    @map("event_type")
+  /// The relay item without `token`, `env` and `ref`: envelope, collapse,
+  /// activity. Cleared once the push is final.
+  item              Json?
+  expiresAt         DateTime  @map("expires_at")
+  /// `pending` | `accepted` | `dropped` | `failed`.
+  status            String    @default("pending")
+  reason            String?
+  attempts          Int       @default(0)
+  /// Pending: the next attempt. Dropped silent push the relay refused for a
+  /// budget: the relay's hold on the device's silent pushes
+  /// (`push-relay/owed-silent.ts`). Null on every other final row.
+  nextAttemptAt     DateTime? @map("next_attempt_at")
+  acceptedAt        DateTime? @map("accepted_at")
+  confirmedAt       DateTime? @map("confirmed_at")
+  receiptReportedAt DateTime? @map("receipt_reported_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, ref])
+  @@index([status, nextAttemptAt])
+  @@index([deviceId, pushClass, createdAt])
+  @@map("push_relay_deliveries")
+}
+
+/// The silent pushes owed to one device. `domains`: the DATA_CHANGED wake,
+/// the domains a server-side sync or a dose change touched since its last
+/// wake, merged. A wake goes out at most once per five minutes and within the
+/// device's one silent budget (`push-relay/wakes.ts`); changes in between
+/// wait here and go out together. A change the device caused itself is never
+/// added to its own row. Writer and reader: `push-relay/data-changed.ts`; the
+/// minute job `push-data-changed` flushes what is due.
+model PushDataChange {
+  deviceId         String     @id @map("device_id")
+  /// Sorted, distinct: `intakes`, `measurements`, `medications`,
+  /// `nutrition`, `sleep`, `workouts`.
+  domains          String[]   @default([])
+  /// When the last wake went out (one value): the start of the five-minute
+  /// window. Stamped only once a wake was sent, so a claim that sent nothing
+  /// costs no slot.
+  sentAt           DateTime[] @default([]) @map("sent_at")
+  updatedAt        DateTime   @default(now()) @map("updated_at")
+  /// An intake sync (`MEDICATION_INTAKE_SYNC`) the silent budget held back,
+  /// or the relay refused or dropped, since when: owed, never dropped. The
+  /// minute job sends it once the budget frees up and clears it. Writers:
+  /// `push-relay/medication-pushes.ts`, `push-relay/relay-send.ts` (through
+  /// `owed-silent.ts`); reader: `medication-pushes.ts`.
+  intakeSyncOwedAt DateTime?  @map("intake_sync_owed_at")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("push_data_changes")
+}
+
+/// One silent wake this server sent a device, over the relay or its own
+/// APNs key: `DATA_CHANGED` or `HEALTHKIT_CATCH_UP`. Read for the rate limits
+/// (a shared hourly silent budget per device, the catch-up's daily count and
+/// spacing); rows older than two days are pruned by `push-data-changed`.
+model PushWake {
+  id        String   @id @default(cuid())
+  deviceId  String   @map("device_id")
+  kind      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, kind, createdAt])
+  @@index([createdAt])
+  @@map("push_wakes")
+}
+
+/// Relay unbinds owed for device tokens whose account was erased: written in
+/// the erasure transaction, sent by the relay's minute pass with retries, so
+/// a relay outage never blocks a deletion. A row goes once the relay
+/// confirmed, or after 7 days (the relay drops idle bindings on its own).
+/// Reader: `push-relay/unbind-queue.ts`.
+model PushRelayUnbind {
+  id            String   @id @default(cuid())
+  token         String   @unique
+  attempts      Int      @default(0)
+  nextAttemptAt DateTime @default(now()) @map("next_attempt_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([nextAttemptAt])
+  @@map("push_relay_unbinds")
+}
+
+/// #1403 — the provider source of a managed profile's AI work.
+enum ManagedAiSource {
+  INSTANCE
+  NONE
+  GUARDIAN
+
+  @@map("managed_ai_source")
+}
+
+/// #1403 follow-up — which FHIR resources of an imported Bundle became which
+/// record row, so a second import of the same Bundle (or a later export from
+/// the same portal) writes nothing twice. One row per resource the import
+/// wrote, keyed by a digest of the issuer, the resource type and the
+/// resource's own id: never the id itself, never content. Lab results and
+/// vital signs carry their identity on their own rows (`externalId`) and are
+/// not listed here; Conditions, Immunizations, MedicationStatements and
+/// Encounters have no external identity column, so this ledger is theirs.
+///
+/// Deleting the record row the ledger points at does not resurrect it on the
+/// next import: the ledger row stays, and the import counts the resource a
+/// duplicate. Read and written only by `src/lib/import/fhir-bundle/`.
+model FhirImportedResource {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  /// `Condition`, `Immunization`, `MedicationStatement` or `Encounter`.
+  resourceType String   @map("resource_type")
+  /// 40 hex characters of SHA-256 over the issuer, the type and the id.
+  resourceKey  String   @map("resource_key")
+  /// The id of the row the resource became, in the model the type names.
+  /// A plain id: the row's own deletion must not take the ledger with it.
+  recordId     String   @map("record_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceType, resourceKey])
+  @@map("fhir_imported_resources")
+}
+
+/// The WebDAV or Nextcloud folder a person's scheduled Health Connect export
+/// lands in, which HealthLog fetches on its own (one per account). The
+/// fetched file goes through the same queue and importer as an upload
+/// (`src/lib/import/health-connect/queue-staged.ts`), so a file already
+/// imported, by hash, is never imported again. Read and written only by
+/// `src/lib/import/health-connect/remote-*.ts` and its settings route.
+model HealthConnectRemoteSource {
+  id                   String    @id @default(cuid())
+  userId               String    @unique @map("user_id")
+  /// The folder, `https://host/remote.php/dav/files/<user>/<folder>` on
+  /// Nextcloud. No credentials, query or fragment: those are refused on save.
+  folderUrl            String    @map("folder_url")
+  /// The export's file name inside the folder; Health Connect writes
+  /// `Health Connect.zip`.
+  fileName             String    @default("Health Connect.zip") @map("file_name")
+  /// The WebDAV user name and password (a Nextcloud app password), sealed
+  /// with the app's encryption key as one JSON value. Never returned.
+  credentialsEncrypted String    @map("credentials_encrypted")
+  enabled              Boolean   @default(true)
+  /// When the next fetch is due. Advanced by six hours after a fetch that
+  /// found nothing new or imported, and by a growing backoff after a failure.
+  nextAttemptAt        DateTime  @default(now()) @map("next_attempt_at")
+  lastAttemptAt        DateTime? @map("last_attempt_at")
+  /// The closed outcome of the last attempt (`imported`, `unchanged`,
+  /// `not_found`, `unauthorized`, `private_origin_not_approved`, …).
+  lastOutcome          String?   @map("last_outcome")
+  consecutiveFailures  Int       @default(0) @map("consecutive_failures")
+  /// The ETag the server sent for the last file read, so an unchanged file is
+  /// not downloaded again.
+  lastEtag             String?   @map("last_etag")
+  /// SHA-256 of the last file handed to the importer.
+  lastFileSha256       String?   @map("last_file_sha256")
+  lastImportJobId      String?   @map("last_import_job_id")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([enabled, nextAttemptAt])
+  @@map("health_connect_remote_sources")
 }

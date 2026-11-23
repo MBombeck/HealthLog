@@ -177,7 +177,8 @@ docker compose exec db dropdb -U healthlog healthlog
 docker compose exec db createdb -U healthlog healthlog
 docker compose run --rm db-restore list
 docker compose run --rm db-restore healthlog-<time>-pre-migration.dump
-# Set HEALTHLOG_IMAGE_REF in .env to the version you ran before the update.
+# Pin the version you ran before the update in .env, with the leading
+# colon: HEALTHLOG_IMAGE_REF=:v1.48.5 (or @sha256:<digest>).
 docker compose up -d
 ```
 

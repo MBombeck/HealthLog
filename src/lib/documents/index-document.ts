@@ -63,6 +63,7 @@ import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { decryptDocumentContent } from "@/lib/documents/store";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
+import { noteAiJobFailure } from "@/lib/ai/job-failure/witness";
 import { detectOcrMimeType } from "@/lib/labs/ocr-upload";
 import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
 
@@ -289,6 +290,7 @@ async function tryProviderIndex(
     // a text-layer PDF still lands its text — and keep the note. The spend
     // stays reconciled at the full amount: the provider was called.
     if (text.trim().length === 0) {
+      noteAiJobFailure("provider_empty", pick.providerType);
       return { outcome: null, note: "empty-transcription" };
     }
     const { tokenCount } = await upsertContentIndex({

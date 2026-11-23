@@ -244,6 +244,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "coach-reminder-sweep": short("Batches of 200 to 500 rows, no provider."),
   "coach-plan-review": short("A batch of 100 plans, folded in SQL."),
   "medication-low-stock": short("A light inventory check per account."),
+  "report-schedule": short(
+    "At most twenty doctor-report PDFs a tick, each one record's report for one closed period; most ticks render none.",
+  ),
   "daily-briefing": short("A light cohort scan every fifteen minutes."),
 
   // ── Rollups ────────────────────────────────────────────────────────
@@ -314,6 +317,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "medication-reminder-check": short("The due slots of the current minute."),
   "mood-reminder-check": short("Accounts whose local reminder hour is now."),
   "cycle-reminder-check": short("Accounts whose local reminder hour is now."),
+  "measurement-anomaly-check": short(
+    "Opted-in accounts whose local push hour is now: a bounded day-mean read per vital, no provider call.",
+  ),
   "measurement-reminder-check": short(
     "Accounts whose local reminder hour is now.",
   ),
@@ -395,6 +401,18 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   ),
   "mood-reminder-cleanup": short("One retention DELETE."),
   "push-attempt-cleanup": short("One retention DELETE."),
+  "push-relay-maintenance": short(
+    "One relay status probe, at most 500 outbox items in batches of 50, one receipt report; each relay call is bounded at 10 s.",
+  ),
+  "push-data-changed": short(
+    "At most 500 pending accounts, one claim and one sealed silent send each, then one retention DELETE.",
+  ),
+  "push-live-activity": short(
+    "At most 500 consented relay devices, two indexed dose reads and one relay push batch each; nothing while the operator's switch is off.",
+  ),
+  "healthkit-catch-up": short(
+    "One indexed scan of Apple Health accounts gone quiet, and at most one sealed silent send per recent device within its daily limit.",
+  ),
   "arrival-reaction-cleanup": short("One retention DELETE."),
   "rate-limit-cleanup": short("One retention DELETE."),
   "idempotency-cleanup": short("One retention DELETE."),
@@ -411,6 +429,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     "At most 40 batches of 5 000 rows per table, over a few small tables.",
   ),
   "auth-ledger-cleanup": short("At most 40 batches of 5 000 rows per table."),
+  "ledger-retention-cleanup": short(
+    "At most 40 batches of 5 000 rows per table, over two tables.",
+  ),
   "document-summary-reaper": short("One updateMany."),
   "cycle-prediction-refresh": short(
     "Arithmetic per eligible account, no provider call.",
@@ -475,6 +496,17 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     },
     why: "Reads a Health Connect export database that can hold years of minute-level samples.",
   },
+  "record-file-import": {
+    runtime: "budgeted",
+    budget: {
+      file: "lib/jobs/record-file-import-worker.ts",
+      fn: "handleRecordFileImport",
+    },
+    why: "One Gadgetbridge database (512 MB) or FHIR Bundle (32 MB); stops at ten minutes or the job's budget, keeps what it wrote and fails for a retry that continues; a one-shot with retryLimit 0.",
+  },
+  "health-connect-remote-fetch": short(
+    "At most 20 due folders per pass, one GET each with a ten-minute timeout and a 1 GiB cap; the import itself runs on its own queue.",
+  ),
   "fit-import": short(
     "One activity file of at most 10 MB (32 MB unpacked), its messages capped by the structural scan before decoding; a one-shot with retryLimit 0.",
   ),

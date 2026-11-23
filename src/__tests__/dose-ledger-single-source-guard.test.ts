@@ -25,8 +25,8 @@ const CALLERS: Record<string, string> = {
     "The compliance ledger every rate and the chips tally.",
   "lib/medications/scheduling/cadence.ts":
     "The cadence timeline the chart draws and the streaks walk.",
-  "app/api/medications/[id]/dose-history/route.ts":
-    "The dose-history view, row by row over the same bands.",
+  "lib/medications/dose-state/ledger.ts":
+    "The per-medication dose ledger the history view and the dose-state resolver read.",
 };
 
 const CALL = /\breconstructDoseHistory\s*\(/;

@@ -42,9 +42,12 @@ const MEASUREMENT_BACKUP_SELECT = {
   sleepStage: true,
   rhythmClassification: true,
   deviceType: true,
+  timeZone: true,
   ingestTokenId: true,
   syncVersion: true,
   deletedAt: true,
+  appleHealthDeletedAt: true,
+  statsComputedAt: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.MeasurementSelect;
@@ -87,9 +90,22 @@ function serialiseMeasurement(
         sleepStage: measurement.sleepStage,
         rhythmClassification: measurement.rhythmClassification,
         deviceType: measurement.deviceType,
+        timeZone: measurement.timeZone,
         ingestTokenId: measurement.ingestTokenId,
         syncVersion: measurement.syncVersion,
         deletedAt: measurement.deletedAt?.toISOString() ?? null,
+        // Who deleted a tombstone, and when a `stats:` total was computed:
+        // written only where set, so a file carries them only for the rows
+        // they describe.
+        ...(measurement.appleHealthDeletedAt
+          ? {
+              appleHealthDeletedAt:
+                measurement.appleHealthDeletedAt.toISOString(),
+            }
+          : {}),
+        ...(measurement.statsComputedAt
+          ? { statsComputedAt: measurement.statsComputedAt.toISOString() }
+          : {}),
         createdAt: measurement.createdAt.toISOString(),
         updatedAt: measurement.updatedAt.toISOString(),
       }
@@ -113,6 +129,9 @@ function serialiseMeasurement(
         sleepStage: measurement.sleepStage,
         rhythmClassification: measurement.rhythmClassification,
         deviceType: measurement.deviceType,
+        // The zone is part of what the reading says: without it a night
+        // slept abroad files under another day once it is imported.
+        timeZone: measurement.timeZone,
         deletedAt: measurement.deletedAt?.toISOString() ?? null,
       };
 }

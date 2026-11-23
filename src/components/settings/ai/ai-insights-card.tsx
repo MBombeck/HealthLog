@@ -43,6 +43,7 @@ import { NamedChainsCard, useNamedChainsQuery } from "./named-chains-card";
 import { LocalProviderForm } from "./local-provider-form";
 import { OpenAIProviderForm } from "./openai-provider-form";
 import { ResponseTimeoutCard } from "./response-timeout-card";
+import { CoachBudgetCard } from "./coach-budget-card";
 import { RuntimeActionsRow } from "./runtime-actions-row";
 import {
   PROVIDER_TYPES,
@@ -209,6 +210,7 @@ export function AiInsightsCard({
           {/* v1.22 (#89) — per-user response timeout (mainly for slow
               local/self-hosted backends). */}
           <ResponseTimeoutCard userProvider={userProvider} />
+          <CoachBudgetCard userProvider={userProvider} />
 
           {/* Read uploaded vault documents automatically with AI (opt-in). */}
           <AutoReadCard />

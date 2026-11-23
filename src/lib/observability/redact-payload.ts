@@ -103,6 +103,11 @@ export const SENSITIVE_KEY_PATTERNS: readonly RegExp[] = [
   // `encryptionKeyId` and friends stay readable.
   /^encryption[_-]?key$/i,
   /^key[_-]?copy$/i,
+  // The push relay's one-time invite code (`PUT /api/admin/push-relay`
+  // `invite`). The route never logs its body and never stores the code; this
+  // keeps it out of any excerpt a future change might take. Anchored so
+  // counts and flags named after invites stay readable.
+  /^invite(?:[_-]?code)?$/i,
 ];
 
 /**

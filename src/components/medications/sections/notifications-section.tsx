@@ -3,8 +3,8 @@
 /**
  * v1.5.5 D-3 §9.6 — Notifications section.
  *
- * Single Switch wrapped in a `<label>` so the entire row is the AT hit
- * target (H-cluster-H + §10 invariant 4). The switch flips
+ * One `SwitchRow`: the name is the switch's label, the helper line its
+ * description. The switch flips
  * `medication.notificationsEnabled` via the parent route's
  * `PUT /api/medications/[id]` with `{ notificationsEnabled }`. State
  * persists optimistically — the parent cache update lands in the same
@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
@@ -42,6 +42,13 @@ import { apiGet, apiPut } from "@/lib/api/api-fetch";
 export interface NotificationsSectionProps {
   medicationId: string;
   notificationsEnabled: boolean;
+  /**
+   * Doses are recorded automatically: no reminder is sent whatever the
+   * switch says, and the helper says so instead of "Reminders are on".
+   */
+  autoMarkTaken?: boolean;
+  /** What the reminders will do, in words (`ReminderPlanLine`). */
+  plan?: React.ReactNode;
 }
 
 interface NotificationChannel {
@@ -61,16 +68,9 @@ interface UserPrefsResponse {
 }
 
 const SWITCH_ID = "medication-detail-notifications-switch";
-// v1.5.5 — split the title id so the section heading and
-// the inner switch label resolve to distinct DOM nodes. The earlier
-// single `TITLE_ID` sat on both `<MedicationDetailSection>`'s heading
-// (`titleId` prop) and the inner `<span>` carrying the switch's
-// `aria-labelledby`, surfacing as an axe duplicate-id failure on
-// every detail-page render and pointing the announced name at the
-// section heading rather than the user's "Send a reminder" target.
+// The section heading carries its own id; the switch takes its name from
+// the row's label, never from the heading, so the two never share an id.
 const SECTION_TITLE_ID = "medication-detail-notifications-heading";
-const ROW_TITLE_ID = "medication-detail-notifications-row-label";
-const HELPER_ID = "medication-detail-notifications-helper";
 
 /**
  * v1.7.0 — section wrapper. Keeps the `<MedicationDetailSection>`
@@ -93,6 +93,8 @@ export function NotificationsSection(props: NotificationsSectionProps) {
 export function NotificationsBody({
   medicationId,
   notificationsEnabled,
+  autoMarkTaken = false,
+  plan = null,
 }: NotificationsSectionProps) {
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
@@ -180,37 +182,26 @@ export function NotificationsBody({
           </p>
         </div>
       ) : (
-        <label
-          htmlFor={SWITCH_ID}
-          className="flex items-center justify-between gap-3"
-          data-slot="notifications-switch-row"
-        >
-          <span className="space-y-1">
-            <span
-              id={ROW_TITLE_ID}
-              className="text-foreground block text-sm font-medium"
-            >
-              {t("medications.detail.notifications.switchLabel")}
-            </span>
-            <span
-              id={HELPER_ID}
-              className="text-muted-foreground block text-xs"
-            >
-              {localEnabled
+        <SwitchRow
+          label={t("medications.detail.notifications.switchLabel")}
+          description={
+            autoMarkTaken
+              ? t("medications.detail.notifications.helperAutoRecorded")
+              : localEnabled
                 ? t("medications.detail.notifications.helperOn")
-                : t("medications.detail.notifications.helperOff")}
-            </span>
-          </span>
-          <Switch
-            id={SWITCH_ID}
-            checked={localEnabled}
-            disabled={submitting}
-            onCheckedChange={(checked) => void flip(checked)}
-            aria-labelledby={ROW_TITLE_ID}
-            aria-describedby={HELPER_ID}
-          />
-        </label>
+                : t("medications.detail.notifications.helperOff")
+          }
+          id={SWITCH_ID}
+          checked={localEnabled}
+          disabled={submitting}
+          onCheckedChange={(checked) => void flip(checked)}
+          data-slot="medication-notifications-switch"
+        />
       )}
+
+      {/* When the reminders come and when the dose counts as missed, read
+          off the resolved next dose. */}
+      {!autoMarkTaken && plan}
 
       {readsCallerPrefs &&
         Array.isArray(status?.channels) &&
@@ -241,7 +232,7 @@ export function ManageChannelsLink() {
   return (
     <p className="text-muted-foreground text-xs">
       <Link
-        href="/settings/notifications"
+        href="/settings/integrations#channels"
         className="focus-visible:ring-ring rounded-sm underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
         data-slot="zeitplan-manage-channels-link"
       >

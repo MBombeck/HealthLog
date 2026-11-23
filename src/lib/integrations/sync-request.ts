@@ -73,7 +73,16 @@ export async function readSyncTriggerBody(
   }
 
   const result = syncTriggerSchema.safeParse(parsed);
-  if (!result.success) return { error: returnAllZodIssues(result.error, 422) };
+  if (!result.success) {
+    return {
+      error: returnAllZodIssues(
+        result.error,
+        422,
+        undefined,
+        syncTriggerSchema,
+      ),
+    };
+  }
 
   return { fullSync: result.data.fullSync === true };
 }

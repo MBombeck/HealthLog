@@ -42,12 +42,12 @@
  * `src/lib/jobs/reminder-worker.ts` so pg-boss provisions it at boot; an
  * unregistered queue silently never drains.
  */
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { prisma } from "@/lib/db";
 import {
   MEDICATION_WINDOW_SELECT,
   medicationWindow,
 } from "@/lib/medications/course-window";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { isP2002 } from "@/lib/prisma-errors";
 import { annotate } from "@/lib/logging/context";
@@ -65,15 +65,7 @@ import type {
 } from "@/lib/medications/scheduling/worker-helpers";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import { activeAccountSql } from "@/lib/account-deletion/active-account";
-
-export const INTAKE_SLOT_DEDUP_QUEUE = "intake-slot-dedup";
-
-/**
- * Serial concurrency — the populator walks a user's intake events and
- * writes per slot; concurrency-1 keeps it from crowding the request
- * pool, matching the other boot-time backfills.
- */
-export const INTAKE_SLOT_DEDUP_CONCURRENCY = 1;
+import { INTAKE_SLOT_DEDUP_QUEUE } from "@/lib/jobs/intake-slot-dedup-queue";
 
 export interface IntakeSlotDedupPayload {
   userId: string;
@@ -171,6 +163,28 @@ function pickWinner(rows: DedupIntakeRow[]): DedupIntakeRow {
     }
     return candidate.id > best.id ? candidate : best;
   });
+}
+
+/**
+ * After a pass that changed rows: evict the record's medication caches and
+ * tell the devices, since a collapsed slot is one dose fewer on a device
+ * that still shows two.
+ */
+function afterDedupe(
+  userId: string,
+  summary: {
+    slotsCollapsed: number;
+    rowsSoftDeleted: number;
+    rowsNormalised: number;
+  },
+): void {
+  if (
+    summary.slotsCollapsed > 0 ||
+    summary.rowsSoftDeleted > 0 ||
+    summary.rowsNormalised > 0
+  ) {
+    afterDoseChange({ userId, scope: "intakes" });
+  }
 }
 
 /**
@@ -481,13 +495,7 @@ export async function dedupeUserIntakeSlots(
   // deploy the worker shares the web process, so the eviction reaches the
   // serving instance; a split web/worker deployment falls back to the TTL
   // bound (see `server-cache.ts`).
-  if (
-    summary.slotsCollapsed > 0 ||
-    summary.rowsSoftDeleted > 0 ||
-    summary.rowsNormalised > 0
-  ) {
-    invalidateUserMedications(userId);
-  }
+  afterDedupe(userId, summary);
 
   annotate({
     action: {

@@ -113,6 +113,20 @@ export function DashboardLayoutSection({ id }: { id: string }) {
         </div>
       )}
 
+      {!dirty && remote && (
+        <p className="text-muted-foreground text-xs">
+          {layout &&
+          JSON.stringify(layout.widgets) ===
+            JSON.stringify(DEFAULT_DASHBOARD_LAYOUT.widgets) &&
+          JSON.stringify(layout.enabledHeroItemKinds ?? PRIORITY_ITEM_KINDS) ===
+            JSON.stringify(DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds) &&
+          (layout.hero ?? "score") === DEFAULT_DASHBOARD_LAYOUT.hero &&
+          layout.todayCardVisible !== false
+            ? t("dashboard.layoutUsingDefaults")
+            : t("dashboard.layoutCustomized")}
+        </p>
+      )}
+
       {/* Reset is a secondary action, so it reads in the same row as save
           rather than from the header's status slot. */}
       <SettingsCardActions>
@@ -120,7 +134,6 @@ export function DashboardLayoutSection({ id }: { id: string }) {
           slot="settings-dashboard-layout-reset"
           variant="outline"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           icon={<RotateCcw className="h-3.5 w-3.5" />}
           label={t("dashboard.layoutReset")}
           title={t("dashboard.layoutResetTitle")}
@@ -135,7 +148,6 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             <Button
               variant="outline"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               onClick={() => setDraft(null)}
               disabled={saveMutation.isPending}
             >
@@ -143,7 +155,6 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             </Button>
             <Button
               size="sm"
-              className="min-h-11 sm:min-h-9"
               data-slot="settings-dashboard-layout-save"
               onClick={() => layout && saveMutation.mutate(layout)}
               disabled={saveMutation.isPending}
@@ -156,20 +167,6 @@ export function DashboardLayoutSection({ id }: { id: string }) {
           </>
         )}
       </SettingsCardActions>
-
-      {!dirty && remote && (
-        <p className="text-muted-foreground text-xs">
-          {layout &&
-          JSON.stringify(layout.widgets) ===
-            JSON.stringify(DEFAULT_DASHBOARD_LAYOUT.widgets) &&
-          JSON.stringify(layout.enabledHeroItemKinds ?? PRIORITY_ITEM_KINDS) ===
-            JSON.stringify(DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds) &&
-          (layout.hero ?? "score") === DEFAULT_DASHBOARD_LAYOUT.hero &&
-          layout.todayCardVisible !== false
-            ? t("dashboard.layoutUsingDefaults")
-            : t("dashboard.layoutCustomized")}
-        </p>
-      )}
     </SettingsCard>
   );
 }

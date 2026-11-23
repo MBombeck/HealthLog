@@ -14,7 +14,6 @@ import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiGet } from "@/lib/api/api-fetch";
-import { formatDate } from "@/lib/format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -138,7 +137,7 @@ export function CustomMetricList() {
                           )}
                           {metric.unit ? ` ${metric.unit}` : ""}
                         </span>
-                        <span>{formatDate(metric.latest.measuredAt)}</span>
+                        <span>{fmt.date(metric.latest.measuredAt)}</span>
                       </>
                     ) : (
                       <span>{t("customMetrics.noValuesYet")}</span>

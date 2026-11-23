@@ -159,6 +159,9 @@ describe("the JSON import takes the app's own files back", () => {
     expect(original.measurements.some((m) => m.sleepStage === "DEEP")).toBe(
       true,
     );
+    expect(
+      original.measurements.some((m) => m.timeZone === "America/New_York"),
+    ).toBe(true);
     expect(original.moodEntries.some((e) => e.context !== null)).toBe(true);
 
     const { userId, res } = await importInto(original);

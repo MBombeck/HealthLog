@@ -19,6 +19,7 @@ import {
   expectScreen,
   next,
   readMe,
+  skipFollowUps,
 } from "./setup-flow-helpers";
 
 test.describe("setup flow — a visit within a month, with labs", () => {
@@ -54,6 +55,7 @@ test.describe("setup flow — a visit within a month, with labs", () => {
     await expectScreen(page, "confirm");
     await next(page);
 
+    await skipFollowUps(page, ["ai"]);
     await expectScreen(page, "first-result");
     const screen = page.locator("section[data-task]");
     await expect(screen).toHaveAttribute("data-task", "log-reading");

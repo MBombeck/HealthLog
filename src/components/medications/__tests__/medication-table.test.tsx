@@ -387,6 +387,52 @@ describe("<MedicationTable> — structure + shared payloads", () => {
     expect(html).not.toContain("ring-primary");
   });
 
+  it("temporarily reveals only the matching group and mounts its row when collapsed with highlightId", () => {
+    const client = makeClient();
+    const rows = [
+      med({ id: "m1", name: "Ramipril", category: "HEART" }),
+      med({ id: "m2", name: "Aspirin", category: "PAIN" }),
+    ];
+    const html = render(
+      <MedicationTable
+        activeMedications={rows}
+        inactiveMedications={[]}
+        groupBy="category"
+        groupsOpen="collapsed"
+        highlightId="m2"
+      />,
+      client,
+    );
+
+    expect(html).toContain('data-medication-id="m2"');
+    expect(html).toContain("ring-primary");
+    expect(html).not.toContain('data-medication-id="m1"');
+  });
+
+  it("labels the inactive block when grouped, so its category headers do not read as a second active list", () => {
+    const client = makeClient();
+    const html = render(
+      <MedicationTable
+        activeMedications={[
+          med({ id: "a1", name: "Ramipril", category: "HEART" }),
+        ]}
+        inactiveMedications={[
+          med({
+            id: "i1",
+            name: "Enalapril",
+            category: "HEART",
+            active: false,
+          }),
+        ]}
+        groupBy="category"
+      />,
+      client,
+    );
+    const inactiveAt = html.indexOf("(1)");
+    expect(inactiveAt).toBeGreaterThan(html.indexOf('data-medication-id="a1"'));
+    expect(inactiveAt).toBeLessThan(html.indexOf('data-medication-id="i1"'));
+  });
+
   it("renders a GLP-1 medication like any other row", () => {
     const client = makeClient();
     seedCompliance(client, "g1", 100, 100);
@@ -407,7 +453,9 @@ describe("<MedicationTable> — structure + shared payloads", () => {
     );
 
     expect(html).toContain("Mounjaro");
-    expect(html).toContain('aria-label="Take Mounjaro"');
+    // The next injection is tomorrow, so a take now is an extra dose, and
+    // the button says so (the one take rule the cards use).
+    expect(html).toContain('aria-label="Take an extra dose of Mounjaro"');
     expect(html).toContain("4 doses");
   });
 
@@ -671,9 +719,10 @@ describe("medication-table — shared mutation/status sources (source guard)", (
     expect(source).toContain("useMedicationComplianceSummary");
   });
 
-  it("gates the status pill on the server next-due exactly like the cards", () => {
-    expect(source).toContain("reduceCurrentWindowStatus");
-    expect(source).toContain("nextDue:");
-    expect(source).toContain("resolveDisplayedSlotInstant");
+  it("reads the server's resolved dose exactly like the cards, with no window math of its own", () => {
+    expect(source).toContain("cardWindowPill(currentDose");
+    expect(source).toContain("liveDoseState(currentDose");
+    expect(source).toContain("cardTakeSlot(currentDose");
+    expect(source).not.toContain("window-status");
   });
 });

@@ -48,6 +48,7 @@ function state(
     needs: { ...emptyOnboardingNeeds(), recordTarget: "me", ...needs },
     completedAt: null,
     firstResult: null,
+    offers: { ai: false },
     ...overrides,
   };
 }

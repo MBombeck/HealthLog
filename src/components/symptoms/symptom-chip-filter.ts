@@ -23,3 +23,41 @@ export function filterSymptomChips<
       (d.label ?? "").toLocaleLowerCase().includes(needle),
   );
 }
+
+interface RecentUse {
+  recent: { count30d: number; lastOccurredAt: string | null };
+}
+
+/**
+ * The chip row in order of use: the symptoms felt most often over the last
+ * 30 days first, a tie broken by the one felt most recently, then every
+ * other symptom in the order the person keeps them. The row used to follow
+ * creation order only, so thirty imported Apple Health symptoms pushed the
+ * two a person logs every week out of sight.
+ */
+export function orderSymptomsByUse<T extends RecentUse>(
+  list: readonly T[],
+): T[] {
+  const time = (d: T) =>
+    d.recent.lastOccurredAt ? Date.parse(d.recent.lastOccurredAt) : -Infinity;
+  const used = list
+    .filter((d) => d.recent.count30d > 0)
+    .sort((a, b) => b.recent.count30d - a.recent.count30d || time(b) - time(a));
+  return [...used, ...list.filter((d) => d.recent.count30d === 0)];
+}
+
+/**
+ * Each symptom's most recent intensity, from occurrences listed newest
+ * first: the value its slider starts on the next time it is picked.
+ */
+export function latestIntensityById(
+  events: ReadonlyArray<{ definitionId: string; intensity: number }>,
+): Map<string, number> {
+  const latest = new Map<string, number>();
+  for (const event of events) {
+    if (!latest.has(event.definitionId)) {
+      latest.set(event.definitionId, event.intensity);
+    }
+  }
+  return latest;
+}

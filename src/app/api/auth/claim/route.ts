@@ -30,7 +30,6 @@ import { auditLog } from "@/lib/auth/audit";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
 import { checkPasswordStrength, hashPassword } from "@/lib/auth/password";
 import { createSession, getSession } from "@/lib/auth/session";
-import { prisma } from "@/lib/db";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { annotate } from "@/lib/logging/context";
@@ -42,6 +41,8 @@ import {
 } from "@/lib/managed-profiles/handover";
 import { notifyGuardiansOfHandover } from "@/lib/managed-profiles/handover-notify";
 import { checkPasswordBreachIfEnabled } from "@/lib/password-breach-check";
+import { normaliseAccountEmail } from "@/lib/validations/auth";
+import { accountNameTaken } from "@/lib/auth/account-name-taken";
 import { claimSchema } from "@/lib/validations/managed-profile-handover";
 
 const taken = () =>
@@ -59,7 +60,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     maxBytes: 16 * 1024,
   });
   if (!parsed.ok) return parsed.error;
-  const { token, username, email, password } = parsed.data;
+  const { token, username, password } = parsed.data;
+  const email = normaliseAccountEmail(parsed.data.email);
 
   // The link first. Without this the collision probe below would answer 409
   // to anybody, token or not, and the claim route would be a username and
@@ -72,11 +74,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // registration route orders it (its comment carries the timing argument).
   // The profile's own row never collides here: its username is the generated
   // `managed-…` one, which no chosen name may start with, and it has no email.
-  const [existingEmail, existingUsername] = await Promise.all([
-    prisma.user.findUnique({ where: { email }, select: { id: true } }),
-    prisma.user.findUnique({ where: { username }, select: { id: true } }),
-  ]);
-  if (existingEmail || existingUsername) return taken();
+  if (await accountNameTaken(email, username)) return taken();
 
   const locale = await resolveServerLocale({ request });
   const strength = checkPasswordStrength(password, [username, email], locale);

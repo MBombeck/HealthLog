@@ -15,6 +15,7 @@ import type {
   UnavailableItem,
 } from "@/lib/integrations/connection-health";
 import { pluralKey } from "@/lib/i18n/plural";
+import { previousDayLabel } from "@/lib/tz/format";
 import type { Locale } from "@/lib/i18n/config";
 
 type Translate = (
@@ -26,8 +27,6 @@ interface InstantFormatters {
   dateShortSmart: (value: Date) => string;
   time: (value: Date) => string;
 }
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** The one word in the status badge. */
 export function healthBadgeLabel(
@@ -65,7 +64,7 @@ export function formatHealthInstant(
   if (day === fmt.dateShortSmart(now)) {
     return t("settings.integrationCard.when.today", { time });
   }
-  if (day === fmt.dateShortSmart(new Date(now.getTime() - DAY_MS))) {
+  if (day === previousDayLabel(now, fmt.dateShortSmart)) {
     return t("settings.integrationCard.when.yesterday", { time });
   }
   return t("settings.integrationCard.when.date", { date: day, time });

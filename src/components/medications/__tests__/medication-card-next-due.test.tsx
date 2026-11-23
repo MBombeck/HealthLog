@@ -246,7 +246,7 @@ describe("<MedicationCard> — open overdue slot (v1.16.4)", () => {
     };
   }
 
-  it("renders the overdue slot as an amber still-takeable line, not a future next-intake", () => {
+  it("renders the overdue slot as the shared Overdue state with its time, not a future next-intake", () => {
     // Pinned now is 2026-06-02T12:00:00Z; the slot anchor sits two hours
     // earlier, still inside its catch-up band per the server flag.
     const med = makeMed({
@@ -265,8 +265,8 @@ describe("<MedicationCard> — open overdue slot (v1.16.4)", () => {
       client,
     );
 
-    expect(html).toContain("Overdue since");
-    expect(html).toContain("can still be taken");
+    expect(html).toContain(">Overdue<");
+    expect(html).toContain('data-slot="medication-overdue-slot"');
     expect(html).toContain("text-warning");
     expect(html).not.toContain("Next intake: Tomorrow,");
   });
@@ -291,8 +291,8 @@ describe("<MedicationCard> — open overdue slot (v1.16.4)", () => {
 
     expect(html).toContain("Next intake:");
     expect(html).toContain("Tomorrow");
-    expect(html).not.toContain("Overdue since");
-    expect(html).not.toContain("can still be taken");
+    expect(html).not.toContain(">Overdue<");
+    expect(html).not.toContain('data-slot="medication-overdue-slot"');
   });
 });
 
@@ -346,7 +346,7 @@ describe("<MedicationCard> — as-needed marker (v1.16.11, #316)", () => {
     expect(html).toContain("Last intake:");
     // No due/overdue presentation, ever.
     expect(html).not.toContain("Overdue");
-    expect(html).not.toContain("Take now");
+    expect(html).not.toContain('data-state="due"');
     // No compliance bars and no skeleton placeholder for them.
     expect(html).not.toContain("Adherence (");
   });
@@ -364,7 +364,8 @@ describe("<MedicationCard> — as-needed marker (v1.16.11, #316)", () => {
     );
     // The shared intake actions render (take/skip) — an as-needed dose
     // is loggable from the card exactly like a scheduled one.
-    expect(html).toContain("Taken");
+    expect(html).toContain('data-slot="medication-intake-take"');
+    expect(html).toContain(">Take<");
   });
 });
 

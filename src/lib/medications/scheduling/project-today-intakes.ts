@@ -38,19 +38,54 @@ import {
   isBeforeLiveEra,
   LIVE_ERA_REVISION_ARGS,
   liveEraStart,
+  predatesMedication,
 } from "@/lib/medications/scheduling/live-era";
 
 export interface ProjectTodayIntakesResult {
   projected: number;
   backfilled: number;
+  /**
+   * Today's scheduled slots as `medicationId|ISO instant`, so a counting
+   * reader can tell a slot row from an ad-hoc one.
+   */
+  slotKeys: Set<string>;
 }
 
-export async function projectTodayIntakesAndRecompute(input: {
+interface ProjectTodayInput {
   userId: string;
   userTz: string;
   todayStart: Date;
   todayEnd: Date;
-}): Promise<ProjectTodayIntakesResult> {
+}
+
+/**
+ * Projections in flight, by user and day. An app start reads the dashboard
+ * summary and the today list in the same instant, and both project the same
+ * day: the second caller joins the first one's projection instead of running
+ * the same reads and the same idempotent insert again. Only while it runs;
+ * nothing is kept once it settles, so the next read projects afresh.
+ */
+const inFlight = new Map<string, Promise<ProjectTodayIntakesResult>>();
+
+export function projectTodayIntakesAndRecompute(
+  input: ProjectTodayInput,
+): Promise<ProjectTodayIntakesResult> {
+  const key = [
+    input.userId,
+    input.userTz,
+    input.todayStart.toISOString(),
+    input.todayEnd.toISOString(),
+  ].join("|");
+  const running = inFlight.get(key);
+  if (running) return running;
+  const run = projectToday(input).finally(() => inFlight.delete(key));
+  inFlight.set(key, run);
+  return run;
+}
+
+async function projectToday(
+  input: ProjectTodayInput,
+): Promise<ProjectTodayIntakesResult> {
   const { userId, userTz, todayStart, todayEnd } = input;
 
   // v1.39.1 (#1033) — a medication with intake tracking off keeps its
@@ -103,31 +138,37 @@ export async function projectTodayIntakesAndRecompute(input: {
   const now = new Date();
   const projected: Array<{ medicationId: string; scheduledFor: Date }> = [];
 
+  // Rolling cadence anchors off the last logged intake, scoped to
+  // `takenAt IS NOT NULL`: byte-identical to the reminder worker's baseline
+  // (`reminder-worker.ts`), so projector and worker resolve the same next-due
+  // instant and never mint divergent `(med, scheduledFor)` rows. One grouped
+  // read for every rolling medication, not one per medication.
+  const rollingIds = activeMedications
+    .filter((med) => med.schedules.some((s) => s.rollingIntervalDays !== null))
+    .map((med) => med.id);
+  const lastIntakes =
+    rollingIds.length === 0
+      ? []
+      : await prisma.medicationIntakeEvent.groupBy({
+          by: ["medicationId"],
+          // v1.7.0 sync — a tombstoned intake is no longer a taken dose, so
+          // it must not anchor the rolling-interval next-due computation.
+          where: {
+            userId,
+            medicationId: { in: rollingIds },
+            deletedAt: null,
+            takenAt: { not: null },
+          },
+          _max: { takenAt: true },
+        });
+  const lastIntakeByMedication = new Map(
+    lastIntakes.map((row) => [row.medicationId, row._max.takenAt]),
+  );
+
   for (const med of activeMedications) {
     if (med.schedules.length === 0) continue;
     const eraStart = liveEraStart(med.scheduleRevisions);
-
-    // Rolling cadence anchors off the last logged intake. One findFirst
-    // per medication, scoped to `takenAt IS NOT NULL` — byte-identical to
-    // the reminder worker's baseline (`reminder-worker.ts`), so projector
-    // and worker resolve the same next-due instant and never mint
-    // divergent `(med, scheduledFor)` rows.
-    let lastIntakeAt: Date | null = null;
-    if (med.schedules.some((s) => s.rollingIntervalDays !== null)) {
-      const lastIntake = await prisma.medicationIntakeEvent.findFirst({
-        // v1.7.0 sync — a tombstoned intake is no longer a taken dose, so
-        // it must not anchor the rolling-interval next-due computation.
-        where: {
-          userId,
-          medicationId: med.id,
-          deletedAt: null,
-          takenAt: { not: null },
-        },
-        orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-        select: { takenAt: true },
-      });
-      lastIntakeAt = lastIntake?.takenAt ?? null;
-    }
+    const lastIntakeAt = lastIntakeByMedication.get(med.id) ?? null;
 
     const ctx = buildRecurrenceContext({
       medication: med,
@@ -160,6 +201,15 @@ export async function projectTodayIntakesAndRecompute(input: {
         if (!Number.isFinite(h) || !Number.isFinite(m)) continue;
         const scheduledFor = localHmAsUtc(now, userTz, h, m);
         if (isBeforeLiveEra(scheduledFor, eraStart)) continue;
+        if (
+          predatesMedication(
+            scheduledFor,
+            med,
+            schedule.rollingIntervalDays !== null,
+          )
+        ) {
+          continue;
+        }
         // #1280 — a course ended with "End course" expects nothing from
         // that instant on; the schedule still emits its earlier slots today.
         if (med.endedAt && scheduledFor >= med.endedAt) continue;
@@ -171,19 +221,25 @@ export async function projectTodayIntakesAndRecompute(input: {
     }
   }
 
+  const slotKeys = new Set(
+    projected.map((p) => `${p.medicationId}|${p.scheduledFor.toISOString()}`),
+  );
   if (projected.length === 0) {
-    return { projected: 0, backfilled: 0 };
+    return { projected: 0, backfilled: 0, slotKeys };
   }
 
   const existing = await prisma.medicationIntakeEvent.findMany({
     where: {
       userId,
       scheduledFor: { gte: todayStart, lt: todayEnd },
+      // Only a live row occupies a slot. An undone dose leaves a tombstone,
+      // and the slot it held is open again: it must come back as pending,
+      // or the today list and the dashboard count drop a dose that is still
+      // due. The unique index covers live rows only since migration 0121
+      // (since 0515 `medication_intake_events_user_med_slot_live_key`), so a
+      // fresh REMINDER row beside a tombstone cannot collide.
+      deletedAt: null,
     },
-    // v1.7.0 sync — intentionally NO `deletedAt: null` filter here. A
-    // tombstoned row still occupies its `(userId, medicationId,
-    // scheduledFor, source)` unique slot, so the backfill must treat it
-    // as present to avoid a P2002 collision when minting REMINDER rows.
     select: { medicationId: true, scheduledFor: true },
   });
   const existingKey = new Set(
@@ -195,7 +251,7 @@ export async function projectTodayIntakesAndRecompute(input: {
   );
 
   if (missing.length === 0) {
-    return { projected: projected.length, backfilled: 0 };
+    return { projected: projected.length, backfilled: 0, slotKeys };
   }
 
   await prisma.medicationIntakeEvent.createMany({
@@ -222,5 +278,5 @@ export async function projectTodayIntakesAndRecompute(input: {
     skipDuplicates: true,
   });
 
-  return { projected: projected.length, backfilled: missing.length };
+  return { projected: projected.length, backfilled: missing.length, slotKeys };
 }

@@ -40,7 +40,11 @@ import { runCoachTurn } from "@/lib/ai/coach/turn/pipeline";
 import type { ReasoningLevel } from "@/lib/ai/reasoning/levels";
 import { resolveCoachTurnReasoningLevel } from "@/lib/ai/reasoning/controls";
 import { streamProviderError, streamRefusal } from "@/lib/ai/coach/turn/sse";
-import { TURN_LIMITS } from "@/lib/ai/coach/tools/turn-budget";
+import {
+  coachTurnWindowMs,
+  parseCoachBudgets,
+} from "@/lib/ai/coach/coach-budgets";
+import { prisma } from "@/lib/db";
 
 /**
  * The `coach` capability gate for a turn. Every unavailable reason throws the
@@ -73,12 +77,14 @@ async function coachCapabilityRefusal(): Promise<Response | null> {
  */
 const COACH_CONCURRENT_TURNS = 2;
 /**
- * How long a turn's slot is held at most: the longest turn's wall time
- * (`TURN_LIMITS.user.wallMs`, 200 s) plus 30 s for the streaming of its
- * reply. A slot whose release never arrived (a crashed process) frees itself
- * when the window ends.
+ * How long a turn's slot is held at most: the longest wall time this
+ * person's turn can run under (`coachTurnWindowMs`: the built-in 200 s, or
+ * the longest turn they set for a self-hosted provider) plus 30 s for the
+ * streaming of its reply. A slot whose release never arrived (a crashed
+ * process) frees itself when the window ends, so an account without a longer
+ * budget never holds its slot for the 600 s a budget may allow.
  */
-const COACH_TURN_SLOT_MS = TURN_LIMITS.user.wallMs + 30_000;
+const COACH_TURN_SLOT_STREAM_MS = 30_000;
 
 async function handleChatRequest(request: NextRequest): Promise<Response> {
   // A turn is metered by the Coach's own buckets (`coach-chat`, the turn
@@ -196,10 +202,15 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
   // (an atomic upsert), given back when the turn is over; a refused slot is
   // given back at once, since the refused attempt never ran.
   const slotKey = `coach-turn-active:${userId}`;
+  const budgetRow = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { aiCoachBudgets: true },
+  });
   const slot = await checkRateLimit(
     slotKey,
     COACH_CONCURRENT_TURNS,
-    COACH_TURN_SLOT_MS,
+    coachTurnWindowMs(parseCoachBudgets(budgetRow?.aiCoachBudgets)) +
+      COACH_TURN_SLOT_STREAM_MS,
   );
   const releaseSlot = () => {
     void refundRateLimit(slotKey).catch(() => {

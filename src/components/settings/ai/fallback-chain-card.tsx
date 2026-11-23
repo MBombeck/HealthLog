@@ -14,7 +14,6 @@ import {
   Loader2,
   PlusCircle,
   RotateCcw,
-  Save,
   X,
 } from "lucide-react";
 
@@ -27,6 +26,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { apiPut } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
@@ -54,12 +54,10 @@ export function FallbackChainCard({
   const { t } = useTranslations();
   const queryClient = useQueryClient();
 
-  // Local working copy. Server-confirmed values arrive via `chain`
-  // prop; we keep our own state so the user can shuffle multiple rows
-  // before clicking "Save chain order".
-  // v1.4.16 (code-review H2) — `enabled` from the
-  // wire is now the canonical state. The GET endpoint surfaces the
-  // raw persisted chain so a disabled entry survives the round-trip.
+  // Local working copy: server values arrive via the `chain` prop, and the
+  // user may shuffle several rows before clicking "Save chain order". Since
+  // v1.4.16 `enabled` from the wire is canonical; the GET endpoint surfaces
+  // the raw persisted chain, so a disabled entry survives the round-trip.
   const seededKey = chain
     .map((c) => `${c.providerType}:${c.enabled ? 1 : 0}`)
     .join(",");
@@ -81,6 +79,8 @@ export function FallbackChainCard({
   const [ok, setOk] = useState(false);
 
   const saveMutation = useMutation({
+    // Confirms in place: the saved line above the action row.
+    meta: CONFIRMS_INLINE,
     mutationFn: async (next: ChainEntry[]) => {
       const body = {
         chain: next.map((entry, idx) => ({
@@ -240,22 +240,18 @@ export function FallbackChainCard({
           confirmLabel={t("settings.ai.providerChain.resetDefaults")}
           onConfirm={() => void resetToDefaults()}
           size="sm"
-          className="min-h-11 sm:min-h-9"
           icon={<RotateCcw className="h-4 w-4" />}
           destructive
         />
         <Button
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={() => saveMutation.mutate(entries)}
           disabled={saveMutation.isPending || entries.length === 0}
           data-testid="ai-fallback-chain-save"
         >
           {saveMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
+          ) : null}
           {t("settings.ai.providerChain.saveOrder")}
         </Button>
       </SettingsCardActions>

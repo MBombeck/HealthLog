@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { enqueueSupplementNutrientRecompute } from "@/lib/medications/ingredients/recompute-job";
+import { afterIdentityFieldsChanged } from "@/lib/auth/identity-change";
 import {
   apiHandler,
   requireGuardianAuth,
@@ -16,7 +16,6 @@ import {
 import { auditLog } from "@/lib/auth/audit";
 import {
   invalidateUserInsightsLayout,
-  invalidateUserMedications,
   invalidateUserProfile,
 } from "@/lib/cache/invalidate";
 import { prisma, toJson } from "@/lib/db";
@@ -47,6 +46,11 @@ import { refreshTextsAfterUnitChange } from "@/lib/insights/unit-change-refresh"
 import { getAiCapability } from "@/lib/ai/capabilities/gate";
 import { ensureExtractionReceipt } from "@/lib/documents/document-settings";
 import { enqueueSummaryCatchUp } from "@/lib/jobs/document-summary-catchup";
+import {
+  ManagedAiSourceChainError,
+  patchManagedAiSourceSettings,
+  readManagedAiSourceSettings,
+} from "@/lib/record-settings/ai-source";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +108,48 @@ async function patchDocumentsSettings(
     settings: { autoAiRead: patch.autoAiRead },
     changed: consentMinted ? ["autoAiRead", "consent"] : ["autoAiRead"],
   };
+}
+
+/** The notifications family: the mood reminder and the medication lead days. */
+async function patchNotificationsSettings(
+  recordId: string,
+  body: unknown,
+): Promise<{ settings: unknown; changed: readonly string[] }> {
+  const patch = parseManagedRecordSettingsPatch("notifications", body);
+  const current = await prisma.user.findUnique({
+    where: { id: recordId },
+    select: { notificationPrefs: true },
+  });
+  const notificationPreferences = patch.notificationPreferences
+    ? resolveNotificationPrefs(
+        current?.notificationPrefs,
+        patch.notificationPreferences,
+      )
+    : undefined;
+  const record = await prisma.user.update({
+    where: { id: recordId },
+    data: {
+      ...(patch.moodReminderEnabled !== undefined
+        ? { moodReminderEnabled: patch.moodReminderEnabled }
+        : {}),
+      ...(notificationPreferences !== undefined
+        ? { notificationPrefs: toJson(notificationPreferences) }
+        : {}),
+    },
+    select: { moodReminderEnabled: true, notificationPrefs: true },
+  });
+  const preferences = parseNotificationPrefs(record.notificationPrefs);
+  const settings = {
+    moodReminderEnabled: record.moodReminderEnabled,
+    notificationPreferences: {
+      medication: {
+        lowStockRunwayDays: preferences.medication.lowStockRunwayDays,
+        reorderLeadDays: preferences.medication.reorderLeadDays,
+      },
+      mood: { reminderHour: preferences.mood.reminderHour },
+    },
+  };
+  return { settings, changed: Object.keys(patch) };
 }
 
 /** Each response names the target record and only one field-specific DTO. */
@@ -216,6 +262,12 @@ export const GET = apiHandler(
       case "documents":
         settings = { autoAiRead: record.documentsAutoAiRead };
         break;
+      case "aiSource":
+        settings = await readManagedAiSourceSettings(
+          access.recordId,
+          access.actorId,
+        );
+        break;
     }
 
     annotate({ action: { name: `record-settings.${family}.get` } });
@@ -236,6 +288,7 @@ export const PATCH = apiHandler(
     try {
       let settings: unknown;
       let changed: readonly string[];
+      let auditExtra: Record<string, string> = {};
 
       switch (family) {
         case "profile": {
@@ -284,14 +337,13 @@ export const PATCH = apiHandler(
               dateFormat: true,
             },
           });
-          invalidateUserProfile(access.recordId);
+          await afterIdentityFieldsChanged(access.recordId, {
+            anthropometrics: true,
+            // A zone in the patch counts as changed; the refresh is idempotent.
+            timezone: patch.timezone !== undefined,
+          });
           if (patch.unitPreference !== undefined) {
             void refreshTextsAfterUnitChange(access.recordId);
-          }
-          if (patch.timezone !== undefined) {
-            invalidateUserMedications(access.recordId, { evict: true });
-            // The supplement nutrient rows are keyed by the local day.
-            await enqueueSupplementNutrientRecompute(access.recordId);
           }
           settings = {
             ...record,
@@ -344,41 +396,10 @@ export const PATCH = apiHandler(
           break;
         }
         case "notifications": {
-          const patch = parseManagedRecordSettingsPatch("notifications", body);
-          const current = await prisma.user.findUnique({
-            where: { id: access.recordId },
-            select: { notificationPrefs: true },
-          });
-          const notificationPreferences = patch.notificationPreferences
-            ? resolveNotificationPrefs(
-                current?.notificationPrefs,
-                patch.notificationPreferences,
-              )
-            : undefined;
-          const record = await prisma.user.update({
-            where: { id: access.recordId },
-            data: {
-              ...(patch.moodReminderEnabled !== undefined
-                ? { moodReminderEnabled: patch.moodReminderEnabled }
-                : {}),
-              ...(notificationPreferences !== undefined
-                ? { notificationPrefs: toJson(notificationPreferences) }
-                : {}),
-            },
-            select: { moodReminderEnabled: true, notificationPrefs: true },
-          });
-          const preferences = parseNotificationPrefs(record.notificationPrefs);
-          settings = {
-            moodReminderEnabled: record.moodReminderEnabled,
-            notificationPreferences: {
-              medication: {
-                lowStockRunwayDays: preferences.medication.lowStockRunwayDays,
-                reorderLeadDays: preferences.medication.reorderLeadDays,
-              },
-              mood: { reminderHour: preferences.mood.reminderHour },
-            },
-          };
-          changed = Object.keys(patch);
+          ({ settings, changed } = await patchNotificationsSettings(
+            access.recordId,
+            body,
+          ));
           break;
         }
         case "thresholds": {
@@ -473,13 +494,25 @@ export const PATCH = apiHandler(
           ));
           break;
         }
+        case "aiSource": {
+          ({
+            settings,
+            changed,
+            audit: auditExtra,
+          } = await patchManagedAiSourceSettings(
+            access.recordId,
+            access.actorId,
+            body,
+          ));
+          break;
+        }
       }
 
       await auditLog(`record-settings.${family}.update`, {
         userId: access.recordId,
         actorUserId: access.actorId,
         ipAddress: getClientIp(request),
-        details: { changed },
+        details: { changed, ...auditExtra },
       });
       annotate({
         action: { name: `record-settings.${family}.update` },
@@ -487,6 +520,11 @@ export const PATCH = apiHandler(
       });
       return apiSuccess({ recordId: access.recordId, family, settings });
     } catch (error) {
+      if (error instanceof ManagedAiSourceChainError) {
+        return apiError(error.message, 422, {
+          errorCode: "record_settings.ai_source.chain_missing",
+        });
+      }
       if (error instanceof Error && "issues" in error) {
         return returnAllZodIssues(error as never, 422);
       }

@@ -13,6 +13,7 @@
  *   6. Explicit APNS-channel opt-out suppresses the fan-out.
  *   7. Failure isolation: a broken flush never throws into the caller.
  */
+import type { Prisma } from "@/generated/prisma/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const rawSendMock = vi.fn();
@@ -35,10 +36,51 @@ vi.mock("@/lib/logging/context", () => ({
   getEvent: () => ({ addWarning: addWarningMock, addMeta: vi.fn() }),
 }));
 
+// Each flush writes its own background event; its meta is asserted here.
+const metaMock = vi.fn();
+vi.mock("@/lib/logging/background", () => ({
+  withBackgroundEvent: (
+    _name: string,
+    fn: (evt: Record<string, unknown>) => Promise<unknown>,
+  ) =>
+    fn({
+      addMeta: (...a: unknown[]) => metaMock(...a),
+      addWarning: (...a: unknown[]) => addWarningMock(...a),
+      setBackground: vi.fn(),
+    }),
+}));
+
 const deviceFindMany = vi.fn();
 const channelFindUnique = vi.fn();
 const deviceDeleteMany = vi.fn();
 const userFindUnique = vi.fn();
+const deviceUpdateMany = vi.fn();
+const intakeCount = vi.fn();
+const activityDeleteMany = vi.fn();
+const openActivityDoses = vi.fn();
+
+// Which doses are still open is the dose-state resolver's answer, read
+// through the relay pass's own helper.
+vi.mock("@/lib/push-relay/live-activity", () => ({
+  openActivityDoses: (...a: unknown[]) => openActivityDoses(...a),
+}));
+
+// The one device-delete path queues relay unbinds; here it is the plain
+// delete the assertions below read.
+vi.mock("@/lib/devices/delete-devices", async () => {
+  const { prisma } = await import("@/lib/db");
+  return {
+    deleteDeviceRows: async (where: Prisma.DeviceWhereInput) =>
+      (await prisma.device.deleteMany({ where }))?.count ?? 0,
+    deleteDeviceRowsIn: async (
+      tx: Prisma.TransactionClient,
+      where: Prisma.DeviceWhereInput,
+    ) => ({
+      count: (await tx.device.deleteMany({ where }))?.count ?? 0,
+      unbinds: [],
+    }),
+  };
+});
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -48,6 +90,13 @@ vi.mock("@/lib/db", () => ({
     device: {
       findMany: (...a: unknown[]) => deviceFindMany(...a),
       deleteMany: (...a: unknown[]) => deviceDeleteMany(...a),
+      updateMany: (...a: unknown[]) => deviceUpdateMany(...a),
+    },
+    medicationIntakeEvent: {
+      count: (...a: unknown[]) => intakeCount(...a),
+    },
+    liveActivityToken: {
+      deleteMany: (...a: unknown[]) => activityDeleteMany(...a),
     },
     notificationChannel: {
       findUnique: (...a: unknown[]) => channelFindUnique(...a),
@@ -55,7 +104,10 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import {
+  fanOutResult,
+  queueMedicationIntakeSync,
+} from "@/lib/notifications/medication-intake-sync";
 
 const APNS_CONFIG = { bundleId: "test.healthlog.ios" };
 
@@ -65,7 +117,7 @@ const APNS_CONFIG = { bundleId: "test.healthlog.ios" };
  * (Fake timers do not fake microtasks, so plain awaits drain them.)
  */
 async function drainFlush(): Promise<void> {
-  for (let i = 0; i < 20; i += 1) await Promise.resolve();
+  for (let i = 0; i < 80; i += 1) await Promise.resolve();
 }
 
 /** Unique per-test user id so per-user coalescing windows never leak
@@ -83,6 +135,7 @@ function device(overrides: Record<string, unknown> = {}) {
     apnsToken: "bbbb2222",
     apnsEnvironment: "sandbox",
     liveActivityPushToken: null,
+    liveActivities: [],
     ...overrides,
   };
 }
@@ -94,6 +147,10 @@ beforeEach(() => {
   channelFindUnique.mockResolvedValue({ enabled: true, preferences: [] });
   rawSendMock.mockResolvedValue({ ok: true, status: 200 });
   deviceDeleteMany.mockResolvedValue({ count: 0 });
+  deviceUpdateMany.mockResolvedValue({ count: 0 });
+  intakeCount.mockResolvedValue(0);
+  openActivityDoses.mockResolvedValue([]);
+  activityDeleteMany.mockResolvedValue({ count: 0 });
   userFindUnique.mockResolvedValue({
     deletionRequestedAt: null,
     deletionPurgeAt: null,
@@ -212,12 +269,12 @@ describe("queueMedicationIntakeSync — coalescing", () => {
     // Trailing fan-out covering the two coalesced mutations.
     expect(rawSendMock).toHaveBeenCalledTimes(2);
     expect(recordPushAttemptMock).toHaveBeenCalledTimes(2);
-    expect(annotateMock).toHaveBeenLastCalledWith({
-      meta: {
-        medication_intake_sync_devices: 1,
-        medication_intake_sync_coalesced: 2,
-      },
-    });
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_coalesced", 2);
+    expect(metaMock).toHaveBeenLastCalledWith(
+      "intake_sync_flush_to_handoff_ms",
+      expect.any(Number),
+    );
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_devices", 1);
   });
 
   it("a single queue call (bulk route) produces exactly ONE fan-out", async () => {
@@ -230,12 +287,12 @@ describe("queueMedicationIntakeSync — coalescing", () => {
     await drainFlush();
 
     expect(rawSendMock).toHaveBeenCalledTimes(1);
-    expect(annotateMock).toHaveBeenCalledWith({
-      meta: {
-        medication_intake_sync_devices: 1,
-        medication_intake_sync_coalesced: 0,
-      },
-    });
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_devices", 1);
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_coalesced", 0);
+    expect(metaMock).toHaveBeenCalledWith(
+      "intake_sync_write_to_flush_ms",
+      expect.any(Number),
+    );
   });
 
   it("does not coalesce across users", async () => {
@@ -344,6 +401,96 @@ describe("queueMedicationIntakeSync — Live Activity push", () => {
     // ActivityKit envelope only — no health data rides along.
     expect(la.payload.medicationId).toBeUndefined();
     expect(la.payload.scheduledFor).toBeUndefined();
+    // A content-state the app's synthesised decoder accepts: every
+    // non-optional field of MedicationActivityAttributes.ContentState.
+    expect(Object.keys(la.payload.aps["content-state"]).sort()).toEqual([
+      "confirmed",
+      "countdownTarget",
+      "isOverdue",
+      "pendingConfirm",
+      "status",
+      "timeFormatRaw",
+    ]);
+    expect(la.payload.aps["content-state"].status).toBe("taken");
+    // The spent token is cleared.
+    expect(deviceUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["d1"] } },
+      data: { liveActivityPushToken: null },
+    });
+  });
+
+  it("leaves the Activity running while a dose it could show is still open", async () => {
+    deviceFindMany.mockResolvedValue([
+      device({ id: "d1", token: "tok-1", liveActivityPushToken: "la-open" }),
+    ]);
+    openActivityDoses.mockResolvedValue([{ medicationId: "m-open" }]);
+
+    queueMedicationIntakeSync({ userId: nextUserId() });
+    await drainFlush();
+
+    expect(rawSendMock.mock.calls.map((c) => c[0].pushType)).toEqual([
+      "background",
+    ]);
+    expect(deviceUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("ends exactly the Activity whose dose was answered, and drops its token", async () => {
+    const answeredSlot = new Date("2026-11-21T07:00:00.000Z");
+    const openSlot = new Date("2026-11-21T19:00:00.000Z");
+    deviceFindMany.mockResolvedValue([
+      device({
+        id: "d1",
+        token: "tok-1",
+        liveActivities: [
+          {
+            id: "la-a",
+            pushToken: "aa11",
+            medicationId: "m-a",
+            slotInstant: answeredSlot,
+          },
+          {
+            id: "la-b",
+            pushToken: "bb22",
+            medicationId: "m-b",
+            slotInstant: openSlot,
+          },
+        ],
+      }),
+    ]);
+    intakeCount.mockImplementation(
+      async (args: { where: { medicationId?: string } }) =>
+        args.where.medicationId === "m-a" ? 1 : 0,
+    );
+
+    queueMedicationIntakeSync({ userId: nextUserId() });
+    await drainFlush();
+
+    const ends = rawSendMock.mock.calls
+      .map((c) => c[0])
+      .filter((a) => a.pushType === "liveactivity");
+    expect(ends.map((a) => a.deviceToken)).toEqual(["aa11"]);
+    expect(activityDeleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["la-a"] } },
+    });
+  });
+
+  it("clears a Live Activity token APNs reports dead", async () => {
+    deviceFindMany.mockResolvedValue([
+      device({ id: "d1", token: "tok-1", liveActivityPushToken: "la-dead" }),
+    ]);
+    rawSendMock.mockImplementation(async (args: { pushType: string }) =>
+      args.pushType === "liveactivity"
+        ? { ok: false, reason: "BadDeviceToken", shouldDisable: true }
+        : { ok: true, status: 200 },
+    );
+
+    queueMedicationIntakeSync({ userId: nextUserId() });
+    await drainFlush();
+
+    expect(deviceUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["d1"] } },
+      data: { liveActivityPushToken: null },
+    });
   });
 
   it("sends no liveactivity push when no token is stored", async () => {
@@ -431,6 +578,102 @@ describe("queueMedicationIntakeSync — gating + failure isolation", () => {
     expect(rawSendMock).not.toHaveBeenCalled();
     expect(addWarningMock).toHaveBeenCalledWith(
       expect.stringContaining("medication_intake_sync_dispatch_failed"),
+    );
+  });
+});
+
+describe("a fan-out always names why it did not deliver", () => {
+  const none = {
+    accepted: 0,
+    deferred: 0,
+    deferredReason: undefined,
+    failed: 0,
+    guardianRelaySkipped: 0,
+    unrouted: 0,
+    lastFailureReason: undefined,
+  };
+
+  it.each([
+    [{ ...none, accepted: 2 }, "ok", null],
+    // One device took it, the relay refused the other for its budget: owed,
+    // not "ok" (a flush that logged "ok" never owed the sync).
+    [
+      {
+        ...none,
+        accepted: 1,
+        deferred: 1,
+        deferredReason: "relay_owed:device_quota",
+      },
+      "deferred",
+      "relay_owed:device_quota",
+    ],
+    [
+      { ...none, deferred: 1, deferredReason: "relay_owed:device_quota" },
+      "deferred",
+      "relay_owed:device_quota",
+    ],
+    [{ ...none, deferred: 2 }, "deferred", "intake_sync_deferred_budget"],
+    [
+      { ...none, deferred: 1, deferredReason: "relay_waiting" },
+      "deferred",
+      "relay_waiting",
+    ],
+    [
+      { ...none, guardianRelaySkipped: 1 },
+      "skipped",
+      "intake_sync_guardian_relay_skipped",
+    ],
+    [
+      {
+        ...none,
+        accepted: 1,
+        deferred: 1,
+        failed: 1,
+        lastFailureReason: "relay_item_failed:binding_unknown",
+      },
+      "error",
+      "relay_item_failed:binding_unknown",
+    ],
+    [{ ...none, failed: 1 }, "error", "intake_sync_send_failed"],
+    [{ ...none, unrouted: 1 }, "error", "intake_sync_device_unrouted"],
+    [none, "error", "intake_sync_nothing_sent"],
+  ] as const)("%o -> %s %s", (input, result, reason) => {
+    expect(fanOutResult(input)).toEqual({ result, reason });
+  });
+
+  it("answers ok only when nothing was deferred or failed", () => {
+    // Every combination of up to two devices per outcome: `ok` exactly when
+    // no device is owed, waiting or failed and one took it.
+    for (let accepted = 0; accepted <= 2; accepted += 1) {
+      for (let deferred = 0; deferred <= 2; deferred += 1) {
+        for (let failed = 0; failed <= 2; failed += 1) {
+          const out = fanOutResult({
+            ...none,
+            accepted,
+            deferred,
+            failed,
+          });
+          expect(out.result === "ok").toBe(
+            accepted > 0 && deferred === 0 && failed === 0,
+          );
+          if (out.result !== "ok") expect(out.reason).toBeTruthy();
+        }
+      }
+    }
+  });
+
+  it("puts the reason into the flush's wide event", async () => {
+    loadConfigMock.mockReturnValue(APNS_CONFIG);
+    deviceFindMany.mockResolvedValue([device()]);
+    rawSendMock.mockResolvedValue({ ok: false, reason: "BadTopic" });
+
+    queueMedicationIntakeSync({ userId: nextUserId() });
+    await drainFlush();
+
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_outcome", "error");
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_reason", "BadTopic");
+    expect(recordPushAttemptMock).toHaveBeenCalledWith(
+      expect.objectContaining({ result: "error", reason: "BadTopic" }),
     );
   });
 });

@@ -31,7 +31,7 @@ export function RecoveryKitBanner({ isAdmin }: { isAdmin: boolean }) {
         </p>
         <p className="text-sm">{t("dashboard.recoveryKitBanner.body")}</p>
       </div>
-      <InlineAction asChild size="sm" className="min-h-11 font-medium">
+      <InlineAction asChild size="sm" className="font-medium">
         <Link href="/admin/encryption">
           {t("dashboard.recoveryKitBanner.action")}
         </Link>

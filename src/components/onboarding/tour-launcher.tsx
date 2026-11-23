@@ -39,6 +39,7 @@
  *      finished onboarding.
  */
 
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -47,7 +48,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNavModules } from "@/hooks/use-nav-modules";
 import { apiPost } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
-import { OnboardingTour } from "./tour";
+// The tour opens once in an account's life, so its ~800 lines stay out of the
+// shell every page ships: the chunk loads when the launcher decides to show it.
+const OnboardingTour = dynamic(
+  () => import("./tour").then((m) => m.OnboardingTour),
+  { ssr: false },
+);
 
 const POST_WIZARD_GRACE_MS = 1500;
 
@@ -107,19 +113,6 @@ export function shouldAutoLaunchTour(args: {
   // grace by the launcher), no 24 h wait.
   if (args.justFromWizard) return true;
   return args.nowMs - completedMs >= TOUR_AUTOLAUNCH_DELAY_MS;
-}
-
-/**
- * v1.18.0 — whether the achievements tour stop should be included.
- * Reads the per-user module map with the standard client default-on
- * convention (`modules?.achievements !== false`): only an explicit
- * `false` drops the stop. Pure + exported so the rule is unit-pinned
- * without rendering the launcher.
- */
-export function tourIncludesAchievements(
-  modules: Partial<Record<string, boolean>> | undefined,
-): boolean {
-  return modules?.achievements !== false;
 }
 
 // v1.4.15 — sessionStorage keys are now scoped by user id so an

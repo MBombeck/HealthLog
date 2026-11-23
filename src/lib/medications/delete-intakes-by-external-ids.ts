@@ -11,18 +11,22 @@
  * evicted and the other devices told once for the whole batch rather than
  * per event.
  *
- * A later re-post of a deleted dose's externalId through the bulk route
- * inserts a new dose: the live-row unique on `(user_id, external_id)`
- * (migration 0239) lets a tombstone never block the ledger. The app drops the
- * outbox entry of a sample it reported deleted.
+ * The tombstone is stamped as Apple Health's deletion, so a later re-post of
+ * the dose event (it came back in HealthKit) lands as a new dose and takes
+ * its stock again. A dose deleted in HealthLog (`deleteIntakeEvent`) is the
+ * other case: its re-post is refused per entry (`skipped`, reason
+ * `deleted_in_healthlog`). That is decided at the ingest, not by the index: the unique
+ * on `(user_id, external_id)` (migration 0239) stays partial over live rows,
+ * so the tombstone never blocks the ledger itself (an undo or a restore of
+ * the deleted row still lands), only the re-import of the same Apple Health
+ * dose event (`tombstone-repost.ts`).
  */
 import { prisma } from "@/lib/db";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
-import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
+import { appleHealthDeletion } from "@/lib/sync/tombstone-repost";
 
 export async function deleteAppleHealthIntakes(
   user: { id: string; timezone: string | null },
@@ -34,7 +38,12 @@ export async function deleteAppleHealthIntakes(
   const events = await prisma.medicationIntakeEvent.findMany({
     where: {
       userId: user.id,
-      source: APP_MINTED_SOURCE,
+      // Not confined to `source = APPLE_HEALTH` like the other families: a
+      // dose event that converged onto a pre-minted slot row keeps that
+      // row's source and carries the dose-event id, and only an Apple Health
+      // entry of the bulk route can set an intake's `externalId` (the route
+      // takes one solely with `source: "APPLE_HEALTH"`). The id is the
+      // provenance here, as in `getAppleHealthDoseFreshness`.
       externalId: { in: [...externalIds] },
       deletedAt: null,
     },
@@ -52,7 +61,7 @@ export async function deleteAppleHealthIntakes(
     });
     const { count } = await prisma.medicationIntakeEvent.updateMany({
       where: { id: event.id, deletedAt: null },
-      data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
+      data: { ...appleHealthDeletion(), syncVersion: { increment: 1 } },
     });
     if (count === 0) continue;
     deleted += count;
@@ -69,8 +78,11 @@ export async function deleteAppleHealthIntakes(
   for (const medicationId of medications) {
     await reconcileOneShotState(prisma, medicationId, user.id);
   }
-  invalidateUserMedications(user.id, { evict: true });
   // The widget count and a pending Live Activity on the other devices change.
-  queueMedicationIntakeSync({ userId: user.id, originDeviceToken });
+  afterDoseChange({
+    scope: "intakes",
+    userId: user.id,
+    originDeviceToken,
+  });
   return deleted;
 }

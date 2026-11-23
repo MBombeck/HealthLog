@@ -137,6 +137,7 @@ async function buildBloodPressureSnapshot(
       dateOfBirth: true,
       gender: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
 
@@ -349,6 +350,7 @@ async function readBpChannels(userId: string, userTz: string) {
       .map((measurement) => ({
         measuredAt: measurement.measuredAt,
         value: measurement.value,
+        timeZone: measurement.timeZone,
       })),
     { now, tz: userTz },
   );
@@ -359,6 +361,7 @@ async function readBpChannels(userId: string, userTz: string) {
       .map((measurement) => ({
         measuredAt: measurement.measuredAt,
         value: measurement.value,
+        timeZone: measurement.timeZone,
       })),
     { now, tz: userTz },
   );
@@ -369,6 +372,7 @@ async function readBpChannels(userId: string, userTz: string) {
       .map((measurement) => ({
         measuredAt: measurement.measuredAt,
         value: measurement.value,
+        timeZone: measurement.timeZone,
       })),
     { now, tz: userTz },
   );

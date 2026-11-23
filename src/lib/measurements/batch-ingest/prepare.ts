@@ -3,6 +3,9 @@
  * become, or to the per-entry refusal that keeps it out. Nothing is written
  * here; hourly sums are validated and set aside for their own write.
  */
+import { prisma } from "@/lib/db";
+import { isStorableTimeZone } from "@/lib/tz/reading-zone";
+import { zonesKnownToPostgres } from "@/lib/tz/reading-zone-sql";
 import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import {
   isAggregatedBucketExternalId,
@@ -30,6 +33,7 @@ import {
 } from "@/lib/mental-health/apple-health-assessment";
 
 import {
+  isStatsExternalId,
   outOfRangeResult,
   type BatchIngestEntry,
   type BatchIngestInput,
@@ -70,6 +74,7 @@ export async function prepareBatch(
     assessments: [],
   };
   const batchNow = new Date();
+  const storableZones = await resolveStorableZones(entries);
 
   for (let index = 0; index < entries.length; index++) {
     const entry = entries[index];
@@ -129,11 +134,30 @@ export async function prepareBatch(
       user.id,
       scoped,
       ingestTokenId,
+      storableZones,
     );
     if ("row" in prepared) batch.prepared.push(prepared);
     else batch.results[index] = prepared;
   }
   return batch;
+}
+
+/**
+ * The per-entry zones of this batch the server can store: a well-formed IANA
+ * name the runtime knows AND the database's tz data knows, because the SQL
+ * readers read a row's wall clock `AT TIME ZONE` its zone. One query for the
+ * distinct names of the batch; usually one or two.
+ */
+async function resolveStorableZones(
+  entries: readonly BatchIngestEntry[],
+): Promise<Set<string>> {
+  const named = new Set<string>();
+  for (const e of entries) {
+    if (e.timeZone !== undefined && isStorableTimeZone(e.timeZone)) {
+      named.add(e.timeZone);
+    }
+  }
+  return zonesKnownToPostgres(prisma, [...named]);
 }
 
 /** Validate one hourly sum and set it aside, or record why it is refused. */
@@ -219,6 +243,7 @@ function prepareMeasurementEntry(
   userId: string,
   scoped: boolean,
   ingestTokenId: string | null,
+  storableZones: ReadonlySet<string>,
 ): PreparedEntry | EntryResult {
   const mapped = mapAppleHealthEntry({
     hkIdentifier: entry.hkIdentifier,
@@ -334,6 +359,16 @@ function prepareMeasurementEntry(
       measuredAt: mapped.takenAt,
       externalId: entry.externalId,
       externalSourceVersion: entry.externalSourceVersion ?? null,
+      // A `stats:` total carries when it was computed, and a write without
+      // one clears it: the stored value then no longer has a known time.
+      ...(isStatsExternalId(entry.externalId)
+        ? {
+            statsComputedAt:
+              entry.computedAt === undefined
+                ? null
+                : new Date(entry.computedAt),
+          }
+        : {}),
       sleepStage: mapped.sleepStage ?? null,
       // Categorical events: the device's own verdict / severity for an EVENT
       // row; null for every continuous reading.
@@ -343,6 +378,12 @@ function prepareMeasurementEntry(
       // `unknown` so legacy ingest keeps working without a server-side
       // default.
       deviceType: entry.deviceType ?? null,
+      // The reading's own zone, when the client sent one the server can read
+      // (`storableZones`, resolved for the whole batch before this runs).
+      timeZone:
+        entry.timeZone !== undefined && storableZones.has(entry.timeZone)
+          ? entry.timeZone
+          : null,
     },
   };
 }

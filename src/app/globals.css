@@ -1458,3 +1458,17 @@ html [data-sonner-toaster][data-y-position="bottom"] {
     bottom: calc(var(--mobile-offset-bottom) + 4rem);
   }
 }
+
+/* ── Insights owns its top spacing ───────────────────────────────────
+ * The auth shell gives every route a generic `pt-6`. Insights already opens
+ * with a sticky, padded navigation row, so on phones that spacer was a second
+ * unexplained 24 px gap; only that inherited top padding goes, when the
+ * insights shell is the route's direct child. Horizontal padding and the
+ * safe-area bottom clearance stay. It lives here, not in a runtime-injected
+ * style, so the server-rendered page has it in its first paint and nothing
+ * moves when the client takes over. */
+@media (max-width: 767px) {
+  #main-content > div:has(> [data-slot="insights-layout-shell"]) {
+    padding-top: 0;
+  }
+}

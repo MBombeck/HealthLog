@@ -27,18 +27,30 @@ export function formatTimeWindowRange(
   start: string,
   end: string,
   locale?: Locale,
+  /**
+   * The reader's wall-clock formatter (`useFormatters().wallTime`), so the
+   * range follows the 12 h / 24 h preference like every instant beside it.
+   * Without it the parts stay `HH:mm`. The German "Uhr" suffix belongs to the
+   * 24 h clock only and is dropped for a 12 h reading.
+   */
+  wallTime?: (hhmm: string) => string,
 ): string {
-  const s = formatTimeWindowPart(start);
-  const e = formatTimeWindowPart(end);
+  const s = wallTime
+    ? wallTime(formatTimeWindowPart(start))
+    : formatTimeWindowPart(start);
+  const e = wallTime
+    ? wallTime(formatTimeWindowPart(end))
+    : formatTimeWindowPart(end);
+  const uhr = !/[a-z]/i.test(s + e);
   // A degenerate window — start == end (a single target time, or a med with
   // no real window span) — must read as ONE time, not "07:00 bis 07:00 Uhr" /
   // "07:00 – 07:00". The "bis" / "–" separator is reserved for a genuine
   // range. The DE branch keeps its "Uhr" suffix on the single time.
   if (s === e) {
-    return locale === undefined || locale === "de" ? `${s} Uhr` : s;
+    return (locale === undefined || locale === "de") && uhr ? `${s} Uhr` : s;
   }
   if (locale === undefined || locale === "de") {
-    return `${s} bis ${e} Uhr`;
+    return uhr ? `${s} bis ${e} Uhr` : `${s} bis ${e}`;
   }
   return `${s} – ${e}`;
 }

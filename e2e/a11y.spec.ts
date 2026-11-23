@@ -584,6 +584,10 @@ async function installA11yMocks(page: Page) {
     if (url.pathname === "/api/medications/layout") {
       return fulfilJson(route, { version: 1, view: "cards", order: [] });
     }
+    // Today's dose rows, which the card's snooze reads: none open.
+    if (url.pathname === "/api/medications/intake") {
+      return fulfilJson(route, []);
+    }
     if (url.pathname === "/api/medications") {
       return fulfilJson(route, [medication]);
     }

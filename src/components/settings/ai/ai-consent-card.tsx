@@ -45,8 +45,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAiConsent } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
-import { formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { CONFIRM_SAVED } from "@/lib/api/mutation-feedback";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   aiInputDependentKeys,
   invalidateKeys,
@@ -66,6 +66,7 @@ export function AiConsentCard({
   isAuthenticated: boolean;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   // The standing decision comes off the account payload, resolved on the
@@ -76,6 +77,8 @@ export function AiConsentCard({
 
   const revoke = useMutation({
     mutationKey: queryKeys.aiConsentReceipt("ai_full"),
+    // The card simply goes once consent ends; say the withdrawal landed.
+    meta: CONFIRM_SAVED,
     mutationFn: async () => {
       const res = await apiFetchRaw("/api/consent/ai/latest?kind=ai_full", {
         method: "DELETE",
@@ -128,11 +131,11 @@ export function AiConsentCard({
   const description = consent.since
     ? providers
       ? t("settings.ai.consent.activeSinceNamed", {
-          date: formatDateTime(consent.since),
+          date: fmt.dateTime(consent.since),
           providers,
         })
       : t("settings.ai.consent.activeSince", {
-          date: formatDateTime(consent.since),
+          date: fmt.dateTime(consent.since),
         })
     : t("settings.ai.consent.activeUndated");
 
@@ -167,7 +170,6 @@ export function AiConsentCard({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setConfirming(false)}
                 disabled={revoke.isPending}
               >
@@ -177,7 +179,6 @@ export function AiConsentCard({
                 type="button"
                 variant="destructive"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 data-slot="ai-consent-withdraw-confirm"
                 onClick={() => revoke.mutate()}
                 disabled={revoke.isPending}
@@ -193,7 +194,6 @@ export function AiConsentCard({
               type="button"
               variant="outline"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               data-slot="ai-consent-withdraw"
               onClick={() => setConfirming(true)}
             >
@@ -221,6 +221,7 @@ function DocumentReadingConsentRow({
   isAuthenticated: boolean;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
 
@@ -239,6 +240,8 @@ function DocumentReadingConsentRow({
 
   const revoke = useMutation({
     mutationKey: queryKeys.aiConsentReceipt("ai_extraction"),
+    // The row simply goes once consent ends; say the withdrawal landed.
+    meta: CONFIRM_SAVED,
     mutationFn: async () => {
       const res = await apiFetchRaw(
         "/api/consent/ai/latest?kind=ai_extraction",
@@ -264,7 +267,7 @@ function DocumentReadingConsentRow({
         icon={ShieldCheck}
         title={t("settings.ai.consent.documentReading.title")}
         description={t("settings.ai.consent.documentReading.activeSince", {
-          date: formatDateTime(active.signedAt),
+          date: fmt.dateTime(active.signedAt),
         })}
       />
       {confirming ? (
@@ -284,7 +287,6 @@ function DocumentReadingConsentRow({
               type="button"
               variant="outline"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               onClick={() => setConfirming(false)}
               disabled={revoke.isPending}
             >
@@ -294,7 +296,6 @@ function DocumentReadingConsentRow({
               type="button"
               variant="destructive"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               data-slot="ai-consent-document-reading-withdraw-confirm"
               onClick={() => revoke.mutate()}
               disabled={revoke.isPending}
@@ -310,7 +311,6 @@ function DocumentReadingConsentRow({
             type="button"
             variant="outline"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             data-slot="ai-consent-document-reading-withdraw"
             onClick={() => setConfirming(true)}
           >

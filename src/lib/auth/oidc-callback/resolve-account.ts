@@ -11,6 +11,11 @@
  *
  * A refusal names the reason the callback redirects with.
  */
+import {
+  findUserIdByEmail,
+  findUserIdByUsername,
+} from "@/lib/auth/identity-lookup";
+import { isP2002 } from "@/lib/prisma-errors";
 import { prisma } from "@/lib/db";
 import type { User } from "@/generated/prisma/client";
 import { annotate } from "@/lib/logging/context";
@@ -56,14 +61,10 @@ async function refreshDisplayEmail(
   ) {
     return user;
   }
-  const emailTaken = await prisma.user.findFirst({
-    where: {
-      email: { equals: displayEmail, mode: "insensitive" },
-      NOT: { id: user.id },
-    },
-    select: { id: true },
+  const emailTaken = await findUserIdByEmail(displayEmail, {
+    excludeId: user.id,
   });
-  if (emailTaken) return user;
+  if (emailTaken !== null) return user;
   return prisma.user.update({
     where: { id: user.id },
     data: { email: displayEmail },
@@ -97,19 +98,12 @@ async function registrationOpen(): Promise<boolean> {
  * racing a password first registration is serialised against the same lock,
  * so only one ADMIN can ever be minted.
  */
-async function provision(
+async function createProvisionedUser(
   subject: OidcSubject & { email: string },
+  username: string,
+  timezone: string,
 ): Promise<User> {
-  const username = await deriveUniqueUsername(subject.email, (candidate) =>
-    prisma.user
-      .findUnique({ where: { username: candidate } })
-      .then((u: unknown) => u !== null),
-  );
-  // Same server-default resolution the register route uses: an
-  // SSO-provisioned account has no registration form to carry the
-  // browser-detected timezone.
-  const timezone = await resolveServerDefaultTimezone();
-  const user = await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     // `pg_advisory_xact_lock` returns void, which the client cannot
     // deserialize as a column; selecting FROM it yields a plain int row.
     await tx.$queryRaw`
@@ -130,11 +124,39 @@ async function provision(
       },
     });
   });
-  await auditLog("auth.oidc.provisioned", {
-    userId: user.id,
-    ipAddress: subject.ip,
-  });
-  return user;
+}
+
+async function provision(
+  subject: OidcSubject & { email: string },
+): Promise<User> {
+  // Same server-default resolution the register route uses: an
+  // SSO-provisioned account has no registration form to carry the
+  // browser-detected timezone.
+  const timezone = await resolveServerDefaultTimezone();
+  // The name is checked regardless of case, like the unique key it is held
+  // to (migration 0517). A second login that takes the same name between
+  // the check and the insert loses on the key, and the name is derived
+  // again, so it takes the next free suffix instead of failing the sign-in.
+  for (let attempt = 0; ; attempt += 1) {
+    const username = await deriveUniqueUsername(
+      subject.email,
+      async (candidate) => (await findUserIdByUsername(candidate)) !== null,
+    );
+    let user: User;
+    try {
+      user = await createProvisionedUser(subject, username, timezone);
+    } catch (err) {
+      const nameTaken =
+        isP2002(err) && (await findUserIdByUsername(username)) !== null;
+      if (!nameTaken || attempt >= 4) throw err;
+      continue;
+    }
+    await auditLog("auth.oidc.provisioned", {
+      userId: user.id,
+      ipAddress: subject.ip,
+    });
+    return user;
+  }
 }
 
 export async function resolveOidcAccount(
@@ -163,9 +185,10 @@ export async function resolveOidcAccount(
     return refuse("oidc_email_unverified");
   }
 
-  const byEmail = await prisma.user.findFirst({
-    where: { email: { equals: email, mode: "insensitive" } },
-  });
+  const byEmailId = await findUserIdByEmail(email);
+  const byEmail = byEmailId
+    ? await prisma.user.findUnique({ where: { id: byEmailId } })
+    : null;
   if (byEmail) {
     // (2) Link ONCE. An account already pinned to a different IdP identity
     // is never silently re-bound: a rebind would let a second IdP identity

@@ -23,7 +23,7 @@ import { useCallback, useId, useMemo, useState } from "react";
 import { TimeField } from "@/components/ui/time-field";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   buildRows,
   isOrderedRange,
@@ -64,20 +64,15 @@ export function DoseWindowEditor({
   idPrefix,
 }: DoseWindowEditorProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const generatedId = useId();
   const prefix = idPrefix ?? generatedId;
 
-  // v1.25.13 — the switch reflects the user's INTENT to customise, held in
-  // local state, because it cannot be reconstructed from `value` alone: the
-  // persisted contract stores ONLY ranges that differ from the default band
-  // (`rowsToEntries` drops a default-equal range so the column stays minimal).
-  // The former editor seeded the range from the default band on toggle-ON and
-  // emitted immediately, so serialisation dropped it right back to `[]`, the
-  // controlled `checked={row.custom}` recomputed `false`, and the switch
-  // snapped off — the toggle could never turn on without first editing a range
-  // the editor wouldn't reveal until the toggle was on (a deadlock). Tracking
-  // the opened set here decouples the toggle from serialisation: the row shows
-  // its default band, and an explicit range only persists once it differs.
+  // The switch holds the INTENT to customise in local state: the stored
+  // contract keeps only ranges that differ from the default band, so a
+  // switch derived from `value` snapped off before a range could be edited
+  // (v1.25.13). An opened row shows its default band; a range persists
+  // only once it differs.
   const [opened, setOpened] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
@@ -162,7 +157,7 @@ export function DoseWindowEditor({
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="text-foreground text-sm font-medium tabular-nums">
-                  {row.timeOfDay}
+                  {fmt.wallTime(row.timeOfDay)}
                 </span>
                 <div className="flex items-center gap-2">
                   <Label
@@ -235,8 +230,8 @@ export function DoseWindowEditor({
                 data-slot="dose-window-band"
               >
                 {t("medications.detail.zeitplan.window.onTimeBand", {
-                  start: row.start,
-                  end: row.end,
+                  start: fmt.wallTime(row.start),
+                  end: fmt.wallTime(row.end),
                 })}
                 {scale === "dayScale"
                   ? ` · ${t("medications.detail.zeitplan.window.lateDays", {
@@ -244,7 +239,7 @@ export function DoseWindowEditor({
                     })}`
                   : lateEnd
                     ? ` · ${t("medications.detail.zeitplan.window.lateUntil", {
-                        time: lateEnd,
+                        time: fmt.wallTime(lateEnd),
                       })}`
                     : ""}
               </p>

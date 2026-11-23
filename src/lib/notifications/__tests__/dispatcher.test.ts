@@ -785,3 +785,43 @@ describe("dispatchNotification — reminders reach Web Push without APNs", () =>
     }
   });
 });
+
+describe("dispatchNotification — a security alert reaches every channel", () => {
+  // Over the relay an alert lives 15 minutes (`RELAY_CLASS_LIFETIME_S`), so a
+  // phone that is offline longer never sees a security alert there. The
+  // dispatcher fans out rather than stopping at the first channel that took
+  // it, so the same alert also goes to every other channel the person set up
+  // (`docs/integrations/push-relay.md`, "When the relay is down").
+  it("sends SECURITY_ALERT on after the APNs leg succeeded", async () => {
+    const rows: MockChannel[] = [
+      makeChannel({ id: "ch-apns", type: "APNS" }),
+      makeChannel({ id: "ch-tg", type: "TELEGRAM" }),
+      makeChannel({ id: "ch-ntfy", type: "NTFY" }),
+      makeChannel({ id: "ch-wp", type: "WEB_PUSH" }),
+    ];
+    vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce(
+      rows as unknown as Awaited<
+        ReturnType<typeof prisma.notificationChannel.findMany>
+      >,
+    );
+    sendViaApnsMock.mockResolvedValueOnce({ ok: true });
+    sendViaTelegramMock.mockResolvedValueOnce({ ok: true });
+    sendViaNtfyMock.mockResolvedValueOnce({ ok: true });
+    sendViaWebPushMock.mockResolvedValueOnce({ ok: true });
+
+    const outcome = await dispatchNotification({
+      eventType: "SECURITY_ALERT",
+      userId: "u-1",
+      title: "New sign-in",
+      message: "A new device signed in to your account.",
+      metadata: { securityKind: "new_device" },
+      urgent: true,
+    });
+
+    expect(sendViaApnsMock).toHaveBeenCalledTimes(1);
+    expect(sendViaTelegramMock).toHaveBeenCalledTimes(1);
+    expect(sendViaNtfyMock).toHaveBeenCalledTimes(1);
+    expect(sendViaWebPushMock).toHaveBeenCalledTimes(1);
+    expect(outcome.channelsSucceeded).toBe(4);
+  });
+});

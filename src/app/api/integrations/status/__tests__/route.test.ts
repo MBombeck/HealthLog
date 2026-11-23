@@ -14,6 +14,7 @@ vi.mock("@/lib/db", () => ({
     withingsConnection: { findUnique: vi.fn(async () => null) },
     whoopConnection: { findUnique: vi.fn(async () => null) },
     googleHealthConnection: { findUnique: vi.fn(async () => null) },
+    healthConnectRemoteSource: { findUnique: vi.fn(async () => null) },
     moodEntry: { count: vi.fn(async () => 0) },
     $queryRaw: vi.fn(async () => []),
     workout: { groupBy: vi.fn(async () => []) },
@@ -338,7 +339,7 @@ describe("/api/integrations/status — the freshness read failed", () => {
     expect(envelope.metricFreshnessDegraded).toBe(true);
     // Still fail-soft: the rest of the envelope survives, every entry
     // present, because a freshness hiccup is never worth the settings surface.
-    expect(envelope.integrations).toHaveLength(9);
+    expect(envelope.integrations).toHaveLength(10);
     for (const entry of envelope.integrations) {
       expect(entry.metricFreshness).toEqual([]);
     }
@@ -470,6 +471,7 @@ describe("/api/integrations/status — the unified connection health", () => {
       nightscout: null,
       dawarich: null,
       garmin: null,
+      "health-connect-remote": null,
       "apple-health": null,
     } as never);
     userFind.mockResolvedValue({ ouraAccessTokenEncrypted: "tok" });

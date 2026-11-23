@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
+import { formatMessage } from "@/lib/i18n/format-message";
+
 /**
  * The description slot holds ONE sentence, guideline ≤ 120 characters
  * (design standards §3).
@@ -118,7 +120,16 @@ function resolve(bundle: unknown, key: string): string | undefined {
           : undefined,
       bundle,
     );
-  return typeof value === "string" ? value : undefined;
+  if (typeof value !== "string") return undefined;
+  // A plural block counts as the sentence a reader sees: render it with a
+  // typical number so its option syntax does not count toward the length.
+  const counts: Record<string, number> = {};
+  for (const m of value.matchAll(/\{(\w+)\s*,\s*plural\s*,/g)) {
+    counts[m[1]!] = 30;
+  }
+  return Object.keys(counts).length
+    ? formatMessage(value, counts, "en")
+    : value;
 }
 
 /** Sentence terminators followed by a space or the end of the string. */

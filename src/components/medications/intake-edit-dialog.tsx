@@ -27,11 +27,11 @@ import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2 } from "lucide-react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { DateTimeField } from "@/components/ui/date-time-field";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads } from "@/lib/query-keys";
 import { apiPut } from "@/lib/api/api-fetch";
@@ -187,10 +187,10 @@ function IntakeEditDialogBody({
         }}
       >
         <div className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="intake-edit-taken-at">
-              {t("medications.detail.intake.edit.takenAtLabel")}
-            </Label>
+          <FieldGroup
+            htmlFor="intake-edit-taken-at"
+            label={t("medications.detail.intake.edit.takenAtLabel")}
+          >
             <DateTimeField
               id="intake-edit-taken-at"
               value={takenAt}
@@ -218,20 +218,13 @@ function IntakeEditDialogBody({
                 {t("medications.detail.intake.edit.farFromScheduledWarning")}
               </p>
             )}
-          </div>
-          <label
-            htmlFor="intake-edit-skipped"
-            className="flex items-center justify-between gap-3"
-          >
-            <span className="text-sm font-medium">
-              {t("medications.detail.intake.edit.skippedLabel")}
-            </span>
-            <Switch
-              id="intake-edit-skipped"
-              checked={skipped}
-              onCheckedChange={(checked) => setSkipped(checked)}
-            />
-          </label>
+          </FieldGroup>
+          <SwitchRow
+            label={t("medications.detail.intake.edit.skippedLabel")}
+            id="intake-edit-skipped"
+            checked={skipped}
+            onCheckedChange={(checked) => setSkipped(checked)}
+          />
         </div>
       </form>
     </ResponsiveSheet>

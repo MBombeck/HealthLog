@@ -29,6 +29,7 @@ import {
   formatDurationMinutes,
 } from "./format";
 import { InlineAction } from "@/components/ui/inline-action";
+import { performanceTiles } from "./performance-tiles";
 
 interface StatTileProps {
   icon: ReactNode;
@@ -160,6 +161,8 @@ export function WorkoutDetailStats({ workout }: WorkoutDetailStatsProps) {
       value: formatPace(workout.durationSec, workout.distanceM, preference),
     });
   }
+
+  tiles.push(...performanceTiles(workout.performance, t, locale));
 
   const averageLine = sportAverageLine(workout, locale, preference);
 

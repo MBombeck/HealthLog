@@ -15,12 +15,14 @@ vi.mock("@/lib/db", () => ({
     webauthnMfaCredential: { count: vi.fn(async () => 0) },
     passkey: { count: vi.fn(async () => 0) },
     user: {
-      findFirst: vi.fn(),
       // The stored row: the password hash is not on the session user.
       findUnique: vi.fn(async () => ({ passwordHash: "argon" })),
     },
     accountGrant: { create: vi.fn(), findFirst: vi.fn() },
   },
+}));
+vi.mock("@/lib/auth/identity-lookup", () => ({
+  findUserIdBySignInName: vi.fn(async () => null),
 }));
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({
@@ -48,6 +50,7 @@ import { POST } from "../route";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { inviteGrant } from "@/lib/sharing/grants";
+import { findUserIdBySignInName } from "@/lib/auth/identity-lookup";
 
 const OWNER = {
   id: "owner-1",
@@ -88,17 +91,19 @@ describe("POST /api/account/grants — fresh proof", () => {
     const body = await res.json();
     expect(body.meta.errorCode).toBe("auth.reproof.required");
     expect(body.meta.methods).toEqual(["password"]);
-    expect(prisma.user.findFirst).not.toHaveBeenCalled();
+    expect(findUserIdBySignInName).not.toHaveBeenCalled();
     expect(inviteGrant).not.toHaveBeenCalled();
   });
 
   it("a session that signed in a minute ago offers the invitation", async () => {
     signedIn(new Date(Date.now() - 60 * 1000));
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({
-      id: "invitee-1",
-      username: "housemate",
-      displayName: null,
-    } as never);
+    vi.mocked(findUserIdBySignInName).mockResolvedValue("invitee-1");
+    vi.mocked(prisma.user.findUnique).mockImplementation((async (args: {
+      where: { id: string };
+    }) =>
+      args.where.id === "invitee-1"
+        ? { id: "invitee-1", username: "housemate", displayName: null }
+        : { passwordHash: "argon" }) as never);
     vi.mocked(inviteGrant).mockResolvedValue({
       id: "grant-1",
       access: "READ",

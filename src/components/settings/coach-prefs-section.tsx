@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import {
   Select,
   SelectContent,
@@ -322,14 +322,10 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
                 const id = `coach-prefs-exclude-${metric}`;
                 const checked = draft.excludeMetrics.includes(metric);
                 return (
-                  <li
-                    key={metric}
-                    className="flex items-center justify-between gap-3 px-3 py-2"
-                  >
-                    <Label htmlFor={id} className="cursor-pointer text-xs">
-                      {t(`insights.coach.metric.${metric}`)}
-                    </Label>
-                    <Switch
+                  <li key={metric}>
+                    <SwitchRow
+                      className="px-3 py-2"
+                      label={t(`insights.coach.metric.${metric}`)}
                       id={id}
                       data-slot={`coach-prefs-exclude-${metric}`}
                       checked={checked}
@@ -359,14 +355,10 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
                 const id = `coach-prefs-context-${metric}`;
                 const sent = !draft.excludeMetrics.includes(metric);
                 return (
-                  <li
-                    key={metric}
-                    className="flex items-center justify-between gap-3 px-3 py-2"
-                  >
-                    <Label htmlFor={id} className="cursor-pointer text-xs">
-                      {t(`insights.coach.metric.${metric}`)}
-                    </Label>
-                    <Switch
+                  <li key={metric}>
+                    <SwitchRow
+                      className="px-3 py-2"
+                      label={t(`insights.coach.metric.${metric}`)}
                       id={id}
                       data-slot={`coach-prefs-context-${metric}`}
                       checked={sent}
@@ -382,68 +374,45 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
               Coach offers an occasional, evidence-based reminder to
               measure a metric more regularly; this is the master switch
               for that surface. Off ⇒ no suggestion cards ever surface. */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <Label
-                htmlFor="coach-prefs-reminder-suggestions"
-                className="cursor-pointer text-xs font-medium"
-              >
-                {t("coach.settings.reminderSuggestionsLabel")}
-              </Label>
-              <p className="text-muted-foreground text-xs leading-relaxed">
-                {t("coach.settings.reminderSuggestionsDescription")}
-              </p>
-            </div>
-            <Switch
-              id="coach-prefs-reminder-suggestions"
-              data-slot="coach-prefs-reminder-suggestions"
-              checked={draft.reminderSuggestions?.enabled ?? true}
-              onCheckedChange={(next) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  reminderSuggestions: {
-                    enabled: next,
-                    stopped: prev.reminderSuggestions?.stopped ?? false,
-                    dismissedCadences:
-                      prev.reminderSuggestions?.dismissedCadences ?? [],
-                    lastSuggestedAt:
-                      prev.reminderSuggestions?.lastSuggestedAt ?? null,
-                  },
-                }))
-              }
-            />
-          </div>
+          <SwitchRow
+            label={t("coach.settings.reminderSuggestionsLabel")}
+            description={t("coach.settings.reminderSuggestionsDescription")}
+            id="coach-prefs-reminder-suggestions"
+            data-slot="coach-prefs-reminder-suggestions"
+            checked={draft.reminderSuggestions?.enabled ?? true}
+            onCheckedChange={(next) =>
+              setDraft((prev) => ({
+                ...prev,
+                reminderSuggestions: {
+                  enabled: next,
+                  stopped: prev.reminderSuggestions?.stopped ?? false,
+                  dismissedCadences:
+                    prev.reminderSuggestions?.dismissedCadences ?? [],
+                  lastSuggestedAt:
+                    prev.reminderSuggestions?.lastSuggestedAt ?? null,
+                },
+              }))
+            }
+          />
 
           {/* v1.39.4 — follow-up chips under the Coach's latest answer.
               Absent in the saved prefs means on. */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <Label
-                htmlFor="coach-prefs-follow-up-chips"
-                className="cursor-pointer text-xs font-medium"
-              >
-                {t(COACH_FOLLOW_UP_UI_KEYS.settingLabel)}
-              </Label>
-              <p className="text-muted-foreground text-xs leading-relaxed">
-                {t(COACH_FOLLOW_UP_UI_KEYS.settingHint)}
-              </p>
-            </div>
-            <Switch
-              id="coach-prefs-follow-up-chips"
-              data-slot="coach-prefs-follow-up-chips"
-              checked={draft.followUpChips !== false}
-              onCheckedChange={(next) =>
-                setDraft((prev) => ({ ...prev, followUpChips: next }))
-              }
-            />
-          </div>
+          <SwitchRow
+            label={t(COACH_FOLLOW_UP_UI_KEYS.settingLabel)}
+            description={t(COACH_FOLLOW_UP_UI_KEYS.settingHint)}
+            id="coach-prefs-follow-up-chips"
+            data-slot="coach-prefs-follow-up-chips"
+            checked={draft.followUpChips !== false}
+            onCheckedChange={(next) =>
+              setDraft((prev) => ({ ...prev, followUpChips: next }))
+            }
+          />
         </div>
       )}
       <SettingsCardActions>
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={() => save.mutate(draft)}
           disabled={save.isPending || isLoading}
           data-slot="coach-prefs-save"

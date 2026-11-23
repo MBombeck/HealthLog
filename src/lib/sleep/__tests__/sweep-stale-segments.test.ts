@@ -46,7 +46,10 @@ describe("sweepStaleSleepSegments — bounded session-scoped sweep", () => {
       externalId: { startsWith: "night-1:", notIn: keepIds },
     });
     // A soft delete — the row is tombstoned, never hard-removed.
-    expect(arg.data).toEqual({ deletedAt: expect.any(Date) });
+    expect(arg.data).toEqual({
+      deletedAt: expect.any(Date),
+      syncVersion: { increment: 1 },
+    });
   });
 
   it("sweeps a legacy indexed row: inside the prefix, outside the keep-set", async () => {

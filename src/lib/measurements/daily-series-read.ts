@@ -10,6 +10,7 @@
  * measuredAt, count, minValue?, maxValue? }`), with `measuredAt` the instant
  * of the bucket's local midnight.
  */
+import { readingWallSql } from "@/lib/tz/reading-zone-sql";
 import { prisma } from "@/lib/db";
 import {
   BUCKET_CAP,
@@ -210,7 +211,8 @@ function localClockSql(
   timeZone: string,
   partOfDay: BpPartOfDay | undefined,
 ): { local: Prisma.Sql; filter: Prisma.Sql } {
-  const wall = Prisma.sql`((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone})`;
+  // The row's own zone when it has one (iOS #181), else the profile's.
+  const wall = readingWallSql("m", timeZone);
   if (!partOfDay) return { local: wall, filter: Prisma.empty };
   const { startHour, endHour } = BP_PART_HOURS[partOfDay];
   const hour = Prisma.sql`EXTRACT(HOUR FROM ${wall})`;

@@ -151,7 +151,14 @@ export async function notifySeizureCluster(
         hours: rule.windowHours,
         name: accountLabel(actor),
       },
-      metadata: { eventId },
+      // The push opens the seizure that formed the cluster. A guardian on a
+      // managed profile still lands on the app root: resolveTapPath and the
+      // iOS metadata both drop the path for a managed delivery, because their
+      // session opens on their own record, not the one this seizure is on.
+      metadata: {
+        eventId,
+        url: `/seizures?event=${encodeURIComponent(eventId)}`,
+      },
       // On a managed profile the push fans out to the guardians, and the one
       // who logged the seizure is among them; they already know.
       excludeRecipientUserIds: [actorId],

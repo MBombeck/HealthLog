@@ -239,7 +239,16 @@ describe("B2/B3 — the medication-ingest surface is unchanged", () => {
     );
     const res = await POST(request);
 
-    expect(res.status).toBe(403);
+    // Refused, and with the same answer as an unknown name, so the token
+    // learns nothing about which medications exist.
+    expect(res.status).toBe(404);
+    expect(
+      ((await res.json()) as { meta?: { errorCode?: string } }).meta?.errorCode,
+    ).toBe("ingest.medication.notFound");
+    const events = await getPrismaClient().medicationIntakeEvent.count({
+      where: { userId: USER_ID },
+    });
+    expect(events).toBe(0);
   });
 });
 

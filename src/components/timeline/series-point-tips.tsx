@@ -51,6 +51,7 @@ import { useTranslations } from "@/lib/i18n/context";
 
 import { useLabReference, useLabValueText, useLabVerdict } from "./lab-lines";
 import { formatSeriesValue, type SeriesValueFormat } from "./series-format";
+import { pregnancyStretches, pregnancyWeekOn } from "./pregnancy-week";
 import { formatDayMonthYear } from "./timeline-dates";
 import type { TimelineLayout } from "./timeline-geometry";
 import { useSeriesCountText } from "./use-series-value-format";
@@ -411,8 +412,21 @@ function useTipLines({
   // The first day of a point's stretch that has happened, the day it opens.
   const dayOf = (t: string) => (t > today ? today : t);
 
+  // Inside a pregnancy a value point names its week beside its date.
+  const stretches = pregnancyStretches(
+    layout.lanes.flatMap((l) =>
+      l.key === "cycle" ? l.spans.map((sp) => sp.item) : [],
+    ),
+  );
+  const pointLabel = (t: string) => {
+    const week = pregnancyWeekOn(stretches, dayOf(t));
+    return week === null
+      ? bucketLabel(t)
+      : `${bucketLabel(t)}, ${tr("timeline.pregnancyWeek", { week })}`;
+  };
+
   const words = (key: string, t: string, mean: number, unit: string | null) =>
-    `${seriesLabel(key)}, ${bucketLabel(t)}: ${formatSeriesValue(key, mean, unit, fmt)}`;
+    `${seriesLabel(key)}, ${pointLabel(t)}: ${formatSeriesValue(key, mean, unit, fmt)}`;
 
   return [
     ...layout.series.map((s) => ({
@@ -423,7 +437,7 @@ function useTipLines({
         y: p.y,
         day: dayOf(p.t),
         ariaLabel: `${words(s.key, p.t, p.mean, s.unit)}, ${countText(s.key, p.count)}`,
-        label: bucketLabel(p.t),
+        label: pointLabel(p.t),
         row: {
           name: seriesLabel(s.key),
           value: formatSeriesValue(s.key, p.mean, s.unit, fmt),

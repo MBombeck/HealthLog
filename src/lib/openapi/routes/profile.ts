@@ -351,6 +351,14 @@ const notificationPrefsResolved = z
         .describe(
           "Reorder lead time in days (0–60) the low-stock alert assumes. The alert fires this lead plus one dose-interval before the supply runs out so a refill arrives before the last dose. Default 10; a per-medication reorderLeadDays overrides it.",
         ),
+      snoozeMinutes: z
+        .number()
+        .int()
+        .min(5)
+        .max(240)
+        .describe(
+          'How long "Remind me later" defers a dose reminder, in minutes (5–240, default 30). One value for every surface: the web card, Telegram and the app\'s notification action show it as "Remind me later (30 min)". A snooze written without `snoozedUntil` defers by this much.',
+        ),
     }),
     mood: z.object({
       reminderHour: z
@@ -699,6 +707,15 @@ const profileUpdateResponse = z
 // ever surfaced. `managedBy` reports the resolved provider origin: `user`
 // (BYOK), `local` (self-hosted Ollama/LM Studio), `server` (operator's
 // shared key), or null when no provider can serve the caller.
+const coachBudgetView = z
+  .object({
+    snapshotChars: z.number().int().optional(),
+    turnTokens: z.number().int().optional(),
+    maxRounds: z.number().int().optional(),
+    turnSeconds: z.number().int().optional(),
+  })
+  .nullable();
+
 const aiProviderResponse = z
   .object({
     provider: z
@@ -780,6 +797,12 @@ const aiProviderResponse = z
     ),
     compatReasoningEffort: reasoningEffortSchema.describe(
       "#1126 — the same for the OpenAI-compatible gateway entry.",
+    ),
+    localCoachBudget: coachBudgetView.describe(
+      "The Coach budget of the Local provider as a turn applies it (clamped to its bounds): snapshot characters, tokens, rounds and seconds. A field left out runs on the built-in value; null when none is set.",
+    ),
+    compatCoachBudget: coachBudgetView.describe(
+      "The same for the OpenAI-compatible gateway.",
     ),
     // v1.38.19 — the setup flow's last screen used to promise
     // that insights "work for you right away" as soon as `managedBy` read
@@ -1163,7 +1186,7 @@ const profileSummaryResponse = z
  * over the cap 413, and one that does not parse 400. All three are answered
  * before validation, and nothing is written.
  */
-const cappedScalarBodyRefusals = {
+export const cappedScalarBodyRefusals = {
   "400": {
     description: "The request body is not parseable JSON. Nothing was written.",
     content: { "application/json": { schema: errorEnvelope } },
@@ -1330,7 +1353,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Replace per-user Coach prompt-tuning preferences",
       description:
-        "Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the documented defaults. Supports optimistic concurrency: echo the `updatedAt` from the last read as `baseUpdatedAt` and the write is refused with 409 if the row changed since; omit it for the legacy unconditional write.",
+        "Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the documented defaults. Supports optimistic concurrency: echo the `updatedAt` from the last read as `baseUpdatedAt` and the write is refused with 409 if the prefs changed since; omit it for the legacy unconditional write.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: coachPrefsPutRequest } },
@@ -1773,7 +1796,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Notifications"],
       summary: "Update per-user notification preferences",
       description:
-        'Deep-merges the supplied partial shape over the persisted row — a PATCH touching only one category leaves the siblings intact. Always returns the fully-resolved next state so clients can hard-set their optimistic update. `medication.clientManaged: true` (or `deliveryDefault: "client"`) keeps the MEDICATION_REMINDER that announces a dose off APNs and leaves the follow-ups for a dose still open on it (v1.42.0); `medication.lowStockRunwayDays` (1–60, nullable, default 7) tunes the low-stock alert — null switches it off. Rate-limit 60/min per user.',
+        'Deep-merges the supplied partial shape over the persisted row — a PATCH touching only one category leaves the siblings intact. Always returns the fully-resolved next state so clients can hard-set their optimistic update. `medication.clientManaged: true` (or `deliveryDefault: "client"`) keeps the MEDICATION_REMINDER that announces a dose off APNs and leaves the follow-ups for a dose still open on it (v1.42.0); `medication.lowStockRunwayDays` (1–60, nullable, default 7) tunes the low-stock alert — null switches it off; `medication.snoozeMinutes` (5–240, default 30) is the snooze length. Rate-limit 60/min per user.',
       requestBody: {
         required: true,
         content: {

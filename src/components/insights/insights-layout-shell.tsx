@@ -116,21 +116,9 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
 
   return (
     <div data-slot="insights-layout-shell" className="space-y-8">
-      {/*
-        AuthShell gives every route a generic `pt-6`. Insights already owns a
-        sticky, padded navigation row as its first surface, so that generic
-        spacer became a second unexplained 24px gap on phones. Remove only
-        that inherited top padding when this shell is the direct route child.
-        Horizontal padding and safe-area-aware bottom clearance stay intact;
-        no negative margin can clip pill focus.
-      */}
-      <style jsx global>{`
-        @media (max-width: 767px) {
-          #main-content > div:has(> [data-slot="insights-layout-shell"]) {
-            padding-top: 0;
-          }
-        }
-      `}</style>
+      {/* The shell's phone-width top padding is dropped in globals.css
+          ("Insights owns its top spacing"), in the stylesheet so the first
+          paint already has it. */}
       <InsightsTabStrip
         onRegenerate={advisorEnabled ? advisor.regenerate : undefined}
         regenerating={advisor.isRegenerating}

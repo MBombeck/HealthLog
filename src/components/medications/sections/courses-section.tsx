@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CalendarPlus, Loader2, Pencil, Trash2 } from "lucide-react";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +31,6 @@ import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
 import { FieldError } from "@/components/forms/field-error";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import type { MedicationCourseWire } from "@/components/medications/course-fields";
 import { ApiError, apiDelete, apiPatch, apiPost } from "@/lib/api/api-fetch";
@@ -147,21 +147,21 @@ function CourseEditor({
     >
       <div className="space-y-4" data-slot="medication-course-editor">
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="medication-course-start">
-              {t("medications.course.startsOn")}
-            </Label>
+          <FieldGroup
+            htmlFor="medication-course-start"
+            label={t("medications.course.startsOn")}
+          >
             <DateField
               id="medication-course-start"
               value={startsOn}
               onChange={setStartsOn}
               required
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="medication-course-end">
-              {t("medications.course.endsOn")}
-            </Label>
+          </FieldGroup>
+          <FieldGroup
+            htmlFor="medication-course-end"
+            label={t("medications.course.endsOn")}
+          >
             <DateField
               id="medication-course-end"
               value={endsOn}
@@ -178,12 +178,12 @@ function CourseEditor({
                   : undefined
               }
             />
-          </div>
+          </FieldGroup>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="medication-course-note">
-            {t("medications.course.note")}
-          </Label>
+        <FieldGroup
+          htmlFor="medication-course-note"
+          label={t("medications.course.note")}
+        >
           <Input
             id="medication-course-note"
             value={note}
@@ -191,7 +191,7 @@ function CourseEditor({
             placeholder={t("medications.course.notePlaceholder")}
             onChange={(e) => setNote(e.target.value)}
           />
-        </div>
+        </FieldGroup>
         <FieldError id="medication-course-error" message={error ?? undefined} />
       </div>
     </ResponsiveSheet>

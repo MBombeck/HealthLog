@@ -1,23 +1,37 @@
 /**
- * Structural guard: how a migration bounds its lock wait, and when the boot
- * may retry it.
+ * Structural guard: how a migration bounds its lock wait, how long it holds
+ * what it takes, and when the boot may retry it.
  *
- * `prisma migrate deploy` runs a migration file statement by statement, each
- * committing on its own; it does not wrap the file in a transaction. Two
- * consequences were written into this repository the other way round:
+ * `prisma migrate deploy` runs a file one of two ways, and which one depends
+ * on the file (pinned against the real CLI by
+ * `tests/integration/migration-file-transaction.test.ts`):
  *
- * - A top-level `SET LOCAL lock_timeout` does nothing (there is no
- *   transaction for it to be local to), so the migration waits as long as
- *   the lock is held, and every write to the table queues behind it.
- * - A file that fails half-way stays half-applied, so marking it rolled back
- *   and running it again can fail on what already exists, or apply a change
- *   twice.
+ * - A file with a dollar-quoted body anywhere (a `DO` block, a function) is
+ *   sent as one query: one implicit transaction. It applies whole or not at
+ *   all, and every lock any statement takes is held until the file's last
+ *   statement has run.
+ * - A file without one is sent statement by statement, each committing on its
+ *   own. A failure leaves the earlier statements applied, and a top-level
+ *   `SET LOCAL lock_timeout` does nothing.
  *
- * So a lock wait is bounded inside a `DO` block with
- * `set_config('lock_timeout', …, true)`, which is one statement and rolls back
- * whole; and the `-- @retry-on-lock-timeout` marker, which lets
- * `scripts/migrate-deploy.mjs` retry a 55P03 failure on boot, is allowed only
- * on a file whose every other statement is harmless to run again.
+ * The rules that follow from that:
+ *
+ * - A lock wait is bounded inside a `DO` block with
+ *   `set_config('lock_timeout', …, true)`. The block makes the file one
+ *   transaction, so the bound holds for every statement after it.
+ * - The `-- @retry-on-lock-timeout` marker, which lets
+ *   `scripts/migrate-deploy.mjs` retry a 55P03 failure on boot, is safe on a
+ *   one-transaction file by construction; on a file split by statement it is
+ *   allowed only when every statement is harmless to run again.
+ * - In a one-transaction file, splitting `ADD CONSTRAINT … NOT VALID` from
+ *   `VALIDATE CONSTRAINT` buys nothing: the scan runs while the ACCESS
+ *   EXCLUSIVE lock of the `ADD` is still held. Long work (a `VALIDATE`, a
+ *   backfill on a large table, a plain index build on one) therefore stands
+ *   in a file that takes no other table lock, and bounds its own run time
+ *   with `SET LOCAL statement_timeout` as a statement of its own before the
+ *   work, since `lock_timeout` only bounds the wait for a lock, never the
+ *   time spent holding it. Set with `set_config` inside the block that does
+ *   the work, the timeout does not bound that block.
  */
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -25,7 +39,11 @@ import { describe, expect, it } from "vitest";
 
 import { RETIRED_MEASUREMENT_INDEXES } from "@/lib/jobs/measurement-maintenance";
 
-import { RETRY_MARKER } from "../../scripts/migrate-deploy.mjs";
+import {
+  RETRY_MARKER,
+  runsAsOneTransaction,
+  topLevelStatements,
+} from "../../scripts/migrate-deploy.mjs";
 
 const MIGRATIONS_DIR = join(process.cwd(), "prisma", "migrations");
 
@@ -38,16 +56,6 @@ function migrations(): Array<{ name: string; sql: string }> {
       name: file.split("/").at(-2) ?? file,
       sql: readFileSync(file, "utf8"),
     }));
-}
-
-/** The statements of a file, comments removed, dollar-quoted bodies blanked. */
-function topLevelStatements(sql: string): string[] {
-  return sql
-    .replace(/--[^\n]*/g, "")
-    .replace(/\$([A-Za-z_]*)\$[\s\S]*?\$\1\$/g, "$BODY$")
-    .split(";")
-    .map((statement) => statement.trim().replace(/\s+/g, " "))
-    .filter((statement) => statement.length > 0);
 }
 
 /** Statements that leave the database as they found it when run twice. */
@@ -64,10 +72,21 @@ const REPEATABLE = [
 const TOP_LEVEL_TIMEOUT =
   /^SET (LOCAL |SESSION )?(lock_timeout|statement_timeout)\b|^SET LOCAL\b/i;
 
+/**
+ * The one top-level setting that takes effect: `SET LOCAL statement_timeout`
+ * in a file that runs as one transaction. The timeout is armed when a
+ * statement starts, so only a statement of its own before the work can bound
+ * it (see "long work since 0517" below). A lock wait is still bounded inside
+ * the block, where `set_config('lock_timeout', …, true)` works.
+ */
+const LOCAL_STATEMENT_TIMEOUT = /^SET LOCAL statement_timeout\b/i;
+
 function violations(name: string, sql: string): string[] {
   const found: string[] = [];
   const statements = topLevelStatements(sql);
+  const oneTransaction = runsAsOneTransaction(sql);
   for (const statement of statements) {
+    if (oneTransaction && LOCAL_STATEMENT_TIMEOUT.test(statement)) continue;
     if (TOP_LEVEL_TIMEOUT.test(statement)) {
       found.push(`${name}: top-level "${statement}" has no effect`);
     }
@@ -79,7 +98,7 @@ function violations(name: string, sql: string): string[] {
       `${name}: bounds its lock wait but lacks -- @retry-on-lock-timeout`,
     );
   }
-  if (marked) {
+  if (marked && !runsAsOneTransaction(sql)) {
     for (const statement of statements) {
       if (!REPEATABLE.some((pattern) => pattern.test(statement))) {
         found.push(
@@ -93,9 +112,10 @@ function violations(name: string, sql: string): string[] {
 
 /**
  * `CREATE INDEX CONCURRENTLY` / `DROP INDEX CONCURRENTLY` refuse to run in a
- * transaction block, and under `migrate deploy` they do so whenever the file
- * holds any other statement (SQLSTATE 25001, seen against Prisma 7 and
- * Postgres 16). Such a statement therefore stands alone in its file.
+ * transaction block (SQLSTATE 25001), which a file with any dollar-quoted body
+ * is. A file split by statement would run it, but would also leave the
+ * statements before a failed build applied. Such a statement therefore stands
+ * alone in its file.
  */
 function concurrentViolations(name: string, sql: string): string[] {
   const statements = topLevelStatements(sql);
@@ -214,18 +234,45 @@ describe("migration lock waits", () => {
 
   it("catches each shape it exists to refuse", () => {
     expect(violations("a", "SET LOCAL lock_timeout = '10s';")).toHaveLength(1);
+    // A split file has no transaction for SET LOCAL to be local to.
+    expect(
+      violations("a2", "SET LOCAL statement_timeout = '5min';"),
+    ).toHaveLength(1);
+    // A session-wide SET outlives the file even in one transaction.
+    expect(
+      violations(
+        "a3",
+        "SET statement_timeout = '5min';\nDO $x$ BEGIN PERFORM 1; END $x$;",
+      ),
+    ).toHaveLength(1);
+    expect(
+      violations(
+        "a4",
+        "SET LOCAL statement_timeout = '5min';\nDO $x$ BEGIN PERFORM 1; END $x$;",
+      ),
+    ).toEqual([]);
     expect(
       violations(
         "b",
         "DO $x$ BEGIN PERFORM set_config('lock_timeout', '1s', true); END $x$;",
       ),
     ).toHaveLength(1);
+    // Split by statement (no dollar-quoted body): a failed attempt leaves
+    // the trigger behind, and the retry fails on it.
     expect(
       violations(
         "c",
-        "-- @retry-on-lock-timeout\nCREATE TRIGGER t BEFORE UPDATE ON m FOR EACH ROW EXECUTE FUNCTION f();\nDO $x$ BEGIN PERFORM set_config('lock_timeout', '1s', true); END $x$;",
+        '-- @retry-on-lock-timeout\nCREATE TRIGGER t BEFORE UPDATE ON m FOR EACH ROW EXECUTE FUNCTION f();\nCREATE INDEX IF NOT EXISTS "i" ON "m" ("c");',
       ),
     ).toEqual([expect.stringContaining("is not repeatable")]);
+    // The same statement beside a `DO` block is one transaction, which a
+    // failed attempt rolls back whole.
+    expect(
+      violations(
+        "c2",
+        "-- @retry-on-lock-timeout\nCREATE TRIGGER t BEFORE UPDATE ON m FOR EACH ROW EXECUTE FUNCTION f();\nDO $x$ BEGIN PERFORM set_config('lock_timeout', '1s', true); END $x$;",
+      ),
+    ).toEqual([]);
     expect(
       violations(
         "d",
@@ -297,6 +344,391 @@ describe("table locks since 0475", () => {
     // History is not re-run.
     expect(
       unboundedLockViolations("0100_e", 'ALTER TABLE "t" ADD COLUMN "c" INT;'),
+    ).toEqual([]);
+  });
+});
+
+/**
+ * From 0517 on, long work in a one-transaction file stands apart from every
+ * table lock: the locks a file takes are held until it ends, so an `ADD
+ * CONSTRAINT … NOT VALID` followed by its `VALIDATE` in the same file scans
+ * the table under ACCESS EXCLUSIVE after all (0476, 0509, 0511 did), and a
+ * backfill beside an `ALTER TABLE` keeps the table closed to reads and writes
+ * for the whole backfill (0476). The long work also bounds its own run time.
+ */
+const LONG_WORK_FROM = 517;
+
+/**
+ * Tables that grow with every reading, dose, or delivery and keep growing.
+ * A ledger that a retention purge holds to a few weeks or months is not one.
+ */
+const LARGE_TABLES = new Set([
+  "measurements",
+  "measurement_rollups",
+  "medication_intake_events",
+  "audit_logs",
+  "push_attempts",
+  "notification_events",
+  "workout_samples",
+]);
+
+const TABLE = String.raw`(?:ONLY\s+)?(?:IF\s+EXISTS\s+)?(?:"?public"?\.)?"?(\w+)"?`;
+
+function matches(pattern: RegExp, sql: string): string[] {
+  return [...sql.matchAll(pattern)].map((m) => m[1].toLowerCase());
+}
+
+/** Each match of `pattern` as its lower-cased table and its offset. */
+function located(
+  pattern: RegExp,
+  sql: string,
+): Array<{ table: string; at: number }> {
+  return [...sql.matchAll(pattern)].map((m) => ({
+    table: m[1].toLowerCase(),
+    at: m.index ?? 0,
+  }));
+}
+
+/** What in the file runs long (a scan, a backfill, a plain index build), and where. */
+function longWorkAt(sql: string): Array<{ label: string; at: number }> {
+  const work: Array<{ label: string; at: number }> = [];
+  for (const { table, at } of located(
+    new RegExp(
+      String.raw`\bALTER\s+TABLE\s+${TABLE}\s+VALIDATE\s+CONSTRAINT\b`,
+      "gi",
+    ),
+    sql,
+  )) {
+    work.push({ label: `VALIDATE on ${table}`, at });
+  }
+  for (const { table, at } of located(
+    new RegExp(String.raw`\b(?:UPDATE|DELETE\s+FROM)\s+${TABLE}`, "gi"),
+    sql,
+  )) {
+    if (LARGE_TABLES.has(table))
+      work.push({ label: `backfill on ${table}`, at });
+  }
+  for (const { table, at } of located(
+    new RegExp(
+      String.raw`\bCREATE\s+(?:UNIQUE\s+)?INDEX\s+(?!CONCURRENTLY)[^;]*?\bON\s+${TABLE}`,
+      "gi",
+    ),
+    sql,
+  )) {
+    if (LARGE_TABLES.has(table)) {
+      work.push({ label: `index build on ${table}`, at });
+    }
+  }
+  return work.sort((a, b) => a.at - b.at);
+}
+
+function longWork(sql: string): string[] {
+  return longWorkAt(sql).map(({ label }) => label);
+}
+
+/**
+ * The file with every dollar-quoted body blanked to spaces, so an offset in
+ * it is an offset in the file, and only top-level text is left to match.
+ */
+function topLevelOnly(sql: string): string {
+  return sql.replace(/\$([A-Za-z_]*)\$[\s\S]*?\$\1\$/g, (body) =>
+    " ".repeat(body.length),
+  );
+}
+
+/**
+ * `statement_timeout` is armed when a top-level statement starts. Set from
+ * inside a `DO` block, it bounds only the statements that start after that
+ * block, never the block's own work (probed on Postgres 18, pinned through
+ * the real CLI in `tests/integration/migration-file-transaction.test.ts`).
+ * The bound that holds is `SET LOCAL statement_timeout` as a statement of its
+ * own, before the statement that does the work, in a one-transaction file.
+ */
+const TOP_LEVEL_STATEMENT_TIMEOUT = /\bSET\s+LOCAL\s+statement_timeout\b/i;
+const STATEMENT_TIMEOUT_SET_CONFIG = /set_config\(\s*'statement_timeout'/i;
+
+function statementTimeoutViolations(name: string, sql: string): string[] {
+  const code = sql.replace(/--[^\n]*/g, "");
+  const top = topLevelOnly(code);
+  if (
+    STATEMENT_TIMEOUT_SET_CONFIG.test(code) &&
+    !STATEMENT_TIMEOUT_SET_CONFIG.test(top)
+  ) {
+    return [
+      `${name}: set_config('statement_timeout') inside a dollar-quoted body does not bound that body; use SET LOCAL statement_timeout as its own statement before it`,
+    ];
+  }
+  return [];
+}
+
+/** The tables the file locks for longer than a statement's own work. */
+function heldLocks(sql: string): string[] {
+  return [
+    ...matches(
+      new RegExp(String.raw`\bALTER\s+TABLE\s+${TABLE}\s+(?!VALIDATE\s)`, "gi"),
+      sql,
+    ),
+    ...matches(
+      new RegExp(String.raw`\bLOCK\s+(?:TABLE\s+)?${TABLE}`, "gi"),
+      sql,
+    ),
+  ];
+}
+
+function longWorkViolations(name: string, sql: string): string[] {
+  const code = sql.replace(/--[^\n]*/g, "");
+  const work = longWork(code);
+  if (work.length === 0) return [];
+  const found: string[] = [];
+  if (!runsAsOneTransaction(code)) {
+    found.push(
+      `${name}: ${work.join(", ")} outside a DO block cannot bound its run time`,
+    );
+  } else {
+    const bound = topLevelOnly(code).search(TOP_LEVEL_STATEMENT_TIMEOUT);
+    const first = longWorkAt(code)[0].at;
+    if (bound < 0 || bound > first) {
+      found.push(
+        `${name}: ${work.join(", ")} without SET LOCAL statement_timeout as its own statement before it`,
+      );
+    }
+  }
+  const held = [...new Set(heldLocks(code))];
+  if (held.length > 0) {
+    found.push(
+      `${name}: ${work.join(", ")} runs while the file holds its lock on ${held.join(", ")}; move one of them to a file of its own`,
+    );
+  }
+  return found;
+}
+
+describe("long work since 0517", () => {
+  it("stands apart from table locks and bounds its run time", () => {
+    const checked = migrations().filter(
+      ({ name }) => Number.parseInt(name.slice(0, 4), 10) >= LONG_WORK_FROM,
+    );
+    // No count floor: until a migration at or past 0517 exists there is
+    // nothing to check, and "names the history" below proves the matcher bites.
+    const found = checked.flatMap(({ name, sql }) => [
+      ...longWorkViolations(name, sql),
+      ...statementTimeoutViolations(name, sql),
+    ]);
+    expect(found, found.join("\n")).toEqual([]);
+  });
+
+  it("names the history it was written from", () => {
+    // These ran before the rule and are not run again; the rule must still
+    // see what they did, or it would pass the next one that does the same.
+    const history = new Map(migrations().map(({ name, sql }) => [name, sql]));
+    for (const name of [
+      "0476_token_apple_health_mirror",
+      "0509_hypertension_event",
+      "0511_apple_health_v2_types",
+    ]) {
+      const sql = history.get(name);
+      expect(sql, name).toBeDefined();
+      expect(longWorkViolations(name, sql ?? ""), name).toContainEqual(
+        expect.stringMatching(/holds its lock on .*\bmeasurements\b/),
+      );
+    }
+  });
+
+  it("catches each shape it exists to refuse", () => {
+    const block = (body: string) =>
+      `SET LOCAL statement_timeout = '5min';\nDO $m$ BEGIN PERFORM set_config('lock_timeout', '5s', true); ${body} END $m$;`;
+    expect(
+      longWorkViolations(
+        "a",
+        block(
+          'ALTER TABLE "t" ADD CONSTRAINT "c" CHECK (x > 0) NOT VALID; ALTER TABLE "t" VALIDATE CONSTRAINT "c";',
+        ),
+      ),
+    ).toEqual([expect.stringContaining("holds its lock on t")]);
+    expect(
+      longWorkViolations(
+        "b",
+        block('UPDATE "measurements" SET "x" = 1 WHERE "x" IS NULL;'),
+      ),
+    ).toEqual([]);
+    expect(
+      longWorkViolations(
+        "c",
+        'DO $m$ BEGIN UPDATE "measurements" SET "x" = 1; END $m$;',
+      ),
+    ).toEqual([expect.stringContaining("SET LOCAL statement_timeout")]);
+    expect(
+      longWorkViolations(
+        "d",
+        block(
+          'CREATE INDEX "i" ON "measurements" ("x"); ALTER TABLE "users" ADD COLUMN "y" INT;',
+        ),
+      ),
+    ).toEqual([expect.stringContaining("holds its lock on users")]);
+    // The bound set inside the block that does the work, or after it, does
+    // not hold; the one before it in a comment is no bound at all.
+    const inside = `DO $m$ BEGIN PERFORM set_config('statement_timeout', '5min', true); UPDATE "measurements" SET "x" = 1; END $m$;`;
+    expect(longWorkViolations("f", inside)).toEqual([
+      expect.stringContaining("SET LOCAL statement_timeout"),
+    ]);
+    expect(statementTimeoutViolations("f", inside)).toEqual([
+      expect.stringContaining("does not bound that body"),
+    ]);
+    expect(
+      longWorkViolations(
+        "g",
+        `DO $m$ BEGIN UPDATE "measurements" SET "x" = 1; END $m$;\nSET LOCAL statement_timeout = '5min';`,
+      ),
+    ).toEqual([expect.stringContaining("SET LOCAL statement_timeout")]);
+    expect(
+      longWorkViolations(
+        "h",
+        `-- SET LOCAL statement_timeout = '5min';\nDO $m$ BEGIN UPDATE "measurements" SET "x" = 1; END $m$;`,
+      ),
+    ).toEqual([expect.stringContaining("SET LOCAL statement_timeout")]);
+    expect(
+      statementTimeoutViolations(
+        "i",
+        `SET LOCAL statement_timeout = '5min';\nDO $m$ BEGIN UPDATE "measurements" SET "x" = 1; END $m$;`,
+      ),
+    ).toEqual([]);
+    // A small table's update is not long work, nor is a comment.
+    expect(
+      longWorkViolations(
+        "e",
+        '-- UPDATE "measurements" SET x = 1;\nALTER TABLE "users" ADD COLUMN "y" INT; UPDATE "users" SET "y" = 1;',
+      ),
+    ).toEqual([]);
+  });
+});
+
+/**
+ * From 0517 on, a unique index built in place on a table the file first
+ * checks or rewrites takes a write-blocking lock on that table before the
+ * check. Between a clash count (0517) or a de-duplication (0529) and the
+ * build, an older container still serving during the upgrade can write a
+ * row that clashes again: the build fails with 23505, and the boot stops at
+ * P3009. `SHARE ROW EXCLUSIVE` holds writes back for the rest of the file
+ * and lets reads go on; the file's `lock_timeout` bounds the wait for it. A
+ * table the same file creates has no other writer.
+ */
+const UNIQUE_RACE_FROM = 517;
+
+const WRITE_BLOCKING_LOCK = new RegExp(
+  String.raw`\bLOCK\s+(?:TABLE\s+)?${TABLE}\s+IN\s+(?:SHARE\s+ROW\s+EXCLUSIVE|EXCLUSIVE|ACCESS\s+EXCLUSIVE)\s+MODE\b`,
+  "gi",
+);
+
+function uniqueBuildRaceViolations(name: string, sql: string): string[] {
+  const code = sql.replace(/--[^\n]*/g, "");
+  const found: string[] = [];
+  const builds = located(
+    new RegExp(
+      String.raw`\bCREATE\s+UNIQUE\s+INDEX\s+(?!CONCURRENTLY)[^;]*?\bON\s+${TABLE}`,
+      "gi",
+    ),
+    code,
+  );
+  const seen = new Set<string>();
+  for (const { table, at } of builds) {
+    if (seen.has(table)) continue;
+    seen.add(table);
+    const before = code.slice(0, at);
+    const created = located(
+      new RegExp(
+        String.raw`\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?${TABLE}`,
+        "gi",
+      ),
+      before,
+    ).some((m) => m.table === table);
+    if (created) continue;
+    const firstTouch = located(
+      new RegExp(String.raw`\b(?:FROM|UPDATE|INTO)\s+${TABLE}`, "gi"),
+      before,
+    ).find((m) => m.table === table);
+    if (!firstTouch) continue;
+    const locked = located(WRITE_BLOCKING_LOCK, before).some(
+      (m) => m.table === table && m.at < firstTouch.at,
+    );
+    if (!locked) {
+      found.push(
+        `${name}: reads or rewrites ${table} before its unique index without LOCK TABLE "${table}" IN SHARE ROW EXCLUSIVE MODE first; a concurrent write can fail the build`,
+      );
+    }
+  }
+  return found;
+}
+
+describe("unique index builds since 0517", () => {
+  it("lock out writes between their check and the build", () => {
+    const found = migrations()
+      .filter(
+        ({ name }) => Number.parseInt(name.slice(0, 4), 10) >= UNIQUE_RACE_FROM,
+      )
+      .flatMap(({ name, sql }) => uniqueBuildRaceViolations(name, sql));
+    expect(found, found.join("\n")).toEqual([]);
+  });
+
+  it("sees the files it was written from", () => {
+    const byName = new Map(migrations().map(({ name, sql }) => [name, sql]));
+    for (const [name, table] of [
+      ["0517_case_insensitive_identity_and_retention_indexes", "users"],
+      ["0529_push_relay_hardening", "devices"],
+    ] as const) {
+      const sql = byName.get(name);
+      expect(sql, name).toBeDefined();
+      // Without its lock the file is exactly the shape the rule refuses.
+      const unlocked = (sql ?? "").replace(
+        new RegExp(
+          String.raw`LOCK TABLE "${table}" IN SHARE ROW EXCLUSIVE MODE;`,
+        ),
+        "",
+      );
+      expect(unlocked).not.toBe(sql);
+      expect(uniqueBuildRaceViolations(name, unlocked)).toEqual([
+        expect.stringContaining(`rewrites ${table} before its unique index`),
+      ]);
+    }
+  });
+
+  it("catches each shape it exists to refuse", () => {
+    const check =
+      'SELECT count(*) FROM "users" GROUP BY lower("email") HAVING count(*) > 1;';
+    const build =
+      'CREATE UNIQUE INDEX IF NOT EXISTS "k" ON "users" (lower("email"));';
+    const lock = 'LOCK TABLE "users" IN SHARE ROW EXCLUSIVE MODE;';
+    const block = (body: string) => `DO $m$ BEGIN ${body} END $m$;`;
+    expect(uniqueBuildRaceViolations("a", block(check + build))).toHaveLength(
+      1,
+    );
+    expect(uniqueBuildRaceViolations("b", block(lock + check + build))).toEqual(
+      [],
+    );
+    // A lock taken after the check comes too late.
+    expect(
+      uniqueBuildRaceViolations("c", block(check + lock + build)),
+    ).toHaveLength(1);
+    // A weaker lock lets writes through.
+    expect(
+      uniqueBuildRaceViolations(
+        "d",
+        block(
+          'LOCK TABLE "users" IN SHARE MODE;' +
+            'UPDATE "users" SET "email" = lower("email");' +
+            build,
+        ),
+      ),
+    ).toHaveLength(1);
+    // A build with no check before it, or on a table the file creates.
+    expect(uniqueBuildRaceViolations("e", block(build))).toEqual([]);
+    expect(
+      uniqueBuildRaceViolations(
+        "f",
+        block(
+          'CREATE TABLE IF NOT EXISTS "users" ("email" TEXT);' +
+            "INSERT INTO \"users\" VALUES ('a');" +
+            build,
+        ),
+      ),
     ).toEqual([]);
   });
 });

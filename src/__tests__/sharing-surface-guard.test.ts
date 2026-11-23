@@ -1058,6 +1058,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "measurements",
     why: "One nutrient's daily series over the record, scoped by the resolved user id.",
   },
+  "app/api/nutrients/energy-balance/route.ts": {
+    domain: "measurements",
+    why: "The record's daily energy balance, read-only: its intake and energy readings plus the profile height, birth date and sex the resting estimate needs, all read for the resolved user id.",
+  },
   "app/api/encounters/route.ts": {
     domain: "profile",
     why: "The record's visits — what happened at a practice and what is booked. Record content in the same sense as the allergies and family history already under this domain: it names no credential, no integration and no notification channel. Carries the honest cost of that classification, which is that a delegate granted `profile` for allergies also sees the visit list; the consent copy names visits for exactly this reason. The create arm is a delegable write.",
@@ -1136,7 +1140,7 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/symptoms/events/[id]/route.ts": {
     domain: "illness",
-    why: "One symptom occurrence of the record, fetch-then-guard against the resolved user. Reached only through this module's MANAGE arm.",
+    why: "One symptom occurrence of the record, fetch-then-guard against the resolved user. The GET is a READ (the save receipt's Edit opens the entry by id); every change is reached only through this module's MANAGE arm.",
   },
   // The seizure diary rides the illness section. A
   // guardian logging for a managed child is the primary user.
@@ -1361,6 +1365,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "record",
     why: "The record's dashboard layout, read only. Settled by a fact rather than a preference: the snapshot already carries this layout and the client seeds the same cache cell from it, so an actor answer would put two people's arrangements in one key. The PUT and DELETE stay bare — a delegate adds to a record, never redecorates it.",
   },
+  "app/api/medications/resolved-slots/route.ts": {
+    domain: "medications",
+    why: "Every scheduled dose of the record's medications over at most 14 days, the batched form of the dose history: the medications, the intake rows and the takes' origin are all read under the resolved record id, through the same ledger as `dose-history`. No cache. The rate bucket keys on the ACTOR.",
+  },
   "app/api/medications/layout/route.ts": {
     domain: "medications",
     why: "The record's medication-list presentation, read only. The stored `order` is a list of the OWNER's medication ids and unknown ids are dropped at apply time, so the caller's own order resolves to nothing against the owner's cabinet. The PUT and DELETE stay bare, and this is the refusal a delegate can actually walk into, since `/medications` is a shared destination.",
@@ -1551,6 +1559,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   "app/api/medications/[id]/glp1/route.ts": {
     domain: "medications",
     why: "Reading the titration history, the recent injections and the supply math, and recording a titration step. The READ arm joined the MANAGE one when the route was published: the write had resolved the record since v1.37.0 while the read still resolved the caller, so a manager could add a dose the history refused them — may write, may not read, which the model does not produce. The read is at the level `/inventory`, `/side-effects` and `/cadence` use for the same medication's data and is strictly narrower than the write already admitted; the argument for the write is the manage literal's reason line.",
+  },
+  "app/api/medications/[id]/glp1/dose-changes/route.ts": {
+    domain: "medications",
+    why: "Removing one titration step by its client id (#169), for a step a device removed before its upload answered. Reached only through this module's MANAGE arm, the level the create on `.../glp1` already asks; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
   },
   "app/api/medications/[id]/glp1/dose-changes/[doseChangeId]/route.ts": {
     domain: "medications",
@@ -2104,6 +2116,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: ["C1"],
     why: "Recording a titration step. C1.",
   },
+  "app/api/medications/[id]/glp1/dose-changes/route.ts": {
+    domain: "medications",
+    conditions: ["C1", "C3"],
+    why: "Removing a titration step by its client id. The removal is hard and files the step's dose and date (C3); it burns the actor's bucket (C1).",
+  },
   "app/api/medications/[id]/glp1/dose-changes/[doseChangeId]/route.ts": {
     domain: "medications",
     conditions: ["C1", "C3", "C4"],
@@ -2333,6 +2350,20 @@ const GUARDIAN_ROUTES: Record<string, string> = {
     "The record's cycle calendar subscription (#1350): status, turning it on, its options, turning it off. A standing credential whose contents land in a third party's calendar cloud, so only the person the dates are about or the guardian of a managed profile may hold one; refused on an adult record at every grant level, MANAGE included. Cookie-only, fresh proof on the mint; the feed re-reads the grant and the marker on every fetch and a handover claim revokes it.",
   "app/api/cycle/feed-subscription/rotate/route.ts":
     "A new link for the record's cycle calendar subscription, the old one revoked in the same transaction (#1350). Same argument as the subscription route: owner or managed-profile guardian only, cookie-only, fresh proof.",
+  "app/api/settings/report-schedule/route.ts":
+    "The scheduled doctor report, a standing instruction that files a report into the record's vault every month, quarter or year. Only the person the record is about sets one, or the guardian of a managed profile, which has nobody who signs in to set it; refused on an adult record at every grant level, MANAGE included. The job re-checks both modules on every run.",
+  "app/api/emergency-card/route.ts":
+    "The emergency card. The person's own card for their own pocket, and for a managed profile (a child, a parent with dementia) the card its guardian carries for it. Refused on an adult record at every grant level: carrying another adult's emergency facts is that adult's decision.",
+  "app/api/emergency-card/offline/route.ts":
+    "The offline copy of the card, a file the holder keeps. The owner's own, or a managed profile's for its guardian; refused on an adult record at every grant level.",
+  "app/api/emergency-card/wallet/route.ts":
+    "The printed wallet card, with the QR code of the record's own link, in the printing person's language. The owner's own, or a managed profile's for its guardian; refused on an adult record at every grant level.",
+  "app/api/emergency-card/link/route.ts":
+    "The emergency card link, a standing URL credential printed on a card a stranger scans. Only the person the card is about, or the guardian of a managed profile, may make one; refused on an adult record at every grant level. Cookie-only, fresh proof of the person at the keyboard on the mint.",
+  "app/api/onboarding/extras/route.ts":
+    "Presence only (counts, never contents) behind the getting-started checklist's optional rows: the emergency card, care calendar and report schedule a managed profile's guardian holds, plus the person-only rows on one's own record. Read only. Refused on an adult record at every grant level, so a delegate sees no such rows.",
+  "app/api/care/feed-subscription/route.ts":
+    "The record's care calendar subscription (appointments, check-ups, booster dates), a standing URL credential whose contents land in a third party's calendar cloud. Like the cycle feed: the person the dates are about, or the guardian of a managed profile, whose appointments they keep; refused on an adult record at every grant level, MANAGE included. Cookie-only, fresh proof on the mint.",
 };
 
 /**
@@ -2564,8 +2595,23 @@ const ACTOR_ROUTES: Record<string, string> = {
  * history and Effect reads join the record list, and the course writes and
  * the Effect target join both the record list and the guardian literal.
  * 324 -> 333.
+ *
+ * The care calendar subscription joins the actor list: its feed is only ever
+ * the caller's own. 333 -> 334.
+ *
+ * The energy balance read joins the record list, read-only. 334 -> 335.
+ *
+ * The emergency card's four routes join the actor list: the card, its
+ * offline copy, its wallet PDF and its link are only ever the caller's own.
+ * 336 -> 340.
+ *
+ * Removing a titration step by its client id joins the record list and the
+ * manage literal. 340 -> 342.
+ *
+ * 1.49: the getting-started checklist's optional-row presence read joins the
+ * guardian list. 342 -> 343.
  */
-const FROZEN_ENTRY_COUNT = 333;
+const FROZEN_ENTRY_COUNT = 344;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -3344,7 +3390,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(105);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(106);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>
@@ -3624,19 +3670,11 @@ describe("(g) the MANAGE route set is frozen", () => {
       comprehensiveModules.some((m) => callsSymbol(m, "probeProviderPresence")),
     ).toBe(true);
     for (const m of comprehensiveModules) {
-      for (const name of [
-        "resolveProvider",
-        "resolveProviderChain",
-        "probeProviderChain",
-      ]) {
+      for (const name of ["resolveProviderChain", "probeProviderChain"]) {
         expect(callsSymbol(m, name), `${m} calls ${name}`).toBe(false);
       }
     }
-    for (const name of [
-      "resolveProvider",
-      "resolveProviderChain",
-      "probeProviderChain",
-    ]) {
+    for (const name of ["resolveProviderChain", "probeProviderChain"]) {
       const resolver = functionSource("lib/ai/provider.ts", name);
       expect(resolver.length, `${name} not found`).toBeGreaterThan(0);
       expect(resolver, `${name} ignores sharing authority`).toContain(
@@ -3943,5 +3981,42 @@ describe("the guard is quiet on the tree it was written against", () => {
       expect(namesSymbol(rel, ACTOR_RESOLVER), rel).toBe(false);
       expect(namesSymbol(rel, GUARDIAN_RESOLVER), rel).toBe(false);
     }
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* A record's standing link has a guardian path                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The class behind the emergency card, the care calendar feed and the report
+ * schedule shipping as actor routes: a new surface that hands out something
+ * standing for a record (a calendar feed, a link a stranger scans) was
+ * declared "the caller's own" without asking whether a managed profile, which
+ * has nobody who signs in, could ever get one. The cycle feed had already
+ * answered it (`requireGuardianAuth`).
+ *
+ * So every route module that mints a URL credential (`mint…Token(`) for a
+ * record resolves through the guardian resolver. A future one that means to
+ * serve only the caller's own account names its reason here.
+ */
+const OWN_ACCOUNT_TOKEN_MINTS: Record<string, string> = {};
+
+describe("a route that mints a standing link for a record", () => {
+  it("resolves through the guardian resolver", () => {
+    const minting = routeModules().filter((rel) =>
+      /\bmint[A-Z]\w*Token\s*\(/.test(readSourceText(join(SRC, rel))),
+    );
+    // The cycle feed, its rotation, the care feed and the emergency card link.
+    expect(minting.length).toBeGreaterThanOrEqual(4);
+    const offenders = minting.filter(
+      (rel) =>
+        !(rel in OWN_ACCOUNT_TOKEN_MINTS) &&
+        !(rel in GUARDIAN_ROUTES && namesSymbol(rel, GUARDIAN_RESOLVER)),
+    );
+    expect(
+      offenders,
+      "A record's standing link is the owner's or a managed profile's guardian's: resolve through requireGuardianAuth and list the route in GUARDIAN_ROUTES.",
+    ).toEqual([]);
   });
 });

@@ -61,10 +61,10 @@
  * cached compliance / intake / summary payloads were built on the
  * pre-flip denominator and would otherwise serve it for up to their TTL.
  */
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import { normaliseDoseWindows } from "@/lib/medications/scheduling/worker-helpers";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
@@ -374,7 +374,13 @@ export async function runIntakeAutoSkipPass(
   // the documented staleness ceiling there (same caveat as every other
   // process-local cache, see `server-cache.ts`).
   for (const userId of invalidatedUserIds) {
-    invalidateUserMedications(userId);
+    // A slot turning missed changes what a running Live Activity and the
+    // widgets show; wake the owner's iOS devices like any other dose change.
+    afterDoseChange({
+      scope: "intakes",
+      userId,
+      originDeviceToken: null,
+    });
   }
 
   return {

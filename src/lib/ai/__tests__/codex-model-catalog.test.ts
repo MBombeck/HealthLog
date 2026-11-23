@@ -29,8 +29,8 @@ import {
   resetCodexClientVersionWarning,
 } from "../codex-client-version";
 import {
-  cachedCodexModels,
   fetchCodexModelList,
+  offeredModels,
   parseCodexModelList,
   readCodexModelCatalog,
 } from "../codex-model-catalog";
@@ -39,6 +39,7 @@ import {
   CODEX_CATALOG_TTL_MS,
   clearCodexSlugCache,
   codexCredentialKey,
+  getCodexCatalogState,
 } from "../codex-slug-cache";
 
 const FIXTURE = readFileSync(
@@ -68,6 +69,13 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
 });
+
+/** The offered models from an earlier read, without touching the network. */
+function cachedCodexModels(
+  credential: Parameters<typeof getCodexCatalogState>[0],
+) {
+  return offeredModels(getCodexCatalogState(credential, Date.now()));
+}
 
 describe("parseCodexModelList", () => {
   it("reads the upstream shape: slug, visibility, priority, modalities, specialty", () => {

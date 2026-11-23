@@ -11,7 +11,13 @@ import {
   screenHref,
   useOnboardingAnswer,
 } from "@/components/onboarding/use-onboarding-flow";
+import { TimezonePicker } from "@/components/settings/timezone-picker";
+import { useMedicineRegistryOptions } from "@/components/settings/use-medicine-registry-options";
+import { FieldGroup } from "@/components/ui/field-group";
+import { InlineAction } from "@/components/ui/inline-action";
+import { NativeSelect } from "@/components/ui/native-select";
 import { useAuth } from "@/hooks/use-auth";
+import { useMounted } from "@/hooks/use-mounted";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
@@ -20,12 +26,21 @@ import {
   unitsAnswerBody,
 } from "@/lib/onboarding/question-config";
 import { nextScreen, previousScreen } from "@/lib/onboarding/wizard-steps";
+import type { MedicineRegistryChoice } from "@/lib/medications/leaflet-registries";
+import { storeTimezone } from "@/lib/timezone-mirror";
+import { DEFAULT_TIMEZONE, detectBrowserTimezone } from "@/lib/tz/format";
 
 type GlucoseUnit = "mg/dL" | "mmol/L";
 type UnitPreference = "metric" | "imperial";
 
 /**
- * v1.39 — Q6, the optional units question.
+ * v1.39 — Q6, the optional units question; "Region & units" since 1.49, with
+ * the time zone and, when medication was chosen, the medicine registry.
+ *
+ * The time zone and the registry arrive filled with what the account already
+ * holds (the zone detected at sign-up, the registry derived from language and
+ * zone), so "Continue" confirms them; the device's zone is offered beside a
+ * stored one that differs.
  *
  * Shown only while an area that needs a unit is among the answers and the
  * account does not already hold the preference (the step machine decides;
@@ -52,9 +67,28 @@ export function UnitsScreen({ state }: { state: OnboardingStateDto }) {
     () => state.needs.units.unitPreference ?? user?.unitPreference ?? null,
   );
 
+  const [timezone, setTimezone] = useState<string>(
+    () => state.needs.units.timezone ?? user?.timezone ?? DEFAULT_TIMEZONE,
+  );
+  const [medicineRegistry, setMedicineRegistry] =
+    useState<MedicineRegistryChoice>(
+      () =>
+        state.needs.units.medicineRegistry ?? user?.medicineRegistry ?? "NONE",
+    );
+  const registryOptions = useMedicineRegistryOptions();
+  // The device zone is read after hydration so both renders agree.
+  const mounted = useMounted();
+  const deviceZone = mounted ? detectBrowserTimezone() : "";
+
   const back = previousScreen(state, "units");
 
-  const answerBody = unitsAnswerBody({ asked, glucoseUnit, unitPreference });
+  const answerBody = unitsAnswerBody({
+    asked,
+    glucoseUnit,
+    unitPreference,
+    timezone,
+    medicineRegistry,
+  });
 
   async function persist(
     input:
@@ -66,6 +100,10 @@ export function UnitsScreen({ state }: { state: OnboardingStateDto }) {
   ) {
     try {
       const written = await answer.mutateAsync(input);
+      // The browser's own zone mirror follows the saved answer, as it does
+      // for Settings.
+      const zone = "units" in input ? input.units.timezone : undefined;
+      if (zone) storeTimezone(zone);
       router.push(screenHref(nextScreen(written, "units") ?? "confirm"));
     } catch (err) {
       showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
@@ -81,6 +119,25 @@ export function UnitsScreen({ state }: { state: OnboardingStateDto }) {
         title={t("onboarding.flow.units.title")}
         description={t("onboarding.flow.units.body")}
       />
+
+      <div className="space-y-1" data-slot="onboarding-question-timezone">
+        <TimezonePicker
+          id="onboarding-timezone"
+          value={timezone}
+          onChange={setTimezone}
+          hint={t("onboarding.flow.units.timezoneHint")}
+        />
+        {deviceZone && deviceZone !== timezone ? (
+          <InlineAction
+            tone="primary"
+            size="xs"
+            data-slot="onboarding-timezone-use-device"
+            onClick={() => setTimezone(deviceZone)}
+          >
+            {t("settings.timezoneUseDevice", { zone: deviceZone })}
+          </InlineAction>
+        ) : null}
+      </div>
 
       {asked.glucose ? (
         <fieldset
@@ -124,6 +181,33 @@ export function UnitsScreen({ state }: { state: OnboardingStateDto }) {
             />
           ))}
         </fieldset>
+      ) : null}
+
+      {asked.registry ? (
+        <div data-slot="onboarding-question-medicine-registry">
+          <FieldGroup
+            htmlFor="onboarding-medicine-registry"
+            label={t("onboarding.flow.units.registryLegend")}
+            hint={t("settings.sections.medications.registry.privacy")}
+          >
+            <NativeSelect
+              id="onboarding-medicine-registry"
+              value={medicineRegistry}
+              onChange={(e) =>
+                setMedicineRegistry(e.target.value as MedicineRegistryChoice)
+              }
+            >
+              <option value="NONE">
+                {t("settings.sections.medications.registry.none")}
+              </option>
+              {registryOptions.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </FieldGroup>
+        </div>
       ) : null}
 
       <StepActions

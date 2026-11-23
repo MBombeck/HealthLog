@@ -35,7 +35,7 @@ import {
   type IllnessRedFlag,
 } from "@/lib/illness/correlation";
 import { notifyIllnessRedFlag } from "@/lib/illness/red-flag-notify";
-import { userDayKey } from "@/lib/tz/format";
+import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 
 /** A row the write hook just persisted (the subset the check needs). */
 export interface WrittenReading {
@@ -178,22 +178,34 @@ async function checkGlucose(
   const windowStart = new Date(
     candidate.measuredAt.getTime() - CONFIRM_WINDOW_MS,
   );
-  const rows = await prisma.measurement.findMany({
-    where: {
-      userId,
-      type: "BLOOD_GLUCOSE",
-      deletedAt: null,
-      measuredAt: { gte: windowStart, lt: candidate.measuredAt },
-    },
-    orderBy: { measuredAt: "desc" },
-    take: 50,
-    select: { value: true, measuredAt: true },
-  });
+  // The confirm gate asks whether ANY reading of the hour before sat on the
+  // same side of a floor, and the floors are thresholds, so the hour's lowest
+  // and highest reading answer it exactly. A sensor reporting every minute
+  // fills the hour with sixty readings; the newest 50 a capped read returned
+  // left the hour's first ten minutes unseen.
+  const window = {
+    userId,
+    type: "BLOOD_GLUCOSE" as const,
+    deletedAt: null,
+    measuredAt: { gte: windowStart, lt: candidate.measuredAt },
+  };
+  const select = { value: true, measuredAt: true } as const;
+  const [lowest, highest] = await Promise.all([
+    prisma.measurement.findFirst({
+      where: window,
+      orderBy: [{ value: "asc" }, { measuredAt: "desc" }],
+      select,
+    }),
+    prisma.measurement.findFirst({
+      where: window,
+      orderBy: [{ value: "desc" }, { measuredAt: "desc" }],
+      select,
+    }),
+  ]);
 
-  const recent: GlucoseSample[] = rows.map((r) => ({
-    measuredAt: r.measuredAt,
-    mgdl: r.value,
-  }));
+  const recent: GlucoseSample[] = [lowest, highest].flatMap((r) =>
+    r ? [{ measuredAt: r.measuredAt, mgdl: r.value }] : [],
+  );
   const decision = evaluateGlucose({ candidate, recent, symptomCoupled });
   if (!decision) return;
 
@@ -317,7 +329,7 @@ interface DailyWorst {
  * Read the recent same-type readings in the lookback window and collapse them
  * to one worst value per user-timezone calendar day (MAX for fever, MIN for
  * SpO2). Sorted chronologically so the run scan sees calendar order. Bounded
- * read (window + row cap); the candidate's own freshly-written rows are
+ * by the window and folded per day in SQL; the candidate's own freshly-written rows are
  * INCLUDED so a run that completes on this very write escalates.
  */
 async function loadDailyWorst(
@@ -330,34 +342,20 @@ async function loadDailyWorst(
   const windowStart = new Date(
     candidateAt.getTime() - SUSTAINED_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
   );
-  const rows = await prisma.measurement.findMany({
-    where: {
-      userId,
-      type,
-      deletedAt: null,
-      measuredAt: { gte: windowStart, lte: candidateAt },
-    },
-    orderBy: { measuredAt: "desc" },
-    take: 500,
-    select: { value: true, measuredAt: true },
+  // One row per local day, its extreme folded in Postgres: a wrist sensor
+  // that samples SpO2 every minute of the night fills the lookback with more
+  // rows than the 500 a capped read used to return, and the days the cap cut
+  // off never entered the run.
+  const days = await readDayAggregates({
+    userId,
+    type,
+    since: windowStart,
+    until: candidateAt,
+    timeZone: tz,
   });
 
-  const byDay = new Map<string, number>();
-  for (const r of rows) {
-    const day = userDayKey(r.measuredAt, tz);
-    const prev = byDay.get(day);
-    if (prev === undefined) {
-      byDay.set(day, r.value);
-    } else {
-      byDay.set(
-        day,
-        worst === "min" ? Math.min(prev, r.value) : Math.max(prev, r.value),
-      );
-    }
-  }
-
-  return [...byDay.entries()]
-    .map(([day, w]) => ({ day, worst: w }))
+  return days
+    .map((d) => ({ day: d.day, worst: worst === "min" ? d.min : d.max }))
     .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
 }
 

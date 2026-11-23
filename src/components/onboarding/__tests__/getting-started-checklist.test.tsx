@@ -32,6 +32,8 @@ const enabledByKey = new Map<string, boolean>();
 
 vi.mock("@/hooks/use-auth", () => ({
   useAccountOnceMounted: () => currentUser,
+  isFullAccount: (user: { accountSeed?: true } | null) =>
+    user !== null && user.accountSeed !== true,
 }));
 
 /** `ai.provider` from `/api/auth/me`, read through `useAiProviderState`. */

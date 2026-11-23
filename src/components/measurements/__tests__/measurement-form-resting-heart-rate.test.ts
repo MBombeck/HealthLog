@@ -7,11 +7,11 @@
  */
 import { describe, it, expect } from "vitest";
 
-import { VALUE_RANGES, getUnitForType } from "@/lib/validations/measurement";
+import { getUnitForType } from "@/lib/validations/measurement";
 import {
   MEASUREMENT_FORM_TYPE_VALUES,
   MEASUREMENT_TYPES,
-} from "@/components/measurements/measurement-form";
+} from "@/components/measurements/measurement-form-types";
 import en from "../../../../messages/en.json";
 
 describe("manual entry of the resting heart rate", () => {
@@ -23,7 +23,7 @@ describe("manual entry of the resting heart rate", () => {
     );
   });
 
-  it("uses the server's unit, a labelled row and a plausible placeholder", () => {
+  it("uses the server's unit and a labelled row", () => {
     const row = MEASUREMENT_TYPES.find((t) => t.value === "RESTING_HEART_RATE");
     expect(row).toBeDefined();
     expect(row && "unit" in row ? row.unit : undefined).toBe(
@@ -33,13 +33,5 @@ describe("manual entry of the resting heart rate", () => {
       (en as { measurements: Record<string, string> }).measurements
         .typeRestingHeartRate,
     ).toBeTruthy();
-    const range = VALUE_RANGES.RESTING_HEART_RATE;
-    const placeholder = Number(
-      row && "placeholder" in row ? row.placeholder : NaN,
-    );
-    if (range) {
-      expect(placeholder).toBeGreaterThanOrEqual(range.min);
-      expect(placeholder).toBeLessThanOrEqual(range.max);
-    }
   });
 });

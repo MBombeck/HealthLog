@@ -19,9 +19,11 @@
  * wire field) — the VALUE has always been calendar days.
  */
 
+import type { ChartRangePoints } from "@/lib/dashboard-layout";
+
 export type DataWindow = "last7days" | "last30days" | "last90days" | "allTime";
 
-const DAYS_BY_WINDOW: Record<DataWindow, number> = {
+const DAYS_BY_WINDOW: Record<DataWindow, ChartRangePoints> = {
   last7days: 7,
   last30days: 30,
   last90days: 90,
@@ -32,6 +34,6 @@ const DAYS_BY_WINDOW: Record<DataWindow, number> = {
  * Returns the day-window value the chart wrapper expects for a given
  * rationale dataWindow enum value.
  */
-export function resolveMiniRangePoints(window: DataWindow): number {
+export function resolveMiniRangePoints(window: DataWindow): ChartRangePoints {
   return DAYS_BY_WINDOW[window];
 }

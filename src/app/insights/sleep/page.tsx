@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Moon } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useModuleEnabled } from "@/hooks/use-module-enabled";
 import { useInsightsAnalytics } from "@/hooks/use-insights-analytics";
 import { useTranslations } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { MetricEmptyState } from "@/components/insights/metric-empty-state";
 import { MetricTargetSummary } from "@/components/insights/metric-target-summary";
 import { SleepOverview } from "@/components/insights/sleep-overview";
 import { SleepRhythmSection } from "@/components/insights/sleep/sleep-rhythm-section";
+import { SleepNightCard } from "@/components/insights/sleep/sleep-night-card";
 import { ChronotypeSection } from "@/components/insights/sleep/chronotype-section";
 import { AverageSleepSection } from "@/components/insights/sleep/average-sleep-section";
 import { SleepQualitySection } from "@/components/insights/sleep/sleep-quality-section";
@@ -40,6 +42,7 @@ import { useSleepRhythm } from "@/components/insights/sleep/use-sleep-rhythm";
 export default function InsightsSchlafPage() {
   const { t } = useTranslations();
   const { user } = useAuth();
+  const sleepEnabled = useModuleEnabled("sleep");
 
   const { isEmpty } = useInsightsAnalytics("SLEEP_DURATION");
   // The three rhythm cards share one `["sleep-rhythm"]` read, so a failure used
@@ -96,6 +99,10 @@ export default function InsightsSchlafPage() {
          min / max / median / mean strip would duplicate it and read in an
          awkward unit. */
     >
+      {/* #1419 — one night's stage order, stepping back through the nights.
+          The stacked bar inside the overview keeps the per-stage totals. */}
+      <SleepNightCard enabled={Boolean(user) && sleepEnabled} />
+
       <SleepOverview />
 
       {/*

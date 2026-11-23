@@ -116,7 +116,6 @@ export const NUTRIENT_CODES = [
 ] as const;
 
 export type NutrientCode = (typeof NUTRIENT_CODES)[number];
-export type SyncableNutrientCode = (typeof SYNCABLE_NUTRIENT_CODES)[number];
 
 /** Canonical storage units. `ug` is µg on the wire — ASCII on purpose. */
 export type NutrientUnit = "mg" | "ug" | "ml" | "g" | "kcal";
@@ -797,15 +796,6 @@ const NUTRIENT_CODE_SET: ReadonlySet<string> = new Set(NUTRIENT_CODES);
 /** True when `code` is a known catalog code. */
 export function isNutrientCode(code: string): code is NutrientCode {
   return NUTRIENT_CODE_SET.has(code);
-}
-
-const SYNCABLE_CODE_SET: ReadonlySet<string> = new Set(SYNCABLE_NUTRIENT_CODES);
-
-/** True when HealthKit may send `code` in the nutrient batch. */
-export function isSyncableNutrientCode(
-  code: string,
-): code is SyncableNutrientCode {
-  return SYNCABLE_CODE_SET.has(code);
 }
 
 /**

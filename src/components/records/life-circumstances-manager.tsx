@@ -33,7 +33,7 @@ import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
@@ -641,7 +641,6 @@ function SectionBody({
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={disabled}
           onClick={() => save.mutate()}
           data-slot={`life-save-${section.key}`}
@@ -780,33 +779,27 @@ export function LifeCircumstancesManager() {
                   {t("records.life.unreadable")}
                 </p>
               ) : null}
-              <div className="flex min-h-11 items-center justify-between gap-4">
-                <label htmlFor={switchId} className="text-sm">
-                  {t("records.life.ai.label")}
-                </label>
-                <Switch
-                  id={switchId}
-                  checked={raw.aiIncluded}
+              <SwitchRow
+                className="min-h-11"
+                label={t("records.life.ai.label")}
+                id={switchId}
+                checked={raw.aiIncluded}
+                disabled={aiSwitch.isPending}
+                onCheckedChange={(on) =>
+                  aiSwitch.mutate({ section: raw.aiSection, on })
+                }
+              />
+              {raw.key === "work" ? (
+                <SwitchRow
+                  className="min-h-11"
+                  label={t("records.life.ai.shiftLabel")}
+                  id="life-ai-shift"
+                  checked={data.extraAiSections.SHIFT_SCHEDULE}
                   disabled={aiSwitch.isPending}
                   onCheckedChange={(on) =>
-                    aiSwitch.mutate({ section: raw.aiSection, on })
+                    aiSwitch.mutate({ section: "SHIFT_SCHEDULE", on })
                   }
                 />
-              </div>
-              {raw.key === "work" ? (
-                <div className="flex min-h-11 items-center justify-between gap-4">
-                  <label htmlFor="life-ai-shift" className="text-sm">
-                    {t("records.life.ai.shiftLabel")}
-                  </label>
-                  <Switch
-                    id="life-ai-shift"
-                    checked={data.extraAiSections.SHIFT_SCHEDULE}
-                    disabled={aiSwitch.isPending}
-                    onCheckedChange={(on) =>
-                      aiSwitch.mutate({ section: "SHIFT_SCHEDULE", on })
-                    }
-                  />
-                </div>
               ) : null}
               <p className="text-muted-foreground text-xs">
                 {t("records.life.ai.hint")}

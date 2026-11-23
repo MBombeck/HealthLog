@@ -19,7 +19,11 @@
  *     measurements: { lastUpdatedAt, liveCount, tombstonedCount },
  *     mood:         { lastUpdatedAt, liveCount, tombstonedCount },
  *     intakes:      { lastUpdatedAt, liveCount, tombstonedCount },
- *     sync:         { incrementalWindowDays, tombstoneRetentionDays }
+ *     medications:  { lastUpdatedAt },  — newest medication-row write or deletion
+ *                                         (snooze, pause, schedule)
+ *     sync:         { incrementalWindowDays, tombstoneRetentionDays },
+ *     push:         { receiptsRecorded }  — whether `openedAlert` /
+ *                                         `openedSilent` were recorded
  *   }
  *
  *   Per-domain block: `lastUpdatedAt` = MAX(updated_at) for live rows,
@@ -44,12 +48,36 @@ import {
 } from "@/lib/auth/native-client";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
+  confirmOpenedEnvelopes,
+  openedFromQuery,
+  receiptDevice,
+} from "@/lib/push-relay/receipts";
+import { runDetached } from "@/lib/logging/detached";
+import { withBackgroundEvent } from "@/lib/logging/background";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
+import {
   countLiveMeasurements,
   countTombstonedMeasurements,
 } from "@/lib/sync/measurement-counts";
 
-export const GET = apiHandler(async (_request: NextRequest) => {
+export const GET = apiHandler(async (request?: NextRequest) => {
   const { user } = await requireAuth();
+
+  // Envelope receipts. The app reports the newest push envelope id it
+  // opened per class (`openedAlert`, `openedSilent`) for the device named by
+  // `X-Device-Id`. It is the one write of this handshake: it confirms the
+  // relay pushes that arrived, so the ones that did not show up as
+  // `intakeSync: degraded` (`push-relay/receipts.ts`). The device is read
+  // beside the other reads; the write itself runs after the answer, in its
+  // own event, so the app's launch never waits on it.
+  const opened = openedFromQuery(
+    request?.url ? new URL(request.url).searchParams : new URLSearchParams(),
+  );
+  const receiptDeviceRead = receiptDevice(
+    user.id,
+    request?.headers?.get("x-device-id") ?? null,
+    opened,
+  );
 
   // Per-domain aggregate reads. The measurement counts are bounded by days
   // and tombstones rather than readings (`measurement-counts.ts`); the mood
@@ -66,6 +94,9 @@ export const GET = apiHandler(async (_request: NextRequest) => {
     intakeLive,
     intakeTomb,
     currentUser,
+    medicationLatest,
+    medicationDeleted,
+    receiptTarget,
   ] = await Promise.all([
     prisma.measurement.findFirst({
       where: { userId: user.id, deletedAt: null },
@@ -98,7 +129,38 @@ export const GET = apiHandler(async (_request: NextRequest) => {
       where: { id: user.id },
       select: { lastSyncedAt: true, timezone: true },
     }),
+    prisma.medication.findFirst({
+      where: { userId: user.id },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      select: { updatedAt: true },
+    }),
+    // A deleted medication leaves no row whose `updatedAt` could move, so
+    // its deletion (always audited) counts as the newest medication write.
+    prisma.auditLog.findFirst({
+      where: { userId: user.id, action: "medication.delete" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    }),
+    receiptDeviceRead,
   ]);
+  const receipts = receiptTarget !== null;
+  if (receiptTarget) {
+    trackBackgroundTask(
+      runDetached(() =>
+        withBackgroundEvent("push.receipts.record", async (evt) => {
+          await confirmOpenedEnvelopes(receiptTarget, opened);
+          evt.setBackground({ task_name: "push.receipts.record" });
+        }),
+      ).catch(() => undefined),
+    );
+  }
+  const medicationsUpdatedAt = [
+    medicationLatest?.updatedAt,
+    medicationDeleted?.createdAt,
+  ].reduce<Date | undefined>(
+    (latest, at) => (at && (!latest || at > latest) ? at : latest),
+    undefined,
+  );
 
   // The handshake reports the checkpoint; it does not set it. The column is
   // stamped by the ingest boundaries that actually move data (see
@@ -117,6 +179,7 @@ export const GET = apiHandler(async (_request: NextRequest) => {
       moodLiveCount: moodLive,
       intakeLiveCount: intakeLive,
       lastSyncedAt: lastSyncedAt?.toISOString() ?? null,
+      envelopeReceipts: receipts,
     },
   });
 
@@ -143,6 +206,12 @@ export const GET = apiHandler(async (_request: NextRequest) => {
       liveCount: intakeLive,
       tombstonedCount: intakeTomb,
     },
+    // A snooze, a pause or a schedule change moves what is due without
+    // touching an intake row. Each writes the medication row, so its
+    // newest `updatedAt` is the second half of "is my dose list stale".
+    medications: {
+      lastUpdatedAt: medicationsUpdatedAt?.toISOString() ?? null,
+    },
     // v1.7.0 — the sync window iOS should derive its incremental-delta
     // horizon from, rather than hardcoding a constant. `incrementalWindowDays`
     // tracks the native refresh-token lifetime (a device offline longer
@@ -152,5 +221,8 @@ export const GET = apiHandler(async (_request: NextRequest) => {
       incrementalWindowDays: NATIVE_REFRESH_TOKEN_DAYS,
       tombstoneRetentionDays: TOMBSTONE_RETENTION_DAYS,
     },
+    // Whether the envelope receipts on this request were recorded: false
+    // without `X-Device-Id`, for an unknown device or without valid ids.
+    push: { receiptsRecorded: receipts },
   });
 });

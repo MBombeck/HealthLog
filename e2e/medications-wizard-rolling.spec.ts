@@ -61,12 +61,14 @@ test.describe("medication wizard — rolling", () => {
     await clickNext(page);
 
     await expectStep(page, 5, 8);
-    // The rolling row surfaces the Counter-Reset explainer right
-    // under the row label, not in a tooltip.
+    // The rolling row explains the restart of the count right under the
+    // row label, not in a tooltip.
     const rollingRow = page.locator(
       '[data-slot="wizard-cadence-row"][data-row="rolling"]',
     );
-    await expect(rollingRow).toContainText(/Counter/i);
+    await expect(
+      rollingRow.locator('[data-slot="wizard-cadence-description"]'),
+    ).not.toBeEmpty();
     await pickCadenceRow(page, "rolling");
     await clickNext(page);
 

@@ -18,6 +18,8 @@ import { requestAccountDeletion } from "@/lib/account-deletion/request";
 import { lockPendingAccount } from "@/lib/account-deletion/lifecycle";
 import { LastManagedGuardianError } from "@/lib/managed-profiles/lifecycle";
 import { adminDeleteUserSchema } from "@/lib/validations/admin";
+import { normaliseAccountEmail } from "@/lib/validations/auth";
+import { isP2002 } from "@/lib/prisma-errors";
 
 const updateUserSchema = z
   .object({
@@ -83,7 +85,10 @@ export const PUT = apiHandler(
               username: parsed.data.username,
             }),
             ...(parsed.data.email !== undefined && {
-              email: parsed.data.email,
+              email:
+                parsed.data.email === null
+                  ? null
+                  : normaliseAccountEmail(parsed.data.email),
             }),
             ...(parsed.data.role !== undefined && { role: parsed.data.role }),
             ...(parsed.data.mfaEnforced !== undefined && {
@@ -110,6 +115,10 @@ export const PUT = apiHandler(
     } catch (error) {
       if (error instanceof LastAdminError) {
         return apiError("The last admin cannot be demoted", 400);
+      }
+      // Another account holds the name or address, regardless of case.
+      if (isP2002(error)) {
+        return apiError("Username or email already taken", 409);
       }
       throw error;
     }

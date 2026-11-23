@@ -22,6 +22,7 @@ import { readDayMeanSeries } from "@/lib/insights/derived/baseline";
 import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import {
+  bmiOf,
   generateAlerts,
   type HealthAlert,
 } from "@/lib/analytics/classifications";
@@ -37,6 +38,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { roundTo } from "@/lib/stats/central";
 
 type Severity = "alert" | "caution" | "info" | "good";
 
@@ -81,6 +83,7 @@ const PROFILE_SELECT = {
   dateOfBirth: true,
   gender: true,
   thresholdsJson: true,
+  timezone: true,
 } as const;
 
 export const GET = apiHandler(async () => {
@@ -174,8 +177,7 @@ export const GET = apiHandler(async () => {
 
   let bmi: number | null = null;
   if (dbUser?.heightCm && summaries.WEIGHT?.latest) {
-    const heightM = dbUser.heightCm / 100;
-    bmi = Math.round((summaries.WEIGHT.latest / (heightM * heightM)) * 10) / 10;
+    bmi = roundTo(bmiOf(summaries.WEIGHT.latest, dbUser.heightCm), 1);
   }
 
   let bpPctInTarget: number | null = null;

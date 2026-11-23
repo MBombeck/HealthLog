@@ -4,10 +4,6 @@
  * enrichments. Statuses are settled from what actually landed.
  */
 import { prisma } from "@/lib/db";
-import {
-  findAppleHealthTombstones,
-  lockAppleHealthTombstones,
-} from "@/lib/sync/apple-health-tombstones";
 import { Prisma } from "@/generated/prisma/client";
 import { lockPersonalRecordsForUser } from "@/lib/personal-records/pr-detection-worker";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
@@ -54,21 +50,20 @@ export async function writeWorkoutPlan(
   const seriesLanded = new Set<string>();
   /** Workout ids whose track row this request actually wrote. */
   const routesLanded = new Set<string>();
+  /** Workout ids whose performance figures this request actually merged. */
+  const figuresLanded = new Set<string>();
   /** Batch indices whose manual edit this request actually wrote. */
   const overwritten = new Set<number>();
 
   await prisma.$transaction(async (tx) => {
     await overwriteManualWorkouts(tx, userId, toOverwrite, overwritten);
-    await insertWorkouts(
-      tx,
-      await withoutTombstoned(tx, userId, toInsert),
-      insertedIdByIndex,
-    );
+    await insertWorkouts(tx, toInsert, insertedIdByIndex);
     await insertChildren(tx, plan, insertedIdByIndex, {
       seriesLanded,
       routesLanded,
     });
     await fillClimbFromAttachedRoutes(tx, userId, toEnrich, routesLanded);
+    await mergePerformanceFigures(tx, userId, toEnrich, figuresLanded);
   });
 
   outcome.insertedCount = insertedIdByIndex.size;
@@ -87,7 +82,9 @@ export async function writeWorkoutPlan(
   // track: one `enriched` when either (or both) landed.
   for (const e of toEnrich) {
     const landed =
-      seriesLanded.has(e.workoutId) || routesLanded.has(e.workoutId);
+      seriesLanded.has(e.workoutId) ||
+      routesLanded.has(e.workoutId) ||
+      figuresLanded.has(e.workoutId);
     results[e.index] = {
       index: e.index,
       status: landed ? "enriched" : "duplicate",
@@ -316,35 +313,26 @@ async function fillClimbFromAttachedRoutes(
 }
 
 /**
- * The inserts left once the Apple Health tombstone ledger has been read
- * under its lock, inside the transaction that inserts. The batch already
- * filtered the ledger before planning; this read is the one that holds
- * against a delete committing in between (`lockAppleHealthTombstones`). An
- * entry dropped here inserts nothing and reads `duplicate`, like one the
- * early read caught.
+ * Hand a stored workout the performance figures it lacks. `||` keeps the
+ * right-hand side on a shared key, so the stored metadata wins: a figure its
+ * own source wrote, or one a concurrent writer merged first, is never
+ * replaced. The keys come from the closed list in `performance-metrics.ts`
+ * and the values are plausibility-checked numbers.
  */
-async function withoutTombstoned(
+async function mergePerformanceFigures(
   tx: Tx,
   userId: string,
-  toInsert: WritePlan["toInsert"],
-): Promise<WritePlan["toInsert"]> {
-  const appleHealthIds = toInsert
-    .filter((p) => p.dedupKey?.source === "APPLE_HEALTH")
-    .map((p) => p.dedupKey!.externalId);
-  if (appleHealthIds.length === 0) return toInsert;
-  await lockAppleHealthTombstones(tx, userId, "workout");
-  const deleted = await findAppleHealthTombstones(
-    tx,
-    userId,
-    "workout",
-    appleHealthIds,
-  );
-  if (deleted.size === 0) return toInsert;
-  return toInsert.filter(
-    (p) =>
-      !(
-        p.dedupKey?.source === "APPLE_HEALTH" &&
-        deleted.has(p.dedupKey.externalId)
-      ),
-  );
+  toEnrich: WritePlan["toEnrich"],
+  figuresLanded: Set<string>,
+): Promise<void> {
+  for (const e of toEnrich) {
+    if (!e.figures) continue;
+    const merged = await tx.$executeRaw`
+      UPDATE "workouts"
+         SET "metadata" = ${JSON.stringify(e.figures)}::jsonb
+                          || COALESCE("metadata", '{}'::jsonb),
+             "updated_at" = ${new Date()}
+       WHERE "id" = ${e.workoutId} AND "user_id" = ${userId}`;
+    if (merged > 0) figuresLanded.add(e.workoutId);
+  }
 }

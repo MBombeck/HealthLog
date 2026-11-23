@@ -34,6 +34,8 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
+  // No request around these reads: the coverage probe holds nothing.
+  getEvent: () => null,
 }));
 
 // v1.11.1 — `computeFromRollups` / `computeFromLiveAggregate` build a
@@ -63,7 +65,15 @@ vi.mock("@/lib/analytics/source-rank-sql", () => {
   };
 });
 
+// The 90-day window aggregate has its own parity suite against the statement
+// it replaced (`tests/integration/canonical-window-parity.test.ts`); here it
+// is one stubbed read, so each case queues its rows on `WINDOW`.
+vi.mock("@/lib/analytics/canonical-window", () => ({
+  readCanonicalWindow: vi.fn(),
+}));
+
 import { prisma } from "@/lib/db";
+import { readCanonicalWindow } from "@/lib/analytics/canonical-window";
 import { canonicalMeasurementsCte } from "@/lib/analytics/source-rank-sql";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
 import { caches, __resetAllCachesForTests } from "@/lib/cache/server-cache";
@@ -80,6 +90,7 @@ const ROLLUP_FIND_MANY = prisma.measurementRollup
   .findMany as unknown as ReturnType<typeof vi.fn>;
 const ROLLUP_FIND_FIRST = prisma.measurementRollup
   .findFirst as unknown as ReturnType<typeof vi.fn>;
+const WINDOW = readCanonicalWindow as unknown as ReturnType<typeof vi.fn>;
 const CANONICAL_FROM = canonicalMeasurementsCte as unknown as ReturnType<
   typeof vi.fn
 >;
@@ -95,6 +106,8 @@ beforeEach(() => {
   // drop cross-test call history so the cap assertion only sees this
   // test's calls.
   CANONICAL_FROM.mockClear();
+  WINDOW.mockReset();
+  WINDOW.mockResolvedValue([]);
   // null → loadUserSourcePriority returns null → default rank ladders.
   USER_FIND_UNIQUE.mockResolvedValue(null);
   ROLLUP_FIND_MANY.mockResolvedValue([]);
@@ -325,39 +338,38 @@ describe("computeSummariesSlice", () => {
       // three rollup-path data queries moved to `$queryRawUnsafe`:
       // 1. per-type coverage probe ($queryRaw) — WEIGHT fully covered
       //    ⇒ happy path.
-      // 2. narrow aggregate ($queryRawUnsafe) — windowed/regression only.
+      // 2. the 90-day window aggregate (`readCanonicalWindow`).
       // 3. latests ($queryRawUnsafe).
       // 4. rollup GROUP BY ($queryRawUnsafe) — one row per type with
       //    count/min/max/mean already composed server-side.
       RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: true }]);
-      UNSAFE.mockResolvedValueOnce([
+      WINDOW.mockResolvedValueOnce([
         {
           type: "WEIGHT",
           avg7: 82,
           avg30: 82.5,
           median: 82.1,
-          // v1.20.0 — the narrow query no longer carries slope/r²; those
+          // v1.20.0 — the window aggregate carries no slope/r²; those
           // compose from the accumulator buckets mocked below.
         },
-      ])
-        .mockResolvedValueOnce([
-          { type: "WEIGHT", value: 82.7, measured_at: new Date() },
-        ])
-        .mockResolvedValueOnce([
-          {
-            type: "WEIGHT",
-            // pre-aggregated server-side: SUM(count), MIN(min),
-            // MAX(max), weighted mean — equivalent to the two-bucket
-            // fixture below.
-            //   bucket A: count=10, mean=81.0, min=79.5, max=82.0
-            //   bucket B: count=10, mean=83.0, min=81.5, max=84.0
-            //   ⇒ count=20, min=79.5, max=84.0, mean=82
-            count: 20,
-            min: 79.5,
-            max: 84.0,
-            mean: 82.0,
-          },
-        ]);
+      ]);
+      UNSAFE.mockResolvedValueOnce([
+        { type: "WEIGHT", value: 82.7, measured_at: new Date() },
+      ]).mockResolvedValueOnce([
+        {
+          type: "WEIGHT",
+          // pre-aggregated server-side: SUM(count), MIN(min),
+          // MAX(max), weighted mean — equivalent to the two-bucket
+          // fixture below.
+          //   bucket A: count=10, mean=81.0, min=79.5, max=82.0
+          //   bucket B: count=10, mean=83.0, min=81.5, max=84.0
+          //   ⇒ count=20, min=79.5, max=84.0, mean=82
+          count: 20,
+          min: 79.5,
+          max: 84.0,
+          mean: 82.0,
+        },
+      ]);
 
       // v1.20.0 — the 90-day accumulator findMany (first measurementRollup
       // .findMany in the Promise.all). Three single-reading DAY buckets six
@@ -408,12 +420,13 @@ describe("computeSummariesSlice", () => {
         confidence: 1,
       });
 
-      // 1 RAW coverage probe + 3 UNSAFE data queries (narrow aggregate
-      // + latests + rollup GROUP BY; v1.4.37.2 — the prior `findMany`
-      // is gone). No heavy aggregate. v1.37.19 (A6-10) — the second RAW
-      // call is the pre-fold all-time remainder splice.
+      // 1 RAW coverage probe + the window aggregate + 2 UNSAFE data
+      // queries (latests + rollup GROUP BY; v1.4.37.2 — the prior
+      // `findMany` is gone). No heavy aggregate. v1.37.19 (A6-10) — the
+      // second RAW call is the pre-fold all-time remainder splice.
       expect(RAW).toHaveBeenCalledTimes(2);
-      expect(UNSAFE).toHaveBeenCalledTimes(3);
+      expect(WINDOW).toHaveBeenCalledTimes(1);
+      expect(UNSAFE).toHaveBeenCalledTimes(2);
       // The 90-day accumulator findMany plus one year-ago DAY read per
       // type-with-data.
       expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(2);
@@ -431,15 +444,14 @@ describe("computeSummariesSlice", () => {
           // pre-fold remainder: 5 ancient readings, heavier and wider.
           { type: "WEIGHT", count: 5, min: 70, max: 95, mean: 90 },
         ]);
-      UNSAFE.mockResolvedValueOnce([
+      WINDOW.mockResolvedValueOnce([
         { type: "WEIGHT", avg7: 82, avg30: 82.5, median: 82.1 },
-      ])
-        .mockResolvedValueOnce([
-          { type: "WEIGHT", value: 82.7, measured_at: new Date() },
-        ])
-        .mockResolvedValueOnce([
-          { type: "WEIGHT", count: 20, min: 79.5, max: 84.0, mean: 82.0 },
-        ]);
+      ]);
+      UNSAFE.mockResolvedValueOnce([
+        { type: "WEIGHT", value: 82.7, measured_at: new Date() },
+      ]).mockResolvedValueOnce([
+        { type: "WEIGHT", count: 20, min: 79.5, max: 84.0, mean: 82.0 },
+      ]);
 
       const result = await computeSummariesSlice("user-prefold");
       const weight = result.summaries.WEIGHT;
@@ -461,8 +473,7 @@ describe("computeSummariesSlice", () => {
       ]).mockResolvedValueOnce([
         { type: "HEIGHT", count: 2, min: 180, max: 181, mean: 180.5 },
       ]);
-      UNSAFE.mockResolvedValueOnce([]) // narrows
-        .mockResolvedValueOnce([]) // latests
+      UNSAFE.mockResolvedValueOnce([]) // latests
         .mockResolvedValueOnce([]); // rollup GROUP BY
 
       const result = await computeSummariesSlice("user-prefold-only");
@@ -484,21 +495,22 @@ describe("computeSummariesSlice", () => {
   describe("year-over-year wiring (avg30LastYear)", () => {
     function warmPathMocks() {
       RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: true }]);
-      UNSAFE.mockResolvedValueOnce([
+      WINDOW.mockResolvedValueOnce([
         { type: "WEIGHT", avg7: 82, avg30: 82.5, median: 82 },
-      ])
-        .mockResolvedValueOnce([
-          { type: "WEIGHT", value: 82.7, measured_at: new Date() },
-        ])
-        .mockResolvedValueOnce([
-          { type: "WEIGHT", count: 5, min: 82, max: 84, mean: 83 },
-        ]);
+      ]);
+      UNSAFE.mockResolvedValueOnce([
+        { type: "WEIGHT", value: 82.7, measured_at: new Date() },
+      ]).mockResolvedValueOnce([
+        { type: "WEIGHT", count: 5, min: 82, max: 84, mean: 83 },
+      ]);
       // The 90-day accumulator findMany runs first; empty (slope composes
       // to null, irrelevant here) so the year-ago DAY read is call #1.
       ROLLUP_FIND_MANY.mockResolvedValueOnce([]);
     }
     function dayBucket(daysAgo: number, count: number, mean: number) {
       return {
+        // One read covers every type, so each bucket names its own.
+        type: "WEIGHT",
         bucketStart: startOfUtcDay(
           new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000),
         ),
@@ -600,15 +612,16 @@ describe("computeSummariesSlice", () => {
       await computeSummariesSlice("user-cold-pin");
 
       const joined = queries.join("\n---\n");
-      // v1.11.1 — the rollup-fresh `narrows` query still writes its
-      // outer 90-day cap inline, now on the canonical-source subquery's
-      // raw alias (`mm.`) rather than the outer `m.`. Pin that the cap
-      // survives the source-rank refactor.
-      const narrowsCap = joined.match(
-        /AND mm\."measured_at" >= \$2::timestamp - INTERVAL '90 days'/g,
+      // The rollup-fresh path's 90-day window is `readCanonicalWindow`,
+      // whose statements carry the cap themselves
+      // (`canonical-window-sql.test.ts`); the slice hands it the request's
+      // clock.
+      expect(WINDOW).toHaveBeenCalledWith(
+        "user-rollup-pin",
+        expect.any(Date),
+        null,
+        expect.any(String),
       );
-      expect(narrowsCap).not.toBeNull();
-      expect(narrowsCap?.length).toBeGreaterThanOrEqual(1);
 
       // v1.11.1 — the cold-fallback `windowed` scan delegates its outer
       // 90-day cap to `canonicalMeasurementsCte` (a CTE now, so the day
@@ -651,22 +664,21 @@ describe("computeSummariesSlice", () => {
       RAW.mockResolvedValueOnce([
         { type: "BLOOD_PRESSURE_SYS", has_buckets: true },
       ]);
-      UNSAFE.mockResolvedValueOnce([
+      WINDOW.mockResolvedValueOnce([
         { type: "BLOOD_PRESSURE_SYS", avg7: 124, avg30: 124, median: 124 },
-      ])
-        .mockResolvedValueOnce([
-          { type: "BLOOD_PRESSURE_SYS", value: 124, measured_at: new Date() },
-        ])
-        .mockResolvedValueOnce([
-          {
-            type: "BLOOD_PRESSURE_SYS",
-            count: 3,
-            days: 1,
-            min: 118,
-            max: 130,
-            mean: 124,
-          },
-        ]);
+      ]);
+      UNSAFE.mockResolvedValueOnce([
+        { type: "BLOOD_PRESSURE_SYS", value: 124, measured_at: new Date() },
+      ]).mockResolvedValueOnce([
+        {
+          type: "BLOOD_PRESSURE_SYS",
+          count: 3,
+          days: 1,
+          min: 118,
+          max: 130,
+          mean: 124,
+        },
+      ]);
       // One DAY bucket holding three readings 2 and 4 minutes apart:
       // 130, 124, 118 mmHg. The composed fit is −1.5 mmHg per minute,
       // about −2,160 mmHg per day, about −15,000 projected onto 7 days.

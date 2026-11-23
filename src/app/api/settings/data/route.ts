@@ -19,11 +19,12 @@ import {
   protectManagedProfilesDuringDataWipe,
 } from "@/lib/managed-profiles/lifecycle";
 import {
-  resolveWipeDelegate,
   USER_RESET,
   wipeDelegateKey,
   WIPE_MODELS,
 } from "@/lib/data-wipe/wipe-plan";
+import { resolveWipeDelegate } from "@/lib/data-wipe/wipe-delegates";
+import { queueRelayUnbindsForAccount } from "@/lib/push-relay/unbind-queue";
 import { stampSyncReset } from "@/lib/sync/reset";
 import {
   accountDeletionGraceDays,
@@ -127,6 +128,9 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
           userId,
         );
 
+        // The device rows go with the wipe: their relay unbinds are queued
+        // first, as account deletion does (`delete-devices.ts`).
+        await queueRelayUnbindsForAccount(tx, userId);
         const perModel: Record<string, number> = {};
         for (const model of WIPE_MODELS) {
           const { count } = await resolveWipeDelegate(tx, model).deleteMany({

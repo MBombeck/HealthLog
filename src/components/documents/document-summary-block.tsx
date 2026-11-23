@@ -23,13 +23,19 @@
  *   UNAVAILABLE → says none could be produced, offers another attempt
  *   NONE        → says none exists yet, offers to generate one
  *
+ * #1404 — when the server recorded why the last attempt stopped (`failure`), the
+ * absent state says that reason instead of the generic line, and the action
+ * reads "Try again".
+ *
  * The action is a click, never an effect: opening a document must not spend a
  * provider call. With no AI provider configured the block renders the state
  * without an action rather than an button that would 422.
  */
 import { FileText } from "lucide-react";
 
+import { AiJobFailureLine } from "@/components/ai/ai-job-failure-line";
 import { Button } from "@/components/ui/button";
+import type { AiJobFailureDto } from "@/lib/ai/job-failure/types";
 import type { AiRunPhase } from "@/hooks/use-ai-run";
 import { useTranslations } from "@/lib/i18n/context";
 import type { DocumentSummaryStateValue } from "@/lib/validations/inbound-documents";
@@ -52,6 +58,7 @@ export function DocumentSummaryBlock({
   runPhase = "idle",
   actionsDisabled,
   canGenerate = true,
+  failures,
   onGenerate,
 }: {
   /** The stored, decrypted summary, or null when there is none to show. */
@@ -75,9 +82,13 @@ export function DocumentSummaryBlock({
    * admits it. The state line stays; the button goes.
    */
   canGenerate?: boolean;
+  /** #1404 — the document's recorded AI failures; the summary's is shown. */
+  failures?: readonly AiJobFailureDto[];
   onGenerate: () => void;
 }) {
   const { t } = useTranslations();
+  const failure =
+    failures?.find((entry) => entry.job === "documentSummary") ?? null;
 
   // A stored summary wins over every state and is shown read-only from storage.
   // Generation remains available only for absent terminal states below.
@@ -116,9 +127,16 @@ export function DocumentSummaryBlock({
       <p className="text-sm leading-none font-medium">
         {t("documents.detail.summary.title")}
       </p>
-      <p className="text-muted-foreground text-xs">
-        {t(absentCopyKey(summaryState))}
-      </p>
+      {failure && summaryState !== "WITHHELD" ? (
+        <AiJobFailureLine
+          failure={failure}
+          slot="document-detail-summary-failure"
+        />
+      ) : (
+        <p className="text-muted-foreground text-xs">
+          {t(absentCopyKey(summaryState))}
+        </p>
+      )}
       {aiEnabled && canGenerate ? (
         <Button
           type="button"
@@ -131,7 +149,9 @@ export function DocumentSummaryBlock({
           <FileText className="size-4" aria-hidden />
           {isGenerating
             ? t("documents.detail.summary.generating")
-            : t("documents.detail.summary.generate")}
+            : failure
+              ? t("aiRuns.jobFailure.retry")
+              : t("documents.detail.summary.generate")}
         </Button>
       ) : null}
       <AiRunPhaseNote

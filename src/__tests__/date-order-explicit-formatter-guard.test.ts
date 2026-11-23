@@ -240,10 +240,6 @@ const RAW_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
     why: "`todayKeyIn` asks `en-CA` for today's `YYYY-MM-DD` key in the record's zone, to compare with the timeline's calendar keys. Never rendered; every label there is a month name.",
   },
   {
-    file: "src/app/api/measurement-reminders/[id]/snooze/route.ts",
-    why: "An ISO day probe split back into numbers to do day arithmetic on the postpone target. Never rendered.",
-  },
-  {
     file: "src/components/ui/calendar.tsx",
     why: "The `data-day` attribute on a calendar cell. It identifies a cell to the DOM, it does not spell a date to a reader.",
   },
@@ -260,16 +256,8 @@ const RAW_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
     why: "`makeDayKeyFormatter` — the per-row bucketing key. Its fields are read back through `formatToParts` and reassembled as `YYYY-MM-DD`.",
   },
   {
-    file: "src/components/measurement-reminders/checkups/postpone-sheet.tsx",
-    why: "The ISO day the postpone request writes to the API. A wire value, and the wire format is ISO whatever the reader prefers.",
-  },
-  {
     file: "src/lib/charts/bucket-time-series.ts",
     why: "Bucket boundary arithmetic. The bucket LABELS are a separate step and go through `makeBucketLabelFormatters`.",
-  },
-  {
-    file: "src/lib/jobs/measurement-reminder.ts",
-    why: "The local day in the notification dedup key. Changing it with a display preference would re-send a claimed reminder.",
   },
   {
     file: "src/lib/jobs/reminder/medication-reminder-check.ts",

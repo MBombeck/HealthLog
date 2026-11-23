@@ -76,6 +76,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
     "one medication's recorded history, listed",
   "app/api/medications/[id]/intake/bulk-delete/route.ts":
     "deletes rows the person chose",
+  "app/api/medications/[id]/intake/purge/route.ts":
+    "the recent takes and skips a purge of one medication removes, announced as reopened, no rate",
   "lib/medications/update-medication/write.ts":
     "one medication's open slots, tombstoned on a schedule replace or the tracking switch",
   "lib/medications/course-end-placeholders.ts":
@@ -83,14 +85,22 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
   "lib/medications/intake-bulk/ingest.ts": "writes recorded doses",
   "lib/medications/scheduling/slot-upsert.ts":
     "binds a recorded dose to its slot",
+  "lib/medications/ad-hoc-intake.ts":
+    "the instants one medication's rows hold, for the ad-hoc insert",
+  "lib/medications/record-intake/write.ts":
+    "the repeat check of one write against one medication's recorded doses",
+  "lib/medications/scheduling/extra-dose.ts":
+    "whether a recorded dose on a slot is another one, split from slot-upsert",
   "lib/medications/scheduling/worker-helpers.ts":
     "slot lookups for one medication the caller already selected",
   "lib/medications/inventory/consumption.ts":
     "units consumed by a recorded dose",
   "lib/medications/intake-slot-dedup.ts":
     "folds duplicate rows of doses already recorded",
-  "lib/doctor-report/collect.ts":
-    "administration ledger lists recorded doses; rates gate via expectsDoses",
+  "lib/doctor-report/collect-medications.ts":
+    "the report's administration ledger lists recorded doses; collect.ts gates rates via expectsDoses",
+  "lib/notifications/live-activity-answered.ts":
+    "whether the slot a Live Activity shows was answered, to end it, no rate; open doses come from openActivityDoses, which filters by tracking",
   "lib/medications/ingredients/recompute.ts":
     "sums the nutrients of doses that were taken; a recorded dose counts whatever the switch says",
 };
@@ -143,8 +153,8 @@ const MAY_READ_EVERY_ROW: Record<string, string> = {
   // list shows the stored schedule as information.
   "app/api/medications/[id]/compliance/route.ts":
     "buildCompliancePayload gates on the type-required trackIntake",
-  "lib/doctor-report/collect.ts":
-    "buildLedgerCompliance gates via expectsDoses; list is information",
+  "lib/doctor-report/collect-medications.ts":
+    "collect.ts's buildLedgerCompliance gates via expectsDoses; list is information",
   // The MCP medication resources list the stored schedule as information,
   // with `intakeTracked` beside it; they carry no due time or rate.
   "lib/mcp/resources.ts":
@@ -187,7 +197,8 @@ describe("medication intake tracking — schedule readers honour the switch", ()
     for (const known of [
       "lib/jobs/reminder/medication-reminder-check.ts",
       "lib/medications/scheduling/project-today-intakes.ts",
-      "lib/dashboard/meds-today.ts",
+      // The dashboard tile and the today list read their schedules here.
+      "lib/medications/dose-state/ledger.ts",
       "lib/medications/list-read.ts",
       "lib/jobs/intake-auto-skip.ts",
     ]) {

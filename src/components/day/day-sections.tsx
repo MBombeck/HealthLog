@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDurationMinutes } from "@/lib/i18n/duration";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -20,6 +21,7 @@ import {
   Stethoscope,
   Syringe,
   Thermometer,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -213,6 +215,8 @@ export function dayTitle(kind: string, title: string, t: Translate): string {
       return t("day.event.illnessBegan", { label: title });
     case "illnessResolved":
       return t("day.event.illnessResolved", { label: title });
+    case "seizure":
+      return title || t("day.seizure");
     case "mood": {
       const key = MOOD_LABEL_KEYS[title];
       return key ? t(key) : t("nav.mood");
@@ -265,6 +269,19 @@ export function dayMeta(
     }
     case "symptom":
       return t("symptoms.intensityPill", { value: meta });
+    case "seizure": {
+      // `<certainty> <count>`: a suspected one says so, a logged run its count.
+      const [certainty, countText] = meta.split(" ");
+      const count = Number(countText);
+      return (
+        [
+          certainty === "SUSPECTED" ? t("seizures.certainty.SUSPECTED") : null,
+          count > 1 ? t("day.seizureCount", { count }) : null,
+        ]
+          .filter(Boolean)
+          .join(", ") || null
+      );
+    }
     case "allergyOnset": {
       const key = keyOf(ALLERGY_SEVERITY_KEY, meta);
       return key ? t(key) : null;
@@ -287,6 +304,25 @@ export function dayMeta(
     default:
       return meta;
   }
+}
+
+/**
+ * "2 h 10 min after Metformin", "40 min before Metformin", "at the time of
+ * Metformin": where a symptom sits against the day's dose, as a distance in
+ * time and never as a cause.
+ */
+export function doseOffsetText(
+  offset: { title: string; minutes: number },
+  t: Translate,
+): string {
+  if (offset.minutes === 0) {
+    return t("day.doseOffset.atDose", { name: offset.title });
+  }
+  const duration = formatDurationMinutes(Math.abs(offset.minutes), t);
+  return t(
+    offset.minutes > 0 ? "day.doseOffset.after" : "day.doseOffset.before",
+    { duration, name: offset.title },
+  );
 }
 
 /** Running kinds whose `sub` is a dose and reads as part of the name. */
@@ -579,6 +615,7 @@ const EVENT_ICON: Record<DayEventKind, LucideIcon> = {
   illnessResolved: Thermometer,
   illnessDayLog: Thermometer,
   symptom: Activity,
+  seizure: Zap,
   allergyOnset: ShieldAlert,
   labResult: FlaskConical,
   visit: Stethoscope,
@@ -656,6 +693,14 @@ export function DayEvents({ events }: { events: readonly DayEvent[] }) {
                 )}
                 {meta ? (
                   <p className="text-muted-foreground mt-0.5 text-xs">{meta}</p>
+                ) : null}
+                {event.doseOffset ? (
+                  <p
+                    className="text-muted-foreground mt-0.5 text-xs"
+                    data-slot="day-event-dose-offset"
+                  >
+                    {doseOffsetText(event.doseOffset, t)}
+                  </p>
                 ) : null}
                 {event.note ? (
                   // The person's own words: content, never muted.

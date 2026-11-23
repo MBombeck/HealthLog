@@ -1,5 +1,6 @@
 import { foldBoundary } from "../consolidation-tz";
 import { describe, expect, it, vi } from "vitest";
+import { userDayKey } from "@/lib/tz/format";
 
 // The SUM drain now recomputes the affected DAY rollup bucket after each
 // per-day fold (so a drained day's stale double-counted sum self-heals).
@@ -10,10 +11,10 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
 }));
 import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 
+import { iterateDayBuckets } from "../consolidation-base";
+import type { PerSampleRow } from "../drain-per-sample-cumulative";
 import {
-  bucketRowsByUserDay,
   canonicalDailyTimestamp,
-  dayKeyForUserTz,
   drainPerSampleCumulative,
   sumBucketValues,
 } from "../drain-per-sample-cumulative";
@@ -31,26 +32,26 @@ vi.mock("@/lib/export/restore-lock", async (importOriginal) => ({
   holdAccountAgainstRestore: vi.fn(async () => {}),
 }));
 
-describe("dayKeyForUserTz", () => {
+describe("userDayKey", () => {
   it("anchors the calendar day to the user's IANA zone", () => {
     // 23:45 NZST on 2026-05-16 is still 11:45 UTC on the same day, but
     // the user's calendar day in Europe/Berlin would be the previous day
     // because Berlin is 10-11h behind NZST.
     const instant = new Date("2026-05-16T11:45:00.000Z");
-    expect(dayKeyForUserTz(instant, "Pacific/Auckland")).toBe("2026-05-16");
+    expect(userDayKey(instant, "Pacific/Auckland")).toBe("2026-05-16");
     // Europe/Berlin: same instant resolves to local 13:45 — still 2026-05-16.
-    expect(dayKeyForUserTz(instant, "Europe/Berlin")).toBe("2026-05-16");
+    expect(userDayKey(instant, "Europe/Berlin")).toBe("2026-05-16");
     // America/Los_Angeles (UTC-7 in DST): same instant resolves to 04:45 — 2026-05-16.
-    expect(dayKeyForUserTz(instant, "America/Los_Angeles")).toBe("2026-05-16");
+    expect(userDayKey(instant, "America/Los_Angeles")).toBe("2026-05-16");
   });
 
   it("uses sv-SE Intl formatting so output is ISO-shaped", () => {
     const instant = new Date("2026-01-01T00:00:00.000Z");
-    expect(dayKeyForUserTz(instant, "UTC")).toBe("2026-01-01");
+    expect(userDayKey(instant, "UTC")).toBe("2026-01-01");
     // The Pacific/Auckland clock is 13h ahead → already 2026-01-01 mid-afternoon at UTC midnight.
-    expect(dayKeyForUserTz(instant, "Pacific/Auckland")).toBe("2026-01-01");
+    expect(userDayKey(instant, "Pacific/Auckland")).toBe("2026-01-01");
     // Europe/Berlin (UTC+1 in standard time): same instant → 01:00 local → still 2026-01-01.
-    expect(dayKeyForUserTz(instant, "Europe/Berlin")).toBe("2026-01-01");
+    expect(userDayKey(instant, "Europe/Berlin")).toBe("2026-01-01");
   });
 });
 
@@ -152,8 +153,26 @@ describe("localDayWindow — DST-aware [dayStart, dayEnd) drill-down bounds", ()
   });
 });
 
+/** Drain the production day-bucket stream over one ascending page of rows. */
+async function bucketRowsByUserDay(
+  rows: readonly PerSampleRow[],
+  tz: string,
+): Promise<Map<string, PerSampleRow[]>> {
+  const sorted = [...rows].sort(
+    (a, b) => a.measuredAt.getTime() - b.measuredAt.getTime(),
+  );
+  async function* pages() {
+    yield sorted;
+  }
+  const byDay = new Map<string, PerSampleRow[]>();
+  for await (const [key, day] of iterateDayBuckets(pages(), tz, "stats:")) {
+    byDay.set(key, day);
+  }
+  return byDay;
+}
+
 describe("bucketRowsByUserDay", () => {
-  it("groups per-sample rows by the user's calendar day", () => {
+  it("groups per-sample rows by the user's calendar day", async () => {
     const rows = [
       {
         id: "m-1",
@@ -177,13 +196,13 @@ describe("bucketRowsByUserDay", () => {
         externalId: "hk-uuid-3",
       },
     ];
-    const { byDay } = bucketRowsByUserDay(rows, "Europe/Berlin");
+    const byDay = await bucketRowsByUserDay(rows, "Europe/Berlin");
     expect(byDay.size).toBe(2);
     expect(byDay.get("2026-05-16")?.length).toBe(2);
     expect(byDay.get("2026-05-17")?.length).toBe(1);
   });
 
-  it("skips rows whose externalId is already in stats:... shape (idempotent re-run)", () => {
+  it("skips rows whose externalId is already in stats:... shape (idempotent re-run)", async () => {
     const rows = [
       {
         id: "m-1",
@@ -200,14 +219,14 @@ describe("bucketRowsByUserDay", () => {
         externalId: "hk-uuid-pre-drain",
       },
     ];
-    const { byDay } = bucketRowsByUserDay(rows, "Europe/Berlin");
+    const byDay = await bucketRowsByUserDay(rows, "Europe/Berlin");
     // The already-collapsed row is skipped; only the per-sample row
     // remains in the bucket.
     expect(byDay.get("2026-05-16")?.length).toBe(1);
     expect(byDay.get("2026-05-16")?.[0]?.id).toBe("m-2");
   });
 
-  it("groups rows with NULL externalId (manual entries) like any other per-sample row", () => {
+  it("groups rows with NULL externalId (manual entries) like any other per-sample row", async () => {
     const rows = [
       {
         id: "m-1",
@@ -217,12 +236,12 @@ describe("bucketRowsByUserDay", () => {
         externalId: null,
       },
     ];
-    const { byDay } = bucketRowsByUserDay(rows, "Europe/Berlin");
+    const byDay = await bucketRowsByUserDay(rows, "Europe/Berlin");
     expect(byDay.get("2026-05-16")?.length).toBe(1);
   });
 
-  it("returns an empty map when the input is empty", () => {
-    const { byDay } = bucketRowsByUserDay([], "Europe/Berlin");
+  it("returns an empty map when the input is empty", async () => {
+    const byDay = await bucketRowsByUserDay([], "Europe/Berlin");
     expect(byDay.size).toBe(0);
   });
 });

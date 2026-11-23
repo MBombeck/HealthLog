@@ -13,6 +13,7 @@
           "autoMissed": false,
           "autoRecorded": false,
           "attributionSource": "AUTO",
+          "takenVia": null,
           "source": "WEB",
           "idempotencyKey": null,
           "createdAt": "<createdAt>",
@@ -22,39 +23,48 @@
           "externalId": null,
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
-          "deletedAt": null
+          "deletedAt": null,
+          "appleHealthDeletedAt": null
         },
         {
           "id": "<id:4>",
           "userId": "<id:2>",
           "medicationId": "<id:3>",
           "scheduledFor": "2026-10-15T08:00:00.000Z",
-          "takenAt": null,
-          "skipped": true,
+          "takenAt": "2026-10-15T08:30:00.000Z",
+          "skipped": false,
           "autoMissed": false,
           "autoRecorded": false,
           "attributionSource": "AUTO",
+          "takenVia": "WEB",
           "source": "REMINDER",
           "idempotencyKey": null,
           "createdAt": "<createdAt>",
           "injectionSite": null,
           "doseTaken": null,
-          "inventoryConsumption": null,
+          "inventoryConsumption": [
+            {
+              "units": 1,
+              "itemId": "<id:5>"
+            }
+          ],
           "externalId": null,
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
-          "deletedAt": null
+          "deletedAt": null,
+          "appleHealthDeletedAt": null
         },
         {
-          "id": "<id:5>",
+          "id": "<id:6>",
           "userId": "<id:2>",
           "medicationId": "<id:3>",
           "scheduledFor": "2026-10-14T20:00:00.000Z",
-          "takenAt": null,
-          "skipped": true,
+          "takenAt": "2026-10-14T20:05:00.000Z",
+          "skipped": false,
           "autoMissed": false,
           "autoRecorded": false,
           "attributionSource": "AUTO",
+          "takenVia": null,
           "source": "WEB",
           "idempotencyKey": null,
           "createdAt": "<createdAt>",
@@ -64,10 +74,11 @@
           "externalId": null,
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
-          "deletedAt": null
+          "deletedAt": null,
+          "appleHealthDeletedAt": null
         },
         {
-          "id": "<id:6>",
+          "id": "<id:7>",
           "userId": "<id:2>",
           "medicationId": "<id:3>",
           "scheduledFor": "2026-10-14T08:00:00.000Z",
@@ -76,6 +87,7 @@
           "autoMissed": false,
           "autoRecorded": false,
           "attributionSource": "USER_PIN",
+          "takenVia": "WEB",
           "source": "WEB",
           "idempotencyKey": null,
           "createdAt": "<createdAt>",
@@ -84,13 +96,14 @@
           "inventoryConsumption": [
             {
               "units": 1,
-              "itemId": "<id:7>"
+              "itemId": "<id:5>"
             }
           ],
           "externalId": null,
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
-          "deletedAt": null
+          "deletedAt": null,
+          "appleHealthDeletedAt": null
         },
         {
           "id": "<id:8>",
@@ -102,6 +115,7 @@
           "autoMissed": false,
           "autoRecorded": false,
           "attributionSource": "AUTO",
+          "takenVia": "WEB",
           "source": "WEB",
           "idempotencyKey": "dose-key-0001",
           "createdAt": "<createdAt>",
@@ -110,13 +124,14 @@
           "inventoryConsumption": [
             {
               "units": 1,
-              "itemId": "<id:7>"
+              "itemId": "<id:5>"
             }
           ],
           "externalId": null,
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
-          "deletedAt": null
+          "deletedAt": null,
+          "appleHealthDeletedAt": null
         },
         {
           "id": "<id:9>",
@@ -128,6 +143,7 @@
           "autoMissed": false,
           "autoRecorded": false,
           "attributionSource": "USER_PIN",
+          "takenVia": "WEB",
           "source": "REMINDER",
           "idempotencyKey": null,
           "createdAt": "<createdAt>",
@@ -136,13 +152,14 @@
           "inventoryConsumption": [
             {
               "units": 1,
-              "itemId": "<id:7>"
+              "itemId": "<id:5>"
             }
           ],
           "externalId": null,
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
-          "deletedAt": null
+          "deletedAt": null,
+          "appleHealthDeletedAt": null
         },
         {
           "id": "<id:10>",
@@ -154,6 +171,7 @@
           "autoMissed": false,
           "autoRecorded": false,
           "attributionSource": "AUTO",
+          "takenVia": null,
           "source": "WEB",
           "idempotencyKey": null,
           "createdAt": "<createdAt>",
@@ -163,7 +181,8 @@
           "externalId": null,
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
-          "deletedAt": null
+          "deletedAt": null,
+          "appleHealthDeletedAt": null
         },
         {
           "id": "<id:11>",
@@ -175,6 +194,7 @@
           "autoMissed": false,
           "autoRecorded": false,
           "attributionSource": "AUTO",
+          "takenVia": "WEB",
           "source": "WEB",
           "idempotencyKey": null,
           "createdAt": "<createdAt>",
@@ -183,13 +203,14 @@
           "inventoryConsumption": [
             {
               "units": 1,
-              "itemId": "<id:7>"
+              "itemId": "<id:5>"
             }
           ],
           "externalId": null,
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
-          "deletedAt": null
+          "deletedAt": null,
+          "appleHealthDeletedAt": null
         },
         {
           "id": "<id:12>",
@@ -201,6 +222,7 @@
           "autoMissed": false,
           "autoRecorded": false,
           "attributionSource": "AUTO",
+          "takenVia": "APP",
           "source": "API",
           "idempotencyKey": null,
           "createdAt": "<createdAt>",
@@ -209,13 +231,14 @@
           "inventoryConsumption": [
             {
               "units": 1,
-              "itemId": "<id:7>"
+              "itemId": "<id:5>"
             }
           ],
           "externalId": null,
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
-          "deletedAt": null
+          "deletedAt": null,
+          "appleHealthDeletedAt": null
         },
         {
           "id": "<id:13>",
@@ -227,6 +250,7 @@
           "autoMissed": false,
           "autoRecorded": false,
           "attributionSource": "AUTO",
+          "takenVia": "WEB",
           "source": "WEB",
           "idempotencyKey": null,
           "createdAt": "<createdAt>",
@@ -235,13 +259,14 @@
           "inventoryConsumption": [
             {
               "units": 1,
-              "itemId": "<id:7>"
+              "itemId": "<id:5>"
             }
           ],
           "externalId": null,
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
-          "deletedAt": null
+          "deletedAt": null,
+          "appleHealthDeletedAt": null
         }
       ],
       "meta": {
@@ -298,6 +323,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -334,6 +360,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -370,6 +397,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -406,6 +434,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -445,6 +474,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -570,6 +600,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -578,13 +609,14 @@
         "inventoryConsumption": [
           {
             "units": 1,
-            "itemId": "<id:7>"
+            "itemId": "<id:5>"
           }
         ],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:12>",
@@ -596,6 +628,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APP",
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -604,13 +637,14 @@
         "inventoryConsumption": [
           {
             "units": 1,
-            "itemId": "<id:7>"
+            "itemId": "<id:5>"
           }
         ],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:11>",
@@ -622,6 +656,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -630,13 +665,14 @@
         "inventoryConsumption": [
           {
             "units": 1,
-            "itemId": "<id:7>"
+            "itemId": "<id:5>"
           }
         ],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:10>",
@@ -648,6 +684,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -657,7 +694,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:9>",
@@ -669,6 +707,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "USER_PIN",
+        "takenVia": "WEB",
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -677,13 +716,14 @@
         "inventoryConsumption": [
           {
             "units": 1,
-            "itemId": "<id:7>"
+            "itemId": "<id:5>"
           }
         ],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:8>",
@@ -695,6 +735,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": "dose-key-0001",
         "createdAt": "<createdAt>",
@@ -703,16 +744,17 @@
         "inventoryConsumption": [
           {
             "units": 1,
-            "itemId": "<id:7>"
+            "itemId": "<id:5>"
           }
         ],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
-        "id": "<id:6>",
+        "id": "<id:7>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-14T08:00:00.000Z",
@@ -721,6 +763,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "USER_PIN",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -729,24 +772,26 @@
         "inventoryConsumption": [
           {
             "units": 1,
-            "itemId": "<id:7>"
+            "itemId": "<id:5>"
           }
         ],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
-        "id": "<id:5>",
+        "id": "<id:6>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-14T20:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-14T20:05:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -756,28 +801,36 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:4>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-15T08:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-15T08:30:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
         "injectionSite": null,
         "doseTaken": null,
-        "inventoryConsumption": null,
+        "inventoryConsumption": [
+          {
+            "units": 1,
+            "itemId": "<id:5>"
+          }
+        ],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:23>",
@@ -789,6 +842,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -798,7 +852,8 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:24>",
@@ -810,6 +865,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -819,28 +875,31 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:25>",
         "userId": "<id:2>",
         "medicationId": "<id:14>",
         "scheduledFor": "2026-10-15T11:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-15T11:00:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
         "injectionSite": null,
         "doseTaken": null,
-        "inventoryConsumption": null,
+        "inventoryConsumption": [],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:1>",
@@ -852,6 +911,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -861,19 +921,20 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "doseChanges": [],
     "inventoryItems": [
       {
-        "id": "<id:7>",
+        "id": "<id:5>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "state": "IN_USE",
         "containerType": "OTHER",
         "unitsTotal": "30",
-        "unitsRemaining": "24",
+        "unitsRemaining": "23",
         "firstUseAt": "2026-10-15T08:30:00.000Z",
         "expiresAt": null,
         "printedExpiry": null,
@@ -929,7 +990,7 @@
         "actorUserId": null,
         "details": {
           "medicationId": "<id:3>",
-          "eventId": "<id:6>",
+          "eventId": "<id:7>",
           "skipped": false
         },
         "ipAddress": null
@@ -1007,39 +1068,6 @@
         "details": {
           "medicationId": "<id:3>",
           "eventId": "<id:1>",
-          "skipped": true
-        },
-        "ipAddress": null
-      },
-      {
-        "action": "medication.intake",
-        "userId": "<id:2>",
-        "actorUserId": null,
-        "details": {
-          "medicationId": "<id:3>",
-          "eventId": "<id:4>",
-          "skipped": true
-        },
-        "ipAddress": null
-      },
-      {
-        "action": "medication.intake",
-        "userId": "<id:2>",
-        "actorUserId": null,
-        "details": {
-          "medicationId": "<id:14>",
-          "eventId": "<id:25>",
-          "skipped": true
-        },
-        "ipAddress": null
-      },
-      {
-        "action": "medication.intake",
-        "userId": "<id:2>",
-        "actorUserId": null,
-        "details": {
-          "medicationId": "<id:3>",
-          "eventId": "<id:5>",
           "skipped": true
         },
         "ipAddress": null

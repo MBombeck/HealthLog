@@ -24,7 +24,7 @@ import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import type { MeasurementType } from "@/generated/prisma/client";
-import { ImportCardShell } from "./import-card-shell";
+import { ImportCardShell, ImportStatusRegion } from "./import-card-shell";
 
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
 
@@ -269,7 +269,7 @@ export function HealthConnectImportCard() {
         {t("settings.sections.export.import.healthConnect.privacyNote")}
       </p>
 
-      <div aria-live="polite" className="space-y-2">
+      <ImportStatusRegion query={statusQuery}>
         {uploading && (
           <p className="text-muted-foreground flex items-center gap-2 text-xs">
             <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
@@ -377,14 +377,13 @@ export function HealthConnectImportCard() {
             </span>
           </p>
         )}
-      </div>
+      </ImportStatusRegion>
 
-      <SettingsCardActions className="mt-auto" align="start">
+      <SettingsCardActions className="mt-auto">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={busy}
           onClick={() => fileInputRef.current?.click()}
           data-testid="import-action-health-connect"

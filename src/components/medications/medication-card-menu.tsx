@@ -28,7 +28,7 @@
  */
 
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { History, MoreVertical, Pencil } from "lucide-react";
+import { ExternalLink, History, MoreVertical, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,15 +38,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslations } from "@/lib/i18n/context";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
 
 export interface MedicationCardMenuProps {
   onEdit: () => void;
   onOpenHistory: () => void;
+  /**
+   * #1430 — the medication the leaflet items open for: the saved leaflet
+   * link, and the registry search of the caller's chosen registry as the
+   * list read built it (`leafletSearch`). Both open in a new tab.
+   */
+  leaflet?: {
+    leafletUrl?: string | null;
+    leafletSearch?: LeafletSearch | null;
+  };
 }
 
 export function MedicationCardMenu({
   onEdit,
   onOpenHistory,
+  leaflet,
 }: MedicationCardMenuProps) {
   const { t } = useTranslations();
   // Editing the medication and opening its history editor are owner work, not
@@ -55,6 +66,7 @@ export function MedicationCardMenu({
   // colour change.
   const { canManageDomain } = useRecordCapabilities();
   if (!canManageDomain("medications")) return null;
+  const search = leaflet?.leafletSearch ?? null;
 
   return (
     <DropdownMenu>
@@ -85,6 +97,32 @@ export function MedicationCardMenu({
           <History className="mr-2 h-4 w-4" />
           {t("medications.detail.header.historyLabel")}
         </DropdownMenuItem>
+        {leaflet?.leafletUrl && (
+          <DropdownMenuItem asChild>
+            <a
+              href={leaflet.leafletUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-slot="medication-card-menu-leaflet-saved"
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              {t("medications.leaflet.saved")}
+            </a>
+          </DropdownMenuItem>
+        )}
+        {search && (
+          <DropdownMenuItem asChild>
+            <a
+              href={search.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-slot="medication-card-menu-leaflet-find"
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              {t("medications.leaflet.find")}
+            </a>
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

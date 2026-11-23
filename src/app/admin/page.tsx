@@ -9,6 +9,8 @@ import { SystemStatusSummary } from "@/components/admin/system-status-summary";
 import { VersionTileSection } from "@/components/admin/version-tile-section";
 import { RecentAuditPreview } from "@/components/admin/recent-audit-preview";
 import { useAdminSettings } from "@/components/admin/_shared";
+import { PushRelayQuestion } from "@/components/admin/push-relay-question";
+import { ServerSetupNotice } from "@/components/admin/server-setup-notice";
 
 /**
  * `/admin` — overview landing page. v1.4.15 (phase A2) replaces the
@@ -45,6 +47,12 @@ export default function AdminOverviewPage() {
             onRetry={() => void refetchSettings()}
           />
         )}
+
+        {/* Once per admin: the server setup is not finished (1.49). */}
+        <ServerSetupNotice />
+
+        {/* Once for the server, until an admin answers: the relay question. */}
+        <PushRelayQuestion />
 
         <VersionTileSection />
 

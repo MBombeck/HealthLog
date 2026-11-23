@@ -9,7 +9,11 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
+import {
+  REOPENED_WINDOW_MS,
+  reopenedEventOf,
+} from "@/lib/notifications/medication-intake-recorded";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -55,6 +59,24 @@ export const DELETE = apiHandler(
     // refund because "I did not take that dose" puts the pill back in the box.
     // A purge wipes an entire history as bookkeeping, and refunding every dose
     // ever taken would inflate the current container count instead.
+    // The recent takes and skips the purge removes: their slots open again
+    // on the other devices (`reopenedEventOf`).
+    const answered = await prisma.medicationIntakeEvent.findMany({
+      where: {
+        medicationId: id,
+        userId: user.id,
+        deletedAt: null,
+        OR: [{ takenAt: { not: null } }, { skipped: true }],
+        scheduledFor: { gte: new Date(Date.now() - REOPENED_WINDOW_MS) },
+      },
+      select: {
+        id: true,
+        medicationId: true,
+        scheduledFor: true,
+        takenAt: true,
+        skipped: true,
+      },
+    });
     const { count } = await prisma.medicationIntakeEvent.updateMany({
       where: { medicationId: id, userId: user.id, deletedAt: null },
       data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
@@ -94,9 +116,14 @@ export const DELETE = apiHandler(
     // (#22) — silent cross-device intake sync: a purged history changes
     // the intake state the user's other iOS devices render. Coalesced
     // per user, best-effort — never affects the response.
-    queueMedicationIntakeSync({
+    afterDoseChange({
+      scope: "intakes",
       userId: user.id,
       originDeviceToken: request.headers.get("x-device-id"),
+      recorded: answered.flatMap((row) => {
+        const reopened = reopenedEventOf(row, null);
+        return reopened ? [reopened] : [];
+      }),
     });
 
     return apiSuccess({ purged: true, count });

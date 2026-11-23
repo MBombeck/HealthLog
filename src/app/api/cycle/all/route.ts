@@ -8,8 +8,12 @@
  * reminder-delivery rows in the push-attempts ledger — so no dated
  * reproductive trace survives in Postgres (the post-Dobbs threat model). The
  * `CycleProfile` row is left in place (gate + settings keep working) but its
- * intent-revealing fields — goal + cycle/period/luteal priors — are reset to
- * neutral defaults, so no reproductive intent survives either.
+ * intent-revealing fields — goal + cycle/period/luteal priors, and the
+ * pregnancy or postpartum state — are reset to neutral defaults, so no
+ * reproductive intent survives either.
+ *
+ * The feed is reset in the same transaction (`stampSyncReset`), so a paired
+ * client drops its mirror of the purged rows on its next pull.
  *
  * Gated (`cycle.disabled` 403) and owner-scoped. The purge action itself IS
  * audited (written after the transaction, so it survives) — its `details`
@@ -24,6 +28,8 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
+import { PREGNANCY_CLEARED } from "@/lib/cycle/pregnancy-store";
+import { stampSyncReset } from "@/lib/sync/reset";
 
 export const DELETE = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -80,7 +86,9 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     });
     // Reset the reproductive INTENT carried on the profile (goal + cycle/period/
     // luteal priors) to neutral defaults so a purge leaves no intent-revealing
-    // state, while keeping the row so the gate + settings keep working.
+    // state, while keeping the row so the gate + settings keep working. The
+    // pregnancy or postpartum state goes with it: left behind it kept the
+    // emergency card, the report and the Coach saying "pregnant".
     await tx.cycleProfile.updateMany({
       where: { userId: user.id },
       data: {
@@ -88,8 +96,15 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
         typicalCycleLength: null,
         typicalPeriodLength: null,
         lutealPhaseLength: null,
+        ...PREGNANCY_CLEARED,
       },
     });
+    // The rows are gone without tombstones (a tombstone would keep the dated
+    // trace the purge exists to remove), so a paired client that mirrored
+    // them could never learn of it from the feed. Reset the feed in the same
+    // transaction: every cursor issued before now answers `cursorExpired`
+    // with reason `sync_reset`, and the client rebuilds without the rows.
+    await stampSyncReset(tx, user.id);
     return {
       dayLogs: dayLogs.count,
       customSymptoms: customSymptoms.count,

@@ -11,7 +11,7 @@
  * Local day bounds (`localDayWindow`, `startOfLocalDayKey`) live in
  * `@/lib/tz/local-day`, the one start-of-day implementation.
  *
- * History: `dayKeyForUserTz`, `canonicalDailyTimestamp`, the grace
+ * History: `userDayKey`, `canonicalDailyTimestamp`, the grace
  * constant, and the `PerSampleRow` shape used
  * to live in `drain-per-sample-cumulative.ts`. `consolidation-base.ts`
  * imported them from there while `drain` imported the runner back — a
@@ -27,7 +27,6 @@
 import type { MeasurementType } from "@/generated/prisma/client";
 // `userDayKey` lives in the pure `@/lib/tz/format` leaf (no Prisma /
 // node:module pull) so importing it keeps this dependency-free module clean.
-import { userDayKey } from "@/lib/tz/format";
 import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
 import { startOfLocalDayInTz } from "@/lib/tz/local-day";
 
@@ -76,16 +75,6 @@ export interface PerSampleRow {
    * issuing a separate query. The cumulative drain leaves it unselected.
    */
   unit?: string;
-}
-
-/**
- * Resolve the user's calendar-day key (`YYYY-MM-DD`) for a given
- * timestamp + timezone. Delegates to the canonical `userDayKey` so the
- * server-side and iOS-side day-keys round-trip byte-identically against
- * every other day-bucketed surface.
- */
-export function dayKeyForUserTz(date: Date, tz: string): string {
-  return userDayKey(date, tz);
 }
 
 /**
@@ -157,7 +146,7 @@ export function hourOfDayForUserTz(date: Date, tz: string): number {
  * the local-noon convention of `canonicalDailyTimestamp` one grain down.
  * Anchoring mid-hour keeps the instant a full 30 minutes inside its hour,
  * so it round-trips back to the same (day, hour) through
- * `dayKeyForUserTz` + `hourOfDayForUserTz` for every zone.
+ * `userDayKey` + `hourOfDayForUserTz` for every zone.
  *
  * DST: the offset is read at the first-guess instant and re-read once at
  * the candidate — a transition between the two shifts the offset by at

@@ -208,12 +208,46 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
     field: "tokenEncrypted",
     kind: "string",
   },
+  // The WebDAV credentials of the Health Connect folder fetch.
+  {
+    model: "HealthConnectRemoteSource",
+    field: "credentialsEncrypted",
+    kind: "string",
+  },
 
   // ───── AppSettings — operator credentials ─────
   { model: "AppSettings", field: "adminAiKeyEncrypted", kind: "string" },
   {
     model: "AppSettings",
     field: "webPushVapidPrivateKeyEncrypted",
+    kind: "string",
+  },
+  // The push relay: this instance's Ed25519 key at the relay, and the
+  // envelope sender key with the collapse-id secret.
+  {
+    model: "PushRelayRegistration",
+    field: "instanceKeyEncrypted",
+    kind: "string",
+  },
+  {
+    model: "PushRelayRegistration",
+    field: "pendingInstanceKeyEncrypted",
+    kind: "string",
+  },
+  {
+    model: "PushRelayRegistration",
+    field: "previousInstanceKeyEncrypted",
+    kind: "string",
+  },
+  { model: "PushEnvelopeKeys", field: "senderKeyEncrypted", kind: "string" },
+  {
+    model: "PushEnvelopeKeys",
+    field: "nextSenderKeyEncrypted",
+    kind: "string",
+  },
+  {
+    model: "PushEnvelopeKeys",
+    field: "collapseSecretEncrypted",
     kind: "string",
   },
   // Operator-shared central Codex (ChatGPT subscription) OAuth credential — the
@@ -253,6 +287,8 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // ───── Cycle day-log sensitive payloads (String?) ─────
   { model: "CycleDayLog", field: "sensitiveEncrypted", kind: "string" },
   { model: "CycleDayLog", field: "notesEncrypted", kind: "string" },
+  // The pregnancy state and its days (`src/lib/cycle/pregnancy-store.ts`).
+  { model: "CycleProfile", field: "pregnancyEncrypted", kind: "string" },
 
   // ───── Coach (Bytes columns) ─────
   { model: "CoachMessage", field: "encryptedContent", kind: "bytes" },
@@ -658,6 +694,7 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "CoachPlan",
   "CoachReminder",
   "CycleDayLog",
+  "CycleProfile",
   "DawarichDay",
   "DocumentContentIndex",
   "DocumentSourceConnection",
@@ -669,6 +706,7 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "ExtractedFact",
   "FamilyHistoryEntry",
   "GoogleHealthConnection",
+  "HealthConnectRemoteSource",
   "IllnessDayLog",
   "IllnessEpisode",
   "InboundDocument",
@@ -685,6 +723,8 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "MentalHealthAssessment",
   "MoodContext",
   "MoodEntry",
+  "PushEnvelopeKeys",
+  "PushRelayRegistration",
   "NotificationChannel",
   "Practitioner",
   "SeizureEvent",

@@ -74,7 +74,7 @@ const { calls, rows, prismaMock } = vi.hoisted(() => {
 
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
 vi.mock("@/lib/cycle/export-data", () => ({
-  buildCycleExportSummary: vi.fn(async () => ({
+  buildCycleReportSummary: vi.fn(async () => ({
     lastPeriodStart: "2026-02-01",
     recentCycles: [
       { startDate: "2026-02-01", lengthDays: 28, periodLengthDays: 5 },

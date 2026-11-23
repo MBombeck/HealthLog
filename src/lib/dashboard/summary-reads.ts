@@ -125,8 +125,7 @@ export function readLatestEver(
  * `measurement_rollups` is keyed `(user_id, type, granularity,
  * bucket_start, source)`. Filtering on `user_id` and `granularity` alone
  * skips the second key column, so on a single-account host — where
- * `user_id` selects nearly the whole table — neither the primary key nor
- * `measurement_rollups_user_type_granularity_bucket_desc_idx` can drive
+ * `user_id` selects nearly the whole table — the primary key cannot drive
  * the read, and Postgres falls back to a sequential scan over every
  * granularity the account has ever rolled up.
  *

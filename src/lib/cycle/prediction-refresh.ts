@@ -18,6 +18,7 @@
 import { prisma } from "@/lib/db";
 import { predictCycle } from "@/lib/cycle";
 import {
+  forecastActive,
   toCycleInputs,
   toDayLogInputs,
   toProfileInput,
@@ -43,7 +44,10 @@ export type PredictionRefreshOutcome =
   | "no-profile"
   /** Prediction is off for this account (raw-chart mode / explicit opt-out),
    *  or the engine had nothing to forecast from. */
-  | "no-prediction";
+  | "no-prediction"
+  /** A pregnancy or postpartum state pauses the forecast; the cached
+   *  row was removed. */
+  | "paused";
 
 /**
  * Recompute and persist the forecast for one account. Throws if the write
@@ -67,6 +71,15 @@ export async function refreshPredictionCacheForUser(
 
   const tz = user?.timezone ?? DEFAULT_TIMEZONE;
   const today = moodDateKey(now, tz);
+
+  // A pregnancy or postpartum state pauses the forecast. The cached
+  // row is what the reminder cron scans, so a paused account must not keep
+  // one: drop it rather than leave last month's forecast answering for a
+  // period that is not coming.
+  if (!forecastActive(toProfileInput(profile), today)) {
+    await prisma.cyclePrediction.deleteMany({ where: { userId } });
+    return "paused";
+  }
 
   const [cycles, dayLogs, nightlyTemps] = await Promise.all([
     prisma.menstrualCycle.findMany({

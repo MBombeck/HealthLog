@@ -2,8 +2,9 @@
  * #1417 — Local's base URL is no longer cleared when another provider is
  * selected, so the guarantee that a cloud key never reaches that address now
  * rests on the resolvers alone: only the Local arm may read `aiLocalBaseUrl`.
- * This pins it on every path that builds a client — the provider in use, each
- * chain entry, and the connection test — for each provider holding a key of
+ * This pins it on every path that builds a client — the chain behind another
+ * picked provider, each chain entry, and the connection test — for each
+ * provider holding a key of
  * its own, with a Local address parked on the row the whole time.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -21,11 +22,7 @@ vi.mock("@/lib/crypto", () => ({
 
 import { prisma } from "@/lib/db";
 import type { AIProvider } from "../types";
-import {
-  resolveProvider,
-  resolveProviderChain,
-  resolveProviderForTest,
-} from "../provider";
+import { resolveProviderChain, resolveProviderForTest } from "../provider";
 
 /** A user row with just the columns the resolver reads. */
 type UserRow = NonNullable<Awaited<ReturnType<typeof prisma.user.findUnique>>>;
@@ -84,15 +81,16 @@ const CLOUD = [
 
 describe("a cloud key never reaches Local's address", () => {
   it.each(CLOUD)(
-    "the provider in use, with %s selected",
+    "the chain with %s selected, Local listed behind it",
     async (selected, chainType) => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue(
-        row(selected, [chainType]),
+        row(selected, [chainType, "local"]),
       );
-      const provider = await resolveProvider("user-1");
-      expect(provider.type).not.toBe("local");
-      expect(provider.type).not.toBe("none");
-      expect(wiring(provider)).not.toContain(LAN_HOST);
+      const chain = await resolveProviderChain("user-1", null);
+      // The kept Local address stays out of the main chain while another
+      // provider is picked, and the picked one never reads it.
+      expect(chain.map((entry) => entry.providerType)).toEqual([chainType]);
+      expect(wiring(chain[0].instance)).not.toContain(LAN_HOST);
     },
   );
 

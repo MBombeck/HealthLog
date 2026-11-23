@@ -9,7 +9,8 @@ import { renderToStaticMarkup } from "react-dom/server";
  * exported so the contract can be locked in unit tests.
  */
 
-import { aggregateMoodEntries, pickMoodBucket, MoodChart } from "../mood-chart";
+import { MoodChart } from "../mood-chart";
+import { aggregateMoodEntries, pickMoodBucket } from "../mood-chart/aggregate";
 
 function dayEntries(
   start: string,
@@ -49,6 +50,16 @@ describe("pickMoodBucket()", () => {
     expect(pickMoodBucket(dayEntries("2020-01-01", 1500))).toBe("month");
   });
 
+  // The range tab names the grain: 90 days is weekly whatever the span,
+  // 7 and 30 days stay daily, All (the default) goes by the span.
+  it("takes the 90-day tab's weekly grain regardless of span", () => {
+    expect(pickMoodBucket(dayEntries("2026-01-01", 10), 90)).toBe("week");
+    expect(pickMoodBucket(dayEntries("2026-01-01", 91), 90)).toBe("week");
+    expect(pickMoodBucket(dayEntries("2026-01-01", 30), 30)).toBe("day");
+    expect(pickMoodBucket(dayEntries("2026-01-01", 7), 7)).toBe("day");
+    expect(pickMoodBucket(dayEntries("2026-01-01", 92), 0)).toBe("week");
+  });
+
   it("returns 'day' for empty / single-point series", () => {
     expect(pickMoodBucket([])).toBe("day");
     expect(pickMoodBucket([{ date: "2026-05-01", score: 4 }])).toBe("day");
@@ -73,7 +84,7 @@ describe("aggregateMoodEntries()", () => {
   });
 
   it("aggregates to weekly mean for windows in the 91-730d range", () => {
-    // 100-day span — pickBucket → "week".
+    // 100-day span — All goes weekly.
     const entries = dayEntries("2026-01-01", 100, 4);
     const out = aggregateMoodEntries(entries, BERLIN);
     expect(out.bucket).toBe("week");
@@ -98,6 +109,34 @@ describe("aggregateMoodEntries()", () => {
     for (const point of out.points) {
       expect(point.score).toBeCloseTo(5, 2);
     }
+  });
+
+  it("folds a 90-day window into weeks with their days and entries", () => {
+    // Thursday 20 August to Wednesday 18 November 2026, two entries a day.
+    const entries = dayEntries("2026-08-20", 91, 3).map((entry) => ({
+      ...entry,
+      samples: 2,
+    }));
+    const out = aggregateMoodEntries(entries, BERLIN, {
+      range: 90,
+      period: {
+        firstDay: Date.UTC(2026, 7, 20),
+        lastDay: Date.UTC(2026, 10, 18),
+      },
+    });
+    expect(out.bucket).toBe("week");
+    expect(out.points).toHaveLength(14);
+    const first = out.points[0];
+    const last = out.points[out.points.length - 1];
+    // The week the window opens in starts on its first day, Thursday.
+    expect(first.periodStart).toBe(Date.UTC(2026, 7, 20));
+    expect(first.periodEnd).toBe(Date.UTC(2026, 7, 23));
+    expect(first.readings).toBe(8);
+    // The week still running ends today.
+    expect(last.periodStart).toBe(Date.UTC(2026, 10, 16));
+    expect(last.periodEnd).toBe(Date.UTC(2026, 10, 18));
+    expect(last.readings).toBe(6);
+    expect(out.points[1].readings).toBe(14);
   });
 
   it("emits empty points array for empty input", () => {

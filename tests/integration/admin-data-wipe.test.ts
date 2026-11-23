@@ -268,10 +268,10 @@ describe("DELETE /api/admin/data leaves nothing it promised to delete", () => {
           (Array.isArray(value) && value.length === 0) ||
           value === "aggregated" ||
           value === "disconnected" ||
-          // A column whose reset is a non-empty default (v1.42: the
-          // air-quality switch resets to on) is cleared when it holds
-          // exactly that default.
-          (typeof value === "boolean" &&
+          // A column whose reset is a non-empty default (the air-quality
+          // switch resets to on, a managed profile's AI source to the server
+          // key) is cleared when it holds exactly that default.
+          ((typeof value === "boolean" || typeof value === "string") &&
             (USER_RESET as Record<string, unknown>)[column] === value);
         if (!cleared) stillSet.push(`${column} = ${JSON.stringify(value)}`);
       }

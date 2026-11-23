@@ -42,12 +42,14 @@ import * as centralCodex from "@/app/api/auth/me/use-central-codex/route";
 import * as disableCoach from "@/app/api/auth/me/disable-coach/route";
 import * as unitPreference from "@/app/api/auth/me/unit-preference/route";
 import * as glucoseUnit from "@/app/api/auth/me/glucose-unit/route";
+import * as medicineRegistry from "@/app/api/auth/me/medicine-registry/route";
 import * as injectionSites from "@/app/api/auth/me/injection-site-prefs/route";
 import * as modules from "@/app/api/auth/me/modules/route";
 import * as healthScore from "@/app/api/auth/me/health-score-config/route";
 import * as sourcePriority from "@/app/api/auth/me/source-priority/route";
 import * as notificationPrefs from "@/app/api/auth/me/notification-prefs/route";
 import * as reportSelection from "@/app/api/auth/me/report-selection/route";
+import * as reportSchedule from "@/app/api/settings/report-schedule/route";
 import * as coachPrefs from "@/app/api/auth/me/coach-prefs/route";
 import { PUT as putAiUsage } from "@/app/api/auth/me/ai-usage/route";
 import { POST as dismissPasskeyNudge } from "@/app/api/auth/me/passkey-nudge/dismiss/route";
@@ -430,6 +432,19 @@ function entries(user: Pick<User, "id">): Entry[] {
       me: { pick: (me) => at(me, "glucoseUnit"), expected: "mmol/L" },
     },
     {
+      // #1430 — published on /me, which is also its read.
+      columns: ["medicineRegistry"],
+      write: {
+        handler: medicineRegistry.PATCH,
+        method: "PATCH",
+        route: "/api/auth/me/medicine-registry",
+        body: { medicineRegistry: "BE" },
+      },
+      read: get(getMe, "/api/auth/me", "medicineRegistry"),
+      expected: "BE",
+      me: { pick: (me) => at(me, "medicineRegistry"), expected: "BE" },
+    },
+    {
       columns: ["globalExcludedInjectionSites"],
       write: {
         handler: injectionSites.PATCH,
@@ -580,6 +595,21 @@ function entries(user: Pick<User, "id">): Entry[] {
       me: { pick: (me) => at(me, "reportSelection.leaves") },
     },
     {
+      columns: ["reportScheduleJson"],
+      write: {
+        handler: reportSchedule.PUT,
+        method: "PUT",
+        route: "/api/settings/report-schedule",
+        body: { cadence: "QUARTERLY", window: "LAST_365_DAYS" },
+      },
+      read: get(
+        reportSchedule.GET,
+        "/api/settings/report-schedule",
+        "schedule.cadence",
+      ),
+      expected: "QUARTERLY",
+    },
+    {
       columns: ["coachPrefsJson", "insightsExcludeMetrics"],
       write: {
         handler: coachPrefs.PUT,
@@ -657,6 +687,21 @@ function entries(user: Pick<User, "id">): Entry[] {
         }),
       },
       me: { pick: (me) => at(me, "avatarUrl") },
+    },
+    {
+      columns: ["aiCoachBudgets"],
+      write: {
+        handler: aiProvider.PATCH,
+        method: "PATCH",
+        route: "/api/user/ai-provider",
+        body: { localCoachBudget: { snapshotChars: 6000 } },
+      },
+      read: get(
+        aiProvider.GET,
+        "/api/user/ai-provider",
+        "localCoachBudget.snapshotChars",
+      ),
+      expected: 6000,
     },
     // #1417 — Local's model is its own: saved from the Local card first, it
     // survives the OpenAI card being saved after it.

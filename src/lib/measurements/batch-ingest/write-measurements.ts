@@ -48,6 +48,7 @@ import {
   type EntryResult,
   type PreparedEntry,
 } from "./entries";
+import { DELETED_IN_HEALTHLOG_ENTRY } from "@/lib/sync/tombstone-repost";
 
 /**
  * Rows per set-based insert statement. 500 entries fit two statements; each
@@ -59,7 +60,24 @@ type Verdict = Pick<MeasurementReconciliationVerdict, "status"> &
   Partial<{
     dirtyIdentities: Array<{ type: MeasurementType; measuredAt: Date }>;
     error: { code?: string };
+    tombstoned: boolean;
+    stale: boolean;
   }>;
+
+/**
+ * The `reason` of a `stats:` write refused because the stored total was
+ * computed later than the entry's (`computedAt`).
+ */
+export const STALE_STATS_REASON = "stale" as const;
+
+/**
+ * The answer to that write: `skipped`, final like every skip, so an older
+ * replay is dropped from the outbox and the newer total stays.
+ */
+const STALE_STATS_ENTRY = {
+  status: "skipped",
+  reason: STALE_STATS_REASON,
+} as const;
 
 /** What the reads before the write loop found for this batch. */
 interface StoredState {
@@ -91,7 +109,11 @@ function desiredFor(userId: string, p: PreparedEntry) {
     rhythmClassification: p.row
       .rhythmClassification as Prisma.MeasurementUncheckedCreateInput["rhythmClassification"],
     deviceType: p.row.deviceType as string | null,
+    timeZone: p.row.timeZone as string | null,
     aggregationProvenance: statsRow ? ("HEALTHKIT_STATISTICS" as const) : null,
+    ...(statsRow
+      ? { statsComputedAt: (p.row.statsComputedAt as Date | null) ?? null }
+      : {}),
     // Only a bridge row names its token (#1272); a phone row leaves the
     // column as it is.
     ...(p.row.ingestTokenId
@@ -321,6 +343,14 @@ export class MeasurementBatchWriter {
       return;
     }
 
+    // A newer total stays: the stored row was computed after this entry
+    // (an out-of-order replay). Decided again under the reconciler's lock,
+    // which answers the same for a total that lands in between.
+    if (statsRow && this.isStaleStatsRow(p)) {
+      this.results[p.index] = { index: p.index, ...STALE_STATS_ENTRY };
+      return;
+    }
+
     if (statsRow && this.isUnchangedStatsRow(p)) {
       this.results[p.index] = { index: p.index, status: "updated" };
       this.unchangedStatsCount++;
@@ -347,14 +377,17 @@ export class MeasurementBatchWriter {
     const folded =
       !prefiltered && !statsRow && this.stored.foldedPrepared.has(p);
     if (prefiltered || folded) {
+      const deleted = !folded && this.isStoredTombstone(p);
       this.results[p.index] = folded
         ? {
             index: p.index,
             status: "duplicate",
             reason: FOLDED_WINDOW_REASON,
           }
-        : { index: p.index, status: "duplicate" };
-      this.duplicateCount++;
+        : deleted
+          ? { index: p.index, ...DELETED_IN_HEALTHLOG_ENTRY }
+          : { index: p.index, status: "duplicate" };
+      if (!deleted) this.duplicateCount++;
       if (folded) this.foldedWindowCount++;
       this.pushMergeCandidate(p);
       return;
@@ -388,18 +421,40 @@ export class MeasurementBatchWriter {
   }
 
   private isExactStoredDuplicate(p: PreparedEntry): boolean {
+    const stored = this.stored.existingByExternalKey.get(
+      externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+    );
     return (
-      sampleIsStoredDuplicate(
-        this.stored.existingByExternalKey.get(
-          externalKeyOf(p.row.type, p.row.source, p.row.externalId),
-        ),
-        p.row,
-      ) &&
+      sampleIsStoredDuplicate(stored, p.row) &&
+      // A sample the phone reported deleted in Apple Health and now posts
+      // again is written again, by the reconciler (`tombstone-repost.ts`).
+      !(stored?.deleted === true && !stored.refused) &&
       this.stored.onceInThisBatch(p.row) &&
       classifyRangeRejection(
         p.row.type as MeasurementType,
         p.row.value as number,
       ) === null
+    );
+  }
+
+  /** The prefiltered duplicate's stored row was deleted in HealthLog. */
+  private isStoredTombstone(p: PreparedEntry): boolean {
+    return (
+      this.stored.existingByExternalKey.get(
+        externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+      )?.refused === true
+    );
+  }
+
+  private isStaleStatsRow(p: PreparedEntry): boolean {
+    const incoming = p.row.statsComputedAt;
+    const stored = this.stored.storedStats.get(
+      externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+    )?.statsComputedAt;
+    return (
+      incoming instanceof Date &&
+      stored instanceof Date &&
+      stored.getTime() > incoming.getTime()
     );
   }
 
@@ -462,8 +517,19 @@ export class MeasurementBatchWriter {
         );
         break;
       case "duplicate":
-        this.results[p.index] = { index: p.index, status: "duplicate" };
-        this.duplicateCount++;
+        // The reconciler's `duplicate` covers two refusals the wire answers
+        // `skipped`: a sample deleted in HealthLog and an older total.
+        if (verdict.tombstoned) {
+          this.results[p.index] = {
+            index: p.index,
+            ...DELETED_IN_HEALTHLOG_ENTRY,
+          };
+        } else if (verdict.stale) {
+          this.results[p.index] = { index: p.index, ...STALE_STATS_ENTRY };
+        } else {
+          this.results[p.index] = { index: p.index, status: "duplicate" };
+          this.duplicateCount++;
+        }
         break;
       case "failed":
         this.results[p.index] = {

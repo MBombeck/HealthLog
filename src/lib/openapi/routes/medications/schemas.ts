@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { leafletSearchResource, leafletUrlResourceField } from "./leaflet";
 import { relatedList } from "../relation-links";
 import { medicationIngredient } from "./ingredients";
 import { z } from "zod/v4";
@@ -15,10 +16,13 @@ import {
   MEDICATION_TREATMENT_CLASS_VALUES,
   doseWindowEntrySchema,
   injectionSiteEnum,
+  medicationCategoryOrderSchema,
 } from "@/lib/validations/medication";
 import { medicationExtractionSchema } from "@/lib/ai/coach/medication-extract-prompt";
 import {
   MEDICATION_LIST_VIEWS,
+  MEDICATION_GROUP_BYS,
+  MEDICATION_GROUPS_OPEN,
   MEDICATION_ORDER_ID_MAX_LENGTH,
   MEDICATION_ORDER_MAX_ENTRIES,
 } from "@/lib/medication-list-layout";
@@ -322,7 +326,7 @@ export const medicationResource = z
     liveActivityEnabled: z
       .boolean()
       .describe(
-        "v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+        "v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client plans its own Activities by it; a server start over the push relay requires it, and a server-started Activity ends once it is off.",
       ),
     criticalAlarmEnabled: z
       .boolean()
@@ -347,6 +351,7 @@ export const medicationResource = z
       .describe(
         '#1371 — the person\'s own note on the medication, for directions such as "30 to 60 minutes before food". Free text, at most 500 characters, decrypted on the way out (encrypted at rest). NULL = no note. Show it with the medication and wherever a dose is logged. Set or cleared through `note` on the create and update bodies.',
       ),
+    leafletUrl: leafletUrlResourceField,
     pausedAt: isoDateTime().nullable(),
     snoozedUntil: isoDateTime().nullable(),
     remindersActive: z
@@ -509,6 +514,7 @@ export const medicationListEntry = medicationResource
       .describe(
         "v1.43 — whether a composition per unit is stored (`GET /api/medications/{id}` carries it as `ingredients`). Absent on older servers.",
       ),
+    leafletSearch: leafletSearchResource,
   })
   .meta({
     id: "MedicationListEntry",
@@ -569,6 +575,7 @@ export const medicationDetailEntry = medicationResource
         "v1.43 — the composition per unit, empty when none is stored. Absent on older servers.",
       ),
     related: relatedList,
+    leafletSearch: leafletSearchResource,
   })
   .meta({
     id: "MedicationDetail",
@@ -700,6 +707,20 @@ export const medicationIntakeEventResource = z
         "How the row bound to its schedule slot: AUTO = the write path's nearest-slot resolution; USER_PIN = the user explicitly pinned the slot (the dedup converge keeps the pinned row).",
       ),
     source: z.enum(["WEB", "API", "REMINDER", "IMPORT", "APPLE_HEALTH"]),
+    takenVia: z
+      .enum([
+        "WEB",
+        "APP",
+        "INTEGRATION",
+        "TELEGRAM",
+        "APPLE_HEALTH",
+        "IMPORT",
+        "AUTO",
+      ])
+      .nullable()
+      .describe(
+        "Where the take on this row came from, whatever wrote the row (`source` keeps the writer that created it, `REMINDER` for a projected slot). Null until a take reaches the row, and on takes recorded before migration 0515.",
+      ),
     idempotencyKey: z.string().nullable(),
     createdAt: isoDateTime(),
     updatedAt: isoDateTime(),
@@ -746,6 +767,12 @@ export const medicationIntakeEventResource = z
       .nullable()
       .describe(
         "Soft-delete tombstone. Non-null rows are excluded from every list/aggregate read; sync readers use it to propagate deletions.",
+      ),
+    appleHealthDeletedAt: isoDateTime()
+      .nullable()
+      .optional()
+      .describe(
+        "Since v1.49.0: who deleted a tombstone. Equal to `deletedAt` when the phone reported the dose deleted through `DELETE /api/medications/intake/by-external-ids`; null, or different, when it was deleted in HealthLog. A re-post of a dose deleted in HealthLog is refused (`skipped`, reason `deleted_in_healthlog`), one the phone reported is written again. Null on every live row; do not show it.",
       ),
   })
   .meta({
@@ -998,7 +1025,30 @@ export const complianceDisplay = z
         targetAt: isoDateTime()
           .nullable()
           .describe(
-            "Target instant of the open dose. Null when no dose is open.",
+            "Target instant of the open dose: the earliest slot still due or overdue, before any upcoming one, so a dose whose clock time has passed stays the current dose until it is recorded or missed. Null when no dose is open.",
+          ),
+        state: z
+          .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])
+          .nullable()
+          .describe(
+            "The open dose's resolved state, the same vocabulary as the today list's `state`. Null when no dose is open. `status` above is the same state in the older vocabulary.",
+          ),
+        takenLate: z
+          .boolean()
+          .describe("With `state: taken`: taken after the on-time window."),
+        dueAt: isoDateTime()
+          .nullable()
+          .describe("When the open dose's window opens."),
+        overdueSince: isoDateTime()
+          .nullable()
+          .describe("End of its on-time window; past it the dose is overdue."),
+        missedAfter: isoDateTime()
+          .nullable()
+          .describe("Its miss cutoff; past it an unanswered dose is missed."),
+        lateTakeCounts: z
+          .boolean()
+          .describe(
+            "A take recorded for this dose now still counts for it (late after `overdueSince`).",
           ),
       })
       .describe(
@@ -1211,6 +1261,17 @@ const doseHistoryRow = z
       "upcoming",
       "ad_hoc",
     ]),
+    state: z
+      .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])
+      .nullable()
+      .describe(
+        "The slot's resolved dose state, the same vocabulary as the today rows and `complianceDisplay.currentDose`: an open slot (`status: upcoming`) reads `upcoming`, `due` or `overdue`. Null on an ad-hoc row.",
+      ),
+    takenLate: z
+      .boolean()
+      .describe(
+        "True when the take came after the on-time window; `state` is then `taken`.",
+      ),
     pinned: z
       .boolean()
       .optional()
@@ -1275,6 +1336,100 @@ export const doseHistoryResponse = z
       "Per-slot dose ledger over [from, to]: every expected slot with a status plus every off-schedule intake tagged ad-hoc. Built from the same band minter + `reconstructDoseHistory` the compliance % consumes, so the history view and the rate never contradict each other.",
   });
 
+// `GET /api/medications/resolved-slots` (v1.49.0, iOS #191): every scheduled
+// dose of the record's active medications over a window of at most 14 days,
+// from the same ledger and resolver as the dose history and the today list.
+export const resolvedSlotsQuery = z.object({
+  from: isoDateTime()
+    .optional()
+    .describe(
+      "Window start (inclusive). Defaults to two days before now, or to ten days before `to` when only `to` is given.",
+    ),
+  to: isoDateTime()
+    .optional()
+    .describe(
+      "Window end (inclusive). Defaults to eight days after now, or to ten days after `from` when only `from` is given. Must be ≥ `from` and at most 14 days after it, else 422.",
+    ),
+});
+
+const resolvedSlot = z
+  .object({
+    slotInstant: isoDateTime().describe(
+      "The slot's scheduled time: the same instant as `at` in the dose history and `slotInstant` on the today rows, and what a take of this dose answers as `slotInstant`.",
+    ),
+    state: z
+      .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])
+      .describe(
+        "The resolved dose state, the vocabulary of the today rows and the dose history's `state`: `upcoming` before `dueAt`, `due` from `dueAt`, `overdue` past `overdueSince`, `missed` past `missedAfter` with nothing recorded (or closed by the auto-miss pass), `taken` (see `takenLate`), `skipped`.",
+      ),
+    takenLate: z
+      .boolean()
+      .describe("With `state: taken`: taken after the on-time window."),
+    dueAt: isoDateTime().describe("When the dose window opens."),
+    overdueSince: isoDateTime().describe(
+      "The end of the on-time window; past it an open dose is `overdue`. Always present here, unlike the today rows.",
+    ),
+    missedAfter: isoDateTime().describe(
+      "The miss cutoff; past it an unanswered dose is `missed`.",
+    ),
+    lateTakeCounts: z
+      .boolean()
+      .describe(
+        "A take recorded for this dose now still counts for it: true while `due`, `overdue` and `missed`.",
+      ),
+    takenAt: isoDateTime()
+      .nullable()
+      .describe("When the dose was taken; null unless `state` is `taken`."),
+    takenVia: z
+      .enum([
+        "WEB",
+        "APP",
+        "INTEGRATION",
+        "TELEGRAM",
+        "APPLE_HEALTH",
+        "IMPORT",
+        "AUTO",
+      ])
+      .nullable()
+      .describe(
+        "How the take was recorded (as on the today rows); null while not taken and for takes recorded before the field existed.",
+      ),
+    intakeId: z
+      .string()
+      .nullable()
+      .describe(
+        "The intake row on the slot, when one exists (a projected pending row included); null for a slot no row holds yet.",
+      ),
+    pinned: z
+      .boolean()
+      .describe("True when a deliberate user pin serves the slot."),
+  })
+  .meta({ id: "ResolvedMedicationSlot" });
+
+export const resolvedSlotsResponse = z
+  .object({
+    from: isoDateTime().describe("The window start the slots were read over."),
+    to: isoDateTime().describe("The window end the slots were read over."),
+    medications: z.array(
+      z.object({
+        medicationId: z.string(),
+        family: z
+          .enum(["daily", "weekly", "one_shot", "none"])
+          .describe("Cadence family the window's slots were minted under."),
+        slots: z
+          .array(resolvedSlot)
+          .describe(
+            "Every scheduled dose of the medication with its slot time in the window, oldest first. Off-schedule takes are not slots and are not listed; the dose history has them.",
+          ),
+      }),
+    ),
+  })
+  .meta({
+    id: "ResolvedMedicationSlotsResponse",
+    description:
+      "Every active medication of the record that can be due (active, not as-needed, intake tracked), each with its resolved slots over the window.",
+  });
+
 // Zod 4's `.meta()` returns a NEW instance carrying the id rather than
 // annotating in place, so the annotated clone is exported and the path table
 // references it — a bare call would register nothing.
@@ -1303,11 +1458,26 @@ export const medicationListLayoutSchema = z
       .describe(
         "User-defined manual medication order (medication ids, first = top), shared by both views. Display-only — unknown / deleted ids are ignored at render time, never 422. Optional on PUT (preserve-when-absent); always present on responses.",
       ),
+    groupBy: z
+      .enum(MEDICATION_GROUP_BYS)
+      .optional()
+      .describe('Grouping mode ("none" or "category"). Default "none".'),
+    groupsOpen: z
+      .enum(MEDICATION_GROUPS_OPEN)
+      .optional()
+      .describe(
+        'Which groups open by default ("expanded", "flagged", "collapsed"). Default "expanded".',
+      ),
+    categoryOrder: medicationCategoryOrderSchema
+      .optional()
+      .describe(
+        "The category order of the grouped list, first = top: built-in category values and `custom:<uuid>` keys, at most 64. A malformed key is a 422; a well-formed custom key the account does not have is dropped on write. Categories not listed follow in the default order, OTHER last. Optional on PUT (preserve-when-absent); always present on responses.",
+      ),
   })
   .meta({
     id: "MedicationListLayout",
     description:
-      "Per-user /medications presentation: the card/table view choice plus the manual medication order shared by both views. Mirrors the dashboard-widgets / insights-layout contract.",
+      "Per-user /medications presentation: the card/table view choice plus the manual medication order, category grouping and ordering. Mirrors the dashboard-widgets / insights-layout contract.",
   });
 
 // v1.32.21 — the PUT body additionally carries the optional
@@ -1326,7 +1496,7 @@ export const medicationListLayoutResult = medicationListLayoutSchema
     updatedAt: isoDateTime()
       .optional()
       .describe(
-        "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
+        "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
       ),
   })
   .meta({
@@ -1606,6 +1776,35 @@ export const medicationDoseHistoryImportFatalReasonEnum = z
 // to. Never registered until now: `openapi:check` compares the registry
 // against the YAML and never the route tree against the registry.
 
+/**
+ * The 200 of a dose POST: a replay, or a take of a slot that already holds a
+ * take recorded within two hours of it (`alreadyTaken: true`).
+ */
+export const repeatedIntakeEventResource = medicationIntakeEventResource
+  .extend({
+    alreadyTaken: z
+      .boolean()
+      .describe(
+        "True when this POST reported a dose already recorded, or skipped one: the slot it binds to already holds a take. Nothing was written and no stock was consumed; the body is the recorded row, so `takenAt` and `takenVia` say when and how. False on a fresh dose (201) and on an idempotency replay (200).",
+      ),
+  })
+  .meta({ id: "RepeatedMedicationIntakeEvent" });
+
+/**
+ * The answer of `POST /api/medications/{id}/intake`: the row, and the slot it
+ * is on, so the device that recorded the dose lines its own slot up without
+ * reading the history again.
+ */
+export const recordedIntakeEventResource = repeatedIntakeEventResource
+  .extend({
+    slotInstant: isoDateTime()
+      .nullable()
+      .describe(
+        "Since v1.49.0. The canonical slot the dose is on: the slot the take or skip bound to (by its window, the nearest open slot, a named `scheduledFor` or a `forceSlotInstant` pin), equal to `scheduledFor` then. Null for a dose on no slot (an ad-hoc take or an extra dose, stored on its own instant). On `alreadyTaken` the slot of the recorded take. The device that recorded the dose gets no silent `MEDICATION_INTAKE_SYNC` for it: this field is its answer, and the sync goes to the account's other devices only.",
+      ),
+  })
+  .meta({ id: "RecordedMedicationIntakeEvent" });
+
 export const todayIntakeEntry = z
   .object({
     id: z.string().describe("Intake-event id."),
@@ -1614,15 +1813,74 @@ export const todayIntakeEntry = z
       "The slot the dose belongs to — the event's `scheduledFor`, renamed on this wire only.",
     ),
     takenAt: isoDateTime().nullable(),
+    syncVersion: z
+      .number()
+      .int()
+      .describe(
+        "The row's current version. Send it as `expectedSyncVersion` on `DELETE /api/medications/{id}/intake/{eventId}` to undo this dose only if nothing changed it since; a changed row answers 409 `medications.intake.changedSinceSeen`.",
+      ),
+    source: z
+      .enum(["WEB", "API", "REMINDER", "IMPORT", "APPLE_HEALTH"])
+      .describe(
+        "Which writer created the row. A take that converges onto a projected or reminder slot keeps `REMINDER` here; read `takenVia` for where the take came from. Values: `WEB` the web app, `API` a Bearer client (the iOS app, the ingest hook a pill box or home automation posts to), `REMINDER` a Telegram reminder button (or the server's own projection while the slot is still open), `IMPORT` a file import, `APPLE_HEALTH` the Apple Health medication sync. Read it with `takenAt` to warn before a second take of the same slot.",
+      ),
+    takenVia: z
+      .enum([
+        "WEB",
+        "APP",
+        "INTEGRATION",
+        "TELEGRAM",
+        "APPLE_HEALTH",
+        "IMPORT",
+        "AUTO",
+      ])
+      .nullable()
+      .describe(
+        'How the take on this slot was recorded, whatever wrote the row: `WEB` the web app, `APP` a Bearer client such as the iOS app, `INTEGRATION` the ingest hook (a pill box, home automation), `TELEGRAM` a Telegram button, `APPLE_HEALTH` the Apple Health medication sync, `IMPORT` a file import, `AUTO` the server\'s auto-take. Null while the slot is not taken, and on takes recorded before this field existed. Show it with `takenAt` before offering a second take: "already taken at 07:12 via an integration".',
+      ),
     status: z
       .enum(["skipped", "taken", "missed", "pending", "snoozed"])
       .describe(
-        "Resolved in that precedence order. `missed` is TERMINAL — the nightly cron closed a never-acted slot — and is not a `pending` that can still be answered. `snoozed` is not a property of this event at all: it reflects the MEDICATION's deferral stamp still lying in the future, so every pending dose of that medication reads snoozed at once.",
+        "Resolved in that precedence order. `missed` is TERMINAL — the nightly cron closed a never-acted slot — and is not a `pending` that can still be answered. `snoozed` means the medication's running deferral holds THIS slot: the slot whose reminder window was open when the snooze was set, or, set while none was open, the next slot to open. It is the same rule the reminder worker applies, so another slot of the same medication stays `pending` and is still reminded.",
       ),
     snoozedUntil: isoDateTime()
       .nullable()
       .describe(
-        "The medication's deferral stamp, repeated on each of its events. Null when the medication is not deferred.",
+        "When the snooze holding this slot ends. Null when no running snooze holds this slot, including other slots of a snoozed medication.",
+      ),
+    state: z
+      .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])
+      .nullable()
+      .describe(
+        "The resolved state of this dose, computed once on the server from the same bands the dose history, the adherence rate and the reminders use (the medication's stored dose windows included). `upcoming` before `dueAt`; `due` from `dueAt`; `overdue` past the on-time window (see `overdueSince`) until `missedAfter`; `missed` after that with nothing recorded (or closed by the auto-miss pass); `taken` (see `takenLate`); `skipped`. Render from this instead of fixed thresholds. Null only for a row on no slot that records nothing. Distinct from the older `status` field above.",
+      ),
+    takenLate: z
+      .boolean()
+      .describe(
+        "With `state: taken`: taken after the on-time window (it still counts, late). False otherwise.",
+      ),
+    slotInstant: isoDateTime()
+      .nullable()
+      .describe(
+        "The slot's scheduled time. Null for a take on no slot (ad hoc).",
+      ),
+    dueAt: isoDateTime()
+      .nullable()
+      .describe("When the dose window opens; the dose is `due` from here."),
+    overdueSince: isoDateTime()
+      .nullable()
+      .describe(
+        "Since when the dose is overdue (the end of its on-time window). Null unless `state` is `overdue`.",
+      ),
+    missedAfter: isoDateTime()
+      .nullable()
+      .describe(
+        "The miss cutoff; past it an unanswered dose is `missed`. Schedule a client-side state change at `dueAt`, `overdueSince` and `missedAfter` instead of polling.",
+      ),
+    lateTakeCounts: z
+      .boolean()
+      .describe(
+        "A take recorded for this dose now still counts for it (as `taken_late` after the on-time window): true while `due`, `overdue` and `missed`. A client that shows `missed` with a take action says that a late take still counts.",
       ),
   })
   .meta({

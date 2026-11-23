@@ -1,0 +1,30 @@
+{
+  "_doc": "Golden fixture for the medication Live Activity `content-state` (#188 (2)). Shared contract between the iOS app (MedicationActivityAttributes.ContentState) and the server's liveactivity push payload. Dates are seconds since 2001-01-01 (ActivityKit's default JSON date strategy). Every case must decode; `expect` is the decoded result.",
+  "cases": [
+    {
+      "name": "full",
+      "contentState": {"status": "pending", "countdownTarget": 805000000, "confirmed": false, "pendingConfirm": false, "isOverdue": true, "timeFormatRaw": "H24"},
+      "expect": {"status": "pending", "countdownTarget": 805000000, "confirmed": false, "pendingConfirm": false, "isOverdue": true, "timeFormatRaw": "H24"}
+    },
+    {
+      "name": "end-empty",
+      "contentState": {},
+      "expect": {"status": "pending", "confirmed": false, "pendingConfirm": false, "isOverdue": false, "timeFormatRaw": "AUTO"}
+    },
+    {
+      "name": "end-taken",
+      "contentState": {"status": "taken", "countdownTarget": 805000000},
+      "expect": {"status": "taken", "countdownTarget": 805000000, "confirmed": false, "pendingConfirm": false, "isOverdue": false, "timeFormatRaw": "AUTO"}
+    },
+    {
+      "name": "legacy-1.0-running-activity",
+      "contentState": {"status": "pending", "countdownTarget": 805000000, "confirmed": false, "pendingConfirm": true, "pendingConfirmStartedAt": 804999990},
+      "expect": {"status": "pending", "countdownTarget": 805000000, "confirmed": false, "pendingConfirm": true, "pendingConfirmStartedAt": 804999990, "isOverdue": false, "timeFormatRaw": "AUTO"}
+    },
+    {
+      "name": "unknown-status",
+      "contentState": {"status": "missed", "countdownTarget": 805000000},
+      "expect": {"status": "pending", "countdownTarget": 805000000, "confirmed": false, "pendingConfirm": false, "isOverdue": false, "timeFormatRaw": "AUTO"}
+    }
+  ]
+}

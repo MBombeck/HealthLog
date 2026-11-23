@@ -47,7 +47,7 @@ export const STAGING_MAX_AGE_MS = ACTIVE_IMPORT_MAX_AGE_MS;
  * Apple Health XML and the extracted Health Connect database.
  */
 const STAGING_NAME =
-  /^healthlog-(?:apple-health-import|admin-apple-health-import|health-connect-import|fit-import|upload)-[0-9a-f-]{36}\.bin$|^healthlog-import-[0-9a-f]{24}\.xml$|^healthlog-hc-import-[0-9a-f]{24}\.db$/;
+  /^healthlog-(?:apple-health-import|admin-apple-health-import|health-connect-import|fit-import|gadgetbridge-import|fhir-bundle-import|upload)-[0-9a-f-]{36}\.bin$|^healthlog-import-[0-9a-f]{24}\.xml$|^healthlog-hc-import-[0-9a-f]{24}\.db$/;
 
 /** An extracted file (as opposed to an upload) a running import reads. */
 const EXTRACTED_NAME = /\.(?:xml|db)$/;

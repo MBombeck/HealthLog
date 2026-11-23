@@ -19,6 +19,7 @@ import {
   parseOnboardingSteps,
   resolveOnboardingSteps,
   type HeldUnitPreferences,
+  type OnboardingOffers,
   type OnboardingStateDto,
 } from "./needs";
 import type { OnboardingRecordState } from "./needs-apply";
@@ -53,7 +54,7 @@ export function readOnboardingRecordState(
   }
   return {
     needs: parseOnboardingNeeds(row.needsJson),
-    steps: parseOnboardingSteps(row.stepsJson),
+    steps: parseOnboardingSteps(row.stepsJson, row.completedAt),
     firstResult: parseOnboardingFirstResult(row.firstResultJson),
   };
 }
@@ -69,13 +70,19 @@ export function readOnboardingRecordState(
 export function toOnboardingStateDto(
   row: OnboardingRecordRow | null,
   held: HeldUnitPreferences,
+  offers: OnboardingOffers,
 ): OnboardingStateDto {
   const state = readOnboardingRecordState(row);
   return {
-    steps: resolveOnboardingSteps(state.steps, held),
+    steps: resolveOnboardingSteps(state.steps, {
+      held,
+      needs: state.needs,
+      offers,
+    }),
     needs: state.needs,
     completedAt: row?.completedAt?.toISOString() ?? null,
     firstResult: state.firstResult,
+    offers,
   };
 }
 

@@ -18,7 +18,8 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
+import { recordedEventOf } from "@/lib/notifications/medication-intake-recorded";
 import { notifyDelegatedIntake } from "@/lib/notifications/delegated-intake";
 import {
   refuseDelegatedChange,
@@ -28,7 +29,12 @@ import {
   type IntakeStatusUpdate,
   type StatusUpdateEvent,
 } from "./admission";
-import { applyTakenStatus } from "./take";
+import { applyTakenStatus, rowWriteRefused } from "./take";
+import {
+  isRowWriteRefusal,
+  updateLiveRow,
+} from "@/lib/medications/scheduling/slot-move";
+import { resolveSnoozeMinutes } from "@/lib/validations/notification-prefs";
 
 interface StatusContext {
   user: Pick<SessionUser, "id" | "timezone">;
@@ -36,6 +42,7 @@ interface StatusContext {
   existing: StatusUpdateEvent;
   ipAddress: string | null;
   originDeviceToken: string | null;
+  takenVia: "WEB" | "APP";
 }
 
 type UpdatedRow = Extract<
@@ -48,33 +55,47 @@ export type IntakeStatusOutcome =
   | { kind: "untracked" }
   | { kind: "updated"; row: UpdatedRow | null };
 
+/** The owner's snooze length in minutes, from the notification prefs. */
+async function snoozeMinutesOf(userId: string): Promise<number> {
+  const row = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { notificationPrefs: true },
+  });
+  return resolveSnoozeMinutes(row?.notificationPrefs ?? null);
+}
+
 /** The skip and the snooze; the take has its own module. */
 async function applySkipOrSnooze(ctx: StatusContext, data: IntakeStatusUpdate) {
   const { user, existing } = ctx;
   const { intakeId, status, snoozedUntil } = data;
   if (status === "skipped") {
-    const updated = await prisma.medicationIntakeEvent.update({
-      where: { id: intakeId },
-      // Bump the reconciliation counter on the skip toggle.
-      // A skip the person records clears the automatic marker.
-      data: {
+    // Under the slot lock and only on a live row (`slot-move.ts`). A skip
+    // the person records clears the automatic marker; the row stopped being
+    // taken, so its consumption stamp is refunded in the same transaction.
+    return updateLiveRow(
+      {
+        userId: user.id,
+        medicationId: existing.medicationId,
+        id: intakeId,
+        slot: existing.scheduledFor,
+      },
+      {
         takenAt: null,
         skipped: true,
         autoRecorded: false,
+        autoMissed: false,
         syncVersion: { increment: 1 },
       },
-    });
-    // The row stopped being taken; refund whatever its
-    // consumption stamp recorded (no-op for a never-consumed row).
-    await restoreForIntake({
-      client: prisma,
-      userId: user.id,
-      eventId: intakeId,
-    });
-    return updated;
+      (tx) =>
+        restoreForIntake({ client: tx, userId: user.id, eventId: intakeId }),
+    );
   }
-  // snoozed: snoozedUntil lives on the Medication row.
-  const until = snoozedUntil ?? new Date(Date.now() + 30 * 60_000); // default +30min
+  // snoozed: snoozedUntil lives on the Medication row. Without an explicit
+  // instant the deferral is the person's own snooze length (default 30
+  // minutes), the same value Telegram's button and the web card use.
+  const until =
+    snoozedUntil ??
+    new Date(Date.now() + (await snoozeMinutesOf(user.id)) * 60_000);
   await prisma.medication.update({
     where: { id: existing.medicationId },
     data: { snoozedUntil: until },
@@ -139,6 +160,7 @@ async function recordAfterUpdate(
 function startTails(
   ctx: StatusContext,
   status: IntakeStatusUpdate["status"],
+  updated: UpdatedRow | null,
 ): void {
   const { user, existing } = ctx;
   // (#22) — silent cross-device intake sync. Wake the user's OTHER
@@ -147,9 +169,14 @@ function startTails(
   // the canonical row is already persisted, so a sync-push miss never
   // affects the response. The originating device (the one that POSTed) is
   // excluded via its `X-Device-Id` (= registered `Device.token`).
-  queueMedicationIntakeSync({
+  afterDoseChange({
+    scope: "intakes",
     userId: user.id,
     originDeviceToken: ctx.originDeviceToken,
+    recorded:
+      status !== "snoozed" && updated
+        ? recordedEventOf(updated, ctx.takenVia)
+        : undefined,
   });
 
   // "Somebody else marked your dose". The helper refuses on self and
@@ -210,15 +237,18 @@ export async function updateIntakeStatus(
       forceSlotInstant: data.forceSlotInstant,
       resolvedInjectionSite: site.site,
       userTz: userTzForHook,
+      takenVia: ctx.takenVia,
     });
     if (taken.kind === "refused") return taken;
     updated = taken.row;
   } else {
-    updated = await applySkipOrSnooze(ctx, data);
+    const written = await applySkipOrSnooze(ctx, data);
+    if (isRowWriteRefusal(written)) return rowWriteRefused(written);
+    updated = written;
   }
 
   await recordAfterUpdate(ctx, data, updated, userTzForHook);
-  startTails(ctx, status);
+  startTails(ctx, status, updated);
 
   return { kind: "updated", row: updated };
 }

@@ -283,6 +283,38 @@ describe("messageTimeText", () => {
       messageTimeText("2026-09-28T07:05:00.000Z", now, formatters, t),
     ).toBe("2026-09-28, 07:05");
   });
+
+  // Yesterday is the calendar day before, in the reader's zone. It used to be
+  // the day of `now - 24 h`, which is two days back right after the 23-hour
+  // day and still today late in the 25-hour day.
+  describe("across a change of clocks in Berlin", () => {
+    const berlin = {
+      dateShortSmart: (v: string | number | Date) =>
+        new Date(v).toLocaleDateString("en-CA", { timeZone: "Europe/Berlin" }),
+      time: (v: string | number | Date) =>
+        new Date(v).toLocaleTimeString("en-GB", {
+          timeZone: "Europe/Berlin",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+    };
+
+    it("says yesterday for the 23-hour Sunday, just after midnight on Monday", () => {
+      // Monday 2026-03-30 00:30 CEST; the message is Sunday 19:00 CEST.
+      const monday = Date.parse("2026-03-29T22:30:00.000Z");
+      expect(
+        messageTimeText("2026-03-29T17:00:00.000Z", monday, berlin, t),
+      ).toBe("yesterday 19:00");
+    });
+
+    it("says yesterday for Saturday, late in the 25-hour Sunday", () => {
+      // Sunday 2026-10-25 23:30 CET; the message is Saturday 20:00 CEST.
+      const lateSunday = Date.parse("2026-10-25T22:30:00.000Z");
+      expect(
+        messageTimeText("2026-10-24T18:00:00.000Z", lateSunday, berlin, t),
+      ).toBe("yesterday 20:00");
+    });
+  });
 });
 
 describe("answerInfoLines", () => {

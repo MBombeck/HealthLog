@@ -419,24 +419,25 @@ test.describe.serial("scoped sharing browser journeys", () => {
       // Leave the refused record, then demand fresh own-record reads. This
       // catches a response that was parked under the owner hash while the
       // refusal was on screen and would otherwise paint without a new request.
+      // Both reads are the own record's first after the leave: the dashboard
+      // snapshot, and the medication list the shell's preloader asks for on
+      // the dashboard (this account has the medications module off, so its
+      // own medications page reads nothing). Each is awaited before anything
+      // navigates away and cancels it.
       corruptAuthPayload = false;
-      const freshDashboard = page.waitForResponse(
-        (response) =>
-          response.request().method() === "GET" &&
-          new URL(response.url()).pathname === "/api/dashboard/snapshot",
-      );
+      const freshRead = (path: string) =>
+        page.waitForResponse(
+          (response) =>
+            response.request().method() === "GET" &&
+            new URL(response.url()).pathname === path,
+        );
+      const freshDashboard = freshRead("/api/dashboard/snapshot");
+      const freshMedications = freshRead("/api/medications");
       await page
         .locator('[data-slot="shared-record-unavailable-leave"]')
         .click();
       await expect(page).toHaveURL(/\/$/);
       await freshDashboard;
-
-      const freshMedications = page.waitForResponse(
-        (response) =>
-          response.request().method() === "GET" &&
-          new URL(response.url()).pathname === "/api/medications",
-      );
-      await page.goto("/medications");
       await freshMedications;
     } finally {
       page.off("request", trackOwnerOnlyRead);

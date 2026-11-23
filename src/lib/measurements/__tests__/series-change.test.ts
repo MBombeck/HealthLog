@@ -13,6 +13,7 @@ const upBad = resolveTrendVerdict("RESTING_HEART_RATE", {
   profile: { dateOfBirth: null, gender: null, heightCm: null },
   thresholdsJson: null,
   referenceValue: null,
+  pregnancy: false,
 });
 
 describe("seriesDayValues", () => {

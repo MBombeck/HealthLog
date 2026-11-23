@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 127,
+  "registeredQueueCount": 136,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -54,6 +54,8 @@
     "google-health-sleep-repair",
     "google-health-sync",
     "health-connect-import",
+    "health-connect-remote-fetch",
+    "healthkit-catch-up",
     "host-metric-sample",
     "idempotency-cleanup",
     "insight-pregenerate",
@@ -67,8 +69,10 @@
     "integration-watchdog-hourly",
     "lab-biomarker-backfill",
     "lab-document-date-repair",
+    "ledger-retention-cleanup",
     "mcp-token-cleanup",
     "mean-consolidation",
+    "measurement-anomaly-check",
     "measurement-fold-repair",
     "measurement-maintenance",
     "measurement-reminder-check",
@@ -95,11 +99,16 @@
     "pr-detection",
     "pulse-day-mean",
     "push-attempt-cleanup",
+    "push-data-changed",
+    "push-live-activity",
+    "push-relay-maintenance",
     "rate-limit-cleanup",
     "reaction-line-generate",
+    "record-file-import",
     "recovery-readiness",
     "recovery-score-compute",
     "reminder-satisfy",
+    "report-schedule",
     "rollup-full-backfill",
     "rollup-recompute",
     "sleep-timeline-backfill",
@@ -927,6 +936,36 @@
     },
     {
       "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "health-connect-remote-fetch",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "healthkit-catch-up",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
       "deletion_seconds": 345600,
       "expire_seconds": 900,
       "heartbeat_seconds": null,
@@ -1125,6 +1164,21 @@
       "deletion_seconds": 604800,
       "expire_seconds": 900,
       "heartbeat_seconds": null,
+      "name": "ledger-retention-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
       "name": "mcp-token-cleanup",
       "notify": false,
       "partition": false,
@@ -1144,6 +1198,21 @@
       "notify": false,
       "partition": false,
       "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "measurement-anomaly-check",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
       "retention_seconds": 1209600,
       "retry_backoff": false,
       "retry_delay": 0,
@@ -1503,7 +1572,7 @@
       "name": "pr-detection",
       "notify": false,
       "partition": false,
-      "policy": "standard",
+      "policy": "short",
       "retention_seconds": 1209600,
       "retry_backoff": false,
       "retry_delay": 0,
@@ -1531,6 +1600,51 @@
       "expire_seconds": 900,
       "heartbeat_seconds": null,
       "name": "push-attempt-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "push-data-changed",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "push-live-activity",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "push-relay-maintenance",
       "notify": false,
       "partition": false,
       "policy": "standard",
@@ -1575,6 +1689,21 @@
       "deletion_seconds": 604800,
       "expire_seconds": 900,
       "heartbeat_seconds": null,
+      "name": "record-file-import",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
       "name": "recovery-readiness",
       "notify": false,
       "partition": false,
@@ -1606,6 +1735,21 @@
       "expire_seconds": 900,
       "heartbeat_seconds": null,
       "name": "reminder-satisfy",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "report-schedule",
       "notify": false,
       "partition": false,
       "policy": "standard",
@@ -2062,7 +2206,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "*/15 * * * *",
+      "cron": "11-59/15 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2169,7 +2313,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "*/15 * * * *",
+      "cron": "4-59/15 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2180,7 +2324,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "*/15 * * * *",
+      "cron": "8-59/15 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2406,6 +2550,28 @@
       "timezone": "Europe/Berlin"
     },
     {
+      "cron": "17 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "health-connect-remote-fetch",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "23 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "healthkit-catch-up",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
       "cron": "*/5 * * * *",
       "data": {},
       "key": "",
@@ -2519,6 +2685,18 @@
       "timezone": "Europe/Berlin"
     },
     {
+      "cron": "58 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "ledger-retention-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
       "cron": "0 4 * * *",
       "data": {},
       "key": "",
@@ -2526,6 +2704,17 @@
       "name": "mcp-token-cleanup",
       "options": {
         "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "8-59/15 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "measurement-anomaly-check",
+      "options": {
         "tz": "Europe/Berlin"
       },
       "timezone": "Europe/Berlin"
@@ -2545,7 +2734,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "*/15 * * * *",
+      "cron": "6-59/15 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2624,7 +2813,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "*/15 * * * *",
+      "cron": "2-59/15 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2693,7 +2882,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "15 * * * *",
+      "cron": "16 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2754,6 +2943,39 @@
       "timezone": "Europe/Berlin"
     },
     {
+      "cron": "* * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "push-data-changed",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "1-59/5 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "push-live-activity",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "* * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "push-relay-maintenance",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
       "cron": "*/5 * * * *",
       "data": {},
       "key": "",
@@ -2784,6 +3006,18 @@
       "kind": "cron",
       "name": "recovery-score-compute",
       "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "25 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "report-schedule",
+      "options": {
+        "retryLimit": 0,
         "tz": "Europe/Berlin"
       },
       "timezone": "Europe/Berlin"
@@ -2925,7 +3159,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "0 * * * *",
+      "cron": "3 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -3337,6 +3571,19 @@
       }
     },
     {
+      "queue": "health-connect-remote-fetch",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "healthkit-catch-up",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
       "queue": "host-metric-sample",
       "options": {
         "localConcurrency": 1,
@@ -3423,6 +3670,13 @@
       }
     },
     {
+      "queue": "ledger-retention-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
       "queue": "mcp-token-cleanup",
       "options": {
         "localConcurrency": 1,
@@ -3433,6 +3687,13 @@
       "queue": "mean-consolidation",
       "options": {
         "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "measurement-anomaly-check",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
       }
     },
     {
@@ -3603,6 +3864,27 @@
       }
     },
     {
+      "queue": "push-data-changed",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "push-live-activity",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "push-relay-maintenance",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
       "queue": "rate-limit-cleanup",
       "options": {
         "localConcurrency": 1,
@@ -3611,6 +3893,12 @@
     },
     {
       "queue": "reaction-line-generate",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "record-file-import",
       "options": {
         "localConcurrency": 1
       }
@@ -3633,6 +3921,13 @@
       "queue": "reminder-satisfy",
       "options": {
         "localConcurrency": 5
+      }
+    },
+    {
+      "queue": "report-schedule",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
       }
     },
     {

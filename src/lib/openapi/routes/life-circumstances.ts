@@ -23,6 +23,7 @@ import {
 
 import {
   dataEnvelope,
+  deletedInHealthLogResponse,
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
@@ -276,7 +277,7 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Anamnesis"],
       summary: "Record an AUDIT-C (v1.43)",
       description:
-        "Scores the three items on the server. The entry is stored in the language of the wording the read route offers this account (`auditC.instrument.locale`), and the cut-off follows that wording; `locale`, when sent, must name that same wording. A replay with the same `externalId` answers 200 with the stored result. 422 `anamnesis.auditC.invalid` (also for another wording than the one offered, and for a `takenAt` more than five minutes ahead of the server clock); 429 `anamnesis.auditC.rateLimited` after 30 in an hour.",
+        "Scores the three items on the server. The entry is stored in the language of the wording the read route offers this account (`auditC.instrument.locale`), and the cut-off follows that wording; `locale`, when sent, must name that same wording. A replay with the same `externalId` answers 200 with the stored result, or 410 (`anamnesis.auditC.deleted_in_healthlog`) when that entry was deleted since. 422 `anamnesis.auditC.invalid` (also for another wording than the one offered, and for a `takenAt` more than five minutes ahead of the server clock); 429 `anamnesis.auditC.rateLimited` after 30 in an hour.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
         required: true,
@@ -307,6 +308,7 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
+        ...deletedInHealthLogResponse("anamnesis.auditC.deleted_in_healthlog"),
         ...stdResponses,
       },
     },

@@ -14,6 +14,7 @@ import {
   injectionSiteEnum,
   INJECTION_SITE_VALUES,
 } from "@/lib/validations/medication";
+import { MEDICINE_REGISTRY_CHOICES } from "@/lib/medications/leaflet-registries";
 
 /** `PATCH /api/auth/me/unit-preference` — metric/imperial display branch. */
 export const unitPreferencePatchSchema = z.object({
@@ -29,6 +30,15 @@ export const unitPreferencePatchSchema = z.object({
  */
 export const glucoseUnitPatchSchema = z.object({
   glucoseUnit: z.enum(["mg/dL", "mmol/L"]),
+});
+
+/**
+ * `PATCH /api/auth/me/medicine-registry` (#1430) — which country's official
+ * medicine registry the "Find leaflet" link opens, or `NONE`. Independent of
+ * the interface language.
+ */
+export const medicineRegistryPatchSchema = z.object({
+  medicineRegistry: z.enum(MEDICINE_REGISTRY_CHOICES),
 });
 
 /** `PATCH /api/auth/me/documents-auto-ai-read` — the auto-read opt-in. */

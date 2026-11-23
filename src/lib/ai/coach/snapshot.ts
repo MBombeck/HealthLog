@@ -15,22 +15,15 @@
  * values with weekday labels and aggregates the older window into
  * weekly buckets so the prompt budget stays tight.
  */
-import { loadFreeWeekdaySpansForPrompt } from "@/lib/profile/life-circumstances";
-import { prisma } from "@/lib/db";
-import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 import { extractFeatures } from "@/lib/insights/features";
 import type { CoachDataCluster } from "@/lib/validations/coach-prefs";
 import type { UnitPreferences } from "@/lib/measurements/display-transform";
-import type { SleepStageRow } from "@/lib/analytics/sleep-night";
 import { compactSections } from "@/lib/ai/prompts/compact-sections";
 import { annotate } from "@/lib/logging/context";
 import { memoizePerRequest } from "@/lib/request-cache";
 import {
-  DAILY_TIMELINE_DAYS,
   MAX_SNAPSHOT_CHARS,
-  readSleepStageRows,
   readSnapshotMeasurementRows,
-  readSnapshotMoodRows,
   resolveSnapshotCutoffs,
   resolveSnapshotPrelude,
 } from "./snapshot-prelude";
@@ -39,73 +32,36 @@ import {
   condenseSeriesBlock,
   isCondensable,
   type DailySeries,
-  type RegisterBlock,
 } from "./series-condense";
-import { buildGlp1SnapshotBlock } from "./glp1-snapshot";
-import { buildDerivedSnapshotBlock } from "./derived-snapshot";
-import { buildCorrelationsSnapshotBlock } from "./correlations-snapshot";
-import { buildCoachMemoryBlock } from "./memory-snapshot";
-import { buildAdherenceStoryline } from "@/lib/insights/derived/adherence-storyline";
-import { buildChangepointSignals } from "@/lib/insights/derived/changepoint";
-import { buildSignalTrust } from "@/lib/insights/derived/signal-trust";
-import { buildTrajectorySnapshotBlock } from "./trajectory-snapshot";
-import { buildCycleSnapshotBlock } from "./cycle-snapshot";
-import { buildIllnessSnapshotBlock } from "./illness-snapshot";
-import { buildLabsSnapshotBlock } from "./labs-snapshot";
-import { buildVisitsSnapshotBlock } from "./visits-snapshot";
 import {
   buildReferenceGroundingBlock,
   type GroundingMetricInput,
 } from "./reference-grounding";
-import type { MeasurementType } from "@/generated/prisma/client";
 import { COACH_SOURCE_MEASUREMENT_TYPES } from "@/lib/ai/coach/source-measurement-types";
 import type { ReferenceMetric } from "@/lib/reference-ranges";
-import { isCycleAvailableForUser } from "@/lib/cycle/gate";
-import {
-  COURSES_COMPLIANCE_SELECT,
-  SCHEDULE_COMPLIANCE_SELECT,
-} from "@/lib/analytics/compliance";
-import type { BaselineProfile } from "@/lib/insights/derived";
-import { toProfileSex } from "@/lib/profile/sex";
-import { CLUSTER_PRIORITY, sourceCluster } from "./clusters";
-import type { CoachProvenance, CoachScope, CoachScopeSource } from "./types";
+import { CLUSTER_PRIORITY } from "./clusters";
+import type { CoachProvenance, CoachScope } from "./types";
 import {
   readSnapshotCache,
   snapshotCacheKey,
   writeSnapshotCache,
 } from "./snapshot-cache";
 import {
-  buildCoarseTimelineTail,
-  type CoarseTimelineTail,
-} from "./snapshot-series";
-import { readCoachWorkoutRows } from "./snapshot-blocks/workouts-read";
-import { buildWorkoutsBlock } from "./snapshot-blocks/workouts-block";
+  createSnapshotAccumulators,
+  type SnapshotBlockRegistry,
+} from "./snapshot-blocks/block-registry";
 import {
-  buildGlucoseBlock,
-  GLUCOSE_CLINICAL_WINDOW_DAYS,
-} from "./snapshot-blocks/glucose-block";
-import {
-  buildSleepRhythmBlock,
-  buildSleepTimelineBlock,
-} from "./snapshot-blocks/sleep-block";
-import { buildComplianceBlock } from "./snapshot-blocks/compliance-block";
-import { buildCoreMetricsBlocks } from "./snapshot-blocks/core-metrics-block";
-import { buildValueSeriesBlocks } from "./snapshot-blocks/value-series-blocks";
-import {
-  buildDayStrainBlock,
-  buildProfileContextBlocks,
-} from "./snapshot-blocks/context-blocks";
-import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+  readCoreCoarseTails,
+  readSnapshotBlockInputs,
+  resolveDerivedGate,
+} from "./snapshot-blocks/snapshot-reads";
+import { assembleSnapshotBlocks } from "./snapshot-blocks/assemble-blocks";
 import {
   UNBOUNDED_REACH,
-  fitsReach,
   isBounded,
   reachFloor,
   type CoachHistoryReach,
 } from "./history-reach";
-import { ADHERENCE_STORYLINE_HORIZON_DAYS } from "@/lib/insights/derived/adherence-storyline";
-import { CHANGEPOINT_WINDOW_DAYS } from "@/lib/insights/derived/changepoint";
-import { SIGNAL_TRUST_WINDOW_DAYS } from "@/lib/insights/derived/signal-trust";
 
 // Test-only escape hatch — the suites import it from this module.
 export { __resetCoachSnapshotCacheForTests } from "./snapshot-cache";
@@ -152,25 +108,6 @@ export interface CoachSnapshotResult {
 }
 
 /**
- * v1.17.0 — the sleep-rhythm read (sleep-debt + chronotype) is a fixed
- * trailing-window artifact, identical across the Sleep page, the dashboard
- * summary, and (here) the coach. Pinned independently of the coach's variable
- * narration window (7/30/90/365) so the coach's debt + chronotype band always
- * equal what the page renders. Mirrors `DEFAULT_WINDOW_DAYS` in
- * `sleep-rhythm.ts`: 42 days gives the 14-night debt window full coverage and
- * ~12 weekend nights for a stable MSF — the assembler self-caps each signal to
- * its own window, so feeding the same 42-day rows yields the page's DTO.
- */
-const SLEEP_RHYTHM_WINDOW_DAYS = 42;
-
-/**
- * Where the coarse MONTH tail begins: the in-window weekly fold covers the
- * first 90 days, the rollup tail what lies beyond. Under a lookback limit of
- * 90 days or less the tail has nothing it may add.
- */
-const COARSE_TAIL_START_DAYS = 90;
-
-/**
  * Build the Coach prompt snapshot for `userId`. Always uses
  * `includeRaw=false` because the Coach replies are conversational and
  * the user is asking the model — they should never depend on raw
@@ -212,11 +149,18 @@ export async function buildCoachSnapshot(
      * output is what it always was.
      */
     condenseRequested?: boolean;
+    /**
+     * The size cap, in compact JSON characters. A Coach turn passes the cap
+     * its provider chain allows (`coach-budgets.ts`); every other caller
+     * keeps `MAX_SNAPSHOT_CHARS`.
+     */
+    maxChars?: number;
   },
 ): Promise<CoachSnapshotResult> {
   const reach = options?.reach ?? UNBOUNDED_REACH;
   const condenseRequested = options?.condenseRequested === true;
-  const key = `${snapshotCacheKey(userId, scope, reach)}${condenseRequested ? "|condense" : ""}`;
+  const maxChars = options?.maxChars ?? MAX_SNAPSHOT_CHARS;
+  const key = `${snapshotCacheKey(userId, scope, reach)}${condenseRequested ? "|condense" : ""}${maxChars === MAX_SNAPSHOT_CHARS ? "" : `|chars:${maxChars}`}`;
   const cached = readSnapshotCache(key);
   if (cached) return cached;
   const result = await buildCoachSnapshotImpl(
@@ -224,32 +168,10 @@ export async function buildCoachSnapshot(
     scope,
     reach,
     condenseRequested,
+    maxChars,
   );
   writeSnapshotCache(key, result);
   return result;
-}
-
-/**
- * A cross-cutting narration block that throws must not vanish silently. Each of
- * these builders is additive — the snapshot is still valid without it — so the
- * catch stays, but the failure is now countable: `signalTrust` is the block that
- * tells the model HOW MUCH to trust the numbers it is about to narrate, and a
- * builder that fails to `null` is indistinguishable from a user who simply has
- * no trust caveats. Absence and failure are different things and the wide event
- * now says which one happened.
- */
-function blockFailed(block: string): (err: unknown) => null {
-  return (err: unknown) => {
-    // Resolved before the annotate call, not inline: the free-text guard in
-    // `snapshot.test.ts` reads three lines around a `name:` key and an inline
-    // `err.name` there looks like an un-sanitised user string to it.
-    const reason = err instanceof Error ? err.name : "unknown";
-    annotate({
-      action: { name: "coach.snapshot.block_failed" },
-      meta: { block, reason },
-    });
-    return null;
-  };
 }
 
 async function buildCoachSnapshotImpl(
@@ -257,6 +179,7 @@ async function buildCoachSnapshotImpl(
   scope: CoachScope | undefined,
   reach: CoachHistoryReach,
   condenseRequested: boolean,
+  maxChars: number,
 ): Promise<CoachSnapshotResult> {
   // Prefs, module gates and the admitted sources — see `snapshot-prelude.ts`.
   // The lookback limit caps the narration window there, whatever the caller
@@ -272,7 +195,6 @@ async function buildCoachSnapshotImpl(
     sources,
   } = await resolveSnapshotPrelude(userId, scope, reach);
   const bounded = isBounded(reach);
-  const glucoseUnit = units.glucoseUnit;
   // v1.4.36 — `medications` and `anthropometrics` are
   // exclude-only toggles (not in `CoachScopeSource`); they gate the
   // GLP-1 weeklyContext / compliance branch and the anthropometrics
@@ -316,53 +238,9 @@ async function buildCoachSnapshotImpl(
       }),
   );
 
-  // Trim down to the metrics the Coach narrates. extractFeatures
-  // returns more (sleep, steps, etc.) — the Coach surface keeps the
-  // snapshot tight so each turn fits inside the provider's context
-  // budget for free-tier accounts.
-  const snapshot: Record<string, unknown> = {};
-  const windows = new Set<CoachProvenance["windows"][number]>();
-  // v1.4.27 — seed the provenance window set with the
-  // user's resolved scope so the year-in-review window surfaces in the
-  // provenance envelope even when the per-metric branches below only
-  // emit `last30days` / `last90days` chips. Older windows are added
-  // by the metric branches as before.
-  if (window === "lastYear" || window === "allTime") {
-    windows.add(window);
-  }
-  const metrics = new Set<CoachProvenance["metrics"][number]>();
-  const counts: NonNullable<CoachProvenance["counts"]> = {};
-
-  // v1.18.6 — representative scalar per reference-covered metric, in the
-  // metric's reference unit, collected as the blocks below build. Feeds the
-  // citation-aware grounding block (population band + the user's placement).
-  // Each entry reads the SAME number the snapshot already surfaces — no
-  // independent recompute — so the grounding can never cite a value the
-  // snapshot doesn't carry. A metric with a block but no clean scalar is left
-  // unset (the grounding line still cites its band with an insufficient
-  // placement only if it is added with a null value; we omit such metrics).
-  const groundingValues = new Map<ReferenceMetric, number>();
-
-  // v1.7.0 — block registry. Maps each emitted snapshot top-level key
-  // to the cluster it belongs to so the soft-cap degradation pass
-  // (below) can walk blocks in reverse cluster-priority order and shed
-  // the lowest-signal detail first. Core legacy blocks register too so
-  // the degrader can reach them as a last resort.
-  const blockClusters = new Map<string, CoachDataCluster>();
-  // Snapshot top-level keys that carry an `aggregate` companion — the
-  // degrader can drop `timeline.recent` from these and still leave the
-  // aggregate for the Coach to reason from.
-  // The source each block was built for, so a single-source read can tell
-  // which blocks it asked for (see `degradeToBudget`).
-  const blockSources = new Map<string, CoachScopeSource>();
-  // A series block's daily values, read only if the block is condensed.
-  const blockDaily = new Map<string, () => DailySeries>();
-  const registerBlock: RegisterBlock = (key, source, daily) => {
-    const cluster = sourceCluster(source);
-    if (cluster) blockClusters.set(key, cluster);
-    blockSources.set(key, source);
-    if (daily) blockDaily.set(key, daily);
-  };
+  // The snapshot record and the accumulators every block writes into
+  // (`snapshot-blocks/block-registry.ts`).
+  const acc = createSnapshotAccumulators(window);
 
   // v1.7.0 — record which clusters resolved active for this build so
   // the observability dashboards can track cluster adoption + the
@@ -376,62 +254,16 @@ async function buildCoachSnapshotImpl(
     },
   });
 
-  const wantsBp = sources.has("bp");
-  const wantsWeight = sources.has("weight");
-  const wantsPulse = sources.has("pulse");
-  const wantsMood = sources.has("mood");
-  const wantsCompliance = sources.has("compliance");
-
-  // v1.18.7 — coarse tail (90d–1y MONTH + >1y YEAR) + anomaly envelope for the
-  // core clinical metrics, from the shared tiered-context builder. Only the
-  // bands the in-window weekly-fold cannot produce are fetched here; the recent
-  // + weekly bands stay as built below. Bounded per-band, so this holds or
-  // reduces the per-metric token cost while letting the Coach see a spike from
-  // months ago. Reads never throw — a coverage miss yields `undefined`, the
-  // block is then omitted. Run in parallel; awaited at the block site.
-  const coarseTailPromises: Partial<
-    Record<"bp" | "weight" | "pulse", Promise<CoarseTimelineTail | undefined>>
-  > = {};
-  // The coarse tail starts where the in-window weekly fold ends (90 days), so
-  // a limit of 90 days or less leaves nothing for it to add.
-  const coarseTailAllowed =
-    reach.days === null || reach.days > COARSE_TAIL_START_DAYS;
-  const coarseFloor = reachFloor(reach, now);
-  if (wantsBp && coarseTailAllowed) {
-    coarseTailPromises.bp = buildCoarseTimelineTail(
-      userId,
-      "BLOOD_PRESSURE_SYS" as MeasurementType,
-      now,
-      userTz,
-      prefsRow?.sourcePriorityJson ?? null,
-      coarseFloor,
-    );
-  }
-  if (wantsWeight && coarseTailAllowed) {
-    coarseTailPromises.weight = buildCoarseTimelineTail(
-      userId,
-      "WEIGHT" as MeasurementType,
-      now,
-      userTz,
-      prefsRow?.sourcePriorityJson ?? null,
-      coarseFloor,
-    );
-  }
-  if (wantsPulse && coarseTailAllowed) {
-    coarseTailPromises.pulse = buildCoarseTimelineTail(
-      userId,
-      "PULSE" as MeasurementType,
-      now,
-      userTz,
-      prefsRow?.sourcePriorityJson ?? null,
-      coarseFloor,
-    );
-  }
-  const [bpCoarseTail, weightCoarseTail, pulseCoarseTail] = await Promise.all([
-    coarseTailPromises.bp ?? Promise.resolve(undefined),
-    coarseTailPromises.weight ?? Promise.resolve(undefined),
-    coarseTailPromises.pulse ?? Promise.resolve(undefined),
-  ]);
+  // Coarse tails for bp / weight / pulse, awaited before the shared read
+  // (`snapshot-blocks/snapshot-reads.ts`).
+  const coarseTails = await readCoreCoarseTails({
+    userId,
+    sources,
+    now,
+    userTz,
+    sourcePriorityJson: prefsRow?.sourcePriorityJson ?? null,
+    reach,
+  });
 
   // Single fetch for all measurement types — Prisma's filter pushes
   // the type list into one SQL `WHERE type IN (…)` so we don't pay
@@ -459,561 +291,86 @@ async function buildCoachSnapshotImpl(
     measurementRowsPromise,
   ]);
 
-  // v1.11.3 — the remaining cold-path reads are mutually independent:
-  // the four conditional table reads (mood / compliance / sleep /
-  // workouts) and the four helper-block reads (GLP-1 / derived /
-  // trajectory / memory) each consume only `userId`, the window cutoff,
-  // or the synchronously-derived `derivedProfile` — none reads another's
-  // result. Fire them all off concurrently now, KEEPING the original
-  // `wants…` / `sources.has(…)` guards so a disabled source still issues
-  // no query (the guard yields `null`/`undefined`, never a wasted
-  // round-trip), then await the batch in one hop. The synchronous block
-  // assembly further below consumes the resolved values in the original
-  // order, so provenance and block-registration order are unchanged.
-  //
-  // `derivedProfile` is derived from `features.context` (now resolved)
-  // and feeds the GLP-1 / derived / trajectory / memory readers; it is
-  // hoisted here so those reads can start immediately.
-  const derivedSources: CoachScopeSource[] = [
-    "hrv",
-    "resting_hr",
-    "sleep",
-    "vo2_max",
-  ];
-  const derivedCtx = features.context;
-  const derivedProfile: BaselineProfile = {
-    ageYears: derivedCtx?.ageYears ?? null,
-    sex: toProfileSex(derivedCtx?.gender),
-    heightCm: derivedCtx?.heightCm ?? null,
-  };
-  // v1.18.0 — the derived block + WHOOP-native dayStrain + trajectory are
-  // the `recovery` module's domain (READINESS / RECOVERY_SCORE / STRAIN /
-  // …). They are gated on `derivedActive`, which still reads the `sleep`
-  // signal — so when `recovery` is disabled but `sleep` stays on, gate them
-  // off explicitly here, not just by dropping the recovery source tokens.
-  const derivedActive =
-    !recoveryDisabled && derivedSources.some((s) => sources.has(s));
-
-  const moodRowsPromise =
-    wantsMood && features.mood ? readSnapshotMoodRows(userId, cutoff) : null;
-  // v1.16.9 — the adherence timeline derives from the LEDGER tally (the
-  // same band engine the compliance % + dose history consume), not from a
-  // raw intake-row count. The raw count read a worker-minted pending row
-  // as "not taken" (today's later doses dragged the day's rate down all
-  // morning) and double-counted cross-source duplicate rows on one slot.
-  // Load each medication's schedules + eras + window events so the ledger
-  // can be reconstructed per medication.
-  const complianceMedsPromise = wantsCompliance
-    ? prisma.medication.findMany({
-        // v1.16.11 — as-needed (PRN) medications never reach the Coach
-        // compliance context (no expected doses, no rate).
-        where: { userId, asNeeded: false, ...TRACKED_INTAKE_WHERE },
-        select: {
-          id: true,
-          ...MEDICATION_WINDOW_SELECT,
-          oneShot: true,
-          createdAt: true,
-          schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
-          scheduleRevisions: {
-            orderBy: [{ validFrom: "asc" }, { id: "asc" }],
-            select: {
-              id: true,
-              validFrom: true,
-              validUntil: true,
-              payload: true,
-              supersededByRevisionId: true,
-            },
-          },
-          // v1.25 — pause eras so paused days drop out of the denominator.
-          pauseEras: { select: { pausedAt: true, resumedAt: true } },
-          // v1.40 (#1024) — the courses, so a gap between two expects nothing.
-          courses: COURSES_COMPLIANCE_SELECT,
-          intakeEvents: {
-            // Tombstoned intake rows must never reach the Coach snapshot.
-            where: { deletedAt: null, scheduledFor: { gte: cutoff } },
-            orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
-            select: {
-              scheduledFor: true,
-              takenAt: true,
-              skipped: true,
-              autoMissed: true,
-              attributionSource: true,
-            },
-          },
-        },
-      })
-    : null;
-  const sleepRowsPromise = sources.has("sleep")
-    ? readSleepStageRows(userId, additiveCutoff("sleep"))
-    : null;
-  // v1.17.0 — sleep-rhythm rows. The sleep-debt + chronotype DTO is a fixed
-  // trailing-42-day artifact (the Sleep page + dashboard read the same window),
-  // so it must NOT ride the coach's variable narration window or the
-  // multi-cluster timeline cap, or the coach would quote a debt / chronotype
-  // band the page never shows. Read the rhythm's own trailing-42-day rows
-  // directly (one indexed query, only when the sleep cluster is active) and
-  // hand them to the SAME assembler the dashboard route uses. The per-stage
-  // narration timeline above keeps using the coach-window `sleepRows`.
-  const sleepRhythmCutoff = new Date(
-    now.getTime() - SLEEP_RHYTHM_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  // The remaining cold-path reads run concurrently in one hop; the block
+  // assembly below consumes them in a fixed order, so provenance and
+  // block-registration order do not depend on the read order.
+  const { derivedProfile, derivedActive } = resolveDerivedGate(
+    features,
+    sources,
+    recoveryDisabled,
   );
-  // source + deviceType feed the canonical writer-dedup so a multi-source
-  // night is counted ONCE, matching every other sleep surface. A limit
-  // shorter than the rhythm's fixed 42 days leaves the block out: a debt or
-  // chronotype band over fewer nights is not the one the page shows.
-  const sleepRhythmRowsPromise =
-    sources.has("sleep") && fitsReach(SLEEP_RHYTHM_WINDOW_DAYS, reach)
-      ? readSleepStageRows(userId, sleepRhythmCutoff)
-      : null;
-  const workoutRowsPromise = sources.has("workouts")
-    ? readCoachWorkoutRows(userId, additiveCutoff("workouts"))
-    : null;
-  // v1.17.0 — the glucose CLINICAL panel is a fixed 30-day clinical artifact,
-  // identical to the one the insights panel + doctor report render. It must NOT
-  // ride the coach's variable narration window (7/30/90/365) or the
-  // multi-cluster timeline cap, or the coach would quote a TIR/GMI/CV% the panel
-  // never shows. So read the panel's own trailing-30-day glucose rows directly
-  // (one indexed query, only when glucose is active) and compute the clinical
-  // block off THOSE rows. The per-context narration timelines below keep using
-  // the coach-window rows — only the clinical summary is pinned to 30 days.
-  const glucoseClinicalCutoff = new Date(
-    now.getTime() - GLUCOSE_CLINICAL_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-  );
-  // Same rule for the fixed 30-day clinical panel: under a shorter limit the
-  // panel is left out (null rows), never computed over fewer days.
-  const glucoseClinicalRowsPromise =
-    sources.has("glucose") && fitsReach(GLUCOSE_CLINICAL_WINDOW_DAYS, reach)
-      ? prisma.measurement.findMany({
-          where: {
-            userId,
-            type: "BLOOD_GLUCOSE" as never,
-            measuredAt: { gte: glucoseClinicalCutoff },
-            deletedAt: null,
-          },
-          orderBy: { measuredAt: "asc" },
-          select: { value: true, measuredAt: true },
-        })
-      : null;
-  const glp1BlockPromise = excludesMedications
-    ? null
-    : buildGlp1SnapshotBlock(userId, now, userTz, reach);
-  const derivedBlockPromise = derivedActive
-    ? buildDerivedSnapshotBlock(userId, derivedProfile, now, userTz, reach)
-    : null;
-  // v1.17.0 — WHOOP-native day strain (0–21), distinct from the COMPUTED
-  // STRAIN_SCORE (0–100) the derived block carries. Gated on the same
-  // wellness/activity signals so it rides the existing parallel batch; the
-  // block is omitted when the account has no DAY_STRAIN rows (every
-  // non-WHOOP account). Native-over-computed mirrors how recovery resolves.
-  const dayStrainRowsPromise = derivedActive
-    ? prisma.measurement.findMany({
-        where: {
-          userId,
-          type: "DAY_STRAIN",
-          measuredAt: { gte: cutoff },
-          deletedAt: null,
-        },
-        orderBy: { measuredAt: "asc" },
-        select: { value: true, measuredAt: true },
-      })
-    : null;
-  const trajectoryBlockPromise = derivedActive
-    ? buildTrajectorySnapshotBlock(userId, derivedProfile, now, reach)
-    : null;
-  // Discovered cross-metric driver pairs for the no-tools
-  // snapshot floor. Reuses the SAME gated/ranked output the get_correlations
-  // tool serves (effect-size floor + family-tautology exclusion + shrinkage +
-  // confidence tiering already applied inside the discovery engine), so a
-  // local/no-tools provider reaches parity on the flagship cross-metric layer
-  // instead of getting only the coincident flag. Gated on `derivedActive` (it
-  // is the recovery / cross-metric layer) and fail-soft to null.
-  const correlationsBlockPromise = derivedActive
-    ? buildCorrelationsSnapshotBlock(userId, coachLocale, reach)
-    : null;
-  const memoryBlockPromise = buildCoachMemoryBlock(
+  const reads = await readSnapshotBlockInputs({
     userId,
-    derivedProfile,
-    now,
-    coachLocale,
-    reach,
-  );
-  // v1.15 — cycle/phase block, gated on the resolved cycle module so a
-  // non-cycle account issues no query (the helper short-circuits to null
-  // before any read for a disabled account). The block is descriptive only —
-  // current phase + day-of-cycle, the next predicted event (period range,
-  // fertile window goal-gated), and the headline phase-correlation finding.
-  // v1.18.0 — the gate is the FULLY-resolved cycle module
-  // (`isCycleAvailableForUser` → the per-user toggle AND the operator
-  // server-wide kill-switch), so an operator-off instance never injects the
-  // cycle block into the coach prompt.
-  const cycleEnabled = await isCycleAvailableForUser(userId);
-  // The cycle block predicts from every logged cycle, of any age, so that its
-  // "day N, period in M days" matches the calendar. Any lookback limit leaves
-  // it out rather than predicting from a part of the history.
-  const cycleBlockPromise =
-    cycleEnabled && !bounded
-      ? buildCycleSnapshotBlock(userId, prefsRow?.gender, now, userTz)
-      : null;
-
-  // v1.18.1 — illness/condition context. Always attempted (the helper is
-  // module-gated internally and short-circuits to null for a non-illness
-  // account). It is CONTEXT, not a scope-gated metric: appended like
-  // anthropometrics/scope below without a `registerBlock` so the budget
-  // degrader never sheds it — the Coach needs to know about Rest Mode.
-  const illnessBlockPromise = buildIllnessSnapshotBlock(userId, now, reach);
-
-  // v1.18.11 (#65) — lab-result context. Like illness it is CONTEXT, not a
-  // scope-gated metric: attached without a `registerBlock` so the budget
-  // degrader never sheds it. Module-gated inside: with Labs off it reads
-  // nothing. It carries the latest reading per biomarker (whole record or the
-  // lookback limit, capped) so the Coach can answer "what was my LDL".
-  const labsBlockPromise = buildLabsSnapshotBlock(userId, now, reach);
-
-  // v1.38 — doctor-visit context. Like illness/labs it is attempted always (a
-  // visit is core, never module-gated) and short-circuits to null when there is
-  // neither an upcoming appointment inside the 14-day horizon nor a past visit.
-  // UNLIKE illness/labs it IS registered for degradation below (against the
-  // lowest-priority cluster), because a visit history is low-frequency context
-  // the Coach can lose under budget pressure without losing a safety flag.
-  const visitsBlockPromise = buildVisitsSnapshotBlock(userId, now, reach);
-
-  const [
-    moodRows,
-    complianceMeds,
-    sleepRows,
-    sleepRhythmRows,
-    workoutRows,
-    glucoseClinicalRows,
-    glp1Block,
-    derivedBlock,
-    dayStrainRows,
-    trajectoryBlock,
-    correlationsBlock,
-    memoryBlock,
-    cycleBlock,
-    illnessBlock,
-    labsBlock,
-    visitsBlock,
-  ] = await Promise.all([
-    moodRowsPromise,
-    complianceMedsPromise,
-    sleepRowsPromise,
-    sleepRhythmRowsPromise,
-    workoutRowsPromise,
-    glucoseClinicalRowsPromise,
-    glp1BlockPromise,
-    derivedBlockPromise,
-    dayStrainRowsPromise,
-    trajectoryBlockPromise,
-    correlationsBlockPromise,
-    memoryBlockPromise,
-    cycleBlockPromise,
-    illnessBlockPromise,
-    labsBlockPromise,
-    visitsBlockPromise,
-  ]);
-
-  buildCoreMetricsBlocks({
     sources,
     features,
-    measurementRows,
-    moodRows,
-    recentCutoff,
-    userTz,
-    coarseTails: {
-      bp: bpCoarseTail,
-      weight: weightCoarseTail,
-      pulse: pulseCoarseTail,
-    },
-    snapshot,
-    windows,
-    metrics,
-    counts,
-    registerBlock,
-    groundingValues,
-    units,
-  });
-  // Medication compliance lives outside the structured features — the block
-  // is assembled in `snapshot-blocks/compliance-block.ts` from the ledger
-  // reads above.
-  if (wantsCompliance && complianceMeds) {
-    buildComplianceBlock({
-      complianceMeds,
-      userTz,
-      cutoff,
-      recentCutoff,
-      now,
-      snapshot,
-      metrics,
-      counts,
-      registerBlock,
-    });
-  }
-
-  buildValueSeriesBlocks({
-    sources,
-    measurementRows,
+    cutoff,
     additiveCutoff,
-    recentCutoff,
+    now,
     userTz,
-    snapshot,
-    metrics,
-    counts,
-    registerBlock,
-    groundingValues,
-    units,
+    coachLocale,
+    gender: prefsRow?.gender,
+    reach,
+    bounded,
+    excludesMedications,
+    derivedProfile,
+    derivedActive,
   });
-  // ── v1.7.0 sleep block (with optional per-stage enrichment) ───────
-  // Assembled in `snapshot-blocks/sleep-block.ts` from the dedicated
-  // stage-bearing rows read in parallel above.
-  if (sources.has("sleep") && sleepRows) {
-    buildSleepTimelineBlock({
-      sleepRows: sleepRows as SleepStageRow[],
-      sourcePriorityJson: prefsRow?.sourcePriorityJson ?? null,
-      userTz,
-      recentCutoff,
-      snapshot,
-      metrics,
-      counts,
-      registerBlock,
-      groundingValues,
-    });
-  }
 
-  // ── v1.17.0 sleep-rhythm block (sleep-debt + chronotype) ──────────
-  // Assembled in `snapshot-blocks/sleep-block.ts` from the rhythm's own
-  // fixed trailing-42-day rows read in parallel above.
-  if (sources.has("sleep") && sleepRhythmRows && sleepRhythmRows.length > 0) {
-    buildSleepRhythmBlock({
-      sleepRhythmRows: sleepRhythmRows as SleepStageRow[],
-      sourcePriorityJson: prefsRow?.sourcePriorityJson ?? null,
-      userTz,
-      ageYears: derivedProfile.ageYears,
-      freeWeekdaySpans: await loadFreeWeekdaySpansForPrompt(userId),
-      snapshot,
-      metrics,
-      registerBlock,
-    });
-  }
-
-  // ── v1.7.0 glucose block (per-context daily means) ────────────────
-  // Assembled in `snapshot-blocks/glucose-block.ts` from the shared
-  // measurement read + the fixed-window clinical rows read above.
-  if (sources.has("glucose")) {
-    buildGlucoseBlock({
-      measurementRows,
-      glucoseCutoff: additiveCutoff("glucose"),
-      glucoseClinicalRows,
-      glucoseUnit,
-      recentCutoff,
-      userTz,
-      now,
-      snapshot,
-      metrics,
-      counts,
-      registerBlock,
-      groundingValues,
-    });
-  }
-
-  // ── v1.7.0 workouts block (capped list + per-sport rollup) ────────
-  // Assembled in `snapshot-blocks/workouts-block.ts` from the rows read
-  // in parallel above.
-  if (sources.has("workouts") && workoutRows) {
-    buildWorkoutsBlock({
-      workoutRows,
-      sourcePriorityJson: prefsRow?.sourcePriorityJson ?? null,
-      userTz,
-      snapshot,
-      metrics,
-      counts,
-      registerBlock,
-      unitPreference: units.system,
-    });
-  }
-
-  buildProfileContextBlocks({
+  await assembleSnapshotBlocks({
+    userId,
+    scope,
+    reach,
+    window,
+    sources,
+    units,
+    sourcePriorityJson: prefsRow?.sourcePriorityJson ?? null,
+    bounded,
     excludesMedications,
     excludesAnthropometrics,
-    glp1Block,
-    profile: features.context,
-    snapshot,
-    metrics,
-    registerBlock,
+    cutoffs: { cutoff, recentCutoff, additiveCutoff },
+    now,
+    userTz,
+    features,
+    measurementRows,
+    coarseTails,
+    reads,
+    derived: { derivedProfile, derivedActive },
+    acc,
   });
 
-  // ── v1.10.0 — derived wellness layer (compact summaries) ─────────────
-  //
-  // The composites + persisted scores the dashboard rings render, folded
-  // in as one tiny object per metric (value + band + coverage), NOT the
-  // raw series. So the Coach can say "your readiness is 64, low band" and
-  // ground it in the same number the user sees. Insufficient metrics are
-  // omitted (no "no data" noise). Reads the same `computeDerivedMetric`
-  // contract every surface uses — no recompute. Gated on at least one of
-  // the signals the composites are built from staying in-scope (HRV /
-  // resting HR / sleep / VO₂max), so a user who excludes those doesn't see
-  // the block. `derivedActive` + `derivedProfile` are resolved up top so
-  // the derived / trajectory reads can run in the parallel batch.
-  if (derivedActive) {
-    if (derivedBlock) {
-      snapshot.derived = derivedBlock;
-      metrics.add("hrv");
-      registerBlock("derived", "hrv");
-    }
+  return finaliseSnapshot({
+    snapshot: acc.snapshot,
+    scope,
+    condenseRequested,
+    maxChars,
+    registry: acc.registry,
+    groundingValues: acc.groundingValues,
+    hasDiabetes: prefsRow?.hasDiabetes ?? false,
+    units,
+    windows: acc.windows,
+    metrics: acc.metrics,
+    counts: acc.counts,
+  });
+}
 
-    buildDayStrainBlock({
-      rows: dayStrainRows,
-      recentCutoff,
-      snapshot,
-      registerBlock,
-    });
-
-    // ── v1.11.0 (Epic B, Pillar 3) — short-horizon trajectory block ──────
-    // Additive, lowest-signal block: per in-scope metric a compact
-    // direction + slope + projected horizon-end-with-band, computed by the
-    // deterministic `computeTrajectory` engine (NEVER recomputed here). The
-    // Coach narrates the range conditionally (system-prompt rule 11 /
-    // ground rule 16) only when this block is present. Registered under an
-    // `environment`-cluster source so the soft-cap degrader sheds it FIRST,
-    // before any clinical cluster, under prompt-budget pressure. Read in
-    // the parallel batch above.
-    if (trajectoryBlock) {
-      snapshot.trajectory = trajectoryBlock;
-      registerBlock("trajectory", "skin_temp");
-    }
-
-    // ── RECON1 (D5-5) — discovered cross-metric drivers ──────────────────
-    // The bounded top-N driver pairs (post quality-gate, post-rank) from the
-    // SAME engine the get_correlations tool reads, attached so the no-tools /
-    // local-provider path narrates the cross-metric layer it was missing —
-    // closing the parity gap with the tool path and making system-prompt rule
-    // 14's "any driver field the SNAPSHOT carries" fallback real. Descriptive,
-    // never causal. Registered against the lowest-priority `skin_temp`
-    // (environment) cluster so the budget degrader sheds it before any
-    // clinical block under prompt-budget pressure.
-    if (correlationsBlock) {
-      snapshot.correlations = correlationsBlock;
-      registerBlock("correlations", "skin_temp");
-    }
-  }
-
-  // ── v1.11.0 W5a — rolling-profile memory (Pillar P2 2a) ──────────────
-  //
-  // Zero-LLM longitudinal recall: the latest period-narrative headline +
-  // a per-metric prior-vs-current band memory, assembled from artefacts we
-  // already persist. Lets the Coach reference "as I noted at the start of
-  // the month…" instead of re-deriving cold every turn. Folded under the
-  // `memory` key and registered against the LOWEST-signal cluster
-  // (`environment`, the tail of CLUSTER_PRIORITY) so `degradeToBudget`
-  // sheds it FIRST under the char cap — before any clinical cluster. The
-  // builder is fault-isolated per sub-source and returns null when neither
-  // a narrative nor any band movement is on file. Read in the parallel
-  // batch above.
-  if (memoryBlock) {
-    snapshot.memory = memoryBlock;
-    // `skin_temp` maps to the `environment` cluster — the lowest priority
-    // in CLUSTER_PRIORITY — so this block degrades before everything else.
-    registerBlock("memory", "skin_temp");
-  }
-
-  // ── v1.15 — cycle/phase block ────────────────────────────────────────
-  //
-  // Present only for a cycle-enabled account (the promise is null otherwise,
-  // so this is byte-for-byte unchanged for everyone else). The block names the
-  // current phase + day-of-cycle, the next predicted event (period range +
-  // confidence + method; fertile window goal-gated), and the headline
-  // phase-correlation finding — all from the same deterministic engine the
-  // calendar + insights surface use, never re-derived. The Coach's cycle
-  // ground rule keeps replies descriptive: never contraception-grade, never a
-  // "safe day" claim. Registered against the lowest-priority `skin_temp`
-  // source so the soft-cap degrader sheds it before any clinical cluster.
-  if (cycleBlock) {
-    snapshot.cycle = cycleBlock;
-    registerBlock("cycle", "skin_temp");
-  }
-
-  // v1.18.1 — illness/condition context. Small + load-bearing, so it is
-  // attached WITHOUT a cluster registration (like scope/anthropometrics): the
-  // budget degrader never sheds it, the Coach always knows whether the user is
-  // in Rest Mode. Labels + lifecycle + dates only — no decrypted note.
-  if (illnessBlock) {
-    snapshot.illness = illnessBlock;
-  }
-
-  // v1.18.11 (#65) — lab-result context. Attached WITHOUT a cluster
-  // registration (like illness/scope): the budget degrader never sheds it, so
-  // the Coach can always answer a lab question from the user's own readings.
-  // Server-authoritative + grounded — resolved name/value/unit/range per
-  // biomarker, never the decrypted note.
-  if (labsBlock) {
-    snapshot.labs = labsBlock;
-  }
-
-  // v1.38 — doctor-visit context. Registered for degradation, and placed
-  // EXPLICITLY rather than left to inherit the tail of the list by accident: a
-  // visit history is low-frequency, high-signal-but-losable context, so it maps
-  // to `skin_temp` (the `environment` cluster, the tail of CLUSTER_PRIORITY),
-  // which puts it among the first blocks the budget degrader sheds — before any
-  // clinical cluster. Unlike illness (which carries the Rest Mode safety flag)
-  // there is no reason to protect it from truncation.
-  if (visitsBlock) {
-    snapshot.visits = visitsBlock;
-    registerBlock("visits", "skin_temp");
-  }
-
-  // ── v1.22 (W9) — adherence storyline (B5), changepoints (C1), signal-trust
-  // (C3). Best-effort + fault-isolated; tiny descriptive objects attached
-  // WITHOUT a cluster registration (like illness/labs/scope, the budget
-  // degrader never sheds them).
-  // These cross-cutting narrations belong on the BROAD Coach turn, not on a
-  // narrowed single-source snapshot (the F1 tool builds + metric-page contexts
-  // pass an explicit `scope.sources`). Skipping them there keeps a scoped read
-  // bounded to its domain and avoids spurious recovery/vital reads.
-  const isExplicitlyScoped =
-    Array.isArray(scope?.sources) && scope.sources.length > 0;
-  // Each of these reads its own fixed window; one that reaches past the
-  // lookback limit is left out.
-  const [adherenceStoryline, changepoints, signalTrust] = isExplicitlyScoped
-    ? [null, null, null]
-    : await Promise.all([
-        excludesMedications ||
-        !fitsReach(ADHERENCE_STORYLINE_HORIZON_DAYS, reach)
-          ? Promise.resolve(null)
-          : buildAdherenceStoryline(userId, userTz, now).catch(
-              blockFailed("adherenceStoryline"),
-            ),
-        fitsReach(CHANGEPOINT_WINDOW_DAYS, reach)
-          ? buildChangepointSignals(userId, now).catch(
-              blockFailed("changepoints"),
-            )
-          : Promise.resolve(null),
-        fitsReach(SIGNAL_TRUST_WINDOW_DAYS, reach)
-          ? buildSignalTrust(userId, userTz, now).catch(
-              blockFailed("signalTrust"),
-            )
-          : Promise.resolve(null),
-      ]);
-  if (adherenceStoryline) snapshot.adherenceStoryline = adherenceStoryline;
-  if (changepoints && changepoints.length > 0) {
-    snapshot.changepoints = changepoints;
-  }
-  if (signalTrust) snapshot.signalTrust = signalTrust;
-
-  if (Object.keys(snapshot).length === 0) {
-    metrics.add("general");
-  }
-
-  // Pin the scope onto the snapshot itself so the model knows which
-  // windows + sources are in-bounds for the reply. The system prompt
-  // tells the model to read from this block for day-level questions.
-  snapshot.scope = {
-    window,
-    sources: Array.from(sources),
-    timelineRecentDays: DAILY_TIMELINE_DAYS,
-    // Named only under a limit, so an unlimited snapshot stays as it was.
-    ...(bounded ? { lookbackLimit: reach.window } : {}),
-  };
-
+/**
+ * Compact, date, degrade and ground the assembled snapshot, and wrap it in
+ * the result envelope.
+ */
+function finaliseSnapshot(input: {
+  snapshot: Record<string, unknown>;
+  scope: CoachScope | undefined;
+  condenseRequested: boolean;
+  maxChars: number;
+  registry: SnapshotBlockRegistry;
+  groundingValues: Map<ReferenceMetric, number>;
+  hasDiabetes: boolean;
+  units: CoachSnapshotResult["units"];
+  windows: Set<CoachProvenance["windows"][number]>;
+  metrics: Set<CoachProvenance["metrics"][number]>;
+  counts: NonNullable<CoachProvenance["counts"]>;
+}): CoachSnapshotResult {
+  const { snapshot, scope, registry, units, counts } = input;
   // v1.4.36 — compactSections drops any zero-row block before
   // serialisation so the prompt never carries a labelled-empty key.
   // The snapshot is built conditionally above so most empty paths are
@@ -1055,7 +412,7 @@ async function buildCoachSnapshotImpl(
   // a metric page) asked for that source's blocks: those are condensed, never
   // emptied, and only after everything else has been shed.
   const requestedSource =
-    condenseRequested &&
+    input.condenseRequested &&
     Array.isArray(scope?.sources) &&
     scope.sources.length === 1
       ? scope.sources[0]
@@ -1063,15 +420,16 @@ async function buildCoachSnapshotImpl(
   const requestedBlocks = new Set(
     requestedSource === null
       ? []
-      : Array.from(blockSources.entries())
+      : Array.from(registry.blockSources.entries())
           .filter(([, source]) => source === requestedSource)
           .map(([key]) => key),
   );
   const degraded = degradeToBudget(
     compactSnapshot,
-    blockClusters,
+    registry.blockClusters,
     requestedBlocks,
-    (key) => blockDaily.get(key)?.(),
+    (key) => registry.blockDaily.get(key)?.(),
+    input.maxChars,
   );
 
   // v1.18.6 — build the citation-aware reference-grounding block from the
@@ -1081,11 +439,11 @@ async function buildCoachSnapshotImpl(
   // order (BP first), giving a stable, inspectable block for the
   // hallucination-QA pass.
   const groundingMetrics: GroundingMetricInput[] = Array.from(
-    groundingValues.entries(),
+    input.groundingValues.entries(),
   ).map(([metric, value]) => ({ metric, value }));
   const referenceGrounding = buildReferenceGroundingBlock({
     metrics: groundingMetrics,
-    hasDiabetes: prefsRow?.hasDiabetes ?? false,
+    hasDiabetes: input.hasDiabetes,
     units,
   });
   if (referenceGrounding) {
@@ -1093,7 +451,7 @@ async function buildCoachSnapshotImpl(
       action: { name: "coach.grounding.attached" },
       meta: {
         metrics: groundingMetrics.map((m) => m.metric).sort(),
-        hasDiabetes: prefsRow?.hasDiabetes ?? false,
+        hasDiabetes: input.hasDiabetes,
       },
     });
   }
@@ -1108,8 +466,8 @@ async function buildCoachSnapshotImpl(
     // serialised; exposing the record avoids re-parsing it.
     sections: compactSnapshot,
     provenance: {
-      windows: Array.from(windows),
-      metrics: Array.from(metrics),
+      windows: Array.from(input.windows),
+      metrics: Array.from(input.metrics),
       counts: Object.keys(counts).length > 0 ? counts : undefined,
     },
     referenceGrounding,
@@ -1140,6 +498,8 @@ export function degradeToBudget(
   requested: ReadonlySet<string> = new Set(),
   /** A requested block's daily values, for its condensed summary. */
   dailyOf: (key: string) => DailySeries | undefined = () => undefined,
+  /** The cap; the built-in one unless a Coach budget set another. */
+  maxChars: number = MAX_SNAPSHOT_CHARS,
 ): Array<{ key: string; cluster: CoachDataCluster; pass: number }> {
   const degraded: Array<{
     key: string;
@@ -1149,7 +509,7 @@ export function degradeToBudget(
   // Measure against the SAME compact form the prompt ships
   // (`JSON.stringify(snapshot)`), so the cap counts what the model reads.
   const size = () => JSON.stringify(snapshot).length;
-  if (size() <= MAX_SNAPSHOT_CHARS) return degraded;
+  if (size() <= maxChars) return degraded;
 
   // Build a degrade order: blocks grouped by cluster, lowest priority
   // first. A block with no registered cluster (e.g. anthropometrics,
@@ -1295,13 +655,13 @@ export function degradeToBudget(
   // prompt still exceeds the cap, so the clinical core keeps its detail
   // until it is genuinely the last lever left.
   for (const [key, cluster] of orderedKeys) {
-    if (size() <= MAX_SNAPSHOT_CHARS) break;
+    if (size() <= maxChars) break;
     // A requested series is condensed step by step and keeps its numbers
     // (`series-condense.ts`); it is never swapped for the `omitted` marker.
     if (requested.has(key) && isCondensable(key, snapshot[key])) {
       const daily = dailyOf(key);
       for (const step of [1, 2, 3] as const) {
-        if (size() <= MAX_SNAPSHOT_CHARS) break;
+        if (size() <= maxChars) break;
         if (condenseSeriesBlock(snapshot[key], step, key, daily)) {
           degraded.push({ key, cluster, pass: step });
         }
@@ -1309,9 +669,9 @@ export function degradeToBudget(
       continue;
     }
     if (dropRecent(key)) degraded.push({ key, cluster, pass: 1 });
-    if (size() <= MAX_SNAPSHOT_CHARS) break;
+    if (size() <= maxChars) break;
     if (dropWeekly(key)) degraded.push({ key, cluster, pass: 2 });
-    if (size() <= MAX_SNAPSHOT_CHARS) break;
+    if (size() <= maxChars) break;
     if (requested.has(key)) continue;
     if (dropBlock(key)) degraded.push({ key, cluster, pass: 3 });
   }

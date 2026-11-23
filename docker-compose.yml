@@ -272,6 +272,10 @@ x-healthlog-env: &healthlog_env
   # "http://dawarich.lan:3000"). Without it a LAN/private Dawarich URL is
   # refused as an SSRF target; a public instance needs nothing here.
   DAWARICH_PRIVATE_ORIGINS: "${DAWARICH_PRIVATE_ORIGINS:-}"
+  # WebDAV / Nextcloud servers on your own network that the scheduled Health
+  # Connect fetch may reach, comma-separated exact origins (e.g.
+  # "https://cloud.lan"); a public server needs nothing here.
+  HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS: "${HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS:-}"
   # Webhook (Gotify, Home Assistant, n8n) and ntfy targets on your own
   # network, comma-separated exact origins (e.g. "https://gotify.example.com,
   # http://ntfy.lan:8080"). Without it a target that resolves to a private
@@ -441,6 +445,17 @@ x-healthlog-env: &healthlog_env
   # Set "true" only if your own iOS build carries Apple's Critical Alerts
   # entitlement; otherwise urgent alerts use the time-sensitive level.
   APNS_CRITICAL_ENTITLEMENT: "${APNS_CRITICAL_ENTITLEMENT:-}"
+  # Push relay for the App Store app (docs/integrations/push-relay.md).
+  # PUSH_RELAY_MODE "off" hides the admin switch and the one-time notice;
+  # unset or "allowed" leaves the choice to the admin. PUSH_RELAY_URL and
+  # PUSH_RELAY_KEYS point a server at a relay other than the hosted one.
+  PUSH_RELAY_MODE: "${PUSH_RELAY_MODE:-}"
+  PUSH_RELAY_URL: "${PUSH_RELAY_URL:-}"
+  PUSH_RELAY_KEYS: "${PUSH_RELAY_KEYS:-}"
+  # PUSH_RELAY_LIVE_ACTIVITY "on" lets Live Activity start and update go over
+  # the relay for devices whose owner gave the separate Live Activity consent;
+  # off by default until the app's device test passed.
+  PUSH_RELAY_LIVE_ACTIVITY: "${PUSH_RELAY_LIVE_ACTIVITY:-}"
   # Structured logging. LOG_LEVEL is one of debug/info/warn/error (default
   # info) — drop to debug while chasing a problem, raise to warn on a busy
   # instance. LOG_SAMPLE_RATE keeps that fraction of successful events

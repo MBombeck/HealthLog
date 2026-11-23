@@ -98,7 +98,7 @@ export function CoachSection() {
             description={t("settings.coach.nudgesMoved")}
           />
           <SettingsCardActions align="start">
-            <Button asChild variant="outline" size="sm" className="min-h-11">
+            <Button asChild variant="outline" size="sm">
               <Link href="/settings/notifications#coach-nudge">
                 {t("settings.coach.openNudges")}
                 <ChevronRight className="size-4" aria-hidden="true" />

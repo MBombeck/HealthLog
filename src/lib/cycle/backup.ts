@@ -46,6 +46,10 @@ import {
   UNOPENED,
 } from "@/lib/export/sealed-text";
 import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
+import {
+  pregnancyBackupFields,
+  restoredPregnancyColumns,
+} from "@/lib/cycle/pregnancy-backup";
 import type { BackupPayload } from "@/lib/validations/backup";
 import {
   recordUnknownKeys,
@@ -70,6 +74,18 @@ export interface CycleBackupSection {
     rawChartMode: boolean;
     discreetNotifications: boolean;
     sensitiveCategoryEncryption: boolean;
+    /**
+     * The pregnancy / postpartum state and its dates: readable in a portable
+     * file, the sealed envelope (`pregnancyEncrypted`) in a disaster-recovery
+     * one.
+     */
+    reproductiveState?: string | null;
+    pregnancyStartDate?: string | null;
+    pregnancyDueDate?: string | null;
+    deliveryDate?: string | null;
+    postpartumWeeks: number;
+    pregnancyOwnerDecided?: boolean;
+    pregnancyEncrypted?: string | null;
     createdAt?: string;
     updatedAt?: string;
   } | null;
@@ -128,6 +144,8 @@ export interface CycleBackupSection {
     tz: string | null;
     syncVersion?: number;
     deletedAt?: string | null;
+    /** Disaster recovery, where set: `deletedAt` if the phone deleted it. */
+    appleHealthDeletedAt?: string;
     createdAt?: string;
     updatedAt?: string;
     /**
@@ -160,6 +178,8 @@ export interface CycleBackupSection {
      * the links stamped with the restore.
      */
     symptomLinkCreatedAt?: Array<{ key: string; createdAt: string }>;
+    /** The links an import wrote, by key (`CycleSymptomLink.source`), sparse. */
+    symptomSources?: Array<{ key: string; source: string }>;
   }>;
   /**
    * The account's OWN symptom definitions.
@@ -272,6 +292,7 @@ export async function buildCycleBackupSection(
           rawChartMode: profile.rawChartMode,
           discreetNotifications: profile.discreetNotifications,
           sensitiveCategoryEncryption: profile.sensitiveCategoryEncryption,
+          ...pregnancyBackupFields(profile, disasterRecovery),
         }
       : null,
     cycles: cycles.map((c) => ({
@@ -301,6 +322,9 @@ export async function buildCycleBackupSection(
             cycleId: d.cycleId,
             syncVersion: d.syncVersion,
             deletedAt: d.deletedAt?.toISOString() ?? null,
+            ...(d.appleHealthDeletedAt
+              ? { appleHealthDeletedAt: d.appleHealthDeletedAt.toISOString() }
+              : {}),
             createdAt: d.createdAt.toISOString(),
             updatedAt: d.updatedAt.toISOString(),
           }
@@ -338,6 +362,9 @@ export async function buildCycleBackupSection(
       symptomSeverities: d.symptomLinks
         .filter((l): l is typeof l & { severity: number } => l.severity != null)
         .map((l) => ({ key: l.symptom.key, severity: l.severity })),
+      symptomSources: d.symptomLinks
+        .filter((l) => l.source !== "MANUAL")
+        .map((l) => ({ key: l.symptom.key, source: l.source })),
       ...(disasterRecovery
         ? {
             symptomLinkCreatedAt: d.symptomLinks.map((l) => ({
@@ -480,9 +507,15 @@ function dayLogSymptomLinks(
     symptomKeys?: string[];
     symptomSeverities?: Array<{ key: string; severity?: number | null }>;
     symptomLinkCreatedAt?: Array<{ key: string; createdAt: string }>;
+    symptomSources?: Array<{ key: string; source: string }>;
   },
   symptomIdByKey: ReadonlyMap<string, string>,
 ) {
+  const sourceByKey = new Map<string, MeasurementSource>();
+  for (const s of d.symptomSources ?? []) {
+    const source = enumOrNull(s.source, CYCLE_SOURCES);
+    if (source) sourceByKey.set(s.key, source);
+  }
   const severityByKey = new Map<string, number>();
   for (const s of d.symptomSeverities ?? []) {
     const severity = severityOrNull(s.severity);
@@ -499,11 +532,31 @@ function dayLogSymptomLinks(
           {
             symptomId: id,
             severity: severityByKey.get(k) ?? null,
+            source: sourceByKey.get(k) ?? "MANUAL",
             ...(createdAt ? { createdAt: new Date(createdAt) } : {}),
           },
         ]
       : [];
   });
+}
+
+/** A day-log's tombstone, its origin and timestamps, as the file has them. */
+function restoredDayLogStamps(
+  d: Partial<
+    Record<
+      "deletedAt" | "appleHealthDeletedAt" | "createdAt" | "updatedAt",
+      string | null
+    >
+  >,
+) {
+  return {
+    deletedAt: d.deletedAt ? new Date(d.deletedAt) : null,
+    appleHealthDeletedAt: d.appleHealthDeletedAt
+      ? new Date(d.appleHealthDeletedAt)
+      : null,
+    ...(d.createdAt ? { createdAt: new Date(d.createdAt) } : {}),
+    ...(d.updatedAt ? { updatedAt: new Date(d.updatedAt) } : {}),
+  };
 }
 
 /**
@@ -561,14 +614,14 @@ export async function restoreCycleData(
         rawChartMode: p.rawChartMode ?? false,
         discreetNotifications: p.discreetNotifications ?? false,
         sensitiveCategoryEncryption: p.sensitiveCategoryEncryption ?? true,
+        ...restoredPregnancyColumns(p),
         ...(p.createdAt ? { createdAt: new Date(p.createdAt) } : {}),
         ...(p.updatedAt ? { updatedAt: new Date(p.updatedAt) } : {}),
       },
     });
   }
 
-  // Recreate observed cycle spans; map startDate → id so day-logs can
-  // re-attach to their owning span.
+  // Recreate observed spans; startDate → id re-attaches day-logs to them.
   const cycleIdByStart = new Map<string, string>();
   const restoredCycleIds = new Set<string>();
   // A folded start names the start that absorbed it. Kept only when that start
@@ -729,9 +782,7 @@ export async function restoreCycleData(
         externalId: d.externalId ?? null,
         tz: d.tz ?? null,
         syncVersion: d.syncVersion ?? 0,
-        deletedAt: d.deletedAt ? new Date(d.deletedAt) : null,
-        ...(d.createdAt ? { createdAt: new Date(d.createdAt) } : {}),
-        ...(d.updatedAt ? { updatedAt: new Date(d.updatedAt) } : {}),
+        ...restoredDayLogStamps(d),
         ...(symptomLinks.length > 0
           ? { symptomLinks: { create: symptomLinks } }
           : {}),

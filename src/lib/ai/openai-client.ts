@@ -9,6 +9,7 @@ import type {
 } from "./types";
 import {
   isCanonicalOpenAIEndpoint,
+  refusesSeed,
   selectOpenAIChatCompletionsCapabilities,
   type OpenAIChatCompletionsCapabilities,
 } from "./openai-capabilities";
@@ -225,13 +226,7 @@ export class OpenAIClient implements AIProvider {
       reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
     const thinkingTokens = this.thinkingRoom(params, reasoningWire);
     const tokenBudget = (params.maxTokens ?? 1000) + thinkingTokens;
-    const capabilityParams = caps.supportsSamplingControls
-      ? {
-          [caps.tokenBudgetField]: tokenBudget,
-          temperature: params.temperature ?? 0.3,
-          ...(params.seed !== undefined ? { seed: params.seed } : {}),
-        }
-      : { [caps.tokenBudgetField]: tokenBudget };
+    const sampling = this.samplingParams(params, caps, tokenBudget);
 
     // A gateway that needs no bearer (a LAN LiteLLM without a master key)
     // gets no `Authorization` header at all rather than an empty one — an
@@ -252,7 +247,7 @@ export class OpenAIClient implements AIProvider {
         body: JSON.stringify({
           model: this.config.model,
           messages,
-          ...capabilityParams,
+          ...sampling.capabilityParams,
           ...(sendJsonFormat
             ? { response_format: { type: "json_object" } }
             : {}),
@@ -299,7 +294,13 @@ export class OpenAIClient implements AIProvider {
     );
 
     if (!res.ok) {
-      return this.failed(res, params, hops, { sent, sendJsonFormat, caps });
+      const { sendSeed } = sampling;
+      return this.failed(res, params, hops, {
+        sent,
+        sendJsonFormat,
+        sendSeed,
+        caps,
+      });
     }
 
     // v1.33.1 (#470) — the standard `response_format` request succeeded: pin
@@ -515,6 +516,7 @@ export class OpenAIClient implements AIProvider {
     sent: {
       sent: string | null;
       sendJsonFormat: boolean;
+      sendSeed: boolean;
       caps: OpenAIChatCompletionsCapabilities;
     },
   ): Promise<CompletionResult> {
@@ -545,6 +547,7 @@ export class OpenAIClient implements AIProvider {
         sent.caps.tokenBudgetField === "max_tokens"
           ? { endpoint: this.config.baseUrl }
           : null,
+      seed: sent.sendSeed ? { endpoint: this.config.baseUrl } : null,
     });
     if (lesson && hops.canSend) return this.generateCompletion(params, hops);
     const modelNotServed = await this.modelNoLongerServed(res.status);
@@ -566,6 +569,34 @@ export class OpenAIClient implements AIProvider {
         ...(lesson === "reasoning" ? { reasoningRefused: true } : {}),
       },
     );
+  }
+
+  /**
+   * The token budget and, where the wire takes them, the sampling controls.
+   * An endpoint that refused `seed` (Gemini's OpenAI-compatible endpoint has
+   * no such field) is asked without it from then on.
+   */
+  private samplingParams(
+    params: CompletionParams,
+    caps: OpenAIChatCompletionsCapabilities,
+    tokenBudget: number,
+  ): { capabilityParams: Record<string, unknown>; sendSeed: boolean } {
+    if (!caps.supportsSamplingControls) {
+      return {
+        capabilityParams: { [caps.tokenBudgetField]: tokenBudget },
+        sendSeed: false,
+      };
+    }
+    const sendSeed =
+      params.seed !== undefined && !refusesSeed(this.config.baseUrl);
+    return {
+      capabilityParams: {
+        [caps.tokenBudgetField]: tokenBudget,
+        temperature: params.temperature ?? 0.3,
+        ...(sendSeed ? { seed: params.seed } : {}),
+      },
+      sendSeed,
+    };
   }
 
   // ── v1.41 reasoning ───────────────────────────────────────────────────────

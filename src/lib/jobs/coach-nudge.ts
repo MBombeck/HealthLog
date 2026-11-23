@@ -107,11 +107,13 @@ import { resolveRestMode } from "@/lib/illness/rest-mode";
 import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
+import { weightFramingPaused } from "@/lib/cycle/pregnancy-context";
 import {
   DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
   type HealthProfileAiSection,
 } from "@/lib/validations/health-profile-facts";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
+import { mean } from "@/lib/stats/central";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const SELF_CONTEXT_AI_SECTIONS = [
@@ -236,9 +238,8 @@ export interface CoachNudgeSummary {
 export function evaluateComplianceTrigger(
   rows: { takenAt: Date | null; skipped: boolean; autoMissed: boolean }[],
 ): boolean {
-  // Deliberate skips are a planned break, not a compliance problem —
-  // exclude them from both numerator and denominator (the compliance
-  // engine's own semantics).
+  // Deliberate skips are a planned break, not a compliance problem: out of
+  // both numerator and denominator (the compliance engine's semantics).
   //
   // v1.16.1 — only RESOLVED slots count toward the denominator: taken
   // rows and auto-missed rows (the hourly auto-miss cron flips a pending
@@ -320,9 +321,7 @@ export function evaluateScoreTrigger(
   ) {
     return false;
   }
-  const mean = (values: number[]) =>
-    values.reduce((sum, v) => sum + v, 0) / values.length;
-  return mean(priorValues) - mean(recentValues) >= COACH_NUDGE_SCORE_DROP;
+  return mean(priorValues)! - mean(recentValues)! >= COACH_NUDGE_SCORE_DROP;
 }
 
 /**
@@ -349,12 +348,10 @@ export function evaluateWeightTrigger(
   ) {
     return false;
   }
-  const mean = (values: number[]) =>
-    values.reduce((sum, v) => sum + v, 0) / values.length;
   const distance = (v: number) =>
     Math.max(0, range.greenMin - v, v - range.greenMax);
-  const recentDistance = distance(mean(recentValues));
-  const priorDistance = distance(mean(priorValues));
+  const recentDistance = distance(mean(recentValues)!);
+  const priorDistance = distance(mean(priorValues)!);
   return (
     recentDistance > 0 &&
     recentDistance - priorDistance >= COACH_NUDGE_WEIGHT_DRIFT_KG
@@ -534,11 +531,7 @@ export async function findTriggerForUser(
   ) =>
     getEffectiveRange(
       metric,
-      {
-        heightCm: user.heightCm,
-        dateOfBirth: user.dateOfBirth,
-        gender: user.gender,
-      },
+      user,
       (user.thresholdsJson ?? null) as ThresholdOverridesJson | null,
     ).range;
 
@@ -608,9 +601,9 @@ export async function findTriggerForUser(
       .map((m) => m.value);
     if (evaluateScoreTrigger(recent, prior)) return "score";
 
-    // 4) Weight weekly mean drifting away from the effective range.
+    // 4) Weight weekly mean drifting away from the effective range; never in a pregnancy.
     const weightRange = effectiveRange("WEIGHT");
-    if (weightRange) {
+    if (weightRange && !(await weightFramingPaused(prisma, user, now))) {
       const weights = await prisma.measurement.findMany({
         where: {
           userId: user.id,

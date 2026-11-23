@@ -64,6 +64,7 @@ const subsystemSurface = {
   "coach-reminder-sweep": { audience: "system" },
   "coach-plan-review": { audience: "system" },
   "medication-low-stock": { audience: "system" },
+  "report-schedule": { audience: "system" },
   "daily-briefing": { audience: "system" },
   "system-job-alert": { audience: "system" },
 
@@ -86,6 +87,7 @@ const subsystemSurface = {
   "mood-reminder-check": { audience: "system" },
   "cycle-reminder-check": { audience: "system" },
   "measurement-reminder-check": { audience: "system" },
+  "measurement-anomaly-check": { audience: "system" },
   "reminder-satisfy": { audience: "system" },
 
   // register-maintenance.ts
@@ -118,6 +120,8 @@ const subsystemSurface = {
   "apple-health-import-reconcile": { audience: "account" },
   "health-connect-import": { audience: "account" },
   "fit-import": { audience: "account" },
+  "record-file-import": { audience: "account" },
+  "health-connect-remote-fetch": { audience: "account" },
   "compaction-tombstone-purge": { audience: "system" },
   "measurement-fold-repair": { audience: "system" },
   "lab-document-date-repair": { audience: "system" },
@@ -128,6 +132,10 @@ const subsystemSurface = {
   "intake-slot-dedup": { audience: "system" },
   "mood-reminder-cleanup": { audience: "system" },
   "push-attempt-cleanup": { audience: "system" },
+  "push-relay-maintenance": { audience: "system" },
+  "push-data-changed": { audience: "system" },
+  "healthkit-catch-up": { audience: "system" },
+  "push-live-activity": { audience: "system" },
   "arrival-reaction-cleanup": { audience: "system" },
   "cycle-prediction-refresh": { audience: "system" },
   "mood-prognosis-refresh": { audience: "system" },
@@ -135,6 +143,7 @@ const subsystemSurface = {
   "measurement-tombstone-cleanup": { audience: "system" },
   "soft-delete-purge": { audience: "system" },
   "auth-ledger-cleanup": { audience: "system" },
+  "ledger-retention-cleanup": { audience: "system" },
   "coach-message-cleanup": { audience: "system" },
   "workout-insight-claim-cleanup": { audience: "system" },
   "note-encryption-backfill": { audience: "system" },

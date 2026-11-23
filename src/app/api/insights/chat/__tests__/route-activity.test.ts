@@ -335,8 +335,8 @@ describe("concurrent turns", () => {
     expect(m.checkRateLimit).toHaveBeenCalledWith(
       "coach-turn-active:u1",
       2,
-      // The longest turn's wall time (200 s since v1.41.2) plus 30 s for
-      // its reply to stream.
+      // The built-in wall time (200 s) plus 30 s for its reply to stream:
+      // this account stored no longer turn.
       230_000,
     );
   });

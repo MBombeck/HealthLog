@@ -43,9 +43,10 @@ export interface TurnLimits {
 }
 
 /**
- * Fixed per payer, not configurable: the person's own plan, key or local
- * model gets room for a long "why" chain; a turn the operator pays for gets
- * a third of the tokens and half the rounds.
+ * The built-in limits per payer: the person's own plan, key or local model
+ * gets room for a long "why" chain; a turn the operator pays for gets a third
+ * of the tokens and half the rounds. A person may set their own for a
+ * self-hosted provider (`coach-budgets.ts`); the operator's stay fixed.
  *
  * v1.41.2 — about a third more on both sides (was 120k / 150 s / 12 rounds
  * and 40k / 90 s / 6 rounds). A real turn on a person's own plan stopped for
@@ -156,7 +157,7 @@ export function createTurnBudget(args: {
   initialInputTokens: number;
   /** Injected for tests. */
   now?: () => number;
-  /** Overrides for tests. */
+  /** The person's own budget (`resolveCoachLimits`); the payer's otherwise. */
   limits?: TurnLimits;
 }): TurnBudget {
   const now = args.now ?? Date.now;

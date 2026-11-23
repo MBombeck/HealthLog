@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { createManyAndReturnMock, findFirstMock, updateMock, safeFetchMock } =
   vi.hoisted(() => ({
@@ -197,6 +197,18 @@ describe("mapHeartRateSample", () => {
 });
 
 describe("syncOuraHeartRateRange", () => {
+  // The samples below are from 1 October 2026. Once they are older than the
+  // dense fold's retention (90 days) the write path asks whether the fold
+  // already took them, a question this test does not set up. Pin the clock a
+  // few days after the fixture so it does not age into that branch.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-04T12:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("writes every page as it arrives, in bounded batches, following next_token", async () => {
     const start = new Date("2026-10-01T00:00:00Z");
     const page = (offset: number, n: number) =>

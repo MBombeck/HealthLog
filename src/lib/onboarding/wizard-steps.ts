@@ -13,10 +13,16 @@
  */
 import type { OnboardingSourceKey } from "./needs";
 import {
+  followUpApplies,
   hasEnteredOnboardingFlow,
+  isOnboardingFollowUpStep,
+  NO_ONBOARDING_OFFERS,
+  ONBOARDING_FOLLOW_UP_STEP_IDS,
   ONBOARDING_SKIPPABLE_STEP_IDS,
   type OnboardingFirstResultTask,
+  type OnboardingFollowUpStepId,
   type OnboardingNeeds,
+  type OnboardingOffers,
   type OnboardingStateDto,
   type OnboardingStepId,
 } from "./needs";
@@ -49,7 +55,14 @@ export function isBrowserConnectableSource(
   return (BROWSER_CONNECTABLE_SOURCES as readonly string[]).includes(source);
 }
 
-type FlowState = Pick<OnboardingStateDto, "steps" | "needs">;
+/**
+ * What the machine reads. `offers` is optional so a caller holding only the
+ * ledger and the answers still gets an order; without it the server-dependent
+ * follow-up (`ai`) is not offered, which shows less and never more.
+ */
+type FlowState = Pick<OnboardingStateDto, "steps" | "needs"> & {
+  offers?: OnboardingOffers;
+};
 
 function status(state: FlowState, id: OnboardingStepId) {
   return state.steps.find((step) => step.id === id)?.status ?? "pending";
@@ -60,23 +73,48 @@ const UNIT_AREAS = new Set<OnboardingNeeds["areas"][number]>([
   "weight-body",
 ]);
 
+/** A medication on a schedule, the answer the registry question is for. */
+export function medicationScheduled(needs: OnboardingNeeds): boolean {
+  return needs.medication === "yes" || needs.medication === "sometimes";
+}
+
 /**
- * Whether Q6 is part of this flow at all.
+ * Whether Q6, "Region & units" since 1.49, is part of this flow at all.
  *
- * Two conditions from the spec: an area that needs a unit is among the
- * answers, and the account does not already hold the preferences. The
- * second is read off the published ledger rather than off the account —
- * the server resolves `units` to `done` when both columns are held — with
- * one refinement: a `done` the FLOW itself produced (an answer is recorded
- * beside it) keeps the screen in the order, so a person can go back to it,
- * and a deliberate skip does the same.
+ * Two conditions: something on the screen concerns the record (an area that
+ * needs a unit, or a medication schedule, which the medicine registry and the
+ * reminder times are about), and the account does not already hold the
+ * preferences. The second is read off the published ledger rather than off
+ * the account — the server resolves `units` to `done` when both unit columns
+ * are held — with one refinement: a `done` the FLOW itself produced (an
+ * answer is recorded beside it) keeps the screen in the order, so a person
+ * can go back to it, and a deliberate skip does the same. A finished record
+ * never resumes into it, because its status is settled either way.
  */
 export function unitsQuestionApplies(state: FlowState): boolean {
-  if (!state.needs.areas.some((area) => UNIT_AREAS.has(area))) return false;
+  const concerned =
+    state.needs.areas.some((area) => UNIT_AREAS.has(area)) ||
+    medicationScheduled(state.needs);
+  if (!concerned) return false;
+  const units = state.needs.units;
   const flowAnswered =
-    state.needs.units.glucoseUnit !== null ||
-    state.needs.units.unitPreference !== null;
+    units.glucoseUnit !== null ||
+    units.unitPreference !== null ||
+    units.timezone !== null ||
+    units.medicineRegistry !== null;
   return !(status(state, "units") === "done" && !flowAnswered);
+}
+
+/**
+ * The follow-up screens this flow shows after confirm, in order. A follow-up
+ * is in the order while it applies, whatever its status, so "Back" reaches an
+ * answered one.
+ */
+export function followUpScreens(state: FlowState): OnboardingFollowUpStepId[] {
+  const offers = state.offers ?? NO_ONBOARDING_OFFERS;
+  return ONBOARDING_FOLLOW_UP_STEP_IDS.filter((id) =>
+    followUpApplies(id, state.needs, offers, status(state, id)),
+  );
 }
 
 const FIXED_QUESTIONS: readonly OnboardingStepId[] = [
@@ -149,6 +187,7 @@ export function screenOrder(state: FlowState): OnboardingScreenId[] {
     "welcome",
     ...questionScreens(state),
     "confirm",
+    ...followUpScreens(state),
     ...(firstResultApplies(state) ? (["first-result"] as const) : []),
     "done",
   ];
@@ -165,19 +204,16 @@ export function screenOrder(state: FlowState): OnboardingScreenId[] {
  * answers as prefill — which is the point of keeping them.
  */
 export function resumeScreen(state: FlowState): OnboardingScreenId {
-  if (
-    !hasEnteredOnboardingFlow({
-      ...state,
-      completedAt: null,
-      firstResult: null,
-    })
-  ) {
+  if (!hasEnteredOnboardingFlow({ needs: state.needs, completedAt: null })) {
     return "welcome";
   }
   for (const id of questionScreens(state)) {
     if (status(state, id) === "pending") return id;
   }
   if (status(state, "confirm") === "pending") return "confirm";
+  for (const id of followUpScreens(state)) {
+    if (status(state, id) === "pending") return id;
+  }
   if (
     firstResultApplies(state) &&
     status(state, "first-result") === "pending"
@@ -236,15 +272,22 @@ export function canVisitScreen(
  * no unit-bearing area — so without this the route answers "incomplete" to
  * three flows out of four, which is exactly what the first real run found.
  * The first-result step is not a question and is passed by the confirm
- * screen on its own rule.
+ * screen on its own rule; the follow-ups come after confirm and resolve on
+ * the server.
  */
+type PassableQuestionId = Exclude<
+  (typeof ONBOARDING_SKIPPABLE_STEP_IDS)[number],
+  "first-result" | OnboardingFollowUpStepId
+>;
+
 export function questionsToPassBeforeConfirm(
   state: FlowState,
-): Exclude<(typeof ONBOARDING_SKIPPABLE_STEP_IDS)[number], "first-result">[] {
+): PassableQuestionId[] {
   const shown = new Set<string>(questionScreens(state));
   return ONBOARDING_SKIPPABLE_STEP_IDS.filter(
-    (id): id is Exclude<typeof id, "first-result"> =>
+    (id): id is PassableQuestionId =>
       id !== "first-result" &&
+      !isOnboardingFollowUpStep(id) &&
       !shown.has(id) &&
       status(state, id) === "pending",
   );
@@ -261,16 +304,28 @@ export function isOnboardingPathname(pathname: string): boolean {
 }
 
 /**
- * "2 of 6" — for the question screens only. The welcome, confirm, first
- * result and done screens carry no counter: the count is a promise about how
- * many questions are left, and those screens are not questions.
+ * The step track: the ordered screens the flow shows after the welcome. The
+ * one source for both the counter ("Step 3 of 9") and the bar of segments
+ * under it, so the two cannot disagree. They used to come from two lists (the
+ * counter from the questions, the bar from every screen), and a flow showed
+ * "Step 1 of 5" over nine segments.
+ */
+export function stepTrack(state: FlowState): OnboardingStepId[] {
+  return screenOrder(state).filter(
+    (id): id is OnboardingStepId => id !== "welcome",
+  );
+}
+
+/**
+ * "Step 3 of 9": the screen's place on the step track, or null on the
+ * welcome, which comes before the track.
  */
 export function stepCounter(
   state: FlowState,
   screen: OnboardingScreenId,
 ): { current: number; total: number } | null {
-  const questions = questionScreens(state);
-  const index = (questions as readonly string[]).indexOf(screen);
+  const track = stepTrack(state);
+  const index = (track as readonly string[]).indexOf(screen);
   if (index === -1) return null;
-  return { current: index + 1, total: questions.length };
+  return { current: index + 1, total: track.length };
 }

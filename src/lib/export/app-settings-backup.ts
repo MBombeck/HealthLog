@@ -15,7 +15,11 @@
  * account copy does not rebuild a lost host; a database dump and the keys do
  * (`docs/ops/disaster-recovery.md`).
  */
-import { DEFAULT_REASONING_MAX_EFFORT } from "@/lib/ai/reasoning/levels";
+import { Prisma, type AppSettings } from "@/generated/prisma/client";
+import {
+  APP_SETTINGS_CARRIED_COLUMNS,
+  APP_SETTINGS_COLUMNS,
+} from "@/lib/export/app-settings-columns";
 import type {
   BackupExportContext,
   BackupExportPart,
@@ -25,9 +29,28 @@ import { foldLegacyCoachAvailability } from "@/lib/modules/operator-availability
 
 // ── Export ───────────────────────────────────────────────────────────────────
 
+/** The carried columns of the row, made JSON-safe by each column's codec. */
+export function serialiseAppSettings(
+  row: AppSettings,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const column of APP_SETTINGS_CARRIED_COLUMNS) {
+    const verdict = APP_SETTINGS_COLUMNS[column];
+    if (verdict.class === "OPERATIONAL") continue;
+    const value = row[column];
+    out[column] =
+      verdict.codec === "date"
+        ? ((value as Date | null)?.toISOString() ?? null)
+        : verdict.codec === "bigint"
+          ? String(value)
+          : value;
+  }
+  return out;
+}
+
 /**
- * The instance settings slice: the singleton row, in a disaster-recovery
- * payload only, with its timestamps and its quota made JSON-safe.
+ * The instance settings slice: the carried columns of the singleton row, in
+ * a disaster-recovery payload only (`app-settings-columns.ts`).
  */
 export async function buildAppSettingsBackupPart(
   ctx: BackupExportContext,
@@ -39,14 +62,7 @@ export async function buildAppSettingsBackupPart(
     section: {
       appSettings:
         ctx.disasterRecovery && appSettings
-          ? {
-              ...appSettings,
-              adminCodexTokenExpiresAt:
-                appSettings.adminCodexTokenExpiresAt?.toISOString() ?? null,
-              adminCodexConnectedAt:
-                appSettings.adminCodexConnectedAt?.toISOString() ?? null,
-              documentQuotaBytes: appSettings.documentQuotaBytes.toString(),
-            }
+          ? serialiseAppSettings(appSettings)
           : null,
     },
     counts: {},
@@ -54,6 +70,38 @@ export async function buildAppSettingsBackupPart(
 }
 
 // ── Restore ──────────────────────────────────────────────────────────────────
+
+/**
+ * The row the file states, by the same table the export walked. A column the
+ * file does not carry (a file older than the column) is written at its
+ * default where the table names one, and left alone otherwise.
+ */
+export function appSettingsRowFromFile(
+  settings: Record<string, unknown>,
+): Record<string, unknown> {
+  const data: Record<string, unknown> = {};
+  for (const column of APP_SETTINGS_CARRIED_COLUMNS) {
+    if (column === "id") continue;
+    const verdict = APP_SETTINGS_COLUMNS[column];
+    if (verdict.class === "OPERATIONAL") continue;
+    let value = settings[column];
+    if (value === undefined) {
+      if (!("whenAbsent" in verdict)) continue;
+      value = verdict.whenAbsent;
+    }
+    data[column] =
+      verdict.codec === "date"
+        ? value == null
+          ? null
+          : new Date(value as string)
+        : verdict.codec === "bigint"
+          ? BigInt(value as string)
+          : verdict.codec === "json" && value === null
+            ? Prisma.DbNull
+            : value;
+  }
+  return data;
+}
 
 export async function restoreAppSettings(ctx: RestoreContext): Promise<void> {
   const { tx, payload } = ctx;
@@ -65,58 +113,36 @@ export async function restoreAppSettings(ctx: RestoreContext): Promise<void> {
     settings.moduleAvailabilityJson,
     settings.assistantCoachEnabled,
   );
+  const row = appSettingsRowFromFile(settings);
+  // The relay answer and the relay registration are one state in two places,
+  // and only the answer travels. While this host is registered at a relay,
+  // the registration is what sends (`routeFor`), so the host's own answer
+  // stays: a file from before the switch would otherwise write `null` or
+  // `off` beside a running relay, and the admin would be asked again, or
+  // told it is off, while every push still goes over it.
+  if (await hostIsRegisteredAtRelay(tx)) delete row.pushRelayDecision;
   const settingsData = {
-    registrationEnabled: settings.registrationEnabled,
-    mfaRequired: settings.mfaRequired,
-    defaultLocale: settings.defaultLocale,
-    telegramGlobal: settings.telegramGlobal,
-    ntfyGlobal: settings.ntfyGlobal,
-    webPushGlobal: settings.webPushGlobal,
-    webPushVapidPublicKey: settings.webPushVapidPublicKey,
-    webPushVapidPrivateKeyEncrypted: settings.webPushVapidPrivateKeyEncrypted,
-    webPushVapidSubject: settings.webPushVapidSubject,
-    apiGlobal: settings.apiGlobal,
-    umamiEnabled: settings.umamiEnabled,
-    umamiScriptUrl: settings.umamiScriptUrl,
-    umamiWebsiteId: settings.umamiWebsiteId,
-    glitchtipEnabled: settings.glitchtipEnabled,
-    glitchtipDsn: settings.glitchtipDsn,
-    glitchtipEnvironment: settings.glitchtipEnvironment,
-    reminderLateMinutes: settings.reminderLateMinutes,
-    reminderMissedMinutes: settings.reminderMissedMinutes,
-    adminAiKeyEncrypted: settings.adminAiKeyEncrypted,
-    adminAiModel: settings.adminAiModel,
-    adminAiBaseUrl: settings.adminAiBaseUrl,
-    adminCodexAccessTokenEncrypted: settings.adminCodexAccessTokenEncrypted,
-    adminCodexRefreshTokenEncrypted: settings.adminCodexRefreshTokenEncrypted,
-    adminCodexAccountIdEncrypted: settings.adminCodexAccountIdEncrypted,
-    adminCodexTokenExpiresAt: settings.adminCodexTokenExpiresAt
-      ? new Date(settings.adminCodexTokenExpiresAt)
-      : null,
-    adminCodexConnectedAt: settings.adminCodexConnectedAt
-      ? new Date(settings.adminCodexConnectedAt)
-      : null,
-    adminCodexConnectionStatus: settings.adminCodexConnectionStatus,
-    adminAiInsightsFeedbackSummary:
-      settings.adminAiInsightsFeedbackSummary as never,
-    defaultUserTimezone: settings.defaultUserTimezone,
-    assistantEnabled: settings.assistantEnabled,
+    ...row,
     assistantCoachEnabled: coachFold.assistantCoachEnabled,
-    assistantBriefingEnabled: settings.assistantBriefingEnabled,
-    assistantInsightStatusEnabled: settings.assistantInsightStatusEnabled,
-    assistantDocumentAiEnabled: settings.assistantDocumentAiEnabled ?? true,
-    // Absent on a file written before the controls existed, which restores
-    // them at their defaults: allowed, no cap.
-    aiReasoningEnabled: settings.aiReasoningEnabled ?? true,
-    aiReasoningMaxEffort:
-      settings.aiReasoningMaxEffort ?? DEFAULT_REASONING_MAX_EFFORT,
-    moduleAvailabilityJson: coachFold.moduleAvailabilityJson as never,
-    documentMaxFileBytes: settings.documentMaxFileBytes,
-    documentQuotaBytes: BigInt(settings.documentQuotaBytes),
-  };
+    moduleAvailabilityJson: coachFold.moduleAvailabilityJson,
+  } as never;
   await tx.appSettings.upsert({
     where: { id: settings.id },
-    create: { id: settings.id, ...settingsData },
+    create: { id: settings.id, ...(settingsData as object) },
     update: settingsData,
   });
+}
+
+/**
+ * A live registration on this host: one with an instance id that is not
+ * being deleted (`loadRegistration`).
+ */
+async function hostIsRegisteredAtRelay(
+  tx: RestoreContext["tx"],
+): Promise<boolean> {
+  const live = await tx.pushRelayRegistration.findFirst({
+    where: { instanceId: { not: null }, state: { not: "deleting" } },
+    select: { id: true },
+  });
+  return live !== null;
 }

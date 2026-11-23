@@ -30,8 +30,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { apiDelete, apiGet, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
-import { formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   aiInputDependentKeys,
   invalidateKeys,
@@ -45,7 +44,7 @@ interface CentralCodexStatus {
 }
 
 export function CentralCodexSection() {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
@@ -175,7 +174,7 @@ export function CentralCodexSection() {
         {data?.connectedAt && isConnected && (
           <p className="text-muted-foreground text-xs">
             {t("admin.centralCodex.connectedSince", {
-              when: formatDateTime(data.connectedAt),
+              when: fmt.dateTime(data.connectedAt),
             })}
           </p>
         )}
@@ -187,7 +186,7 @@ export function CentralCodexSection() {
               destructive
               variant="destructive"
               size="sm"
-              className="min-h-11 shrink-0 sm:min-h-9"
+              className="shrink-0"
               icon={<Trash2 className="h-4 w-4" />}
               label={t("admin.centralCodex.disconnectButton")}
               title={t("admin.centralCodex.disconnectTitle")}
@@ -256,7 +255,6 @@ export function CentralCodexSection() {
               size="sm"
               onClick={handleConnect}
               disabled={devicePolling}
-              className="min-h-11 w-full sm:min-h-9 sm:w-auto"
               data-slot="admin-central-codex-connect"
             >
               {devicePolling ? (

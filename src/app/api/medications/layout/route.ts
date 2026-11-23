@@ -24,30 +24,39 @@ import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
 import {
   takeBaseToken,
-  guardedUserUpdate,
+  guardedUserDocumentUpdate,
   invalidBaseTokenError,
+  readUserDocumentToken,
+  userDocumentToken,
 } from "@/lib/optimistic-lock";
 import {
   resolveMedicationListLayout,
   serializeMedicationListLayout,
   DEFAULT_MEDICATION_LIST_LAYOUT,
   MEDICATION_LIST_VIEWS,
+  MEDICATION_GROUP_BYS,
+  MEDICATION_GROUPS_OPEN,
   MEDICATION_ORDER_ID_MAX_LENGTH,
   MEDICATION_ORDER_MAX_ENTRIES,
   type MedicationListLayoutWithToken,
 } from "@/lib/medication-list-layout";
 import { Prisma } from "@/generated/prisma/client";
+import {
+  isCustomMedicationCategoryKey,
+  medicationCategoryOrderSchema,
+} from "@/lib/validations/medication/base";
 import { z } from "zod/v4";
 import { invalidateUserMedicationListLayout } from "@/lib/cache/invalidate";
-import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { caches, type ServerCache } from "@/lib/cache/server-cache";
+import { cachedAtRevision } from "@/lib/cache/cached-at-revision";
 import { redactForExcerpt } from "@/lib/observability/redact-payload";
 import { shouldEmitAuditRow } from "@/lib/audit-dedup";
 import type { NextRequest } from "next/server";
 
 const layoutSchema = z.object({
   version: z.literal(1),
-  // Both fields are optional so a client can PUT exactly the field it
-  // changed; the handler merges the absent one from the stored blob
+  // Fields are optional so a client can PUT exactly the field it
+  // changed; the handler merges the absent ones from the stored blob
   // (preserve-when-absent, like `chartOverlayPrefs` on the dashboard layout).
   view: z.enum(MEDICATION_LIST_VIEWS).optional(),
   // Medication ids are opaque here — display-only ordering, unknown /
@@ -57,21 +66,53 @@ const layoutSchema = z.object({
     .array(z.string().min(1).max(MEDICATION_ORDER_ID_MAX_LENGTH))
     .max(MEDICATION_ORDER_MAX_ENTRIES)
     .optional(),
+  groupBy: z.enum(MEDICATION_GROUP_BYS).optional(),
+  groupsOpen: z.enum(MEDICATION_GROUPS_OPEN).optional(),
+  // Built-in values or `custom:<uuid>` keys, nothing else: a malformed key
+  // is a 422. A well-formed custom key the account does not have (deleted,
+  // or another account's) is dropped below rather than refused, because a
+  // client's draft can name a category deleted on another device meanwhile.
+  categoryOrder: medicationCategoryOrderSchema.optional(),
 });
+
+/**
+ * The category order as written: built-in values, and only the custom keys
+ * this account has (hidden ones included, they still file medications).
+ */
+async function keepOwnCategoryKeys(
+  userId: string,
+  order: readonly string[],
+): Promise<string[]> {
+  const custom = order.filter(isCustomMedicationCategoryKey);
+  if (custom.length === 0) return [...order];
+  const owned = new Set(
+    (
+      await prisma.medicationCategoryLabel.findMany({
+        where: { userId, key: { in: custom } },
+        select: { key: true },
+      })
+    ).map((row) => row.key),
+  );
+  return order.filter(
+    (key) => !isCustomMedicationCategoryKey(key) || owned.has(key),
+  );
+}
 
 async function buildMedicationListLayout(
   userId: string,
 ): Promise<MedicationListLayoutWithToken> {
   const row = await prisma.user.findUnique({
     where: { id: userId },
-    // v1.32.21 — `updatedAt` rides the cached blob so GET hands the
-    // client the optimistic-concurrency token alongside the presentation it
-    // applies to (busted on every write, so the pair stays consistent).
-    select: { medicationListLayoutJson: true, updatedAt: true },
+    // The lock token rides with the presentation it applies to: the
+    // document's own revision, never the row's `updatedAt`.
+    select: {
+      medicationListLayoutJson: true,
+      medicationListLayoutRevisedAt: true,
+    },
   });
   return {
     ...resolveMedicationListLayout(row?.medicationListLayoutJson),
-    updatedAt: row?.updatedAt?.toISOString(),
+    updatedAt: userDocumentToken(row, "medicationListLayout"),
   };
 }
 
@@ -87,13 +128,15 @@ export const GET = apiHandler(async () => {
   // destination, so this is a list a delegate really does see.
   const { user } = await requireRecordAuth("read", "medications");
 
-  // 5-minute TTL matches the dashboard-widgets / insights-layout caches; the
-  // blob changes only on a view toggle or an order save, which invalidates via
-  // `invalidateUserMedicationListLayout()`. Keyed on the resolved id, so a
-  // delegated read fills the owner's cell and never their own.
-  const layout = await cached(
+  // 5-minute TTL matches the dashboard-widgets / insights-layout caches.
+  // The cell is served only while its token is the document's current
+  // revision, so a writer that forgot to invalidate can never hand out a
+  // stale token. Keyed on the resolved id, so a delegated read fills the
+  // owner's cell and never their own.
+  const layout = await cachedAtRevision(
     caches.medicationListLayout as ServerCache<MedicationListLayoutWithToken>,
     user.id,
+    await readUserDocumentToken(user.id, "medicationListLayout"),
     () => buildMedicationListLayout(user.id),
     annotate,
   );
@@ -162,27 +205,47 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 422);
   }
 
-  // Preserve-when-absent: a PUT carrying only `view` must not wipe the
-  // stored manual order, and an order-only PUT must not reset the view.
-  // One stored-blob read covers both fallbacks.
+  // Preserve-when-absent: a PUT carrying a subset of fields must not wipe the
+  // stored values for omitted fields.
+  // One stored-blob read covers all fallbacks.
   let mergedView = parsed.data.view;
   let mergedOrder = parsed.data.order;
-  if (mergedView === undefined || mergedOrder === undefined) {
+  let mergedGroupBy = parsed.data.groupBy;
+  let mergedGroupsOpen = parsed.data.groupsOpen;
+  let mergedCategoryOrder =
+    parsed.data.categoryOrder === undefined
+      ? undefined
+      : await keepOwnCategoryKeys(user.id, parsed.data.categoryOrder);
+  if (
+    mergedView === undefined ||
+    mergedOrder === undefined ||
+    mergedGroupBy === undefined ||
+    mergedGroupsOpen === undefined ||
+    mergedCategoryOrder === undefined
+  ) {
     const existing = await buildMedicationListLayout(user.id);
     if (mergedView === undefined) mergedView = existing.view;
     if (mergedOrder === undefined) mergedOrder = existing.order;
+    if (mergedGroupBy === undefined) mergedGroupBy = existing.groupBy;
+    if (mergedGroupsOpen === undefined) mergedGroupsOpen = existing.groupsOpen;
+    if (mergedCategoryOrder === undefined)
+      mergedCategoryOrder = existing.categoryOrder;
   }
   const normalized = serializeMedicationListLayout({
     view: mergedView,
     order: mergedOrder,
+    groupBy: mergedGroupBy,
+    groupsOpen: mergedGroupsOpen,
+    categoryOrder: mergedCategoryOrder,
   });
 
   // v1.32.21 — guard the write on the client's base token. A stale base
   // 409s and writes NOTHING, so a view toggle can't resurrect an order the
   // reorder Save just committed (or vice versa); a tokenless request keeps the
   // prior unconditional write.
-  const guarded = await guardedUserUpdate({
+  const guarded = await guardedUserDocumentUpdate({
     userId: user.id,
+    document: "medicationListLayout",
     base,
     data: { medicationListLayoutJson: toJson(normalized) },
     conflict: {

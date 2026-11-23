@@ -27,6 +27,8 @@ import {
   WORKOUT_PICK_SELECT,
 } from "@/lib/workouts/canonical-read";
 
+import { missingPerformanceFigures } from "@/lib/workouts/performance-metrics";
+
 import type { EntryResult, PreparedWorkout } from "./entries";
 import type { WritePlan } from "./plan";
 
@@ -35,6 +37,7 @@ type StoredRow = WorkoutPickerRow & {
   userId: string;
   samples: { workoutId: string } | null;
   route: { workoutId: string } | null;
+  metadata: unknown;
 };
 
 /** The stored workout an incoming one duplicates, or null. */
@@ -55,6 +58,7 @@ async function readStoredTwin(
           userId: true,
           samples: { select: { workoutId: true } },
           route: { select: { workoutId: true } },
+          metadata: true,
         },
       }),
   );
@@ -92,13 +96,17 @@ export async function adoptStoredTwins(
     }
     const samples = p.samples && twin.samples === null ? p.samples : null;
     const route = p.route && twin.route === null ? p.route : null;
-    if ((samples || route) && !claimed.has(twin.id)) {
+    // The file's own figures (training effect, recovery time, running
+    // dynamics) go to the twin too, beside what its source already wrote.
+    const figures = missingPerformanceFigures(twin.metadata, p.row.metadata);
+    if ((samples || route || figures) && !claimed.has(twin.id)) {
       claimed.add(twin.id);
       plan.toEnrich.push({
         index: p.index,
         workoutId: twin.id,
         samples,
         route,
+        figures,
       });
     } else {
       results[p.index] = { index: p.index, status: "duplicate" };

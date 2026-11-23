@@ -3,6 +3,8 @@
  * per-entry results and counters the response carries, and the distinct
  * days, slots and medications the tails after the loop act on.
  */
+import type { MedicationIntakeEvent } from "@/generated/prisma/client";
+import type { IntakeRecordedEvent } from "@/lib/notifications/medication-intake-recorded";
 import type { UnstableExternalIdShape } from "@/lib/validations/external-id";
 import type { InjectionSiteValue } from "@/lib/validations/medication";
 
@@ -24,18 +26,43 @@ export interface BulkIntakeEntry {
 }
 
 /**
+ * A `skipped` with reason `deleted_in_healthlog` is a re-post of a dose the
+ * person deleted in HealthLog: nothing was written (`tombstone-repost.ts`).
+ *
  * `updated` joins the per-entry status vocabulary: a write that snaps onto
  * an existing scheduled-slot row (e.g. the pending REMINDER row) updates it
  * in place rather than inserting. The iOS sync engine treats `updated` the
  * same as `inserted` for cursor advancement — both mean "the server accepted
  * this entry and produced a row id".
  */
-type EntryStatus = "inserted" | "updated" | "duplicate" | "skipped";
+type EntryStatus =
+  "inserted" | "updated" | "duplicate" | "alreadyTaken" | "skipped";
 export interface EntryResult {
   index: number;
   status: EntryStatus;
   reason?: string;
   id?: string;
+  /**
+   * The landed row's `syncVersion` once the batch has settled, so the client
+   * can undo the entry with `expectedSyncVersion` (absent on skips).
+   */
+  syncVersion?: number;
+  /** On `alreadyTaken`: the recorded row and the take it holds. */
+  intake?: MedicationIntakeEvent;
+  /**
+   * On `alreadyTaken` and on a `force_slot_occupied` skip: when and how the
+   * take that holds the slot was recorded (both null when a skip holds it).
+   */
+  takenAt?: string | null;
+  takenVia?: string | null;
+  /**
+   * The slot the entry's row is on, as the single route's `slotInstant`
+   * says it: the canonical slot of a scheduled dose, null for a row on no
+   * slot (an ad-hoc take, an extra dose) and for an entry that stored
+   * nothing. A `force_slot_occupied` skip names the slot it was refused.
+   * Set on every entry once the batch settled (`ingest.ts`).
+   */
+  slotInstant?: string | null;
 }
 
 export interface BatchState {
@@ -62,7 +89,15 @@ export interface BatchState {
    * cross-device sync fires once per affected slot — not once per row, and
    * not for pending echoes / duplicates that changed nothing.
    */
-  syncSlots: Map<string, { medicationId: string; scheduledFor: string }>;
+  syncSlots: Map<
+    string,
+    {
+      medicationId: string;
+      scheduledFor: string;
+      /** The take or skip it recorded, for the visible confirmation. */
+      recorded?: IntakeRecordedEvent;
+    }
+  >;
   /**
    * A landed non-skipped dose quiets an active snooze, exactly like the
    * single-intake routes (they null `snoozedUntil` on every recorded take).
@@ -75,10 +110,16 @@ export interface BatchState {
    * UUID dedups too.
    */
   rowIdByExternalId: Map<string, string>;
+  /**
+   * Apple Health dose-event UUIDs of doses deleted earlier with no live row
+   * under them: their entries are refused (`tombstone-repost.ts`).
+   */
+  tombstonedExternalIds: Set<string>;
 }
 
 export function createBatchState(
   rowIdByExternalId: Map<string, string>,
+  tombstonedExternalIds: Set<string> = new Set(),
 ): BatchState {
   return {
     results: [],
@@ -92,11 +133,20 @@ export function createBatchState(
     syncSlots: new Map(),
     snoozeClearIds: new Set<string>(),
     rowIdByExternalId,
+    tombstonedExternalIds,
   };
 }
 
-/** Record an entry the batch skipped, with its reason. */
-export function skipEntry(state: BatchState, index: number, reason: string) {
+/**
+ * Record an entry the batch skipped, with its reason and, for an occupied
+ * pin, what holds the slot.
+ */
+export function skipEntry(
+  state: BatchState,
+  index: number,
+  reason: string,
+  held?: Pick<EntryResult, "slotInstant" | "takenAt" | "takenVia">,
+) {
   state.skipped.push({ index, reason });
-  state.results.push({ index, status: "skipped", reason });
+  state.results.push({ index, status: "skipped", reason, ...held });
 }

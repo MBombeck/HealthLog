@@ -15,10 +15,25 @@ import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 const DAY_MS = 86_400_000;
 const NOON_MS = 43_200_000;
 
-export function labReadingDay(takenAt: Date, tz: string): string {
-  const msOfDay = ((takenAt.getTime() % DAY_MS) + DAY_MS) % DAY_MS;
-  if (msOfDay === 0 || msOfDay === NOON_MS) return dateOnlyKey(takenAt);
-  return userDayKey(takenAt, tz);
+/**
+ * True when a stored `takenAt` is a date-only anchor (UTC noon, or UTC
+ * midnight for the older rows) rather than the instant of a draw. The one
+ * test every surface uses to decide whether a reading is dated by its
+ * calendar date or by the reader's zone.
+ */
+export function isLabDateOnly(takenAt: Date | string | number): boolean {
+  const ms = new Date(takenAt).getTime();
+  const msOfDay = ((ms % DAY_MS) + DAY_MS) % DAY_MS;
+  return msOfDay === 0 || msOfDay === NOON_MS;
+}
+
+export function labReadingDay(
+  takenAt: Date | string | number,
+  tz: string,
+): string {
+  const instant = new Date(takenAt);
+  if (isLabDateOnly(instant)) return dateOnlyKey(instant);
+  return userDayKey(instant, tz);
 }
 
 /**

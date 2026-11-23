@@ -46,7 +46,7 @@ export { DOSE_WINDOW_DEFAULTS };
  *   - `upcoming`       — the on-time window has not opened yet.
  *
  * PRN doses are never scheduled and so never produce a status — callers
- * exclude them before calling {@link deriveDoseStatus}.
+ * exclude them before resolving a dose.
  */
 export type DoseStatus =
   | "upcoming"
@@ -64,31 +64,24 @@ const HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * HOUR_MS;
 
 /**
- * v1.15.9 — derive a single dose's {@link DoseStatus} from its target
- * instant, the cadence family, `now`, and (optionally) when it was taken /
- * whether the user skipped it. Pure and deterministic.
- *
- * `nextDoseAt` (when supplied) caps a daily dose's miss cutoff at the next
- * dose's on-time window start, so two adjacent intraday doses never claim
- * overlapping overdue windows — the earlier dose flips to `missed` the
- * moment the later one comes due if that is sooner than its own cutoff.
- *
- * The defaults come from {@link DOSE_WINDOW_DEFAULTS}; callers may override
- * per-medication once that configurability lands.
+ * The default-window band of a dose at `targetAt`, for a dose the ledger has
+ * not minted (a future one). The state itself is resolved by
+ * `dose-state/resolve.ts`, the one place that turns a band into a state.
  */
-export function deriveDoseStatus(
+export function defaultDoseBand(
   targetAt: Date,
   cadence: DoseCadenceFamily,
-  now: Date,
   options?: {
-    takenAt?: Date | null;
-    skipped?: boolean;
     nextDoseAt?: Date | null;
     windows?: Partial<typeof DOSE_WINDOW_DEFAULTS>;
   },
-): DoseStatus {
-  if (options?.skipped) return "skipped";
-
+): {
+  at: Date;
+  onTimeStart: Date;
+  onTimeEnd: Date;
+  overdueEnd: Date;
+  earlyStart: Date;
+} {
   const w = { ...DOSE_WINDOW_DEFAULTS, ...(options?.windows ?? {}) };
   const target = targetAt.getTime();
 
@@ -113,18 +106,13 @@ export function deriveDoseStatus(
         : options.nextDoseAt.getTime() - w.dailyOnTimeMinutes * 60_000;
     if (nextOnTimeStart < overdueEnd) overdueEnd = nextOnTimeStart;
   }
-
-  const takenAt = options?.takenAt ?? null;
-  if (takenAt) {
-    const t = takenAt.getTime();
-    return t <= onTimeEnd ? "taken_on_time" : "taken_late";
-  }
-
-  const n = now.getTime();
-  if (n < onTimeStart) return "upcoming";
-  if (n <= onTimeEnd) return "on_time_window";
-  if (n <= overdueEnd) return "overdue";
-  return "missed";
+  return {
+    at: targetAt,
+    onTimeStart: new Date(onTimeStart),
+    onTimeEnd: new Date(onTimeEnd),
+    overdueEnd: new Date(overdueEnd),
+    earlyStart: new Date(onTimeStart),
+  };
 }
 
 /**

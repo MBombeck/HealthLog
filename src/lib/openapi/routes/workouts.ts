@@ -41,7 +41,7 @@ const workoutBatchEntryResult = z
     status: z
       .enum(["inserted", "duplicate", "enriched", "updated", "skipped"])
       .describe(
-        "`inserted`: a new workout row. `duplicate`: the workout was already stored and nothing was written; since v1.48.2 also an `APPLE_HEALTH` workout whose externalId was deleted through `DELETE /api/workouts/by-external-ids`, which stays deleted. `enriched`: the workout was already stored and the heart-rate series or GPS track this entry carried (or both) was attached because the stored workout had none; no workout row was inserted, and the entry also counts towards the top-level `duplicates`. A track is attached only while the account keeps tracks (`storeWorkoutRoutes`), and when the stored workout had no elevation, the climb derived from the attached track fills `elevationM`; no other column of the workout row is written. `updated` (since v1.40.0): a workout entered by hand (`source: MANUAL`, `externalId` starting `manual:`) was sent again with different values and the stored row now carries them; no row was inserted, so it also counts towards `duplicates`. `skipped`: the server refused the entry, see `reason`.",
+        "`inserted`: a new workout row. `duplicate`: the workout was already stored and nothing was written. From v1.48.2 to v1.48.x also an `APPLE_HEALTH` workout whose externalId was deleted through `DELETE /api/workouts/by-external-ids`; since v1.49.0 such a re-post is written again (`inserted`): only the phone can delete an Apple Health workout, so one it posts again is back in Apple Health. `enriched`: the workout was already stored and the heart-rate series or GPS track this entry carried (or both) was attached because the stored workout had none; no workout row was inserted, and the entry also counts towards the top-level `duplicates`. A track is attached only while the account keeps tracks (`storeWorkoutRoutes`), and when the stored workout had no elevation, the climb derived from the attached track fills `elevationM`; no other column of the workout row is written. `updated` (since v1.40.0): a workout entered by hand (`source: MANUAL`, `externalId` starting `manual:`) was sent again with different values and the stored row now carries them; no row was inserted, so it also counts towards `duplicates`. `skipped`: the server refused the entry, see `reason`.",
       ),
     reason: z
       .string()
@@ -277,6 +277,31 @@ const workoutActivityInsight = z
   })
   .meta({ id: "WorkoutActivityInsight" });
 
+/**
+ * #1343 — the watch's own figures for one session, read server-side from the
+ * workout's metadata (the FIT import's keys, the Garmin integration's as a
+ * fallback). Every figure is null when the source did not compute it.
+ */
+const workoutPerformance = z
+  .object({
+    aerobicTrainingEffect: z.number().nullable().describe("0–5 score."),
+    anaerobicTrainingEffect: z.number().nullable().describe("0–5 score."),
+    trainingLoad: z.number().nullable(),
+    recoveryTimeMin: z
+      .number()
+      .nullable()
+      .describe("Minutes until the watch considers the person recovered."),
+    sweatLossMl: z.number().nullable().describe("Estimated, millilitres."),
+    avgPowerW: z.number().nullable(),
+    avgVerticalOscillationMm: z.number().nullable(),
+    avgGroundContactTimeMs: z.number().nullable(),
+    avgGroundContactBalancePct: z
+      .number()
+      .nullable()
+      .describe("The left foot's share of ground contact, percent."),
+  })
+  .meta({ id: "WorkoutPerformance" });
+
 const workoutDetailResponse = z
   .object({
     id: z.string(),
@@ -318,6 +343,7 @@ const workoutDetailResponse = z
     source: measurementSourceEnum,
     externalId: z.string().nullable(),
     metadata: z.unknown().nullable(),
+    performance: workoutPerformance.nullable().optional(),
     route: workoutRouteGeometry.nullable(),
     samples: workoutHrSeries.nullable(),
     // #67 enrichment — additive; absent from a pre-enrichment client's

@@ -20,12 +20,11 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { ApiError, apiDelete, apiPatch, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { describePasskeyError } from "@/lib/passkey-errors";
-import { formatDate } from "@/lib/format";
 import {
   ExistingFactorReauthDialog,
   isReproofRequired,
@@ -84,7 +83,7 @@ export function SecurityKeysCard({
   keys: WebauthnKeyInfo[];
   totpEnabled?: boolean;
 }) {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -271,12 +270,12 @@ export function SecurityKeysCard({
                         <p className="text-muted-foreground mt-1 text-xs">
                           {key.lastUsedAt
                             ? t("settings.security.keys.lastUsed", {
-                                date: formatDate(key.lastUsedAt),
+                                date: fmt.date(key.lastUsedAt),
                               })
                             : t("settings.security.keys.neverUsed")}
                           {" · "}
                           {t("settings.security.keys.added", {
-                            date: formatDate(key.createdAt),
+                            date: fmt.date(key.createdAt),
                           })}
                         </p>
                       </>
@@ -335,8 +334,8 @@ export function SecurityKeysCard({
 
         <SettingsCardActions>
           <Button
+            size="sm"
             type="button"
-            className="min-h-11 sm:min-h-9"
             onClick={() => add.mutate(undefined)}
             disabled={add.isPending}
           >

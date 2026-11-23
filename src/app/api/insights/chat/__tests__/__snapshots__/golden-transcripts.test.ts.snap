@@ -17,16 +17,16 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -266,16 +266,16 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -527,16 +527,16 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13339,
@@ -896,16 +896,16 @@ exports[`coach chat golden transcripts > 03 no-tools path with the full snapshot
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "local",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 600,
@@ -1349,16 +1349,16 @@ exports[`coach chat golden transcripts > 06 budget exceeded 1`] = `
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "call": "annotate",
@@ -1403,16 +1403,16 @@ exports[`coach chat golden transcripts > 07a all providers failed (plain) 1`] = 
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -1495,16 +1495,16 @@ exports[`coach chat golden transcripts > 07b all providers failed (every hop rat
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -1587,16 +1587,16 @@ exports[`coach chat golden transcripts > 07c all providers failed (primary crede
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -1679,16 +1679,16 @@ exports[`coach chat golden transcripts > 08 an unwrapped tagged provider error 1
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -1772,16 +1772,16 @@ exports[`coach chat golden transcripts > 09 an aborted request leaves a cancelle
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -1871,16 +1871,16 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13342,
@@ -2250,16 +2250,16 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -2503,16 +2503,16 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -2754,16 +2754,16 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -2989,16 +2989,16 @@ exports[`coach chat golden transcripts > 11d sentinel-only reply is an empty rep
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -3092,16 +3092,16 @@ exports[`coach chat golden transcripts > 11e empty provider reply 1`] = `
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -3186,16 +3186,16 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13346,
@@ -3459,16 +3459,16 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13346,
@@ -3696,16 +3696,16 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13342,
@@ -3973,16 +3973,16 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13346,
@@ -4230,16 +4230,16 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13346,
@@ -4482,16 +4482,16 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13345,
@@ -4732,12 +4732,6 @@ exports[`coach chat golden transcripts > 16a coach.provider.none via an empty ch
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "annotate",
       "metaKeys": [],
       "name": "insights.coach.noProvider",
@@ -4798,16 +4792,16 @@ exports[`coach chat golden transcripts > 16d coach.provider.none from the capabi
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "call": "annotate",
@@ -4846,6 +4840,12 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
       "tokensUsed": null,
     },
     {
+      "call": "assertConsentForChain",
+      "chain": [
+        "anthropic",
+      ],
+    },
+    {
       "call": "storeDeterministicFacts",
     },
     {
@@ -4863,12 +4863,6 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
         "source",
       ],
       "name": "coach.launch.scoped",
-    },
-    {
-      "call": "assertConsentForChain",
-      "chain": [
-        "anthropic",
-      ],
     },
     {
       "amount": 13340,
@@ -5108,6 +5102,12 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
       "tokensUsed": null,
     },
     {
+      "call": "assertConsentForChain",
+      "chain": [
+        "anthropic",
+      ],
+    },
+    {
       "call": "storeDeterministicFacts",
     },
     {
@@ -5121,12 +5121,6 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
         "source",
       ],
       "name": "coach.launch.scoped",
-    },
-    {
-      "call": "assertConsentForChain",
-      "chain": [
-        "anthropic",
-      ],
     },
     {
       "amount": 13340,
@@ -5354,16 +5348,16 @@ exports[`coach chat golden transcripts > 18 a persistence throw after the provid
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -5469,16 +5463,16 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13503,
@@ -5730,16 +5724,16 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13342,
@@ -5947,16 +5941,16 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13367,
@@ -6200,16 +6194,16 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
       "tokensUsed": null,
     },
     {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
-    },
-    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
       ],
+    },
+    {
+      "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "amount": 13341,
@@ -6817,12 +6811,6 @@ exports[`coach chat golden transcripts — refusals before the stream > R6 conse
       "providerType": null,
       "role": "user",
       "tokensUsed": null,
-    },
-    {
-      "call": "storeDeterministicFacts",
-    },
-    {
-      "call": "enqueueCoachMemoryRefresh",
     },
   ],
   "contentType": null,

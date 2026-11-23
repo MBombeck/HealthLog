@@ -111,6 +111,8 @@ beforeEach(() => {
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
+  // The settled-version read after the batch; a test that cares overrides it.
+  vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue([]);
 });
 
 describe("POST /api/medications/intake/bulk — 422 multi-issue (v1.4.43 W6)", () => {
@@ -144,7 +146,14 @@ describe("POST /api/medications/intake/bulk — 422 multi-issue (v1.4.43 W6)", (
     expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
     expect(body.meta?.errorCode).toBe("medications.intake.bulk.invalid");
     for (const issue of body.details.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
   });
 
@@ -259,7 +268,12 @@ describe("POST /api/medications/intake/bulk — v1.8.2 reconcile", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data.entries).toEqual([
-      { index: 0, status: "skipped", reason: "intake_not_tracked" },
+      {
+        index: 0,
+        status: "skipped",
+        reason: "intake_not_tracked",
+        slotInstant: null,
+      },
     ]);
     expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
   });
@@ -463,10 +477,14 @@ describe("POST /api/medications/intake/bulk — v1.8.2 reconcile", () => {
     // The whole batch produces ONE queued fan-out, not one per dose; the
     // web caller carries no X-Device-Id, so no origin is excluded.
     expect(queueMedicationIntakeSync).toHaveBeenCalledTimes(1);
-    expect(queueMedicationIntakeSync).toHaveBeenCalledWith({
-      userId: "user-1",
-      originDeviceToken: null,
-    });
+    // One fan-out, carrying the visible confirmation of each recorded slot.
+    expect(queueMedicationIntakeSync).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "user-1", originDeviceToken: null }),
+    );
+    const [call] = vi.mocked(queueMedicationIntakeSync).mock.calls[0] as [
+      { recorded?: unknown[] },
+    ];
+    expect(call.recorded).toHaveLength(2);
   });
 
   it("C1 — a same-slot P2002 on create converges via re-find+update, not dropped as duplicate", async () => {
@@ -577,9 +595,12 @@ describe("POST /api/medications/intake/bulk — v1.15.19 resolver-null convergen
     // (resolver null); the convergence probe must honour the same
     // `mayConvergeOntoSuppliedSlot` guard rather than re-binding the take
     // forward onto the pre-minted REMINDER row. It records standalone instead.
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValueOnce({
-      id: "row-standalone",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementationOnce(
+      (async ({ data }: { data: object }) => ({
+        id: "row-standalone",
+        ...data,
+      })) as never,
+    );
 
     const res = await POST(
       postReq({
@@ -626,9 +647,12 @@ describe("POST /api/medications/intake/bulk — v1.15.19 resolver-null convergen
     vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValueOnce(
       null as never,
     );
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValueOnce({
-      id: "row-standalone",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementationOnce(
+      (async ({ data }: { data: object }) => ({
+        id: "row-standalone",
+        ...data,
+      })) as never,
+    );
 
     const res = await POST(
       postReq({
@@ -937,9 +961,12 @@ describe("POST /api/medications/intake/bulk — v1.15.20 band attribution", () =
 
   it("files an out-of-band take as ad-hoc (scheduledFor = takenAt)", async () => {
     // 14:00 Berlin, no band, no pin → standalone row anchored on the take.
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValueOnce({
-      id: "row-adhoc",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementationOnce(
+      (async ({ data }: { data: object }) => ({
+        id: "row-adhoc",
+        ...data,
+      })) as never,
+    );
 
     const res = await POST(
       postReq({
@@ -1117,7 +1144,7 @@ describe("POST /api/medications/intake/bulk — v1.16.10 inventory consumption",
     expect(restoreForIntake).not.toHaveBeenCalled();
   });
 
-  it("an explicit skip entry restores the slot row's stamp instead of consuming", async () => {
+  it("a stale skip entry onto a taken slot neither refunds nor consumes", async () => {
     vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValueOnce([
       {
         id: "row-taken",
@@ -1146,10 +1173,11 @@ describe("POST /api/medications/intake/bulk — v1.16.10 inventory consumption",
     );
     expect(res.status).toBe(200);
     expect(consumeForIntake).not.toHaveBeenCalled();
-    expect(restoreForIntake).toHaveBeenCalledTimes(1);
-    expect(restoreForIntake).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user-1", eventId: "row-taken" }),
-    );
+    expect(restoreForIntake).not.toHaveBeenCalled();
+    const body = (await res.json()) as {
+      data: { entries: Array<{ status: string }> };
+    };
+    expect(body.data.entries[0].status).toBe("alreadyTaken");
   });
 
   it("an idempotency-key replay (duplicate) never consumes again", async () => {
@@ -1327,9 +1355,12 @@ describe("POST /api/medications/intake/bulk — v1.28 Apple Health dose events",
       [] as never,
     );
     // 14:00 Berlin — off-band, so the take records standalone (ad-hoc).
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValueOnce({
-      id: "row-apple",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementationOnce(
+      (async ({ data }: { data: object }) => ({
+        id: "row-apple",
+        ...data,
+      })) as never,
+    );
 
     const res = await POST(
       postReq({
@@ -1427,9 +1458,12 @@ describe("POST /api/medications/intake/bulk — v1.28 Apple Health dose events",
   it("keeps a source-less entry byte-identical to today: source API, no externalId column", async () => {
     // No entry carries an externalId, so the dedup pre-check must not
     // fire a findMany at all — the hot path pays zero extra reads.
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValueOnce({
-      id: "row-adhoc",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementationOnce(
+      (async ({ data }: { data: object }) => ({
+        id: "row-adhoc",
+        ...data,
+      })) as never,
+    );
 
     const res = await POST(
       postReq({
@@ -1446,7 +1480,14 @@ describe("POST /api/medications/intake/bulk — v1.28 Apple Health dose events",
       data: { inserted: number; entries: Array<{ status: string }> };
     };
     expect(body.data.inserted).toBe(1);
-    expect(prisma.medicationIntakeEvent.findMany).not.toHaveBeenCalled();
+    // Two reads: the ad-hoc insert's free-instant probe, and the
+    // settled-version read after the batch, by row id. Neither is an
+    // externalId lookup.
+    const reads = vi.mocked(prisma.medicationIntakeEvent.findMany).mock.calls;
+    expect(reads).toHaveLength(2);
+    for (const read of reads) {
+      expect(JSON.stringify(read[0])).not.toContain("externalId");
+    }
     const createArgs = vi.mocked(prisma.medicationIntakeEvent.create).mock
       .calls[0][0] as { data: Record<string, unknown> };
     expect(createArgs.data.source).toBe("API");
@@ -1477,9 +1518,11 @@ describe("POST /api/medications/intake/bulk — identity stability floor", () =>
     vi.mocked(prisma.medicationIntakeEvent.findUnique).mockResolvedValue(
       null as never,
     );
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValue({
-      id: "evt-new",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementation((async ({
+      data,
+    }: {
+      data: object;
+    }) => ({ id: "evt-new", ...data })) as never);
   });
 
   function entry(overrides: Record<string, unknown>) {

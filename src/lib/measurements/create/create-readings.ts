@@ -54,6 +54,77 @@ export interface ReadingWriter {
 /** A unique index already holds this reading. */
 export const DUPLICATE_READING = { duplicate: true } as const;
 
+/** What a hand-entry write stores, for a fresh row or a revived one. */
+type ReadingData = {
+  userId: string;
+  type: MeasurementType;
+  value: number;
+  unit: string;
+  source: MeasurementSource;
+  ingestTokenId: string | null;
+  measuredAt: Date;
+  notes: null;
+  notesEncrypted: ReturnType<typeof encryptNote>;
+  glucoseContext: GlucoseContext | null;
+  deviceType: string | null;
+};
+
+type ReadingClient = Pick<typeof prisma, "measurement">;
+
+/**
+ * Write one hand-entered reading, reviving the tombstone of a deleted one at
+ * the same key instead of failing on it.
+ *
+ * The reading key `(user, type, measured_at, source, sleep_stage)` is unique
+ * over tombstones too, and a tombstone stays for the 75 days before its purge.
+ * So "typed it wrong, deleted it, entered it again at the same minute" met
+ * the deleted row and answered 409. For an imported reading that is the
+ * point (deleted stays deleted, so the next sync does not bring it back);
+ * for a MANUAL one it is not, and only MANUAL is revived. The revived row
+ * takes every value the new entry writes and a raised `sync_version`, so a
+ * device that had synced the deletion receives the reading again, which a
+ * hard delete and fresh insert would not tell it.
+ */
+async function writeReading(
+  client: ReadingClient,
+  data: ReadingData,
+): Promise<MeasurementWithMirrorInput> {
+  if (data.source === "MANUAL") {
+    const tombstone = await client.measurement.findFirst({
+      where: {
+        userId: data.userId,
+        type: data.type,
+        measuredAt: data.measuredAt,
+        source: "MANUAL",
+        sleepStage: null,
+        deletedAt: { not: null },
+      },
+      select: { id: true },
+    });
+    if (tombstone) {
+      return client.measurement.update({
+        where: { id: tombstone.id },
+        data: {
+          value: data.value,
+          unit: data.unit,
+          ingestTokenId: data.ingestTokenId,
+          notes: data.notes,
+          notesEncrypted: data.notesEncrypted,
+          glucoseContext: data.glucoseContext,
+          deviceType: data.deviceType,
+          deletedAt: null,
+          syncVersion: { increment: 1 },
+        },
+        include: APPLE_HEALTH_MIRROR_INCLUDE,
+      });
+    }
+  }
+  return client.measurement.create({
+    data,
+    include: APPLE_HEALTH_MIRROR_INCLUDE,
+  });
+}
+
 /**
  * The array arm: every reading in one transaction, so a duplicate anywhere
  * in it rolls the rest back.
@@ -69,10 +140,11 @@ export async function createReadings(
   // retries against.
   let results;
   try {
-    results = await prisma.$transaction(
-      input.measurements.map((m) =>
-        prisma.measurement.create({
-          data: {
+    results = await prisma.$transaction(async (tx) => {
+      const written: MeasurementWithMirrorInput[] = [];
+      for (const m of input.measurements) {
+        written.push(
+          await writeReading(tx, {
             userId: user.id,
             type: m.type as MeasurementType,
             value: m.value,
@@ -97,11 +169,11 @@ export async function createReadings(
             // Mirror the single-entry path so the multi-entry batch persists
             // `deviceType` instead of silently dropping it.
             deviceType: m.deviceType ?? null,
-          },
-          include: APPLE_HEALTH_MIRROR_INCLUDE,
-        }),
-      ),
-    );
+          }),
+        );
+      }
+      return written;
+    });
   } catch (err) {
     if (isP2002(err)) return DUPLICATE_READING;
     throw err;
@@ -149,30 +221,27 @@ export async function createReading(
 
   let measurement;
   try {
-    measurement = await prisma.measurement.create({
-      data: {
-        userId: user.id,
-        type: type as MeasurementType,
-        value,
-        unit: getUnitForType(type),
-        // Server-resolved under a scoped credential. `source` is necessarily
-        // the schema default here (the route refused any body that named
-        // one), so nothing a caller asserted is being discarded.
-        source: (scoped
-          ? EXTERNAL_SOURCE
-          : (source ?? "MANUAL")) as MeasurementSource,
-        ingestTokenId: scoped ? writer.ingestTokenId : null,
-        measuredAt,
-        // The note is sealed at rest; the legacy plaintext column is nulled.
-        notes: null,
-        notesEncrypted: encryptNote(notes ?? null),
-        glucoseContext: (glucoseContext as GlucoseContext | undefined) ?? null,
-        // The deviceType column already accepts client metadata from the
-        // batch route; the single-entry POST persists the tag too instead of
-        // silently dropping it.
-        deviceType: deviceType ?? null,
-      },
-      include: APPLE_HEALTH_MIRROR_INCLUDE,
+    measurement = await writeReading(prisma, {
+      userId: user.id,
+      type: type as MeasurementType,
+      value,
+      unit: getUnitForType(type),
+      // Server-resolved under a scoped credential. `source` is necessarily
+      // the schema default here (the route refused any body that named
+      // one), so nothing a caller asserted is being discarded.
+      source: (scoped
+        ? EXTERNAL_SOURCE
+        : (source ?? "MANUAL")) as MeasurementSource,
+      ingestTokenId: scoped ? writer.ingestTokenId : null,
+      measuredAt,
+      // The note is sealed at rest; the legacy plaintext column is nulled.
+      notes: null,
+      notesEncrypted: encryptNote(notes ?? null),
+      glucoseContext: (glucoseContext as GlucoseContext | undefined) ?? null,
+      // The deviceType column already accepts client metadata from the
+      // batch route; the single-entry POST persists the tag too instead of
+      // silently dropping it.
+      deviceType: deviceType ?? null,
     });
   } catch (err) {
     // `isP2002` rather than `instanceof Prisma.PrismaClientKnownRequestError`.

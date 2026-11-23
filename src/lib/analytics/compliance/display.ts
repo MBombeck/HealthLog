@@ -15,12 +15,9 @@ import type {
   ComplianceSchedule,
   IntakeEvent,
 } from "./types";
-import {
-  deriveDoseStatus,
-  doseCadenceFamily,
-  type DoseCadenceFamily,
-  type DoseStatus,
-} from "./dose-status";
+import { doseCadenceFamily, type DoseCadenceFamily } from "./dose-status";
+import { currentDoseOf, type CurrentDose } from "./current-dose";
+export type { CurrentDose } from "./current-dose";
 import {
   COMPLIANCE_WINDOW_LADDER,
   MIN_STABLE_DOSES,
@@ -30,6 +27,7 @@ import {
 import {
   COMPLIANCE_LEDGER_WINDOW_DAYS,
   tallyComplianceFromLedger,
+  forwardComplianceSlot,
   trailingComplianceLedger,
   trailingComplianceTally,
 } from "./ledger";
@@ -104,7 +102,7 @@ export interface ComplianceDisplay {
    * there is no projected next dose (PRN / paused / ended). `targetAt` is the
    * open dose's target instant (echo of `currentCycle.nextDueAt`).
    */
-  currentDose: { status: DoseStatus; targetAt: Date | null };
+  currentDose: CurrentDose;
 }
 
 /**
@@ -160,17 +158,13 @@ export function buildComplianceDisplay(
   // cadence family comes from the SOONEST non-PRN schedule (the one the
   // open cycle anchors on). `none` cycles (PRN / paused / ended) carry an
   // `upcoming` status with a null target so the card stays calm.
-  const currentDose: { status: DoseStatus; targetAt: Date | null } =
-    currentCycle.nextDueAt
-      ? {
-          status: deriveDoseStatus(
-            currentCycle.nextDueAt,
-            soonestCadenceFamily(schedules),
-            now,
-          ),
-          targetAt: currentCycle.nextDueAt,
-        }
-      : { status: "upcoming", targetAt: null };
+  const currentDose = currentDoseOf(
+    currentCycle.nextDueAt,
+    now,
+    soonestCadenceFamily(schedules),
+    trailingComplianceLedger(events, schedules, ctx, now),
+    (at) => forwardComplianceSlot(events, schedules, ctx, at, now),
+  );
 
   return {
     shortDays,
@@ -688,17 +682,13 @@ export function buildMedicationComplianceBundle(
     selection.expectedShort,
     events,
   );
-  const currentDose: { status: DoseStatus; targetAt: Date | null } =
-    currentCycle.nextDueAt
-      ? {
-          status: deriveDoseStatus(
-            currentCycle.nextDueAt,
-            soonestCadenceFamily(schedules),
-            now,
-          ),
-          targetAt: currentCycle.nextDueAt,
-        }
-      : { status: "upcoming", targetAt: null };
+  const currentDose = currentDoseOf(
+    currentCycle.nextDueAt,
+    now,
+    soonestCadenceFamily(schedules),
+    ledgerRows,
+    (at) => forwardComplianceSlot(events, schedules, ctx, at, now),
+  );
 
   const complianceDisplay: ComplianceDisplay = {
     shortDays: selection.shortDays,

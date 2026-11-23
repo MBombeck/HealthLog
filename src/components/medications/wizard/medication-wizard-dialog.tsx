@@ -47,7 +47,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 
@@ -76,7 +76,7 @@ import { Step5Cadence } from "./steps/step5-cadence";
 import { Step6SubCadence } from "./steps/step6-sub-cadence";
 import { Step7Times } from "./steps/step7-times";
 import { Step8Summary } from "./steps/step8-summary";
-import { validateStep } from "./wizard-payload";
+import { stepBlocker } from "./wizard-payload";
 import { extractorToWizardPartial } from "./nl-bridge";
 
 export interface MedicationWizardDialogProps {
@@ -149,9 +149,8 @@ function WizardDialogShell({
 }: MedicationWizardDialogProps) {
   const { t, locale } = useTranslations();
   // The "describe it in words" reader follows the `medicationExtract`
-  // capability: offered while available, and while only the document-reading
-  // consent is missing (the sheet asks for it). Otherwise the button is not
-  // there at all, and the manual steps are the whole wizard.
+  // capability: offered while available or while only the reading consent is
+  // missing (the sheet asks for it); otherwise the manual steps are all.
   const medicationExtract = useAiCapability("medicationExtract");
   const extractOffered =
     medicationExtract.available ||
@@ -159,10 +158,11 @@ function WizardDialogShell({
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  const userTz = useDisplayTimezone();
   const [seed] = useState<WizardPayload>(() =>
     mode === "edit" && initial
-      ? hydrateWizardPayload(initial)
-      : emptyWizardPayload(),
+      ? hydrateWizardPayload(initial, userTz)
+      : emptyWizardPayload(userTz),
   );
   const [payload, setPayload] = useState<WizardPayload>(seed);
   const [step, setStep] = useState<StepNumber>(() =>
@@ -229,10 +229,10 @@ function WizardDialogShell({
   // behind an unmet requirement.
   const lastReachable = firstInvalidIndex(payload, stepList, 0) >= totalSteps;
 
-  const canContinue = useMemo(
-    () => validateStep(payload, step),
-    [payload, step],
-  );
+  // What still holds this step, said under the disabled button rather than
+  // left for the person to guess; null when the step can be left.
+  const blocker = useMemo(() => stepBlocker(payload, step), [payload, step]);
+  const canContinue = blocker === null;
 
   const goNext = useCallback(() => {
     if (!canContinue) return;
@@ -446,43 +446,16 @@ function WizardDialogShell({
         className="min-h-[40dvh] md:min-h-0"
         bodyClassName="gap-0 p-0"
         footer={
-          <div className="flex w-full items-center justify-between gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={goBack}
-              disabled={isFirstStep || submitting}
-              data-slot="wizard-back"
-              className="h-11"
-            >
-              {t("medications.wizard.nav.back")}
-            </Button>
-            {!isLastStep ? (
-              <Button
-                type="button"
-                onClick={goNext}
-                disabled={!canContinue}
-                data-slot="wizard-next"
-                className="h-11"
-              >
-                {primaryCtaLabel}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={() => void onSubmit()}
-                disabled={!canContinue || submitting}
-                data-slot="wizard-save"
-                aria-busy={submitting || undefined}
-                className="h-11"
-              >
-                {submitting && (
-                  <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-                )}
-                {primaryCtaLabel}
-              </Button>
-            )}
-          </div>
+          <WizardFooter
+            blocker={blocker ? t(blocker) : null}
+            isFirstStep={isFirstStep}
+            isLastStep={isLastStep}
+            submitting={submitting}
+            label={primaryCtaLabel}
+            onBack={goBack}
+            onNext={goNext}
+            onSubmit={() => void onSubmit()}
+          />
         }
       >
         <div
@@ -495,12 +468,12 @@ function WizardDialogShell({
           className="flex flex-col"
         >
           {/* v1.8.6 — dot stepper replaces the v1.5.5 continuous
-              `<Progress>` strip + "Step X of Y" caption. The dot row +
-              body share the same outer padding so they read as one
-              column; the right padding leaves room for the shell's
-              36 px close-X (`pr-12` mobile / `pr-14` desktop). The NL
-              "Describe" affordance is re-homed beside the stepper on
-              the Step-1 create path. */}
+              `<Progress>` strip + "Step X of Y" caption. The right
+              padding leaves room for the shell's 36 px close-X
+              (`pr-12` mobile / `pr-14` desktop), which sits over this
+              band and over nothing below it. The NL "Describe"
+              affordance is re-homed beside the stepper on the Step-1
+              create path. */}
           <div className="border-border/70 space-y-1.5 border-b p-4 pr-12 sm:p-6 sm:pr-14">
             <WizardStepper
               steps={stepList}
@@ -535,7 +508,7 @@ function WizardDialogShell({
           </div>
 
           {/* Step body — v1.5.5 D-3 §8 spacing buckets:
-              outer  = p-4 pr-12 sm:p-6 sm:pr-14
+              outer  = p-4 sm:p-6, both sides alike (no close-X here)
               section = gap-6 sm:gap-8
               row    = gap-3
               tight  = space-y-1
@@ -544,7 +517,7 @@ function WizardDialogShell({
               snaps the step. The slide proposed in D-2 was stripped. */}
           <div
             ref={bodyRef}
-            className="animate-in fade-in-0 flex flex-col gap-6 p-4 pr-12 duration-200 motion-reduce:animate-none sm:gap-8 sm:p-6 sm:pr-14"
+            className="animate-in fade-in-0 flex flex-col gap-6 p-4 duration-200 motion-reduce:animate-none sm:gap-8 sm:p-6"
             data-slot="wizard-step-body"
             key={step}
           >
@@ -651,5 +624,86 @@ function WizardDialogShell({
         />
       )}
     </>
+  );
+}
+
+/**
+ * Back, then Next or Save. A disabled Next or Save says what still holds the
+ * step (`blocker`, from the same gate that disables it) instead of leaving
+ * the person to guess.
+ */
+function WizardFooter({
+  blocker,
+  isFirstStep,
+  isLastStep,
+  submitting,
+  label,
+  onBack,
+  onNext,
+  onSubmit,
+}: {
+  blocker: string | null;
+  isFirstStep: boolean;
+  isLastStep: boolean;
+  submitting: boolean;
+  label: string;
+  onBack: () => void;
+  onNext: () => void;
+  onSubmit: () => void;
+}) {
+  const { t } = useTranslations();
+  const describedBy = blocker ? "wizard-blocked-hint" : undefined;
+  return (
+    <div className="flex w-full flex-col gap-2">
+      {blocker && (
+        <p
+          id="wizard-blocked-hint"
+          className="text-foreground text-right text-sm"
+          data-slot="wizard-blocked-hint"
+          aria-live="polite"
+        >
+          {blocker}
+        </p>
+      )}
+      <div className="flex w-full items-center justify-between gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onBack}
+          disabled={isFirstStep || submitting}
+          data-slot="wizard-back"
+          className="h-11"
+        >
+          {t("medications.wizard.nav.back")}
+        </Button>
+        {!isLastStep ? (
+          <Button
+            type="button"
+            onClick={onNext}
+            disabled={blocker !== null}
+            aria-describedby={describedBy}
+            data-slot="wizard-next"
+            className="h-11"
+          >
+            {label}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={blocker !== null || submitting}
+            aria-describedby={describedBy}
+            data-slot="wizard-save"
+            aria-busy={submitting || undefined}
+            className="h-11"
+          >
+            {submitting && (
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+            )}
+            {label}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

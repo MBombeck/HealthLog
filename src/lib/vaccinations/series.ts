@@ -133,19 +133,3 @@ export function deriveSeries(
 
   return result;
 }
-
-/**
- * The same answer for one record, against a history.
- *
- * A convenience over {@link deriveSeries} for the detail route, which holds
- * one record and needs the set it belongs to anyway. Returns an empty array
- * for a record the history does not contain, rather than deriving a lonely
- * position that would contradict the list.
- */
-export function seriesForRecord(
-  recordId: string,
-  history: readonly SeriesInputRecord[],
-  customs?: CustomVaccineLookup,
-): SeriesPosition[] {
-  return deriveSeries(history, customs).get(recordId) ?? [];
-}

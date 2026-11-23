@@ -19,7 +19,9 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { credentialRevocations } from "@/lib/auth/credential-revocations";
+import { stripSignedOutDevicePush } from "@/lib/devices/signed-out-push";
 import { remainingGuardianWhere } from "@/lib/managed-profiles/guardian-where";
+import { queueRelayUnbindsForAccount } from "@/lib/push-relay/unbind-queue";
 import {
   requestOffhostPurge,
   type OffhostPurgeReason,
@@ -58,6 +60,9 @@ export async function lockAccountForDeletion(
   for (const revoke of credentialRevocations(tx, input.userId)) {
     await revoke;
   }
+  // The account's devices take no more of its pushes during the window; the
+  // relay's minute pass sends the queued unbinds.
+  await stripSignedOutDevicePush(tx, input.userId);
   // A handover link is a credential for the profile it hands over: claimed
   // during the window, it would give someone an account that is locked at
   // once and erased when the window ends. The links this account minted for
@@ -92,6 +97,10 @@ export async function eraseAccount(
   // The nightly off-host copies go with the account. The request commits
   // with the deletion; the purge job deletes the objects.
   await requestOffhostPurge(tx, userId, reason);
+  // The push relay's bindings for the account's devices go too. The unbinds
+  // are queued here and sent by the relay's minute pass, so a relay that is
+  // down delays them without blocking the erasure.
+  await queueRelayUnbindsForAccount(tx, userId);
   // Every other row the account owns goes through `onDelete: Cascade`.
   await tx.user.delete({ where: { id: userId } });
 }

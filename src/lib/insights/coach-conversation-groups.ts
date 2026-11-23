@@ -4,10 +4,12 @@
  *
  * Shared by the Coach page's conversations panel and the standalone
  * conversation list, so both group a thread the same way. Comparisons run
- * against LOCAL day boundaries, so "Today" follows the person's own midnight
- * rather than UTC's. Empty groups are dropped; order inside a group is the
+ * on calendar days of the profile zone `tz`, so "Today" follows the person's
+ * own midnight rather than UTC's or the browser's. Empty groups are dropped; order inside a group is the
  * caller's (the server already returns `updatedAt desc`).
  */
+import { shiftDateKey, userDayKey } from "@/lib/tz/format";
+
 export type CoachRecencyGroupId =
   "today" | "yesterday" | "thisWeek" | "earlier";
 
@@ -16,8 +18,6 @@ export interface CoachRecencyGroup<T> {
   labelKey: string;
   conversations: T[];
 }
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 const GROUPS: ReadonlyArray<{ id: CoachRecencyGroupId; labelKey: string }> = [
   { id: "today", labelKey: "insights.coach.history.groupToday" },
@@ -28,15 +28,14 @@ const GROUPS: ReadonlyArray<{ id: CoachRecencyGroupId; labelKey: string }> = [
 
 export function groupConversationsByRecency<T extends { updatedAt: string }>(
   conversations: readonly T[],
+  tz: string,
   now: Date = new Date(),
 ): CoachRecencyGroup<T>[] {
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  ).getTime();
-  const startOfYesterday = startOfToday - DAY_MS;
-  const startOfWeek = startOfToday - 6 * DAY_MS;
+  // Day keys compare as strings. Each boundary is a calendar day, not an
+  // instant 24 hours back, which is an hour off after a change of clocks.
+  const today = userDayKey(now, tz);
+  const yesterday = shiftDateKey(today, -1);
+  const weekStart = shiftDateKey(today, -6);
 
   const buckets: Record<CoachRecencyGroupId, T[]> = {
     today: [],
@@ -45,10 +44,10 @@ export function groupConversationsByRecency<T extends { updatedAt: string }>(
     earlier: [],
   };
   for (const conversation of conversations) {
-    const updated = new Date(conversation.updatedAt).getTime();
-    if (updated >= startOfToday) buckets.today.push(conversation);
-    else if (updated >= startOfYesterday) buckets.yesterday.push(conversation);
-    else if (updated >= startOfWeek) buckets.thisWeek.push(conversation);
+    const day = userDayKey(new Date(conversation.updatedAt), tz);
+    if (day >= today) buckets.today.push(conversation);
+    else if (day >= yesterday) buckets.yesterday.push(conversation);
+    else if (day >= weekStart) buckets.thisWeek.push(conversation);
     else buckets.earlier.push(conversation);
   }
 

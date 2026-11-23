@@ -42,13 +42,15 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
 import {
-  CUMULATIVE_HK_TYPES,
-  HIGH_FREQUENCY_MEAN_TYPES,
-} from "@/lib/measurements/apple-health-mapping";
-
-const SRC = join(process.cwd(), "src");
+  SRC,
+  closeOf,
+  lineOf,
+  measurementReadSourceFiles,
+  sparseLiteral,
+  typeExprOf,
+  whereObject,
+} from "./helpers/measurement-read-scan";
 
 const SCOPED_DIRS = [
   "lib/insights/",
@@ -80,22 +82,12 @@ const SCOPED_DIRS = [
   "lib/medications/intake-bulk/",
 ];
 
-/** Types a device writes at sampling rate rather than a few times a day. */
-const DENSE_TYPES: ReadonlySet<string> = new Set([
-  "PULSE",
-  "BLOOD_GLUCOSE",
-  "HEART_RATE_VARIABILITY",
-  "OXYGEN_SATURATION",
-  ...CUMULATIVE_HK_TYPES,
-  ...HIGH_FREQUENCY_MEAN_TYPES,
-]);
-
 /**
  * Untaken reads whose `where` neither names sparse literal types nor a key
  * list, keyed `<file>::<type expression>`, with why each stays bounded.
  */
 const ALLOWED: Record<string, string> = {
-  "lib/analytics/summaries-slice.ts::(shorthand)":
+  "lib/analytics/summaries-slice-passes.ts::(shorthand)":
     "one hourly-mean type (pulse) over one local day, the latest: the same rows the day view reads for that day, bounded by a day, not by the sampling history",
   "lib/insights/comprehensive-generate.ts::(shorthand)":
     'Only reached for SLEEP_DURATION (guarded by `type === "SLEEP_DURATION"`); a few stage rows per night.',
@@ -109,7 +101,7 @@ const ALLOWED: Record<string, string> = {
     "Daily computed / provider scores (recovery, strain, readiness), one row per day.",
   "lib/jobs/step-consolidation-repair.ts::STEP_TYPE":
     "Repair job over one user's step rows for a bounded day range; runs once per repair, not per status refresh.",
-  'lib/ai/coach/snapshot.ts::"BLOOD_GLUCOSE" as never':
+  'lib/ai/coach/snapshot-blocks/snapshot-reads.ts::"BLOOD_GLUCOSE" as never':
     "Clinical CGM metrics (time in range, SD / CV, J-index, LBGI / HBGI, reading span) are functions of the individual readings, which a per-day aggregate cannot reproduce. 30 days at a sensor's fixed rate (at most one a minute) stays below 45 000 rows.",
   'lib/dashboard/snapshot.ts::"BLOOD_GLUCOSE"':
     "Same 30-day clinical glucose panel as the coach snapshot (per-reading metrics), grouped by meal context.",
@@ -125,6 +117,10 @@ const ALLOWED: Record<string, string> = {
     "Thirty days of weight, blood pressure, resting heart rate, body fat and steps (drained to one row per day). PULSE is filtered out of `recentTypes` and folds in SQL.",
   "lib/import/health-connect/import.ts::{ in: spotTypes":
     "The Health Connect import's same-reading check: the spot types of one 500-row batch (weight, blood pressure, vitals) in that batch's time window, ±2 s. Heart rate and sleep never take the check.",
+  'lib/analytics/intraday-pulse-io.ts::"PULSE"':
+    "One local day of PULSE `stats:` rows only (`externalId` starts with `stats:`): uploaded ten-minute buckets and folded hours, at most 144 + 24 a day per source. The day's raw readings fold in SQL (`readLocalDayMinuteBuckets`).",
+  "lib/insights/recent-readings.ts::(shorthand)":
+    "Thirty days of one type, read as rows only after `countReadingsUpTo` has shown they number at most `DENSE_READ_CAP`; beyond it the window is read as hour cells in SQL.",
   "lib/doctor-report/collect.ts::{ notIn: rawExcluded":
     "The report window's sparse types. Pulse, heart-rate variability and blood oxygen over 10 000 readings or any window over 90 days, and glucose over 90 days, are in `rawExcluded` and read as day buckets; glucose inside 90 days stays raw for the clinical panel (per-reading metrics), below 26 000 rows at a sensor's rate.",
 };
@@ -145,6 +141,8 @@ const ALLOWED_SQL: Record<string, string> = {
     "Selects one row per account; `measurements` is read only inside the MIN / MAX scalar subqueries of each row.",
   "lib/jobs/pr-detection.ts::1":
     "Selects account ids; `measurements` is read inside `EXISTS`, one row per account at most.",
+  "lib/jobs/dense-intraday-hourly-rebuild.ts::1":
+    "Selects account ids from `users`; `measurements` is read inside `EXISTS`, one row per account at most.",
   "lib/rollups/measurement-coverage.ts::1":
     "Selects from `unnest` of the caller's type list; `measurements` is read inside `EXISTS`, one row per type at most.",
   "lib/dashboard/summary-reads.ts::1":
@@ -161,67 +159,12 @@ interface UntakenRead {
   typeExpr: string;
 }
 
-function lineOf(src: string, index: number): number {
-  return src.slice(0, index).split("\n").length;
-}
-
-/** Index just past the bracket that closes the one at `open`. */
-function closeOf(src: string, open: number): number {
-  const pair: Record<string, string> = { "(": ")", "{": "}", "[": "]" };
-  const want = pair[src[open]];
-  let depth = 1;
-  let i = open + 1;
-  while (depth > 0 && i < src.length) {
-    if (src[i] === src[open]) depth += 1;
-    else if (src[i] === want) depth -= 1;
-    i += 1;
-  }
-  return i;
-}
-
-/** The `where: { … }` object of a call, or null when `where` is a variable. */
-function whereObject(call: string): string | null {
-  const m = /\bwhere\s*:\s*\{/.exec(call);
-  if (!m) return null;
-  const open = m.index + m[0].length - 1;
-  return call.slice(open, closeOf(call, open));
-}
-
-/** The type expression a `where` object constrains on. */
-function typeExprOf(call: string): string {
-  const where = whereObject(call);
-  if (where === null) {
-    return /\bwhere\s*[,}]/.test(call) ? "(where variable)" : "(none)";
-  }
-  const typed = /\btype\s*:\s*([^,\n}]+)/.exec(where);
-  if (typed) return typed[1].trim();
-  return /\btype\s*[,}\n]/.test(where) ? "(shorthand)" : "(none)";
-}
-
 /** A `where` that pins rows by key rather than by a window. */
 function keyBounded(call: string): boolean {
   const where = whereObject(call) ?? "";
   return (
     /\b(?:id|externalId|measuredAt)\s*:\s*\{\s*in\s*:/.test(where) ||
     /\bmeasuredAt\s*:\s*(?![\s{])/.test(where)
-  );
-}
-
-function sparseLiteral(typeExpr: string): boolean {
-  const lit = /^"([A-Z_0-9]+)"/.exec(typeExpr);
-  if (lit) return !DENSE_TYPES.has(lit[1]);
-  const list = /^\{\s*in\s*:\s*\[([^\]]*)/.exec(typeExpr);
-  if (!list) return false;
-  const items = list[1]
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return (
-    items.length > 0 &&
-    items.every((item) => {
-      const m = /^"([A-Z_0-9]+)"$/.exec(item);
-      return m !== null && !DENSE_TYPES.has(m[1]);
-    })
   );
 }
 
@@ -305,19 +248,11 @@ function rawMeasurementReads(file: string, src: string): RawRead[] {
   return out;
 }
 
-function sourceFiles(): string[] {
-  return walkSourceFiles(SRC, { floor: 3000 })
-    .filter((p) => !p.startsWith("generated/"))
-    .filter((p) => !p.includes("__tests__"))
-    .filter((p) => !p.endsWith(".test.ts") && !p.endsWith(".test.tsx"))
-    .sort();
-}
-
 function scan() {
   let all = 0;
   const untaken: UntakenRead[] = [];
   const raw: RawRead[] = [];
-  for (const file of sourceFiles()) {
+  for (const file of measurementReadSourceFiles()) {
     const src = readFileSync(join(SRC, file), "utf8");
     raw.push(...rawMeasurementReads(file, src));
     if (!SCOPED_DIRS.some((d) => file.startsWith(d))) continue;

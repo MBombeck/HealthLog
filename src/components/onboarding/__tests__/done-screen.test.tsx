@@ -9,7 +9,15 @@ import { I18nProvider } from "@/lib/i18n/context";
  * (dashboard, tour, connect, log) are there either way.
  */
 
+/** `push.relay` of `/api/auth/me`. */
+const relay = vi.hoisted(() => ({
+  status: null as null | {
+    operatorDecision: "undecided" | "on" | "off";
+    canDecide: boolean;
+  },
+}));
 vi.mock("@tanstack/react-query", () => ({
+  useQuery: () => ({ data: undefined }),
   useMutation: () => ({
     mutate: () => {},
     mutateAsync: async () => {},
@@ -22,9 +30,19 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
 
-const auth = vi.hoisted(() => ({ modules: {} as Record<string, boolean> }));
+const auth = vi.hoisted(() => ({
+  modules: {} as Record<string, boolean>,
+  role: "USER" as "USER" | "ADMIN",
+}));
 vi.mock("@/hooks/use-auth", () => ({
-  useAuth: () => ({ user: { id: "u1", modules: auth.modules } }),
+  useAuth: () => ({
+    user: {
+      id: "u1",
+      modules: auth.modules,
+      role: auth.role,
+      push: { relay: relay.status },
+    },
+  }),
 }));
 
 /** `ai.provider` from `/api/auth/me`. */
@@ -82,6 +100,7 @@ function state(
     needs: { ...emptyOnboardingNeeds(), recordTarget },
     completedAt: "2026-09-10T08:00:00.000Z",
     firstResult: null,
+    offers: { ai: false },
   };
 }
 
@@ -164,5 +183,64 @@ describe("<DoneScreen> exits", () => {
   it("offers the managed profile only to an answer that asked for it later", () => {
     expect(render("both")).toContain('href="/settings/access"');
     expect(render("me")).not.toContain('href="/settings/access"');
+  });
+});
+
+describe("<DoneScreen> push relay line", () => {
+  function withRelay(
+    role: "USER" | "ADMIN",
+    status: {
+      operatorDecision: "undecided" | "on" | "off";
+      canDecide: boolean;
+    } | null,
+    run: () => void,
+  ) {
+    auth.role = role;
+    relay.status = status;
+    try {
+      run();
+    } finally {
+      auth.role = "USER";
+      relay.status = null;
+    }
+  }
+
+  it("tells an admin the relay is a choice, with a link to its switch", () => {
+    withRelay(
+      "ADMIN",
+      { operatorDecision: "undecided", canDecide: true },
+      () => {
+        const html = render();
+        const line = html.match(
+          /<p[^>]*data-slot="onboarding-relay-line"[^>]*>([\s\S]*?)<\/p>/,
+        );
+        expect(line).not.toBeNull();
+        expect(line![1]).toContain("optional HealthLog push relay");
+        expect(line![1]).toContain('href="/admin/services"');
+        // Nothing here switches it on.
+        expect(line![1]).not.toContain("<button");
+      },
+    );
+  });
+
+  it("is left out for everyone else", () => {
+    withRelay(
+      "USER",
+      { operatorDecision: "undecided", canDecide: false },
+      () => {
+        expect(render()).not.toContain('data-slot="onboarding-relay-line"');
+      },
+    );
+  });
+
+  it("is left out once the relay question is answered, or with nothing to decide", () => {
+    for (const operatorDecision of ["on", "off"] as const) {
+      withRelay("ADMIN", { operatorDecision, canDecide: true }, () => {
+        expect(render()).not.toContain('data-slot="onboarding-relay-line"');
+      });
+    }
+    withRelay("ADMIN", { operatorDecision: "off", canDecide: false }, () => {
+      expect(render()).not.toContain('data-slot="onboarding-relay-line"');
+    });
   });
 });

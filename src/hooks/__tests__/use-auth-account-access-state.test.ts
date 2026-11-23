@@ -18,7 +18,16 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
-import { fetchMe, NO_ACCOUNT_ACCESS } from "../use-auth";
+import {
+  __resetRecordFenceForTests,
+  currentRecordFenceState,
+} from "@/lib/api/record-fence";
+import {
+  adoptMePayload,
+  fetchMe,
+  NO_ACCOUNT_ACCESS,
+  type MePayload,
+} from "../use-auth";
 
 const response = {
   id: "delegate",
@@ -44,6 +53,40 @@ const canonicalEntry = {
 beforeEach(() => {
   apiGet.mockReset();
   __resetRecordScopeForTests();
+  __resetRecordFenceForTests();
+});
+
+describe("adoptMePayload on the server render", () => {
+  it("resolves the same account without touching browser state", () => {
+    // Through JSON, as the layout hands it over.
+    const published: MePayload = JSON.parse(
+      JSON.stringify({
+        ...response,
+        accountAccess: {
+          accounts: [canonicalEntry],
+          active: canonicalEntry,
+          recordKind: "shared",
+          canSwitch: true,
+        },
+        recordSession: { epoch: 3, scope: "record-a" },
+      }),
+    );
+
+    const user = adoptMePayload(published, { apply: false });
+
+    // The value the shell renders from is the browser's.
+    expect(user.accountAccessStatus).toBe("valid");
+    expect(user.accountAccess?.active).toEqual(canonicalEntry);
+    // None of it was applied: the record scope and the fence context are
+    // module state, which on the server every request shares.
+    expect(getRecordScope()).toBeNull();
+    expect(currentRecordFenceState()).toBeNull();
+
+    // Applied, the same payload sets both.
+    adoptMePayload(published);
+    expect(getRecordScope()).toBe("record-a");
+    expect(currentRecordFenceState()).toEqual({ epoch: 3, scope: "record-a" });
+  });
 });
 
 describe("fetchMe account-access resolution", () => {

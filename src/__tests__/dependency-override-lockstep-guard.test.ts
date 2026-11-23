@@ -3,8 +3,9 @@
  *
  * The image carries two independent installs. `pnpm install` builds the app
  * tree and honours the `overrides` block in `pnpm-workspace.yaml`. A second,
- * npm-owned install builds `/opt/prisma-cli` (Dockerfile) and honours nothing
- * from that file — it reads its own `overrides` field instead.
+ * npm-owned install builds `/opt/prisma-cli` (the Dockerfile's `prisma-cli`
+ * stage, `npm ci` from `docker/prisma-cli/`) and honours nothing from that
+ * file — it reads the `overrides` field of its own package.json instead.
  *
  * On 2026-08-21 only the first one was set. The dependency audit over the app
  * tree passed, and the Trivy image scan reported CVE-2026-40345 against
@@ -39,12 +40,16 @@
  * matcher knows fails the guard loudly instead of shrinking the compared set
  * in silence, which is the only structural defence against a third repeat.
  *
+ * The npm side used to be `npm pkg set 'overrides.X=Y'` lines in the
+ * Dockerfile; it is now a committed package.json and lockfile, read as JSON.
+ * A value JSON allows but this guard does not compare (npm's nested override
+ * objects) lands in `unparsed` as well, and the Dockerfile itself must not
+ * name `overrides` at all, so a pin cannot move back there unread.
+ *
  * Limits, written down so the next reader does not over-trust a green run:
  * this compares DECLARED ranges. It cannot see a NEW vulnerable transitive
  * that neither file mentions — only the image scan can, and that job runs on
- * main-push, not on pull requests. It also reads the Dockerfile as text, so a
- * pin injected by a build ARG, an `npm config` call, or a package.json copied
- * in from elsewhere is outside both matchers.
+ * main-push, not on pull requests.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -54,6 +59,10 @@ import { describe, expect, it } from "vitest";
 const ROOT = process.cwd();
 const DOCKERFILE = readFileSync(join(ROOT, "Dockerfile"), "utf8");
 const WORKSPACE = readFileSync(join(ROOT, "pnpm-workspace.yaml"), "utf8");
+const PRISMA_CLI_PACKAGE = readFileSync(
+  join(ROOT, "docker/prisma-cli/package.json"),
+  "utf8",
+);
 
 /** What a side of the comparison parsed, and what it had to give up on. */
 type ParsedOverrides = {
@@ -151,70 +160,40 @@ export function parseWorkspaceOverrides(yaml: string): ParsedOverrides {
 }
 
 /**
- * `overrides` entries written into `/opt/prisma-cli/package.json`.
+ * `overrides` entries in `docker/prisma-cli/package.json`, the file the
+ * Dockerfile's `prisma-cli` stage installs from with `npm ci`.
  *
- * `npm pkg set` is indifferent to shell quoting, so the assignment may be
- * quoted whole, quoted per half, or bare. Any non-comment Dockerfile line that
- * names `overrides` and matches none of the accepted spellings is reported as
- * unparsed rather than skipped — that is what stops a fresh spelling from
- * quietly shrinking the compared set.
+ * npm also accepts a nested object as an override value (an override scoped
+ * under a parent). Nothing here uses one, and comparing it against a flat
+ * pnpm range would be guesswork, so it is reported as unparsed instead.
  */
-export function parseDockerfileOverrides(dockerfile: string): ParsedOverrides {
+export function parseNpmOverrides(packageJson: string): ParsedOverrides {
   const pins = new Map<string, string>();
   const unparsed: string[] = [];
-
-  // `npm pkg set 'overrides.<name>=<range>'`, `"overrides.<name>=<range>"`,
-  // `overrides.<name>=<range>`, and the per-half-quoted variants. A package
-  // name and a semver range never contain a quote character, so quoting is
-  // pure shell decoration here: strip it and every spelling collapses onto the
-  // same `overrides.<name>=<range>` token.
-  const npmPkgSet = /npm\s+pkg\s+set\s+overrides\.([^\s=]+)\s*=\s*([^\s&;|]+)/;
-  // A raw JSON field, e.g. inside a `cat > package.json` heredoc:
-  // `"<name>": "<range>"` on a line under an `"overrides"` key.
-  const jsonField = /"([^"]+)"\s*:\s*"([^"]+)"/;
-
-  let insideJsonOverrides = false;
-  for (const rawLine of dockerfile.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (line.startsWith("#")) continue;
-
-    if (insideJsonOverrides) {
-      if (line.startsWith("}")) {
-        insideJsonOverrides = false;
-        continue;
-      }
-      const field = jsonField.exec(line);
-      if (field) {
-        pins.set(packageNameOf(field[1]), field[2].trim());
-        continue;
-      }
-      unparsed.push(line);
+  const parsed = JSON.parse(packageJson) as { overrides?: unknown };
+  const overrides = parsed.overrides;
+  if (overrides === undefined) {
+    return { pins, unparsed: ["no `overrides` field found"] };
+  }
+  if (typeof overrides !== "object" || overrides === null) {
+    return { pins, unparsed: [JSON.stringify(overrides)] };
+  }
+  for (const [key, value] of Object.entries(overrides)) {
+    if (typeof value === "string" && value.trim() !== "") {
+      pins.set(packageNameOf(key), value.trim());
       continue;
     }
-
-    if (!/\boverrides\b/.test(line)) continue;
-
-    if (/"overrides"\s*:\s*\{\s*$/.test(line)) {
-      insideJsonOverrides = true;
-      continue;
-    }
-
-    const set = npmPkgSet.exec(line.replace(/['"]/g, ""));
-    if (set) {
-      pins.set(packageNameOf(set[1]), set[2].trim());
-      continue;
-    }
-    unparsed.push(line);
+    unparsed.push(`${key}: ${JSON.stringify(value)}`);
   }
   return { pins, unparsed };
 }
 
-const dockerfileOverrides = () => parseDockerfileOverrides(DOCKERFILE);
+const npmOverrides = () => parseNpmOverrides(PRISMA_CLI_PACKAGE);
 const workspaceOverrides = () => parseWorkspaceOverrides(WORKSPACE);
 
 describe("dependency overrides — pnpm workspace and the npm install agree", () => {
-  it("finds the Dockerfile's npm-side overrides at all", () => {
-    const docker = dockerfileOverrides();
+  it("finds the prisma-cli package's npm-side overrides at all", () => {
+    const docker = npmOverrides();
     // A zero-match regex would make every assertion below vacuously true.
     // This is the check that keeps the guard honest about its own matcher.
     expect(docker.pins.size).toBeGreaterThan(0);
@@ -238,10 +217,10 @@ describe("dependency overrides — pnpm workspace and the npm install agree", ()
         "unparsed, or the pin stops being compared against the Dockerfile.",
     ).toEqual([]);
     expect(
-      dockerfileOverrides().unparsed,
-      "The Dockerfile names `overrides` on a line this guard cannot read. " +
-        "Teach `parseDockerfileOverrides` the spelling — an unread pin is an " +
-        "uncompared pin.",
+      npmOverrides().unparsed,
+      "docker/prisma-cli/package.json has an `overrides` entry this guard " +
+        "cannot read. Teach `parseNpmOverrides` the shape — an unread pin is " +
+        "an uncompared pin.",
     ).toEqual([]);
   });
 
@@ -297,29 +276,33 @@ describe("dependency overrides — pnpm workspace and the npm install agree", ()
     expect(parsed.pins.has("prisma")).toBe(false);
   });
 
-  it("reads every spelling of the Dockerfile's npm-side pin", () => {
-    // The old matcher accepted `npm pkg set 'overrides.X=Y'` and nothing else,
-    // so re-quoting the same line removed the pin from the comparison without
-    // changing what the image installs.
-    const parsed = parseDockerfileOverrides(
-      [
-        "# a comment mentioning the `overrides` block",
-        "RUN npm init -y && \\",
-        "    npm pkg set 'overrides.single-quoted=^1.0.0' && \\",
-        '    npm pkg set "overrides.double-quoted=^1.0.0" && \\',
-        "    npm pkg set overrides.unquoted=^1.0.0 && \\",
-        "    npm pkg set 'overrides.@scoped/split'='^1.0.0' && \\",
-        "    npm install --omit=dev prisma@7.8.0",
-      ].join("\n"),
+  it("reads the npm-side pins, scoped and selector keys included", () => {
+    const parsed = parseNpmOverrides(
+      JSON.stringify({
+        overrides: {
+          plain: "^1.0.0",
+          "with-selector@<1.0.0": "^1.0.0",
+          "@scoped/name": "^1.0.0",
+        },
+      }),
     );
-
     expect(parsed.unparsed).toEqual([]);
     expect(Object.fromEntries(parsed.pins)).toEqual({
-      "single-quoted": "^1.0.0",
-      "double-quoted": "^1.0.0",
-      unquoted: "^1.0.0",
-      "@scoped/split": "^1.0.0",
+      plain: "^1.0.0",
+      "with-selector": "^1.0.0",
+      "@scoped/name": "^1.0.0",
     });
+  });
+
+  it("keeps every npm-side pin out of the Dockerfile itself", () => {
+    // The pins used to be `npm pkg set` lines in the Dockerfile. Now that
+    // they live in the stage's package.json, a pin written back into the
+    // Dockerfile would install without this guard ever reading it.
+    const named = DOCKERFILE.split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => !line.startsWith("#"))
+      .filter((line) => /\boverrides\b|npm\s+pkg\s+set/.test(line));
+    expect(named).toEqual([]);
   });
 
   it("reports an overrides spelling neither matcher knows", () => {
@@ -330,13 +313,15 @@ describe("dependency overrides — pnpm workspace and the npm install agree", ()
         .unparsed,
     ).toEqual(["- not-a-mapping"]);
     expect(
-      parseDockerfileOverrides("RUN node -e \"pkg.overrides['x']='^1.0.0'\"")
-        .unparsed.length,
-    ).toBeGreaterThan(0);
+      parseNpmOverrides(
+        JSON.stringify({ overrides: { parent: { child: "^1.0.0" } } }),
+      ).unparsed,
+    ).toEqual(['parent: {"child":"^1.0.0"}']);
+    expect(parseNpmOverrides("{}").unparsed.length).toBeGreaterThan(0);
   });
 
   it("pins the same range wherever both files name the same package", () => {
-    const docker = dockerfileOverrides().pins;
+    const docker = npmOverrides().pins;
     const workspace = workspaceOverrides().pins;
 
     const shared = [...docker.keys()].filter((name) => workspace.has(name));
@@ -356,12 +341,12 @@ describe("dependency overrides — pnpm workspace and the npm install agree", ()
     // These three were each reported by the image scan under
     // `/opt/prisma-cli`, reached through `prisma`. Losing a mirror is not a
     // style regression, it is the vulnerable version coming back.
-    const docker = dockerfileOverrides().pins;
+    const docker = npmOverrides().pins;
     for (const name of ["deepmerge-ts", "@hono/node-server", "valibot"]) {
       expect(
         docker.has(name),
         `${name} was flagged under /opt/prisma-cli and needs an ` +
-          `\`npm pkg set 'overrides.${name}=...'\` line in the Dockerfile; ` +
+          `\`overrides\` entry in docker/prisma-cli/package.json; ` +
           `pnpm-workspace.yaml does not reach that install.`,
       ).toBe(true);
     }
@@ -370,7 +355,7 @@ describe("dependency overrides — pnpm workspace and the npm install agree", ()
   it("keeps the override ahead of the version Prisma's config asks for", () => {
     // `@prisma/config` requests deepmerge-ts 7.x; the advisory is fixed in
     // 8.0.0. Anything that lets a 7.x back in re-opens CVE-2026-40345.
-    const range = dockerfileOverrides().pins.get("deepmerge-ts");
+    const range = npmOverrides().pins.get("deepmerge-ts");
     expect(range).toBeDefined();
     expect(range).toMatch(/\^?8\./);
   });

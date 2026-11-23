@@ -22,6 +22,8 @@ import {
   POPULATION_DEFAULT_CYCLE,
   PERIOD_MAX,
 } from "@/lib/cycle";
+import { predictionsPausedOn, pregnancyFieldsFrom } from "./pregnancy";
+import { pregnancyFieldsOf } from "./pregnancy-store";
 import { resolveCycleDay } from "./verdict";
 import type {
   CycleProfile,
@@ -172,6 +174,7 @@ export function toProfileInput(profile: CycleProfile): CycleProfileInput {
     predictionEnabled: profile.predictionEnabled,
     rawChartMode: profile.rawChartMode,
     secondarySymptom: profile.secondarySymptom,
+    ...pregnancyFieldsOf(profile),
   };
 }
 
@@ -351,6 +354,28 @@ export interface CycleEngineInputs {
 }
 
 /**
+ * Whether the profile admits a forecast on `today`: prediction on, not in
+ * raw-chart mode, and no pregnancy or postpartum state pausing it (v1.49).
+ * Every surface that computes or serves a forecast asks this one question.
+ */
+export function forecastActive(
+  profile: Pick<
+    CycleProfileInput,
+    | "predictionEnabled"
+    | "rawChartMode"
+    | "reproductiveState"
+    | "pregnancyStartDate"
+    | "pregnancyDueDate"
+    | "deliveryDate"
+    | "postpartumWeeks"
+  >,
+  today: string,
+): boolean {
+  if (!profile.predictionEnabled || profile.rawChartMode) return false;
+  return !predictionsPausedOn(pregnancyFieldsFrom(profile), today);
+}
+
+/**
  * The forecast, or null when the profile asks for none.
  *
  * One predicate for every surface that shows a forecast: the calendar, the
@@ -363,7 +388,7 @@ export function gatedPrediction(
   inputs: CycleEngineInputs,
   today: string,
 ): CyclePredictionResult | null {
-  if (!profile.predictionEnabled || profile.rawChartMode) return null;
+  if (!forecastActive(profile, today)) return null;
   return predictCycle(
     toCycleInputs(inputs.cycles),
     inputs.dayLogs,

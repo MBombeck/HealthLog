@@ -24,6 +24,7 @@ process.env.ENCRYPTION_KEY ??=
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
+import { expectSanitisedIssue } from "./zod-issue-shape";
 import { DEFAULT_DASHBOARD_LAYOUT } from "@/lib/dashboard-layout";
 
 vi.mock("next/headers", async () => {
@@ -454,10 +455,17 @@ describe("PUT /api/dashboard/widgets — Save persists full layouts", () => {
       const body = (await res.json()) as {
         details: { issues: Array<Record<string, unknown>> };
       };
-      for (const issue of body.details.issues) {
-        expect(issue).not.toHaveProperty("params");
-        expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
-      }
+      for (const issue of body.details.issues) expectSanitisedIssue(issue);
+      // The empty list is named by the schema's bound, not by what was sent.
+      expect(body.details.issues).toEqual([
+        expect.objectContaining({
+          path: "widgets",
+          code: "too_small",
+          minimum: 1,
+          inclusive: true,
+          origin: "array",
+        }),
+      ]);
     });
   });
 

@@ -36,6 +36,9 @@ function fakeTx() {
       })),
       delete: vi.fn(async () => ({})),
     },
+    // The erasure queues a relay unbind per relay-bound device; none here.
+    device: { findMany: vi.fn(async () => []) },
+    pushRelayUnbind: { createMany: vi.fn(async () => ({ count: 0 })) },
     accountGrant: {
       findMany: vi.fn(async () => []),
       findFirst: vi.fn(async () => ({ id: "grant-1" })),

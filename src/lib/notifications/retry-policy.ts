@@ -33,6 +33,13 @@ export interface SendOutcome {
   statusCode?: number;
   /** Stable reason code suitable for `disabled_reason` / `last_failure_reason`. */
   reason?: string;
+  /**
+   * The failure is the push relay's (down, paused, or still holding the push
+   * for a retry), not the channel's or the device's. The channel state keeps
+   * it out of the failure count, so a relay outage can never switch the APNs
+   * channel off (`recordChannelTransientFailure`).
+   */
+  relayTransport?: boolean;
   /** Human-readable error fragment for logs (NOT for the disabled_reason column). */
   message?: string;
   /**

@@ -3,16 +3,11 @@
  * Extracts aggregated health metrics from the database.
  * No raw timestamps or exact values are sent in aggregated mode.
  */
+import { weightTargetFor } from "@/lib/cycle/pregnancy-context";
+import { ageInYears } from "@/lib/tz/date-only";
 import { prisma } from "@/lib/db";
 import { summarize } from "@/lib/analytics/trends";
 import type { DataPoint } from "@/lib/analytics/trends";
-import {
-  buildComplianceMedicationContext,
-  COURSES_COMPLIANCE_SELECT,
-  calculateCompliance,
-  lastNonSkippedTakenAt,
-  SCHEDULE_COMPLIANCE_SELECT,
-} from "@/lib/analytics/compliance";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   DEFAULT_TIMEZONE,
@@ -36,6 +31,7 @@ import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import { READING_SPREAD } from "@/lib/stats/spread";
 import {
   avgInWindow,
+  laterDate,
   roundedSpread,
   toDataPoints,
 } from "@/lib/insights/feature-window";
@@ -44,8 +40,6 @@ import {
   significantPearsonCorrelation,
   type CorrelationResult,
 } from "@/lib/analytics/correlations";
-import { getMedicationCategories } from "@/lib/medication-category";
-import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import {
   readAllTimeExtremes,
   readBucketedSeries,
@@ -68,24 +62,18 @@ import {
   readNewestRowsPerType,
 } from "@/lib/measurements/newest-per-type";
 
-import {
-  resolveEffectiveBpTargets,
-  resolveWeightTargetOverride,
-} from "@/lib/analytics/effective-range";
+import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import {
   buildWeightTargetFeature,
   type WeightTargetFeature,
 } from "@/lib/targets/weight-trend";
-import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import { bmiOf } from "@/lib/analytics/classifications";
+import { readMedicationFeatures } from "@/lib/insights/feature-medications";
 // The briefing read blocks and the signals-of-day builder moved to
 // sibling modules; re-exported so every existing call site keeps
 // importing from here.
 export * from "@/lib/insights/feature-blocks";
 export * from "@/lib/insights/signals-of-day";
-
-/** Max chars of the free-text medication name / dose that may enter the Coach prompt. */
-const MED_NAME_MAX_CHARS = 60;
-const MED_DOSE_MAX_CHARS = 40;
 
 interface DataCoverage {
   count: number;
@@ -243,10 +231,6 @@ async function buildMoodDimensionFeatures(
  * Bounded: the same 90-day window the dimensions use, and the comparison's own
  * cap on how many rows survive.
  */
-/** The later of `date` and an optional floor. */
-function laterDate(date: Date, floor: Date | null): Date {
-  return floor !== null && floor.getTime() > date.getTime() ? floor : date;
-}
 
 async function buildMoodContextBlock(
   userId: string,
@@ -1123,6 +1107,7 @@ export async function extractFeatures(
       dateOfBirth: true,
       gender: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
 
@@ -1194,16 +1179,10 @@ export async function extractFeatures(
       : 0;
 
   // Compute age
-  let ageYears: number | null = null;
-  if (user?.dateOfBirth) {
-    const dob = user.dateOfBirth;
-    const today = new Date();
-    ageYears = today.getFullYear() - dob.getFullYear();
-    const monthDiff = today.getMonth() - dob.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-      ageYears--;
-    }
-  }
+  const ageYears = ageInYears(
+    user?.dateOfBirth,
+    user?.timezone ?? DEFAULT_TIMEZONE,
+  );
 
   const features: AggregatedFeatures = {
     context: {
@@ -1232,7 +1211,7 @@ export async function extractFeatures(
     const summary = summarize(toDataPoints(weightData));
     const bmi =
       user?.heightCm && summary.latest
-        ? parseFloat((summary.latest / (user.heightCm / 100) ** 2).toFixed(1))
+        ? parseFloat(bmiOf(summary.latest, user.heightCm).toFixed(1))
         : null;
 
     features.weight = {
@@ -1263,7 +1242,7 @@ export async function extractFeatures(
       coverage: computeCoverage(weightData, now),
     };
     const weightTarget = buildWeightTargetFeature(
-      resolveWeightTargetOverride(user?.thresholdsJson),
+      (await weightTargetFor(prisma, userId, user)).target,
       { avg7: summary.avg7, latest: summary.latest },
     );
     if (weightTarget) features.weight.target = weightTarget;
@@ -1656,119 +1635,8 @@ export async function extractFeatures(
     );
   }
 
-  // Medications
-  const medications = await prisma.medication.findMany({
-    // v1.16.11 — as-needed (PRN) medications never surface a compliance
-    // rate (no expected doses), so the insight features exclude them.
-    where: { userId, active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
-    // v1.15.20 — schedules through the shared compliance select so the
-    // configured per-dose windows reach this surface like every other.
-    include: {
-      schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
-      // v1.16.3 — archived schedule eras for era-aware compliance.
-      scheduleRevisions: { orderBy: [{ validFrom: "asc" }, { id: "asc" }] },
-      // v1.25 — pause eras so paused days drop out of the denominator.
-      pauseEras: { select: { pausedAt: true, resumedAt: true } },
-      // v1.40 (#1024) — the courses, so a gap between two expects nothing.
-      courses: COURSES_COMPLIANCE_SELECT,
-    },
-  });
-
-  if (medications.length > 0) {
-    const categoryMap = await getMedicationCategories(
-      medications.map((med) => med.id),
-    );
-
-    // Single batched fetch + in-memory grouping replaces the per-medication
-    // findMany loop. Same shape as the v1.3.0 fix to /api/insights/comprehensive
-    // (the previous N+1 the v3 audit closed). 90 days is the longest window
-    // calculateCompliance uses below, so we don't need the full intake history.
-    const ninetyDaysAgo = laterDate(
-      new Date(Date.now() - 90 * 86_400_000),
-      historyFloor,
-    );
-    const allEvents = await prisma.medicationIntakeEvent.findMany({
-      where: {
-        userId,
-        // v1.7.0 sync — exclude tombstoned rows.
-        deletedAt: null,
-        medicationId: { in: medications.map((med) => med.id) },
-        scheduledFor: { gte: ninetyDaysAgo },
-      },
-      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
-      select: {
-        medicationId: true,
-        takenAt: true,
-        skipped: true,
-        scheduledFor: true,
-      },
-    });
-
-    const eventsByMed = new Map<
-      string,
-      { takenAt: Date | null; skipped: boolean; scheduledFor: Date }[]
-    >();
-    for (const e of allEvents) {
-      const list = eventsByMed.get(e.medicationId) ?? [];
-      list.push({
-        takenAt: e.takenAt,
-        skipped: e.skipped,
-        scheduledFor: e.scheduledFor,
-      });
-      eventsByMed.set(e.medicationId, list);
-    }
-
-    // v1.7.0 — resolve the user timezone once so every
-    // per-med compliance call can route its denominator through the
-    // canonical engine (RRULE / rolling / one-shot / PRN / cyclic).
-    const userTz = await resolveUserTimezone(userId);
-
-    features.medications = medications.map((med) => {
-      const mapped = eventsByMed.get(med.id) ?? [];
-      const medicationContext = buildComplianceMedicationContext(
-        med,
-        lastNonSkippedTakenAt(mapped),
-        userTz,
-      );
-      const c7 = calculateCompliance(mapped, med.schedules, 7, med.createdAt, {
-        medicationContext,
-      });
-      const c30 = calculateCompliance(
-        mapped,
-        med.schedules,
-        30,
-        med.createdAt,
-        {
-          medicationContext,
-        },
-      );
-      const c90 = calculateCompliance(
-        mapped,
-        med.schedules,
-        90,
-        med.createdAt,
-        {
-          medicationContext,
-        },
-      );
-
-      return {
-        // v1.30.25 — `name` / `dose` are free text and this struct lands in
-        // the Coach SNAPSHOT as `medications`. The category is resolved from
-        // `med.id` above, so sanitising the label cannot change any
-        // classification. Found by the snapshot free-text guard once its file
-        // list was derived from the import graph instead of hardcoded.
-        name: sanitizeForPrompt(med.name, MED_NAME_MAX_CHARS),
-        dose: sanitizeForPrompt(med.dose, MED_DOSE_MAX_CHARS),
-        category: categoryMap[med.id] ?? "OTHER",
-        compliance7: c7.rate,
-        compliance30: c30.rate,
-        compliance90: c90.rate,
-        streak: c30.streak,
-        missedLast7: c7.missed,
-      };
-    });
-  }
+  const medicationFeatures = await readMedicationFeatures(userId, historyFloor);
+  if (medicationFeatures) features.medications = medicationFeatures;
 
   // v1.18.7 — present-focused "Signals of the day". Computed from the
   // in-memory measurement set (no extra DB round-trip). Lands inside the

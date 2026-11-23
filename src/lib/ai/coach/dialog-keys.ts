@@ -46,21 +46,6 @@ export const COACH_STEP_UI_KEYS = {
   announceDone: "coach.step.announceDone",
 } as const;
 
-/** "N readings" on a step row, by plural tier. */
-export function stepReadingsKey(count: number, locale: Locale): string {
-  return pluralKey("coach.step.readings", count, locale);
-}
-
-/** "N rows" on a step row, by plural tier. */
-export function stepRowsKey(count: number, locale: Locale): string {
-  return pluralKey("coach.step.rows", count, locale);
-}
-
-/** "N metrics" on the snapshot step, by plural tier. */
-export function stepMetricsKey(count: number, locale: Locale): string {
-  return pluralKey("coach.step.metrics", count, locale);
-}
-
 export const COACH_STEP_REASON_KEYS: Readonly<Record<CoachStepReason, string>> =
   {
     no_data: "coach.step.reason.noData",

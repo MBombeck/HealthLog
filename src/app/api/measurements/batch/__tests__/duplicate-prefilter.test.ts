@@ -192,6 +192,11 @@ vi.mock("@/lib/measurements/reconcile-external-measurement", () => ({
       store.rows.push(row);
       return { status: "inserted", row };
     }
+    // The reconciler's rule: an immutable sample whose external identity
+    // names a deleted row stays deleted (`tombstone-repost.ts`).
+    if (options.exactExternalMatch === "duplicate" && externalHit?.deletedAt) {
+      return { status: "duplicate", row: externalHit, tombstoned: true };
+    }
     const canonical = (externalHit ?? naturalHit)!;
     const redundant =
       externalHit && naturalHit && externalHit !== naturalHit
@@ -417,7 +422,11 @@ describe("exact-duplicate prefilter (v1.42)", () => {
     const { next, transactions } = await golden(setup, [
       weight("uuid-gone", at),
     ]);
-    expect(next.entries[0]).toEqual({ index: 0, status: "duplicate" });
+    expect(next.entries[0]).toEqual({
+      index: 0,
+      status: "skipped",
+      reason: "deleted_in_healthlog",
+    });
     expect(transactions).toBe(0);
     expect(store.rows[0].deletedAt).not.toBeNull();
   });
@@ -705,12 +714,13 @@ describe("set-based insert (v1.44)", () => {
     expect(transactions).toBe(2);
   });
 
-  it("a mix of fresh, moved and resurrected rows leaves the same table", async () => {
+  it("a mix of fresh, moved and tombstoned rows leaves the same table", async () => {
     const at = (h: number) => new Date(NOW - DAY - h * HOUR);
     const setup = () => {
       // Moves: the stored row sits at another instant.
       seed({ type: "WEIGHT", externalId: "moved", measuredAt: at(9) });
-      // Resurrects: a tombstone at a different instant under the same id.
+      // A tombstone at a different instant under the same id: the sample
+      // stays deleted (`tombstone-repost.ts`), it is not resurrected.
       seed({
         type: "WEIGHT",
         externalId: "back",
@@ -733,9 +743,10 @@ describe("set-based insert (v1.44)", () => {
       "updated",
       "updated",
       "inserted",
-      "updated",
+      "skipped",
       "inserted",
     ]);
+    expect(next.entries[4]).toMatchObject({ reason: "deleted_in_healthlog" });
     // One set statement, then the three rows it skipped.
     expect(transactions).toBe(4);
   });

@@ -213,8 +213,3 @@ export function healthTermKind(text: string): HealthTermKind | null {
   }
   return null;
 }
-
-/** Whether the text names a medication or a health condition. */
-export function containsHealthTerm(text: string): boolean {
-  return healthTermKind(text) !== null;
-}

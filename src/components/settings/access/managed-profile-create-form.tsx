@@ -5,9 +5,10 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
+import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { TimezonePicker } from "@/components/settings/timezone-picker";
 import { stepUpErrorKey } from "@/components/settings/access/grant-action-error";
 import {
@@ -163,10 +164,10 @@ export function ManagedProfileCreateForm({
         data-slot="managed-profile-create-form"
         className="space-y-3"
       >
-        <div className="space-y-1.5">
-          <Label htmlFor="managed-profile-name">
-            {t("recordSharing.managed.nameLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor="managed-profile-name"
+          label={t("recordSharing.managed.nameLabel")}
+        >
           <Input
             id="managed-profile-name"
             data-slot="managed-profile-name"
@@ -193,12 +194,12 @@ export function ManagedProfileCreateForm({
               displayName.length > 0 && nameIssue !== null ? t(nameIssue) : null
             }
           />
-        </div>
+        </FieldGroup>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="managed-profile-dob">
-            {t("recordSharing.managed.dobLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor="managed-profile-dob"
+          label={t("recordSharing.managed.dobLabel")}
+        >
           <DateField
             id="managed-profile-dob"
             data-slot="managed-profile-dob"
@@ -213,12 +214,13 @@ export function ManagedProfileCreateForm({
           >
             {t("recordSharing.managed.dobHint")}
           </p>
-        </div>
+        </FieldGroup>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="managed-profile-locale">
-            {t("recordSharing.managed.localeLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor="managed-profile-locale"
+          label={t("recordSharing.managed.localeLabel")}
+          hint={t("recordSharing.managed.localeHint")}
+        >
           <NativeSelect
             id="managed-profile-locale"
             data-slot="managed-profile-locale"
@@ -232,15 +234,13 @@ export function ManagedProfileCreateForm({
               </option>
             ))}
           </NativeSelect>
-          <p className="text-muted-foreground text-xs">
-            {t("recordSharing.managed.localeHint")}
-          </p>
-        </div>
+        </FieldGroup>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="managed-profile-gender">
-            {t("recordSharing.managed.genderLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor="managed-profile-gender"
+          label={t("recordSharing.managed.genderLabel")}
+          hint={t("recordSharing.managed.genderHint")}
+        >
           <NativeSelect
             id="managed-profile-gender"
             data-slot="managed-profile-gender"
@@ -254,10 +254,7 @@ export function ManagedProfileCreateForm({
               </option>
             ))}
           </NativeSelect>
-          <p className="text-muted-foreground text-xs">
-            {t("recordSharing.managed.genderHint")}
-          </p>
-        </div>
+        </FieldGroup>
 
         <div className="space-y-1.5">
           <TimezonePicker
@@ -282,16 +279,6 @@ export function ManagedProfileCreateForm({
           />
         </div>
 
-        <Button
-          type="submit"
-          data-slot="managed-profile-create-submit"
-          disabled={create.isPending || blocked}
-        >
-          {create.isPending
-            ? t("recordSharing.managed.creating")
-            : (submitLabel ?? t("recordSharing.managed.create"))}
-        </Button>
-
         {error && (
           <p
             role="alert"
@@ -310,6 +297,18 @@ export function ManagedProfileCreateForm({
             {t("recordSharing.managed.created", { name: created })}
           </p>
         )}
+        <SettingsCardActions>
+          <Button
+            type="submit"
+            size="sm"
+            data-slot="managed-profile-create-submit"
+            disabled={create.isPending || blocked}
+          >
+            {create.isPending
+              ? t("recordSharing.managed.creating")
+              : (submitLabel ?? t("recordSharing.managed.create"))}
+          </Button>
+        </SettingsCardActions>
       </form>
     </>
   );

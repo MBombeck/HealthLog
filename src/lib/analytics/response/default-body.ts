@@ -21,6 +21,8 @@ import { readCorrelationBlock } from "./correlations";
 import { readGlucoseBlocks } from "./glucose";
 import { readHealthScoreBlock } from "./health-score";
 import { computeSleepStageBreakdown } from "./sleep-stages";
+import { roundTo } from "@/lib/stats/central";
+import { bmiOf } from "@/lib/analytics/classifications";
 
 export type AnalyticsBody = Awaited<ReturnType<typeof buildAnalyticsResponse>>;
 
@@ -121,8 +123,7 @@ export async function buildAnalyticsResponse(
   // BMI calculation
   let bmi: number | null = null;
   if (user.heightCm && results.WEIGHT?.latest) {
-    const heightM = user.heightCm / 100;
-    bmi = Math.round((results.WEIGHT.latest / (heightM * heightM)) * 10) / 10;
+    bmi = roundTo(bmiOf(results.WEIGHT.latest, user.heightCm), 1);
   }
 
   const bp = await readBpInTargetBlock(user, coverage, userTz);

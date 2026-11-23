@@ -4,12 +4,16 @@
  * otherwise make itself — the change direction, the change over the window,
  * the reference lines — and the stat strip.
  */
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { resolveGlucoseUnit } from "@/lib/glucose";
-import { resolveTrendVerdict } from "@/lib/targets/trend-verdict";
+import {
+  resolveTrendVerdict,
+  verdictReadsPregnancy,
+} from "@/lib/targets/trend-verdict";
 import {
   computeSeriesChange,
   seriesDayValues,
@@ -87,6 +91,7 @@ export async function readSeries(args: {
         gender: true,
         heightCm: true,
         thresholdsJson: true,
+        timezone: true,
         glucoseUnit: true,
         locale: true,
       },
@@ -103,11 +108,16 @@ export async function readSeries(args: {
     dateOfBirth: record?.dateOfBirth ?? null,
     gender: record?.gender ?? null,
     heightCm: record?.heightCm ?? null,
+    timezone: seriesTz,
   };
   const verdictType = KIND_TO_TYPE[kind];
   const dayValues = seriesDayValues(verdictType, points, seriesTz);
   const reference = seriesReferenceValue(dayValues);
   const direction = resolveTrendVerdict(verdictType, {
+    // Only a weight verdict reads the state (`verdictReadsPregnancy`).
+    pregnancy:
+      verdictReadsPregnancy(verdictType) &&
+      (await pregnancyContextActive(prisma, userId, seriesTz)),
     profile: rangeProfile,
     thresholdsJson: record?.thresholdsJson ?? null,
     // The verdict reads stored units: sleep is served in hours here and

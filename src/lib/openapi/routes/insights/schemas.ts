@@ -1059,6 +1059,11 @@ export const analyticsRangeResponse = z
       .describe(
         "v1.48.0 — the direction of `delta`: `flat` under 0.05 in the metric's own unit, `unknown` when `delta` is null. The dashboard summary's metric card takes its `trend` from this same comparison over `30d` (its `trendWindowDays` is then 30), so the arrow on the card and on the metric page agree.",
       ),
+    unit: z
+      .string()
+      .describe(
+        "The unit every number of this answer is in, resolved for the account: BLOOD_GLUCOSE in its glucose unit (`mg/dL` or `mmol/L`), the metric/imperial types (weight, length, distance, temperature, …) in its unit system, everything else in the stored unit. `min`, `max`, `mean`, `sum` and `delta` are converted; `deltaPct` is recomputed from the converted means. Render the values with this unit; never convert them again.",
+      ),
   })
   .meta({
     id: "AnalyticsRangeResponse",
@@ -1422,7 +1427,7 @@ export const dashboardSnapshotResponse = z
           .optional(),
       })
       .describe(
-        "Today's medication block: active-medication count, today-window tally (scheduled / taken / skipped), every active medication's current display-due candidate, and legacy scalar fields projected from candidate zero. `overdue: true` marks an OPEN overdue slot (anchor passed, still inside its catch-up band); `availableFrom` is the canonical cadence- and dose-window-derived attribution-band start. `dueCandidates` is optional so older cached snapshots remain valid. Medication ids let consumers deep-link straight to the relevant card.",
+        "Today's medication block: active-medication count, today-window tally (scheduled / taken / skipped), every active medication's next dose, and legacy scalar fields projected from candidate zero. Since v1.49.0 each candidate comes from the dose resolver, the same one behind the today rows and `complianceDisplay.currentDose`: the medication's earliest open dose (`due` or `overdue`), else its earliest `upcoming` one. `overdue: true` means the resolver's `overdue` state (past the on-time window, before the miss cutoff); `availableFrom` is the resolver's `dueAt`, when the dose turns due. For the state of a dose, read the today rows or `currentDose`. `dueCandidates` is optional so older cached snapshots remain valid. Medication ids let consumers deep-link straight to the relevant card.",
       ),
     // Dashboard hero health score. The additive metadata lets clients suppress
     // false change narratives when eligibility or the algorithm changes.
@@ -1869,12 +1874,12 @@ export const ecgIngestResponse = z
     id: z
       .string()
       .describe(
-        "The recording row's id (cuid). Required and never null, so a client decoding it as a plain string keeps working: on a `duplicate` for a recording deleted through `DELETE /api/insights/ecg/by-external-ids` it is the id of the deletion record instead, which names no recording. Do not fetch or link it; treat it as opaque.",
+        "The recording row's id (cuid): the written one, or on a `duplicate` the row that already holds the recording.",
       ),
     status: z
       .enum(["inserted", "updated", "duplicate"])
       .describe(
-        "What the write did. `inserted` — a new recording landed (HTTP 201). `updated` — this `externalRecordingId` was already stored and the row was overwritten in place (HTTP 200); a retry is safe and creates nothing. `duplicate` — this exact recording is already stored under a DIFFERENT id, i.e. it arrived earlier through the `export.zip` importer (HTTP 200); nothing was written and `id` names the row that already holds it. A recording is the same recording when `(source, recordedAt, samplingFrequency)` match, which is enforced by a unique index rather than by convention. Since v1.48.2 `duplicate` is also the answer for an `APPLE_HEALTH` recording deleted through `DELETE /api/insights/ecg/by-external-ids`: it stays deleted, nothing is written, and `id` names the deletion record rather than a recording. All three statuses mean the client may advance its cursor.",
+        "What the write did. `inserted` — a new recording landed (HTTP 201). `updated` — this `externalRecordingId` was already stored and the row was overwritten in place (HTTP 200); a retry is safe and creates nothing. `duplicate` — this exact recording is already stored under a DIFFERENT id, i.e. it arrived earlier through the `export.zip` importer (HTTP 200); nothing was written and `id` names the row that already holds it. A recording is the same recording when `(source, recordedAt, samplingFrequency)` match, which is enforced by a unique index rather than by convention. From v1.48.2 to v1.48.x `duplicate` was also the answer for an `APPLE_HEALTH` recording deleted through `DELETE /api/insights/ecg/by-external-ids`; since v1.49.0 such a re-post is written again (`inserted`), because only the phone can delete a recording, and a recording it reported deleted that comes back is back in Apple Health. All three statuses mean the client may advance its cursor.",
       ),
     recordedAt: isoDateTime().describe(
       "The `recordedAt` that was submitted, echoed back.",
@@ -2148,12 +2153,31 @@ export const insightsComprehensiveResponse = z
             .describe(
               "The label of a custom category; null for a built-in one.",
             ),
-          compliance7: z.number().describe("Percent, 0-100."),
-          compliance30: z.number().describe("Percent, 0-100."),
-          streak: z.number().int(),
+          compliance7: z
+            .number()
+            .describe(
+              "Percent, 0-100. When `taken7 + missed7` is 0 there is no dose to score and this is not adherence: show an empty state, not the number.",
+            ),
+          compliance30: z
+            .number()
+            .describe(
+              "Percent, 0-100. When `expected30` is 0 there is no dose to score and this is not adherence: show an empty state, not the number.",
+            ),
+          streak: z
+            .number()
+            .int()
+            .describe(
+              "Days in a row with every expected dose taken or skipped. Starts on a day with an answered dose, so it is 0 before the first one.",
+            ),
           taken7: z.number().int(),
           skipped7: z.number().int(),
           missed7: z.number().int(),
+          expected30: z
+            .number()
+            .int()
+            .describe(
+              "Since v1.49.0: the doses the 30-day rate counts (taken plus missed).",
+            ),
         }),
       )
       .describe("Cadence-aware compliance per active medication."),

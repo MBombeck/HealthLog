@@ -104,7 +104,7 @@ describe("MoodList — full-text note affordance", () => {
 
   it("wires the toggle as a small sibling button with state + target", () => {
     const src = readFileSync(
-      join(process.cwd(), "src/components/mood/mood-list.tsx"),
+      join(process.cwd(), "src/components/mood/mood-list-rows.tsx"),
       "utf8",
     );
     // The toggle carries the disclosure contract: aria-expanded for the
@@ -122,7 +122,7 @@ describe("MoodList — full-text note affordance", () => {
 
   it("expanded branch preserves line breaks and renders plain text children", () => {
     const src = readFileSync(
-      join(process.cwd(), "src/components/mood/mood-list.tsx"),
+      join(process.cwd(), "src/components/mood/mood-list-rows.tsx"),
       "utf8",
     );
     // The expanded branch must keep the author's line breaks…

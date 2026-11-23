@@ -34,6 +34,8 @@ vi.mock("@tanstack/react-query", () => ({
 vi.mock("@/hooks/use-mounted", () => ({ useMounted: () => true }));
 
 vi.mock("@/hooks/use-auth", () => ({
+  isFullAccount: (user: { accountSeed?: true } | null) =>
+    user !== null && user.accountSeed !== true,
   useAuth: () => ({
     user: {
       id: "u1",
@@ -47,6 +49,7 @@ vi.mock("@/hooks/use-auth", () => ({
       unitPreference: "metric",
     },
     isAuthenticated: true,
+    profileLoaded: true,
     isLoading: false,
     refetch: vi.fn(),
   }),
@@ -92,7 +95,7 @@ describe("display name on the profile card", () => {
 
   it("is published on the account payload the card seeds from", () => {
     const route = readFileSync(
-      join(process.cwd(), "src/app/api/auth/me/route.ts"),
+      join(process.cwd(), "src/lib/auth/me-payload.ts"),
       "utf8",
     );
     expect(route).toMatch(/\bdisplayName:\s*user\.displayName\s*\?\?\s*null/);

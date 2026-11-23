@@ -5,14 +5,11 @@ import {
   Bell,
   Keyboard,
   LogOut,
-  Monitor,
-  Moon,
   MoreVertical,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
   Shield,
-  Sun,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,7 +18,13 @@ import { AccountSwitcherMenuItems } from "@/components/layout/account-switcher-m
 import { openShortcutsHelp } from "@/components/layout/global-shortcuts";
 import { medicationsPrefetchIntentProps } from "@/lib/queries/prefetch-medications";
 import {
-  isNavDestinationActive,
+  RAIL_LIST_GAP,
+  RAIL_SHORT_PY,
+  RailNavGroups,
+  railRowClass,
+} from "@/components/layout/rail-nav-groups";
+import { useNavCounts } from "@/hooks/use-nav-counts";
+import {
   isSettingsUtilityDestination,
   visibleNavDestinations,
   visibleUtilityDestinations,
@@ -45,7 +48,10 @@ import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useNavModules } from "@/hooks/use-nav-modules";
 import { useMounted } from "@/hooks/use-mounted";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { useTheme } from "@/components/providers";
+import {
+  ThemeChoiceIcon,
+  ThemeMenuItems,
+} from "@/components/layout/theme-choice";
 import { useTranslations } from "@/lib/i18n/context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -136,7 +142,6 @@ function FooterIdentity({
 function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   const { user } = useAuth();
   const logout = useLogout();
-  const { theme, setTheme } = useTheme();
   const { t } = useTranslations();
   const avatarUrl = user?.avatarUrl ?? null;
   // v1.36.0 — while this browser is acting on somebody else's record the
@@ -147,15 +152,6 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
 
   if (!user) return null;
   const name = accountName(user);
-
-  const themeIcon =
-    theme === "system" ? (
-      <Monitor className="h-4 w-4" />
-    ) : theme === "dark" ? (
-      <Moon className="h-4 w-4" />
-    ) : (
-      <Sun className="h-4 w-4" />
-    );
 
   const identityBlock = (
     <>
@@ -223,31 +219,11 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
           the avatar menu stays focused on account-level actions. */}
       <DropdownMenuSub>
         <DropdownMenuSubTrigger>
-          {themeIcon}
+          <ThemeChoiceIcon />
           <span className="ml-2">{t("nav.theme")}</span>
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent>
-          <DropdownMenuItem onClick={() => setTheme("system")}>
-            <Monitor className="mr-2 h-4 w-4" />
-            {t("nav.themeSystem")}
-            {theme === "system" && (
-              <span className="text-primary ml-auto text-xs">&#10003;</span>
-            )}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("dark")}>
-            <Moon className="mr-2 h-4 w-4" />
-            {t("nav.themeDark")}
-            {theme === "dark" && (
-              <span className="text-primary ml-auto text-xs">&#10003;</span>
-            )}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("light")}>
-            <Sun className="mr-2 h-4 w-4" />
-            {t("nav.themeLight")}
-            {theme === "light" && (
-              <span className="text-primary ml-auto text-xs">&#10003;</span>
-            )}
-          </DropdownMenuItem>
+          <ThemeMenuItems />
         </DropdownMenuSubContent>
       </DropdownMenuSub>
       {/* v1.36.0 — the records this account may open. Renders nothing when
@@ -328,46 +304,6 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
         </DropdownMenu>
       </div>
     </div>
-  );
-}
-
-/**
- * Height-based density for the rail. A 13-inch laptop at 100 % zoom leaves
- * the browser roughly 700–860 px, and the full destination list plus the
- * footer rows did not fit: the list scrolled, and on a classic-scrollbar
- * platform (Windows) the rail grew a native scrollbar with arrow buttons.
- * On short windows the rows close their gaps first, then step their height
- * down; tall windows keep the roomy default. Desktop-only by construction —
- * the rail is hidden below `md`, so the phone layout never sees these steps.
- *
- * Steps (rows are full-width, so the click target is the whole row):
- * - default: 40 px rows, 4 px apart
- * - max-height 940 px: gaps close (40 px pitch), the list padding tightens
- *   (the account band keeps the logo band's height, `RAIL_ACCOUNT_BAND`)
- * - max-height 820 px: 36 px rows
- * - max-height 740 px: 32 px rows — the one step under 40 px, taken only
- *   where the alternative is rows hidden behind a scroll edge
- */
-// Disjoint height ranges, not nested max-heights: two arbitrary media
-// variants on one property cascade in stylesheet order, not by how narrow
-// the query is, so a nested pair let the 36 px step win on a 720 px window.
-// The height steps apply to a mouse only. Under a finger (a touch tablet)
-// the rows keep the 44 px touch floor and the list scrolls behind its fades
-// instead. A phone held sideways never sees the rail: it keeps the phone
-// shell (`shell-mobile`).
-const RAIL_ROW_HEIGHT =
-  "min-h-10 pointer-coarse:min-h-11 [@media(hover:hover)_and_(pointer:fine)_and_(740px<height<=820px)]:min-h-9 [@media(hover:hover)_and_(pointer:fine)_and_(height<=740px)]:min-h-8";
-const RAIL_LIST_GAP = "space-y-1 [@media(max-height:940px)]:space-y-0";
-const RAIL_SHORT_PY = "[@media(max-height:940px)]:py-1.5";
-
-/** Rail row, collapsed (icon only) or expanded (icon + label). */
-function railRowClass(collapsed: boolean): string {
-  return cn(
-    "flex items-center rounded-lg transition-colors",
-    RAIL_ROW_HEIGHT,
-    collapsed
-      ? "justify-center px-2.5"
-      : "gap-3 px-3 py-1.5 text-sm font-medium",
   );
 }
 
@@ -453,12 +389,8 @@ export function SidebarNav() {
   // v1.36.0 — while this browser is acting on somebody else's record, the nav
   // shows only what sharing covers. The server refuses the rest regardless;
   // dropping the entries spares a delegate a click that ends in a 403.
-  const {
-    inSharedRecord: sharedRecord,
-    sections,
-    recordKind,
-    level,
-  } = useRecordCapabilities();
+  const caps = useRecordCapabilities();
+  const { inSharedRecord: sharedRecord, sections, recordKind, level } = caps;
   // The sections the grant may manage, bound from the server-resolved entry.
   // The Settings entry needs them: a record-content page is offered only when
   // the grant manages the section its forms write.
@@ -467,9 +399,11 @@ export function SidebarNav() {
   // Coach entry point; the rest of the map is `modules` unchanged.
   const navModules = useNavModules();
   const visibleNavItems = useMemo(
-    () => visibleNavDestinations(navModules, mounted, sharedRecord, sections),
-    [navModules, mounted, sharedRecord, sections],
+    () =>
+      visibleNavDestinations(navModules, mounted, sharedRecord, sections, caps),
+    [navModules, mounted, sharedRecord, sections, caps],
   );
+  const navCounts = useNavCounts(mounted);
   // Collapsed = the user's stored choice, or — with no stored choice — a
   // viewport default: tablet widths (md–lg, e.g. an iPad held upright)
   // fall back to the icon rail so the content column keeps its room; a
@@ -542,6 +476,7 @@ export function SidebarNav() {
             <Link
               href={item.href}
               aria-current={isActive ? "page" : undefined}
+              aria-label={t(item.tKey)}
               data-tour-id={tourId}
               data-slot={isSettings ? "nav-settings-link" : undefined}
               className={cn(
@@ -551,7 +486,7 @@ export function SidebarNav() {
                   : "text-foreground hover:bg-accent",
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon aria-hidden="true" className="h-4 w-4" />
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>
@@ -589,6 +524,7 @@ export function SidebarNav() {
             <Link
               href="/admin"
               aria-current={onAdminPage ? "page" : undefined}
+              aria-label={t("nav.admin")}
               className={cn(
                 railRowClass(true),
                 onAdminPage
@@ -596,7 +532,7 @@ export function SidebarNav() {
                   : "text-foreground hover:bg-accent",
               )}
             >
-              <Shield className="h-4 w-4" />
+              <Shield aria-hidden="true" className="h-4 w-4" />
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>
@@ -661,6 +597,7 @@ export function SidebarNav() {
           >
             <Link
               href="/"
+              aria-label={collapsed ? "HealthLog" : undefined}
               className={cn(
                 "flex h-full items-center",
                 collapsed ? "justify-center px-0" : "gap-2",
@@ -681,61 +618,13 @@ export function SidebarNav() {
             label={t("nav.mainNavigation")}
             className={cn(collapsed ? "p-1.5" : "p-3", RAIL_SHORT_PY)}
           >
-            <div className={RAIL_LIST_GAP}>
-              {visibleNavItems.map((item) => {
-                const isActive = isNavDestinationActive(
-                  item.href,
-                  pathname,
-                  visibleNavItems,
-                );
-                const label = t(item.tKey);
-
-                if (collapsed) {
-                  return (
-                    <Tooltip key={item.href}>
-                      <TooltipTrigger asChild>
-                        <Link
-                          href={item.href}
-                          aria-current={isActive ? "page" : undefined}
-                          data-tour-id={item.tourId}
-                          {...(item.href === "/medications" ? medsIntent : {})}
-                          className={cn(
-                            railRowClass(true),
-                            isActive
-                              ? "bg-primary/10 text-primary"
-                              : "text-foreground hover:bg-accent",
-                          )}
-                        >
-                          <item.icon className="h-4 w-4" />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" sideOffset={8}>
-                        {label}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={isActive ? "page" : undefined}
-                    data-tour-id={item.tourId}
-                    {...(item.href === "/medications" ? medsIntent : {})}
-                    className={cn(
-                      railRowClass(false),
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground hover:bg-accent",
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {label}
-                  </Link>
-                );
-              })}
-            </div>
+            <RailNavGroups
+              items={visibleNavItems}
+              pathname={pathname}
+              collapsed={collapsed}
+              counts={navCounts}
+              medsIntent={medsIntent}
+            />
           </RailNavList>
 
           {/* Bottom utility links — the shared utility tail (minus

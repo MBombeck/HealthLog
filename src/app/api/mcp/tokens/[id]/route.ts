@@ -3,6 +3,7 @@
  * filter keeps this endpoint to `health:read` tokens so it can never revoke a
  * differently-scoped credential by id alone.
  */
+import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
@@ -38,6 +39,7 @@ export const DELETE = apiHandler(
       userId: user.id,
       details: { tokenId: id },
     });
+    void sendSecurityAlert(user.id, "token_revoked");
 
     return apiSuccess({ revoked: true });
   },

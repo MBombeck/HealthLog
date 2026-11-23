@@ -40,6 +40,7 @@
  * rows. There is no unbounded `findMany` here, and adding one would turn a
  * detail view into a table scan on an account with years of history.
  */
+import { READING_ZONE_SLACK_MS, readingDayKey } from "@/lib/tz/reading-zone";
 import type {
   MeasurementSource,
   MeasurementType,
@@ -172,14 +173,15 @@ export function canonicalRowsOfDay(
   const metricKey = metricKeyForType(type);
   if (metricKey === null) return matching;
   // The rows are already narrowed to one local day, so the picker's day key
-  // is constant here; it still goes through the real helper rather than a
-  // constant, because the ladder resolution is what is wanted and the bucket
-  // shape is the picker's business.
+  // is that day. It is not re-derived from the instant in `tz`: a reading
+  // filed under this day by its own zone (iOS #181) would otherwise land
+  // in a second bucket and lose the ladder pick against the first.
+  void tz;
   const { canonicalRows } = pickCanonicalSourceRows(
     matching,
     metricKey,
     priorityJson,
-    (d) => moodDateKey(d, tz),
+    () => day,
   );
   return canonicalRows.length > 0 ? canonicalRows : matching;
 }
@@ -649,7 +651,13 @@ export async function resolveDayReadings(
         userId,
         deletedAt: null,
         type: { not: "SLEEP_DURATION" },
-        measuredAt: { gte: window.dayStart, lt: window.dayEnd },
+        // Widened by the largest zone difference, so a reading whose own
+        // zone files it under this day is fetched; the day is then decided
+        // per row below (iOS #181).
+        measuredAt: {
+          gte: new Date(window.dayStart.getTime() - READING_ZONE_SLACK_MS),
+          lt: new Date(window.dayEnd.getTime() + READING_ZONE_SLACK_MS),
+        },
       },
       select: {
         type: true,
@@ -658,6 +666,7 @@ export async function resolveDayReadings(
         measuredAt: true,
         source: true,
         deviceType: true,
+        timeZone: true,
       },
       // Same determinism precondition as the linked block above.
       orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
@@ -676,6 +685,7 @@ export async function resolveDayReadings(
             sleepStage: true,
             source: true,
             deviceType: true,
+            timeZone: true,
           },
           orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
         })
@@ -683,8 +693,11 @@ export async function resolveDayReadings(
   ]);
 
   const byType = new Map<MeasurementType, DayReadingRow[]>();
-  for (const row of rows) {
+  for (const { timeZone, ...row } of rows) {
     if (!typeVisible(row.type)) continue;
+    // A reading belongs to the day of its own zone when it carries one,
+    // else to the profile zone's day: exactly `[dayStart, dayEnd)` then.
+    if (readingDayKey(row.measuredAt, timeZone, tz) !== day) continue;
     const bucket = byType.get(row.type);
     if (bucket) bucket.push(row);
     else byType.set(row.type, [row]);

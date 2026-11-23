@@ -4,6 +4,7 @@
  * customised it, with the optimistic-concurrency token beside it.
  */
 import { prisma } from "@/lib/db";
+import { userDocumentToken } from "@/lib/optimistic-lock";
 import {
   resolveDashboardLayout,
   type DashboardLayoutWithToken,
@@ -14,12 +15,11 @@ export async function buildDashboardLayout(
 ): Promise<DashboardLayoutWithToken> {
   const row = await prisma.user.findUnique({
     where: { id: userId },
-    // Issue #581: `updatedAt` rides the cached layout so GET hands the
-    // client the optimistic-concurrency token alongside the layout it
-    // applies to. Cached together (and busted on every write) so the
-    // (layout, token) pair a client reads is always consistent.
-    select: { dashboardWidgetsJson: true, updatedAt: true },
+    // Issue #581: the lock token rides with the layout it applies to. It is
+    // the layout's own revision, never the row's `updatedAt`, which every
+    // other write to the account row moves.
+    select: { dashboardWidgetsJson: true, dashboardWidgetsRevisedAt: true },
   });
   const layout = resolveDashboardLayout(row?.dashboardWidgetsJson);
-  return { ...layout, updatedAt: row?.updatedAt?.toISOString() };
+  return { ...layout, updatedAt: userDocumentToken(row, "dashboardWidgets") };
 }

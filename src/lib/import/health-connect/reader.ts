@@ -27,9 +27,19 @@
  * Nothing here holds a whole table in memory. Statements are walked with
  * `iterate()` and handed out in batches; the aggregations (daily sums, hourly
  * means) run inside SQLite.
+ *
+ * The file is read on its own thread (`../sqlite-off-thread.ts`), like the
+ * Gadgetbridge reader: an hourly mean over a year of minute heart rate is one
+ * synchronous SQLite call that sorts the whole series before it returns, and
+ * the import worker shares its process with the web server by default.
  */
-import type { DatabaseSync, SQLInputValue } from "node:sqlite";
+import type { SQLInputValue } from "node:sqlite";
 import { pathToFileURL } from "node:url";
+
+import {
+  openSqliteOffThread,
+  type OffThreadSqlite,
+} from "@/lib/import/sqlite-off-thread";
 
 /** First schema version with 16-byte UUID blobs (`DatabaseVersions.MIN_SUPPORTED`). */
 export const HC_MIN_USER_VERSION = 9;
@@ -111,10 +121,11 @@ export interface HealthConnectDb {
     sql: string,
     params?: readonly SQLInputValue[],
     size?: number,
-  ): Generator<HcRow[]>;
+  ): AsyncGenerator<HcRow[]>;
   /** Every row of `sql` at once. For small, bounded results only. */
-  all(sql: string, params?: readonly SQLInputValue[]): HcRow[];
-  close(): void;
+  all(sql: string, params?: readonly SQLInputValue[]): Promise<HcRow[]>;
+  /** Close the file and end its thread. Safe to call twice. */
+  close(): Promise<void>;
 }
 
 /**
@@ -122,18 +133,18 @@ export interface HealthConnectDb {
  * importer can read. Throws {@link HealthConnectImportError} when it is not;
  * the database is closed again in that case.
  */
-export function openHealthConnectDb(path: string): HealthConnectDb {
+export async function openHealthConnectDb(
+  path: string,
+): Promise<HealthConnectDb> {
   const url = pathToFileURL(path);
   url.searchParams.set("immutable", "1");
-  let db: DatabaseSync;
+  let db: OffThreadSqlite;
   try {
-    // Loaded on first use rather than at import: the routes that share this
-    // module graph (upload, status) never open a database, and `node:sqlite`
-    // prints an experimental-feature warning the moment it loads.
-    const { DatabaseSync: Database } = process.getBuiltinModule(
-      "node:sqlite",
-    ) as typeof import("node:sqlite");
-    db = new Database(url, { readOnly: true });
+    // The pragmas run before the first statement reads the schema.
+    db = await openSqliteOffThread(
+      url,
+      "PRAGMA trusted_schema = OFF; PRAGMA query_only = ON; PRAGMA cell_size_check = ON; PRAGMA mmap_size = 0;",
+    );
   } catch (err) {
     throw new HealthConnectImportError(
       "not_health_connect",
@@ -141,13 +152,9 @@ export function openHealthConnectDb(path: string): HealthConnectDb {
     );
   }
   try {
-    // Before the first statement reads the schema.
-    db.exec(
-      "PRAGMA trusted_schema = OFF; PRAGMA query_only = ON; PRAGMA cell_size_check = ON; PRAGMA mmap_size = 0;",
-    );
-    return inspect(db);
+    return await inspect(db);
   } catch (err) {
-    db.close();
+    await db.close();
     if (err instanceof HealthConnectImportError) throw err;
     throw new HealthConnectImportError(
       "not_health_connect",
@@ -156,9 +163,8 @@ export function openHealthConnectDb(path: string): HealthConnectDb {
   }
 }
 
-function inspect(db: DatabaseSync): HealthConnectDb {
-  const versionRow = db.prepare("PRAGMA user_version").get() as
-    { user_version?: unknown } | undefined;
+async function inspect(db: OffThreadSqlite): Promise<HealthConnectDb> {
+  const versionRow = await db.get("PRAGMA user_version");
   const userVersion = Number(versionRow?.user_version ?? 0);
   if (!Number.isSafeInteger(userVersion) || userVersion < HC_MIN_USER_VERSION) {
     throw new HealthConnectImportError(
@@ -174,11 +180,9 @@ function inspect(db: DatabaseSync): HealthConnectDb {
   // What each name the importer reads actually is in this file.
   const kinds = new Map<string, string>();
   const names = new Set<string>(HC_TABLES);
-  for (const row of db
-    .prepare(
-      "SELECT type, name FROM sqlite_schema WHERE type IN ('table', 'view')",
-    )
-    .all() as Array<{ type: string; name: string }>) {
+  for (const row of (await db.all(
+    "SELECT type, name FROM sqlite_schema WHERE type IN ('table', 'view')",
+  )) as Array<{ type: string; name: string }>) {
     if (names.has(row.name)) kinds.set(row.name, row.type);
   }
   for (const [name, type] of kinds) {
@@ -196,22 +200,18 @@ function inspect(db: DatabaseSync): HealthConnectDb {
     );
   }
 
-  const columnCache = new Map<string, ReadonlySet<string>>();
-  const columns = (table: HcTable): ReadonlySet<string> | null => {
-    if (!kinds.has(table)) return null;
-    const cached = columnCache.get(table);
-    if (cached) return cached;
+  // The columns of every table present, read once: the importer asks for
+  // them between statements and expects an answer without a round trip.
+  const columnSets = new Map<string, ReadonlySet<string>>();
+  for (const table of kinds.keys()) {
     // `table` is one of the closed HC_TABLES names, never input.
-    const set = new Set(
-      (
-        db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
-          name: string;
-        }>
-      ).map((c) => c.name),
-    );
-    columnCache.set(table, set);
-    return set;
-  };
+    const info = (await db.all(`PRAGMA table_info(${table})`)) as Array<{
+      name: string;
+    }>;
+    columnSets.set(table, new Set(info.map((c) => c.name)));
+  }
+  const columns = (table: HcTable): ReadonlySet<string> | null =>
+    columnSets.get(table) ?? null;
 
   const appInfo = columns("application_info_table");
   if (!appInfo?.has("row_id") || !appInfo.has("package_name")) {
@@ -242,27 +242,10 @@ function inspect(db: DatabaseSync): HealthConnectDb {
     warnings,
     columns,
     usable,
-    *batches(sql, params = [], size = HC_BATCH_SIZE) {
-      let batch: HcRow[] = [];
-      for (const row of db.prepare(sql).iterate(...params)) {
-        batch.push(row as HcRow);
-        if (batch.length >= size) {
-          yield batch;
-          batch = [];
-        }
-      }
-      if (batch.length > 0) yield batch;
-    },
-    all(sql, params = []) {
-      return db.prepare(sql).all(...params) as HcRow[];
-    },
-    close() {
-      try {
-        db.close();
-      } catch {
-        // Already closed.
-      }
-    },
+    batches: (sql, params = [], size = HC_BATCH_SIZE) =>
+      db.batches(sql, params, size),
+    all: (sql, params = []) => db.all(sql, params),
+    close: () => db.close(),
   };
 }
 

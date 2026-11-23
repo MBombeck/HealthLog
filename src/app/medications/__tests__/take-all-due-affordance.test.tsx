@@ -90,7 +90,7 @@ const WRITABLE: AccountAccess = {
   canSwitch: true,
 };
 
-/** A window straddling the frozen clock below, so both medications read due. */
+/** The schedule the list carries; the due state comes from `COMPLIANCE`. */
 const openWindow = {
   windowStart: "11:00",
   windowEnd: "13:00",
@@ -129,6 +129,41 @@ const DUE_MEDS = [
   },
 ];
 
+/** The server's resolved open dose for both: due now (12:00 Berlin). */
+const DOSE = {
+  status: "on_time_window",
+  targetAt: "2026-08-04T10:00:00.000Z",
+  state: "due",
+  takenLate: false,
+  dueAt: "2026-08-04T09:00:00.000Z",
+  overdueSince: "2026-08-04T11:00:00.000Z",
+  missedAfter: "2026-08-04T14:00:00.000Z",
+  lateTakeCounts: true,
+};
+const COMPLIANCE = DUE_MEDS.map((m) => ({
+  medicationId: m.id,
+  applicable: true,
+  notApplicableReason: null,
+  compliance7: { rate: 100, streak: 0 },
+  compliance30: { rate: 100 },
+  complianceDisplay: {
+    shortDays: 7,
+    longDays: 30,
+    expectedShort: 7,
+    expectedLong: 30,
+    minStableDoses: 4,
+    short: { rate: 100, taken: 7, expected: 7, missed: 0, streak: 7 },
+    long: { rate: 100, taken: 30, expected: 30, missed: 0 },
+    currentCycle: {
+      state: "due",
+      nextDueAt: DOSE.targetAt,
+      graceUntil: DOSE.overdueSince,
+      hasClosedCycles: true,
+    },
+    currentDose: DOSE,
+  },
+}));
+
 function render(access: AccountAccess): string {
   accessRef.value = access;
   const client = new QueryClient({
@@ -137,6 +172,7 @@ function render(access: AccountAccess): string {
     },
   });
   client.setQueryData(queryKeys.medications(), DUE_MEDS);
+  client.setQueryData(queryKeys.medicationComplianceSummary(), COMPLIANCE);
   client.setQueryData(queryKeys.medicationListLayout(), {
     version: 1,
     view: "cards",

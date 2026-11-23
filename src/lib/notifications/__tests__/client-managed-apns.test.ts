@@ -51,6 +51,11 @@ const recordPushAttemptMock = vi.fn();
 vi.mock("@/lib/notifications/senders/apns", () => ({
   sendViaApns: (...args: unknown[]) => sendViaApnsMock(...args),
 }));
+// No device here holds a push key, so the sealed front of the APNs channel
+// hands every send straight to `sendViaApns`.
+vi.mock("@/lib/push-relay/apns-channel", () => ({
+  sendApnsChannel: (...args: unknown[]) => sendViaApnsMock(...args),
+}));
 vi.mock("@/lib/notifications/senders/telegram", () => ({
   sendViaTelegram: (...args: unknown[]) => sendViaTelegramMock(...args),
 }));
@@ -253,11 +258,49 @@ type DeviceRows = Awaited<ReturnType<typeof prisma.device.findMany>>;
 type UserRow = Awaited<ReturnType<typeof prisma.user.findUnique>>;
 
 describe("deviceDeliversLocally — #179", () => {
+  const now = new Date("2026-06-15T08:00:00Z");
+  const seen = (
+    medicationDelivery: string | null,
+    lastSeen: Date = now,
+    localRunwayUntil: Date | null = null,
+  ) => ({ medicationDelivery, lastSeen, localRunwayUntil });
+  const days = (n: number) => new Date(now.getTime() + n * 86_400_000);
+
   it("lets the device's own override win, and inherits the account otherwise", () => {
-    expect(deviceDeliversLocally("client", false)).toBe(true);
-    expect(deviceDeliversLocally("server", true)).toBe(false);
-    expect(deviceDeliversLocally(null, true)).toBe(true);
-    expect(deviceDeliversLocally(null, false)).toBe(false);
+    expect(deviceDeliversLocally(seen("client"), false, now)).toBe(true);
+    expect(deviceDeliversLocally(seen("server"), true, now)).toBe(false);
+    expect(deviceDeliversLocally(seen(null), true, now)).toBe(true);
+    expect(deviceDeliversLocally(seen(null), false, now)).toBe(false);
+  });
+
+  it("hands a client device that has been quiet for over 3 days back to the server", () => {
+    expect(deviceDeliversLocally(seen("client", days(-3)), false, now)).toBe(
+      true,
+    );
+    expect(deviceDeliversLocally(seen("client", days(-3.01)), false, now)).toBe(
+      false,
+    );
+    // Inheriting a client-managed account follows the same rule.
+    expect(deviceDeliversLocally(seen(null, days(-4)), true, now)).toBe(false);
+  });
+
+  it("uses the reported runway instead of the 3 days", () => {
+    // Quiet for 5 days, but the plan runs a week: still local.
+    expect(
+      deviceDeliversLocally(seen("client", days(-5), days(2)), false, now),
+    ).toBe(true);
+    // Seen an hour ago, but the plan ran out yesterday: the server reminds.
+    expect(
+      deviceDeliversLocally(
+        seen("client", new Date(now.getTime() - 3_600_000), days(-1)),
+        false,
+        now,
+      ),
+    ).toBe(false);
+    // A runway never turns a server device local.
+    expect(deviceDeliversLocally(seen("server", now, days(7)), true, now)).toBe(
+      false,
+    );
   });
 });
 
@@ -267,6 +310,8 @@ describe("dispatchNotification — per-device medication delivery (#179)", () =>
       rows.map(([id, medicationDelivery]) => ({
         id,
         medicationDelivery,
+        lastSeen: new Date(),
+        localRunwayUntil: null,
       })) as DeviceRows,
     );
   }
@@ -283,8 +328,11 @@ describe("dispatchNotification — per-device medication delivery (#179)", () =>
     await dispatchNotification(MEDICATION_PAYLOAD);
 
     expect(sendViaApnsMock).toHaveBeenCalledTimes(1);
+    // The same decision for both transports: the server's own key pushes to
+    // `onlyDeviceIds`, the relay carries it to `serverDeviceIds`.
     expect(sendViaApnsMock.mock.calls[0][2]).toEqual({
       onlyDeviceIds: ["dev-pad"],
+      serverDeviceIds: ["dev-pad"],
     });
     expect(addMetaMock).toHaveBeenCalledWith(
       "medication_reminder_suppressed_client_managed",
@@ -307,10 +355,31 @@ describe("dispatchNotification — per-device medication delivery (#179)", () =>
 
     await dispatchNotification(MEDICATION_PAYLOAD);
 
-    expect(sendViaApnsMock.mock.calls[0][2]).toBeUndefined();
+    // Every device over the server's own key; the relay reads the same set.
+    expect(sendViaApnsMock.mock.calls[0][2]).toEqual({
+      serverDeviceIds: ["dev-phone", "dev-pad"],
+    });
     expect(addMetaMock).not.toHaveBeenCalledWith(
       "apns_devices_suppressed_client_managed",
       expect.anything(),
     );
+  });
+  it("hands a follow-up the same decision: every device directly, the relay only the server-delivered ones", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      notificationPrefs: { medication: { clientManaged: true } },
+    } as unknown as UserRow);
+    devices([
+      ["dev-phone", "client"],
+      ["dev-pad", "server"],
+    ]);
+
+    await dispatchNotification({
+      ...MEDICATION_PAYLOAD,
+      metadata: { ...MEDICATION_PAYLOAD.metadata, followUp: true },
+    });
+
+    expect(sendViaApnsMock.mock.calls[0][2]).toEqual({
+      serverDeviceIds: ["dev-pad"],
+    });
   });
 });

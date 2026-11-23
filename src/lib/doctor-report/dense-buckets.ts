@@ -22,6 +22,7 @@ import type {
   MeasurementSource,
   MeasurementType,
 } from "@/generated/prisma/client";
+import { readingWallSql } from "@/lib/tz/reading-zone-sql";
 
 /** One pre-aggregated bucket: a local day for one type/source/device/context. */
 export interface DenseMeasurementBucket {
@@ -81,6 +82,7 @@ export async function loadDenseMeasurementBuckets(params: {
   const hourlyMeanType = Prisma.raw(isHourlyMeanTypeSql('"type"'));
   // Each hour's weight under the active pulse day-mean method (code-built).
   const hourWeight = Prisma.raw(hourWeightSql("n"));
+  const wall = readingWallSql("m", reportTz);
   // One grouping over one scan, no join. The latest reading and the hour
   // means used to be groupings of their own, joined back to the buckets; on
   // a measurements table without planner statistics (a new install, an
@@ -98,14 +100,11 @@ export async function loadDenseMeasurementBuckets(params: {
             m."glucose_context",
             m."value",
             m."measured_at",
-            date_trunc(
-              'day',
-              (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${reportTz}
-            ) AS local_day,
-            date_trunc(
-              'hour',
-              (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${reportTz}
-            ) AS local_hour
+            -- The day and hour a reading was taken on, in its own zone
+            -- when it has one (reading-zone.ts), as the day view and
+            -- the BP status file it.
+            date_trunc('day', ${wall}) AS local_day,
+            date_trunc('hour', ${wall}) AS local_hour
           FROM measurements m
           WHERE m."user_id" = ${userId}
             AND m."measured_at" >= ${start}

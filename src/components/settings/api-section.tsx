@@ -29,8 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useAuth } from "@/hooks/use-auth";
-import { formatDate, formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import { ApiEndpointsCard } from "@/components/settings/api-endpoints-card";
@@ -353,7 +352,7 @@ function IngestTokenCard({
 }
 
 function ApiTokensCard() {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
@@ -413,7 +412,7 @@ function ApiTokensCard() {
             {latestActiveUse && (
               <Badge variant="outline" className="text-xs">
                 {t("settings.tokenTableLastUsed")}:{" "}
-                {formatDateTime(latestActiveUse)}
+                {fmt.dateTime(latestActiveUse)}
               </Badge>
             )}
           </>
@@ -506,11 +505,11 @@ function ApiTokensCard() {
                             )}
                           </td>
                           <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
-                            {formatDate(tok.createdAt)}
+                            {fmt.date(tok.createdAt)}
                           </td>
                           <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
                             {tok.lastUsedAt
-                              ? formatDateTime(tok.lastUsedAt)
+                              ? fmt.dateTime(tok.lastUsedAt)
                               : t("settings.tokenNeverUsed")}
                           </td>
                           <td className="px-3 py-2 text-right">
@@ -583,14 +582,14 @@ function ApiTokensCard() {
                           <span className="font-medium">
                             {t("settings.tokenTableCreated")}:
                           </span>{" "}
-                          {formatDate(tok.createdAt)}
+                          {fmt.date(tok.createdAt)}
                         </p>
                         <p className="text-muted-foreground text-xs">
                           <span className="font-medium">
                             {t("settings.tokenTableLastUsed")}:
                           </span>{" "}
                           {tok.lastUsedAt
-                            ? formatDateTime(tok.lastUsedAt)
+                            ? fmt.dateTime(tok.lastUsedAt)
                             : t("settings.tokenNeverUsed")}
                         </p>
                         <AppleHealthMirrorSwitch token={tok} />
@@ -625,6 +624,7 @@ function ApiTokensCard() {
 /** The revoked tokens, folded away until asked for. Read-only but for the switch. */
 function RevokedTokens({ tokens: revokedTokens }: { tokens: ApiTokenInfo[] }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const [showRevokedTokens, setShowRevokedTokens] = useState(false);
   return (
     <div className="space-y-2">
@@ -675,11 +675,11 @@ function RevokedTokens({ tokens: revokedTokens }: { tokens: ApiTokenInfo[] }) {
                       {tok.permissions.join(", ")}
                     </td>
                     <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
-                      {formatDate(tok.createdAt)}
+                      {fmt.date(tok.createdAt)}
                     </td>
                     <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
                       {tok.lastUsedAt
-                        ? formatDateTime(tok.lastUsedAt)
+                        ? fmt.dateTime(tok.lastUsedAt)
                         : t("settings.tokenNeverUsed")}
                     </td>
                   </tr>
@@ -711,14 +711,14 @@ function RevokedTokens({ tokens: revokedTokens }: { tokens: ApiTokenInfo[] }) {
                   <span className="font-medium">
                     {t("settings.tokenTableCreated")}:
                   </span>{" "}
-                  {formatDate(tok.createdAt)}
+                  {fmt.date(tok.createdAt)}
                 </p>
                 <p className="text-muted-foreground text-xs">
                   <span className="font-medium">
                     {t("settings.tokenTableLastUsed")}:
                   </span>{" "}
                   {tok.lastUsedAt
-                    ? formatDateTime(tok.lastUsedAt)
+                    ? fmt.dateTime(tok.lastUsedAt)
                     : t("settings.tokenNeverUsed")}
                 </p>
                 <AppleHealthMirrorSwitch token={tok} />

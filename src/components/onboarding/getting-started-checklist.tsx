@@ -20,7 +20,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useAccountOnceMounted } from "@/hooks/use-auth";
+import { isFullAccount, useAccountOnceMounted } from "@/hooks/use-auth";
 import { hasOptedOutOfAi } from "@/lib/ai/capabilities/types";
 import { useTranslations } from "@/lib/i18n/context";
 import { useDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
@@ -42,6 +42,7 @@ import {
 } from "@/lib/onboarding/checklist-storage";
 import { sourceConnectionLabelKey } from "@/lib/onboarding/first-result-config";
 import { isBrowserConnectableSource } from "@/lib/onboarding/wizard-steps";
+import { GettingStartedExtras } from "@/components/onboarding/getting-started-extras";
 
 const ITEM_ICONS: Record<ChecklistItemId, LucideIcon> = {
   profile: User2,
@@ -113,7 +114,11 @@ interface NotificationsPreferences {
   channels?: NotificationChannel[];
 }
 
-function readDismissedSet(): Set<ChecklistItemId> {
+/**
+ * The dismissed rows, by id: a checklist row's own id, or `extra:<id>` for a
+ * row of the optional "More" group (1.49), one list for both.
+ */
+function readDismissedSet(): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
     const raw = window.localStorage.getItem(DISMISSED_ITEMS_KEY);
@@ -121,7 +126,7 @@ function readDismissedSet(): Set<ChecklistItemId> {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
       return new Set(
-        parsed.filter((id): id is ChecklistItemId => typeof id === "string"),
+        parsed.filter((id): id is string => typeof id === "string"),
       );
     }
   } catch {
@@ -155,22 +160,12 @@ function readExpanded(): boolean {
 }
 
 /**
- * Persistent dashboard checklist surfaced to brand-new users. Mirrors
- * the Linear/Notion pattern: visible until the user has either
- * completed every step or explicitly hidden it. Each row is one line
- * with status icon + label + CTA + dismiss-x.
+ * The card's three per-browser conveniences (hidden rows, hidden card, open
+ * state), read once and written back on change. Every access is wrapped, and
+ * the card renders correctly with no stored value.
  */
-export function GettingStartedChecklist() {
-  // Withheld until mounted: this card lives inside the dashboard's streamed
-  // boundary and its whole render turns on `if (!user) return null` below. The
-  // shell has usually answered `/api/auth/me` before the boundary hydrates, so
-  // reading the payload on the hydration render would paint a card where the
-  // server painted nothing — a mismatch that discards the streamed dashboard.
-  // See `useAccountOnceMounted`.
-  const user = useAccountOnceMounted();
-  const { t } = useTranslations();
-
-  const [dismissedIds, setDismissedIds] = useState<Set<ChecklistItemId>>(() =>
+function usePersistedChecklistState() {
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() =>
     readDismissedSet(),
   );
   const [dismissedAll, setDismissedAll] = useState<boolean>(() =>
@@ -213,6 +208,41 @@ export function GettingStartedChecklist() {
       /* storage may be full or disabled */
     }
   }, [expanded]);
+
+  return {
+    dismissedIds,
+    setDismissedIds,
+    dismissedAll,
+    setDismissedAll,
+    expanded,
+    setExpanded,
+  };
+}
+
+/**
+ * Persistent dashboard checklist surfaced to brand-new users. Mirrors
+ * the Linear/Notion pattern: visible until the user has either
+ * completed every step or explicitly hidden it. Each row is one line
+ * with status icon + label + CTA + dismiss-x.
+ */
+export function GettingStartedChecklist() {
+  // Withheld until mounted: this card lives inside the dashboard's streamed
+  // boundary and its whole render turns on `if (!user) return null` below. The
+  // shell has usually answered `/api/auth/me` before the boundary hydrates, so
+  // reading the payload on the hydration render would paint a card where the
+  // server painted nothing — a mismatch that discards the streamed dashboard.
+  // See `useAccountOnceMounted`.
+  const user = useAccountOnceMounted();
+  const { t } = useTranslations();
+
+  const {
+    dismissedIds,
+    setDismissedIds,
+    dismissedAll,
+    setDismissedAll,
+    expanded,
+    setExpanded,
+  } = usePersistedChecklistState();
 
   // v1.15.20 — the measurement count is derived from the dashboard
   // snapshot the page already fetches (`tiles.summaries` is the same
@@ -407,7 +437,7 @@ export function GettingStartedChecklist() {
   // dashboard's snapshot query shares the cache key, so the checklist
   // almost always sees the cached value synchronously on mount and
   // never blocks UI.)
-  if (!user) return null;
+  if (!isFullAccount(user)) return null; // the seed withholds the birth date
   if (snapshotData === undefined) return null;
   if (!show) return null;
 
@@ -579,6 +609,13 @@ export function GettingStartedChecklist() {
             );
           })}
         </ul>
+      ) : null}
+
+      {expanded ? (
+        <GettingStartedExtras
+          dismissed={dismissedIds}
+          onDismiss={(id) => setDismissedIds((prev) => new Set(prev).add(id))}
+        />
       ) : null}
     </section>
   );

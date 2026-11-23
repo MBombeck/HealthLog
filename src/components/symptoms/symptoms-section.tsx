@@ -48,6 +48,7 @@ import { QuickEntrySheets } from "@/components/dashboard/quick-entry-sheets";
 import { useIllnessEpisodes } from "@/components/illness/use-illness";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeepLinkedRecord } from "@/hooks/use-deep-linked-record";
+import { useEntryEditLink } from "@/components/forms/use-entry-edit-link";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
@@ -109,6 +110,7 @@ export function SymptomEventRow({
     <li
       className="flex items-start justify-between gap-3 py-2.5"
       data-testid="symptom-event-row"
+      data-symptom-event-id={event.id}
     >
       <div className="flex min-w-0 flex-1 items-start gap-2">
         <SymptomIcon
@@ -390,8 +392,7 @@ export function SymptomsSection() {
   const hidden = all.filter((d) => !d.isActive);
   const days = groupEventsByDay(events.data?.events ?? [], timezone);
 
-  // `?symptom=<id>` — a search hit names the symptom. Scroll to it, and open
-  // it for someone who may edit it.
+  // `?symptom=<id>`: a search hit; scrolled to, opened for an editor.
   useDeepLinkedRecord({
     param: "symptom",
     records: definitions.data ? all : undefined,
@@ -564,6 +565,38 @@ export function SymptomsSection() {
           onClose={() => setEditingDefinition(null)}
         />
       ) : null}
+      <OccurrenceEditLink events={events.data?.events} byId={byId} />
     </Card>
+  );
+}
+
+/**
+ * `?occurrence=<id>`: a save receipt's Edit opens that occurrence's sheet,
+ * for someone who may edit it.
+ */
+function OccurrenceEditLink({
+  events,
+  byId,
+}: {
+  events: SymptomEventDTO[] | undefined;
+  byId: ReadonlyMap<string, SymptomDefinitionDTO>;
+}) {
+  const { t } = useTranslations();
+  const { canManageDomain } = useRecordCapabilities();
+  const [editing, setEditing] = useState<SymptomEventDTO | null>(null);
+  useEntryEditLink(
+    "symptom",
+    events,
+    canManageDomain("illness") ? setEditing : undefined,
+  );
+  if (!editing) return null;
+  return (
+    <EditSymptomEventSheet
+      event={editing}
+      label={
+        byId.get(editing.definitionId)?.label ?? t("symptoms.unreadableLabel")
+      }
+      onClose={() => setEditing(null)}
+    />
   );
 }

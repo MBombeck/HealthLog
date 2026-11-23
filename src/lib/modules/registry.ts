@@ -208,15 +208,6 @@ export type ModuleKey = (typeof MODULE_KEYS)[number];
  */
 export const CORE_DOMAIN_KEYS = ["weight", "bloodPressure", "pulse"] as const;
 
-export type CoreDomainKey = (typeof CORE_DOMAIN_KEYS)[number];
-
-const CORE_DOMAIN_SET: ReadonlySet<string> = new Set(CORE_DOMAIN_KEYS);
-
-/** True for the four always-on core domains (never disableable). */
-export function isCoreDomain(key: string): key is CoreDomainKey {
-  return CORE_DOMAIN_SET.has(key);
-}
-
 /**
  * The registry. Order is the Settings-hub display order (grouped by
  * category in the UI; this flat order is the canonical iteration order).

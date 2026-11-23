@@ -19,26 +19,78 @@ vi.mock("@/lib/ai/codex-oauth", () => ({
     }),
   ),
   decryptCodexCreds: vi.fn(),
+  decryptAdminCodexCreds: vi.fn(),
 }));
 
 import {
-  resolveProvider,
+  resolveProviderChain,
   resolveProviderForTest,
   resolveProviderAvailability,
 } from "../provider";
 import { OpenAIClient } from "../openai-client";
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
-import { decryptCodexCreds, encryptCodexCreds } from "@/lib/ai/codex-oauth";
+import {
+  decryptAdminCodexCreds,
+  decryptCodexCreds,
+  encryptCodexCreds,
+} from "@/lib/ai/codex-oauth";
+
+/** Every column `resolveProviderChain` selects, with nothing configured. */
+const EMPTY_USER = {
+  aiProvider: null,
+  aiModel: null,
+  aiLocalBaseUrl: null,
+  aiLocalModel: null,
+  aiAnthropicKeyEncrypted: null,
+  aiLocalKeyEncrypted: null,
+  aiOpenaiKeyEncrypted: null,
+  aiCompatBaseUrl: null,
+  aiCompatKeyEncrypted: null,
+  aiCompatModel: null,
+  role: "USER",
+  aiProviderChain: null,
+  aiNamedChains: null,
+  useCentralCodex: false,
+  managedProfileAt: null,
+  aiResponseTimeoutSeconds: null,
+};
+
+const DISCONNECTED_CODEX = {
+  codexAccessTokenEncrypted: null,
+  codexRefreshTokenEncrypted: null,
+  codexConnectionStatus: "disconnected",
+};
 
 /**
- * resolveProvider() makes up to TWO findUnique calls per invocation:
- *   1. Read user-level AI config (aiProvider/...).
- *   2. If falling back to codex, read codex token fields.
- * We use mockResolvedValueOnce in order so each call returns the right shape.
+ * The chain reads the user's AI row once, then the Codex columns when its
+ * `codex` entry is tried. The two reads are told apart by what they select,
+ * so the order the chain walks its entries in does not matter to the mock.
  */
+function mockUser(
+  user: Record<string, unknown>,
+  codex: Record<string, unknown> = DISCONNECTED_CODEX,
+) {
+  vi.mocked(prisma.user.findUnique).mockImplementation((async (args: {
+    select?: Record<string, unknown>;
+  }) =>
+    args?.select && "codexAccessTokenEncrypted" in args.select
+      ? codex
+      : { ...EMPTY_USER, ...user }) as never);
+}
 
-describe("resolveProvider", () => {
+function mockAdminKey(model = "gpt-4o-mini") {
+  vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
+    adminAiKeyEncrypted: "enc-admin-key",
+    adminAiModel: model,
+    adminAiBaseUrl: "https://api.openai.com/v1",
+  } as never);
+}
+
+const types = async () =>
+  (await resolveProviderChain("user-123", null)).map((e) => e.providerType);
+
+describe("resolveProviderChain — the default chain", () => {
   beforeEach(() => {
     // Reset mocks AND mockResolvedValueOnce queues, then re-establish
     // the deterministic factory implementations for crypto/oauth helpers.
@@ -55,252 +107,195 @@ describe("resolveProvider", () => {
         refreshEncrypted: `enc:${c.refreshToken}`,
       }),
     );
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
   });
 
-  it("returns codex provider when user has valid tokens (no explicit choice)", async () => {
+  function connectCodex() {
     vi.mocked(decryptCodexCreds).mockReturnValue({
-      accessToken: "oauth-access",
-      refreshToken: "decrypted-refresh",
+      accessToken: "access",
+      refreshToken: "refresh",
       accountId: "acct-123",
       expiresAt: new Date(Date.now() + 3600_000),
     });
+    return {
+      codexAccessTokenEncrypted: "enc-access",
+      codexRefreshTokenEncrypted: "enc-refresh",
+      codexConnectionStatus: "connected",
+    };
+  }
 
-    vi.mocked(prisma.user.findUnique)
-      // 1st call: user AI config — none selected
-      .mockResolvedValueOnce({
-        aiProvider: null,
-        aiModel: null,
-        aiLocalBaseUrl: null,
-        aiAnthropicKeyEncrypted: null,
-        aiLocalKeyEncrypted: null,
-      } as never)
-      // 2nd call: codex tokens
-      .mockResolvedValueOnce({
-        codexAccessTokenEncrypted: "enc-access",
-        codexRefreshTokenEncrypted: "enc-refresh",
-        codexTokenExpiresAt: new Date(Date.now() + 3600000),
-        codexConnectionStatus: "connected",
-      } as never);
+  it("leads with Codex when the user has valid tokens and nothing picked", async () => {
+    mockUser({}, connectCodex());
+    mockAdminKey();
 
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("codex");
+    const chain = await resolveProviderChain("user-123", null);
+    expect(chain.map((e) => e.providerType)).toEqual(["codex", "admin-openai"]);
+    expect(chain[0].instance.type).toBe("codex");
   });
 
-  it("returns admin-key when user has no codex but admin key exists", async () => {
-    vi.mocked(prisma.user.findUnique)
-      .mockResolvedValueOnce({
-        aiProvider: null,
-        aiModel: null,
-        aiLocalBaseUrl: null,
-        aiAnthropicKeyEncrypted: null,
-        aiLocalKeyEncrypted: null,
-      } as never)
-      .mockResolvedValueOnce({
-        codexAccessTokenEncrypted: null,
-        codexRefreshTokenEncrypted: null,
-        codexTokenExpiresAt: null,
-        codexConnectionStatus: "disconnected",
-      } as never);
+  it("serves the admin key when the user has no Codex connection", async () => {
+    mockUser({});
+    mockAdminKey();
 
-    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
-      adminAiKeyEncrypted: "enc-admin-key",
-      adminAiModel: "gpt-4o-mini",
-      adminAiBaseUrl: "https://api.openai.com/v1",
-    } as never);
-
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("admin-key");
+    const chain = await resolveProviderChain("user-123", null);
+    expect(chain.map((e) => e.providerType)).toEqual(["admin-openai"]);
+    expect(chain[0].instance.type).toBe("admin-key");
   });
 
-  it("returns none when nothing is configured", async () => {
-    vi.mocked(prisma.user.findUnique)
-      .mockResolvedValueOnce({
-        aiProvider: null,
-        aiModel: null,
-        aiLocalBaseUrl: null,
-        aiAnthropicKeyEncrypted: null,
-        aiLocalKeyEncrypted: null,
-      } as never)
-      .mockResolvedValueOnce({
-        codexAccessTokenEncrypted: null,
-        codexRefreshTokenEncrypted: null,
-        codexTokenExpiresAt: null,
-        codexConnectionStatus: "disconnected",
-      } as never);
-
+  it("is empty when nothing is configured", async () => {
+    mockUser({});
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       adminAiKeyEncrypted: null,
     } as never);
 
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("none");
+    await expect(resolveProviderChain("user-123", null)).resolves.toEqual([]);
   });
 
-  it("falls back to admin-key when codex status is expired", async () => {
-    vi.mocked(prisma.user.findUnique)
-      .mockResolvedValueOnce({
-        aiProvider: null,
-        aiModel: null,
-        aiLocalBaseUrl: null,
-        aiAnthropicKeyEncrypted: null,
-        aiLocalKeyEncrypted: null,
-      } as never)
-      .mockResolvedValueOnce({
+  it("drops an expired Codex connection and serves the admin key", async () => {
+    mockUser(
+      {},
+      {
         codexAccessTokenEncrypted: "enc-access",
         codexRefreshTokenEncrypted: "enc-refresh",
-        codexTokenExpiresAt: new Date(Date.now() - 1000),
         codexConnectionStatus: "expired",
-      } as never);
+      },
+    );
+    mockAdminKey("gpt-4o");
 
-    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
-      adminAiKeyEncrypted: "enc-admin",
-      adminAiModel: "gpt-4o",
-      adminAiBaseUrl: "https://api.openai.com/v1",
-    } as never);
-
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("admin-key");
+    expect(await types()).toEqual(["admin-openai"]);
   });
 
-  it("returns Anthropic provider when user picks ANTHROPIC and has key", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+  it("puts the user's Anthropic key ahead of the admin key", async () => {
+    mockUser({
       aiProvider: "ANTHROPIC",
       aiModel: "claude-3-5-sonnet-latest",
-      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: "enc-anthropic-key",
-      aiLocalKeyEncrypted: null,
-    } as never);
+    });
+    mockAdminKey();
 
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("anthropic");
-    // Codex/admin lookups must NOT happen when user provider resolved.
-    expect(prisma.appSettings.findUnique).not.toHaveBeenCalled();
+    const chain = await resolveProviderChain("user-123", null);
+    expect(chain.map((e) => e.providerType)).toEqual([
+      "anthropic",
+      "admin-openai",
+    ]);
+    expect(chain[0].instance.type).toBe("anthropic");
   });
 
-  it("falls back when user picks ANTHROPIC but has no key", async () => {
-    vi.mocked(prisma.user.findUnique)
-      .mockResolvedValueOnce({
-        aiProvider: "ANTHROPIC",
-        aiModel: "claude-3-5-sonnet-latest",
-        aiLocalBaseUrl: null,
-        aiAnthropicKeyEncrypted: null,
-        aiLocalKeyEncrypted: null,
-      } as never)
-      .mockResolvedValueOnce({
-        codexAccessTokenEncrypted: null,
-        codexConnectionStatus: "disconnected",
-      } as never);
+  it("drops the Anthropic entry when the user picked ANTHROPIC but has no key", async () => {
+    mockUser({ aiProvider: "ANTHROPIC", aiModel: "claude-3-5-sonnet-latest" });
+    mockAdminKey();
 
-    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
-      adminAiKeyEncrypted: "enc-admin",
-      adminAiModel: "gpt-4o-mini",
-      adminAiBaseUrl: "https://api.openai.com/v1",
-    } as never);
-
-    // ANTHROPIC explicit choice ≠ CHATGPT_OAUTH/null → codex branch is skipped.
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("admin-key");
+    expect(await types()).toEqual(["admin-openai"]);
   });
 
-  it("returns Local provider when user picks LOCAL with baseUrl", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+  it("serves Local when the user picked LOCAL with a base URL", async () => {
+    mockUser({
       aiProvider: "LOCAL",
       aiModel: "llama3:8b",
       aiLocalBaseUrl: "http://localhost:11434/v1",
-      aiAnthropicKeyEncrypted: null,
-      aiLocalKeyEncrypted: null,
-    } as never);
+    });
 
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("local");
+    const chain = await resolveProviderChain("user-123", null);
+    expect(chain.map((e) => e.providerType)).toEqual(["local"]);
+    expect(chain[0].instance.type).toBe("local");
   });
 
-  it("OPENAI selection routes through admin OpenAI key", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
-      aiProvider: "OPENAI",
-      aiModel: null,
-      aiLocalBaseUrl: null,
-      aiAnthropicKeyEncrypted: null,
-      aiLocalKeyEncrypted: null,
-    } as never);
+  it("an OPENAI pick without a personal key is served by the admin key", async () => {
+    mockUser({ aiProvider: "OPENAI" });
+    mockAdminKey();
 
-    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
-      adminAiKeyEncrypted: "enc-admin",
-      adminAiModel: "gpt-4o-mini",
-      adminAiBaseUrl: "https://api.openai.com/v1",
-    } as never);
-
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("admin-key");
+    const chain = await resolveProviderChain("user-123", null);
+    expect(chain.map((e) => e.providerType)).toEqual(["admin-openai"]);
+    expect(chain[0].instance.type).toBe("admin-key");
   });
 
-  it("OPENAI with user key ignores stored aiLocalBaseUrl (provider-leak guard)", async () => {
+  it("the openai entry ignores a stored aiLocalBaseUrl (provider-leak guard)", async () => {
     // Regression for v1.4.6 T4: a user who had configured LOCAL with a
     // private LAN URL and later switched to OPENAI must NOT have their
-    // OpenAI key forwarded to that URL. The persisted `aiLocalBaseUrl` is
-    // shared across providers, so `buildUserProvider` hardcodes
-    // api.openai.com for OPENAI regardless of what the column carries.
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+    // OpenAI key forwarded to that URL. The persisted `aiLocalBaseUrl` stays
+    // set (#1417), so the openai entry hardcodes api.openai.com, and the
+    // main chain's Local entry stays out while another provider is picked.
+    mockUser({
       aiProvider: "OPENAI",
-      aiModel: null,
       aiLocalBaseUrl: "http://192.168.0.42/v1", // stale LOCAL value
-      aiAnthropicKeyEncrypted: null,
-      aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-user-openai-key",
-    } as never);
+    });
 
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("admin-key");
-    const inspect = provider as unknown as {
+    const chain = await resolveProviderChain("user-123", null);
+    expect(chain.map((e) => e.providerType)).toEqual(["openai"]);
+    const inspect = chain[0].instance as unknown as {
       config: { baseUrl: string };
     };
     expect(inspect.config.baseUrl).toBe("https://api.openai.com/v1");
   });
 
-  it("ANTHROPIC ignores stored aiLocalBaseUrl (provider-leak guard)", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+  it("the anthropic entry ignores a stored aiLocalBaseUrl (provider-leak guard)", async () => {
+    mockUser({
       aiProvider: "ANTHROPIC",
       aiModel: "claude-3-5-sonnet-latest",
       aiLocalBaseUrl: "http://192.168.0.42/v1", // stale LOCAL value
       aiAnthropicKeyEncrypted: "enc-user-anthropic-key",
-      aiLocalKeyEncrypted: null,
-      aiOpenaiKeyEncrypted: null,
-    } as never);
+    });
 
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("anthropic");
+    const chain = await resolveProviderChain("user-123", null);
+    expect(chain.map((e) => e.providerType)).toEqual(["anthropic"]);
     // AnthropicClient should default to its SDK baseUrl, never the LAN URL.
-    const inspect = provider as unknown as {
+    const inspect = chain[0].instance as unknown as {
       config: { baseUrl?: string };
     };
     expect(inspect.config.baseUrl).toBeUndefined();
   });
 
-  it("CHATGPT_OAUTH selection routes through Codex when connected", async () => {
-    vi.mocked(decryptCodexCreds).mockReturnValue({
-      accessToken: "oauth-access",
-      refreshToken: "decrypted-refresh",
-      accountId: "acct-123",
+  it("a CHATGPT_OAUTH pick is served by Codex when connected", async () => {
+    mockUser({ aiProvider: "CHATGPT_OAUTH" }, connectCodex());
+
+    const chain = await resolveProviderChain("user-123", null);
+    expect(chain.map((e) => e.providerType)).toEqual(["codex"]);
+    expect(chain[0].instance.type).toBe("codex");
+  });
+
+  it("follows the saved chain's order, not the picked provider", async () => {
+    mockUser({
+      aiProvider: "ANTHROPIC",
+      aiAnthropicKeyEncrypted: "enc-anthropic-key",
+      aiOpenaiKeyEncrypted: "enc-openai-key",
+      aiProviderChain: [
+        { providerType: "openai", priority: 1, enabled: true },
+        { providerType: "anthropic", priority: 2, enabled: true },
+      ],
+    });
+
+    expect(await types()).toEqual(["openai", "anthropic"]);
+  });
+
+  it("appends the central Codex last, and only behind the opt-in", async () => {
+    vi.mocked(prisma.appSettings.findUnique).mockImplementation((async (args: {
+      select?: Record<string, unknown>;
+    }) =>
+      args?.select && "adminCodexConnectionStatus" in args.select
+        ? {
+            adminCodexConnectionStatus: "connected",
+            adminCodexAccessTokenEncrypted: "enc-a",
+            adminCodexRefreshTokenEncrypted: "enc-r",
+            adminCodexAccountIdEncrypted: "enc-id",
+            adminCodexTokenExpiresAt: new Date(Date.now() + 3600_000),
+          }
+        : null) as never);
+    vi.mocked(decryptAdminCodexCreds).mockReturnValue({
+      accessToken: "access",
+      refreshToken: "refresh",
+      accountId: "acct-central",
       expiresAt: new Date(Date.now() + 3600_000),
     });
 
-    vi.mocked(prisma.user.findUnique)
-      .mockResolvedValueOnce({
-        aiProvider: "CHATGPT_OAUTH",
-        aiModel: null,
-        aiLocalBaseUrl: null,
-        aiAnthropicKeyEncrypted: null,
-        aiLocalKeyEncrypted: null,
-      } as never)
-      .mockResolvedValueOnce({
-        codexAccessTokenEncrypted: "enc-access",
-        codexRefreshTokenEncrypted: "enc-refresh",
-        codexTokenExpiresAt: new Date(Date.now() + 3600000),
-        codexConnectionStatus: "connected",
-      } as never);
+    mockUser({ aiAnthropicKeyEncrypted: "enc-anthropic-key" });
+    expect(await types()).toEqual(["anthropic"]);
 
-    const provider = await resolveProvider("user-123");
-    expect(provider.type).toBe("codex");
+    mockUser({
+      aiAnthropicKeyEncrypted: "enc-anthropic-key",
+      useCentralCodex: true,
+    });
+    expect(await types()).toEqual(["anthropic", "admin-codex"]);
   });
 });
 

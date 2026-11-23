@@ -148,18 +148,6 @@ export const MEDICAL_REFERENCE_ORGS: readonly MedicalReferenceOrg[] =
   Array.from(new Set(MEDICAL_REFERENCES.map((r) => r.org)));
 
 /**
- * Look up a reference by id. Returns `undefined` for unknown ids — the
- * UI uses this to silently drop a footnote rather than render a broken
- * link if a payload sneaks through with an unknown id (defence in
- * depth alongside the schema check).
- */
-export function getMedicalReferenceById(
-  id: string,
-): MedicalReference | undefined {
-  return MEDICAL_REFERENCES.find((r) => r.id === id);
-}
-
-/**
  * Map the set of feature/snapshot sections present for a generation onto
  * the reference metric buckets. Lets the insight consumers pick the
  * applicable curated SOURCES without re-encoding the bucket names.

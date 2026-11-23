@@ -12,8 +12,10 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { hashToken } from "@/lib/auth/hmac";
+import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { issueApiToken } from "@/lib/auth/issue-token";
 import type { TokenPolicyDecision } from "@/lib/auth/native-client";
+import { afterRefreshRevocation } from "@/lib/devices/signed-out-push";
 
 export interface IssuedRefreshBundle {
   accessToken: string;
@@ -106,8 +108,20 @@ export async function issueAccessAndRefresh(
   };
 }
 
+/**
+ * `already_used` is the replay of a consumed token: reuse detection fired and
+ * the device family is revoked. `superseded` is the loser of two concurrent
+ * rotations of the same live token: nothing was revoked, the winner's pair is
+ * live, and the caller must read the credentials the winner stored instead of
+ * presenting this token again (which would be a replay).
+ */
 export type RotationFailureReason =
-  "not_found" | "expired" | "already_used" | "revoked" | "device_mismatch";
+  | "not_found"
+  | "expired"
+  | "already_used"
+  | "superseded"
+  | "revoked"
+  | "device_mismatch";
 
 export type RotationResult =
   | { ok: true; bundle: IssuedRefreshBundle }
@@ -180,6 +194,13 @@ export async function rotateRefreshToken(input: {
         data: { revoked: true },
       });
     }
+    // The person learns a device was signed out for a replayed token; fire
+    // and forget, so the refusal does not wait on the dispatcher.
+    if (compromised.length > 0) {
+      void sendSecurityAlert(row.userId, "refresh_reuse");
+      // The revoked family's device takes no more of the account's pushes.
+      await afterRefreshRevocation(row.userId);
+    }
     return { ok: false, reason: "already_used" };
   }
 
@@ -244,9 +265,13 @@ export async function rotateRefreshToken(input: {
   if (updated.count === 0) {
     // Lost the race: another concurrent refresh consumed this row, or a
     // revocation landed underneath it. Either way, retire what was just minted
-    // so no extra valid pair leaks, then say which it was — a revoked family
-    // must read as `revoked`, which the client answers with a fresh sign-in,
-    // not as `already_used`, which it would retry.
+    // so no extra valid pair leaks, then say which it was. A revoked family
+    // reads as `revoked`, which the client answers with a fresh sign-in. A
+    // sibling rotation reads as `superseded`, not `already_used`: nothing was
+    // revoked on this path and the winner's pair is live, so telling the
+    // client "reuse detected, re-pair" would sign out a healthy device, and a
+    // client that retried with this token would trip the real reuse detection
+    // and kill the winner's pair.
     await prisma.refreshToken.updateMany({
       where: { tokenHash: newHash },
       data: { revokedAt: new Date() },
@@ -259,7 +284,7 @@ export async function rotateRefreshToken(input: {
       where: { id: row.id },
       select: { revokedAt: true },
     });
-    return { ok: false, reason: now?.revokedAt ? "revoked" : "already_used" };
+    return { ok: false, reason: now?.revokedAt ? "revoked" : "superseded" };
   }
 
   // Best-effort: sunset the access token paired with the consumed refresh, so
@@ -327,6 +352,11 @@ export async function revokeBearerAccessToken(
   rawAccessToken: string,
 ): Promise<boolean> {
   const accessHash = hashToken(rawAccessToken);
+  // The account whose device signs out, read off the paired sign-in.
+  const owner = await prisma.refreshToken.findFirst({
+    where: { accessTokenHash: accessHash, revokedAt: null },
+    select: { userId: true },
+  });
 
   const apiResult = await prisma.apiToken.updateMany({
     where: { tokenHash: accessHash, revoked: false },
@@ -335,10 +365,14 @@ export async function revokeBearerAccessToken(
 
   // Revoke the paired refresh sibling so a native logout kills both halves
   // of the pair in one call.
-  await prisma.refreshToken.updateMany({
+  const refreshResult = await prisma.refreshToken.updateMany({
     where: { accessTokenHash: accessHash, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+  // Signing out drops the device's push key and relay binding with it.
+  if (owner && refreshResult.count > 0) {
+    await afterRefreshRevocation(owner.userId);
+  }
 
   return apiResult.count > 0;
 }
@@ -359,7 +393,7 @@ export async function revokeRefreshTokenByHash(
 ): Promise<boolean> {
   const row = await prisma.refreshToken.findUnique({
     where: { tokenHash: refreshTokenHash },
-    select: { accessTokenHash: true, revokedAt: true },
+    select: { userId: true, accessTokenHash: true, revokedAt: true },
   });
   if (!row || row.revokedAt) return false;
 
@@ -375,6 +409,7 @@ export async function revokeRefreshTokenByHash(
       data: { revoked: true },
     });
   }
+  await afterRefreshRevocation(row.userId);
   return true;
 }
 
@@ -387,7 +422,7 @@ export async function revokeRefreshToken(
   const hash = hashToken(refreshToken);
   const row = await prisma.refreshToken.findUnique({
     where: { tokenHash: hash },
-    select: { accessTokenHash: true, revokedAt: true },
+    select: { userId: true, accessTokenHash: true, revokedAt: true },
   });
   if (!row || row.revokedAt) return false;
 
@@ -403,5 +438,6 @@ export async function revokeRefreshToken(
       data: { revoked: true },
     });
   }
+  await afterRefreshRevocation(row.userId);
   return true;
 }

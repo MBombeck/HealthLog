@@ -19,6 +19,7 @@
         "nutrientDays": 1,
         "labResults": 1,
         "labResultImportKeys": 0,
+        "fhirImportedResources": 0,
         "biomarkers": 1,
         "illnessEpisodes": 2,
         "illnessDayLogs": 1,
@@ -77,6 +78,7 @@
         "cycleProfile": 0,
         "labResults": 0,
         "labResultImportKeys": 0,
+        "fhirImportedResources": 0,
         "biomarkers": 0,
         "nutrientDays": 0,
         "illnessEpisodes": 0,
@@ -297,6 +299,7 @@
           "cycleProfile": 0,
           "labResults": 0,
           "labResultImportKeys": 0,
+          "fhirImportedResources": 0,
           "biomarkers": 0,
           "nutrientDays": 0,
           "illnessEpisodes": 0,
@@ -424,6 +427,7 @@
         "unit": "mmHg",
         "source": "MANUAL",
         "measuredAt": "2026-07-01T07:05:00.000Z",
+        "timeZone": null,
         "notes": null,
         "notesEncrypted": null,
         "externalId": null,
@@ -435,6 +439,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -449,6 +455,7 @@
         "unit": "ms",
         "source": "FITBIT",
         "measuredAt": "2026-07-03T04:00:00.000Z",
+        "timeZone": null,
         "notes": null,
         "notesEncrypted": null,
         "externalId": "fitbit-hrv-2026-07-03",
@@ -460,6 +467,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -474,6 +483,7 @@
         "unit": "ms",
         "source": "FITBIT",
         "measuredAt": "2026-07-02T04:00:00.000Z",
+        "timeZone": null,
         "notes": null,
         "notesEncrypted": null,
         "externalId": "fitbit-hrv-2026-07-02",
@@ -485,6 +495,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -499,6 +511,7 @@
         "unit": "kg",
         "source": "MANUAL",
         "measuredAt": "2026-07-01T07:00:00.000Z",
+        "timeZone": null,
         "notes": null,
         "notesEncrypted": "<sealed:v2:after the long ride>",
         "externalId": null,
@@ -510,6 +523,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
+        "appleHealthDeletedAt": null,
+        "statsComputedAt": null,
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "ingestTokenId": null
@@ -545,6 +560,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -581,6 +597,7 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -621,6 +638,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<now>",
@@ -630,7 +648,8 @@
         "externalId": null,
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:9>",
@@ -642,6 +661,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<now>",
@@ -651,7 +671,8 @@
         "externalId": null,
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "MedicationSideEffect": [],
@@ -696,7 +717,8 @@
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       },
       {
         "id": "<id:12>",
@@ -720,7 +742,8 @@
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "syncVersion": 0,
-        "deletedAt": null
+        "deletedAt": null,
+        "appleHealthDeletedAt": null
       }
     ],
     "MoodContext": [],
@@ -753,6 +776,7 @@
       }
     ],
     "LabResultImportKey": [],
+    "FhirImportedResource": [],
     "Biomarker": [
       {
         "id": "<id:14>",
@@ -939,7 +963,6 @@
     "MedicationScheduleRevision": [],
     "MedicationEfficacyTarget": [],
     "EcgRecording": [],
-    "AppleHealthTombstone": [],
     "OnboardingRecord": [],
     "BiomarkerAlias": [],
     "BiomarkerMerge": [],
@@ -1056,10 +1079,19 @@
       "medicationListLayoutJson": null,
       "documentsLayoutJson": null,
       "moodTagLayoutJson": null,
+      "dashboardWidgetsRevisedAt": "<now>",
+      "insightsLayoutRevisedAt": "<now>",
+      "medicationListLayoutRevisedAt": "<now>",
+      "moodTagLayoutRevisedAt": "<now>",
+      "modulePreferencesRevisedAt": "<now>",
+      "notificationPrefsRevisedAt": "<now>",
+      "coachPrefsRevisedAt": "<now>",
+      "healthScoreConfigRevisedAt": "<now>",
       "moduleListLayoutJson": null,
       "activityGoalsJson": null,
       "nutrientTargetsJson": null,
       "glucoseUnit": null,
+      "medicineRegistry": null,
       "hasDiabetes": false,
       "labsLocalOcrEnabled": false,
       "storeWorkoutRoutes": false,
@@ -1078,7 +1110,11 @@
       "aiCompatModel": null,
       "aiProviderChain": null,
       "aiNamedChains": null,
+      "managedAiSource": "INSTANCE",
+      "managedAiGuardianId": null,
+      "managedAiChainId": null,
       "aiResponseTimeoutSeconds": null,
+      "aiCoachBudgets": null,
       "documentsAutoAiRead": false,
       "onboardingCompletedAt": null,
       "onboardingTourCompleted": false,
@@ -1097,6 +1133,7 @@
       "syncResetAt": "<now>",
       "moodReminderEnabled": false,
       "reportSelectionJson": null,
+      "reportScheduleJson": null,
       "notificationPrefs": null,
       "disableCoach": false,
       "aiUsageLevel": null,
@@ -1112,6 +1149,7 @@
       "totpLastStep": null,
       "mfaEnforced": false,
       "passkeyUpgradeNudgeDismissed": false,
+      "adminNoticesDismissed": [],
       "fullName": null,
       "insurerName": null,
       "insuranceNumberEncrypted": null,
@@ -1172,7 +1210,12 @@
       "pulseDayMeanDryRunJson": {
         "roundTrip": "rt-AppSettings-pulseDayMeanDryRunJson"
       },
-      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor"
+      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor",
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
+      },
+      "pushRelayDecision": "off"
     }
   },
   "reexport": {
@@ -1197,9 +1240,6 @@
       "glitchtipEnabled": false,
       "glitchtipDsn": null,
       "glitchtipEnvironment": null,
-      "glitchtipLastOkAt": "2026-06-30T12:34:56.789Z",
-      "glitchtipLastFailureAt": "2026-06-30T12:34:56.789Z",
-      "glitchtipLastFailureReason": "rt-AppSettings-glitchtipLastFailureReason",
       "reminderLateMinutes": 30,
       "reminderMissedMinutes": 120,
       "adminAiKeyEncrypted": null,
@@ -1228,13 +1268,11 @@
       },
       "documentMaxFileBytes": 10000000,
       "documentQuotaBytes": "500000000",
-      "correlationSeasonalEngineSince": "2026-06-30T12:34:56.789Z",
-      "pulseDayMeanMethod": "hour_mean_v1",
-      "pulseDayMeanAppliedAt": "2026-06-30T12:34:56.789Z",
-      "pulseDayMeanDryRunJson": {
-        "roundTrip": "rt-AppSettings-pulseDayMeanDryRunJson"
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
       },
-      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor"
+      "pushRelayDecision": "off"
     },
     "accountSettings": {
       "heightCm": null,
@@ -1259,6 +1297,7 @@
       "locale": null,
       "unitPreference": null,
       "glucoseUnit": null,
+      "medicineRegistry": null,
       "timeFormat": "AUTO",
       "dateFormat": "AUTO",
       "modulePreferencesJson": null,
@@ -1274,6 +1313,7 @@
       "activityGoalsJson": null,
       "nutrientTargetsJson": null,
       "reportSelectionJson": null,
+      "reportScheduleJson": null,
       "globalExcludedInjectionSites": [],
       "healthKitConfigJson": null,
       "notificationPrefs": null,
@@ -1287,6 +1327,7 @@
       "aiProviderChain": null,
       "aiNamedChains": null,
       "aiResponseTimeoutSeconds": null,
+      "aiCoachBudgets": null,
       "useCentralCodex": false,
       "insightsPrivacyMode": "aggregated",
       "insightsExcludeMetrics": [],
@@ -1322,6 +1363,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
@@ -1346,6 +1388,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
@@ -1370,6 +1413,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
@@ -1394,6 +1438,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
@@ -1405,14 +1450,20 @@
     "medications": [
       {
         "id": "<id:5>",
+        "startsOn": null,
+        "endsOn": null,
+        "snoozedUntil": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "updatedAt": "<now>",
+        "categoryUpdatedAt": null,
         "treatmentClass": "GENERIC",
         "dosesPerUnit": null,
         "unitsPerDose": "1",
         "notificationsEnabled": true,
         "pausedAt": null,
-        "snoozedUntil": null,
-        "startsOn": null,
-        "endsOn": null,
         "oneShot": false,
         "asNeeded": false,
         "deliveryForm": "ORAL",
@@ -1422,13 +1473,7 @@
         "criticalAlarmEnabled": false,
         "atcCode": null,
         "rxNormCode": null,
-        "lowStockNotifiedAt": null,
-        "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
-        "externalSource": null,
-        "externalId": null,
-        "updatedAt": "<now>",
-        "categoryUpdatedAt": null,
         "name": "Ramipril",
         "dose": "5 mg",
         "active": true,
@@ -1437,6 +1482,7 @@
         "autoMarkTakenSince": null,
         "category": "OTHER",
         "noteEncrypted": null,
+        "leafletUrl": null,
         "createdAt": "2026-07-01T07:00:00.000Z",
         "schedules": [
           {
@@ -1470,14 +1516,20 @@
       },
       {
         "id": "<id:7>",
+        "startsOn": "2026-07-01T00:00:00.000Z",
+        "endsOn": "2026-08-01T00:00:00.000Z",
+        "snoozedUntil": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "updatedAt": "<now>",
+        "categoryUpdatedAt": null,
         "treatmentClass": "GENERIC",
         "dosesPerUnit": null,
         "unitsPerDose": "1",
         "notificationsEnabled": true,
         "pausedAt": null,
-        "snoozedUntil": null,
-        "startsOn": "2026-07-01T00:00:00.000Z",
-        "endsOn": "2026-08-01T00:00:00.000Z",
         "oneShot": false,
         "asNeeded": false,
         "deliveryForm": "ORAL",
@@ -1487,13 +1539,7 @@
         "criticalAlarmEnabled": false,
         "atcCode": null,
         "rxNormCode": null,
-        "lowStockNotifiedAt": null,
-        "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
-        "externalSource": null,
-        "externalId": null,
-        "updatedAt": "<now>",
-        "categoryUpdatedAt": null,
         "name": "Vitamin D",
         "dose": "1000 IU",
         "active": true,
@@ -1502,6 +1548,7 @@
         "autoMarkTakenSince": null,
         "category": "OTHER",
         "noteEncrypted": null,
+        "leafletUrl": null,
         "createdAt": "2026-07-01T08:00:00.000Z",
         "schedules": [],
         "sideEffects": [],
@@ -1530,12 +1577,8 @@
       {
         "id": "<id:8>",
         "medicationId": "<id:7>",
-        "autoMissed": false,
-        "attributionSource": "AUTO",
         "idempotencyKey": null,
         "createdAt": "<now>",
-        "injectionSite": null,
-        "doseTaken": null,
         "inventoryConsumption": null,
         "externalId": null,
         "updatedAt": "<now>",
@@ -1546,17 +1589,18 @@
         "takenAt": null,
         "skipped": true,
         "source": "WEB",
-        "autoRecorded": false
+        "takenVia": null,
+        "autoRecorded": false,
+        "injectionSite": null,
+        "doseTaken": null,
+        "attributionSource": "AUTO",
+        "autoMissed": false
       },
       {
         "id": "<id:9>",
         "medicationId": "<id:5>",
-        "autoMissed": false,
-        "attributionSource": "AUTO",
         "idempotencyKey": null,
         "createdAt": "<now>",
-        "injectionSite": null,
-        "doseTaken": null,
         "inventoryConsumption": null,
         "externalId": null,
         "updatedAt": "<now>",
@@ -1567,7 +1611,12 @@
         "takenAt": "2026-07-01T07:10:00.000Z",
         "skipped": false,
         "source": "WEB",
-        "autoRecorded": false
+        "takenVia": null,
+        "autoRecorded": false,
+        "injectionSite": null,
+        "doseTaken": null,
+        "attributionSource": "AUTO",
+        "autoMissed": false
       }
     ],
     "moodEntries": [
@@ -1679,6 +1728,7 @@
     ],
     "biomarkerMerges": [],
     "labResultImportKeys": [],
+    "fhirImportedResources": [],
     "illnessEpisodes": [
       {
         "id": "legacy-episode-child",
@@ -1785,7 +1835,6 @@
         "externalId": null
       }
     ],
-    "appleHealthTombstones": [],
     "documents": [],
     "manifest": {
       "documents": {

@@ -46,12 +46,7 @@ export function CoachPlansMemoryCard({
         description={t("settings.ai.coachPlans.description")}
       />
       <SettingsCardActions align="start">
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-        >
+        <Button asChild variant="outline" size="sm">
           <Link href="/coach/plans" data-slot="settings-coach-plans-open">
             {t("settings.ai.coachPlans.open")}
           </Link>

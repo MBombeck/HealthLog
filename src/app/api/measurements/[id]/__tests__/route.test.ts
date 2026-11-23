@@ -232,6 +232,14 @@ describe("PUT /api/measurements/[id] — value guards (di-001)", () => {
     };
     expect(call.data.value).toBe(82.5);
   });
+
+  it("raises the sync version paired clients reconcile by", async () => {
+    await PUT(putReq({ value: 82.5 }), ROUTE_CTX);
+    const call = vi.mocked(prisma.measurement.update).mock.calls[0]?.[0] as {
+      data: { syncVersion?: unknown };
+    };
+    expect(call.data.syncVersion).toEqual({ increment: 1 });
+  });
 });
 
 describe("PUT /api/measurements/[id] — glucose context (#1407)", () => {

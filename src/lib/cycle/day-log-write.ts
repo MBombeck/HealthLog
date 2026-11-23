@@ -16,12 +16,17 @@
  *
  * Partial merge: a re-post that omits a field never nulls a previously
  * stored value — the UPDATE branch only overwrites the fields actually
- * present in the input.
+ * present in the input. A tombstoned day written again is the exception: it
+ * starts from empty fields and no symptoms (iOS #191).
  *
- * Collision-safe: on a `(userId, source, externalId)`-keyed create that
- * collides with an existing canonical `(userId, date)` row (Prisma P2002),
- * the existing row is adopted and UPDATEd in place — one canonical row per
- * date regardless of provenance.
+ * Symptom links are source-aware: an import's write replaces only the links
+ * it wrote, a hand-made one the day's whole set (`replaceSymptomLinks`).
+ *
+ * One row per date: an externalId the day does not carry yet, on a date that
+ * already has a row, adopts that row and merges into it (probed up front, so
+ * the merge keeps the fields the write leaves out). A create that still
+ * collides on `(userId, date)` in a race (Prisma P2002) is adopted the same
+ * way after the fact.
  *
  * Returns the upserted row id + whether a row already existed (so the
  * caller can map `inserted`/`updated`/`duplicate`) plus whether any field
@@ -32,6 +37,7 @@ import { prisma } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import { ensureCycleForBleedingDay } from "@/lib/cycle/cycle-boundaries";
+import { deletedInHealthLog } from "@/lib/sync/tombstone-repost";
 import type { CycleDayLogInput } from "@/lib/validations/cycle";
 import type {
   CervicalMucus,
@@ -41,6 +47,7 @@ import type {
   ContraceptiveKind,
   FlowLevel,
   HomeTestResult,
+  MeasurementSource,
   OvulationTest,
   Prisma,
 } from "@/generated/prisma/client";
@@ -60,6 +67,11 @@ export interface DayLogWriteResult {
   existed: boolean;
   /** A pre-existing row whose persisted fields differ from the re-post. */
   changed: boolean;
+  /**
+   * Nothing was written: the Apple Health re-post names a day the person
+   * deleted in HealthLog (`refuseDeletedInHealthLog`).
+   */
+  refused?: true;
 }
 
 /** The five intent-revealing fields the encryption envelope carries. */
@@ -105,11 +117,23 @@ export async function resolveSymptomIds(
  * and the PATCH route so both resolve + write the join identically. Each
  * selection's optional 1-4 severity is persisted on the link (NULL = a
  * plain presence link).
+ *
+ * Source-aware (iOS #191): each link remembers the write it came from
+ * (`CycleSymptomLink.source`).
+ *   - An import's write (`APPLE_HEALTH`, `HEALTH_CONNECT`) sets only its own
+ *     links: it removes those it no longer sends and adds the new ones, and a
+ *     symptom the person logged by hand on that day stays as it is, even when
+ *     the import names it too.
+ *   - A hand-made write (`MANUAL`, the log-day sheet and the PATCH) sets the
+ *     day's whole set, as the person sees it. A link it keeps unchanged keeps
+ *     its source, so the import can still take it away later; one whose
+ *     severity it changes becomes the person's own.
  */
 export async function replaceSymptomLinks(
   userId: string,
   dayLogId: string,
   selections: readonly SymptomSelection[],
+  source: MeasurementSource = "MANUAL",
 ): Promise<void> {
   const resolved = await resolveSymptomIds(
     userId,
@@ -122,13 +146,49 @@ export async function replaceSymptomLinks(
       typeof s.severity === "number" ? s.severity : null,
     ]),
   );
-  await prisma.cycleSymptomLink.deleteMany({ where: { dayLogId } });
-  if (resolved.length > 0) {
+  const wanted = new Map(
+    resolved.map(({ key, id }) => [id, severityByKey.get(key) ?? null]),
+  );
+  const existing = await prisma.cycleSymptomLink.findMany({
+    where: { dayLogId },
+    select: { symptomId: true, severity: true, source: true },
+  });
+  const imported = source !== "MANUAL";
+  // An import only ever touches its own links.
+  const ownLinks = imported
+    ? existing.filter((l) => l.source === source)
+    : existing;
+  const gone = ownLinks
+    .filter((l) => !wanted.has(l.symptomId))
+    .map((l) => l.symptomId);
+  if (gone.length > 0) {
+    await prisma.cycleSymptomLink.deleteMany({
+      where: { dayLogId, symptomId: { in: gone } },
+    });
+  }
+  const held = new Map(existing.map((l) => [l.symptomId, l]));
+  const fresh: { symptomId: string; severity: number | null }[] = [];
+  for (const [symptomId, severity] of wanted) {
+    const link = held.get(symptomId);
+    if (!link) {
+      fresh.push({ symptomId, severity });
+      continue;
+    }
+    // A link of another source: the import leaves it alone.
+    if (imported && link.source !== source) continue;
+    if (link.severity === severity) continue;
+    await prisma.cycleSymptomLink.update({
+      where: { dayLogId_symptomId: { dayLogId, symptomId } },
+      data: { severity, source },
+    });
+  }
+  if (fresh.length > 0) {
     await prisma.cycleSymptomLink.createMany({
-      data: resolved.map(({ key, id }) => ({
+      data: fresh.map(({ symptomId, severity }) => ({
         dayLogId,
-        symptomId: id,
-        severity: severityByKey.get(key) ?? null,
+        symptomId,
+        severity,
+        source,
       })),
       skipDuplicates: true,
     });
@@ -184,6 +244,7 @@ type ExistingRow = {
   sensitiveEncrypted: string | null;
   notesEncrypted: string | null;
   deletedAt: Date | null;
+  appleHealthDeletedAt: Date | null;
 };
 
 const EXISTING_SELECT = {
@@ -206,6 +267,7 @@ const EXISTING_SELECT = {
   sensitiveEncrypted: true,
   notesEncrypted: true,
   deletedAt: true,
+  appleHealthDeletedAt: true,
 } as const;
 
 /**
@@ -224,6 +286,14 @@ export async function upsertCycleDayLog(
   tz: string | null,
   cycleId: string | null = null,
   encryptSensitiveFlag?: boolean,
+  options: {
+    /**
+     * The bulk drain's rule for an Apple Health re-post of a day deleted in
+     * HealthLog: refuse it (`tombstone-repost.ts`). A write the person makes
+     * here revives the day either way.
+     */
+    refuseDeletedInHealthLog?: boolean;
+  } = {},
 ): Promise<DayLogWriteResult> {
   const source = entry.source;
 
@@ -245,10 +315,47 @@ export async function upsertCycleDayLog(
 
   // Probe so the caller can distinguish inserted / updated / duplicate
   // and (for an externalId re-post) detect whether a field changed.
-  const existing = (await prisma.cycleDayLog.findUnique({
+  let existing = (await prisma.cycleDayLog.findUnique({
     where,
     select: EXISTING_SELECT,
   })) as ExistingRow | null;
+
+  // An externalId the day does not carry yet, on a date that already has a
+  // row: that row is the day, and the write merges into it like any other
+  // update, so the fields the write leaves out keep their values. Probing it
+  // here, rather than only after the create collides, is what keeps a
+  // symptoms-only Apple Health write from blanking the flow and note the
+  // person logged by hand that day.
+  let adopt = false;
+  if (!existing && entry.externalId) {
+    existing = (await prisma.cycleDayLog.findUnique({
+      where: { userId_date: { userId, date: entry.date } },
+      select: EXISTING_SELECT,
+    })) as ExistingRow | null;
+    adopt = existing !== null;
+  }
+
+  // An Apple Health re-post of a day the person deleted in HealthLog stays
+  // out: the day the sample names was deleted by its owner, not by Apple
+  // Health. Only the day the externalId itself names counts, not a day
+  // adopted by its date.
+  if (
+    options.refuseDeletedInHealthLog === true &&
+    source === "APPLE_HEALTH" &&
+    existing !== null &&
+    !adopt &&
+    deletedInHealthLog(existing)
+  ) {
+    return { id: existing.id, existed: true, changed: false, refused: true };
+  }
+
+  // A deleted day written again starts from empty fields: the deleted day's
+  // values, note and symptoms do not come back (iOS #191). The row is
+  // reused, so its identity and sync history stay, but nothing it held is
+  // merged into the new write. In the bulk drain that is a day the phone
+  // reported deleted in Apple Health; everywhere else, the person writing
+  // the day again.
+  const revived = existing !== null && existing.deletedAt !== null;
 
   const result = await writeDayLog({
     userId,
@@ -256,9 +363,11 @@ export async function upsertCycleDayLog(
     tz,
     cycleId,
     source,
-    where,
+    where: adopt && existing ? { id: existing.id } : where,
     existing,
+    base: revived ? null : existing,
     encryptSensitive,
+    adopt,
   });
 
   return result;
@@ -272,7 +381,15 @@ interface WriteArgs {
   source: CycleDayLogWriteEntry["source"];
   where: Prisma.CycleDayLogWhereUniqueInput;
   existing: ExistingRow | null;
+  /** What the write merges into: `existing`, or null for a revived day. */
+  base: ExistingRow | null;
   encryptSensitive: boolean;
+  /**
+   * The externalId names no row yet but the day has one (another source's,
+   * or a hand-made one): that row is written in place and takes the
+   * externalId, one canonical row per date.
+   */
+  adopt: boolean;
 }
 
 async function writeDayLog(args: WriteArgs): Promise<DayLogWriteResult> {
@@ -284,7 +401,9 @@ async function writeDayLog(args: WriteArgs): Promise<DayLogWriteResult> {
     source,
     where,
     existing,
+    base,
     encryptSensitive,
+    adopt,
   } = args;
 
   // Decrypt the existing note (fail-soft) for the change/duplicate split —
@@ -292,7 +411,7 @@ async function writeDayLog(args: WriteArgs): Promise<DayLogWriteResult> {
   // GCM IV), so a ciphertext compare would always read "changed". This is a
   // DISPLAY-ONLY read (a `null` here only affects the change flag, never the
   // written column — see the note-write below), so soft-decrypt is safe.
-  const existingNote = decryptNoteSoft(existing?.notesEncrypted ?? null);
+  const existingNote = decryptNoteSoft(base?.notesEncrypted ?? null);
 
   // The resolved plaintext sensitive values for THIS write, after partial
   // merge against what's already stored (decrypted from the envelope when
@@ -300,8 +419,8 @@ async function writeDayLog(args: WriteArgs): Promise<DayLogWriteResult> {
   // existing envelope could not be decrypted — in that case the merged
   // values are DEFAULTS, not the real stored data, so they must never be
   // re-encrypted back over the column (that would wipe the envelope).
-  const merged = existing
-    ? mergeStoredSensitive(existing)
+  const merged = base
+    ? mergeStoredSensitive(base)
     : {
         values: {
           sexualActivity: false,
@@ -352,7 +471,7 @@ async function writeDayLog(args: WriteArgs): Promise<DayLogWriteResult> {
       ? entry.note
         ? encrypt(entry.note)
         : null
-      : (existing?.notesEncrypted ?? null);
+      : (base?.notesEncrypted ?? null);
 
   // Note change detection for the `changed`/`duplicate` split. An omitted
   // `note` preserves the column verbatim, so it can never count as a change.
@@ -364,39 +483,39 @@ async function writeDayLog(args: WriteArgs): Promise<DayLogWriteResult> {
 
   // Non-sensitive fields, partial-merged against the stored row.
   const flow =
-    entry.flow !== undefined ? (entry.flow ?? null) : (existing?.flow ?? null);
+    entry.flow !== undefined ? (entry.flow ?? null) : (base?.flow ?? null);
   const intermenstrualBleeding =
     entry.intermenstrualBleeding !== undefined
       ? entry.intermenstrualBleeding
-      : (existing?.intermenstrualBleeding ?? false);
+      : (base?.intermenstrualBleeding ?? false);
   const basalBodyTempC =
     entry.basalBodyTempC !== undefined
       ? (entry.basalBodyTempC ?? null)
-      : (existing?.basalBodyTempC ?? null);
+      : (base?.basalBodyTempC ?? null);
   const temperatureExcluded =
     entry.temperatureExcluded !== undefined
       ? entry.temperatureExcluded
-      : (existing?.temperatureExcluded ?? false);
+      : (base?.temperatureExcluded ?? false);
   const ovulationTest =
     entry.ovulationTest !== undefined
       ? (entry.ovulationTest ?? null)
-      : (existing?.ovulationTest ?? null);
+      : (base?.ovulationTest ?? null);
   const cervicalMucus =
     entry.cervicalMucus !== undefined
       ? (entry.cervicalMucus ?? null)
-      : (existing?.cervicalMucus ?? null);
+      : (base?.cervicalMucus ?? null);
   const cervixPosition =
     entry.cervixPosition !== undefined
       ? (entry.cervixPosition ?? null)
-      : (existing?.cervixPosition ?? null);
+      : (base?.cervixPosition ?? null);
   const cervixFirmness =
     entry.cervixFirmness !== undefined
       ? (entry.cervixFirmness ?? null)
-      : (existing?.cervixFirmness ?? null);
+      : (base?.cervixFirmness ?? null);
   const cervixOpening =
     entry.cervixOpening !== undefined
       ? (entry.cervixOpening ?? null)
-      : (existing?.cervixOpening ?? null);
+      : (base?.cervixOpening ?? null);
 
   // A first bleeding day opens the cycle it belongs to. Cycle rows used to
   // come only from the one-tap period boundary, so a person who logged every
@@ -444,7 +563,7 @@ async function writeDayLog(args: WriteArgs): Promise<DayLogWriteResult> {
     encryptSensitive && !storedSensitiveDecryptable && !sensitiveFieldSupplied;
   const sensitiveEncrypted = encryptSensitive
     ? preserveExistingEnvelope
-      ? (existing?.sensitiveEncrypted ?? null)
+      ? (base?.sensitiveEncrypted ?? null)
       : encrypt(JSON.stringify(resolvedSensitive))
     : null;
   const sensitivePlaintext = encryptSensitive
@@ -502,6 +621,7 @@ async function writeDayLog(args: WriteArgs): Promise<DayLogWriteResult> {
             resolvedSensitive.progesteroneTest ||
           storedSensitive.contraceptive !== resolvedSensitive.contraceptive)) ||
       noteChanged ||
+      adopt ||
       existing.deletedAt !== null ||
       (Boolean(entry.externalId) && existing.date !== entry.date);
   }
@@ -509,6 +629,7 @@ async function writeDayLog(args: WriteArgs): Promise<DayLogWriteResult> {
   const updateData: Prisma.CycleDayLogUncheckedUpdateInput = {
     ...baseData,
     ...(entry.externalId ? { date: entry.date } : {}),
+    ...(adopt ? { source, externalId: entry.externalId ?? null } : {}),
     ...(attributedCycleId !== null ? { cycleId: attributedCycleId } : {}),
     deletedAt: null,
     // Only bump syncVersion when a field actually changed — an unchanged
@@ -578,13 +699,29 @@ async function writeDayLog(args: WriteArgs): Promise<DayLogWriteResult> {
     }
   }
 
-  // Replace the symptom-link set when symptoms were supplied. Absent
-  // `symptoms` leaves existing links untouched.
-  if (entry.symptoms !== undefined) {
-    await replaceSymptomLinks(userId, rowId, entry.symptoms);
-  }
-
+  await writeDayLinks(userId, rowId, entry, source, !base && !!existing);
   return { id: rowId, existed, changed };
+}
+
+/**
+ * The day's symptom links after its row was written. Supplied `symptoms`
+ * replace the set (source-aware, `replaceSymptomLinks`); absent `symptoms`
+ * leave the links untouched, except on a revived day, which starts without
+ * the deleted day's links, whichever write made them.
+ */
+async function writeDayLinks(
+  userId: string,
+  dayLogId: string,
+  entry: CycleDayLogWriteEntry,
+  source: MeasurementSource,
+  revived: boolean,
+): Promise<void> {
+  if (revived) {
+    await prisma.cycleSymptomLink.deleteMany({ where: { dayLogId } });
+  }
+  if (entry.symptoms !== undefined) {
+    await replaceSymptomLinks(userId, dayLogId, entry.symptoms, source);
+  }
 }
 
 /** Prisma P2002 (unique constraint) detector without importing the runtime. */

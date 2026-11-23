@@ -7,10 +7,10 @@ import {
   coverage,
   failedPillar,
   insufficientPillar,
-  mean,
   okPillar,
   readingSpread,
 } from "./shared";
+import { mean } from "@/lib/stats/central";
 
 export const ACTIVITY_WINDOW_DAYS = 28;
 export const ACTIVITY_MIN_DAYS = 21;
@@ -66,7 +66,8 @@ export function computeActivityPillar(
   }
 
   const values = points.map((point) => point.value);
-  const observed = mean(values);
+  // The day floor above guarantees days here.
+  const observed = mean(values)!;
   const plateau =
     input.ageYears != null && input.ageYears >= OLDER_ADULT_AGE
       ? OLDER_STEP_PLATEAU

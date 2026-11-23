@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
-import { Label } from "@/components/ui/label";
+import { FieldGroup } from "@/components/ui/field-group";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
@@ -73,8 +73,7 @@ export function UnitPreferenceSelect({
   }
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{t("settings.dashboard.units.title")}</Label>
+    <FieldGroup htmlFor={id} label={t("settings.dashboard.units.title")}>
       <NativeSelect
         id={id}
         data-testid="settings-unit-preference-select"
@@ -90,6 +89,6 @@ export function UnitPreferenceSelect({
       <p className="text-muted-foreground text-xs">
         {t("settings.dashboard.units.description")}
       </p>
-    </div>
+    </FieldGroup>
   );
 }

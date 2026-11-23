@@ -31,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsInfoTile } from "@/components/settings/_info-tile";
+import { WhoHasAccessCard } from "@/components/settings/who-has-access-card";
 import { WorkoutRoutesCard } from "@/components/settings/workout-routes-card";
 import { useTranslations } from "@/lib/i18n/context";
 import { MODULE_KEYS, MODULE_REGISTRY } from "@/lib/modules/registry";
@@ -64,6 +65,9 @@ export function PrivacySection() {
 
   return (
     <div className="space-y-6">
+      {/* Every way into the record, each linked to where it is revoked. */}
+      <WhoHasAccessCard />
+
       {/* Encryption at rest */}
       <SettingsCard>
         <SettingsCardHeader

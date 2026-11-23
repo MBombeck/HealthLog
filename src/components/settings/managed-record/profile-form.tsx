@@ -1,6 +1,7 @@
 import type { FormEvent } from "react";
 
 import { DateField } from "@/components/ui/date-field";
+import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { locales } from "@/lib/i18n/config";
@@ -37,17 +38,21 @@ export function ProfileSettingsForm({
 
   return (
     <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
-      <label className="grid gap-1 text-sm" htmlFor="managed-display-name">
-        {t("settings.sharedRecord.managedSettings.profile.displayName")}
+      <FieldGroup
+        htmlFor="managed-display-name"
+        label={t("settings.sharedRecord.managedSettings.profile.displayName")}
+      >
         <Input
           defaultValue={asString(settings.displayName)}
           disabled={disabled}
           id="managed-display-name"
           name="displayName"
         />
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-height">
-        {t("settings.sharedRecord.managedSettings.profile.height")}
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-height"
+        label={t("settings.sharedRecord.managedSettings.profile.height")}
+      >
         <Input
           defaultValue={
             settings.heightCm === null ? "" : String(settings.heightCm ?? "")
@@ -59,9 +64,11 @@ export function ProfileSettingsForm({
           name="heightCm"
           type="number"
         />
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-date-of-birth">
-        {t("settings.sharedRecord.managedSettings.profile.dateOfBirth")}
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-date-of-birth"
+        label={t("settings.sharedRecord.managedSettings.profile.dateOfBirth")}
+      >
         {/* The profile date must not depend on the browser's date
             parsing; DateField displays in the user's order and submits ISO
             through its hidden mirror. */}
@@ -72,9 +79,11 @@ export function ProfileSettingsForm({
           name="dateOfBirth"
           autoComplete="bday"
         />
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-gender">
-        {t("settings.sharedRecord.managedSettings.profile.gender")}
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-gender"
+        label={t("settings.sharedRecord.managedSettings.profile.gender")}
+      >
         <NativeSelect
           defaultValue={asString(settings.gender)}
           disabled={disabled}
@@ -94,9 +103,11 @@ export function ProfileSettingsForm({
             {t("settings.sharedRecord.managedSettings.profile.other")}
           </option>
         </NativeSelect>
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-locale">
-        {t("settings.sharedRecord.managedSettings.profile.locale")}
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-locale"
+        label={t("settings.sharedRecord.managedSettings.profile.locale")}
+      >
         <NativeSelect
           defaultValue={asString(settings.locale)}
           disabled={disabled}
@@ -112,9 +123,11 @@ export function ProfileSettingsForm({
             </option>
           ))}
         </NativeSelect>
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-timezone">
-        {t("settings.sharedRecord.managedSettings.profile.timezone")}
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-timezone"
+        label={t("settings.sharedRecord.managedSettings.profile.timezone")}
+      >
         <Input
           defaultValue={asString(settings.timezone, DEFAULT_TIMEZONE)}
           disabled={disabled}
@@ -122,9 +135,11 @@ export function ProfileSettingsForm({
           name="timezone"
           required
         />
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-units">
-        {t("settings.sharedRecord.managedSettings.profile.units")}
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-units"
+        label={t("settings.sharedRecord.managedSettings.profile.units")}
+      >
         <NativeSelect
           defaultValue={asString(settings.unitPreference, "metric")}
           disabled={disabled}
@@ -138,9 +153,11 @@ export function ProfileSettingsForm({
             {t("settings.sharedRecord.managedSettings.profile.imperial")}
           </option>
         </NativeSelect>
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-time-format">
-        {t("settings.sharedRecord.managedSettings.profile.timeFormat")}
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-time-format"
+        label={t("settings.sharedRecord.managedSettings.profile.timeFormat")}
+      >
         <NativeSelect
           defaultValue={asString(settings.timeFormat, "AUTO")}
           disabled={disabled}
@@ -157,9 +174,11 @@ export function ProfileSettingsForm({
             {t("settings.sharedRecord.managedSettings.profile.hour24")}
           </option>
         </NativeSelect>
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-date-format">
-        {t("settings.sharedRecord.managedSettings.profile.dateFormat")}
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-date-format"
+        label={t("settings.sharedRecord.managedSettings.profile.dateFormat")}
+      >
         <NativeSelect
           defaultValue={asString(settings.dateFormat, "AUTO")}
           disabled={disabled}
@@ -179,7 +198,7 @@ export function ProfileSettingsForm({
             {t("settings.sharedRecord.managedSettings.profile.dateYmd")}
           </option>
         </NativeSelect>
-      </label>
+      </FieldGroup>
       <FormFooter
         disabled={disabled}
         label={saveLabel}

@@ -9,9 +9,9 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DateField } from "@/components/ui/date-field";
+import { FieldGroup } from "@/components/ui/field-group";
 import { InfoPopover } from "@/components/ui/info-popover";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useQueryClientMounted } from "@/hooks/_internal/use-query-client-safe";
 import { useModuleEnabled } from "@/hooks/use-module-enabled";
@@ -23,8 +23,13 @@ import {
   useRecentProof,
 } from "@/components/settings/security-section/use-recent-proof";
 import { SHARE_DOMAINS, type ShareDomain } from "@/lib/sharing/scope";
-import { DEFAULT_TIMEZONE, isValidTimezone } from "@/lib/tz/format";
-import { wallClockInTz, zonedWallClockToUtc } from "@/lib/tz/wall-clock";
+import {
+  DEFAULT_TIMEZONE,
+  isValidTimezone,
+  shiftDateKey,
+  userDayKey,
+} from "@/lib/tz/format";
+import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
 
 /**
  * v1.37.0 — offering somebody access to this record.
@@ -168,10 +173,10 @@ export function GrantInviteCard() {
         description={t("recordSharing.invite.description")}
       />
       <form onSubmit={(event) => void submit(event)} className="space-y-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="grant-invite-identifier">
-            {t("recordSharing.invite.identifierLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor="grant-invite-identifier"
+          label={t("recordSharing.invite.identifierLabel")}
+        >
           <Input
             id="grant-invite-identifier"
             data-slot="grant-invite-identifier"
@@ -190,7 +195,7 @@ export function GrantInviteCard() {
           <p className="text-muted-foreground text-xs">
             {t("recordSharing.invite.needsAccount")}
           </p>
-        </div>
+        </FieldGroup>
         <fieldset className="space-y-1.5" data-slot="grant-invite-access">
           {/* The `Label` primitive is a `<label>` and cannot name a group, so
               the legend mirrors its type and its trailing colon by hand rather
@@ -328,10 +333,10 @@ export function GrantInviteCard() {
           </fieldset>
         )}
 
-        <div className="space-y-1.5">
-          <Label htmlFor="grant-invite-expires">
-            {t("recordSharing.invite.expiresLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor="grant-invite-expires"
+          label={t("recordSharing.invite.expiresLabel")}
+        >
           <DateField
             id="grant-invite-expires"
             // `data-slot` rides `{...rest}` onto `DateField`'s HIDDEN mirror
@@ -354,7 +359,7 @@ export function GrantInviteCard() {
           >
             {t("recordSharing.invite.expiresHint")}
           </p>
-        </div>
+        </FieldGroup>
         {error && (
           <p role="alert" className="text-destructive text-sm">
             {error}
@@ -369,7 +374,6 @@ export function GrantInviteCard() {
           <Button
             type="submit"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             data-slot="grant-invite-submit"
             // A narrowed invitation with nothing ticked would be a grant that
             // opens nothing, which the server refuses. The button is inert and
@@ -691,13 +695,7 @@ export function endOfDayIso(day: string, timeZone: string): string | null {
 /** The earliest day worth offering: a grant that lapses today confers nothing. */
 function tomorrowIso(timeZone: string): string {
   const zone = isValidTimezone(timeZone) ? timeZone : DEFAULT_TIMEZONE;
-  const today = wallClockInTz(new Date(), zone);
-  const tomorrow = new Date(
-    Date.UTC(today.year, today.month - 1, today.day) + 86_400_000,
-  );
-  return `${tomorrow.getUTCFullYear()}-${String(
-    tomorrow.getUTCMonth() + 1,
-  ).padStart(2, "0")}-${String(tomorrow.getUTCDate()).padStart(2, "0")}`;
+  return shiftDateKey(userDayKey(new Date(), zone), 1);
 }
 
 function useInvitationOwnerTimezone(): string {

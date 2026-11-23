@@ -40,6 +40,7 @@ import { orderLeaves } from "@/lib/report-selection/catalogue";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiPost } from "@/lib/api/api-fetch";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import {
   recentProofErrorMessage,
   useRecentProof,
@@ -223,9 +224,8 @@ export function ShareLinkCreateForm({
   useEffect(() => {
     if (!qrUrl) return;
     let cancelled = false;
-    // Dynamic import so `qrcode` code-splits out of the settings chunk — the
-    // QR is only ever rendered after a link is created, so the library never
-    // needs to ship eagerly.
+    // Dynamic import so `qrcode` code-splits out of the settings chunk: the QR
+    // is only ever rendered after a link is created.
     import("qrcode")
       .then(({ default: QRCode }) =>
         // Render at a high pixel density (the display size is capped in CSS) so
@@ -249,6 +249,8 @@ export function ShareLinkCreateForm({
   const recentProof = useRecentProof();
 
   const createMutation = useMutation({
+    // Confirms in place: the new link and its QR code appear.
+    meta: CONFIRMS_INLINE,
     mutationFn: () => {
       // Surface the same expiry-bound the server enforces before the round
       // trip, so the validation feedback is immediate.
@@ -273,8 +275,7 @@ export function ShareLinkCreateForm({
       setCreated(result);
       setCopied(null);
       setLabel("");
-      // The document set is frozen onto the link now — reset the picker so the
-      // next link starts clean.
+      // The document set is frozen onto the link now; the next starts clean.
       setSelectedDocs([]);
       setFormError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.shareLinks() });
@@ -474,7 +475,6 @@ export function ShareLinkCreateForm({
             }
             aria-describedby={documentOnly ? undefined : scopeSummaryId}
             data-testid="share-create-submit"
-            className="min-h-11 sm:min-h-9"
           >
             {createMutation.isPending && (
               <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />

@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, RotateCcw, Trash2 } from "lucide-react";
 
+import { documentSourceName } from "@/components/documents/document-source-name";
 import { TileHeader } from "@/components/insights/tile-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -36,10 +37,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import type {
-  DeletedDocumentDto,
-  DocumentSourceSystemValue,
-} from "@/lib/validations/inbound-documents";
+import type { DeletedDocumentDto } from "@/lib/validations/inbound-documents";
 
 import { DOCUMENT_KIND_ICONS } from "../document-kind-meta";
 
@@ -189,16 +187,6 @@ export function RecentlyDeletedView() {
   );
 }
 
-/** Product names stay untranslated; only "another system" is prose. */
-function sourceName(
-  system: DocumentSourceSystemValue,
-  t: (key: string) => string,
-): string {
-  if (system === "PAPERLESS") return "Paperless-ngx";
-  if (system === "PAPRA") return "Papra";
-  return t("documents.detail.sourceOther");
-}
-
 /**
  * One deleted document: what it was, how long it has left, the ways out.
  * Without `onPurge` (inside a managed profile) only Restore is offered.
@@ -223,7 +211,7 @@ export function DeletedRow({
     doc.documentDate ? fmt.dateShortSmartCalendar(doc.documentDate) : null,
     doc.sourceSystem
       ? t("documents.detail.importedFrom", {
-          system: sourceName(doc.sourceSystem, t),
+          system: documentSourceName(doc.sourceSystem, t),
         })
       : null,
   ]

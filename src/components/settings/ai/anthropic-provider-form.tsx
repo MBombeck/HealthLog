@@ -6,7 +6,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -16,6 +16,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { PasswordInput } from "@/components/ui/password-input";
 import { apiPatch } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
@@ -71,6 +72,8 @@ export function AnthropicProviderForm({
       : modelChoice.trim();
 
   const saveMutation = useMutation({
+    // Confirms in place: the saved line above the action row.
+    meta: CONFIRMS_INLINE,
     mutationFn: async () => {
       const body: Record<string, unknown> = {
         provider: uiToLegacyProviderEnum("anthropic"),
@@ -178,15 +181,12 @@ export function AnthropicProviderForm({
         <Button
           type="submit"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           aria-busy={saveMutation.isPending || undefined}
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
+          ) : null}
           {t("settings.ai.saveCta")}
         </Button>
       </SettingsCardActions>

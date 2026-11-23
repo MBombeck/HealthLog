@@ -51,6 +51,7 @@ import {
   baseUpdatedAtField,
   conflictResponse409,
   dataEnvelope,
+  deletedInHealthLogResponse,
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
@@ -424,7 +425,12 @@ const bulkMoodEntryResult = z
       .describe(
         "`inserted`/`duplicate` — the row landed (advance the cursor). `skipped` — see `reason`.",
       ),
-    reason: z.string().optional(),
+    reason: z
+      .string()
+      .optional()
+      .describe(
+        "Why an entry was `skipped`. `deleted_in_healthlog` (since v1.49.0) for an entry whose `(source, externalId)` names an entry the person deleted in HealthLog; it stays deleted and nothing is written. An entry the phone reported deleted through `DELETE /api/mood-entries/by-external-ids` is written back when it is posted again (`inserted`): it is in Apple Health again.",
+      ),
     id: z
       .string()
       .optional()
@@ -1675,7 +1681,7 @@ export const moodPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Mood"],
       summary: "Create a mood entry",
       description:
-        "Writes the entry, its structured-tag links and its day context in one transaction — a link or context failure rolls the entry back rather than letting a retry mint a duplicate. Idempotent via the `Idempotency-Key` header. With `externalId` the write UPSERTS on `(userId, source, externalId)` (a re-post updates the row in place and restates pleasantness from the label, while A2-A5 and a stored context are only touched when the request carries them); without it, a same-`(date, moodLoggedAt)` re-post 409s. A delegated manager cannot supply `externalId` (422, `meta.errorCode` = `mood.create.external_id_not_delegable`) — it is a device's contract with its own rows. A rated factor outside its catalog scale 422s (`mood.ratedFactor.out_of_range`); a malformed body 422s (`mood.create.invalid`). An unstable `externalId` (an object description or memory address that rotates per launch) is refused at validation.",
+        "Writes the entry, its structured-tag links and its day context in one transaction — a link or context failure rolls the entry back rather than letting a retry mint a duplicate. Idempotent via the `Idempotency-Key` header. With `externalId` the write UPSERTS on `(userId, source, externalId)` (a re-post updates the row in place and restates pleasantness from the label, while A2-A5 and a stored context are only touched when the request carries them); without it, a same-`(date, moodLoggedAt)` re-post 409s. A delegated manager cannot supply `externalId` (422, `meta.errorCode` = `mood.create.external_id_not_delegable`) — it is a device's contract with its own rows. A rated factor outside its catalog scale 422s (`mood.ratedFactor.out_of_range`); a malformed body 422s (`mood.create.invalid`). An unstable `externalId` (an object description or memory address that rotates per launch) is refused at validation. An `externalId` that names an entry the person deleted in HealthLog answers 410 (`mood.deleted_in_healthlog`) and writes nothing; one the app reported deleted in Apple Health is written back as a live entry.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: createMoodEntryRequest } },
@@ -1688,6 +1694,7 @@ export const moodPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: moodEntryEnvelope } },
         },
         ...duplicateTimestampResponse,
+        ...deletedInHealthLogResponse("mood.deleted_in_healthlog"),
         ...recordRefusal(),
         ...stdResponses,
         ...recordWriteRateLimitResponse,

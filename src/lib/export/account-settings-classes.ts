@@ -57,6 +57,14 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   // Whether somebody else runs this record. Account shape, and the gate for
   // the guardian's reach: the wipe keeps it for the same reason.
   managedProfileAt: "IDENTITY",
+  // #1403 — which provider a managed profile's AI uses. The source names a
+  // guardian account of THIS host, which a copy restored elsewhere would point
+  // at nobody (or at the wrong person), and the choice is the guardian's act
+  // on this host, re-checked against their grant on every resolution. A
+  // restore leaves the profile on its current source.
+  managedAiSource: "OPERATIONAL",
+  managedAiGuardianId: "OPERATIONAL",
+  managedAiChainId: "OPERATIONAL",
   // The operator's per-account policy and quota, set by the operator and not
   // by the person; a file from Monday must not undo Tuesday's decision.
   mfaEnforced: "IDENTITY",
@@ -143,6 +151,18 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   stravaAthleteId: "CREDENTIAL",
 
   // ── Operational ───────────────────────────────────────────────────────────
+  // The lock tokens of the settings documents (migration 0554): the database
+  // moves each when its document changes, and a restore that writes a
+  // document moves it again. Carrying one would hand a restored account a
+  // token nobody read.
+  dashboardWidgetsRevisedAt: "OPERATIONAL",
+  insightsLayoutRevisedAt: "OPERATIONAL",
+  medicationListLayoutRevisedAt: "OPERATIONAL",
+  moodTagLayoutRevisedAt: "OPERATIONAL",
+  modulePreferencesRevisedAt: "OPERATIONAL",
+  notificationPrefsRevisedAt: "OPERATIONAL",
+  coachPrefsRevisedAt: "OPERATIONAL",
+  healthScoreConfigRevisedAt: "OPERATIONAL",
   insightsCachedAt: "OPERATIONAL",
   insightsCachedTextEncrypted: "OPERATIONAL",
   insightsCachedLocale: "OPERATIONAL",
@@ -168,6 +188,7 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   healthKitLastSyncTrigger: "OPERATIONAL",
   healthKitLastBackgroundSyncAt: "OPERATIONAL",
   lastSyncedAt: "OPERATIONAL",
+  adminNoticesDismissed: "OPERATIONAL",
   // The restore stamps its own: paired clients' cursors from before it must
   // be refused, which a carried value would undo.
   syncResetAt: "OPERATIONAL",

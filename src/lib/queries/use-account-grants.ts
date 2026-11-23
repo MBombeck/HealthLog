@@ -97,7 +97,7 @@ export interface RecordActivity {
 }
 
 /** A capped list as its hook hands it out: the payload and the route's cap. */
-type WithCap<T> = T & {
+export type WithCap<T> = T & {
   /**
    * The route's list cap (`meta` on the envelope), null when it sent none.
    * Shown with `ListCapNotice`: the retention window bounds how far back the

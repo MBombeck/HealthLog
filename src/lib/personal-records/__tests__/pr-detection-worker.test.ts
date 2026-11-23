@@ -148,7 +148,7 @@ function makeFakePrisma(state: {
     // UTC `date_trunc` aggregate; it reads every matching row via
     // `measurement.findMany` and does the source-collapse + tz-aware
     // day-bucket SUM in JS (`pickCanonicalSourceRows` +
-    // `dayKeyForUserTz`), matching every other cumulative-day surface.
+    // `userDayKey`), matching every other cumulative-day surface.
     user: {
       findUnique: vi.fn(async () => ({
         // Every fixture in this file is written in `Date.UTC(...)` —

@@ -157,17 +157,6 @@ export const STRAIN_PERSONAL_REF_FLOOR = 10;
 /** Which anchor produced a day's score. */
 export type StrainAnchor = "personal" | "population";
 
-/**
- * The UTC calendar day a Strain run scores — the PREVIOUS day relative to
- * `now`. The cron fires in the small hours; scoring the just-ended day is what
- * lets the engine see that day's completed workouts + active-energy total
- * rather than a few hours of the current day. Delegates to the shared
- * `scoreDayKey` so all three engines agree.
- */
-export function strainDayKey(now: Date): string {
-  return scoreDayKey(now);
-}
-
 /** The full `externalId` for a given run's Strain score row. */
 export function strainExternalId(now: Date): string {
   return scoreExternalId(STRAIN_SCORE_EXTERNAL_ID_PREFIX, now);
@@ -405,29 +394,35 @@ export async function computeStrainScore(
     priorRefPersonal: null,
   },
 ): Promise<StrainComputeResult> {
-  const dayKey = strainDayKey(now);
+  const dayKey = scoreDayKey(now);
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: UTC day window of the UTC-day score engines (scoreDayKey)
   const dayStart = new Date(`${dayKey}T00:00:00.000Z`);
   const dayEnd = new Date(dayStart.getTime() + MS_PER_DAY);
 
-  // Day-total active energy first — it is the fallback signal and cheap.
-  const energyRows = await prisma.measurement.findMany({
+  // Day-total active energy first — it is the fallback signal and cheap. One
+  // row per source and device type, summed in Postgres: the source picker
+  // below chooses between sources and device types and never between single
+  // rows, so the sums pick exactly as the rows would. A watch writing active
+  // energy every few seconds holds more rows a day than any cap that used to
+  // stand here, and a capped read ended the day's total mid-afternoon.
+  const energyGroups = await prisma.measurement.groupBy({
+    by: ["source", "deviceType"],
     where: {
       userId,
       type: "ACTIVE_ENERGY_BURNED" as MeasurementType,
       deletedAt: null,
       measuredAt: { gte: dayStart, lt: dayEnd },
     },
-    orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
-    select: {
-      value: true,
-      source: true,
-      deviceType: true,
-      measuredAt: true,
-      type: true,
-    },
-    take: 5000,
+    orderBy: [{ source: "asc" }, { deviceType: "asc" }],
+    _sum: { value: true },
   });
+  const energyRows = energyGroups.map((g) => ({
+    source: g.source,
+    deviceType: g.deviceType,
+    measuredAt: dayStart,
+    type: "ACTIVE_ENERGY_BURNED" as MeasurementType,
+    value: g._sum.value ?? 0,
+  }));
 
   // The day's workouts + their HR series, with the session identity the
   // cross-source picker needs: one run recorded by the watch and synced again
@@ -627,7 +622,7 @@ export async function loadStrainAnchorHistory(
   userId: string,
   now: Date,
 ): Promise<StrainAnchorHistory> {
-  const dayKey = strainDayKey(now);
+  const dayKey = scoreDayKey(now);
   const windowStart = shiftDateKey(dayKey, -STRAIN_CHRONIC_WINDOW_DAYS);
 
   // The chronic window of cached rows, excluding the scored day itself (its
@@ -673,7 +668,7 @@ export async function upsertStrainTrimpCache(
     trainingDays: number;
   },
 ): Promise<void> {
-  const day = strainDayKey(args.now);
+  const day = scoreDayKey(args.now);
   await prisma.strainTrimpCache.upsert({
     where: { userId_day: { userId: args.userId, day } },
     create: {

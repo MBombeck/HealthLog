@@ -1565,7 +1565,8 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "Rotate refresh token (one-time use)",
       description:
         "Reuse of a consumed refresh token revokes every refresh token still active for the originating device (per-device blast radius from v1.4.23). Legacy tokens issued before v1.4.23 with a null deviceId fall back to revoke-all-for-user.\n\n" +
-        "On a 401, `meta.errorCode` is a stable machine code so the client can branch terminal re-auth from a transient blip without parsing the prose `error`: `auth.refresh.reuse` (a consumed token was replayed — device family revoked, re-pair required), `auth.refresh.revoked` (family revoked out-of-band — re-pair required), `auth.refresh.invalid` (not found / expired — drop the token and re-authenticate).",
+        "On a 401, `meta.errorCode` is a stable machine code so the client can branch terminal re-auth from a transient blip without parsing the prose `error`: `auth.refresh.reuse` (a consumed token was replayed — device family revoked, re-pair required), `auth.refresh.revoked` (family revoked out-of-band — re-pair required), `auth.refresh.invalid` (not found / expired — drop the token and re-authenticate).\n\n" +
+        "A 409 with `meta.errorCode` = `auth.refresh.superseded` (v1.49.0) answers the loser of two concurrent refreshes with the same token: the other request rotated it, nothing is revoked, and its pair is live. Not terminal: read the credentials the winning request stored and continue. Do not present this refresh token again, since that is a replay and revokes the device family. Before v1.49.0 this case answered 401 `auth.refresh.reuse`.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: refreshRequest } },
@@ -1587,6 +1588,11 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        "409": {
+          description:
+            "`meta.errorCode` = `auth.refresh.superseded`: a concurrent refresh with the same token won. Nothing is revoked; read the newest stored credentials and do not retry with this token.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },
@@ -1794,6 +1800,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "End the calling session, and the calling token with it",
       description:
         "Clears the browser session cookie. When the request ALSO carries `Authorization: Bearer hlk_…` it revokes that access token and the refresh sibling paired with it, so a native client signs out in one call rather than through the refresh endpoint's `revoke: true` arm.\n\n" +
+        "Since v1.49.0 a native sign-out also ends the device's pushes: once the device (the `X-Device-Id` it signed in with) has no live sign-in of the account left, its APNs token, push key, relay consent and binding (unbound at the relay) and Live Activity state are dropped, so none of the account's reminders or confirmations reach it. The device row and its delivery choice stay; the next sign-in's `POST /api/devices` registers the push credentials again. The same holds for every other way a sign-in ends: the refresh endpoint's `revoke: true`, reuse detection, sign out everywhere, a password change, and a sign-in that expired (swept nightly).\n\n" +
         "Takes no body and needs no credential: an unauthenticated call answers 200 exactly like an authenticated one. Whether the Bearer revocation actually found a row is recorded server-side and is deliberately absent from the response — a caller that could read it would learn whether a token it presented was live.",
       responses: {
         "200": {

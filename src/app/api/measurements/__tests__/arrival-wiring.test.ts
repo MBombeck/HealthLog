@@ -39,16 +39,21 @@ vi.mock("@/lib/idempotency", () => ({
 }));
 
 vi.mock("@/lib/db", () => {
-  const measurement = { create: vi.fn() };
-  return {
-    prisma: {
-      measurement,
-      auditLog: { create: vi.fn() },
-      $transaction: vi.fn(async (operations: Array<Promise<unknown>>) =>
-        Promise.all(operations),
-      ),
-    },
+  // `findFirst` answers "no tombstone at this key", so every hand entry is a
+  // fresh insert, the case this file pins.
+  const measurement = {
+    create: vi.fn(),
+    findFirst: vi.fn(async () => null),
   };
+  const prisma: Record<string, unknown> = {
+    measurement,
+    auditLog: { create: vi.fn() },
+  };
+  // The array arm runs as an interactive transaction over the same client.
+  prisma.$transaction = vi.fn(
+    async (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+  );
+  return { prisma };
 });
 
 vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));

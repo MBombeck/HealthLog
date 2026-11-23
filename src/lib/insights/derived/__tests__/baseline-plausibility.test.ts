@@ -10,7 +10,9 @@
  * currently 111,287,531.01 instead of the usual 36,016.75".
  *
  * The numbers below are shaped like the real thing: a resting-pulse series in
- * the 60s and 70s, one impossible sample dropped into it.
+ * the 60s and 70s, one impossible sample dropped into it. The deviation
+ * line's latest-day mean folds in Postgres; its gate is pinned against a real
+ * database in `tests/integration/dense-day-readers.test.ts`.
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -33,10 +35,7 @@ vi.mock("@/lib/measurements/day-aggregates", async () => {
 });
 
 import { buildBaselineBand, readDayMeanSeries } from "../baseline";
-import { latestDayMeanFromRows } from "../coincident-deviation";
 import { isPlausibleMetricValue } from "@/lib/measurements/value-domain";
-
-const TZ = "Europe/Berlin";
 
 /** A real-shaped resting-pulse day: four readings in the 60s/70s. */
 function pulseDay(day: string, values: number[]) {
@@ -129,26 +128,5 @@ describe("per-day means behind the personal band", () => {
     expect(band!.center).toBeLessThan(120);
     expect(band!.low).toBeGreaterThan(20);
     expect(band!.high).toBeLessThan(300);
-  });
-});
-
-describe("the latest-day mean the deviation line reads", () => {
-  it("means only the real readings of the most recent day", () => {
-    const rows = [
-      ...pulseDay("2026-08-01", [66, 70, 68]),
-      ...pulseDay("2026-08-02", [72, 111287531.01, 74]),
-    ];
-
-    const latest = latestDayMeanFromRows(rows, "PULSE", TZ);
-
-    expect(latest).not.toBeNull();
-    expect(latest!.day).toBe("2026-08-02");
-    expect(latest!.value).toBeCloseTo(73, 6);
-  });
-
-  it("reports nothing when the latest day holds no plausible reading", () => {
-    const rows = pulseDay("2026-08-02", [36016.75, 111287531.01]);
-
-    expect(latestDayMeanFromRows(rows, "PULSE", TZ)).toBeNull();
   });
 });

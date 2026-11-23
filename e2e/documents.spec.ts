@@ -62,6 +62,39 @@ function selectBox(page: Page, title: string) {
   return page.getByRole("checkbox", { name: `Select ${title}` }).first();
 }
 
+/**
+ * A success toast, addressed by its type rather than its copy. Count strings
+ * are ICU plurals whose wording belongs to the bundle, and a literal here has
+ * gone stale more than once.
+ */
+function successToast(page: Page) {
+  return page.locator('[data-sonner-toast][data-type="success"]').first();
+}
+
+/**
+ * Counts the bulk POSTs the page sends and the per-id results that came back
+ * ok. Poll them once the outcome is on screen: the toast shows after every
+ * chunk has answered, and the body reads here settle shortly after.
+ */
+function collectBulkResults(page: Page): { posts: number; ok: number } {
+  const tally = { posts: 0, ok: 0 };
+  page.on("response", async (response) => {
+    const request = response.request();
+    if (
+      request.method() !== "POST" ||
+      new URL(response.url()).pathname !== "/api/documents/inbound/bulk"
+    ) {
+      return;
+    }
+    tally.posts += 1;
+    const body = (await response.json()) as {
+      data: { results: { ok: boolean }[] };
+    };
+    tally.ok += body.data.results.filter((r) => r.ok).length;
+  });
+  return tally;
+}
+
 /** Upload `bytes` through the picker input and return when queued. */
 async function uploadViaPicker(
   page: Page,
@@ -619,11 +652,15 @@ test.describe("document vault", () => {
     await expect(bar).toBeVisible();
     await expect(bar.getByText("50 selected")).toBeVisible();
 
+    const bulkResults = collectBulkResults(page);
     await bar.getByRole("button", { name: "Change type" }).click();
     await page.getByRole("menuitem", { name: "Referral" }).click();
-    await expect(page.getByText("50 document(s) updated")).toBeVisible({
-      timeout: 15_000,
-    });
+    // The outcome is read from the toast's type and the wire, not its copy:
+    // the count string is an ICU plural and its wording is the bundle's.
+    await expect(successToast(page)).toBeVisible({ timeout: 15_000 });
+    await expect.poll(() => bulkResults.posts).toBe(1);
+    await expect.poll(() => bulkResults.ok).toBe(50);
+    await expect(bar).toBeHidden();
 
     // Server state: all 50 now carry the new kind.
     const res = await page.request.get(
@@ -686,23 +723,15 @@ test.describe("document vault", () => {
     await selectBox(page, "bulkchunk 001").click({ modifiers: ["Shift"] });
     await expect(page.getByText("101 selected")).toBeVisible();
 
-    let bulkPosts = 0;
-    page.on("request", (req) => {
-      if (
-        req.method() === "POST" &&
-        req.url().includes("/api/documents/inbound/bulk")
-      ) {
-        bulkPosts += 1;
-      }
-    });
-
+    const bulkResults = collectBulkResults(page);
     const bar = page.locator('[data-slot="document-bulk-bar"]');
     await bar.getByRole("button", { name: "Change type" }).click();
     await page.getByRole("menuitem", { name: "Vaccination" }).click();
-    await expect(page.getByText("101 document(s) updated")).toBeVisible({
-      timeout: 15_000,
-    });
-    expect(bulkPosts).toBe(2);
+    await expect(successToast(page)).toBeVisible({ timeout: 15_000 });
+    // 100 + 1: the client chunks at the route's cap, and every id lands.
+    await expect.poll(() => bulkResults.posts).toBe(2);
+    await expect.poll(() => bulkResults.ok).toBe(101);
+    await expect(bar).toBeHidden();
   });
 
   // ── Keyboard-only doctor flow ──────────────────────────────────────────

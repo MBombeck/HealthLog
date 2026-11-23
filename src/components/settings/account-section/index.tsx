@@ -3,7 +3,7 @@
 import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Languages, Loader2, Save, User } from "lucide-react";
+import { Languages, Loader2, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -16,7 +16,7 @@ import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { HeightFieldControl } from "@/components/profile/height-field-control";
-import { useAuth } from "@/hooks/use-auth";
+import { isFullAccount, useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
@@ -28,6 +28,7 @@ import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { ThemeSegmented } from "@/components/layout/theme-choice";
 import { TimezoneSelect } from "@/components/settings/timezone-select";
 import { TimeFormatSelect } from "@/components/settings/time-format-select";
 import { DateFormatSelect } from "@/components/settings/date-format-select";
@@ -139,11 +140,11 @@ export function AccountSection() {
   }, [isLoading, isAuthenticated, router]);
 
   // Hydrate the form draft once the auth payload arrives. Using the
-  // React-recommended "store-the-prop-id alongside the state" pattern so the
-  // sync-from-server happens during render (not in a setState-in-effect),
-  // satisfying the strict `react-hooks/set-state-in-effect` rule.
+  // React-recommended "store-the-prop-id alongside the state" pattern (no
+  // setState-in-effect); never from the server-rendered seed, whose withheld
+  // identity fields would seed a draft that saves them as cleared.
   const [seededUserId, setSeededUserId] = useState<string | null>(null);
-  if (user && user.id !== seededUserId) {
+  if (isFullAccount(user) && user.id !== seededUserId) {
     const seed = {
       email: user.email ?? "",
       displayName: user.displayName ?? "",
@@ -359,9 +360,9 @@ export function AccountSection() {
     }
   }
 
-  if (!mounted || isLoading) {
-    // §13 — a loading section paints its card + header, not a bare centered
-    // spinner (reference: admin/coach-feedback-section).
+  if (!mounted || isLoading || user?.accountSeed) {
+    // §13 — a loading section (the seeded account too) paints its card +
+    // header, not a bare centered spinner (ref.: admin/coach-feedback-section).
     return (
       <SettingsCard>
         <SettingsCardHeader
@@ -665,16 +666,10 @@ export function AccountSection() {
           )}
 
           <SettingsCardActions>
-            <Button
-              type="submit"
-              className="min-h-11 sm:min-h-9"
-              disabled={saving}
-            >
+            <Button size="sm" type="submit" disabled={saving}>
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
+              ) : null}
               {t("common.save")}
             </Button>
           </SettingsCardActions>
@@ -770,6 +765,16 @@ export function DisplayPreferencesCard({
         <TimeFormatSelect isAuthenticated={isAuthenticated} />
         <DateFormatSelect isAuthenticated={isAuthenticated} />
         <TimezoneSelect isAuthenticated={isAuthenticated} />
+      </div>
+      {/* The theme, beside the other display choices. The same control and
+          the same store as the avatar menu (`theme-choice.tsx`); it is kept
+          on this device, like the menu's. */}
+      <div id="theme" className="scroll-mt-28 space-y-2">
+        <p className="text-sm leading-none font-medium">{t("nav.theme")}</p>
+        <ThemeSegmented />
+        <p className="text-muted-foreground text-xs">
+          {t("settings.displayCard.themeDescription")}
+        </p>
       </div>
     </SettingsCard>
   );

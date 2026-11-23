@@ -408,10 +408,12 @@ describe("the mood prognosis never states a cause", () => {
         const copy = strings.get(key);
         expect(copy, `${locale}/${key} is missing`).toBeTypeOf("string");
         for (const placeholder of placeholders) {
+          // `{entries}` or a plural block on it (`{entries, plural, …}`).
+          const name = placeholder.slice(1, -1);
           expect(
             copy,
             `${locale}/${key} quotes a value without ${placeholder}; a forecast without the days behind it cannot be weighed by the reader`,
-          ).toContain(placeholder);
+          ).toMatch(new RegExp(`\\{${name}(\\}|\\s*,\\s*plural\\s*,)`));
         }
       }
     });

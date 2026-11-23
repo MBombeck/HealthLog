@@ -102,9 +102,10 @@ to one task.
   chain's id, never its name), `capability` and `provider`, so the app's
   own log answers which chain and provider served a call.
 - **Guardrails apply per chain.** Entries resolve under the same
-  credential policy (a delegate gets nothing, a guardian only the
-  operator's key, so a managed profile's local-only binding refuses
-  rather than reach the operator's key), consent is decided from the
+  credential policy (a delegate gets nothing; a managed profile gets the
+  source its guardian chose: the operator's key, nothing, or one chain the
+  guardian lends from their own account, see
+  [Account sharing](../self-hosting/account-sharing.md)), consent is decided from the
   attached chain's entries under the capability's own rule, and the
   egress re-check at the wire runs as before.
 - **Deleting a chain** returns its capabilities to Default; if it was the
@@ -281,6 +282,38 @@ once; Azure refuses it, and the request goes out again with
 deployment until the container restarts. Any other gateway that
 refuses `max_tokens` the same way is handled the same way.
 
+**Google Gemini.** Google serves Gemini on the same wire, so it goes
+in as a gateway; there is no separate Gemini provider.
+
+- Base URL: `https://generativelanguage.googleapis.com/v1beta/openai`
+  (Google's compatibility layer,
+  <https://ai.google.dev/gemini-api/docs/openai>).
+- API key: create one in Google AI Studio (<https://aistudio.google.com/apikey>)
+  and paste it into the gateway's key field.
+- Model: the bare model name, such as `gemini-3.8-flash` or
+  `gemini-flash-latest`. The endpoint's model listing spells them
+  `models/gemini-3.8-flash`; both spellings name the same model, and
+  the provider health check treats them alike.
+- What the endpoint accepts: chat, `max_tokens` and `temperature`,
+  JSON mode (`response_format`), `reasoning_effort` (the Reasoning
+  setting on the gateway entry), tool calls for the Coach, and images
+  (lab photos) as `image_url` data URLs. It refuses the `seed` field
+  that the briefing, status and summary calls send; HealthLog asks
+  once more without it and remembers that for the endpoint until the
+  container restarts.
+- Data use: under Google's Gemini API terms
+  (<https://ai.google.dev/gemini-api/terms>), prompts and replies on a
+  paid (billing-enabled) project are not used to improve Google's
+  products. On the free tier they may be, and may be read by human
+  reviewers, except for users in the EEA, Switzerland and the UK, where
+  the paid-tier rules apply. For health data a key from a project with
+  billing turned on is the safer choice.
+- Cost: Google bills per input and output token, with thinking tokens
+  counted as output; see <https://ai.google.dev/gemini-api/docs/pricing>.
+  A higher Reasoning setting spends more output tokens per call. A
+  prepaid project that runs out of credit
+  answers HTTP 402, which the provider health card shows as such.
+
 **When the gateway refuses.** OpenRouter answers a refused generation
 with HTTP 200 and the reason inside the body, so every refusal used to
 reach the provider health card as an empty reply with no status. It now
@@ -302,6 +335,48 @@ custom base URL must additionally be allowed via
 `ADMIN_AI_BASE_URL_ALLOWLIST` in the container environment. Neither
 the user-level Local provider nor the gateway provider reads that
 variable — both are governed by the SSRF guard above.
+
+## Coach budget for self-hosted models
+
+The Coach's limits are sized for a hosted model with a large context window:
+a data snapshot of 14,000 characters in the prompt, and 165,000 tokens, 16
+tool rounds and 200 seconds for one answer. A small local model cannot read a
+snapshot that large; a 64k-context model on its own GPU can read far more.
+Settings > AI > **Coach budget for self-hosted models** sets each of the four
+values separately for the Local provider and for the OpenAI-compatible
+gateway. An empty field keeps the built-in value.
+
+| Field                      | Built-in | Range             | Applies to                                   |
+| -------------------------- | -------- | ----------------- | -------------------------------------------- |
+| Snapshot size (characters) | 14,000   | 4,000 to 120,000  | the snapshot path (a provider without tools) |
+| Tokens per answer          | 165,000  | 20,000 to 600,000 | the tool path                                |
+| Tool rounds per answer     | 16       | 2 to 24           | the tool path                                |
+| Seconds per answer         | 200      | 30 to 600         | the tool path                                |
+
+The Local provider has no tool calling, so its Coach reads the snapshot and
+only the snapshot size matters there. A gateway with tool calling reads its
+data through tools, round by round, and runs under the three per-answer
+limits. The response timeout above still bounds each single model call.
+
+Which budget a turn runs under:
+
+- The first provider of the chain sets the budget.
+- A smaller snapshot size on a later provider of the chain wins, because a
+  fallback has to fit the prompt it is handed.
+- A chain with the operator's shared provider as a fallback never gets a
+  snapshot larger than the built-in one, and a turn the operator's provider
+  serves first keeps the operator limits whatever is set. A person cannot
+  raise what somebody else pays for.
+
+The settings write refuses a value outside its range, and every turn clamps
+the stored value again, so a restored backup or a hand-edited row cannot push
+a turn past the ceiling. A turn that runs on a custom budget is visible in the
+logs as `insights.coach.budget.custom`, with the four values it used. The
+daily token budget still applies on top.
+
+Rough starting points: a 7-8B model with an 8k context window does well with
+6,000 to 8,000 snapshot characters; a 32k context takes the built-in 14,000
+comfortably; a 64k context can take 40,000 to 60,000.
 
 ## ChatGPT OAuth (Codex)
 

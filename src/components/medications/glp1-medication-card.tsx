@@ -11,8 +11,12 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { MedicationCardMenu } from "@/components/medications/medication-card-menu";
 import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
+import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
+import { useCardDoseSnooze } from "@/components/medications/card-parts/use-dose-snooze";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
+import { lastTakenLabel } from "@/components/medications/card-parts/last-taken-label";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
 import {
   useTranslations,
   useFormatters,
@@ -24,7 +28,7 @@ import {
   queryKeys,
 } from "@/lib/query-keys";
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
-import { formatDateTime, formatTime } from "@/lib/format";
+import { formatTime } from "@/lib/format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
 import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
@@ -32,8 +36,12 @@ import { getDayOfWeekInTz } from "@/lib/tz/local-day";
 import { type InjectionSiteKey } from "@/lib/medications/injection-sites";
 import { LogInjectionSiteDialog } from "@/components/medications/log-injection-site-dialog";
 import { useGlobalExcludedInjectionSites } from "@/lib/medications/use-injection-site-prefs";
-import { reduceCurrentWindowStatus } from "@/lib/medications/window-status";
-import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
+import {
+  liveDoseState,
+  cardTakeSlot,
+  cardWindowPill,
+} from "@/lib/medications/dose-state/pill";
+import { shownAdherence } from "@/lib/medications/shown-adherence";
 import {
   estimateDailyDoseCount,
   estimateRunwayDays,
@@ -41,7 +49,11 @@ import {
 } from "@/lib/medications/supply-runway";
 import { useAuth } from "@/hooks/use-auth";
 import { useMedicationComplianceSummary } from "@/lib/queries/use-medication-compliance-summary";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import {
+  DEFAULT_TIMEZONE,
+  daysBetweenDateKeys,
+  userDayKey,
+} from "@/lib/tz/format";
 
 /**
  * v1.4.25 — GLP-1 medication card variant.
@@ -68,11 +80,7 @@ interface ScheduleLite {
   label: string | null;
   dose: string | null;
   daysOfWeek: string | null;
-  /**
-   * v1.16.1 — first-class dose times + explicit per-dose bands; the
-   * window-status helper derives its bands from these (canonical) and
-   * only falls back to the legacy window when they are absent.
-   */
+  /** First-class dose times and explicit per-dose bands (schedule editor). */
   timesOfDay?: string[];
   doseWindows?: { timeOfDay: string; start: string; end: string }[] | null;
   /** Cadence fields the supply-runway estimate reads (v1.16.11). */
@@ -117,6 +125,10 @@ export interface Glp1Medication {
   todayEventCount?: number;
   /** #1371 — the person's own note, shown above the dose actions. */
   note?: string | null;
+  /** #1430 — the saved leaflet link; null = none. */
+  leafletUrl?: string | null;
+  /** #1430 — the caller's registry search, built by the list read. */
+  leafletSearch?: LeafletSearch | null;
   /**
    * v1.8.4 — server-computed next due instant from `GET /api/medications`
    * (the canonical recurrence engine anchored on the last intake). The card
@@ -187,13 +199,6 @@ interface Glp1MedicationCardProps {
   highlighted?: boolean;
 }
 
-function diffDays(target: Date, from: Date): number {
-  const ms =
-    Date.UTC(target.getFullYear(), target.getMonth(), target.getDate()) -
-    Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
-  return Math.round(ms / (24 * 60 * 60 * 1000));
-}
-
 /**
  * v1.8.4 — the next injection instant now comes from the server's
  * `nextDueAt` (the canonical recurrence engine, anchored on the last
@@ -205,11 +210,16 @@ function diffDays(target: Date, from: Date): number {
 function nextInjectionFromServer(
   nextDueAt: string | null | undefined,
   now: Date,
+  tz: string,
 ): { date: Date; daysAway: number } | null {
   if (!nextDueAt) return null;
   const date = new Date(nextDueAt);
   if (Number.isNaN(date.getTime())) return null;
-  return { date, daysAway: Math.max(0, diffDays(date, now)) };
+  const daysAway = daysBetweenDateKeys(
+    userDayKey(now, tz),
+    userDayKey(date, tz),
+  );
+  return { date, daysAway: Math.max(0, daysAway) };
 }
 
 export function Glp1MedicationCard({
@@ -239,10 +249,9 @@ export function Glp1MedicationCard({
     medication.deliveryForm === "INJECTION" &&
     medication.trackInjectionSites === true;
 
-  // v1.12.2 — take / skip + failure-toast (C1) + Undo (C2) come from the
-  // SAME shared hook the generic card uses, closing the robustness gap
-  // where a failed GLP-1 POST was swallowed silently and the success toast
-  // carried no Undo. The card keeps its post-success injection-site prompt.
+  // Take / skip / Undo and the snooze come from the hooks the generic card
+  // uses; the card keeps its post-success injection-site prompt.
+  const snooze = useCardDoseSnooze(medication);
   const { intakeLoading, recordIntake } = useMedicationIntake({
     medication,
     onRecorded: (eventId, skipped) => {
@@ -263,16 +272,12 @@ export function Glp1MedicationCard({
     refetch: refetchCompliance,
   } = useMedicationComplianceSummary(medication.id);
 
-  // v1.4.37 — same reminder-thresholds source as the generic
-  // medication card so the take-now / overdue / very-overdue pill
-  // tiers identically on both surfaces.
+  // The generic card's reminder thresholds, so the pill tiers identically.
   const { data: thresholds } = useQuery({
     queryKey: queryKeys.settingsReminderThresholds(),
     queryFn: async () => {
       try {
         return await apiGet<{
-          lateMinutes: number;
-          missedMinutes: number;
           lowStockRunwayDays: number | null;
           reorderLeadDays?: number;
         }>("/api/settings/reminder-thresholds");
@@ -332,64 +337,26 @@ export function Glp1MedicationCard({
 
   const schedule = medication.schedules[0] ?? null;
   const now = new Date();
-  const next = nextInjectionFromServer(medication.nextDueAt, now);
+  const next = nextInjectionFromServer(medication.nextDueAt, now, userTz);
   // v1.8.6 — the two compliance windows scale with the dosing cadence. When
   // the server supplies `complianceDisplay` the card reads its cadence-scaled
   // rows; otherwise it falls back to the static 7-/30-day fields.
   const complianceNotApplicable = compliance?.applicable === false;
   const display = compliance?.complianceDisplay ?? undefined;
-  const shortDays = display?.shortDays ?? 7;
-  const longDays = display?.longDays ?? 30;
-  const rate7 = display?.short.rate ?? compliance?.compliance7?.rate ?? 0;
-  const rate30 = display?.long.rate ?? compliance?.compliance30?.rate ?? 0;
-  const streak = display?.short.streak ?? compliance?.compliance7?.streak ?? 0;
+  // A window with no dose to score shows "no doses yet", never a rate.
+  const { shortDays, longDays, rate7, rate30, streak } =
+    shownAdherence(compliance);
   // v1.15.9 — the open dose's server-derived status drives the green
   // take-window highlight + the overdue / heavily-overdue top line, shared
-  // verbatim with the generic card. Defaults to "upcoming" (calm).
-  const doseStatus = display?.currentDose.status ?? "upcoming";
+  // verbatim with the generic card. No state (calm) without a dose.
+  const currentDose = display?.currentDose;
+  const doseState = liveDoseState(currentDose, now);
+  const pill = cardWindowPill(currentDose, now, userTz);
 
-  // v1.4.37 — symmetric take-now / overdue pill with the generic
-  // card. Sort schedules by `windowStart` so the most-actionable
-  // earliest window wins when multiple GLP-1 windows overlap (rare
-  // today; the parity is what matters).
-  const sortedSchedules = [...medication.schedules].sort(
-    (a, b) =>
-      a.windowStart.localeCompare(b.windowStart) ||
-      a.windowEnd.localeCompare(b.windowEnd),
-  );
-  const lateMinutes = thresholds?.lateMinutes ?? 120;
-  const missedMinutes = thresholds?.missedMinutes ?? 240;
-  const currentWindowStatus = reduceCurrentWindowStatus({
-    schedules: sortedSchedules,
-    now,
-    lateMinutes,
-    missedMinutes,
-    active: medication.active,
-    lastTakenAt: medication.lastTakenAt,
-    todayEventCount: medication.todayEventCount ?? 0,
-    tz: userTz,
-    // v1.16.6 — gate the pill on the server display-due so a rolling
-    // cadence whose next injection is days away can never paint an overdue
-    // pill today. `undefined` (older payloads / fixtures) keeps legacy
-    // behaviour; `next` is already the parsed-and-validated `nextDueAt`.
-    nextDue:
-      medication.nextDueAt === undefined
-        ? undefined
-        : next
-          ? { at: next.date, overdue: medication.nextDueOverdue === true }
-          : null,
-  });
-
-  // v1.12.3 — slot instant of the injection this card is showing (the
-  // open/overdue window, else the server's next-due). Threaded onto the
-  // take / skip POST so the server records THIS dose deterministically
-  // rather than snapping "now" to the nearest slot.
-  const displayedSlot = resolveDisplayedSlotInstant({
-    currentWindowStatus,
-    nextDueAt: medication.nextDueAt,
-    now,
-    timeZone: userTz,
-  });
+  // The slot of the injection this card shows (the resolved open dose
+  // while due, overdue or missed, else the server's next-due), threaded onto
+  // the take / skip POST so the server records THIS dose.
+  const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
 
   // v1.16.11 / v1.17.0 — low-stock card context, identical to the generic
   // card: runway days from the list payload's dose-derived stock, surfaced
@@ -439,17 +406,6 @@ export function Glp1MedicationCard({
   // else (the picker, the detail history) — only the card line drops it.
   const recentInjections = details?.recentIntakes ?? [];
 
-  function lastInjectionLabel(): string | null {
-    if (!medication.lastTakenAt) return null;
-    const d = new Date(medication.lastTakenAt);
-    const days = diffDays(d, now);
-    if (days === 0)
-      return `${t("medications.today")}, ${formatTime(medication.lastTakenAt)}`;
-    if (days === -1)
-      return `${t("medications.yesterday")}, ${formatTime(medication.lastTakenAt)}`;
-    return formatDateTime(medication.lastTakenAt);
-  }
-
   function nextInjectionLabel(): string | null {
     if (!next) return null;
     if (next.daysAway === 0) return t("medications.glp1NextInjectionToday");
@@ -475,14 +431,13 @@ export function Glp1MedicationCard({
     />
   );
 
-  // The four former header icon-buttons (open / edit / history /
-  // advanced) collapse into a SINGLE overflow menu so the GLP-1 card
-  // stays symmetric with the generic medication card. The card header
-  // itself links to the detail page (the former chevron target).
+  // The header icon-buttons collapse into ONE overflow menu, symmetric with
+  // the generic medication card; the card header links to the detail page.
   const headerActions = (
     <MedicationCardMenu
       onEdit={() => onEdit(medication)}
       onOpenHistory={() => onOpenHistory(medication)}
+      leaflet={medication}
     />
   );
 
@@ -496,23 +451,21 @@ export function Glp1MedicationCard({
   // the liked relative-day phrasing ("Samstag 13.7. (in 7 Tagen)") — while
   // the structure / labels live in the shared body. The purple dose accent
   // is byte-equivalent with the generic card's.
-  // v1.16.4 — an open overdue slot stays on the card as a calm amber
-  // "overdue — still takeable" line until its catch-up band closes
-  // (auto-miss); only then does the line advance to the next future slot.
-  // A same-day overdue anchor reads as a clock time, an older one (the
-  // weekly catch-up tail spans days) as its weekday + date.
+  // An open overdue slot reads "Overdue" + its time until the catch-up band
+  // closes; a same-day anchor shows the clock, an older one weekday + date.
   const overdueLabel =
     medication.nextDueOverdue && next
-      ? diffDays(next.date, now) === 0
+      ? userDayKey(next.date, userTz) === userDayKey(now, userTz)
         ? formatTime(next.date.toISOString())
         : `${weekdayLabel(getDayOfWeekInTz(next.date, displayTz))}, ${fmt.dateShortSmart(next.date)}`
       : null;
 
   const nextLine =
-    next && currentWindowStatus.status !== "in_window" ? (
+    next && pill?.status !== "in_window" ? (
       overdueLabel ? (
-        <span className="text-warning font-medium">
-          {t("medications.nextIntakeOverdue", { time: overdueLabel })}
+        <span className="inline-flex flex-wrap items-center gap-x-1 text-sm">
+          <DoseStateLabel state="overdue" />
+          <span className="text-muted-foreground">— {overdueLabel}</span>
         </span>
       ) : (
         <>
@@ -540,7 +493,11 @@ export function Glp1MedicationCard({
   // v1.15.9 — the last-injection line drops the injection-site display; it
   // now reads exactly like the generic card's last line (relative-day only).
   const lastLine = medication.lastTakenAt
-    ? t("medications.glp1LastInjection", { label: lastInjectionLabel() ?? "—" })
+    ? t("medications.glp1LastInjection", {
+        label: medication.lastTakenAt
+          ? lastTakenLabel(medication.lastTakenAt, userTz, t)
+          : "—",
+      })
     : null;
 
   return (
@@ -556,19 +513,8 @@ export function Glp1MedicationCard({
       linkLabel={t("medications.openDetailPage")}
       stateBadges={stateBadges}
       headerActions={headerActions}
-      windowStatus={
-        currentWindowStatus.status
-          ? {
-              status: currentWindowStatus.status,
-              // v1.16.1 — the pill shows the MATCHED dose band, not the
-              // legacy schedule window (which may be stale / degenerate).
-              windowStart: currentWindowStatus.window!.start,
-              windowEnd: currentWindowStatus.window!.end,
-              takenEarlyDaysAgo: currentWindowStatus.takenEarlyDaysAgo,
-            }
-          : null
-      }
-      doseStatus={doseStatus}
+      windowStatus={pill}
+      doseState={doseState}
       nextLine={nextLine}
       lastLine={lastLine}
       compliance={
@@ -586,7 +532,9 @@ export function Glp1MedicationCard({
       intakeActionable={medication.intakeActionable !== false}
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
-      onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      onRecordIntake={(skipped) => recordIntake(skipped, takeSlot)}
+      takeSlot={takeSlot}
+      snooze={snooze}
     >
       {/* v1.8.5 — post-dose injection-site capture (optional, skippable). */}
       {tracksInjection && (

@@ -67,6 +67,10 @@ export const jsonImportMeasurementSchema = z
     // Which device wrote the reading (watch, phone). The per-night sleep
     // collapse picks between writers by it.
     deviceType: z.string().min(1).max(32).optional(),
+    // The IANA zone the reading was taken in, as the batch route stores it.
+    // A name the server cannot read is stored as null (the profile zone),
+    // never a refusal of the file.
+    timeZone: z.string().min(1).max(64).optional(),
     notes: z.string().optional(),
     // Optional source-stable id. When present, the import upserts on
     // `(userId, type, source=IMPORT, externalId)` so a re-import of the same

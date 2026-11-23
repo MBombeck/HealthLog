@@ -191,6 +191,24 @@ const doseValueSchema = z.number().finite().min(0).max(MAX_DOSE_MG);
 const doseUnitSchema = z.string().min(1).max(10);
 const doseNoteSchema = z.string().max(MAX_NOTE_CHARS).nullable();
 
+/** #169 — the client's own id for a titration step. */
+const glp1DoseChangeClientIdSchema = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[A-Za-z0-9._:-]+$/);
+
+/**
+ * Removing a titration step by the client's own id
+ * (`DELETE /api/medications/[id]/glp1/dose-changes?clientId=`), for a step a
+ * device removed before its upload answered.
+ */
+export const glp1DoseChangeDeleteQuerySchema = z.object({
+  clientId: glp1DoseChangeClientIdSchema.describe(
+    "The client id the step was (or may have been) uploaded under.",
+  ),
+});
+
 export const glp1DoseChangePostSchema = z.object({
   effectiveFrom: effectiveFromSchema,
   doseValue: doseValueSchema,
@@ -201,11 +219,7 @@ export const glp1DoseChangePostSchema = z.object({
    * POST with the same id answers the stored row (200) instead of creating
    * one, so a step two devices hold locally is uploaded once. Never edited.
    */
-  clientId: z
-    .string()
-    .min(1)
-    .max(128)
-    .regex(/^[A-Za-z0-9._:-]+$/)
+  clientId: glp1DoseChangeClientIdSchema
     .optional()
     .describe(
       "Optional client-side id of the step, 1–128 characters of `A–Z a–z 0–9 . _ : -`. Unique per medication: a second create with the same id returns the stored step with 200 and changes nothing, whatever else the body says. Fixed at create; a correction cannot change it.",

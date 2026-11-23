@@ -12,7 +12,8 @@ name: Build & Publish Docker Image
 # the metadata-action (`type=raw,value=latest,...`) now keys on
 # the v* tag presence so each release still refreshes the `latest`
 # alias in the same run. PR + workflow_dispatch triggers stay so
-# the image still builds on PR validation and manual reruns.
+# the image still builds on PR validation and manual reruns. Pushes to
+# `main` build the amd64 `:edge` image in edge-image.yml instead.
 on:
   push:
     tags: ["v*"]
@@ -44,6 +45,8 @@ jobs:
     permissions:
       actions: read
       contents: read
+    outputs:
+      off_schedule: ${{ steps.calendar.outputs.off_schedule }}
     steps:
       - name: Checkout full history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -88,6 +91,44 @@ jobs:
 
           echo "Release policy passed for $GITHUB_REF_NAME at $GITHUB_SHA."
 
+      # The release calendar (docs/contributing/release-policy.md). The
+      # push time comes from the event payload, so a re-run days later
+      # judges the tag by when it was pushed, not by when it was re-run.
+      # A tag outside the calendar needs an `Out of schedule:` line in its
+      # changelog section and sets off_schedule=true, which holds the
+      # build for the maintainer's approval below.
+      - name: Check release calendar
+        id: calendar
+        if: github.event_name != 'pull_request'
+        env:
+          TAG: ${{ github.ref_name }}
+          PUSHED_AT: ${{ github.event.repository.pushed_at }}
+        run: |
+          now_args=()
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$PUSHED_AT" ]; then
+            now_args=(--now "$PUSHED_AT")
+          fi
+          node scripts/release-policy.mjs check "$TAG" "${now_args[@]}" --github-output "$GITHUB_OUTPUT"
+
+  # An out-of-schedule tag (security, data loss, broken install) waits
+  # here until the maintainer approves the `off-schedule-release`
+  # environment, which lists him as the required reviewer. A scheduled
+  # tag skips this job and builds without a click.
+  off-schedule-approval:
+    name: Approve out-of-schedule release
+    needs: [release-policy]
+    if: needs.release-policy.outputs.off_schedule == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: off-schedule-release
+    permissions:
+      contents: read
+    steps:
+      - name: Record approval
+        env:
+          TAG: ${{ github.ref_name }}
+        run: echo "::notice::Out-of-schedule release $TAG approved."
+
   # ── Stage 1 ────────────────────────────────────────────────────────
   # Build each architecture on its own native GitHub-hosted runner so
   # Next.js's static-page workers run on real silicon instead of QEMU
@@ -105,7 +146,14 @@ jobs:
   # manifest in a third step, so consumers see a single tag that
   # auto-selects on `docker pull` per local platform.
   build:
-    needs: [release-policy]
+    needs: [release-policy, off-schedule-approval]
+    # Runs when the policy passed and the approval either passed or was not
+    # needed. A refused or pending approval keeps every build job waiting.
+    if: >-
+      !cancelled() &&
+      needs.release-policy.result == 'success' &&
+      (needs.off-schedule-approval.result == 'success' ||
+       needs.off-schedule-approval.result == 'skipped')
     name: Build ${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
     # 25 min wall clock — native amd64 build finished inside 12 min
@@ -445,6 +493,176 @@ jobs:
       image_digest: ${{ needs.merge.outputs.image_digest }}
       build_sha: ${{ needs.merge.outputs.build_sha }}
     secrets: inherit
+
+  # ── Release assets ─────────────────────────────────────────────────
+  # Every release tag attaches three files to its GitHub release, so the
+  # release can be verified without trusting the registry alone:
+  #
+  #   healthlog-<tag>-image.txt             the image refs with the index
+  #                                         digest and the per-platform digests
+  #   healthlog-<tag>-image.sigstore.json   keyless cosign bundle for that file
+  #   healthlog-<tag>.intoto.jsonl          SLSA v1 provenance for that file
+  #
+  # Three jobs, so each holds only what it needs: the manifest job signs
+  # (id-token) but cannot write to the repository, the SLSA generator signs
+  # under its own identity, and the upload job writes the release but holds
+  # no signing token. Tags only: `:edge` is built by edge-image.yml and pull
+  # requests never reach `merge`.
+  release-manifest:
+    name: Sign release manifest
+    needs: [merge, verify-published-image]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    outputs:
+      hashes: ${{ steps.hashes.outputs.hashes }}
+    env:
+      IMAGE_REF: ${{ needs.merge.outputs.image_ref }}
+      IMAGE_TAG: ${{ needs.merge.outputs.image_tag }}
+      IMAGE_DIGEST: ${{ needs.merge.outputs.image_digest }}
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The index the merge job signed, plus its two platform manifests.
+      # BuildKit's attestation manifests (platform unknown/unknown) are
+      # left out; anything other than exactly amd64 + arm64 fails.
+      - name: Write image manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::Index digest '$IMAGE_DIGEST' is not a sha256 digest." >&2
+            exit 1
+          fi
+          raw="$(docker buildx imagetools inspect --raw "${IMAGE_REF}@${IMAGE_DIGEST}")"
+          platforms="$(jq -r '.manifests[] | select(.platform.os != "unknown") | "\(.platform.os)/\(.platform.architecture) \(.digest)"' <<< "$raw" | sort)"
+          if [ "$(cut -d' ' -f1 <<< "$platforms" | paste -sd' ' -)" != "linux/amd64 linux/arm64" ]; then
+            echo "::error::Index ${IMAGE_DIGEST} lists platforms '$(cut -d' ' -f1 <<< "$platforms" | paste -sd' ' -)', expected linux/amd64 and linux/arm64." >&2
+            exit 1
+          fi
+          manifest="healthlog-${IMAGE_TAG}-image.txt"
+          {
+            echo "# HealthLog ${IMAGE_TAG} container image, built from commit ${GITHUB_SHA}"
+            echo "${IMAGE_REF}:${IMAGE_TAG}@${IMAGE_DIGEST} index"
+            echo "${IMAGE_REF}:${IMAGE_TAG#v}@${IMAGE_DIGEST} index"
+            while read -r platform digest; do
+              if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+                echo "::error::Platform $platform has no sha256 digest." >&2
+                exit 1
+              fi
+              echo "${IMAGE_REF}@${digest} ${platform}"
+            done <<< "$platforms"
+          } > "$manifest"
+          cat "$manifest"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+
+      - name: Sign image manifest (keyless)
+        run: |
+          cosign sign-blob --yes \
+            --bundle "healthlog-${IMAGE_TAG}-image.sigstore.json" \
+            "healthlog-${IMAGE_TAG}-image.txt"
+
+      - name: Hash image manifest
+        id: hashes
+        run: |
+          echo "hashes=$(sha256sum "healthlog-${IMAGE_TAG}-image.txt" | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload signed manifest
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-manifest
+          path: |
+            healthlog-${{ env.IMAGE_TAG }}-image.txt
+            healthlog-${{ env.IMAGE_TAG }}-image.sigstore.json
+          if-no-files-found: error
+          retention-days: 7
+
+  # SLSA v1 provenance for the image manifest, signed by the SLSA generator
+  # under its own workflow identity. The one action in this file that is
+  # not pinned by commit SHA: slsa-verifier checks the builder's ref, and
+  # the generator refuses to run from a SHA (slsa-framework/slsa-verifier#12),
+  # so it must be referenced by its release tag. v2.1.0 is commit
+  # f7dd8c54c2067bafc12ca7a55595d5ee9b75204a.
+  #
+  # `contents: write` is required by the generator's nested upload job,
+  # which GitHub checks when the workflow loads even though it is skipped
+  # here (`upload-assets: false`): the generator never sees a draft
+  # release, so the upload stays in release-assets below.
+  release-provenance:
+    name: SLSA provenance for the release manifest
+    needs: [release-manifest]
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: ${{ needs.release-manifest.outputs.hashes }}
+      provenance-name: healthlog-${{ github.ref_name }}.intoto.jsonl
+      upload-assets: false
+
+  # Attaches the three files to the release for the tag. The maintainer
+  # writes the notes and publishes after the deploy; when this job runs
+  # first, it creates the release as a DRAFT with no notes. It never
+  # publishes. `--clobber` makes a re-run replace the files.
+  release-assets:
+    name: Attach signed manifest to the GitHub release
+    needs: [release-manifest, release-provenance]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed manifest
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-manifest
+          path: release-assets
+
+      - name: Download provenance
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ needs.release-provenance.outputs.provenance-name }}
+          path: release-assets
+
+      - name: Upload release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          files=(
+            "release-assets/healthlog-${TAG}-image.txt"
+            "release-assets/healthlog-${TAG}-image.sigstore.json"
+            "release-assets/healthlog-${TAG}.intoto.jsonl"
+          )
+          for file in "${files[@]}"; do
+            if [ ! -s "$file" ]; then
+              echo "::error::Release asset $file is missing or empty." >&2
+              exit 1
+            fi
+          done
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release $TAG exists; attaching the assets."
+          else
+            echo "Release $TAG does not exist yet; creating it as a draft."
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --draft --verify-tag --title "$TAG" --notes ""
+          fi
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
+          echo "::notice::Signed manifest, bundle and provenance attached to release $TAG."
 
   promote:
     name: Promote verified image to Coolify

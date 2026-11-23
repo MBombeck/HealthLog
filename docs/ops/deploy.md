@@ -1,11 +1,23 @@
 # Deploy ordering
 
+Releases follow a calendar (`docs/contributing/release-policy.md`): a minor on
+the first Saturday of the month, a patch on other Saturdays when there are fixes,
+and an out-of-schedule release only for security, data loss or a broken
+install. `:latest` therefore moves at most once a week, except for those.
+Between releases, `main` collects merged fixes and every push to it publishes
+`:edge` (amd64). A host that tracks `:edge` gets fixes before their release
+and no promise beyond that; take a backup first, migrations do not run
+backwards. Production installs track a release tag or `:latest`.
+
 Coolify handles the standard deploy ordering automatically: the
 container image is pulled, `docker-entrypoint.sh` runs
 `prisma migrate deploy` against the live database, and only then does
 the Next.js process bind to the listener. This page documents the
 ordering explicitly for manual-rollback and partial-deploy scenarios
-where the operator drives the steps by hand.
+where the operator drives the steps by hand. The reader's version of the
+update, with the release calendar and the way back, is
+[Updates and deploy](https://docs.healthlog.dev/guides/updates-and-deploy/);
+this page holds the operator detail and the notes for each release.
 
 ## Migration ordering
 
@@ -13,13 +25,14 @@ Migrations land **before** the new app container takes traffic. The
 canonical command sequence on a single-instance host:
 
 ```sh
-# 0. Nothing to do by hand for the way back: when the new image brings
-#    migrations, its entrypoint first writes
-#    healthlog-<time>-pre-migration.dump into DB_BACKUP_DIR (the `backups`
-#    volume) and keeps the last two. A migration is not undone by going back
-#    to the previous image; that dump is the way back
-#    (docs/ops/disaster-recovery.md, "Going back to before a migration").
-#    Copy it off the host if the host itself is what you are worried about.
+# 0. The way back: when the new image brings migrations, its entrypoint
+#    first writes healthlog-<time>-pre-migration.dump into DB_BACKUP_DIR
+#    (the `backups` volume of the published compose file). Without that
+#    volume no dump is taken: run `pg_dump` yourself before step 1
+#    (docs/ops/disaster-recovery.md). A migration is not undone by going
+#    back to the previous image; the dump is the way back
+#    (disaster-recovery.md, "Going back to before a migration"). Copy it
+#    off the host if the host itself is what you are worried about.
 
 # 1. Pull the new image. If you pin a version with HEALTHLOG_IMAGE_REF,
 #    set it to the new one first.
@@ -91,9 +104,12 @@ rolled back (`prisma migrate resolve --rolled-back`) and runs
 `migrate deploy` again after 15, 30, 60, 120 and 240 seconds. The app starts
 as soon as an attempt gets the lock. A later boot that finds the attempt still
 on record (Prisma's `P3009`) reads the cause from `_prisma_migrations` and
-does the same. Nothing else is retried: any other failure, and a lock timeout
-in a migration that does not carry the marker, stops the boot exactly as
-before.
+does the same. A migration whose one statement builds an index concurrently
+is retried the same way without the marker: a failed build leaves only an
+INVALID index, which the next attempt drops first (below). Nothing else is
+retried: any other failure, and a lock timeout in any other migration, stops
+the boot exactly as before. How a migration file runs, and why that makes the
+retry safe, is in [migrations/README.md](migrations/README.md).
 
 The retries fit inside the container's health check: its start period is ten
 minutes (`docker-compose.yml` and the image's own `HEALTHCHECK`), so failed
@@ -119,6 +135,42 @@ wait for it to disappear and start the container again (a restart policy does
 that for you, and each boot retries). Anything else is a session you can
 judge: a stuck client may be ended with `SELECT pg_terminate_backend(<pid>)`.
 You never need to run `migrate resolve` by hand for this case.
+
+### Accounts that differ only in case
+
+From 1.49.0 an e-mail address and a username are unique regardless of case,
+because sign-in already treats `Name@host` and `name@host` as the same
+address. Migration `0517` first counts the addresses and names that two
+accounts on the instance share when case is ignored. When there are any, it
+stops with
+
+```
+HealthLog 0517: 1 e-mail address(es) and 0 username(s) belong to more than one account when case is ignored; no account was changed.
+```
+
+and the container does not start. Nothing is merged or renamed for you. List
+the accounts:
+
+```sh
+docker compose exec db psql -U healthlog -c "
+  SELECT id, username, email, created_at FROM users
+   WHERE lower(email) IN (SELECT lower(email) FROM users WHERE email IS NOT NULL
+                           GROUP BY 1 HAVING count(*) > 1)
+      OR lower(username) IN (SELECT lower(username) FROM users
+                              GROUP BY 1 HAVING count(*) > 1)
+   ORDER BY lower(email), lower(username), created_at"
+```
+
+Decide which account of each pair keeps the address or name and give the
+other one a different one (`UPDATE users SET email = '…' WHERE id = '…'`).
+The migration runs as one transaction, so the failed attempt changed nothing,
+but Prisma keeps it on record as failed. Mark it rolled back, then start the
+container again:
+
+```sh
+docker compose run --rm --entrypoint sh app -c \
+  'NODE_PATH=/opt/prisma-cli/node_modules node /opt/prisma-cli/node_modules/prisma/build/index.js migrate resolve --rolled-back 0517_case_insensitive_identity_and_retention_indexes'
+```
 
 ### A concurrent index build that failed
 
@@ -158,6 +210,255 @@ new one starts, as for any update with migrations. A web container and a
 worker container that start together wait for each other on an advisory lock
 and derive the same password. Going back to 1.46 runs as the owner, as 1.46
 always did, and finds nothing in the queue schema it did not create.
+
+### v1.49.0 notes
+
+The sequence above covers this release, with one possible stop (`0517`, see
+below). It brings thirty-six migrations, `0514` to `0558` (`0516`, `0523`,
+`0527`, `0528`, `0541`, `0548`, `0550`, `0552` and `0555` do not exist), so
+the boot log says `36 database migrations pending`. Copy the pre-migration
+dump of step 0 off the host before you start: it is the way back.
+
+Seven migrations touch data you already have:
+
+- `0515` merges doses recorded twice for one slot. Of each slot's live rows
+  it keeps the one that records a take, else a skip, else the oldest pending
+  row, and soft-deletes the rest (clearing `deleted_at` restores one); a
+  merged take that took units off a pack gives them back and loses its
+  `inventory_consumption` stamp. It clears the auto-miss mark on doses that
+  were taken or skipped, installs a trigger that keeps it cleared, rewrites
+  legacy single-time schedules with a dose window into `times_of_day` and
+  `dose_windows`, and replaces the slot's unique index
+  `(user_id, medication_id, scheduled_for, source)` with one on
+  `(user_id, medication_id, scheduled_for)`: one live dose per slot,
+  whoever writes it.
+- `0517` makes e-mail address and username unique regardless of case. It
+  takes `LOCK TABLE "users" IN SHARE ROW EXCLUSIVE MODE` before it counts
+  the clashes, so a v1.48.5 container that still runs cannot add a clashing
+  account between the count and the index build. Its writes to `users`
+  (sign-ups, account changes) wait until the file commits; the migration
+  itself waits at most its 10 s `lock_timeout` for the lock, and the boot
+  retries it on a timeout. When two accounts already share an address or name, it
+  stops before changing anything and the container does not start; see
+  "Accounts that differ only in case" above. Existing addresses are not
+  rewritten; new and changed ones are stored in lower case. It also drops
+  six duplicate indexes, builds four small retention indexes, and adds a
+  shape CHECK to day keys stored as text. A column holding a key that does
+  not fit gets the CHECK `NOT VALID` and the count as a warning, instead of
+  a failed start.
+- `0529` lowers APNs device tokens. It takes
+  `LOCK TABLE "devices" IN SHARE ROW EXCLUSIVE MODE` before it lowers them,
+  so writes to `devices` from a v1.48.5 container (a device registering, its
+  `last_seen` stamp) wait until it commits; the migration waits at most 5 s
+  for the lock, and the boot retries it on a timeout. Where two
+  devices hold one token in different case, the one seen most recently keeps
+  it; the other loses its token and environment and registers again on its
+  next launch. A unique index on `lower(apns_token)` refuses a second
+  spelling of one token from then on.
+- `0543` adds `cycle_symptom_links.source` (`measurement_source`,
+  `NOT NULL DEFAULT 'MANUAL'`, a catalog change without a rewrite) and
+  backfills it: a link on a day whose `cycle_day_logs.source` is not
+  `MANUAL` takes the day's source, every other link keeps `MANUAL`. An
+  Apple Health day write then replaces only the links it wrote, and a
+  symptom logged by hand on the same day stays.
+- `0546` records who deleted a synced row. It adds a nullable
+  `apple_health_deleted_at` to `measurements`, `mood_entries`,
+  `symptom_events`, `medication_intake_events` and `cycle_day_logs`
+  (metadata-only, no rewrite). Rows deleted before the update read as
+  deleted in HealthLog, so a phone that sends them again after a reinstall
+  is refused rather than writing them back; `0557` then sorts out the ones
+  the phone itself had reported deleted. It drops the workout and ECG
+  ledger `apple_health_tombstones` from `0511`: those rows can only be
+  deleted in Apple Health, so a sample that comes back there is written
+  again.
+- `0551` adds `app_settings.server_setup_completed_at` and
+  `server_setup_steps_json` (both nullable, no rewrite) and stamps the
+  first-admin server setup as finished on an instance that already has
+  accounts, with one `UPDATE` of the single `app_settings` row. An upgrade
+  therefore never offers the setup to a server that has been running; a
+  fresh install has no account when the migration runs, keeps `NULL`, and
+  offers the setup to its first admin. It stays reachable from Admin >
+  System status either way.
+- `0557` backfills the origin `0546` could not know. A tombstone from before
+  the update is stamped as deleted in Apple Health
+  (`apple_health_deleted_at = deleted_at`) when the audit log proves it: it
+  lies in the window of one `<domain>.delete.by_external_ids` request (the
+  ten minutes up to five seconds past the audit row, and after the account's
+  previous request of that domain), it is an Apple Health row with an
+  `external_id`, and the window holds exactly as many such unstamped
+  tombstones as the request says it deleted. Any other count leaves the
+  whole window as `0546` set it, refused, which is the safe side for a
+  deletion a person made. It changes no schema and writes nothing but that
+  column on `measurements`, `mood_entries`, `symptom_events`,
+  `medication_intake_events` and `cycle_day_logs`: `updated_at` and
+  `sync_version` stay, so no tombstone goes down the sync feed again. The
+  five `UPDATE`s run in one transaction under a ten-minute
+  `statement_timeout` and lock only the rows they stamp, so readers and
+  other writers carry on. A run that is cut off has changed nothing, and a
+  second run stamps nothing new. An instance no phone ever reported a
+  deletion to has no such audit rows and nothing is written.
+
+Four more change data only on a host that ran a 1.49 pre-release. Coming from
+1.48, the columns and tables they touch are created earlier in the same
+update and hold nothing:
+
+- `0539` encrypts the pregnancy state at rest. It adds
+  `cycle_profiles.pregnancy_encrypted` (one AES-256-GCM envelope the app
+  writes, holding the state and its three days), then drops the plaintext
+  columns `0533` added, `reproductive_state`, `pregnancy_start_date`,
+  `pregnancy_due_date` and `delivery_date`, with their three day-key CHECKs,
+  and drops the enum `cycle_reproductive_state`. `postpartum_weeks` stays. A
+  state set under a pre-release is cleared, because SQL cannot seal it with
+  the application's key; its owner sets it again.
+- `0540` adds `created_by_id` to `care_calendar_feeds` and
+  `emergency_card_links`, backfills it with `user_id` (every existing link
+  was made by its owner), sets it `NOT NULL`, and adds an index and a
+  cascading foreign key to `users` for each. A link a guardian makes for a
+  managed profile ends when that guardian's grant does.
+- `0556` adds `app_settings.push_relay_decision` (nullable text with a CHECK
+  for `on` and `off`), the answer to the one-time relay question. One
+  `UPDATE` of the single `app_settings` row stamps `on` where the server is
+  already registered at the relay, so its admin is not asked what the switch
+  already answered. Coming from 1.48 no registration exists, the column
+  stays `NULL`, and an admin is asked after the update, unless the server
+  has its own Apple key or sets `PUSH_RELAY_MODE=off`. No rewrite; the
+  migration waits at most 5 s for its lock, and the boot retries it on a
+  timeout.
+- `0558` adds `devices.la_start_ref` and `devices.relay_conflict_at` (both
+  nullable) and, on `push_relay_registrations`, `bad_signature_count`
+  (`INTEGER NOT NULL DEFAULT 0`, a catalog change without a rewrite),
+  `status_checked_at` and `relay_status`. One `UPDATE` stamps
+  `relay_conflict_at` with the time of the migration on each device whose
+  relay binding is in conflict, so it gets the full 30 minutes before the
+  server asks it for a fresh binding. Same 5 s lock wait and retry.
+
+The rest is additive: enum values for Apple Health workout effort and sport
+quantities (`0514`, `0519`), nullable columns or columns with a default
+(`0520`, `0521`, `0525`, `0526`, `0530`, `0533`, `0536`, `0537`, and
+`devices.local_runway_until` in `0542`, `push_data_changes.intake_sync_owed_at`
+in `0544`, `live_activity_tokens.relay_started BOOLEAN NOT NULL DEFAULT false`
+in `0545`, `measurements.stats_computed_at` in `0547`, `users.medicine_registry`
+and `medications.leaflet_url` in `0549`), and new tables (`0522`, `0524`,
+`0531`, `0532`, `0534`, `0535`, and `ai_job_failures` in `0553`, which holds
+why background AI work last stopped for a record: closed reason codes only,
+cleared by the next success, cascading with the account).
+`0554` gives each settings document its own lock token. It adds eight
+`*_revised_at` columns to `users` and `about_me_revised_at` to
+`user_health_profiles`, all `TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP`
+(a catalog change without a rewrite), and a `BEFORE UPDATE` trigger on each
+table that moves a document's revision when its value changes. Nothing
+stored is rewritten. A browser or app that read one of those settings before
+the update gets a single 409 on its next save, reads again, and saves.
+`0545` is metadata-only: existing Live Activity rows read `false`, and relay
+updates go only to an Activity the server started over the relay. `0538`
+only drops an index on `live_activity_tokens` that another index already
+covers. `0518` builds an index on `measurements` `CONCURRENTLY` at boot.
+Writes carry on, but on a very large table the build can take a while; the
+app's healthcheck allows ten minutes for the start. If it is interrupted,
+see "A concurrent index build that failed" above.
+
+New variables, all optional and on the compose whitelist:
+`HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS` (a WebDAV or Nextcloud server on
+your own network for the scheduled Health Connect fetch), and
+`PUSH_RELAY_MODE`, `PUSH_RELAY_URL`, `PUSH_RELAY_KEYS`,
+`PUSH_RELAY_LIVE_ACTIVITY` ([push-relay.md](../integrations/push-relay.md)).
+The relay is off until an admin turns it on: after the update an admin is
+asked once, on the dashboard and the admin start page, and No is final until
+someone switches it on in Admin > Push and channels. A server that turned
+it on under a 1.49 pre-release is asked once, on the relay card, to read and
+confirm the updated relay text; the relay keeps working until then. Live
+Activity start and update go over it only with `PUSH_RELAY_LIVE_ACTIVITY=on`
+and a second consent on the device. `pnpm check-env` reports all five.
+
+Steps:
+
+1. Before the update, check for accounts that differ only in case with the
+   query under "Accounts that differ only in case". Resolve any pair first,
+   and `0517` will not stop the start.
+2. Follow the sequence above.
+3. List the day-key columns `0517` could only check `NOT VALID`. Nothing
+   breaks, but those rows were written in a wrong shape and are worth a look:
+
+   ```sh
+   docker compose exec db psql -U healthlog -c "
+     SELECT conrelid::regclass AS table_name, conname FROM pg_constraint
+      WHERE conname LIKE '%\\_day\\_key\\_shape' AND NOT convalidated"
+   ```
+
+A stop in `0517` is not a reason to roll back. The migration refuses to run
+while two accounts share an e-mail address or a username when case is
+ignored (`HealthLog 0517: … belong to more than one account when case is
+ignored`), and nothing was changed: the file is one transaction. Resolve each pair with the
+query under "Accounts that differ only in case", mark the migration rolled
+back as described there, and start again.
+
+Rollback to v1.48.5: restore the pre-migration dump with the v1.48.5 image,
+following disaster-recovery.md, "Going back to before a migration", and pin
+the image there with `HEALTHLOG_IMAGE_REF=:v1.48.5` (the leading colon is
+part of the value; `@sha256:<digest>` pins the digest instead). Anything
+written since the update is lost, so decide early. Stop a separate worker
+container too, if you run one. Switching the image back alone is not enough:
+
+- After `0515`, v1.48.5 writes a dose for a slot another source already
+  holds as a second row, and the new index refuses it, so that write fails.
+- After `0517`, v1.48.5 stores an address or username in the case it is
+  typed, and the unique indexes on `lower(email)` and `lower(username)`
+  refuse a case variant of one another account holds: the write fails with
+  `P2002` (registration answers 409). That refusal is what the indexes are
+  for, so the steps below leave them in place.
+- After `0529`, v1.48.5 stores an APNs token in the case the app sends it,
+  and the index on `lower(apns_token)` refuses a token another device
+  already holds in other letters.
+- Readings of the new measurement types (`WORKOUT_EFFORT_SCORE`,
+  `ESTIMATED_WORKOUT_EFFORT_SCORE`, `PHYSICAL_EFFORT`, `CYCLING_DISTANCE`,
+  `ROWING_DISTANCE`, `ROWING_SPEED`, `RUNNING_SPEED`, `RUNNING_POWER`,
+  `RUNNING_GROUND_CONTACT_TIME`, `RUNNING_VERTICAL_OSCILLATION`,
+  `RUNNING_STRIDE_LENGTH`) may not decode in the v1.48.5 image, whose client
+  does not know them.
+
+Only the dump undoes these; the old image runs on top of them, but they stay
+as the migration left them:
+
+- `0515` rewrites rows in place: merged doses are soft-deleted with their
+  `inventory_consumption` cleared and their units refunded to the pack, the
+  auto-miss mark is cleared, and legacy schedules are rewritten into
+  `times_of_day` and `dose_windows`. The previous values are not kept.
+- `0529` overwrites every mixed-case token with its lower-case form and
+  clears the token and environment of the device that lost a clash.
+- `0514` and `0519` add enum values with `ALTER TYPE … ADD VALUE`, which
+  PostgreSQL cannot drop. The values alone do not trouble v1.48.5; a reading
+  of one of those types does, and short of the dump it can only be moved
+  aside.
+
+No other migration needs the dump. `0517` rewrites no row, and its indexes
+and CHECKs can be dropped. `0539` drops columns and an enum, and `0540` and
+`0543` add `NOT NULL` columns, but v1.48.5 never reads the dropped columns,
+`0540`'s tables are new in this release, and `0543`'s column has a default
+that covers v1.48.5's inserts. Nothing is renamed. `0551`'s columns are
+nullable, `0553` is a table v1.48.5 never touches, and `0554`'s columns have
+a default while its triggers only stamp columns v1.48.5 does not read.
+`0556` and `0558` add columns v1.48.5 never reads, the one `NOT NULL` among
+them with a default and on a table new in this release, and `0557` writes
+only a column v1.48.5 does not know. Every
+other migration is harmless to the old image, which ignores what it does not
+know. If the dump
+is gone, or too much has been written since, switch the image back only
+after these three steps, run as the database owner:
+
+```sql
+DROP INDEX IF EXISTS "medication_intake_events_user_med_slot_live_key";
+CREATE UNIQUE INDEX IF NOT EXISTS "medication_intake_events_user_med_slot_source_live_key"
+  ON "medication_intake_events" ("user_id", "medication_id", "scheduled_for", "source")
+  WHERE "deleted_at" IS NULL;
+DROP INDEX IF EXISTS "devices_apns_token_lower_unique";
+```
+
+and check that no reading of the new types exists
+(`SELECT type, count(*) FROM measurements WHERE type IN (…) GROUP BY type`
+with the eleven names above). If any do, stay on v1.49.0 or move those rows
+aside, as described for v1.48.2. The next upgrade to v1.49.0 does not
+rebuild the two dropped indexes, since its migrations are already on
+record; build them again by hand with the definitions in `0515` and `0529`.
 
 ### v1.48.4 notes
 
@@ -566,6 +867,10 @@ A passing verification proves the image was built by this repository's
 release workflow on a `v*` tag — not by anyone who merely obtained push
 access to the GHCR package.
 
+From v1.49.0 on, the GitHub release carries the same facts as files you
+can check without asking the registry; see
+[Verify a release from its assets](#verify-a-release-from-its-assets).
+
 ### Prefer digest-pinned deploys
 
 Tags (`:latest`, `:1.16.4`) are mutable aliases: a registry-side
@@ -618,7 +923,7 @@ mechanic, end to end:
 > instance stays on the old release. If you pin, bumping the pin is part of
 > shipping, not an afterthought. If you would rather not carry that step, leave
 > the variable unset: `docker-publish.yml` rotates `:latest` on every release tag
-> without a pre-release suffix, so the git tag stays the single place a version is
+> without a pre-release suffix (at most weekly, see the release calendar), so the git tag stays the single place a version is
 > declared.
 >
 > Two checks after any deploy, because the first alone can be served from a
@@ -685,6 +990,85 @@ becomes part of the release routine, not an optional extra.
 Digest pinning is the recommended hardening for operators with a
 threat model that includes the registry; `:latest` remains the
 low-friction default.
+
+## The GitHub release
+
+From v1.49.0 on, the tag build attaches three files to the GitHub release
+for the tag (the jobs `release-manifest`, `release-provenance` and
+`release-assets` in `docker-publish.yml`):
+
+| File                                  | What it is                                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `healthlog-<tag>-image.txt`           | the image refs: both release tags pinned to the index digest, and the `linux/amd64` and `linux/arm64` digests |
+| `healthlog-<tag>-image.sigstore.json` | keyless cosign bundle for that file, signed by `docker-publish.yml` at the tag                                |
+| `healthlog-<tag>.intoto.jsonl`        | SLSA v1 provenance for that file, signed by the SLSA generator (`generator_generic_slsa3.yml`)                |
+
+The files are written after the image index is signed and the published
+image has passed `post-publish-verify.yml`, so a release whose image
+failed verification gets no assets.
+
+### Publishing the release
+
+The build runs before the notes exist. If no release exists for the tag
+when the assets are ready, the workflow creates one as a **draft** with
+the tag as its title and no notes, and attaches the files. It never
+publishes a release and never edits one.
+
+After the deploy, the maintainer therefore edits that draft instead of
+creating a release:
+
+```sh
+gh release edit v1.49.0 --notes-file notes.md --draft=false --latest
+```
+
+Do not run `gh release create` for the tag once the draft exists: GitHub
+allows a draft next to a release with the same tag, and the files would sit
+on the draft nobody publishes. A release created by hand before the build
+finishes is fine: the workflow attaches the files to it (`--clobber`, so a
+re-run replaces them). A draft is invisible to the public releases API, so
+the update badge on self-hosted instances (`/releases/latest`) moves only
+when the draft is published.
+
+### Verify a release from its assets
+
+Download the three files of a release (here v1.49.0) and check each link:
+the manifest was signed by this repository's release workflow at that tag,
+the provenance says the same workflow run produced it, and the image the
+manifest names carries the release signature.
+
+```sh
+TAG=v1.49.0
+gh release download "$TAG" --repo MBombeck/HealthLog \
+  --pattern "healthlog-$TAG-image.txt" \
+  --pattern "healthlog-$TAG-image.sigstore.json" \
+  --pattern "healthlog-$TAG.intoto.jsonl"
+
+# 1. The manifest is signed by docker-publish.yml at the tag.
+cosign verify-blob \
+  --bundle "healthlog-$TAG-image.sigstore.json" \
+  --certificate-identity "https://github.com/MBombeck/HealthLog/.github/workflows/docker-publish.yml@refs/tags/$TAG" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "healthlog-$TAG-image.txt"
+
+# 2. Its SLSA provenance names this repository and tag.
+slsa-verifier verify-artifact "healthlog-$TAG-image.txt" \
+  --provenance-path "healthlog-$TAG.intoto.jsonl" \
+  --source-uri github.com/MBombeck/HealthLog \
+  --source-tag "$TAG"
+
+# 3. The image index it names carries the release signature.
+IMAGE="$(awk '$2 == "index" { print $1; exit }' "healthlog-$TAG-image.txt")"
+cosign verify \
+  --certificate-identity-regexp '^https://github\.com/MBombeck/HealthLog/\.github/workflows/docker-publish\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "$IMAGE"
+```
+
+`$IMAGE` is `ghcr.io/mbombeck/healthlog:<tag>@sha256:<index>`: pull that
+reference (or set `HEALTHLOG_IMAGE_REF=@sha256:<index>`) and you run
+exactly the image the release describes. Releases before v1.49.0 have no
+assets; their image signature is checked with `cosign verify` alone, as
+above.
 
 ## Deploy-status webhook: replay protection
 

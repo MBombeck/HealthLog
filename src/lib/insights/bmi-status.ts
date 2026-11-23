@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getBmiSystemPrompt, getBmiUserPrompt } from "@/lib/ai/prompts/bmi";
 import { classifyBMI } from "@/lib/analytics/classifications";
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import { getNoKeyBmiStatusText } from "@/lib/insights/no-key-fallbacks";
 import { computeSteadyRun } from "@/lib/insights/assessment-context";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
@@ -27,6 +28,7 @@ import {
   type StatusCardPlugin,
   type StatusTextResult,
 } from "@/lib/insights/status-pipeline";
+import { heightSquaredM2 } from "@/lib/analytics/classifications";
 
 /**
  * Public entry — unchanged signature. Prepares the card (cache-read,
@@ -82,6 +84,23 @@ async function buildBmiSnapshot(
     };
   }
 
+  // During a pregnancy or its postpartum weeks a BMI band frames a body that
+  // is supposed to change: no assessment, and no model call to write one.
+  if (await pregnancyContextActive(prisma, userId, userTz)) {
+    return {
+      phase: "served",
+      result: {
+        hasProvider: true,
+        text:
+          locale === "de"
+            ? "Während der Schwangerschaft und der Zeit danach gibt es keine BMI-Einschätzung."
+            : "There is no BMI assessment during a pregnancy and the weeks after it.",
+        cached: true,
+        updatedAt: null,
+      },
+    };
+  }
+
   // v1.18.11 — input gate for this slow-moving metric. The snapshot
   // derives from WEIGHT rows and the profile heightCm; a cheap probe over
   // both fingerprints the inputs, so a non-forced unchanged week re-stamps
@@ -114,6 +133,7 @@ async function buildBmiSnapshot(
       select: {
         value: true,
         measuredAt: true,
+        timeZone: true,
       },
     })
     .then((rows) => rows.reverse());
@@ -122,11 +142,12 @@ async function buildBmiSnapshot(
   // v1.2.5 — bucket day windows on the user's own calendar so a
   // near-midnight reading lands on the user's day for non-Berlin self-hosters.
   // `userTz` was already resolved above for the cache day-key.
-  const heightFactor = (user.heightCm / 100) ** 2;
+  const heightFactor = heightSquaredM2(user.heightCm);
 
   const bmiPoints = measurements.map((measurement) => ({
     measuredAt: measurement.measuredAt,
     value: round(measurement.value / heightFactor, 2),
+    timeZone: measurement.timeZone,
   }));
   // `applyPayloadBudget` daily buckets drive the latest/previous focus;
   // the compact graded series is what reaches the prompt.

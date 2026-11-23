@@ -1,6 +1,5 @@
 /**
- * The one declaration of what a backup contains, and what it deliberately does
- * not.
+ * The one declaration of what a backup contains, and what it leaves out.
  *
  * The wipe plan next door ({@link ../data-wipe/wipe-plan}) answers the mirror
  * question and got the same treatment for the same reason: a list that was
@@ -14,8 +13,7 @@
  * The wipe may lean on the database: deleting a `Medication` cascades to its
  * schedules, dose changes and inventory events, so the wipe plan never has to
  * name them. **A restore has no cascade.** Every child has to be carried
- * explicitly and re-inserted explicitly, so sixteen models the wipe plan never
- * needed to mention are decisions here.
+ * and re-inserted explicitly: sixteen models the wipe never names are here.
  *
  * ── The three verdicts ──────────────────────────────────────────────────────
  *
@@ -47,9 +45,7 @@
  *                 provider handshake state that is meaningless on another
  *                 host, ledgers whose value is that they were written here.
  *
- * Every entry carries its reason in prose. "Obvious" is not a reason: the
- * whole class of defect here is someone deciding something was obvious and
- * nobody being able to check afterwards.
+ * Every entry carries its reason in prose. "Obvious" is not a reason.
  */
 
 /** A model whose absence from a restore would lose something the account owns. */
@@ -57,16 +53,14 @@ export const BACKED_UP_MODELS = [
   // ── Measurements ──────────────────────────────────────────────────────────
   "Measurement",
   // Not derived, despite looking it. The hourly shape of a cumulative day is
-  // folded out of the per-sample rows in the same transaction that deletes
-  // them, so past the 36-hour grace window there is nothing left to rebuild it
-  // from. A restore without it silently resets the same-time baseline to
-  // "still learning" for two weeks.
+  // folded out of the per-sample rows in the transaction that deletes them, so
+  // past the 36-hour grace window nothing is left to rebuild it from; without
+  // it a restore resets the same-time baseline to "still learning" for weeks.
   "IntradayCumulativeProfile",
 
   // ── Medications, and everything hanging off one ───────────────────────────
-  // The parent alone restores a drug list with no schedule, no history and no
-  // stock — a shape the app renders without complaint, which is why this was
-  // easy to miss.
+  // The parent alone restores a drug list with no schedule, history or stock,
+  // a shape the app renders without complaint, which is why it was missed.
   "Medication",
   "MedicationSchedule",
   "MedicationScheduleRevision",
@@ -102,6 +96,7 @@ export const BACKED_UP_MODELS = [
   "MentalHealthAssessment",
   "LabResult",
   "LabResultImportKey", // Deleted Health Records readings: `labs-backup.ts`.
+  "FhirImportedResource", // FHIR Bundle import ledger: `fhir-import-ledger-backup.ts`.
   "Biomarker",
   "Allergy",
   "FamilyHistoryEntry",
@@ -121,8 +116,6 @@ export const BACKED_UP_MODELS = [
   // person and held nowhere else.
   "LifeEvent",
   "EcgRecording",
-  // Apple Health deletions; without them a late re-post comes back in.
-  "AppleHealthTombstone",
   "UserHealthProfile",
   "HealthProfileFactRevision",
   "MeasurementReminder",
@@ -312,6 +305,7 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   "src/lib/export/symptoms-backup.ts",
   // The person's life events, both ends beside each other (v1.42).
   "src/lib/export/life-events-backup.ts",
+  "src/lib/export/fhir-import-ledger-backup.ts",
   // The seizure diary; the doses ride inside their seizure both ways.
   "src/lib/export/seizures-backup.ts",
   // The five relation links that close the relation matrix (v1.43), both
@@ -376,6 +370,7 @@ export const TWO_ENDED_MODELS = [
   "MoodTag",
   "LabResult",
   "LabResultImportKey",
+  "FhirImportedResource",
   "Biomarker",
   "Allergy",
   "FamilyHistoryEntry",
@@ -592,8 +587,6 @@ export const TWO_ENDED_MODELS = [
   // theoretical. The reference is resolved against what the restore wrote,
   // nulled when it cannot be, and reported either way.
   "EcgRecording",
-  // Disaster-recovery files only, beside the workouts, as mood's `deletedAt`.
-  "AppleHealthTombstone",
   // The setup answers, carried from the release that introduces them. There is
   // no debt entry to write instead: the row is one small object with no
   // reference to resolve, so "carried" and "owed" would have cost the same
@@ -645,25 +638,6 @@ export type TwoEndedModel = (typeof TWO_ENDED_MODELS)[number];
 export const STRUCTURALLY_UNATTRIBUTABLE: Readonly<Record<string, string>> = {
   IllnessSymptomLink:
     "Read out through `dayLogSymptomInclude`, a shared include constant in `src/lib/illness/dto.ts` that names `symptomLinks` with no query beside it. `symptomLinks` is also `CycleDayLog`'s field for `CycleSymptomLink`, so the name alone cannot say which table a line is about, and the parent that would disambiguate it — `IllnessDayLog` — is reached transitively through the episode's `dayLogs` include in another file. Deleting the illness branch from the restore route left the old check green on the strength of the cycle write; the round trip is what notices now.",
-};
-
-/**
- * Backed-up models that do NOT travel yet, each with what an account loses
- * until it does.
- *
- * This is a debt register, not a design. Every line is a restore that comes
- * back short without saying so, which is the failure mode the whole file
- * exists to make visible. The reasons say what goes missing rather than
- * "not yet", so the next person can order the work by what it costs a person
- * rather than by what is cheapest to write.
- */
-export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
-  // v1.43 — the new tables are declared here with the schema and move to
-  // TWO_ENDED_MODELS when their section writer and restore branch land.
-  WorkoutRoute:
-    "GPS traces. Deliberately absent from the payload today and DISCLOSED as absent in the file's own manifest, which is why this is a documented exclusion rather than a silent one — but it is still a loss for a self-hoster with no other copy.",
-  WorkoutSamples:
-    "Per-sample heart-rate and pace series behind a workout summary. Same disclosed-exclusion status as the routes above, same cost.",
 };
 
 /**
@@ -789,12 +763,16 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "That this host's one-time fold repair has recomputed the account's hourly and daily means, which lets the compaction-tombstone purge delete the tombstones the repair reads. It describes this database, not the file: a restore of a file exported before the repair ran writes back the means and tombstones of that moment, so the restore removes the row and the repair runs again before anything is purged.",
   BackupPassAttempt:
     "When this host's backup passes last started and finished this account, kept so a pass the process died under is taken last next time and named on the backups page. It describes this deployment's own runs, so restoring it elsewhere would report an interrupted run that host never had, or hide one it did.",
+  AiJobFailure:
+    "Why this host's latest background AI work of one kind stopped for the account (a provider down, a chain with nowhere to go), kept until the next success. It describes this deployment's own runs and providers, so restoring it elsewhere would report a failure that host never had.",
   DocumentAiRun:
     "A ticket for one background read (a document read with AI, a lab scan), deleted an hour after it finishes. The document and the committed rows travel; the ticket does not, and a restored run would point at a worker job that does not exist on the receiving host.",
   DocumentSourceAlias:
     "Further import source keys that were answered with an already stored document because the bytes matched. The next import run writes the same alias again the moment it meets the same bytes, so a restore loses nothing a re-run does not rebuild. A deleted document's aliases travel as import-ledger entries (`DocumentImportKey`), which is what they mean once the document is gone.",
   ImportJob:
     "A job record pointing at an uploaded file that the backup does not carry, so restoring it would resurrect a task with nothing to work on.",
+  HealthConnectRemoteSource:
+    "A sealed WebDAV credential to another system, and a fetch schedule of this host. Restored elsewhere the credential would start reading a folder on a host the person never set up; they enter it again.",
   HealthKitTypeSync:
     "When each HealthKit type last arrived on this host and how. Diagnostic state the next sync rebuilds; restored elsewhere it would claim deliveries that host never received.",
   ManagedProfileHandover:
@@ -813,6 +791,10 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "A live URL handed to a practice. Restoring it would resurrect a link the account may have revoked deliberately — and it points at a host that may not be this one.",
   CycleCalendarFeed:
     "A live calendar-feed URL (#1350): a credential a calendar provider polls, stored only as its hash. Restoring it would bring back a link the owner may have revoked or rotated, and it names a host that may not be this one. After a restore the owner turns the subscription on again and re-adds the new link.",
+  CareCalendarFeed:
+    "A live calendar-feed URL for visits and dates coming due: a credential a calendar provider polls, stored only as its hash. Excluded for the cycle feed's reason: restoring it would bring back a link the owner may have revoked, naming a host that may not be this one. After a restore the owner turns the subscription on again.",
+  EmergencyCardLink:
+    "The emergency card's QR link (v1.49): a credential printed on a card, stored only as its hash. Restoring it would bring back a link the owner may have revoked; after a restore the owner makes a new link and prints the card again.",
   ClinicianShareLinkDocument:
     "Names which documents a share link exposed. Without the link it grants nothing, and with it, it would re-expose files through a URL the account may have revoked.",
 
@@ -827,31 +809,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Feedback on generated recommendations that are themselves DERIVED. Restoring the feedback without the item it judged leaves an orphan.",
 };
 
-/**
- * Tables created with raw SQL at runtime rather than declared in the schema.
- * Every check above walks `schema.prisma`, so a table outside it is invisible
- * to all of them — which is how the medication category went missing from
- * every backup until v1.39.4. The guard beside this file finds each
- * `CREATE TABLE IF NOT EXISTS` in the source and demands a verdict here, or a
- * schema model mapped to the same name.
- *
- * Empty since v1.40: the one such table, `medication_categories`, is the
- * `MedicationCategoryAssignment` model now and judged with the others.
- */
-export const RAW_SQL_TABLES: Readonly<
-  Record<string, { verdict: "BACKED_UP" | "NOT_IN_BACKUP"; reason: string }>
-> = {};
-
-/** Auth material: not user data, and excluded from the wipe for the same reason. */
-export const AUTH_MODELS_OUT_OF_SCOPE: readonly string[] = [
-  "Session",
-  "RefreshToken",
-  "Passkey",
-  "WebauthnMfaCredential",
-  "MfaRecoveryCode",
-  "MfaChallenge",
-  "AuthChallenge",
-  "TrustedDevice",
-  "OidcNativeHandoff",
-  "InviteRedemption",
-];
+export {
+  AUTH_MODELS_OUT_OF_SCOPE,
+  COVERAGE_PENDING,
+  RAW_SQL_TABLES,
+} from "./backup-auth-models";

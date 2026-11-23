@@ -19,6 +19,10 @@
  * instance cannot decrypt is carried as a visible marker rather than as
  * nothing.
  */
+import {
+  buildFhirImportLedgerSlice,
+  type FhirImportedResourceBackupEntry,
+} from "@/lib/export/fhir-import-ledger-backup";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { FamilyHistoryEntryDTO } from "@/lib/records/dto";
 import {
@@ -43,7 +47,6 @@ import {
 } from "@/lib/export/labs-backup";
 import {
   buildWorkoutsBackupSlice,
-  type AppleHealthTombstoneBackupEntry,
   type WorkoutBackupEntry,
 } from "@/lib/export/workouts-backup";
 
@@ -74,12 +77,12 @@ export interface RecordsBackupSection {
   biomarkers: BiomarkerBackupEntry[];
   biomarkerMerges: BiomarkerMergeBackupEntry[];
   labResultImportKeys: LabResultImportKeyBackupEntry[];
+  /** The FHIR Bundle import ledger (`fhir-import-ledger-backup.ts`). */
+  fhirImportedResources: FhirImportedResourceBackupEntry[];
   illnessEpisodes: CanonicalIllnessEpisode[];
   allergies: CanonicalAllergy[];
   familyHistory: FamilyHistoryEntryDTO[];
   workouts: WorkoutBackupEntry[];
-  /** Disaster-recovery files only: the Apple Health deletion ledger. */
-  appleHealthTombstones?: AppleHealthTombstoneBackupEntry[];
   documents: DocumentBackupEntry[];
   manifest: {
     documents: {
@@ -93,6 +96,7 @@ export interface RecordsBackupSection {
 export interface RecordsBackupCounts {
   labResults: number;
   labResultImportKeys: number;
+  fhirImportedResources: number;
   biomarkers: number;
   illnessEpisodes: number;
   illnessDayLogs: number;
@@ -114,20 +118,21 @@ export async function buildRecordsBackupSection(
     | "biomarkerAlias"
     | "biomarkerMerge"
     | "labResultImportKey"
+    | "fhirImportedResource"
     | "illnessEpisode"
     | "allergy"
     | "familyHistoryEntry"
     | "workout"
-    | "appleHealthTombstone"
     | "inboundDocument"
   >,
   userId: string,
   options: RecordsBackupOptions = {},
 ): Promise<RecordsBackupSection> {
   const disasterRecovery = options.purpose === "disaster-recovery";
-  const [labs, illness, allergies, family, workouts, documents] =
+  const [labs, fhirLedger, illness, allergies, family, workouts, documents] =
     await Promise.all([
       buildLabsBackupSlice(prisma, userId, disasterRecovery),
+      buildFhirImportLedgerSlice(prisma, userId),
       buildIllnessBackupSlice(prisma, userId, disasterRecovery),
       buildAllergiesBackupSlice(prisma, userId, disasterRecovery),
       buildFamilyHistoryBackupSlice(prisma, userId, disasterRecovery),
@@ -142,6 +147,7 @@ export async function buildRecordsBackupSection(
 
   return {
     ...labs,
+    ...fhirLedger,
     ...illness,
     ...allergies,
     ...family,
@@ -166,6 +172,7 @@ export function countRecordsBackupSection(
   return {
     labResults: section.labResults.length,
     labResultImportKeys: section.labResultImportKeys.length,
+    fhirImportedResources: section.fhirImportedResources.length,
     biomarkers: section.biomarkers.length,
     illnessEpisodes: section.illnessEpisodes.length,
     illnessDayLogs: section.illnessEpisodes.reduce(

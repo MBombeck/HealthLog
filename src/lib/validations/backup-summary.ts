@@ -42,6 +42,8 @@ export interface BackupSummary {
   labResults: number;
   /** Identities of Health Records lab readings the person deleted. */
   labResultImportKeys: number;
+  /** FHIR Bundle resources already imported (the import ledger). */
+  fhirImportedResources: number;
   nutrientDays: number;
   /** User-scoped biomarker catalog entries in the backup. */
   biomarkers: number;
@@ -149,6 +151,7 @@ export function summarizeBackup(payload: BackupPayload): BackupSummary {
     nutrientDays: payload.nutrientDays.length,
     labResults: payload.labResults.length,
     labResultImportKeys: payload.labResultImportKeys.length,
+    fhirImportedResources: payload.fhirImportedResources.length,
     biomarkers: payload.biomarkers.length,
     illnessEpisodes: payload.illnessEpisodes.length,
     illnessDayLogs: payload.illnessEpisodes.reduce(

@@ -83,14 +83,17 @@ async function buildGeneralSnapshot(
       dateOfBirth: true,
       gender: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
 
   // The latest 365 readings of each type, bounded per type so a dense
   // stream cannot crowd the others out (`readLatestReadingsPerType`).
-  const measurements = await readLatestReadingsPerType(userId, [
-    ...MEASUREMENT_TYPES,
-  ]);
+  const measurements = await readLatestReadingsPerType(
+    userId,
+    [...MEASUREMENT_TYPES],
+    userTz,
+  );
 
   const now = new Date();
 

@@ -20,9 +20,12 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
+  isFullAccount: (user: { accountSeed?: true } | null) =>
+    user !== null && user.accountSeed !== true,
   useAuth: () => ({
     user: { id: "u1", role: "USER" },
     isAuthenticated: true,
+    profileLoaded: true,
     isLoading: false,
     refetch: vi.fn(),
   }),

@@ -27,6 +27,7 @@ import { readFileSync } from "node:fs";
 import apn from "@parse/node-apn";
 
 import { prisma } from "@/lib/db";
+import { deleteDeviceRows } from "@/lib/devices/delete-devices";
 import { getEvent } from "@/lib/logging/context";
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-attempt-record";
@@ -34,6 +35,7 @@ import { plainPushText } from "@/lib/notifications/strip-emoji";
 import { stripHtml } from "@/lib/notifications/strip-html";
 import { isManagedGuardianDelivery } from "@/lib/notifications/managed-delivery";
 import { NEUTRAL_TAP_PATH } from "@/lib/notifications/tap-target";
+import { iosMetadataFor } from "@/lib/notifications/senders/ios-metadata";
 import type { NotificationTap } from "@/lib/notifications/types";
 
 export interface ApnsPayload {
@@ -601,8 +603,14 @@ export async function sendViaApns(
     recipientUserId?: string;
     tap?: NotificationTap;
   },
-  /** #179: only these devices (per-device medication delivery); absent = all. */
-  options?: { onlyDeviceIds?: readonly string[] },
+  /**
+   * #179: only these devices (per-device medication delivery); absent = all.
+   * `excludeDeviceIds`: devices a sealed envelope already went to.
+   */
+  options?: {
+    onlyDeviceIds?: readonly string[];
+    excludeDeviceIds?: readonly string[];
+  },
 ): Promise<SendOutcome> {
   const config = loadApnsConfig();
   if (!config) {
@@ -622,6 +630,9 @@ export async function sendViaApns(
       userId,
       apnsToken: { not: null },
       ...(only && { id: { in: [...only] } }),
+      ...(options?.excludeDeviceIds?.length && {
+        NOT: { id: { in: [...options.excludeDeviceIds] } },
+      }),
     },
     select: { id: true, apnsToken: true, apnsEnvironment: true },
   });
@@ -733,19 +744,7 @@ export async function sendViaApns(
             // `suppressActions` removes the act-on-it keys for the same
             // reason it clears the category below: the affordance the app
             // would build from them resolves to a refusal.
-            ...pickIosMetadata(
-              managedDelivery
-                ? undefined
-                : payload.suppressActions
-                  ? stripActionMetadata(
-                      payload.discreet
-                        ? stripCycleMetadata(payload.metadata)
-                        : payload.metadata,
-                    )
-                  : payload.discreet
-                    ? stripCycleMetadata(payload.metadata)
-                    : payload.metadata,
-            ),
+            ...iosMetadataFor(payload, managedDelivery),
             // The resolved tap target (`tap-target.ts`): a same-origin path
             // the app opens on tap. Overrides a producer's `metadata.url`,
             // which the resolver already took into account. A managed
@@ -828,9 +827,7 @@ export async function sendViaApns(
   }
 
   if (deadDeviceIds.length > 0) {
-    await prisma.device.deleteMany({
-      where: { id: { in: deadDeviceIds } },
-    });
+    await deleteDeviceRows({ id: { in: deadDeviceIds } });
   }
 
   if (anySuccess) {
@@ -886,7 +883,7 @@ export interface ApnsRawSendInput {
    * content-available push (no alert); `liveactivity` for an
    * ActivityKit update / end push.
    */
-  pushType: "background" | "liveactivity";
+  pushType: "background" | "liveactivity" | "alert";
   /**
    * Custom JSON payload merged into the notification body. For a
    * `background` push this is the app's userInfo; for a `liveactivity`
@@ -901,6 +898,9 @@ export interface ApnsRawSendInput {
   topic?: string;
   /** `apns-priority`. `5` for background (power-conserving) is required. */
   priority?: 5 | 10;
+  collapseId?: string; // `apns-collapse-id`: a newer push replaces the older
+  /** `apns-expiration`, unix seconds; Apple drops the push after it. */
+  expiry?: number;
 }
 
 /**
@@ -938,10 +938,10 @@ export async function sendApnsRawPush(
   } else {
     note.priority = input.priority ?? 10;
   }
-  // Bypass the convenience setters entirely so the body is exactly what
-  // the silent-sync / Live-Activity contract specifies — no injected
-  // `aps.alert` shell.
+  // Bypass the convenience setters: the body is exactly what the caller sent.
   note.rawPayload = input.payload;
+  if (input.collapseId) note.collapseId = input.collapseId;
+  if (input.expiry !== undefined) note.expiry = input.expiry;
 
   const start = performance.now();
   let result: Awaited<ReturnType<apn.Provider["send"]>>;
@@ -1002,91 +1002,4 @@ export async function sendApnsRawPush(
     shouldDisable,
     message: failure?.error?.message,
   };
-}
-
-/**
- * Whitelist the metadata keys we send through to iOS. The dispatcher
- * payload's `metadata` field is shared across every channel — Telegram
- * stuffs an `replyMarkup` keyboard in there, future channels will add
- * their own extras — and forwarding the lot to APNs leaks
- * channel-specific payload structures into the APNs userInfo Apple
- * sees plus the iOS app's notification handler.
- *
- * Allowed keys are the ones the iOS app actually reads. Add a new key
- * here as iOS gains support for it.
- */
-const IOS_METADATA_ALLOWLIST = new Set([
-  "scheduledAt",
-  "localDate",
-  "medicationId",
-  "scheduleId",
-  "phase",
-  "date",
-  // v1.16.11 — MEDICATION_LOW_STOCK deep link + context: the in-app
-  // path the push should open (`/medications/{id}?tab=supply`) plus
-  // the runway / threshold figures the iOS handler can surface.
-  "url",
-  "runwayDays",
-  "thresholdDays",
-  // v1.18.7 — MEASUREMENT_REMINDER carries the reminder's id so a
-  // foreground / handled notification can POST the completion directly
-  // instead of routing through the capture deep link.
-  "reminderId",
-]);
-
-function pickIosMetadata(
-  metadata: Record<string, unknown> | undefined,
-): Record<string, unknown> {
-  if (!metadata) return {};
-  const out: Record<string, unknown> = {};
-  for (const key of Object.keys(metadata)) {
-    if (IOS_METADATA_ALLOWLIST.has(key)) {
-      out[key] = metadata[key];
-    }
-  }
-  return out;
-}
-
-/**
- * Metadata keys that exist so the iOS app can ACT on the notification rather
- * than merely read it. Dropped when the producer says the dispatch carries no
- * completion affordance.
- */
-const ACTION_METADATA_KEYS = new Set(["reminderId"]);
-
-/**
- * Strip the act-on-it keys from a payload whose actions the server will refuse.
- *
- * An appointment nudge rides the same `MEASUREMENT_REMINDER` event type as a
- * checkup, so the iOS app would offer the registered "Erledigt" action and
- * POST a completion the by-id reminder family answers 404 for. Removing the
- * id is what removes the action: the handler has nothing to complete.
- */
-function stripActionMetadata(
-  metadata: Record<string, unknown> | undefined,
-): Record<string, unknown> | undefined {
-  if (!metadata) return metadata;
-  const out: Record<string, unknown> = {};
-  for (const key of Object.keys(metadata)) {
-    if (!ACTION_METADATA_KEYS.has(key)) out[key] = metadata[key];
-  }
-  return out;
-}
-
-/** Cycle-semantic metadata keys that must never ride a discreet payload. */
-const CYCLE_METADATA_KEYS = new Set(["phase"]);
-
-/**
- * Drop cycle-semantic metadata (e.g. `phase`) so a discreet cycle push can't
- * name a cycle concept on the wire even though the allowlist permits the key.
- */
-function stripCycleMetadata(
-  metadata: Record<string, unknown> | undefined,
-): Record<string, unknown> | undefined {
-  if (!metadata) return metadata;
-  const out: Record<string, unknown> = {};
-  for (const key of Object.keys(metadata)) {
-    if (!CYCLE_METADATA_KEYS.has(key)) out[key] = metadata[key];
-  }
-  return out;
 }

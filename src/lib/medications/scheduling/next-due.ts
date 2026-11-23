@@ -23,6 +23,7 @@ import {
   type RecurrenceContext,
 } from "@/lib/medications/scheduling/recurrence";
 import { buildBandsForMedication } from "@/lib/medications/scheduling/band-minter";
+import { predatesMedication } from "@/lib/medications/scheduling/live-era";
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import {
   ADHOC_RESOLVE_EPSILON_MS,
@@ -319,6 +320,16 @@ function findOpenOverdueSlot(
       // before the era floor is rejected explicitly — the minter works in
       // local-day granularity, so the range floor alone is not a guarantee.
       if (anchor < floor.getTime()) continue;
+      // Not owed: its time had passed when the medication was created.
+      if (
+        predatesMedication(
+          band.at,
+          medication,
+          schedule.rollingIntervalDays !== null,
+        )
+      ) {
+        continue;
+      }
       if (anchor >= now.getTime()) continue;
       if (now.getTime() > band.overdueEnd.getTime()) continue;
       if (selfMinted?.has(anchor)) continue;

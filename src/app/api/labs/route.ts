@@ -1,3 +1,4 @@
+import { textContains } from "@/lib/db-like";
 import { NextRequest } from "next/server";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";
 
@@ -98,10 +99,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     ...(analyte && { analyte }),
     ...(panel && { panel }),
     ...(q && {
-      OR: [
-        { analyte: { contains: q, mode: "insensitive" as const } },
-        { panel: { contains: q, mode: "insensitive" as const } },
-      ],
+      OR: [{ analyte: textContains(q) }, { panel: textContains(q) }],
     }),
     ...(from || to
       ? {

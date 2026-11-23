@@ -13,6 +13,7 @@ import {
 } from "@/lib/managed-profiles/guardian-where";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
+import { afterIdentityFieldsChanged } from "@/lib/auth/identity-change";
 import { releaseUnbackedClientApps } from "@/lib/integrations/oauth-kit/connect-target";
 import type { Prisma } from "@/generated/prisma/client";
 import { dayKeyAsUtcMidnight, dateOnlyKey } from "@/lib/tz/date-only";
@@ -469,13 +470,23 @@ export async function updateManagedProfile(input: {
   guardianId: string;
   patch: ManagedProfileEdit;
 }): Promise<ManagedProfileView> {
-  return prisma.$transaction(async (tx) => {
+  let priorTimezone: string | null = null;
+  const view = await prisma.$transaction(async (tx) => {
     return withManagedProfileLock(tx, input.profileId, async (profile) => {
       if (!profile || profile.deletionRequestedAt) {
         throw new ManagedProfileLifecycleError("not_found");
       }
       if (!profile.managedProfileAt) {
         throw new ManagedProfileLifecycleError("not_managed");
+      }
+      if (input.patch.timezone !== undefined) {
+        priorTimezone =
+          (
+            await tx.user.findUnique({
+              where: { id: profile.id },
+              select: { timezone: true },
+            })
+          )?.timezone ?? null;
       }
 
       const guardian = await tx.accountGrant.findFirst({
@@ -526,6 +537,16 @@ export async function updateManagedProfile(input: {
       return toManagedProfileView(updated);
     });
   });
+  // After the commit, the same refresh the person's own profile edit runs:
+  // the record's day grid, compliance and age- and sex-dependent targets.
+  await afterIdentityFieldsChanged(input.profileId, {
+    anthropometrics:
+      input.patch.dateOfBirth !== undefined || input.patch.gender !== undefined,
+    timezone:
+      input.patch.timezone !== undefined &&
+      input.patch.timezone !== priorTimezone,
+  });
+  return view;
 }
 
 /**
@@ -571,6 +592,38 @@ export async function clearManagedProfileMarker(
         await auditLog("cycle.feed.revoke.handover", {
           userId: profile.id,
           details: { revoked: revoked.count },
+          client,
+        });
+      }
+      // The care calendar feed and the emergency card link a Guardian made
+      // for the profile end the same way: the grown-up decides again who
+      // holds a standing link to their appointments or their card.
+      const guardianMinted = {
+        userId: profile.id,
+        createdById: { not: profile.id },
+        revokedAt: null,
+      };
+      const [careFeeds, cardLinks] = await Promise.all([
+        client.careCalendarFeed.updateMany({
+          where: guardianMinted,
+          data: { revokedAt: new Date() },
+        }),
+        client.emergencyCardLink.updateMany({
+          where: guardianMinted,
+          data: { revokedAt: new Date() },
+        }),
+      ]);
+      if (careFeeds.count > 0) {
+        await auditLog("care.feed.revoke.handover", {
+          userId: profile.id,
+          details: { revoked: careFeeds.count },
+          client,
+        });
+      }
+      if (cardLinks.count > 0) {
+        await auditLog("emergency-card.link.revoke.handover", {
+          userId: profile.id,
+          details: { revoked: cardLinks.count },
           client,
         });
       }

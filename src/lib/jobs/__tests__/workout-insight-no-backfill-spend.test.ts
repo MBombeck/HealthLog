@@ -20,7 +20,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * as a passing test about a mock.
  */
 
-vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/logging/context", () => ({
+  annotate: vi.fn(),
+  getEvent: vi.fn(() => undefined),
+}));
+// The iOS data wake is an edge of its own (devices, the relay), not part of
+// the arrival chain this file walks.
+vi.mock("@/lib/push-relay/data-changed", () => ({
+  noteDataChanged: vi.fn(async () => {}),
+}));
 vi.mock("@/lib/jobs/boss-instance", () => ({ getGlobalBoss: vi.fn() }));
 vi.mock("@/lib/modules/gate", () => ({ resolveModuleMap: vi.fn() }));
 // The spine's provider-free prefilter (`aiWorkNotRuledOut`) runs for real; only

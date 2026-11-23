@@ -18,13 +18,22 @@
  * slot is either seeded as taken (its window has opened) or still upcoming,
  * so neither state can turn into a miss on any day the suite runs.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { GET } from "@/app/api/medications/[id]/cadence/route";
 
 import { anonymous, callRoute } from "../../kit/call-route";
 import { makeMedication, makeSession, makeUser } from "../../kit/factories";
 import { getPrismaClient, truncateAllTables } from "../setup";
+import { expectSanitisedIssue } from "../zod-issue-shape";
 
 const prisma = getPrismaClient();
 const ROUTE = "/api/medications/{id}/cadence";
@@ -57,6 +66,23 @@ interface CadenceBody {
 interface ValidationBody {
   details: { issues: Array<Record<string, unknown>> };
 }
+
+// The dose windows are 08:00 to 10:00 UTC. A run that lands inside today's
+// window counts the open dose differently from one after it, so the clock is
+// pinned to 12:00 UTC on the real day: today's dose is taken, every time.
+beforeAll(() => {
+  const now = new Date();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(
+    new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12),
+    ),
+  );
+});
+
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(async () => {
   await truncateAllTables(prisma);
@@ -115,10 +141,12 @@ function pastDays(body: CadenceBody) {
 
 describe("GET /api/medications/{id}/cadence", () => {
   it("computes the timeline and the chips from the stored doses", async () => {
-    const { owner, med } = await dailyMedicationWithOneMiss({
+    const { owner, med, takes } = await dailyMedicationWithOneMiss({
       days: 20,
       missedDaysAgo: 3,
     });
+    // Today's dose exists only once its take time (08:30 UTC) has passed.
+    const takenToday = takes.some((t) => t >= slotStart(0));
 
     const res = await callRoute<CadenceBody>(GET, {
       method: "GET",
@@ -150,8 +178,10 @@ describe("GET /api/medications/{id}/cadence", () => {
     );
     expect(today.every((p) => p.status !== "missed")).toBe(true);
 
-    // One miss three days ago: the run since covers two past days and today.
+    // One miss three days ago: the run since covers the two past days, and
+    // today once today's dose is recorded.
     expect(res.data.chips.missedLast30).toBe(1);
+    expect(takenToday).toBe(true);
     expect(res.data.chips.currentStreak).toBe(3);
     const taken = res.data.timeline.filter((p) => p.status === "taken").length;
     expect(res.data.chips.adherenceRate).toBe(
@@ -210,30 +240,33 @@ describe("GET /api/medications/{id}/cadence", () => {
   });
 
   it.each([
-    ["9999", "too large"],
-    ["0", "below one"],
-    ["notanumber", "not a number"],
-  ])("refuses days=%s (%s) with the multi-issue 422", async (days) => {
-    const owner = await makeUser();
-    const med = await makeMedication(owner);
+    ["9999", "too large", { code: "too_big", maximum: 180 }],
+    ["0", "below one", { code: "too_small", minimum: 1 }],
+    ["notanumber", "not a number", { code: "invalid_type" }],
+  ])(
+    "refuses days=%s (%s) with the multi-issue 422",
+    async (days, _, named) => {
+      const owner = await makeUser();
+      const med = await makeMedication(owner);
 
-    const res = await callRoute(GET, {
-      method: "GET",
-      route: ROUTE,
-      params: { id: med.id },
-      query: { days },
-      auth: await makeSession(owner),
-    });
+      const res = await callRoute(GET, {
+        method: "GET",
+        route: ROUTE,
+        params: { id: med.id },
+        query: { days },
+        auth: await makeSession(owner),
+      });
 
-    expect(res.status).toBe(422);
-    expect(res.error).toBe("Validation failed");
-    const issues = (res.body as ValidationBody).details.issues;
-    expect(issues.length).toBeGreaterThanOrEqual(1);
-    expect(issues.every((i) => i.path === "days")).toBe(true);
-    for (const issue of issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
-    }
-  });
+      expect(res.status).toBe(422);
+      expect(res.error).toBe("Validation failed");
+      const issues = (res.body as ValidationBody).details.issues;
+      expect(issues.length).toBeGreaterThanOrEqual(1);
+      expect(issues.every((i) => i.path === "days")).toBe(true);
+      for (const issue of issues) expectSanitisedIssue(issue);
+      // A bound issue names the declared bound, never the value sent.
+      expect(issues[0]).toMatchObject(named);
+    },
+  );
 
   it("answers 404 for another account's medication", async () => {
     const owner = await makeUser();

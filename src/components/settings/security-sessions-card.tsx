@@ -23,6 +23,7 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet, apiDelete } from "@/lib/api/api-fetch";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import {
   useAccountGrants,
   useRevokeGrant,
@@ -64,13 +65,10 @@ export function SecuritySessionsCard({
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<string | null>(null);
   // "Everywhere" also ends clinician share links unless the person keeps
-  // them. Revoking is the default: this is often pressed after losing a
-  // device or a session, and a link made by whoever held it opens the record
-  // without signing in.
+  // them. Revoking is the default: this is often pressed after losing a device,
+  // and a link made by whoever held it opens the record without signing in.
   const [endShareLinks, setEndShareLinks] = useState(true);
-  // Collapsed by default — the list opens only when the user asks for it, so
-  // the security surface stays calm and skimmable on first paint. UI-only
-  // state; nothing is persisted across reloads.
+  // Collapsed until asked for, so the surface stays calm; UI-only state.
   const [open, setOpen] = useState(false);
   const regionId = useId();
   // The people who can still read this record after "sign out everywhere".
@@ -79,9 +77,8 @@ export function SecuritySessionsCard({
   // a one-click end instead. Held only until the card unmounts.
   const [keptGrants, setKeptGrants] = useState<KeptGrant[]>([]);
   const revokeGrant = useRevokeGrant();
-  // Ending one of them is the same act as on the access card, so it asks the
-  // same question with the same disclosure — and that names the audit window,
-  // which rides the grant list. Read only once there is a row to end.
+  // Ending one asks the access card's question and disclosure, which names the
+  // audit window riding the grant list; read only once there is a row to end.
   const grantListQuery = useAccountGrants(keptGrants.length > 0);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -91,6 +88,8 @@ export function SecuritySessionsCard({
   });
 
   const revokeOne = useMutation({
+    // Confirms in place: the session leaves the list.
+    meta: CONFIRMS_INLINE,
     mutationFn: (id: string) => apiDelete(`/api/auth/me/sessions/${id}`),
     onSuccess: () => {
       setStatus(null);
@@ -103,6 +102,8 @@ export function SecuritySessionsCard({
   });
 
   const revokeOthers = useMutation({
+    // Confirms in place: the status line counts the sessions ended.
+    meta: CONFIRMS_INLINE,
     mutationFn: () =>
       apiDelete<{
         sessionsRevoked: number;
@@ -242,12 +243,30 @@ export function SecuritySessionsCard({
           </ul>
         )}
 
+        {status && (
+          <p role="status" className="text-muted-foreground text-right text-sm">
+            {status}
+          </p>
+        )}
+
+        <KeptGrantsList
+          grants={keptGrants}
+          grantList={grantListQuery}
+          revokeGrant={revokeGrant}
+          onRevoked={(id) =>
+            setKeptGrants((current) => current.filter((g) => g.id !== id))
+          }
+          onRevokeFailed={() =>
+            setStatus(t("recordSharing.actionError.revokeFailed"))
+          }
+        />
+
         {data && (
           <SettingsCardActions>
             <ConfirmButton
+              size="sm"
               slot="sign-out-everywhere"
               destructive
-              className="min-h-11 sm:min-h-9"
               label={t("settings.security.signOutEverywhere")}
               title={t("settings.security.signOutEverywhereConfirmTitle")}
               body={t("settings.security.signOutEverywhereConfirmBody")}
@@ -277,24 +296,6 @@ export function SecuritySessionsCard({
             />
           </SettingsCardActions>
         )}
-
-        {status && (
-          <p role="status" className="text-muted-foreground text-right text-sm">
-            {status}
-          </p>
-        )}
-
-        <KeptGrantsList
-          grants={keptGrants}
-          grantList={grantListQuery}
-          revokeGrant={revokeGrant}
-          onRevoked={(id) =>
-            setKeptGrants((current) => current.filter((g) => g.id !== id))
-          }
-          onRevokeFailed={() =>
-            setStatus(t("recordSharing.actionError.revokeFailed"))
-          }
-        />
       </div>
     </SettingsCard>
   );

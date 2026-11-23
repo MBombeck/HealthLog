@@ -96,4 +96,23 @@ describe("restoredMedicationCreatedAt", () => {
       restoredMedicationCreatedAt(medication, intakeEvents, NOW),
     ).toBeUndefined();
   });
+
+  it("reads a portable file's dose by the medication reference, not the name", () => {
+    const { medication, intakeEvents } = parse({ ref: "src-med-1" }, [
+      {
+        medicationRef: "src-med-1",
+        medication: "Ramipril",
+        scheduledFor: "2025-03-10T08:00:00.000Z",
+      },
+      // Another drug of the same name: not evidence for this one.
+      {
+        medicationRef: "src-med-2",
+        medication: "Ramipril",
+        scheduledFor: "2020-01-01T08:00:00.000Z",
+      },
+    ]);
+    expect(restoredMedicationCreatedAt(medication, intakeEvents, NOW)).toEqual(
+      new Date("2025-03-10T08:00:00.000Z"),
+    );
+  });
 });

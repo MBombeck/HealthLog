@@ -505,7 +505,6 @@ export function DocumentSourcePicker({
               setFrom("");
               setTo("");
             }}
-            className="min-h-8"
           >
             <X className="size-3.5" aria-hidden />
             {t("documents.sourcePicker.clearFilters")}

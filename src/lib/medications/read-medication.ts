@@ -42,6 +42,10 @@ import {
 } from "@/lib/medications/course-authority";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 import { withMedicationNote } from "@/lib/medications/medication-note";
+import {
+  buildLeafletSearch,
+  type MedicineRegistryChoice,
+} from "@/lib/medications/leaflet-registries";
 
 export type ReadUser = Pick<SessionUser, "id" | "timezone" | "locale">;
 type MedicationWithSchedules = Medication & {
@@ -191,8 +195,10 @@ export async function readMedication(input: {
   user: ReadUser;
   grantId: string | null;
   id: string;
+  /** The caller's medicine registry (#1430), for `leafletSearch`. */
+  leafletRegistry: MedicineRegistryChoice;
 }): Promise<Record<string, unknown> | null> {
-  const { user, grantId, id } = input;
+  const { user, grantId, id, leafletRegistry } = input;
   const medication = await prisma.medication.findUnique({
     where: { id },
     include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
@@ -201,7 +207,13 @@ export async function readMedication(input: {
   if (!medication || medication.userId !== user.id) {
     return null;
   }
-  return medicationDetail({ user, grantId, medication, announce: true });
+  return medicationDetail({
+    user,
+    grantId,
+    medication,
+    announce: true,
+    leafletRegistry,
+  });
 }
 
 /**
@@ -218,6 +230,11 @@ export async function medicationDetail(input: {
    * read model passes false and keeps its own action.
    */
   announce: boolean;
+  /**
+   * #1430 — the CALLER's medicine registry (the person in front of the
+   * screen, not the record), from which `leafletSearch` is built.
+   */
+  leafletRegistry: MedicineRegistryChoice;
 }): Promise<Record<string, unknown>> {
   const { user, grantId, medication } = input;
   const id = medication.id;
@@ -296,6 +313,10 @@ export async function medicationDetail(input: {
     stockDosesRemaining,
     runwayDays,
     ingredients: toIngredientDtos(ingredientRows, user.locale ?? null),
+    // #1430 — the official registry search for this medication, built from
+    // the static template table; null when the caller chose no registry.
+    // Nothing is fetched: a client opens `url` in a new tab.
+    leafletSearch: buildLeafletSearch(input.leafletRegistry, medication),
     // The records this medication relates to (`src/lib/links/`).
     related: await buildRelated(prisma, {
       userId: user.id,

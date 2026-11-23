@@ -8,8 +8,7 @@ import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { apiDelete } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
-import { formatDate } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { useAccountDeletionGrace } from "@/lib/queries/use-privacy-summary";
 import {
@@ -64,6 +63,7 @@ export function DeleteUserControl({
  */
 function DeleteUserButton({ user }: { user: AdminUser }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   const grace = useAccountDeletionGrace();
   const recentProof = useRecentProof();
@@ -83,7 +83,7 @@ function DeleteUserButton({ user }: { user: AdminUser }) {
         result.scheduledPurgeAt
           ? t("admin.section.users.deleteUserScheduled", {
               name: user.username,
-              date: formatDate(result.scheduledPurgeAt),
+              date: fmt.date(result.scheduledPurgeAt),
             })
           : t("admin.section.users.deleteUserDone", { name: user.username }),
       );
@@ -119,7 +119,7 @@ function DeleteUserButton({ user }: { user: AdminUser }) {
           purgeOn
             ? t("admin.section.users.deleteUserBodyGrace", {
                 name: user.username,
-                date: formatDate(purgeOn),
+                date: fmt.date(purgeOn),
               })
             : t("admin.section.users.deleteUserBodyNow", {
                 name: user.username,

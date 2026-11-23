@@ -280,7 +280,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(105);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(106);
   });
 });
 
@@ -2591,6 +2591,42 @@ proveManageRoute(
   },
 );
 
+manageContract("DELETE /api/medications/[id]/glp1/dose-changes", {
+  contract: admittedContract(
+    "/api/medications/[id]/glp1/dose-changes",
+    "DELETE",
+  ),
+  prepare: async (ownerId) => {
+    const { medication } = await makeDoseStep(ownerId);
+    const step = await getPrismaClient().medicationDoseChange.create({
+      data: {
+        medicationId: medication.id,
+        effectiveFrom: new Date(ISO),
+        doseValue: 1,
+        doseUnit: "mg",
+        clientId: "step-matrix",
+      },
+    });
+    return { medication, step };
+  },
+  act: async ({ medication }) =>
+    call(
+      await matrixHandler(
+        admittedContract("/api/medications/[id]/glp1/dose-changes", "DELETE"),
+      ),
+      "DELETE",
+      `/api/medications/${medication.id}/glp1/dose-changes?clientId=step-matrix`,
+      undefined,
+      { id: medication.id },
+    ),
+  ok: 204,
+  auditAction: "medication.glp1.doseChange.delete",
+  applied: async ({ step }) =>
+    (await getPrismaClient().medicationDoseChange.findUnique({
+      where: { id: step.id },
+    })) === null,
+});
+
 proveManageRoute("PUT /api/medications/[id]/ingredients", {
   route: "/api/medications/[id]/ingredients",
   action: "PUT",
@@ -3288,7 +3324,7 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(105);
+    expect(STRICT_DRIVER_KEYS.size).toBe(106);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 });
@@ -3300,6 +3336,6 @@ describe("the complete MANAGE handler matrix", () => {
 afterAll(() => {
   if (EFFECT_CASES_STARTED.size !== STRICT_DRIVER_KEYS.size) return;
   const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-  expect(REAL_EFFECT_KEYS.size).toBe(105);
+  expect(REAL_EFFECT_KEYS.size).toBe(106);
   expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
 });

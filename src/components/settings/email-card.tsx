@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
@@ -93,15 +93,13 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
       />
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="email-toggle">{t("settings.emailEnable")}</Label>
-          <Switch
-            id="email-toggle"
-            checked={settings?.enabled ?? false}
-            onCheckedChange={(checked) => toggle.mutate(checked)}
-            disabled={!settings || save.isPending || toggle.isPending}
-          />
-        </div>
+        <SwitchRow
+          label={t("settings.emailEnable")}
+          id="email-toggle"
+          checked={settings?.enabled ?? false}
+          onCheckedChange={(checked) => toggle.mutate(checked)}
+          disabled={!settings || save.isPending || toggle.isPending}
+        />
 
         <form
           onSubmit={(e) => {
@@ -138,9 +136,9 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
               unsavedChanges={dirty}
             />
             <Button
+              size="sm"
               type="submit"
               disabled={save.isPending || toggle.isPending}
-              className="min-h-11"
             >
               {save.isPending && (
                 <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />

@@ -425,7 +425,14 @@ describe("PUT /api/insights/layout — 422 multi-issue envelope", () => {
     expect(paths).toEqual(["tiles", "version"]);
 
     for (const issue of body.details.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
   });
 
@@ -465,7 +472,14 @@ describe("PUT /api/insights/layout — 422 multi-issue envelope", () => {
       // The filed issues strip `message` so a future Zod code that
       // echoes the offending value cannot leak into the audit
       // surface.
-      expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "path"]);
     }
   });
 
@@ -516,7 +530,14 @@ describe("PUT /api/insights/layout — 422 multi-issue envelope", () => {
     expect(Array.isArray(issues)).toBe(true);
     expect(issues.length).toBeGreaterThanOrEqual(2);
     for (const issue of issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
   });
 
@@ -711,16 +732,18 @@ describe("PUT /api/insights/layout — optimistic concurrency", () => {
     // The merge-read `previous` (no row) then the post-write token read.
     vi.mocked(prisma.user.findUnique)
       .mockResolvedValueOnce({ insightsLayoutJson: null } as never)
-      .mockResolvedValueOnce({ updatedAt: advanced } as never);
+      .mockResolvedValueOnce({ insightsLayoutRevisedAt: advanced } as never);
 
     const res = await callPut(makeReq(body(base.toISOString())));
     expect(res.status).toBe(200);
 
     expect(prisma.user.updateMany).toHaveBeenCalledTimes(1);
     const whereArg = vi.mocked(prisma.user.updateMany).mock.calls[0]?.[0]
-      ?.where as { id: string; updatedAt: Date };
+      ?.where as { id: string; insightsLayoutRevisedAt: Date };
     expect(whereArg.id).toBe("user-1");
-    expect((whereArg.updatedAt as Date).toISOString()).toBe(base.toISOString());
+    expect((whereArg.insightsLayoutRevisedAt as Date).toISOString()).toBe(
+      base.toISOString(),
+    );
     expect(prisma.user.update).not.toHaveBeenCalled();
 
     const bodyJson = (await res.json()) as { data: { updatedAt: string } };
@@ -764,7 +787,7 @@ describe("PUT /api/insights/layout — optimistic concurrency", () => {
       insightsLayoutJson: null,
     } as never);
     vi.mocked(prisma.user.update).mockResolvedValue({
-      updatedAt: new Date("2026-07-24T11:00:00.000Z"),
+      insightsLayoutRevisedAt: new Date("2026-07-24T11:00:00.000Z"),
     } as never);
 
     const res = await callPut(makeReq(body()));

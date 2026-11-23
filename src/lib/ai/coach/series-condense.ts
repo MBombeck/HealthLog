@@ -25,6 +25,7 @@
  */
 import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import type { CoachScopeSource } from "./types";
+import { mean } from "@/lib/stats/central";
 
 /** Daily rows a condensed block keeps, newest first in time order. */
 export const KEEP_DAILY_ROWS = 7;
@@ -107,18 +108,17 @@ export function summariseDaily(
     .sort((a, b) => a.date.localeCompare(b.date));
   if (days.length === 0) return null;
   const values = days.map((d) => d.value);
-  const mean = (list: number[]) =>
-    list.reduce((s, v) => s + v, 0) / list.length;
   const from = days[0].date;
   const to = days[days.length - 1].date;
   const firstEnd = shiftDay(from, COMPARE_DAYS - 1);
   const latestStart = shiftDay(to, -(COMPARE_DAYS - 1));
+  // Each window holds its own end day, so neither is empty.
   const firstWeek = mean(
     days.filter((d) => d.date <= firstEnd).map((d) => d.value),
-  );
+  )!;
   const latestWeek = mean(
     days.filter((d) => d.date >= latestStart).map((d) => d.value),
-  );
+  )!;
   return {
     from,
     to,
@@ -127,7 +127,7 @@ export function summariseDaily(
     last: values[values.length - 1],
     min: Math.min(...values),
     max: Math.max(...values),
-    mean: round(mean(values)),
+    mean: round(mean(values)!),
     firstWeekMean: round(firstWeek),
     latestWeekMean: round(latestWeek),
     change: round(latestWeek - firstWeek),

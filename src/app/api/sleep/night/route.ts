@@ -61,6 +61,9 @@ const querySchema = z.object({
 function serializeSession(s: SleepSession) {
   return {
     night: s.night,
+    // iOS #181 — the zone the night is read in when its rows carry one
+    // that is not the profile zone (a night slept abroad); null otherwise.
+    timeZone: s.timeZone,
     source: s.source,
     start: s.start.toISOString(),
     end: s.end.toISOString(),

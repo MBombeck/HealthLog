@@ -101,7 +101,7 @@ export const GET = apiHandler(async () => {
       : Promise.resolve<string[]>([]),
     prisma.userHealthProfile.findUnique({
       where: { userId: user.id },
-      select: { updatedAt: true, aiIncludedSections: true },
+      select: { aboutMeRevisedAt: true, aiIncludedSections: true },
     }),
     getAiCapability("aboutMeQuestions"),
   ]);
@@ -142,7 +142,7 @@ export const GET = apiHandler(async () => {
     coachFocus: ctx.coachFocus,
     pendingQuestions,
     aiIncludedSections,
-    updatedAt: row?.updatedAt?.toISOString() ?? null,
+    updatedAt: row?.aboutMeRevisedAt?.toISOString() ?? null,
     maxChars: ABOUT_ME_MAX_CHARS,
     fieldMaxChars: ABOUT_ME_FIELD_MAX_CHARS,
     ai,
@@ -174,9 +174,9 @@ export const PUT = apiHandler(async (req: Request) => {
 
   // v1.32.21 — pull the optimistic-concurrency base token off the body
   // BEFORE the Zod parse (issue #581 family). The token guards on
-  // `UserHealthProfile.updatedAt`, which — unlike the layout endpoints on the
-  // shared `User` row — moves only when THIS surface (or the `/adopt`
-  // sub-route) writes, so it is noise-free.
+  // `UserHealthProfile.aboutMeRevisedAt`, the document's own revision: the
+  // emergency profile and the pending questions share this row, and a write
+  // to them must not make an about-me save conflict.
   const taken = takeBaseToken(rawBody);
   if ("invalid" in taken) return invalidBaseTokenError();
   const base = taken.base;
@@ -268,8 +268,8 @@ export const PUT = apiHandler(async (req: Request) => {
     let updatedAtIso: string;
     let savedProfileUpdatedAt: Date | null = null;
 
-    // v1.32.21 — optimistic concurrency on
-    // `UserHealthProfile.updatedAt`.
+    // Optimistic concurrency on the about-me document's own revision
+    // (`aboutMeRevisedAt`, moved by the database when one of its fields does).
     //   - no base token → today's upsert (backward-compat arm);
     //   - base present + row still carries it → conditional update;
     //   - base present + zero match → create if the row vanished, otherwise
@@ -279,19 +279,19 @@ export const PUT = apiHandler(async (req: Request) => {
         where: { userId: user.id },
         create: { userId: user.id, ...update },
         update,
-        select: { updatedAt: true },
+        select: { aboutMeRevisedAt: true },
       });
-      updatedAtIso = row.updatedAt.toISOString();
-      savedProfileUpdatedAt = row.updatedAt;
+      updatedAtIso = row.aboutMeRevisedAt.toISOString();
+      savedProfileUpdatedAt = row.aboutMeRevisedAt;
     } else {
       const guarded = await tx.userHealthProfile.updateMany({
-        where: { userId: user.id, updatedAt: base },
+        where: { userId: user.id, aboutMeRevisedAt: base },
         data: update,
       });
       if (guarded.count === 0) {
         const existing = await tx.userHealthProfile.findUnique({
           where: { userId: user.id },
-          select: { updatedAt: true },
+          select: { aboutMeRevisedAt: true },
         });
         if (existing) {
           return {
@@ -301,17 +301,17 @@ export const PUT = apiHandler(async (req: Request) => {
         }
         const created = await tx.userHealthProfile.create({
           data: { userId: user.id, ...update },
-          select: { updatedAt: true },
+          select: { aboutMeRevisedAt: true },
         });
-        updatedAtIso = created.updatedAt.toISOString();
-        savedProfileUpdatedAt = created.updatedAt;
+        updatedAtIso = created.aboutMeRevisedAt.toISOString();
+        savedProfileUpdatedAt = created.aboutMeRevisedAt;
       } else {
         const fresh = await tx.userHealthProfile.findUnique({
           where: { userId: user.id },
-          select: { updatedAt: true },
+          select: { aboutMeRevisedAt: true },
         });
-        updatedAtIso = (fresh?.updatedAt ?? new Date()).toISOString();
-        savedProfileUpdatedAt = fresh?.updatedAt ?? null;
+        updatedAtIso = (fresh?.aboutMeRevisedAt ?? new Date()).toISOString();
+        savedProfileUpdatedAt = fresh?.aboutMeRevisedAt ?? null;
       }
     }
 
@@ -439,10 +439,10 @@ export const PUT = apiHandler(async (req: Request) => {
 
   const finalProfileRow = await prisma.userHealthProfile.findUnique({
     where: { userId: user.id },
-    select: { updatedAt: true },
+    select: { aboutMeRevisedAt: true },
   });
   if (finalProfileRow) {
-    updatedAtIso = finalProfileRow.updatedAt.toISOString();
+    updatedAtIso = finalProfileRow.aboutMeRevisedAt.toISOString();
   }
 
   return apiSuccess({

@@ -25,6 +25,21 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// The resting proxy folds in SQL; the fake derives it from `proxyRows` in
+// the zone the read is asked for.
+let proxyRows: Array<{ value: number; measuredAt: Date }> = [];
+vi.mock("@/lib/analytics/resting-pulse-read", async () => {
+  const { deriveRestingProxyFromPulse } =
+    await import("@/lib/analytics/resting-pulse");
+  const { userDayKey } = await import("@/lib/tz/format");
+  return {
+    readRestingPulseProxy: async (opts: { timeZone: string }) =>
+      deriveRestingProxyFromPulse(proxyRows, (d) =>
+        userDayKey(d, opts.timeZone),
+      ),
+  };
+});
+
 vi.mock("@/lib/insights/status-provider", () => ({
   runStatusCompletion: vi.fn(),
 }));
@@ -80,6 +95,7 @@ function stubCompletion(
 }
 
 beforeEach(() => {
+  proxyRows = [];
   vi.resetAllMocks();
   vi.mocked(prisma.insightStatusCache.findUnique).mockResolvedValue(null);
   vi.mocked(prisma.insightStatusCache.upsert).mockResolvedValue({} as never);
@@ -118,11 +134,14 @@ describe("generatePulseStatusForUser — graded payload", () => {
       .map((r) => ({ bucket_start: r.measuredAt, mean: r.value }))
       .reverse();
     vi.mocked(prisma.$queryRaw).mockImplementation(((
-      strings: TemplateStringsArray,
-    ) =>
-      Promise.resolve(
-        strings.join("").includes("measurement_rollups") ? [] : dayBuckets,
-      )) as never);
+      strings: TemplateStringsArray | { strings: readonly string[] },
+    ) => {
+      // A tagged template or a `Prisma.sql` statement.
+      const text = ("raw" in strings ? strings : strings.strings).join("");
+      return Promise.resolve(
+        text.includes("measurement_rollups") ? [] : dayBuckets,
+      );
+    }) as never);
     vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
 
     const captured: { userPrompt: string | null } = { userPrompt: null };
@@ -250,6 +269,7 @@ describe("generatePulseStatusForUser — A2 resting-target in-target %", () => {
       .mockResolvedValueOnce(pulseRecords as never)
       .mockResolvedValueOnce([] as never); // no RESTING_HEART_RATE
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+    proxyRows = pulseRecords;
     vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
 
     const captured: { userPrompt: string | null } = { userPrompt: null };

@@ -301,6 +301,7 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // v1.40 (#1041) — the person's own category vocabulary: the same row
   // store, the same data-layer reasoning.
   "src/app/api/medications/categories/route.ts",
+  "src/app/api/medications/resolved-slots/route.ts",
   "src/app/api/medications/categories/[key]/route.ts",
   // v1.40 (#1024) — a medication's courses, same again.
   "src/app/api/medications/[id]/courses/route.ts",
@@ -327,6 +328,8 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/medications/[id]/glp1/route.ts",
   // #169 — correcting and removing a titration step, the same rows.
   "src/app/api/medications/[id]/glp1/dose-changes/[doseChangeId]/route.ts",
+  // Removing a titration step by its client id: the same rows again.
+  "src/app/api/medications/[id]/glp1/dose-changes/route.ts",
   "src/app/api/medications/[id]/phase-config/route.ts",
   "src/app/api/medications/[id]/intake/route.ts",
   "src/app/api/medications/[id]/intake/[eventId]/route.ts",

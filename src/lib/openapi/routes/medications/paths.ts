@@ -18,6 +18,7 @@ import {
   intakeAggregateQuerySchema,
   intakeStatusUpdateSchema,
   glp1PostBodySchema,
+  glp1DoseChangeDeleteQuerySchema,
   glp1DoseChangePatchSchema,
   bulkDeleteIntakeEventsSchema,
   updateIntakeEventSchema,
@@ -88,6 +89,9 @@ import {
   medicationInventoryItemResource,
   medicationSupplySummaryResource,
   medicationIntakeEventResource,
+  recordedIntakeEventResource,
+  resolvedSlotsQuery,
+  resolvedSlotsResponse,
   medicationCadenceResponse,
   medicationComplianceResponse,
   medicationComplianceSummaryEntry,
@@ -150,7 +154,9 @@ const bulkIntakeEntry = z
     medicationId: z.string().min(1),
     scheduledFor: isoDateTime()
       .optional()
-      .describe("ISO instant; defaults to `takenAt` then now() when omitted."),
+      .describe(
+        "ISO instant; defaults to `takenAt` then now() when omitted. On a take the same rule as `POST /api/medications/{id}/intake`: A take that names a real slot of the medication counts for it when the slot lies behind the take (however late) or the take sits inside the slot's window, from its early grace on (a 20:00 dose taken at 19:30 counts for 20:00). A slot further ahead does not bind: the take answers the slot its own time falls into, or none. For a dose that is not open yet, send `forceSlotInstant`.",
+      ),
     takenAt: isoDateTime()
       .optional()
       .describe("ISO instant of the take; omit + `skipped:false` = pending."),
@@ -215,17 +221,53 @@ const bulkIntakeEntryResult = z
   .object({
     index: z.number().int().nonnegative(),
     status: z
-      .enum(["inserted", "updated", "duplicate", "skipped"])
+      .enum(["inserted", "updated", "duplicate", "alreadyTaken", "skipped"])
       .describe(
-        "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor). `skipped` — not stored; see `reason`.",
+        "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent replay of an entry already stored, nothing else. A dose the phone reported deleted through `DELETE /api/medications/intake/by-external-ids` is the other case: posted again, it is back in Apple Health and lands as a new dose (`inserted`). `alreadyTaken` — the slot already holds a take recorded by another writer or another key, and this entry was a take or a skip: nothing was written, no stock consumed or refunded; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose. `skipped` — not stored; see `reason`. Since v1.49.0 that includes the re-post of an Apple Health dose (`externalId`) the person deleted in HealthLog, `deleted_in_healthlog`: it stays deleted, nothing was written and no stock was taken.",
       ),
     reason: z
       .string()
       .optional()
       .describe(
-        "Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`, `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0) `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same answer.",
+        "Why a `skipped` entry was not stored. Among others: `deleted_in_healthlog` (since v1.49.0) for the re-post of a dose the person deleted in HealthLog, `medication_not_found`, `unstable_external_id`, `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0) `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same answer.",
       ),
     id: z.string().optional().describe("The landed row id (absent on skips)."),
+    syncVersion: z
+      .number()
+      .int()
+      .optional()
+      .describe(
+        "The landed row's version after the batch settled (absent on skips). Send it as `expectedSyncVersion` to undo the entry; a row changed since answers 409 `medications.intake.changedSinceSeen`. The `intake` row on `alreadyTaken` carries the same value.",
+      ),
+    intake: medicationIntakeEventResource
+      .optional()
+      .describe("On `alreadyTaken`: the recorded row the slot already holds."),
+    takenAt: isoDateTime()
+      .nullable()
+      .optional()
+      .describe(
+        "On `alreadyTaken`, and since v1.49.0 on a `force_slot_occupied` skip: when the take that holds the slot was recorded (null when a skip holds it).",
+      ),
+    takenVia: z
+      .enum([
+        "WEB",
+        "APP",
+        "INTEGRATION",
+        "TELEGRAM",
+        "APPLE_HEALTH",
+        "IMPORT",
+        "AUTO",
+      ])
+      .nullable()
+      .optional()
+      .describe(
+        "On `alreadyTaken`, and since v1.49.0 on a `force_slot_occupied` skip: where the slot's take came from (null for takes before migration 0515, and when a skip holds the slot).",
+      ),
+    slotInstant: isoDateTime()
+      .nullable()
+      .describe(
+        "Since v1.49.0, on every entry. The canonical slot the entry's row is on, as `POST /api/medications/{id}/intake` answers it: the slot a take or skip bound to (by its window, a named `scheduledFor` or a `forceSlotInstant` pin), and on `alreadyTaken` the slot of the recorded take. Null for a row on no slot (an ad-hoc take, an extra dose) and for an entry that stored nothing; a `force_slot_occupied` skip names the slot it was refused. An entry answered by a row it did not write (`duplicate`) reads the slot off that row. The device that sent the batch gets no silent `MEDICATION_INTAKE_SYNC` for it; this field is its answer.",
+      ),
   })
   .meta({ id: "BulkMedicationIntakeEntryResult" });
 
@@ -269,13 +311,21 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Today's doses, or per-day compliance",
       description:
-        "Two reads behind one path, chosen by `scope`. `today` lists every dose slot for the current local day across all medications, ordered by slot. `compliance` returns per-day scheduled-versus-taken buckets over the trailing `days`. The `today` scope WRITES before it reads: it projects the pending intake rows for every active schedule whose window opens today and idempotently backfills the missing ones, because a daily schedule has no row to read until the reminder worker reaches the end of its dose window — so a plain read would return an empty morning. The `compliance` scope is cached per (record, days, timezone). Delegable at READ level over the `medications` section. Not module-gated. Cookie or Bearer auth.",
-      requestParams: { query: intakeAggregateQuerySchema },
+        "Two reads behind one path, chosen by `scope`. `today` lists every dose slot for the current local day across all medications, ordered by slot. `compliance` returns per-day scheduled-versus-taken buckets over the trailing `days`. The `today` scope WRITES before it reads: it projects the pending intake rows for every active schedule whose window opens today and idempotently backfills the missing ones, because a daily schedule has no row to read until the reminder worker reaches the end of its dose window — so a plain read would return an empty morning. The `compliance` scope is cached per (record, days, timezone). v1.49.0: the `today` scope answers with an `ETag`, a hash of the exact body, which changes on any change to the rows (an edit, a new row, a tombstoned row that leaves the list, a dose whose resolved state moved with the clock) and on nothing else; a request whose `If-None-Match` names it answers 304 with no body, so a client confirms its cached rows in one round trip. Delegable at READ level over the `medications` section. Not module-gated. Cookie or Bearer auth.",
+      requestParams: {
+        query: intakeAggregateQuerySchema,
+        header: z.object({
+          "if-none-match": z.string().optional().meta({
+            description:
+              "`scope=today` only: the `ETag` of the rows the client holds. A match answers 304.",
+          }),
+        }),
+      },
       responses: {
         ...recordRefusal(),
         "200": {
           description:
-            "`TodayIntakeEntry[]` for `scope=today`, `MedicationComplianceDayBucket[]` for `scope=compliance`. The array is the whole payload — there is no wrapper object inside `data`.",
+            "`TodayIntakeEntry[]` for `scope=today`, `MedicationComplianceDayBucket[]` for `scope=compliance`. The array is the whole payload — there is no wrapper object inside `data`. `scope=today` carries `ETag`, `HealthLog-As-Of` and `Cache-Control: private, no-cache`.",
           content: {
             "application/json": {
               schema: dataEnvelope(
@@ -285,6 +335,33 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 ]),
                 "MedicationIntakeAggregateEnvelope",
               ),
+            },
+          },
+          headers: {
+            ETag: {
+              description:
+                "`scope=today` only: the strong content tag of the body, for `If-None-Match`.",
+              schema: { type: "string" as const },
+            },
+            "HealthLog-As-Of": {
+              description:
+                "v1.49.0, `scope=today` only: the server instant the rows were read at (ISO 8601, UTC, milliseconds). Compare it with `asOf` of a `MEDICATION_INTAKE_RECORDED` push: a push newer than the list holds a change the list does not show yet. A header, not a body field, so it does not move the `ETag`.",
+              schema: { type: "string" as const, format: "date-time" },
+            },
+          },
+        },
+        "304": {
+          description:
+            "`scope=today` only: the rows are unchanged since the `If-None-Match` ETag. No body; the `ETag` is repeated, and `HealthLog-As-Of` names the instant they were confirmed current.",
+          headers: {
+            ETag: {
+              description: "The same tag as the request's `If-None-Match`.",
+              schema: { type: "string" as const },
+            },
+            "HealthLog-As-Of": {
+              description:
+                "The server instant the rows were read and found unchanged (ISO 8601, UTC, milliseconds).",
+              schema: { type: "string" as const, format: "date-time" },
             },
           },
         },
@@ -331,7 +408,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "Body validation failed (multi-issue envelope, breadcrumbed as `medications.intake.update.validation-failed`), or `meta.errorCode` = `medications.intake.injection_site.disallowed` when the site is outside the medication's effective allowed set, or `medications.intake.force_slot.invalid` when `forceSlotInstant` is not a real slot of the medication, or (v1.42.0) `medication.intake.notTracked` when the event is still open and its medication is kept as a record only (`trackIntake: false`): resolving or snoozing it would record a new dose that is counted nowhere. Correcting an event that is already taken or skipped stays open. The coded refusals carry no issue list — branch on the code.",
+            "Body validation failed (multi-issue envelope, breadcrumbed as `medications.intake.update.validation-failed`), or `meta.errorCode` = `medications.intake.injection_site.disallowed` when the site is outside the medication's effective allowed set, or `medications.intake.force_slot.invalid` when `forceSlotInstant` is not a real slot of the medication, or `medications.intake.force_slot.occupied` when a take would move onto a slot that already holds a take (nothing changes; the dose stays on its row), or (v1.42.0) `medication.intake.notTracked` when the event is still open and its medication is kept as a record only (`trackIntake: false`): resolving or snoozing it would record a new dose that is counted nowhere. Correcting an event that is already taken or skipped stays open. The coded refusals carry no issue list — branch on the code.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "401": stdResponses["401"],
@@ -678,6 +755,34 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/medications/{id}/glp1/dose-changes": {
+    delete: {
+      tags: ["Medications"],
+      summary: "Remove one GLP-1 titration step by its client id",
+      description:
+        "For a step a device removed before its upload answered: the device knows the `clientId` but not the server id, and not whether the step reached the server. Idempotent: removes the step under this `clientId` when one exists, and spends the client id either way, so a create under it that arrives later answers 410 `glp1.doseChange.deleted` and writes nothing. Answers 204 whether or not a step was found. A create that was already past its own check when this delete ran can still land; a client that sees that create answer 200 or 201 sends this delete once more. Audits `medication.glp1.doseChange.delete` when a step was removed. Rate-limited 30/min keyed on the ACTOR, shared with the step's other writes. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
+      requestParams: {
+        path: z.object({ id: z.string() }),
+        query: glp1DoseChangeDeleteQuerySchema,
+      },
+      responses: {
+        ...recordRefusal(),
+        "204": {
+          description:
+            "The client id is spent, and the step under it, if there was one, is removed. No body.",
+        },
+        "404": {
+          description: "No such medication for this record.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description: "`clientId` is missing or malformed.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
   "/api/medications/{id}/glp1/dose-changes/{doseChangeId}": {
     patch: {
       tags: ["Medications"],
@@ -723,7 +828,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Remove one GLP-1 titration step",
       description:
-        "A HARD delete: the step is removed, not tombstoned, and its client id is free again. The audit row (`medication.glp1.doseChange.delete`) carries the step's dose, unit, date and client id, so the removal is reconstructable from the trail. Rate-limited 30/min keyed on the ACTOR. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
+        "A HARD delete: the step is removed. Its client id is spent with it, so a later create under the same `clientId` answers 410 `glp1.doseChange.deleted` instead of bringing the step back. A step known only by its client id is removed at `DELETE /api/medications/{id}/glp1/dose-changes?clientId=`. The audit row (`medication.glp1.doseChange.delete`) carries the step's dose, unit, date and client id, so the removal is reconstructable from the trail. Rate-limited 30/min keyed on the ACTOR. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
       requestParams: {
         path: z.object({ id: z.string(), doseChangeId: z.string() }),
       },
@@ -814,7 +919,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "Body validation failed (multi-issue), or one of three coded refusals: `medications.intake.taken_at.before_start` when the edited take predates the medication's start day in the record's timezone, `medications.intake.force_slot.invalid` when the pinned instant is not a real slot, and `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds.",
+            "Body validation failed (multi-issue), or one of three coded refusals: `medications.intake.taken_at.before_start` when the edited take predates the medication's start day in the record's timezone, `medications.intake.force_slot.invalid` when the pinned instant is not a real slot, and `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds (since v1.49.0 with `meta.slotInstant`, `meta.takenAt` and `meta.takenVia` of the dose that holds it), or when the corrected dose would move onto a slot that already holds a take (nothing changes; the dose stays where it was).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "401": stdResponses["401"],
@@ -825,12 +930,34 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Undo one dose",
       description:
-        "A SOFT delete: the row stays, `deletedAt` is stamped and the sync counter bumps, so a client that was offline when it happened receives a tombstone keyed on the server id rather than silently keeping the dose forever. Every today, compliance and list read filters tombstones out, so it is invisible from here on. The inventory stamp is REFUNDED — undoing a dose puts the units back in the container — and the day's compliance rollup is recomputed, dropping the row entirely when the day now holds nothing. Undoing the single live dose of a one-shot medication reactivates that medication so the lists and the worker pick it back up. Re-deleting is harmless. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
+        "Undo is serialised with every take of the slot and re-reads the row under the slot lock. Send `expectedSyncVersion` (and, for a take recorded with a key, `expectedIdempotencyKey`) so an undo never removes a dose another writer recorded. A SOFT delete: the row stays, `deletedAt` is stamped and the sync counter bumps, so a client that was offline when it happened receives a tombstone keyed on the server id rather than silently keeping the dose forever. Every today, compliance and list read filters tombstones out, so it is invisible from here on. The inventory stamp is REFUNDED — undoing a dose puts the units back in the container — and the day's compliance rollup is recomputed, dropping the row entirely when the day now holds nothing. Undoing the single live dose of a one-shot medication reactivates that medication so the lists and the worker pick it back up. Re-deleting is harmless. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
       requestParams: {
         path: z.object({ id: z.string(), eventId: z.string() }),
+        query: z.object({
+          expectedSyncVersion: z
+            .string()
+            .regex(/^\d{1,9}$/)
+            .optional()
+            .describe(
+              "The row's `syncVersion` as this client last saw it (the take's response carries it). When the row has changed since, the undo is refused with 409 and nothing is deleted. Sent but not a whole number from 0 (e.g. `-1`, `1.5`, empty): 422 `medications.intake.invalidPrecondition`, nothing deleted.",
+            ),
+          expectedIdempotencyKey: z
+            .string()
+            .min(1)
+            .max(128)
+            .optional()
+            .describe(
+              "The idempotency key of the take this client recorded. When the row carries another key it holds someone else's take (a take that answered `alreadyTaken` keeps the first writer's key), so the undo is refused with 409. Sent but empty or over 128 characters: 422 `medications.intake.invalidPrecondition`, nothing deleted.",
+            ),
+        }),
       },
       responses: {
         ...recordRefusal(),
+        "409": {
+          description:
+            "`medications.intake.changedSinceSeen`: the row changed since the client read it, or holds another writer's take. Nothing was deleted; re-read the slot.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         "200": {
           description: "The dose was tombstoned and its inventory refunded.",
           content: {
@@ -848,6 +975,11 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
+        "422": {
+          description:
+            "`medications.intake.invalidPrecondition`: `expectedSyncVersion` or `expectedIdempotencyKey` was sent but is not readable. Nothing was deleted; an absent precondition is allowed, a broken one never skips the check.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },
@@ -1550,7 +1682,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Log an intake event for a medication",
       description:
-        "Records a taken or skipped dose. Idempotent via the `Idempotency-Key` header AND the optional `idempotencyKey` body field (the route walks both paths); a re-post inside the 60 s server-side dedup window returns the original event. Non-skipped intakes auto-decrement pen inventory (best-effort), refresh the per-day compliance rollup, and — for `oneShot:true` medications — flip `active` to false.",
+        "Records a taken or skipped dose. Idempotent via the `Idempotency-Key` header AND the optional `idempotencyKey` body field (the route walks both paths). Without a key, a dose no slot answers that repeats a recorded one within a minute (a take of the same kind with its `takenAt` within 60 s, a skip anchored within 60 s) is answered with that row; the check reads what rows record, so a pending slot, a deleted row or a take at another time never counts. Non-skipped intakes auto-decrement pen inventory (best-effort), refresh the per-day compliance rollup, and — for `oneShot:true` medications — flip `active` to false.",
       requestParams: {
         path: z.object({ id: z.string() }),
       },
@@ -1562,11 +1694,12 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...idempotentWrite(),
         ...recordRefusal(),
         "201": {
-          description: "Intake event created.",
+          description:
+            "Intake event created. A dose no slot answers is stored on its own instant (`scheduledFor = takenAt`); when another live row of the medication holds that exact instant (an extra dose logged on the minute of a slot), it is stored on the next free millisecond, both fields moved together.",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                medicationIntakeEventResource,
+                recordedIntakeEventResource,
                 "CreateMedicationIntakeResponse",
               ),
             },
@@ -1574,11 +1707,11 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "200": {
           description:
-            "Idempotent replay — the original event is returned without creating a new row.",
+            "Idempotent replay — the original event is returned without creating a new row (a key replay with `alreadyTaken: false`, a keyless skip within a minute of a recorded skip the same way). A keyless take that no slot answers, within a minute of a recorded take of the same kind on its own instant (an extra dose of an extra dose, a plain take of a plain take), is a double tap: that row with `alreadyTaken: true`, nothing written. Also a repeat: a take that names no slot, for a slot already holding a take recorded within two hours, returns that row with `alreadyTaken: true` and writes nothing (one further away is a dose of its own and answers the nearest open slot, 201). A take or a skip that names a slot already holding a take answers the same way: the first take is never overwritten from here, and a deliberate change of a recorded take goes through the row (`POST /api/medications/intake`, `PUT /api/medications/{id}/intake/{eventId}`).",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                medicationIntakeEventResource,
+                recordedIntakeEventResource,
                 "ReplayMedicationIntakeResponse",
               ),
             },
@@ -1592,7 +1725,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...recordWriteRateLimitResponse,
         "422": {
           description:
-            "Body validation failed (multi-issue envelope), or `meta.errorCode` names the refusal: `medications.intake.injection_site.disallowed`, `medications.intake.force_slot.invalid`, or (v1.42.0) `medication.intake.notTracked` when the medication is kept as a record only (`trackIntake: false`). Its stored history stays; a new dose is refused rather than stored and counted nowhere. The check runs after ownership, so a foreign medication is still a 404.",
+            "Body validation failed (multi-issue envelope), or `meta.errorCode` names the refusal: `medications.intake.injection_site.disallowed`, `medications.intake.force_slot.invalid`, `medications.intake.force_slot.occupied` (the pinned slot already holds a recorded take or skip; since v1.49.0 `meta.slotInstant`, `meta.takenAt` and `meta.takenVia` name the slot and the take that holds it, both null when a skip holds it, the way an `alreadyTaken` answer does), or (v1.42.0) `medication.intake.notTracked` when the medication is kept as a record only (`trackIntake: false`). Its stored history stays; a new dose is refused rather than stored and counted nowhere. The check runs after ownership, so a foreign medication is still a 404.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -2034,6 +2167,35 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...recordRefusal(),
         ...stdResponses,
+      },
+    },
+  },
+  "/api/medications/resolved-slots": {
+    get: {
+      tags: ["Medications"],
+      summary: "Resolved slots of every medication over a window",
+      description:
+        "Since v1.49.0. Every scheduled dose of the record's medications that can be due (active, not as-needed, intake tracked) with its slot time in [from, to], each with its resolved state. One request for what a client otherwise reads per medication from `GET /api/medications/{id}/dose-history`: the slots and states come from the same dose ledger and resolver as the dose history, the today list and the medication card, over the same window, so they never disagree. The statement count does not grow with the number of medications. The window is at most 14 days; without `from` and `to` it runs from two days back to eight days ahead. Auth, scope and rate limit as `dose-history`: a read of the `medications` section of the record the request resolves (cookie, or a Bearer token that reads medications), 60 requests a minute per caller, no server cache.",
+      requestParams: { query: resolvedSlotsQuery },
+      responses: {
+        "200": {
+          description: "Resolved slots per medication.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                resolvedSlotsResponse,
+                "GetResolvedMedicationSlotsResponse",
+              ),
+            },
+          },
+        },
+        ...recordRefusal(),
+        ...stdResponses,
+        "422": {
+          description:
+            "Query validation failed: an instant that is not ISO 8601, `to` before `from`, or a window over 14 days.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

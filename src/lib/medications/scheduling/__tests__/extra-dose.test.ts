@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildSlotBands, type SlotWindowInput } from "../attribution";
 import { reconstructDoseHistory, type HistoryIntake } from "../dose-history";
-import { DOUBLE_ENTRY_TOLERANCE_MS, isAnotherDose } from "../slot-upsert";
+import { DOUBLE_ENTRY_TOLERANCE_MS, isAnotherDose } from "../extra-dose";
 
 const MIN = 60_000;
 const t0 = new Date("2026-06-09T20:00:00Z");

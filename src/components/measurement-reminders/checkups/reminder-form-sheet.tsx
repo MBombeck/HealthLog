@@ -2,10 +2,10 @@
 
 import type { Dispatch, SetStateAction } from "react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useTranslations } from "@/lib/i18n/context";
@@ -78,10 +78,10 @@ export function ReminderFormSheet({
           on touch and avoids a tall scrolling Radix popover inside the
           bottom-sheet. The form fields stay NativeSelect by design. */}
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="vorsorge-label">
-            {t("measurementReminders.form.label")}
-          </Label>
+        <FieldGroup
+          htmlFor="vorsorge-label"
+          label={t("measurementReminders.form.label")}
+        >
           <Input
             id="vorsorge-label"
             value={form.label}
@@ -89,12 +89,12 @@ export function ReminderFormSheet({
             placeholder={t("measurementReminders.form.labelPlaceholder")}
             onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
           />
-        </div>
+        </FieldGroup>
 
-        <div className="space-y-2">
-          <Label htmlFor="vorsorge-kind">
-            {t("measurementReminders.form.kind")}
-          </Label>
+        <FieldGroup
+          htmlFor="vorsorge-kind"
+          label={t("measurementReminders.form.kind")}
+        >
           <NativeSelect
             id="vorsorge-kind"
             value={form.kind}
@@ -112,13 +112,13 @@ export function ReminderFormSheet({
               {t("measurementReminders.form.kindFreeText")}
             </option>
           </NativeSelect>
-        </div>
+        </FieldGroup>
 
         {form.kind === "type" && (
-          <div className="space-y-2">
-            <Label htmlFor="vorsorge-type">
-              {t("measurementReminders.form.measurementType")}
-            </Label>
+          <FieldGroup
+            htmlFor="vorsorge-type"
+            label={t("measurementReminders.form.measurementType")}
+          >
             <NativeSelect
               id="vorsorge-type"
               value={form.measurementType}
@@ -149,26 +149,26 @@ export function ReminderFormSheet({
                 </optgroup>
               ))}
             </NativeSelect>
-          </div>
+          </FieldGroup>
         )}
 
         <CadenceFields form={form} setForm={setForm} />
 
-        <div className="space-y-2">
-          <Label htmlFor="vorsorge-anchor">
-            {t("measurementReminders.form.firstDue")}
-          </Label>
+        <FieldGroup
+          htmlFor="vorsorge-anchor"
+          label={t("measurementReminders.form.firstDue")}
+        >
           <DateField
             id="vorsorge-anchor"
             value={form.anchorDate}
             onChange={(value) => setForm((f) => ({ ...f, anchorDate: value }))}
           />
-        </div>
+        </FieldGroup>
 
-        <div className="space-y-2">
-          <Label htmlFor="vorsorge-location">
-            {t("measurementReminders.form.location")}
-          </Label>
+        <FieldGroup
+          htmlFor="vorsorge-location"
+          label={t("measurementReminders.form.location")}
+        >
           <Input
             id="vorsorge-location"
             value={form.location}
@@ -178,7 +178,7 @@ export function ReminderFormSheet({
               setForm((f) => ({ ...f, location: e.target.value }))
             }
           />
-        </div>
+        </FieldGroup>
       </div>
     </ResponsiveSheet>
   );
@@ -202,10 +202,10 @@ function CadenceFields({
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="vorsorge-interval">
-            {t("measurementReminders.form.cadence")}
-          </Label>
+        <FieldGroup
+          htmlFor="vorsorge-interval"
+          label={t("measurementReminders.form.cadence")}
+        >
           <NativeSelect
             id="vorsorge-interval"
             value={form.cadenceChoice}
@@ -225,11 +225,11 @@ function CadenceFields({
               {t("measurementReminders.cadence.rruleOption")}
             </option>
           </NativeSelect>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="vorsorge-hour">
-            {t("measurementReminders.form.notifyHour")}
-          </Label>
+        </FieldGroup>
+        <FieldGroup
+          htmlFor="vorsorge-hour"
+          label={t("measurementReminders.form.notifyHour")}
+        >
           <NativeSelect
             id="vorsorge-hour"
             value={String(form.notifyHour)}
@@ -243,14 +243,14 @@ function CadenceFields({
               </option>
             ))}
           </NativeSelect>
-        </div>
+        </FieldGroup>
       </div>
 
       {cadenceCustom && (
-        <div className="space-y-2">
-          <Label htmlFor="vorsorge-custom-interval">
-            {t("measurementReminders.form.customInterval")}
-          </Label>
+        <FieldGroup
+          htmlFor="vorsorge-custom-interval"
+          label={t("measurementReminders.form.customInterval")}
+        >
           <Input
             id="vorsorge-custom-interval"
             type="number"
@@ -264,14 +264,14 @@ function CadenceFields({
               }))
             }
           />
-        </div>
+        </FieldGroup>
       )}
 
       {cadenceRrule && (
-        <div className="space-y-2">
-          <Label htmlFor="vorsorge-rrule">
-            {t("measurementReminders.form.rrule")}
-          </Label>
+        <FieldGroup
+          htmlFor="vorsorge-rrule"
+          label={t("measurementReminders.form.rrule")}
+        >
           <Input
             id="vorsorge-rrule"
             value={form.rrule}
@@ -282,7 +282,7 @@ function CadenceFields({
           <p className="text-muted-foreground text-xs">
             {t("measurementReminders.form.rruleHint")}
           </p>
-        </div>
+        </FieldGroup>
       )}
     </>
   );

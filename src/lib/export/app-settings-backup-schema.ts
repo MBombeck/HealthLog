@@ -7,6 +7,7 @@
  * heap; see `backup-schema-lazy-guard.test.ts`).
  */
 import { z } from "zod/v4";
+import { AiUsageLevel } from "@/generated/prisma/enums";
 import { REASONING_MAX_EFFORTS } from "@/lib/ai/reasoning/levels";
 import { isoDateTime } from "@/lib/export/backup-schema-kit";
 
@@ -54,8 +55,23 @@ export const appSettingsBackupSchema = z
     // Optional for the same reason.
     aiReasoningEnabled: z.boolean().optional(),
     aiReasoningMaxEffort: z.enum(REASONING_MAX_EFFORTS).optional(),
+    // The operator's AI usage bounds. Optional: a file from before 1.49 left
+    // them out although the columns existed, and the restore then leaves the
+    // host's own values alone (`app-settings-columns.ts`).
+    aiUsageMaxLevel: z.enum(AiUsageLevel).optional(),
+    aiUsageDefaultLevel: z.enum(AiUsageLevel).optional(),
+    // The admin write path's bounds (`adminAiUsageSchema`).
+    aiSyncRegenGapHours: z.number().int().min(1).max(48).nullable().optional(),
     moduleAvailabilityJson: z.unknown().nullable(),
     documentMaxFileBytes: z.number().int(),
     documentQuotaBytes: z.string().regex(/^\d+$/),
+    // 1.49 — the first-admin server setup's stamp and step states. Absent on
+    // a file written before the setup existed; a restore then leaves them as
+    // the server has them.
+    serverSetupCompletedAt: isoDateTime.nullable().optional(),
+    serverSetupStepsJson: z.unknown().nullable().optional(),
+    // 1.49 — the operator's answer to the relay question (CHECK in migration
+    // 0556). Absent on an older file; the host keeps its own answer.
+    pushRelayDecision: z.enum(["on", "off"]).nullable().optional(),
   })
   .passthrough();

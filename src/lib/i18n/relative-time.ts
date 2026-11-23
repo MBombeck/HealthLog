@@ -18,7 +18,12 @@
  * same two keys as before. `locale` defaults to the app default so a caller
  * without one in hand keeps the previous behaviour rather than throwing.
  */
-import { DEFAULT_TIMEZONE, isValidTimezone } from "@/lib/tz/format";
+import {
+  DEFAULT_TIMEZONE,
+  isValidTimezone,
+  shiftDateKey,
+} from "@/lib/tz/format";
+import type { Formatters } from "@/lib/format-locale";
 import { pluralKey } from "./plural";
 import { defaultLocale, type Locale } from "./config";
 
@@ -91,14 +96,14 @@ export function relativeCalendarDate(
     month: "2-digit",
     day: "2-digit",
   });
-  const now = new Date();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
+  // Yesterday is the key before today's, not the host's calendar step back:
+  // `setDate(-1)` moves in the HOST zone, which on a server is UTC, so in the
+  // hour around a change of clocks in `timeZone` it named the wrong day.
+  const today = dayFormatter.format(new Date());
 
   const targetDay = dayFormatter.format(target);
-  if (targetDay === dayFormatter.format(now)) return t("medications.today");
-  if (targetDay === dayFormatter.format(yesterday))
-    return t("medications.yesterday");
+  if (targetDay === today) return t("medications.today");
+  if (targetDay === shiftDateKey(today, -1)) return t("medications.yesterday");
   return formatDate(target);
 }
 
@@ -132,16 +137,78 @@ export function formatUpdatedLabel(
     month: "2-digit",
     day: "2-digit",
   });
-  const now = new Date();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
+  // The key before today's, as in `relativeCalendarDate` above.
+  const today = dayFormatter.format(new Date());
 
   const targetDay = dayFormatter.format(target);
-  if (targetDay === dayFormatter.format(now)) {
+  if (targetDay === today) {
     return t("insights.updatedTodayAt", { time: formatTime(target) });
   }
-  if (targetDay === dayFormatter.format(yesterday)) {
+  if (targetDay === shiftDateKey(today, -1)) {
     return t("insights.updatedYesterday");
   }
   return t("insights.updatedOn", { date: formatDate(target) });
+}
+
+/**
+ * Render a timestamp as a relative phrase when it
+ * happened within the last 24 hours, otherwise fall back to the
+ * absolute locale-aware date+time. Closes the visual inconsistency
+ * the measurement-list surfaced: the same screen could show "vor 3
+ * min" (briefing) alongside "21.05.2026, 14:32" (list rows) for
+ * adjacent events.
+ *
+ * Buckets:
+ *   - < 1 m  → "just now"
+ *   - < 1 h  → "vor N min" / "N min ago"
+ *   - < 24 h → "vor N Std." / "N h ago"
+ *   - ≥ 24 h → absolute `fmt.dateTime`
+ *
+ * The relative branch reuses the `insights.relative*` i18n keys (same
+ * keys `formatRelativeTime()` above reads).
+ * Caller supplies a `t()` translator and the formatter set so this
+ * helper stays usable server-side; clients pass `useTranslations().t`
+ * and `useFormatters()`. The buckets
+ * mirror the briefing's existing copy so users never see two
+ * different relative phrasings in the same view.
+ */
+export function formatDateOrRelative(
+  iso: Date | string,
+  t: (key: string, params?: Record<string, string | number>) => string,
+  /** Formatter set the absolute branch renders through (`useFormatters()`). */
+  fmt: Pick<Formatters, "dateTime">,
+  /**
+   * Optional "now" for deterministic tests. Defaults to `Date.now()`.
+   */
+  nowMs: number = Date.now(),
+): string {
+  const target = iso instanceof Date ? iso.getTime() : new Date(iso).getTime();
+  if (Number.isNaN(target)) return "";
+  const diffMs = nowMs - target;
+  // Future timestamps fall back to absolute — relative copy doesn't
+  // model them and "in 3 min" would mislead in a health-log context.
+  if (diffMs < 0) return fmt.dateTime(iso);
+  if (diffMs < 60_000) return t("insights.relativeJustNow");
+  // One/Other pluralisation, as in `formatRelativeTime` above: the bundle
+  // carries only the `*One` / `*Other` variants, so a bare key would print
+  // itself.
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 60) {
+    return t(
+      minutes === 1
+        ? "insights.relativeMinutesAgoOne"
+        : "insights.relativeMinutesAgoOther",
+      { count: minutes },
+    );
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return t(
+      hours === 1
+        ? "insights.relativeHoursAgoOne"
+        : "insights.relativeHoursAgoOther",
+      { count: hours },
+    );
+  }
+  return fmt.dateTime(iso);
 }

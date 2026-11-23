@@ -18,6 +18,8 @@
  * are unit-testable in isolation.
  */
 
+import { mean } from "@/lib/stats/central";
+
 /** A single per-night reading (index) or a device-flagged event row. */
 export interface BreathingRow {
   value: number;
@@ -56,13 +58,6 @@ const MIN_TREND_NIGHTS = 6;
 /** Relative band within which the recent mean reads as "stable". */
 const STABLE_BAND = 0.1;
 
-function mean(xs: readonly number[]): number {
-  if (xs.length === 0) return 0;
-  let sum = 0;
-  for (const x of xs) sum += x;
-  return sum / xs.length;
-}
-
 const round1 = (n: number): number => Math.round(n * 10) / 10;
 
 /**
@@ -93,15 +88,16 @@ export function summariseBreathing(
   }
 
   const values = sorted.map((r) => r.value);
-  const recentMeanIndex = nights > 0 ? round1(mean(values)) : null;
+  const valuesMean = mean(values);
+  const recentMeanIndex = valuesMean === null ? null : round1(valuesMean);
 
   let trend: BreathingTrend = null;
   if (nights >= MIN_TREND_NIGHTS) {
     const recent = values.slice(-TREND_WINDOW_NIGHTS);
     const prior = values.slice(0, -TREND_WINDOW_NIGHTS);
-    if (recent.length > 0 && prior.length > 0) {
-      const recentMean = mean(recent);
-      const priorMean = mean(prior);
+    const recentMean = mean(recent);
+    const priorMean = mean(prior);
+    if (recentMean !== null && priorMean !== null) {
       const band = Math.abs(priorMean) * STABLE_BAND;
       const delta = recentMean - priorMean;
       trend = Math.abs(delta) <= band ? "stable" : delta > 0 ? "up" : "down";

@@ -51,6 +51,7 @@ import {
   restoreLabResults,
 } from "@/lib/export/labs-backup";
 import { restoreLifeEventsData } from "@/lib/export/life-events-backup";
+import { restoreFhirImportLedger } from "@/lib/export/fhir-import-ledger-backup";
 import {
   clearMeasurementRollups,
   clearMeasurements,
@@ -81,12 +82,11 @@ import { restoreSensitiveData } from "@/lib/export/sensitive-backup";
 import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
 import { restoreSeizuresData } from "@/lib/export/seizures-backup";
 import { restoreVaccinationsData } from "@/lib/export/vaccinations-backup";
-import { restoreVisitsData } from "@/lib/export/visits-backup";
 import {
-  clearWorkouts,
-  restoreAppleHealthTombstones,
-  restoreWorkouts,
-} from "@/lib/export/workouts-backup";
+  restoreVisitsData,
+  withRestoredLabIds,
+} from "@/lib/export/visits-backup";
+import { clearWorkouts, restoreWorkouts } from "@/lib/export/workouts-backup";
 
 /** One step of the restore transaction. */
 export interface RestoreStep {
@@ -195,7 +195,11 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
         ctx.tx,
         ctx.ownerId,
         ctx.payload,
-        { retargeted: ctx.retargeted },
+        {
+          retargeted: ctx.retargeted,
+          medicationCategoryKeyBySourceKey:
+            ctx.links.medicationCategoryKeyBySourceKey,
+        },
       );
       for (const column of result.refused) {
         ctx.skips.push({ catalogue: "accountSetting", key: column, links: 1 });
@@ -207,6 +211,9 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
   // After the markers: a drug's target names one by a real foreign key.
   { name: "efficacy targets", run: restoreEfficacyTargets },
   { name: "lab results", run: restoreLabResults },
+  // The FHIR Bundle import ledger; after the medications, whose new ids its
+  // MedicationStatement rows are mapped through.
+  { name: "fhir import ledger", run: restoreFhirImportLedger },
   { name: "illness", run: restoreIllness },
   {
     // The person's own symptoms and their occurrences. After the episodes,
@@ -239,6 +246,7 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
           ctx.payload,
           ctx.links.medicationIdBySourceId,
           ctx.skips,
+          ctx.links.intakeSlotBySourceId,
         ),
       );
     },
@@ -313,7 +321,12 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
       ctx.reportSection("visits");
       Object.assign(
         ctx.cleared,
-        await restoreVisitsData(ctx.tx, ctx.ownerId, ctx.payload, ctx.skips),
+        await restoreVisitsData(
+          ctx.tx,
+          ctx.ownerId,
+          withRestoredLabIds(ctx.payload, ctx.links.labResultIdBySourceId),
+          ctx.skips,
+        ),
       );
     },
   },
@@ -447,13 +460,6 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
           ctx.skips,
           (fn) => ctx.streamed.forEachEcgTrace(fn),
         ),
-      );
-      // The ECG lines of the deletion ledger travel with the recordings.
-      await restoreAppleHealthTombstones(
-        ctx.tx,
-        ctx.ownerId,
-        ctx.payload.appleHealthTombstones,
-        "ecg",
       );
     },
   },

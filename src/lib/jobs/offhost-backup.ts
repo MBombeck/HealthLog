@@ -39,6 +39,7 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { envValue } from "@/lib/env";
 import { OFFHOST_BACKUP_QUEUE } from "./offhost-backup-queue";
 import { decodeBackupKey, offhostKeyId } from "./offhost-key";
+import { recordOffhostKeyUse } from "./offhost-key-use";
 import {
   LIFECYCLE_MISSING,
   LIFECYCLE_UNKNOWN,
@@ -812,6 +813,8 @@ interface BackupRunReport {
   alreadyUploaded: number;
   /** `shouldStop` ended the run before every account was reached. */
   stoppedEarly: boolean;
+  /** Key-use rows that could not be written for an uploaded object. */
+  keyUseWritesFailed: number;
 }
 
 export interface RunOffhostBackupOptions extends UploadBackupOptions {
@@ -831,30 +834,6 @@ export interface RunOffhostBackupOptions extends UploadBackupOptions {
    * accounts, before the job's expiry would cut one off halfway.
    */
   shouldStop?: () => boolean;
-}
-
-/**
- * Note, per key id, that an object needing it went into the bucket now. Never
- * fails the account: the object is in the bucket whatever this row says.
- */
-async function recordOffhostKeyUse(
-  prisma: PrismaClient,
-  keyIds: readonly string[],
-  at: Date,
-): Promise<void> {
-  for (const keyId of keyIds) {
-    try {
-      await prisma.offhostBackupKeyUse.upsert({
-        where: { keyId },
-        create: { keyId, firstWrittenAt: at, lastWrittenAt: at },
-        update: { lastWrittenAt: at },
-      });
-    } catch (err) {
-      getEvent()?.addWarning(
-        `offhost-backup key-use write failed: ${(err as Error).message?.slice(0, 200)}`,
-      );
-    }
-  }
 }
 
 export async function runOffhostBackup(
@@ -880,6 +859,7 @@ export async function runOffhostBackup(
   let uploaded = 0;
   let failed = 0;
   let oversized = 0;
+  let keyUseWritesFailed = 0;
   let largestObjectBytes = 0;
   const failures: Array<{ userId: string; message: string }> = [];
   let ledgerWriteFailures = 0;
@@ -947,7 +927,11 @@ export async function runOffhostBackup(
       }
       largestObjectBytes = Math.max(largestObjectBytes, objectBytes);
       uploaded++;
-      await recordOffhostKeyUse(prisma, keyScanner.keyIds(), new Date());
+      keyUseWritesFailed += await recordOffhostKeyUse(
+        prisma,
+        keyScanner.keyIds(),
+        new Date(),
+      );
     } catch (err) {
       failed++;
       if (err instanceof OffhostBackupTooLargeError) oversized++;
@@ -1035,6 +1019,7 @@ export async function runOffhostBackup(
     oversized,
     alreadyUploaded,
     stoppedEarly,
+    keyUseWritesFailed,
   };
 }
 

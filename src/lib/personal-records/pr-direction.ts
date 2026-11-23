@@ -116,12 +116,8 @@ export function getPRDirection(
     // v1.5.5 — lean body mass is the muscle-mass-adjacent body-comp
     // axis where higher is the goal.
     case "LEAN_BODY_MASS":
-    // v1.5.5 — walking speed is a well-established
-    // clinical fitness marker (often called the "sixth vital
-    // sign" in older-adult medicine); faster gait correlates
-    // with cardiovascular fitness, sarcopenia recovery, and
-    // overall mobility resilience. MAX direction matches Apple's
-    // own Mobility-section framing.
+    // v1.5.5 — walking speed, the "sixth vital sign" of older-adult
+    // medicine; faster gait is the fitter result, as Apple's Mobility frames it.
     case "WALKING_SPEED":
     // v1.10.0 — cardio recovery (a larger one-minute HR drop is the
     // fitter result), six-minute-walk distance (the classic endurance
@@ -197,16 +193,10 @@ export function getPRDirection(
     // either ill or harder-effort).
     case "RESPIRATORY_RATE":
     case "WALKING_HEART_RATE_AVERAGE":
-    // v1.5.5 — walking step length is a state metric:
-    // taller users have longer strides regardless of fitness, and
-    // there is no clean "higher is better" axis (very long strides
-    // can also signal an unsafe overstride). Defer to a null PR
-    // direction; the future worker can still surface trend deltas
-    // without claiming a record direction.
+    // v1.5.5 — step length follows height, not fitness, and a very long
+    // stride can be an unsafe overstride: no clean goal axis.
     case "WALKING_STEP_LENGTH":
-    // v1.10.0 — wrist temperature is homeostatic and Apple frames it as
-    // a baseline deviation, not a goal axis; neither a higher nor a
-    // lower reading is an achievement. Defer to a null PR direction.
+    // v1.10.0 — wrist temperature is homeostatic, a baseline deviation.
     case "WRIST_TEMPERATURE":
     // v1.10.0 — categorical events (WX-B). Device-flagged EVENT rows are
     // discrete occurrences (value is always 1), never a goal axis: a record
@@ -234,11 +224,8 @@ export function getPRDirection(
     case "FVC":
     case "PEAK_EXPIRATORY_FLOW":
     case "BREATHING_DISTURBANCE_EVENT":
-    // v1.10.0 — computed scores (WX-C). The server-derived wellness scores
-    // are themselves derived composites recomputed nightly from the
-    // underlying signals; a "personal record" on a derived score would
-    // double-count the PRs of its own inputs and read as noise. They
-    // explicitly have no PR direction, like the categorical events above.
+    // v1.10.0 — computed scores: a record on a derived composite would
+    // double-count the records of its own inputs.
     case "RECOVERY_SCORE":
     case "STRESS_SCORE":
     case "STRAIN_SCORE":
@@ -251,6 +238,19 @@ export function getPRDirection(
     case "HRV_RMSSD":
     case "DAY_STRAIN":
     case "WORKOUT_STRAIN":
+    // Apple effort and the sport quantities (#1415) describe a session, not
+    // a goal axis.
+    case "WORKOUT_EFFORT_SCORE":
+    case "ESTIMATED_WORKOUT_EFFORT_SCORE":
+    case "PHYSICAL_EFFORT":
+    case "CYCLING_DISTANCE":
+    case "ROWING_DISTANCE":
+    case "ROWING_SPEED":
+    case "RUNNING_SPEED":
+    case "RUNNING_POWER":
+    case "RUNNING_GROUND_CONTACT_TIME":
+    case "RUNNING_VERTICAL_OSCILLATION":
+    case "RUNNING_STRIDE_LENGTH":
     case "SLEEP_PERFORMANCE":
     case "SLEEP_EFFICIENCY":
     case "SLEEP_CONSISTENCY":

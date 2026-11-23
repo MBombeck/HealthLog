@@ -41,6 +41,7 @@
 
 import { GLUCOSE_TIR_CUT_POINTS } from "@/lib/glucose";
 import { standardDeviation } from "@/lib/stats/spread";
+import { mean } from "@/lib/stats/central";
 
 // ── Inputs ───────────────────────────────────────────────
 
@@ -224,13 +225,6 @@ export interface GlucoseClinicalMetrics {
 
 // ── Core formulas ────────────────────────────────────────
 
-/** Arithmetic mean. Caller guarantees a non-empty array. */
-function mean(values: number[]): number {
-  let sum = 0;
-  for (const v of values) sum += v;
-  return sum / values.length;
-}
-
 /**
  * Sample standard deviation, sqrt(Σ(Gᵢ−mean)² / (n−1)).
  * Standard variability foundation reported alongside mean in Battelino 2019.
@@ -251,7 +245,7 @@ export function glucoseVariability(
 ): GlucoseVariability | null {
   const sd = glucoseSD(values);
   if (sd === null) return null;
-  const m = mean(values);
+  const m = mean(values)!;
   if (m === 0) return null;
   const cv = (sd / m) * 100;
   return { sd, cv, unstable: cv >= CV_INSTABILITY_THRESHOLD };
@@ -286,7 +280,7 @@ export function estimatedA1c(meanMgdl: number): number {
 export function jIndex(values: number[]): number | null {
   const sd = glucoseSD(values);
   if (sd === null) return null;
-  const m = mean(values);
+  const m = mean(values)!;
   const s = m + sd;
   return 0.001 * s * s;
 }
@@ -438,7 +432,7 @@ export function computeGlucoseClinicalMetrics(
       : 0;
 
   const values = inWindow.map((r) => r.mgdl);
-  const meanMgdl = values.length > 0 ? mean(values) : null;
+  const meanMgdl = mean(values);
 
   const distribution = timeInRange(values);
   const variability = glucoseVariability(values);

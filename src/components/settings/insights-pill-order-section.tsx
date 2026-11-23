@@ -345,7 +345,6 @@ export function InsightsPillOrderSection({ id }: { id?: string }) {
           onClick={() => saveMutation.mutate(draftTiles)}
           disabled={busy || !dirty}
           data-slot="insights-pill-order-save"
-          className="min-h-11 self-end sm:min-h-9 sm:self-auto"
         >
           {saveMutation.isPending && (
             <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />

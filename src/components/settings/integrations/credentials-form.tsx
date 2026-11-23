@@ -12,7 +12,7 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
@@ -159,14 +159,11 @@ export function CredentialsForm({
           type="submit"
           variant="outline"
           size="sm"
-          className="min-h-11 w-full sm:min-h-9 sm:w-auto"
           disabled={saving || !clientId.trim() || !clientSecret.trim()}
         >
           {saving ? (
             <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Save className="size-3.5" aria-hidden="true" />
-          )}
+          ) : null}
           {t(`${i18nPrefix}SaveCredentials`)}
         </Button>
       </SettingsCardActions>

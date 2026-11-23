@@ -49,6 +49,8 @@ export async function runMeanConsolidationForUser(
 ): Promise<{
   daysConsolidated: number;
   perSampleRowsSoftDeleted: number;
+  /** Days whose fold threw and were stepped over; retried next run. */
+  daysFailed: number;
   stoppedEarly: boolean;
 }> {
   const summary = await consolidateDailyMean(prisma, {
@@ -67,6 +69,7 @@ export async function runMeanConsolidationForUser(
         per_sample_rows_soft_deleted: summary.totals.perSampleRowsSoftDeleted,
         daily_rows_upserted: summary.totals.dailyRowsUpserted,
         days_left_as_stored: summary.totals.daysLeftAsStored,
+        days_failed: summary.totals.daysFailed,
         stopped_early: summary.stoppedEarly,
       },
     },
@@ -74,6 +77,7 @@ export async function runMeanConsolidationForUser(
   return {
     daysConsolidated: summary.totals.daysConsolidated,
     perSampleRowsSoftDeleted: summary.totals.perSampleRowsSoftDeleted,
+    daysFailed: summary.totals.daysFailed,
     stoppedEarly: summary.stoppedEarly,
   };
 }

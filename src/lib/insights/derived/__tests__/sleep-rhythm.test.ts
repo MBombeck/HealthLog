@@ -29,9 +29,9 @@ import {
   buildSleepRhythm,
   computeAverageSleep,
   computeSleepRhythmFromNights,
-  defaultDayType,
   type RhythmNight,
 } from "../sleep-rhythm";
+import { dayTypeForNight } from "@/lib/profile/life-derived";
 
 /**
  * Build per-stage rows for one night: a single bare-ASLEEP block whose END is
@@ -50,19 +50,19 @@ function nightRows(wakeIso: string, asleepMinutes: number) {
   ];
 }
 
-describe("defaultDayType", () => {
+describe("dayTypeForNight with no free-weekday span", () => {
   it("tags weekend wake days free and weekdays work from the date key alone", () => {
     // 2026-06-13 is a Saturday, 2026-06-14 a Sunday, 2026-06-15 a Monday.
-    expect(defaultDayType("2026-06-13")).toBe("free");
-    expect(defaultDayType("2026-06-14")).toBe("free");
-    expect(defaultDayType("2026-06-15")).toBe("work");
+    expect(dayTypeForNight("2026-06-13", [])).toBe("free");
+    expect(dayTypeForNight("2026-06-14", [])).toBe("free");
+    expect(dayTypeForNight("2026-06-15", [])).toBe("work");
   });
 
   it("reads the weekday off the local date digits — correct for far-east zones", () => {
     // The wake-day key is already local; the weekday must not shift for a
     // UTC+14 user (the old noon-UTC anchor mislabelled a Friday as Saturday).
-    expect(defaultDayType("2026-06-12")).toBe("work"); // Friday
-    expect(defaultDayType("2026-06-13")).toBe("free"); // Saturday
+    expect(dayTypeForNight("2026-06-12", [])).toBe("work"); // Friday
+    expect(dayTypeForNight("2026-06-13", [])).toBe("free"); // Saturday
   });
 });
 

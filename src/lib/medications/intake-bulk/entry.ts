@@ -24,6 +24,7 @@ import {
   type BatchState,
   type BulkIntakeEntry,
 } from "./batch-state";
+import { DELETED_IN_HEALTHLOG_REASON } from "@/lib/sync/tombstone-repost";
 import { attributeEntry } from "./entry-attribution";
 import { writeEntry } from "./entry-write";
 
@@ -107,6 +108,15 @@ function screenEntry(
       state.results.push({ index: i, status: "duplicate", id: existingRowId });
       return true;
     }
+    // A dose deleted in HealthLog stays deleted: the re-post of its Apple
+    // Health dose event (a fresh install reading the whole history, an
+    // outbox that had not drained) writes nothing and takes no stock. One
+    // the phone reported deleted in Apple Health is not in the set, and
+    // lands as a new dose.
+    if (state.tombstonedExternalIds.has(entry.externalId)) {
+      skipEntry(state, i, DELETED_IN_HEALTHLOG_REASON);
+      return true;
+    }
   }
   return false;
 }
@@ -174,6 +184,19 @@ function recordLanded(
     state.syncSlots.set(`${entry.medicationId}|${scheduledForIso}`, {
       medicationId: entry.medicationId,
       scheduledFor: scheduledForIso,
+      // A dose the person recorded on this device; an Apple Health mirror
+      // is a bulk catch-up and confirms nothing on the other devices.
+      ...(entry.source !== "APPLE_HEALTH" &&
+        landed?.id !== undefined && {
+          recorded: {
+            medicationId: entry.medicationId,
+            intakeId: landed.id,
+            slotInstant: effectiveScheduledFor,
+            outcome: entry.skipped ? ("skipped" as const) : ("taken" as const),
+            takenAt: entry.skipped ? null : (entry.takenAt ?? null),
+            takenVia: "APP" as const,
+          },
+        }),
     });
     if (!entry.skipped) state.snoozeClearIds.add(entry.medicationId);
   }
@@ -201,7 +224,7 @@ async function writeScreenedEntry(
     { isExplicitTaken, isExplicitSkip },
   );
   if ("reason" in attribution) {
-    skipEntry(state, i, attribution.reason);
+    skipEntry(state, i, attribution.reason, attribution.held);
     return;
   }
   if (attribution.heldByAnotherDose) state.extraDosesUnscheduled += 1;
@@ -230,12 +253,14 @@ async function writeScreenedEntry(
 }
 
 /**
- * P2002 = unique-constraint violation. Two shapes reach here:
- *   1. an idempotencyKey collision on the unscheduled/PRN insert →
- *      "duplicate" (the canonical-slot path already absorbs its own
- *      same-slot P2002 race inside `applyCanonicalSlotWrite`);
- *   2. a same-slot collision on the unscheduled insert. In both
- *      cases we surface the existing row id so the cursor advances.
+ * P2002 = unique-constraint violation. A racing re-submission of the same
+ * entry (its idempotencyKey, or its Apple dose-event externalId, written by a
+ * concurrent batch) answers "duplicate" with the row that won, so the cursor
+ * advances. The canonical-slot path absorbs its own same-slot race inside
+ * `applyCanonicalSlotWrite`, and the ad-hoc insert moves off a held instant
+ * (`ad-hoc-intake.ts`). A conflict that names no row of this entry stored
+ * nothing, and says so: it is answered like any other failed write, never as
+ * a "duplicate" without an id.
  */
 async function answerFailedEntry(
   ctx: BatchContext,
@@ -251,7 +276,7 @@ async function answerFailedEntry(
     "code" in err &&
     (err as { code: string }).code === "P2002"
   ) {
-    const existing = entry.idempotencyKey
+    const byKey = entry.idempotencyKey
       ? await prisma.medicationIntakeEvent.findUnique({
           where: {
             userId_idempotencyKey: {
@@ -261,10 +286,13 @@ async function answerFailedEntry(
           },
           select: { id: true },
         })
-      : // An Apple entry that raced the partial
-        // `(user_id, external_id)` unique (concurrent batches syncing
-        // the same dose event) resolves to the winning live row.
-        entry.externalId
+      : null;
+    // An Apple entry that raced the partial `(user_id, external_id)` unique
+    // (concurrent batches syncing the same dose event) resolves to the
+    // winning live row.
+    const existing =
+      byKey ??
+      (entry.externalId
         ? await prisma.medicationIntakeEvent.findFirst({
             where: {
               userId: user.id,
@@ -273,14 +301,12 @@ async function answerFailedEntry(
             },
             select: { id: true },
           })
-        : null;
-    state.duplicates += 1;
-    state.results.push({
-      index: i,
-      status: "duplicate",
-      id: existing?.id,
-    });
-    return;
+        : null);
+    if (existing) {
+      state.duplicates += 1;
+      state.results.push({ index: i, status: "duplicate", id: existing.id });
+      return;
+    }
   }
   const reason =
     err instanceof Error ? err.message.slice(0, 120) : "create_failed";

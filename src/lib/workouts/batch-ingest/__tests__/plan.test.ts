@@ -3,6 +3,7 @@
  * track it lacks from an entry that carries one, once per workout, and
  * nothing it already holds.
  */
+import type { Prisma } from "@/generated/prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { findMany } = vi.hoisted(() => ({
@@ -34,7 +35,9 @@ const SAMPLES = {
 function entry(
   index: number,
   externalId: string,
-  parts: Partial<Pick<PreparedWorkout, "route" | "samples">> = {},
+  parts: Partial<Pick<PreparedWorkout, "route" | "samples">> & {
+    metadata?: Prisma.InputJsonObject;
+  } = {},
 ): PreparedWorkout {
   return {
     index,
@@ -46,6 +49,7 @@ function entry(
       durationSec: 2700,
       source: "APPLE_HEALTH",
       externalId,
+      ...(parts.metadata ? { metadata: parts.metadata } : {}),
     },
     route: parts.route ?? null,
     samples: parts.samples ?? null,
@@ -55,7 +59,7 @@ function entry(
 
 function stored(
   externalId: string,
-  has: { route?: boolean; samples?: boolean } = {},
+  has: { route?: boolean; samples?: boolean; metadata?: unknown } = {},
 ) {
   return {
     id: `w-${externalId}`,
@@ -75,6 +79,7 @@ function stored(
     stepCount: null,
     elevationM: null,
     pauseDurationSec: null,
+    metadata: has.metadata ?? null,
   };
 }
 
@@ -96,7 +101,13 @@ describe("planWorkoutWrites: track enrichment", () => {
       [entry(0, "a", { route: ROUTE })],
     );
     expect(p.toEnrich).toEqual([
-      { index: 0, workoutId: "w-a", samples: null, route: ROUTE },
+      {
+        index: 0,
+        workoutId: "w-a",
+        samples: null,
+        route: ROUTE,
+        figures: null,
+      },
     ]);
     expect(p.toInsert).toEqual([]);
     expect(p.duplicates).toBe(0);
@@ -120,7 +131,13 @@ describe("planWorkoutWrites: track enrichment", () => {
       [entry(0, "a", { route: ROUTE, samples: SAMPLES })],
     );
     expect(p.toEnrich).toEqual([
-      { index: 0, workoutId: "w-a", samples: SAMPLES, route: ROUTE },
+      {
+        index: 0,
+        workoutId: "w-a",
+        samples: SAMPLES,
+        route: ROUTE,
+        figures: null,
+      },
     ]);
   });
 
@@ -133,8 +150,20 @@ describe("planWorkoutWrites: track enrichment", () => {
       ],
     );
     expect(p.toEnrich).toEqual([
-      { index: 0, workoutId: "w-a", samples: null, route: ROUTE },
-      { index: 1, workoutId: "w-b", samples: SAMPLES, route: null },
+      {
+        index: 0,
+        workoutId: "w-a",
+        samples: null,
+        route: ROUTE,
+        figures: null,
+      },
+      {
+        index: 1,
+        workoutId: "w-b",
+        samples: SAMPLES,
+        route: null,
+        figures: null,
+      },
     ]);
   });
 
@@ -151,7 +180,13 @@ describe("planWorkoutWrites: track enrichment", () => {
       [entry(0, "a", { samples: SAMPLES }), entry(1, "a", { route: ROUTE })],
     );
     expect(p.toEnrich).toEqual([
-      { index: 0, workoutId: "w-a", samples: SAMPLES, route: null },
+      {
+        index: 0,
+        workoutId: "w-a",
+        samples: SAMPLES,
+        route: null,
+        figures: null,
+      },
     ]);
     expect(results[1]).toEqual({ index: 1, status: "duplicate" });
   });
@@ -162,5 +197,37 @@ describe("planWorkoutWrites: track enrichment", () => {
       select: Record<string, unknown>;
     };
     expect(args.select.route).toEqual({ select: { workoutId: true } });
+  });
+});
+
+describe("planWorkoutWrites: performance figures (#1343)", () => {
+  it("hands a stored workout the figures a re-imported file now carries", async () => {
+    const { plan: p } = await plan(
+      [stored("a", { samples: true, metadata: { garminAerobicEffect: 2.8 } })],
+      [
+        entry(0, "a", {
+          samples: SAMPLES,
+          metadata: { aerobicTrainingEffect: 3, recoveryTimeMin: 900 },
+        }),
+      ],
+    );
+    expect(p.toEnrich).toEqual([
+      {
+        index: 0,
+        workoutId: "w-a",
+        samples: null,
+        route: null,
+        figures: { recoveryTimeMin: 900 },
+      },
+    ]);
+  });
+
+  it("settles a duplicate when the stored workout already shows every figure", async () => {
+    const { plan: p, results } = await plan(
+      [stored("a", { metadata: { recoveryTimeMin: 900 } })],
+      [entry(0, "a", { metadata: { recoveryTimeMin: 800 } })],
+    );
+    expect(p.toEnrich).toEqual([]);
+    expect(results[0]).toEqual({ index: 0, status: "duplicate" });
   });
 });

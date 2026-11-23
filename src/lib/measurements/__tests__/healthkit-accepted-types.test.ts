@@ -34,6 +34,28 @@ describe("acceptedHealthKitTypes", () => {
     // Resting energy (#1340) left the deferred set for a type of
     // its own, so the client is told the server takes it.
     expect(accepted).toContain("HKQuantityTypeIdentifierBasalEnergyBurned");
+    // The logged workout-effort score, the watch's estimate and physical
+    // effort each left the deferred set for a type of their own.
+    expect(accepted).toContain("HKQuantityTypeIdentifierWorkoutEffortScore");
+    expect(accepted).toContain(
+      "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
+    );
+    expect(accepted).toContain("HKQuantityTypeIdentifierPhysicalEffort");
+    // #1415 — cycling and rowing distance, rowing speed and the running
+    // dynamics; cycling speed, power and cadence stay deferred.
+    for (const id of [
+      "HKQuantityTypeIdentifierDistanceCycling",
+      "HKQuantityTypeIdentifierDistanceRowing",
+      "HKQuantityTypeIdentifierRowingSpeed",
+      "HKQuantityTypeIdentifierRunningSpeed",
+      "HKQuantityTypeIdentifierRunningPower",
+      "HKQuantityTypeIdentifierRunningGroundContactTime",
+      "HKQuantityTypeIdentifierRunningVerticalOscillation",
+      "HKQuantityTypeIdentifierRunningStrideLength",
+    ]) {
+      expect(accepted).toContain(id);
+    }
+    expect(accepted).not.toContain("HKQuantityTypeIdentifierCyclingSpeed");
   });
 
   it("lists only identifiers the batch mapper turns into a row, or a screener", () => {

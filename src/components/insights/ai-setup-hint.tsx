@@ -92,7 +92,6 @@ export function AiSetupHint({
             type="button"
             size="sm"
             variant="outline"
-            className="min-h-11 sm:min-h-9"
             onClick={dismiss}
             data-slot="ai-setup-hint-dismiss"
           >

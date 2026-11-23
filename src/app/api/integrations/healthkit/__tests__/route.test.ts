@@ -214,7 +214,14 @@ describe("PATCH /api/integrations/healthkit — 422 multi-issue (v1.4.43 W6)", (
     expect(body.error).toBe("Validation failed");
     expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
     for (const issue of body.details.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
   });
 
@@ -556,12 +563,22 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       "RESPIRATORY_RATE",
       "PULSE",
     ]);
+    const oldest = ago(400 * DAY);
     mockProbes([
-      { type: "RESPIRATORY_RATE", last_seen: ago(2 * DAY) },
-      { type: "PULSE", last_seen: ago(60 * 60 * 1000) },
+      {
+        type: "RESPIRATORY_RATE",
+        last_seen: ago(2 * DAY),
+        first_seen: oldest,
+      },
+      { type: "PULSE", last_seen: ago(60 * 60 * 1000), first_seen: null },
     ] as never);
+    const workoutAt = ago(DAY);
     vi.mocked(prisma.workout.groupBy).mockResolvedValue([
-      { source: "APPLE_HEALTH", _max: { startedAt: ago(DAY) } },
+      {
+        source: "APPLE_HEALTH",
+        _max: { startedAt: workoutAt },
+        _min: { startedAt: workoutAt },
+      },
     ] as never);
     const receivedAt = ago(3 * 60 * 60 * 1000);
     vi.mocked(prisma.healthKitTypeSync.findMany).mockResolvedValue([
@@ -581,6 +598,12 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       lastReceivedAt: receivedAt.toISOString(),
       lastTrigger: "manual",
       lastNewSampleAt: null,
+      // iOS #191: where the history walk may jump to.
+      oldestSeenAt: oldest.toISOString(),
+    });
+    expect(byType.PULSE).not.toHaveProperty("oldestSeenAt");
+    expect(byType.WORKOUTS).toMatchObject({
+      oldestSeenAt: workoutAt.toISOString(),
     });
     expect(byType.PULSE).toMatchObject({
       lastReceivedAt: null,

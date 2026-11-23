@@ -10,6 +10,10 @@
  *   - range 91-730     → "week"  (ISO weekly mean per metric)
  *   - range > 730 days → "month" (Berlin calendar monthly mean)
  *
+ * That span ladder is what the "All" tab uses. The fixed tabs name their
+ * grain instead (`pickRangeBucket` in `range-grain.ts`): the 90-day tab is
+ * weekly although its span never passes 90 days.
+ *
  * The function is pure and string-stable: the bucket key for a given
  * timestamp depends only on the calendar week / month, never on the
  * input order, so the chart-data adapter can call it as part of its
@@ -28,6 +32,14 @@ export interface ChartBucketPoint {
   values: Record<string, number>;
   /** How many daily input points fed into this bucket per metric. */
   counts: Record<string, number>;
+  /**
+   * The plain sum, the smallest and the largest input per metric, for the
+   * callers that fold a count (summed) or a spread (min of the minima, max of
+   * the maxima) alongside the mean.
+   */
+  sums: Record<string, number>;
+  mins: Record<string, number>;
+  maxs: Record<string, number>;
 }
 
 export interface BucketedChartSeries {
@@ -111,8 +123,8 @@ export interface BucketInputPoint {
 }
 
 export interface BucketTimeSeriesOptions {
-  /** Override the bucketer when the caller already knows it. */
-  bucket?: ChartBucketType;
+  /** The grain; a chart with range tabs takes it from `pickRangeBucket`. */
+  bucket: ChartBucketType;
   /**
    * The calendar the day / week / month boundaries are drawn in.
    *
@@ -126,15 +138,6 @@ export interface BucketTimeSeriesOptions {
 }
 
 /**
- * Pick the bucket size from a time-range in days.
- */
-export function pickBucket(rangeDays: number): ChartBucketType {
-  if (rangeDays > 730) return "month";
-  if (rangeDays > 90) return "week";
-  return "day";
-}
-
-/**
  * Bucket a daily-aggregated chart series into day/week/month groups.
  * Weeks use ISO 8601 (Monday start); every boundary is drawn in the caller's
  * `timeZone`. Empty buckets are skipped so a sparse user does not get a flat
@@ -144,22 +147,10 @@ export function bucketTimeSeries(
   points: BucketInputPoint[],
   options: BucketTimeSeriesOptions,
 ): BucketedChartSeries {
-  const { timeZone } = options;
+  const { bucket, timeZone } = options;
   const sorted = [...points].sort(
     (a, b) => toMs(a.timestamp) - toMs(b.timestamp),
   );
-
-  const bucket =
-    options.bucket ??
-    pickBucket(
-      sorted.length < 2
-        ? 0
-        : Math.round(
-            (toMs(sorted[sorted.length - 1].timestamp) -
-              toMs(sorted[0].timestamp)) /
-              MS_PER_DAY,
-          ),
-    );
 
   if (bucket === "day") {
     // Day-granularity is the upstream's native shape, but we still go
@@ -190,16 +181,28 @@ function aggregate(
 ): BucketedChartSeries {
   const aggregates = new Map<
     number,
-    { sums: Record<string, number>; counts: Record<string, number> }
+    {
+      sums: Record<string, number>;
+      counts: Record<string, number>;
+      mins: Record<string, number>;
+      maxs: Record<string, number>;
+    }
   >();
 
   for (const point of points) {
     const key = bucketKey(point.timestamp);
-    const slot = aggregates.get(key) ?? { sums: {}, counts: {} };
+    const slot = aggregates.get(key) ?? {
+      sums: {},
+      counts: {},
+      mins: {},
+      maxs: {},
+    };
     for (const [metric, raw] of Object.entries(point.values)) {
       if (raw === undefined || !Number.isFinite(raw)) continue;
-      slot.sums[metric] = (slot.sums[metric] ?? 0) + (raw as number);
+      slot.sums[metric] = (slot.sums[metric] ?? 0) + raw;
       slot.counts[metric] = (slot.counts[metric] ?? 0) + 1;
+      slot.mins[metric] = Math.min(slot.mins[metric] ?? raw, raw);
+      slot.maxs[metric] = Math.max(slot.maxs[metric] ?? raw, raw);
     }
     aggregates.set(key, slot);
   }
@@ -209,13 +212,19 @@ function aggregate(
     .map(([timestamp, slot]) => {
       const values: Record<string, number> = {};
       const counts: Record<string, number> = {};
+      const sums: Record<string, number> = {};
+      const mins: Record<string, number> = {};
+      const maxs: Record<string, number> = {};
       for (const [metric, sum] of Object.entries(slot.sums)) {
         const n = slot.counts[metric] ?? 0;
         if (n === 0) continue;
         values[metric] = sum / n;
         counts[metric] = n;
+        sums[metric] = sum;
+        mins[metric] = slot.mins[metric];
+        maxs[metric] = slot.maxs[metric];
       }
-      return { timestamp, values, counts };
+      return { timestamp, values, counts, sums, mins, maxs };
     })
     .filter((p) => Object.keys(p.values).length > 0);
 

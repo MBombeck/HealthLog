@@ -25,6 +25,16 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// A zone change queues the supplement nutrient recompute; nothing here is
+// about that job.
+vi.mock("@/lib/medications/ingredients/recompute-job", () => ({
+  enqueueSupplementNutrientRecompute: vi.fn(async () => ({ queued: true })),
+}));
+
+vi.mock("@/lib/auth/identity-lookup", () => ({
+  findUserIdByEmail: vi.fn(),
+}));
+
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
@@ -48,20 +58,15 @@ const applyProfileUpdate = (
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { checkProfileEmailRateLimit } from "@/lib/rate-limit";
+import { findUserIdByEmail } from "@/lib/auth/identity-lookup";
+import { Prisma } from "@/generated/prisma/client";
 
 const USER_ID = "user-1";
 const ON_FILE = "mine@example.test";
 
-/** The `where` clauses the helper can send, told apart by their shape. */
-function selfLookups() {
-  return vi
-    .mocked(prisma.user.findUnique)
-    .mock.calls.filter((c) => "id" in (c[0]!.where as object));
-}
+/** The case-blind probe for the submitted address. */
 function emailProbes() {
-  return vi
-    .mocked(prisma.user.findUnique)
-    .mock.calls.filter((c) => "email" in (c[0]!.where as object));
+  return vi.mocked(findUserIdByEmail).mock.calls;
 }
 
 beforeEach(() => {
@@ -83,6 +88,7 @@ beforeEach(() => {
     if ("id" in args.where) return { email: ON_FILE };
     return null;
   }) as never);
+  vi.mocked(findUserIdByEmail).mockResolvedValue(null);
 });
 
 describe("applyProfileUpdate — the email conflict is metered", () => {
@@ -90,13 +96,13 @@ describe("applyProfileUpdate — the email conflict is metered", () => {
     await applyProfileUpdate(USER_ID, { email: "someone@example.test" });
 
     expect(checkProfileEmailRateLimit).toHaveBeenCalledWith(USER_ID);
-    expect(emailProbes()).toHaveLength(1);
+    expect(emailProbes()).toEqual([
+      ["someone@example.test", { excludeId: USER_ID }],
+    ]);
     // Ordering, not just presence: the probe must not have run first.
     const chargedAt = vi.mocked(checkProfileEmailRateLimit).mock
       .invocationCallOrder[0];
-    const probedAt = vi.mocked(prisma.user.findUnique).mock.invocationCallOrder[
-      selfLookups().length
-    ];
+    const probedAt = vi.mocked(findUserIdByEmail).mock.invocationCallOrder[0];
     expect(chargedAt).toBeLessThan(probedAt);
   });
 
@@ -192,12 +198,7 @@ describe("applyProfileUpdate — the email conflict is metered", () => {
       remaining: 9,
       resetAt: Date.now() + 3_600_000,
     });
-    vi.mocked(prisma.user.findUnique).mockImplementation((async (args: {
-      where: Record<string, unknown>;
-    }) => {
-      if ("id" in args.where) return { email: ON_FILE };
-      return { id: "someone-else" };
-    }) as never);
+    vi.mocked(findUserIdByEmail).mockResolvedValue("someone-else");
 
     await applyProfileUpdate(USER_ID, { email: "taken@example.test" });
     expect(auditLog).toHaveBeenCalledWith(
@@ -230,12 +231,7 @@ describe("applyProfileUpdate — the email conflict is metered", () => {
   });
 
   it("still answers 409 when the bucket has room and the address is taken", async () => {
-    vi.mocked(prisma.user.findUnique).mockImplementation((async (args: {
-      where: Record<string, unknown>;
-    }) => {
-      if ("id" in args.where) return { email: ON_FILE };
-      return { id: "someone-else" };
-    }) as never);
+    vi.mocked(findUserIdByEmail).mockResolvedValue("someone-else");
 
     const result = await applyProfileUpdate(USER_ID, {
       email: "taken@example.test",
@@ -247,6 +243,31 @@ describe("applyProfileUpdate — the email conflict is metered", () => {
       expect(result.errorCode).toBe("profile.update.emailInUse");
     }
     expect(checkProfileEmailRateLimit).toHaveBeenCalledTimes(1);
+  });
+
+  it("answers 409, not 500, when the unique key refuses the write", async () => {
+    // Another account took the address (in any case) between the probe and
+    // the write; the key on lower(email) refuses it.
+    vi.mocked(prisma.user.update).mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+
+    const result = await applyProfileUpdate(USER_ID, {
+      email: "raced@example.test",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(409);
+      expect(result.errorCode).toBe("profile.update.emailInUse");
+    }
+    expect(auditLog).toHaveBeenCalledWith(
+      "profile.email.conflict",
+      expect.objectContaining({ userId: USER_ID }),
+    );
   });
 });
 

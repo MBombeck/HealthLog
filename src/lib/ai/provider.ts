@@ -10,7 +10,6 @@ import { openStoredKey } from "./stored-key";
 import { isAnthropicBaseUrl } from "./anthropic-host";
 import { CodexClient } from "./codex-client";
 import { codexCredentialKey } from "./codex-slug-cache";
-import { chainEntryReadsImages } from "./codex-slug-chain";
 import { OpenAIClient } from "./openai-client";
 import { AnthropicClient } from "./anthropic-client";
 import { LocalOpenAICompatibleClient } from "./local-client";
@@ -54,6 +53,15 @@ import {
   pinnedChains,
 } from "./named-chains";
 import { chainLabelFor, logChainCalls } from "./chain-call-log";
+import { managedAiServing } from "./managed-ai-source";
+import {
+  credentialPresenceOf,
+  entryVision,
+  guardianChainPresence,
+  NO_PRESENCE,
+  PRESENCE_USER_SELECT,
+  resolveGuardianChain,
+} from "./managed-ai-chain";
 import {
   everyEntry,
   type ProviderEntryPresence,
@@ -357,27 +365,12 @@ class NoProvider implements AIProvider {
   }
 }
 
-type UserAIRow = {
-  aiProvider: string | null;
-  aiModel: string | null;
-  aiLocalBaseUrl: string | null;
-  aiLocalModel: string | null;
-  aiAnthropicKeyEncrypted: string | null;
-  aiLocalKeyEncrypted: string | null;
-  aiOpenaiKeyEncrypted: string | null;
-  aiCompatBaseUrl: string | null;
-  aiCompatKeyEncrypted: string | null;
-  aiCompatModel: string | null;
-  /**
-   * v1.39.3 — the owning account's role. Provider settings saved on an admin
-   * account are the operator's own, and only those (plus the instance-wide
-   * admin provider) are still covered by the deprecated
-   * `ALLOW_LOCAL_AI_PRIVATE_HOSTS=true`.
-   */
-  role: string;
-};
-
-/** v1.39.3 — see `UserAIRow.role`. */
+/**
+ * v1.39.3 — whether the owning account is an admin. Provider settings saved
+ * on an admin account are the operator's own, and only those (plus the
+ * instance-wide admin provider) are still covered by the deprecated
+ * `ALLOW_LOCAL_AI_PRIVATE_HOSTS=true`.
+ */
 function isOperatorOwned(row: { role: string } | null | undefined): boolean {
   return row?.role === "ADMIN";
 }
@@ -423,72 +416,6 @@ function buildCompatProvider(row: {
     providerType: "openai-compatible",
     operatorTrusted: isOperatorOwned(row),
   });
-}
-
-/**
- * Build a provider from a user-level config row. Returns null if the row does
- * not select a usable per-user provider (caller falls back to admin/codex).
- */
-function buildUserProvider(row: UserAIRow): AIProvider | null {
-  const choice = row.aiProvider?.toUpperCase();
-  if (!choice) return null;
-
-  switch (choice) {
-    case "ANTHROPIC": {
-      if (!row.aiAnthropicKeyEncrypted) return null;
-      // Never `aiLocalBaseUrl`: that is Local's address and stays set while
-      // another provider is selected (#1417), so an Anthropic key must not
-      // be able to reach it. Anthropic has no per-tenant base URL the UI
-      // exposes; the SDK default is correct.
-      const apiKey = openStoredKey(row.aiAnthropicKeyEncrypted);
-      if (apiKey === null) return null;
-      return new AnthropicClient({
-        apiKey,
-        model: row.aiModel ?? "claude-sonnet-4-6",
-      });
-    }
-    case "LOCAL": {
-      if (!row.aiLocalBaseUrl) return null;
-      const apiKey = row.aiLocalKeyEncrypted
-        ? openStoredKey(row.aiLocalKeyEncrypted)
-        : null;
-      if (row.aiLocalKeyEncrypted && apiKey === null) return null;
-      return new LocalOpenAICompatibleClient({
-        apiKey,
-        model: row.aiLocalModel ?? "local-model",
-        baseUrl: row.aiLocalBaseUrl,
-        operatorTrusted: isOperatorOwned(row),
-      });
-    }
-    case "OPENAI_COMPATIBLE": {
-      // v1.33.1 (#470) — the gateway provider. Reads its own three columns
-      // and nothing else; the OpenAI arm below stays pinned.
-      return buildCompatProvider(row);
-    }
-    case "OPENAI": {
-      // v1.4.3: user-level OpenAI key gets first crack — only fall back
-      // to the admin key if the user hasn't supplied their own. The
-      // model-default mirrors the admin path for consistency so a saved
-      // user "OPENAI" without an explicit model still produces an
-      // OpenAIClient with the current full-size default `gpt-4o`.
-      // Pinned host, never `aiLocalBaseUrl`: Local's address stays set while
-      // OpenAI is selected (#1417), and the OpenAI key must not reach it.
-      const apiKey = row.aiOpenaiKeyEncrypted
-        ? openStoredKey(row.aiOpenaiKeyEncrypted)
-        : null;
-      if (apiKey === null) return null;
-      return new OpenAIClient({
-        apiKey,
-        model: row.aiModel ?? "gpt-4o",
-        baseUrl: "https://api.openai.com/v1",
-      });
-    }
-    case "CHATGPT_OAUTH":
-      // Caller handles Codex OAuth via the dedicated branch; signal here.
-      return null;
-    default:
-      return null;
-  }
 }
 
 /**
@@ -723,78 +650,10 @@ async function resolveAdminCodexProvider(): Promise<AIProvider | null> {
 }
 
 /**
- * Test-only, ignoring the chain's switches: use `resolveProviderChain`.
- *
- * Priority:
- *   1. User selected ANTHROPIC / LOCAL with valid creds → that provider.
- *   2. User selected CHATGPT_OAUTH (or no explicit choice but Codex tokens
- *      are connected) → Codex.
- *   3. User selected OPENAI (or no creds for the chosen provider) → admin
- *      OpenAI key from app_settings.
- *   4. Nothing configured → NoProvider().
- */
-export async function resolveProvider(userId: string): Promise<AIProvider> {
-  const authority = providerWorkAuthorityForRecord(userId);
-  if (providerCredentialPolicy(authority) === "deny") return new NoProvider();
-
-  const userRow = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      aiProvider: true,
-      aiModel: true,
-      aiLocalBaseUrl: true,
-      aiLocalModel: true,
-      aiAnthropicKeyEncrypted: true,
-      aiLocalKeyEncrypted: true,
-      aiOpenaiKeyEncrypted: true,
-      aiCompatBaseUrl: true,
-      aiCompatKeyEncrypted: true,
-      aiCompatModel: true,
-      role: true,
-      managedProfileAt: true,
-      aiResponseTimeoutSeconds: true,
-      aiProviderChain: true,
-    },
-  });
-  // The record's response-timeout setting rides on whatever this returns, on
-  // every branch, the operator-key fallback for a managed profile included:
-  // the person waiting on the record is who the call serves. The reasoning
-  // effort (#1126) rides the same way; it only lands on a Local or gateway
-  // instance, so the operator fallback never picks one up.
-  const bind = (provider: AIProvider): AIProvider =>
-    bindReasoningEffort(
-      bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds),
-      userRow?.aiProviderChain,
-    );
-  const policy = providerCredentialPolicy(
-    authority,
-    userRow?.managedProfileAt ?? null,
-  );
-  if (policy === "operator-default") return bind(await resolveAdminProvider());
-
-  // 1. Per-user Anthropic / Local
-  if (userRow) {
-    const userProvider = buildUserProvider(userRow);
-    if (userProvider) return bind(userProvider);
-  }
-
-  // 2. Codex OAuth (either explicitly selected or implicit fallback)
-  const explicitChoice = userRow?.aiProvider?.toUpperCase();
-  const tryCodex = explicitChoice === "CHATGPT_OAUTH" || !explicitChoice;
-  if (tryCodex) {
-    const codex = await resolveCodexProvider(userId);
-    if (codex) return bind(codex);
-  }
-
-  // 3. Admin OpenAI key (also acts as fallback for user-OPENAI selection)
-  return bind(await resolveAdminProvider());
-}
-
-/**
  * The record owner's `aiResponseTimeoutSeconds` and `aiProviderChain`, for
  * `resolveProviderForTest`, whose many branches (saved config, unsaved
- * override, the chain) are bound in one place on the way out. The other two
- * resolvers read them with their row.
+ * override, the chain) are bound in one place on the way out. The chain reads
+ * them with its row.
  */
 async function readBoundSettings(userId: string): Promise<{
   aiResponseTimeoutSeconds: number | null;
@@ -879,6 +738,23 @@ export async function resolveProviderChain(
   const label = chainLabelFor(selection, capability);
   const logged = (providerType: ProviderChainType, provider: AIProvider) =>
     logChainCalls(bind(provider), providerType, label);
+  if (policy === "operator-default") {
+    // #1403 — the guardian's choice for the profile decides the credential
+    // source before anything else is read.
+    const serving = await managedAiServing(userId);
+    if (serving.kind === "none") return [];
+    if (serving.kind === "guardian") {
+      return resolveGuardianChain(serving, capability, (type, id, row) =>
+        type === "admin-codex"
+          ? resolveAdminCodexProvider()
+          : resolveProviderForType(type, {
+              userId: id,
+              userRow: row,
+              policy: "personal",
+            }),
+      );
+    }
+  }
   if (!pinned && policy === "operator-default") {
     const provider = await resolveAdminProvider();
     return provider.type === "none"
@@ -988,59 +864,8 @@ export async function resolveProviderAvailability(
 }
 
 // ── The one presence definition ────────────────────────────────────────────
-
-/** The credential-presence columns the probe reads off the record's row. */
-const PRESENCE_USER_SELECT = {
-  aiProvider: true,
-  aiProviderChain: true,
-  aiNamedChains: true,
-  aiAnthropicKeyEncrypted: true,
-  aiLocalKeyEncrypted: true,
-  aiOpenaiKeyEncrypted: true,
-  aiLocalBaseUrl: true,
-  aiLocalModel: true,
-  aiCompatBaseUrl: true,
-  aiCompatModel: true,
-  aiModel: true,
-  codexConnectionStatus: true,
-  codexAccessTokenEncrypted: true,
-  codexRefreshTokenEncrypted: true,
-  useCentralCodex: true,
-  managedProfileAt: true,
-  labsLocalOcrEnabled: true,
-  aiResponseTimeoutSeconds: true,
-} as const;
-
-const NO_PRESENCE: ProviderPresence = Object.freeze({
-  entries: [],
-  localOcrEnabled: false,
-  managedBy: null,
-  availableTypes: [],
-});
-
-/**
- * Whether one chain entry's model can read an image. Mirrors the model each
- * entry runs on (`src/lib/labs/ocr-capability.ts`): each Codex path asks its
- * own sign-in, the operator's slot uses the operator's model, Local its own
- * (`aiLocalModel`), every other entry the person's shared `aiModel`.
- */
-function entryVision(
-  providerType: string,
-  recordId: string,
-  models: {
-    user: string | null;
-    local: string | null;
-    admin: string | null;
-  },
-): boolean {
-  const model =
-    providerType === "admin-openai"
-      ? models.admin
-      : providerType === "local"
-        ? models.local
-        : models.user;
-  return chainEntryReadsImages(providerType, recordId, model);
-}
+// The row it reads, the entry vision and the credential check live in
+// `./managed-ai-chain.ts`.
 
 /**
  * The provider chain that would serve a record, presence only: which entries
@@ -1095,6 +920,11 @@ export function probeProviderChain(
       if (policy === "deny") return NO_PRESENCE;
       const named = parseNamedChains(row.aiNamedChains ?? null);
       if (policy === "operator-default") {
+        const serving = await managedAiServing(recordId);
+        if (serving.kind === "none") return NO_PRESENCE;
+        if (serving.kind === "guardian") {
+          return guardianChainPresence(serving, settings, row);
+        }
         return {
           entries: adminKey ? [vision("admin-openai")] : [],
           pinned: pinnedChains(
@@ -1111,32 +941,7 @@ export function probeProviderChain(
         };
       }
 
-      const codexConnected =
-        row.codexConnectionStatus === "connected" &&
-        !!row.codexAccessTokenEncrypted &&
-        !!row.codexRefreshTokenEncrypted;
-      const credentialPresent = (providerType: ProviderChainType): boolean => {
-        switch (providerType) {
-          case "codex":
-            return codexConnected;
-          case "openai":
-            return !!row.aiOpenaiKeyEncrypted;
-          case "anthropic":
-            return !!row.aiAnthropicKeyEncrypted;
-          case "local":
-            return !!row.aiLocalBaseUrl;
-          case "openai-compatible":
-            return !!(
-              row.aiCompatBaseUrl &&
-              (row.aiCompatModel || row.aiModel)
-            );
-          case "admin-openai":
-            return adminKey;
-          default:
-            // `admin-codex` is never resolved from a stored chain entry.
-            return false;
-        }
-      };
+      const credentialPresent = credentialPresenceOf(row, adminKey);
       const centralCodex =
         row.useCentralCodex && appSettingsCentralCodexConnected(settings);
       const entries: ProviderEntryPresence[] = defaultChainTypes(named, row)

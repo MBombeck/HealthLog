@@ -79,6 +79,9 @@ const RECENT_PROOF_ROUTES: Record<string, string> = {
   "app/api/export/route.ts": "elevation",
   "app/api/export/full-backup/route.ts": "elevation",
   "app/api/export/encrypted/route.ts": "elevation-if-enrolled",
+  // Writing the WebDAV password decides where a standing credential goes.
+  // Only a save that carries a password asks; the web card is the only client.
+  "app/api/import/health-connect-remote/route.ts": "elevation",
   // A connector token outlives the session that mints it. An account holding
   // a second factor or a passkey proves it in the app; one holding neither
   // (most SSO-only accounts) has nothing it could prove there and mints on its
@@ -103,13 +106,16 @@ const TOKEN_ARM_COOKIE_PROOF_ROUTES = [
 
 /**
  * Routes that resolve through `requireGuardianAuth` and are cookie-only: they
- * refuse a Bearer caller outright, then take the cookie arm. The cycle
- * calendar feed's mint and rotate (#1350) hand out a standing URL credential,
- * so no token may reach them and the session needs a fresh proof.
+ * refuse a Bearer caller outright, then take the cookie arm. The cycle and
+ * care calendar feeds' mints and the emergency card link hand out a standing
+ * URL credential, so no token may reach them and the session needs a fresh
+ * proof.
  */
 const RECORD_COOKIE_ONLY_PROOF_ROUTES = [
+  "app/api/care/feed-subscription/route.ts",
   "app/api/cycle/feed-subscription/route.ts",
   "app/api/cycle/feed-subscription/rotate/route.ts",
+  "app/api/emergency-card/link/route.ts",
 ].sort();
 
 /**
@@ -125,6 +131,7 @@ const COOKIE_PROOF_ROUTES = [
   "app/api/admin/backups/[id]/restore/route.ts",
   "app/api/admin/backups/upload/route.ts",
   "app/api/admin/data/route.ts",
+  "app/api/admin/push-relay/rotate-sender-key/route.ts",
   "app/api/admin/users/[id]/reset-password/route.ts",
   "app/api/admin/users/[id]/route.ts",
   "app/api/auth/reproof/route.ts",
@@ -176,7 +183,7 @@ describe("the recent-proof gate", () => {
         const handlerStart = before.lastIndexOf("apiHandler(");
         expect(handlerStart, rel).toBeGreaterThan(-1);
         expect(before.slice(handlerStart), rel).toMatch(
-          /if \(auth\.authMethod !== "cookie"\) return cookieOnlyRefusal\(\);/,
+          /if \(auth\.authMethod !== "cookie"\) return \w*[cC]ookieOnlyRefusal\(\);/,
         );
       }
     }

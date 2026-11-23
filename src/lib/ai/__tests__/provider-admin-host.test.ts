@@ -43,8 +43,8 @@ vi.mock("undici", async (importOriginal) => {
   };
 });
 
-import { resolveProvider } from "../provider";
-import { singleUserTurn } from "../types";
+import { resolveProviderChain } from "../provider";
+import { singleUserTurn, type AIProvider } from "../types";
 import { prisma } from "@/lib/db";
 
 /** A user with nothing configured, so resolution falls through to the admin key. */
@@ -60,7 +60,10 @@ function emptyUserRow() {
     aiCompatKeyEncrypted: null,
     aiCompatModel: null,
     aiProviderChain: null,
+    aiNamedChains: null,
     useCentralCodex: false,
+    role: "USER",
+    managedProfileAt: null,
     codexConnectionStatus: null,
     codexAccessTokenEncrypted: null,
     codexRefreshTokenEncrypted: null,
@@ -95,6 +98,17 @@ function stubTransport() {
   return fetchMock;
 }
 
+/**
+ * The chain production runs, for a user with nothing of their own: the
+ * operator's key is its one entry, in the `admin-openai` slot whichever
+ * client it builds.
+ */
+async function adminEntry(): Promise<AIProvider> {
+  const chain = await resolveProviderChain("u-1", null);
+  expect(chain.map((entry) => entry.providerType)).toEqual(["admin-openai"]);
+  return chain[0].instance;
+}
+
 const probe = () =>
   singleUserTurn({ system: "s", user: "u", responseFormat: "json" });
 
@@ -113,7 +127,7 @@ describe("the admin base URL picks the client", () => {
       }),
     );
 
-    const provider = await resolveProvider("u-1");
+    const provider = await adminEntry();
     expect(provider.type).toBe("anthropic");
 
     const result = await provider.generateCompletion(probe());
@@ -133,7 +147,7 @@ describe("the admin base URL picks the client", () => {
       }),
     );
 
-    const provider = await resolveProvider("u-1");
+    const provider = await adminEntry();
     expect(provider.type).toBe("anthropic");
 
     await provider.generateCompletion(probe());
@@ -152,7 +166,7 @@ describe("the admin base URL picks the client", () => {
       }),
     );
 
-    const provider = await resolveProvider("u-1");
+    const provider = await adminEntry();
     expect(provider.type).toBe("admin-key");
 
     await provider.generateCompletion(probe());
@@ -171,7 +185,7 @@ describe("the admin base URL picks the client", () => {
       }),
     );
 
-    const provider = await resolveProvider("u-1");
+    const provider = await adminEntry();
     expect(provider.type).toBe("admin-key");
 
     await provider.generateCompletion(probe());
@@ -187,7 +201,7 @@ describe("the admin base URL picks the client", () => {
     const fetchMock = stubTransport();
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(adminSettings());
 
-    const provider = await resolveProvider("u-1");
+    const provider = await adminEntry();
     expect(provider.type).toBe("admin-key");
 
     await provider.generateCompletion(probe());
@@ -201,7 +215,7 @@ describe("the admin base URL picks the client", () => {
       adminSettings({ adminAiBaseUrl: "api.anthropic.com" }),
     );
 
-    const provider = await resolveProvider("u-1");
+    const provider = await adminEntry();
     expect(provider.type).toBe("admin-key");
   });
 
@@ -211,7 +225,7 @@ describe("the admin base URL picks the client", () => {
       adminSettings({ adminAiBaseUrl: "https://api.anthropic.com/v1" }),
     );
 
-    const provider = await resolveProvider("u-1");
+    const provider = await adminEntry();
     await provider.generateCompletion(probe());
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).model).toBe(
       "claude-sonnet-4-6",

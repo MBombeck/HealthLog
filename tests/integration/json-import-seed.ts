@@ -43,6 +43,8 @@ export const JI_MEASUREMENTS = [
     unit: "bpm",
     at: "2026-09-11T07:00:00.000Z",
     deviceType: "watch",
+    // Taken away from the profile zone.
+    timeZone: "America/New_York",
   },
   {
     type: "BLOOD_GLUCOSE",
@@ -183,6 +185,7 @@ export async function seedJsonImportOwner(
         rhythmClassification:
           "rhythmClassification" in m ? m.rhythmClassification : null,
         deviceType: "deviceType" in m ? m.deviceType : null,
+        timeZone: "timeZone" in m ? m.timeZone : null,
       },
     });
   }

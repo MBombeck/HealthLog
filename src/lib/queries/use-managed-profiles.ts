@@ -28,10 +28,20 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import {
+  apiDelete,
+  apiGet,
+  apiGetList,
+  apiPatch,
+  apiPost,
+} from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 import { invalidateGrantReads } from "@/lib/queries/use-account-grants";
-import type { GrantParty } from "@/lib/queries/use-account-grants";
+import type {
+  GrantParty,
+  RecordActivityEntry,
+  WithCap,
+} from "@/lib/queries/use-account-grants";
 import type { Locale } from "@/lib/i18n/config";
 import type { HandoverAccess } from "@/lib/managed-profiles/handover-access";
 
@@ -252,6 +262,27 @@ export function useManagedProfileGuardians(profileId: string, enabled = true) {
       ),
     enabled,
   });
+}
+
+/**
+ * #1403 — the activity feed of one managed profile. Read only when the panel
+ * opens; the cap rides the envelope like every capped list's.
+ */
+export function useManagedProfileActivity(profileId: string) {
+  return useQuery({
+    queryKey: queryKeys.managedProfileActivity(profileId),
+    queryFn: async (): Promise<WithCap<ManagedProfileActivity>> => {
+      const { data, cap } = await apiGetList<ManagedProfileActivity>(
+        `/api/managed-profiles/${profileId}/activity`,
+      );
+      return { ...data, cap };
+    },
+  });
+}
+
+export interface ManagedProfileActivity {
+  entries: RecordActivityEntry[];
+  retentionDays: number;
 }
 
 /**

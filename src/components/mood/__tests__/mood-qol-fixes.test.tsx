@@ -100,7 +100,7 @@ describe("MoodForm — Reset confirm when dirty (v1.11.5)", () => {
 
   it("routes Reset through requestReset, which gates the confirm dialog on dirty", () => {
     // The dropdown item calls `requestReset`, not `resetForm` directly.
-    expect(formSrc).toContain("onClick={requestReset}");
+    expect(formSrc).toContain("onReset={requestReset}");
     expect(formSrc).toMatch(
       /function requestReset\(\) \{[\s\S]*if \(isDirty\) \{[\s\S]*setResetConfirmOpen\(true\)/,
     );

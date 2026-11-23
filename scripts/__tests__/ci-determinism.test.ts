@@ -201,10 +201,11 @@ describe("production dependency advisory floors", () => {
     dompurify: "3.4.13",
     // CVE-2026-69153.
     postcss: "8.5.23",
-    // GHSA-frvp-7c67-39w9 and CVE-2026-39406. Mirrored in the Dockerfile.
+    // GHSA-frvp-7c67-39w9 and CVE-2026-39406. Mirrored in
+    // docker/prisma-cli/package.json.
     "@hono/node-server": "1.19.15",
     hono: "4.12.25",
-    // CVE-2026-59952. Mirrored in the Dockerfile.
+    // CVE-2026-59952. Mirrored in docker/prisma-cli/package.json.
     valibot: "1.4.2",
   };
 

@@ -165,4 +165,68 @@ describe("POST /api/measurements — a duplicate is a conflict, not a fault", ()
       await getPrismaClient().measurement.count({ where: { userId: user.id } }),
     ).toBe(2);
   });
+
+  it("revives a deleted hand entry at the same minute instead of answering 409", async () => {
+    // Typed it wrong, deleted it, entered it again: the tombstone holds the
+    // reading key for 75 days, and a MANUAL entry takes it over.
+    const user = await signIn();
+    const first = await post(single);
+    expect(first.status).toBe(201);
+    const original = await getPrismaClient().measurement.findFirstOrThrow({
+      where: { userId: user.id },
+    });
+    await getPrismaClient().measurement.update({
+      where: { id: original.id },
+      data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
+    });
+
+    const again = await post({ ...single, value: 81.4 });
+
+    expect(again.status).toBe(201);
+    const rows = await getPrismaClient().measurement.findMany({
+      where: { userId: user.id },
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: original.id,
+      value: 81.4,
+      deletedAt: null,
+    });
+    // Raised past the deletion's version, so a device that synced the
+    // deletion receives the reading again.
+    expect(rows[0].syncVersion).toBeGreaterThan(original.syncVersion + 1);
+  });
+
+  it("revives deleted entries inside a batch too, and still refuses a live duplicate", async () => {
+    const user = await signIn();
+    const pair = [
+      { type: "BLOOD_PRESSURE_SYS", value: 128, measuredAt: MEASURED_AT },
+      { type: "BLOOD_PRESSURE_DIA", value: 82, measuredAt: MEASURED_AT },
+    ];
+    expect((await post(pair)).status).toBe(201);
+    await getPrismaClient().measurement.updateMany({
+      where: { userId: user.id },
+      data: { deletedAt: new Date() },
+    });
+
+    const again = await post([
+      { ...pair[0], value: 126 },
+      { ...pair[1], value: 80 },
+    ]);
+    expect(again.status).toBe(201);
+    const live = await getPrismaClient().measurement.findMany({
+      where: { userId: user.id, deletedAt: null },
+      select: { type: true, value: true },
+    });
+    expect(live.sort((a, b) => a.type.localeCompare(b.type))).toEqual([
+      { type: "BLOOD_PRESSURE_DIA", value: 80 },
+      { type: "BLOOD_PRESSURE_SYS", value: 126 },
+    ]);
+    expect(
+      await getPrismaClient().measurement.count({ where: { userId: user.id } }),
+    ).toBe(2);
+
+    // Live now, so a third entry at the same minute is a duplicate again.
+    expect((await post(pair)).status).toBe(409);
+  });
 });

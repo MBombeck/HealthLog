@@ -21,6 +21,7 @@ import {
   MODULE_DISABLED_DESCRIPTION,
   createMeasurementSchema,
   dataEnvelope,
+  deletedInHealthLogResponse,
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
@@ -109,6 +110,11 @@ const batchEntrySchema = z
           "The id MUST be stable across app restarts. An object description or memory address (`<Class: 0x…>`, `0x12ab34cd`) is a new value on every launch, so it can never match its own earlier row; such an entry is `skipped` with reason `unstable_external_id` while the rest of the batch still lands.",
       ),
     externalSourceVersion: z.string().min(1).max(120).optional(),
+    computedAt: isoDateTime()
+      .optional()
+      .describe(
+        "Since v1.49.0, on a `stats:` entry: when the client computed this day total. A write of the same row carrying an earlier `computedAt` than the stored row's is refused, `skipped` with reason `stale`, so an out-of-order replay never replaces a newer total; an equal or later one writes. Without it the entry overwrites as before and the stored row forgets its time, so the next entry that states one writes. Ignored on every other entry.",
+      ),
     // v1.8.6 — optional per-entry source tag. Defaults to
     // `APPLE_HEALTH` server-side when omitted, so legacy clients are
     // unchanged. Restricted to the `{APPLE_HEALTH, MANUAL}` subset of
@@ -128,6 +134,14 @@ const batchEntrySchema = z
       .optional()
       .describe(
         "Device class mapped from `HKDevice.model`. Used by the analytics aggregator to break ties when the same source contributed multiple devices for the same day. Omit (or send null) on legacy clients — the server treats it as `unknown` and the picker falls through.",
+      ),
+    timeZone: z
+      .string()
+      .min(1)
+      .max(64)
+      .optional()
+      .describe(
+        "IANA time zone the sample was taken in (`HKMetadataKeyTimeZone`, e.g. `America/New_York`). The local day and wall clock of the reading are read in this zone: a night slept abroad files under that zone's wake day, the day view and the daily charts count the reading on that zone's day. Omit it to keep the profile zone (`timezone` on `/api/auth/me`), which is also what every row stored without one means. A name the server cannot read (not a valid IANA name, or one its database does not know) is stored as null and the entry is still written. Not part of any dedup key; a `stats:` re-post updates it. Rollup buckets are UTC days and do not read it.",
       ),
   })
   .meta({ id: "AppleHealthBatchEntry" });
@@ -166,7 +180,7 @@ const batchEntryResult = z
       .string()
       .optional()
       .describe(
-        "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`, `hour_bucket_unsupported_type`, `hour_bucket_too_old` (since v1.43): an hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent for the row as sent.",
+        "Why a row was `skipped` or a `duplicate`. On a `skipped`: `deleted_in_healthlog` (since v1.49.0), an immutable sample whose `(type, source, externalId)` names a row the person deleted in HealthLog (web, app or MCP); it stays deleted and nothing is written. Final: drop the entry. A sample the phone reported deleted through `DELETE /api/measurements/by-external-ids` is the other case: posted again, it is back in Apple Health, and the deleted row is written again in place (`updated`). A `stats:` aggregate is a day's total, not a sample, and a re-post writes it again either way. `stale` (since v1.49.0, on a `skipped`): a `stats:` entry whose `computedAt` is earlier than the one the stored row was written with; the newer total stays. Final: drop the entry. `superseded_in_batch`: a later entry of the same batch carries the same `stats:` id. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`, `hour_bucket_unsupported_type`, `hour_bucket_too_old` (since v1.43): an hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent for the row as sent.",
       ),
     convertedValue: z
       .number()
@@ -327,6 +341,13 @@ export const measurementResource = z
       .nullable()
       .optional()
       .describe("`watch | band | ring | phone | scale | other | unknown`."),
+    timeZone: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "IANA zone the reading was taken in, when its writer sent one; null means the profile zone. The reading's local day is read in it.",
+      ),
     syncVersion: z
       .number()
       .int()
@@ -506,7 +527,18 @@ const sleepSegmentResource = z.object({
 });
 
 const sleepSessionResource = z.object({
-  night: z.string().describe("Wake-day key (YYYY-MM-DD)."),
+  night: z
+    .string()
+    .describe(
+      "Wake-day key (YYYY-MM-DD), in `timeZone` when set, else in the profile zone.",
+    ),
+  timeZone: z
+    .string()
+    .nullable()
+    .optional()
+    .describe(
+      "The zone the night is read in when its last stage row carries one other than the profile zone (a night slept abroad); null otherwise. Render the night's clock times in it.",
+    ),
   source: measurementSourceEnum.nullable(),
   start: isoDateTime(),
   end: isoDateTime(),
@@ -1055,7 +1087,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "Create one measurement (or a small array)",
       description:
         "Single ingest. The body may also be a bare ARRAY of the same objects — the mode the iOS client uses for a combined blood-pressure + pulse or dual-value glucose write — in which case `data` is the array of created rows in request order. Use `/api/measurements/batch` for Apple Health upload streams.\n\n" +
-        "Sleep stages by name (since v1.39.1): an object with `type: SLEEP_DURATION`, a `sleepStage` of `IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP` or `REM`, and the segment as `startDate` + `endDate` or as `measuredAt` (its end) + `value` (minutes). It is stored and deduplicated exactly as the batch route stores a HealthKit sleep sample, so a bridge can send stages without the HealthKit codepoints. See `NamedSleepStageEntry`.\n\n" +
+        "Sleep stages by name (since v1.39.1): an object with `type: SLEEP_DURATION`, a `sleepStage` of `IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP` or `REM`, and the segment as `startDate` + `endDate` or as `measuredAt` (its end) + `value` (minutes). It is stored and deduplicated exactly as the batch route stores a HealthKit sleep sample, so a bridge can send stages without the HealthKit codepoints. A segment whose `externalId` names one the person deleted in HealthLog answers 410 (`measurement.deleted_in_healthlog`) and stays deleted. See `NamedSleepStageEntry`.\n\n" +
         "Also reachable with a narrow `measurements:write` Bearer, which is the supported way to push readings from a scale, a watch bridge or a home-automation rule. That credential is confined to its owner's own record — a request carrying the account selector is refused 403 before any sharing grant is read, however the record is actually shared — and it may not attribute a source at all: rows it writes carry `source: EXTERNAL`, resolved from the credential, so a bridged reading stays distinguishable from a hand-typed one. A body naming ANY source, `MANUAL` included, is refused 422 (`measurement.create.source_not_permitted`). The GET on this same path, and the PUT and DELETE beside it, name no scope and so refuse it — though the rows themselves stay editable by their owner, unlike a connected provider's.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
@@ -1114,6 +1146,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "A measurement with this data already exists — the `(userId, type, source, externalId)` dedup index rejected the write. Never for a named sleep-stage body, which answers a re-post with 200 instead.",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        ...deletedInHealthLogResponse("measurement.deleted_in_healthlog"),
         // After the spread: `stdResponses` carries a generic 422 that would
         // otherwise overwrite this one.
         ...stdResponses,

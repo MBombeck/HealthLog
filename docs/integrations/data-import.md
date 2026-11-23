@@ -1,7 +1,7 @@
 # Data import
 
-HealthLog has five ways to bring data in, all reachable from
-**Settings → Export & Import**:
+HealthLog has these ways to bring data in, all reachable from
+**Settings > Export & import**:
 
 1. An **Apple Health `export.zip`** upload — the full archive from the
    iPhone Health app, parsed server-side. See
@@ -17,6 +17,14 @@ HealthLog has five ways to bring data in, all reachable from
    with its own `?dryRun=1` preview.
 5. An **activity file (FIT)** — one workout as a watch or bike computer
    recorded it, with its heart-rate curve. Documented in section 4 below.
+6. A **Gadgetbridge database** — steps, heart rate, SpO2, sleep and weight
+   from the Android companion app without a vendor cloud. See
+   [`gadgetbridge.md`](./gadgetbridge.md).
+7. A **patient record as a FHIR R4 Bundle** — lab results, vital signs,
+   conditions, vaccinations, medications and visits from a patient portal.
+   See [`fhir-bundle-import.md`](./fhir-bundle-import.md).
+8. A **Health Connect export**, uploaded or fetched on a schedule from a
+   WebDAV or Nextcloud folder. See [`health-connect.md`](./health-connect.md).
 
 All paths skip rows that already exist, so re-running an import is
 safe — it merges rather than duplicating.
@@ -35,7 +43,7 @@ scroll.
 
 On the iPhone: **Health app → profile picture → Export All Health
 Data**, then move the resulting `export.zip` somewhere you can reach
-from a browser. In HealthLog open **Settings → Export & Import** and drop
+from a browser. In HealthLog open **Settings > Export & import** and drop
 the archive onto the Apple Health control (or click to pick it). The
 upload streams to the server — a multi-gigabyte archive never buffers in
 the browser — and a background job parses it while a progress indicator
@@ -150,83 +158,86 @@ display per the user's preference. Event-class types record a single
 fired event (`value` is `1`) and are normally produced by a device, not
 hand-authored.
 
-| Type                            | Canonical unit       |
-| ------------------------------- | -------------------- |
-| `WEIGHT`                        | kg                   |
-| `BLOOD_PRESSURE_SYS`            | mmHg                 |
-| `BLOOD_PRESSURE_DIA`            | mmHg                 |
-| `PULSE`                         | bpm                  |
-| `RESTING_HEART_RATE`            | bpm                  |
-| `WALKING_HEART_RATE_AVERAGE`    | bpm                  |
-| `AVERAGE_HEART_RATE`            | bpm                  |
-| `MAX_HEART_RATE`                | bpm                  |
-| `CARDIO_RECOVERY`               | bpm                  |
-| `HEART_RATE_VARIABILITY`        | ms (SDNN)            |
-| `HRV_RMSSD`                     | ms (RMSSD)           |
-| `RESPIRATORY_RATE`              | count/min            |
-| `OXYGEN_SATURATION`             | percent (0–100)      |
-| `BLOOD_GLUCOSE`                 | mg/dL                |
-| `BLOOD_KETONES`                 | mmol/L               |
-| `INSULIN_DELIVERY`              | IU                   |
-| `FEV1`                          | L                    |
-| `FVC`                           | L                    |
-| `PEAK_EXPIRATORY_FLOW`          | L/min                |
-| `INHALER_USAGE`                 | count                |
-| `BODY_FAT`                      | percent (0–100)      |
-| `FAT_MASS`                      | kg                   |
-| `FAT_FREE_MASS`                 | kg                   |
-| `LEAN_BODY_MASS`                | kg                   |
-| `MUSCLE_MASS`                   | kg                   |
-| `BONE_MASS`                     | kg                   |
-| `TOTAL_BODY_WATER`              | kg                   |
-| `VISCERAL_FAT`                  | rating               |
-| `BODY_MASS_INDEX`               | kg/m²                |
-| `BODY_TEMPERATURE`              | °C (core)            |
-| `SKIN_TEMPERATURE`              | °C (dermal spot)     |
-| `WRIST_TEMPERATURE`             | °C (overnight wrist) |
-| `SLEEP_DURATION`                | minutes              |
-| `SLEEP_NEED`                    | minutes              |
-| `SLEEP_PERFORMANCE`             | percent (0–100)      |
-| `SLEEP_EFFICIENCY`              | percent (0–100)      |
-| `SLEEP_CONSISTENCY`             | percent (0–100)      |
-| `SLEEP_DISTURBANCE_COUNT`       | count                |
-| `BREATHING_DISTURBANCES`        | count                |
-| `ACTIVITY_STEPS`                | count                |
-| `FLIGHTS_CLIMBED`               | count                |
-| `WALKING_RUNNING_DISTANCE`      | metres               |
-| `SIX_MINUTE_WALK_DISTANCE`      | metres               |
-| `WALKING_STEP_LENGTH`           | metres               |
-| `WALKING_SPEED`                 | m/s                  |
-| `STAIR_ASCENT_SPEED`            | m/s                  |
-| `STAIR_DESCENT_SPEED`           | m/s                  |
-| `WALKING_STEADINESS`            | percent (0–100)      |
-| `WALKING_ASYMMETRY`             | percent (0–100)      |
-| `WALKING_DOUBLE_SUPPORT`        | percent (0–100)      |
-| `ACTIVE_ENERGY_BURNED`          | kcal                 |
-| `BASAL_ENERGY_BURNED`           | kcal                 |
-| `ENERGY_EXPENDITURE_KJ`         | kJ                   |
-| `VO2_MAX`                       | mL/(kg·min)          |
-| `PULSE_WAVE_VELOCITY`           | m/s                  |
-| `VASCULAR_AGE`                  | years                |
-| `FALL_COUNT`                    | count                |
-| `AUDIO_EXPOSURE_ENV`            | dBA                  |
-| `AUDIO_EXPOSURE_HEADPHONE`      | dBA                  |
-| `TIME_IN_DAYLIGHT`              | minutes              |
-| `RECOVERY_SCORE`                | score (0–100)        |
-| `STRESS_SCORE`                  | score (0–100)        |
-| `STRAIN_SCORE`                  | score (0–100)        |
-| `DAY_STRAIN`                    | score (0–21)         |
-| `WORKOUT_STRAIN`                | score (0–21)         |
-| `AUDIO_EXPOSURE_EVENT`          | count (event)        |
-| `IRREGULAR_RHYTHM_NOTIFICATION` | event                |
-| `HIGH_HEART_RATE_EVENT`         | event                |
-| `LOW_HEART_RATE_EVENT`          | event                |
-| `WALKING_STEADINESS_EVENT`      | event                |
-| `BREATHING_DISTURBANCE_EVENT`   | event                |
-| `HYPERTENSION_EVENT`            | event                |
-| `LOW_CARDIO_FITNESS_EVENT`      | event                |
-| `MENOPAUSAL_STATE`              | state (1–3)          |
-| `BLEEDING_AFTER_MENOPAUSE`      | flow (1–5)           |
+| Type                             | Canonical unit       |
+| -------------------------------- | -------------------- |
+| `WEIGHT`                         | kg                   |
+| `BLOOD_PRESSURE_SYS`             | mmHg                 |
+| `BLOOD_PRESSURE_DIA`             | mmHg                 |
+| `PULSE`                          | bpm                  |
+| `RESTING_HEART_RATE`             | bpm                  |
+| `WALKING_HEART_RATE_AVERAGE`     | bpm                  |
+| `AVERAGE_HEART_RATE`             | bpm                  |
+| `MAX_HEART_RATE`                 | bpm                  |
+| `CARDIO_RECOVERY`                | bpm                  |
+| `HEART_RATE_VARIABILITY`         | ms (SDNN)            |
+| `HRV_RMSSD`                      | ms (RMSSD)           |
+| `RESPIRATORY_RATE`               | count/min            |
+| `OXYGEN_SATURATION`              | percent (0–100)      |
+| `BLOOD_GLUCOSE`                  | mg/dL                |
+| `BLOOD_KETONES`                  | mmol/L               |
+| `INSULIN_DELIVERY`               | IU                   |
+| `FEV1`                           | L                    |
+| `FVC`                            | L                    |
+| `PEAK_EXPIRATORY_FLOW`           | L/min                |
+| `INHALER_USAGE`                  | count                |
+| `BODY_FAT`                       | percent (0–100)      |
+| `FAT_MASS`                       | kg                   |
+| `FAT_FREE_MASS`                  | kg                   |
+| `LEAN_BODY_MASS`                 | kg                   |
+| `MUSCLE_MASS`                    | kg                   |
+| `BONE_MASS`                      | kg                   |
+| `TOTAL_BODY_WATER`               | kg                   |
+| `VISCERAL_FAT`                   | rating               |
+| `BODY_MASS_INDEX`                | kg/m²                |
+| `BODY_TEMPERATURE`               | °C (core)            |
+| `SKIN_TEMPERATURE`               | °C (dermal spot)     |
+| `WRIST_TEMPERATURE`              | °C (overnight wrist) |
+| `SLEEP_DURATION`                 | minutes              |
+| `SLEEP_NEED`                     | minutes              |
+| `SLEEP_PERFORMANCE`              | percent (0–100)      |
+| `SLEEP_EFFICIENCY`               | percent (0–100)      |
+| `SLEEP_CONSISTENCY`              | percent (0–100)      |
+| `SLEEP_DISTURBANCE_COUNT`        | count                |
+| `BREATHING_DISTURBANCES`         | count                |
+| `ACTIVITY_STEPS`                 | count                |
+| `FLIGHTS_CLIMBED`                | count                |
+| `WALKING_RUNNING_DISTANCE`       | metres               |
+| `SIX_MINUTE_WALK_DISTANCE`       | metres               |
+| `WALKING_STEP_LENGTH`            | metres               |
+| `WALKING_SPEED`                  | m/s                  |
+| `STAIR_ASCENT_SPEED`             | m/s                  |
+| `STAIR_DESCENT_SPEED`            | m/s                  |
+| `WALKING_STEADINESS`             | percent (0–100)      |
+| `WALKING_ASYMMETRY`              | percent (0–100)      |
+| `WALKING_DOUBLE_SUPPORT`         | percent (0–100)      |
+| `ACTIVE_ENERGY_BURNED`           | kcal                 |
+| `BASAL_ENERGY_BURNED`            | kcal                 |
+| `WORKOUT_EFFORT_SCORE`           | score (0–10)         |
+| `ESTIMATED_WORKOUT_EFFORT_SCORE` | score (0–10)         |
+| `PHYSICAL_EFFORT`                | kcal/(hr·kg)         |
+| `ENERGY_EXPENDITURE_KJ`          | kJ                   |
+| `VO2_MAX`                        | mL/(kg·min)          |
+| `PULSE_WAVE_VELOCITY`            | m/s                  |
+| `VASCULAR_AGE`                   | years                |
+| `FALL_COUNT`                     | count                |
+| `AUDIO_EXPOSURE_ENV`             | dBA                  |
+| `AUDIO_EXPOSURE_HEADPHONE`       | dBA                  |
+| `TIME_IN_DAYLIGHT`               | minutes              |
+| `RECOVERY_SCORE`                 | score (0–100)        |
+| `STRESS_SCORE`                   | score (0–100)        |
+| `STRAIN_SCORE`                   | score (0–100)        |
+| `DAY_STRAIN`                     | score (0–21)         |
+| `WORKOUT_STRAIN`                 | score (0–21)         |
+| `AUDIO_EXPOSURE_EVENT`           | count (event)        |
+| `IRREGULAR_RHYTHM_NOTIFICATION`  | event                |
+| `HIGH_HEART_RATE_EVENT`          | event                |
+| `LOW_HEART_RATE_EVENT`           | event                |
+| `WALKING_STEADINESS_EVENT`       | event                |
+| `BREATHING_DISTURBANCE_EVENT`    | event                |
+| `HYPERTENSION_EVENT`             | event                |
+| `LOW_CARDIO_FITNESS_EVENT`       | event                |
+| `MENOPAUSAL_STATE`               | state (1–3)          |
+| `BLEEDING_AFTER_MENOPAUSE`       | flow (1–5)           |
 
 The table is a curated subset and lags the enum by a few
 device-derived types. The live, machine-readable list of writable
@@ -235,7 +246,7 @@ types and their units is served by `GET /api/meta/capabilities` under
 
 ### Worked example
 
-The **Download example** button in **Settings → Export & Import** mints
+The **Download example** button in **Settings > Export & import** mints
 exactly this payload, which is a valid import body:
 
 ```json
@@ -285,7 +296,7 @@ The response is a count envelope:
 
 `POST /api/import/csv` takes the raw file as `text/csv` — one measurement
 per row, no JSON wrapper. The **CSV file** control in
-**Settings → Export & Import** posts to it, and **Download example**
+**Settings > Export & import** posts to it, and **Download example**
 mints a file with the right header.
 
 A header row is required; column order does not matter and header
@@ -322,7 +333,7 @@ with the reasons grouped by count.
 
 Watches and bike computers record each workout as a FIT file: Garmin,
 Wahoo, Coros, Polar, Suunto, Zwift and most others. The **Activity file
-(FIT)** card in **Settings → Export & Import** takes one such file at a
+(FIT)** card in **Settings > Export & import** takes one such file at a
 time and posts it to `POST /api/import/fit`; a background job reads it
 while the card shows its progress, and the result stays on the card after
 a reload (`GET /api/import/fit/status`).
@@ -338,12 +349,13 @@ Accepted files, up to 10 MB:
 
 What a file becomes:
 
-| FIT                                          | HealthLog                                                                                                |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Each session (one per sport in a multisport) | One workout: sport, start, end, distance, energy, average and peak heart rate, climb, pause time         |
-| The record stream (usually once a second)    | The workout's series: heart rate, speed, power and cadence, shown as the heart-rate chart on the workout |
-| The positions in the records                 | The GPS track, only when **Workout routes** is switched on in the privacy settings, stored encrypted     |
-| Laps, power and cadence averages, the device | Kept as the workout's details                                                                            |
+| FIT                                          | HealthLog                                                                                                                                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Each session (one per sport in a multisport) | One workout: sport, start, end, distance, energy, average and peak heart rate, climb, pause time                                                                                           |
+| The record stream (usually once a second)    | The workout's series: heart rate, speed, power and cadence, shown as the heart-rate chart on the workout                                                                                   |
+| The positions in the records                 | The GPS track, only when **Workout routes** is switched on in the privacy settings, stored encrypted                                                                                       |
+| Laps, power and cadence averages, the device | Kept as the workout's details                                                                                                                                                              |
+| The watch's own figures for the session      | Shown on the workout: aerobic and anaerobic training effect, training load, recovery time, sweat loss, average power, vertical oscillation, ground contact time and its left/right balance |
 
 The series is capped at 30 000 points. A longer session (a day-long
 race at one record a second) is averaged down evenly so its shape stays.
@@ -366,7 +378,7 @@ that is not an activity (a course or a daily monitoring file); or a file
 holding far more messages than any activity (a structural limit checked
 before the file is decoded).
 
-The file is deleted from the server as soon as the import ends. Ten
+The file is deleted from the server as soon as the import ends. Five
 uploads a minute per account; one import of any kind runs at a time.
 
 ## Converting a CSV into the import JSON

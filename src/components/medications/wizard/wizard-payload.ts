@@ -62,10 +62,22 @@ import {
 } from "@/lib/validations/medication";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 import { parseUnitsPerDoseInput } from "@/lib/medications/units-per-dose";
+
+import { TIME_RE, validateStep } from "./wizard-step-gate";
+import {
+  EMPTY_EXTRAS,
+  extrasBody,
+  hydrateExtras,
+  type ExtrasBody,
+  type ExtrasInitial,
+  type WizardExtras,
+} from "./wizard-extras";
 import {
   isExplicitRange,
   type DoseWindowEntry,
 } from "@/components/medications/scheduling/dose-window";
+import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 // ────────────────────────────────────────────────────────────────────
 // Step 2 — treatment-class taxonomy
@@ -262,7 +274,7 @@ export interface ScheduleDraft {
  * stay single-schedule-aware; the list-mutating helpers below keep
  * the mirror in sync.
  */
-export interface WizardPayload {
+export interface WizardPayload extends WizardExtras {
   name: string;
   doseAmount: string;
   doseUnit: string;
@@ -351,23 +363,10 @@ export interface WizardPayload {
    * time has passed. No reminder is sent while it is on.
    */
   autoMarkTaken: boolean;
-  /** #1371 — the medication's own note; empty = none. */
-  note: string;
-  /** #1371 — the note an edit hydrated to; absent on create. */
-  initialNote?: string;
   /** Every parallel schedule under construction. Always >= 1 entry. */
   schedules: ScheduleDraft[];
   /** Which schedule Steps 5-7 currently edit. */
   activeScheduleIndex: number;
-}
-
-const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
-function todayUtc(): Date {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0),
-  );
 }
 
 /** Default draft for a fresh schedule slot. */
@@ -380,8 +379,8 @@ export function emptyScheduleDraft(): ScheduleDraft {
   };
 }
 
-/** Sensible defaults for a fresh wizard. */
-export function emptyWizardPayload(): WizardPayload {
+/** Defaults for a fresh wizard; it starts today in the profile zone `tz`. */
+export function emptyWizardPayload(tz = DEFAULT_TIMEZONE): WizardPayload {
   const draft = emptyScheduleDraft();
   return {
     name: "",
@@ -400,12 +399,12 @@ export function emptyWizardPayload(): WizardPayload {
     scheduleDose: draft.dose ?? "",
     scheduleUnitsPerDose: draft.unitsPerDose ?? "",
     doseWindows: draft.doseWindows ?? [],
-    startsOn: todayUtc(),
+    startsOn: dayKeyAsUtcMidnight(userDayKey(new Date(), tz)),
     endsOn: null,
     notificationsEnabled: true,
     trackIntake: true,
     autoMarkTaken: false,
-    note: "",
+    ...EMPTY_EXTRAS,
     schedules: [draft],
     activeScheduleIndex: 0,
   };
@@ -552,82 +551,8 @@ export function progressIndices(
   return RECURRING_PATH;
 }
 
-// ────────────────────────────────────────────────────────────────────
-// validateStep — pure per-step gate
-// ────────────────────────────────────────────────────────────────────
-
-/**
- * Returns true when the step's required inputs are populated.
- *
- * Matrix:
- *  - Step 1: name populated.
- *  - Step 2: treatment row picked.
- *  - Step 3: doseAmount populated.
- *  - Step 4: startsOn present + (endsOn null OR endsOn >= startsOn).
- *  - Step 5: mode picked.
- *  - Step 6: cadence-specific (weekdays >= 1; interval >= 1; monthly
- *    day 1..31; rolling 1..365).
- *  - Step 7: >= 1 valid HH:mm time.
- *  - Step 8: mirrors Step 4 (the reminders toggle has no failure mode).
- */
-export function validateStep(payload: WizardPayload, step: number): boolean {
-  switch (step) {
-    case 1:
-      return payload.name.trim().length > 0;
-    case 2:
-      return payload.treatmentRow !== null;
-    case 3:
-      return (
-        payload.doseAmount.trim().length > 0 &&
-        parseUnitsPerDoseInput(payload.unitsPerDose) !== null
-      );
-    case 4:
-      if (payload.startsOn === null) return false;
-      if (payload.endsOn === null) return true;
-      return payload.endsOn.getTime() >= payload.startsOn.getTime();
-    case 5:
-      return payload.mode !== null;
-    case 6: {
-      if (payload.mode !== "recurring") return true;
-      switch (payload.cadence.kind) {
-        case "weekdays":
-          return payload.subControls.weekdays.length >= 1;
-        case "everyNWeeks":
-          return (
-            payload.subControls.weekdays.length >= 1 &&
-            payload.subControls.intervalWeeks >= 1
-          );
-        case "monthly":
-          return (
-            payload.subControls.dayOfMonth >= 1 &&
-            payload.subControls.dayOfMonth <= 31
-          );
-        case "rolling":
-          return (
-            payload.subControls.rollingDays >= 1 &&
-            payload.subControls.rollingDays <= 365
-          );
-        default:
-          return true;
-      }
-    }
-    case 7: {
-      const times = payload.timesOfDay.filter((t) => TIME_RE.test(t));
-      // Blank inherits the medication-level value; anything typed must read.
-      const slotUnits = payload.scheduleUnitsPerDose.trim();
-      return (
-        times.length >= 1 &&
-        (slotUnits === "" || parseUnitsPerDoseInput(slotUnits) !== null)
-      );
-    }
-    case 8:
-      if (payload.startsOn === null) return false;
-      if (payload.endsOn === null) return true;
-      return payload.endsOn.getTime() >= payload.startsOn.getTime();
-    default:
-      return false;
-  }
-}
+// The per-step gate lives in `./wizard-step-gate.ts`.
+export { stepBlocker, validateStep } from "./wizard-step-gate";
 
 // ────────────────────────────────────────────────────────────────────
 // firstInvalidIndex — multi-step forward lookahead
@@ -663,7 +588,7 @@ export function firstInvalidIndex(
 // buildCreateBody — POST /api/medications request body
 // ────────────────────────────────────────────────────────────────────
 
-export interface CreateMedicationBody {
+export interface CreateMedicationBody extends ExtrasBody {
   name: string;
   dose: string;
   /**
@@ -712,8 +637,6 @@ export interface CreateMedicationBody {
    * so re-sending the stored value never moves it. Off for as-needed.
    */
   autoMarkTaken: boolean;
-  /** #1371 — trimmed; sent only when set (create) or changed (edit). */
-  note?: string;
   schedules: Array<{
     id?: string;
     windowStart: string;
@@ -944,12 +867,7 @@ export function buildCreateBody(
     trackIntake: isAsNeeded ? true : committed.trackIntake,
     // An as-needed medication has no slot to record.
     autoMarkTaken: isAsNeeded ? false : committed.autoMarkTaken,
-    // An edit names the note only when it changed, so an unrelated save
-    // never clears it; a blank one then clears it.
-    ...(committed.note.trim() !==
-      (forMode === "edit" ? (committed.initialNote ?? "").trim() : "") && {
-      note: committed.note.trim(),
-    }),
+    ...extrasBody(committed, forMode),
     schedules: draftsToEmit.map((draft) =>
       encodeScheduleDraft(draft, isOneShot),
     ),
@@ -1086,11 +1004,10 @@ function cadenceLineFor(
 export function summariseCadence(
   payload: WizardPayload,
   t: (key: string, params?: Record<string, string | number>) => string,
-  // v1.16.4 — UI callers pass `useFormatters().date` so the course-window
-  // dates render in the active locale ("11.06.2026" / "Jun 11, 2026")
-  // instead of the raw ISO string. The ISO default keeps the helper pure
-  // for non-React callers.
+  // UI callers pass `useFormatters().date` / `.wallTime` (locale, hour cycle);
+  // the defaults keep the helper pure for non-React callers.
   formatDate: (d: Date) => string = dateToIsoString,
+  wallTime: (hhmm: string) => string = (hhmm) => hhmm,
 ): string {
   const cadenceLine = cadenceLineFor(payload, t);
   const timesPhrase =
@@ -1098,7 +1015,7 @@ export function summariseCadence(
     payload.mode !== "asNeeded" &&
     payload.timesOfDay.length > 0
       ? t("medications.wizard.summary.times", {
-          times: sortTimes(payload.timesOfDay).join(", "),
+          times: sortTimes(payload.timesOfDay).map(wallTime).join(", "),
         })
       : "";
   const startPhrase = payload.startsOn
@@ -1127,6 +1044,7 @@ export function summariseCadence(
 export function summariseScheduleDraft(
   draft: ScheduleDraft,
   t: (key: string, params?: Record<string, string | number>) => string,
+  wallTime: (hhmm: string) => string = (hhmm) => hhmm,
 ): string {
   const cadenceLine = cadenceLineFor(draft, t);
   const timesPhrase =
@@ -1134,7 +1052,7 @@ export function summariseScheduleDraft(
     draft.mode !== "asNeeded" &&
     draft.timesOfDay.length > 0
       ? t("medications.wizard.summary.times", {
-          times: sortTimes(draft.timesOfDay).join(", "),
+          times: sortTimes(draft.timesOfDay).map(wallTime).join(", "),
         })
       : "";
   return [cadenceLine, timesPhrase].filter(Boolean).join(" · ");
@@ -1150,7 +1068,7 @@ export function summariseScheduleDraft(
  * the v1.5 cadence fields and the legacy `(daysOfWeek, intervalWeeks)`
  * pair so the bridge can hydrate older medications cleanly.
  */
-export interface MedicationPayload {
+export interface MedicationPayload extends ExtrasInitial {
   id: string;
   name: string;
   dose: string;
@@ -1178,8 +1096,6 @@ export interface MedicationPayload {
   trackIntake?: boolean;
   /** v1.42.2 — auto-mark-taken; absent = off. */
   autoMarkTaken?: boolean;
-  /** #1371 — the person's own note; null or absent = none. */
-  note?: string | null;
   schedules: Array<{
     id?: string;
     windowStart: string;
@@ -1281,8 +1197,9 @@ function hydrateScheduleDraft(
  */
 export function hydrateWizardPayload(
   initial: MedicationPayload,
+  tz: string = DEFAULT_TIMEZONE,
 ): WizardPayload {
-  const base = emptyWizardPayload();
+  const base = emptyWizardPayload(tz);
   const parsedDose = parseDoseExpression(initial.dose ?? "");
 
   // v1.16.11 — an as-needed medication persists ZERO schedules; hydrate
@@ -1333,8 +1250,7 @@ export function hydrateWizardPayload(
     notificationsEnabled: initial.notificationsEnabled ?? true,
     trackIntake: initial.trackIntake !== false,
     autoMarkTaken: initial.autoMarkTaken === true,
-    note: initial.note ?? "",
-    initialNote: initial.note ?? "",
+    ...hydrateExtras(initial),
     schedules: drafts,
     activeScheduleIndex: 0,
   };

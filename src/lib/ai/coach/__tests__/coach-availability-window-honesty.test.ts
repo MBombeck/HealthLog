@@ -603,7 +603,10 @@ describe("the two instructions that told the model to move on", () => {
  */
 describe("a failed narration block is counted, not silently absent", () => {
   const source = readFileSync(
-    join(process.cwd(), "src/lib/ai/coach/snapshot.ts"),
+    join(
+      process.cwd(),
+      "src/lib/ai/coach/snapshot-blocks/cross-cutting-blocks.ts",
+    ),
     "utf8",
   );
 

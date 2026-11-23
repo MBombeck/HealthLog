@@ -22,7 +22,8 @@ import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { refreshDoseDay } from "@/lib/medications/dose-day-refresh";
 import { unstableExternalIdMeta } from "@/lib/validations/external-id";
 import type { InjectionSiteValue } from "@/lib/validations/medication";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
+import { slotOfStoredRow } from "@/lib/medications/ad-hoc-intake";
 import {
   createBatchState,
   type BatchState,
@@ -33,6 +34,10 @@ import {
   OWNED_MEDICATION_SELECT,
   type BatchContext,
 } from "./entry";
+import {
+  deletedInHealthLog,
+  type TombstoneOrigin,
+} from "@/lib/sync/tombstone-repost";
 
 interface BatchInput {
   user: Pick<SessionUser, "id" | "timezone">;
@@ -52,17 +57,26 @@ export type BulkIntakeOutcome =
   | { kind: "ingested"; body: Record<string, unknown> };
 
 /**
- * Idempotent re-sync dedup: one read collects every live row already
- * carrying one of the batch's external dose-event UUIDs; the per-entry loop
- * reports those entries as `duplicate` (first-write-wins per Apple dose)
- * without touching the DB again. Fresh inserts register into the same map so
- * an intra-batch repeat of a UUID dedups too. The partial
+ * Idempotent re-sync dedup: one read collects every row already carrying one
+ * of the batch's external dose-event UUIDs. A live one answers its entry
+ * `duplicate` (first-write-wins per Apple dose); fresh inserts register into
+ * the same map so an intra-batch repeat of a UUID dedups too. The partial
  * `(user_id, external_id)` unique (migration 0239) is the race backstop.
+ *
+ * A deleted Apple Health dose with no live row under its UUID is a
+ * tombstone. When its newest deletion was the person's, in HealthLog, the
+ * entry is refused, `skipped` with reason `deleted_in_healthlog`, so a fresh install
+ * reading the whole Apple Health history does not bring the dose back or take
+ * its stock again (iOS #191). When the phone reported it deleted in Apple
+ * Health, the re-post lands as a new dose (`tombstone-repost.ts`).
  */
 async function loadKnownExternalIds(
   userId: string,
   entries: BulkIntakeEntry[],
-): Promise<Map<string, string>> {
+): Promise<{
+  rowIdByExternalId: Map<string, string>;
+  tombstoned: Set<string>;
+}> {
   const batchExternalIds = Array.from(
     new Set(
       entries
@@ -71,20 +85,44 @@ async function loadKnownExternalIds(
     ),
   );
   const rowIdByExternalId = new Map<string, string>();
+  const deleted = new Set<string>();
   if (batchExternalIds.length > 0) {
     const existingExternalRows = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId,
+        // Every row of either kind, whatever its `source`: an Apple Health
+        // dose that converged onto a pre-minted slot row keeps that row's
+        // source and takes the dose-event id, and it is an Apple Health dose
+        // all the same. Only Apple Health entries carry an `externalId`.
         externalId: { in: batchExternalIds },
-        deletedAt: null,
       },
-      select: { id: true, externalId: true },
+      select: {
+        id: true,
+        externalId: true,
+        deletedAt: true,
+        appleHealthDeletedAt: true,
+      },
     });
+    const newestTombstone = new Map<string, TombstoneOrigin>();
     for (const row of existingExternalRows) {
-      if (row.externalId) rowIdByExternalId.set(row.externalId, row.id);
+      if (!row.externalId) continue;
+      if (!row.deletedAt) {
+        rowIdByExternalId.set(row.externalId, row.id);
+        continue;
+      }
+      const held = newestTombstone.get(row.externalId);
+      if (!held || held.deletedAt!.getTime() < row.deletedAt.getTime()) {
+        newestTombstone.set(row.externalId, row);
+      }
+    }
+    for (const [externalId, row] of newestTombstone) {
+      if (deletedInHealthLog(row)) deleted.add(externalId);
     }
   }
-  return rowIdByExternalId;
+  const tombstoned = new Set(
+    [...deleted].filter((id) => !rowIdByExternalId.has(id)),
+  );
+  return { rowIdByExternalId, tombstoned };
 }
 
 /**
@@ -192,9 +230,15 @@ async function settleLandedRows(input: BatchInput, state: BatchState) {
   }
 
   if (state.syncSlots.size > 0) {
-    queueMedicationIntakeSync({
+    // One sync per batch, and the visible confirmation once per recorded
+    // slot (`medication-intake-recorded.ts`).
+    afterDoseChange({
+      scope: "intakes",
       userId: user.id,
       originDeviceToken: input.originDeviceToken,
+      recorded: [...state.syncSlots.values()].flatMap((slot) =>
+        slot.recorded ? [slot.recorded] : [],
+      ),
     });
   }
 }
@@ -230,6 +274,46 @@ async function recordSyncArrival(input: BatchInput, state: BatchState) {
 
   if (syncTrigger !== BACKFILL_SYNC_TRIGGER) {
     await markSyncCheckpoint(user.id);
+  }
+}
+
+/**
+ * Every landed entry carries its row's current `syncVersion`, read once after
+ * the batch settled (a later entry or the dedup pass may have moved it), so
+ * an undo with `expectedSyncVersion` matches what the client was told.
+ *
+ * Every entry also carries `slotInstant`. The write knew it where it wrote;
+ * an entry answered by a row it did not write (a replay, a known Apple dose)
+ * reads it off that row: a row on its own instant (`scheduledFor = takenAt`,
+ * the ad-hoc marker, `ad-hoc-intake.ts`) is on no slot, any other row is on
+ * its `scheduledFor`. An entry that stored nothing is on none.
+ */
+async function stampSyncVersions(userId: string, state: BatchState) {
+  const ids = [...new Set(state.results.flatMap((r) => (r.id ? [r.id] : [])))];
+  const rows =
+    ids.length === 0
+      ? []
+      : await prisma.medicationIntakeEvent.findMany({
+          where: { id: { in: ids }, userId },
+          select: {
+            id: true,
+            syncVersion: true,
+            scheduledFor: true,
+            takenAt: true,
+          },
+        });
+  const rowById = new Map(rows.map((r) => [r.id, r]));
+  for (const result of state.results) {
+    const row = result.id ? rowById.get(result.id) : undefined;
+    if (result.slotInstant === undefined) {
+      result.slotInstant = row
+        ? (slotOfStoredRow(row)?.toISOString() ?? null)
+        : null;
+    }
+    if (!row) continue;
+    result.syncVersion = row.syncVersion;
+    if (result.intake)
+      result.intake = { ...result.intake, syncVersion: row.syncVersion };
   }
 }
 
@@ -272,7 +356,8 @@ export async function ingestBulkIntake(
     };
   }
 
-  const state = createBatchState(await loadKnownExternalIds(user.id, entries));
+  const known = await loadKnownExternalIds(user.id, entries);
+  const state = createBatchState(known.rowIdByExternalId, known.tombstoned);
   const ctx: BatchContext = {
     user,
     ownedSet,
@@ -287,6 +372,7 @@ export async function ingestBulkIntake(
   await recordBatch(input, state);
   await settleLandedRows(input, state);
   await recordSyncArrival(input, state);
+  await stampSyncVersions(user.id, state);
 
   return {
     kind: "ingested",

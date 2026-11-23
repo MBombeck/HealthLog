@@ -76,6 +76,17 @@ vi.mock("@/lib/db", () => ({
           null
         );
       }),
+      findFirst: vi.fn(
+        async ({ where }: { where: Record<string, unknown> }) => {
+          return (
+            dbState.refreshTokens.find((r) =>
+              Object.entries(where).every(
+                ([k, v]) => (r as unknown as Record<string, unknown>)[k] === v,
+              ),
+            ) ?? null
+          );
+        },
+      ),
       findMany: vi.fn(async ({ where }: { where: Record<string, unknown> }) => {
         return dbState.refreshTokens.filter((r) =>
           Object.entries(where).every(
@@ -160,6 +171,19 @@ vi.mock("@/lib/auth/issue-token", () => ({
 
 vi.mock("@/lib/auth/hmac", () => ({
   hashToken: (raw: string) => `hash:${raw}`,
+}));
+
+const sendSecurityAlert = vi.fn();
+vi.mock("@/lib/auth/security-alert", () => ({
+  sendSecurityAlert: (...args: unknown[]) => sendSecurityAlert(...args),
+}));
+
+// The device side of a revocation has its own integration suite
+// (`tests/integration/device-signed-out-push.test.ts`); here it is only
+// checked that every revocation reaches it.
+const afterRefreshRevocation = vi.fn(async (_userId: string) => {});
+vi.mock("@/lib/devices/signed-out-push", () => ({
+  afterRefreshRevocation: (userId: string) => afterRefreshRevocation(userId),
 }));
 
 import {
@@ -278,6 +302,8 @@ describe("rotateRefreshToken", () => {
       (r) => r.revokedAt === null && r.deviceId === "dev-1",
     );
     expect(liveDev1).toHaveLength(0);
+    // The owner hears about the signed-out family.
+    expect(sendSecurityAlert).toHaveBeenCalledWith("u1", "refresh_reuse");
   });
 
   it("v1.4.23 — per-device replay does NOT revoke another device's tokens", async () => {
@@ -582,6 +608,7 @@ describe("revokeBearerAccessToken (M-2 logout bearer revoke)", () => {
     expect(refreshRow?.revokedAt).toBeNull();
 
     const ok = await revokeBearerAccessToken(bundle.accessToken);
+    expect(afterRefreshRevocation).toHaveBeenCalledWith("u1");
     expect(ok).toBe(true);
 
     expect(

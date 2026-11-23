@@ -2,7 +2,8 @@
  * The wire rows of `GET /api/sync/changes`, one upsert and one tombstone
  * shape per domain. Tombstone identity follows the iOS §7.3 table:
  * measurements key on `externalId` (the cross-device key); mood and intakes
- * key on the server `id` (the client mirrors those by server id); cycle days
+ * key on the server `id` (the client mirrors those by server id), and an
+ * intake tombstone also names its Apple Health dose event; cycle days
  * key on `externalId` when present (HealthKit-origin rows are
  * externalId-keyed cross-device, like measurements) else the server `id`;
  * cycles key on the server `id` (computed rows carry no externalId).
@@ -73,6 +74,17 @@ export interface IdTombstone {
   updatedAt: string;
 }
 
+/**
+ * An intake tombstone: the server id it keys on, plus the Apple Health dose
+ * event it recorded (`externalId`, null for a dose not from Apple Health)
+ * and its `source`, so a client can tell which HealthKit dose was deleted
+ * without a ledger of server ids (iOS #191).
+ */
+export interface IntakeTombstone extends IdTombstone {
+  externalId: string | null;
+  source: string;
+}
+
 export interface IntakeUpsert {
   id: string;
   medicationId: string;
@@ -111,7 +123,7 @@ export interface MeasurementMirrorUpsert {
 export interface SyncChanges {
   measurements: DomainBlock<MeasurementUpsert, MeasurementTombstone>;
   mood: DomainBlock<MoodUpsert, IdTombstone>;
-  intakes: DomainBlock<IntakeUpsert, IdTombstone>;
+  intakes: DomainBlock<IntakeUpsert, IntakeTombstone>;
   cycleDays: DomainBlock<CycleDayLogDTO, CycleDayTombstone>;
   cycles: DomainBlock<MenstrualCycleDTO, IdTombstone>;
   /** Never carries tombstones: a deleted reading is a measurement tombstone. */

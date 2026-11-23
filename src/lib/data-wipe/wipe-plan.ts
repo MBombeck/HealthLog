@@ -172,9 +172,6 @@ export const WIPE_MODELS = [
   "WorkoutInsightGenerationClaim",
   "PersonalRecord",
   "StrainTrimpCache",
-  // The Apple Health workout and ECG deletions the phone reported. Nothing
-  // points at them.
-  "AppleHealthTombstone",
 
   // ── Context and engagement ──────────────────────────────────────────────
   "EnvironmentContext",
@@ -211,7 +208,17 @@ export const WIPE_MODELS = [
   // holds the uploaded report until it is read, and a finished run holds what
   // was read off it; a child of the document, so it goes before it.
   "DocumentAiRun",
+  // Why background AI work stopped (#1404). Some rows name a document, so
+  // they go with the documents.
+  "AiJobFailure",
   "ImportJob",
+  // The FHIR Bundle import's ledger of which resources became which rows. A
+  // wipe empties the rows it points at, so it goes with them: a later import
+  // of the same Bundle writes the records again, as into a fresh account.
+  "FhirImportedResource",
+  // The folder the Health Connect export is fetched from, with its sealed
+  // WebDAV credentials: a working credential to another system.
+  "HealthConnectRemoteSource",
   // v1.42 (#1173) — when each HealthKit type last arrived. Diagnostic, but a
   // record of what the account's phone sent and when.
   "HealthKitTypeSync",
@@ -240,6 +247,10 @@ export const WIPE_MODELS = [
   // the feed on this record, and any this account minted on a record it
   // manages. Deleting the row is the revocation, as for the share link.
   "CycleCalendarFeed",
+  // The care calendar feed; deleting the row is the revocation.
+  "CareCalendarFeed",
+  // The emergency card's QR link; deleting the row is the revocation.
+  "EmergencyCardLink",
   // v1.36.0 — account grants, on BOTH sides (see WIPE_OWNER_FIELDS): the ones
   // this account made over its own record, and the ones it holds over someone
   // else's.
@@ -367,6 +378,12 @@ export const WIPE_EXEMPT: Readonly<Record<string, string>> = {
  */
 export const INSTANCE_SCOPED: Readonly<Record<string, string>> = {
   AppSettings: "instance-wide configuration singleton",
+  PushRelayRegistration:
+    "this instance's registration at the push relay and its instance key; the operator's switch, not any account's data",
+  PushRelayUnbind:
+    "relay unbinds owed for device tokens of accounts already erased; tied to no account any more",
+  PushEnvelopeKeys:
+    "the instance's envelope sender keys and collapse secret; they seal pushes for every account alike",
   EncryptionKeyCanary:
     "one known value per configured encryption key id, checked at boot; belongs to the instance's keys, not to any account",
   RateLimit: "instance-wide rate-limit buckets, keyed by string, self-expiring",
@@ -454,12 +471,17 @@ export const USER_RESET = {
   aiCompatModel: null,
   aiProviderChain: Prisma.DbNull,
   aiNamedChains: Prisma.DbNull,
+  aiCoachBudgets: Prisma.DbNull,
   aiResponseTimeoutSeconds: null,
   disableCoach: false,
   aiUsageLevel: null,
   coachPrefsJson: Prisma.DbNull,
   coachLastSeenAt: null,
   documentsAutoAiRead: false,
+  // #1403 — a wiped managed profile goes back to the operator's key.
+  managedAiSource: "INSTANCE",
+  managedAiGuardianId: null,
+  managedAiChainId: null,
   labsLocalOcrEnabled: false,
   storeWorkoutRoutes: false,
   codexAccessTokenEncrypted: null,
@@ -533,6 +555,8 @@ export const USER_RESET = {
   activityGoalsJson: Prisma.DbNull,
   nutrientTargetsJson: Prisma.DbNull,
   reportSelectionJson: Prisma.DbNull,
+  // A wiped record has nothing to report on: the schedule goes with it.
+  reportScheduleJson: Prisma.DbNull,
   modulePreferencesJson: Prisma.DbNull,
   healthScoreConfigJson: Prisma.DbNull,
   globalExcludedInjectionSites: [],
@@ -563,6 +587,22 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
   oidcSub: "a sign-in credential — the external identity binding",
   createdAt: "when the account was created; the account is preserved",
   updatedAt: "row bookkeeping maintained by Prisma",
+  dashboardWidgetsRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  insightsLayoutRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  medicationListLayoutRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  moodTagLayoutRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  modulePreferencesRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  notificationPrefsRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  coachPrefsRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  healthScoreConfigRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
   managedProfileAt:
     "whether this record is one somebody else runs — account shape, not record content. Clearing it would strip the guardian's reach from a record that has no credentials of its own, leaving an account nobody can open, administer or delete. Emptying a record is not emancipating the person in it.",
   totpSecretEncrypted: "a second-factor credential",
@@ -572,12 +612,16 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
   mfaEnforced: "the operator's per-account second-factor policy",
   passkeyUpgradeNudgeDismissed:
     "an interface nudge the person already dismissed",
+  adminNoticesDismissed:
+    "one-time admin notices this admin already dismissed; interface state, not record content",
   timezone: "an interface preference — how dates and times are rendered",
   locale: "an interface preference — which language the interface speaks",
   unitPreference: "an interface preference — metric or imperial rendering",
   timeFormat: "an interface preference — 12- or 24-hour rendering",
   dateFormat: "an interface preference — date-order rendering",
   glucoseUnit: "an interface preference — mg/dL or mmol/L rendering",
+  medicineRegistry:
+    "an interface preference — which official registry the leaflet search opens, not record content",
   disclaimerAcknowledgedAt:
     "the account's acknowledgement of the medical disclaimer, which is about the app and not about the record",
   disclaimerAcknowledgedVersion:
@@ -606,7 +650,7 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
  * exactly one thing — "delete this model's rows for this account" — and the
  * question of what "for this account" means for a given model stays in the
  * file that already answers every other question about the wipe.
- * {@link resolveWipeDelegate} translates; the route is unaware.
+ * `resolveWipeDelegate` (wipe-delegates.ts) translates; the route is unaware.
  */
 export const WIPE_OWNER_FIELDS: Readonly<Record<string, readonly string[]>> = {
   // The record owner owns the import payload. The actor is durable audit
@@ -618,6 +662,10 @@ export const WIPE_OWNER_FIELDS: Readonly<Record<string, readonly string[]>> = {
   ManagedProfileHandover: ["profileId", "createdById"],
   // #1350 — the record the feed serves, and the carrier who minted it.
   CycleCalendarFeed: ["userId", "createdById"],
+  // The same for the care calendar feed and the emergency card link a
+  // guardian made for a managed profile.
+  CareCalendarFeed: ["userId", "createdById"],
+  EmergencyCardLink: ["userId", "createdById"],
   // Both sides. Wiping only the grantor side would leave the account still
   // holding read access to other people's records after it asked for
   // everything of its own to be deleted.
@@ -701,76 +749,3 @@ export const WIPE_KEPT_ROWS: Readonly<
       "the account copies taken before a wipe (`PRE_WIPE_<ms>`), the current one included: it is written immediately before this transaction so the wipe can be undone during the deletion grace window, and the account-deletion purge job deletes each one when its window ends",
   },
 };
-
-/** The narrow slice of a Prisma delegate the wipe loop uses. */
-export interface UserScopedDeleteDelegate {
-  deleteMany(args: { where: { userId: string } }): Promise<{ count: number }>;
-}
-
-/** The same slice for the admin wipe, which selects no account at all. */
-export interface UnscopedDeleteDelegate {
-  deleteMany(args: Record<string, never>): Promise<{ count: number }>;
-}
-
-interface RawDeleteDelegate {
-  deleteMany(args: { where?: object }): Promise<{ count: number }>;
-}
-
-/**
- * The Prisma delegate for a model name, or a thrown error naming the model.
- *
- * One documented cast: {@link WIPE_MODELS} is a literal list of model names
- * checked against `schema.prisma` by the completeness test, and every entry
- * indexes a delegate that exposes `deleteMany`. The test also asserts every
- * entry resolves, so an unresolvable name fails the build rather than the
- * request.
- */
-function rawDelegate(client: object, model: string): RawDeleteDelegate {
-  const delegate = (client as Record<string, RawDeleteDelegate>)[
-    wipeDelegateKey(model)
-  ];
-  if (!delegate || typeof delegate.deleteMany !== "function") {
-    throw new Error(`No Prisma delegate for wipe model "${model}"`);
-  }
-  return delegate;
-}
-
-/**
- * Resolve a model name to its delegate on a client or transaction handle.
- *
- * A model listed in {@link WIPE_OWNER_FIELDS} gets a wrapper that rewrites the
- * caller's `{ userId }` into that model's own ownership predicate. The caller
- * still says "this account's rows" and still gets a count back; only the
- * translation moved, and it moved to the file that declares the columns rather
- * than to the loop that does not know about them.
- */
-export function resolveWipeDelegate(
-  client: object,
-  model: string,
-): UserScopedDeleteDelegate {
-  const delegate = rawDelegate(client, model);
-  if (!WIPE_OWNER_FIELDS[model] && !WIPE_KEPT_ROWS[model]) {
-    return delegate as UserScopedDeleteDelegate;
-  }
-  return {
-    deleteMany: ({ where }) =>
-      delegate.deleteMany({ where: wipeWhere(model, where.userId) }),
-  };
-}
-
-/**
- * Resolve a model name to a delegate that deletes every row of it.
- *
- * The admin wipe asks a different question from the per-account one — "every
- * row of this model" rather than "this account's rows" — so it gets its own
- * resolver instead of a `where` the caller has to remember to leave out.
- * {@link WIPE_OWNER_FIELDS} is irrelevant here by construction: with no
- * account to select, a row that belongs to two of them is deleted once.
- */
-export function resolveGlobalWipeDelegate(
-  client: object,
-  model: string,
-): UnscopedDeleteDelegate {
-  const delegate = rawDelegate(client, model);
-  return { deleteMany: () => delegate.deleteMany({}) };
-}

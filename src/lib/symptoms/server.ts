@@ -12,6 +12,7 @@ import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import type {
+  Prisma,
   SymptomDefinition,
   SymptomEvent,
 } from "@/generated/prisma/client";
@@ -169,10 +170,44 @@ export async function isLinkableEpisode(
  * active ones the person named. A built-in one (`code` set) never does; Apple
  * Health creates it on demand, and refusing it would drop the sample.
  */
-export function countCappedSymptomDefinitions(userId: string): Promise<number> {
-  return prisma.symptomDefinition.count({
+export function countCappedSymptomDefinitions(
+  userId: string,
+  db: Prisma.TransactionClient = prisma,
+): Promise<number> {
+  return db.symptomDefinition.count({
     where: { userId, isActive: true, code: null },
   });
+}
+
+/**
+ * Hold the account's symptom definitions for the rest of the transaction.
+ *
+ * The cap is a count and a write in two statements; two requests that both
+ * count 29 would otherwise both write and leave 31. Every write that takes a
+ * slot (a create, showing a hidden one again) takes this lock first and
+ * counts under it.
+ */
+export async function lockSymptomDefinitions(
+  tx: Prisma.TransactionClient,
+  userId: string,
+): Promise<void> {
+  await tx.$queryRaw`SELECT 1 AS "locked" FROM (SELECT pg_advisory_xact_lock(hashtextextended(${`symptom-definitions:${userId}`}, 0))) AS lock`;
+}
+
+/**
+ * The place a new definition takes: after every definition the account has,
+ * its own and the built-in ones alike, hidden ones included. The one rule for
+ * a create through the route and for a built-in one Apple Health creates.
+ */
+export async function nextSymptomDefinitionSortOrder(
+  userId: string,
+  db: Prisma.TransactionClient = prisma,
+): Promise<number> {
+  const last = await db.symptomDefinition.aggregate({
+    where: { userId },
+    _max: { sortOrder: true },
+  });
+  return (last._max.sortOrder ?? -1) + 1;
 }
 
 /** One active definition as the correlation pick sees it. */

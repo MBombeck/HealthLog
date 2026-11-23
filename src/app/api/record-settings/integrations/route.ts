@@ -84,6 +84,8 @@ export const GET = apiHandler(async () => {
     // Garmin is a key the record's owner pastes on their own settings page;
     // a managed profile has none to offer.
     garmin: false,
+    // The export folder is the owner's own and never set up for a record.
+    "health-connect-remote": false,
   };
   // The one server-resolved state per connection, from the same loader the
   // owner's own envelope uses, so a guardian reads the record's connections in

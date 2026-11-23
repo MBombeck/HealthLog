@@ -13,7 +13,11 @@ import { resolveEventDefault } from "@/lib/notifications/event-defaults";
 import { sendViaTelegram } from "@/lib/notifications/senders/telegram";
 import { sendViaNtfy } from "@/lib/notifications/senders/ntfy";
 import { sendViaWebPush } from "@/lib/notifications/senders/web-push";
-import { sendViaApns } from "@/lib/notifications/senders/apns";
+import {
+  APNS_DEVICE_UNROUTED,
+  APNS_EVENT_NOT_CARRIED,
+} from "@/lib/notifications/apns-idle-reasons";
+import { sendApnsChannel } from "@/lib/push-relay/apns-channel";
 import { sendViaWebhook } from "@/lib/notifications/senders/webhook";
 import { sendViaEmail } from "@/lib/notifications/senders/email";
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
@@ -61,9 +65,46 @@ const NO_RECIPIENT_REASONS: ReadonlySet<string> = new Set([
   "web_push_vapid_not_configured",
   "apns_no_devices",
   "apns_not_configured",
+  APNS_DEVICE_UNROUTED,
   "email_no_recipient",
   "email_not_configured",
 ]);
+
+/**
+ * Sender outcomes that mean the event was none for this channel: nothing was
+ * due there, by design. The sender writes a `skipped` ledger row. Unlike a
+ * missing recipient this says nothing about the channel, so it neither
+ * counts as an attempt nor rests the channel: the next event that is for it
+ * goes out.
+ */
+const NOT_FOR_CHANNEL_REASONS: ReadonlySet<string> = new Set([
+  APNS_EVENT_NOT_CARRIED,
+]);
+
+/**
+ * Whether a send that did not succeed went nowhere by design, and what that
+ * does to the channel: an event that was none for it leaves it alone, a
+ * missing recipient rests it. False for a real failure.
+ */
+async function wentNowhere(
+  ref: { id: string; userId: string; type: ChannelType },
+  outcome: SendOutcome,
+  now: Date,
+): Promise<boolean> {
+  if (!outcome.reason) return false;
+  if (NOT_FOR_CHANNEL_REASONS.has(outcome.reason)) {
+    getEvent()?.addMeta(
+      `notification_skip_${ref.type.toLowerCase()}_not_for_channel`,
+      outcome.reason,
+    );
+    return true;
+  }
+  if (NO_RECIPIENT_REASONS.has(outcome.reason)) {
+    await recordChannelNoRecipient(ref, outcome.reason, now);
+    return true;
+  }
+  return false;
+}
 
 /**
  * Dispatch a notification to all enabled channels for a user.
@@ -379,7 +420,7 @@ export async function dispatchNotification(
           channel.config,
           delivery.recipientUserId,
           recipientPayload,
-          apnsTargets?.kind === "send" ? apnsTargets.onlyDeviceIds : undefined,
+          apnsTargets?.kind === "send" ? apnsTargets : undefined,
         );
         let outcome: SendOutcome;
         if ("outcome" in prepared) {
@@ -429,9 +470,8 @@ export async function dispatchNotification(
           continue;
         }
 
-        if (outcome.reason && NO_RECIPIENT_REASONS.has(outcome.reason)) {
+        if (await wentNowhere(ref, outcome, now)) {
           channelsAttempted -= 1; // nothing went anywhere
-          await recordChannelNoRecipient(ref, outcome.reason, now);
           continue;
         }
 
@@ -487,6 +527,11 @@ type PreparedChannelSend =
  * client-managed gate applies (send to every device as ever), `skip` when no
  * device takes the server's push, or `send` with the devices that do. Devices
  * left out are annotated on the wide event, like a whole-channel skip.
+ *
+ * An event with per-device delivery is resolved for every dispatch, a
+ * follow-up the flag does not cover included: the relay carries it only to
+ * the devices that get the server's reminder (`serverDeviceIds`), so the one
+ * decision has to reach the channel either way.
  */
 async function resolveApnsTargetsFor(
   channelType: string,
@@ -497,7 +542,8 @@ async function resolveApnsTargetsFor(
   if (
     channelType !== "APNS" ||
     delivery.managed ||
-    !hasClientManagedApnsGate(payload.eventType, payload.metadata)
+    (!hasClientManagedApnsGate(payload.eventType, payload.metadata) &&
+      !CLIENT_MANAGED_APNS_EVENTS[payload.eventType]?.perDevice)
   ) {
     return null;
   }
@@ -505,6 +551,7 @@ async function resolveApnsTargetsFor(
     payload.eventType,
     delivery.recipientUserId,
     await accountDeliversLocally(),
+    payload.metadata,
   );
   if (targets.kind === "send" && targets.localDeviceIds.length > 0) {
     annotateClientManagedSkip(payload);
@@ -538,8 +585,15 @@ function prepareChannelSend(
   encryptedConfig: string,
   recipientUserId: string,
   payload: NotificationPayload,
-  /** APNs only: push to these devices alone (#179); all when absent. */
-  apnsDeviceIds?: readonly string[],
+  /**
+   * APNs only (#179): `onlyDeviceIds` limits the push to those devices (all
+   * when absent); `serverDeviceIds` are the devices that get the server's
+   * reminder of a per-device event, the only ones the relay carries it to.
+   */
+  apnsTargets?: Pick<
+    Extract<ApnsDeliveryTargets, { kind: "send" }>,
+    "onlyDeviceIds" | "serverDeviceIds"
+  >,
 ): PreparedChannelSend {
   let decrypted: string;
   try {
@@ -642,11 +696,16 @@ function prepareChannelSend(
       // changing the dispatcher shape.
       return {
         send: () =>
-          apnsDeviceIds
-            ? sendViaApns(recipientUserId, payload, {
-                onlyDeviceIds: apnsDeviceIds,
+          apnsTargets
+            ? sendApnsChannel(recipientUserId, payload, {
+                ...(apnsTargets.onlyDeviceIds && {
+                  onlyDeviceIds: apnsTargets.onlyDeviceIds,
+                }),
+                ...(apnsTargets.serverDeviceIds && {
+                  serverDeviceIds: apnsTargets.serverDeviceIds,
+                }),
               })
-            : sendViaApns(recipientUserId, payload),
+            : sendApnsChannel(recipientUserId, payload),
       };
     }
     default:

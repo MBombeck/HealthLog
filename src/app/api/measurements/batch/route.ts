@@ -50,6 +50,7 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { withIdempotency } from "@/lib/idempotency";
+import { withIngestAdmission } from "@/lib/ingest/admission";
 import type { BatchIngestEntry } from "@/lib/measurements/batch-ingest/entries";
 import { ingestMeasurementBatch } from "@/lib/measurements/batch-ingest/ingest";
 import { HEALTHKIT_REQUEST_SYNC_TRIGGERS } from "@/lib/integrations/healthkit-type-sync";
@@ -123,6 +124,12 @@ const batchEntrySchema = z.object({
   // @external-id-checked-per-entry: src/lib/measurements/batch-ingest/prepare.ts
   externalId: z.string().min(1).max(120),
   externalSourceVersion: z.string().min(1).max(120).optional(),
+  // When the phone computed a `stats:` day total (iOS #191). A
+  // write of the same row carrying an earlier one than the stored row's is
+  // refused (`skipped`, reason `stale`), so an out-of-order replay never
+  // replaces a newer total. Ignored on every other entry; absent, the write
+  // overwrites as before.
+  computedAt: isoDateTime().optional(),
   // v1.8.6 — optional per-entry source tag. Defaults to
   // `APPLE_HEALTH` so every pre-W6 caller (web + current iOS) stays
   // byte-for-byte unchanged. The iOS standalone adopt-on-pair backfill
@@ -139,6 +146,11 @@ const batchEntrySchema = z.object({
   // treats null as `unknown` and only uses it as a tiebreaker when a
   // ranked device-type coexists in the same daily bucket.
   deviceType: deviceTypeEnum.nullable().optional(),
+  // iOS #181 — the IANA zone the sample was taken in, from HealthKit's
+  // `HKMetadataKeyTimeZone`. Optional; absent means the profile zone. A name
+  // the server cannot read is stored as null rather than refusing the entry,
+  // so the shape is only bounded here and checked per entry.
+  timeZone: z.string().min(1).max(64).optional(),
 });
 
 // v1.32.8 (iOS #66) — optional per-REQUEST diagnostic tag naming what woke the
@@ -161,7 +173,9 @@ const batchPayloadSchema = z.object({
   syncTrigger: syncTriggerEnum.optional(),
 });
 
-export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
+export const POST = apiHandler(
+  withIngestAdmission(withIdempotency<[NextRequest]>(postBatch)),
+);
 
 async function postBatch(request: NextRequest): Promise<Response> {
   // Declares the third-party ingest scope, so a narrow `measurements:write`

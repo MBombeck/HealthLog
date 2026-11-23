@@ -8,6 +8,7 @@ import {
   admitAccountSettings,
   type AccountSettingsBackupEntry,
 } from "@/lib/export/account-settings-backup";
+import { remapMedicationListCategoryOrder } from "@/lib/medication-list-layout";
 
 /** The slice of a parsed backup this restore consumes. */
 export interface AccountSettingsRestoreInput {
@@ -22,6 +23,11 @@ export interface AccountSettingsRestoreSource {
    * wrote (`backup-upload-type.ts`), so its settings are that author's word.
    */
   retargeted: boolean;
+  /**
+   * Custom medication category keys the medications step re-minted, file key
+   * to new key. The list layout's category order is rewritten through it.
+   */
+  medicationCategoryKeyBySourceKey?: ReadonlyMap<string, string>;
 }
 
 export interface AccountSettingsRestoreResult {
@@ -66,6 +72,16 @@ export async function restoreAccountSettings(
   const { data, refused } = admitAccountSettings(entry, {
     operatorTrusted: !source.retargeted && current.role === "ADMIN",
   });
+
+  if (
+    "medicationListLayoutJson" in data &&
+    source.medicationCategoryKeyBySourceKey
+  ) {
+    data.medicationListLayoutJson = remapMedicationListCategoryOrder(
+      data.medicationListLayoutJson,
+      source.medicationCategoryKeyBySourceKey,
+    );
+  }
 
   const columns = Object.keys(data);
   if (columns.length > 0) {

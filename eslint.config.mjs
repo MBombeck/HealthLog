@@ -172,6 +172,45 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+      // The action row of a card: SettingsCardActions sets its buttons'
+      // height and width, so a button inside says size="sm" and carries no
+      // sizing class, the row takes no layout class, align="start" holds no
+      // primary action, a save button has no disk glyph, and nothing follows
+      // the row (UI standards §12). See the rule header.
+      "healthlog/card-action-row": "error",
+      // A switch with a name is a SwitchRow (UI standards §6); a switch for
+      // a whole card stands in the card header's status slot. The files
+      // below hold the bare switches that remain, counted, so a new one
+      // fails and one that moves over has to take its number down. See the
+      // rule header.
+      "healthlog/switch-row": [
+        "error",
+        {
+          allow: {
+            // Not a row: a cell of a matrix, or a list row that also holds
+            // reorder, weight or remove controls.
+            "src/app/notifications/page.tsx": 1,
+            "src/components/settings/dashboard-layout/widget-lists.tsx": 4,
+            "src/components/settings/ai/fallback-chain-card.tsx": 1,
+            "src/components/settings/score-pillar-row.tsx": 1,
+            "src/components/settings/thresholds-editor-section.tsx": 1,
+            // A list row whose switch trades places with a pending spinner.
+            "src/components/insights/coach-panel/sources-rail.tsx": 1,
+            // The chart's own popover: compact 12 px rows that belong to the
+            // chart frame, not to a card.
+            "src/components/charts/chart-overlay-controls.tsx": 3,
+            // A name that carries a FieldInfo button beside it; a button
+            // cannot sit inside the label SwitchRow renders.
+            "src/components/cycle/log-day-sheet.tsx": 3,
+            // A secondary control in a row named by the dose time; the
+            // switch's caption is not the row's name.
+            "src/components/medications/scheduling/dose-window-editor.tsx": 1,
+            // A compact switch inside a token table cell, under the token's
+            // name; the cell is not a row of its own.
+            "src/components/settings/apple-health-mirror-token.tsx": 1,
+          },
+        },
+      ],
       // Layer direction: src/lib never imports src/components or src/app, and
       // a "use client" file makes no value import of the database client,
       // crypto, the Prisma client entry, the job queue, pg or next/headers.
@@ -214,7 +253,8 @@ const eslintConfig = defineConfig([
       // they sit inside the same chart-runtime graph.
       "src/components/charts/health-chart/chart-layers.tsx",
       "src/components/charts/medication-compliance-chart.tsx",
-      "src/components/charts/mood-chart.tsx",
+      // MoodChart's plot, imported by mood-chart.tsx alone.
+      "src/components/charts/mood-chart/plot.tsx",
       "src/components/charts/nutrient-daily-bar-chart.tsx",
       "src/components/charts/scatter-correlation-chart.tsx",
       "src/components/custom-metrics/custom-metric-chart.tsx",
@@ -226,6 +266,7 @@ const eslintConfig = defineConfig([
       "src/components/insights/mood/mood-time-of-day-chart.tsx",
       "src/components/insights/mood/mood-weekday-chart.tsx",
       "src/components/insights/sleep-stage-stacked-bar.tsx",
+      "src/components/insights/sleep/sleep-hypnogram-chart.tsx",
       "src/components/labs/lab-biomarker-chart.tsx",
       "src/components/medications/detail/efficacy/efficacy-chart.tsx",
       "src/components/medications/dose-strength-curve.tsx",

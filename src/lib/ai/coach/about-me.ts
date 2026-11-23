@@ -27,7 +27,8 @@
  * Server-only — reads `@/lib/db`.
  */
 import { prisma } from "@/lib/db";
-import { userDayKey } from "@/lib/tz/format";
+import { ageInYears } from "@/lib/tz/date-only";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { getEvent } from "@/lib/logging/context";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
@@ -174,21 +175,6 @@ export async function getSelfContextForUser(
       coachFocus: null,
     };
   }
-}
-
-/** Whole years between `dateOfBirth` and `now`; null when unknown. */
-export function deriveAgeYears(
-  dateOfBirth: Date | null,
-  now: Date = new Date(),
-): number | null {
-  if (!dateOfBirth) return null;
-  let age = now.getFullYear() - dateOfBirth.getFullYear();
-  const beforeBirthday =
-    now.getMonth() < dateOfBirth.getMonth() ||
-    (now.getMonth() === dateOfBirth.getMonth() &&
-      now.getDate() < dateOfBirth.getDate());
-  if (beforeBirthday) age -= 1;
-  return age >= 0 && age < 130 ? age : null;
 }
 
 const GENDER_LABELS: Record<"de" | "en", Record<string, string>> = {
@@ -776,7 +762,7 @@ export async function getSelfContextTextForUser(
         included.has("ABOUT_ME")
           ? prisma.user.findUnique({
               where: { id: userId },
-              select: { dateOfBirth: true, gender: true },
+              select: { dateOfBirth: true, gender: true, timezone: true },
             })
           : Promise.resolve(null),
         included.has("ALLERGIES")
@@ -817,7 +803,10 @@ export async function getSelfContextTextForUser(
     const selfText = composeSelfContextText(
       ctx,
       {
-        ageYears: deriveAgeYears(user?.dateOfBirth ?? null),
+        ageYears: ageInYears(
+          user?.dateOfBirth,
+          user?.timezone ?? DEFAULT_TIMEZONE,
+        ),
         gender: user?.gender ?? null,
       },
       locale,
@@ -918,8 +907,8 @@ export async function getPendingQuestionsForUser(
  * Persist (or clear, with `null` / `[]`) the pending questions.
  *
  * When `expectedUpdatedAt` is present, the write is conditional on the
- * profile version that produced the questions. A false result means the
- * profile advanced while the questions were being derived.
+ * about-me revision (`aboutMeRevisedAt`) that produced the questions. A false
+ * result means the document advanced while the questions were being derived.
  *
  * Without a version, retain the unconditional upsert used by direct question
  * dismissal and callers that may not have a profile row yet.
@@ -935,7 +924,7 @@ export async function setPendingQuestionsForUser(
 
   if (expectedUpdatedAt !== undefined) {
     const result = await prisma.userHealthProfile.updateMany({
-      where: { userId, updatedAt: expectedUpdatedAt },
+      where: { userId, aboutMeRevisedAt: expectedUpdatedAt },
       data: { pendingQuestionsEncrypted: payload },
     });
     return result.count === 1;

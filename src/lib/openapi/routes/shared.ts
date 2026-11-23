@@ -56,6 +56,42 @@ export const validationIssue = z
       .describe(
         "Only on `unrecognized_keys`: the refused key names, bounded to 10 and 64 characters each. Zod reports every unknown key of one object in a single issue whose `path` is the object, so the names live here and nowhere in `path`.",
       ),
+    minimum: z
+      .number()
+      .optional()
+      .describe(
+        "On `too_small`: the lower bound the schema declares (a number's value, a string's or a list's length; see `origin`). Since v1.49.0 also on `too_big` when the field declares a lower bound too (with `minimumInclusive`), on every body validated through the shared body parser. From the schema, never the request.",
+      ),
+    maximum: z
+      .number()
+      .optional()
+      .describe(
+        "On `too_big`: the upper bound the schema declares, for example a nutrient target's plausibility cap. Since v1.49.0 also on `too_small` when the field declares an upper bound too (with `maximumInclusive`). From the schema, never the request.",
+      ),
+    inclusive: z
+      .boolean()
+      .optional()
+      .describe(
+        "With `minimum` / `maximum`: whether the bound that was broken is itself allowed (`false` for a value that must be above 0).",
+      ),
+    minimumInclusive: z
+      .boolean()
+      .optional()
+      .describe(
+        "Since v1.49.0. Present only when the issue carries both `minimum` and `maximum`: whether `minimum` itself is allowed.",
+      ),
+    maximumInclusive: z
+      .boolean()
+      .optional()
+      .describe(
+        "Since v1.49.0. Present only when the issue carries both `minimum` and `maximum`: whether `maximum` itself is allowed.",
+      ),
+    origin: z
+      .string()
+      .optional()
+      .describe(
+        "With `minimum` / `maximum`: what the bound measures, e.g. `number`, `string`, `array`. Treat an unfamiliar value as opaque.",
+      ),
   })
   .meta({
     id: "ValidationIssue",
@@ -223,7 +259,7 @@ export const createBatchWorkoutSchema = createBatchWorkoutSchemaBase.meta({
 // ── Optimistic concurrency (v1.32.21 / R5a) ──────────────────────────
 // The write endpoints that read-modify-write a per-user blob accept an
 // optional `baseUpdatedAt` base token (the `updatedAt` the client last
-// read) and guard the write on the stored row still carrying it. A stale
+// read) and guard the write on the stored resource still carrying it. A stale
 // token fails the write with 409 and changes nothing; an omitted token
 // takes the prior unconditional write (backward-compatible). The token is
 // OPAQUE — clients only ever echo a server-returned value.
@@ -237,18 +273,18 @@ export const createBatchWorkoutSchema = createBatchWorkoutSchemaBase.meta({
 export const baseUpdatedAtField = isoDateTime()
   .optional()
   .describe(
-    "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored row still carrying this exact value — a stale token fails with 409 and changes nothing. A present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it.",
+    "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored resource still carrying this exact value — a stale token fails with 409 and changes nothing. A present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it.",
   );
 
 /**
  * Optional response field echoing the fresh optimistic-concurrency token.
- * Every guarded GET / write response carries the stored row's `updatedAt`; the
+ * Every guarded GET / write response carries the resource's own revision; the
  * client echoes it back as `baseUpdatedAt` on the next write.
  */
 export const updatedAtTokenField = isoDateTime()
   .optional()
   .describe(
-    "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or synthesise it.",
+    "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or synthesise it.",
   );
 
 /**
@@ -755,3 +791,30 @@ export const deviceRevokeResponse = z
     description:
       "What the revocation cascade actually removed. The counts let a client say how many credentials were killed rather than only that something happened.",
   });
+
+// ── Re-post of an entry deleted in HealthLog ─────────────────────────
+// The single create routes' answer when the `externalId` names an entry the
+// person deleted (`src/lib/sync/tombstone-repost-response.ts`). One object per
+// code so the YAML emitter can alias the shared prose.
+const deletedInHealthLogCache = new Map<
+  string,
+  {
+    "410": {
+      description: string;
+      content: { "application/json": { schema: typeof errorEnvelope } };
+    };
+  }
+>();
+
+export function deletedInHealthLogResponse(errorCode: string) {
+  const cached = deletedInHealthLogCache.get(errorCode);
+  if (cached) return cached;
+  const response = {
+    "410": {
+      description: `The \`externalId\` names an entry the person deleted in HealthLog. Nothing was written, and a re-post gets the same answer: treat it as final and drop the entry from the outbox. \`meta.errorCode\` = \`${errorCode}\`, \`meta.reason\` = \`deleted_in_healthlog\` (the word the bulk routes use per entry), \`meta.id\` = the deleted row. An entry the app reported deleted in Apple Health (\`DELETE …/by-external-ids\`) is written again instead.`,
+      content: { "application/json": { schema: errorEnvelope } },
+    },
+  };
+  deletedInHealthLogCache.set(errorCode, response);
+  return response;
+}

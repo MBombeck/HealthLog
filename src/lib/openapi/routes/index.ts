@@ -28,9 +28,11 @@ import {
   recordScopeParameter,
 } from "./account-sharing";
 import { activityPaths } from "./activity";
+import { navigationPaths } from "./navigation";
 import { provenancePaths } from "./provenance";
 import { adminDiagnosticPaths, adminInvitePaths } from "./admin";
 import { aiUsagePaths } from "./ai-usage";
+import { aiJobFailurePaths } from "./ai-job-failures";
 import { dawarichPaths } from "./dawarich";
 import { lifeCircumstancesPaths } from "./life-circumstances";
 import { relationLinkPaths } from "./relation-links";
@@ -54,6 +56,9 @@ import { customMetricPaths } from "./custom-metrics";
 import { dailyPaths } from "./daily";
 import { cyclePaths } from "./cycle";
 import { cycleFeedPaths } from "./cycle-feed";
+import { careFeedPaths } from "./care-feed";
+import { emergencyCardPaths } from "./emergency-card";
+import { reportSchedulePaths } from "./report-schedule";
 import { dashboardWidgetPaths } from "./dashboard";
 import { dayPaths } from "./day";
 import { searchPaths } from "./search";
@@ -61,6 +66,8 @@ import { biomarkerPaths } from "./biomarkers";
 import { inboundDocumentPaths } from "./documents";
 import { documentSourcePaths } from "./document-sources";
 import { devicePaths } from "./devices";
+import { pushRelayAdminPaths } from "./push-relay";
+import { adminServerSetupPaths } from "./admin-server-setup";
 import { exportPaths } from "./export";
 import { familyHistoryPaths } from "./family-history";
 import { healthRecordPaths } from "./health-record";
@@ -68,6 +75,7 @@ import { encounterPaths } from "./encounters";
 import { vaccinationPaths } from "./vaccinations";
 import { illnessPaths } from "./illness";
 import { importPaths } from "./import";
+import { healthConnectRemotePaths, importFilePaths } from "./import-files";
 import { insightsPaths, sleepScoreValue, wellnessScoreValue } from "./insights";
 import { integrationPaths } from "./integrations";
 import { insightsSignalPaths } from "./insights-signals";
@@ -79,6 +87,7 @@ import { measurementReminderPaths } from "./measurement-reminders";
 import { mentalHealthPaths } from "./mental-health";
 import {
   medicationIngredientPaths,
+  medicineRegistryPaths,
   medicationPaths,
   medicationResource,
   medicationDoseHistoryImportFatalReasonEnum,
@@ -104,6 +113,10 @@ import { coachPrefsSchema, withScopeRefusal } from "./shared";
 const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...cyclePaths,
   ...cycleFeedPaths,
+  ...careFeedPaths,
+  ...emergencyCardPaths,
+  ...navigationPaths,
+  ...reportSchedulePaths,
   ...metaPaths,
   ...healthRecordPaths,
   ...exportPaths,
@@ -115,6 +128,8 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...activityPaths,
   ...provenancePaths,
   ...devicePaths,
+  ...pushRelayAdminPaths,
+  ...adminServerSetupPaths,
   ...medicationPaths,
   ...profilePaths,
   ...coachPaths,
@@ -130,6 +145,8 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...settingsPaths,
   ...consentPaths,
   ...importPaths,
+  ...importFilePaths,
+  ...healthConnectRemotePaths,
   ...measurementReminderPaths,
   ...labsPaths,
   ...ocrPaths,
@@ -205,7 +222,9 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // composition, life circumstances and AUDIT-C, Dawarich movement context and
   // the relation links (appended, spread order is load-bearing).
   ...aiUsagePaths,
+  ...aiJobFailurePaths,
   ...medicationIngredientPaths,
+  ...medicineRegistryPaths,
   ...lifeCircumstancesPaths,
   ...dawarichPaths,
   ...relationLinkPaths,

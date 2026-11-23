@@ -49,6 +49,8 @@ export interface NewestPerTypeRow {
   deviceType: string | null;
   sleepStage: SleepStage | null;
   glucoseContext: GlucoseContext | null;
+  /** The reading's own zone (`reading-zone.ts`), or null for the profile's. */
+  timeZone?: string | null;
 }
 
 export interface NewestPerTypeRead {
@@ -99,21 +101,24 @@ export async function readNewestRowsPerType(
       device_type: string | null;
       sleep_stage: string | null;
       glucose_context: string | null;
+      time_zone: string | null;
       read: number;
     }>
   >`
     SELECT y."type", y."value", y."measured_at", y."source", y."device_type",
-           y."sleep_stage", y."glucose_context", y."read"
+           y."sleep_stage", y."glucose_context", y."time_zone", y."read"
     FROM (
       SELECT mt."type" AS "type", x."id", x."value", x."measured_at",
              x."source"::text AS "source", x."device_type",
              x."sleep_stage"::text AS "sleep_stage",
-             x."glucose_context"::text AS "glucose_context"
+             x."glucose_context"::text AS "glucose_context",
+             x."time_zone"
              ${shareColumns}
       FROM unnest(${distinct}::text[]) AS mt("type")
       CROSS JOIN LATERAL (
         SELECT m."id", m."value", m."measured_at", m."source",
-               m."device_type", m."sleep_stage", m."glucose_context"
+               m."device_type", m."sleep_stage", m."glucose_context",
+               m."time_zone"
         FROM measurements m
         ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "newest", since)}
         LIMIT (SELECT ${perTypeCap}::int)
@@ -136,6 +141,7 @@ export async function readNewestRowsPerType(
       deviceType: r.device_type,
       sleepStage: r.sleep_stage as SleepStage | null,
       glucoseContext: r.glucose_context as GlucoseContext | null,
+      timeZone: r.time_zone,
     };
   });
   // Capped: the type filled its own cap, or the total cut it short.

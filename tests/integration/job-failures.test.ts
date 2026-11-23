@@ -161,6 +161,38 @@ describe("readFailingQueues", () => {
     );
   });
 
+  it("lists a fan-out run that carried on past failed items, with the counts", async () => {
+    const PARTIAL_QUEUE = "push-data-changed";
+    await boss.createQueue(PARTIAL_QUEUE);
+    async function completeOne(did: Record<string, unknown>) {
+      const jobId = await boss.send(PARTIAL_QUEUE, {}, { retryLimit: 0 });
+      const [job] = await boss.fetch(PARTIAL_QUEUE);
+      if (!job || job.id !== jobId) throw new Error("nothing to fetch");
+      await boss.complete(PARTIAL_QUEUE, job.id, { ok: true, did });
+    }
+    await completeOne({
+      items_attempted: 4,
+      items_failed: 0,
+      partial_failed: false,
+    });
+    await completeOne({
+      items_attempted: 4,
+      items_failed: 1,
+      partial_failed: true,
+    });
+
+    const entry = (await readFailingQueues())?.find(
+      (e) => e.queue === PARTIAL_QUEUE,
+    );
+    expect(entry?.failures).toBe(1);
+    expect(entry?.lastError).toBe(
+      "The run completed, but 1 of 4 items it attempted failed. " +
+        "It carried on past each one; the app log has a warning per item.",
+    );
+    // Not a failure of the queue: the repeated-failure streak steps over it.
+    expect(await readConsecutiveRunFailures(PARTIAL_QUEUE)).toBe(1);
+  });
+
   it("ignores a failure older than the window", async () => {
     await failOneJob(QUEUE, { userId: "user-a" }, "old failure");
     await getPrismaClient().$executeRawUnsafe(

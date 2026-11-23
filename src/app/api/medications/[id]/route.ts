@@ -4,6 +4,7 @@ import { parseJsonBody } from "@/lib/api/body";
 import { updateMedicationSchema } from "@/lib/validations/medication";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { readMedication } from "@/lib/medications/read-medication";
+import { resolveMedicineRegistry } from "@/lib/medications/medicine-registry";
 import { findMedicationForEdit } from "@/lib/medications/update-medication/preflight";
 import { updateMedication } from "@/lib/medications/update-medication/update-medication";
 import {
@@ -16,10 +17,19 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export const GET = apiHandler(
   async (_request: NextRequest, { params }: RouteParams) => {
-    const { user, grantId } = await requireRecordAuth("read", "medications");
+    const { user, actor, grantId } = await requireRecordAuth(
+      "read",
+      "medications",
+    );
 
     const { id } = await params;
-    const body = await readMedication({ user, grantId, id });
+    const body = await readMedication({
+      user,
+      grantId,
+      id,
+      // The caller's own registry (#1430): the person who opens the link.
+      leafletRegistry: resolveMedicineRegistry(actor),
+    });
     if (!body) {
       return apiError("Medication not found", 404);
     }
@@ -36,7 +46,7 @@ export const PUT = apiHandler(
     // excludes every actioned row — and the previous cadence is the one
     // genuinely unrecoverable part, which is what C7 puts in the audit row.
     // The DELETE beside it stays refused.
-    const { user, authMethod, grantId } = await requireRecordAuth(
+    const { user, actor, authMethod, grantId } = await requireRecordAuth(
       "manage",
       "medications",
     );
@@ -66,6 +76,7 @@ export const PUT = apiHandler(
       existing,
       data: parsed.data,
       ipAddress: getClientIp(request),
+      leafletRegistry: resolveMedicineRegistry(actor),
     });
     if (!outcome.ok) {
       return apiError(outcome.message, outcome.status, outcome.meta);

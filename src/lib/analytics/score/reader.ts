@@ -18,8 +18,8 @@ import { resolveWeightTargetOverride } from "@/lib/analytics/effective-range";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import { reconstructNights } from "@/lib/insights/derived/sleep-score";
 import { pickCumulativeDaySum } from "@/lib/measurements/cumulative-day-sum";
+import { ageInYears } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
 import { healthScoreNoticeItemKey } from "@/lib/daily/priority-item-key";
 import { annotate, getEvent } from "@/lib/logging/context";
 
@@ -40,6 +40,7 @@ import { pillarsWithModuleData, type ScoreReaderModules } from "./modules";
 import { computeHealthScore } from "./index";
 import type { HealthScoreReport, PillarInputs, ScorePillarId } from "./types";
 import { computeWeightGoal } from "./weight-goal";
+import { pregnancyContextFor } from "@/lib/cycle/pregnancy-context";
 import { DAY_MS, uniqueSources } from "./shared";
 import type { DerivedProvenanceSource } from "@/lib/insights/derived/types";
 import type { GlucoseUnit } from "@/lib/glucose";
@@ -469,16 +470,17 @@ function scoreInputsFor(args: {
   >;
 }): PillarInputs {
   const { asOf, input } = args;
-  const ageYears = getAgeFromDateOfBirth(input.profile.dateOfBirth);
-  const asOfDay = userDayKey(asOf, input.profile.timezone);
-  const activityWindow = activityWindowKeys(asOf, input.profile.timezone);
+  const tz = input.profile.timezone;
+  const ageYears = ageInYears(input.profile.dateOfBirth, tz);
+  const asOfDay = userDayKey(asOf, tz);
+  const activityWindow = activityWindowKeys(asOf, tz);
   const sleepSinceDay = userDayKey(
     new Date(asOf.getTime() - (SLEEP_WINDOW_DAYS - 1) * DAY_MS),
-    input.profile.timezone,
+    tz,
   );
   const fastingCanonical = pickStableSourceRows(
     args.glucose.value.filter((row) => row.glucoseContext === "FASTING"),
-    (row) => userDayKey(row.measuredAt, input.profile.timezone),
+    (row) => userDayKey(row.measuredAt, tz),
   );
   const sleepNights = reconstructNights(
     args.sleep.value.map((row) => ({
@@ -488,7 +490,7 @@ function scoreInputsFor(args: {
       source: row.source,
       deviceType: row.deviceType,
     })),
-    input.profile.timezone,
+    tz,
     input.profile.sourcePriorityJson,
   );
   const hba1c = args.labs.value.filter((row) => {
@@ -501,8 +503,7 @@ function scoreInputsFor(args: {
   });
   const adiposityCanonical = pickStableSourceRows(
     args.adiposity.value,
-    (row) =>
-      `${row.type}|${userDayKey(row.measuredAt, input.profile.timezone)}`,
+    (row) => `${row.type}|${userDayKey(row.measuredAt, tz)}`,
   );
 
   return {
@@ -550,7 +551,7 @@ function scoreInputsFor(args: {
     ACTIVITY: {
       source: args.activity.ok ? readSource(args.activity.value.path) : "none",
       readFailed: !args.activity.ok,
-      timezone: input.profile.timezone,
+      timezone: tz,
       asOf,
       ageYears,
       days: args.activity.value.days,
@@ -567,7 +568,7 @@ function scoreInputsFor(args: {
     SLEEP: {
       source: "live",
       readFailed: !args.sleep.ok,
-      timezone: input.profile.timezone,
+      timezone: tz,
       asOf,
       ageYears,
       nights: sleepNights.map((night) => ({
@@ -578,7 +579,7 @@ function scoreInputsFor(args: {
       sources: uniqueSources(
         args.sleep.value
           .filter((row) => {
-            const day = userDayKey(row.measuredAt, input.profile.timezone);
+            const day = userDayKey(row.measuredAt, tz);
             return day >= sleepSinceDay && day <= asOfDay;
           })
           .map((row) => row.source),
@@ -798,14 +799,12 @@ export async function computeUserHealthScore(
   const config = resolveHealthScoreConfig(input.healthScoreConfigJson);
   const recordedPillars = pillarsWithModuleData(input.modules);
   const recorded = new Set(recordedPillars);
-  const availablePillars: ScorePillarId[] = config.pillars.filter((id) =>
-    recorded.has(id),
+  const pregnant = await pregnancyContextFor(db, input);
+  const availablePillars: ScorePillarId[] = config.pillars.filter(
+    (id) => recorded.has(id) && !(pregnant && id === "ADIPOSITY"),
   );
-  // v1.35.0 — the one place the "this score is configured" boolean is
-  // decided, from the same config and the same module map the
-  // composition came from. Resolved here rather than anywhere a client
-  // can reach, because a client that re-derived it would be a second
-  // place deciding one thing.
+  // v1.35.0 — the one place "this score is configured" is decided, from the
+  // composition's own config and module map, never re-derived by a client.
   const configured = resolveScoreConfigured({ config, recordedPillars });
   const previousAt = new Date(input.now.getTime() - 7 * DAY_MS);
   const previousPreviousAt = new Date(input.now.getTime() - 14 * DAY_MS);
@@ -854,6 +853,7 @@ export async function computeUserHealthScore(
     source: weights.ok ? "live" : "none",
     readFailed: !weights.ok,
     asOf: input.now,
+    pregnancyContext: pregnant,
   });
   const current = computeHealthScore({
     asOf: input.now,

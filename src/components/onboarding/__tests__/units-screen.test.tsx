@@ -7,6 +7,12 @@
  * Skip is the way past a question with no opinion, and Skip says so on the
  * ledger.
  *
+ * Since 1.49 the screen is "Region & units" and always carries the time zone,
+ * filled with the account's own. The filled zone is never the answer to a
+ * unit question: while a unit is asked, "Continue" waits for one. Only a
+ * screen with no unit question (a medication schedule alone) is answered by
+ * confirming the filled values.
+ *
  * Rendered server-side, this repo's component-test convention.
  */
 import { renderToStaticMarkup } from "react-dom/server";
@@ -38,6 +44,7 @@ function state(
     needs: { ...emptyOnboardingNeeds(), recordTarget: "me", ...needs },
     completedAt: null,
     firstResult: null,
+    offers: { ai: false },
   };
 }
 
@@ -64,18 +71,37 @@ function nextIsDisabled(html: string): boolean {
 }
 
 describe("<UnitsScreen>", () => {
-  it("does not let the person continue without choosing a unit", () => {
+  it("does not take the filled time zone as the answer to a unit question", () => {
     const html = render({ areas: ["glucose"] });
+    expect(html).toContain('data-slot="onboarding-question-timezone"');
     expect(nextIsDisabled(html)).toBe(true);
     // Skip is still there: it is the honest way past a question with no
     // opinion, and it says "skipped" on the ledger.
     expect(html).toContain('data-slot="onboarding-skip"');
   });
 
+  it("is answered by confirming the filled values when no unit is asked", () => {
+    expect(nextIsDisabled(render({ medication: "yes" }))).toBe(false);
+  });
+
+  it("asks for the medicine registry only when medication was chosen", () => {
+    expect(render({ areas: ["glucose"] })).not.toContain(
+      'data-slot="onboarding-question-medicine-registry"',
+    );
+    expect(render({ medication: "yes" })).toContain(
+      'data-slot="onboarding-question-medicine-registry"',
+    );
+  });
+
   it("lets the person continue once a unit is chosen", () => {
     const html = render({
       areas: ["glucose"],
-      units: { glucoseUnit: "mg/dL", unitPreference: null },
+      units: {
+        glucoseUnit: "mg/dL",
+        unitPreference: null,
+        timezone: null,
+        medicineRegistry: null,
+      },
     });
     expect(nextIsDisabled(html)).toBe(false);
   });

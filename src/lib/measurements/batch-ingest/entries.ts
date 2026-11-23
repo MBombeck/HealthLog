@@ -27,8 +27,19 @@ export interface BatchIngestEntry {
   assessmentAnswers?: number[];
   externalId: string;
   externalSourceVersion?: string;
+  /**
+   * When the phone computed a `stats:` day total (ISO). Compared with the
+   * stored row's; ignored on every other entry.
+   */
+  computedAt?: string;
   source?: "APPLE_HEALTH" | "MANUAL";
   deviceType?: DeviceType | null;
+  /**
+   * IANA zone the sample was taken in (HealthKit `HKMetadataKeyTimeZone`).
+   * Checked per entry; a name the server cannot read in SQL is stored as
+   * null (the profile zone), and the entry itself is still written.
+   */
+  timeZone?: string;
 }
 
 /** The parsed request: the entries and the client's declared wake reason. */

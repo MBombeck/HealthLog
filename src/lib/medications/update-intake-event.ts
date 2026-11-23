@@ -21,19 +21,25 @@ import {
 } from "@/lib/medications/inventory/consumption";
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
+import { reopenedEventOf } from "@/lib/notifications/medication-intake-recorded";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
-import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
 import {
   applyCanonicalSlotWrite,
-  findPinConflict,
   resolveForcedSlotForWrite,
   resolveSlotForWriteByBand,
 } from "@/lib/medications/scheduling/slot-upsert";
+import {
+  findPinConflictRow,
+  pinConflictWire,
+} from "@/lib/medications/scheduling/pin-conflict";
+import { resolveTakeSlotForExistingRow } from "@/lib/medications/scheduling/existing-row-slot";
+import { moveRowToSlot } from "@/lib/medications/scheduling/slot-move";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { resolveInjectionSiteForWrite } from "@/lib/medications/injection-site-write";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 import type { z } from "zod/v4";
+import { userDayKey } from "@/lib/tz/format";
 
 export type IntakeEventEdit = z.output<typeof updateIntakeEventSchema>;
 
@@ -42,6 +48,8 @@ export interface IntakeEditRefusal {
   ok: false;
   message: string;
   errorCode: string;
+  /** On an occupied pin: the slot and the take that holds it. */
+  meta?: ReturnType<typeof pinConflictWire>;
 }
 
 type AttributionSource = "AUTO" | "USER_PIN";
@@ -94,7 +102,7 @@ async function refuseTakeBeforeStart(
       select: { startsOn: true },
     });
     if (medication?.startsOn) {
-      const takenDay = dayKeyForUserTz(data.takenAt, user.timezone);
+      const takenDay = userDayKey(data.takenAt, user.timezone);
       const startsOnDay = dateOnlyKey(medication.startsOn);
       if (takenDay < startsOnDay) {
         annotate({
@@ -187,8 +195,11 @@ async function resolveEditedInjectionSite(
  *      OR deliberately ad-hoc). The persisted marker is what keeps the
  *      nightly slot dedup from snapping the released row back into the
  *      cluster the user just detached it from;
- *   4. else a taken edit attributes by band (slot anchor on match, the
- *      take's own time on a miss → ad-hoc), provenance AUTO;
+ *   4. else a taken edit keeps the row's own slot when it is a real slot
+ *      not ahead of the take (`resolveTakeSlotForExistingRow`: AUTO when
+ *      the band agrees, USER_PIN when only the anchor holds it), and
+ *      otherwise attributes by band (the take's own time on a miss →
+ *      ad-hoc);
  *   5. a skip / pending edit keeps the existing `scheduledFor` anchor.
  */
 async function resolveEditAttribution(
@@ -236,15 +247,14 @@ async function resolveEditAttribution(
       // rule would silently overwrite that dose record. The ledger UI only
       // offers the pin for unserved slots, so this only fires for stale
       // clients / raw API calls.
-      if (
-        await findPinConflict({
-          userId: user.id,
-          medicationId: id,
-          canonicalSlot: forced,
-          incomingTakenAt: nextSkipped ? null : nextTakenAt,
-          excludeEventId: eventId,
-        })
-      ) {
+      const held = await findPinConflictRow({
+        userId: user.id,
+        medicationId: id,
+        canonicalSlot: forced,
+        incomingTakenAt: nextSkipped ? null : nextTakenAt,
+        excludeEventId: eventId,
+      });
+      if (held) {
         annotate({
           action: { name: "medication.intake.force_slot.occupied" },
           meta: { medication_id: id, event_id: eventId },
@@ -253,6 +263,7 @@ async function resolveEditAttribution(
           ok: false,
           message: "forceSlotInstant already carries a recorded dose action",
           errorCode: "medications.intake.force_slot.occupied",
+          meta: pinConflictWire(held),
         };
       }
       resolvedScheduledFor = forced;
@@ -262,17 +273,32 @@ async function resolveEditAttribution(
       nextTakenAt !== null &&
       !nextSkipped
     ) {
-      const attribution = await resolveSlotForWriteByBand({
-        userId: user.id,
-        medicationId: id,
-        userTz: user.timezone,
-        takenAt: nextTakenAt,
-      });
-      // band.at on match; the take's own time on a miss (ad-hoc).
-      resolvedScheduledFor = attribution.slotInstant ?? nextTakenAt;
-      // An explicit unpin stays user-fixed (USER_PIN) even on the released
-      // row; a plain taken/skipped edit re-attributes AUTO.
-      attributionSource = data.forceSlotInstant === null ? "USER_PIN" : "AUTO";
+      if (data.forceSlotInstant === null) {
+        // An explicit unpin releases the row from its anchor: band on the
+        // take's time, ad-hoc on a miss, and the release stays user-fixed
+        // (USER_PIN).
+        const attribution = await resolveSlotForWriteByBand({
+          userId: user.id,
+          medicationId: id,
+          userTz: user.timezone,
+          takenAt: nextTakenAt,
+        });
+        resolvedScheduledFor = attribution.slotInstant ?? nextTakenAt;
+        attributionSource = "USER_PIN";
+      } else {
+        // A corrected time or outcome on a row keeps the dose the row names
+        // (its own anchor), the same rule as the status route.
+        const bound = await resolveTakeSlotForExistingRow({
+          userId: user.id,
+          medicationId: id,
+          userTz: user.timezone,
+          rowScheduledFor: ctx.event.scheduledFor,
+          rowWasTaken: ctx.event.takenAt !== null && !ctx.event.skipped,
+          takenAt: nextTakenAt,
+        });
+        resolvedScheduledFor = bound.slotInstant;
+        attributionSource = bound.attributionSource;
+      }
     } else if (data.forceSlotInstant === null) {
       // Unpin on a row that is not a confirmed take (skip / pending):
       // nothing to re-attribute, but the provenance still resets — a
@@ -319,6 +345,8 @@ async function editIntakeInPlace(
       ...((data.takenAt !== undefined || data.skipped !== undefined) && {
         autoRecorded: false,
       }),
+      // A recorded outcome is no longer an auto-miss.
+      ...((nextSkipped || nextTakenAt !== null) && { autoMissed: false }),
       // Sync — bump the reconciliation counter on every server-side mutation
       // so the `/api/sync/changes` feed echoes a monotonic value to paired
       // clients.
@@ -358,9 +386,8 @@ async function editIntakeInPlace(
  * REMINDER row) rather than bare-updating into an occupied slot and risking a
  * P2002 (audit HIGH-4).
  *
- * The source row's consumption stamp is refunded BEFORE the tombstone; the
- * consume on the converged row below nets the move to exactly one
- * consumption.
+ * The source row's consumption stamp is refunded and the converged row
+ * consumes, so the move nets exactly one consumption.
  */
 async function moveIntakeToSlot(
   ctx: EditContext,
@@ -381,68 +408,70 @@ async function moveIntakeToSlot(
     nextSkipped,
     wasTaken,
   } = move;
-  await restoreForIntake({
-    client: prisma,
-    userId: user.id,
-    eventId,
-  });
-  await prisma.medicationIntakeEvent.update({
-    where: { id: eventId },
-    data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
-  });
-  const applied = await applyCanonicalSlotWrite({
-    client: prisma,
-    userId: user.id,
-    medicationId: id,
-    canonicalSlot: targetScheduledFor,
-    takenAt: nextSkipped ? null : nextTakenAt,
-    skipped: nextSkipped,
-    isExplicitTaken: !nextSkipped && nextTakenAt !== null,
-    isExplicitSkip: nextSkipped,
-    idempotencyKey: null,
-    // The converged row keeps the ORIGINAL's provenance. This used to be a
-    // hardcoded `"WEB"`, which said "somebody typed this in the browser"
-    // about an Apple Health dose whose time was corrected. Under MANAGE the
-    // sentence would be wrong about a second person as well.
-    createSource: event.source,
-    attributionSource,
-    // A slot move is a re-binding, not a new dose: the original row's
-    // recorded injection site and dose override ride along onto the
-    // converged row instead of being tombstoned away, unless the same edit
-    // sets a new site (#169).
-    injectionSite:
-      move.injectionSite !== undefined
-        ? move.injectionSite
-        : (event.injectionSite as InjectionSiteKey | null),
-    doseTaken: event.doseTaken,
-  });
-  // The shared slot write only ever sets a site; a clear in the same edit
-  // lands here, on the converged row.
-  let row = applied.row;
-  if (move.injectionSite === null && row.injectionSite !== null) {
-    row = await prisma.medicationIntakeEvent.update({
-      where: { id: row.id },
-      data: { injectionSite: null, syncVersion: { increment: 1 } },
-    });
-  }
-  // A taken source WITHOUT a stamp is a legacy row whose stock moved through
-  // the old take-time hook: the refund above was a no-op, so consuming on the
-  // converged row would double-charge — skip it. Every other taken outcome
-  // nets the move to exactly one consumption.
-  if (
-    nextTakenAt !== null &&
-    !nextSkipped &&
-    (!wasTaken || event.inventoryConsumption !== null)
-  ) {
-    await consumeForIntake({
-      client: prisma,
+  // One locked transaction (`slot-move.ts`): a target slot that already
+  // holds a take refuses the move and leaves the source row as it was.
+  return moveRowToSlot(
+    {
       userId: user.id,
       medicationId: id,
-      eventId: applied.row.id,
-      intakeAt: nextTakenAt,
-    });
-  }
-  return row;
+      id: eventId,
+      slot: event.scheduledFor,
+      target: targetScheduledFor,
+    },
+    (tx) =>
+      applyCanonicalSlotWrite({
+        client: tx,
+        userId: user.id,
+        medicationId: id,
+        canonicalSlot: targetScheduledFor,
+        takenAt: nextSkipped ? null : nextTakenAt,
+        skipped: nextSkipped,
+        isExplicitTaken: !nextSkipped && nextTakenAt !== null,
+        isExplicitSkip: nextSkipped,
+        idempotencyKey: null,
+        // The converged row keeps the ORIGINAL's provenance: an Apple Health
+        // dose whose time was corrected is still an Apple Health dose.
+        createSource: event.source,
+        attributionSource,
+        // A slot move is a re-binding, not a new dose: the recorded site and
+        // dose override ride along unless the same edit sets a new site (#169).
+        injectionSite:
+          move.injectionSite !== undefined
+            ? move.injectionSite
+            : (event.injectionSite as InjectionSiteKey | null),
+        doseTaken: event.doseTaken,
+      }),
+    async (tx, applied) => {
+      await restoreForIntake({ client: tx, userId: user.id, eventId });
+      // The shared slot write only ever sets a site; a clear in the same
+      // edit lands here, on the converged row.
+      let row = applied.row;
+      if (move.injectionSite === null && row.injectionSite !== null) {
+        row = await tx.medicationIntakeEvent.update({
+          where: { id: row.id },
+          data: { injectionSite: null, syncVersion: { increment: 1 } },
+        });
+      }
+      // A taken source WITHOUT a stamp is a legacy row whose stock moved
+      // through the old take-time hook: the refund was a no-op, so consuming
+      // on the converged row would double-charge. Every other taken outcome
+      // nets the move to exactly one consumption.
+      if (
+        nextTakenAt !== null &&
+        !nextSkipped &&
+        (!wasTaken || event.inventoryConsumption !== null)
+      ) {
+        await consumeForIntake({
+          client: tx,
+          userId: user.id,
+          medicationId: id,
+          eventId: applied.row.id,
+          intakeAt: nextTakenAt,
+        });
+      }
+      return row;
+    },
+  );
 }
 
 /** Correct one dose; the event is the live row the route found. */
@@ -511,6 +540,21 @@ export async function updateIntakeEvent(
         wasTaken,
         injectionSite,
       });
+  if (updated === "gone") {
+    return {
+      ok: false as const,
+      status: 404,
+      message: "Intake event not found",
+      errorCode: "medications.notFound",
+    };
+  }
+  if (updated === "occupied") {
+    return {
+      ok: false as const,
+      message: "The slot the dose would move to already holds a take",
+      errorCode: "medications.intake.force_slot.occupied",
+    };
+  }
 
   await auditLog("medication.intake.update", {
     userId: user.id,
@@ -582,9 +626,13 @@ export async function updateIntakeEvent(
   // (#22) — silent cross-device intake sync: an edited dose must reconcile on
   // the user's other iOS devices too. Coalesced per user, best-effort — never
   // affects the response.
-  queueMedicationIntakeSync({
+  afterDoseChange({
+    scope: "intakes",
     userId: user.id,
     originDeviceToken: input.originDeviceToken,
+    // A take or skip reverted, or moved off its slot: that slot is open
+    // again on the other devices.
+    recorded: reopenedEventOf(event, updated),
   });
 
   return { ok: true as const, row: updated };

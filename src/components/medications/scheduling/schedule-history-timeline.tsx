@@ -185,7 +185,7 @@ export function ScheduleHistoryTimeline({
           <div className="min-w-0">
             <p className="text-foreground text-sm font-medium tabular-nums">
               {liveTimes.length > 0
-                ? liveTimes.join(" / ")
+                ? liveTimes.map(fmt.wallTime).join(" / ")
                 : t("medications.detail.zeitplan.history.noTimes")}
             </p>
             <p className="text-muted-foreground text-xs">
@@ -211,7 +211,7 @@ export function ScheduleHistoryTimeline({
                   <div className="min-w-0">
                     <p className="text-foreground text-sm tabular-nums">
                       {times.length > 0
-                        ? times.join(" / ")
+                        ? times.map(fmt.wallTime).join(" / ")
                         : t("medications.detail.zeitplan.history.noTimes")}
                       {revision.source === "MANUAL" && (
                         <span

@@ -42,15 +42,16 @@ import {
   resolveThresholdOverride,
   resolveWeightTargetOverride,
   type ThresholdMetric,
+  profileTimezone,
   type UserProfileForRange,
 } from "@/lib/analytics/effective-range";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
 import {
   getTrendSentiment,
   type TrendDirectionSentiment,
   type TrendSentimentDirection,
 } from "@/lib/insights/trend-sentiment";
 import { binaryReferenceSex } from "@/lib/profile/sex";
+import { ageInYears } from "@/lib/tz/date-only";
 
 import { resolveWeightTrend } from "./weight-trend";
 
@@ -141,6 +142,13 @@ export interface TrendVerdictContext {
    * there is nothing to place, which leaves the metric's default.
    */
   referenceValue: number | null;
+  /**
+   * The record is in a pregnancy or its postpartum weeks
+   * (`pregnancyContextActive`). Weight and BMI then judge no direction
+   * against the person's target: the body is supposed to change. Required,
+   * so no caller can judge weight without having read it.
+   */
+  pregnancy: boolean;
 }
 
 /**
@@ -157,7 +165,7 @@ function hasProfileDefault(
     case "BLOOD_PRESSURE_DIA":
       return profile.dateOfBirth != null;
     case "PULSE": {
-      const age = getAgeFromDateOfBirth(profile.dateOfBirth ?? null);
+      const age = ageInYears(profile.dateOfBirth, profileTimezone(profile));
       return age != null && age >= 20;
     }
     case "BODY_FAT":
@@ -253,6 +261,15 @@ const DIRECTION_BY_POSITION: Record<
   inside: "hold",
 };
 
+/**
+ * Whether the verdict of `key` reads `pregnancy` at all: only weight and BMI
+ * do. A reader that judges one other metric (a pulse chart) passes `false`
+ * without reading the state, which is a statement per request saved.
+ */
+export function verdictReadsPregnancy(key: TrendVerdictKey): boolean {
+  return key === "WEIGHT" || key === "BMI";
+}
+
 export function resolveTrendVerdict(
   key: TrendVerdictKey,
   ctx: TrendVerdictContext,
@@ -265,8 +282,10 @@ export function resolveTrendVerdict(
   // Weight, and BMI which moves exactly when weight does: only the person's
   // own target counts (see the module comment). For `BMI` the reference is
   // the WEIGHT it is derived from, in kg, since the target is a weight.
-  if (key === "WEIGHT" || key === "BMI") {
-    const target = resolveWeightTargetOverride(ctx.thresholdsJson);
+  if (verdictReadsPregnancy(key)) {
+    const target = ctx.pregnancy
+      ? null
+      : resolveWeightTargetOverride(ctx.thresholdsJson);
     const judgement = resolveWeightTrend(target, reference);
     return {
       direction: judgement.direction,

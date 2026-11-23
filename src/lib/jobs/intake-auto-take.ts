@@ -56,7 +56,6 @@ import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import {
   autoTakeEligibleWhere,
@@ -83,7 +82,7 @@ import {
   buildRecurrenceContext,
 } from "@/lib/medications/scheduling/worker-helpers";
 import type { SlotBand } from "@/lib/medications/scheduling/attribution";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { isP2002 } from "@/lib/prisma-errors";
 import {
   dayKeyForScheduledFor,
@@ -317,10 +316,13 @@ export async function runIntakeAutoTakePass(
   }
 
   for (const userId of touchedUsers) {
-    invalidateUserMedications(userId, { evict: true });
     // Wakes the person's iOS devices so a widget or Live Activity showing
     // the dose as open reconciles. Coalesced per user, best-effort.
-    queueMedicationIntakeSync({ userId, originDeviceToken: null });
+    afterDoseChange({
+      scope: "intakes",
+      userId,
+      originDeviceToken: null,
+    });
   }
 
   return {
@@ -538,6 +540,7 @@ async function applyDecision(
       data: {
         takenAt: at,
         autoRecorded: true,
+        takenVia: "AUTO",
         syncVersion: { increment: 1 },
       },
     });
@@ -556,6 +559,7 @@ async function applyDecision(
         // worker's slot rows; `autoRecorded` says which server path.
         source: "REMINDER",
         autoRecorded: true,
+        takenVia: "AUTO",
       },
       select: { id: true },
     });

@@ -41,6 +41,8 @@ const CALLERS: Record<string, string> = {
   "lib/fhir/rest.ts": "the owner's saved profile (resolveSavedSelection)",
   "lib/mcp/resources.ts": "the owner's saved profile (resolveSavedSelection)",
   "lib/mcp/prompts.ts": "the owner's saved profile (resolveSavedSelection)",
+  "lib/jobs/report-schedule.ts":
+    "the owner's saved profile (resolveSavedSelection); an empty one files nothing",
 };
 
 function walk(dir: string, out: string[] = []): string[] {

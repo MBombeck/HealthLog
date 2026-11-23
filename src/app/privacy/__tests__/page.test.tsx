@@ -32,8 +32,8 @@ function render() {
   return renderToStaticMarkup(<PrivacyPage />);
 }
 
-const POLICY_VERSION = "1.37.12";
-const LAST_UPDATED = "2026-08-11";
+const POLICY_VERSION = "1.49.0";
+const LAST_UPDATED = "2026-11-22";
 
 describe("<PrivacyPage>", () => {
   it("renders without crashing and includes the bilingual H1", () => {
@@ -48,8 +48,8 @@ describe("<PrivacyPage>", () => {
     const html = render();
     expect(html).toContain(`Policy version ${POLICY_VERSION}`);
     // Each language writes the date its own way, on its own line.
-    expect(html).toContain("Stand: 11. August 2026");
-    expect(html).toContain("Last updated: 11 August 2026");
+    expect(html).toContain("Stand: 22. November 2026");
+    expect(html).toContain("Last updated: 22 November 2026");
     expect(html).toContain(`dateTime="${LAST_UPDATED}"`);
     expect(html).toContain('data-slot="privacy-last-updated"');
   });
@@ -177,6 +177,7 @@ describe("<PrivacyPage>", () => {
       "GitHub",
       "Cloudflare",
       "Hetzner",
+      "HealthLog push relay",
     ];
     for (const provider of expectedProviders) {
       expect(
@@ -184,6 +185,15 @@ describe("<PrivacyPage>", () => {
         `missing sub-processor ${JSON.stringify(provider)}`,
       ).toContain(provider);
     }
+  });
+
+  it("names the app's real bundle id and points to the relay's own notice", () => {
+    const html = render();
+    expect(html).toContain("dev.healthlog.app");
+    expect(html).not.toContain("io.bombeck.healthlog");
+    // The relay's notice is the one source; the page summarises and links.
+    expect(html).toContain('href="https://push.healthlog.dev/privacy"');
+    expect(html).toContain("Apple Health Records");
   });
 
   it("states the EU MDR medical-device boundary verbatim", () => {

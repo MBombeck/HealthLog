@@ -59,6 +59,13 @@ export const medicationKeys = {
    * and a medication write changes the per-category counts.
    */
   medicationCategories: () => ["medications", "categories"] as const,
+  /**
+   * Today's dose rows across every medication
+   * (`GET /api/medications/intake?scope=today`), the row a card snoozes and
+   * the place its snoozed state is read. Under the `["medications"]`
+   * prefix: every intake write refetches it.
+   */
+  medicationIntakeToday: () => ["medications", "intake", "today"] as const,
   medicationCadence: (medicationId: string) =>
     ["medications", medicationId, "cadence"] as const,
   medicationGlp1Details: (medicationId: string) =>
@@ -92,6 +99,25 @@ export const medicationKeys = {
    */
   medicationDoseHistory: (medicationId: string, windowDays: number) =>
     ["medications", medicationId, "dose-history", windowDays] as const,
+  /**
+   * The same ledger read over one local calendar day (`dayKey` in
+   * `timeZone`), for the intake form: the slots that day really has are the
+   * only ones it offers. Under the `["medications"]` prefix, so an intake
+   * write refreshes it with the rest.
+   */
+  medicationDoseHistoryDay: (
+    medicationId: string,
+    dayKey: string,
+    timeZone: string,
+  ) =>
+    [
+      "medications",
+      medicationId,
+      "dose-history",
+      "day",
+      dayKey,
+      timeZone,
+    ] as const,
   medicationIntakeDrugLevelChart: (medicationId: string) =>
     ["medications", medicationId, "intake", "drug-level-chart"] as const,
   /**

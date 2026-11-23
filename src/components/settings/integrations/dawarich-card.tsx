@@ -18,7 +18,6 @@ import {
   MapPinned,
   Plug,
   RefreshCw,
-  Save,
   Trash2,
   Unlink,
 } from "lucide-react";
@@ -379,7 +378,6 @@ function DawarichHome({
               type="button"
               size="sm"
               variant="outline"
-              className="min-h-11 sm:min-h-9"
               onClick={() => onEditingChange(false)}
               data-testid="dawarich-cancel-home"
             >
@@ -388,7 +386,6 @@ function DawarichHome({
             <Button
               type="button"
               size="sm"
-              className="min-h-11 sm:min-h-9"
               disabled={
                 save.isPending ||
                 (placeId === "" && !/^[A-Z]{2}$/.test(countryValue))
@@ -405,9 +402,7 @@ function DawarichHome({
             >
               {save.isPending ? (
                 <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Save className="size-3.5" aria-hidden="true" />
-              )}
+              ) : null}
               {t("settings.dawarichHomeSave")}
             </Button>
           </SettingsCardActions>
@@ -494,7 +489,6 @@ function DawarichForm({
           type="submit"
           size="sm"
           variant={connected ? "outline" : "default"}
-          className="min-h-11 w-full sm:min-h-9 sm:w-auto"
           disabled={connect.isPending || !url.trim() || !apiKey.trim()}
           data-slot={connected ? undefined : "integration-primary-action"}
           data-action={connected ? undefined : "connect"}
@@ -502,9 +496,7 @@ function DawarichForm({
         >
           {connect.isPending ? (
             <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-          ) : connected ? (
-            <Save className="size-3.5" aria-hidden="true" />
-          ) : (
+          ) : connected ? null : (
             <Link2 className="size-3.5" aria-hidden="true" />
           )}
           {connected

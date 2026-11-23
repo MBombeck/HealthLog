@@ -28,7 +28,7 @@ import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 // eager client bundle of all of them. `classification` carries a type import
 // and nothing else.
 import { isManageDelegateSettingsDestination } from "@/lib/record-settings/classification";
-import { isDestinationInSharedRecord } from "./nav-model";
+import { isSharedRecordPathOpen } from "@/lib/navigation/shared-record";
 import { BottomNav } from "./bottom-nav";
 import { GlobalShortcuts } from "./global-shortcuts";
 import { CommandPaletteMount } from "@/components/command-palette/command-palette.lazy";
@@ -201,10 +201,10 @@ export function AuthShell({
   // squash a 3000-word policy into a "login card" layout, so we let it
   // render edge-to-edge while still resolving as a public page for the
   // auth gate above.
-  // v1.4.27 — `/about` follows the same shape (own header, own
-  // footer, full-width body), so it joins the standalone list.
+  // v1.4.27 — `/about` has the same shape, so it joins the standalone list.
   // v1.11.0 — the clinician view (`/c/*`) renders edge-to-edge with its own
-  // standalone chrome and no app shell, like the legal pages.
+  // chrome, like the legal pages. The emergency card's view (`/e/*`) is a
+  // route that answers its own document and never mounts this shell.
   const isStandalonePublicPage =
     pathname.startsWith("/privacy") ||
     pathname.startsWith("/about") ||
@@ -247,14 +247,14 @@ export function AuthShell({
     (recordKind === "managed" ||
       (level === "manage" &&
         isManageDelegateSettingsDestination(settingsSlug)));
-  // v1.36.0 — a page reached while acting on somebody else's record that
-  // sharing does not cover. The nav already drops these entries, so arriving
-  // here means a bookmark or a browser back button; the panel below explains
-  // it instead of letting the page paint a row of 403 error cards. Paint only
-  // — every route behind these pages refuses on its own.
+  // v1.36.0 — a page sharing does not cover, reached by bookmark or back
+  // button: the panel below explains it instead of a row of 403 cards. Paint
+  // only. A page of parts (emergency card, Health record) opens when one part's
+  // route rule admits the record on screen (`RECORD_PAGE_SURFACES`).
+  const viewer = { inSharedRecord, recordKind, level, sections };
   const outsideSharedRecord =
     inSharedRecord &&
-    !isDestinationInSharedRecord(pathname, sections) &&
+    !isSharedRecordPathOpen(pathname, viewer) &&
     !isRecordSettingsPath;
   const fullBleed = isFullBleedPage({
     pathname,
