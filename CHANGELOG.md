@@ -97,6 +97,8 @@
 
 ### Fixed
 
+- Editing a dose time keeps a time that was typed but not yet added with Add: saving adds it, and a schedule with no time at all can't be saved. The medication wizard and the schedule change dialog do the same.
+- A seizure cluster alert goes out when the next seizure is logged seconds after the first. Each write used to see the other one in the cluster, took itself for a joiner, and neither sent the alert.
 - The "Pulse through the day" chart and the heart rate curve on a workout page show the whole day and the whole workout again with a dense source. With about 35,000 readings a day they broke off after roughly four hours. Thanks to @sdrburgess. ([#1429](https://github.com/MBombeck/HealthLog/issues/1429))
 - With dense data the live step and energy profile, strain, stress, readiness, the deviation hint, the glucose and SpO2 safety limits, the 30-day figures on the status cards and the mood correlations count every reading instead of a capped slice, and the resting pulse baseline matures again.
 - The image ships the PostgreSQL 19 client tools. An install that runs its own database on PostgreSQL 19 no longer stops before a migration because the bundled `pg_dump` refused the newer server, and its nightly dumps work again. The client reads 16, 18 and 19 alike, and the upgrade guide now names the ceiling. Thanks to @aw23edfr4. ([#1431](https://github.com/MBombeck/HealthLog/issues/1431), [#1432](https://github.com/MBombeck/HealthLog/issues/1432))
