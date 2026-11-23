@@ -311,7 +311,7 @@ async function medicationStateKey(id: string): Promise<string | null> {
   const row = await prisma.medication.findUnique({
     where: { id },
     include: {
-      schedules: true,
+      schedules: { orderBy: MEDICATION_SCHEDULE_ORDER },
       categoryAssignment: { select: { category: true } },
     },
   });
