@@ -35,6 +35,8 @@ import {
   queueMedicationIntakeSync,
   type IntakeSyncRequest,
 } from "@/lib/notifications/medication-intake-sync";
+import type { IntakeRecordedEvent } from "@/lib/notifications/medication-intake-recorded";
+import { releaseReopenedDoseStarts } from "@/lib/push-relay/live-activity-settle";
 import {
   noteDataChanged,
   type DataDomain,
@@ -48,6 +50,23 @@ export interface DoseChange extends IntakeSyncRequest {
 export function afterDoseChange(change: DoseChange): void {
   const { scope, ...sync } = change;
   invalidateUserMedications(change.userId, { evict: true });
+  // A dose answered and open again may get its Live Activity back.
+  const reopened = (
+    change.recorded === undefined
+      ? []
+      : Array.isArray(change.recorded)
+        ? change.recorded
+        : [change.recorded]
+  ).filter((r: IntakeRecordedEvent) => r.outcome === "reopened");
+  if (reopened.length > 0) {
+    void releaseReopenedDoseStarts(
+      change.userId,
+      reopened.map((r) => ({
+        medicationId: r.medicationId,
+        slotInstant: r.slotInstant,
+      })),
+    ).catch(() => undefined);
+  }
   queueMedicationIntakeSync(sync);
   const domains: DataDomain[] =
     scope === "medication" ? ["intakes", "medications"] : ["intakes"];

@@ -7,6 +7,10 @@
  */
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import {
+  DOSE_LEDGER_MEDICATION_INCLUDE,
+  loadDoseLedger,
+} from "@/lib/medications/dose-state/ledger";
 import { resolveDosesByRow } from "@/lib/medications/dose-state/today";
 import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
@@ -114,4 +118,40 @@ export async function doseAt(
   if (!row) return null;
   const [dose] = await resolveRows(userId, [row], now);
   return dose ?? null;
+}
+
+/**
+ * Whether the medication's schedule still has a dose at `slot` (within
+ * `activitySlotWindow`), by the dose ledger the today list, resolved-slots
+ * and the history read. A slot without a live row can still be a dose (its
+ * row is minted again on the next today read); a slot the schedule no longer
+ * has, after a time was edited away, is none, and an Activity that shows it
+ * has nothing left to show.
+ */
+export async function slotStillScheduled(
+  userId: string,
+  medicationId: string,
+  slot: Date,
+  now: Date,
+): Promise<boolean> {
+  const medication = await prisma.medication.findFirst({
+    where: { id: medicationId, userId },
+    include: DOSE_LEDGER_MEDICATION_INCLUDE,
+  });
+  if (!medication) return false;
+  const window = activitySlotWindow(slot);
+  const ledger = await loadDoseLedger({
+    medication,
+    userId,
+    userTz: await resolveUserTimezone(userId),
+    from: window.gte,
+    to: window.lte,
+    now,
+  });
+  return ledger.rows.some(
+    (row) =>
+      row.kind === "slot" &&
+      row.at.getTime() >= window.gte.getTime() &&
+      row.at.getTime() <= window.lte.getTime(),
+  );
 }

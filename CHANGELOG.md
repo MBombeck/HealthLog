@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- A take or skip undone while its dose is still in its window brings the dose's Live Activity back over the push relay. The server's record of the first start used to hold the dose for good, so the lock screen stayed empty after a mistaken take was deleted.
+- A Live Activity the server started over the push relay ends when its dose time is edited away. It used to stay on the lock screen, showing a dose that was no longer due, until the next dose started or the system ended it after eight hours.
+- Editing a dose time no longer drops an earlier dose of the same day that is still open. Moving the evening time in the morning removed the morning dose from the today list and the dashboard count while the history and the iPhone app still showed it due.
+
 ## [1.49.0] — 2026-11-23
 
 ### Added
