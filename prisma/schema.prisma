@@ -6669,9 +6669,11 @@ model Device {
   laStartToken               String?             @map("la_start_token")
   laStartStatement           Json?               @map("la_start_statement")
   laStartSignature           String?             @map("la_start_signature")
-  /// The dose the last relay start was for, so a dose starts once and the
-  /// app's registration of the started Activity (`relayStart: true`) finds
-  /// its dose. Reader and writer: `push-relay/live-activity.ts`.
+  /// The dose the last relay start was for, so the app's registration of
+  /// the started Activity (`relayStart: true`) finds its dose. Only the
+  /// last: once per dose is kept by the start's outbox row
+  /// (`PushRelayDelivery.medicationId`, `slotInstant`). Reader and writer:
+  /// `push-relay/live-activity.ts`.
   laStartedMedicationId      String?             @map("la_started_medication_id")
   laStartedSlot              DateTime?           @map("la_started_slot")
   /// When the relay accepted the last start; null while it is in flight.
@@ -11731,6 +11733,14 @@ model PushRelayDelivery {
   acceptedAt        DateTime? @map("accepted_at")
   confirmedAt       DateTime? @map("confirmed_at")
   receiptReportedAt DateTime? @map("receipt_reported_at")
+  /// A Live Activity start only: the dose it was for. The record that keeps
+  /// a dose to one start per device, whatever the device row holds and
+  /// whether the device has reported the Activity yet. A sign-out clears
+  /// it, so a dose may start again on the next sign-in. Writer:
+  /// `push-relay/relay-send.ts`; reader: `push-relay/live-activity-settle.ts`
+  /// (`doseStartHeld`).
+  medicationId      String?   @map("medication_id")
+  slotInstant       DateTime? @map("slot_instant")
   createdAt         DateTime  @default(now()) @map("created_at")
 
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
@@ -11738,6 +11748,7 @@ model PushRelayDelivery {
   @@unique([deviceId, ref])
   @@index([status, nextAttemptAt])
   @@index([deviceId, pushClass, createdAt])
+  @@index([deviceId, medicationId, slotInstant])
   @@map("push_relay_deliveries")
 }
 

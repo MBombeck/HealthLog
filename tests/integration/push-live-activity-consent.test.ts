@@ -1121,3 +1121,92 @@ describe("a device leaving the account", () => {
     expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
   });
 });
+
+describe("once per dose, from the server's own start record", () => {
+  const startsOnWire = () =>
+    laPushes().filter(
+      (p) => (p.payload.aps as { event?: string }).event === "start",
+    );
+
+  async function consented() {
+    const t = await setUp();
+    await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(),
+    });
+    return t;
+  }
+
+  it("starts a dose at its lead time and never again before the device reports it", async () => {
+    const t = await consented();
+    const dose = await dueDose(t.session.userId, 100);
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    // Pending turns due at the slot, then five and twenty minutes on: the
+    // device has reported no Activity token, and nothing starts twice.
+    for (const minutes of [0, 5, 20]) {
+      expect(await runLiveActivityRelayPass(dose.at(minutes))).toMatchObject({
+        started: 0,
+      });
+    }
+    expect(startsOnWire()).toHaveLength(1);
+  });
+
+  it("keeps a dose started once when a start for another dose replaced the device's record", async () => {
+    const t = await consented();
+    // The first dose starts at its lead time.
+    const first = await dueDose(t.session.userId, 30, { start: -30, end: 90 });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    // A dose with an earlier slot shows up due (its row written late): it
+    // is the earliest now, and its start becomes the device's last one.
+    const earlier = await dueDose(t.session.userId, -20);
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    expect(
+      await getPrismaClient().device.findFirstOrThrow({
+        where: { apnsToken: TOKEN },
+      }),
+    ).toMatchObject({ laStartedMedicationId: earlier.medication.id });
+    // Once that one is overdue, the first is the earliest startable again.
+    // It already runs: no second start, at the turn or later.
+    for (const minutes of [61, 66, 81]) {
+      expect(await runLiveActivityRelayPass(earlier.at(minutes))).toMatchObject(
+        { started: 0 },
+      );
+    }
+    expect(startsOnWire()).toHaveLength(2);
+    expect(first.slot.getTime()).toBeGreaterThan(earlier.slot.getTime());
+  });
+
+  it("holds the dose across a restart, and starts a different dose", async () => {
+    const t = await consented();
+    const dose = await dueDose(t.session.userId, 20);
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+
+    // A fresh process: no module state survives, only the database.
+    vi.resetModules();
+    const fresh = await import("@/lib/push-relay/live-activity");
+    expect(await fresh.runLiveActivityRelayPass(dose.at(0))).toMatchObject({
+      started: 0,
+    });
+    expect(startsOnWire()).toHaveLength(1);
+
+    // The dose is answered; the next one is a different dose and starts.
+    await getPrismaClient().medicationIntakeEvent.updateMany({
+      where: { medicationId: dose.medication.id },
+      data: { takenAt: new Date() },
+    });
+    const next = await dueDose(t.session.userId, 40);
+    expect(await fresh.runLiveActivityRelayPass()).toMatchObject({
+      started: 1,
+    });
+    expect(
+      await getPrismaClient().pushRelayDelivery.findMany({
+        where: { eventType: "LIVE_ACTIVITY_START" },
+        select: { medicationId: true },
+        orderBy: { createdAt: "asc" },
+      }),
+    ).toEqual([
+      { medicationId: dose.medication.id },
+      { medicationId: next.medication.id },
+    ]);
+  });
+});

@@ -21,7 +21,9 @@
  *
  * The pass (`push-live-activity`, every five minutes) starts an Activity for
  * one dose of each eligible device, once per dose, unless the device already
- * runs one for it. The dose is the earliest of those entering their window
+ * runs one for it. Once per dose is the server's own record: each start's
+ * outbox row keeps its dose (`doseStartHeld`), before the device reports the
+ * Activity and across restarts. The dose is the earliest of those entering their window
  * ({@link pickStartDose}): its medication has the person's Live Activity
  * opt-in (`liveActivityEnabled`), it lies no more than the lead ahead, and
  * the resolver calls it pending or due. A dose already overdue, missed,
@@ -80,7 +82,7 @@ import {
   LA_START_EVENT,
   LA_UPDATE_EVENT,
   refusedRecently,
-  startHeld,
+  doseStartHeld,
   updatesInFlight,
 } from "@/lib/push-relay/live-activity-settle";
 
@@ -275,10 +277,6 @@ const DEVICE_SELECT = {
   laStartToken: true,
   laStartStatement: true,
   laStartSignature: true,
-  laStartedMedicationId: true,
-  laStartedSlot: true,
-  laStartedAt: true,
-  laStartRef: true,
   liveActivities: {
     select: {
       id: true,
@@ -530,17 +528,12 @@ async function startItem(
   if (!dose) return null;
   const state = doseContentState(dose, timeFormat, now);
   if (!state) return null;
-  const slot = dose.scheduledFor.getTime();
-  // Once per dose: a start the relay accepted, or one still in flight. A
-  // start that failed for good no longer holds the dose
-  // (`live-activity-settle.ts`), and one whose outbox row is gone is no
-  // start at all.
-  if (
-    device.laStartedMedicationId === dose.medicationId &&
-    device.laStartedSlot?.getTime() === slot &&
-    (device.laStartedAt !== null ||
-      (await startHeld(device.id, device.laStartRef)))
-  ) {
+  // Once per dose: a start the relay accepted, or one still in flight, read
+  // from the start rows themselves. The device row names only the last
+  // start, which a start for another dose replaces, and the device reports
+  // the Activity only once the app runs again. A start that failed for good
+  // no longer holds the dose (`live-activity-settle.ts`).
+  if (await doseStartHeld(device.id, dose.medicationId, dose.scheduledFor)) {
     return null;
   }
   if (await refusedRecently(device.id, LA_START_EVENT, now)) return null;
@@ -572,6 +565,7 @@ async function startItem(
         signature: device.laStartSignature,
       },
       expiresAt: new Date((nowS + PUSH_LIFETIME_S) * 1000),
+      dose: { medicationId: dose.medicationId, slotInstant: dose.scheduledFor },
     },
   };
 }
@@ -601,9 +595,8 @@ export function relayActivityKind(activity: {
  * One owner per dose. iOS builds up to 1.7 start their own Activity for a
  * dose whatever the relay started, so a relay start that came first stands
  * beside the app's own one, which alone has the Take button. The relay one
- * ends and the app's stays. The dose stays held on the device
- * (`laStartedMedicationId`, `laStartedSlot`), so no second relay start
- * follows. From the next 1.7 build the app starts none of its own while a
+ * ends and the app's stays. The dose stays held by its start row
+ * (`doseStartHeld`), so no second relay start follows. From the next 1.7 build the app starts none of its own while a
  * relay Activity runs for the dose, and the relay Activity gets a Take
  * button of its own.
  */

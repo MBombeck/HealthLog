@@ -6,12 +6,14 @@
  * A start or update counts as done only once the relay answered `accepted`,
  * which it does once Apple took the push:
  *
- * - a start: the dose it was for is held on the device while it is in flight
- *   (`laStartedMedicationId`, `laStartedSlot`, `laStartRef`), so the next
- *   pass does not start it twice. `accepted` sets `laStartedAt`, and only
- *   then does `push.device.liveActivityStarted` name the dose. A start that
- *   failed for good (refused, or dropped at its deadline) clears the dose
- *   again, so a later pass starts it anew.
+ * - a start: its outbox row keeps the dose it was for (`medicationId`,
+ *   `slotInstant`), so no later pass starts that dose twice
+ *   ({@link doseStartHeld}). The device row names the last start
+ *   (`laStartedMedicationId`, `laStartedSlot`, `laStartRef`); `accepted`
+ *   sets `laStartedAt`, and only then does `push.device.liveActivityStarted`
+ *   name the dose. A start that failed for good (refused, or dropped at its
+ *   deadline) clears the device's dose again, and its row no longer holds
+ *   it, so a later pass starts it anew.
  * - an update: `accepted` stores its content state as the Activity's
  *   `lastRelayState`; a failed one leaves the state that is really showing,
  *   so the next pass sends the change again.
@@ -23,6 +25,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { textEquals } from "@/lib/db-like";
+import { activitySlotWindow } from "@/lib/push-relay/activity-slot";
 
 export const LA_START_EVENT = "LIVE_ACTIVITY_START";
 export const LA_UPDATE_EVENT = "LIVE_ACTIVITY_UPDATE";
@@ -112,17 +115,30 @@ export async function refusedRecently(
   return last?.status === "failed" || last?.status === "dropped";
 }
 
-/** Whether the start under `ref` is still in flight or already accepted. */
-export async function startHeld(
+/**
+ * Whether the device has a start for this dose in flight or accepted: the
+ * server's own record of what it started, on each start's outbox row
+ * (`medicationId`, `slotInstant`). It holds the dose before the device
+ * reports the Activity, and whatever the device row says about its last
+ * start, which a start for another dose replaces. A start that failed for
+ * good holds nothing; the cool-down decides when it is tried again.
+ */
+export async function doseStartHeld(
   deviceId: string,
-  ref: string | null,
+  medicationId: string,
+  slot: Date,
 ): Promise<boolean> {
-  if (!ref) return false;
-  const row = await prisma.pushRelayDelivery.findUnique({
-    where: { deviceId_ref: { deviceId, ref } },
-    select: { status: true },
+  const row = await prisma.pushRelayDelivery.findFirst({
+    where: {
+      deviceId,
+      eventType: LA_START_EVENT,
+      medicationId,
+      slotInstant: activitySlotWindow(slot),
+      status: { in: ["pending", "accepted"] },
+    },
+    select: { id: true },
   });
-  return row?.status === "pending" || row?.status === "accepted";
+  return row !== null;
 }
 
 /** The Activity tokens an update is still in flight for, lower case. */
