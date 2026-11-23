@@ -136,6 +136,7 @@ const params = { params: Promise.resolve({ token: TOKEN }) };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  pdfOptionsSeen.length = 0;
   vi.mocked(resolveShareGateState).mockResolvedValue({
     tokenHash: "hash-1",
     passphraseHash: "pass-hash",
@@ -298,7 +299,6 @@ describe("GET /c/{token}/report.pdf", () => {
     // back to the display default. A reading is dated by the day it was where
     // the person lives, and a practice filing the PDF beside the page it came
     // from must not find two different dates for one reading.
-    pdfOptionsSeen.length = 0;
     const { GET } = await import("../report.pdf/route");
     await GET(new Request(`http://localhost/c/${TOKEN}/report.pdf`), params);
 
@@ -315,7 +315,6 @@ describe("GET /c/{token}/report.pdf", () => {
 
   it("falls back to AUTO when the owner row carries no clock preference", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
-    pdfOptionsSeen.length = 0;
     const { GET } = await import("../report.pdf/route");
     const res = await GET(
       new Request(`http://localhost/c/${TOKEN}/report.pdf`),

@@ -39,15 +39,15 @@ vi.mock("@/hooks/use-insights-analytics", () => ({
   }),
 }));
 
-// The record on screen: 118 cm, no target of its own.
-const targets = {
-  current: {
-    targets: [
-      { type: "WEIGHT", range: { min: 25.8, max: 34.7 }, source: "WHO BMI" },
-    ],
-    profile: { heightCm: 118 },
-  } as unknown,
-};
+// The record on screen: 118 cm, no target of its own. Built fresh for every
+// case, so a case that swaps the answer cannot hand the next one its swap.
+const recordTargets = (): unknown => ({
+  targets: [
+    { type: "WEIGHT", range: { min: 25.8, max: 34.7 }, source: "WHO BMI" },
+  ],
+  profile: { heightCm: 118 },
+});
+const targets = { current: recordTargets() };
 vi.mock("@tanstack/react-query", () => ({
   useQuery: ({ queryKey }: { queryKey: readonly unknown[] }) => ({
     data: JSON.stringify(queryKey).includes("targets")
@@ -77,7 +77,10 @@ function chartBands(): Array<{ min: number; max: number }> | undefined {
 }
 
 describe("/insights/weight band", () => {
-  beforeEach(() => shellProps.mockClear());
+  beforeEach(() => {
+    shellProps.mockClear();
+    targets.current = recordTargets();
+  });
 
   it("shades the WHO band for the record's height, not the viewer's", () => {
     const bands = chartBands();
@@ -93,13 +96,6 @@ describe("/insights/weight band", () => {
 
   it("shades no band when the record's targets are not readable", () => {
     targets.current = undefined;
-    try {
-      expect(chartBands()).toBeUndefined();
-    } finally {
-      targets.current = {
-        targets: [],
-        profile: { heightCm: 118 },
-      };
-    }
+    expect(chartBands()).toBeUndefined();
   });
 });
