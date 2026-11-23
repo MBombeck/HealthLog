@@ -61962,8 +61962,10 @@ components:
           enum:
             - ok
             - degraded
-          description: "`degraded` when the relay is not healthy, the last dose confirmation to this device was dropped, or a push
-            the relay accepted was never opened."
+          description: "`degraded` when the relay is not healthy, the last dose confirmation to this device was dropped and no
+            alert opened since, or the newest alert the relay accepted was never opened although the device reported
+            receipts well after it. Only the last 24 hours count; silent and Live Activity pushes never do, since iOS
+            delivers them at its discretion (v1.49.0). The reason is in the device's push diagnostics."
         senderKeys:
           type: array
           items:
@@ -62403,6 +62405,32 @@ components:
             from the account's delivery attempts only while this is the account's one APNs device, because that ledger
             names no device, and is null otherwise. A Live Activity push over this server's own key leaves no per-device
             record and stays null.
+        intakeSync:
+          type: object
+          properties:
+            state:
+              type: string
+              enum:
+                - ok
+                - degraded
+              description: The same value as `push.device.intakeSync`.
+            reason:
+              anyOf:
+                - type: string
+                  enum:
+                    - relay
+                    - intake_recorded_dropped
+                    - alert_unconfirmed
+                - type: "null"
+              description: "Why it reads `degraded`, null while `ok`: the relay is not healthy (`relay`); the last dose confirmation
+                to this device was dropped and no alert opened since (`intake_recorded_dropped`); the newest alert the
+                relay accepted in the last 24 hours was never opened although the device reported receipts well after it
+                (`alert_unconfirmed`). Silent and Live Activity pushes never count (v1.49.0)."
+          required:
+            - state
+            - reason
+          additionalProperties: false
+          description: Whether a dose recorded on another device reaches this one, from the last 24 hours of evidence only.
         receipt:
           anyOf:
             - type: object
@@ -62442,6 +62470,7 @@ components:
         - budget
         - medicationReminder
         - lastDelivery
+        - intakeSync
         - receipt
         - serverTime
       additionalProperties: false

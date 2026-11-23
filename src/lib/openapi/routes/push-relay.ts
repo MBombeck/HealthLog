@@ -141,7 +141,7 @@ export const devicePushBlockSchema = z
     intakeSync: z
       .enum(["ok", "degraded"])
       .describe(
-        "`degraded` when the relay is not healthy, the last dose confirmation to this device was dropped, or a push the relay accepted was never opened.",
+        "`degraded` when the relay is not healthy, the last dose confirmation to this device was dropped and no alert opened since, or the newest alert the relay accepted was never opened although the device reported receipts well after it. Only the last 24 hours count; silent and Live Activity pushes never do, since iOS delivers them at its discretion (v1.49.0). The reason is in the device's push diagnostics.",
       ),
     senderKeys: z
       .array(senderKey)
