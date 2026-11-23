@@ -8200,7 +8200,9 @@
     "displayCard": {
       "title": "Wyświetlanie",
       "description": "Język, jednostki i formaty zapisywane od razu po zmianie.",
-      "themeDescription": "Systemowy podąża za urządzeniem między jasnym a ciemnym. Wybór zostaje na tym urządzeniu."
+      "themeDescription": "Systemowy podąża za urządzeniem między jasnym a ciemnym. Wybór zostaje na tym urządzeniu.",
+      "navCountsLabel": "Liczniki w nawigacji",
+      "navCountsDescription": "Pokazuje przy pozycjach na pasku bocznym i w menu Więcej, ile dawek i badań kontrolnych jest do zrobienia."
     },
     "integrationCard": {
       "state": {

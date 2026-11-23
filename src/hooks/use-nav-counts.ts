@@ -9,10 +9,13 @@
  * (`src/lib/navigation/nav-counts.ts`). The sidebar and the More sheet share
  * the cached answer; every dose write and every check-up write evicts it
  * (`queryKeys.navCounts()` in the dependent-key sets). Inside somebody else's
- * record no count is shown and nothing is asked.
+ * record no count is shown and nothing is asked. Neither when the person
+ * switched the counts off (`showNavCounts`, Settings > Account > Display):
+ * no count, and no read either.
  */
 import { useQuery } from "@tanstack/react-query";
 
+import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { apiGet } from "@/lib/api/api-fetch";
 import type { NavCounts } from "@/lib/navigation/nav-counts";
@@ -28,7 +31,11 @@ export function navCountsByHref(
 
 export function useNavCounts(enabled: boolean): Record<string, number> {
   const { inSharedRecord } = useRecordCapabilities();
-  const active = enabled && !inSharedRecord;
+  const { user } = useAuth();
+  // On unless the person switched them off; the account seed carries the
+  // choice, so the first paint already knows.
+  const shown = user?.showNavCounts !== false;
+  const active = enabled && shown && !inSharedRecord;
   const counts = useQuery({
     queryKey: queryKeys.navCounts(),
     queryFn: () => apiGet<NavCounts>("/api/nav/counts"),

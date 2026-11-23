@@ -81,6 +81,7 @@
       "unitPreference": "imperial",
       "glucoseUnit": "mmol/L",
       "medicineRegistry": "GB",
+      "showNavCounts": false,
       "timeFormat": "H12",
       "dateFormat": "DMY",
       "modulePreferencesJson": {
@@ -2811,6 +2812,7 @@
       "unitPreference": "imperial",
       "glucoseUnit": "mmol/L",
       "medicineRegistry": "GB",
+      "showNavCounts": false,
       "timeFormat": "H12",
       "dateFormat": "DMY",
       "modulePreferencesJson": {

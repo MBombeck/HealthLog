@@ -622,6 +622,8 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
   glucoseUnit: "an interface preference — mg/dL or mmol/L rendering",
   medicineRegistry:
     "an interface preference — which official registry the leaflet search opens, not record content",
+  showNavCounts:
+    "an interface preference — whether the navigation shows its counts, not record content",
   disclaimerAcknowledgedAt:
     "the account's acknowledgement of the medical disclaimer, which is about the app and not about the record",
   disclaimerAcknowledgedVersion:

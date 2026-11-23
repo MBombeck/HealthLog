@@ -8200,7 +8200,9 @@
     "displayCard": {
       "title": "Display",
       "description": "Language, units and formats, saved as soon as you change them.",
-      "themeDescription": "System follows your device between light and dark. The choice is kept on this device."
+      "themeDescription": "System follows your device between light and dark. The choice is kept on this device.",
+      "navCountsLabel": "Counts in the navigation",
+      "navCountsDescription": "Shows how many doses and check-ups are due beside their entries in the sidebar and the More menu."
     },
     "integrationCard": {
       "state": {

@@ -8200,7 +8200,9 @@
     "displayCard": {
       "title": "Weergave",
       "description": "Taal, eenheden en notaties, opgeslagen zodra je ze wijzigt.",
-      "themeDescription": "Systeem volgt je apparaat tussen licht en donker. De keuze blijft op dit apparaat."
+      "themeDescription": "Systeem volgt je apparaat tussen licht en donker. De keuze blijft op dit apparaat.",
+      "navCountsLabel": "Aantallen in de navigatie",
+      "navCountsDescription": "Toont naast de items in de zijbalk en het menu Meer hoeveel innames en controles er openstaan."
     },
     "integrationCard": {
       "state": {

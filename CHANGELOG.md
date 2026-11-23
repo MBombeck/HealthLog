@@ -45,7 +45,7 @@
 - Capture menu: most-used types as rows, "Save and next", the last reading under the field; the save receipt has Undo and Edit.
 - Biomarker page lists its five newest values under the chart.
 - Time zone per reading from the iPhone; the Day view, list and daily charts follow it.
-- The sidebar and the More sheet sort their entries under Tracking, Health record and Analysis. Medications and Checkups show a small number when a dose or a check-up is due. No address changes. Thanks to @Cnote43 for the sketch it follows. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
+- The sidebar and the More sheet sort their entries under Tracking, Health record and Analysis. Medications and Checkups show a small number when a dose or a check-up is due; the numbers can be switched off under Settings > Account > Display. No address changes. Thanks to @Cnote43 for the sketch it follows. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
 - The search finds every page and every settings card, in every language also by keyword ("snooze", "dark mode", "Nextcloud", "ICE").
 - Settings > Notifications has an "Alerts" group with account security and lasting change in a vital, visible before any channel is set up.
 - Settings > Data & privacy opens with "Who can reach your record": accounts and guardians, clinician links, the emergency card link, the care and cycle calendars, API tokens, MCP and sign-ins, each with its link.
@@ -200,7 +200,7 @@
 ### Updating
 
 - Take a backup first. With the `backups` volume the container writes a pre-migration dump before it migrates; without it, run `pg_dump` yourself. `docs/ops/deploy.md`, "v1.49.0 notes", has the operator detail.
-- Thirty-six migrations, 0514 to 0558 (0516, 0523, 0527, 0528, 0541, 0548, 0550, 0552 and 0555 do not exist); the boot log says `36 database migrations pending`. Seven touch existing data:
+- Thirty-seven migrations, 0514 to 0559 (0516, 0523, 0527, 0528, 0541, 0548, 0550, 0552 and 0555 do not exist); the boot log says `37 database migrations pending`. Seven touch existing data:
   - 0515 merges dose rows recorded twice for one slot (take, then skip, then the oldest pending row; the rest soft-deleted), refunds the stock of a merged take, clears the auto-miss mark on taken or skipped doses, and rewrites legacy single-time schedules into dose windows.
   - 0517 makes e-mail and username unique regardless of case. On a clash it stops, changes nothing, and the container does not start: list the accounts with the query in `docs/ops/deploy.md` ("Accounts that differ only in case"), ideally before the update, rename one of each pair, run `prisma migrate resolve --rolled-back 0517_case_insensitive_identity_and_retention_indexes` as shown there, and start again. It also drops six duplicate indexes, builds four retention indexes (bounded to five minutes) and checks the shape of text day keys, `NOT VALID` with a warning where old rows do not fit.
   - 0529 lowers APNs tokens; where two devices held one token in different case, the most recently seen keeps it and the other registers again on its next launch.

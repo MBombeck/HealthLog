@@ -172,6 +172,12 @@ export interface AuthUser {
    */
   medicineRegistry: MedicineRegistryChoice;
   /**
+   * #1113 — whether the sidebar and the More sheet show their counts. Off
+   * means no count and no `/api/nav/counts` read. Coerced to `true` (the
+   * default) against a stale /me payload.
+   */
+  showNavCounts: boolean;
+  /**
    * v1.4.47 — the signed-in person's own stored Coach opt-out. It is
    * the value the Activate-Coach switch and the module toggle edit, and
    * nothing else should read it: it belongs to the account, not to the
@@ -534,6 +540,9 @@ export function adoptMePayload(
     medicineRegistry: isMedicineRegistryChoice(data.medicineRegistry)
       ? data.medicineRegistry
       : "NONE",
+    // #1113 — on unless the payload says off, so a stale payload keeps the
+    // counts the way they were before the switch existed.
+    showNavCounts: data.showNavCounts !== false,
     // v1.15.0 — coerce against a stale /me payload so the cycle nav entry
     // stays hidden by default when the field is absent.
     cycleTrackingEnabled: data.cycleTrackingEnabled === true,

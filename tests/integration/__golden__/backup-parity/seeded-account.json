@@ -2679,6 +2679,7 @@
       },
       "glucoseUnit": "mmol/L",
       "medicineRegistry": "GB",
+      "showNavCounts": false,
       "hasDiabetes": true,
       "labsLocalOcrEnabled": true,
       "storeWorkoutRoutes": true,

@@ -8200,7 +8200,9 @@
     "displayCard": {
       "title": "Visualización",
       "description": "Idioma, unidades y formatos; se guardan en cuanto los cambias.",
-      "themeDescription": "Sistema sigue a tu dispositivo entre claro y oscuro. La elección se guarda en este dispositivo."
+      "themeDescription": "Sistema sigue a tu dispositivo entre claro y oscuro. La elección se guarda en este dispositivo.",
+      "navCountsLabel": "Contadores en la navegación",
+      "navCountsDescription": "Muestra junto a sus entradas, en la barra lateral y en el menú Más, cuántas tomas y revisiones están pendientes."
     },
     "integrationCard": {
       "state": {

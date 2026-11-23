@@ -595,6 +595,8 @@ const ACCOUNT_SETTING_CODECS = {
   ),
   // #1430 — which medicine registry the leaflet search opens.
   medicineRegistry: oneOf("medicineRegistry", MEDICINE_REGISTRY_CHOICES, true),
+  // #1113 — whether the navigation shows its counts.
+  showNavCounts: plain("showNavCounts"),
   timeFormat: oneOf("timeFormat", Object.values(TimeFormatPreference), false),
   dateFormat: oneOf("dateFormat", Object.values(DateFormatPreference), false),
   // What is switched on, what is shown where, and what counts as in range.

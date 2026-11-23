@@ -8200,7 +8200,9 @@
     "displayCard": {
       "title": "Darstellung",
       "description": "Sprache, Einheiten und Formate, gespeichert, sobald du sie änderst.",
-      "themeDescription": "System folgt deinem Gerät zwischen hell und dunkel. Die Wahl gilt auf diesem Gerät."
+      "themeDescription": "System folgt deinem Gerät zwischen hell und dunkel. Die Wahl gilt auf diesem Gerät.",
+      "navCountsLabel": "Zahlen in der Navigation",
+      "navCountsDescription": "Zeigt in der Seitenleiste und im Menü „Mehr“ neben den Einträgen, wie viele Einnahmen und Vorsorgetermine fällig sind."
     },
     "integrationCard": {
       "state": {
