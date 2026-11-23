@@ -57,8 +57,8 @@ import type { ResolvedDose } from "@/lib/medications/dose-state/resolve";
 import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
+  activityShowsDose,
   activitySlotWindow,
-  sameActivitySlot,
   STARTABLE_MEDICATION_WHERE,
 } from "@/lib/push-relay/activity-slot";
 import { liveActivityRelayEnabled } from "@/lib/push-relay/config";
@@ -544,13 +544,18 @@ async function startItem(
     return null;
   }
   if (await refusedRecently(device.id, LA_START_EVENT, now)) return null;
-  const running = device.liveActivities.some(
-    (a) =>
-      a.medicationId === dose.medicationId &&
-      (a.slotInstant === null ||
-        sameActivitySlot(a.slotInstant, dose.scheduledFor)),
-  );
-  if (running) return null;
+  // One owner per dose: an Activity the device already runs for it, the
+  // app's own (`MedicationActivityAttributes`, with its Take button) above
+  // all, keeps the relay from starting a second one beside it. The reverse
+  // order, a relay start the app's own Activity follows, ends the relay one
+  // ({@link supersededRelayActivities}).
+  if (
+    device.liveActivities.some((a) =>
+      activityShowsDose(a, dose.medicationId, dose.scheduledFor),
+    )
+  ) {
+    return null;
+  }
   return {
     dose,
     item: {
@@ -586,6 +591,75 @@ export function relayActivityKind(activity: {
   relayStarted: boolean;
 }): RelayActivityKind {
   return activity.relayStarted ? "relay_started" : "app_started";
+}
+
+/**
+ * The relay-started Activities that show a dose an app-started Activity of
+ * the same device shows too, matched by {@link activityShowsDose}, the
+ * match the start and the end path make.
+ *
+ * One owner per dose. iOS builds up to 1.7 start their own Activity for a
+ * dose whatever the relay started, so a relay start that came first stands
+ * beside the app's own one, which alone has the Take button. The relay one
+ * ends and the app's stays. The dose stays held on the device
+ * (`laStartedMedicationId`, `laStartedSlot`), so no second relay start
+ * follows. From the next 1.7 build the app starts none of its own while a
+ * relay Activity runs for the dose, and the relay Activity gets a Take
+ * button of its own.
+ */
+export function supersededRelayActivities<
+  T extends {
+    medicationId: string;
+    slotInstant: Date | null;
+    relayStarted: boolean;
+  },
+>(activities: readonly T[]): T[] {
+  const appStarted = activities.filter(
+    (a) => relayActivityKind(a) === "app_started",
+  );
+  return activities.filter((relay): relay is T & { slotInstant: Date } => {
+    const slot = relay.slotInstant;
+    return (
+      relayActivityKind(relay) === "relay_started" &&
+      slot !== null &&
+      appStarted.some((app) => activityShowsDose(app, relay.medicationId, slot))
+    );
+  });
+}
+
+/**
+ * End the relay-started Activities of a device that an app-started one of the
+ * same dose made redundant ({@link supersededRelayActivities}), and forget
+ * their tokens once the relay took the end or reported the Activity gone.
+ * Run when the device registers its Activities, so the second one goes at
+ * once; the pass ends one whose end the relay did not take. Returns how many
+ * ended. Nothing is sent when none is redundant, so a repeat is a no-op.
+ */
+export async function endSupersededRelayActivities(
+  deviceId: string,
+): Promise<number> {
+  const device = await prisma.device.findUnique({
+    where: { id: deviceId },
+    select: {
+      ...ROUTABLE_DEVICE_SELECT,
+      relayBindingKey: true,
+      liveActivities: { select: DEVICE_SELECT.liveActivities.select },
+    },
+  });
+  if (!device) return 0;
+  const superseded = supersededRelayActivities(device.liveActivities);
+  if (superseded.length === 0) return 0;
+  const spent = await endActivitiesOverRelay(
+    device,
+    superseded,
+    await loadPushContext(),
+  );
+  if (spent.length > 0) {
+    await prisma.liveActivityToken.deleteMany({
+      where: { id: { in: spent } },
+    });
+  }
+  return spent.length;
 }
 
 /**
@@ -698,6 +772,9 @@ async function updateItems(
     : new Set<string>();
   // An update is final only once accepted: one still in flight is not sent
   // twice, and after a refusal the device's updates wait out the cool-down.
+  const superseded = new Set(
+    supersededRelayActivities(device.liveActivities).map((a) => a.id),
+  );
   const [inFlight, refused] = relayStarted
     ? await Promise.all([
         updatesInFlight(device.id),
@@ -714,7 +791,10 @@ async function updateItems(
     ) {
       continue;
     }
-    if (relayOwned(activity) && !startable.has(activity.medicationId)) {
+    if (
+      superseded.has(activity.id) ||
+      (relayOwned(activity) && !startable.has(activity.medicationId))
+    ) {
       ending.push(activity);
       continue;
     }

@@ -59,6 +59,7 @@ import {
 import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { endDeviceLiveActivities } from "@/lib/notifications/live-activity-end";
+import { endSupersededRelayActivities } from "@/lib/push-relay/live-activity";
 import {
   activityStatementSchema,
   applyPushFields,
@@ -623,5 +624,20 @@ export const POST = apiHandler(async (request: NextRequest) => {
     action: { name: "devices.register", entity_type: "device", entity_id: id },
   });
 
-  return apiSuccess({ id, push: await applyPushFields(id, parsed.data) }, 201);
+  const pushBlock = await applyPushFields(id, parsed.data);
+  if (parsed.data.liveActivityTokens !== undefined) {
+    // One owner per dose: a relay-started Activity the app's own one of the
+    // same dose now stands beside ends at once; the Live Activity pass
+    // retries an end the relay did not take.
+    try {
+      const ended = await endSupersededRelayActivities(id);
+      if (ended > 0) annotate({ meta: { live_activity_superseded: ended } });
+    } catch (err) {
+      getEvent()?.addWarning(
+        `live_activity_superseded_end_failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  return apiSuccess({ id, push: pushBlock }, 201);
 });

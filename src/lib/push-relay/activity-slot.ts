@@ -28,6 +28,25 @@ export function sameActivitySlot(named: Date, stored: Date): boolean {
 }
 
 /**
+ * Whether a registered Activity shows the dose of `medicationId` stored at
+ * `slot`: the same medication, and its named slot within the tolerance
+ * ({@link sameActivitySlot}, the match the end path makes in the database
+ * through {@link activitySlotWindow}). An Activity registered without a slot
+ * shows every dose of its medication.
+ */
+export function activityShowsDose(
+  activity: { medicationId: string; slotInstant: Date | null },
+  medicationId: string,
+  slot: Date,
+): boolean {
+  return (
+    activity.medicationId === medicationId &&
+    (activity.slotInstant === null ||
+      sameActivitySlot(activity.slotInstant, slot))
+  );
+}
+
+/**
  * The medications the server may start a Live Activity for, and keep one it
  * started running: tracked, active, neither paused nor ended, and with the
  * person's own Live Activity opt-in on the medication (`liveActivityEnabled`,
