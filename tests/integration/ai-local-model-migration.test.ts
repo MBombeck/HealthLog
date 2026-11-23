@@ -86,38 +86,45 @@ beforeAll(async () => {
   await prisma.$executeRawUnsafe(MIGRATION);
 });
 
-describe("migration 0512 — the Local provider's own model", () => {
-  it("copies the model the Local entry ran on, and only that", async () => {
-    expect(await localModels()).toEqual({
-      "m0512-local": "gemma3:27b",
-      "m0512-local-no-url": "qwen2.5",
-      // A Local base URL behind the gateway: the Local chain entry read the
-      // shared model.
-      "m0512-gateway": "llama3.1:8b",
-      "m0512-gateway-no-url": null,
-      // OpenAI and Anthropic own the shared model.
-      "m0512-openai": null,
-      "m0512-anthropic": null,
-      "m0512-blank": null,
+// One walk by design: the state the file left, then a Local model set since
+// and the file run again over it. The rerun case changes the row the first
+// case reads, so the block keeps its order under a shuffled run.
+describe(
+  "migration 0512 — the Local provider's own model",
+  { shuffle: false },
+  () => {
+    it("copies the model the Local entry ran on, and only that", async () => {
+      expect(await localModels()).toEqual({
+        "m0512-local": "gemma3:27b",
+        "m0512-local-no-url": "qwen2.5",
+        // A Local base URL behind the gateway: the Local chain entry read the
+        // shared model.
+        "m0512-gateway": "llama3.1:8b",
+        "m0512-gateway-no-url": null,
+        // OpenAI and Anthropic own the shared model.
+        "m0512-openai": null,
+        "m0512-anthropic": null,
+        "m0512-blank": null,
+      });
     });
-  });
 
-  it("leaves the shared model and Local's address where they were", async () => {
-    const row = await prisma.user.findUniqueOrThrow({
-      where: { id: "m0512-local" },
-      select: { aiModel: true, aiLocalBaseUrl: true },
+    it("leaves the shared model and Local's address where they were", async () => {
+      const row = await prisma.user.findUniqueOrThrow({
+        where: { id: "m0512-local" },
+        select: { aiModel: true, aiLocalBaseUrl: true },
+      });
+      expect(row).toEqual({ aiModel: "gemma3:27b", aiLocalBaseUrl: LAN });
     });
-    expect(row).toEqual({ aiModel: "gemma3:27b", aiLocalBaseUrl: LAN });
-  });
 
-  it("changes nothing on a rerun, a Local model set since included", async () => {
-    await prisma.user.update({
-      where: { id: "m0512-local" },
-      data: { aiLocalModel: "picked-later" },
+    it("changes nothing on a rerun, a Local model set since included", async () => {
+      await prisma.user.update({
+        where: { id: "m0512-local" },
+        data: { aiLocalModel: "picked-later" },
+      });
+      const before = await localModels();
+      await prisma.$executeRawUnsafe(MIGRATION);
+      expect(await localModels()).toEqual(before);
+      expect(before["m0512-local"]).toBe("picked-later");
     });
-    const before = await localModels();
-    await prisma.$executeRawUnsafe(MIGRATION);
-    expect(await localModels()).toEqual(before);
-    expect(before["m0512-local"]).toBe("picked-later");
-  });
-});
+  },
+);
