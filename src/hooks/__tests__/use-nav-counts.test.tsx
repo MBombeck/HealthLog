@@ -73,14 +73,14 @@ describe("useNavCounts and the switch", () => {
 
   it("shows the counts and asks for them by default", () => {
     useAuthMock.mockReturnValue({ user: { showNavCounts: true } });
-    expect(counts()).toEqual({ "/medications": 2, "/checkups": 1 });
+    expect(counts()).toEqual({ "/medications": 2, "/care": 1 });
     expect(queryOptions.at(-1)?.enabled).toBe(true);
     expect(apiGetMock).toHaveBeenCalledWith("/api/nav/counts");
   });
 
   it("keeps them on before the account resolves", () => {
     useAuthMock.mockReturnValue({ user: null });
-    expect(counts()).toEqual({ "/medications": 2, "/checkups": 1 });
+    expect(counts()).toEqual({ "/medications": 2, "/care": 1 });
   });
 
   it("shows nothing and never asks while the switch is off", () => {
