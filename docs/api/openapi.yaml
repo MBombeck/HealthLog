@@ -12196,6 +12196,43 @@ paths:
         "415": *a30
         "422": *a4
         "429": *a5
+  /api/auth/me/show-nav-counts:
+    patch:
+      tags:
+        - Auth
+      summary: Show or hide the navigation counts
+      description: >-
+        Whether the sidebar and the More sheet show their counts: the doses due on Medications and the check-ups due on
+        Checkups. On by default. While it is off a client shows no count and does not call `GET /api/nav/counts`. The
+        current value is `showNavCounts` on `/api/auth/me`.
+
+
+        Hard-set, idempotent, audit-logged. Rate-limited 60 / min per user. The caller's own setting: under a switched
+        session it is still the caller's.
+
+
+        The body is capped at 1 KB and must carry `Content-Type: application/json`. Anything larger is 413, a wrong
+        content type is 415, and a body that is not JSON at all is 400.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShowNavCountsPatchRequest"
+      responses:
+        "200":
+          description: The stored flag.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatchShowNavCountsEnvelope"
+        "400": *a28
+        "401": *a1
+        "403": *a9
+        "413": *a29
+        "415": *a30
+        "422": *a4
+        "429": *a5
   /api/auth/me/use-central-codex:
     get:
       tags:
@@ -35824,6 +35861,14 @@ components:
       required:
         - storeWorkoutRoutes
       description: Keep or stop keeping the GPS track of new workouts. Off by default.
+    ShowNavCountsPatchRequest:
+      type: object
+      properties:
+        showNavCounts:
+          type: boolean
+      required:
+        - showNavCounts
+      description: Show or hide the counts in the navigation (doses due, check-ups due). On by default.
     UseCentralCodexPatchRequest:
       type: object
       properties:
@@ -48916,6 +48961,8 @@ components:
                   type:
                     - string
                     - "null"
+                showNavCounts:
+                  type: boolean
                 timeFormat:
                   type: string
                 dateFormat:
@@ -71704,6 +71751,31 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    PatchShowNavCountsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ShowNavCountsResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ShowNavCountsResponse:
+      type: object
+      properties:
+        showNavCounts:
+          type: boolean
+      required:
+        - showNavCounts
       additionalProperties: false
     GetUseCentralCodexEnvelope:
       type: object
@@ -100064,6 +100136,11 @@ components:
             two agree on one registry, otherwise `NONE`, and stored, so a later change of language does not move it. Set
             it with `PATCH /api/auth/me/medicine-registry`. Clients show and edit it; the link itself comes ready-built
             on the medication list and detail as `leafletSearch`.'
+        showNavCounts:
+          type: boolean
+          description: "#1113 — whether the navigation shows its counts (doses due on Medications, check-ups due on Checkups).
+            `true` by default. When `false`, show no count and do not call `GET /api/nav/counts`. Set it with `PATCH
+            /api/auth/me/show-nav-counts`."
         features:
           type: object
           properties:
@@ -100160,6 +100237,7 @@ components:
         - timezone
         - glucoseUnit
         - medicineRegistry
+        - showNavCounts
         - features
         - push
         - accountAccess

@@ -8200,7 +8200,9 @@
     "displayCard": {
       "title": "표시",
       "description": "언어, 단위, 형식은 바꾸는 즉시 저장돼요.",
-      "themeDescription": "시스템은 기기 설정에 따라 밝은 테마와 어두운 테마를 오갑니다. 선택은 이 기기에 저장됩니다."
+      "themeDescription": "시스템은 기기 설정에 따라 밝은 테마와 어두운 테마를 오갑니다. 선택은 이 기기에 저장됩니다.",
+      "navCountsLabel": "내비게이션 숫자",
+      "navCountsDescription": "사이드바와 더 보기 메뉴의 항목 옆에 복용할 약과 받아야 할 검진이 몇 개인지 보여줘요."
     },
     "integrationCard": {
       "state": {

@@ -48,6 +48,7 @@ function buildUser(timeFormat: TimeFormatPreference): AuthUser {
     timeFormat,
     dateFormat: "AUTO",
     medicineRegistry: "NONE",
+    showNavCounts: true,
     disableCoach: false,
     fullName: null,
     insurerName: null,

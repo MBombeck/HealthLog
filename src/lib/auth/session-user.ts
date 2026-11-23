@@ -77,6 +77,7 @@ export const SESSION_USER_SELECT = {
   moodTagLayoutJson: true,
   glucoseUnit: true,
   medicineRegistry: true,
+  showNavCounts: true,
   hasDiabetes: true,
   labsLocalOcrEnabled: true,
   unitPreference: true,

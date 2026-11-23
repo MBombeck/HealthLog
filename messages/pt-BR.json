@@ -8200,7 +8200,9 @@
     "displayCard": {
       "title": "Exibição",
       "description": "Escolha como os dados são exibidos no HealthLog.",
-      "themeDescription": "Sistema acompanha o seu dispositivo entre claro e escuro. A escolha fica salva neste dispositivo."
+      "themeDescription": "Sistema acompanha o seu dispositivo entre claro e escuro. A escolha fica salva neste dispositivo.",
+      "navCountsLabel": "Contadores na navegação",
+      "navCountsDescription": "Mostra ao lado das entradas, na barra lateral e no menu Mais, quantas doses e consultas preventivas estão pendentes."
     },
     "integrationCard": {
       "state": {

@@ -469,6 +469,12 @@ model User {
   /// medication detail read, which builds the link. The server never fetches
   /// anything from a registry.
   medicineRegistry              String?              @map("medicine_registry")
+  /// #1113 — whether the navigation shows its counts (doses due on
+  /// Medications, check-ups due on Checkups) in the sidebar and the More
+  /// sheet. On by default. While it is off the client does not ask
+  /// `GET /api/nav/counts` at all. Written by
+  /// `PATCH /api/auth/me/show-nav-counts`; read through `/api/auth/me`.
+  showNavCounts                 Boolean              @default(true) @map("show_nav_counts")
   // v1.18.6 — explicit "I have diabetes / clinician glucose targets" opt-in.
   // When `true`, the glucose target resolver applies the tighter ADA glycemic
   // GOAL bands (fasting 80–130, postprandial < 180) instead of the general

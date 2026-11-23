@@ -8200,7 +8200,9 @@
     "displayCard": {
       "title": "Affichage",
       "description": "Langue, unités et formats, enregistrés dès que vous les modifiez.",
-      "themeDescription": "Système suit votre appareil entre clair et sombre. Le choix est gardé sur cet appareil."
+      "themeDescription": "Système suit votre appareil entre clair et sombre. Le choix est gardé sur cet appareil.",
+      "navCountsLabel": "Compteurs dans la navigation",
+      "navCountsDescription": "Affiche, à côté des entrées de la barre latérale et du menu Plus, le nombre de prises et de bilans à faire."
     },
     "integrationCard": {
       "state": {

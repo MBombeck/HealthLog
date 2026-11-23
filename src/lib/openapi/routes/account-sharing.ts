@@ -541,6 +541,11 @@ const accountPayload = z
       ),
     // #1430 — enumerated: the medication surfaces and the settings read it.
     medicineRegistry: medicineRegistryField,
+    showNavCounts: z
+      .boolean()
+      .describe(
+        "#1113 — whether the navigation shows its counts (doses due on Medications, check-ups due on Checkups). `true` by default. When `false`, show no count and do not call `GET /api/nav/counts`. Set it with `PATCH /api/auth/me/show-nav-counts`.",
+      ),
     features: accountFeaturesBlock,
     push: accountPushBlock,
     accountAccess: accountAccessBlock,

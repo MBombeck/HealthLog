@@ -8200,7 +8200,9 @@
     "displayCard": {
       "title": "Visualizzazione",
       "description": "Lingua, unità e formati, salvati appena li modifichi.",
-      "themeDescription": "Sistema segue il dispositivo tra chiaro e scuro. La scelta resta su questo dispositivo."
+      "themeDescription": "Sistema segue il dispositivo tra chiaro e scuro. La scelta resta su questo dispositivo.",
+      "navCountsLabel": "Conteggi nella navigazione",
+      "navCountsDescription": "Mostra accanto alle voci della barra laterale e del menu Altro quante dosi e quanti controlli sono in scadenza."
     },
     "integrationCard": {
       "state": {
