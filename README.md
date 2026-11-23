@@ -30,7 +30,18 @@ It is for people who track their health over years, often with a condition and s
 
 The [live demo](https://demo.healthlog.dev) is a working install with sample data. Sign in with `demo` / `demo123demo123`.
 
-<img width="1600" height="1000" alt="A short tour of the HealthLog web app in the light theme: the dashboard with today's medications, the health score ring and metric tiles with 7-day trends, then the timeline with lanes for life events, conditions, medications, vaccinations, visits, labs and cycles above blood pressure, weight and resting heart rate, then a medication page with its next dose and adherence" src="docs/assets/tour.webp" />
+<img width="1600" height="1000" alt="A short tour of the HealthLog web app: the dashboard with today's medications, the health score ring and metric tiles with 7-day trends, switching from the light to the dark theme, then the timeline with lanes for life events, conditions, medications, vaccinations, visits, labs and cycles above blood pressure, weight and resting heart rate, then a medication page with its next dose and adherence" src="docs/assets/tour.webp" />
+
+| At a glance |                                                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------------------- |
+| Hosting     | Your server: two containers, the app and Postgres 18, images for `amd64` and `arm64`                            |
+| At rest     | Notes, documents, questionnaire answers, AI texts and every stored credential in AES-256-GCM                    |
+| Network     | No telemetry and no HealthLog cloud; each of the three requests the server makes on its own can be switched off |
+| Sources     | 9 live connections (8 services plus Apple Health through the iOS app) and 6 file imports                        |
+| AI          | Off until configured; your own key, a ChatGPT subscription or a local model                                     |
+| Languages   | 10                                                                                                              |
+| License     | PolyForm Noncommercial 1.0.0                                                                                    |
+
 <p align="center">
   <img src="docs/assets/timeline.jpeg" alt="Timeline: life events, conditions, medications, vaccinations, labs and cycles on one time axis, above blood pressure, weight and resting heart rate" width="32%">
   <img src="docs/assets/day-panel.jpeg" alt="Blood pressure insights with the day panel open: what was running that day, its values and scores" width="32%">
