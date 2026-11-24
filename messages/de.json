@@ -9791,7 +9791,8 @@
         "encryption_keys": "Schlüssel",
         "secure_cookie": "Sichere Cookies",
         "app_url": "Öffentliche Adresse",
-        "database_dump": "Datenbank-Dump"
+        "database_dump": "Datenbank-Dump",
+        "local_ocr": "Texterkennung für Scans"
       },
       "reason": {
         "encryption_keys": {
@@ -9816,6 +9817,12 @@
           "disabled": "Es wird kein nächtlicher Datenbank-Dump erstellt. Sichere die Datenbank auf anderem Weg.",
           "not_persistent": "Das Dump-Verzeichnis liegt nicht auf einem eingebundenen Volume, Dumps gehen beim nächsten Update verloren.",
           "scheduled": "Nächtlicher Dump geplant ({cron})."
+        },
+        "local_ocr": {
+          "ready": "Gescannte PDFs und Fotos werden auf diesem Server gelesen, ohne KI ({languages}).",
+          "recent_failures": "Gescannte Dokumente, die dieser Server in den letzten 7 Tagen nicht lesen konnte: {count}. Jedes nennt auf seiner Seite den Grund. Meist ist der Rechner zu langsam oder hat zu wenig Speicher.",
+          "engine_missing": "Diesem Build fehlt die Texterkennung. Scans und Fotos bleiben ungelesen, außer ein KI-Anbieter liest sie.",
+          "languages_missing": "Die Texterkennung ist da, aber ohne Sprachdaten. Baue das Image mit bereitgestellten Sprachdaten (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -13185,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "Es wurde kein lesbarer Text gefunden. Das sieht nach einem Scan aus; ein KI-Vision-Anbieter kann ihn lesen.",
+          "local-empty": "Es wurde kein lesbarer Text gefunden, weder in der Datei noch durch die Texterkennung auf diesem Server. Ein KI-Vision-Anbieter kann ihn vielleicht trotzdem lesen.",
           "local-unsupported": "Dieser Dateityp kann für die Suche nicht gelesen werden.",
           "decrypt-error": "Die gespeicherte Datei konnte zum Lesen nicht geöffnet werden.",
           "raster-failed": "Die PDF-Seiten konnten zum Lesen nicht gerendert werden. Gescannte Fax-Kompressionsformate sind eine bekannte Ursache.",
           "provider-error": "Der KI-Anbieter konnte dieses Dokument beim letzten Versuch nicht lesen.",
           "pdf-needs-anthropic": "Der Prozessor dieses Servers kann keine PDF-Seiten darstellen, und dieses PDF hat keine Textebene. Lesen kann es ein KI-Anbieter, der PDF-Dateien direkt annimmt, oder du lädst Fotos der Seiten hoch.",
           "empty-transcription": "Der KI-Anbieter hat für dieses Dokument keinen Text geliefert.",
-          "resource-limit": "Dieses PDF ist zu groß oder zu komplex, um es hier zu lesen. Die Datei selbst ist in Ordnung und lässt sich weiterhin öffnen."
+          "resource-limit": "Dieses PDF ist zu groß oder zu komplex, um es hier zu lesen. Die Datei selbst ist in Ordnung und lässt sich weiterhin öffnen.",
+          "ocr-failed": "Die Texterkennung auf diesem Server konnte dieses Dokument nicht fertig lesen. Sie brauchte zu lange oder zu viel Speicher, oder sie schlug fehl. Die Datei selbst ist in Ordnung."
         }
       },
       "loadError": "Dieses Dokument konnte nicht geladen werden.",
@@ -13344,6 +13352,9 @@
       "extractHint": "Nutzt den bereits ausgelesenen Text dieses Dokuments. Ausgelesene Werte warten auf deine Prüfung; nichts wird automatisch gespeichert.",
       "extractEmpty": "Aus diesem Dokument konnten keine Werte ausgelesen werden.",
       "extractIncomplete": "Ein Teil des Dokuments konnte nicht vollständig gelesen werden, deshalb können Werte fehlen. Vergleiche die Liste mit dem Dokument.",
+      "readLocally": "Werte ohne KI auslesen",
+      "readLocallyPending": "Liest…",
+      "readLocallyHint": "Liest die Tabellenzeilen aus dem Text, den dieser Server schon gelesen hat, ohne KI und ohne dass etwas den Server verlässt. Prüfe jeden Wert, bevor du ihn speicherst.",
       "failUnitRequired": "Ein Zahlenwert braucht eine Einheit, bevor er gespeichert werden kann.",
       "failUnitMismatch": "Die angegebene Einheit passt nicht zur gespeicherten Einheit dieses Markers. Passe sie an und schließe die Prüfung erneut ab.",
       "failGeneric": "Dieser Wert konnte nicht gespeichert werden.",

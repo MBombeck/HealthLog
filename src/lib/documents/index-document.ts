@@ -24,9 +24,11 @@
  *      configured, the toggle is OFF for an external pick, the provider can't
  *      read this file (e.g. a text-layer PDF on a non-Anthropic account), the
  *      daily budget is reached, or the provider call fails — fall back to
- *      server-side text-layer extraction (pdfjs, no egress, milliseconds).
- *      So content search works at a baseline even with no AI, and every
- *      text-layer PDF is searchable regardless of provider.
+ *      server-side text-layer extraction (pdfjs, no egress, milliseconds),
+ *      and for a scan or a photo to OCR on this server (`server-ocr.ts`, no
+ *      egress, seconds a page). So content search works at a baseline even
+ *      with no AI, and every text-layer PDF is searchable regardless of
+ *      provider.
  *
  * Both paths write the SAME blind, encrypted index via `upsertContentIndex`
  * (AES-256-GCM text + opaque HMAC token tags) — nothing readable at rest. The
@@ -58,6 +60,7 @@ import {
 import { transcribeDocument } from "@/lib/documents/describe";
 import { documentAutoReadEnabled } from "@/lib/documents/document-settings";
 import { localExtractText } from "@/lib/documents/local-extract";
+import type { ServerOcrOptions } from "@/lib/documents/server-ocr";
 import { PdfReaderUnavailableError } from "@/lib/documents/pdfjs";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { decryptDocumentContent } from "@/lib/documents/store";
@@ -84,7 +87,8 @@ export type IndexFailureReason =
   | "raster-failed"
   | "provider-error"
   | "pdf-needs-anthropic"
-  | "empty-transcription";
+  | "empty-transcription"
+  | "ocr-failed";
 
 /**
  * Outcome of one document's index attempt. A provider that is not usable (none
@@ -324,10 +328,33 @@ async function tryProviderIndex(
   }
 }
 
-/** Try the LOCAL (provider-free) text-layer path for one loaded document. */
+/**
+ * How a background job can end the local read early: its abort signal, and
+ * the document going away while a long scan is read page by page.
+ */
+export interface LocalReadOptions {
+  signal?: AbortSignal;
+}
+
+/** Whether the document is still there to index, asked between OCR pages. */
+function documentStillWanted(
+  userId: string,
+  documentId: string,
+): () => Promise<boolean> {
+  return async () =>
+    (await prisma.inboundDocument.count({
+      where: { id: documentId, userId, deletedAt: null },
+    })) > 0;
+}
+
+/**
+ * Try the LOCAL (provider-free) path for one loaded document: the text
+ * layer, and OCR on this server for a scan or a photo.
+ */
 async function tryLocalIndex(
   userId: string,
   document: LoadedDocument,
+  options: LocalReadOptions = {},
 ): Promise<IndexOutcome> {
   let buffer: Buffer;
   try {
@@ -342,7 +369,11 @@ async function tryLocalIndex(
   // Re-derive the MIME from the bytes (never trust the stored label), matching
   // the provider path's posture; fall back to the stored MIME if unrecognised.
   const mime = detectOcrMimeType(buffer) ?? document.mimeType;
-  const result = await localExtractText(buffer, mime);
+  const ocrOptions: ServerOcrOptions = {
+    signal: options.signal,
+    stillWanted: documentStillWanted(userId, document.id),
+  };
+  const result = await localExtractText(buffer, mime, ocrOptions);
   if (result.ok) {
     const { tokenCount } = await upsertContentIndex({
       userId,
@@ -365,6 +396,13 @@ async function tryLocalIndex(
   if (result.reason === "error") {
     return { indexed: false, reason: "decrypt-error" };
   }
+  if (result.reason === "ocr-failed") {
+    return { indexed: false, reason: "ocr-failed" };
+  }
+  // The document went away while it was read; there is no row to explain.
+  if (result.reason === "cancelled") {
+    return { indexed: false, reason: "not-found" };
+  }
   return { indexed: false, reason: "local-empty" };
 }
 
@@ -382,13 +420,14 @@ export async function indexLoadedDocument(
   userId: string,
   document: LoadedDocument,
   provider: ResolvedIndexProvider,
+  options: LocalReadOptions = {},
 ): Promise<IndexOutcome> {
   const providerResult = await tryProviderIndex(userId, document, provider);
   let outcome: IndexOutcome;
   if (providerResult.outcome) {
     outcome = providerResult.outcome;
   } else {
-    const local = await tryLocalIndex(userId, document);
+    const local = await tryLocalIndex(userId, document, options);
     if (
       !local.indexed &&
       providerResult.note &&
@@ -413,7 +452,7 @@ export async function indexLoadedDocument(
 export async function indexDocumentContent(
   userId: string,
   documentId: string,
-  options: { localOnly?: boolean } = {},
+  options: { localOnly?: boolean } & LocalReadOptions = {},
 ): Promise<IndexOutcome> {
   const document = await loadOwnedDocument(userId, documentId);
   if (!document) return { indexed: false, reason: "not-found" };
@@ -433,5 +472,7 @@ export async function indexDocumentContent(
           costOwner: "operator",
         }
       : await resolveIndexProvider(userId);
-  return indexLoadedDocument(userId, document, provider);
+  return indexLoadedDocument(userId, document, provider, {
+    signal: options.signal,
+  });
 }

@@ -36,6 +36,7 @@ import {
 } from "@/lib/query-keys";
 import type {
   ExtractedFactDto,
+  InboundDocumentDetailDto,
   InboundFactEdit,
 } from "@/lib/validations/inbound-documents";
 
@@ -88,6 +89,29 @@ export function useStoredExtract() {
     },
   });
   return { ...mutation, runPhase: mutation.isPending ? phase : "idle" };
+}
+
+/**
+ * Read the document's lab values from its stored text by rule, with no
+ * model (`POST …/lab-values`). The same staged facts, the same review; open
+ * with AI off and with no provider. Answers the document with the facts it
+ * staged.
+ */
+export function useLocalLabValues() {
+  const queryClient = useQueryClient();
+  return useMutation<InboundDocumentDetailDto, Error, { documentId: string }>({
+    mutationFn: ({ documentId }) =>
+      apiPost<InboundDocumentDetailDto>(
+        `/api/documents/inbound/${documentId}/lab-values`,
+        {},
+      ),
+    onSuccess: (_data, { documentId }) => {
+      void invalidateKeys(queryClient, [
+        queryKeys.inboundDocument(documentId),
+        queryKeys.documents(),
+      ]);
+    },
+  });
 }
 
 /**

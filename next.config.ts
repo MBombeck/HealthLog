@@ -355,6 +355,10 @@ const nextConfig: NextConfig = {
       "./src/lib/documents/pdf-child.mjs",
       "./src/lib/documents/pdf-engine.mjs",
       "./src/lib/documents/image-engine.mjs",
+      // The child's OCR engine for scanned pages. tesseract.js itself is
+      // not traced: the Dockerfile copies the tree
+      // `scripts/stage-ocr-runtime.mjs` stages.
+      "./src/lib/documents/ocr-engine.mjs",
       // The doctor-report PDF embeds its fonts, read from disk by a path the
       // tracer cannot follow (`src/lib/doctor-report-pdf/fonts.ts`).
       "./src/lib/doctor-report-pdf/fonts/**",

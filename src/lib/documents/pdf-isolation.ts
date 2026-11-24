@@ -1,6 +1,7 @@
 /**
- * Runs pdf.js, and the image decoder behind the vault's thumbnails, in a child
- * process with a memory ceiling and a time limit.
+ * Runs pdf.js, the image decoder behind the vault's thumbnails, and the OCR
+ * engine that reads scanned pages, in a child process with a memory ceiling
+ * and a time limit.
  *
  * A PDF's cost is set by whoever wrote it. A 400 KB file can declare an image
  * of twenty thousand pixels square, and pdf.js allocated about 7 GB decoding
@@ -49,6 +50,7 @@ import type {
   ImageThumbnailOptions,
   ImageThumbnailOutcome,
 } from "./image-engine.mjs";
+import type { OcrOptions, OcrPageText } from "./ocr-engine.mjs";
 import { nativeCanvasSupported } from "./native-canvas-support";
 import type { RenderOptions, RenderedDocument } from "./pdf-engine.mjs";
 import { createReaderQueue, type ReaderLane } from "./reader-queue";
@@ -81,7 +83,8 @@ export type PdfChildRequest =
   | { op: "text"; data: Uint8Array; maxPages: number }
   | { op: "page-texts"; data: Uint8Array; maxPages: number }
   | { op: "render"; data: Uint8Array; options: RenderOptions }
-  | { op: "image-thumbnail"; data: Uint8Array; options: ImageThumbnailOptions };
+  | { op: "image-thumbnail"; data: Uint8Array; options: ImageThumbnailOptions }
+  | { op: "ocr"; data: Uint8Array; options: OcrOptions };
 
 type PdfChildValue<R extends PdfChildRequest> = R extends { op: "text" }
   ? string
@@ -89,7 +92,9 @@ type PdfChildValue<R extends PdfChildRequest> = R extends { op: "text" }
     ? PdfPageTexts
     : R extends { op: "render" }
       ? RenderedDocument
-      : ImageThumbnailOutcome;
+      : R extends { op: "ocr" }
+        ? OcrPageText
+        : ImageThumbnailOutcome;
 
 /** A document's text layer page by page: the first pages read, and how many it has. */
 export interface PdfPageTexts {
@@ -121,6 +126,12 @@ export interface PdfChildLimits {
   timeoutMs: number;
   /** Overrides `PDF_CHILD_MEMORY_MB`; the suites use a small one. */
   memoryMb?: number;
+  /**
+   * Ends the work when it fires: a waiting item leaves the queue, a running
+   * child is killed, and the call rejects with `PdfWorkCancelledError`. Only
+   * a caller that passes a signal can see that error.
+   */
+  signal?: AbortSignal;
   /** Replaces the child start; the suites use it to stand in for a child. */
   run?: (
     script: string,
@@ -189,6 +200,14 @@ export function currentPdfWork(): PdfWork {
   return workContext.getStore() ?? UNATTRIBUTED;
 }
 
+/** The caller's signal fired: the work was ended on purpose, not by the document. */
+export class PdfWorkCancelledError extends Error {
+  override name = "PdfWorkCancelledError";
+  constructor() {
+    super("the document work was cancelled");
+  }
+}
+
 /** How many times a child that vanished without a measured cause is run. */
 const MAX_ATTEMPTS = 2;
 
@@ -224,6 +243,7 @@ interface ChildReply {
   pageTexts?: PdfPageTexts;
   document?: RenderedDocument;
   thumbnail?: ImageThumbnailOutcome;
+  ocr?: OcrPageText;
   error?: { name: string; message: string };
 }
 
@@ -255,6 +275,7 @@ function decodeValue<R extends PdfChildRequest>(
       reply.document as RenderedDocument,
     ) as PdfChildValue<R>;
   }
+  if (request.op === "ocr") return reply.ocr as PdfChildValue<R>;
   const thumbnail = reply.thumbnail as ImageThumbnailOutcome;
   return (
     thumbnail.ok
@@ -271,10 +292,12 @@ function decodeValue<R extends PdfChildRequest>(
 }
 
 /**
- * Read or render one PDF, or decode one image, in a child process. Never
- * throws: a document that crosses a bound answers `limit`, one the reader
- * refuses answers `error`, a reader that is taken answers `busy`, and a
- * child that twice ended for no reason it could see answers `interrupted`.
+ * Read or render one PDF, decode one image, or read one page by OCR, in a
+ * child process. Never throws for the document: one that crosses a bound
+ * answers `limit`, one the reader refuses answers `error`, a reader that is
+ * taken answers `busy`, and a child that twice ended for no reason it could
+ * see answers `interrupted`. The one throw is `PdfWorkCancelledError`, when
+ * the caller's own `signal` fired.
  */
 export async function runPdfChild<R extends PdfChildRequest>(
   request: R,
@@ -290,11 +313,18 @@ export async function runPdfChild<R extends PdfChildRequest>(
     };
   }
 
+  const { signal } = limits;
+  if (signal?.aborted) throw new PdfWorkCancelledError();
   const work = currentPdfWork();
   const queuedAt = Date.now();
   const ticket = await queue.acquire(work.owner, work.lane);
   if (!ticket.ok) {
     return { ok: false, reason: "busy", retryAfterMs: ticket.retryAfterMs };
+  }
+  // The turn may have come after the caller gave up.
+  if (signal?.aborted) {
+    ticket.release();
+    throw new PdfWorkCancelledError();
   }
   const grantedAt = Date.now();
   // The most this read may take: every attempt to its time limit.
@@ -305,6 +335,7 @@ export async function runPdfChild<R extends PdfChildRequest>(
       const result = limits.run
         ? ((await limits.run(script, request, limits)) as PdfChildResult<R>)
         : await runOnce(script, request, limits);
+      if (signal?.aborted) throw new PdfWorkCancelledError();
       if (result.ok || result.reason !== "interrupted") return result;
       if (attempt >= MAX_ATTEMPTS) return result;
     }
@@ -371,6 +402,7 @@ export function runOnce<R extends PdfChildRequest>(
       settled = true;
       clearTimeout(timer);
       clearInterval(sampler);
+      limits.signal?.removeEventListener("abort", onAbort);
       if (child.exitCode === null && child.signalCode === null) {
         child.kill("SIGKILL");
       }
@@ -384,6 +416,16 @@ export function runOnce<R extends PdfChildRequest>(
     };
 
     const timer = setTimeout(() => kill("time"), limits.timeoutMs);
+    // The caller ended the work. The answer is decided by `runPdfChild`,
+    // which sees the signal; this only stops the child.
+    let cancelled = false;
+    const onAbort = () => {
+      cancelled = true;
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill("SIGKILL");
+      }
+    };
+    limits.signal?.addEventListener("abort", onAbort, { once: true });
     let sampling = false;
     const sampler = setInterval(() => {
       if (sampling || child.pid === undefined) return;
@@ -421,6 +463,11 @@ export function runOnce<R extends PdfChildRequest>(
     child.on("close", (code, signal) => {
       if (killedFor) {
         finish({ ok: false, reason: "limit", limit: killedFor });
+        return;
+      }
+      // Ended on the caller's word, which says nothing about the document.
+      if (cancelled) {
+        finish({ ok: false, reason: "interrupted" });
         return;
       }
       // Gone without an answer. V8 reaching the heap cap this module gave

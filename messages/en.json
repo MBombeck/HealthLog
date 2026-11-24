@@ -9791,7 +9791,8 @@
         "encryption_keys": "Encryption keys",
         "secure_cookie": "Secure cookies",
         "app_url": "Public address",
-        "database_dump": "Database dump"
+        "database_dump": "Database dump",
+        "local_ocr": "Text recognition for scans"
       },
       "reason": {
         "encryption_keys": {
@@ -9816,6 +9817,12 @@
           "disabled": "No nightly database dump is taken. Back the database up another way.",
           "not_persistent": "The dump directory is not on a mounted volume, so dumps are lost at the next update.",
           "scheduled": "Nightly dump scheduled ({cron})."
+        },
+        "local_ocr": {
+          "ready": "Scanned PDFs and photos are read on this server, without AI ({languages}).",
+          "recent_failures": "Scanned documents this server could not read in the last 7 days: {count}. Each one says why on its page. A slow machine or one short of memory is the usual cause.",
+          "engine_missing": "This build has no text recognition engine. Scans and photos stay unread unless an AI provider reads them.",
+          "languages_missing": "The text recognition engine is there, but no language data. Build the image with the language data staged (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -13185,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "No readable text was found. This looks like a scan; an AI vision provider can read it.",
+          "local-empty": "No readable text was found, neither in the file nor by the text recognition on this server. An AI vision provider may still read it.",
           "local-unsupported": "This file type can't be read for search.",
           "decrypt-error": "The stored file couldn't be opened for reading.",
           "raster-failed": "The PDF pages couldn't be rendered for reading. Scanned fax compression formats are a known cause.",
           "provider-error": "The AI provider couldn't read this document on the last try.",
           "pdf-needs-anthropic": "This server's processor can't run the PDF page renderer, and this PDF has no text layer. An AI provider that takes PDF files directly can read it, or photos of the pages.",
           "empty-transcription": "The AI provider returned no text for this document.",
-          "resource-limit": "This PDF is too large or complex to read here. The file itself is fine and still opens."
+          "resource-limit": "This PDF is too large or complex to read here. The file itself is fine and still opens.",
+          "ocr-failed": "The text recognition on this server could not finish this document. It took too long or needed too much memory, or it failed. The file itself is fine."
         }
       },
       "loadError": "Couldn't load this document.",
@@ -13344,6 +13352,9 @@
       "extractHint": "Uses the text already read from this document. Extracted values wait for your review; nothing is saved automatically.",
       "extractEmpty": "No values could be extracted from this document.",
       "extractIncomplete": "Part of the document could not be read in full, so some values may be missing. Check the list against the document.",
+      "readLocally": "Read values without AI",
+      "readLocallyPending": "Reading…",
+      "readLocallyHint": "Reads the table rows from the text this server already read, with no AI and nothing sent anywhere. Check each value before you save it.",
       "failUnitRequired": "A numeric value needs a unit before it can be saved.",
       "failUnitMismatch": "The stated unit does not match the saved unit for this marker. Adjust it, then finish the review again.",
       "failGeneric": "This value could not be saved.",

@@ -87,6 +87,11 @@ RUN node -p "require('/app/node_modules/@napi-rs/canvas/package.json').version" 
 # stage can check the catalogs the image actually carries.
 RUN node scripts/verify-message-catalogs.mjs --dir messages \
       --config src/lib/i18n/config.ts --write /app/.message-locales
+# The OCR engine scanned documents are read with on the server, as a flat tree
+# of real files. It runs in the document reader's child process and starts its
+# WebAssembly core in a worker thread, so the standalone tracer sees none of
+# it; the runner copies this tree over the standalone `node_modules`.
+RUN node scripts/stage-ocr-runtime.mjs /app/.ocr-runtime
 
 # ── Stage 3: Migration CLI ─────────────────────────────────
 # Install the migration CLI, its config dependency, and a pinned launcher for
@@ -400,6 +405,13 @@ RUN set -e; \
     RESOLVED="$(node -p "require('/app/node_modules/pdfjs-dist/package.json').version")"; \
     [ "$RESOLVED" = "$PDFJS_VERSION" ] || { echo "ERROR: hoisted pdfjs-dist is $RESOLVED, expected $PDFJS_VERSION"; exit 1; }; \
     echo "pdfjs-dist hoisted: $PDFJS_DIR (resolves as $RESOLVED)"
+
+# The OCR engine for scanned documents (`scripts/stage-ocr-runtime.mjs`), and
+# a start of it against the language data `public/tesseract/lang` carries:
+# the core file it picks and both languages have to load here, or the build
+# fails instead of every scan quietly staying unread.
+COPY --from=builder --chown=nextjs:nodejs /app/.ocr-runtime/ ./node_modules/
+RUN node --input-type=module -e "const { default: t } = await import('/app/node_modules/tesseract.js/src/index.js'); const w = await t.createWorker(['deu', 'eng'], 1, { langPath: '/app/public/tesseract/lang', cacheMethod: 'none', gzip: true }); await w.terminate(); console.log('ocr engine loads with deu+eng');"
 
 # Copy Prisma for migrations (schema, migration SQL, config, engines)
 COPY --from=builder /app/prisma ./prisma

@@ -9791,7 +9791,8 @@
         "encryption_keys": "Chaves de criptografia",
         "secure_cookie": "Cookies seguros",
         "app_url": "Endereço público",
-        "database_dump": "Dump do banco de dados"
+        "database_dump": "Dump do banco de dados",
+        "local_ocr": "Reconhecimento de texto de digitalizações"
       },
       "reason": {
         "encryption_keys": {
@@ -9816,6 +9817,12 @@
           "disabled": "Nenhum dump noturno do banco de dados é feito. Faça o backup do banco de outra forma.",
           "not_persistent": "A pasta de dumps não está em um volume montado, então os dumps se perdem na próxima atualização.",
           "scheduled": "Dump noturno agendado ({cron})."
+        },
+        "local_ocr": {
+          "ready": "PDFs digitalizados e fotos são lidos neste servidor, sem IA ({languages}).",
+          "recent_failures": "Documentos digitalizados que este servidor não conseguiu ler nos últimos 7 dias: {count}. Cada um mostra o motivo na própria página. O mais comum é uma máquina lenta ou com pouca memória.",
+          "engine_missing": "Esta versão não tem mecanismo de reconhecimento de texto. Digitalizações e fotos ficam sem leitura, a menos que um provedor de IA as leia.",
+          "languages_missing": "O mecanismo de reconhecimento está presente, mas sem dados de idioma. Gere a imagem com os dados de idioma preparados (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -13185,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "Nenhum texto legível foi encontrado. Parece uma digitalização; um provedor de visão por IA pode lê-lo.",
+          "local-empty": "Nenhum texto legível foi encontrado, nem no arquivo nem pelo reconhecimento de texto deste servidor. Um provedor de visão por IA talvez consiga lê-lo.",
           "local-unsupported": "Este tipo de arquivo não pode ser lido para busca.",
           "decrypt-error": "O arquivo armazenado não pôde ser aberto para leitura.",
           "raster-failed": "As páginas do PDF não puderam ser renderizadas para leitura. Formatos de compressão de fax digitalizado são uma causa conhecida.",
           "provider-error": "O provedor de IA não conseguiu ler este documento na última tentativa.",
           "pdf-needs-anthropic": "O processador deste servidor não consegue renderizar páginas de PDF e este PDF não tem camada de texto. Um provedor de IA que aceite arquivos PDF diretamente consegue ler, ou envie fotos das páginas.",
           "empty-transcription": "O provedor de IA não retornou texto para este documento.",
-          "resource-limit": "Este PDF é grande ou complexo demais para ser lido aqui. O arquivo em si está bem e continua abrindo."
+          "resource-limit": "Este PDF é grande ou complexo demais para ser lido aqui. O arquivo em si está bem e continua abrindo.",
+          "ocr-failed": "O reconhecimento de texto deste servidor não conseguiu terminar este documento. Demorou demais, precisou de memória demais ou falhou. O arquivo em si está bem."
         }
       },
       "loadError": "Não foi possível carregar este documento.",
@@ -13344,6 +13352,9 @@
       "extractHint": "Usa o texto já lido deste documento. Valores extraídos aguardam sua revisão; nada é salvo automaticamente.",
       "extractEmpty": "Nenhum valor pôde ser extraído deste documento.",
       "extractIncomplete": "Parte do documento não pôde ser lida por completo, então podem faltar valores. Confira a lista com o documento.",
+      "readLocally": "Ler os valores sem IA",
+      "readLocallyPending": "Lendo…",
+      "readLocallyHint": "Lê as linhas da tabela no texto que este servidor já leu, sem IA e sem enviar nada para fora. Confira cada valor antes de salvar.",
       "failUnitRequired": "Um valor numérico precisa de uma unidade antes de poder ser salvo.",
       "failUnitMismatch": "A unidade informada não corresponde à unidade salva para este marcador. Ajuste-a e conclua a revisão novamente.",
       "failGeneric": "Este valor não pôde ser salvo.",

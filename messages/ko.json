@@ -9791,7 +9791,8 @@
         "encryption_keys": "암호화 키",
         "secure_cookie": "보안 쿠키",
         "app_url": "공개 주소",
-        "database_dump": "데이터베이스 덤프"
+        "database_dump": "데이터베이스 덤프",
+        "local_ocr": "스캔 문자 인식"
       },
       "reason": {
         "encryption_keys": {
@@ -9816,6 +9817,12 @@
           "disabled": "야간 데이터베이스 덤프가 만들어지지 않습니다. 다른 방법으로 데이터베이스를 백업하세요.",
           "not_persistent": "덤프 폴더가 마운트된 볼륨에 있지 않아 다음 업데이트 때 덤프가 사라집니다.",
           "scheduled": "야간 덤프 예약됨({cron})."
+        },
+        "local_ocr": {
+          "ready": "스캔한 PDF와 사진을 AI 없이 이 서버에서 읽어요({languages}).",
+          "recent_failures": "지난 7일 동안 이 서버가 읽지 못한 스캔 문서: {count}개. 각 문서 페이지에 이유가 나와 있어요. 대개 기기가 느리거나 메모리가 부족해서예요.",
+          "engine_missing": "이 빌드에는 문자 인식 엔진이 없어요. AI 제공자가 읽지 않으면 스캔과 사진은 읽히지 않아요.",
+          "languages_missing": "문자 인식 엔진은 있지만 언어 데이터가 없어요. 언어 데이터를 준비해서 이미지를 빌드하세요(scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -13185,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "읽을 수 있는 텍스트가 없어요. 스캔 문서로 보이는데, AI 비전 제공자로는 읽을 수 있어요.",
+          "local-empty": "파일에서도, 이 서버의 문자 인식으로도 읽을 수 있는 텍스트를 찾지 못했어요. AI 비전 제공자라면 읽을 수도 있어요.",
           "local-unsupported": "이 파일 형식은 검색용으로 읽을 수 없어요.",
           "decrypt-error": "저장된 파일을 열어 읽지 못했어요.",
           "raster-failed": "PDF 페이지를 읽기용으로 렌더링하지 못했어요. 스캔 팩스 압축 형식이 흔한 원인이에요.",
           "provider-error": "지난번에 AI 제공자가 이 문서를 읽지 못했어요.",
           "pdf-needs-anthropic": "이 서버의 프로세서로는 PDF 페이지를 렌더링할 수 없고, 이 PDF에는 텍스트 레이어가 없어요. PDF 파일을 직접 받는 AI 제공자는 읽을 수 있고, 페이지 사진을 올려도 돼요.",
           "empty-transcription": "AI 제공자가 이 문서에서 텍스트를 찾지 못했어요.",
-          "resource-limit": "이 PDF는 너무 크거나 복잡해서 여기서 읽을 수 없습니다. 파일 자체는 정상이며 계속 열 수 있습니다."
+          "resource-limit": "이 PDF는 너무 크거나 복잡해서 여기서 읽을 수 없습니다. 파일 자체는 정상이며 계속 열 수 있습니다.",
+          "ocr-failed": "이 서버의 문자 인식이 이 문서를 끝까지 읽지 못했어요. 시간이 너무 오래 걸렸거나 메모리가 부족했거나 오류가 났어요. 파일 자체는 괜찮아요."
         }
       },
       "loadError": "이 문서를 불러오지 못했어요.",
@@ -13344,6 +13352,9 @@
       "extractHint": "이 문서에서 이미 읽은 텍스트를 사용해요. 추출한 값은 검토를 기다리며, 자동으로 저장되지 않아요.",
       "extractEmpty": "이 문서에서 추출할 수 있는 값이 없었어요.",
       "extractIncomplete": "문서 일부를 끝까지 읽지 못해서 빠진 값이 있을 수 있어요. 목록을 문서와 비교해 주세요.",
+      "readLocally": "AI 없이 수치 읽기",
+      "readLocallyPending": "읽는 중…",
+      "readLocallyHint": "이 서버가 이미 읽은 텍스트에서 표의 행을 읽어요. AI를 쓰지 않고 아무것도 밖으로 보내지 않아요. 저장하기 전에 값을 하나씩 확인하세요.",
       "failUnitRequired": "숫자 값을 저장하려면 단위가 필요해요.",
       "failUnitMismatch": "기재된 단위가 이 지표에 저장된 단위와 달라요. 수정한 뒤 검토를 다시 완료해 주세요.",
       "failGeneric": "이 값을 저장하지 못했어요.",

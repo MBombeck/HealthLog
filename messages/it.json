@@ -9791,7 +9791,8 @@
         "encryption_keys": "Chiavi di cifratura",
         "secure_cookie": "Cookie sicuri",
         "app_url": "Indirizzo pubblico",
-        "database_dump": "Dump del database"
+        "database_dump": "Dump del database",
+        "local_ocr": "Riconoscimento del testo delle scansioni"
       },
       "reason": {
         "encryption_keys": {
@@ -9816,6 +9817,12 @@
           "disabled": "Non viene fatto nessun dump notturno del database. Esegui il backup in un altro modo.",
           "not_persistent": "La cartella dei dump non è su un volume montato, quindi i dump vanno persi al prossimo aggiornamento.",
           "scheduled": "Dump notturno pianificato ({cron})."
+        },
+        "local_ocr": {
+          "ready": "I PDF scansionati e le foto vengono letti su questo server, senza IA ({languages}).",
+          "recent_failures": "Documenti scansionati che questo server non è riuscito a leggere negli ultimi 7 giorni: {count}. Ognuno indica il motivo nella sua pagina. Di solito la macchina è lenta o ha poca memoria.",
+          "engine_missing": "Questa build non ha un motore di riconoscimento del testo. Scansioni e foto restano non lette, a meno che non le legga un provider IA.",
+          "languages_missing": "Il motore di riconoscimento c’è, ma senza dati linguistici. Crea l’immagine con i dati linguistici preparati (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -13185,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "Non è stato trovato testo leggibile. Sembra una scansione; un provider di visione IA può leggerla.",
+          "local-empty": "Non è stato trovato testo leggibile, né nel file né con il riconoscimento del testo di questo server. Un provider di visione IA potrebbe comunque leggerlo.",
           "local-unsupported": "Questo tipo di file non può essere letto per la ricerca.",
           "decrypt-error": "Il file archiviato non può essere aperto per la lettura.",
           "raster-failed": "Le pagine del PDF non possono essere elaborate per la lettura. I formati di compressione fax digitalizzati sono una causa nota.",
           "provider-error": "Il provider IA non è riuscito a leggere questo documento all’ultimo tentativo.",
           "pdf-needs-anthropic": "Il processore di questo server non può eseguire il rendering delle pagine PDF e questo PDF non ha un livello di testo. Può leggerlo un provider IA che accetta direttamente i file PDF, oppure carica le foto delle pagine.",
           "empty-transcription": "Il provider IA non ha restituito testo per questo documento.",
-          "resource-limit": "Questo PDF è troppo grande o complesso per essere letto qui. Il file in sé è a posto e si apre ancora."
+          "resource-limit": "Questo PDF è troppo grande o complesso per essere letto qui. Il file in sé è a posto e si apre ancora.",
+          "ocr-failed": "Il riconoscimento del testo di questo server non è riuscito a finire questo documento. Ha richiesto troppo tempo o troppa memoria, oppure non è riuscito. Il file in sé è a posto."
         }
       },
       "loadError": "Impossibile caricare questo documento.",
@@ -13344,6 +13352,9 @@
       "extractHint": "Usa il testo già letto da questo documento. I valori estratti attendono la tua revisione; nulla viene salvato automaticamente.",
       "extractEmpty": "Non è stato possibile estrarre valori da questo documento.",
       "extractIncomplete": "Una parte del documento non è stata letta per intero, quindi possono mancare dei valori. Confronta l'elenco con il documento.",
+      "readLocally": "Leggi i valori senza IA",
+      "readLocallyPending": "Lettura…",
+      "readLocallyHint": "Legge le righe della tabella dal testo che questo server ha già letto, senza IA e senza inviare nulla altrove. Controlla ogni valore prima di salvarlo.",
       "failUnitRequired": "Un valore numerico ha bisogno di un’unità prima di poter essere salvato.",
       "failUnitMismatch": "L’unità indicata non corrisponde all’unità salvata per questo marcatore. Correggila e concludi di nuovo la revisione.",
       "failGeneric": "Questo valore non è stato salvato.",

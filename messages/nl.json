@@ -9791,7 +9791,8 @@
         "encryption_keys": "Versleutelingssleutels",
         "secure_cookie": "Veilige cookies",
         "app_url": "Openbaar adres",
-        "database_dump": "Databasedump"
+        "database_dump": "Databasedump",
+        "local_ocr": "Tekstherkenning voor scans"
       },
       "reason": {
         "encryption_keys": {
@@ -9816,6 +9817,12 @@
           "disabled": "Er wordt geen nachtelijke databasedump gemaakt. Maak op een andere manier een back-up van de database.",
           "not_persistent": "De dumpmap staat niet op een gekoppeld volume, dus dumps gaan bij de volgende update verloren.",
           "scheduled": "Nachtelijke dump gepland ({cron})."
+        },
+        "local_ocr": {
+          "ready": "Gescande pdf's en foto's worden op deze server gelezen, zonder AI ({languages}).",
+          "recent_failures": "Gescande documenten die deze server de afgelopen 7 dagen niet kon lezen: {count}. Elk document noemt de reden op zijn pagina. Meestal is de machine te traag of heeft ze te weinig geheugen.",
+          "engine_missing": "Deze build heeft geen tekstherkenning. Scans en foto's blijven ongelezen, tenzij een AI-provider ze leest.",
+          "languages_missing": "De tekstherkenning is er, maar zonder taalgegevens. Bouw de image met de taalgegevens klaargezet (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -13185,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "Er is geen leesbare tekst gevonden. Dit lijkt een scan; een AI-provider met beeldherkenning kan hem lezen.",
+          "local-empty": "Er is geen leesbare tekst gevonden, niet in het bestand en niet met de tekstherkenning op deze server. Een AI-provider met beeldherkenning kan hem misschien wel lezen.",
           "local-unsupported": "Dit bestandstype kan niet worden gelezen voor de zoekfunctie.",
           "decrypt-error": "Het opgeslagen bestand kon niet worden geopend om te lezen.",
           "raster-failed": "De PDF-pagina's konden niet worden weergegeven om te lezen. Compressieformaten van gescande faxen zijn een bekende oorzaak.",
           "provider-error": "De AI-provider kon dit document bij de laatste poging niet lezen.",
           "pdf-needs-anthropic": "De processor van deze server kan geen PDF-pagina's weergeven en deze PDF heeft geen tekstlaag. Een AI-provider die PDF-bestanden rechtstreeks aanneemt kan hem lezen, of upload foto's van de pagina's.",
           "empty-transcription": "De AI-provider gaf geen tekst terug voor dit document.",
-          "resource-limit": "Deze pdf is te groot of te complex om hier te lezen. Het bestand zelf is in orde en opent nog steeds."
+          "resource-limit": "Deze pdf is te groot of te complex om hier te lezen. Het bestand zelf is in orde en opent nog steeds.",
+          "ocr-failed": "De tekstherkenning op deze server kon dit document niet afmaken. Het duurde te lang, vroeg te veel geheugen of mislukte. Het bestand zelf is in orde."
         }
       },
       "loadError": "Dit document kon niet worden geladen.",
@@ -13344,6 +13352,9 @@
       "extractHint": "Gebruikt de tekst die al uit dit document is gelezen. Geëxtraheerde waarden wachten op jouw controle; er wordt niets automatisch opgeslagen.",
       "extractEmpty": "Er konden geen waarden uit dit document worden geëxtraheerd.",
       "extractIncomplete": "Een deel van het document kon niet volledig worden gelezen, dus er kunnen waarden ontbreken. Vergelijk de lijst met het document.",
+      "readLocally": "Waarden zonder AI uitlezen",
+      "readLocallyPending": "Bezig met lezen…",
+      "readLocallyHint": "Leest de tabelregels uit de tekst die deze server al heeft gelezen, zonder AI en zonder iets te versturen. Controleer elke waarde voordat je die opslaat.",
       "failUnitRequired": "Een numerieke waarde heeft een eenheid nodig voordat ze kan worden opgeslagen.",
       "failUnitMismatch": "De opgegeven eenheid komt niet overeen met de opgeslagen eenheid voor deze biomarker. Pas de eenheid aan en rond de controle daarna opnieuw af.",
       "failGeneric": "Deze waarde kon niet worden opgeslagen.",

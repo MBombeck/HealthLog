@@ -16,6 +16,9 @@
  *     extracted text → "Extract lab values" runs the SAME text-structuring
  *     pass the automatic worker uses ({ mode: "stored" }) — reusing the
  *     stored text, never asking for a re-upload — and opens the review.
+ *     Beside it, "Read values without AI" reads the same stored text by rule
+ *     (`POST …/lab-values`) into the same review. That one is offered
+ *     whatever the AI settings say: reading data needs no model.
  *   - Neither → nothing renders; the surface stays calm.
  *
  * HARD RULE: nothing here writes into Labs / conditions / medications on its
@@ -27,9 +30,7 @@
 import { useCalendarDate } from "@/hooks/use-calendar-date";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FlaskConical, Loader2, ScanSearch } from "lucide-react";
-import { toast } from "sonner";
-import { showErrorToast } from "@/lib/errors/error-toast";
+import { FlaskConical, Loader2 } from "lucide-react";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { Button } from "@/components/ui/button";
@@ -41,11 +42,9 @@ import { LabUnitInput } from "@/components/labs/lab-unit-input";
 import { MarkerMatchField } from "@/components/labs/marker-match-field";
 import type { BiomarkerListResponse } from "@/components/labs/types";
 import { apiGet } from "@/lib/api/api-fetch";
-import type { DocumentExtractRunResult } from "@/lib/documents/ai-runs/types";
 import { withLabUnit } from "@/lib/labs/dimensionless";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { cn } from "@/lib/utils";
 import type {
   ConditionFactData,
   ExtractedFactDto,
@@ -55,13 +54,10 @@ import type {
   ObservationFactData,
 } from "@/lib/validations/inbound-documents";
 
-import { AiRunPhaseNote } from "./document-ai-panels";
-import { useDocumentAiErrorText } from "./use-document-assist";
-import {
-  useConfirmFacts,
-  useEditFact,
-  useStoredExtract,
-} from "./use-document-facts";
+import { LOCAL_PARSER_PROVIDER } from "@/lib/documents/inbound-constants";
+
+import { DocumentFactsReadActions } from "./document-facts-read-actions";
+import { useConfirmFacts, useEditFact } from "./use-document-facts";
 
 /** Map a per-fact commit refusal to its translated sentence. */
 function commitFailureKey(reason: string): string {
@@ -475,25 +471,6 @@ export function FactRow({
  * or nothing. Owner-only: staging and confirming write to the caller's own
  * record, so a delegate never sees these controls.
  */
-/**
- * What the person is told when a stored extract finishes. The staged facts
- * arrive with the document refetch the hook starts; the review opens onto
- * them. A long document read in parts may have had a part cut at the
- * provider's output limit or not reached, and then the review is not the
- * whole document.
- */
-function announceExtract(
-  result: DocumentExtractRunResult,
-  t: (key: string) => string,
-  openReview: () => void,
-): void {
-  if (result.factsStaged > 0) openReview();
-  else toast.info(t("documents.review.extractEmpty"));
-  if (result.incomplete) {
-    toast.warning(t("documents.review.extractIncomplete"));
-  }
-}
-
 /** The review panel's title and how to use it. */
 function ReviewHeading() {
   const { t } = useTranslations();
@@ -537,9 +514,7 @@ export function DocumentFactsSection({
   labsModuleEnabled: boolean;
 }) {
   const { t, tCount } = useTranslations();
-  const storedExtract = useStoredExtract();
   const confirmFacts = useConfirmFacts();
-  const aiErrorText = useDocumentAiErrorText();
 
   const [open, setOpen] = useState(false);
   // Approve-set as explicit state, seeded per fact on first sight: a
@@ -566,6 +541,12 @@ export function DocumentFactsSection({
   ).length;
 
   if (!canManage) return null;
+
+  // A read staged new facts: the review's local choices start over.
+  const resetChoices = () => {
+    setFailures({});
+    setIncluded({});
+  };
 
   const isChecked = (fact: ExtractedFactDto): boolean =>
     included[fact.id] ?? !fact.needsReview;
@@ -615,16 +596,28 @@ export function DocumentFactsSection({
   // The stored-text extract offer: a lab-filed, already-read document with
   // nothing staged and nothing confirmed yet. `alreadyPartlyConfirmed` is the
   // server's refusal once anything is APPROVED, so the offer withdraws then.
-  const canExtract =
+  // The model-free read has the same conditions minus the AI: it is offered
+  // with AI off, "local only", or no provider at all.
+  const canReadLocally =
     labsModuleEnabled &&
-    aiEnabled &&
     doc.kind === "LAB_RESULT" &&
     doc.hasContentIndex &&
     doc.status !== "CONFIRMED" &&
     pending.length === 0 &&
     approvedCount === 0;
+  const canExtract = canReadLocally && aiEnabled;
+  // Values read by rule and not yet confirmed: the AI read over the same
+  // text is still a click away, and replaces them.
+  const canRereadWithAi =
+    labsModuleEnabled &&
+    aiEnabled &&
+    doc.providerType === LOCAL_PARSER_PROVIDER &&
+    doc.hasContentIndex &&
+    doc.status !== "CONFIRMED" &&
+    pending.length > 0 &&
+    approvedCount === 0;
 
-  if (pending.length === 0 && !canExtract) return null;
+  if (pending.length === 0 && !canReadLocally) return null;
 
   const unverified = pending.filter((fact) => fact.needsReview).length;
 
@@ -712,57 +705,23 @@ export function DocumentFactsSection({
               </div>
             </div>
           )}
+          {canRereadWithAi ? (
+            <DocumentFactsReadActions
+              documentId={doc.id}
+              canExtract
+              withoutAi={false}
+              onStaged={resetChoices}
+              openReview={() => setOpen(true)}
+            />
+          ) : null}
         </>
       ) : (
-        <div className="space-y-1.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            data-slot="document-facts-extract"
-            className="min-h-11 sm:min-h-9"
-            onClick={() =>
-              storedExtract.mutate(
-                { documentId: doc.id },
-                {
-                  onSuccess: (result) => {
-                    setFailures({});
-                    setIncluded({});
-                    announceExtract(result, t, () => setOpen(true));
-                  },
-                  onError: (error) =>
-                    showErrorToast(aiErrorText(error), { cause: error }),
-                },
-              )
-            }
-            disabled={storedExtract.isPending}
-          >
-            <ScanSearch
-              className={cn(
-                "size-4",
-                storedExtract.isPending &&
-                  "animate-pulse motion-reduce:animate-none",
-              )}
-              aria-hidden
-            />
-            {storedExtract.isPending
-              ? t("documents.review.extracting")
-              : t("documents.review.extract")}
-          </Button>
-          {storedExtract.runPhase === "idle" ? (
-            <p className="text-muted-foreground text-xs">
-              {t("documents.review.extractHint")}
-            </p>
-          ) : (
-            // While the read runs, the hint gives way to where it stands:
-            // one muted line, the same one every document read shows.
-            <AiRunPhaseNote
-              phase={storedExtract.runPhase}
-              outcome="savedWithDocument"
-              slot="document-facts-extract-run-phase"
-            />
-          )}
-        </div>
+        <DocumentFactsReadActions
+          documentId={doc.id}
+          canExtract={canExtract}
+          onStaged={resetChoices}
+          openReview={() => setOpen(true)}
+        />
       )}
     </div>
   );
