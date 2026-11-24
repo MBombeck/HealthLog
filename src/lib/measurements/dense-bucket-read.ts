@@ -75,6 +75,14 @@ export async function readLocalDayMinuteBuckets(opts: {
   timeZone: string;
   /** Bucket width in minutes, 1 to 1440. */
   bucketMinutes: number;
+  /**
+   * Only rows of these sources. A reader that wants a day's intraday shape
+   * names the sources that write samples: a provider's daily total (Garmin
+   * `daily:…`, Withings `withings:activity:…`, Gadgetbridge `gb:steps:…`) is
+   * not keyed `stats:`, so the prefix alone lets it through as one bucket
+   * holding the whole day.
+   */
+  sources?: readonly MeasurementSource[];
   db?: RawDb;
 }): Promise<LocalMinuteBucket[]> {
   const rows = await (opts.db ?? prisma).$queryRaw<
@@ -105,8 +113,17 @@ export function localDayMinuteBucketsSql(opts: {
   dateKey: string;
   timeZone: string;
   bucketMinutes: number;
+  sources?: readonly MeasurementSource[];
 }): Prisma.Sql {
   const bucketMinutes = Math.trunc(opts.bucketMinutes);
+  if (opts.sources && opts.sources.length === 0) {
+    throw new RangeError("sources must name at least one source");
+  }
+  const sourceScope = opts.sources
+    ? Prisma.sql`AND m."source" IN (${Prisma.join(
+        opts.sources.map((s) => Prisma.sql`${s}::measurement_source`),
+      )})`
+    : Prisma.empty;
   if (!(bucketMinutes >= 1 && bucketMinutes <= 1440)) {
     throw new RangeError(`bucketMinutes out of range: ${opts.bucketMinutes}`);
   }
@@ -132,6 +149,7 @@ export function localDayMinuteBucketsSql(opts: {
           OR (m."measured_at" >= ${dayStart} AND m."measured_at" < ${dayEnd})
         )
         AND (m."external_id" IS NULL OR m."external_id" NOT LIKE 'stats:%')
+        ${sourceScope}
     ),
     placed AS (
       SELECT
