@@ -16161,16 +16161,6 @@
       "asOf": "기준일",
       "week": "임신 {weeks}주 {days}일",
       "postpartum": "산후",
-      "bloodShort": {
-        "A_POS": "A+",
-        "A_NEG": "A−",
-        "B_POS": "B+",
-        "B_NEG": "B−",
-        "AB_POS": "AB+",
-        "AB_NEG": "AB−",
-        "O_POS": "O+",
-        "O_NEG": "O−"
-      },
       "scan": "스캔하면 전체 카드가 열립니다",
       "validUntil": "유효 기간",
       "untilRevoked": "철회할 때까지",

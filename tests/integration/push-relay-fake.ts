@@ -125,6 +125,19 @@ export class FakeRelay {
   registrationInvites: Array<string | undefined> = [];
   /** Merged into the `GET /v1/status` answer (the relay's state, devices). */
   status: Record<string, unknown> = {};
+  /** Every manifest `POST /v1/wallet/apple/sign` received, as its bytes. */
+  walletManifests: Buffer[] = [];
+  /** Every item `POST /v1/wallet/apple/notify` received. */
+  walletPushes: Array<{ ref: string; token: string }> = [];
+  /** Who the Wallet endpoints sign as, and what a signature looks like. */
+  walletIdentity = {
+    passTypeIdentifier: "pass.dev.healthlog.vector",
+    teamIdentifier: "VECTOR1234",
+    signerSubjectO: "HealthLog Vectors",
+    certNotAfterDay: 24107,
+  };
+  walletSignature: (manifest: Buffer) => Buffer = (manifest) =>
+    Buffer.concat([Buffer.from([0x30, 0x20]), manifest.subarray(0, 32)]);
 
   private sign(nonce: string | null, status: number, body: string): string {
     const seed = this.forge ? Buffer.alloc(32, 0x42) : RELAY_SEED;
@@ -297,6 +310,30 @@ export class FakeRelay {
     if (method === "POST" && pathAndQuery === "/v1/receipts") {
       this.receipts.push(JSON.parse(body));
       return this.reply(nonce, 204, null);
+    }
+    if (method === "POST" && pathAndQuery === "/v1/wallet/apple/sign") {
+      const req = JSON.parse(body) as { v: number; manifest: string };
+      const manifest = fromBase64Url(req.manifest);
+      if (req.v !== 1 || !manifest || Object.keys(req).length !== 2) {
+        return this.reply(nonce, 422, {
+          error: "wallet_manifest_invalid",
+          reason: "shape",
+        });
+      }
+      this.walletManifests.push(manifest);
+      return this.reply(nonce, 200, {
+        signature: toBase64Url(this.walletSignature(manifest)),
+        ...this.walletIdentity,
+      });
+    }
+    if (method === "POST" && pathAndQuery === "/v1/wallet/apple/notify") {
+      const req = JSON.parse(body) as {
+        items: Array<{ ref: string; token: string }>;
+      };
+      this.walletPushes.push(...req.items);
+      return this.reply(nonce, 200, {
+        results: req.items.map((i) => ({ ref: i.ref, result: "accepted" })),
+      });
     }
     if (method === "GET" && pathAndQuery === "/v1/status") {
       return this.reply(nonce, 200, {

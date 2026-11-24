@@ -16161,16 +16161,6 @@
       "asOf": "Aggiornata al",
       "week": "Settimana {weeks}+{days}",
       "postpartum": "Post partum",
-      "bloodShort": {
-        "A_POS": "A+",
-        "A_NEG": "A−",
-        "B_POS": "B+",
-        "B_NEG": "B−",
-        "AB_POS": "AB+",
-        "AB_NEG": "AB−",
-        "O_POS": "0+",
-        "O_NEG": "0−"
-      },
       "scan": "Scansiona per la tessera completa",
       "validUntil": "Valida fino al",
       "untilRevoked": "Fino al ritiro",

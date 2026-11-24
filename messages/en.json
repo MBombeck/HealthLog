@@ -16161,16 +16161,6 @@
       "asOf": "As of",
       "week": "Week {weeks}+{days}",
       "postpartum": "Postpartum",
-      "bloodShort": {
-        "A_POS": "A+",
-        "A_NEG": "A−",
-        "B_POS": "B+",
-        "B_NEG": "B−",
-        "AB_POS": "AB+",
-        "AB_NEG": "AB−",
-        "O_POS": "O+",
-        "O_NEG": "O−"
-      },
       "scan": "Scan for the full card",
       "validUntil": "Valid until",
       "untilRevoked": "Until withdrawn",

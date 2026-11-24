@@ -226,3 +226,21 @@ describe("collectReadiness — the database dump", () => {
     expect(report.hasBlocker).toBe(false);
   });
 });
+
+describe("collectReadiness — Apple Wallet with an own Pass Type ID", () => {
+  it("says nothing while unset, the project's signing service is the default", () => {
+    expect(lineFor(baseEnv(), "WALLET_APPLE_*")).toBeUndefined();
+  });
+
+  it("warns on a partial set with its problem code and no value", () => {
+    const env = {
+      ...baseEnv(),
+      WALLET_APPLE_PASS_TYPE_ID: "pass.org.example.secret-looking-id",
+    };
+    const line = lineFor(env, "WALLET_APPLE_*");
+    expect(line?.status).toBe("warn");
+    expect(line?.detail).toContain("incomplete");
+    expect(line?.detail).not.toContain("secret-looking-id");
+    expect(collectReadiness(env).hasBlocker).toBe(false);
+  });
+});

@@ -16161,16 +16161,6 @@
       "asOf": "À jour au",
       "week": "{weeks}+{days} SA",
       "postpartum": "Post-partum",
-      "bloodShort": {
-        "A_POS": "A+",
-        "A_NEG": "A−",
-        "B_POS": "B+",
-        "B_NEG": "B−",
-        "AB_POS": "AB+",
-        "AB_NEG": "AB−",
-        "O_POS": "O+",
-        "O_NEG": "O−"
-      },
       "scan": "Scanner pour la carte complète",
       "validUntil": "Valable jusqu'au",
       "untilRevoked": "Jusqu'au retrait",

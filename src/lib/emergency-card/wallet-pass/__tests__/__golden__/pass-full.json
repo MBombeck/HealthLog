@@ -45,12 +45,12 @@
       {
         "key": "blood",
         "label": "BLOOD TYPE",
-        "value": "A+"
+        "value": "A positive"
       },
       {
         "key": "allergy",
         "label": "SEVERE ALLERGY",
-        "value": "Penicillin +2"
+        "value": "Penicillin"
       },
       {
         "key": "pregnancy",
@@ -179,12 +179,12 @@
       {
         "key": "blood",
         "label": "BLOOD TYPE",
-        "value": "A+"
+        "value": "A positive"
       },
       {
         "key": "allergy",
         "label": "SEVERE ALLERGY",
-        "value": "Penicillin +2"
+        "value": "Penicillin"
       }
     ],
     "auxiliaryFields": [

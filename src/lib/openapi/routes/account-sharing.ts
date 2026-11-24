@@ -25,6 +25,7 @@ import { HANDOVER_METHODS } from "@/lib/validations/claim-sso";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 import { accountFeaturesBlock } from "./account-features";
+import { emergencyWalletAppleSchema } from "./emergency-card";
 import { accountPushBlock } from "./push-relay";
 
 import { accountAccessBlockSchema } from "@/lib/sharing/account-access-schema";
@@ -548,6 +549,14 @@ const accountPayload = z
       ),
     features: accountFeaturesBlock,
     push: accountPushBlock,
+    // Enumerated because a client decides on it: the card page and
+    // the app show the Wallet option from this resolved answer.
+    emergencyCard: z
+      .object({ wallet: z.object({ apple: emergencyWalletAppleSchema }) })
+      .nullable()
+      .describe(
+        "The emergency card for the record on screen. Null only when rendered without a request; `GET /api/auth/me` always carries it.",
+      ),
     accountAccess: accountAccessBlock,
     moduleAccess: moduleAccessMap,
     // v1.39 — enumerated because every AI surface decides on it: a client

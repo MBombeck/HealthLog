@@ -2,6 +2,8 @@
  * A placeholder card for the pass tests: an invented person, invented
  * values, a documentation host. Nothing here is anyone's record.
  */
+import { join } from "node:path";
+
 import type { EmergencyCardView } from "../../card-data";
 import { EMERGENCY_CARD_FIELDS } from "../../fields";
 import type { WalletPassContentInput } from "../content";
@@ -77,3 +79,20 @@ export const MINIMAL_INPUT: WalletPassContentInput = {
 };
 
 export const NONCE = "0123456789abcdef0123456789abcdef";
+
+/**
+ * The push relay's CC0 reference implementation (`relay-spec/`, copied from
+ * healthlog-push), loaded by its folder: the parts the tests use.
+ */
+export interface RelayReference {
+  deriveRSAKey(seed: Buffer): { privateKey: import("node:crypto").KeyObject };
+  checkManifest(bytes: Buffer, pins: Record<string, readonly string[]>): string;
+}
+
+export const RELAY_SPEC_DIR = join(__dirname, "relay-spec");
+
+export async function relayReference(): Promise<RelayReference> {
+  return (await import(
+    /* @vite-ignore */ join(RELAY_SPEC_DIR, `wallet.${"mjs"}`)
+  )) as RelayReference;
+}

@@ -157,18 +157,25 @@ function frontFacts(
     facts.push({
       key: "blood",
       label: upper(locale, t("records.emergency.bloodType")),
-      value: t(`emergencyCard.walletPass.bloodShort.${view.bloodType}`),
+      // The detail sheet's wording, so the pass reads one notation.
+      value: t(`records.emergency.bloodTypeValues.${view.bloodType}`),
     });
   }
   const allergies = has(view, "ALLERGIES") ? view.allergies : null;
   if (allergies && allergies.length > 0) {
+    // Severe ones come first. A label never claims more than it counts: under
+    // "Severe allergy" the count is of further severe ones only; the milder
+    // ones are in the detail sheet.
     const [first] = allergies;
-    const more = allergies.length - 1;
+    const severe = first.severity === "SEVERE";
+    const more = allergies
+      .slice(1)
+      .filter((a) => !severe || a.severity === "SEVERE").length;
     facts.push({
       key: "allergy",
       label: upper(
         locale,
-        first.severity === "SEVERE"
+        severe
           ? t("emergencyCard.walletPass.severeAllergy")
           : t("emergencyCard.walletPass.allergy"),
       ),

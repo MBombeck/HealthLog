@@ -39,12 +39,59 @@ export const RELAY_REPORTED_REASONS: ReadonlySet<string> = new Set(
   RELAY_STATES.filter((s) => s !== "ok").map((s) => `relay_${s}`),
 );
 
+/**
+ * The relay's Wallet block (`spec/wallet.md`, "Status"), as stored: whether
+ * it signs and pushes passes for this instance now, and under which Pass
+ * Type ID. Read by the emergency card's Wallet availability.
+ */
+export type RelayWalletSnapshot = {
+  sign: boolean;
+  notify: boolean;
+  passTypeIdentifier: string | null;
+  teamIdentifier: string | null;
+  /** The certificate's last valid day, days since 1970-01-01 UTC. */
+  certNotAfterDay: number | null;
+};
+
 /** What the admin card shows of the last status answer. */
 export interface RelayStatusSnapshot {
   /** When the relay answered, ISO. */
   at: string;
   state: RelayReportedState;
   devices: { active: number; provisional: number; limit: number } | null;
+  /** Null from a relay that does not report Wallet. */
+  wallet: RelayWalletSnapshot | null;
+}
+
+const PASS_TYPE_ID = /^pass\.[A-Za-z0-9.-]{1,120}$/;
+const TEAM_ID = /^[A-Z0-9]{10}$/;
+
+/** The Wallet block, closed values only; signing needs both identifiers. */
+function walletOf(value: unknown): RelayWalletSnapshot | null {
+  const w = value as Record<string, unknown> | null | undefined;
+  if (!w || typeof w !== "object") return null;
+  const passTypeIdentifier =
+    typeof w.passTypeIdentifier === "string" &&
+    PASS_TYPE_ID.test(w.passTypeIdentifier)
+      ? w.passTypeIdentifier
+      : null;
+  const teamIdentifier =
+    typeof w.teamIdentifier === "string" && TEAM_ID.test(w.teamIdentifier)
+      ? w.teamIdentifier
+      : null;
+  const day = w.certNotAfterDay;
+  const certNotAfterDay =
+    typeof day === "number" && Number.isInteger(day) && day > 0 && day < 1e6
+      ? day
+      : null;
+  const named = passTypeIdentifier !== null && teamIdentifier !== null;
+  return {
+    sign: w.sign === true && named,
+    notify: w.notify === true && named,
+    passTypeIdentifier,
+    teamIdentifier,
+    certNotAfterDay,
+  };
 }
 
 function count(value: unknown): number | null {
@@ -75,6 +122,7 @@ export function relayStatusOf(
       active !== null && provisional !== null && limit !== null
         ? { active, provisional, limit }
         : null,
+    wallet: walletOf(body?.wallet),
   };
 }
 

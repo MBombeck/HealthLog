@@ -73,6 +73,28 @@ const SUCCESS: Record<string, z.ZodType> = {
   "POST /v1/bindings/liveactivity": z.looseObject({
     liveActivity: z.literal("granted"),
   }),
+  // `spec/wallet.md`: a detached CMS over the manifest, and who signed it.
+  "POST /v1/wallet/apple/sign": z.looseObject({
+    signature: z
+      .string()
+      .min(16)
+      .max(22_000)
+      .regex(/^[A-Za-z0-9_-]+$/),
+    passTypeIdentifier: z.string().regex(/^pass\.[A-Za-z0-9.-]{1,120}$/),
+    teamIdentifier: z.string().regex(/^[A-Z0-9]{10}$/),
+    signerSubjectO: z.string().max(200),
+    certNotAfterDay: z.number().int().min(0).max(1_000_000),
+  }),
+  "POST /v1/wallet/apple/notify": z.looseObject({
+    results: z
+      .array(
+        z.looseObject({
+          ref: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
+          result: code,
+        }),
+      )
+      .max(50),
+  }),
 };
 
 /**

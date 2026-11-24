@@ -16161,16 +16161,6 @@
       "asOf": "Stan na",
       "week": "Tydzień {weeks}+{days}",
       "postpartum": "Połóg",
-      "bloodShort": {
-        "A_POS": "A Rh+",
-        "A_NEG": "A Rh−",
-        "B_POS": "B Rh+",
-        "B_NEG": "B Rh−",
-        "AB_POS": "AB Rh+",
-        "AB_NEG": "AB Rh−",
-        "O_POS": "0 Rh+",
-        "O_NEG": "0 Rh−"
-      },
       "scan": "Zeskanuj, by zobaczyć całą kartę",
       "validUntil": "Ważna do",
       "untilRevoked": "Do wycofania",

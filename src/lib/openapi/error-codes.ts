@@ -287,7 +287,12 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "emergency-card.exists",
       "emergency-card.none",
       "emergency-card.rateLimited",
+      "emergency-card.wallet.consent",
+      "emergency-card.wallet.exists",
+      "emergency-card.wallet.none",
+      "emergency-card.wallet.signer_unavailable",
       "emergency-card.wallet.token",
+      "emergency-card.wallet.unavailable",
     ],
     encryption: ["encryption.key_mismatch"],
     environment: [
