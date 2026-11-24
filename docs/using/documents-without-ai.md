@@ -17,10 +17,11 @@ values of a lab report into the review.
   upload, so the document is filed straight away and becomes searchable a
   little later.
 
-The OCR runs with the German and English language data the image carries.
-Reports in other languages that use the Latin alphabet are mostly read
-(digits, units and most names); Cyrillic and Hangul scans are not yet. A PDF
-with a text layer is read in every language.
+The image carries language data for every app language. A scan is read in
+German and English, which lab reports often mix, and in the language your
+account is set to when that is another one: a Russian or Korean scan is read
+when the account uses Russian or Korean. A PDF with a text layer is read in
+every language.
 
 When a scan cannot be read, the document says why under its preview: no
 text was found, or the text recognition did not finish (it took too long,

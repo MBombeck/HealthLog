@@ -15,8 +15,10 @@
  *   - the three LSTM-only core builds of tesseract.js-core (plain, SIMD,
  *     relaxed SIMD); the worker picks one by feature detection. LSTM-only
  *     because `createWorker` defaults to OEM 1.
- *   - `deu` and `eng` `4.0.0_best_int` language data, gzipped, which is what
- *     OEM 1 loads.
+ *   - `4.0.0_best_int` language data, gzipped, which is what OEM 1 loads:
+ *     one for each app language. The browser scan reads with `deu` and
+ *     `eng`; the server reads scanned documents with those two plus the
+ *     account's own language (`src/lib/documents/server-ocr.ts`).
  *
  * Runs as a `prebuild`/`predev` step; the output is gitignored.
  */
@@ -51,6 +53,14 @@ const files = [
   ...[
     ["deu", require.resolve("@tesseract.js-data/deu/package.json")],
     ["eng", require.resolve("@tesseract.js-data/eng/package.json")],
+    ["fra", require.resolve("@tesseract.js-data/fra/package.json")],
+    ["spa", require.resolve("@tesseract.js-data/spa/package.json")],
+    ["ita", require.resolve("@tesseract.js-data/ita/package.json")],
+    ["pol", require.resolve("@tesseract.js-data/pol/package.json")],
+    ["nld", require.resolve("@tesseract.js-data/nld/package.json")],
+    ["por", require.resolve("@tesseract.js-data/por/package.json")],
+    ["rus", require.resolve("@tesseract.js-data/rus/package.json")],
+    ["kor", require.resolve("@tesseract.js-data/kor/package.json")],
   ].map(([lang, manifest]) => [
     join(dirname(manifest), "4.0.0_best_int", `${lang}.traineddata.gz`),
     join("lang", `${lang}.traineddata.gz`),
