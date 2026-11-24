@@ -77,6 +77,14 @@ x-healthlog-env: &healthlog_env
   # whitelist — vars not listed here don't propagate even though
   # docker-compose reads .env for `${VAR}` substitution at compose-up time).
   SESSION_COOKIE_SECURE: "${SESSION_COOKIE_SECURE:-}"
+  # How long a sign-in lasts, in whole days. A web session ends after
+  # SESSION_IDLE_TIMEOUT_DAYS without use (default 30) and SESSION_MAX_LIFETIME_DAYS
+  # after its sign-in however busy it is (default 90). The iOS app's refresh
+  # tokens and an MCP connection end REFRESH_TOKEN_MAX_LIFETIME_DAYS after the
+  # sign-in or consent (default 180); the MCP consent screen states that number.
+  SESSION_IDLE_TIMEOUT_DAYS: "${SESSION_IDLE_TIMEOUT_DAYS:-}"
+  SESSION_MAX_LIFETIME_DAYS: "${SESSION_MAX_LIFETIME_DAYS:-}"
+  REFRESH_TOKEN_MAX_LIFETIME_DAYS: "${REFRESH_TOKEN_MAX_LIFETIME_DAYS:-}"
   NATIVE_CANVAS: "${NATIVE_CANVAS:-}"
   # Read-only showcase instance. DEMO_MODE=true makes the proxy refuse every
   # mutation except login and paints the demo banner. Leave it unset on a

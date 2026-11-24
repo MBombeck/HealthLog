@@ -28,6 +28,10 @@
  */
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import {
+  refreshFamilyHardEnd,
+  refreshTokenMaxLifetimeMs,
+} from "@/lib/auth/session-lifetime";
 
 type ConnectionDb = Pick<
   Prisma.TransactionClient,
@@ -48,10 +52,16 @@ export interface ConnectionRotation {
 }
 
 export type RotationOutcome =
-  | { ok: true }
+  /** `endsAt`: the connection's absolute end, which caps the successor. */
+  | { ok: true; endsAt: Date }
   | {
       ok: false;
-      reason: "not_found" | "revoked" | "reuse_detected" | "client_mismatch";
+      reason:
+        | "not_found"
+        | "revoked"
+        | "reuse_detected"
+        | "client_mismatch"
+        | "lifetime_ended";
     };
 
 /** Create the connection anchor for a freshly-granted `offline_access` flow. */
@@ -110,6 +120,7 @@ export async function rotateConnection(
       userId: true,
       clientId: true,
       currentJti: true,
+      createdAt: true,
       revokedAt: true,
     },
   });
@@ -122,6 +133,15 @@ export async function rotateConnection(
   }
   if (connection.revokedAt) {
     return { ok: false, reason: "revoked" };
+  }
+  // A connection ends a fixed time after the consent that opened it
+  // (REFRESH_TOKEN_MAX_LIFETIME_DAYS), however often it refreshes; the client
+  // runs the consent again. Stamped revoked here so it leaves the settings
+  // list and the cleanup job prunes it like any other ended connection.
+  const endsAt = refreshFamilyHardEnd(connection.createdAt);
+  if (endsAt.getTime() <= Date.now()) {
+    await revokeConnectionRow(connection.id, db);
+    return { ok: false, reason: "lifetime_ended" };
   }
   if (connection.currentJti !== args.presentedJti) {
     // Replay of an already-rotated refresh token — treat as theft and revoke
@@ -155,7 +175,7 @@ export async function rotateConnection(
     data: { revoked: true },
   });
 
-  return { ok: true };
+  return { ok: true, endsAt };
 }
 
 /** Internal — stamp `revokedAt` and revoke every linked access token. */
@@ -199,12 +219,20 @@ export interface ConnectionSummary {
   lastUsedAt: Date | null;
 }
 
-/** The user's live (non-revoked) connector connections for the settings list. */
+/**
+ * The user's live connector connections for the settings list: not revoked,
+ * and not past the absolute lifetime counted from their consent (one that
+ * ended without refreshing since is stamped revoked only on its next try).
+ */
 export async function listConnectionsForUser(
   userId: string,
 ): Promise<ConnectionSummary[]> {
   return prisma.mcpOAuthConnection.findMany({
-    where: { userId, revokedAt: null },
+    where: {
+      userId,
+      revokedAt: null,
+      createdAt: { gt: new Date(Date.now() - refreshTokenMaxLifetimeMs()) },
+    },
     select: {
       id: true,
       clientName: true,
