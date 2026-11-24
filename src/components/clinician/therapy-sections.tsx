@@ -116,7 +116,7 @@ export function Glp1Section({
                   label={fmtDate(change.effectiveFrom)}
                   value={
                     `${fmtRecorded(change.value)} ${change.unit}` +
-                    (change.note ? ` · ${change.note}` : "")
+                    (change.note ? `, ${change.note}` : "")
                   }
                 />
               ))}
@@ -126,7 +126,7 @@ export function Glp1Section({
                   value={
                     fmtDate(med.lastInjection.date) +
                     (med.lastInjection.site
-                      ? ` · ${med.lastInjection.site}`
+                      ? `, ${med.lastInjection.site}`
                       : "")
                   }
                 />
@@ -216,11 +216,11 @@ export function DoseLogSection({
               ? t("doctorReport.colTaken")
               : t("doctorReport.colSkipped")) +
             (dose.dose
-              ? ` · ${fmtRecorded(dose.dose.value)} ${dose.dose.unit}`
+              ? `, ${fmtRecorded(dose.dose.value)} ${dose.dose.unit}`
               : dose.doseText
-                ? ` · ${dose.doseText}`
+                ? `, ${dose.doseText}`
                 : "") +
-            (dose.injectionSite ? ` · ${dose.injectionSite}` : "")
+            (dose.injectionSite ? `, ${dose.injectionSite}` : "")
           }
         />
       ))}

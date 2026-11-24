@@ -385,7 +385,6 @@ async function postAssessment(request: NextRequest): Promise<Response> {
       if (winner) {
         annotate({
           action: { name: "mental-health.create.dedup" },
-          meta: { instrument: id },
         });
         return respondExisting(winner);
       }
@@ -420,7 +419,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   });
   annotate({
     action: { name: "mental-health.create" },
-    meta: { instrument: id, item9_flagged: flagged, wording },
+    meta: { wording },
   });
 
   // SAFETY: surface the locale-aware crisis resources on a positive item-9.

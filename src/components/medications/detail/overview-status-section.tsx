@@ -223,7 +223,7 @@ export function OverviewStatusSection({
                 )}
                 {expiredUnits > 0 && (
                   <span className="text-muted-foreground">
-                    {" · "}
+                    {", "}
                     {t("medications.detail.bestand.expiredSuffix", {
                       units: expiredUnits,
                     })}
@@ -231,7 +231,7 @@ export function OverviewStatusSection({
                 )}
                 {runwayDays !== null && (
                   <span className="text-muted-foreground">
-                    {" · "}
+                    {", "}
                     {t("medications.detail.uebersicht.supplyRunway", {
                       days: runwayDays,
                     })}

@@ -433,14 +433,12 @@ export function MedicationCard({
               )}
               {s.dose && (
                 <span className="text-dose-accent hidden font-medium sm:inline">
-                  {" "}
-                  — {formatDose(s.dose, t)}
+                  , {formatDose(s.dose, t)}
                 </span>
               )}
               {typeof s.unitsPerDose === "number" && s.unitsPerDose > 0 && (
                 <span className="text-muted-foreground hidden sm:inline">
-                  {" "}
-                  ·{" "}
+                  ,{" "}
                   {t("medications.perSlotUnits", {
                     units: formatUnitsPerDose(s.unitsPerDose, locale),
                   })}

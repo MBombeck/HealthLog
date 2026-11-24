@@ -130,7 +130,6 @@ async function postAllergy(request: NextRequest): Promise<Response> {
       entity_type: "allergy",
       entity_id: created.id,
     },
-    meta: { category: created.category, type: created.type },
   });
 
   await enqueueWalletRefresh(user.id);

@@ -84,7 +84,7 @@ function sportAverageLine(
   }
   parts.push(`${formatDurationMinutes(ctx.avgDurationSec, locale)} min`);
   if (ctx.avgAvgHr != null) parts.push(`${ctx.avgAvgHr} bpm`);
-  return parts.join(" · ");
+  return parts.join(", ");
 }
 
 export function WorkoutDetailStats({ workout }: WorkoutDetailStatsProps) {

@@ -168,7 +168,6 @@ async function postEpisode(request: NextRequest): Promise<Response> {
       entity_type: "illness_episode",
       entity_id: created.id,
     },
-    meta: { type: created.type, lifecycle: created.lifecycle },
   });
 
   await enqueueWalletRefresh(user.id);

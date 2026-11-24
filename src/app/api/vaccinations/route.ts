@@ -281,9 +281,11 @@ async function postVaccination(request: NextRequest): Promise<Response> {
       entity_id: created.id,
     },
     meta: {
-      antigen_slug:
-        created.antigenSlug ??
-        (created.customVaccineId ? "custom" : "free-text"),
+      antigen_source: created.antigenSlug
+        ? "catalog"
+        : created.customVaccineId
+          ? "custom"
+          : "free-text",
       linked_documents: entry.documentIds?.length ?? 0,
       satisfied_boosters: satisfiedReminderIds.length,
     },
@@ -296,9 +298,11 @@ async function postVaccination(request: NextRequest): Promise<Response> {
         entity_id: reminderId,
       },
       meta: {
-        antigen_slug:
-          created.antigenSlug ??
-          (created.customVaccineId ? "custom" : "free-text"),
+        antigen_source: created.antigenSlug
+          ? "catalog"
+          : created.customVaccineId
+            ? "custom"
+            : "free-text",
       },
     });
   }

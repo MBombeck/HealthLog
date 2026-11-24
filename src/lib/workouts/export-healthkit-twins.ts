@@ -80,8 +80,6 @@ export const FOLDED_WORKOUT_COLUMNS = [
   "externalSourceVersion",
 ] as const;
 
-export type FoldedWorkoutColumn = (typeof FOLDED_WORKOUT_COLUMNS)[number];
-
 export type FoldedWorkoutValues = {
   totalEnergyKcal?: number | null;
   totalDistanceM?: number | null;

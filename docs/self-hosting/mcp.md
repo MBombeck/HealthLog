@@ -30,7 +30,7 @@ Three things must be true before `/mcp` will answer:
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`APP_URL` is set**       | The endpoint fails closed without a pinned canonical origin. `APP_URL` (or `NEXT_PUBLIC_APP_URL`) is the origin every OAuth document and audience check is anchored to — `Host` is never trusted. Without it the surface stays invisible (`404`). |
 | **The global API is on**   | The operator's instance-wide API switch must be enabled (it is by default). With it off, every token path — including `/mcp` — returns `404`.                                                                                                     |
-| **The `mcp` module is on** | A per-account opt-in that ships off by default; you turn it on in **Settings → Modules**. Until then `/mcp` answers `404` for that account.                                                                                                       |
+| **The `mcp` module is on** | A per-account opt-in that ships off by default; you turn it on in **Settings > Modules**. Until then `/mcp` answers `404` for that account.                                                                                                       |
 
 `APP_URL` is the same origin you already use for passkeys and invite
 links — for example `https://health.example`. It must be reachable by the
@@ -40,10 +40,10 @@ LAN-only origin works for Claude Desktop over stdio).
 
 ## 1. Enable the module
 
-The switch lives with every other module: **Settings → Modules**, the
+The switch lives with every other module: **Settings > Modules**, the
 **MCP** row. Turn it on and the `/mcp` endpoint goes live for your account.
 
-**Settings → MCP connector** is where you use it. The page has three parts:
+**Settings > MCP connector** is where you use it. The page has three parts:
 
 - **State** — whether the module is on, with a link to its switch in
   Modules, and your endpoint URL (`<origin>/mcp`). Turning the module off
@@ -55,13 +55,13 @@ The switch lives with every other module: **Settings → Modules**, the
 
 ## 2. Mint a connector token
 
-Still in **Settings → MCP connector → Tokens**:
+Still in **Settings > MCP connector > Tokens**:
 
 1. Choose the scope with the **write** toggle:
-   - **off** → a read-only token (`health:read`). This is the default and
+   - **off** > a read-only token (`health:read`). This is the default and
      the right choice unless you actually want the assistant to log
      readings.
-   - **on** → a read **and** write token (`health:read health:write`).
+   - **on** > a read **and** write token (`health:read health:write`).
      The write scope only ever admits the three confirmed, append-only
      write tools (below) and is **bound to `/mcp`** — it can never write
      over the regular REST API.
@@ -101,12 +101,12 @@ refused (`403`) as a DNS-rebinding defence.
 1. In Claude.ai, add a custom connector and paste `<APP_URL>/mcp`.
 2. Claude.ai discovers the OAuth flow automatically: the `401` from
    `/mcp` points at `/.well-known/oauth-protected-resource`, which names
-   the authorization server, and the client walks `/authorize` →
+   the authorization server, and the client walks `/authorize` >
    `/token`. PKCE (S256) is mandatory; the built-in bridge accepts
    client-id-metadata-document clients with dynamic registration as a
    fallback.
 3. Approve the consent screen. The connection then appears under
-   **Settings → MCP connector → Connections**, where you can revoke it.
+   **Settings > MCP connector > Connections**, where you can revoke it.
 
 No token to paste — OAuth mints and rotates a short-lived `health:read`
 access token (60 minutes, with a refresh token) behind the scenes.
@@ -166,7 +166,7 @@ still matter:
 
 - **Only enable the connector for clients you trust.** Anything that
   holds a valid token or a live OAuth connection reads your health
-  record. Revoke connections and tokens you no longer use (Settings →
+  record. Revoke connections and tokens you no longer use (Settings >
   MCP).
 - **Use a read-only token unless you need writes.** The default. A
   read-only session never even sees the write tools advertised.

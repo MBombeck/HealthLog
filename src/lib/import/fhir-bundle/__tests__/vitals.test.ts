@@ -24,6 +24,7 @@ describe("mapVital", () => {
       }),
       "https://portal.example",
       NOW,
+      "UTC",
     );
     expect(rows).toEqual([
       expect.objectContaining({ type: "WEIGHT", value: 72.57 }),
@@ -47,6 +48,7 @@ describe("mapVital", () => {
       }),
       "https://portal.example",
       NOW,
+      "UTC",
     );
     expect(Array.isArray(rows) && rows.map((r) => [r.type, r.value])).toEqual([
       ["BLOOD_PRESSURE_SYS", 121],
@@ -63,6 +65,7 @@ describe("mapVital", () => {
         }),
         "x",
         NOW,
+        "UTC",
       ),
     ).toEqual({ reason: "unit_mismatch" });
   });
@@ -72,9 +75,9 @@ describe("mapVital", () => {
       code: { coding: [{ system: "http://loinc.org", code: "8867-4" }] },
       valueQuantity: { value: 64, code: "/min" },
     });
-    const a = mapVital(resource, "https://a.example", NOW);
-    const b = mapVital(resource, "https://a.example", NOW);
-    const c = mapVital(resource, "https://b.example", NOW);
+    const a = mapVital(resource, "https://a.example", NOW, "UTC");
+    const b = mapVital(resource, "https://a.example", NOW, "UTC");
+    const c = mapVital(resource, "https://b.example", NOW, "UTC");
     const id = (r: typeof a) => (Array.isArray(r) ? r[0]!.externalId : null);
     expect(id(a)).toBe(id(b));
     expect(id(a)).not.toBe(id(c));
@@ -89,6 +92,7 @@ describe("mapVital", () => {
         }),
         "https://a.example",
         NOW,
+        "UTC",
       );
     const type = (r: ReturnType<typeof pulse>) =>
       Array.isArray(r) ? r.map((row) => row.type) : r;

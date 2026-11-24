@@ -456,7 +456,7 @@ function StepMeta({ parts }: { parts: string[] }) {
         <span key={i}>
           {i > 0 ? (
             <>
-              <span aria-hidden="true"> · </span>
+              <span aria-hidden="true">, </span>
               {/* The comma is for a screen reader only. `select-none` keeps
                   it out of a copied row. */}
               <span className="sr-only select-none">, </span>
