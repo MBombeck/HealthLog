@@ -38,6 +38,7 @@ import { pathToFileURL } from "node:url";
 
 import {
   openSqliteOffThread,
+  SqliteStatementError,
   type OffThreadSqlite,
 } from "@/lib/import/sqlite-off-thread";
 
@@ -243,10 +244,37 @@ async function inspect(db: OffThreadSqlite): Promise<HealthConnectDb> {
     columns,
     usable,
     batches: (sql, params = [], size = HC_BATCH_SIZE) =>
-      db.batches(sql, params, size),
-    all: (sql, params = []) => db.all(sql, params),
+      refusingDamage(db.batches(sql, params, size)),
+    all: (sql, params = []) =>
+      db.all(sql, params).catch((err: unknown) => {
+        throw damaged(err);
+      }),
     close: () => db.close(),
   };
+}
+
+/**
+ * A statement that fails on the uploader's file, refused as a broken file.
+ * SQLite reads pages lazily, so damage past the schema surfaced mid-import as
+ * SQLite's own text and failed the job as an internal error.
+ */
+function damaged(err: unknown): unknown {
+  return err instanceof SqliteStatementError
+    ? new HealthConnectImportError(
+        "not_health_connect",
+        "the database is damaged and could not be read to the end",
+      )
+    : err;
+}
+
+async function* refusingDamage(
+  rows: AsyncGenerator<HcRow[]>,
+): AsyncGenerator<HcRow[]> {
+  try {
+    yield* rows;
+  } catch (err) {
+    throw damaged(err);
+  }
 }
 
 /** The 8-4-4-4-12 string of a 16-byte UUID blob, or null for anything else. */

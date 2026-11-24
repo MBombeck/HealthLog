@@ -235,6 +235,16 @@ describe("POST /api/medications/intake/dose-history-import", () => {
     });
   });
 
+  it("refuses a CSV with more rows than one import reads before planning it", async () => {
+    const res = await POST(
+      postReq(`Date,Medication,Status\n${"x\n".repeat(100_001)}`),
+    );
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.meta?.errorCode).toBe("too_many_rows");
+    expect(prisma.medication.findMany).not.toHaveBeenCalled();
+  });
+
   it("refuses a body it has no parser for rather than guessing", async () => {
     const res = await POST(postReq(CSV, { contentType: "application/x-yaml" }));
     expect(res.status).toBe(415);

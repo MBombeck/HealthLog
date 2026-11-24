@@ -48,6 +48,17 @@ export interface MultipartStreamOptions {
   tmpPrefix?: string;
 }
 
+/**
+ * The body is not a multipart upload this reader accepts. The message names
+ * what is wrong with the body and nothing else, so the route may show it.
+ */
+export class MultipartMalformedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MultipartMalformedError";
+  }
+}
+
 /** The captured file passed `maxBytes`; the upload is refused as too large. */
 export class MultipartTooLargeError extends Error {
   constructor(maxBytes: number) {
@@ -95,7 +106,7 @@ function cappedReader(body: ReadableStream<Uint8Array>, maxBytes: number) {
 function headerBlockEnd(buffer: Buffer): number {
   const eoh = buffer.indexOf(DOUBLE_CRLF);
   if ((eoh === -1 ? buffer.length : eoh) > MULTIPART_MAX_HEADER_BYTES) {
-    throw new Error("Multipart part headers too large");
+    throw new MultipartMalformedError("Multipart part headers too large");
   }
   return eoh;
 }
@@ -131,6 +142,80 @@ class TextParts {
 }
 
 /**
+ * The captured file part on its way to disk: a temp file opened on the first
+ * byte, its SHA-256 computed in the same pass, its size held to the cap.
+ */
+class CapturedFile {
+  private sink: Writable | null = null;
+  private open = false;
+  // A write stream reports a disk error as an `error` event. Without a
+  // listener that event is an uncaught exception that ends the process; with
+  // it, the error is held here and the next write or close rejects with it.
+  private failure: Error | null = null;
+  private readonly hash = createHash("sha256");
+  bytes = 0;
+  /** The part was written and closed; a second one is refused. */
+  done = false;
+
+  constructor(
+    readonly path: string,
+    private readonly maxBytes: number,
+  ) {}
+
+  write(chunk: Buffer): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.bytes + chunk.length > this.maxBytes) {
+        reject(new MultipartTooLargeError(this.maxBytes));
+        return;
+      }
+      if (this.failure) {
+        reject(this.failure);
+        return;
+      }
+      this.bytes += chunk.length;
+      this.hash.update(chunk);
+      if (!this.sink) {
+        this.sink = createWriteStream(this.path);
+        this.sink.on("error", (err) => {
+          this.failure ??= err;
+        });
+        this.open = true;
+      }
+      this.sink.write(chunk, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  }
+
+  async close(): Promise<void> {
+    const sink = this.sink;
+    if (sink && this.open) {
+      this.open = false;
+      await new Promise<void>((resolve) => sink.end(() => resolve()));
+    }
+    if (this.failure) throw this.failure;
+  }
+
+  /** Stop writing and remove whatever reached the disk. */
+  async discard(): Promise<void> {
+    const sink = this.sink;
+    if (sink && !sink.closed) {
+      this.open = false;
+      await new Promise<void>((resolve) => {
+        sink.once("close", () => resolve());
+        sink.destroy();
+      });
+    }
+    await rm(this.path, { force: true }).catch(() => {});
+  }
+
+  digest(): string {
+    return this.hash.digest("hex");
+  }
+}
+
+/**
  * Parse the multipart boundary from a `Content-Type` header. Returns
  * `null` if the header is missing or unparseable.
  */
@@ -143,10 +228,13 @@ export function parseBoundary(contentType: string | null): string | null {
 
 /**
  * Stream a multipart body from `req.body` to disk, returning the
- * captured file's path + a SHA-256 digest. Throws on:
- *   - Missing / unparseable boundary.
- *   - Missing required field.
- *   - Size cap exceeded.
+ * captured file's path + a SHA-256 digest. Refuses with
+ * `MultipartMalformedError` a body without a usable boundary, a header block
+ * past its ceiling, a malformed boundary line, a second part for the captured
+ * field, a body that ends before its closing boundary, and one without the
+ * captured field; with `MultipartTooLargeError` anything past the caps. A
+ * write error of the temp file or a broken stream is rethrown as it is. On
+ * every refusal the partial file is removed.
  */
 export async function streamMultipartToDisk(
   body: ReadableStream<Uint8Array>,
@@ -155,31 +243,21 @@ export async function streamMultipartToDisk(
 ): Promise<MultipartFileResult> {
   const boundary = parseBoundary(contentType);
   if (!boundary) {
-    throw new Error("Multipart body missing boundary parameter");
+    throw new MultipartMalformedError(
+      "Multipart body missing boundary parameter",
+    );
   }
   const boundaryMarker = Buffer.from(`--${boundary}`);
   const tmpDirectory = opts.tmpDir ?? tmpdir();
-  const filePath = join(
-    tmpDirectory,
-    `${opts.tmpPrefix ?? "healthlog-upload"}-${randomUUID()}.bin`,
+  const file = new CapturedFile(
+    join(
+      tmpDirectory,
+      `${opts.tmpPrefix ?? "healthlog-upload"}-${randomUUID()}.bin`,
+    ),
+    opts.maxBytes,
   );
-
-  const hash = createHash("sha256");
-  let bytesWritten = 0;
   let originalFilename: string | null = null;
   const textFields: Record<string, string> = {};
-
-  // Lazily created sink — opens once we have entered the matching part.
-  let fileSink: Writable | null = null;
-  let fileSinkOpen = false;
-
-  const ensureFileSink = (): Writable => {
-    if (!fileSink) {
-      fileSink = createWriteStream(filePath);
-      fileSinkOpen = true;
-    }
-    return fileSink;
-  };
 
   // Buffer holding bytes awaiting boundary scan. Capped at twice the
   // boundary length so we never accumulate more than necessary.
@@ -203,33 +281,6 @@ export async function streamMultipartToDisk(
   let state: ParserState = "preamble";
   let currentFieldName: string | null = null;
   const text = new TextParts(opts.maxBytes);
-
-  const writeFileChunk = (chunk: Buffer): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if (bytesWritten + chunk.length > opts.maxBytes) {
-        reject(new MultipartTooLargeError(opts.maxBytes));
-        return;
-      }
-      bytesWritten += chunk.length;
-      hash.update(chunk);
-      const sink = ensureFileSink();
-      sink.write(chunk, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-  };
-
-  const closeFileSink = (): Promise<void> => {
-    return new Promise((resolve) => {
-      if (!fileSink || !fileSinkOpen) {
-        resolve();
-        return;
-      }
-      fileSinkOpen = false;
-      fileSink.end(() => resolve());
-    });
-  };
 
   const reader = cappedReader(body, opts.maxBytes);
   let streamDone = false;
@@ -300,7 +351,9 @@ export async function streamMultipartToDisk(
           buffer = buffer.slice(i);
           continue;
         }
-        throw new Error("Malformed multipart boundary suffix");
+        throw new MultipartMalformedError(
+          "Malformed multipart boundary suffix",
+        );
       }
 
       if (state === "headers") {
@@ -322,6 +375,11 @@ export async function streamMultipartToDisk(
         const filenameMatch = disposition.match(/filename="([^"]*)"/i);
         currentFieldName = nameMatch?.[1] ?? null;
         if (currentFieldName === opts.fieldName) {
+          if (file.done) {
+            throw new MultipartMalformedError(
+              `Multipart body has more than one '${opts.fieldName}' part`,
+            );
+          }
           state = "body-file";
           originalFilename = filenameMatch?.[1] ?? null;
         } else {
@@ -341,7 +399,7 @@ export async function streamMultipartToDisk(
         const emit = buffer.slice(0, buffer.length - keep);
         if (emit.length > 0) {
           if (state === "body-file") {
-            await writeFileChunk(emit);
+            await file.write(emit);
           } else {
             text.push(emit);
           }
@@ -353,7 +411,7 @@ export async function streamMultipartToDisk(
       const emit = buffer.slice(0, idx);
       if (emit.length > 0) {
         if (state === "body-file") {
-          await writeFileChunk(emit);
+          await file.write(emit);
         } else {
           text.push(emit);
         }
@@ -363,7 +421,8 @@ export async function streamMultipartToDisk(
         textFields[currentFieldName] = text.take();
       }
       if (state === "body-file") {
-        await closeFileSink();
+        await file.close();
+        file.done = true;
       }
       buffer = buffer.slice(idx + sep.length);
       // The boundary marker is consumed; classify its two-byte suffix
@@ -384,10 +443,18 @@ export async function streamMultipartToDisk(
       await processBuffer();
     }
     await processBuffer();
-    await closeFileSink();
+    // A body cut off inside a part would otherwise be taken as complete, with
+    // the bytes held back for the boundary search silently dropped.
+    // `processBuffer` moves `state`; read it as the union it is.
+    if ((state as ParserState) !== "epilogue") {
+      throw new MultipartMalformedError(
+        "Multipart body ended before its closing boundary",
+      );
+    }
+    await file.close();
 
-    if (bytesWritten === 0) {
-      throw new Error(
+    if (file.bytes === 0) {
+      throw new MultipartMalformedError(
         `Multipart body did not include a '${opts.fieldName}' file field`,
       );
     }
@@ -398,22 +465,14 @@ export async function streamMultipartToDisk(
     // all end here. The reader is cancelled so the rest of the body is not
     // read for nothing.
     await reader.cancel().catch(() => {});
-    const sink = fileSink as Writable | null;
-    if (sink && !sink.closed) {
-      fileSinkOpen = false;
-      await new Promise<void>((resolve) => {
-        sink.once("close", () => resolve());
-        sink.destroy();
-      });
-    }
-    await rm(filePath, { force: true }).catch(() => {});
+    await file.discard();
     throw err;
   }
 
   return {
-    filePath,
-    bytes: bytesWritten,
-    sha256: hash.digest("hex"),
+    filePath: file.path,
+    bytes: file.bytes,
+    sha256: file.digest(),
     originalFilename,
     textFields,
   };

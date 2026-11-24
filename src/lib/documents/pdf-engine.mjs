@@ -467,14 +467,12 @@ function inkRatio(context, width, height) {
 /**
  * @typedef {object} RenderOptions
  * @property {number} maxPages Pages to render from the first.
- * @property {number} targetLongEdge Longest edge of a rendered page, never upscaled.
+ * @property {number} dpi Resolution a page renders at, in dots per inch of its media box.
+ * @property {number} maxLongEdge Longest edge of a rendered page in pixels; a
+ *   page that would come out larger at `dpi` is scaled down to fit.
  * @property {number} jpegQuality
  * @property {number} minInkRatio Below this share of dark pixels a page counts as blank.
  * @property {boolean} [withText] Also read each rendered page's text layer.
- * @property {boolean} [upscale] Render to `targetLongEdge` even when that is
- *   larger than the page's own size in points. OCR needs it: an A4 page is
- *   842 points long, 72 dpi at scale 1, and a scan's small print is
- *   unreadable at that resolution.
  *
  * @typedef {object} RenderedPage
  * @property {Buffer} jpeg
@@ -488,10 +486,23 @@ function inkRatio(context, width, height) {
  */
 
 /**
- * The most a page is enlarged when `upscale` is asked for. A page declared a
- * few points wide would otherwise become a canvas of any size.
+ * The scale a page renders at. pdf.js measures a page in points (1/72 inch),
+ * so scale 1 is 72 dpi: an A4 page comes out 842 px tall, too coarse for the
+ * small print of a lab report. The page renders at `dpi` instead, which for a
+ * vector page is a sharper render and not an enlargement, unless its long edge
+ * would then pass `maxLongEdge`; then it is scaled to fit that edge exactly.
+ *
+ * @param {number} width Page width in points.
+ * @param {number} height Page height in points.
+ * @param {{ dpi: number; maxLongEdge: number }} options
+ * @returns {number}
  */
-const MAX_UPSCALE = 6;
+export function rasterScale(width, height, options) {
+  const longEdge = Math.max(width, height);
+  if (!(longEdge > 0)) return 1;
+  const atDpi = options.dpi / 72;
+  return Math.min(atDpi, options.maxLongEdge / longEdge);
+}
 
 /**
  * Render the first `maxPages` pages of a PDF to JPEG. Throws what pdf.js
@@ -515,18 +526,15 @@ export async function renderPdfPages(data, options) {
       const page = await doc.getPage(pageNumber);
       try {
         const base = page.getViewport({ scale: 1 });
-        const longEdge = Math.max(base.width, base.height);
-        // Cap the long edge; never upscale unless asked to (OCR).
-        const fit = longEdge > 0 ? options.targetLongEdge / longEdge : 1;
-        const scale = options.upscale
-          ? Math.min(fit, MAX_UPSCALE)
-          : Math.min(1, fit);
+        const scale = rasterScale(base.width, base.height, options);
         const viewport = page.getViewport({ scale });
 
         const factory = /** @type {RenderTargetFactory} */ (doc.canvasFactory);
+        // Rounded, not ceiled: a scale fitted to `maxLongEdge` lands a hair
+        // above it in floating point, and the cap is the provider's limit.
         const target = factory.create(
-          Math.ceil(viewport.width),
-          Math.ceil(viewport.height),
+          Math.max(1, Math.round(viewport.width)),
+          Math.max(1, Math.round(viewport.height)),
         );
         await page.render({
           canvasContext: /** @type {never} */ (target.context),

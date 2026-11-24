@@ -42,6 +42,7 @@ import {
   writeImportedMeasurements,
   type ImportedMeasurement,
 } from "../file-import/write-measurements";
+import { jsonDeeperThan, UPLOADED_JSON_MAX_DEPTH } from "../json-depth";
 import { arr, firstInstant, obj, str, type Json } from "./fields";
 import {
   importRecordResource,
@@ -161,6 +162,12 @@ export async function importFhirBundleFile(input: {
     bundle = obj(JSON.parse(buffer.toString("utf8")));
   } catch {
     throw new RecordFileImportError("not_fhir_bundle", "the file is not JSON");
+  }
+  if (bundle && jsonDeeperThan(bundle)) {
+    throw new RecordFileImportError(
+      "not_fhir_bundle",
+      `the file nests deeper than ${UPLOADED_JSON_MAX_DEPTH} levels`,
+    );
   }
   if (!bundle || bundle.resourceType !== "Bundle") {
     throw new RecordFileImportError(

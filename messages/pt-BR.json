@@ -3964,6 +3964,7 @@
         "title": "Linha do tempo da noite",
         "wokeOn": "Acordou em {date}",
         "summary": "{asleep} dormindo, {awakenings, plural, one {# despertar} other {# despertares}}",
+        "asleepOnly": "{asleep} dormindo",
         "source": "de {source}",
         "previous": "Noite anterior",
         "next": "Próxima noite",

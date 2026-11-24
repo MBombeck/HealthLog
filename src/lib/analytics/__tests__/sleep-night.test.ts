@@ -1677,3 +1677,177 @@ describe("stage-total invariant over generated sessions", () => {
     }
   });
 });
+
+/**
+ * #1419 — whether a night's spans carry the ORDER of its stages or only their
+ * totals is read from the spans' shape, once, on the server. The fixtures are
+ * the shapes the integrations write: a daily sleep summary stamping every
+ * stage total on the wake instant (Garmin, Oura's fallback), the ingest
+ * builder's back-to-back layout (WHOOP, Polar), and a measured night that
+ * alternates through its cycles (Apple Health, Withings, Oura's hypnogram).
+ */
+describe("stage order from the spans' shape (#1419)", () => {
+  const WAKE = "2026-06-04T05:00:00.000Z";
+
+  /** Garmin's daily summary: four stage totals, all on the wake instant. */
+  function garminSummary(source: MeasurementSource = "GARMIN") {
+    return [
+      writerRow(WAKE, "CORE", 250, source, "watch"),
+      writerRow(WAKE, "DEEP", 40, source, "watch"),
+      writerRow(WAKE, "REM", 95, source, "watch"),
+      writerRow(WAKE, "AWAKE", 45, source, "watch"),
+    ];
+  }
+
+  /** The same night as a measured series (00:50 → 05:00), one awakening. */
+  function measuredNight(source: MeasurementSource = "APPLE_HEALTH") {
+    return [
+      writerRow("2026-06-04T02:00:00.000Z", "CORE", 70, source, "watch"),
+      writerRow("2026-06-04T02:40:00.000Z", "DEEP", 40, source, "watch"),
+      writerRow("2026-06-04T03:10:00.000Z", "REM", 30, source, "watch"),
+      writerRow("2026-06-04T03:20:00.000Z", "AWAKE", 10, source, "watch"),
+      writerRow("2026-06-04T04:30:00.000Z", "CORE", 70, source, "watch"),
+      writerRow("2026-06-04T05:00:00.000Z", "REM", 30, source, "watch"),
+    ];
+  }
+
+  /** WHOOP's ingest layout of the night's totals: AWAKE, CORE, DEEP, REM. */
+  function whoopLayout() {
+    return [
+      srcRow("2026-06-04T01:00:00.000Z", "AWAKE", 10, "WHOOP"),
+      srcRow("2026-06-04T03:20:00.000Z", "CORE", 140, "WHOOP"),
+      srcRow("2026-06-04T04:00:00.000Z", "DEEP", 40, "WHOOP"),
+      srcRow("2026-06-04T05:00:00.000Z", "REM", 60, "WHOOP"),
+      srcRow("2026-06-04T05:00:00.000Z", "IN_BED", 250, "WHOOP"),
+    ];
+  }
+
+  it("flags a Garmin night of stage totals and counts no awakening in it", () => {
+    const sessions = reconstructSleepSessions(garminSummary(), "UTC");
+    expect(sessions).toHaveLength(1);
+    const s = sessions[0];
+    expect(s.source).toBe("GARMIN");
+    expect(s.reconstructed).toBe(true);
+    // Sorted by derived start, the 45-minute AWAKE total falls between REM
+    // and DEEP; an awakening read off that order would be invented.
+    expect(s.awakenings).toBe(0);
+    // The totals themselves are what the night does know.
+    expect(s.asleepMinutes).toBe(385);
+    expect(s.stages).toMatchObject({ CORE: 250, DEEP: 40, REM: 95, AWAKE: 45 });
+  });
+
+  it("flags Oura's stage-total fallback the same way", () => {
+    const rows = [
+      srcRow(WAKE, "CORE", 250, "OURA"),
+      srcRow(WAKE, "DEEP", 60, "OURA"),
+      srcRow(WAKE, "REM", 90, "OURA"),
+    ];
+    expect(reconstructSleepSessions(rows, "UTC")[0].reconstructed).toBe(true);
+  });
+
+  it("flags totals stamped on one onset instant", () => {
+    // Every span starts at 23:00; the ends only say how long each lasted.
+    const rows = [
+      srcRow("2026-06-04T03:00:00.000Z", "CORE", 240, "GOOGLE_HEALTH"),
+      srcRow("2026-06-04T00:30:00.000Z", "DEEP", 90, "GOOGLE_HEALTH"),
+      srcRow("2026-06-04T00:20:00.000Z", "REM", 80, "GOOGLE_HEALTH"),
+    ];
+    expect(reconstructSleepSessions(rows, "UTC")[0].reconstructed).toBe(true);
+  });
+
+  it("flags the ingest layout of WHOOP totals, IN_BED envelope included", () => {
+    const s = reconstructSleepSessions(whoopLayout(), "UTC")[0];
+    expect(s.source).toBe("WHOOP");
+    expect(s.reconstructed).toBe(true);
+    expect(s.awakenings).toBe(0);
+  });
+
+  it("keeps a measured night a timeline, with its awakening", () => {
+    const s = reconstructSleepSessions(measuredNight(), "UTC")[0];
+    expect(s.source).toBe("APPLE_HEALTH");
+    expect(s.reconstructed).toBe(false);
+    expect(s.awakenings).toBe(1);
+  });
+
+  it("decides from the shape, not from the source's name", () => {
+    expect(
+      reconstructSleepSessions(garminSummary("APPLE_HEALTH"), "UTC")[0]
+        .reconstructed,
+    ).toBe(true);
+    expect(
+      reconstructSleepSessions(measuredNight("GARMIN"), "UTC")[0].reconstructed,
+    ).toBe(false);
+  });
+
+  it("serves the measured night when Garmin's totals and its Apple Health copy describe the same sleep", () => {
+    // GARMIN outranks APPLE_HEALTH on the default sleep ladder and both carry
+    // all three granular stages, so only the shape can decide.
+    const s = reconstructSleepSessions(
+      [...garminSummary(), ...measuredNight()],
+      "UTC",
+    );
+    expect(s).toHaveLength(1);
+    expect(s[0].source).toBe("APPLE_HEALTH");
+    expect(s[0].reconstructed).toBe(false);
+    expect(s[0].asleepMinutes).toBe(240);
+    expect(s[0].awakenings).toBe(1);
+    expect(s[0].segments).toHaveLength(6);
+  });
+
+  it("serves the measured night over a higher-ranked layout of totals", () => {
+    // WHOOP tops the default ladder and its layout has distinct instants, so
+    // an instant count alone let it win and drew its invented order.
+    const s = reconstructSleepSessions(
+      [...whoopLayout(), ...measuredNight()],
+      "UTC",
+    );
+    expect(s).toHaveLength(1);
+    expect(s[0].source).toBe("APPLE_HEALTH");
+    expect(s[0].reconstructed).toBe(false);
+    // The in-bed envelope still unions across writers.
+    expect(s[0].inBedMinutes).toBe(250);
+  });
+
+  it("keeps the totals when the only other writer knows no stages", () => {
+    const rows = [
+      ...garminSummary(),
+      writerRow(WAKE, "ASLEEP", 380, "APPLE_HEALTH", "phone"),
+      writerRow(
+        "2026-06-04T05:10:00.000Z",
+        "IN_BED",
+        420,
+        "APPLE_HEALTH",
+        "phone",
+      ),
+    ];
+    const s = reconstructSleepSessions(rows, "UTC")[0];
+    expect(s.source).toBe("GARMIN");
+    expect(s.reconstructed).toBe(true);
+    expect(s.inBedMinutes).toBe(420);
+  });
+
+  it("keeps Garmin's totals over the first lone span of a sync still arriving", () => {
+    const rows = [
+      ...garminSummary(),
+      writerRow(
+        "2026-06-04T02:00:00.000Z",
+        "CORE",
+        70,
+        "APPLE_HEALTH",
+        "watch",
+      ),
+    ];
+    const s = reconstructSleepSessions(rows, "UTC")[0];
+    expect(s.source).toBe("GARMIN");
+    expect(s.asleepMinutes).toBe(385);
+  });
+
+  it("carries the measured night onto the night-level totals as well", () => {
+    const nights = reconstructSleepNights(
+      [...whoopLayout(), ...measuredNight()],
+      "UTC",
+    );
+    expect(nights).toHaveLength(1);
+    expect(nights[0].asleepMinutes).toBe(240);
+  });
+});

@@ -216,94 +216,101 @@ afterAll(() => {
   _setWorkerPrismaForTests(null);
 });
 
-describe("Apple Health export: lab results from Health Records", () => {
-  it("imports the lab results and reports bounded counts", async () => {
-    const result = await runArchive();
-    expect(result.labs).toEqual({
-      discovered: 6,
-      imported: 2,
-      duplicate: 1,
-      skipped: 2,
-      failed: 1,
-      // Hemoglobin is new to the account; LDL and Glucose already exist.
-      markersCreated: 1,
-      reasons: { not_final: 1, panel_header: 1, unit_mismatch: 1 },
-    });
-    expect(result.clinical).toEqual({ skipped: 1 });
+// One walk by design: the first import, the same archive again, then a
+// deletion and the archive once more. Each case reads what the one before it
+// wrote, so the block keeps its order under a shuffled run.
+describe(
+  "Apple Health export: lab results from Health Records",
+  { shuffle: false },
+  () => {
+    it("imports the lab results and reports bounded counts", async () => {
+      const result = await runArchive();
+      expect(result.labs).toEqual({
+        discovered: 6,
+        imported: 2,
+        duplicate: 1,
+        skipped: 2,
+        failed: 1,
+        // Hemoglobin is new to the account; LDL and Glucose already exist.
+        markersCreated: 1,
+        reasons: { not_final: 1, panel_header: 1, unit_mismatch: 1 },
+      });
+      expect(result.clinical).toEqual({ skipped: 1 });
 
-    const rows = await prisma.labResult.findMany({
-      where: { userId: USER_ID, source: "APPLE_HEALTH" },
-      orderBy: { analyte: "asc" },
-    });
-    expect(rows).toHaveLength(2);
-    const [hemoglobin, ldl] = rows;
-
-    // Matched to the existing "LDL" marker through its LOINC code, converted
-    // into the marker's unit, the printed value kept.
-    expect(ldl.biomarkerId).toBe(ldlMarkerId);
-    expect(ldl.analyte).toBe("LDL");
-    expect(ldl.unit).toBe("mg/dL");
-    expect(ldl.value).toBeCloseTo(119.9, 0);
-    expect(ldl.sourceValue).toBe(3.1);
-    expect(ldl.sourceUnit).toBe("mmol/L");
-    expect(ldl.sourceReferenceHigh).toBeCloseTo(116, 0);
-    expect(ldl.takenAt.toISOString()).toBe("2025-03-04T07:15:00.000Z");
-    expect(ldl.externalId).toMatch(/^fhir:[0-9a-f]{40}$/);
-
-    // A new analyte gets a marker; the member carries its panel's name.
-    expect(hemoglobin.analyte).toBe("Hemoglobin");
-    expect(hemoglobin.panel).toBe("Complete blood count");
-    expect(hemoglobin.value).toBe(14.2);
-    const marker = await prisma.biomarker.findFirst({
-      where: { userId: USER_ID, name: "Hemoglobin" },
-    });
-    expect(marker?.unit).toBe("g/dL");
-
-    // Nothing from the resource outside the reading.
-    expect(JSON.stringify(result)).not.toContain("synthetic-patient");
-    expect(JSON.stringify(result)).not.toContain("example-clinic");
-  });
-
-  it("writes nothing when the same archive is uploaded again", async () => {
-    const result = await runArchive();
-    expect(result.labs).toEqual({
-      discovered: 6,
-      imported: 0,
-      duplicate: 3,
-      skipped: 2,
-      failed: 1,
-      markersCreated: 0,
-      reasons: { not_final: 1, panel_header: 1, unit_mismatch: 1 },
-    });
-    expect(
-      await prisma.labResult.count({
+      const rows = await prisma.labResult.findMany({
         where: { userId: USER_ID, source: "APPLE_HEALTH" },
-      }),
-    ).toBe(2);
-  });
+        orderBy: { analyte: "asc" },
+      });
+      expect(rows).toHaveLength(2);
+      const [hemoglobin, ldl] = rows;
 
-  it("keeps a deleted result deleted", async () => {
-    const hemoglobin = await prisma.labResult.findFirstOrThrow({
-      where: { userId: USER_ID, analyte: "Hemoglobin" },
+      // Matched to the existing "LDL" marker through its LOINC code, converted
+      // into the marker's unit, the printed value kept.
+      expect(ldl.biomarkerId).toBe(ldlMarkerId);
+      expect(ldl.analyte).toBe("LDL");
+      expect(ldl.unit).toBe("mg/dL");
+      expect(ldl.value).toBeCloseTo(119.9, 0);
+      expect(ldl.sourceValue).toBe(3.1);
+      expect(ldl.sourceUnit).toBe("mmol/L");
+      expect(ldl.sourceReferenceHigh).toBeCloseTo(116, 0);
+      expect(ldl.takenAt.toISOString()).toBe("2025-03-04T07:15:00.000Z");
+      expect(ldl.externalId).toMatch(/^fhir:[0-9a-f]{40}$/);
+
+      // A new analyte gets a marker; the member carries its panel's name.
+      expect(hemoglobin.analyte).toBe("Hemoglobin");
+      expect(hemoglobin.panel).toBe("Complete blood count");
+      expect(hemoglobin.value).toBe(14.2);
+      const marker = await prisma.biomarker.findFirst({
+        where: { userId: USER_ID, name: "Hemoglobin" },
+      });
+      expect(marker?.unit).toBe("g/dL");
+
+      // Nothing from the resource outside the reading.
+      expect(JSON.stringify(result)).not.toContain("synthetic-patient");
+      expect(JSON.stringify(result)).not.toContain("example-clinic");
     });
-    await prisma.labResult.update({
-      where: { id: hemoglobin.id },
-      data: { deletedAt: new Date() },
+
+    it("writes nothing when the same archive is uploaded again", async () => {
+      const result = await runArchive();
+      expect(result.labs).toEqual({
+        discovered: 6,
+        imported: 0,
+        duplicate: 3,
+        skipped: 2,
+        failed: 1,
+        markersCreated: 0,
+        reasons: { not_final: 1, panel_header: 1, unit_mismatch: 1 },
+      });
+      expect(
+        await prisma.labResult.count({
+          where: { userId: USER_ID, source: "APPLE_HEALTH" },
+        }),
+      ).toBe(2);
     });
-    const result = await runArchive();
-    expect(result.labs).toMatchObject({ imported: 0, duplicate: 3 });
-    expect(
-      await prisma.labResult.count({
+
+    it("keeps a deleted result deleted", async () => {
+      const hemoglobin = await prisma.labResult.findFirstOrThrow({
         where: { userId: USER_ID, analyte: "Hemoglobin" },
-      }),
-    ).toBe(1);
-    expect(
-      await prisma.labResult.count({
-        where: { userId: USER_ID, analyte: "Hemoglobin", deletedAt: null },
-      }),
-    ).toBe(0);
-  });
-});
+      });
+      await prisma.labResult.update({
+        where: { id: hemoglobin.id },
+        data: { deletedAt: new Date() },
+      });
+      const result = await runArchive();
+      expect(result.labs).toMatchObject({ imported: 0, duplicate: 3 });
+      expect(
+        await prisma.labResult.count({
+          where: { userId: USER_ID, analyte: "Hemoglobin" },
+        }),
+      ).toBe(1);
+      expect(
+        await prisma.labResult.count({
+          where: { userId: USER_ID, analyte: "Hemoglobin", deletedAt: null },
+        }),
+      ).toBe(0);
+    });
+  },
+);
 
 describe("Apple Health export: Health Records named by FHIR resource type", () => {
   const CURRENT_USER = "user-apple-clinical-current";

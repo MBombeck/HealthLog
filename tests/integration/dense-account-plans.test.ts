@@ -305,6 +305,20 @@ function expectBounded(
   ).toBeLessThanOrEqual(bound);
 }
 
+/**
+ * Explain `read` after one untimed call of its own. The readings older than
+ * the fold window are counted once into a closed block that the first read
+ * of a type folds and every later read takes; the bounds below are the cost
+ * of a later read. A case that left the fold to whichever case ran before it
+ * measured the fold instead whenever the order changed.
+ */
+async function explainWarm<T>(
+  read: () => Promise<T>,
+): ReturnType<typeof explainStatements<T>> {
+  await read();
+  return explainStatements(read);
+}
+
 describe.each<StatisticsState>(["none", "predate", "analysed"])(
   "dense account reads with statistics: %s",
   (state) => {
@@ -337,7 +351,7 @@ describe.each<StatisticsState>(["none", "predate", "analysed"])(
     });
 
     it("reads the full-history figures from the tier, checking it at its ends", async () => {
-      const ledger = await explainStatements(() =>
+      const ledger = await explainWarm(() =>
         readAllTimeExtremes(ACCOUNT, [
           "WEIGHT",
           "BLOOD_PRESSURE_SYS",
@@ -424,6 +438,10 @@ describe.each<StatisticsState>(["none", "predate", "analysed"])(
     });
 
     it("searches the domains without the Coach snapshot", async () => {
+      // The first call folds the closed block (see `explainWarm`); the
+      // snapshot cache is emptied after it so the measured call cannot be
+      // answered from a snapshot the first one built.
+      await searchTool.run(ctx, { query: "pulse" });
       __resetCoachSnapshotCacheForTests();
       const ledger = await explainStatements(() =>
         searchTool.run(ctx, { query: "pulse" }),
@@ -466,7 +484,7 @@ describe.each<StatisticsState>(["none", "predate", "analysed"])(
     });
 
     it("counts the discovery rows exactly from the tier", async () => {
-      const ledger = await explainStatements(() =>
+      const ledger = await explainWarm(() =>
         metricStatusDiscoveryRows(ACCOUNT),
       );
       expect(

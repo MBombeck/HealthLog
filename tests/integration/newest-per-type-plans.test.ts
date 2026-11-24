@@ -34,6 +34,11 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
+import {
+  loopTotal,
+  perLoopHalfStep,
+  serverVersionNum,
+} from "./statement-plans";
 import { prisma as appPrisma } from "@/lib/db";
 import { readLatestEver } from "@/lib/dashboard/summary-reads";
 import { readLatestReadingsPerType } from "@/lib/insights/recent-readings";
@@ -167,7 +172,13 @@ async function readStatistics(): Promise<{
   };
 }
 
+/** EXPLAIN's per-loop rounding on this server; see `perLoopHalfStep`. */
+let halfStep = 0.005;
+
 beforeAll(async () => {
+  halfStep = perLoopHalfStep(
+    await serverVersionNum((sql) => prisma.$queryRawUnsafe(sql)),
+  );
   await truncateAllTables(prisma);
   await prisma.$executeRawUnsafe(
     "ALTER TABLE measurements SET (autovacuum_enabled = false)",
@@ -436,18 +447,15 @@ function scanRowVisits(
       (alias === undefined || node.Alias === alias)
     ) {
       scans += 1;
-      const loops = node["Actual Loops"] ?? 1;
-      const perLoop =
-        (node["Actual Rows"] ?? 0) +
-        (node["Rows Removed by Filter"] ?? 0) +
-        (node["Rows Removed by Index Recheck"] ?? 0);
-      // EXPLAIN prints these per-loop averages rounded to two decimals
-      // (Postgres 18), so a scan run once per enum value over a handful of
-      // rows multiplies the rounding by the loop count: four rows over 101
-      // probes print as 0.04 a loop and read back as 4.04. The true total is
-      // a whole number within half a hundredth a loop of the print; take the
-      // smallest one consistent with it, never less than the print allows.
-      own = Math.max(0, Math.ceil((perLoop - 0.005) * loops - 1e-9));
+      // EXPLAIN prints these as per-loop averages, rounded (to two decimals
+      // on Postgres 18, to whole rows before it), so a scan run once per type
+      // multiplies the rounding by the loop count. `loopTotal` takes the
+      // smallest whole total the print allows (`statement-plans.ts`).
+      const loops = node["Actual Loops"];
+      own =
+        loopTotal(node["Actual Rows"], loops, halfStep) +
+        loopTotal(node["Rows Removed by Filter"], loops, halfStep) +
+        loopTotal(node["Rows Removed by Index Recheck"], loops, halfStep);
     }
     return own + (node.Plans ?? []).reduce((sum, p) => sum + walk(p), 0);
   };

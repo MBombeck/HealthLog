@@ -120,6 +120,8 @@ Contributors: branch off `main` for a fix and target `main`; branch off the curr
 4. Ensure all checks pass (`pnpm typecheck && pnpm lint && pnpm test && pnpm format:check && pnpm build`)
 5. Submit a PR against `main` (fix) or the release branch (feature) with a clear description of the changes
 
+Signing your commits is welcome and not required; [docs/contributing/commit-signing.md](docs/contributing/commit-signing.md) explains the setup and why the rule stops short of requiring it.
+
 ## Translations
 
 HealthLog ships with English (`en`) and German (`de`) maintained by the project, plus French (`fr`), Spanish (`es`), Italian (`it`), Polish (`pl`), Korean (`ko`), Dutch (`nl`), Brazilian Portuguese (`pt-BR`) and Russian (`ru`), which started as machine-translated first drafts and are reviewed by the community. The maintained locales are reviewed line by line; the community-reviewed ones show a small banner inviting users to improve them.

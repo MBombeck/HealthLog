@@ -34,6 +34,7 @@ import { pathToFileURL } from "node:url";
 import { RecordFileImportError } from "@/lib/import/file-import/kinds";
 import {
   openSqliteOffThread,
+  SqliteStatementError,
   type OffThreadSqlite,
 } from "@/lib/import/sqlite-off-thread";
 
@@ -199,9 +200,31 @@ async function inspect(db: OffThreadSqlite): Promise<GadgetbridgeDb> {
     tables,
     unread,
     batches: (sql, params = [], size = GB_BATCH_SIZE) =>
-      db.batches(sql, params, size),
+      refusingDamage(db.batches(sql, params, size)),
     close: () => db.close(),
   };
+}
+
+/**
+ * The rows of a statement, with a damaged page refused as a broken file. The
+ * schema and the counts read fine on a file whose damage lies deeper; the
+ * error then surfaced mid-import as SQLite's own text and failed the job as
+ * an internal error.
+ */
+async function* refusingDamage(
+  rows: AsyncGenerator<Array<Record<string, unknown>>>,
+): AsyncGenerator<Array<Record<string, unknown>>> {
+  try {
+    yield* rows;
+  } catch (err) {
+    if (err instanceof SqliteStatementError) {
+      throw new RecordFileImportError(
+        "not_gadgetbridge",
+        "the database is damaged and could not be read to the end",
+      );
+    }
+    throw err;
+  }
 }
 
 /** A finite number from a SQLite value, or null. */

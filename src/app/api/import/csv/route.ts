@@ -11,7 +11,10 @@ import { csvImportQuerySchema } from "@/lib/validations/record-import";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 
-import { parseCsvMeasurements } from "@/lib/import/csv-measurements";
+import {
+  CsvShapeLimitError,
+  parseCsvMeasurements,
+} from "@/lib/import/csv-measurements";
 import { runCsvImport, type CsvOkRow } from "@/lib/import/csv-write";
 
 /**
@@ -74,7 +77,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Could not read the request body", 400);
   }
 
-  const parsed = parseCsvMeasurements(text);
+  let parsed: ReturnType<typeof parseCsvMeasurements>;
+  try {
+    parsed = parseCsvMeasurements(text);
+  } catch (err) {
+    if (err instanceof CsvShapeLimitError) return apiError(err.message, 422);
+    throw err;
+  }
   if (parsed.fatal) {
     return apiError(parsed.fatal.message, 422);
   }

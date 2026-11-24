@@ -11,9 +11,9 @@
  *
  * The ORDER is synthetic, so every laid segment is flagged `reconstructed:
  * true`; the night DTO advertises it and the UI labels such a night as an
- * approximate layout, never as measured stage timing. The reader's honesty
- * flag (`analytics/sleep-night.ts` `RECONSTRUCTED_TIMELINE_SOURCES`) carries
- * the same contract on the read side.
+ * approximate layout, never as measured stage timing. The flag is not stored;
+ * the reader recognises the layout by its shape instead (every stage once,
+ * back to back, in `LAID_OUT_STAGE_ORDER`: `sleep/stage-timeline.ts`).
  *
  * This helper is the single source of the algorithm; each vendor `mapSleep`
  * keeps only its field-name → tuple normalisation (ms vs sec, source field
@@ -58,7 +58,7 @@ export interface ReconstructedInBed {
 export interface ReconstructTimelineOptions {
   /** Sleep ONSET instant; the contiguous walk starts here. */
   startMs: number;
-  /** Stages in physiological lay-out order (e.g. AWAKE → CORE → DEEP → REM). */
+  /** Stages to lay out; laid in `LAID_OUT_STAGE_ORDER` whatever their order here. */
   stages: ReadonlyArray<ReconstructedStage>;
   /** Optional IN_BED envelope row. */
   inBed?: ReconstructedInBed;
@@ -75,6 +75,16 @@ export interface ReconstructTimelineOptions {
   externalIdFor: (fieldTag: string) => string;
 }
 
+/**
+ * The one order a reconstructed timeline is laid in: a settling-in AWAKE
+ * block, then CORE → DEEP → REM. The builder lays its stages in this order
+ * whatever order the caller lists them in, and the night reader recognises
+ * a laid-out night by it (`sleep/stage-timeline.ts` `hasStageTimeline`), so
+ * the two cannot drift apart.
+ */
+export const LAID_OUT_STAGE_ORDER: ReadonlyArray<ReconstructedStage["stage"]> =
+  ["AWAKE", "CORE", "DEEP", "REM"];
+
 const MS_TO_MIN = 1 / 60_000;
 
 function round2(n: number): number {
@@ -82,7 +92,8 @@ function round2(n: number): number {
 }
 
 /**
- * Lay the asleep/awake stages contiguously from `startMs` in the given order,
+ * Lay the asleep/awake stages contiguously from `startMs` in
+ * `LAID_OUT_STAGE_ORDER`,
  * emitting one timed `SLEEP_DURATION` row per stage (`measuredAt` = that
  * segment's END), each flagged `reconstructed: true` and keyed by a
  * stage-tagged externalId. Appends a single IN_BED envelope row when `inBed`
@@ -94,8 +105,13 @@ export function reconstructContiguousSleepTimeline(
   const { startMs, stages, inBed, externalIdFor } = opts;
   const out: ReconstructedSleepRow[] = [];
 
+  const ordered = [...stages].sort(
+    (a, b) =>
+      LAID_OUT_STAGE_ORDER.indexOf(a.stage) -
+      LAID_OUT_STAGE_ORDER.indexOf(b.stage),
+  );
   let cursor = startMs;
-  for (const { durationMs, stage, fieldTag } of stages) {
+  for (const { durationMs, stage, fieldTag } of ordered) {
     if (
       typeof durationMs !== "number" ||
       !Number.isFinite(durationMs) ||

@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, inject, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, inject, vi } from "vitest";
 
 import { quarantineEntryFor } from "../quarantine/quarantine";
 import { watchSwallowedMockErrors } from "../support/swallowed-mock-errors";
+import { readSchemaEntries, schemaDrift } from "./schema-fingerprint";
 import { prepareWorkerDatabase } from "./worker-database";
 
 // Each worker runs against its own clone of the migrated template (see
@@ -39,6 +40,31 @@ afterEach(async () => {
     await import("@/lib/logging/background-tasks");
   await settleBackgroundTasks();
   checkSwallowedMockErrors();
+});
+
+/**
+ * A file leaves the worker's schema as it found it (`schema-fingerprint.ts`).
+ * Registered here, before the file's own hooks, so this `afterAll` runs after
+ * the file's own clean-up.
+ */
+let schemaAtStart: string[] = [];
+beforeAll(async () => {
+  schemaAtStart = await readSchemaEntries(process.env.DATABASE_URL ?? "");
+});
+afterAll(async () => {
+  const { added, removed } = schemaDrift(
+    schemaAtStart,
+    await readSchemaEntries(process.env.DATABASE_URL ?? ""),
+  );
+  if (added.length > 0 || removed.length > 0) {
+    throw new Error(
+      [
+        "This file changed the schema of the worker database and left it changed; the next file in the worker inherits it. Put the head schema back in an afterAll or finally.",
+        ...added.map((e) => `  left behind: ${e}`),
+        ...removed.map((e) => `  missing:     ${e}`),
+      ].join("\n"),
+    );
+  }
 });
 
 /** The flaky-test quarantine, as in the unit setup (`vitest.setup.ts`). */

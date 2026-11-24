@@ -74,13 +74,16 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("<AppleHealthCard>", () => {
-  beforeEach(() => {
-    statusPayload = undefined;
-    statusLoading = false;
-    statusError = false;
-  });
+// The status read every case starts from, at file level so it runs before
+// every case in every block: a block without it inherited a loading or error
+// state from whichever case a shuffled run put before it.
+beforeEach(() => {
+  statusPayload = undefined;
+  statusLoading = false;
+  statusError = false;
+});
 
+describe("<AppleHealthCard>", () => {
   it("explains that live sync uses the iOS app rather than OAuth", () => {
     statusPayload = { lastSyncedAt: null, health: null };
 
@@ -229,12 +232,6 @@ describe("<AppleHealthCard>", () => {
 });
 
 describe("<AppleHealthCard> — delivery diagnostic (#586)", () => {
-  beforeEach(() => {
-    statusPayload = undefined;
-    statusLoading = false;
-    statusError = false;
-  });
-
   it("names how the last sync arrived and when data last came in on its own", () => {
     statusPayload = {
       lastSyncedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
@@ -298,12 +295,6 @@ describe("<AppleHealthCard> — delivery diagnostic (#586)", () => {
 // #778 — the first-run backfill used to be invisible: a user watching the web
 // app had no way to tell "still flowing" from "looks dead but is working".
 describe("<AppleHealthCard> — sync progress (#778)", () => {
-  beforeEach(() => {
-    statusPayload = undefined;
-    statusLoading = false;
-    statusError = false;
-  });
-
   it("shows the accepted-row count and the oldest reading reached", () => {
     statusPayload = {
       lastSyncedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),

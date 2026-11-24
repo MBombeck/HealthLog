@@ -11,9 +11,9 @@
  * thumbnail and every read a person is waiting on until it was done. Page by
  * page, the queue puts those in between.
  *
- * Bounds: the first `LOCAL_OCR_MAX_PAGES` pages, each rendered to
- * `LOCAL_OCR_LONG_EDGE` pixels on its long side (about 240 dpi on A4, enough
- * for the small print of a lab table), each read within
+ * Bounds: the first `LOCAL_OCR_MAX_PAGES` pages, each rendered for the `ocr`
+ * purpose of `RASTER_PURPOSES` (240 dpi on A4 and US Letter, enough for the
+ * small print of a lab table), each read within
  * `LOCAL_OCR_PAGE_TIMEOUT_MS`. Between pages the work stops when the job was
  * aborted (`signal`) or the document is gone (`stillWanted`).
  *
@@ -37,21 +37,11 @@ import {
   type PdfChildLimits,
 } from "./pdf-isolation";
 import { PdfReaderUnavailableError } from "./pdfjs";
-import { RASTER_MIN_INK_RATIO } from "./rasterize-pdf";
+import { RASTER_MIN_INK_RATIO, RASTER_PURPOSES } from "./rasterize-pdf";
 import { MAX_SOURCE_PIXELS } from "./thumbnail";
 
 /** Pages of a scan read by OCR; the rest of a longer one is not. */
 export const LOCAL_OCR_MAX_PAGES = 10;
-
-/** Long edge a page is rendered to for OCR. */
-export const LOCAL_OCR_LONG_EDGE = 2800;
-
-/**
- * The resolution a rendered A4 or Letter page comes out at, told to
- * tesseract: a JPEG carries none, and tesseract sizes its text detection by
- * it. A photo has no known resolution and is read without one.
- */
-const LOCAL_OCR_PDF_DPI = 240;
 
 /** JPEG quality of a rendered page; text edges stay sharp at this one. */
 const LOCAL_OCR_JPEG_QUALITY = 90;
@@ -263,10 +253,9 @@ async function pageImages(
         data: bytes,
         options: {
           maxPages: LOCAL_OCR_MAX_PAGES,
-          targetLongEdge: LOCAL_OCR_LONG_EDGE,
+          ...RASTER_PURPOSES.ocr,
           jpegQuality: LOCAL_OCR_JPEG_QUALITY,
           minInkRatio: RASTER_MIN_INK_RATIO,
-          upscale: true,
         },
       },
       {
@@ -295,7 +284,9 @@ async function pageImages(
       ok: true,
       images: pages.map((page) => page.jpeg),
       pageCount: rendered.value.pageCount,
-      dpi: LOCAL_OCR_PDF_DPI,
+      // A JPEG carries no resolution and tesseract sizes its text detection
+      // by it; a page up to A4 renders at exactly this one.
+      dpi: RASTER_PURPOSES.ocr.dpi,
     };
   }
 
@@ -308,7 +299,7 @@ async function pageImages(
         op: "image-thumbnail",
         data: bytes,
         options: {
-          longEdge: LOCAL_OCR_LONG_EDGE,
+          longEdge: RASTER_PURPOSES.ocr.maxLongEdge,
           quality: LOCAL_OCR_JPEG_QUALITY,
           maxPixels: MAX_SOURCE_PIXELS,
         },

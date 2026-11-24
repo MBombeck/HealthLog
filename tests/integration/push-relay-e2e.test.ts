@@ -279,7 +279,16 @@ describe("push relay end to end", () => {
     // Over the relay the confirmation lives as long as every other alert.
     expect((plaintext.exp as number) - (plaintext.iat as number)).toBe(15 * 60);
 
-    // The confirmation's delivery; the silent sync beside it has its own.
+    // The confirmation's delivery; the silent sync beside it has its own. The
+    // fake has the push as soon as the relay call arrives, but the server
+    // records the relay's answer after that call returns, in a send nothing
+    // awaits; read the row once it has been written, not as the request lands.
+    await eventually(
+      async () =>
+        (await prisma.pushRelayDelivery.count({
+          where: { deviceId, pushClass: "alert", status: { not: "pending" } },
+        })) > 0,
+    );
     const delivery = await prisma.pushRelayDelivery.findFirstOrThrow({
       where: { deviceId, pushClass: "alert" },
     });

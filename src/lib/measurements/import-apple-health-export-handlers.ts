@@ -306,17 +306,17 @@ function openCycleRecord(
   hkType: string,
   attrs: TagAttributes,
 ): void {
-  const dayKey = userDayKey(
-    new Date(attrs.endDate ?? attrs.startDate ?? ""),
-    ctx.userTimezone,
-  );
-  ctx.state.currentCycleRecord = Number.isNaN(
-    Date.parse(attrs.endDate ?? attrs.startDate ?? ""),
-  )
+  // The day key is taken only from a date that reads. It used to be computed
+  // first, and formatting an invalid date throws, so one reproductive sample
+  // with an unreadable date ended the whole import instead of being skipped.
+  const at = Date.parse(attrs.endDate ?? attrs.startDate ?? "");
+  if (Number.isNaN(at))
+    tallyReason(ctx.tally.unknown, `${hkType}::unparseable`);
+  ctx.state.currentCycleRecord = Number.isNaN(at)
     ? null
     : {
         hkType,
-        dayKey,
+        dayKey: userDayKey(new Date(at), ctx.userTimezone),
         rawValue: attrs.value,
         sampleKey: hashSampleKey(
           hkType,
