@@ -36,6 +36,7 @@ type Payload = {
     recordsAccepted: number;
     oldestMeasuredAt: string | null;
   } | null;
+  quietDevices?: Array<{ model: string | null; quietSince: string }>;
 };
 
 let statusPayload: Payload | undefined;
@@ -135,6 +136,38 @@ describe("<AppleHealthCard>", () => {
     expect(html).toContain('data-state="ok"');
     expect(html).toContain("Data is arriving.");
     expect(html).toContain("Last data: today,");
+  });
+
+  it("names each quiet iPhone and since when, from the stall rule", () => {
+    const anHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    statusPayload = {
+      lastSyncedAt: anHourAgo,
+      health: healthFixture({ lastDataAt: anHourAgo }),
+      quietDevices: [
+        { model: "iPhone", quietSince: "2026-10-07T07:30:00.000Z" },
+        { model: null, quietSince: "2026-10-07T09:00:00.000Z" },
+      ],
+    };
+
+    const html = render();
+
+    expect(html).toContain('data-slot="apple-health-quiet-devices"');
+    expect(html.match(/data-testid="apple-health-quiet-device"/g)).toHaveLength(
+      2,
+    );
+    expect(html).toContain("iPhone: quiet since yesterday");
+    expect(html).toContain("An iPhone: quiet since yesterday");
+    expect(html).toContain("Opening HealthLog on it once is enough.");
+  });
+
+  it("shows no quiet line while every iPhone delivers", () => {
+    const anHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    statusPayload = {
+      lastSyncedAt: anHourAgo,
+      health: healthFixture({ lastDataAt: anHourAgo }),
+      quietDevices: [],
+    };
+    expect(render()).not.toContain("apple-health-quiet-devices");
   });
 
   it("keeps per-metric freshness in the details so one dead permission stays findable", () => {
