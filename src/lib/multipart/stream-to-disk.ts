@@ -7,9 +7,11 @@
  * therefore reads `request.body` directly (a `ReadableStream<Uint8Array>`
  * per Web Streams) and walks the multipart boundary by hand.
  *
- * Only the named `file` field of the upload is captured; any other
- * field-name parts are read and discarded so the stream drains
- * cleanly. The captured field's bytes are written to a temp file and
+ * Only the named `file` field of the upload is captured to disk; any
+ * other part is kept in memory as a text field, under a small ceiling
+ * of its own. Every byte read counts against the file cap plus a fixed
+ * envelope, and a part's header block has a ceiling too, so nothing in
+ * the body is held without a bound. The captured field's bytes are written to a temp file and
  * a SHA-256 digest is computed in the same pass — the digest powers
  * the content-hash idempotency check in the kick-off endpoint.
  *
@@ -53,6 +55,18 @@ export class MultipartTooLargeError extends Error {
     this.name = "MultipartTooLargeError";
   }
 }
+
+/**
+ * What a body may carry beyond the file itself: boundaries, part headers and
+ * the small text fields. Every byte read from the stream counts against
+ * `maxBytes` plus this, so a body without a Content-Length (chunked) is held
+ * to the same ceiling as one that declares it.
+ */
+export const MULTIPART_ENVELOPE_RESERVE_BYTES = 64 * 1024;
+/** One part's header block. */
+export const MULTIPART_MAX_HEADER_BYTES = 16 * 1024;
+/** All text parts together; they are held in memory, unlike the file. */
+export const MULTIPART_MAX_TEXT_BYTES = 32 * 1024;
 
 const CRLF = Buffer.from("\r\n");
 const DOUBLE_CRLF = Buffer.from("\r\n\r\n");
@@ -130,6 +144,19 @@ export async function streamMultipartToDisk(
   let state: ParserState = "preamble";
   let currentFieldName: string | null = null;
   let currentTextBuffer: Buffer[] = [];
+  let textBytes = 0;
+  let bodyBytesRead = 0;
+  const maxBodyBytes = opts.maxBytes + MULTIPART_ENVELOPE_RESERVE_BYTES;
+
+  // A text part is kept in memory, so it is held to a small ceiling of its
+  // own; only the file part streams to disk under `maxBytes`.
+  const keepText = (chunk: Buffer): void => {
+    textBytes += chunk.length;
+    if (textBytes > MULTIPART_MAX_TEXT_BYTES) {
+      throw new MultipartTooLargeError(opts.maxBytes);
+    }
+    currentTextBuffer.push(chunk);
+  };
 
   const writeFileChunk = (chunk: Buffer): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -232,7 +259,15 @@ export async function streamMultipartToDisk(
 
       if (state === "headers") {
         const eoh = buffer.indexOf(DOUBLE_CRLF);
-        if (eoh === -1) return;
+        if (eoh === -1) {
+          if (buffer.length > MULTIPART_MAX_HEADER_BYTES) {
+            throw new Error("Multipart part headers too large");
+          }
+          return;
+        }
+        if (eoh > MULTIPART_MAX_HEADER_BYTES) {
+          throw new Error("Multipart part headers too large");
+        }
         const headerBlock = buffer.slice(0, eoh).toString("utf8");
         buffer = buffer.slice(eoh + DOUBLE_CRLF.length);
 
@@ -270,7 +305,7 @@ export async function streamMultipartToDisk(
           if (state === "body-file") {
             await writeFileChunk(emit);
           } else {
-            currentTextBuffer.push(emit);
+            keepText(emit);
           }
         }
         buffer = buffer.slice(buffer.length - keep);
@@ -282,7 +317,7 @@ export async function streamMultipartToDisk(
         if (state === "body-file") {
           await writeFileChunk(emit);
         } else {
-          currentTextBuffer.push(emit);
+          keepText(emit);
         }
       }
       // Finalise the text field if applicable.
@@ -308,6 +343,10 @@ export async function streamMultipartToDisk(
       if (done) {
         streamDone = true;
         break;
+      }
+      bodyBytesRead += value.length;
+      if (bodyBytesRead > maxBodyBytes) {
+        throw new MultipartTooLargeError(opts.maxBytes);
       }
       buffer = Buffer.concat([buffer, Buffer.from(value)]);
       await processBuffer();
