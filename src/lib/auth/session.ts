@@ -18,8 +18,7 @@ import {
   readSessionCookie,
   sessionCookieName,
 } from "@/lib/auth/session-cookie";
-
-const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+import * as lifetime from "@/lib/auth/session-lifetime";
 
 /**
  * Marks a cookie value as a v1.30.32 session secret. Doubles as the branch
@@ -136,18 +135,20 @@ async function findSessionByCookie(cookieValue: string) {
 }
 
 /**
- * A session row that may answer for its user: it exists, has not expired, and
- * its account is not pending deletion. Deleting an account revokes every
- * session in the same transaction; this refuses one minted in the moment
- * between a sign-in's own check and that commit, so the lock holds without
- * relying on the order of two transactions.
+ * A session row that may answer for its user: it exists, has not expired nor
+ * outlived the absolute lifetime read from its sign-in (a row stored before
+ * the limit ends on time too), and its account is not pending deletion. An
+ * account deletion revokes every session in its transaction; this refuses one
+ * minted between a sign-in's own check and that commit.
  */
 function isUsableSession(session: {
+  createdAt: Date;
   expiresAt: Date;
   user: { deletionRequestedAt: Date | null };
 }): boolean {
   return (
-    session.expiresAt >= new Date() && session.user.deletionRequestedAt == null
+    lifetime.isWebSessionLive(session) &&
+    session.user.deletionRequestedAt == null
   );
 }
 
@@ -250,7 +251,7 @@ export async function setOnboardingPendingCookie(
       // Withings OAuth callback arrives via top-level cross-site
       // redirect; the onboarding hint has no equivalent flow.
       sameSite: "strict",
-      maxAge: SESSION_MAX_AGE_MS / 1000,
+      maxAge: lifetime.sessionIdleTimeoutMs() / 1000,
       path: "/",
     });
   } else {
@@ -281,11 +282,14 @@ export async function createSession(
   // The secret is the cookie; the row id stays an internal identifier and is
   // never handed to the client.
   const secret = mintSessionSecret();
+  const signedInAt = new Date();
+  const expiresAt = lifetime.webSessionExpiry(signedInAt);
   const session = await prisma.session.create({
     data: {
       userId,
       tokenHash: hashToken(secret),
-      expiresAt: new Date(Date.now() + SESSION_MAX_AGE_MS),
+      createdAt: signedInAt,
+      expiresAt,
       ipAddress: ipAddress ?? null,
       userAgent: userAgent ?? null,
       mfaVerifiedAt: mfaVerifiedAt ?? null,
@@ -293,7 +297,7 @@ export async function createSession(
   });
 
   const cookieStore = await cookies();
-  issueSessionCookie(cookieStore, secret, SESSION_MAX_AGE_MS / 1000);
+  issueSessionCookie(cookieStore, secret, lifetime.secondsUntil(expiresAt));
 
   // Anchor the onboarding cookie alongside the session cookie so a
   // future auth surface added without remembering the helper can never
@@ -330,32 +334,28 @@ export async function getSession(): Promise<{
     return null;
   }
 
-  // Sliding expiry: refresh if more than 1 day old.
-  //
-  // Withheld from legacy (`tokenHash === null`) rows on purpose. Extending
-  // those would let a cuid-as-credential session renew itself indefinitely for
-  // an active user, and the whole point of the passive transition is that the
-  // id-resolvable path drains on its own. Capping them at the expiry they
-  // already carry bounds it to at most 30 days past the deploy; the user then
-  // logs in once and lands on a secret. Re-emitting the cookie is likewise
-  // pointless for a legacy row — its value cannot be improved in place.
-  const oneDayMs = 24 * 60 * 60 * 1000;
-  if (
-    session.tokenHash !== null &&
-    session.expiresAt.getTime() - Date.now() < SESSION_MAX_AGE_MS - oneDayMs
-  ) {
-    const newExpiry = new Date(Date.now() + SESSION_MAX_AGE_MS);
+  // Sliding expiry, never past the absolute end (`slidWebSessionExpiry`).
+  // Withheld from legacy (`tokenHash === null`) rows on purpose: extending
+  // those would let a cuid-as-credential session renew itself for ever; the
+  // id path drains on its own within one session lifetime of the deploy.
+  const nextExpiry =
+    session.tokenHash === null
+      ? null
+      : lifetime.slidWebSessionExpiry(session.createdAt, session.expiresAt);
+  if (nextExpiry) {
     await prisma.session.update({
       where: { id: session.id },
-      data: { expiresAt: newExpiry },
+      data: { expiresAt: nextExpiry },
     });
-    issueSessionCookie(cookieStore, cookieValue, SESSION_MAX_AGE_MS / 1000);
+    const maxAge = lifetime.secondsUntil(nextExpiry);
+    issueSessionCookie(cookieStore, cookieValue, maxAge);
   } else if (carried.name !== sessionCookieName()) {
     // Issued before the `__Host-` name: re-issued under it, so the upgrade
     // signs nobody out. A server-component render cannot write cookies; the
     // next route request does.
     try {
-      issueSessionCookie(cookieStore, cookieValue, SESSION_MAX_AGE_MS / 1000);
+      const maxAge = lifetime.secondsUntil(session.expiresAt);
+      issueSessionCookie(cookieStore, cookieValue, maxAge);
     } catch {
       // Read-only cookie context.
     }

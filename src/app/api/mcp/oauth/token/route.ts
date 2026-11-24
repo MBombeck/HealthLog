@@ -52,6 +52,7 @@ import {
 } from "@/lib/mcp/oauth/config";
 import { signArtifact, verifyArtifact } from "@/lib/mcp/oauth/artifacts";
 import { verifyPkceS256 } from "@/lib/mcp/oauth/pkce";
+import { refreshFamilyHardEnd } from "@/lib/auth/session-lifetime";
 import {
   createConnection,
   rotateConnection,
@@ -120,6 +121,11 @@ type TokenPairArgs = {
   grant: "authorization_code" | "refresh_token";
   connectionId?: string;
   refreshJti?: string;
+  /**
+   * The connection's absolute end (REFRESH_TOKEN_MAX_LIFETIME_DAYS from its
+   * consent): neither the access token nor the refresh artifact outlives it.
+   */
+  endsAt?: Date;
 };
 
 /**
@@ -132,9 +138,20 @@ type TokenPairArgs = {
  * the connection seeded with it; for `refresh_token` the caller has just
  * advanced the connection to it.
  */
+/** The refresh artifact's lifetime: 30 days, or less at the connection's end. */
+function refreshArtifactTtlMs(endsAt: Date | undefined): number {
+  const ttl = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
+  if (!endsAt) return ttl;
+  return Math.max(0, Math.min(ttl, endsAt.getTime() - Date.now()));
+}
+
 async function mintTokenPair(args: TokenPairArgs): Promise<Response> {
-  const access = await persistAccessToken(args);
-  return finalizeTokenPair(args, access);
+  // A connection opened by this consent ends a fixed time from now.
+  const pair = args.connectionId
+    ? { ...args, endsAt: refreshFamilyHardEnd(new Date()) }
+    : args;
+  const access = await persistAccessToken(pair);
+  return finalizeTokenPair(pair, access);
 }
 
 async function persistAccessToken(
@@ -157,6 +174,7 @@ async function persistAccessToken(
     name: "MCP connector",
     permissions,
     expiresInMinutes: ACCESS_TOKEN_TTL_MINUTES,
+    ...(args.endsAt ? { notAfter: args.endsAt } : {}),
     ...(args.connectionId ? { mcpConnectionId: args.connectionId } : {}),
   };
   return db ? issueApiToken(options, db) : issueApiToken(options);
@@ -178,7 +196,7 @@ async function finalizeTokenPair(
             scope: args.scope,
             resource: args.resource,
           },
-          REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
+          refreshArtifactTtlMs(args.endsAt),
         )
       : undefined;
 
@@ -403,17 +421,17 @@ export async function POST(request: NextRequest): Promise<Response> {
         refreshJti: newJti,
       };
 
-      // Rotation and successor insertion are one serialized state transition.
-      // A replay transaction commits family revocation; a successful
-      // transaction commits both JTI advancement and the successor access row.
-      // Any insertion error rejects the callback and PostgreSQL rolls every
-      // earlier state change back. No artifact is signed inside this callback.
+      // One serialized state transition: a replay commits the family's
+      // revocation, a success the JTI advance and the successor access row
+      // (capped at the connection's end); an insertion error rolls all of it
+      // back. No artifact is signed inside this callback.
       const exchange = await prisma.$transaction(
         async (tx) => {
           const rotation = await rotateConnection(rotationArgs, tx);
           if (!rotation.ok) {
             return { ok: false as const, rotation };
           }
+          pairArgs.endsAt = rotation.endsAt;
           const access = await persistAccessToken(pairArgs, tx);
           return { ok: true as const, access };
         },

@@ -23,6 +23,10 @@
  * port-agnostic loopback tolerance). Errors are returned directly (never
  * redirected to an unvalidated URI) so the endpoint is not an open redirector.
  */
+import {
+  readDays,
+  REFRESH_TOKEN_MAX_LIFETIME,
+} from "@/lib/auth/session-lifetime";
 import { randomUUID } from "node:crypto";
 
 import { NextRequest } from "next/server";
@@ -431,6 +435,12 @@ async function authorizeGet(request: NextRequest): Promise<Response> {
     // Document text is named on its own because it is the widest thing a
     // connection can read (v1.39.3: search and fetch reach it).
     const readSummary = `<p>What it can read: your measurements, medications, lab values, visits and procedures, conditions and vaccinations, and your stored documents, including the text of your stored documents that HealthLog has indexed. It never receives the files themselves. A document you held back from AI reading is shared by its title and details only, without its text. Anything in a module you have switched off is not shared.</p>`;
+    // How long the grant lasts, before the person clicks Allow. Without
+    // `offline_access` there is no connection, only an hour's access token.
+    const lasting = v.scope.split(/\s+/).includes("offline_access");
+    const durationSummary = lasting
+      ? `<p>How long: until you revoke it under Settings, and at most ${readDays(REFRESH_TOKEN_MAX_LIFETIME)} days. After that the application asks you again.</p>`
+      : `<p>How long: one hour. The application asks you again after that.</p>`;
     // The one response whose form may lead off-origin: allow exactly the
     // redirect URI `validate()` just matched against the resolved client.
     return withAuthorizeCsp(
@@ -444,6 +454,7 @@ async function authorizeGet(request: NextRequest): Promise<Response> {
         <p>Scope: <code>${htmlEscape(v.scope)}</code></p>
         ${accessSummary}
         ${readSummary}
+        ${durationSummary}
         <form method="POST" action="/api/mcp/oauth/authorize">
           ${hidden("response_type", "code")}
           ${hidden("client_id", v.clientId)}

@@ -26,6 +26,7 @@ import {
   isCookielessNativeCaller,
 } from "@/lib/auth/native-client";
 import { issueAccessAndRefresh } from "@/lib/auth/refresh-token";
+import { webSessionHardEnd } from "@/lib/auth/session-lifetime";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
 import { detectInsecureCookieTransport } from "@/lib/auth/secure-cookie";
 import { annotate } from "@/lib/logging/context";
@@ -120,6 +121,8 @@ export async function finishLogin(
       name: `web auto-login ${new Date().toISOString()}`,
       permissions: ["*"],
       expiresInDays: policy.accessTokenDays,
+      // A Bearer stand-in for a web session ends when one would.
+      notAfter: webSessionHardEnd(new Date()),
     });
     await auditLog("auth.token.autoissue.native", {
       userId: user.id,

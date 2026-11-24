@@ -86,6 +86,10 @@ const PUBLISHED_TO_USERS = [
     shownBy: "the shared-access activity window and the revoke dialog",
   },
   {
+    name: "REFRESH_TOKEN_MAX_LIFETIME_DAYS",
+    shownBy: "the MCP consent screen, which states how long a connection lasts",
+  },
+  {
     name: "SESSION_COOKIE_SECURE",
     shownBy:
       "nothing directly — the original of this defect class, kept as a control",

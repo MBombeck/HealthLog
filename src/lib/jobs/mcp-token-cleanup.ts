@@ -16,6 +16,7 @@
 // account-deletion(file): removes revoked or expired connector tokens; acts for no account.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { SCOPE_HEALTH_READ } from "@/lib/mcp/oauth/config";
+import { refreshTokenMaxLifetimeMs } from "@/lib/auth/session-lifetime";
 
 /** Grace window kept after expiry before a dead access row is deleted. */
 const ACCESS_TOKEN_GRACE_MS = 24 * 60 * 60 * 1000;
@@ -42,11 +43,21 @@ export async function cleanupExpiredMcpTokens(
     },
   });
 
-  // Prune long-revoked connection anchors. SetNull on the access-token FK means
-  // any lingering linked rows simply lose the pointer; the predicate keeps the
-  // window generous so an in-flight rotation never races a delete.
+  // Prune long-revoked connection anchors, and anchors whose absolute
+  // lifetime ended as long ago without a refresh stamping them revoked. SetNull
+  // on the access-token FK means any lingering linked rows simply lose the
+  // pointer; the predicate keeps the window generous so an in-flight rotation
+  // never races a delete.
+  const lifetimeCutoff = new Date(
+    connectionCutoff.getTime() - refreshTokenMaxLifetimeMs(),
+  );
   const connections = await prisma.mcpOAuthConnection.deleteMany({
-    where: { revokedAt: { lt: connectionCutoff } },
+    where: {
+      OR: [
+        { revokedAt: { lt: connectionCutoff } },
+        { createdAt: { lt: lifetimeCutoff } },
+      ],
+    },
   });
 
   return {
