@@ -4846,8 +4846,7 @@ paths:
         still admits the signup, and a token is consumed whenever one is sent — even under open registration, so the
         issuer's ledger stays complete. The bootstrap: on an instance with zero users the first account is minted ADMIN,
         decided under an advisory lock so two racing signups cannot both become one, and only with the instance's setup
-        token (in `setupToken`, or the proof cookie POST /api/auth/register/setup sets); it closes open
-        self-registration.
+        token (in `setupToken`, or the proof cookie POST /api/auth/register/setup sets).
 
 
         The password is checked for strength against the chosen username and email, and against a breach corpus over
@@ -49736,6 +49735,9 @@ components:
                   type: integer
                   minimum: 0
                   maximum: 90
+                mfaPolicySince:
+                  type: string
+                  minLength: 1
                 defaultLocale:
                   type: string
                 telegramGlobal:
