@@ -15,6 +15,7 @@ const LIVE = {
   deviceId: "dev-1",
   accessTokenHash: "acc_old",
   expiresAt: new Date(Date.now() + 86_400_000),
+  familyStartedAt: new Date(),
   revokedAt: null,
   usedAt: null,
   userAgent: null,

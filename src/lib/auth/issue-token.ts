@@ -38,6 +38,12 @@ export interface IssueTokenOptions {
   mcpConnectionId?: string;
   /** A measurement token's Apple Health write-back (#1272). Off by default. */
   mirrorToAppleHealth?: boolean;
+  /**
+   * The latest instant the token may live to, whatever the lifetime above
+   * says: the absolute end of the sign-in it belongs to
+   * (`@/lib/auth/session-lifetime`), so an access token never outlives it.
+   */
+  notAfter?: Date;
 }
 
 /**
@@ -51,10 +57,12 @@ export async function issueApiToken(
 ): Promise<IssuedToken> {
   const rawToken = `hlk_${randomBytes(32).toString("hex")}`;
   const tokenHashValue = hashToken(rawToken);
-  const expiresAt =
+  const lifetimeEnd =
     opts.expiresInMinutes !== undefined
       ? new Date(Date.now() + opts.expiresInMinutes * 60 * 1000)
       : new Date(Date.now() + (opts.expiresInDays ?? 90) * 24 * 60 * 60 * 1000);
+  const expiresAt =
+    opts.notAfter && opts.notAfter < lifetimeEnd ? opts.notAfter : lifetimeEnd;
 
   const created = await db.apiToken.create({
     data: {

@@ -92,8 +92,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     //   - `auth.refresh.revoked` — the family was revoked out-of-band
     //     (explicit logout, or reuse detected on another device). Also
     //     terminal: re-auth required.
-    //   - `auth.refresh.invalid` — not found / expired. The client drops
-    //     the token and re-authenticates.
+    //   - `auth.refresh.invalid` — not found / expired, or the family has
+    //     reached its absolute lifetime (`family_ended`,
+    //     REFRESH_TOKEN_MAX_LIFETIME_DAYS from its sign-in). The client drops
+    //     the token and re-authenticates; the code is the same for both
+    //     because the client's answer is the same.
     //   - `auth.refresh.superseded` (409) — a concurrent refresh with the
     //     same token won; nothing is revoked. Not terminal: the client reads
     //     the pair the winner stored and carries on. It must not present
