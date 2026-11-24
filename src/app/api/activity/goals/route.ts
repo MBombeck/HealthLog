@@ -13,6 +13,7 @@ import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma, toJson } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import { annotate } from "@/lib/logging/context";
 import {
   ACTIVITY_GOAL_KEYS,
@@ -58,14 +59,27 @@ export const PATCH = apiHandler(async (request: Request) => {
   });
   if (!parsed.ok) return parsed.error;
 
-  const next = mergeActivityGoals(await readGoals(user.id), parsed.data);
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      activityGoalsJson: hasNoActivityGoals(next)
-        ? Prisma.DbNull
-        : toJson(next),
-    },
+  // Read-merge-write under a row lock: two PATCHes that overlap, each
+  // setting another goal, would otherwise both merge into the same stored
+  // goals and the later write would drop the earlier one's goal.
+  const next = await withUserRowLock(user.id, async (tx) => {
+    const row = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { activityGoalsJson: true },
+    });
+    const merged = mergeActivityGoals(
+      parseActivityGoals(row?.activityGoalsJson ?? null),
+      parsed.data,
+    );
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        activityGoalsJson: hasNoActivityGoals(merged)
+          ? Prisma.DbNull
+          : toJson(merged),
+      },
+    });
+    return merged;
   });
 
   await auditLog("activity.goals.update", {

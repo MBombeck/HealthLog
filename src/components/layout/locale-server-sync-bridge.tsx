@@ -20,10 +20,12 @@ import { queryKeys } from "@/lib/query-keys";
  *
  * Fires when an account appears (right after signing in, carrying the choice
  * made on the sign-in page) and on every switch; `persistLocaleToServer`
- * skips a value this tab already wrote for this account.
+ * skips a value this tab already wrote for this account. When the server
+ * answers with another language — this tab is stale, or it showed a guess
+ * while the account has a stored choice — the tab switches to that one.
  */
 export function LocaleServerSyncBridge() {
-  const { locale } = useTranslations();
+  const { locale, setLocale } = useTranslations();
   const { data: account } = useQuery({
     queryKey: queryKeys.authMe(),
     queryFn: fetchMe,
@@ -32,8 +34,8 @@ export function LocaleServerSyncBridge() {
   const accountId = account?.id ?? null;
 
   useEffect(() => {
-    if (accountId) persistLocaleToServer(locale, accountId);
-  }, [locale, accountId]);
+    if (accountId) persistLocaleToServer(locale, accountId, setLocale);
+  }, [locale, accountId, setLocale]);
 
   return null;
 }

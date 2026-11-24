@@ -19,6 +19,7 @@ import {
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import { auditLog } from "@/lib/auth/audit";
 import { getAppleHealthSyncProgress } from "@/lib/integrations/apple-health-progress";
 import { acceptedHealthKitTypes } from "@/lib/measurements/healthkit-accepted-types";
@@ -280,39 +281,47 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 422);
   }
 
-  const row = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { healthKitConfigJson: true },
-  });
-  const stored = parseStored(row?.healthKitConfigJson ?? null);
-
-  // Resolve known ids set: default ids + already-stored ids.
-  const knownIds = new Set<string>(DEFAULT_HEALTHKIT_ENTRIES.map((e) => e.id));
-  if (stored) for (const e of stored.entries) knownIds.add(e.id);
-
-  // Merge by id; unknown ids are silently ignored per spec.
-  const map = new Map<string, HealthKitEntry>();
-  if (stored) for (const e of stored.entries) map.set(e.id, e);
-  for (const update of parsed.data.entries) {
-    if (!knownIds.has(update.id)) continue;
-    const existing =
-      map.get(update.id) ??
-      DEFAULT_HEALTHKIT_ENTRIES.find((d) => d.id === update.id);
-    map.set(update.id, {
-      id: update.id,
-      kind: update.kind ?? existing?.kind ?? update.id,
-      direction: update.direction,
-      enabled: update.enabled ?? existing?.enabled ?? true,
+  // Merged by id into what is stored, under the row lock: two devices that
+  // patch different entries at once (an iPhone and an iPad on launch) would
+  // otherwise both merge into the same stored list, and the later write would
+  // put back the entry the earlier one had just changed.
+  const updatedConfig = await withUserRowLock(user.id, async (tx) => {
+    const row = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { healthKitConfigJson: true },
     });
-  }
+    const stored = parseStored(row?.healthKitConfigJson ?? null);
 
-  const updatedConfig: StoredConfig = { entries: [...map.values()] };
+    // Resolve known ids set: default ids + already-stored ids.
+    const knownIds = new Set<string>(
+      DEFAULT_HEALTHKIT_ENTRIES.map((e) => e.id),
+    );
+    if (stored) for (const e of stored.entries) knownIds.add(e.id);
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      healthKitConfigJson: toJson(updatedConfig),
-    },
+    // Merge by id; unknown ids are silently ignored per spec.
+    const map = new Map<string, HealthKitEntry>();
+    if (stored) for (const e of stored.entries) map.set(e.id, e);
+    for (const update of parsed.data.entries) {
+      if (!knownIds.has(update.id)) continue;
+      const existing =
+        map.get(update.id) ??
+        DEFAULT_HEALTHKIT_ENTRIES.find((d) => d.id === update.id);
+      map.set(update.id, {
+        id: update.id,
+        kind: update.kind ?? existing?.kind ?? update.id,
+        direction: update.direction,
+        enabled: update.enabled ?? existing?.enabled ?? true,
+      });
+    }
+
+    const next: StoredConfig = { entries: [...map.values()] };
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        healthKitConfigJson: toJson(next),
+      },
+    });
+    return next;
   });
 
   await auditLog("integrations.healthkit.update", {

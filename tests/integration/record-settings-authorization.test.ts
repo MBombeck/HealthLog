@@ -104,9 +104,14 @@ describe("record settings authorization", () => {
     expect(route).toContain(
       "effective: getAllEffectiveRanges(record, overrides)",
     );
-    expect(route).toContain("invalidateUserProfile(access.recordId)");
+    // The thresholds write lives in `patchThresholdsSettings(recordId, ...)`,
+    // called with `access.recordId`; the profile cache drops after it.
+    expect(route).toContain(
+      "patchThresholdsSettings(\n            access.recordId,",
+    );
+    expect(route).toContain("invalidateUserProfile(recordId)");
     expect(
-      route.lastIndexOf("invalidateUserProfile(access.recordId)"),
+      route.lastIndexOf("invalidateUserProfile(recordId)"),
     ).toBeGreaterThan(
       route.indexOf("data: { thresholdsJson: toJson(overrides) }"),
     );

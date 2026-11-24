@@ -3,14 +3,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/lib/query-keys";
-import { apiFetchRaw, apiPut } from "@/lib/api/api-fetch";
+import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import {
   readUpdatedAtToken,
   withBaseToken,
   isConflict,
 } from "@/lib/api/optimistic-token";
 import type { CoachPrefs } from "@/lib/validations/coach-prefs";
-import { DEFAULT_COACH_PREFS } from "@/lib/ai/coach/prefs-constants";
 
 /**
  * v1.32.22 — the cached Coach-prefs row carries the optimistic-
@@ -26,10 +25,10 @@ type CoachPrefsWithToken = CoachPrefs & { updatedAt?: string };
  * message-thread evidence-disclosure default consume the same
  * `/api/auth/me/coach-prefs` payload; before the extraction the two
  * call sites duplicated the same `useQuery` block with subtly
- * different fallback semantics (one threw on `!ok`, the other returned
- * defaults). The hook centralises the cache key, the envelope unwrap,
- * and the "treat fetch failure as defaults" stance so the next surface
- * (insights cog, settings tab) inherits a single source of truth.
+ * different fallback semantics. The hook centralises the cache key and the
+ * envelope unwrap so the next surface (insights cog, settings tab) inherits
+ * a single source of truth. A failed read is an error state: no surface may
+ * save over a document it never loaded.
  *
  * The query is gated on `enabled` so the settings sheet can defer the
  * fetch until the sheet actually opens. Callers that always want the
@@ -38,14 +37,12 @@ type CoachPrefsWithToken = CoachPrefs & { updatedAt?: string };
 export function useCoachPrefs(opts?: { enabled?: boolean }) {
   return useQuery<CoachPrefsWithToken>({
     queryKey: queryKeys.coachPrefs(),
-    queryFn: async () => {
-      // `apiFetchRaw` (no .ok throw) — a non-OK read soft-fails to the
-      // defaults instead of surfacing an error state.
-      const res = await apiFetchRaw("/api/auth/me/coach-prefs");
-      if (!res.ok) return DEFAULT_COACH_PREFS;
-      const env = (await res.json()) as { data: CoachPrefsWithToken };
-      return env.data;
-    },
+    // A failed read is an error, not the defaults. Every writer spreads the
+    // cached document into a whole-document PUT and gates on having one; a
+    // read that answered the defaults (with no revision token to send) let
+    // the next switch replace every stored preference unconditionally. The
+    // readers fall back to the defaults themselves.
+    queryFn: () => apiGet<CoachPrefsWithToken>("/api/auth/me/coach-prefs"),
     enabled: opts?.enabled,
   });
 }
