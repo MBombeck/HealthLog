@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
@@ -66,6 +66,16 @@ vi.mock("@/components/insights/insights-tab-strip", () => ({
 import { queryKeys } from "@/lib/query-keys";
 import { InsightsLayoutShell } from "../insights-layout-shell";
 
+// Every case starts from the same capture and the same answers, so no case
+// reads what another one rendered or set.
+beforeEach(() => {
+  queries.length = 0;
+  stripProps.length = 0;
+  layoutReads.length = 0;
+  answer.presence = undefined;
+  answer.active = null;
+});
+
 describe("InsightsLayoutShell: what it reads on entry", () => {
   it("keeps the regenerate button and sends no briefing read", () => {
     renderToStaticMarkup(
@@ -84,8 +94,6 @@ describe("InsightsLayoutShell: what it reads on entry", () => {
   });
 
   it("reads the presence answer and the layout, nothing else", () => {
-    queries.length = 0;
-    layoutReads.length = 0;
     renderToStaticMarkup(
       <InsightsLayoutShell>
         <div />
@@ -124,7 +132,5 @@ describe("InsightsLayoutShell: what it reads on entry", () => {
     const switched = render({ accountId: "record-2" });
     expect(switched?.summaries).toBeUndefined();
     expect(switched?.hasMood).toBe(true);
-    answer.presence = undefined;
-    answer.active = null;
   });
 });

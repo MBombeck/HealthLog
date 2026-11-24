@@ -14,6 +14,15 @@ import {
   runGeoBackfill,
 } from "../geo-backfill";
 import { lookupIpGeo } from "@/lib/geo";
+// Imported up front rather than inside the case: the registry pulls in every
+// queue's module, and a cold transform of that graph billed to the case's
+// five seconds timed it out whenever a shuffled run put this file first.
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "../registry/__tests__/registry-helpers";
+import { handleGeoBackfill } from "../reminder/ops-handlers";
 
 interface FakeRow {
   id: string;
@@ -310,9 +319,6 @@ describe("geo-backfill scheduling contract", () => {
     expect(handlerSrc).toMatch(
       /import \{[^}]*runGeoBackfill[^}]*\} from "@\/lib\/jobs\/geo-backfill";/,
     );
-    const { groupOf, jobOf, loadedHandler } =
-      await import("../registry/__tests__/registry-helpers");
-    const { handleGeoBackfill } = await import("../reminder/ops-handlers");
     expect(groupOf(GEO_BACKFILL_QUEUE).name).toBe("maintenance");
     expect(jobOf(GEO_BACKFILL_QUEUE).cron).toBe(GEO_BACKFILL_CRON);
     expect(await loadedHandler(GEO_BACKFILL_QUEUE)).toBe(handleGeoBackfill);
