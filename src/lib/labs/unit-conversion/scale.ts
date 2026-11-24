@@ -29,7 +29,8 @@ const AMOUNT_PREFIX: ReadonlyArray<[string, number]> = [
   ["pmol", -12],
 ];
 /** Litres per volume unit, as a power of ten. */
-const VOLUME: Readonly<Record<string, number>> = {
+type Volume = "L" | "dL" | "mL" | "µL";
+const VOLUME: Readonly<Record<Volume, number>> = {
   L: 0,
   dL: -1,
   mL: -3,
@@ -37,7 +38,7 @@ const VOLUME: Readonly<Record<string, number>> = {
 };
 
 /** The mass-concentration units a lab prints, with the volumes they print on. */
-const MASS_UNITS: ReadonlyArray<[string, string]> = [
+const MASS_UNITS: ReadonlyArray<[string, Volume]> = [
   ["g", "L"],
   ["g", "dL"],
   ["mg", "L"],

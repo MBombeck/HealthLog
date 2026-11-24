@@ -64,8 +64,8 @@ export const DAY_EXCLUSIONS_BY_TOKEN: Readonly<
   bp: [],
   weight: [],
   pulse: [],
-  // A mood entry and a mental-health screener are both the person's mood.
-  mood: ["mood", "assessments"],
+  // The questionnaires (`assessments`) reach no model in the first place.
+  mood: ["mood"],
   // Intakes are what compliance is computed from.
   compliance: ["medications"],
   hrv: [],

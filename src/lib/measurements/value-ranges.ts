@@ -7,6 +7,8 @@
  * server-side writers.
  */
 
+import { ownValue } from "@/lib/own-key";
+
 // Plausible ranges per measurement type
 export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   WEIGHT: { min: 1, max: 500 },
@@ -305,7 +307,7 @@ export function validateMeasurementRange(
   type: string,
   value: number,
 ): string | null {
-  const range = VALUE_RANGES[type];
+  const range = ownValue(VALUE_RANGES, type);
   if (range && (value < range.min || value > range.max)) {
     return `Value must be between ${range.min} and ${range.max}`;
   }

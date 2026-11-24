@@ -12620,7 +12620,7 @@
     "openDetail": "Pokaż szczegóły",
     "historyLoadError": "Nie udało się wczytać historii testów",
     "historyLoadErrorHint": "To nie znaczy, że nie masz wyników; nie udało się pobrać listy. Spróbuj ponownie.",
-    "privacyNote": "Twoje odpowiedzi są przechowywane w postaci zaszyfrowanej i nigdy nie trafiają do Coacha AI.",
+    "privacyNote": "Twoje odpowiedzi są przechowywane w postaci zaszyfrowanej. Odpowiedzi i wyniki nigdy nie trafiają do Coacha AI, innej funkcji AI ani do podłączonego asystenta AI.",
     "trend": {
       "sincePrevious": "Od poprzedniego sprawdzenia {date}: {change, plural, one {# punkt} few {# punkty} many {# punktów} other {# punktu}}.",
       "sinceFirst": "Od pierwszego sprawdzenia {date}: {change, plural, one {# punkt} few {# punkty} many {# punktów} other {# punktu}}.",

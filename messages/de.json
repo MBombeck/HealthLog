@@ -12620,7 +12620,7 @@
     "openDetail": "Details anzeigen",
     "historyLoadError": "Dein Testverlauf konnte nicht geladen werden",
     "historyLoadErrorHint": "Das heißt nicht, dass keine Ergebnisse vorliegen. Die Liste konnte nicht abgerufen werden. Versuche es erneut.",
-    "privacyNote": "Deine Antworten sind verschlüsselt gespeichert und erreichen den KI-Coach nicht.",
+    "privacyNote": "Deine Antworten sind verschlüsselt gespeichert. Antworten und Ergebnisse erreichen weder den KI-Coach noch eine andere KI-Funktion oder einen verbundenen KI-Assistenten.",
     "trend": {
       "sincePrevious": "Seit deinem vorigen Check-in am {date}: {change, plural, one {# Punkt} other {# Punkte}}.",
       "sinceFirst": "Seit deinem ersten Check-in am {date}: {change, plural, one {# Punkt} other {# Punkte}}.",

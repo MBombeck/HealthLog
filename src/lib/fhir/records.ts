@@ -24,6 +24,7 @@ import type {
   FhirFamilyMemberHistory,
   FhirReference,
 } from "@/lib/fhir/types";
+import { ownValue } from "@/lib/own-key";
 
 const patientRef: FhirReference = {
   reference: `Patient/${PATIENT_RESOURCE_ID}`,
@@ -80,9 +81,12 @@ export function allergyIntoleranceResources(
   let seq = 0;
   for (const a of allergies) {
     seq += 1;
-    const clinical = ALLERGY_CLINICAL[a.status] ?? ALLERGY_CLINICAL.ACTIVE;
-    const category = ALLERGY_CATEGORY[a.category];
-    const severity = a.severity ? ALLERGY_SEVERITY[a.severity] : undefined;
+    const clinical =
+      ownValue(ALLERGY_CLINICAL, a.status) ?? ALLERGY_CLINICAL.ACTIVE;
+    const category = ownValue(ALLERGY_CATEGORY, a.category);
+    const severity = a.severity
+      ? ownValue(ALLERGY_SEVERITY, a.severity)
+      : undefined;
     const resource: FhirAllergyIntolerance = {
       resourceType: "AllergyIntolerance",
       id: `allergy-${seq}`,
@@ -105,7 +109,7 @@ export function allergyIntoleranceResources(
           },
         ],
       },
-      type: ALLERGY_TYPE[a.type] ?? "allergy",
+      type: ownValue(ALLERGY_TYPE, a.type) ?? "allergy",
       ...(category ? { category: [category] } : {}),
       ...(severity
         ? { criticality: severity === "severe" ? "high" : "low" }
@@ -174,7 +178,8 @@ export function familyMemberHistoryResources(
   let seq = 0;
   for (const e of entries) {
     seq += 1;
-    const role = RELATIONSHIP_ROLE[e.relationship] ?? RELATIONSHIP_ROLE.OTHER;
+    const role =
+      ownValue(RELATIONSHIP_ROLE, e.relationship) ?? RELATIONSHIP_ROLE.OTHER;
     out.push({
       resourceType: "FamilyMemberHistory",
       id: `famhist-${seq}`,

@@ -47,7 +47,7 @@ function privacySafeResult(
   value: Record<string, unknown> | null,
 ): Record<string, unknown> | null {
   if (!value) return null;
-  const block = (key: string): Record<string, unknown> =>
+  const block = (key: "ecg" | "labs"): Record<string, unknown> =>
     typeof value[key] === "object" && value[key] !== null
       ? (value[key] as Record<string, unknown>)
       : {};

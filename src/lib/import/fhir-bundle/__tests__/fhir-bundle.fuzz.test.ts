@@ -17,7 +17,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import fc from "fast-check";
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 const { emptyDb } = vi.hoisted(() => {
   function emptyDb(): unknown {
@@ -74,6 +74,7 @@ vi.mock("@/lib/labs/fhir-import/after-write", () => ({
   afterLabReadingsWritten: vi.fn(),
 }));
 
+import { _resetCryptoCacheForTests } from "@/lib/crypto";
 import { RecordFileImportError } from "@/lib/import/file-import/kinds";
 import { RecordFileImportTally } from "@/lib/import/file-import/tally";
 
@@ -84,9 +85,32 @@ import {
   assertProperty,
   propertyTimeout,
 } from "../../../../../tests/property/fast-check";
+import {
+  PROTOTYPE_KEYS,
+  expectPrototypesUntouched,
+  snapshotPrototypes,
+} from "../../../../../tests/property/prototype-keys";
 
 const DIR = mkdtempSync(join(tmpdir(), "fhir-fuzz-"));
-afterAll(() => rmSync(DIR, { recursive: true, force: true }));
+// Visit reasons are stored encrypted, as on every real host; without a key
+// the Encounter path failed on the missing key instead of on the file.
+const before = snapshotPrototypes();
+beforeAll(() => {
+  vi.stubEnv("ENCRYPTION_KEYS", "");
+  vi.stubEnv("ENCRYPTION_ACTIVE_KEY_ID", "");
+  vi.stubEnv(
+    "ENCRYPTION_KEY",
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  );
+  _resetCryptoCacheForTests();
+});
+afterAll(() => {
+  rmSync(DIR, { recursive: true, force: true });
+  vi.unstubAllEnvs();
+  _resetCryptoCacheForTests();
+  // A code, unit or class that names a prototype member never writes one.
+  expectPrototypesUntouched(before);
+});
 const NOW = new Date("2026-06-01T00:00:00Z");
 
 /** Any JSON value, shallow, with the odd shapes a broken exporter writes. */
@@ -100,8 +124,8 @@ const junk = fc.oneof(
     "1e309",
     "-0",
     "NaN",
-    "__proto__",
     "2026-02-30T25:00:00Z",
+    ...PROTOTYPE_KEYS,
   ),
   fc.array(fc.string({ maxLength: 8 }), { maxLength: 3 }),
   fc.dictionary(fc.string({ maxLength: 8 }), fc.string({ maxLength: 8 }), {
@@ -149,6 +173,7 @@ const coding = fc.record(
         "718-7",
         "4548-4",
         "x",
+        ...PROTOTYPE_KEYS,
       ),
     ),
     display: maybe(fc.string({ maxLength: 80 })),
@@ -175,9 +200,12 @@ const quantity = fc.record(
         "%",
         "",
         "g/dL",
+        ...PROTOTYPE_KEYS,
       ),
     ),
-    code: maybe(fc.constantFrom("/min", "mm[Hg]", "kg", "mg/dL")),
+    code: maybe(
+      fc.constantFrom("/min", "mm[Hg]", "kg", "mg/dL", ...PROTOTYPE_KEYS),
+    ),
     comparator: maybe(fc.constantFrom("<", ">", "<=")),
   },
   { requiredKeys: [] },
@@ -276,6 +304,12 @@ const recordResource = fc.record(
       ),
     ),
     type: maybe(fc.array(concept, { maxLength: 2 })),
+    class: maybe(
+      fc.record(
+        { code: maybe(fc.constantFrom("EMER", "AMB", ...PROTOTYPE_KEYS)) },
+        { requiredKeys: [] },
+      ),
+    ),
     reasonCode: maybe(fc.array(concept, { maxLength: 2 })),
     note: maybe(
       fc.array(fc.record({ text: maybe(fc.string({ maxLength: 300 })) }), {

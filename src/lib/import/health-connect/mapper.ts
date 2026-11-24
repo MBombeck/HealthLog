@@ -28,6 +28,7 @@ import { getUnitForType } from "@/lib/validations/measurement";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { isStableExternalId } from "@/lib/validations/external-id";
 import type { NutrientCode } from "@/lib/nutrients/catalog";
+import { ownValue } from "@/lib/own-key";
 
 /** Health Connect `HealthDataCategory` values the importer ranks apps by. */
 export const HC_CATEGORY = {
@@ -128,7 +129,7 @@ function single(
   return {
     columns: [column],
     map(row) {
-      const v = num(row[column]);
+      const v = num(ownValue(row, column));
       return v === null ? [] : [{ type, value: v * factor }];
     },
   };
