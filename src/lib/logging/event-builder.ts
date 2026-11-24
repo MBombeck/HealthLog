@@ -353,6 +353,11 @@ export class WideEventBuilder {
     return this.event.http?.method;
   }
 
+  /** The path of the current request, if one was attached. */
+  getHttpPath(): string | undefined {
+    return this.event.http?.path;
+  }
+
   /**
    * Who authenticated, and whose record they are acting on.
    *

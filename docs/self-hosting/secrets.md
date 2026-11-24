@@ -28,6 +28,7 @@ out of `docker inspect` and out of the platform's environment editor.
 | `ENCRYPTION_KEY`                  | Encryption key for data at rest                  |
 | `ENCRYPTION_KEYS`                 | The key map, when rotating keys                  |
 | `API_TOKEN_HMAC_KEY`              | Key for API tokens and session cookies           |
+| `SETUP_TOKEN`                     | Token that creates the first account             |
 | `BACKUP_ENCRYPTION_KEY`           | Key for off-host backups                         |
 | `BACKUP_ENCRYPTION_PREVIOUS_KEYS` | Older backup keys, kept for restores             |
 | `BACKUP_S3_ACCESS_KEY`            | Bucket access key                                |

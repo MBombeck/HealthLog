@@ -37,6 +37,57 @@ function summariseGlitchtipDeliveryFields(state: {
   };
 }
 
+/** The second-factor policy as both answers publish it. */
+function mfaPolicyFields(
+  settings: {
+    mfaRequired: boolean;
+    mfaRequiredForAdmins: boolean;
+    mfaGraceDays: number;
+  } | null,
+) {
+  return {
+    mfaRequired: settings?.mfaRequired ?? false,
+    mfaRequiredForAdmins: settings?.mfaRequiredForAdmins ?? true,
+    mfaGraceDays: settings?.mfaGraceDays ?? 14,
+  };
+}
+
+/**
+ * The admin policy switch, the grace period, and the instant a policy took
+ * effect: switching either policy on starts the grace period now for every
+ * account it newly covers (`@/lib/auth/mfa-enrollment`).
+ */
+async function applyMfaPolicyUpdates(
+  data: {
+    mfaRequired?: boolean;
+    mfaRequiredForAdmins?: boolean;
+    mfaGraceDays?: number;
+  },
+  updates: Record<string, unknown>,
+  auditDetails: Record<string, unknown>,
+): Promise<void> {
+  if (data.mfaRequiredForAdmins !== undefined) {
+    updates.mfaRequiredForAdmins = data.mfaRequiredForAdmins;
+    auditDetails.mfaRequiredForAdmins = data.mfaRequiredForAdmins;
+  }
+  if (data.mfaGraceDays !== undefined) {
+    updates.mfaGraceDays = data.mfaGraceDays;
+    auditDetails.mfaGraceDays = data.mfaGraceDays;
+  }
+  if (data.mfaRequired !== true && data.mfaRequiredForAdmins !== true) return;
+  const prior = await prisma.appSettings.findUnique({
+    where: { id: "singleton" },
+    select: { mfaRequired: true, mfaRequiredForAdmins: true },
+  });
+  if (
+    (data.mfaRequired === true && !prior?.mfaRequired) ||
+    (data.mfaRequiredForAdmins === true &&
+      prior?.mfaRequiredForAdmins === false)
+  ) {
+    updates.mfaPolicySince = new Date();
+  }
+}
+
 export const GET = apiHandler(async () => {
   await requireAdmin();
   annotate({ action: { name: "admin.settings.get" } });
@@ -47,7 +98,7 @@ export const GET = apiHandler(async () => {
 
   return apiSuccess({
     registrationEnabled: settings?.registrationEnabled ?? true,
-    mfaRequired: settings?.mfaRequired ?? false,
+    ...mfaPolicyFields(settings),
     defaultLocale: settings?.defaultLocale ?? "de",
     telegramGlobal: settings?.telegramGlobal ?? true,
     ntfyGlobal: settings?.ntfyGlobal ?? true,
@@ -113,13 +164,10 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   const updates: Record<string, unknown> = {};
   const auditDetails: Record<string, unknown> = {};
 
-  // Boolean fields — direct mapping.
-  //
-  // The five assistant flags belong here and not only on the dedicated
-  // `/settings/assistant-flags` endpoint: `adminSettingsSchema` accepts them
-  // so an operator scripting their settings over a single route can carry
-  // them, and a schema that accepts a field and then drops it is worse than
-  // one that refuses it.
+  // Boolean fields — direct mapping. The five assistant flags belong here
+  // and not only on `/settings/assistant-flags`: `adminSettingsSchema` accepts
+  // them so a script can carry them over one route, and a schema that accepts
+  // a field and then drops it is worse than one that refuses it.
   const booleanFields = [
     "registrationEnabled",
     "mfaRequired",
@@ -253,6 +301,8 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     }
   }
 
+  await applyMfaPolicyUpdates(data, updates, auditDetails);
+
   if (Object.keys(updates).length === 0) {
     return apiError("No valid fields", 422);
   }
@@ -275,7 +325,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   return apiSuccess({
     registrationEnabled: settings.registrationEnabled,
-    mfaRequired: settings.mfaRequired,
+    ...mfaPolicyFields(settings),
     defaultLocale: settings.defaultLocale,
     telegramGlobal: settings.telegramGlobal,
     ntfyGlobal: settings.ntfyGlobal,

@@ -35,6 +35,7 @@ import { CommandPaletteMount } from "@/components/command-palette/command-palett
 import { DemoBanner } from "./demo-banner";
 import { OfflineBanner } from "./offline-banner";
 import { SharedRecordBanner } from "./shared-record-banner";
+import { MfaEnrollmentBanner } from "./mfa-enrollment-banner";
 import { ShellStripOutlet } from "./shell-dock";
 import { ShellSidePanelOutlet } from "./shell-side-panel";
 import { SharedRecordUnavailable } from "./shared-record-unavailable";
@@ -522,11 +523,11 @@ export function AuthShell({
             seeing first. Renders nothing when the session is in its own
             account, which is every session that has never used sharing. */}
         <SharedRecordBanner />
-        {/* Demo instances surface a persistent "changes are not
-            saved" strip — the proxy blocks every mutation, and
-            without the banner that block only surfaced as a raw API
-            error after the user already filled in a form. */}
+        {/* Demo instances surface a persistent "changes are not saved"
+            strip: the proxy blocks every mutation, and without the banner
+            that only surfaced as a raw API error after a form was filled. */}
         {demoMode ? <DemoBanner /> : null}
+        <MfaEnrollmentBanner />
         <MaintainershipBanner />
         <div className="shell-desktop:flex-row flex min-h-0 flex-1 flex-col">
           <SidebarNav />

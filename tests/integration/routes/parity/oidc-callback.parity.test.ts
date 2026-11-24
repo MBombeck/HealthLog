@@ -19,6 +19,13 @@
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+// The browser proved the setup token, so a first login may create the admin;
+// the rule itself is pinned in first-account-and-mfa-policy.test.ts.
+vi.mock("@/lib/auth/setup-token", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/auth/setup-token")>()),
+  isProven: async () => true,
+}));
+
 import { GET } from "@/app/api/auth/oidc/callback/route";
 import { encrypt } from "@/lib/crypto";
 import { OIDC_STATE_COOKIE } from "@/lib/auth/oidc-cookie";

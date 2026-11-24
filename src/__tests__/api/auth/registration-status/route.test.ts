@@ -30,6 +30,7 @@ vi.mock("@/lib/db", () => ({
     appSettings: {
       findUnique: vi.fn(),
     },
+    user: { count: vi.fn(async () => 1) },
   },
 }));
 
@@ -133,7 +134,32 @@ describe("GET /api/auth/registration-status — sessionCookieSecure (#1097)", ()
     expect(body.data).toEqual({
       registrationEnabled: false,
       sessionCookieSecure: true,
+      setupRequired: false,
+      setupProven: false,
     });
     vi.unstubAllEnvs();
+  });
+});
+
+describe("GET /api/auth/registration-status — first account", () => {
+  it("says an instance without an account needs the setup token", async () => {
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.user.count).mockResolvedValueOnce(0);
+    const res = await callGet();
+    const body = (await res.json()) as {
+      data: { setupRequired: boolean; setupProven: boolean };
+    };
+    expect(body.data.setupRequired).toBe(true);
+    // The mocked cookie jar holds no proof.
+    expect(body.data.setupProven).toBe(false);
+  });
+
+  it("asks for nothing once an account exists", async () => {
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.user.count).mockResolvedValueOnce(3);
+    const body = (await (await callGet()).json()) as {
+      data: { setupRequired: boolean };
+    };
+    expect(body.data.setupRequired).toBe(false);
   });
 });

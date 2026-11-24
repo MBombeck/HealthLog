@@ -38,6 +38,8 @@ const INSECURE_TRANSPORT_CODE = "auth.session.insecure_transport";
 /** The server's refusal for an account pending deletion. */
 const DELETION_PENDING = "auth.account.deletion_pending";
 import { loadDocument } from "@/lib/navigation/load-document";
+import { useRegistrationStatus } from "@/hooks/use-registration-status";
+import { FirstAccountSetup } from "@/components/auth/first-account-setup";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
 
@@ -74,6 +76,7 @@ function signInRedirectError(
     oidc_identity_conflict: "auth.oidc.errorIdentityConflict",
     oidc_link_required: "auth.oidc.errorLinkRequired",
     oidc_registration_disabled: "auth.oidc.errorRegistrationDisabled",
+    oidc_setup_required: "auth.oidc.errorSetupRequired",
   };
   return t(key[oidcError] ?? "auth.oidc.errorFailed");
 }
@@ -112,26 +115,7 @@ export default function LoginPage() {
   // standalone alert detached from the form.
   const errorId = useId();
   const errorDescriptor = error ? errorId : undefined;
-  const { data: registrationStatus } = useQuery({
-    queryKey: queryKeys.authRegistrationStatus(),
-    queryFn: async () => {
-      try {
-        const data = await apiGet<{
-          registrationEnabled?: boolean;
-          sessionCookieSecure?: boolean;
-        }>("/api/auth/registration-status", { cache: "no-store" });
-        return {
-          registrationEnabled: Boolean(data?.registrationEnabled ?? true),
-          sessionCookieSecure: data?.sessionCookieSecure === true,
-        };
-      } catch {
-        // Fail open, exactly as the raw `if (!res.ok) return true` did; and
-        // no transport gate without the server's word on its cookies.
-        return { registrationEnabled: true, sessionCookieSecure: false };
-      }
-    },
-    staleTime: 60 * 1000,
-  });
+  const { data: registrationStatus } = useRegistrationStatus();
   const registrationEnabled = registrationStatus?.registrationEnabled;
 
   // #1097 — a server that sets its sign-in cookie only over https:// cannot
@@ -429,6 +413,13 @@ export default function LoginPage() {
           >
             {t("auth.native.signingInToApp")}
           </div>
+        )}
+
+        {registrationStatus?.setupRequired && (
+          <FirstAccountSetup
+            proven={registrationStatus.setupProven}
+            registerLink={oidcStatus?.only !== true}
+          />
         )}
 
         {mfaChallenge ? (

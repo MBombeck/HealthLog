@@ -66,6 +66,17 @@ export const registerSchema = z.object({
    * registration is open.
    */
   inviteToken: z.string().max(80).optional(),
+  /**
+   * The instance's setup token (`@/lib/auth/setup-token`). Needed for
+   * the first account only, when the browser has not proven it already
+   * through `POST /api/auth/register/setup`; ignored afterwards.
+   */
+  setupToken: z.string().max(512).optional(),
+});
+
+/** `POST /api/auth/register/setup`: the setup token of an instance without an account. */
+export const setupTokenSchema = z.object({
+  setupToken: z.string().min(1).max(512),
 });
 
 export const loginPasswordSchema = z.object({

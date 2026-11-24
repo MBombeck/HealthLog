@@ -85,6 +85,12 @@ x-healthlog-env: &healthlog_env
   SESSION_IDLE_TIMEOUT_DAYS: "${SESSION_IDLE_TIMEOUT_DAYS:-}"
   SESSION_MAX_LIFETIME_DAYS: "${SESSION_MAX_LIFETIME_DAYS:-}"
   REFRESH_TOKEN_MAX_LIFETIME_DAYS: "${REFRESH_TOKEN_MAX_LIFETIME_DAYS:-}"
+  # The token that claims a fresh instance: the first account (the admin) can
+  # only be created with it. Unset, every start prints one derived from
+  # API_TOKEN_HMAC_KEY to the log while the instance has no account. Set it
+  # (at least 32 characters) to choose your own; it opens nothing afterwards.
+  SETUP_TOKEN: "${SETUP_TOKEN:-}"
+  SETUP_TOKEN_FILE: "${SETUP_TOKEN_FILE:-}"
   NATIVE_CANVAS: "${NATIVE_CANVAS:-}"
   # Read-only showcase instance. DEMO_MODE=true makes the proxy refuse every
   # mutation except login and paints the demo banner. Leave it unset on a

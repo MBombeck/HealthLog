@@ -24,6 +24,7 @@ import {
   resolveServerDefaultTimezone,
 } from "@/lib/tz/resolver";
 import { isOidcOnly } from "@/lib/auth/oidc";
+import * as firstAccount from "@/lib/auth/setup-token";
 
 // One code for a taken username and a taken address, like the one message.
 const TAKEN = { errorCode: "auth.register.taken" };
@@ -118,6 +119,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (!registrationEnabled && !inviteToken) {
     return apiError("Registration is disabled", 403);
   }
+  const setupProven = await firstAccount.isProven(parsed.data.setupToken);
+  if (userCount === 0 && !setupProven) return firstAccount.setupRefusal();
 
   // v1.4.25 — accept a browser-detected timezone from the
   // registration form. Validate against the runtime IANA list; on
@@ -202,23 +205,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  // v1.28.42 — the first registered user becomes ADMIN. Deriving that
-  // role from the early `userCount` (read at the top, before all the
-  // validation above) and then creating without coordination is a
-  // check-then-act race: on a freshly-exposed instance two registrations
-  // racing the empty-DB window both observe `0` and are BOTH minted ADMIN.
-  // Serialise the count+insert behind a transaction-scoped advisory lock
-  // (released on commit/rollback) and re-count *inside* the lock, so the
-  // second registration always observes the first's committed row and is
-  // minted USER. The lock scope is only the count + insert — none of the
-  // argon2 hash / HIBP / invite work above runs under it. Mirrors the
-  // advisory-lock single-flight in `drain-per-sample-cumulative.ts`.
-  //
-  // v1.28.42 — a concurrent same-email/username signup (both passed the
-  // findUnique probe above before either committed) surfaces the unique
-  // violation as `P2002`; map it to the unified 409 rather than an unhandled
-  // 500. The DB unique index is the real guard against duplicate accounts;
-  // this only fixes the status code under the race.
+  // v1.28.42 — the first registered user becomes ADMIN (and needs the setup
+  // token, `claimIfFirst`). Deriving that from the early `userCount` would be
+  // a check-then-act race: two signups in the empty-DB window would both be
+  // minted ADMIN. The count+insert is serialised behind a transaction-scoped
+  // advisory lock and re-counted inside it, so the second one is minted USER;
+  // no hashing or HIBP work runs under the lock. A concurrent same-name
+  // signup surfaces the unique index as `P2002`, mapped to the unified 409.
   const user = await prisma
     .$transaction(async (tx) => {
       // `pg_advisory_xact_lock` returns void, which the client cannot
@@ -228,6 +221,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         FROM pg_advisory_xact_lock(hashtextextended('register:first-admin', 0))
       `;
       const priorUsers = await tx.user.count();
+      firstAccount.claimIfFirst(priorUsers, setupProven);
       const role = priorUsers === 0 ? "ADMIN" : "USER";
       return tx.user.create({
         data: {
@@ -246,12 +240,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
       ) {
         return null;
       }
+      if (err instanceof firstAccount.SetupRequired) return err;
       throw err;
     });
 
   if (user === null) {
     return apiError("Username or email already taken", 409, TAKEN);
   }
+  if (user instanceof Error) return firstAccount.setupRefusal();
+  if (user.role === "ADMIN") await firstAccount.afterClaim(user.id, ip);
 
   // Create session immediately. v1.4.22 W5 reconcile (Sr-H1) —
   // `createSession` anchors the `hl_onboarding` cookie itself; fresh

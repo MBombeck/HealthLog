@@ -67,6 +67,8 @@ const UNAUTHENTICATED: Readonly<Record<string, string>> = {
     "Mints the session. There is no credential to present yet.",
   "/api/auth/register":
     "Creates the first credential. Refused outright when registration is closed.",
+  "/api/auth/register/setup":
+    "Proves the setup token of an instance without an account, before the first credential exists.",
   "/api/auth/registration-status":
     "Says whether registration is open, so the sign-in screen can decide what to offer.",
   "/api/auth/passkey/login-options":

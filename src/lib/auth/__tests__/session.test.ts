@@ -48,6 +48,8 @@ vi.mock("@/lib/db", () => ({
       deleteMany: vi.fn(),
       update: vi.fn(),
     },
+    // The second-factor due date read at sign-in: no account row here.
+    user: { findUnique: vi.fn(async () => null) },
     apiToken: { updateMany: vi.fn() },
     refreshToken: { updateMany: vi.fn() },
     trustedDevice: { deleteMany: vi.fn() },

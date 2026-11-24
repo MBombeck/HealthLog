@@ -11,6 +11,7 @@
  *
  * A refusal names the reason the callback redirects with.
  */
+import * as firstAccount from "@/lib/auth/setup-token";
 import {
   findUserIdByEmail,
   findUserIdByUsername,
@@ -102,6 +103,7 @@ async function createProvisionedUser(
   subject: OidcSubject & { email: string },
   username: string,
   timezone: string,
+  setupProven: boolean,
 ): Promise<User> {
   return prisma.$transaction(async (tx) => {
     // `pg_advisory_xact_lock` returns void, which the client cannot
@@ -111,6 +113,9 @@ async function createProvisionedUser(
       FROM pg_advisory_xact_lock(hashtextextended('register:first-admin', 0))
     `;
     const priorUsers = await tx.user.count();
+    // The first account becomes the admin: only a browser that showed the
+    // setup token may create it, as with the password registration.
+    firstAccount.claimIfFirst(priorUsers, setupProven);
     const role = priorUsers === 0 ? "ADMIN" : "USER";
     return tx.user.create({
       data: {
@@ -128,6 +133,7 @@ async function createProvisionedUser(
 
 async function provision(
   subject: OidcSubject & { email: string },
+  setupProven: boolean,
 ): Promise<User> {
   // Same server-default resolution the register route uses: an
   // SSO-provisioned account has no registration form to carry the
@@ -144,7 +150,12 @@ async function provision(
     );
     let user: User;
     try {
-      user = await createProvisionedUser(subject, username, timezone);
+      user = await createProvisionedUser(
+        subject,
+        username,
+        timezone,
+        setupProven,
+      );
     } catch (err) {
       const nameTaken =
         isP2002(err) && (await findUserIdByUsername(username)) !== null;
@@ -221,5 +232,15 @@ export async function resolveOidcAccount(
     annotate({ meta: { reason: "registration_disabled" } });
     return refuse("oidc_registration_disabled");
   }
-  return { kind: "user", user: await provision({ ...subject, email }) };
+  const setupProven = await firstAccount.isProven(undefined);
+  try {
+    return {
+      kind: "user",
+      user: await provision({ ...subject, email }, setupProven),
+    };
+  } catch (err) {
+    if (!(err instanceof firstAccount.SetupRequired)) throw err;
+    annotate({ meta: { reason: "setup_required" } });
+    return refuse("oidc_setup_required");
+  }
 }

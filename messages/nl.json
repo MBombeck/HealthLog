@@ -163,13 +163,19 @@
         "last_method": "Deze passkey is je enige manier om in te loggen. Stel eerst een wachtwoord in of voeg nog een passkey toe."
       },
       "mfa": {
-        "already_active": "Voor dit account is al een authenticator-app ingesteld. Schakel die eerst uit om een nieuwe in te stellen."
+        "already_active": "Voor dit account is al een authenticator-app ingesteld. Schakel die eerst uit om een nieuwe in te stellen.",
+        "enrollment_required": "Stel een tweede factor in om verder te gaan. Tot dan kan dit account alleen daarvoor worden gebruikt."
       },
       "register": {
         "taken": "Deze gebruikersnaam of dit e-mailadres is al in gebruik.",
-        "invite_invalid": "Deze uitnodiging is niet meer geldig. Vraag de persoon die je heeft uitgenodigd om een nieuwe link."
+        "invite_invalid": "Deze uitnodiging is niet meer geldig. Vraag de persoon die je heeft uitgenodigd om een nieuwe link.",
+        "setup_required": "Deze server heeft nog geen account. Voer de installatiecode uit het serverlog in om het eerste aan te maken."
       },
-      "already_authenticated": "Je bent al ingelogd. Log eerst uit en probeer het dan opnieuw."
+      "already_authenticated": "Je bent al ingelogd. Log eerst uit en probeer het dan opnieuw.",
+      "setup": {
+        "token_invalid": "Dat is niet de installatiecode van deze server. Kijk in het serverlog en probeer het opnieuw.",
+        "already_claimed": "Deze server heeft al een account. Meld je in plaats daarvan aan."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -690,7 +696,8 @@
       "errorIdentityConflict": "Dat e-mailadres hoort bij een account dat al aan een andere SSO-identiteit is gekoppeld.",
       "errorRegistrationDisabled": "Er is geen account dat bij die identiteit past, en nieuwe registraties zijn momenteel gesloten.",
       "errorFailed": "Single sign-on is mislukt. Probeer het opnieuw.",
-      "errorLinkRequired": "Er bestaat hier al een account met dit e-mailadres. Log daar één keer in met het wachtwoord of de passkey om het aan single sign-on te koppelen."
+      "errorLinkRequired": "Er bestaat hier al een account met dit e-mailadres. Log daar één keer in met het wachtwoord of de passkey om het aan single sign-on te koppelen.",
+      "errorSetupRequired": "Deze server heeft nog geen account. Voer eerst de installatiecode uit het serverlog in en meld je daarna aan met single sign-on."
     },
     "native": {
       "signingInToApp": "Inloggen bij de HealthLog-app",
@@ -715,7 +722,10 @@
     "enrollMfa": {
       "title": "Stel een tweede factor in",
       "body": "Je beheerder vereist een tweede factor voor dit account. Voeg een authenticator-app of een beveiligingssleutel toe om verder te gaan.",
-      "signOut": "Uitloggen"
+      "signOut": "Uitloggen",
+      "graceBanner": "Je beheerder vereist een tweede factor voor dit account. Voeg er een toe vóór {date}; daarna kan het account alleen nog worden gebruikt om die in te stellen.",
+      "graceAction": "Nu instellen",
+      "graceDismiss": "Deze melding verbergen"
     },
     "confirmAccess": {
       "title": "Bevestig dat jij het bent",
@@ -775,7 +785,16 @@
     },
     "deletionPending": "Dit account wordt op {date} verwijderd en is tot dan vergrendeld. Een beheerder van deze server kan de verwijdering vóór die datum ongedaan maken.",
     "deletionPendingNoDate": "Dit account staat gepland voor verwijdering en is vergrendeld. Een beheerder van deze server kan de verwijdering ongedaan maken tot die voltooid is.",
-    "signInRateLimited": "Te veel pogingen. Wacht een paar minuten en probeer het opnieuw."
+    "signInRateLimited": "Te veel pogingen. Wacht een paar minuten en probeer het opnieuw.",
+    "setup": {
+      "title": "Deze server instellen",
+      "body": "Deze server heeft nog geen account. Het eerste account wordt de beheerder en heeft daarom de installatiecode nodig: de server schrijft die bij elke start in zijn log, of het is de SETUP_TOKEN uit zijn omgeving.",
+      "tokenLabel": "Installatiecode",
+      "submit": "Doorgaan",
+      "invalid": "Dat is niet gelukt. Controleer de installatiecode en probeer het opnieuw.",
+      "proven": "Installatiecode geaccepteerd. Het eerste account dat je hier aanmaakt, wordt de beheerder.",
+      "createFirstAccount": "Eerste account aanmaken"
+    }
   },
   "dashboard": {
     "title": "Dashboard",
@@ -9310,7 +9329,7 @@
     },
     "carrier": "Netwerkprovider",
     "mfaRequired": "Tweede factor verplichten",
-    "mfaRequiredDescription": "Accounts zonder tweede factor worden na het inloggen via het web doorgestuurd om er een in te stellen; toegang via de API en native apps (Bearer) blijft open.",
+    "mfaRequiredDescription": "Hetzelfde voor elk account: een account zonder authenticator-app, beveiligingssleutel of passkey wordt gevraagd er een toe te voegen en kan na de respijtperiode alleen nog worden gebruikt om die in te stellen. De iPhone-app weigert de aanmelding tot dan.",
     "mfaEnforcedOn": "MFA aan",
     "mfaEnforcedOff": "MFA uit",
     "mfaEnforcedOnHint": "Voor deze gebruiker is een tweede factor verplicht. Klik om dit niet langer te verplichten.",
@@ -9845,7 +9864,13 @@
       "upToDate": "Bijgewerkt",
       "lastApplied": "Laatste: {name}, {time}",
       "loadError": "De status van de migraties kon niet worden geladen."
-    }
+    },
+    "mfaRequiredForAdmins": "Tweede factor verplicht voor beheerders",
+    "mfaRequiredForAdminsDescription": "Een beheerdersaccount zonder authenticator-app, beveiligingssleutel of passkey wordt gevraagd er een toe te voegen en kan na de respijtperiode alleen nog worden gebruikt om die in te stellen. De iPhone-app weigert de aanmelding tot dan.",
+    "mfaGraceDays": "Respijtperiode",
+    "mfaGraceDaysDescription": "Hoe lang een account dat een regel nieuw dekt de tijd heeft om een tweede factor toe te voegen. De periode begint wanneer je een regel inschakelt.",
+    "mfaGraceDaysNone": "Geen",
+    "mfaGraceDaysOption": "{count, plural, one {# dag} other {# dagen}}"
   },
   "achievements": {
     "title": "Prestaties",

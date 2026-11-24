@@ -57,6 +57,8 @@ export const SECRET_ENV_NAMES = Object.freeze([
   "ENCRYPTION_KEY",
   "ENCRYPTION_KEYS",
   "API_TOKEN_HMAC_KEY",
+  // The token that claims a fresh instance's first account.
+  "SETUP_TOKEN",
   // Backups.
   "BACKUP_ENCRYPTION_KEY",
   "BACKUP_ENCRYPTION_PREVIOUS_KEYS",

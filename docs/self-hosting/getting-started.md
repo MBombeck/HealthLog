@@ -135,10 +135,25 @@ banner, the instance is live.
 
 ## 4. Create the first user
 
-Open `http://localhost:3000` in a browser. The registration flow asks
-for a username, email, and password. **The first user that registers
-is promoted to admin automatically.** Every subsequent registration
-creates a regular user.
+Open `http://localhost:3000` in a browser. The first account becomes the
+admin, so a fresh instance first asks for its **setup token**: the app
+prints it to its log at every start while no account exists.
+
+```bash
+docker compose logs app | grep "\[setup\]"
+```
+
+Paste the `hlu_…` token, then register with a username, email and password
+(or sign in with single sign-on, if configured). To choose the token
+yourself, set `SETUP_TOKEN` (at least 32 characters) before the first
+start; the log then names the variable instead of printing a token. Once
+the first account exists the token opens nothing. Every later
+registration creates a regular user; close open registration in the admin
+settings once everyone has an account (invites work either way).
+
+The admin account is asked to add a second factor (an authenticator app,
+a security key or a passkey) within 14 days; after that it can only be
+used to add one. See [Require a second factor](../ops/mfa-enforcement.md).
 
 After the first user lands, two short setups are offered. Neither is
 forced, every step can be skipped, and everything stays changeable later.

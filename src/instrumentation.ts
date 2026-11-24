@@ -48,6 +48,24 @@ async function applySecretFilesAtBoot(): Promise<void> {
   }
 }
 
+/** A fresh instance prints the token that claims its first account. */
+async function logSetupTokenAtBootSafely(): Promise<void> {
+  // Node-only, guarded like the helpers above.
+  if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  try {
+    const [{ beginBootStep }, { logSetupTokenAtBoot }, { prisma }] =
+      await Promise.all([
+        import("@/lib/boot/boot-steps"),
+        import("@/lib/auth/setup-token"),
+        import("@/lib/db"),
+      ]);
+    beginBootStep("setup_token");
+    await logSetupTokenAtBoot(prisma);
+  } catch {
+    // A notice must never break boot.
+  }
+}
+
 export async function register() {
   // Only start the worker on the Node.js server runtime (not Edge, not build)
   if (process.env.NEXT_RUNTIME === "nodejs") {
@@ -66,9 +84,8 @@ export async function register() {
     );
     startEventLoopLagMonitor();
 
-    // Every locale falls back to the English message catalog, so a process
-    // without a readable `messages/en.json` cannot serve a page or a job.
-    // Refuse to start with the file named, rather than fail every request.
+    // Every locale falls back to the English message catalog: a process
+    // without a readable `messages/en.json` refuses to start, the file named.
     const { assertDefaultCatalogReadable } =
       await import("@/lib/i18n/server-catalogs");
     assertDefaultCatalogReadable();
@@ -116,6 +133,7 @@ export async function register() {
       // A diagnostic must never break boot.
     }
 
+    await logSetupTokenAtBootSafely();
     // Every pulse reader follows the operator's pulse day-mean method; mirror
     // it in this process and keep the mirror current.
     beginBootStep("pulse_method_sync");

@@ -20,6 +20,9 @@ import { memoizePerRequest } from "@/lib/request-cache";
 
 export const OPERATOR_ROW_SELECT = {
   mfaRequired: true,
+  mfaRequiredForAdmins: true,
+  mfaGraceDays: true,
+  mfaPolicySince: true,
   assistantEnabled: true,
   assistantCoachEnabled: true,
   assistantBriefingEnabled: true,

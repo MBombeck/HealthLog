@@ -13,6 +13,7 @@ vi.mock("@/lib/db", () => ({
     },
     appSettings: {
       findUnique: vi.fn().mockResolvedValue({ registrationEnabled: true }),
+      upsert: vi.fn(),
     },
     // v1.28.42 — the first-admin count+insert now runs inside a
     // transaction-scoped advisory lock. Default `$transaction` to run the
@@ -188,6 +189,11 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
     vi.mocked(prisma.$queryRaw).mockResolvedValue([{ locked: 1 }] as never);
   });
 
+  // The first account needs the instance's setup token (`SETUP_TOKEN` here).
+  const SETUP = "setup-token-for-the-register-route-tests";
+  beforeEach(() => vi.stubEnv("SETUP_TOKEN", SETUP));
+  afterEach(() => vi.unstubAllEnvs());
+
   const validBody = {
     email: "new@example.com",
     username: "newuser",
@@ -231,12 +237,42 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
     // Early gate count and in-tx count both 0.
     vi.mocked(prisma.user.count).mockResolvedValue(0 as never);
 
-    const res = await postPathThrough(validBody);
+    const res = await postPathThrough({ ...validBody, setupToken: SETUP });
     expect(res.status).toBe(201);
     const createArgs = vi.mocked(prisma.user.create).mock.calls[0]?.[0] as {
       data: { role: string };
     };
     expect(createArgs.data.role).toBe("ADMIN");
+  });
+
+  it.each([
+    ["no setup token", {}],
+    [
+      "a wrong setup token",
+      { setupToken: "not-the-token-of-this-instance-at-all" },
+    ],
+  ])(
+    "refuses the first account with %s, before any hashing",
+    async (_label, extra) => {
+      vi.mocked(prisma.user.count).mockResolvedValue(0);
+
+      const res = await postPathThrough({ ...validBody, ...extra });
+      expect(res.status).toBe(403);
+      const body = (await res.json()) as { meta?: { errorCode?: string } };
+      expect(body.meta?.errorCode).toBe("auth.register.setup_required");
+      expect(hashPassword).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it("refuses inside the lock when the instance emptied after the early read", async () => {
+    vi.mocked(prisma.user.count)
+      .mockResolvedValueOnce(1) // early read: an account exists
+      .mockResolvedValueOnce(0); // inside the lock: none left
+
+    const res = await postPathThrough(validBody);
+    expect(res.status).toBe(403);
+    expect(prisma.user.create).not.toHaveBeenCalled();
   });
 
   it("mints USER when a concurrent registration committed first (stale early read, fresh in-tx re-count)", async () => {
@@ -248,7 +284,7 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
       .mockResolvedValueOnce(0 as never) // early registrationEnabled gate
       .mockResolvedValueOnce(1 as never); // inside the advisory-locked tx
 
-    const res = await postPathThrough(validBody);
+    const res = await postPathThrough({ ...validBody, setupToken: SETUP });
     expect(res.status).toBe(201);
     const createArgs = vi.mocked(prisma.user.create).mock.calls[0]?.[0] as {
       data: { role: string };
@@ -258,7 +294,7 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
 
   it("acquires the transaction-scoped advisory lock before counting", async () => {
     vi.mocked(prisma.user.count).mockResolvedValue(0 as never);
-    await postPathThrough(validBody);
+    await postPathThrough({ ...validBody, setupToken: SETUP });
     expect(prisma.$queryRaw).toHaveBeenCalled();
     expect(prisma.$transaction).toHaveBeenCalled();
   });

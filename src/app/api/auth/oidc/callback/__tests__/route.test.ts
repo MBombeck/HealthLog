@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 
+// The browser proved the setup token unless a case says otherwise; the
+// first-account rule itself is pinned in the register route's tests.
+const setupProof = vi.hoisted(() => ({ proven: true }));
+vi.mock("@/lib/auth/setup-token", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/auth/setup-token")>()),
+  isProven: vi.fn(async () => setupProof.proven),
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
@@ -31,7 +39,7 @@ vi.mock("@/lib/db", () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
-    appSettings: { findUnique: vi.fn() },
+    appSettings: { findUnique: vi.fn(), upsert: vi.fn() },
     webauthnMfaCredential: { count: vi.fn() },
     // v1.28.48 — the first-admin provision count+insert now runs inside a
     // transaction-scoped advisory lock. Default `$transaction` to run the
@@ -509,6 +517,26 @@ describe("GET /api/auth/oidc/callback", () => {
     expect(
       vi.mocked(prisma.$queryRaw).mock.invocationCallOrder[0],
     ).toBeLessThan(vi.mocked(prisma.user.create).mock.invocationCallOrder[0]);
+  });
+
+  it("refuses the first account to a browser that did not prove the setup token", async () => {
+    setupProof.proven = false;
+    mockIdentity({
+      sub: "sub-unproven",
+      email: "first@example.com",
+      emailVerified: true,
+    });
+    mockUserLookups({ byIdentity: null, byEmail: null });
+    vi.mocked(prisma.user.count).mockResolvedValue(0);
+    // No settings row: registration is open, as on a fresh instance.
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
+
+    const res = await GET(validRequest());
+    setupProof.proven = true;
+
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
+    expect(res.headers.get("location")).toContain("error=oidc_setup_required");
   });
 
   it("refuses to auto-provision when registration is closed", async () => {

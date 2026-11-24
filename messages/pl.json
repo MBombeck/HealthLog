@@ -163,13 +163,19 @@
         "last_method": "Ten klucz dostępu to Twój jedyny sposób logowania. Najpierw ustaw hasło albo dodaj kolejny klucz dostępu."
       },
       "mfa": {
-        "already_active": "To konto ma już skonfigurowaną aplikację uwierzytelniającą. Najpierw ją wyłącz, aby skonfigurować nową."
+        "already_active": "To konto ma już skonfigurowaną aplikację uwierzytelniającą. Najpierw ją wyłącz, aby skonfigurować nową.",
+        "enrollment_required": "Skonfiguruj drugi składnik, aby kontynuować. Do tego czasu to konto służy tylko do tego."
       },
       "register": {
         "taken": "Ta nazwa użytkownika lub adres e-mail jest już zajęty.",
-        "invite_invalid": "To zaproszenie jest już nieważne. Poproś osobę, która cię zaprosiła, o nowy link."
+        "invite_invalid": "To zaproszenie jest już nieważne. Poproś osobę, która cię zaprosiła, o nowy link.",
+        "setup_required": "Ten serwer nie ma jeszcze konta. Wpisz token konfiguracji z logu serwera, aby utworzyć pierwsze."
       },
-      "already_authenticated": "Masz już zalogowaną sesję. Najpierw się wyloguj, a potem spróbuj ponownie."
+      "already_authenticated": "Masz już zalogowaną sesję. Najpierw się wyloguj, a potem spróbuj ponownie.",
+      "setup": {
+        "token_invalid": "To nie jest token konfiguracji tego serwera. Sprawdź log serwera i spróbuj ponownie.",
+        "already_claimed": "Ten serwer ma już konto. Zaloguj się zamiast tego."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -690,7 +696,8 @@
       "errorIdentityConflict": "Ten adres e-mail należy do konta powiązanego już z inną tożsamością SSO.",
       "errorRegistrationDisabled": "Żadne konto nie pasuje do tej tożsamości, a nowe rejestracje są obecnie zamknięte.",
       "errorFailed": "Logowanie jednokrotne nie powiodło się. Spróbuj ponownie.",
-      "errorLinkRequired": "Konto z tym adresem e-mail już tu istnieje. Zaloguj się do niego raz hasłem lub kluczem dostępu, aby połączyć je z logowaniem jednokrotnym."
+      "errorLinkRequired": "Konto z tym adresem e-mail już tu istnieje. Zaloguj się do niego raz hasłem lub kluczem dostępu, aby połączyć je z logowaniem jednokrotnym.",
+      "errorSetupRequired": "Ten serwer nie ma jeszcze konta. Najpierw wpisz token konfiguracji z logu serwera, a potem zaloguj się przez logowanie jednokrotne."
     },
     "native": {
       "signingInToApp": "Logowanie do aplikacji HealthLog",
@@ -715,7 +722,10 @@
     "enrollMfa": {
       "title": "Skonfiguruj drugi składnik",
       "body": "Administrator wymaga drugiego składnika na tym koncie. Dodaj aplikację uwierzytelniającą lub klucz bezpieczeństwa, aby kontynuować.",
-      "signOut": "Wyloguj się"
+      "signOut": "Wyloguj się",
+      "graceBanner": "Administrator wymaga drugiego składnika dla tego konta. Dodaj go do {date}; po tej dacie konto posłuży już tylko do jego konfiguracji.",
+      "graceAction": "Skonfiguruj teraz",
+      "graceDismiss": "Ukryj to powiadomienie"
     },
     "confirmAccess": {
       "title": "Potwierdź, że to Ty",
@@ -775,7 +785,16 @@
     },
     "deletionPending": "To konto zostanie usunięte {date} i do tego czasu jest zablokowane. Administrator tego serwera może cofnąć usunięcie przed tą datą.",
     "deletionPendingNoDate": "To konto czeka na usunięcie i jest zablokowane. Administrator tego serwera może cofnąć usunięcie, dopóki się nie zakończy.",
-    "signInRateLimited": "Zbyt wiele prób. Odczekaj kilka minut i spróbuj ponownie."
+    "signInRateLimited": "Zbyt wiele prób. Odczekaj kilka minut i spróbuj ponownie.",
+    "setup": {
+      "title": "Skonfiguruj ten serwer",
+      "body": "Ten serwer nie ma jeszcze konta. Pierwsze konto zostanie jego administratorem, dlatego potrzebny jest token konfiguracji: serwer wypisuje go w logu przy każdym starcie albo jest to SETUP_TOKEN ustawiony w jego środowisku.",
+      "tokenLabel": "Token konfiguracji",
+      "submit": "Dalej",
+      "invalid": "To się nie udało. Sprawdź token konfiguracji i spróbuj ponownie.",
+      "proven": "Token konfiguracji przyjęty. Pierwsze konto, które tu utworzysz, zostanie administratorem.",
+      "createFirstAccount": "Utwórz pierwsze konto"
+    }
   },
   "dashboard": {
     "title": "Pulpit",
@@ -9310,7 +9329,7 @@
     },
     "carrier": "Operator",
     "mfaRequired": "Wymagaj drugiego składnika",
-    "mfaRequiredDescription": "Konta bez drugiego składnika są po logowaniu w przeglądarce kierowane do jego konfiguracji; dostęp przez API i natywny (Bearer) pozostaje otwarty.",
+    "mfaRequiredDescription": "To samo dla każdego konta: konto bez aplikacji uwierzytelniającej, klucza bezpieczeństwa ani klucza dostępu jest proszone o dodanie jednego, a po okresie karencji służy już tylko do jego konfiguracji. Do tego czasu aplikacja na iPhone'a odmawia logowania.",
     "mfaEnforcedOn": "MFA wł.",
     "mfaEnforcedOff": "MFA wył.",
     "mfaEnforcedOnHint": "Ten użytkownik musi używać drugiego składnika. Kliknij, aby przestać go wymagać.",
@@ -9845,7 +9864,13 @@
       "upToDate": "Aktualne",
       "lastApplied": "Ostatnia: {name}, {time}",
       "loadError": "Nie udało się wczytać stanu migracji."
-    }
+    },
+    "mfaRequiredForAdmins": "Wymagaj drugiego składnika od administratorów",
+    "mfaRequiredForAdminsDescription": "Konto administratora bez aplikacji uwierzytelniającej, klucza bezpieczeństwa ani klucza dostępu jest proszone o dodanie jednego, a po okresie karencji służy już tylko do jego konfiguracji. Do tego czasu aplikacja na iPhone'a odmawia logowania.",
+    "mfaGraceDays": "Okres karencji",
+    "mfaGraceDaysDescription": "Ile czasu ma konto, które reguła właśnie objęła, na dodanie drugiego składnika. Liczy się od włączenia reguły.",
+    "mfaGraceDaysNone": "Brak",
+    "mfaGraceDaysOption": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}"
   },
   "achievements": {
     "title": "Osiągnięcia",

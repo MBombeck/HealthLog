@@ -9,6 +9,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { SettingsToggle, useAdminSettings, useUpdateSettings } from "./_shared";
+import { MfaPolicySettings } from "./mfa-policy-settings";
 import { listSupportedTimezones } from "@/lib/tz/format";
 
 // Document-vault limits: bytes on the wire, MB / GB in the UI. The bounds
@@ -111,20 +112,8 @@ export function GeneralSettingsSection() {
           </p>
         )}
 
-        {/* v1.23 — instance-wide "require a second factor" policy. Every
-            account without an active factor is sent to forced enrollment after
-            sign-in. This is a web-session nudge, not an API wall: direct API /
-            native (Bearer) access for a not-yet-enrolled account is not blocked.
-            See docs/ops/mfa-enforcement.md. */}
-        <SettingsToggle
-          label={t("admin.mfaRequired")}
-          description={t("admin.mfaRequiredDescription")}
-          checked={settings?.mfaRequired ?? false}
-          onCheckedChange={(checked) =>
-            updateSettings.mutate({ mfaRequired: checked })
-          }
-          disabled={updateSettings.isPending}
-        />
+        {/* Second-factor policies and their grace period: docs/ops/mfa-enforcement.md. */}
+        <MfaPolicySettings settings={settings} update={updateSettings} />
 
         {/* v1.4.27 — match the SettingsToggle stacking
             contract: stack on `<sm`, side-by-side on `sm+`. */}
