@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- A damaged Gadgetbridge or Health Connect database is refused as a broken file, also when the damage sits behind a sound header and only shows once a table is read. The import used to fail with SQLite's own message as an internal error.
 - A FHIR Bundle, or a health record inside an Apple Health export, that nests deeper than 64 levels is refused as an unreadable file. A few hundred kilobytes nested deep enough made the import fail with an internal error instead.
 - An Apple Health export no longer stops as a whole at one cycle sample with a date that does not read. That sample is skipped and counted, and the rest of the export is imported.
 - A measurement CSV or a dose-history CSV with more than 100 000 rows, or a row wider than 1000 columns, is refused straight away. Blank lines are no longer held as rows while the file is read. Sixteen megabytes of line breaks used to hold several gigabytes of server memory for most of a minute, and a file of short junk lines answered with a status line for each of millions of rows.
