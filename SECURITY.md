@@ -55,10 +55,25 @@ HealthLog is designed with security as a core principle:
 - **AES-256-GCM encryption** for all stored secrets (OAuth tokens, API keys, VAPID keys)
 - **Argon2id** password hashing with zxcvbn strength validation
 - **HMAC-SHA256** hashed API tokens
-- **Server-side sessions** in PostgreSQL (HttpOnly, SameSite=Strict, 30-day sliding expiry)
+- **Server-side sessions** in PostgreSQL (`__Host-` cookie, HttpOnly, Secure, SameSite=Lax, an idle timeout and an absolute lifetime)
 - **Rate limiting** on authentication and external-facing endpoints
 - **Security headers**: CSP with nonces, HSTS, X-Frame-Options DENY, Permissions-Policy
 - **Proxy-level route protection** via `proxy.ts` (session cookie validation on all non-public paths)
+
+The session cookie is `SameSite=Lax` rather than `Strict` because a single
+sign-on return and links into the app from notifications arrive as cross-site
+navigations; state-changing requests from another site or origin are refused
+by the server regardless.
+
+The security documentation in this repository:
+
+- [Authentication and sessions](docs/security/authentication.md)
+- [Authorization](docs/security/authorization.md)
+- [Key management and cryptographic inventory](docs/security/key-management.md)
+- [Data classification](docs/security/data-classification.md)
+- [Logging](docs/security/logging.md)
+- [Network egress](docs/security/network-egress.md)
+- [Limits](docs/security/limits.md) and [file handling](docs/security/file-handling.md)
 
 For more details, see the [security documentation](https://docs.healthlog.dev/security/overview/).
 

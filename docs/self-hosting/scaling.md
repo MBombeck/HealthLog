@@ -139,6 +139,10 @@ that starts after the web container changes nothing the web container relies
 on. Rotating `API_TOKEN_HMAC_KEY` changes that password: restart all
 containers together.
 
+Each container needs only some of the secrets; the table in
+[`docs/security/key-management.md`](../security/key-management.md#which-process-needs-which-secret)
+says which, and [`secrets.md`](secrets.md) how to pass them as files.
+
 ## Healthchecks
 
 - `app` (web) healthcheck: a `node -e` fetch of `/api/health` every 30s.

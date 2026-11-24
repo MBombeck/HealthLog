@@ -282,6 +282,9 @@ server {
 
     ssl_certificate     /etc/letsencrypt/live/your-instance.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/your-instance.example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
 
     client_max_body_size 1600M;  # Apple Health export.zip cap is 1.5 GB
 
@@ -303,7 +306,8 @@ server {
     listen 80;
     listen [::]:80;
     server_name your-instance.example.com;
-    return 301 https://$host$request_uri;
+    location /api/ { return 403; }
+    location / { return 301 https://$host$request_uri; }
 }
 ```
 
@@ -312,6 +316,51 @@ to support Apple Health `export.zip` uploads — the app caps the
 upload at 1.5 GB and Nginx will reject the body before the app sees
 it otherwise. `proxy_buffering off` keeps streamed insight events
 flowing without buffer pauses. Pair with `TRUST_PROXY_HOPS=1`.
+
+## TLS versions and ciphers
+
+HealthLog does not terminate TLS; the proxy does, and its settings are the
+instance's. Offer TLS 1.2 and TLS 1.3 only, with the cipher suites of
+Mozilla's "intermediate" profile
+(<https://ssl-config.mozilla.org/#config=intermediate>), and a certificate
+from a public CA (or `tailscale serve` on a tailnet).
+
+- **Caddy** offers TLS 1.2 and 1.3 with a modern suite list by default;
+  nothing to add.
+- **Traefik** defaults to TLS 1.2 as the minimum. To state it, set
+  `tls.options.default.minVersion: VersionTLS12` in Traefik's dynamic file
+  configuration; the option named `default` applies to every router.
+- **Nginx** (and Nginx Proxy Manager's custom configuration): the
+  `ssl_protocols` and `ssl_ciphers` lines in the bare Nginx block above.
+
+The app sends `Strict-Transport-Security: max-age=31536000; includeSubDomains;
+preload` on every response. `includeSubDomains` applies to every host under
+the instance's domain: if other services there still need plain HTTP, strip
+or override the header at the proxy.
+
+Check the result with `openssl s_client -connect your-instance.example.com:443 -tls1_1`
+(it must fail) or any TLS scanner.
+
+## Plain HTTP on port 80
+
+Redirect browsers to HTTPS, but answer `/api/*` on port 80 with an error
+instead of a redirect. A client that sends a token or a cookie over plain HTTP
+has already exposed it; a redirect hides that and the client keeps doing it,
+while a 403 makes the misconfiguration visible at once. The bare Nginx block
+above does this. In Caddy, an explicit `http://` site replaces the automatic
+redirect:
+
+```
+http://your-instance.example.com {
+    @api path /api/*
+    respond @api "HTTPS required" 403
+    redir https://{host}{uri} 308
+}
+```
+
+In Traefik, give the HTTP entrypoint's redirect router the rule
+``Host(`your-instance.example.com`) && !PathPrefix(`/api`)``; an `/api`
+request on port 80 then matches no router and gets 404.
 
 ## Verifying the proxy chain
 

@@ -58,3 +58,71 @@ the SQL statements.
 - If compromise is suspected beyond one account, rotate the affected
   instance-level secrets using the relevant operator runbooks before
   restoring integrations.
+
+## A second factor is lost
+
+The person's own way back comes first: a recovery code replaces the second
+factor at sign-in, once per code, and from there they can enrol a new factor.
+The steps below are for an account whose owner has neither the factor nor a
+recovery code.
+
+### Verify the person first
+
+Clearing a second factor lowers the account to one factor, so do it only on
+evidence as strong as what the factor protected. Ask for the same proof the
+account was set up with, never less:
+
+- On a household instance, where the operator knows the person, confirm in
+  person or on a call where you can see and hear them. A message from their
+  e-mail address or chat account is not enough: if the second factor was
+  needed, the attacker may hold exactly those.
+- Where the operator does not know the person, ask for what was checked when
+  the account was created (the invitation it came from, the identity document
+  the organisation keeps), and have the request arrive through a channel
+  other than the one the person is asking from.
+- If the person can still sign in with the password, have them do so on a
+  device you can watch; that proves the first factor too.
+- Write down who asked, how you verified it and when, outside the instance.
+
+### Clear the factor
+
+From a source checkout of the running release, after `pnpm install` and `pnpm db:generate`, with a
+`DATABASE_URL` that reaches the database as the owner (the script is not part
+of the image):
+
+```sh
+DATABASE_URL='postgres://…' pnpm dlx tsx scripts/disable-mfa.ts <username-or-email>
+```
+
+In one transaction it clears the TOTP secret, deletes every recovery code,
+deletes every web session and trusted device, revokes every native refresh
+token, and writes an `auth.mfa.disabled` audit row with
+`{"source":"cli","factor":"totp"}` on the account. The account then signs in
+with its password alone and, where a policy requires a second factor
+([`mfa-enforcement.md`](mfa-enforcement.md)), is sent straight to enrolment.
+
+What the script does not do, and how to finish the job:
+
+- **Security keys.** It looks only at the TOTP factor. An account whose only
+  second factor is a security key gets "no active second factor, nothing to
+  do". Remove the keys as the owner and record it yourself:
+
+  ```sql
+  BEGIN;
+  DELETE FROM webauthn_mfa_credentials WHERE user_id = '<user id>';
+  DELETE FROM mfa_recovery_codes WHERE user_id = '<user id>';
+  DELETE FROM sessions WHERE user_id = '<user id>';
+  DELETE FROM trusted_devices WHERE user_id = '<user id>';
+  UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = '<user id>' AND revoked_at IS NULL;
+  INSERT INTO audit_logs (id, user_id, action, details, created_at)
+    VALUES (gen_random_uuid()::text, '<user id>', 'auth.mfa.disabled',
+            '{"source":"cli","factor":"webauthn"}', now());
+  COMMIT;
+  ```
+
+- **API tokens and step-up elevations** survive. If the factor was lost to
+  theft rather than to a broken phone, follow with a password reset
+  ([above](#what-a-successful-operator-reset-revokes)), which revokes those
+  too, and let the person choose a new password.
+
+Afterwards the person enrols a new factor and generates new recovery codes.

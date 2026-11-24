@@ -123,6 +123,25 @@ Client registration essentials only — the IdP's own docs cover the rest.
   an operator decision (a manual `users.oidc_issuer` / `users.oidc_sub`
   update), not something a login can do.
 
+## Sessions
+
+A sign-in through the identity provider creates an ordinary HealthLog
+session, and from then on the two sessions are independent:
+
+- Signing out at the provider, or the provider's session expiring, does
+  **not** end the HealthLog session. HealthLog does not take part in the
+  provider's logout (no front- or back-channel logout).
+- The HealthLog session ends on its own idle timeout and absolute lifetime
+  (`SESSION_IDLE_TIMEOUT_DAYS`, `SESSION_MAX_LIFETIME_DAYS`; the app's
+  refresh tokens on `REFRESH_TOKEN_MAX_LIFETIME_DAYS`), when the person signs
+  out of HealthLog, or when the session is revoked in Settings, Security or by
+  an admin. After that, the next sign-in goes to the provider again.
+- Disabling a person at the provider stops new sign-ins, not existing
+  sessions. To cut someone off at once, also end their HealthLog sessions
+  (an admin password reset ends every sign-in, the app's included).
+
+Details: [`docs/security/authentication.md`](../security/authentication.md#sessions).
+
 ## OIDC_ONLY
 
 `OIDC_ONLY="true"` disables password and passkey login **server-side**
