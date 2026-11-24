@@ -2,14 +2,15 @@ name: Security & Quality
 
 on:
   push:
-    branches: [main]
+    branches: [main, "release/**"]
   pull_request:
-    branches: [main]
+    branches: [main, "release/**"]
   schedule:
     # Daily, 05:47 UTC. Carries the dependency audit only — every other job
     # here answers "is this change safe" and has nothing to say about a tree
     # nobody touched. See the note on `dependency-audit`.
     - cron: "47 5 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
