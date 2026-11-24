@@ -44,7 +44,7 @@ import {
   dayKeyAsUtcMidnight,
 } from "@/lib/tz/date-only";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
-import { visitPath } from "@/lib/encounters/visit-links";
+import { CARE_WIRE_PATH, visitPath } from "@/lib/encounters/visit-links";
 import {
   canonicalWorkoutsInRange,
   readWorkoutsAroundRange,
@@ -730,7 +730,7 @@ async function checkupsPart(frame: DayFrame): Promise<SectionPart> {
         section: "checkups",
         id: row.id,
         title: row.reminder.label,
-        href: "/checkups", // /checkups kept on the wire for iOS builds before 1.7; switch to /care in 1.50.
+        href: CARE_WIRE_PATH,
       }),
     ),
   };

@@ -20,6 +20,7 @@
  * back to a centred-screen tooltip so the tour never blocks.
  */
 
+import { CARE_WEB_PATH } from "@/lib/encounters/visit-links";
 import type { ModuleKey } from "@/lib/modules/registry";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 
@@ -129,7 +130,7 @@ const ALL_STOPS: readonly TourStop[] = [
     id: "vorsorge",
     targetId: "vorsorge-hero",
     placement: "bottom",
-    route: "/care",
+    route: CARE_WEB_PATH,
     titleKey: "onboarding.tour.steps.vorsorge.title",
     bodyKey: "onboarding.tour.steps.vorsorge.body",
   },
