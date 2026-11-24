@@ -77,14 +77,16 @@ On an instance with no account, the first account (by password registration
 or by the first SSO sign-in) can only be created with the setup token. It is
 `SETUP_TOKEN` from the environment (at least 32 characters, also accepted as
 `SETUP_TOKEN_FILE`), or, when that is unset, a token derived from
-`API_TOKEN_HMAC_KEY` that the web process prints to its log at every start for
+`API_TOKEN_HMAC_KEY` that every app process prints to its log at every start for
 as long as no account exists. Whoever can read the container log or the
 environment is already the operator; whoever merely reaches a fresh instance
 first is not.
 
 The first account becomes the administrator. From then on the token has no
-use, and registration is closed by default. An admin can open it (Admin,
-General); invitations work while it is closed.
+use; every later registration creates a regular account while open
+registration is on (the default). An admin closes it under Admin, General
+once everyone has an account; invitations work while it is closed, and the
+admin settings show a reminder while it is open.
 
 ## Second factors
 
