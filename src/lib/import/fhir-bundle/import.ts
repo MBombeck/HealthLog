@@ -65,12 +65,21 @@ function categories(resource: Json): string[] {
   return out;
 }
 
-/** The server a resource came from: the `fullUrl` without its type and id. */
+/**
+ * The namespace a resource's id is unique in: the server it came from (the
+ * `fullUrl` without its type and id). A `urn:uuid:` or `urn:oid:` fullUrl
+ * names no server, and its id is unique on its own, so it needs none: a
+ * patient summary or a portal export writes these with a new `Bundle.id`
+ * every time, and keying them on the Bundle would import every resource of
+ * the next export of the same record again. Only a resource with neither
+ * falls back to its Bundle.
+ */
 function issuerOf(fullUrl: unknown, bundleId: string): string {
   const url = str(fullUrl, 500);
   if (url && /^https?:\/\//i.test(url)) {
     return url.replace(/\/[A-Za-z]+\/[^/]+\/?$/u, "").toLowerCase();
   }
+  if (url && /^urn:(uuid|oid):/i.test(url)) return "urn";
   return `bundle:${bundleId}`;
 }
 
