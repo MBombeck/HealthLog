@@ -23182,7 +23182,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InboundLabValuesEnvelope"
         "401": *a1
-        "403": *a25
+        "403": *a27
         "409":
           description: "Refused: at least one fact on this document is already APPROVED. `meta.errorCode` =
             `documents.inbound.alreadyPartlyConfirmed`."
