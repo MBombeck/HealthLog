@@ -143,7 +143,7 @@ describe("GET /api/sleep/night", () => {
   });
 
   it("returns the requested night's hypnogram segments", async () => {
-    signIn();
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       stage("2026-06-04T01:00:00.000Z", "CORE", 240),
       stage("2026-06-04T03:00:00.000Z", "DEEP", 120),
