@@ -96,7 +96,7 @@ export function main(argv = process.argv.slice(2), env = process.env) {
       console.error(`${PREFIX} ERROR — ${problem}`);
     }
     console.error(
-      `${PREFIX} not starting. Fix the file named above and start again.`,
+      `${PREFIX} not starting. Fix what is named above and start again.`,
     );
     return 1;
   }
