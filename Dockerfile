@@ -75,6 +75,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # starts fresh and therefore does not inherit this setting.
 RUN NODE_OPTIONS=--max-old-space-size=8192 pnpm build
 
+# The licence and notice files of every package the application ships: the
+# production tree and the build packages whose files are in the output
+# (THIRD_PARTY_NOTICES.md). Written from this stage's install, so it lists the
+# platform builds of this architecture; a licence the policy refuses fails the
+# build. The release pipeline checks the image's SBOM against this file.
+RUN node scripts/third-party-notices.mjs --bundle-pnpm /app/THIRD_PARTY_LICENSES.txt
+
 # Record which pdfjs-dist the top-level dependency actually resolves to. pnpm
 # links a direct dependency at `node_modules/<name>`, so this reads the exact
 # pinned copy rather than guessing. The runner stage hoists that version by
@@ -142,6 +149,13 @@ FROM node:22-trixie-slim@sha256:68c76cfad89921b927eae28ba21407475e29d0ce450afcdb
 WORKDIR /opt/prisma-cli
 COPY docker/prisma-cli/package.json docker/prisma-cli/package-lock.json ./
 RUN npm ci --omit=dev --no-fund --no-audit
+# The licence and notice files of every package this install put in place,
+# in one file beside it (THIRD_PARTY_NOTICES.md). The script refuses a licence
+# the project's policy does not allow, and needs nothing but Node.
+COPY scripts/third-party-notices.mjs /tmp/third-party-notices.mjs
+RUN node /tmp/third-party-notices.mjs --bundle-npm /opt/prisma-cli \
+      --out /opt/prisma-cli/THIRD_PARTY_LICENSES.txt && \
+    rm /tmp/third-party-notices.mjs
 
 # ── Stage 4: PostgreSQL client ─────────────────────────────
 # pg_dump and pg_restore of the newest PostgreSQL major this project
@@ -307,6 +321,8 @@ RUN mkdir -p /var/lib/healthlog/backups && \
 
 # Copy built assets
 COPY --from=builder /app/public ./public
+# The project licence and the third-party notices travel with every copy.
+COPY --from=builder /app/LICENSE /app/THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_LICENSES.txt ./
 # The server reads its message catalogs from here on first use, one locale at
 # a time (src/lib/i18n/server-catalogs.ts); they are not bundled.
 COPY --from=builder /app/messages ./messages

@@ -768,6 +768,7 @@ describe("signed release assets", () => {
       "release-provenance",
     ]);
     expect(holding("id-token")).toEqual([
+      "image-provenance",
       "merge",
       "release-manifest",
       "release-provenance",
@@ -854,6 +855,207 @@ describe("signed release assets", () => {
     expect(commands).toHaveLength(2);
     expect(commands[1]).toContain("release upload v1.49.0");
     expect(script).not.toMatch(/release edit|--draft=false|--latest/);
+  });
+});
+
+function runCachePolicy(refType: string, refName: string) {
+  const directory = mkdtempSync(join(tmpdir(), "healthlog-cache-policy-"));
+  temporaryDirectories.push(directory);
+  const output = join(directory, "github-output");
+  writeFileSync(output, "");
+  const workflow = loadWorkflow("docker-publish.yml");
+  const result = spawnSync(
+    "bash",
+    [
+      "-eo",
+      "pipefail",
+      "-c",
+      stepScript(workflow, "build", "Resolve cache policy"),
+    ],
+    {
+      cwd: directory,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        GITHUB_OUTPUT: output,
+        GITHUB_REF_TYPE: refType,
+        GITHUB_REF_NAME: refName,
+        SCOPE: "amd64",
+      },
+    },
+  );
+  return { result, output: readFileSync(output, "utf8") };
+}
+
+function runProvenanceCheck(ghExit: number) {
+  const directory = mkdtempSync(join(tmpdir(), "healthlog-provenance-"));
+  temporaryDirectories.push(directory);
+  const binDirectory = join(directory, "bin");
+  mkdirSync(binDirectory);
+  const commandLog = join(directory, "commands.log");
+  writeFileSync(commandLog, "");
+  writeFileSync(
+    join(binDirectory, "gh"),
+    `#!/bin/sh
+printf '%s\\n' "$*" >> "$FIXTURE_COMMAND_LOG"
+exit ${ghExit}
+`,
+  );
+  writeFileSync(join(binDirectory, "sleep"), "#!/bin/sh\nexit 0\n");
+  chmodSync(join(binDirectory, "gh"), 0o755);
+  chmodSync(join(binDirectory, "sleep"), 0o755);
+
+  const workflow = loadWorkflow("image-provenance.yml");
+  const result = spawnSync(
+    "bash",
+    ["-c", stepScript(workflow, "attest", "Verify the attestation")],
+    {
+      cwd: directory,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        PATH: `${binDirectory}:${process.env.PATH ?? ""}`,
+        GH_TOKEN: "fixture",
+        IMAGE: "ghcr.io/mbombeck/healthlog",
+        DIGEST: INDEX_DIGEST,
+        GITHUB_REPOSITORY: "MBombeck/HealthLog",
+        GITHUB_REF: "refs/tags/v1.49.0",
+        FIXTURE_COMMAND_LOG: commandLog,
+      },
+    },
+  );
+  return {
+    result,
+    commands: readFileSync(commandLog, "utf8").split("\n").filter(Boolean),
+  };
+}
+
+describe("image provenance at SLSA Build L3", () => {
+  const SIGNER = "MBombeck/HealthLog/.github/workflows/image-provenance.yml";
+
+  it("attests the index from the reusable workflow on release tags", () => {
+    const workflow = loadWorkflow("docker-publish.yml");
+    const job = workflow.jobs["image-provenance"];
+
+    expect(job?.uses).toBe("./.github/workflows/image-provenance.yml");
+    expect(job?.needs).toEqual(["merge"]);
+    const condition = (job?.if ?? "").replace(/\s+/g, " ");
+    expect(condition).toContain("startsWith(github.ref, 'refs/tags/v')");
+    expect(condition).toContain("needs.merge.result == 'success'");
+    expect(job?.with).toEqual({
+      image: "${{ needs.merge.outputs.image_ref }}",
+      digest: "${{ needs.merge.outputs.image_digest }}",
+    });
+    expect(job?.permissions).toEqual({
+      "id-token": "write",
+      attestations: "write",
+      packages: "write",
+    });
+  });
+
+  it("signs the provenance in its own job, pushed next to the index", () => {
+    const workflow = loadWorkflow("image-provenance.yml");
+    const raw = parse(
+      readRepoFile(".github/workflows/image-provenance.yml"),
+    ) as { permissions?: unknown };
+    const attest = workflow.jobs.attest;
+    const step = attest?.steps?.find(
+      (s) => s.name === "Attest build provenance",
+    ) as (WorkflowStep & { uses?: string }) | undefined;
+
+    expect(Object.keys(workflow.jobs)).toEqual(["attest"]);
+    expect(raw.permissions).toEqual({});
+    expect(workflow.on?.workflow_call?.inputs?.image?.required).toBe(true);
+    expect(workflow.on?.workflow_call?.inputs?.digest?.required).toBe(true);
+    expect(attest?.permissions).toEqual({
+      "id-token": "write",
+      attestations: "write",
+      packages: "write",
+    });
+    expect(step?.uses).toMatch(
+      /^actions\/attest-build-provenance@[0-9a-f]{40}$/,
+    );
+    expect(step?.with).toEqual({
+      "subject-name": "${{ inputs.image }}",
+      "subject-digest": "${{ inputs.digest }}",
+      "push-to-registry": true,
+      "create-storage-record": false,
+    });
+  });
+
+  it("verifies the attestation from the API and the registry under its own signer", () => {
+    const { result, commands } = runProvenanceCheck(0);
+
+    expect(result.status).toBe(0);
+    expect(commands).toHaveLength(2);
+    for (const command of commands) {
+      expect(command).toContain(
+        `attestation verify oci://ghcr.io/mbombeck/healthlog@${INDEX_DIGEST}`,
+      );
+      expect(command).toContain(`--signer-workflow ${SIGNER}`);
+      expect(command).toContain("--source-ref refs/tags/v1.49.0");
+    }
+    expect(commands[0]).toContain("--bundle-from-oci=false");
+    expect(commands[1]).toContain("--bundle-from-oci=true");
+  });
+
+  it("fails when the attestation does not verify", () => {
+    const { result, commands } = runProvenanceCheck(1);
+
+    expect(result.status).toBe(1);
+    expect(commands).toHaveLength(3);
+    expect(result.stderr).toContain("does not verify");
+  });
+
+  it("keeps OIDC tokens out of every job that runs repository code", () => {
+    const workflow = loadWorkflow("docker-publish.yml");
+
+    expect(workflow.jobs.build?.permissions?.["id-token"]).toBeUndefined();
+    const signingJobsWithCheckout = Object.entries(workflow.jobs)
+      .filter(([, job]) => job.permissions?.["id-token"] === "write")
+      .filter(([, job]) =>
+        (job.steps ?? []).some((s) =>
+          String((s as { uses?: string }).uses ?? "").startsWith(
+            "actions/checkout@",
+          ),
+        ),
+      )
+      .map(([name]) => name);
+    expect(signingJobsWithCheckout).toEqual([]);
+  });
+
+  it("builds with full BuildKit provenance and the resolved cache policy", () => {
+    const workflow = loadWorkflow("docker-publish.yml");
+    const build = workflow.jobs.build?.steps?.find(
+      (s) => s.name === "Build & push by digest",
+    );
+
+    expect(build?.with?.provenance).toBe("mode=max");
+    expect(build?.with?.["no-cache"]).toBe(
+      "${{ steps.cache.outputs.no_cache }}",
+    );
+    expect(build?.with?.["cache-from"]).toBe("${{ steps.cache.outputs.from }}");
+    expect(build?.with?.["cache-to"]).toBe("${{ steps.cache.outputs.to }}");
+  });
+
+  it("gives a release tag build no shared cache", () => {
+    const { result, output } = runCachePolicy("tag", "v1.49.0");
+
+    expect(result.status).toBe(0);
+    expect(output).toBe("no_cache=true\n");
+  });
+
+  it("keeps the per-ref cache for pull-request builds", () => {
+    const { result, output } = runCachePolicy("branch", "1481/merge");
+
+    expect(result.status).toBe(0);
+    expect(output).toContain("no_cache=false\n");
+    expect(output).toContain(
+      "from<<EOF\ntype=gha,scope=build-amd64-1481/merge\ntype=gha,scope=build-amd64-main\nEOF\n",
+    );
+    expect(output).toContain(
+      "to=type=gha,mode=max,scope=build-amd64-1481/merge\n",
+    );
   });
 });
 

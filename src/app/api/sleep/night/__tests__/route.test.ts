@@ -93,6 +93,12 @@ function stage(
   };
 }
 
+/** A signed-in caller whose night reads exactly these stage rows. */
+function signedInWithNight(rows: ReturnType<typeof stage>[]) {
+  vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+  vi.mocked(prisma.measurement.findMany).mockResolvedValue(rows as never);
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
@@ -143,13 +149,12 @@ describe("GET /api/sleep/night", () => {
   });
 
   it("returns the requested night's hypnogram segments", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+    signedInWithNight([
       stage("2026-06-04T01:00:00.000Z", "CORE", 240),
       stage("2026-06-04T03:00:00.000Z", "DEEP", 120),
       stage("2026-06-04T05:00:00.000Z", "REM", 120),
       stage("2026-06-04T05:00:00.000Z", "IN_BED", 510),
-    ] as never);
+    ]);
     const res = await GET(req("date=2026-06-04"));
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -162,6 +167,43 @@ describe("GET /api/sleep/night", () => {
     );
     expect(core.start).toBe("2026-06-03T21:00:00.000Z");
     expect(core.end).toBe("2026-06-04T01:00:00.000Z");
+  });
+
+  it("flags a night of stage totals and serves no awakening for it (#1419)", async () => {
+    // A daily sleep summary: every stage total stamped on the wake instant.
+    signedInWithNight([
+      stage("2026-06-04T05:00:00.000Z", "CORE", 250, "GARMIN"),
+      stage("2026-06-04T05:00:00.000Z", "DEEP", 40, "GARMIN"),
+      stage("2026-06-04T05:00:00.000Z", "REM", 95, "GARMIN"),
+      stage("2026-06-04T05:00:00.000Z", "AWAKE", 45, "GARMIN"),
+    ]);
+    const res = await GET(req("date=2026-06-04"));
+    expect(res.status).toBe(200);
+    const { main } = (await res.json()).data;
+    expect(main.source).toBe("GARMIN");
+    expect(main.reconstructed).toBe(true);
+    expect(main.awakenings).toBe(0);
+    expect(main.asleepMinutes).toBe(385);
+  });
+
+  it("serves the measured copy of a night another source sent as totals (#1419)", async () => {
+    signedInWithNight([
+      stage("2026-06-04T05:00:00.000Z", "CORE", 250, "GARMIN"),
+      stage("2026-06-04T05:00:00.000Z", "DEEP", 40, "GARMIN"),
+      stage("2026-06-04T05:00:00.000Z", "REM", 95, "GARMIN"),
+      stage("2026-06-04T02:00:00.000Z", "CORE", 70),
+      stage("2026-06-04T02:40:00.000Z", "DEEP", 40),
+      stage("2026-06-04T03:10:00.000Z", "REM", 30),
+      stage("2026-06-04T03:20:00.000Z", "AWAKE", 10),
+      stage("2026-06-04T04:30:00.000Z", "CORE", 70),
+      stage("2026-06-04T05:00:00.000Z", "REM", 30),
+    ]);
+    const res = await GET(req("date=2026-06-04"));
+    const { main } = (await res.json()).data;
+    expect(main.source).toBe("APPLE_HEALTH");
+    expect(main.reconstructed).toBe(false);
+    expect(main.awakenings).toBe(1);
+    expect(main.segments).toHaveLength(6);
   });
 
   it("rounds asleep / awake minutes to whole numbers", async () => {
@@ -314,9 +356,12 @@ describe("GET /api/sleep/night", () => {
   });
 
   describe("overlays (#1419)", () => {
+    // A measured night: it returns to a stage, so it holds an order (three
+    // stages once each, back to back, would read as a layout of totals).
     const NIGHT = [
-      stage("2026-06-04T01:00:00.000Z", "CORE", 240),
-      stage("2026-06-04T03:00:00.000Z", "DEEP", 120),
+      stage("2026-06-03T23:00:00.000Z", "CORE", 120),
+      stage("2026-06-04T01:00:00.000Z", "DEEP", 120),
+      stage("2026-06-04T03:00:00.000Z", "CORE", 120),
       stage("2026-06-04T05:00:00.000Z", "REM", 120),
     ];
 

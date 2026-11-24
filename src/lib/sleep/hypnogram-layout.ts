@@ -82,19 +82,17 @@ export function hypnogramLayout(
 }
 
 /**
- * Whether a layout is worth drawing as a timeline. A synthesised night
- * (WHOOP, Polar: stage totals laid out in a fixed order) is not, because the
- * bar would show a phase order that was never measured. Neither is a night
- * whose every segment starts on the same instant.
+ * Whether a layout is drawn as a timeline. The server decides per night
+ * whether the spans carry a measured stage order (`reconstructed`, from
+ * `hasStageTimeline` in `sleep/stage-timeline.ts`); a night of stage totals
+ * is never drawn, whichever source wrote it, and the client does not second
+ * guess the flag from the spans.
  */
 export function hasHypnogramTrack(
   layout: HypnogramLayout,
   reconstructed: boolean,
 ): boolean {
-  if (reconstructed || layout.spans.length === 0) return false;
-  return (
-    layout.spans.length === 1 || new Set(layout.spans.map((s) => s.x1)).size > 1
-  );
+  return !reconstructed && layout.spans.length > 0;
 }
 
 const HOUR_MS = 3_600_000;

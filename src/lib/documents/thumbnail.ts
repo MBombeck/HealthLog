@@ -295,7 +295,7 @@ export async function generateThumbnail(
         return { ok: false, reason: "raster-failed" };
       }
       // The page is a JPEG the child rendered, no longer than
-      // `RASTER_TARGET_LONG_EDGE` on its long side: the one decode left in
+      // `RASTER_MAX_LONG_EDGE` on its long side: the one decode left in
       // this process is of the server's own output at a bounded size.
       // Lazy import: keeps @napi-rs/canvas out of the eager server chunk.
       const napi =

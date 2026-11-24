@@ -3964,6 +3964,7 @@
         "title": "Przebieg nocy",
         "wokeOn": "Pobudka {date}",
         "summary": "{asleep} snu, {awakenings, plural, one {# wybudzenie} few {# wybudzenia} many {# wybudzeń} other {# wybudzenia}}",
+        "asleepOnly": "{asleep} snu",
         "source": "z {source}",
         "previous": "Poprzednia noc",
         "next": "Następna noc",

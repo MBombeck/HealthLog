@@ -37,8 +37,9 @@ export interface SleepNightSession {
   asleepMinutes: number;
   inBedMinutes: number | null;
   awakeMinutes: number | null;
-  /** Mid-sleep awakenings. `0` is a real answer, not an absence. */
+  /** Mid-sleep awakenings; always 0 on a `reconstructed` night. */
   awakenings: number;
+  /** The night holds stage totals without their order: draw no timeline. */
   reconstructed: boolean;
   stages: Record<string, number>;
   segments: SleepNightSegment[];

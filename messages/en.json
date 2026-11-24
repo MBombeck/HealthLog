@@ -3964,6 +3964,7 @@
         "title": "Night timeline",
         "wokeOn": "Woke on {date}",
         "summary": "{asleep} asleep, {awakenings, plural, one {# awakening} other {# awakenings}}",
+        "asleepOnly": "{asleep} asleep",
         "source": "from {source}",
         "previous": "Previous night",
         "next": "Next night",

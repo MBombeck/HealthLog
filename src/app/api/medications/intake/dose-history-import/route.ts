@@ -39,6 +39,7 @@ import {
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
+import { CsvShapeLimitError } from "@/lib/import/csv-measurements";
 import {
   groupMedicationImportSkips,
   totalMedicationImportSkips,
@@ -150,7 +151,23 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Could not read the request body", 400);
   }
 
-  const parsed = isJson ? parseAutoExportJson(text) : parseAutoExportCsv(text);
+  let parsed: ReturnType<typeof parseAutoExportCsv>;
+  try {
+    parsed = isJson ? parseAutoExportJson(text) : parseAutoExportCsv(text);
+  } catch (err) {
+    if (!(err instanceof CsvShapeLimitError)) throw err;
+    annotate({
+      action: { name: "medication.intake.history.import.refused" },
+      meta: { reason: `csv_${err.limit}` },
+    });
+    // Too many rows is the refusal the card already words; a row too wide
+    // to be this export gets the generic one.
+    return apiError(
+      "The file could not be read",
+      422,
+      err.limit === "rows" ? { errorCode: "too_many_rows" } : undefined,
+    );
+  }
   if (parsed.fatal) {
     annotate({
       action: { name: "medication.intake.history.import.refused" },

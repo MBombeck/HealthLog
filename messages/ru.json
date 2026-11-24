@@ -3964,6 +3964,7 @@
         "title": "Ход ночи",
         "wokeOn": "Пробуждение {date}",
         "summary": "сон {asleep}, {awakenings, plural, one {# пробуждение} few {# пробуждения} many {# пробуждений} other {# пробуждения}}",
+        "asleepOnly": "сон {asleep}",
         "source": "из {source}",
         "previous": "Предыдущая ночь",
         "next": "Следующая ночь",
