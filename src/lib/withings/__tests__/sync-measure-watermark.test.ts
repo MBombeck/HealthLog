@@ -253,6 +253,33 @@ describe("syncUserMeasurements — watermark hold on hard row failure (F4)", () 
     expect(recordSyncFailure).not.toHaveBeenCalled();
   });
 
+  it("stamps the watermark with the start of the read, not the end of the run", async () => {
+    const readStartedAt = new Date("2026-05-16T09:00:00Z");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(readStartedAt);
+    try {
+      const weight: WithingsMeasure = {
+        type: "WEIGHT",
+        value: 80,
+        measuredAt: new Date("2026-05-16T08:00:00Z"),
+      };
+      vi.mocked(fetchMeasurements).mockImplementation(async () => {
+        // The writes after the read run long: a group Withings stores in
+        // between must stay inside the next run's window.
+        vi.setSystemTime(new Date(readStartedAt.getTime() + 20 * 60_000));
+        return [weight];
+      });
+
+      await syncUserMeasurements("user-1");
+
+      expect(prisma.withingsConnection.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { lastSyncedAt: readStartedAt } }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   // Without the cache leg of the shared write tail this fails: an earlier
   // tail evicted only the dashboard snapshot, so correlations, analytics,
   // targets and derived served pre-sync bodies until their TTL lapsed after

@@ -285,6 +285,135 @@ describe("FHIR Bundle import", () => {
     ).toBe(1);
   });
 
+  it("reads a malformed date as absent instead of failing the file", async () => {
+    const user = await makeUser();
+    const dir = mkdtempSync(join(tmpdir(), "rfi-fhir-"));
+    cleanup.push(dir);
+    const path = join(dir, "bundle.json");
+    const base = "https://portal.example/fhir";
+    const entry = (resource: Record<string, unknown>) => ({
+      fullUrl: `${base}/${resource.resourceType}/${resource.id}`,
+      resource,
+    });
+    writeFileSync(
+      path,
+      JSON.stringify({
+        resourceType: "Bundle",
+        id: "export-bad-dates",
+        type: "collection",
+        entry: [
+          // A month of 13 next to a readable `recorded`: the day comes off
+          // the field that parsed.
+          entry({
+            resourceType: "Immunization",
+            id: "imm-bad",
+            status: "completed",
+            vaccineCode: { text: "Tetanus booster" },
+            occurrenceDateTime: "2024-13-03",
+            recorded: "2024-05-04",
+          }),
+          entry({
+            resourceType: "MedicationStatement",
+            id: "med-bad",
+            status: "active",
+            medicationCodeableConcept: { text: "Example tablet" },
+            effectivePeriod: { start: "2025-02-30" },
+            effectiveDateTime: "2025-01-01",
+          }),
+          entry({
+            resourceType: "Observation",
+            id: "vital-1",
+            status: "final",
+            category: [{ coding: [{ code: "vital-signs" }] }],
+            code: {
+              coding: [{ system: "http://loinc.org", code: "29463-7" }],
+            },
+            effectiveDateTime: "2026-02-10T09:05:00Z",
+            valueQuantity: { value: 70.5, code: "kg" },
+          }),
+        ],
+      }),
+    );
+
+    const job = await run(user.id, "fhir_bundle", path);
+    expect(job.status).toBe("done");
+    const prisma = getPrismaClient();
+    const vaccination = await prisma.vaccinationRecord.findFirstOrThrow({
+      where: { userId: user.id },
+    });
+    expect(vaccination.occurredAt.toISOString().slice(0, 10)).toBe(
+      "2024-05-04",
+    );
+    const medication = await prisma.medication.findFirstOrThrow({
+      where: { userId: user.id },
+      include: { courses: true },
+    });
+    expect(
+      medication.courses.map((c) => c.startsOn.toISOString().slice(0, 10)),
+    ).toEqual(["2025-01-01"]);
+    expect(
+      await prisma.measurement.count({
+        where: { userId: user.id, type: "WEIGHT" },
+      }),
+    ).toBe(1);
+  });
+
+  it("recognises a urn:uuid resource again in the next export of the record", async () => {
+    const user = await makeUser();
+    const dir = mkdtempSync(join(tmpdir(), "rfi-fhir-"));
+    cleanup.push(dir);
+    // A document Bundle names its entries by urn:uuid and gets a new id each
+    // time it is generated.
+    const summary = (bundleId: string) => ({
+      resourceType: "Bundle",
+      id: bundleId,
+      type: "document",
+      entry: [
+        {
+          fullUrl: "urn:uuid:7d3c1a52-0d1e-4b4e-9a51-0a6f3c1e2b10",
+          resource: {
+            resourceType: "Immunization",
+            id: "7d3c1a52-0d1e-4b4e-9a51-0a6f3c1e2b10",
+            status: "completed",
+            vaccineCode: { text: "Tetanus booster" },
+            occurrenceDateTime: "2024-05-03",
+          },
+        },
+        {
+          fullUrl: "urn:uuid:0f1e2d3c-4b5a-4968-8776-655443322110",
+          resource: {
+            resourceType: "Observation",
+            id: "0f1e2d3c-4b5a-4968-8776-655443322110",
+            status: "final",
+            category: [{ coding: [{ code: "vital-signs" }] }],
+            code: {
+              coding: [{ system: "http://loinc.org", code: "29463-7" }],
+            },
+            effectiveDateTime: "2026-02-10T09:05:00Z",
+            valueQuantity: { value: 70.5, code: "kg" },
+          },
+        },
+      ],
+    });
+    const first = join(dir, "summary-1.json");
+    const second = join(dir, "summary-2.json");
+    writeFileSync(first, JSON.stringify(summary("summary-a")));
+    writeFileSync(second, JSON.stringify(summary("summary-b")));
+
+    await run(user.id, "fhir_bundle", first);
+    const again = await run(user.id, "fhir_bundle", second);
+    expect(again.result).toMatchObject({ imported: 0, duplicates: 2 });
+    const prisma = getPrismaClient();
+    expect(
+      await prisma.vaccinationRecord.count({ where: { userId: user.id } }),
+    ).toBe(1);
+    expect(
+      await prisma.measurement.count({
+        where: { userId: user.id, type: "WEIGHT" },
+      }),
+    ).toBe(1);
+  });
+
   it("refuses a file that is not a Bundle", async () => {
     const user = await makeUser();
     const dir = mkdtempSync(join(tmpdir(), "rfi-fhir-"));
