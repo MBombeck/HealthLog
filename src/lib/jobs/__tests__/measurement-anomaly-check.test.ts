@@ -9,6 +9,12 @@ const m = vi.hoisted(() => ({
   claim: vi.fn(),
   dispatch: vi.fn(),
   release: vi.fn(),
+  annotate: vi.fn(),
+}));
+
+vi.mock("@/lib/logging/context", async (orig) => ({
+  ...(await orig<typeof import("@/lib/logging/context")>()),
+  annotate: m.annotate,
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: {} }));
@@ -124,6 +130,16 @@ describe("runMeasurementAnomalyTick", () => {
     m.illness.mockResolvedValue({ id: "ep1" });
     await runMeasurementAnomalyTick(AT_TEN, prisma);
     expect(m.dispatch).not.toHaveBeenCalled();
+  });
+
+  it("logs that a state explained the shift, never which one", async () => {
+    m.illness.mockResolvedValue({ id: "ep1" });
+    await runMeasurementAnomalyTick(AT_TEN, prisma);
+    const names = m.annotate.mock.calls.map((c) => c[0]?.action?.name);
+    expect(names).toContain("notification.measurementAnomaly.explained");
+    expect(JSON.stringify(m.annotate.mock.calls)).not.toMatch(
+      /illness|pregnan/i,
+    );
   });
 
   it("tells a shift once, and never burns the week on one already told", async () => {

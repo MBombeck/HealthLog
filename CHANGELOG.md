@@ -9,10 +9,13 @@
 - A Live Activity the server started over the push relay ends when its dose time is edited away. It used to stay on the lock screen, showing a dose that was no longer due, until the next dose started or the system ended it after eight hours.
 - Editing a dose time no longer drops an earlier dose of the same day that is still open. Moving the evening time in the morning removed the morning dose from the today list and the dashboard count while the history and the iPhone app still showed it due.
 - The public demo no longer goes stale between seeds. Everything the demo seed writes is relative to the day it ran, so after that day medications without an automatic intake lost adherence day by day, sleep and activity slid out of their windows, and the visit booked for tomorrow moved into the past. A demo deploy (`DEMO_MODE=true`) now rewrites itself from the same seed every day at 10:00 Berlin, and after a restart that missed that hour. It runs only when the database holds the demo account and nothing else, and on any other deploy the job does not exist. Visitors stay read-only; a visitor signed in at 10:00 is signed out once.
+- The wallet card prints a QR code only for a link that opens. A link past its end, or one the instance's API switch or a guardian's lost grant had stopped, still went onto the card, and the code led to the "this link does not work" page. Such a card is now refused instead; revoking the link and making a new one prints a working code.
+- A wallet card with a QR code prints the items its link shows. It used to print every item while the link showed only the ticked ones, so the card said the full card was behind the code when the code showed less, and anyone holding the card read more than the link allows. A card without a code still prints every item, and when it is shortened to fit it now says the full card is in the app instead of pointing at a code it does not carry.
 
 ### Security
 
 - A file import upload is held to its size limit as a whole, not only in the file it carries. The other parts of the form and their headers were read into memory without a limit, so a signed-in caller could send a body that grew the server's memory until the app stopped. Every byte of the body now counts against the import's cap, and the small form fields and part headers have their own ceilings.
+- The logs no longer name a person's reproductive state. The lasting-change notice wrote whether a pregnancy or an illness had held it back, the cycle calendar whether a period was late, the cycle list the cycle's regularity, and every fetch of the cycle calendar feed the forecast's state. These events carry counts and flags only now, and a test holds every cycle and pregnancy code path to that.
 
 ## [1.49.0] — 2026-11-23
 
