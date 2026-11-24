@@ -200,3 +200,19 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
     // map; the rationale for its wording is documented there.
     HEALTH_SCORE: HEALTH_SCORE_PROVENANCE,
   };
+
+/**
+ * The day-total form of `SAME_TIME_BASELINE` explains a different
+ * method from the hourly one, so it carries its own method copy and citation.
+ * The range is the middle half of the full-day totals, cut with the linear
+ * quantile definition (Hyndman & Fan type 7, the spreadsheet `PERCENTILE.INC`)
+ * that `quantileSorted` implements.
+ */
+export const SAME_TIME_DAILY_TOTAL_PROVENANCE: MetricProvenanceMeta = {
+  methodKey: "insights.derived.composite.SAME_TIME_BASELINE.methodDailyTotal",
+  standard: {
+    name: "Hyndman & Fan 1996, The American Statistician",
+    url: "https://doi.org/10.1080/00031305.1996.10473566",
+  },
+  caveatKey: "insights.derived.composite.SAME_TIME_BASELINE.caveat",
+};

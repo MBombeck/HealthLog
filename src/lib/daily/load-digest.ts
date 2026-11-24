@@ -414,18 +414,17 @@ async function loadDailyDigestExtrasCached(
               r.tension ? { partOfDay: r.tension.partOfDay } : null,
             )
             .catch(() => null),
-          // The engine gates itself — it returns its `insufficient` arm while it
-          // is still learning the usual day, when the account has no intraday
-          // rows at all (every daily-total source), and before the day's first
-          // hour has finished. Only the `ok` arm reaches the rail. Passing no
-          // profile because the engine reads none; fault-isolated like its
-          // siblings, since the digest is a must-not-fail path.
+          // The engine gates itself (still learning, no reading today, the
+          // day's first hour unfinished). Only the hourly `ok` arm reaches the
+          // rail: the day-total form is "not yet" every morning, no news worth
+          // a rail slot. Passing no profile because the engine reads none;
+          // fault-isolated like its siblings, since the digest must not fail.
           computeSameTimeBaseline(userId, null, {
             type: SAME_TIME_RAIL_TYPE,
             now,
           })
             .then((d): DailyDigestExtras["sameTime"] =>
-              d.status === "ok"
+              d.status === "ok" && d.value.mode === "hourly"
                 ? {
                     type: d.value.type,
                     band: d.value.band,

@@ -229,9 +229,8 @@ export interface DailyDigestTensionWindow {
  * band verdict, the two totals and the hour are the server's, and the copy is
  * a deterministic template over them.
  *
- * Null whenever the engine returned its `insufficient` arm — still learning
- * the usual day, no intraday rows today, or the day too young to compare. The
- * rail stays quiet in every one of those cases rather than guessing.
+ * Null on the engine's `insufficient` arm and on its day-total form (no hour
+ * to compare at). The rail stays quiet in those cases rather than guessing.
  */
 export interface DailyDigestSameTime {
   /** The cumulative metric compared (`ACTIVITY_STEPS`). */

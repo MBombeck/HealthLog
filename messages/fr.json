@@ -4870,7 +4870,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Votre total cumulé du jour comparé à la médiane de cette même heure locale sur vos quatre dernières semaines, avec une bande robuste médiane ± MAD autour. Seuls les jours suffisamment détaillés comptent, et aucune comparaison n'apparaît avant d'en avoir au moins quatorze.",
-          "caveat": "Une comparaison avec votre propre historique récent, pas un objectif. Elle dit où se situe aujourd'hui par rapport à votre habitude à cette heure, et rien sur le fait que cette habitude vous convienne."
+          "caveat": "Une comparaison avec votre propre historique récent, pas un objectif. Elle dit où se situe aujourd'hui par rapport à votre habitude à cette heure, et rien sur le fait que cette habitude vous convienne.",
+          "methodDailyTotal": "Votre source transmet chaque journée comme un seul total : il n'y a donc pas d'heure à laquelle comparer. Le total cumulé d'aujourd'hui, tel que la source l'a transmis en dernier, est placé face à vos totaux journaliers des 14 derniers jours complets : le trait marque leur médiane, la bande ombrée leur moitié centrale. La plage s'affiche dès que 7 de ces jours ont un total."
         }
       },
       "scores": {
@@ -4912,7 +4913,11 @@
         "sectionSubtitle": "Vos totaux cumulés face à ce qui est habituel chez vous à cette heure",
         "learning": "Apprentissage de votre journée habituelle : {count, plural, one {# jour} other {# jours}} sur {target, plural, other {#}}",
         "framing": "Habituel à {time} : {typical} {unit}",
-        "comparisonLabel": "Votre journée habituelle"
+        "comparisonLabel": "Votre journée habituelle",
+        "sectionSubtitleDailyTotal": "Vos totaux cumulés face à votre journée complète habituelle",
+        "sectionSubtitleMixed": "Vos totaux cumulés face à ce qui est habituel chez vous",
+        "dailyFraming": "Journée complète habituelle : {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {

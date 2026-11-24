@@ -4870,7 +4870,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Je lopende totaal voor vandaag, afgezet tegen de mediaan van hetzelfde lokale uur over je afgelopen vier weken, met een robuuste band van mediaan ± MAD eromheen. Alleen dagen met voldoende vastgelegde details tellen mee, en er wordt geen vergelijking getoond totdat er minstens veertien van zijn.",
-          "caveat": "Een vergelijking met je eigen recente geschiedenis, geen doel. Het laat zien waar vandaag staat ten opzichte van je gebruikelijke patroon op dit uur en zegt niets over de vraag of dat patroon goed voor je is."
+          "caveat": "Een vergelijking met je eigen recente geschiedenis, geen doel. Het laat zien waar vandaag staat ten opzichte van je gebruikelijke patroon op dit uur en zegt niets over de vraag of dat patroon goed voor je is.",
+          "methodDailyTotal": "Je bron meldt elke dag als één totaal, dus er is geen uur om mee te vergelijken. Het lopende totaal van vandaag, zoals de bron het het laatst meldde, staat tegenover je dagtotalen van de laatste 14 volledige dagen: het streepje markeert hun mediaan, de gearceerde band hun middelste helft. Het bereik verschijnt zodra 7 van die dagen een totaal hebben."
         }
       },
       "scores": {
@@ -4912,7 +4913,11 @@
         "sectionSubtitle": "Je lopende totalen vergeleken met wat op dit uur gebruikelijk is voor jou",
         "learning": "Je gebruikelijke dag leren kennen: {count} van {target, plural, one {# dag} other {# dagen}}",
         "framing": "Gebruikelijk tot {time}: {typical} {unit}",
-        "comparisonLabel": "Je gebruikelijke dag"
+        "comparisonLabel": "Je gebruikelijke dag",
+        "sectionSubtitleDailyTotal": "Je lopende totalen vergeleken met je gebruikelijke volle dag",
+        "sectionSubtitleMixed": "Je lopende totalen vergeleken met wat gebruikelijk is voor jou",
+        "dailyFraming": "Gebruikelijke volle dag: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {

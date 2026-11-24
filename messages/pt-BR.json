@@ -4870,7 +4870,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Seu total acumulado de hoje posicionado contra a mediana da mesma hora local nas suas últimas quatro semanas, com uma faixa robusta de mediana ± MAD em torno dela. Apenas dias com detalhe registrado suficiente contam para isso, e nenhuma comparação é mostrada até que pelo menos quatorze deles estejam em mãos.",
-          "caveat": "Uma comparação com o seu próprio histórico recente, não uma meta. Diz onde hoje se situa contra o seu padrão habitual nesta hora e nada sobre se esse padrão é certo para você."
+          "caveat": "Uma comparação com o seu próprio histórico recente, não uma meta. Diz onde hoje se situa contra o seu padrão habitual nesta hora e nada sobre se esse padrão é certo para você.",
+          "methodDailyTotal": "Sua fonte informa cada dia como um único total, então não há uma hora para comparar. O total acumulado de hoje, como a fonte o informou por último, é comparado com seus totais diários dos últimos 14 dias completos: o traço marca a mediana deles, a faixa sombreada a metade central. A faixa aparece assim que 7 desses dias tiverem um total."
         }
       },
       "scores": {
@@ -4912,7 +4913,11 @@
         "sectionSubtitle": "Seus totais acumulados contra o que é habitual para você nesta hora",
         "learning": "Aprendendo seu dia habitual: {count} de {target, plural, one {# dia} other {# dias}}",
         "framing": "Típico às {time}: {typical} {unit}",
-        "comparisonLabel": "Seu dia típico"
+        "comparisonLabel": "Seu dia típico",
+        "sectionSubtitleDailyTotal": "Seus totais acumulados contra o seu dia completo habitual",
+        "sectionSubtitleMixed": "Seus totais acumulados contra o que é habitual para você",
+        "dailyFraming": "Dia completo habitual: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {

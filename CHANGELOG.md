@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- "Today so far" for steps, active energy, floors and walking distance works for accounts whose watch or service reports the day as one total: Garmin, Withings, a Gadgetbridge import. None of them hands over the hours of the day, so the card cannot say what is usual by this hour, and for them it stayed empty or did not show at all. It now shows today's running total as the source last reported it, set against your usual full day (the median and middle half of the last 14 complete days), with the time the total last changed and the source it came from. The range shows once 7 of those days have a total. Which source a day counts from follows your order under Settings > Sources, the same pick as the "per day" chart, so an iPhone and a watch are never added together and today's curve from one is never compared with a total from the other. The Insights value of `SAME_TIME_BASELINE` carries this as `mode: "daily_total"` beside the hourly `mode: "hourly"`. ([#1459](https://github.com/MBombeck/HealthLog/issues/1459))
+
 ### Changed
 
 - The relay card under Admin > Push and channels says when this server has its own Apple push key (APNs) configured: every push then goes directly to Apple and the relay is not used while the key is set. It explains how to use the relay instead (remove the `APNS_*` variables) and no longer shows a switch that would change nothing; a relay turned on before the key can still be turned off there. The admin relay status carries this as `ownApnsKey`.
@@ -31,6 +35,7 @@
 
 ### Thanks
 
+- @Gen-X-Jim for the report with the database counts that showed what the card was missing, and for asking for a day-total form. ([#1459](https://github.com/MBombeck/HealthLog/issues/1459))
 - @camiracode for counting the pairs that stayed after the 1.48.3 cleanup. ([#1414](https://github.com/MBombeck/HealthLog/issues/1414))
 
 ## [1.49.0] — 2026-11-23

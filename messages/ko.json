@@ -4870,7 +4870,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "오늘 누적값을 최근 4주 동안 같은 시각의 중앙값과 비교하고, 그 주위에 중앙값 ± MAD 범위를 함께 보여줘요. 기록이 충분한 날만 계산에 넣고, 그런 날이 14일 이상 모이기 전에는 비교를 보여주지 않아요.",
-          "caveat": "목표가 아니라 내 최근 기록과의 비교예요. 이 시각의 평소 패턴에서 오늘이 어디쯤인지 알려줄 뿐, 그 패턴이 나에게 맞는지는 말해 주지 않아요."
+          "caveat": "목표가 아니라 내 최근 기록과의 비교예요. 이 시각의 평소 패턴에서 오늘이 어디쯤인지 알려줄 뿐, 그 패턴이 나에게 맞는지는 말해 주지 않아요.",
+          "methodDailyTotal": "연결된 소스가 하루를 합계 하나로만 보내서 비교할 시각이 없어요. 소스가 마지막으로 보낸 오늘 누적값을 최근 14일(하루가 끝난 날) 동안의 하루 합계와 비교해요. 눈금은 그 중앙값, 음영 띠는 가운데 절반을 나타내요. 그중 7일에 합계가 생기면 범위를 보여줘요."
         }
       },
       "scores": {
@@ -4912,7 +4913,11 @@
         "sectionSubtitle": "이 시각의 평소 수준과 비교한 오늘 누적값",
         "learning": "평소 하루를 익히는 중: {target, plural, other {#일}} 중 {count}일",
         "framing": "{time}까지 평소: {typical} {unit}",
-        "comparisonLabel": "평소 하루"
+        "comparisonLabel": "평소 하루",
+        "sectionSubtitleDailyTotal": "평소 하루 전체와 비교한 오늘 누적값",
+        "sectionSubtitleMixed": "평소 수준과 비교한 오늘 누적값",
+        "dailyFraming": "평소 하루 전체: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {

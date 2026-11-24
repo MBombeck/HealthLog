@@ -4870,7 +4870,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Twoja dzisiejsza suma narastająca zestawiona z medianą tej samej godziny lokalnej z ostatnich czterech tygodni, z odpornym pasmem mediana ± MAD wokół niej. Liczą się tylko dni z wystarczającą liczbą zapisów, a porównanie nie pojawia się, dopóki nie ma ich co najmniej czternastu.",
-          "caveat": "Porównanie z twoją własną niedawną historią, a nie cel. Mówi, gdzie dziś jesteś względem swojego zwykłego wzorca o tej godzinie, i nic o tym, czy ten wzorzec jest dla ciebie właściwy."
+          "caveat": "Porównanie z twoją własną niedawną historią, a nie cel. Mówi, gdzie dziś jesteś względem swojego zwykłego wzorca o tej godzinie, i nic o tym, czy ten wzorzec jest dla ciebie właściwy.",
+          "methodDailyTotal": "Twoje źródło podaje każdy dzień jako jedną sumę, więc nie ma godziny, z którą można porównać. Dzisiejsza suma narastająca, tak jak źródło ostatnio ją podało, jest zestawiona z twoimi sumami dziennymi z ostatnich 14 pełnych dni: kreska oznacza ich medianę, zacieniowany pas ich środkową połowę. Zakres pojawia się, gdy 7 z tych dni ma sumę."
         }
       },
       "scores": {
@@ -4912,7 +4913,11 @@
         "sectionSubtitle": "Twoje sumy narastające względem tego, co o tej godzinie jest u ciebie zwykłe",
         "learning": "Uczę się twojego zwykłego dnia: {count} z {target, plural, one {# dnia} few {# dni} many {# dni} other {# dnia}}",
         "framing": "Zwykle do {time}: {typical} {unit}",
-        "comparisonLabel": "Twój zwykły dzień"
+        "comparisonLabel": "Twój zwykły dzień",
+        "sectionSubtitleDailyTotal": "Twoje sumy narastające względem twojego zwykłego pełnego dnia",
+        "sectionSubtitleMixed": "Twoje sumy narastające względem tego, co jest u ciebie zwykłe",
+        "dailyFraming": "Zwykły pełny dzień: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {

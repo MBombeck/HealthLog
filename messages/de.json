@@ -4870,7 +4870,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Dein heutiger laufender Gesamtwert im Vergleich zum Median derselben Ortszeit-Stunde aus deinen letzten vier Wochen, mit einem robusten Median-±-MAD-Band darum. Nur Tage mit ausreichend aufgezeichneten Details zählen, und es wird kein Vergleich gezeigt, bevor mindestens vierzehn davon vorliegen.",
-          "caveat": "Ein Vergleich mit deiner eigenen jüngeren Vergangenheit, kein Ziel. Er sagt, wo der heutige Tag zu dieser Stunde gegenüber deinem üblichen Muster steht, und nichts darüber, ob dieses Muster für dich das richtige ist."
+          "caveat": "Ein Vergleich mit deiner eigenen jüngeren Vergangenheit, kein Ziel. Er sagt, wo der heutige Tag zu dieser Stunde gegenüber deinem üblichen Muster steht, und nichts darüber, ob dieses Muster für dich das richtige ist.",
+          "methodDailyTotal": "Deine Quelle meldet jeden Tag als eine Summe, es gibt also keine Stunde zum Vergleichen. Die heutige laufende Summe, so wie die Quelle sie zuletzt gemeldet hat, steht deinen Tagessummen der letzten 14 vollständigen Tage gegenüber: Der Strich markiert ihren Median, das schattierte Band ihre mittlere Hälfte. Der Bereich erscheint, sobald 7 dieser Tage eine Summe haben."
         }
       },
       "scores": {
@@ -4912,7 +4913,11 @@
         "sectionSubtitle": "Deine laufenden Summen im Vergleich zu dem, was zu dieser Stunde für dich üblich ist",
         "learning": "Lernt deinen üblichen Tag: {count} von {target, plural, one {# Tag} other {# Tagen}}",
         "framing": "Üblich bis {time}: {typical} {unit}",
-        "comparisonLabel": "Dein üblicher Tag"
+        "comparisonLabel": "Dein üblicher Tag",
+        "sectionSubtitleDailyTotal": "Deine laufenden Summen im Vergleich zu deinem üblichen ganzen Tag",
+        "sectionSubtitleMixed": "Deine laufenden Summen im Vergleich zu dem, was für dich üblich ist",
+        "dailyFraming": "Üblicher ganzer Tag: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {
