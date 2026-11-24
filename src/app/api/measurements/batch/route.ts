@@ -287,6 +287,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     entries,
     syncTrigger: parsed.data.syncTrigger,
     ipAddress: getClientIp(request),
+    deviceToken: request.headers.get("x-device-id"),
   });
 
   const response = apiSuccess(result);

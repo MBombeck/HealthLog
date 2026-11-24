@@ -31,31 +31,60 @@ import type {
   ConnectionHealthReason,
   ConnectionKey,
 } from "./connection-health";
+import {
+  HISTORY_DAYS,
+  MIN_DELIVERY_DAYS,
+  judgeStall,
+  type Cadence,
+} from "@/lib/sync-stall/cadence";
 
-export type SourceCadenceKind = "continuous" | "on_demand";
+/**
+ * - `continuous`: worn or attached around the clock. Its silence is flagged,
+ *   told to the owner once (`src/lib/sync-stall/notice.ts`) and is an operator
+ *   incident.
+ * - `habitual`: measured by hand, but often daily (a scale, a sleep mat). Its
+ *   silence is flagged and told to the owner when its own history says it
+ *   delivers daily, and is never an operator incident: a person who stops
+ *   weighing themselves is nothing an operator can fix.
+ * - `on_demand`: silence never counts; watched for errors only.
+ */
+export type SourceCadenceKind = "continuous" | "habitual" | "on_demand";
 
 export interface SourceProfile {
   kind: SourceCadenceKind;
-  /** How long a continuous source may go without data before silence counts. */
+  /**
+   * The least a continuous source may go without data before silence counts:
+   * the floor of the stall rule. A source whose own cadence is slower waits
+   * longer (`stallThresholdMs`).
+   */
   silenceWindowMs: number;
 }
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
-/** How many days of a connection's own history decide "normally delivers". */
-export const HISTORY_DAYS = 14;
+/**
+ * How many days of a connection's own history decide "normally delivers", and
+ * how many of them must have data. The stall rule's own constants
+ * (`src/lib/sync-stall/cadence.ts`), so the watchdog, the owner's stall notice
+ * and the web read one rule.
+ */
+export { HISTORY_DAYS };
+export const NORMAL_DELIVERY_MIN_DAYS = MIN_DELIVERY_DAYS;
 
-/** Days with data, out of `HISTORY_DAYS`, that make a source "normally delivering". */
-export const NORMAL_DELIVERY_MIN_DAYS = 10;
+/** Whether a flagged silence of this source is an operator incident. */
+export function silenceIsIncident(profile: SourceProfile): boolean {
+  return profile.kind === "continuous";
+}
 
 /** How long a non-ok health state must last before it is an operator incident. */
 export const INCIDENT_AFTER_MS = DAY_MS;
 
 /**
- * Per connection. Withings is mostly scales and cuffs, Strava is workouts:
- * both are on-demand and never alert on silence, only on errors. Everything
- * worn or attached around the clock is continuous.
+ * Per connection. Strava is workouts: on-demand, watched for errors only.
+ * Withings is mostly scales, cuffs and sleep mats: habitual, so a person who
+ * weighs in every morning hears once when it stops, and nobody else does.
+ * Everything worn or attached around the clock is continuous.
  *
  * The window is how long a continuous source may stay quiet before silence
  * counts, and it follows how each source actually delivers:
@@ -77,7 +106,8 @@ export const INCIDENT_AFTER_MS = DAY_MS;
  * daily; the window only decides how long a gap is ordinary.
  */
 export const SOURCE_PROFILES: Record<ConnectionKey, SourceProfile> = {
-  withings: { kind: "on_demand", silenceWindowMs: DAY_MS },
+  // A day without stepping on the scale is ordinary, so two days at least.
+  withings: { kind: "habitual", silenceWindowMs: 2 * DAY_MS },
   strava: { kind: "on_demand", silenceWindowMs: DAY_MS },
   whoop: { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
   oura: { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
@@ -109,10 +139,11 @@ export interface SilenceInput {
   /** Newest data instant, or null when the source never delivered. */
   lastDataAt: Date | null;
   /**
-   * Distinct days with data in the `HISTORY_DAYS` before the silence window,
-   * or null when the runner has not computed it (it only does when needed).
+   * The cadence learned from the `HISTORY_DAYS` before the silence window
+   * (`learnCadence`), or null when the runner has not read it (it only does
+   * when needed).
    */
-  deliveredDays: number | null;
+  cadence: Cadence | null;
   /** The current flag, so an already-flagged source is not re-judged hourly. */
   currentSilentSince: Date | null;
   now: Date;
@@ -129,33 +160,40 @@ export type SilenceVerdict =
   | { kind: "not_expected" };
 
 /**
- * Decide the silence flag. `deliveredDays` is only needed for a silent,
- * not-yet-flagged continuous source (the hourly pass reads it lazily) and for a
- * re-check of a flag (the daily pass passes it so a source its owner has
- * stopped using drops out once its history no longer says it delivers).
+ * Decide the silence flag by the stall rule (`judgeStall`): quiet past the
+ * floor and past its own cadence, with a history that says it delivers. The
+ * cadence is only needed for a silent, not-yet-flagged source (the
+ * hourly pass reads it lazily) and for a re-check of a flag (the daily pass
+ * passes it so a source its owner has stopped using drops out once its history
+ * no longer says it delivers).
  */
 export function classifySilence(input: SilenceInput): SilenceVerdict {
   const { profile, lastDataAt, now } = input;
   if (profile.kind === "on_demand") return { kind: "clear" };
-  // A source that never delivered has no history to break with.
-  if (lastDataAt === null) return { kind: "clear" };
-  if (now.getTime() - lastDataAt.getTime() <= profile.silenceWindowMs) {
-    return { kind: "clear" };
+  const verdict = judgeStall({
+    floorMs: profile.silenceWindowMs,
+    lastAt: lastDataAt,
+    cadence: input.cadence,
+    now,
+  });
+  switch (verdict.kind) {
+    case "fresh":
+    case "within_cadence":
+      return { kind: "clear" };
+    case "needs_history":
+      // Already flagged and nothing asked for a re-check: keep the flag as is.
+      if (input.currentSilentSince) {
+        return { kind: "flag", silentSince: input.currentSilentSince };
+      }
+      return { kind: "needs_history" };
+    case "not_expected":
+      return { kind: "not_expected" };
+    case "stalled":
+      return {
+        kind: "flag",
+        silentSince: input.currentSilentSince ?? verdict.since,
+      };
   }
-  if (input.deliveredDays === null) {
-    // Already flagged and nothing asked for a re-check: keep the flag as is.
-    if (input.currentSilentSince) {
-      return { kind: "flag", silentSince: input.currentSilentSince };
-    }
-    return { kind: "needs_history" };
-  }
-  if (input.deliveredDays >= NORMAL_DELIVERY_MIN_DAYS) {
-    return {
-      kind: "flag",
-      silentSince: input.currentSilentSince ?? lastDataAt,
-    };
-  }
-  return { kind: "not_expected" };
 }
 
 /**

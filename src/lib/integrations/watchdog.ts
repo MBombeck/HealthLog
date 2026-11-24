@@ -6,7 +6,7 @@
  *
  *   hourly — cheap. One health load per account with a connection (the same
  *            loader the routes use), plus a 14-day history count only for a
- *            continuous source that is silent and not flagged yet.
+ *            source that can go silent, is silent and is not flagged yet.
  *   daily  — the same pass, and it re-reads the history behind every standing
  *            silence flag, so a source its owner simply stopped using drops out
  *            once its own history no longer says it delivers.
@@ -34,6 +34,7 @@ import {
   type ConnectionFacts,
 } from "./connection-health-load";
 import { INTEGRATION_MEASUREMENT_SOURCE } from "./metric-freshness";
+import { learnCadence, type Cadence } from "@/lib/sync-stall/cadence";
 import {
   FIRST_RUN_ALERTED_AT,
   HISTORY_DAYS,
@@ -41,6 +42,7 @@ import {
   classifySilence,
   currentIncident,
   decideWatchTransition,
+  silenceIsIncident,
   type IncidentReason,
   type WatchRow,
 } from "./watchdog-classify";
@@ -66,7 +68,8 @@ export interface WatchdogSummary {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const LABELS: Record<ConnectionKey, string> = {
+/** Provider names, the same in every language. */
+export const CONNECTION_LABELS: Record<ConnectionKey, string> = {
   withings: "Withings",
   whoop: "WHOOP",
   "google-health": "Google Health",
@@ -86,21 +89,23 @@ function measurementSourceFor(key: ConnectionKey): MeasurementSource | null {
 }
 
 /**
- * Distinct UTC days with data in the `HISTORY_DAYS` before the silence window.
- * The window ends where silence starts to count, so the history being read is
- * the one the silence is measured against.
+ * The cadence of a connection's data in the `HISTORY_DAYS` before the silence
+ * window: one hour bucket per hour with data, so the read is bounded by the
+ * window and the stall rule learns its days and gaps from it. The window ends
+ * where silence starts to count, so the history being read is the one the
+ * silence is measured against.
  */
-async function countDeliveredDays(
+async function readCadence(
   userId: string,
   key: ConnectionKey,
   now: Date,
-): Promise<number> {
+): Promise<Cadence> {
   const source = measurementSourceFor(key);
-  if (!source) return 0;
   const to = new Date(now.getTime() - SOURCE_PROFILES[key].silenceWindowMs);
+  if (!source) return learnCadence([], to);
   const from = new Date(to.getTime() - HISTORY_DAYS * DAY_MS);
-  const rows = await prisma.$queryRaw<Array<{ days: number }>>`
-    SELECT COUNT(DISTINCT date_trunc('day', m."measured_at"))::int AS "days"
+  const rows = await prisma.$queryRaw<Array<{ hour: Date }>>`
+    SELECT DISTINCT date_trunc('hour', m."measured_at") AS "hour"
       FROM "measurements" m
      WHERE m."user_id" = ${userId}
        AND m."source" = ${source}::"measurement_source"
@@ -108,7 +113,10 @@ async function countDeliveredDays(
        AND m."measured_at" >= ${from}
        AND m."measured_at" < ${to}
   `;
-  return Number(rows[0]?.days ?? 0);
+  return learnCadence(
+    rows.map((r) => r.hour),
+    to,
+  );
 }
 
 /**
@@ -218,7 +226,7 @@ export function formatWatchdogMessage(input: {
   since: Date | null;
   closedBecause?: "healthy" | "disconnected" | "not_expected";
 }): { title: string; message: string } {
-  const label = LABELS[input.key];
+  const label = CONNECTION_LABELS[input.key];
   if (input.kind === "incident") {
     const copy =
       INCIDENT_COPY[input.reason as IncidentReason]?.(label) ??
@@ -315,7 +323,7 @@ export function formatWatchdogAggregate(
   key: ConnectionKey,
   notes: WatchdogNote[],
 ): { title: string; message: string } {
-  const label = LABELS[key];
+  const label = CONNECTION_LABELS[key];
   const n = notes.length;
   const named = notes.slice(0, AGGREGATE_NAMED).map((x) => x.subjectLabel);
   const more = n > AGGREGATE_NAMED ? ` and ${n - AGGREGATE_NAMED} more` : "";
@@ -505,14 +513,12 @@ async function watchConnection(input: {
     const recheck = mode === "daily" && row?.silentSince != null;
     let verdict = classifySilence({
       ...base,
-      deliveredDays: recheck
-        ? await countDeliveredDays(userId, key, now)
-        : null,
+      cadence: recheck ? await readCadence(userId, key, now) : null,
     });
     if (verdict.kind === "needs_history") {
       verdict = classifySilence({
         ...base,
-        deliveredDays: await countDeliveredDays(userId, key, now),
+        cadence: await readCadence(userId, key, now),
       });
     }
     if (verdict.kind === "flag") silentSince = verdict.silentSince;
@@ -523,7 +529,8 @@ async function watchConnection(input: {
   // ── Incident ───────────────────────────────────────────────────────
   const incident = currentIncident({
     health: fact.connected ? fact.healthWithoutSilence : null,
-    silentSince,
+    // A habitual source's silence is the owner's to hear, never a page.
+    silentSince: silenceIsIncident(profile) ? silentSince : null,
     ledgerAlerted: fact.ledgerAlerted,
     now,
   });
@@ -630,6 +637,9 @@ async function watchConnection(input: {
       incidentReason,
       incidentOpenedAt,
       alertedAt,
+      // The owner's stall notice belongs to one silence: when it ends, the
+      // next silence is told afresh (`src/lib/sync-stall/notice.ts`).
+      ...(silentSince === null ? { ownerNotifiedAt: null } : {}),
       checkedAt: now,
     },
   });

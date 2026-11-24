@@ -113,6 +113,13 @@ const PINS: ReadonlyArray<{
     covered:
       "The consent text got shorter, not different, and what the relay carries did not change. The paragraph above the dialog's checkboxes (`dialogBody`) and the card's second sentence (`whatItSees`) are gone; their facts stay where an admin reads them before saying yes: the question and the card say the content is end-to-end encrypted and the relay sees when something is sent (`question.body`, `description`), `seesWhen` and `seesTiming` (when a dose is due) stay word for word under What the relay sees on the card, and the dialog's three lines link the relay terms (household use, not a medical service) and the privacy notice the admin confirms having read. The fingerprint now holds the texts that remain.",
   },
+  {
+    version: "2026-11-22",
+    fingerprint:
+      "6206e05a39c88ecf921b603b8959dca0e23ffae865b4626938a0f5a917490db7",
+    covered:
+      "A new alert kind, `SYNC_STALLED`: the person's own devices are told once that a daily source went quiet, at most once a day and only in their daytime, sealed like every other alert with the source key as its only data. No new class, lifetime, sender file or occasion: it goes through the dispatcher's alert path the texts already name (`seesWhen`, an alert, when and of which kind), and its timing says no more than that the server sent an alert at that moment.",
+  },
 ];
 
 /**

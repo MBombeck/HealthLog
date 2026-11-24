@@ -8194,7 +8194,9 @@
         "never": "Aún no recibido",
         "lastBackfill": "Historial recuperado {relative}",
         "lastEnteredHere": "Último registro aquí {relative}"
-      }
+      },
+      "quietSince": "{device}: en silencio desde {since}. Basta con abrir HealthLog en él una vez.",
+      "quietDeviceUnnamed": "Un iPhone"
     },
     "glucoseReference": {
       "title": "Banda de referencia de glucosa",
@@ -10395,6 +10397,15 @@
       "title": "Un cambio sostenido",
       "bodyUp": "Tu {metric} se mantiene más alto desde el {date}. Insights muestra el antes y el después.",
       "bodyDown": "Tu {metric} se mantiene más bajo desde el {date}. Insights muestra el antes y el después."
+    },
+    "eventSyncStalled": "Una fuente dejó de sincronizar",
+    "eventSyncStalledDesc": "Cuando un iPhone, anillo, reloj o báscula que envía datos cada día se queda en silencio. Una vez por pausa, de día y como mucho una vez al día.",
+    "syncStalled": {
+      "title": "{provider} está en silencio",
+      "appleYesterday": "{provider} no ha enviado nada desde ayer. Basta con abrir HealthLog una vez.",
+      "appleSince": "{provider} no ha enviado nada desde el {date}. Basta con abrir HealthLog una vez.",
+      "sourceYesterday": "{provider} no ha enviado nada desde ayer. Abre su app o vuelve a conectarlo en HealthLog.",
+      "sourceSince": "{provider} no ha enviado nada desde el {date}. Abre su app o vuelve a conectarlo en HealthLog."
     },
     "relayTest": {
       "title": "Notificación de prueba de HealthLog",
@@ -15396,6 +15407,7 @@
       "snooze": "posponer, más tarde, aplazar, snooze",
       "securityAlerts": "seguridad, inicio de sesión, dispositivo nuevo, alerta",
       "lastingChange": "cambio duradero, signo vital, tendencia, pulso en reposo, tensión",
+      "syncStalled": "sincronización detenida, silencio, sin datos, Apple Health, segundo plano",
       "theme": "tema, modo oscuro, modo claro, apariencia, colores",
       "gadgetbridge": "Gadgetbridge, Android, reloj inteligente, base de datos",
       "fhirBundle": "FHIR, paquete, historia clínica, importar",

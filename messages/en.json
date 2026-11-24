@@ -8194,7 +8194,9 @@
         "never": "Not received yet",
         "lastBackfill": "History caught up {relative}",
         "lastEnteredHere": "Last entered here {relative}"
-      }
+      },
+      "quietSince": "{device}: quiet since {since}. Opening HealthLog on it once is enough.",
+      "quietDeviceUnnamed": "An iPhone"
     },
     "glucoseReference": {
       "title": "Glucose reference band",
@@ -10395,6 +10397,15 @@
       "title": "A lasting change",
       "bodyUp": "{metric} has stayed higher since {date}. Insights shows the before and after.",
       "bodyDown": "{metric} has stayed lower since {date}. Insights shows the before and after."
+    },
+    "eventSyncStalled": "A source stopped syncing",
+    "eventSyncStalledDesc": "When an iPhone, ring, watch or scale that delivers every day has gone quiet. Once per gap, in the daytime, at most once a day.",
+    "syncStalled": {
+      "title": "{provider} has gone quiet",
+      "appleYesterday": "{provider} has sent nothing since yesterday. Opening HealthLog once is enough.",
+      "appleSince": "{provider} has sent nothing since {date}. Opening HealthLog once is enough.",
+      "sourceYesterday": "{provider} has sent nothing since yesterday. Open its app, or reconnect it in HealthLog.",
+      "sourceSince": "{provider} has sent nothing since {date}. Open its app, or reconnect it in HealthLog."
     },
     "relayTest": {
       "title": "HealthLog test notification",
@@ -15396,6 +15407,7 @@
       "snooze": "snooze, later, postpone, remind me later",
       "securityAlerts": "security, sign-in, login, new device, alert",
       "lastingChange": "lasting change, vital, trend, resting heart rate, blood pressure",
+      "syncStalled": "sync stopped, quiet, no data, stalled, Apple Health, background",
       "theme": "theme, dark mode, light mode, appearance, colours",
       "gadgetbridge": "Gadgetbridge, Android, smartwatch, database",
       "fhirBundle": "FHIR, bundle, medical record, import",

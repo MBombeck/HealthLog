@@ -8194,7 +8194,9 @@
         "never": "Nog niet ontvangen",
         "lastBackfill": "Geschiedenis bijgewerkt {relative}",
         "lastEnteredHere": "Laatst hier ingevoerd {relative}"
-      }
+      },
+      "quietSince": "{device}: stil sinds {since}. HealthLog er één keer op openen is genoeg.",
+      "quietDeviceUnnamed": "Een iPhone"
     },
     "glucoseReference": {
       "title": "Referentiebereik voor glucose",
@@ -10395,6 +10397,15 @@
       "title": "Een blijvende verandering",
       "bodyUp": "Je {metric} is sinds {date} hoger gebleven. Insights toont het voor en na.",
       "bodyDown": "Je {metric} is sinds {date} lager gebleven. Insights toont het voor en na."
+    },
+    "eventSyncStalled": "Een bron synchroniseert niet meer",
+    "eventSyncStalledDesc": "Wanneer een iPhone, ring, horloge of weegschaal die elke dag levert stil valt. Eén keer per onderbreking, overdag, hooguit één keer per dag.",
+    "syncStalled": {
+      "title": "{provider} is stil",
+      "appleYesterday": "{provider} heeft sinds gisteren niets gestuurd. HealthLog één keer openen is genoeg.",
+      "appleSince": "{provider} heeft sinds {date} niets gestuurd. HealthLog één keer openen is genoeg.",
+      "sourceYesterday": "{provider} heeft sinds gisteren niets gestuurd. Open de bijbehorende app of koppel {provider} opnieuw in HealthLog.",
+      "sourceSince": "{provider} heeft sinds {date} niets gestuurd. Open de bijbehorende app of koppel {provider} opnieuw in HealthLog."
     },
     "relayTest": {
       "title": "HealthLog-testmelding",
@@ -15396,6 +15407,7 @@
       "snooze": "sluimeren, later, uitstellen, snooze",
       "securityAlerts": "beveiliging, aanmelding, inloggen, nieuw apparaat, waarschuwing",
       "lastingChange": "blijvende verandering, vitale waarde, trend, rusthartslag, bloeddruk",
+      "syncStalled": "synchronisatie gestopt, stil, geen gegevens, Apple Health, achtergrond",
       "theme": "thema, donkere modus, lichte modus, weergave, kleuren",
       "gadgetbridge": "Gadgetbridge, Android, smartwatch, databank",
       "fhirBundle": "FHIR, bundel, medisch dossier, importeren",

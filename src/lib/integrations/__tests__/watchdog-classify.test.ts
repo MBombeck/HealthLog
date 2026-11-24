@@ -7,6 +7,7 @@ import {
   FIRST_RUN_ALERTED_AT,
   currentIncident,
   decideWatchTransition,
+  silenceIsIncident,
   type WatchRow,
 } from "../watchdog-classify";
 import { formatWatchdogMessage } from "../watchdog";
@@ -14,6 +15,8 @@ import { formatWatchdogMessage } from "../watchdog";
 const NOW = new Date("2026-10-15T12:00:00.000Z");
 const HOUR = 60 * 60 * 1000;
 const ago = (hours: number) => new Date(NOW.getTime() - hours * HOUR);
+/** A history with `n` delivery days and an hourly rhythm, so the floor decides. */
+const days = (n: number) => ({ deliveredDays: n, typicalGapMs: HOUR });
 
 function health(
   state: ConnectionHealth["state"],
@@ -53,13 +56,12 @@ describe("classifySilence", () => {
   const withings = SOURCE_PROFILES.withings;
 
   it("never flags an on-demand source for silence, however long and however regular", () => {
-    expect(withings.kind).toBe("on_demand");
     expect(SOURCE_PROFILES.strava.kind).toBe("on_demand");
     expect(
       classifySilence({
-        profile: withings,
+        profile: SOURCE_PROFILES.strava,
         lastDataAt: ago(24 * 30),
-        deliveredDays: 14,
+        cadence: days(14),
         currentSilentSince: null,
         now: NOW,
       }),
@@ -71,7 +73,7 @@ describe("classifySilence", () => {
       classifySilence({
         profile: wearable,
         lastDataAt: ago(20),
-        deliveredDays: null,
+        cadence: null,
         currentSilentSince: null,
         now: NOW,
       }),
@@ -83,7 +85,7 @@ describe("classifySilence", () => {
       classifySilence({
         profile: wearable,
         lastDataAt: ago(30),
-        deliveredDays: null,
+        cadence: null,
         currentSilentSince: null,
         now: NOW,
       }),
@@ -95,7 +97,7 @@ describe("classifySilence", () => {
       classifySilence({
         profile: wearable,
         lastDataAt: ago(30),
-        deliveredDays: NORMAL_DELIVERY_MIN_DAYS,
+        cadence: days(NORMAL_DELIVERY_MIN_DAYS),
         currentSilentSince: null,
         now: NOW,
       }),
@@ -107,7 +109,7 @@ describe("classifySilence", () => {
       classifySilence({
         profile: wearable,
         lastDataAt: ago(30),
-        deliveredDays: NORMAL_DELIVERY_MIN_DAYS - 1,
+        cadence: days(NORMAL_DELIVERY_MIN_DAYS - 1),
         currentSilentSince: null,
         now: NOW,
       }),
@@ -119,7 +121,7 @@ describe("classifySilence", () => {
       classifySilence({
         profile: wearable,
         lastDataAt: ago(50),
-        deliveredDays: null,
+        cadence: null,
         currentSilentSince: ago(50),
         now: NOW,
       }),
@@ -131,7 +133,7 @@ describe("classifySilence", () => {
       classifySilence({
         profile: wearable,
         lastDataAt: ago(24 * 6),
-        deliveredDays: 8,
+        cadence: days(8),
         currentSilentSince: ago(24 * 6),
         now: NOW,
       }),
@@ -147,7 +149,7 @@ describe("classifySilence", () => {
         classifySilence({
           profile,
           lastDataAt: ago(36),
-          deliveredDays: 14,
+          cadence: days(14),
           currentSilentSince: null,
           now: NOW,
         }),
@@ -157,12 +159,36 @@ describe("classifySilence", () => {
         classifySilence({
           profile,
           lastDataAt: ago(49),
-          deliveredDays: 14,
+          cadence: days(14),
           currentSilentSince: null,
           now: NOW,
         }),
       ).toEqual({ kind: "flag", silentSince: ago(49) });
     }
+  });
+
+  it("waits for its own cadence when a source delivers less often than the window", () => {
+    // A cloud that receives one summary a day: twice its gap is 48 h, so a
+    // day and a half of quiet is its ordinary rhythm, not a stall.
+    const daily = { deliveredDays: 14, typicalGapMs: 24 * HOUR };
+    expect(
+      classifySilence({
+        profile: wearable,
+        lastDataAt: ago(36),
+        cadence: daily,
+        currentSilentSince: null,
+        now: NOW,
+      }),
+    ).toEqual({ kind: "clear" });
+    expect(
+      classifySilence({
+        profile: wearable,
+        lastDataAt: ago(49),
+        cadence: daily,
+        currentSilentSince: null,
+        now: NOW,
+      }),
+    ).toEqual({ kind: "flag", silentSince: ago(49) });
   });
 
   it("keeps the 24 h window for wearables whose cloud receives data on its own", () => {
@@ -174,10 +200,31 @@ describe("classifySilence", () => {
     }
   });
 
-  it("never alerts on silence for scales, cuffs and workout logs", () => {
-    for (const key of ["withings", "strava"] as const) {
-      expect(SOURCE_PROFILES[key].kind).toBe("on_demand");
-    }
+  it("flags a scale used daily for its owner, never as an operator incident", () => {
+    expect(withings.kind).toBe("habitual");
+    expect(silenceIsIncident(withings)).toBe(false);
+    expect(silenceIsIncident(wearable)).toBe(true);
+    expect(SOURCE_PROFILES.strava.kind).toBe("on_demand");
+    // Weighed in on most days: two quiet days and a bit is a stall.
+    expect(
+      classifySilence({
+        profile: withings,
+        lastDataAt: ago(50),
+        cadence: { deliveredDays: 12, typicalGapMs: 24 * HOUR },
+        currentSilentSince: null,
+        now: NOW,
+      }),
+    ).toEqual({ kind: "flag", silentSince: ago(50) });
+    // Weighed in now and then: never news.
+    expect(
+      classifySilence({
+        profile: withings,
+        lastDataAt: ago(24 * 5),
+        cadence: { deliveredDays: 4, typicalGapMs: 72 * HOUR },
+        currentSilentSince: null,
+        now: NOW,
+      }),
+    ).toEqual({ kind: "not_expected" });
   });
 
   it("gives Apple Health a wider window than a wearable", () => {
@@ -187,7 +234,7 @@ describe("classifySilence", () => {
       classifySilence({
         profile: apple,
         lastDataAt: ago(30),
-        deliveredDays: 14,
+        cadence: days(14),
         currentSilentSince: null,
         now: NOW,
       }),

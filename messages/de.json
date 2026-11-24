@@ -8194,7 +8194,9 @@
         "never": "Noch nicht empfangen",
         "lastBackfill": "Verlauf nachgeladen {relative}",
         "lastEnteredHere": "Zuletzt hier eingetragen {relative}"
-      }
+      },
+      "quietSince": "{device}: still seit {since}. Einmal HealthLog darauf öffnen genügt.",
+      "quietDeviceUnnamed": "Ein iPhone"
     },
     "glucoseReference": {
       "title": "Glukose-Referenzband",
@@ -10395,6 +10397,15 @@
       "title": "Eine anhaltende Veränderung",
       "bodyUp": "Dein Wert {metric} liegt seit {date} höher. Insights zeigt vorher und nachher.",
       "bodyDown": "Dein Wert {metric} liegt seit {date} niedriger. Insights zeigt vorher und nachher."
+    },
+    "eventSyncStalled": "Eine Quelle synchronisiert nicht mehr",
+    "eventSyncStalledDesc": "Wenn ein iPhone, Ring, eine Uhr oder Waage, die sonst täglich liefert, verstummt. Einmal je Pause, tagsüber, höchstens einmal am Tag.",
+    "syncStalled": {
+      "title": "{provider} ist verstummt",
+      "appleYesterday": "{provider} hat seit gestern nichts gesendet. Einmal HealthLog öffnen genügt.",
+      "appleSince": "{provider} hat seit {date} nichts gesendet. Einmal HealthLog öffnen genügt.",
+      "sourceYesterday": "{provider} hat seit gestern nichts gesendet. Öffne die zugehörige App oder verbinde {provider} in HealthLog neu.",
+      "sourceSince": "{provider} hat seit {date} nichts gesendet. Öffne die zugehörige App oder verbinde {provider} in HealthLog neu."
     },
     "relayTest": {
       "title": "HealthLog-Testbenachrichtigung",
@@ -15396,6 +15407,7 @@
       "snooze": "Snooze, später, verschieben, schlummern",
       "securityAlerts": "Sicherheit, Anmeldung, Login, neues Gerät, Warnung",
       "lastingChange": "dauerhafte Änderung, Vitalwert, Trend, Ruhepuls, Blutdruck",
+      "syncStalled": "Synchronisierung gestoppt, still, keine Daten, Apple Health, Hintergrund",
       "theme": "Design, Dunkelmodus, dunkel, hell, Darstellung, dark mode",
       "gadgetbridge": "Gadgetbridge, Android, Smartwatch, Datenbank",
       "fhirBundle": "FHIR, Bundle, Patientenakte, Import",

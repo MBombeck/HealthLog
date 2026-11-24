@@ -59,6 +59,8 @@ export const NOTIFICATION_TAP_PATHS: Record<SentEventType, string | null> = {
   SEIZURE_CLUSTER: "/seizures",
   // The health-status card on the Insights overview shows the shift.
   MEASUREMENT_ANOMALY: "/insights",
+  // The source's own card (`#apple-health`, `#garmin`, …) rides `metadata.url`.
+  SYNC_STALLED: "/settings/integrations",
 };
 
 const MAX_PATH_LENGTH = 512;

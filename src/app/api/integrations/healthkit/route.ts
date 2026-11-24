@@ -33,6 +33,7 @@ import {
   getEnteredHereAt,
   getSourceFreshness,
 } from "@/lib/integrations/metric-freshness";
+import { loadQuietDevices } from "@/lib/sync-stall/devices";
 import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
 import {
   classifyMetricFreshness,
@@ -197,6 +198,7 @@ export const GET = apiHandler(async () => {
     syncProgress,
     health,
     enteredHere,
+    quietDevices,
   ] = await Promise.all([
     getSourceFreshness(user.id, "APPLE_HEALTH").catch(() => []),
     getAppleHealthDoseFreshness(user.id).catch(() => null),
@@ -206,6 +208,9 @@ export const GET = apiHandler(async () => {
     getEnteredHereAt(user.id, healthKitWriteBackTypes(entries)).catch(
       () => undefined,
     ),
+    // The iPhones whose upload has stalled (`src/lib/sync-stall/devices.ts`),
+    // the same rule the stall notice tells. Fail-soft to an empty list.
+    loadQuietDevices(prisma, user.id).catch(() => []),
   ]);
   const samples = doseSample
     ? [...measurementSamples, doseSample].sort((a, b) =>
@@ -242,6 +247,7 @@ export const GET = apiHandler(async () => {
     ),
     syncProgress,
     health,
+    quietDevices,
     // #1340 — what the batch route maps, so the app asks only for those.
     acceptedTypes: acceptedHealthKitTypes(),
   });

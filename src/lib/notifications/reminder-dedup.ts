@@ -87,6 +87,12 @@ export async function claimNotificationEvent(
     eventType: string;
     dedupKey: string;
     since: Date;
+    /**
+     * The instant the claim is recorded at; the database's clock when
+     * omitted. A pass that judges against an injected `now` passes it, so
+     * its `since` and the claim read the same clock.
+     */
+    at?: Date;
   },
 ): Promise<boolean> {
   try {
@@ -119,6 +125,7 @@ export async function claimNotificationEvent(
           recordUserId: input.recordUserId,
           eventType: input.eventType,
           dedupKey: input.dedupKey,
+          ...(input.at ? { createdAt: input.at } : {}),
         },
       });
       return true;

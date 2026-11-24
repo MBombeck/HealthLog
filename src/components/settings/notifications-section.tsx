@@ -6,6 +6,7 @@ import {
   Bell,
   BellRing,
   ChevronRight,
+  CloudOff,
   ShieldAlert,
   Siren,
   Smartphone,
@@ -182,6 +183,12 @@ export function NotificationsSection() {
           eventType="MEASUREMENT_ANOMALY"
           anchor="lasting-change"
           icon={Activity}
+          isAuthenticated={isAuthenticated}
+        />
+        <EventSwitchCard
+          eventType="SYNC_STALLED"
+          anchor="sync-stalled"
+          icon={CloudOff}
           isAuthenticated={isAuthenticated}
         />
       </section>

@@ -43736,6 +43736,7 @@ components:
             - SHARED_RECORD_INTAKE
             - BACKUP_HEALTH
             - SEIZURE_CLUSTER
+            - SYNC_STALLED
         enabled:
           type: boolean
       required:
@@ -97543,6 +97544,27 @@ components:
           anyOf:
             - $ref: "#/components/schemas/ConnectionHealth"
             - type: "null"
+        quietDevices:
+          description: "The account's iOS devices whose Apple Health upload has gone quiet against their own rhythm (the stall
+            rule behind the `SYNC_STALLED` notification): only a device that delivers on most days qualifies, and it
+            counts as quiet after 24 hours or twice its usual gap, whichever is longer. Empty when every device
+            delivers. Present on the GET read; omitted from the PATCH echo."
+          type: array
+          items:
+            type: object
+            properties:
+              model:
+                description: The model the device registered with, or null.
+                type:
+                  - string
+                  - "null"
+              quietSince:
+                type: string
+                description: ISO instant of the device's last Apple Health delivery of a background type.
+            required:
+              - model
+              - quietSince
+            additionalProperties: false
         acceptedTypes:
           description: The HealthKit quantity and category identifiers `POST /api/measurements/batch` maps today (e.g.
             `HKQuantityTypeIdentifierBodyMass`, `HKCategoryTypeIdentifierSleepAnalysis`), sorted. Derived from the
@@ -103861,6 +103883,7 @@ components:
               - SHARED_RECORD_INTAKE
               - BACKUP_HEALTH
               - SEIZURE_CLUSTER
+              - SYNC_STALLED
             description: Notification category a per-channel preference can toggle.
           additionalProperties:
             type: boolean
@@ -103885,6 +103908,7 @@ components:
             - SHARED_RECORD_INTAKE
             - BACKUP_HEALTH
             - SEIZURE_CLUSTER
+            - SYNC_STALLED
           description: What each event does on a channel with no stored row, resolved for this account by the function delivery
             uses. Most are constant per category; the mood reminder follows the account's mood-reminder setting
             (`moodReminderEnabled` on `/api/user/profile`). Render a switch without a row from this map rather than from
@@ -103958,6 +103982,7 @@ components:
             - SHARED_RECORD_INTAKE
             - BACKUP_HEALTH
             - SEIZURE_CLUSTER
+            - SYNC_STALLED
           description: Notification category a per-channel preference can toggle.
         enabled:
           type: boolean
