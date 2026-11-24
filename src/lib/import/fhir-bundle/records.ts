@@ -89,7 +89,11 @@ interface Built {
 
 const ids = (rows: Array<{ id: string }>) => rows.map((r) => r.id);
 
-function buildCondition(r: Json, now: Date): Built | { skip: string } {
+function buildCondition(
+  r: Json,
+  now: Date,
+  tz: string,
+): Built | { skip: string } {
   const verification = statusCode(r.verificationStatus);
   if (verification === "refuted" || verification === "entered-in-error") {
     return { skip: "not_confirmed" };
@@ -97,6 +101,7 @@ function buildCondition(r: Json, now: Date): Built | { skip: string } {
   const label = conceptText(r.code, 120);
   if (!label) return { skip: "no_label" };
   const onsetAt = firstInstant(
+    tz,
     r.onsetDateTime,
     obj(r.onsetPeriod)?.start,
     r.recordedDate,
@@ -104,6 +109,7 @@ function buildCondition(r: Json, now: Date): Built | { skip: string } {
   if (!onsetAt) return { skip: "no_date" };
   if (onsetAt > now) return { skip: "future_date" };
   const resolvedAt = firstInstant(
+    tz,
     r.abatementDateTime,
     obj(r.abatementPeriod)?.end,
   );
@@ -139,11 +145,15 @@ function buildCondition(r: Json, now: Date): Built | { skip: string } {
   };
 }
 
-function buildImmunization(r: Json, now: Date): Built | { skip: string } {
+function buildImmunization(
+  r: Json,
+  now: Date,
+  tz: string,
+): Built | { skip: string } {
   if (statusCode(r.status) !== "completed") return { skip: "not_completed" };
   const name = conceptText(r.vaccineCode, 120);
   if (!name) return { skip: "no_label" };
-  const dated = firstDated(r.occurrenceDateTime, r.recorded);
+  const dated = firstDated(tz, r.occurrenceDateTime, r.recorded);
   if (!dated) return { skip: "no_date" };
   if (dated.at > now) return { skip: "future_date" };
   // The day the record states, at UTC midnight, as the vaccination model
@@ -178,7 +188,11 @@ function buildImmunization(r: Json, now: Date): Built | { skip: string } {
   };
 }
 
-function buildMedication(r: Json, now: Date): Built | { skip: string } {
+function buildMedication(
+  r: Json,
+  now: Date,
+  tz: string,
+): Built | { skip: string } {
   const status = statusCode(r.status);
   if (status === "entered-in-error" || status === "not-taken") {
     return { skip: "not_taken" };
@@ -189,11 +203,12 @@ function buildMedication(r: Json, now: Date): Built | { skip: string } {
   const dosage = obj(arr(r.dosage)[0]);
   const dose = str(dosage?.text, 60) ?? "";
   const startDated = firstDated(
+    tz,
     obj(r.effectivePeriod)?.start,
     r.effectiveDateTime,
   );
   const start = startDated?.at ?? null;
-  const endDated = firstDated(obj(r.effectivePeriod)?.end);
+  const endDated = firstDated(tz, obj(r.effectivePeriod)?.end);
   const end = endDated?.at ?? null;
   const ended =
     status === "completed" ||
@@ -282,10 +297,10 @@ const ENCOUNTER_CLASS: Record<string, EncounterKind> = {
   PRENC: "PREVENTIVE",
 };
 
-function buildEncounter(r: Json): Built | { skip: string } {
+function buildEncounter(r: Json, tz: string): Built | { skip: string } {
   const status = ENCOUNTER_STATUS[statusCode(r.status) ?? ""];
   if (!status) return { skip: "not_a_visit" };
-  const occurredAt = firstInstant(obj(r.period)?.start, obj(r.period)?.end);
+  const occurredAt = firstInstant(tz, obj(r.period)?.start, obj(r.period)?.end);
   if (!occurredAt) return { skip: "no_date" };
   const classCode = str(obj(r.class)?.code, 16)?.toUpperCase() ?? "";
   const reason =
@@ -326,16 +341,17 @@ function build(
   type: RecordResourceType,
   resource: Json,
   now: Date,
+  tz: string,
 ): Built | { skip: string } {
   switch (type) {
     case "Condition":
-      return buildCondition(resource, now);
+      return buildCondition(resource, now, tz);
     case "Immunization":
-      return buildImmunization(resource, now);
+      return buildImmunization(resource, now, tz);
     case "MedicationStatement":
-      return buildMedication(resource, now);
+      return buildMedication(resource, now, tz);
     case "Encounter":
-      return buildEncounter(resource);
+      return buildEncounter(resource, tz);
   }
 }
 
@@ -390,8 +406,10 @@ export async function importRecordResource(input: {
   type: RecordResourceType;
   resource: Json;
   now: Date;
+  /** The person's zone, for a time the record gives without an offset. */
+  tz: string;
 }): Promise<RecordOutcome> {
-  const built = build(input.type, input.resource, input.now);
+  const built = build(input.type, input.resource, input.now, input.tz);
   if ("skip" in built) return { status: "skipped", reason: built.skip };
   const key = resourceKey(
     input.issuer,

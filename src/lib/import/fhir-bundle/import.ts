@@ -98,12 +98,14 @@ export function mapVital(
   resource: Json,
   issuer: string,
   now: Date,
+  tz: string,
 ): ImportedMeasurement[] | { reason: string } {
   const status = str(resource.status, 32)?.toLowerCase();
   if (status && !["final", "amended", "corrected"].includes(status)) {
     return { reason: "not_final" };
   }
   const at = firstInstant(
+    tz,
     resource.effectiveDateTime,
     obj(resource.effectivePeriod)?.start,
     resource.issued,
@@ -207,7 +209,7 @@ async function importEntries(
           urn: issuer === "urn",
         });
       } else if (cats.includes("vital-signs")) {
-        const mapped = mapVital(resource, issuer, now);
+        const mapped = mapVital(resource, issuer, now, input.tz);
         if ("reason" in mapped) tally.skip("Observation", mapped.reason);
         else vitals.push(...mapped);
       } else {
@@ -225,6 +227,7 @@ async function importEntries(
         type: recordType,
         resource,
         now,
+        tz: input.tz,
       });
       const line = RECORD_LINE[recordType];
       if (outcome.status === "imported") {

@@ -139,13 +139,14 @@ async function importWithBundleKeys(userId: string, bundleId: string) {
           "Condition" | "Immunization" | "MedicationStatement" | "Encounter",
         resource,
         now,
+        tz: "Europe/Berlin",
       });
       expect(outcome.status).toBe("imported");
       continue;
     }
     const lab = JSON.stringify(resource.category).includes("laboratory");
     if (!lab) {
-      const rows = mapVital(resource, issuer, now);
+      const rows = mapVital(resource, issuer, now, "Europe/Berlin");
       if ("reason" in rows) throw new Error(rows.reason);
       await writeImportedMeasurements(userId, rows, tally);
       continue;
