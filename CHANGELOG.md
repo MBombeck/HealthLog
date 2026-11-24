@@ -34,6 +34,7 @@
 - A field's name starts on the same line as the text and the controls around it. Every form label sat a few pixels to the right of the sentence above it and of a switch's name in the same card; it now shares their left edge, in Settings, Admin and every form sheet.
 - A checkup that has never been done no longer shows "Last done" with a dash. The line is left out, as on the medication cards.
 - The Spanish, French, Italian and Polish texts write an ellipsis as one character, as the other languages do, and one Spanish loading line no longer ends in four dots.
+- A push over the push relay that follows another within a minute reuses the open connection. The connection was closed after four seconds of quiet, so nearly every push looked up the relay's address and set up TCP and TLS again: a few milliseconds from Europe, around half a second from an instance in Asia or Australia. The relay connection now stays open for 55 seconds, just under the relay's own idle limit, and every other outbound connection keeps its old lifetime.
 
 ### Security
 
