@@ -380,6 +380,46 @@
       ]
     },
     {
+      "name": "Apple Wallet, own Pass Type ID",
+      "description": "Signs the emergency card's Apple Wallet pass on this server with the operator's own Pass Type ID (docs/self-hosting/apple-wallet.md). The four core variables together; a partial or inconsistent set turns Wallet off and never falls back to the project's signing service. Optional; unset, the pass is signed by the HealthLog signing service over the push relay.",
+      "required": false,
+      "allOrNone": true,
+      "variables": [
+        {
+          "name": "WALLET_APPLE_PASS_TYPE_ID",
+          "purpose": "The Pass Type ID, the certificate's UID.",
+          "example": "pass.org.example.emergency"
+        },
+        {
+          "name": "WALLET_APPLE_TEAM_ID",
+          "purpose": "The 10-character Apple team id, the certificate's OU."
+        },
+        {
+          "name": "WALLET_APPLE_CERT_B64",
+          "purpose": "The Pass Type ID certificate, PEM or DER, base64-encoded."
+        },
+        {
+          "name": "WALLET_APPLE_KEY_B64",
+          "purpose": "The certificate's RSA private key, PEM (PKCS#8 or PKCS#1, optionally encrypted), base64-encoded."
+        }
+      ]
+    },
+    {
+      "name": "Apple Wallet, own Pass Type ID, extras",
+      "description": "Optional companions of the group above, read only when it is set.",
+      "required": false,
+      "variables": [
+        {
+          "name": "WALLET_APPLE_KEY_PASSPHRASE",
+          "purpose": "The passphrase of an encrypted WALLET_APPLE_KEY_B64."
+        },
+        {
+          "name": "WALLET_APPLE_WWDR_B64",
+          "purpose": "The intermediate that issued the certificate, base64. Default: Apple WWDR G4, embedded."
+        }
+      ]
+    },
+    {
       "name": "Document picker",
       "description": "Operator grant for the document picker, which lets a person search their own Paperless-ngx or Papra instance and import picked documents. Unset, the picker is off. Optional.",
       "required": false,

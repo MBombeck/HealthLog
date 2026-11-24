@@ -47,3 +47,7 @@ project.inlang/*
 # prettier must never rewrite them.
 src/lib/push-relay/__tests__/fixtures/relay-vectors-v1.json
 src/lib/notifications/__tests__/fixtures/app-medication-content-state.json
+
+# The push relay's Wallet reference and vectors, copied byte for byte from
+# healthlog-push and pinned by hash in wallet-relay-spec.test.ts.
+src/lib/emergency-card/wallet-pass/__tests__/relay-spec

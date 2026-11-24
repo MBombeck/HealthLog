@@ -43,7 +43,36 @@ describe("relayStatusOf", () => {
       at: now.toISOString(),
       state: "maintenance",
       devices: { active: 3, provisional: 1, limit: 50 },
+      wallet: null,
     });
+  });
+
+  it("keeps the Wallet block's closed values; signing needs both identifiers", () => {
+    const wallet = (block: unknown) =>
+      relayStatusOf({ state: "ok", wallet: block }, now)?.wallet;
+    expect(
+      wallet({
+        sign: true,
+        notify: true,
+        passTypeIdentifier: "pass.dev.healthlog.emergency",
+        teamIdentifier: "ABCDE12345",
+        certNotAfterDay: 20800,
+        note: "free text",
+      }),
+    ).toEqual({
+      sign: true,
+      notify: true,
+      passTypeIdentifier: "pass.dev.healthlog.emergency",
+      teamIdentifier: "ABCDE12345",
+      certNotAfterDay: 20800,
+    });
+    expect(
+      wallet({ sign: true, notify: true, passTypeIdentifier: "evil" }),
+    ).toMatchObject({ sign: false, notify: false, passTypeIdentifier: null });
+    expect(wallet({ sign: false, notify: false })).toMatchObject({
+      sign: false,
+    });
+    expect(wallet("yes")).toBeNull();
   });
 
   it("refuses an unknown state and drops malformed counts", () => {

@@ -140,7 +140,7 @@ function makePki(dir: string): LocalSigner {
   ]);
   return {
     certificatePem: readFileSync(join(dir, "pass.pem"), "utf8"),
-    privateKeyPem: readFileSync(join(dir, "pass.key"), "utf8"),
+    privateKey: readFileSync(join(dir, "pass.key"), "utf8"),
     intermediatePem: readFileSync(join(dir, "wwdr.pem"), "utf8"),
   };
 }
@@ -191,7 +191,10 @@ describe.skipIf(!HAS_OPENSSL)("the local CMS signer", () => {
     const tampered = new TextEncoder().encode(
       new TextDecoder()
         .decode(manifest)
-        .replace(/"pass.json":"[0-9a-f]/, '"pass.json":"0'),
+        .replace(
+          /"pass\.json":"([0-9a-f])/,
+          (_, c: string) => `"pass.json":"${c === "0" ? "1" : "0"}`,
+        ),
     );
     expect(Buffer.from(tampered).equals(Buffer.from(manifest))).toBe(false);
     expect(verify(signature, tampered).status).not.toBe(0);
@@ -248,7 +251,7 @@ describe.skipIf(!HAS_OPENSSL)("the local CMS signer", () => {
     expect(() =>
       signManifestLocally(new Uint8Array(), {
         ...signer,
-        privateKeyPem: other,
+        privateKey: other,
       }),
     ).toThrow(/does not belong/);
   });
