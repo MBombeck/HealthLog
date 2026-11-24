@@ -89,12 +89,22 @@ the row is written. A delegate's reads of somebody else's record are counted
 in one `sharing.record.accessed` row per owner, delegate and day.
 
 **Protection.** From 1.50.0 `audit_logs` is append-only for the app's database
-role. A trigger refuses `DELETE`, `TRUNCATE` and every `UPDATE` except two:
-filling a row's location fields once, and raising the per-day counter of a
-delegated-access row. Retention cleanup, account erasure and the cycle-data
-erasure run through functions owned by the database owner (`SECURITY DEFINER`)
-that delete only what their narrow conditions name. A process running as the
-app role, compromised or not, can add rows and cannot change or remove one.
+role (migration 0569). The role has no `DELETE` on the table, and a trigger
+refuses `TRUNCATE` and every `UPDATE` that changes who, what, when or from
+where. The updates the app makes still pass: filling a row's location fields
+once, raising the per-day counter of a delegated-access row, and the details
+of the two actions a later step completes or scrubs
+(`practitioner.contact.update`, `measurement.apple_health_distance.repaired`).
+The three deletions the app needs run through functions owned by the database
+owner (`SECURITY DEFINER`), each with its own condition: `audit_logs_purge`
+takes only rows older than the retention cutoff and refuses a cutoff less
+than six days back; `audit_logs_erase_account` erases only an account whose
+deletion is under way; `audit_logs_erase_cycle` takes only an account's
+`cycle.*` and cycle-preference rows. A process running as the app role,
+compromised or not, cannot rewrite a row or remove one from the last six
+days; it can still remove older rows, or an account's rows after marking the
+account for deletion, which is itself visible. The test is in
+`tests/integration/db-app-role.test.ts`.
 An install that turned the separate role off
 ([`self-hosting/database-role.md`](../self-hosting/database-role.md#turning-it-off))
 runs as the owner and does not get this protection. Either way, a copy kept
