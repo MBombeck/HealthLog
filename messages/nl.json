@@ -16176,6 +16176,52 @@
     },
     "entry": {
       "description": "Bloedgroep, allergieën, medicijnen en contactpersonen voor een noodgeval, met offline kopie, pasje en QR-link."
+    },
+    "appleWallet": {
+      "title": "Apple Wallet",
+      "lead": "Je kaart in Wallet, die zichzelf bijwerkt.",
+      "learnMore": "Meer informatie",
+      "add": "Voeg toe aan Apple Wallet",
+      "makeNew": "Nieuwe pas maken",
+      "withdraw": "Pas intrekken",
+      "withdrawTitle": "Wallet-pas intrekken?",
+      "withdrawBody": "De QR-code werkt meteen niet meer, en de pas in Wallet laat dat zien.",
+      "fieldsLabel": "Wat de pas toont",
+      "expiryLabel": "Pas eindigt",
+      "otherDevice": "Open deze pagina op je iPhone of Mac om deze kaart aan Wallet toe te voegen.",
+      "error": "De pas kon niet worden gewijzigd. Probeer het opnieuw.",
+      "consentTitle": "Ondertekend door het HealthLog-project",
+      "consentBody": "De ondertekendienst ziet de bestandshashes en het tijdstip, nooit wat er op je kaart staat.",
+      "expired": "Verlopen. Wallet maakt hem grijs.",
+      "fetched": "Op een apparaat, laatst bijgewerkt {when}.",
+      "notFetched": "Nog op geen apparaat.",
+      "state": {
+        "live": "Actief",
+        "voided": "Ingetrokken",
+        "expired": "Verlopen"
+      },
+      "withdrawn": {
+        "owner": "Je hebt hem {when} ingetrokken.",
+        "credential_reset": "{when} ingetrokken na een wachtwoordwijziging.",
+        "handover": "{when} ingetrokken bij de overdracht van het profiel.",
+        "guardian_lost": "{when} ingetrokken: het recht om dit profiel te beheren is vervallen.",
+        "account_deletion": "{when} ingetrokken toen het account verwijderd zou worden."
+      },
+      "unavailable": {
+        "signer_off": "Deze server ondertekent geen Wallet-passen.",
+        "relay_not_ready": "Wallet-passen zijn op deze server nu niet beschikbaar.",
+        "no_https_origin": "Wallet-passen vereisen dat deze server via HTTPS bereikt wordt.",
+        "api_disabled": "Externe toegang staat op deze server uit, en daarmee ook Wallet-passen.",
+        "not_allowed": "Alleen de persoon om wie het gaat, of diens voogd, kan hem toevoegen."
+      },
+      "more": {
+        "frozen": "De pas toont wat je hier aanvinkt. Trek hem in en maak een nieuwe om dat te wijzigen.",
+        "updates": "Als je kaart verandert, werkt de pas zichzelf bij. De QR-code is een eigen code, los van die van de gedrukte kaart.",
+        "lock": "Wallet toont hem pas na Face ID of je code. Vul voor hulpverleners bij een vergrendelde iPhone de Medische ID in Gezondheid in.",
+        "signerRelay": "Het HealthLog-project ondertekent hem. De ondertekendienst ziet bestandshashes en tijdstippen, nooit de inhoud.",
+        "signerLocal": "Deze server ondertekent hem met een eigen certificaat.",
+        "withdraw": "Intrekken stopt de QR-code meteen. Een telefoon zonder verbinding houdt de oude pas tot hij weer online is; lukt bijwerken niet, verwijder de pas dan in Wallet."
+      }
     }
   }
 }

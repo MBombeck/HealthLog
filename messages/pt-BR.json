@@ -16176,6 +16176,52 @@
     },
     "entry": {
       "description": "Tipo sanguíneo, alergias, medicamentos e contatos para uma emergência, com cópia offline, cartão e link QR."
+    },
+    "appleWallet": {
+      "title": "Apple Wallet",
+      "lead": "Seu cartão na Wallet, que se mantém atualizado sozinho.",
+      "learnMore": "Saiba mais",
+      "add": "Adicionar à Apple Wallet",
+      "makeNew": "Criar novo passe",
+      "withdraw": "Retirar passe",
+      "withdrawTitle": "Retirar o passe da Wallet?",
+      "withdrawBody": "O código QR para de funcionar na hora, e o passe na Wallet mostra isso.",
+      "fieldsLabel": "O que o passe mostra",
+      "expiryLabel": "Fim do passe",
+      "otherDevice": "Para adicionar este cartão à Wallet, abra esta página no seu iPhone ou Mac.",
+      "error": "Não foi possível alterar o passe. Tente de novo.",
+      "consentTitle": "Assinado pelo projeto HealthLog",
+      "consentBody": "O serviço de assinatura vê os hashes dos arquivos e a hora, nunca o que diz o seu cartão.",
+      "expired": "Expirado. A Wallet o deixa em cinza.",
+      "fetched": "Em um dispositivo, atualizado {when}.",
+      "notFetched": "Ainda em nenhum dispositivo.",
+      "state": {
+        "live": "Ativo",
+        "voided": "Retirado",
+        "expired": "Expirado"
+      },
+      "withdrawn": {
+        "owner": "Você o retirou {when}.",
+        "credential_reset": "Retirado {when} após uma troca de senha.",
+        "handover": "Retirado {when} na entrega do perfil.",
+        "guardian_lost": "Retirado {when}: o direito de gerenciar este perfil terminou.",
+        "account_deletion": "Retirado {when} quando a conta ia ser excluída."
+      },
+      "unavailable": {
+        "signer_off": "Este servidor não assina passes da Wallet.",
+        "relay_not_ready": "Os passes da Wallet não estão disponíveis neste servidor agora.",
+        "no_https_origin": "Os passes da Wallet exigem acesso a este servidor por HTTPS.",
+        "api_disabled": "O acesso externo está desligado neste servidor, e com ele os passes da Wallet.",
+        "not_allowed": "Só a pessoa do cartão, ou seu responsável, pode adicioná-lo."
+      },
+      "more": {
+        "frozen": "O passe mostra o que você marcar aqui. Para mudar, retire-o e crie um novo.",
+        "updates": "Quando seu cartão muda, o passe se atualiza sozinho. O código QR é próprio, separado do cartão impresso.",
+        "lock": "A Wallet o mostra após Face ID ou código. Para quem socorre diante de um iPhone bloqueado, preencha a Ficha Médica no Saúde.",
+        "signerRelay": "O projeto HealthLog o assina. O serviço de assinatura vê hashes de arquivos e horários, nunca o conteúdo.",
+        "signerLocal": "Este servidor o assina com seu próprio certificado.",
+        "withdraw": "Retirar para o código QR na hora. Um celular offline mantém o passe antigo até voltar a ficar online; se um passe não puder ser atualizado, apague-o na Wallet."
+      }
     }
   }
 }
