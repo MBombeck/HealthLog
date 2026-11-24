@@ -28,7 +28,7 @@ typecheck.
 - **`repair-apple-health-distance.ts`**: repair walking-distance rows the `export.zip` import stored 1000x too small; dry-run by default, see `docs/ops/apple-health-distance-repair.md`.
 - **`repair-intake-anomalies.ts`**: repair historic medication-ledger defects (duplicate dose-slot rows, implausible `taken_at`); dry-run by default, see `docs/ops/intake-repair.md`.
 - **`backfill-rollups.ts`**, **`drain-per-sample-cumulative.ts`**, **`backfill-mood-note-column.ts`**: historical data backfills (the boot-time `rollup-full-backfill` queue handles new accounts automatically; the CLI is the manual fallback).
-- **`seed-demo.ts`** + **`seed-demo-v15.sql`**: populate a demo tenant.
+- **`seed-demo.ts`** + **`seed-demo-v15.sql`**: populate a demo tenant. It deletes every account in the target database first. A demo deploy (`DEMO_MODE=true`) re-runs `seed-demo.ts` itself every day (`src/lib/jobs/demo-refresh.ts`); run it by hand only to set up a new demo database.
 - **`bench/`**: `seed-large-account.ts` (a synthetic ten-year account of about 1.26 million measurement rows) and `run.ts` (latency and SQL statements per request against it); see `docs/contributing/benchmarks.md`. Results land in `bench/results/`.
 - **`test-notifications.ts`**: exercise the notification dispatcher + reminder check.
 - **`fetch-geolite2.sh`**: download the MaxMind GeoLite2 MMDBs (needs a licence key) before `docker build`.

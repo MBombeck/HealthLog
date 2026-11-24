@@ -5,6 +5,7 @@
 ### Fixed
 
 - The bottom bar of the installed iPhone app reaches the bottom edge again. iOS 26 and 27 can lay out a home-screen app a status bar's height short of the screen, and the strip below the bar showed the page colour as a separate band; that strip now takes the bar's colour, in light and dark, by colour alone, so nothing is measured or moved and the loop from 1.48.4 cannot come back. The band behind the status bar and the top bar are one colour as well, and the page now ends a full 1rem above the Coach button instead of half of that. Every edge of the app reads the screen's safe areas from one place. Thanks to @2q2code for the report and the video. ([#1426](https://github.com/MBombeck/HealthLog/issues/1426))
+- The public demo no longer goes stale between seeds. Everything the demo seed writes is relative to the day it ran, so after that day medications without an automatic intake lost adherence day by day, sleep and activity slid out of their windows, and the visit booked for tomorrow moved into the past. A demo deploy (`DEMO_MODE=true`) now rewrites itself from the same seed every day at 10:00 Berlin, and after a restart that missed that hour. It runs only when the database holds the demo account and nothing else, and on any other deploy the job does not exist. Visitors stay read-only; a visitor signed in at 10:00 is signed out once.
 
 ## [1.49.0] — 2026-11-23
 
