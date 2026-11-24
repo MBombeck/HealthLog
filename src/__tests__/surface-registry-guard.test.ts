@@ -374,6 +374,7 @@ describe("3. every entry is in the palette and found by its name and words", () 
     ["gadgetbridge", "settings:export#import-gadgetbridge"],
     ["lasting change", "settings:notifications#lasting-change"],
     ["security alerts", "settings:notifications#security-alerts"],
+    ["sync stopped", "settings:notifications#sync-stalled"],
     ["care calendar", "settings:health-record#calendar"],
     ["nextcloud", "settings:integrations#import-health-connect-remote"],
     ["who can reach", "settings:privacy#who-has-access"],

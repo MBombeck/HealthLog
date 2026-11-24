@@ -129,8 +129,10 @@ const BUDGET = {
   batchIngest500: 28,
   // The Apple Health card and the phone's sync read (1.49.0). The newest and
   // the oldest reading of each type are two index probes per type in ONE
-  // statement, so `oldestSeenAt` costs no statement of its own.
-  integrationsHealthkit: 17,
+  // statement, so `oldestSeenAt` costs no statement of its own. One more for
+  // the account's quiet iPhones (`quietDevices`), an indexed read of its own
+  // devices.
+  integrationsHealthkit: 18,
   // The navigation's two counts (1.49.0): the session and the user, the
   // active medications with their schedules, schedule eras and courses, the
   // ledgers' anchor and window reads in one batch, and the due check-ups.

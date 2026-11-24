@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { HeartPulse, Upload } from "lucide-react";
 
 import { formatRelative } from "./format-relative";
+import { formatHealthInstant } from "./integration-health-copy";
 import { Button } from "@/components/ui/button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { apiGet } from "@/lib/api/api-fetch";
@@ -38,11 +39,44 @@ interface HealthKitStatus {
   health?: ConnectionHealth | null;
   /** Per type: newest sample, plus when it last arrived and how (#1173). */
   metricFreshness?: HealthKitFreshnessEntry[];
+  /**
+   * The iPhones whose upload has gone quiet against their own rhythm, the
+   * rule behind the stall notification.
+   */
+  quietDevices?: Array<{ model: string | null; quietSince: string }>;
   /** Server-side backfill progress (#778); null when the read failed. */
   syncProgress?: {
     recordsAccepted: number;
     oldestMeasuredAt: string | null;
   } | null;
+}
+
+/**
+ * One line per iPhone whose Apple Health upload stalled: since when, and the
+ * one thing that resumes it. The same rule the stall notification tells.
+ */
+function QuietDevices({ status }: { status: HealthKitStatus }) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  const devices = status.quietDevices ?? [];
+  if (devices.length === 0) return null;
+  return (
+    <ul className="space-y-1" data-slot="apple-health-quiet-devices">
+      {devices.map((device) => (
+        <li
+          key={`${device.model ?? ""}:${device.quietSince}`}
+          className="text-sm"
+          data-testid="apple-health-quiet-device"
+        >
+          {t("settings.appleHealth.quietSince", {
+            device:
+              device.model ?? t("settings.appleHealth.quietDeviceUnnamed"),
+            since: formatHealthInstant(device.quietSince, t, fmt),
+          })}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /**
@@ -399,6 +433,7 @@ export function AppleHealthCard({ enabled }: { enabled: boolean }) {
         ) : undefined
       }
     >
+      {status && !isError ? <QuietDevices status={status} /> : null}
       {isError ? (
         <QueryErrorRow
           error={error}

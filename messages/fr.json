@@ -8194,7 +8194,9 @@
         "never": "Pas encore reçu",
         "lastBackfill": "Historique rattrapé {relative}",
         "lastEnteredHere": "Dernière saisie ici {relative}"
-      }
+      },
+      "quietSince": "{device} : silencieux depuis {since}. Il suffit d'y ouvrir HealthLog une fois.",
+      "quietDeviceUnnamed": "Un iPhone"
     },
     "glucoseReference": {
       "title": "Plage de référence du glucose",
@@ -10395,6 +10397,15 @@
       "title": "Un changement durable",
       "bodyUp": "Votre valeur {metric} reste plus haute depuis le {date}. Insights montre l'avant et l'après.",
       "bodyDown": "Votre valeur {metric} reste plus basse depuis le {date}. Insights montre l'avant et l'après."
+    },
+    "eventSyncStalled": "Une source ne se synchronise plus",
+    "eventSyncStalledDesc": "Quand un iPhone, une bague, une montre ou une balance qui envoie des données chaque jour se tait. Une fois par interruption, en journée, au plus une fois par jour.",
+    "syncStalled": {
+      "title": "{provider} ne transmet plus",
+      "appleYesterday": "{provider} n'a rien envoyé depuis hier. Il suffit d'ouvrir HealthLog une fois.",
+      "appleSince": "{provider} n'a rien envoyé depuis le {date}. Il suffit d'ouvrir HealthLog une fois.",
+      "sourceYesterday": "{provider} n'a rien envoyé depuis hier. Ouvrez son app ou reconnectez-le dans HealthLog.",
+      "sourceSince": "{provider} n'a rien envoyé depuis le {date}. Ouvrez son app ou reconnectez-le dans HealthLog."
     },
     "relayTest": {
       "title": "Notification de test HealthLog",
@@ -15396,6 +15407,7 @@
       "snooze": "snooze, plus tard, reporter, rappel",
       "securityAlerts": "sécurité, connexion, nouvel appareil, alerte",
       "lastingChange": "changement durable, constante, tendance, pouls au repos, tension",
+      "syncStalled": "synchronisation arrêtée, silencieux, aucune donnée, Apple Health, arrière-plan",
       "theme": "thème, mode sombre, mode clair, apparence, couleurs",
       "gadgetbridge": "Gadgetbridge, Android, montre connectée, base de données",
       "fhirBundle": "FHIR, bundle, dossier médical, importation",

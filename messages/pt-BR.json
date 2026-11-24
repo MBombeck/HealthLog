@@ -8194,7 +8194,9 @@
         "never": "Ainda não recebido",
         "lastBackfill": "Histórico em dia {relative}",
         "lastEnteredHere": "Último registro feito aqui {relative}"
-      }
+      },
+      "quietSince": "{device}: em silêncio desde {since}. Basta abrir o HealthLog nele uma vez.",
+      "quietDeviceUnnamed": "Um iPhone"
     },
     "glucoseReference": {
       "title": "Faixa de referência da glicose",
@@ -10395,6 +10397,15 @@
       "title": "Uma mudança persistente",
       "bodyUp": "Seu {metric} se manteve mais alto desde {date}. Insights mostra o antes e o depois.",
       "bodyDown": "Seu {metric} se manteve mais baixo desde {date}. Insights mostra o antes e o depois."
+    },
+    "eventSyncStalled": "Uma fonte parou de sincronizar",
+    "eventSyncStalledDesc": "Quando um iPhone, anel, relógio ou balança que envia dados todos os dias fica em silêncio. Uma vez por pausa, durante o dia, no máximo uma vez por dia.",
+    "syncStalled": {
+      "title": "{provider} está em silêncio",
+      "appleYesterday": "{provider} não envia nada desde ontem. Basta abrir o HealthLog uma vez.",
+      "appleSince": "{provider} não envia nada desde {date}. Basta abrir o HealthLog uma vez.",
+      "sourceYesterday": "{provider} não envia nada desde ontem. Abra o app dele ou reconecte no HealthLog.",
+      "sourceSince": "{provider} não envia nada desde {date}. Abra o app dele ou reconecte no HealthLog."
     },
     "relayTest": {
       "title": "Notificação de teste do HealthLog",
@@ -15396,6 +15407,7 @@
       "snooze": "adiar, mais tarde, soneca, snooze",
       "securityAlerts": "segurança, login, entrada, dispositivo novo, alerta",
       "lastingChange": "mudança duradoura, sinal vital, tendência, frequência em repouso, pressão",
+      "syncStalled": "sincronização parada, silêncio, sem dados, Apple Health, segundo plano",
       "theme": "tema, modo escuro, modo claro, aparência, cores",
       "gadgetbridge": "Gadgetbridge, Android, relógio inteligente, banco de dados",
       "fhirBundle": "FHIR, pacote, prontuário, importar",

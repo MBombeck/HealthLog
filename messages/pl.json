@@ -8194,7 +8194,9 @@
         "never": "Jeszcze nie odebrano",
         "lastBackfill": "Historia uzupełniona {relative}",
         "lastEnteredHere": "Ostatni wpis tutaj {relative}"
-      }
+      },
+      "quietSince": "{device}: cisza od {since}. Wystarczy raz otworzyć na nim HealthLog.",
+      "quietDeviceUnnamed": "iPhone"
     },
     "glucoseReference": {
       "title": "Zakres referencyjny glukozy",
@@ -10395,6 +10397,15 @@
       "title": "Trwała zmiana",
       "bodyUp": "Twój parametr {metric} utrzymuje się wyżej od {date}. Insights pokazuje stan przed i po.",
       "bodyDown": "Twój parametr {metric} utrzymuje się niżej od {date}. Insights pokazuje stan przed i po."
+    },
+    "eventSyncStalled": "Źródło przestało synchronizować",
+    "eventSyncStalledDesc": "Gdy iPhone, pierścień, zegarek lub waga, które wysyłają dane codziennie, ucichną. Raz na przerwę, w ciągu dnia, najwyżej raz dziennie.",
+    "syncStalled": {
+      "title": "{provider}: brak danych",
+      "appleYesterday": "Od wczoraj z {provider} nic nie dotarło. Wystarczy raz otworzyć HealthLog.",
+      "appleSince": "Od {date} z {provider} nic nie dotarło. Wystarczy raz otworzyć HealthLog.",
+      "sourceYesterday": "Od wczoraj z {provider} nic nie dotarło. Otwórz aplikację {provider} lub połącz ponownie w HealthLog.",
+      "sourceSince": "Od {date} z {provider} nic nie dotarło. Otwórz aplikację {provider} lub połącz ponownie w HealthLog."
     },
     "relayTest": {
       "title": "Powiadomienie testowe HealthLog",
@@ -15396,6 +15407,7 @@
       "snooze": "drzemka, później, odłóż, przypomnij później",
       "securityAlerts": "bezpieczeństwo, logowanie, nowe urządzenie, alert",
       "lastingChange": "trwała zmiana, parametr życiowy, trend, tętno spoczynkowe, ciśnienie",
+      "syncStalled": "synchronizacja zatrzymana, cisza, brak danych, Apple Health, tło",
       "theme": "motyw, tryb ciemny, tryb jasny, wygląd, kolory",
       "gadgetbridge": "Gadgetbridge, Android, smartwatch, baza danych",
       "fhirBundle": "FHIR, pakiet, dokumentacja medyczna, import",

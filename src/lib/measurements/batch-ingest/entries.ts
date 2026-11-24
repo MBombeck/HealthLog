@@ -55,6 +55,11 @@ export interface BatchIngestInput {
   entries: BatchIngestEntry[];
   syncTrigger: HealthKitRequestSyncTrigger | undefined;
   ipAddress: string | null;
+  /**
+   * The caller's `X-Device-Id`: the device the stall detector stamps as
+   * delivering (`recordDeviceHealthIngest`). Not a credential.
+   */
+  deviceToken?: string | null;
 }
 
 /**

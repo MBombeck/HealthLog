@@ -87,6 +87,7 @@ export async function ingestMeasurementBatch(
     unchangedStatsRows: writer.unchangedStatsRows,
     hourLanded: hours.hourLanded,
     hourChanged: hours.hourChanged,
+    deviceToken: input.deviceToken ?? null,
   });
 
   const tallies: BatchTallies = writer;

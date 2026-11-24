@@ -352,6 +352,11 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "skipped_not_due",
   "skipped_outside_window",
   "slots_collapsed",
+  // The stall notice after the watchdog: iPhones newly flagged as quiet,
+  // and the owner notices sent and failed.
+  "stall_devices_flagged",
+  "stall_notices_failed",
+  "stall_notices_sent",
   "states_deleted",
   "stopped_early",
   "stored",

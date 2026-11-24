@@ -146,6 +146,13 @@ export const EVENT_TYPES = [
   // Default OFF, see EVENT_DEFAULT_ENABLED. On a managed profile it reaches
   // the guardians, like a medication reminder.
   "SEIZURE_CLUSTER",
+  // A source that delivers on its own every day has gone quiet: an iPhone
+  // whose Apple Health upload stopped (a force-quit app gets no silent push
+  // and no background delivery, so only a visible notification still reaches
+  // it), or a ring, watch or cloud the integration watchdog flagged
+  // (`src/lib/sync-stall/notice.ts`). Sent once per stall, in the person's
+  // daytime, and at most once a day. Default ON, see EVENT_DEFAULT_ENABLED.
+  "SYNC_STALLED",
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -249,6 +256,12 @@ export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   // about clusters turns it on per channel, so nobody is woken by a push
   // they never asked for.
   SEIZURE_CLUSTER: false,
+  // ON by default: a source that stopped delivering is lost data the person
+  // cannot see from the phone that stopped, and the notice is the only way it
+  // reaches them. It is built not to nag (once per stall, its own cadence
+  // decides, daytime only, one a day), and a switch in Settings >
+  // Notifications > Alerts turns it off on every channel.
+  SYNC_STALLED: true,
 };
 
 /** Event types only an admin is ever sent, and only an admin is shown. */
