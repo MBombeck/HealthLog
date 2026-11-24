@@ -54,6 +54,8 @@ import { prisma } from "@/lib/db";
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { getEvent } from "@/lib/logging/context";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
+import { projectUpcomingIntakes } from "@/lib/medications/scheduling/project-today-intakes";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   activityShowsDose,
   STARTABLE_MEDICATION_WHERE,
@@ -169,7 +171,8 @@ export function laRelayEligible(
 }
 
 /**
- * The open tracked doses an Activity may show at `now`, soonest first: the
+ * The open tracked doses an Activity may show at `now`, soonest first, once
+ * their rows are in place ({@link projectUpcomingIntakes}): the
  * resolver calls them pending, due or overdue (never missed), and their slot
  * lies no more than {@link ACTIVITY_LEAD_MS} ahead. Of the past, only what
  * the relay could still count from is read (`COUNTDOWN_PAST_S`); how long a
@@ -180,6 +183,15 @@ export async function openActivityDoses(
   now: Date,
   medicationId?: string,
 ): Promise<ActivityDose[]> {
+  // The rows come from the server's own projection, not from a read of the
+  // today list: a person who does not open the app that day still gets the
+  // Activity of a dose ahead, and one just past midnight from the evening.
+  await projectUpcomingIntakes({
+    userId,
+    userTz: await resolveUserTimezone(userId),
+    now,
+    aheadMs: ACTIVITY_LEAD_MS,
+  });
   const rows = await prisma.medicationIntakeEvent.findMany({
     where: {
       userId,
