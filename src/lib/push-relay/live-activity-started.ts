@@ -9,24 +9,28 @@
  * is the server's record of it: its `ref` is the start id, `medicationId`
  * and `slotInstant` its dose. The app learns the dose over the
  * authenticated channel only, on `GET /api/auth/me` and in the
- * `POST /api/devices` answer:
+ * `POST /api/devices` answer, both read through {@link liveActivityStartsState}:
  *
- * - `push.device.liveActivityStarts`: every start the relay accepted on the
- *   device that may still run, by start id. An app that reads the `s`
- *   attribute names each Activity exactly.
+ * - `push.device.liveActivityStarts`: every start that may still run, by
+ *   start id, always present (empty when none runs). A start is listed from
+ *   the moment the server records it (`state: "pending"`), so an Activity
+ *   that appears before the relay's answer has a name at once; once the
+ *   relay accepted it, it reads `"accepted"`. A start the relay refused, or
+ *   that was dropped at its deadline, started nothing on the device and
+ *   leaves the list: no Activity can carry its id.
  * - `push.device.liveActivityStarted`: the device's last start alone, for
- *   builds that read no start id (1.49).
+ *   builds that read no start id (1.49), and only once accepted. It is
+ *   always an entry of the list, the same object.
  *
- * A start is named only once the relay accepted it: one still in flight, or
- * one that failed, started nothing on the device. It is no longer named once
- * there is nothing left to show: the slot was taken, skipped or turned
- * missed, its row is gone, the medication was paused, ended or deleted, or
- * its Live Activity opt-in (`liveActivityEnabled`) was turned off, or the
- * system has ended the Activity ({@link RELAY_ACTIVITY_RUNNING_MAX_MS}). The
- * server ends an Activity only in those cases (`liveActivityEndState`, and
- * the relay pass for a server-started Activity whose medication may no
- * longer have one), so an ended Activity reads as gone too. A server-started
- * Activity ended because the app's own Activity shows the same dose
+ * A start leaves both once there is nothing left to show: the slot was
+ * taken, skipped or turned missed, its row is gone, the medication was
+ * paused, ended or deleted, or its Live Activity opt-in
+ * (`liveActivityEnabled`) was turned off, or the system has ended the
+ * Activity ({@link RELAY_ACTIVITY_RUNNING_MAX_MS}). The server ends an
+ * Activity only in those cases (`liveActivityEndState`, and the relay pass
+ * for a server-started Activity whose medication may no longer have one),
+ * so an ended Activity reads as gone too. A server-started Activity ended
+ * because the app's own Activity shows the same dose
  * (`supersededRelayActivities`) stays named: the dose stays held, so no
  * second start follows. An Activity the person dismissed on the device stays
  * named until the slot is answered; the app knows it dismissed it.
@@ -37,12 +41,12 @@ import { STARTABLE_MEDICATION_WHERE } from "@/lib/push-relay/activity-slot";
 import { LA_START_EVENT } from "@/lib/push-relay/live-activity-settle";
 
 /**
- * How long a relay-started Activity can still be running after the relay
- * accepted its start. ActivityKit ends an Activity eight hours after it
- * started; an ended one may stay on the lock screen up to twelve hours in
- * all, but it takes no further update, cannot be ended twice, and is not an
- * Activity the app reports as running. So past eight hours a start is over
- * whatever the server's records say, and holds no other start back.
+ * How long a relay-started Activity can still be running after its start.
+ * ActivityKit ends an Activity eight hours after it started; an ended one
+ * may stay on the lock screen up to twelve hours in all, but it takes no
+ * further update, cannot be ended twice, and is not an Activity the app
+ * reports as running. So past eight hours a start is over whatever the
+ * server's records say, and holds no other start back.
  */
 export const RELAY_ACTIVITY_RUNNING_MAX_MS = 8 * 3600_000;
 
@@ -61,30 +65,16 @@ export interface LiveActivityStart {
   startId: string;
   medicationId: string;
   slotInstant: string;
-  /** When the relay accepted the start. */
+  /** When the server issued the start. */
   startedAt: string;
+  /** `pending` while the relay has not answered, `accepted` once it took it. */
+  state: "pending" | "accepted";
 }
 
-/** The device's last start; the same shape, for builds without start ids. */
+/** The device's last start, once accepted: always an entry of the list. */
 export type LiveActivityStarted = LiveActivityStart;
 
-type StartRow = {
-  ref: string;
-  status: string;
-  medicationId: string | null;
-  slotInstant: Date | null;
-  acceptedAt: Date | null;
-};
-
-const START_ROW_SELECT = {
-  ref: true,
-  status: true,
-  medicationId: true,
-  slotInstant: true,
-  acceptedAt: true,
-} as const;
-
-/** Whether the dose of `row` is still open on a medication that keeps it. */
+/** Whether the dose is still open on a medication that keeps its Activity. */
 async function doseStillOpen(
   userId: string,
   medicationId: string,
@@ -107,75 +97,67 @@ async function doseStillOpen(
   return open !== null;
 }
 
-/** The start `row` names, once the relay accepted it with its dose. */
-function named(row: StartRow): (LiveActivityStart & { slot: Date }) | null {
-  const { medicationId, slotInstant, acceptedAt } = row;
-  if (row.status !== "accepted" || !medicationId || !slotInstant) return null;
-  if (!acceptedAt) return null;
-  return {
-    startId: row.ref,
-    medicationId,
-    slotInstant: slotInstant.toISOString(),
-    startedAt: acceptedAt.toISOString(),
-    slot: slotInstant,
-  };
-}
-
-/** The start without the slot as a date, as the app reads it. */
-function wire({ slot: _slot, ...start }: LiveActivityStart & { slot: Date }) {
-  return start;
-}
-
-/** The dose of the device's last start, while it may still show. */
-export async function liveActivityStartedOf(device: {
-  id: string;
-  userId: string;
-}): Promise<LiveActivityStarted | null> {
-  const last = await prisma.pushRelayDelivery.findFirst({
-    where: { deviceId: device.id, eventType: LA_START_EVENT },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    select: START_ROW_SELECT,
-  });
-  const start = last ? named(last) : null;
-  if (!start) return null;
-  if (!(await doseStillOpen(device.userId, start.medicationId, start.slot))) {
-    return null;
-  }
-  return wire(start);
-}
-
 /**
- * The starts the relay accepted on the device that may still run, oldest
- * first, each with its start id and dose.
+ * Both start fields of `push.device` for one device: the list of starts
+ * that may still run, oldest first, and the last start when it is accepted
+ * and listed. `liveActivityStarted` is taken from the list itself, so its
+ * `startId` is always one of the list's.
  */
-export async function liveActivityStartsOf(
+export async function liveActivityStartsState(
   device: { id: string; userId: string },
   now: Date = new Date(),
-): Promise<LiveActivityStart[]> {
-  const rows = await prisma.pushRelayDelivery.findMany({
-    where: {
-      deviceId: device.id,
-      eventType: LA_START_EVENT,
-      status: "accepted",
-      medicationId: { not: null },
-      acceptedAt: {
-        gte: new Date(now.getTime() - RELAY_ACTIVITY_RUNNING_MAX_MS),
+): Promise<{
+  liveActivityStarts: LiveActivityStart[];
+  liveActivityStarted: LiveActivityStarted | null;
+}> {
+  const [rows, last] = await Promise.all([
+    prisma.pushRelayDelivery.findMany({
+      where: {
+        deviceId: device.id,
+        eventType: LA_START_EVENT,
+        status: { in: ["pending", "accepted"] },
+        medicationId: { not: null },
+        slotInstant: { not: null },
+        createdAt: {
+          gte: new Date(now.getTime() - RELAY_ACTIVITY_RUNNING_MAX_MS),
+        },
       },
-    },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    take: STARTS_LISTED_MAX,
-    select: START_ROW_SELECT,
-  });
+      // The newest, so the last start is never cut off; listed oldest first.
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: STARTS_LISTED_MAX,
+      select: {
+        ref: true,
+        status: true,
+        medicationId: true,
+        slotInstant: true,
+        createdAt: true,
+      },
+    }),
+    prisma.pushRelayDelivery.findFirst({
+      where: { deviceId: device.id, eventType: LA_START_EVENT },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { ref: true },
+    }),
+  ]);
   const starts: LiveActivityStart[] = [];
-  for (const row of rows) {
-    const start = named(row);
-    if (!start) continue;
-    if (!(await doseStillOpen(device.userId, start.medicationId, start.slot))) {
+  for (const row of rows.reverse()) {
+    const { medicationId, slotInstant } = row;
+    if (!medicationId || !slotInstant) continue;
+    if (!(await doseStillOpen(device.userId, medicationId, slotInstant))) {
       continue;
     }
-    starts.push(wire(start));
+    starts.push({
+      startId: row.ref,
+      medicationId,
+      slotInstant: slotInstant.toISOString(),
+      startedAt: row.createdAt.toISOString(),
+      state: row.status === "accepted" ? "accepted" : "pending",
+    });
   }
-  return starts;
+  const started =
+    starts.find((s) => s.startId === last?.ref && s.state === "accepted") ??
+    null;
+  return { liveActivityStarts: starts, liveActivityStarted: started };
 }
 
 /** The relay starts of a device the app has not registered yet. */

@@ -90,10 +90,45 @@ async function relayBlock(session: SessionFixture) {
   return me.data.push.relay;
 }
 
-async function startedOnMe(session: SessionFixture) {
+type StartEntry = {
+  startId: string;
+  medicationId: string;
+  slotInstant: string;
+  startedAt: string;
+  state: "pending" | "accepted";
+};
+
+/**
+ * The two start fields as `push.device` carries them, with the contract the
+ * app relies on checked on every read: the list is always present, and the
+ * last start, when named, is one of its entries and accepted.
+ */
+function checkedStarts(
+  device: {
+    liveActivityStarted: StartEntry | null;
+    liveActivityStarts: StartEntry[];
+  } | null,
+) {
+  expect(device).not.toBeNull();
+  const { liveActivityStarted: started, liveActivityStarts: starts } = device!;
+  expect(Array.isArray(starts)).toBe(true);
+  if (started) {
+    expect(started.state).toBe("accepted");
+    expect(starts).toContainEqual(started);
+  }
+  return { started, starts };
+}
+
+/** The device's start fields on `/api/auth/me`, checked. */
+async function startsOn(session: SessionFixture) {
   const { GET } = await import("@/app/api/auth/me/route");
   const me = await callRoute<{
-    push: { device: { liveActivityStarted: unknown } | null };
+    push: {
+      device: {
+        liveActivityStarted: StartEntry | null;
+        liveActivityStarts: StartEntry[];
+      } | null;
+    };
   }>(GET, {
     method: "GET",
     route: "/api/auth/me",
@@ -103,7 +138,11 @@ async function startedOnMe(session: SessionFixture) {
       skip: "the account payload's features block predates this check",
     },
   });
-  return me.data.push.device?.liveActivityStarted;
+  return checkedStarts(me.data.push.device);
+}
+
+async function startedOnMe(session: SessionFixture) {
+  return (await startsOn(session)).started;
 }
 
 async function setUp() {
@@ -316,6 +355,23 @@ describe("the Live Activity consent", () => {
   });
 });
 
+describe("the start fields on the device block", () => {
+  it("are always present: an empty list and no last start when nothing was started", async () => {
+    const t = await setUp();
+    const registered = await t.reg({});
+    expect(
+      checkedStarts(
+        registered.data.push as Parameters<typeof checkedStarts>[0],
+      ),
+    ).toEqual({ started: null, starts: [] });
+    expect(await startsOn(t.session)).toEqual({ started: null, starts: [] });
+    // With the consent and the operator's switch off as well.
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "off");
+    await t.reg({ liveActivityConsent: t.consent() });
+    expect(await startsOn(t.session)).toEqual({ started: null, starts: [] });
+  });
+});
+
 describe("start and update", () => {
   it("are held back while the operator's switch is off", async () => {
     vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "");
@@ -385,9 +441,13 @@ describe("start and update", () => {
       medicationId: medication.id,
       slotInstant: slot.toISOString(),
       startId: (await lastStart())?.ref,
-      startedAt: (await lastStart())?.acceptedAt?.toISOString(),
+      startedAt: (await lastStart())?.createdAt.toISOString(),
+      state: "accepted",
     };
-    expect(registered.data.push.liveActivityStarted).toEqual(started);
+    expect(
+      checkedStarts(registered.data.push as Parameters<typeof checkedStarts>[0])
+        .started,
+    ).toEqual(started);
     expect(await startedOnMe(t.session)).toEqual(started);
     // Once the slot is answered there is nothing left to show.
     await getPrismaClient().medicationIntakeEvent.updateMany({
@@ -483,7 +543,20 @@ describe("a start or update counts once the relay accepted it", () => {
         ? { status: 503, error: "apns_unavailable", retryAfter: 5 }
         : null;
     expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
-    expect(await startedOnMe(t.session)).toBeNull();
+    // Listed as pending from the moment the server recorded it, so an
+    // Activity that shows up before the relay's answer has its name; the
+    // field for builds without start ids waits for the acceptance.
+    const pending = await startsOn(t.session);
+    expect(pending.started).toBeNull();
+    expect(pending.starts).toEqual([
+      {
+        startId: (await lastStart())?.ref,
+        medicationId: medication.id,
+        slotInstant: slot.toISOString(),
+        startedAt: (await lastStart())?.createdAt.toISOString(),
+        state: "pending",
+      },
+    ]);
     expect(await lastStart()).toMatchObject({
       status: "pending",
       acceptedAt: null,
@@ -504,6 +577,32 @@ describe("a start or update counts once the relay accepted it", () => {
     });
     expect((await lastStart())?.status).toBe("accepted");
     expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+  });
+
+  it("lists a start while the relay has not answered, and drops it once the relay refuses it", async () => {
+    const t = await setUp();
+    await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(),
+    });
+    await dueDose(t.session.userId, 30);
+    fake.itemAnswer = (item) =>
+      item.class === "liveactivity"
+        ? { status: 503, error: "apns_unavailable", retryAfter: 5 }
+        : null;
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    expect((await startsOn(t.session)).starts).toMatchObject([
+      { state: "pending" },
+    ]);
+    // The retry is refused for good: the start began nothing on the device,
+    // so no Activity can carry its id, and it leaves the list.
+    fake.itemAnswer = (item) =>
+      item.class === "liveactivity"
+        ? { status: 403, error: "activity_refused" }
+        : null;
+    await retryOutbox();
+    expect((await lastStart())?.status).toBe("failed");
+    expect(await startsOn(t.session)).toEqual({ started: null, starts: [] });
   });
 
   it("forgets a refused start and tries it again after the cool-down", async () => {
@@ -1739,21 +1838,8 @@ describe("one Live Activity per dose, named by its start id", () => {
   const device = () =>
     getPrismaClient().device.findFirstOrThrow({ where: { apnsToken: TOKEN } });
 
-  async function startsOnMe(session: SessionFixture) {
-    const { GET } = await import("@/app/api/auth/me/route");
-    const me = await callRoute<{
-      push: { device: { liveActivityStarts: unknown } | null };
-    }>(GET, {
-      method: "GET",
-      route: "/api/auth/me",
-      auth: session,
-      headers: { "x-device-id": `device-${TOKEN.slice(0, 6)}` },
-      contract: {
-        skip: "the account payload's features block predates this check",
-      },
-    });
-    return me.data.push.device?.liveActivityStarts;
-  }
+  const startsOnMe = async (session: SessionFixture) =>
+    (await startsOn(session)).starts;
 
   /** The end path a take runs (`medication-intake-sync.ts`), for one device. */
   async function endAnswered(userId: string) {
@@ -1828,12 +1914,14 @@ describe("one Live Activity per dose, named by its start id", () => {
         medicationId: a.medication.id,
         slotInstant: a.slot.toISOString(),
         startedAt: expect.any(String),
+        state: "accepted",
       },
       {
         startId: startIdOf(1),
         medicationId: b.medication.id,
         slotInstant: b.slot.toISOString(),
         startedAt: expect.any(String),
+        state: "accepted",
       },
     ]);
     // Each dose once: no further start, while both run.

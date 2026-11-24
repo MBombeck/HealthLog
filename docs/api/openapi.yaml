@@ -49252,8 +49252,11 @@ components:
             stats: rows; a write older than the stored one answers skipped with reason stale, and without computedAt the
             last write wins. `push.live-activity-start-id`: POST /api/devices takes liveActivityTokens[].startId, the s
             attribute of a relay-started HealthLogDoseAttributes Activity, and names its dose from that start;
-            push.device.liveActivityStarts lists every start that may still run by id; once a device reports one, it may
-            run one relay-started Activity per dose (at most four Activities in all), and a new start ends no other."
+            push.device.liveActivityStarts, always present (empty when none runs), lists every start that may still run
+            by id with startedAt and state (pending from the moment the server records it, accepted once the relay took
+            it; a refused or dropped start leaves it), and liveActivityStarted, when not null, is one of its entries;
+            once a device reports one, it may run one relay-started Activity per dose (at most four Activities in all),
+            and a new start ends no other."
       required:
         - version
         - buildSha
@@ -63130,33 +63133,43 @@ components:
           anyOf:
             - type: object
               properties:
+                startId:
+                  type: string
+                  description: "v1.50.0. The start id, the `s` attribute the relay writes into the Activity's `HealthLogDoseAttributes`:
+                    opaque ASCII of at most 64 characters, random, holding no medication, dose or time. Compare it byte
+                    for byte."
                 medicationId:
                   type: string
                 slotInstant:
                   type: string
                   format: date-time
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-                startId:
-                  type: string
-                  description: v1.50.0. The start's id, as in `liveActivityStarts`.
                 startedAt:
                   type: string
                   format: date-time
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-                  description: v1.50.0. When the relay accepted the start.
+                  description: v1.50.0. When the server issued the start.
+                state:
+                  type: string
+                  enum:
+                    - pending
+                    - accepted
+                  description: v1.50.0. `pending` while the relay has not answered the start, `accepted` once it took it.
               required:
+                - startId
                 - medicationId
                 - slotInstant
-                - startId
                 - startedAt
+                - state
               additionalProperties: false
             - type: "null"
-          description: "The dose of the last Live Activity the server started on this device (over the relay). The start push
-            never carries it, so the app reads it here, and in the `POST /api/devices` answer right after it registers
-            the started Activity's token (`relayStart: true`). Null until the relay accepted the start (a start still in
-            flight or one the relay refused shows null; a refused one is tried again later), when no server start is
-            running, or once that slot is taken, skipped or missed, its medication paused, ended or deleted, or the
-            Activity ended. Names one start only: an app that reads the start id uses `liveActivityStarts`."
+          description: "The last Live Activity the server started on this device (over the relay), for app builds that read no
+            start id. The start push never carries the dose, so the app reads it here, and in the `POST /api/devices`
+            answer right after it registers the started Activity's token (`relayStart: true`). Null until the relay
+            accepted the start (a start still in flight or one the relay refused shows null; a refused one is tried
+            again later), when no server start is running, or once that slot is taken, skipped or missed, its medication
+            paused, ended or deleted, or the Activity ended or is older than eight hours. Whenever it is not null it is
+            the entry of `liveActivityStarts` with the same `startId`, so it always carries `state: \"accepted\"`."
         liveActivityStarts:
           type: array
           items:
@@ -63164,8 +63177,9 @@ components:
             properties:
               startId:
                 type: string
-                description: "The start id, the `s` attribute the relay writes into the Activity's `HealthLogDoseAttributes`: opaque
-                  ASCII of at most 64 characters, random, holding no medication, dose or time."
+                description: "v1.50.0. The start id, the `s` attribute the relay writes into the Activity's `HealthLogDoseAttributes`:
+                  opaque ASCII of at most 64 characters, random, holding no medication, dose or time. Compare it byte
+                  for byte."
               medicationId:
                 type: string
               slotInstant:
@@ -63176,17 +63190,27 @@ components:
                 type: string
                 format: date-time
                 pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-                description: When the relay accepted the start.
+                description: v1.50.0. When the server issued the start.
+              state:
+                type: string
+                enum:
+                  - pending
+                  - accepted
+                description: v1.50.0. `pending` while the relay has not answered the start, `accepted` once it took it.
             required:
               - startId
               - medicationId
               - slotInstant
               - startedAt
+              - state
             additionalProperties: false
-          description: "v1.50.0. Every Live Activity the server started on this device that may still run, oldest first: started
-            over the relay, accepted by it in the last eight hours, its dose still open on a medication that keeps its
-            Live Activity opt-in. Name a relay-started Activity by the entry whose `startId` equals its `s` attribute;
-            an Activity whose id is not listed has nothing left to show. Empty when none runs."
+          description: 'v1.50.0. Every Live Activity the server started on this device that may still run, oldest first: started
+            over the relay in the last eight hours, its dose still open on a medication that keeps its Live Activity
+            opt-in. Always present, an empty array when none runs. A start is listed from the moment the server records
+            it (`state: "pending"`), before the relay has answered, so an Activity that appears early already has a
+            name; a start the relay refuses or drops started nothing and leaves the list. Name a relay-started Activity
+            by the entry whose `startId` equals its `s` attribute; an Activity whose id is not listed has nothing left
+            to show.'
       required:
         - transport
         - envelope

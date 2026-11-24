@@ -24,8 +24,8 @@
  *
  * `push.device`: `transport` (`relay` | `direct` | `none`), `consent`,
  * `relayState`, `intakeSync` (`ok` | `degraded`), `liveActivityConsent`,
- * `liveActivityStarted` (`{ medicationId, slotInstant }` | null) and
- * `liveActivityStarts` (`[{ startId, medicationId, slotInstant }]`).
+ * `liveActivityStarted` (the last accepted start | null) and
+ * `liveActivityStarts` (every start that may still run, always present).
  */
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
@@ -50,8 +50,7 @@ import {
 import { readOperatorRow } from "@/lib/settings/operator-row";
 import { relayStateAt } from "@/lib/push-relay/relay-state";
 import {
-  liveActivityStartedOf,
-  liveActivityStartsOf,
+  liveActivityStartsState,
   type LiveActivityStart,
   type LiveActivityStarted,
 } from "@/lib/push-relay/live-activity-started";
@@ -408,15 +407,15 @@ async function devicePushBlockOf(
 ): Promise<DevicePushBlock> {
   const row = inputs.registration;
   const transport = device ? displayTransport(device, inputs) : "none";
-  const [intakeSync, senderKeys, liveActivityStarted, liveActivityStarts] =
-    await Promise.all([
-      device && transport === "relay"
-        ? intakeSyncOf(device, row).then((sync) => sync.state)
-        : ("ok" as const),
-      inputs.senderKeys,
-      device ? liveActivityStartedOf(device) : null,
-      device ? liveActivityStartsOf(device) : [],
-    ]);
+  const [intakeSync, senderKeys, starts] = await Promise.all([
+    device && transport === "relay"
+      ? intakeSyncOf(device, row).then((sync) => sync.state)
+      : ("ok" as const),
+    inputs.senderKeys,
+    device
+      ? liveActivityStartsState(device)
+      : { liveActivityStarts: [], liveActivityStarted: null },
+  ]);
   return {
     transport,
     envelope: device?.pushKeyPublic && transport !== "none" ? 1 : null,
@@ -428,8 +427,8 @@ async function devicePushBlockOf(
     liveActivityConsent: Boolean(
       device?.relayConsentAt && device.liveActivityConsentAt,
     ),
-    liveActivityStarted,
-    liveActivityStarts,
+    liveActivityStarted: starts.liveActivityStarted,
+    liveActivityStarts: starts.liveActivityStarts,
   };
 }
 

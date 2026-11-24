@@ -96,5 +96,5 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
   "measurement.stats-computed-at":
     "POST /api/measurements/batch accepts an optional computedAt (ISO 8601) on stats: rows; a write older than the stored one answers skipped with reason stale, and without computedAt the last write wins.",
   "push.live-activity-start-id":
-    "POST /api/devices takes liveActivityTokens[].startId, the s attribute of a relay-started HealthLogDoseAttributes Activity, and names its dose from that start; push.device.liveActivityStarts lists every start that may still run by id; once a device reports one, it may run one relay-started Activity per dose (at most four Activities in all), and a new start ends no other.",
+    "POST /api/devices takes liveActivityTokens[].startId, the s attribute of a relay-started HealthLogDoseAttributes Activity, and names its dose from that start; push.device.liveActivityStarts, always present (empty when none runs), lists every start that may still run by id with startedAt and state (pending from the moment the server records it, accepted once the relay took it; a refused or dropped start leaves it), and liveActivityStarted, when not null, is one of its entries; once a device reports one, it may run one relay-started Activity per dose (at most four Activities in all), and a new start ends no other.",
 };
