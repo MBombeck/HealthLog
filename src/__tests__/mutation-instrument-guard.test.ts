@@ -26,11 +26,11 @@
  */
 import { existsSync, globSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
 import strykerConfig from "../../stryker.config.mjs";
-import mutationConfig from "../../vitest.mutation.config.mts";
 import floors from "../../stryker.floors.json";
 import { requireFloor } from "./helpers/source-files";
 
@@ -48,7 +48,11 @@ const mutated = requireFloor(
 );
 const mutatedSet = new Set(mutated);
 
-const includePatterns = (mutationConfig.test?.include ?? []) as string[];
+// Loaded by URL: the compiler refuses a static `.mts` import path.
+const mutationConfig = (await import(
+  pathToFileURL(join(ROOT, "vitest.mutation.config.mts")).href
+)) as { default: { test?: { include?: string[] } } };
+const includePatterns = mutationConfig.default.test?.include ?? [];
 const mutationTests = new Set(
   requireFloor(
     "tests in vitest.mutation.config.mts",
