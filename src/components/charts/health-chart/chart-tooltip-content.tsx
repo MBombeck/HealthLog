@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 import type { useFormatters } from "@/lib/i18n/context";
-import type { ComparisonBaseline } from "@/lib/dashboard-layout";
+import type { ComparisonBaseline } from "@/lib/dashboard/chart-overlay-prefs";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { pointPeriodLabel, READINGS_KEY } from "@/lib/charts/range-grain";
 

@@ -70,10 +70,8 @@ import {
 } from "@/lib/analytics/sleep-night";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
-import {
-  resolveDashboardLayout,
-  type ComparisonBaseline,
-} from "@/lib/dashboard-layout";
+import { resolveDashboardLayout } from "@/lib/dashboard-layout";
+import { type ComparisonBaseline } from "@/lib/dashboard/chart-overlay-prefs";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { Prisma as PrismaSql } from "@/generated/prisma/client";
 import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";

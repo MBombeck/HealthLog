@@ -21,7 +21,7 @@ import { RING_GRADIENT, type RingHue } from "./ring-hues";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import { METRIC_PROVENANCE } from "./standards";
 import { ScoreHistoryChart, ScoreTrendChartDynamic } from "./score-history";
-import type { ChartOverlayKey } from "@/lib/dashboard-layout";
+import type { ChartOverlayKey } from "@/lib/dashboard/chart-overlay-prefs";
 
 /**
  * v1.10.0 — the data-bound wrapper that fetches a composite/persisted derived

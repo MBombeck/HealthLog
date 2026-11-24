@@ -19,7 +19,7 @@
  * wire field) — the VALUE has always been calendar days.
  */
 
-import type { ChartRangePoints } from "@/lib/dashboard-layout";
+import type { ChartRangePoints } from "@/lib/dashboard/chart-overlay-prefs";
 
 export type DataWindow = "last7days" | "last30days" | "last90days" | "allTime";
 

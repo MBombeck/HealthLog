@@ -26,7 +26,7 @@ import {
 import type {
   ChartRangePoints,
   ComparisonBaseline,
-} from "@/lib/dashboard-layout";
+} from "@/lib/dashboard/chart-overlay-prefs";
 import { computePaddedYDomain, niceYAxis } from "@/lib/insights/chart-y-domain";
 import { trendLineByTime } from "@/lib/stats/linear-fit";
 

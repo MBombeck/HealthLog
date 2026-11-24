@@ -3,13 +3,13 @@
 import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { type DashboardLayout } from "@/lib/dashboard-layout";
 import {
   DEFAULT_CHART_OVERLAY_PREFS,
   type ChartOverlayKey,
   type ChartOverlayPrefs,
   type ChartOverlayPrefsMap,
-  type DashboardLayout,
-} from "@/lib/dashboard-layout";
+} from "@/lib/dashboard/chart-overlay-prefs";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 
