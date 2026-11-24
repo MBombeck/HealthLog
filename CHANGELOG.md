@@ -16,6 +16,7 @@
 - A Gadgetbridge export uploaded after a newer one no longer lowers a day's step total to what the older file had seen of that day.
 - A Gadgetbridge spot or resting heart rate of 255, the value Gadgetbridge writes for no reading, is no longer imported as a pulse of 255. Spot and resting readings now take the same 30 to 220 bpm as the hourly pulse.
 - A Health Connect export fetched from a WebDAV folder is fetched again when its import failed on the server's side, for example after a restart. The folder's file counted as imported once it was queued, so a failed run waited for the next export file. A file the importer refused still waits for the next export.
+- A Gadgetbridge or FHIR Bundle import that stops on an unexpected error keeps a fixed reason on its job, as the import card and the API promise, instead of the error's own text.
 - A Withings sync that runs long no longer skips a reading uploaded while it was writing. The next sync's window started ten minutes before the end of the previous run instead of before the start of its read.
 
 ### Security
