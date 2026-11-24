@@ -187,7 +187,7 @@ export function useHealthChartOverlays({
             Math.abs(meanFirst) > Number.EPSILON
               ? (splitHalfDelta / Math.abs(meanFirst)) * 100
               : null;
-          totalDeltaSegment = ` · ${t(
+          totalDeltaSegment = `, ${t(
             "charts.totalDelta",
           )} ${formatSigned(splitHalfDelta)}${unitSuffix}${
             totalDeltaPct != null ? ` (${formatSigned(totalDeltaPct)} %)` : ""

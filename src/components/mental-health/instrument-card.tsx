@@ -165,7 +165,7 @@ export function InstrumentCard({
               data-slot="instrument-card-last-score"
             >
               {last.totalScore}
-              {" · "}
+              {", "}
               {t(`mentalHealth.band.${last.instrument}.${last.severityBand}`)}
             </span>
           </div>

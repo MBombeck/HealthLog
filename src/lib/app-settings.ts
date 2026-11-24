@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { readOperatorRow } from "@/lib/settings/operator-row";
 
 export interface GlobalServiceAvailability {
   telegramGlobal: boolean;
@@ -10,15 +11,9 @@ export interface GlobalServiceAvailability {
 
 export async function getGlobalServiceAvailability(): Promise<GlobalServiceAvailability> {
   try {
-    const settings = await prisma.appSettings.findUnique({
-      where: { id: "singleton" },
-      select: {
-        telegramGlobal: true,
-        ntfyGlobal: true,
-        webPushGlobal: true,
-        apiGlobal: true,
-      },
-    });
+    // The instance switches ride the one operator-row read of the request
+    // (`settings/operator-row.ts`), read afresh in a background job.
+    const settings = await readOperatorRow();
 
     return {
       telegramGlobal: settings?.telegramGlobal ?? true,

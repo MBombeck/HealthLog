@@ -191,7 +191,7 @@ export function SparklineDeltaTile({
       />
 
       <div
-        className="mt-2 flex flex-wrap items-baseline gap-x-1.5"
+        className="mt-3 flex flex-wrap items-baseline gap-x-1.5"
         data-slot="sparkline-delta-tile-value-row"
       >
         <span
@@ -211,11 +211,12 @@ export function SparklineDeltaTile({
           data-slot="sparkline-delta-tile-arrow"
           aria-hidden="true"
         >
+          {/* No signal yet: the slot stays empty and keeps its width, so the
+              value row lines up across the grid. It never prints a glyph
+              of its own; a dash beside the value read as a value. */}
           {delta != null ? (
             <TrendIcon className={cn("h-4 w-4", trendColor)} />
-          ) : (
-            <span className="text-muted-foreground text-xs opacity-30">—</span>
-          )}
+          ) : null}
         </span>
       </div>
 

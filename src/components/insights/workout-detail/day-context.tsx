@@ -134,7 +134,7 @@ export function WorkoutDetailDayContext({
                     <p className="text-sm">
                       {formatDurationMinutes(night.asleepMinutes, t)}
                       {night.awakenings > 0
-                        ? ` · ${
+                        ? `, ${
                             night.awakenings === 1
                               ? t(
                                   "insights.workouts.detail.daySleepAwakeningsOne",

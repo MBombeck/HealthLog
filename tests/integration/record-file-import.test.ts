@@ -141,6 +141,42 @@ describe("Gadgetbridge import", () => {
     expect(steps.map((s) => s.value)).toEqual([6500]);
   });
 
+  it("keeps the larger day total when an older export comes after", async () => {
+    const user = await makeUser();
+    const newer = buildGadgetbridgeFixture({ extraSteps: 500 });
+    const older = buildGadgetbridgeFixture();
+    cleanup.push(dirname(newer), dirname(older));
+    await run(user.id, "gadgetbridge", newer);
+    const again = await run(user.id, "gadgetbridge", older);
+    expect(again.status).toBe("done");
+    const steps = await getPrismaClient().measurement.findMany({
+      where: { userId: user.id, type: "ACTIVITY_STEPS" },
+    });
+    expect(steps.map((s) => s.value)).toEqual([6500]);
+  });
+
+  it("refuses a heart rate Gadgetbridge writes for no reading", async () => {
+    const user = await makeUser();
+    const fixture = buildGadgetbridgeFixture({ heartRateSentinels: true });
+    cleanup.push(dirname(fixture));
+    const job = await run(user.id, "gadgetbridge", fixture);
+    expect(job.status).toBe("done");
+    const prisma = getPrismaClient();
+    const rows = await prisma.measurement.findMany({
+      where: {
+        userId: user.id,
+        type: { in: ["PULSE", "RESTING_HEART_RATE"] },
+        externalId: { not: { startsWith: "gb:pulse:" } },
+      },
+      select: { type: true, value: true },
+      orderBy: [{ type: "asc" }, { value: "asc" }],
+    });
+    expect(rows).toEqual([
+      { type: "PULSE", value: 72 },
+      { type: "RESTING_HEART_RATE", value: 58 },
+    ]);
+  });
+
   it("refuses a file that is not a Gadgetbridge database", async () => {
     const user = await makeUser();
     const dir = mkdtempSync(join(tmpdir(), "rfi-bad-"));

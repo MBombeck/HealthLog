@@ -96,7 +96,6 @@ export const GET = apiHandler(
       meta: {
         biomarkerId: id,
         trend: trend.status,
-        ...(trend.status === "ok" ? { projection: trend.projection } : {}),
       },
     });
 

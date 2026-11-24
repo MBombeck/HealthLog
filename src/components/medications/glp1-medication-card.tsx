@@ -465,22 +465,20 @@ export function Glp1MedicationCard({
       overdueLabel ? (
         <span className="inline-flex flex-wrap items-center gap-x-1 text-sm">
           <DoseStateLabel state="overdue" />
-          <span className="text-muted-foreground">— {overdueLabel}</span>
+          <span className="text-muted-foreground">{overdueLabel}</span>
         </span>
       ) : (
         <>
           {nextInjectionLabel()}
           {schedule?.dose && (
             <span className="text-dose-accent hidden font-medium sm:inline">
-              {" "}
-              — {formatDose(schedule.dose, t)}
+              , {formatDose(schedule.dose, t)}
             </span>
           )}
           {typeof schedule?.unitsPerDose === "number" &&
             schedule.unitsPerDose > 0 && (
               <span className="text-muted-foreground hidden sm:inline">
-                {" "}
-                ·{" "}
+                ,{" "}
                 {t("medications.perSlotUnits", {
                   units: formatUnitsPerDose(schedule.unitsPerDose, locale),
                 })}

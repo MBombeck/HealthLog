@@ -396,7 +396,7 @@ export function InventorySection({
                     item.unitsRemaining != null &&
                     item.unitsTotal != null && (
                       <>
-                        {" · "}
+                        {", "}
                         {t("medications.detail.bestand.unitsDetail", {
                           remaining: formatUnitCount(item.unitsRemaining),
                           total: formatUnitCount(item.unitsTotal),

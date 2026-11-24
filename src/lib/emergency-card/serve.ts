@@ -65,6 +65,39 @@ function miss(reason: string): CardRead {
   return { ok: false, reason };
 }
 
+/** The refusals `cardLinkRefusal` gives before it asks the guardian check. */
+const LINK_REFUSALS: ReadonlySet<string> = new Set([
+  "unknown",
+  "expired",
+  "api_disabled",
+]);
+
+/**
+ * Why a looked-up link would not open right now, or null when it would: it is
+ * revoked, past its end, the operator's switch is off, or a guardian's link
+ * has lost what admitted it. The scan asks this, and so does the wallet card
+ * before it prints the link's QR code, so a card is never printed with a code
+ * that already answers nothing.
+ */
+export async function cardLinkRefusal(
+  link: {
+    userId: string;
+    createdById: string;
+    expiresAt: Date | null;
+    revokedAt: Date | null;
+  },
+  apiOn: boolean,
+  now: Date,
+): Promise<string | null> {
+  if (link.revokedAt !== null) return "unknown";
+  if (link.expiresAt !== null && link.expiresAt.getTime() <= now.getTime()) {
+    return "expired";
+  }
+  if (!apiOn) return "api_disabled";
+  // A guardian's link rests on their live grant and the profile's marker.
+  return guardianMintRefusal(link);
+}
+
 export async function readEmergencyCardByToken(
   request: Request,
   segment: string,
@@ -101,18 +134,13 @@ export async function readEmergencyCardByToken(
     }),
     isApiGloballyEnabled(),
   ]);
-  if (!link || link.revokedAt !== null) return miss("unknown");
-  if (link.expiresAt !== null && link.expiresAt.getTime() <= now.getTime()) {
-    return miss("expired");
-  }
-
-  if (!apiOn) return miss("api_disabled");
-  // A guardian's link rests on their live grant and the profile's marker.
-  const refusal = await guardianMintRefusal(link);
+  if (!link) return miss("unknown");
+  const refusal = await cardLinkRefusal(link, apiOn, now);
   if (refusal) {
     // A guardian's Wallet pass ends with the right it rested on: stamped
-    // withdrawn, and its devices told.
-    if (link.purpose === "WALLET") {
+    // withdrawn, and its devices told. Only a guardian refusal ends it; a
+    // revoked, expired or switched-off link answers as before.
+    if (link.purpose === "WALLET" && !LINK_REFUSALS.has(refusal)) {
       const voided = await prisma.$transaction((tx) =>
         voidWalletPassesWhere(tx, { linkId: link.id }, "GUARDIAN_LOST", now),
       );

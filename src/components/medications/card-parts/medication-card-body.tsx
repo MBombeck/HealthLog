@@ -404,7 +404,6 @@ function NextDoseValue({
         <DoseStateLabel state={escalation} emphasis />
         {windowStatus !== null ? (
           <span className="text-muted-foreground">
-            —{" "}
             {formatTimeWindowRange(
               windowStatus.windowStart,
               windowStatus.windowEnd,
@@ -413,7 +412,7 @@ function NextDoseValue({
             )}
           </span>
         ) : nextLine !== null ? (
-          <span className="text-muted-foreground">— {nextLine}</span>
+          <span className="text-muted-foreground">{nextLine}</span>
         ) : null}
       </span>
     );

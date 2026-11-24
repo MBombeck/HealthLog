@@ -71,7 +71,7 @@ export const GET = apiHandler(async () => {
       present: summary.present,
       nights: summary.nights,
       events: summary.eventCount,
-      classification: summary.classification ?? "none",
+      classified: summary.classification != null,
     },
   });
 

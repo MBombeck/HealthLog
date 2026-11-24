@@ -61,7 +61,7 @@ export function ScopeSummary({
       className="text-muted-foreground text-xs"
       data-testid={`report-scope-summary-${surface}`}
     >
-      {sensitive ? `${base} · ${sensitive}` : base}
+      {sensitive ? `${base}, ${sensitive}` : base}
     </p>
   );
 }

@@ -14,6 +14,10 @@
  *   3. A file whose hash matches the last one imported is "unchanged"; any
  *      other goes through `queueStagedHealthConnectImport`, the upload's own
  *      dedupe and queue, so a file is imported exactly once however it came.
+ *      The ETag and the hash count only while the import they queued has not
+ *      failed: a run that stopped on this server's side (a restart, the
+ *      database) fetches the same file again. A file the importer refused
+ *      waits for the next export.
  *
  * Backoff: a pass that found nothing new or queued an import is next due in
  * six hours; a failure doubles the wait from thirty minutes up to a day, and
@@ -203,7 +207,34 @@ interface SourceRow {
   credentialsEncrypted: string;
   lastEtag: string | null;
   lastFileSha256: string | null;
+  lastImportJobId: string | null;
   consecutiveFailures: number;
+}
+
+/**
+ * Failure codes that refuse the file itself, so the same bytes fail again
+ * (`HealthConnectFailureCode` in the import worker, less `staging_missing`).
+ */
+const FILE_REFUSALS: readonly string[] = [
+  "unsupported_version",
+  "not_health_connect",
+  "unsafe_schema",
+  "too_large",
+];
+
+/**
+ * Whether the import the last file was queued for failed on this server's
+ * side, so the ETag and hash of that file must not hold it back.
+ */
+async function lastImportFailed(source: SourceRow): Promise<boolean> {
+  if (!source.lastImportJobId) return false;
+  const job = await prisma.importJob.findFirst({
+    where: { id: source.lastImportJobId, userId: source.userId },
+    select: { status: true, failureReason: true },
+  });
+  if (job?.status !== "failed") return false;
+  const code = job.failureReason?.split(":", 1)[0] ?? "";
+  return !FILE_REFUSALS.includes(code);
 }
 
 type Download =
@@ -355,9 +386,12 @@ async function download(source: SourceRow): Promise<Download> {
 
 /** One source, one attempt, the row updated with its outcome. */
 export async function fetchRemoteSource(
-  source: SourceRow,
+  stored: SourceRow,
   now: Date = new Date(),
 ): Promise<RemoteOutcome> {
+  const source = (await lastImportFailed(stored))
+    ? { ...stored, lastEtag: null, lastFileSha256: null }
+    : stored;
   const got = await download(source);
   let outcome: RemoteOutcome;
   let etag = source.lastEtag;
@@ -428,6 +462,7 @@ const SOURCE_SELECT = {
   credentialsEncrypted: true,
   lastEtag: true,
   lastFileSha256: true,
+  lastImportJobId: true,
   consecutiveFailures: true,
 } as const;
 
