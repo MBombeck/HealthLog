@@ -135,6 +135,8 @@ const GATED_ROUTES: Record<string, string> = {
   "POST /api/admin/backups/upload": "web",
   "POST /api/care/feed-subscription": "web",
   "POST /api/emergency-card/link": "web",
+  "POST /api/emergency-card/wallet/apple":
+    "the card page's Apple Wallet button, which lands with the Wallet UI on the same release branch and turns this entry into web; until then no web file calls it",
   "POST /api/cycle/feed-subscription": "web",
   "POST /api/cycle/feed-subscription/rotate": "web",
   "POST /api/admin/encryption/rotate": "web",

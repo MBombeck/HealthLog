@@ -13,8 +13,14 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import {
   emergencyCardFieldSchema,
   emergencyCardLinkCreateSchema,
+  emergencyWalletAppleCreateSchema,
   emergencyWalletBodySchema,
 } from "@/lib/emergency-card/fields";
+import {
+  WALLET_CREATE_PATH,
+  WALLET_DOWNLOAD_PATH,
+  WALLET_UNAVAILABLE_REASONS,
+} from "@/lib/emergency-card/wallet-pass/constants";
 import {
   advanceDirectiveStatusSchema,
   emergencyBloodTypeSchema,
@@ -25,6 +31,8 @@ import { isoDateTime } from "@/lib/validations/datetime";
 import {
   dataEnvelope,
   errorEnvelope,
+  idempotencyKeyParameter,
+  idempotentWrite,
   malformedJsonResponse,
   recordRefusal,
   stdResponses,
@@ -100,6 +108,78 @@ const cardLinkSummary = z
   });
 
 const linkStatus = z.object({ link: cardLinkSummary.nullable() });
+
+const walletPassSummary = z
+  .object({
+    serialNumber: z
+      .string()
+      .describe("The pass's serial number, as PassKit knows it."),
+    state: z
+      .enum(["live", "voided", "expired"])
+      .describe(
+        "`voided`: withdrawn, its link answers 404 and the download is the withdrawn version. `expired`: past `expiresAt`; Wallet greys it out itself.",
+      ),
+    fields: z
+      .array(emergencyCardFieldSchema)
+      .describe("The items frozen on the pass at creation."),
+    createdAt: isoDateTime(),
+    contentChangedAt: isoDateTime().describe(
+      "When the pass's content last changed. A client that stored an older value downloads the pass again and replaces it.",
+    ),
+    expiresAt: isoDateTime().nullable(),
+    voidedAt: isoDateTime().nullable(),
+    lastFetchedAt: isoDateTime().nullable(),
+    downloadPath: z.literal(WALLET_DOWNLOAD_PATH),
+  })
+  .meta({
+    id: "EmergencyWalletPassSummary",
+    description:
+      "The record's Apple Wallet pass without its secrets: never the link, never the authentication token.",
+  });
+
+/** `emergencyCard.wallet.apple` on `/api/auth/me`, and the status route. */
+export const emergencyWalletAppleSchema = z
+  .object({
+    available: z
+      .boolean()
+      .describe("The server can make a pass for the record on screen now."),
+    reason: z
+      .enum(["ok", ...WALLET_UNAVAILABLE_REASONS])
+      .describe(
+        "`signer_off`: neither the project's signing service nor the operator's own Pass Type ID is set up. `relay_not_ready`: the relay is not on, not ok, or does not sign passes now. `no_https_origin`: the instance is not reached over https. `api_disabled`: the operator's external-access switch is off. `not_allowed`: a delegate on an adult's record. Decode unknown values leniently.",
+      ),
+    signer: z.enum(["relay", "local"]).nullable(),
+    passTypeIdentifier: z.string().nullable(),
+    canCreate: z
+      .boolean()
+      .describe(
+        "The caller can make the pass here (a browser session). The app opens `createPath` on the instance instead.",
+      ),
+    createPath: z.literal(WALLET_CREATE_PATH),
+    consentTextVersion: z
+      .string()
+      .nullable()
+      .describe(
+        "The signing-service notice the owner accepts on creation; null when the operator signs with their own Pass Type ID.",
+      ),
+    pass: walletPassSummary.nullable(),
+  })
+  .meta({
+    id: "EmergencyWalletApple",
+    description:
+      "v1.50. The emergency card in Apple Wallet, resolved by the server for the record on screen. Render it; do not recompute it.",
+  });
+
+const walletErrors = (codes: Record<string, string>) =>
+  Object.fromEntries(
+    Object.entries(codes).map(([status, description]) => [
+      status,
+      {
+        description,
+        content: { "application/json": { schema: errorEnvelope } },
+      },
+    ]),
+  );
 
 const COOKIE_ONLY = recordRefusal(
   "A Bearer caller (`emergency-card.cookie_only`): the link and the downloads are managed over a browser session, on the caller's own record or on a managed profile the caller is guardian of. Making a link while the operator's external-access switch is off answers `emergency-card.api_disabled`.",
@@ -252,6 +332,125 @@ export const emergencyCardPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...NONE_404,
         ...COOKIE_ONLY,
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/emergency-card/wallet/apple": {
+    get: {
+      tags: ["Records"],
+      summary: "Apple Wallet pass status",
+      description:
+        "v1.50. Whether a pass can be made for the record on screen, who would sign it, and the pass it has. Cookie or a full-access token; the same object as `emergencyCard.wallet.apple` on `GET /api/auth/me`.",
+      responses: {
+        "200": {
+          description: "The status.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ apple: emergencyWalletAppleSchema }),
+                "EmergencyWalletAppleStatus",
+              ),
+            },
+          },
+        },
+        ...recordRefusal(),
+        ...stdResponses,
+      },
+    },
+    post: {
+      tags: ["Records"],
+      summary: "Make the Apple Wallet pass",
+      description:
+        "v1.50. Makes the pass and its own `hlm_` link with the ticked items and the optional expiry frozen on it. The response carries where to download it, never the link. Cookie only, with a fresh proof (401 `auth.reproof.required`). The operator's external-access switch off answers 403 `emergency-card.api_disabled`; 10 per account and hour (429 `emergency-card.rateLimited`). Honours `Idempotency-Key`.",
+      parameters: [idempotencyKeyParameter],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: emergencyWalletAppleCreateSchema.meta({
+              id: "EmergencyWalletAppleCreate",
+            }),
+          },
+        },
+      },
+      responses: {
+        "201": {
+          description: "The new pass.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  pass: walletPassSummary,
+                  downloadPath: z.literal(WALLET_DOWNLOAD_PATH),
+                }),
+                "EmergencyWalletAppleCreated",
+              ),
+            },
+          },
+        },
+        "409": {
+          ...idempotentWrite()["409"],
+          description:
+            "A pass already exists (`emergency-card.wallet.exists`), Wallet is not available here (`emergency-card.wallet.unavailable`, `meta.reason` as in `EmergencyWalletApple.reason`), or a request with this `Idempotency-Key` is still in progress (`X-Idempotent-Replay: false`; retry shortly).",
+        },
+        ...walletErrors({
+          "422":
+            "The body is invalid, or `consentTextVersion` is not the current signing notice (`emergency-card.wallet.consent`).",
+        }),
+        ...COOKIE_ONLY,
+        ...malformedJsonResponse,
+        ...stdResponses,
+      },
+    },
+    delete: {
+      tags: ["Records"],
+      summary: "Withdraw the Apple Wallet pass",
+      description:
+        "v1.50. The pass's link answers 404 from now on and the pass downloads in its withdrawn version. The printed card's link is not touched. Cookie only.",
+      responses: {
+        "200": {
+          description: "Withdrawn.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ revoked: z.literal(true) }),
+                "EmergencyWalletAppleRevoked",
+              ),
+            },
+          },
+        },
+        ...walletErrors({
+          "404": "No live pass (`emergency-card.wallet.none`).",
+        }),
+        ...COOKIE_ONLY,
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/emergency-card/wallet/apple/pass": {
+    get: {
+      tags: ["Records"],
+      summary: "Download the Apple Wallet pass",
+      description:
+        "v1.50. The current version of the record's pass, built and signed for this request. A withdrawn pass is served in its withdrawn version so an installed one can be replaced; `HL-Wallet-State` names the version. Cookie or a full-access token. 30 downloads per pass and hour.",
+      responses: {
+        "200": {
+          description: "The signed pass.",
+          headers: z.object({
+            "HL-Wallet-State": z.enum(["live", "voided", "expired"]),
+            "Last-Modified": z.string(),
+          }),
+          content: { "application/vnd.apple.pkpass": { schema: z.string() } },
+        },
+        ...walletErrors({
+          "404": "The record has no pass (`emergency-card.wallet.none`).",
+          "429":
+            "Too many downloads of this pass (`emergency-card.rateLimited`).",
+          "503":
+            "The signer cannot sign right now (`emergency-card.wallet.signer_unavailable`). Retry after `Retry-After` seconds and keep the installed pass.",
+        }),
+        ...recordRefusal(),
         ...stdResponses,
       },
     },

@@ -74,6 +74,9 @@ export const ACCOUNT_SEED_WITHHELD = [
   "insuranceNumber",
   "lastReportPracticeName",
   "reportSelection",
+  // Resolved against the origin a request reached, which the first paint
+  // does not have; the client reads it from `/api/auth/me`.
+  "emergencyCard",
 ] as const satisfies readonly MeField[];
 
 type SeedField = (typeof ACCOUNT_SEED_FIELDS)[number];
