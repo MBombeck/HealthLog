@@ -97,6 +97,29 @@ describe("<AppleWalletCard>", () => {
     expect(html).not.toContain('data-slot="wallet-create"');
   });
 
+  it("keeps withdrawing secondary: outline, before the primary, never red", () => {
+    const html = render({ ...BASE, pass: PASS });
+    const withdraw = /<button(?=[^>]*data-slot="wallet-withdraw")[^>]*>/.exec(
+      html,
+    )?.[0];
+    expect(withdraw).toContain('data-variant="outline"');
+    expect(withdraw).not.toMatch(/bg-destructive|text-destructive/);
+    const add = /<button(?=[^>]*data-slot="wallet-add")[^>]*>/.exec(html)?.[0];
+    expect(add).toContain('data-variant="default"');
+    expect(html.indexOf('data-slot="wallet-withdraw"')).toBeLessThan(
+      html.indexOf('data-slot="wallet-add"'),
+    );
+  });
+
+  it("offers another device once a device has the pass", () => {
+    expect(render({ ...BASE, pass: PASS })).toContain(">Add to Apple Wallet<");
+    const html = render({
+      ...BASE,
+      pass: { ...PASS, lastFetchedAt: "2026-11-24T09:00:00.000Z" },
+    });
+    expect(html).toContain(">Add to another device<");
+  });
+
   it("says why a withdrawn pass ended and lists nothing of it", () => {
     const html = render({
       ...BASE,
