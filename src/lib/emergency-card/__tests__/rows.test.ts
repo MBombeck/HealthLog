@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
 import type { EmergencyCardView } from "@/lib/emergency-card/card-data";
@@ -14,6 +11,8 @@ import {
   escapeHtml,
 } from "@/lib/emergency-card/offline-html";
 import { emergencyCardRows, splitCardTitle } from "@/lib/emergency-card/rows";
+
+import { readSource } from "@/__tests__/helpers/source-files";
 
 const t = (key: string, vars?: Record<string, string | number>) =>
   vars ? `${key}(${Object.values(vars).join(",")})` : key;
@@ -256,13 +255,13 @@ describe("where the owner edits each line", () => {
     );
     expect(rows[0].hrefs).toBeUndefined();
     // The public read and the files built for carrying never ask for them.
-    for (const file of [
-      "src/lib/emergency-card/serve.ts",
-      "src/lib/emergency-card/offline-html.ts",
-      "src/lib/emergency-card/wallet-pdf.ts",
-      "src/app/e/[token]/route.ts",
-    ]) {
-      const text = readFileSync(join(process.cwd(), file), "utf8");
+    for (const [file, anchor] of [
+      ["src/lib/emergency-card/serve.ts", "loadEmergencyCard("],
+      ["src/lib/emergency-card/offline-html.ts", "emergencyCardRows("],
+      ["src/lib/emergency-card/wallet-pdf.ts", "emergencyCardRows("],
+      ["src/app/e/[token]/route.ts", "export"],
+    ] as const) {
+      const text = readSource(file, anchor);
       expect(text, file).not.toMatch(/loadOwnerEmergencyCard|targets/);
     }
   });
