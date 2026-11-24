@@ -1509,8 +1509,8 @@ model Passkey {
 }
 
 model Session {
-  id            String    @id @default(cuid())
-  userId        String    @map("user_id")
+  id                 String    @id @default(cuid())
+  userId             String    @map("user_id")
   // v1.30.32 — HMAC-SHA256 of the session cookie's secret. The cookie carries
   // a 32-byte CSPRNG token (`hls_<hex>`), never this row's cuid: a cuid is
   // collision-resistant, not unguessable (embedded timestamp + counter), and a
@@ -1520,23 +1520,28 @@ model Session {
   // Nullable for the transition only: rows minted before this column existed
   // carry NULL and are still resolvable by id until they expire. See the
   // resolution comment in `src/lib/auth/session.ts`.
-  tokenHash     String?   @unique @map("token_hash")
-  expiresAt     DateTime  @map("expires_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  ipAddress     String?   @map("ip_address")
-  userAgent     String?   @map("user_agent")
+  tokenHash          String?   @unique @map("token_hash")
+  expiresAt          DateTime  @map("expires_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  ipAddress          String?   @map("ip_address")
+  userAgent          String?   @map("user_agent")
   // v1.23 — step-up freshness stamp. Set when the session completes a second
   // factor (or re-confirms it); `requireFreshMfa` (a later wave) reads it.
-  mfaVerifiedAt DateTime? @map("mfa_verified_at")
+  mfaVerifiedAt      DateTime? @map("mfa_verified_at")
   /// When this session last re-proved a credential through `POST
   /// /api/auth/reproof` (any method). Read by `requireRecentProof`, which on an
   /// account without a second factor accepts it as the fresh proof in front of
   /// exports, share links, token minting and the admin data actions. A
   /// second-factor proof also stamps `mfaVerifiedAt`; a password proof stamps
   /// only this, so it never satisfies a gate that asks for a second factor.
-  reproofAt     DateTime? @map("reproof_at")
+  reproofAt          DateTime? @map("reproof_at")
+  /// When this session's account has to have a second factor by, under the
+  /// instance policy (`src/lib/auth/mfa-enrollment.ts`). NULL: no policy
+  /// covers the account or it has a factor. From this instant on the session
+  /// reaches only the enrolment routes until the account enrols one.
+  mfaEnrollmentDueAt DateTime? @map("mfa_enrollment_due_at")
   // v1.23 — sliding "last seen" for the user-facing active-session list.
-  lastActiveAt  DateTime? @map("last_active_at")
+  lastActiveAt       DateTime? @map("last_active_at")
 
   /// v1.36.0 — the cookie transport's acting-account carrier. NULL (the only
   /// value any session has had until now) means the browser is acting as the
@@ -5599,8 +5604,8 @@ model IntegrationWatch {
 // ─── App Settings ─────────────────────────────────────────
 
 model AppSettings {
-  id                              String  @id @default("singleton")
-  registrationEnabled             Boolean @default(true) @map("registration_enabled")
+  id                              String   @id @default("singleton")
+  registrationEnabled             Boolean  @default(true) @map("registration_enabled")
   // v1.23 — instance-wide "require a second factor" policy. When true, every
   // account without an active second factor (no confirmed TOTP and no
   // registered security key) is sent through a forced-enrollment interstitial
@@ -5608,21 +5613,31 @@ model AppSettings {
   // `User.mfaEnforced`; the effective requirement is the OR of the two. The
   // operator/CLI escape hatch (`scripts/disable-mfa.ts`, toggling this off)
   // keeps the policy from locking anyone out irrecoverably.
-  mfaRequired                     Boolean @default(false) @map("mfa_required")
-  defaultLocale                   String  @default("de") @map("default_locale") // "de" | "en"
-  telegramGlobal                  Boolean @default(true) @map("telegram_global") // global toggle
-  ntfyGlobal                      Boolean @default(true) @map("ntfy_global") // global toggle
-  webPushGlobal                   Boolean @default(true) @map("web_push_global") // global toggle
-  webPushVapidPublicKey           String? @map("web_push_vapid_public_key")
-  webPushVapidPrivateKeyEncrypted String? @map("web_push_vapid_private_key_encrypted")
-  webPushVapidSubject             String? @map("web_push_vapid_subject")
-  apiGlobal                       Boolean @default(true) @map("api_global") // global toggle
-  umamiEnabled                    Boolean @default(false) @map("umami_enabled")
-  umamiScriptUrl                  String? @map("umami_script_url")
-  umamiWebsiteId                  String? @map("umami_website_id")
-  glitchtipEnabled                Boolean @default(false) @map("glitchtip_enabled")
-  glitchtipDsn                    String? @map("glitchtip_dsn")
-  glitchtipEnvironment            String? @map("glitchtip_environment")
+  mfaRequired                     Boolean  @default(false) @map("mfa_required")
+  /// v1.50 — the same requirement for administrator accounts only. On by
+  /// default, existing installs included: an admin account reaches every
+  /// person's settings, so it is the one a password alone should not open.
+  mfaRequiredForAdmins            Boolean  @default(true) @map("mfa_required_for_admins")
+  /// Days an account a policy newly covers may go on without a second factor
+  /// (`src/lib/auth/mfa-enrollment.ts`). Counted from `mfaPolicySince`.
+  mfaGraceDays                    Int      @default(14) @map("mfa_grace_days")
+  /// When an instance-wide second-factor policy last took effect: switching
+  /// either policy on moves it to now, so the grace period starts again.
+  mfaPolicySince                  DateTime @default(now()) @map("mfa_policy_since")
+  defaultLocale                   String   @default("de") @map("default_locale") // "de" | "en"
+  telegramGlobal                  Boolean  @default(true) @map("telegram_global") // global toggle
+  ntfyGlobal                      Boolean  @default(true) @map("ntfy_global") // global toggle
+  webPushGlobal                   Boolean  @default(true) @map("web_push_global") // global toggle
+  webPushVapidPublicKey           String?  @map("web_push_vapid_public_key")
+  webPushVapidPrivateKeyEncrypted String?  @map("web_push_vapid_private_key_encrypted")
+  webPushVapidSubject             String?  @map("web_push_vapid_subject")
+  apiGlobal                       Boolean  @default(true) @map("api_global") // global toggle
+  umamiEnabled                    Boolean  @default(false) @map("umami_enabled")
+  umamiScriptUrl                  String?  @map("umami_script_url")
+  umamiWebsiteId                  String?  @map("umami_website_id")
+  glitchtipEnabled                Boolean  @default(false) @map("glitchtip_enabled")
+  glitchtipDsn                    String?  @map("glitchtip_dsn")
+  glitchtipEnvironment            String?  @map("glitchtip_environment")
 
   // Delivery outcome of the last error report this host tried to send.
   // Without it the admin card can only say a DSN is set and parses, which is

@@ -23,6 +23,7 @@
  * user-tz-aware (proposal §3 symptom 9 — deferred to a separate
  * v1.5 wave). That assertion is intentionally NOT in this file.
  */
+import { expectedSetupToken } from "@/lib/auth/setup-token";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 process.env.ENCRYPTION_KEY ??=
@@ -303,6 +304,8 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
         username: "fresh-akl",
         password: "S3cure-Passw0rd-12345",
         timezone: "Pacific/Auckland",
+        // The instance may have no account yet; the first one needs the token.
+        setupToken: expectedSetupToken(),
       }),
     });
     const res = await POST(req as Parameters<typeof POST>[0]);
@@ -342,6 +345,8 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
         username: "bogus-tz",
         password: "S3cure-Passw0rd-12345",
         timezone: "Mars/Olympus_Mons",
+        // The instance may have no account yet; the first one needs the token.
+        setupToken: expectedSetupToken(),
       }),
     });
     const res = await POST(req as Parameters<typeof POST>[0]);

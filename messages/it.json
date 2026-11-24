@@ -163,13 +163,19 @@
         "last_method": "Questa passkey è il tuo unico modo per accedere. Imposta prima una password o aggiungi un’altra passkey."
       },
       "mfa": {
-        "already_active": "Per questo account è già configurata un'app di autenticazione. Disattivala prima di configurarne una nuova."
+        "already_active": "Per questo account è già configurata un'app di autenticazione. Disattivala prima di configurarne una nuova.",
+        "enrollment_required": "Configura un secondo fattore per continuare. Fino ad allora questo account serve solo a questo."
       },
       "register": {
         "taken": "Questo nome utente o indirizzo e-mail è già in uso.",
-        "invite_invalid": "Questo invito non è più valido. Chiedi un nuovo link alla persona che ti ha invitato."
+        "invite_invalid": "Questo invito non è più valido. Chiedi un nuovo link alla persona che ti ha invitato.",
+        "setup_required": "Questo server non ha ancora un account. Inserisci il codice di configurazione dal log del server per creare il primo."
       },
-      "already_authenticated": "Hai già effettuato l’accesso. Prima esci, poi riprova."
+      "already_authenticated": "Hai già effettuato l’accesso. Prima esci, poi riprova.",
+      "setup": {
+        "token_invalid": "Non è il codice di configurazione di questo server. Controlla il log del server e riprova.",
+        "already_claimed": "Questo server ha già un account. Accedi invece."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -690,7 +696,8 @@
       "errorIdentityConflict": "Questo indirizzo email appartiene a un account già collegato a un'altra identità SSO.",
       "errorRegistrationDisabled": "Nessun account corrisponde a questa identità e le nuove registrazioni sono attualmente chiuse.",
       "errorFailed": "L'accesso Single Sign-On non è riuscito. Riprova.",
-      "errorLinkRequired": "Esiste già un account con questo indirizzo email. Accedi una volta con la sua password o passkey per collegarlo al single sign-on."
+      "errorLinkRequired": "Esiste già un account con questo indirizzo email. Accedi una volta con la sua password o passkey per collegarlo al single sign-on.",
+      "errorSetupRequired": "Questo server non ha ancora un account. Inserisci prima il codice di configurazione dal log del server, poi accedi con il single sign-on."
     },
     "native": {
       "signingInToApp": "Accesso all'app HealthLog",
@@ -715,7 +722,10 @@
     "enrollMfa": {
       "title": "Configura un secondo fattore",
       "body": "Il tuo amministratore richiede un secondo fattore su questo account. Aggiungi un'app di autenticazione o una chiave di sicurezza per continuare.",
-      "signOut": "Esci"
+      "signOut": "Esci",
+      "graceBanner": "Il tuo amministratore richiede un secondo fattore su questo account. Aggiungilo entro il {date}; dopo quella data l'account servirà solo a configurarlo.",
+      "graceAction": "Configuralo ora",
+      "graceDismiss": "Nascondi questo avviso"
     },
     "confirmAccess": {
       "title": "Conferma che sei tu",
@@ -775,7 +785,16 @@
     },
     "deletionPending": "Questo account verrà eliminato il {date} ed è bloccato fino ad allora. Un amministratore di questo server può annullare l’eliminazione prima di quella data.",
     "deletionPendingNoDate": "Questo account è in attesa di eliminazione ed è bloccato. Un amministratore di questo server può annullare l’eliminazione finché non è completata.",
-    "signInRateLimited": "Troppi tentativi. Attendi qualche minuto e riprova."
+    "signInRateLimited": "Troppi tentativi. Attendi qualche minuto e riprova.",
+    "setup": {
+      "title": "Configura questo server",
+      "body": "Questo server non ha ancora un account. Il primo account ne diventa l'amministratore, quindi serve il codice di configurazione: il server lo scrive nel suo log a ogni avvio, oppure è il SETUP_TOKEN impostato nel suo ambiente.",
+      "tokenLabel": "Codice di configurazione",
+      "submit": "Continua",
+      "invalid": "Non ha funzionato. Controlla il codice di configurazione e riprova.",
+      "proven": "Codice di configurazione accettato. Il primo account che crei qui diventa l'amministratore.",
+      "createFirstAccount": "Crea il primo account"
+    }
   },
   "dashboard": {
     "title": "Cruscotto",
@@ -9310,7 +9329,7 @@
     },
     "carrier": "Operatore",
     "mfaRequired": "Richiedi un secondo fattore",
-    "mfaRequiredDescription": "Gli account senza secondo fattore vengono indirizzati alla configurazione dopo un accesso web; l'accesso via API o nativo (Bearer) resta aperto.",
+    "mfaRequiredDescription": "Lo stesso per ogni account: a uno senza app di autenticazione, chiave di sicurezza o passkey viene chiesto di aggiungerne una e, dopo il periodo di tolleranza, può essere usato solo per configurarla. L'app per iPhone ne rifiuta l'accesso fino ad allora.",
     "mfaEnforcedOn": "MFA attivo",
     "mfaEnforcedOff": "MFA disattivato",
     "mfaEnforcedOnHint": "Per questo utente è richiesto un secondo fattore. Clicca per non richiederlo più.",
@@ -9844,7 +9863,13 @@
       "upToDate": "Aggiornato",
       "lastApplied": "Ultima: {name}, {time}",
       "loadError": "Non è stato possibile caricare lo stato delle migrazioni."
-    }
+    },
+    "mfaRequiredForAdmins": "Richiedi un secondo fattore agli amministratori",
+    "mfaRequiredForAdminsDescription": "A un account amministratore senza app di autenticazione, chiave di sicurezza o passkey viene chiesto di aggiungerne una e, dopo il periodo di tolleranza, può essere usato solo per configurarla. L'app per iPhone ne rifiuta l'accesso fino ad allora.",
+    "mfaGraceDays": "Periodo di tolleranza",
+    "mfaGraceDaysDescription": "Quanto tempo ha un account appena coperto da una regola per aggiungere un secondo fattore. Inizia quando attivi una regola.",
+    "mfaGraceDaysNone": "Nessuno",
+    "mfaGraceDaysOption": "{count, plural, one {# giorno} other {# giorni}}"
   },
   "achievements": {
     "title": "Obiettivi",

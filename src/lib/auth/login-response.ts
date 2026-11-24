@@ -33,6 +33,7 @@ import { annotate } from "@/lib/logging/context";
 import { completePendingOidcLink } from "@/lib/auth/oidc-pending-link";
 import type { User } from "@/generated/prisma/client";
 import { refuseIfPendingDeletion } from "@/lib/account-deletion/pending";
+import { refuseNativeSignInWithoutFactor } from "@/lib/auth/mfa-native-refusal";
 
 export interface FinishLoginParams {
   user: Pick<
@@ -83,6 +84,14 @@ export async function finishLogin(
     shouldIssueBearerToken(request.headers) ||
     isNativeClientRequest(request.headers)
   ) {
+    // An account past its second-factor due date gets no Bearer credential:
+    // a token transport has no enrolment surface to confine it to.
+    const enrolmentRefusal = await refuseNativeSignInWithoutFactor(
+      user.id,
+      ip,
+      source,
+    );
+    if (enrolmentRefusal) return enrolmentRefusal;
     const policy = resolveTokenPolicy(request.headers);
     const deviceId = request.headers.get("x-device-id");
 

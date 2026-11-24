@@ -17,6 +17,7 @@ import {
   changePasswordSchema,
   passkeyRenameSchema,
   registerSchema,
+  setupTokenSchema,
 } from "@/lib/validations/auth";
 // `PUT /api/auth/profile` and `PATCH /api/user/profile` are two doors onto one
 // `applyProfileUpdate` call, so they take one body and publish one component.
@@ -465,8 +466,28 @@ const registrationStatusResponse = z
       .describe(
         "Whether this server issues its session cookies with the `Secure` flag (`SESSION_COOKIE_SECURE`, else on in production). A browser on a plain `http://` page cannot keep such a cookie; the web login page compares this with its own scheme before any credential is sent.",
       ),
+    setupRequired: z
+      .boolean()
+      .describe(
+        "The instance has no account yet. The first account becomes its admin and needs the setup token: in the `setupToken` field of POST /api/auth/register, or proven first through POST /api/auth/register/setup (which a first single sign-on needs). Servers before v1.50 omit the field.",
+      ),
+    setupProven: z
+      .boolean()
+      .describe(
+        "This browser has proven the setup token through POST /api/auth/register/setup within the last 30 minutes. Always false once an account exists.",
+      ),
   })
   .meta({ id: "RegistrationStatusResponse" });
+
+const setupTokenRequest = setupTokenSchema.meta({
+  id: "SetupTokenRequest",
+  description:
+    "The instance's setup token: `SETUP_TOKEN` from the server's environment, or the `hlu_` token every server process prints to its log at start while the instance has no account.",
+});
+
+const setupProvenResponse = z
+  .object({ proven: z.literal(true) })
+  .meta({ id: "SetupProvenResponse" });
 
 /**
  * The browser sign-in refusal for a page whose session cookie cannot stick.
@@ -602,7 +623,7 @@ const createDocumentTokenResponse = z
 const registerRequest = registerSchema.meta({
   id: "RegisterRequest",
   description:
-    "Account creation. `timezone` is a hint, not a requirement — an unknown zone is replaced with the operator default rather than refused. `inviteToken` is consulted whenever it is present, and is the admission requirement only while self-registration is closed.",
+    "Account creation. `timezone` is a hint, not a requirement — an unknown zone is replaced with the operator default rather than refused. `inviteToken` is consulted whenever it is present, and is the admission requirement only while self-registration is closed. `setupToken` is needed for the first account on an instance without one, unless this browser proved it through POST /api/auth/register/setup; it is ignored afterwards.",
 });
 
 const changePasswordRequest = changePasswordSchema.meta({
@@ -959,7 +980,8 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "403": {
           description:
             "Password login is disabled — the operator runs `OIDC_ONLY=true`. `meta.errorCode` = `oidc_only`; sign in through SSO instead. The one exception is a browser the SSO callback sent back with a pending link to confirm an existing account: it may sign in with that one account's password, which links the account. A sign-in to any other account on that browser is refused before its password is checked, so the answer is the same whether the password was right or wrong.\n\n" +
-            "Also 403 `auth.account.deletion_pending`, after the password was proved and before a second factor is asked for: the account is pending deletion and locked. `meta.purgeAt` is when it is erased; an admin can undo the deletion until then. Every other sign-in surface (passkey, second-factor completion, the native token exchanges) refuses with the same code. A session, refresh token or API token issued before the deletion is revoked by it, so those answer 401 (`auth.refresh.revoked` on refresh), the same as for a signed-out session.",
+            "Also 403 `auth.account.deletion_pending`, after the password was proved and before a second factor is asked for: the account is pending deletion and locked. `meta.purgeAt` is when it is erased; an admin can undo the deletion until then. Every other sign-in surface (passkey, second-factor completion, the native token exchanges) refuses with the same code. A session, refresh token or API token issued before the deletion is revoked by it, so those answer 401 (`auth.refresh.revoked` on refresh), the same as for a signed-out session.\n\n" +
+            "Also 403 `auth.mfa.enrollment_required` (v1.50), for a native caller only and after the password was proved: a second-factor policy (for admins, for everyone, or set on this account) covers the account, it has no factor, and its grace period is over. No token is issued; the person adds a factor in a browser (Settings > Security) and signs in again. The native web hand-off and SSO token exchanges refuse the same way. A browser sign-in still gets its session, which then reaches only the enrolment routes until a factor exists: every other route answers the same 403.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
@@ -2285,6 +2307,41 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   },
   // ── Appended: registration, credential rotation, the OIDC entry point and
   // the Codex device-auth flow.
+  "/api/auth/register/setup": {
+    post: {
+      // No credential: this operation is reachable before one exists.
+      security: [],
+      tags: ["Auth"],
+      summary: "Prove the setup token of an instance without an account",
+      description:
+        "Anonymous, and only while the instance has no account. A correct token sets a signed, httpOnly cookie for 30 minutes that lets this browser create the first account (the admin) through POST /api/auth/register or a first single sign-on. Rate-limited to 5 attempts per 15 minutes before the token is compared; every attempt is audited.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: setupTokenRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The token is right; the proof cookie is set.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(setupProvenResponse, "SetupProvenEnvelope"),
+            },
+          },
+        },
+        "403": {
+          description:
+            "Not this instance's setup token (`auth.setup.token_invalid`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "The instance already has an account (`auth.setup.already_claimed`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/auth/register": {
     post: {
       // No credential: this operation is reachable before one exists.
@@ -2297,7 +2354,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "Create an account",
       description:
         "Anonymous. Creates the account, issues a browser session cookie, and returns the new account's identity. No token is minted here even for a native caller — an app registers and then signs in through /api/auth/login.\n\n" +
-        "Admission has three gates and a bootstrap. `OIDC_ONLY=true` refuses outright. Otherwise the surface is rate-limited to 5 attempts per 15 minutes; on a misconfigured proxy trust chain every anonymous caller collapses into ONE bucket rather than falling open. When the operator has closed self-registration a valid invite token still admits the signup, and a token is consumed whenever one is sent — even under open registration, so the issuer's ledger stays complete. The bootstrap: on an instance with zero users registration is always allowed and the first account is minted ADMIN, decided under an advisory lock so two racing signups cannot both become one.\n\n" +
+        "Admission has three gates and a bootstrap. `OIDC_ONLY=true` refuses outright. Otherwise the surface is rate-limited to 5 attempts per 15 minutes; on a misconfigured proxy trust chain every anonymous caller collapses into ONE bucket rather than falling open. When the operator has closed self-registration a valid invite token still admits the signup, and a token is consumed whenever one is sent — even under open registration, so the issuer's ledger stays complete. The bootstrap: on an instance with zero users the first account is minted ADMIN, decided under an advisory lock so two racing signups cannot both become one, and only with the instance's setup token (in `setupToken`, or the proof cookie POST /api/auth/register/setup sets); it closes open self-registration.\n\n" +
         "The password is checked for strength against the chosen username and email, and against a breach corpus over k-anonymity. The breach check fails OPEN — an unreachable corpus never blocks a signup. A supplied `timezone` is validated against the runtime IANA list and silently replaced with the operator default when it is not one; it is never a reason to refuse.\n\n" +
         "Existence is not disclosed: a taken email and a taken username return the same 409 with the same prose.",
       requestBody: {
@@ -2315,7 +2372,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "403": {
           description:
-            "Refused before any work. Either the operator runs `OIDC_ONLY=true` (`meta.errorCode` = `oidc_only`), or self-registration is closed and the request carried no invite, or the invite it carried was invalid, expired or exhausted (`auth.register.invite_invalid`).",
+            "Refused before any work. Either the operator runs `OIDC_ONLY=true` (`meta.errorCode` = `oidc_only`), or self-registration is closed and the request carried no invite, or the invite it carried was invalid, expired or exhausted (`auth.register.invite_invalid`), or the instance has no account yet and the request proved no setup token (`auth.register.setup_required`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "409": {
@@ -2481,7 +2538,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "302": {
           description:
-            "Always a redirect. To the provider on success. On failure to `/auth/login?error=<reason>` (browser; `/auth/claim?error=<reason>` with `intent=claim`, where `claim_expired` is one more reason) or `healthlog://oidc-callback?error=<reason>` (native), where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_invalid_request`, `oidc_failed`, and on the browser leg `insecure_transport` (see `client_proto`). The provider then returns to the callback (not listed here, because the identity provider drives it rather than a client), which ends the native leg at `healthlog://oidc-callback` with `code=<hlh_…>`, with `mfa_ticket=<ticket>&methods=<list>`, or with `error=<reason>`, where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_denied`, `oidc_no_email`, `oidc_email_unverified`, `oidc_identity_conflict`, `oidc_link_required`, `oidc_registration_disabled`, `account_deletion_pending`, `oidc_failed`. `oidc_link_required` means the provider's e-mail matches an existing local account that is not linked yet; the owner links it by signing in once with that account's own password or passkey in a browser. `account_deletion_pending` means the account is locked pending deletion; when the purge date is known it rides beside the reason as `purgeAt=<ISO 8601 instant>` on both legs, and nothing else about the account does. The reasons are this exact snake_case vocabulary on both legs; a client maps a value it does not know to a generic sign-in failure.",
+            "Always a redirect. To the provider on success. On failure to `/auth/login?error=<reason>` (browser; `/auth/claim?error=<reason>` with `intent=claim`, where `claim_expired` is one more reason) or `healthlog://oidc-callback?error=<reason>` (native), where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_invalid_request`, `oidc_failed`, and on the browser leg `insecure_transport` (see `client_proto`). The provider then returns to the callback (not listed here, because the identity provider drives it rather than a client), which ends the native leg at `healthlog://oidc-callback` with `code=<hlh_…>`, with `mfa_ticket=<ticket>&methods=<list>`, or with `error=<reason>`, where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_denied`, `oidc_no_email`, `oidc_email_unverified`, `oidc_identity_conflict`, `oidc_link_required`, `oidc_registration_disabled`, `oidc_setup_required`, `account_deletion_pending`, `oidc_failed`. `oidc_setup_required` means the instance has no account yet and the browser did not prove the setup token (POST /api/auth/register/setup) before the first single sign-on. `oidc_link_required` means the provider's e-mail matches an existing local account that is not linked yet; the owner links it by signing in once with that account's own password or passkey in a browser. `account_deletion_pending` means the account is locked pending deletion; when the purge date is known it rides beside the reason as `purgeAt=<ISO 8601 instant>` on both legs, and nothing else about the account does. The reasons are this exact snake_case vocabulary on both legs; a client maps a value it does not know to a generic sign-in failure.",
         },
       },
     },

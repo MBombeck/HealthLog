@@ -163,13 +163,19 @@
         "last_method": "Esta clave de acceso es tu única forma de iniciar sesión. Primero establece una contraseña o añade otra clave de acceso."
       },
       "mfa": {
-        "already_active": "Esta cuenta ya tiene una aplicación de autenticación configurada. Desactívala primero para configurar una nueva."
+        "already_active": "Esta cuenta ya tiene una aplicación de autenticación configurada. Desactívala primero para configurar una nueva.",
+        "enrollment_required": "Configura un segundo factor para continuar. Hasta entonces, esta cuenta solo sirve para eso."
       },
       "register": {
         "taken": "Ese nombre de usuario o correo electrónico ya está en uso.",
-        "invite_invalid": "Esta invitación ya no es válida. Pide un enlace nuevo a la persona que te invitó."
+        "invite_invalid": "Esta invitación ya no es válida. Pide un enlace nuevo a la persona que te invitó.",
+        "setup_required": "Este servidor aún no tiene ninguna cuenta. Introduce el código de configuración del registro del servidor para crear la primera."
       },
-      "already_authenticated": "Ya has iniciado sesión. Cierra la sesión primero y vuelve a intentarlo."
+      "already_authenticated": "Ya has iniciado sesión. Cierra la sesión primero y vuelve a intentarlo.",
+      "setup": {
+        "token_invalid": "Ese no es el código de configuración de este servidor. Revisa el registro del servidor y vuelve a intentarlo.",
+        "already_claimed": "Este servidor ya tiene una cuenta. Inicia sesión en su lugar."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -690,7 +696,8 @@
       "errorIdentityConflict": "Ese correo electrónico pertenece a una cuenta que ya está vinculada a otra identidad SSO.",
       "errorRegistrationDisabled": "Ninguna cuenta coincide con esa identidad y los nuevos registros están cerrados actualmente.",
       "errorFailed": "El inicio de sesión único falló. Inténtalo de nuevo.",
-      "errorLinkRequired": "Ya existe aquí una cuenta con esta dirección de correo. Inicia sesión en ella una vez con su contraseña o llave de acceso para conectarla al inicio de sesión único."
+      "errorLinkRequired": "Ya existe aquí una cuenta con esta dirección de correo. Inicia sesión en ella una vez con su contraseña o llave de acceso para conectarla al inicio de sesión único.",
+      "errorSetupRequired": "Este servidor aún no tiene ninguna cuenta. Introduce primero el código de configuración del registro del servidor y luego inicia sesión con inicio de sesión único."
     },
     "native": {
       "signingInToApp": "Iniciando sesión en la app de HealthLog",
@@ -715,7 +722,10 @@
     "enrollMfa": {
       "title": "Configurar un segundo factor",
       "body": "Tu administrador exige un segundo factor en esta cuenta. Añade una app de autenticación o una llave de seguridad para continuar.",
-      "signOut": "Cerrar sesión"
+      "signOut": "Cerrar sesión",
+      "graceBanner": "Tu administrador exige un segundo factor en esta cuenta. Añádelo antes del {date}; después de esa fecha la cuenta solo servirá para configurarlo.",
+      "graceAction": "Configurarlo ahora",
+      "graceDismiss": "Ocultar este aviso"
     },
     "confirmAccess": {
       "title": "Confirma que eres tú",
@@ -775,7 +785,16 @@
     },
     "deletionPending": "Esta cuenta se eliminará el {date} y está bloqueada hasta entonces. Un administrador de este servidor puede deshacer la eliminación antes de esa fecha.",
     "deletionPendingNoDate": "Esta cuenta está programada para eliminarse y está bloqueada. Un administrador de este servidor puede deshacer la eliminación hasta que se complete.",
-    "signInRateLimited": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo."
+    "signInRateLimited": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.",
+    "setup": {
+      "title": "Configurar este servidor",
+      "body": "Este servidor aún no tiene ninguna cuenta. La primera cuenta será su administradora, así que necesita el código de configuración: el servidor lo escribe en su registro en cada arranque, o es el SETUP_TOKEN definido en su entorno.",
+      "tokenLabel": "Código de configuración",
+      "submit": "Continuar",
+      "invalid": "No ha funcionado. Revisa el código de configuración y vuelve a intentarlo.",
+      "proven": "Código de configuración aceptado. La primera cuenta que crees aquí será la administradora.",
+      "createFirstAccount": "Crear la primera cuenta"
+    }
   },
   "dashboard": {
     "title": "Panel",
@@ -9310,7 +9329,7 @@
     },
     "carrier": "Operador",
     "mfaRequired": "Exigir un segundo factor",
-    "mfaRequiredDescription": "Las cuentas sin segundo factor van a configurarlo tras iniciar sesión en la web; el acceso por API o nativo (Bearer) sigue abierto.",
+    "mfaRequiredDescription": "Lo mismo para todas las cuentas: a una sin app de autenticación, llave de seguridad ni passkey se le pide añadir una, y tras el periodo de gracia solo sirve para configurarla. La app de iPhone rechaza su inicio de sesión hasta entonces.",
     "mfaEnforcedOn": "MFA activado",
     "mfaEnforcedOff": "MFA desactivado",
     "mfaEnforcedOnHint": "Este usuario debe usar un segundo factor. Haz clic para dejar de exigirlo.",
@@ -9844,7 +9863,13 @@
       "upToDate": "Al día",
       "lastApplied": "Última: {name}, {time}",
       "loadError": "No se pudo cargar el estado de las migraciones."
-    }
+    },
+    "mfaRequiredForAdmins": "Exigir un segundo factor a los administradores",
+    "mfaRequiredForAdminsDescription": "A una cuenta de administrador sin app de autenticación, llave de seguridad ni passkey se le pide añadir una, y tras el periodo de gracia solo sirve para configurarla. La app de iPhone rechaza su inicio de sesión hasta entonces.",
+    "mfaGraceDays": "Periodo de gracia",
+    "mfaGraceDaysDescription": "Cuánto tiempo tiene una cuenta recién cubierta por una regla para añadir un segundo factor. Empieza cuando activas una regla.",
+    "mfaGraceDaysNone": "Ninguno",
+    "mfaGraceDaysOption": "{count, plural, one {# día} other {# días}}"
   },
   "achievements": {
     "title": "Logros",

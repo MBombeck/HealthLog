@@ -37,6 +37,12 @@ vi.mock("@/lib/auth/mfa-enrollment", () => ({
   syncMfaEnrollCookie: vi.fn().mockResolvedValue(undefined),
 }));
 
+// The second-factor policy's native refusal; answers "no refusal" unless a
+// case stages one.
+vi.mock("@/lib/auth/mfa-native-refusal", () => ({
+  refuseNativeSignInWithoutFactor: vi.fn(),
+}));
+
 vi.mock("@/lib/auth/login-alert", () => ({
   recordSignInDevice: vi.fn().mockResolvedValue(undefined),
 }));
@@ -94,6 +100,7 @@ import {
 } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/auth/audit";
 import { createSession } from "@/lib/auth/session";
+import { refuseNativeSignInWithoutFactor } from "@/lib/auth/mfa-native-refusal";
 
 const FAKE_USER = {
   id: "user-1",
@@ -253,5 +260,31 @@ describe("POST /api/auth/login — native token issuance", () => {
     } finally {
       process.env.API_TOKEN_HMAC_KEY = original;
     }
+  });
+});
+
+describe("POST /api/auth/login — second-factor policy on the native path", () => {
+  it("issues no token when the account is past its enrolment date", async () => {
+    vi.mocked(refuseNativeSignInWithoutFactor).mockResolvedValue(
+      Response.json(
+        {
+          data: null,
+          error: "This account needs two-factor sign-in.",
+          meta: { errorCode: "auth.mfa.enrollment_required" },
+        },
+        { status: 403 },
+      ),
+    );
+    const res = await POST(makeRequest({ "user-agent": "HealthLog-iOS/1.0" }));
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.meta.errorCode).toBe("auth.mfa.enrollment_required");
+    expect(prisma.apiToken.create).not.toHaveBeenCalled();
+    expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+    expect(refuseNativeSignInWithoutFactor).toHaveBeenCalledWith(
+      "user-1",
+      "203.0.113.1",
+      "login.password",
+    );
   });
 });

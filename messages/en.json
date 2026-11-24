@@ -163,13 +163,19 @@
         "last_method": "This passkey is your only way to sign in. Set a password or add another passkey first."
       },
       "mfa": {
-        "already_active": "An authenticator app is already set up for this account. Disable it first to set up a new one."
+        "already_active": "An authenticator app is already set up for this account. Disable it first to set up a new one.",
+        "enrollment_required": "Set up a second factor to continue. This account can only be used for that until it has one."
       },
       "register": {
         "taken": "That username or email address is already in use.",
-        "invite_invalid": "This invitation is no longer valid. Ask the person who invited you for a new link."
+        "invite_invalid": "This invitation is no longer valid. Ask the person who invited you for a new link.",
+        "setup_required": "This server has no account yet. Enter the setup token from the server log to create the first one."
       },
-      "already_authenticated": "You are already signed in. Sign out first, then try again."
+      "already_authenticated": "You are already signed in. Sign out first, then try again.",
+      "setup": {
+        "token_invalid": "That is not this server's setup token. Check the server log and try again.",
+        "already_claimed": "This server already has an account. Sign in instead."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -690,7 +696,8 @@
       "errorIdentityConflict": "That email address belongs to an account that is already linked to a different SSO identity.",
       "errorRegistrationDisabled": "No account matches that identity, and new sign-ups are currently closed.",
       "errorFailed": "Single sign-on failed. Please try again.",
-      "errorLinkRequired": "An account with this email address already exists here. Sign in to it once with its password or passkey to connect it to single sign-on."
+      "errorLinkRequired": "An account with this email address already exists here. Sign in to it once with its password or passkey to connect it to single sign-on.",
+      "errorSetupRequired": "This server has no account yet. Enter the setup token from the server log first, then sign in with single sign-on."
     },
     "native": {
       "signingInToApp": "Signing in to the HealthLog app",
@@ -715,7 +722,10 @@
     "enrollMfa": {
       "title": "Set up a second factor",
       "body": "Your administrator requires a second factor on this account. Add an authenticator app or a security key to continue.",
-      "signOut": "Sign out"
+      "signOut": "Sign out",
+      "graceBanner": "Your administrator requires a second factor on this account. Add one by {date}; after that date this account can only be used to set it up.",
+      "graceAction": "Set it up now",
+      "graceDismiss": "Hide this notice"
     },
     "confirmAccess": {
       "title": "Confirm it is you",
@@ -775,7 +785,16 @@
     },
     "deletionPending": "This account is scheduled for deletion on {date} and is locked until then. An admin of this server can undo the deletion before that date.",
     "deletionPendingNoDate": "This account is scheduled for deletion and is locked. An admin of this server can undo the deletion until it completes.",
-    "signInRateLimited": "Too many attempts. Wait a few minutes and try again."
+    "signInRateLimited": "Too many attempts. Wait a few minutes and try again.",
+    "setup": {
+      "title": "Set up this server",
+      "body": "This server has no account yet. The first account becomes its admin, so it needs the setup token: the server prints it to its log at every start, or it is the SETUP_TOKEN set in its environment.",
+      "tokenLabel": "Setup token",
+      "submit": "Continue",
+      "invalid": "That did not work. Check the setup token and try again.",
+      "proven": "Setup token accepted. The first account you create here becomes the admin.",
+      "createFirstAccount": "Create the first account"
+    }
   },
   "dashboard": {
     "title": "Dashboard",
@@ -9310,7 +9329,7 @@
     },
     "carrier": "Carrier",
     "mfaRequired": "Require a second factor",
-    "mfaRequiredDescription": "Accounts without a second factor are sent to set one up after a web sign-in; API and native (Bearer) access stays open.",
+    "mfaRequiredDescription": "The same for every account: one without an authenticator app, a security key or a passkey is asked to add one, and after the grace period can only be used to set it up. The iPhone app refuses its sign-in until then.",
     "mfaEnforcedOn": "MFA on",
     "mfaEnforcedOff": "MFA off",
     "mfaEnforcedOnHint": "A second factor is required for this user. Click to stop requiring it.",
@@ -9844,7 +9863,13 @@
       "upToDate": "Up to date",
       "lastApplied": "Last: {name}, {time}",
       "loadError": "The migration status could not be loaded."
-    }
+    },
+    "mfaRequiredForAdmins": "Require a second factor for admins",
+    "mfaRequiredForAdminsDescription": "An admin account without an authenticator app, a security key or a passkey is asked to add one, and after the grace period can only be used to set it up. The iPhone app refuses its sign-in until then.",
+    "mfaGraceDays": "Grace period",
+    "mfaGraceDaysDescription": "How long an account a policy newly covers has to add a second factor. It starts when you switch a policy on.",
+    "mfaGraceDaysNone": "None",
+    "mfaGraceDaysOption": "{count, plural, one {# day} other {# days}}"
   },
   "achievements": {
     "title": "Achievements",

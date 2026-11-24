@@ -619,13 +619,13 @@ export function proxy(request: NextRequest) {
   // echoed and logged, so anything else is replaced with a fresh one.
   const requestId = resolveRequestId(request.headers.get("x-request-id"));
 
-  // 128 bits of random, base64-encoded. randomUUID().toString() only carries
-  // ~122 bits and has a predictable structure that base64-encodes to a
-  // partially guessable pattern.
+  // 128 random bits, base64 (randomUUID has ~122 and a guessable structure).
   const nonce = generateNonce();
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("x-request-id", requestId);
+  // Overwritten on every request: read by the MFA confinement in getSession.
+  requestHeaders.set("x-healthlog-path", pathname);
   forwardAccountSeedPermission(requestHeaders, isSessionGatedPage);
 
   const response = NextResponse.next({

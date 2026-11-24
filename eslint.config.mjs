@@ -164,6 +164,7 @@ const eslintConfig = defineConfig([
             "src/app/auth/login/page.tsx",
             "src/app/auth/register/page.tsx",
             "src/components/auth/claim-profile.tsx",
+            "src/components/auth/first-account-setup.tsx",
             "src/app/key-mismatch-page.tsx",
             // The first-run flow: full-screen steps with their own rhythm.
             "src/components/onboarding/anamnesis-card.tsx",

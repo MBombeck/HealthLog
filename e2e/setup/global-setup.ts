@@ -805,6 +805,15 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   const pool = new pg.Pool({ connectionString: url });
 
   try {
+    // The seeded admins have no second factor. The admin policy (on by
+    // default since v1.50) would put a grace-period strip above every admin
+    // page and, after the grace period, confine them to enrolment; the specs
+    // here test other things, so the fixture instance runs without it.
+    await pool.query(
+      `INSERT INTO app_settings (id, mfa_required_for_admins)
+       VALUES ('singleton', false)
+       ON CONFLICT (id) DO UPDATE SET mfa_required_for_admins = false`,
+    );
     const passwordHash = await hashPassword(E2E_USER.password);
     const now = new Date();
     const dob = new Date("1985-06-15T00:00:00.000Z");

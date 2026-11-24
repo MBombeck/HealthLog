@@ -163,13 +163,19 @@
         "last_method": "Cette clé d’accès est votre seul moyen de connexion. Définissez d’abord un mot de passe ou ajoutez une autre clé d’accès."
       },
       "mfa": {
-        "already_active": "Une application d'authentification est déjà configurée pour ce compte. Désactivez-la d'abord pour en configurer une nouvelle."
+        "already_active": "Une application d'authentification est déjà configurée pour ce compte. Désactivez-la d'abord pour en configurer une nouvelle.",
+        "enrollment_required": "Configurez un second facteur pour continuer. D'ici là, ce compte ne sert qu'à cela."
       },
       "register": {
         "taken": "Ce nom d’utilisateur ou cette adresse e-mail est déjà utilisé.",
-        "invite_invalid": "Cette invitation n’est plus valable. Demandez un nouveau lien à la personne qui vous a invité."
+        "invite_invalid": "Cette invitation n’est plus valable. Demandez un nouveau lien à la personne qui vous a invité.",
+        "setup_required": "Ce serveur n'a pas encore de compte. Saisissez le code de configuration du journal du serveur pour créer le premier."
       },
-      "already_authenticated": "Vous êtes déjà connecté. Déconnectez-vous d’abord, puis réessayez."
+      "already_authenticated": "Vous êtes déjà connecté. Déconnectez-vous d’abord, puis réessayez.",
+      "setup": {
+        "token_invalid": "Ce n'est pas le code de configuration de ce serveur. Consultez le journal du serveur et réessayez.",
+        "already_claimed": "Ce serveur a déjà un compte. Connectez-vous plutôt."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -690,7 +696,8 @@
       "errorIdentityConflict": "Cette adresse e-mail appartient à un compte déjà lié à une autre identité SSO.",
       "errorRegistrationDisabled": "Aucun compte ne correspond à cette identité et les nouvelles inscriptions sont actuellement fermées.",
       "errorFailed": "L'authentification unique a échoué. Veuillez réessayer.",
-      "errorLinkRequired": "Un compte avec cette adresse e-mail existe déjà ici. Connectez-vous-y une fois avec son mot de passe ou sa clé d'accès pour le relier à l'authentification unique."
+      "errorLinkRequired": "Un compte avec cette adresse e-mail existe déjà ici. Connectez-vous-y une fois avec son mot de passe ou sa clé d'accès pour le relier à l'authentification unique.",
+      "errorSetupRequired": "Ce serveur n'a pas encore de compte. Saisissez d'abord le code de configuration du journal du serveur, puis connectez-vous avec l'authentification unique."
     },
     "native": {
       "signingInToApp": "Connexion à l'application HealthLog",
@@ -715,7 +722,10 @@
     "enrollMfa": {
       "title": "Configurer un second facteur",
       "body": "Votre administrateur exige un second facteur sur ce compte. Ajoutez une application d'authentification ou une clé de sécurité pour continuer.",
-      "signOut": "Se déconnecter"
+      "signOut": "Se déconnecter",
+      "graceBanner": "Votre administrateur exige un second facteur sur ce compte. Ajoutez-en un avant le {date} ; après cette date, le compte ne servira plus qu'à le configurer.",
+      "graceAction": "Le configurer maintenant",
+      "graceDismiss": "Masquer cet avis"
     },
     "confirmAccess": {
       "title": "Confirmez que c'est bien vous",
@@ -775,7 +785,16 @@
     },
     "deletionPending": "Ce compte sera supprimé le {date} et reste verrouillé d’ici là. Un administrateur de ce serveur peut annuler la suppression avant cette date.",
     "deletionPendingNoDate": "Ce compte est programmé pour suppression et il est verrouillé. Un administrateur de ce serveur peut annuler la suppression tant qu’elle n’est pas terminée.",
-    "signInRateLimited": "Trop de tentatives. Attendez quelques minutes puis réessayez."
+    "signInRateLimited": "Trop de tentatives. Attendez quelques minutes puis réessayez.",
+    "setup": {
+      "title": "Configurer ce serveur",
+      "body": "Ce serveur n'a pas encore de compte. Le premier compte en devient l'administrateur et a donc besoin du code de configuration : le serveur l'écrit dans son journal à chaque démarrage, ou c'est le SETUP_TOKEN défini dans son environnement.",
+      "tokenLabel": "Code de configuration",
+      "submit": "Continuer",
+      "invalid": "Cela n'a pas fonctionné. Vérifiez le code de configuration et réessayez.",
+      "proven": "Code de configuration accepté. Le premier compte que vous créez ici devient l'administrateur.",
+      "createFirstAccount": "Créer le premier compte"
+    }
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -9310,7 +9329,7 @@
     },
     "carrier": "Opérateur",
     "mfaRequired": "Exiger un second facteur",
-    "mfaRequiredDescription": "Les comptes sans deuxième facteur sont dirigés vers sa configuration après une connexion web ; l'accès par API ou natif (Bearer) reste ouvert.",
+    "mfaRequiredDescription": "La même chose pour chaque compte : un compte sans application d'authentification, clé de sécurité ni clé d'accès est invité à en ajouter une et, après le délai de grâce, ne sert plus qu'à la configurer. L'app iPhone refuse sa connexion d'ici là.",
     "mfaEnforcedOn": "MFA activé",
     "mfaEnforcedOff": "MFA désactivé",
     "mfaEnforcedOnHint": "Un second facteur est requis pour cet utilisateur. Cliquez pour ne plus l'exiger.",
@@ -9844,7 +9863,13 @@
       "upToDate": "À jour",
       "lastApplied": "Dernière : {name}, {time}",
       "loadError": "L'état des migrations n'a pas pu être chargé."
-    }
+    },
+    "mfaRequiredForAdmins": "Exiger un second facteur pour les administrateurs",
+    "mfaRequiredForAdminsDescription": "Un compte administrateur sans application d'authentification, clé de sécurité ni clé d'accès est invité à en ajouter une et, après le délai de grâce, ne sert plus qu'à la configurer. L'app iPhone refuse sa connexion d'ici là.",
+    "mfaGraceDays": "Délai de grâce",
+    "mfaGraceDaysDescription": "Le temps dont dispose un compte nouvellement concerné par une règle pour ajouter un second facteur. Il commence lorsque vous activez une règle.",
+    "mfaGraceDaysNone": "Aucun",
+    "mfaGraceDaysOption": "{count, plural, one {# jour} other {# jours}}"
   },
   "achievements": {
     "title": "Réussites",

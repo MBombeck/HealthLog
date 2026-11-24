@@ -534,6 +534,14 @@ const accountPayload = z
       .describe(
         "The IANA zone the server cuts this account's days in: the stored zone, or the instance default when the stored one is unusable. Resolved, never the raw column, so bucket day keys by this value.",
       ),
+    mfaEnrollment: z
+      .object({
+        state: z.enum(["none", "grace", "required"]),
+        dueAt: isoDateTime().nullable(),
+      })
+      .describe(
+        "Whether an instance or per-account policy requires this account to enrol a second factor (TOTP, a security key or a passkey), and by when. `none`: no policy covers the account or it has a factor; `grace`: enrol by `dueAt`, the account works as before until then; `required`: a browser session reaches only the enrolment routes and a native sign-in is refused with `auth.mfa.enrollment_required` until the account enrols.",
+      ),
     glucoseUnit: z
       .enum(["mg/dL", "mmol/L"])
       .nullable()

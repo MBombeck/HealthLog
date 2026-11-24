@@ -93,10 +93,7 @@ export async function openOidcSession(
 ): Promise<void> {
   // Parity with password login: the admin-enforced-MFA hint cookie sends a
   // single-factor account into forced enrollment after sign-in.
-  await syncMfaEnrollCookie(user.id, {
-    totpConfirmedAt: user.totpConfirmedAt,
-    mfaEnforced: user.mfaEnforced,
-  });
+  await syncMfaEnrollCookie(user.id, user);
 
   // The 5th argument stays null: OIDC is a delegated factor, so an SSO
   // session must never satisfy `requireFreshMfa` step-up (MFA disable,

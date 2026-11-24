@@ -168,10 +168,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   );
 
   // v1.23 — sync the admin-enforced-MFA forced-enrollment hint cookie.
-  await syncMfaEnrollCookie(user.id, {
-    totpConfirmedAt: user.totpConfirmedAt,
-    mfaEnforced: user.mfaEnforced,
-  });
+  await syncMfaEnrollCookie(user.id, user);
 
   await auditLog("auth.login.passkey", {
     userId: user.id,

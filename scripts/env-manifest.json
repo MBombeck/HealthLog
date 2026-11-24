@@ -526,6 +526,11 @@
           "example": "180"
         },
         {
+          "name": "SETUP_TOKEN",
+          "purpose": "The token that creates the first account (the admin) on an instance without one, at least 32 characters. Unset, every start prints one derived from API_TOKEN_HMAC_KEY to the log while no account exists. Opens nothing once an account exists.",
+          "example": "<openssl rand -hex 32>"
+        },
+        {
           "name": "HEALTHLOG_PLATFORM",
           "purpose": "Where this server's environment is configured (compose, truenas, coolify, unraid, portainer). Shown back to the admin: the \"Back up your encryption key\" step opens on that platform's instructions. Unset means compose.",
           "example": "compose"

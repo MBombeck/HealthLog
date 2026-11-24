@@ -123,6 +123,9 @@ export interface AdminSettings {
   registrationEnabled: boolean;
   // v1.23 — instance-wide "require a second factor" policy.
   mfaRequired: boolean;
+  // The same for admin accounts, and the grace period in days.
+  mfaRequiredForAdmins: boolean;
+  mfaGraceDays: number;
   defaultLocale: string;
   telegramGlobal: boolean;
   ntfyGlobal: boolean;

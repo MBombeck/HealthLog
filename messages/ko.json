@@ -163,13 +163,19 @@
         "last_method": "이 패스키가 유일한 로그인 수단이에요. 먼저 비밀번호를 설정하거나 패스키를 하나 더 추가하세요."
       },
       "mfa": {
-        "already_active": "이 계정에는 이미 인증 앱이 설정되어 있어요. 새로 설정하려면 먼저 해제하세요."
+        "already_active": "이 계정에는 이미 인증 앱이 설정되어 있어요. 새로 설정하려면 먼저 해제하세요.",
+        "enrollment_required": "계속하려면 2단계 인증을 설정하세요. 설정할 때까지 이 계정은 그 용도로만 사용할 수 있습니다."
       },
       "register": {
         "taken": "이미 사용 중인 사용자명 또는 이메일 주소예요.",
-        "invite_invalid": "이 초대는 더 이상 유효하지 않아요. 초대한 분께 새 링크를 요청해 주세요."
+        "invite_invalid": "이 초대는 더 이상 유효하지 않아요. 초대한 분께 새 링크를 요청해 주세요.",
+        "setup_required": "이 서버에는 아직 계정이 없습니다. 첫 계정을 만들려면 서버 로그의 설정 토큰을 입력하세요."
       },
-      "already_authenticated": "이미 로그인되어 있어요. 먼저 로그아웃한 다음 다시 시도해 주세요."
+      "already_authenticated": "이미 로그인되어 있어요. 먼저 로그아웃한 다음 다시 시도해 주세요.",
+      "setup": {
+        "token_invalid": "이 서버의 설정 토큰이 아닙니다. 서버 로그를 확인하고 다시 시도하세요.",
+        "already_claimed": "이 서버에는 이미 계정이 있습니다. 대신 로그인하세요."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -690,7 +696,8 @@
       "errorIdentityConflict": "그 이메일 주소는 다른 SSO 계정에 이미 연결돼 있어요.",
       "errorRegistrationDisabled": "일치하는 계정이 없고, 지금은 회원가입이 닫혀 있어요.",
       "errorFailed": "싱글 사인온에 실패했어요. 다시 시도해 주세요.",
-      "errorLinkRequired": "이 이메일 주소를 사용하는 계정이 이미 있습니다. 싱글 사인온에 연결하려면 해당 계정의 비밀번호나 패스키로 한 번 로그인하세요."
+      "errorLinkRequired": "이 이메일 주소를 사용하는 계정이 이미 있습니다. 싱글 사인온에 연결하려면 해당 계정의 비밀번호나 패스키로 한 번 로그인하세요.",
+      "errorSetupRequired": "이 서버에는 아직 계정이 없습니다. 먼저 서버 로그의 설정 토큰을 입력한 다음 통합 로그인(SSO)으로 로그인하세요."
     },
     "native": {
       "signingInToApp": "HealthLog 앱에 로그인하는 중",
@@ -715,7 +722,10 @@
     "enrollMfa": {
       "title": "2차 인증 수단 설정",
       "body": "관리자가 이 계정에 2차 인증 수단을 요구해요. 인증 앱이나 보안 키를 추가하고 계속해 주세요.",
-      "signOut": "로그아웃"
+      "signOut": "로그아웃",
+      "graceBanner": "관리자가 이 계정에 2단계 인증을 요구합니다. {date}까지 추가하세요. 그 이후에는 이 계정으로 설정만 할 수 있습니다.",
+      "graceAction": "지금 설정",
+      "graceDismiss": "이 알림 숨기기"
     },
     "confirmAccess": {
       "title": "본인인지 확인해 주세요",
@@ -775,7 +785,16 @@
     },
     "deletionPending": "이 계정은 {date}에 삭제될 예정이며 그때까지 잠겨 있어요. 그 전에는 이 서버의 관리자가 삭제를 취소할 수 있어요.",
     "deletionPendingNoDate": "이 계정은 삭제 예정이라 잠겨 있어요. 삭제가 끝나기 전까지는 이 서버의 관리자가 취소할 수 있어요.",
-    "signInRateLimited": "시도 횟수가 너무 많아요. 몇 분 후 다시 시도해 주세요."
+    "signInRateLimited": "시도 횟수가 너무 많아요. 몇 분 후 다시 시도해 주세요.",
+    "setup": {
+      "title": "이 서버 설정",
+      "body": "이 서버에는 아직 계정이 없습니다. 첫 계정이 관리자가 되므로 설정 토큰이 필요합니다. 서버가 시작할 때마다 로그에 출력하거나, 환경에 설정된 SETUP_TOKEN입니다.",
+      "tokenLabel": "설정 토큰",
+      "submit": "계속",
+      "invalid": "실패했습니다. 설정 토큰을 확인하고 다시 시도하세요.",
+      "proven": "설정 토큰이 확인되었습니다. 여기서 처음 만드는 계정이 관리자가 됩니다.",
+      "createFirstAccount": "첫 계정 만들기"
+    }
   },
   "dashboard": {
     "title": "대시보드",
@@ -9285,7 +9304,7 @@
     },
     "carrier": "통신사",
     "mfaRequired": "2단계 인증 필수",
-    "mfaRequiredDescription": "2단계 인증이 없는 계정은 웹 로그인 후 등록 화면으로 보내고, API와 네이티브(Bearer) 접근은 그대로 열려 있어요.",
+    "mfaRequiredDescription": "모든 계정에 동일하게 적용됩니다. 인증 앱, 보안 키 또는 패스키가 없는 계정에는 추가하라는 안내가 표시되고, 유예 기간 후에는 설정에만 사용할 수 있습니다. 그때까지 iPhone 앱은 로그인을 거부합니다.",
     "mfaEnforcedOn": "MFA 켬",
     "mfaEnforcedOff": "MFA 끔",
     "mfaEnforcedOnHint": "이 사용자에게 2단계 인증이 필수예요. 누르면 해제돼요.",
@@ -9844,7 +9863,13 @@
       "upToDate": "최신 상태",
       "lastApplied": "마지막: {name}, {time}",
       "loadError": "마이그레이션 상태를 불러오지 못했습니다."
-    }
+    },
+    "mfaRequiredForAdmins": "관리자에게 2단계 인증 요구",
+    "mfaRequiredForAdminsDescription": "인증 앱, 보안 키 또는 패스키가 없는 관리자 계정에는 추가하라는 안내가 표시되고, 유예 기간 후에는 설정에만 사용할 수 있습니다. 그때까지 iPhone 앱은 로그인을 거부합니다.",
+    "mfaGraceDays": "유예 기간",
+    "mfaGraceDaysDescription": "새로 정책 대상이 된 계정이 2단계 인증을 추가할 수 있는 기간입니다. 정책을 켤 때 시작됩니다.",
+    "mfaGraceDaysNone": "없음",
+    "mfaGraceDaysOption": "{count, plural, other {#일}}"
   },
   "achievements": {
     "title": "업적",

@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { hashToken } from "@/lib/auth/hmac";
 import { SESSION_USER_SELECT, type SessionUser } from "@/lib/auth/session-user";
 import { getEvent } from "@/lib/logging/context";
-import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isInputRefusal, isP2025 } from "@/lib/prisma-errors";
 import { SessionStoreUnavailableError } from "@/lib/api-errors";
 import { credentialRevocations } from "@/lib/auth/credential-revocations";
@@ -19,6 +18,15 @@ import {
   sessionCookieName,
 } from "@/lib/auth/session-cookie";
 import * as lifetime from "@/lib/auth/session-lifetime";
+import {
+  ONBOARDING_COOKIE,
+  setOnboardingPendingCookie,
+} from "@/lib/auth/onboarding-cookie";
+export { setOnboardingPendingCookie };
+import {
+  enforceMfaEnrollment,
+  mfaDueAtForSignIn,
+} from "@/lib/auth/mfa-confinement";
 
 /**
  * Marks a cookie value as a v1.30.32 session secret. Doubles as the branch
@@ -224,42 +232,6 @@ export async function validateSessionWithCreatedAt(
 const LAST_ACTIVE_THROTTLE_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
- * v1.4.22 — flag cookie mirroring the user's `onboardingCompletedAt`
- * status. Set to `"pending"` while the field is null and cleared once
- * onboarding completes. The proxy reads this cookie to short-circuit
- * the post-hydration redirect that previously caused a dashboard flash
- * before the client-side `<AuthShell>` effect could fire.
- *
- * NOT httpOnly: the cookie is a UX hint, not a security signal — the
- * real gate stays the server-side onboarding-complete check in
- * `/api/onboarding/complete`. A user editing the cookie locally just
- * skips the dashboard flash; they still can't bypass any data check.
- */
-const ONBOARDING_COOKIE = "hl_onboarding";
-
-export async function setOnboardingPendingCookie(
-  pending: boolean,
-): Promise<void> {
-  const cookieStore = await cookies();
-  if (pending) {
-    cookieStore.set(ONBOARDING_COOKIE, "pending", {
-      httpOnly: false,
-      secure: shouldEmitSecureCookie(),
-      // v1.4.22 — Strict (not Lax) because
-      // no cross-site redirect flow ever depends on this cookie. The
-      // sibling session cookie stays Lax because the
-      // Withings OAuth callback arrives via top-level cross-site
-      // redirect; the onboarding hint has no equivalent flow.
-      sameSite: "strict",
-      maxAge: lifetime.sessionIdleTimeoutMs() / 1000,
-      path: "/",
-    });
-  } else {
-    cookieStore.delete(ONBOARDING_COOKIE);
-  }
-}
-
-/**
  * v1.4.22 — `onboardingPending` is required
  * (not optional) so issuing a session without anchoring the
  * onboarding cookie is type-impossible. Every auth surface (login,
@@ -290,6 +262,7 @@ export async function createSession(
       tokenHash: hashToken(secret),
       createdAt: signedInAt,
       expiresAt,
+      mfaEnrollmentDueAt: await mfaDueAtForSignIn(userId),
       ipAddress: ipAddress ?? null,
       userAgent: userAgent ?? null,
       mfaVerifiedAt: mfaVerifiedAt ?? null,
@@ -313,6 +286,7 @@ export async function getSession(): Promise<{
     expiresAt: Date;
     actingAsUserId: string | null;
     recordEpoch: number;
+    mfaEnrollmentDueAt?: Date | null;
   };
   user: SessionUser;
 } | null> {
@@ -333,6 +307,8 @@ export async function getSession(): Promise<{
     cookieStore.delete(ONBOARDING_COOKIE);
     return null;
   }
+  // Past its second-factor due date: the enrolment surface only.
+  await enforceMfaEnrollment(session);
 
   // Sliding expiry, never past the absolute end (`slidWebSessionExpiry`).
   // Withheld from legacy (`tokenHash === null`) rows on purpose: extending
@@ -479,6 +455,7 @@ export async function getSession(): Promise<{
       // Written by a database trigger only (migration 0302); nothing in the
       // application assigns it, and the `BEFORE` timing means nothing can.
       recordEpoch: session.recordEpoch,
+      mfaEnrollmentDueAt: session.mfaEnrollmentDueAt,
     },
     user: session.user,
   };

@@ -121,13 +121,13 @@ export interface AuthUser {
   onboarding?: OnboardingStateDto | null;
   /**
    * v1.18.6 — ISO timestamp of the one-time medical-disclaimer
-   * acknowledgment, or null when never acknowledged. The onboarding welcome
-   * step gates "Get started" on a non-null value for a fresh account.
-   * Optional in the type so a stale /me payload (older server image without
-   * the field) and existing test fixtures coerce to "never acknowledged"
-   * rather than failing the shape.
+   * acknowledgment, or null when never acknowledged; the welcome step gates
+   * "Get started" on it. Optional so an older payload and test fixtures
+   * coerce to "never acknowledged" rather than failing the shape.
    */
   disclaimerAcknowledgedAt?: string | null;
+  /** Second-factor policy: `grace` until `dueAt` shows the prompt; may be absent. */
+  mfaEnrollment?: { state: string; dueAt: string | null };
   /**
    * The disclaimer version that acknowledgment was given for. The welcome
    * gate compares it against the current `DISCLAIMER_VERSION` so a revised

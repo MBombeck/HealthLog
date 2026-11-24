@@ -163,13 +163,19 @@
         "last_method": "Esta chave de acesso é sua única forma de entrar. Defina uma senha ou adicione outra chave de acesso primeiro."
       },
       "mfa": {
-        "already_active": "Esta conta já tem um aplicativo autenticador configurado. Desative-o primeiro para configurar um novo."
+        "already_active": "Esta conta já tem um aplicativo autenticador configurado. Desative-o primeiro para configurar um novo.",
+        "enrollment_required": "Configure um segundo fator para continuar. Até lá, esta conta só pode ser usada para isso."
       },
       "register": {
         "taken": "Esse nome de usuário ou endereço de e-mail já está em uso.",
-        "invite_invalid": "Este convite não é mais válido. Peça um novo link à pessoa que convidou você."
+        "invite_invalid": "Este convite não é mais válido. Peça um novo link à pessoa que convidou você.",
+        "setup_required": "Este servidor ainda não tem nenhuma conta. Digite o token de configuração do log do servidor para criar a primeira."
       },
-      "already_authenticated": "Você já está conectado. Saia primeiro e tente novamente."
+      "already_authenticated": "Você já está conectado. Saia primeiro e tente novamente.",
+      "setup": {
+        "token_invalid": "Esse não é o token de configuração deste servidor. Confira o log do servidor e tente de novo.",
+        "already_claimed": "Este servidor já tem uma conta. Entre em vez disso."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -690,7 +696,8 @@
       "errorIdentityConflict": "Esse e-mail pertence a uma conta já vinculada a outra identidade SSO.",
       "errorRegistrationDisabled": "Nenhuma conta corresponde a essa identidade e novos cadastros estão fechados.",
       "errorFailed": "O login único falhou. Tente novamente.",
-      "errorLinkRequired": "Já existe uma conta com este e-mail aqui. Entre nela uma vez com a senha ou chave de acesso para vinculá-la ao login único."
+      "errorLinkRequired": "Já existe uma conta com este e-mail aqui. Entre nela uma vez com a senha ou chave de acesso para vinculá-la ao login único.",
+      "errorSetupRequired": "Este servidor ainda não tem nenhuma conta. Digite primeiro o token de configuração do log do servidor e depois entre com login único."
     },
     "native": {
       "signingInToApp": "Entrando no app HealthLog",
@@ -715,7 +722,10 @@
     "enrollMfa": {
       "title": "Configurar um segundo fator",
       "body": "Seu administrador exige um segundo fator nesta conta. Adicione um app autenticador ou uma chave de segurança para continuar.",
-      "signOut": "Sair"
+      "signOut": "Sair",
+      "graceBanner": "Seu administrador exige um segundo fator nesta conta. Adicione um até {date}; depois dessa data a conta só poderá ser usada para configurá-lo.",
+      "graceAction": "Configurar agora",
+      "graceDismiss": "Ocultar este aviso"
     },
     "confirmAccess": {
       "title": "Confirme que é você",
@@ -775,7 +785,16 @@
     },
     "deletionPending": "Esta conta será excluída em {date} e está bloqueada até lá. Um administrador deste servidor pode desfazer a exclusão antes dessa data.",
     "deletionPendingNoDate": "Esta conta está programada para exclusão e está bloqueada. Um administrador deste servidor pode desfazer a exclusão até que ela seja concluída.",
-    "signInRateLimited": "Muitas tentativas. Aguarde alguns minutos e tente novamente."
+    "signInRateLimited": "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+    "setup": {
+      "title": "Configurar este servidor",
+      "body": "Este servidor ainda não tem nenhuma conta. A primeira conta se torna a administradora, por isso precisa do token de configuração: o servidor o escreve no log a cada inicialização, ou é o SETUP_TOKEN definido no ambiente.",
+      "tokenLabel": "Token de configuração",
+      "submit": "Continuar",
+      "invalid": "Não deu certo. Confira o token de configuração e tente de novo.",
+      "proven": "Token de configuração aceito. A primeira conta que você criar aqui será a administradora.",
+      "createFirstAccount": "Criar a primeira conta"
+    }
   },
   "dashboard": {
     "title": "Painel",
@@ -9310,7 +9329,7 @@
     },
     "carrier": "Operadora",
     "mfaRequired": "Exigir um segundo fator",
-    "mfaRequiredDescription": "Contas sem um segundo fator são enviadas para configurar um após um login pela web; o acesso à API e nativo (Bearer) permanece aberto.",
+    "mfaRequiredDescription": "O mesmo para todas as contas: uma sem app autenticador, chave de segurança ou passkey é solicitada a adicionar um e, após o período de carência, só pode ser usada para configurá-lo. O app de iPhone recusa o login até lá.",
     "mfaEnforcedOn": "MFA ativado",
     "mfaEnforcedOff": "MFA desativado",
     "mfaEnforcedOnHint": "Um segundo fator é exigido para este usuário. Clique para parar de exigi-lo.",
@@ -9844,7 +9863,13 @@
       "upToDate": "Em dia",
       "lastApplied": "Última: {name}, {time}",
       "loadError": "Não foi possível carregar o estado das migrações."
-    }
+    },
+    "mfaRequiredForAdmins": "Exigir um segundo fator dos administradores",
+    "mfaRequiredForAdminsDescription": "Uma conta de administrador sem app autenticador, chave de segurança ou passkey é solicitada a adicionar um e, após o período de carência, só pode ser usada para configurá-lo. O app de iPhone recusa o login até lá.",
+    "mfaGraceDays": "Período de carência",
+    "mfaGraceDaysDescription": "Quanto tempo uma conta recém-coberta por uma regra tem para adicionar um segundo fator. Começa quando você ativa uma regra.",
+    "mfaGraceDaysNone": "Nenhum",
+    "mfaGraceDaysOption": "{count, plural, one {# dia} other {# dias}}"
   },
   "achievements": {
     "title": "Conquistas",

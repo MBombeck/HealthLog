@@ -69,6 +69,11 @@ export type AuthContext = {
      * fence.
      */
     readonly recordEpoch?: number;
+    /**
+     * The session's second-factor due date (`Session.mfaEnrollmentDueAt`),
+     * cookie path only. `/api/auth/me` refreshes it from the policy.
+     */
+    readonly mfaEnrollmentDueAt?: Date | null;
   };
   user: SessionUser;
   /**

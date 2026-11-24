@@ -15,6 +15,10 @@ import { detectBrowserTimezone } from "@/lib/tz/format";
 import { ApiError, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
 import {
+  FirstAccountSetupCard,
+  useFirstAccountSetupPending,
+} from "@/components/auth/first-account-setup";
+import {
   clearCachesForSessionEnd,
   signOutRequest,
   useAuth,
@@ -39,11 +43,10 @@ export default function RegisterPage() {
   // the shell does not sign people out on a blip — and on that path there is
   // no `user`. Gating on it would show an invited household member behind a
   // 502 a panel that names nobody and offers a sign-out posting to the very
-  // endpoint that is failing, with no way to register. A payload in hand is
-  // the only positive evidence of a session, and it is also absent while the
-  // probe is still in flight, so the panel cannot flash at somebody who is
-  // not signed in.
+  // endpoint that is failing. A payload in hand is the only positive evidence
+  // of a session, and it is absent while the probe is in flight.
   const { user } = useAuth();
+  const setupPending = useFirstAccountSetupPending();
   const [signingOut, setSigningOut] = useState(false);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -166,6 +169,7 @@ export default function RegisterPage() {
     );
   }
 
+  if (setupPending) return <FirstAccountSetupCard />;
   return (
     <div className="w-full max-w-sm">
       {/* v1.4.27 — drop `p-8` to `p-6 sm:p-8` so the

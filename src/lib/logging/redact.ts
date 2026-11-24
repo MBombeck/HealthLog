@@ -161,12 +161,16 @@ export function redactSecrets(input: string): string {
       // token, `hls_` session cookie secret (v1.30.32) and clinician share
       // token, `hle_` step-up elevation (v1.30.34), `hlv_` registration invite,
       // `hlp_` managed-profile handover link (v1.42), `hlf_` cycle
-      // calendar-feed link (#1350), `hlm_` emergency-card link (v1.49).
+      // calendar-feed link (#1350), `hlm_` emergency-card link (v1.49), `hlu_`
+      // first-account setup token (v1.50).
       // Same boundary-aware shape as the `sk-` rule. The
       // idempotency replay-cache already rejects bodies containing
       // these prefixes; this
       // is the matching egress guard for log/error surfaces.
-      .replace(/(^|[^A-Za-z0-9])hl[kpresvfm]_[A-Fa-f0-9]{32,}/g, "$1[REDACTED]")
+      .replace(
+        /(^|[^A-Za-z0-9])hl[kpresvfmu]_[A-Fa-f0-9]{32,}/g,
+        "$1[REDACTED]",
+      )
       // v1.22.0 — the MCP OAuth bridge artifacts: the authorization code
       // (`hlac_`), refresh token (`hlrt_`), and DCR client id (`hlc_`). All
       // are signed, base64url-bodied, and credential-bearing, so they are

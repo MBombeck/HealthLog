@@ -11,6 +11,10 @@ export const adminSettingsSchema = z
     registrationEnabled: z.boolean().optional(),
     // v1.23 — instance-wide "require a second factor" policy.
     mfaRequired: z.boolean().optional(),
+    // The same for admin accounts, and the grace period in days an
+    // account a policy newly covers has to enrol.
+    mfaRequiredForAdmins: z.boolean().optional(),
+    mfaGraceDays: z.number().int().min(0).max(90).optional(),
     // Every shipped locale. It was the pair de/en long after the app shipped
     // seven, so the admin picker could offer only two of them.
     defaultLocale: z.enum(locales).optional(),

@@ -12,6 +12,7 @@
  * The scoping rules for every field are on the route's docblock
  * (`src/app/api/auth/me/route.ts`).
  */
+import { resolveMfaEnrollment } from "@/lib/auth/mfa-enrollment";
 import type { AuthContext } from "@/lib/api-handler";
 import { buildAvatarUrl } from "@/lib/avatar";
 import { decrypt } from "@/lib/crypto";
@@ -130,6 +131,10 @@ export async function buildAuthMePayload(
     // One-time medical-disclaimer acknowledgment. Null
     // when never acknowledged; the onboarding welcome gate reads this to
     // decide whether to require the acknowledgment before "Get started".
+    // Whether, and by when, a second-factor policy needs this account to
+    // enrol (`@/lib/auth/mfa-enrollment`). The web shows the grace prompt
+    // from it; the confinement itself is server-side.
+    mfaEnrollment: await resolveMfaEnrollment(user.id, user),
     disclaimerAcknowledgedAt: user.disclaimerAcknowledgedAt,
     // The version that acknowledgment was given for. The welcome gate
     // compares it against the current DISCLAIMER_VERSION so a revised

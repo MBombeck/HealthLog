@@ -68,10 +68,16 @@ export const GET = apiHandler(async (request?: Request) => {
     // boot, mirroring the onboarding-cookie resync. A locally edited cookie is
     // corrected here; an account that enrols (or has the policy lifted) loses
     // the redirect on the next /me read.
-    syncMfaEnrollCookie(user.id, {
-      totpConfirmedAt: user.totpConfirmedAt,
-      mfaEnforced: user.mfaEnforced,
-    }),
+    syncMfaEnrollCookie(
+      user.id,
+      user,
+      auth.authMethod === "cookie"
+        ? {
+            id: auth.session.id,
+            mfaEnrollmentDueAt: auth.session.mfaEnrollmentDueAt ?? null,
+          }
+        : undefined,
+    ),
     // v1.36.0 — which records this caller may open, which one they are
     // inside, and what they may do there. Every value resolved server-side;
     // see the module docblock for why none of it is left to the client.

@@ -219,10 +219,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       });
       // The account has a second factor, so the enforcement gate is satisfied;
       // keep the hint cookie honest.
-      await syncMfaEnrollCookie(user.id, {
-        totpConfirmedAt: user.totpConfirmedAt,
-        mfaEnforced: user.mfaEnforced,
-      });
+      await syncMfaEnrollCookie(user.id, user);
       return finishLogin({
         user,
         request,
@@ -266,10 +263,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // v1.23 — admin-enforced MFA policy. A single-factor account under the policy
   // is sent to forced enrollment after sign-in; the proxy reads this hint
   // cookie without a DB round-trip. Cheap (short-circuits when not enforced).
-  await syncMfaEnrollCookie(user.id, {
-    totpConfirmedAt: user.totpConfirmedAt,
-    mfaEnforced: user.mfaEnforced,
-  });
+  await syncMfaEnrollCookie(user.id, user);
 
   // No second factor — issue the session/token exactly as before.
   return finishLogin({

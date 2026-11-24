@@ -59,6 +59,7 @@ export const ACCOUNT_SEED_FIELDS = [
   "recordSession",
   "features",
   "push",
+  "mfaEnrollment",
 ] as const satisfies readonly MeField[];
 
 /**

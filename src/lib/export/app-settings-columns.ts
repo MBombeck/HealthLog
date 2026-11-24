@@ -50,6 +50,14 @@ export const APP_SETTINGS_COLUMNS = {
   id: { class: "SETTING", codec: "plain" },
   registrationEnabled: { class: "SETTING", codec: "plain" },
   mfaRequired: { class: "SETTING", codec: "plain" },
+  // 1.50. A file written before carries neither; the host keeps its own.
+  mfaRequiredForAdmins: { class: "SETTING", codec: "plain" },
+  mfaGraceDays: { class: "SETTING", codec: "plain" },
+  mfaPolicySince: {
+    class: "OPERATIONAL",
+    reason:
+      "when a second-factor policy took effect on this host; the grace period of this host's accounts counts from it, not from the file's",
+  },
   defaultLocale: { class: "SETTING", codec: "plain" },
   telegramGlobal: { class: "SETTING", codec: "plain" },
   ntfyGlobal: { class: "SETTING", codec: "plain" },
