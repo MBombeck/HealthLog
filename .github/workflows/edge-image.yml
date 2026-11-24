@@ -81,7 +81,8 @@ jobs:
             echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } >> "$GITHUB_OUTPUT"
 
-      # Writes the `-main` cache scope the release build warm-starts from.
+      # Writes the `-main` cache scope pull-request image builds warm-start
+      # from. Release tag builds use no shared cache (docker-publish.yml).
       - name: Build & push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
