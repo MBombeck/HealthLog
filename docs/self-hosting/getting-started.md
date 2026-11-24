@@ -87,6 +87,9 @@ process (`pnpm dev` against a host Postgres) or a **custom compose** that
 does not derive it — in that case uncomment and set `DATABASE_URL`
 explicitly in `.env` (see the commented example there).
 
+To keep the secrets out of `.env`, every one of them can come from a file,
+such as a Docker secret: see `docs/self-hosting/secrets.md`.
+
 ### Using an existing or shared Postgres
 
 HealthLog can live in a database on a Postgres instance you already run,
@@ -248,6 +251,7 @@ many hops to read back.
 | TLS + reverse-proxy configuration                                   | `docs/self-hosting/reverse-proxy.md`                                                                                  |
 | Tailnet-only HTTPS via `tailscale serve` (no reverse proxy)         | `docs/self-hosting/tailscale.md`                                                                                      |
 | Push notifications — Web Push, Telegram, ntfy, webhook, email, APNs | `docs/self-hosting/notifications.md`                                                                                  |
+| Secrets from files (Docker secrets, Vault)                          | `docs/self-hosting/secrets.md`                                                                                        |
 | Web/worker process split for horizontal scale                       | `docs/self-hosting/scaling.md`                                                                                        |
 | Off-host encrypted backups to S3/R2/B2                              | `docs/ops/backup-restore.md`                                                                                          |
 | Encryption-key rotation procedure                                   | `docs/ops/encryption-key-rotation.md`                                                                                 |
