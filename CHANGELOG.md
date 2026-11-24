@@ -10,6 +10,10 @@
 - Editing a dose time no longer drops an earlier dose of the same day that is still open. Moving the evening time in the morning removed the morning dose from the today list and the dashboard count while the history and the iPhone app still showed it due.
 - The public demo no longer goes stale between seeds. Everything the demo seed writes is relative to the day it ran, so after that day medications without an automatic intake lost adherence day by day, sleep and activity slid out of their windows, and the visit booked for tomorrow moved into the past. A demo deploy (`DEMO_MODE=true`) now rewrites itself from the same seed every day at 10:00 Berlin, and after a restart that missed that hour. It runs only when the database holds the demo account and nothing else, and on any other deploy the job does not exist. Visitors stay read-only; a visitor signed in at 10:00 is signed out once.
 
+### Security
+
+- A file import upload is held to its size limit as a whole, not only in the file it carries. The other parts of the form and their headers were read into memory without a limit, so a signed-in caller could send a body that grew the server's memory until the app stopped. Every byte of the body now counts against the import's cap, and the small form fields and part headers have their own ceilings.
+
 ## [1.49.0] — 2026-11-23
 
 ### Added
