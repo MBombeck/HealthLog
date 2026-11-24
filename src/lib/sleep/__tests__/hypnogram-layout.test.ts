@@ -55,12 +55,19 @@ describe("hasHypnogramTrack", () => {
     expect(hasHypnogramTrack(layout, true)).toBe(false);
   });
 
-  it("does not draw segments that all start on one instant", () => {
-    const flat = hypnogramLayout([
-      seg("CORE", "2026-06-01T23:00:00Z", "2026-06-02T01:00:00Z"),
-      seg("DEEP", "2026-06-01T23:00:00Z", "2026-06-02T00:00:00Z"),
+  it("draws nothing when no span survives the layout", () => {
+    expect(hasHypnogramTrack(hypnogramLayout([]), false)).toBe(false);
+  });
+
+  // The shape of a totals-only night (spans nested against the wake instant,
+  // or laid back to back) is decided once on the server, in
+  // `hasStageTimeline`; the client reads the flag and does not re-derive it.
+  it("takes the server's word for a night whose spans look like a timeline", () => {
+    const nested = hypnogramLayout([
+      seg("CORE", "2026-06-01T23:00:00Z", "2026-06-02T07:00:00Z"),
+      seg("DEEP", "2026-06-02T05:30:00Z", "2026-06-02T07:00:00Z"),
     ]);
-    expect(hasHypnogramTrack(flat, false)).toBe(false);
+    expect(hasHypnogramTrack(nested, true)).toBe(false);
   });
 });
 

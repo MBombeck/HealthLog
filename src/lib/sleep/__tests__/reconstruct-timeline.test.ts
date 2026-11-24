@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-import { reconstructContiguousSleepTimeline } from "../reconstruct-timeline";
+import {
+  LAID_OUT_STAGE_ORDER,
+  reconstructContiguousSleepTimeline,
+} from "../reconstruct-timeline";
+import { hasStageTimeline } from "../stage-timeline";
 
 describe("reconstructContiguousSleepTimeline", () => {
   const onset = Date.parse("2026-06-09T21:00:00.000Z");
@@ -128,5 +132,28 @@ describe("reconstructContiguousSleepTimeline", () => {
       externalIdFor: (tag) => `night:seg:${tag}`,
     });
     expect(rows.find((r) => r.sleepStage === "IN_BED")).toBeUndefined();
+  });
+
+  it("lays stages in the one order the night reader recognises, whatever the caller's order", () => {
+    // The reader tells a laid-out night from a measured one by this order
+    // (`hasStageTimeline`); a vendor listing its stages differently must not
+    // produce a layout the reader would take for measured timing.
+    const rows = reconstructContiguousSleepTimeline({
+      startMs: onset,
+      stages: [
+        { durationMs: 90 * 60_000, stage: "REM", fieldTag: "sleep_rem" },
+        { durationMs: 60 * 60_000, stage: "CORE", fieldTag: "sleep_core" },
+        { durationMs: 10 * 60_000, stage: "AWAKE", fieldTag: "sleep_awake" },
+        { durationMs: 30 * 60_000, stage: "DEEP", fieldTag: "sleep_deep" },
+      ],
+      externalIdFor: (tag) => `night:seg:${tag}`,
+    });
+    expect(rows.map((r) => r.sleepStage)).toEqual([...LAID_OUT_STAGE_ORDER]);
+    const segments = rows.map((r) => ({
+      stage: r.sleepStage,
+      start: new Date(r.measuredAt.getTime() - r.value * 60_000),
+      end: r.measuredAt,
+    }));
+    expect(hasStageTimeline(segments)).toBe(false);
   });
 });

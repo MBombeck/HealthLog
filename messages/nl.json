@@ -3931,6 +3931,7 @@
         "title": "Verloop van de nacht",
         "wokeOn": "Wakker op {date}",
         "summary": "{asleep} slaap, {awakenings, plural, other {#×}} wakker",
+        "asleepOnly": "{asleep} slaap",
         "source": "van {source}",
         "previous": "Vorige nacht",
         "next": "Volgende nacht",
