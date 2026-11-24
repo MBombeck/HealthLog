@@ -249,10 +249,10 @@ function SeizureList({
                       <span className="text-muted-foreground text-xs">
                         {fmt.dateTime(event.onsetAt)}
                         {event.sleepState !== "UNKNOWN"
-                          ? ` · ${t(`seizures.sleepState.${event.sleepState}`)}`
+                          ? `, ${t(`seizures.sleepState.${event.sleepState}`)}`
                           : ""}
                         {event.loggedBy === "delegate"
-                          ? ` · ${
+                          ? `, ${
                               event.loggedByViewer
                                 ? t("seizures.list.loggedByYou")
                                 : event.loggedByName

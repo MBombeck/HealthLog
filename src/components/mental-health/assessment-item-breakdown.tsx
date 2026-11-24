@@ -119,7 +119,7 @@ export function AssessmentItemBreakdown({
               </span>
               <span className="text-foreground shrink-0 text-right">
                 {anchorText(instrument, text, index, value)}
-                {" · "}
+                {", "}
                 <span className="tabular-nums">{value}</span>
               </span>
             </div>

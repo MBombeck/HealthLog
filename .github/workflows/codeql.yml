@@ -13,9 +13,9 @@ name: CodeQL
 # which is the cost of every commit on `main` having an analysis of its own.
 on:
   push:
-    branches: [main]
+    branches: [main, "release/**"]
   pull_request:
-    branches: [main]
+    branches: [main, "release/**"]
   schedule:
     # Mondays, 04:27 UTC. Off the hour so the run does not queue behind
     # everyone else's midnight cron.

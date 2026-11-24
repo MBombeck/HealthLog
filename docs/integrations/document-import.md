@@ -5,7 +5,7 @@ without you uploading them one by one. There are three ways in.
 
 - The **archive picker** searches your Paperless-ngx or Papra from inside
   HealthLog and imports the documents you tick. You connect the archive once
-  under **Settings → Integrations → Document archives**; the operator has to
+  under **Settings > Integrations > Document archives**; the operator has to
   allow its address first. See
   [the document picker](../self-hosting/document-sources.md).
 - **Paperless-ngx** can send each newly tagged document to HealthLog by
@@ -25,9 +25,9 @@ The rest of this page covers the workflow and the import script.
 
 ## 1. Turn on Documents and create a document token
 
-1. In HealthLog, turn on **Documents** under **Settings → Modules** if you
+1. In HealthLog, turn on **Documents** under **Settings > Modules** if you
    have not already. Uploads are refused while the vault is off.
-2. Open **Settings → API & Tokens → Document tokens**, give the token a name (for
+2. Open **Settings > API & Tokens > Document tokens**, give the token a name (for
    example "Paperless workflow"), and select **Create**.
 3. Copy the token (it starts with `hlk_`). It is shown once.
 
@@ -35,7 +35,7 @@ A document token can add documents to your own vault and do nothing else. It
 cannot list, open, download, change or delete a document, cannot use the AI
 features, and cannot create another token. When it uploads a file it gets
 back only whether the file was stored, not the title or anything else about
-your vault. You can revoke it at any time under **Settings → API & Tokens →
+your vault. You can revoke it at any time under **Settings > API & Tokens >
 API Tokens**. It expires after a year unless you revoke it sooner.
 
 ## 2. New documents from Paperless-ngx (workflow)
@@ -101,7 +101,7 @@ Tokens go in environment variables, never on the command line:
 
 ```sh
 export HEALTHLOG_TOKEN=hlk_…          # the document token
-export PAPERLESS_TOKEN=…              # Paperless: My Profile → API auth token
+export PAPERLESS_TOKEN=…              # Paperless: My Profile > API auth token
 export PAPRA_TOKEN=…                  # Papra: an API key with documents:read and tags:read
 ```
 
@@ -244,7 +244,7 @@ an import, the script stops and says so; raise the limit and run it again.
 
 An imported document's detail sheet says where it came from, for example
 "Imported from Paperless-ngx, ID 123". When you have connected that archive
-under **Settings → Integrations → Document archives**, the sheet also shows
+under **Settings > Integrations > Document archives**, the sheet also shows
 **Open in Paperless-ngx** (or **Open in Papra**), which opens the document's
 page in the archive in a new tab. The link is built by the server from your
 connection, not from anything the import sent:

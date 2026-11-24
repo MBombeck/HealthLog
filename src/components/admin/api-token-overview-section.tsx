@@ -131,7 +131,7 @@ function formatTokenName(name: string, fmt: Formatters): string {
   // `fmt.dateTime` emits "05.05.2026, 21:46" — strip the comma so the
   // suffix reads as a single date+time chunk.
   const stamp = fmt.dateTime(d).replace(",", "");
-  const formatted = `${prefix} · ${stamp}`;
+  const formatted = `${prefix}, ${stamp}`;
   return rest && rest.trim() ? `${formatted} ${rest.trim()}` : formatted;
 }
 

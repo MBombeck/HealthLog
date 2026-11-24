@@ -309,7 +309,7 @@ export function HostMetricsChart() {
                   if (memTotalGiB > 0) {
                     const usedGiB = (value / 100) * memTotalGiB;
                     return [
-                      `${fmt.number(value, 1)} % · ${fmt.number(usedGiB, 1)} / ${fmt.number(memTotalGiB, 1)} GiB`,
+                      `${fmt.number(value, 1)} %, ${fmt.number(usedGiB, 1)} / ${fmt.number(memTotalGiB, 1)} GiB`,
                       name,
                     ];
                   }
@@ -321,7 +321,7 @@ export function HostMetricsChart() {
                   const peakMiB = peakDiskBps / 1_048_576;
                   const absMiB = (value / 100) * peakMiB;
                   return [
-                    `${fmt.number(value, 1)} % · ${fmt.number(absMiB, 2)} MiB/s`,
+                    `${fmt.number(value, 1)} %, ${fmt.number(absMiB, 2)} MiB/s`,
                     name,
                   ];
                 }

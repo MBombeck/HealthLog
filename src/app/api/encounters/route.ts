@@ -351,7 +351,7 @@ async function postEncounter(request: NextRequest): Promise<Response> {
       entity_type: "encounter",
       entity_id: created.id,
     },
-    meta: { status: created.status, kind: created.kind },
+    meta: { status: created.status },
   });
 
   const seriesRefs = await loadEncounterSeriesRefs(prisma, user.id, [created]);

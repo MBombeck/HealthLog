@@ -780,10 +780,9 @@ describe("summariseScheduleDraft — shared cadence-line helper", () => {
       const draft = p.schedules[p.activeScheduleIndex];
       const draftLine = summariseScheduleDraft(draft, t);
       const fullSummary = summariseCadence(p, t);
-      // The draft line's cadence segment is the leading " · " segment of
-      // the full summary (which trails times / course-window phrases).
-      const firstSegment = fullSummary.split(" · ")[0];
-      expect(draftLine.split(" · ")[0]).toBe(firstSegment);
+      // The draft line's cadence segment leads the full summary (which
+      // trails times / course-window phrases after a comma).
+      expect(fullSummary.startsWith(draftLine.split(", ")[0])).toBe(true);
     }
   });
 

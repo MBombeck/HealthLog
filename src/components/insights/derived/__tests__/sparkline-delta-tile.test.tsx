@@ -61,6 +61,14 @@ describe("<SparklineDeltaTile>", () => {
     expect(html).not.toContain("border-dashed");
   });
 
+  it("keeps the arrow slot empty when there is no delta", () => {
+    const html = render(<SparklineDeltaTile {...base} value={58} />);
+    expect(html).toMatch(
+      /data-slot="sparkline-delta-tile-arrow"[^>]*><\/span>/,
+    );
+    expect(html).not.toContain("—");
+  });
+
   it("omits the sparkline row when series < 2 points", () => {
     const html = render(
       <SparklineDeltaTile {...base} value={58} series={[58]} />,

@@ -166,19 +166,19 @@ export function ProviderHealthSection() {
                     count: p.tracked,
                   })}
                   {p.lastOkAt
-                    ? ` · ${t("admin.providerHealth.lastOk", {
+                    ? `, ${t("admin.providerHealth.lastOk", {
                         at: fmt.dateTime(p.lastOkAt),
                       })}`
                     : ""}
                   {p.failing > 0 && p.lastFailureAt
-                    ? ` · ${t("admin.providerHealth.lastFailure", {
+                    ? `, ${t("admin.providerHealth.lastFailure", {
                         at: fmt.dateTime(p.lastFailureAt),
                       })}`
                     : ""}
                   {p.failing > 0 &&
                   p.lastFailureAt &&
                   p.lastFailureStatus !== null
-                    ? ` · ${t("admin.providerHealth.lastFailureStatus", {
+                    ? `, ${t("admin.providerHealth.lastFailureStatus", {
                         status: p.lastFailureStatus,
                       })}`
                     : ""}

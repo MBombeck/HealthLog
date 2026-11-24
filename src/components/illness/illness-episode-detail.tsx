@@ -110,7 +110,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
                   date: fmt.dateShortSmart(new Date(episode.onsetAt)),
                 })}
                 {episode.resolvedAt
-                  ? ` · ${t("illness.recoveredOn", {
+                  ? `, ${t("illness.recoveredOn", {
                       date: fmt.dateShortSmart(new Date(episode.resolvedAt)),
                     })}`
                   : ""}

@@ -74,13 +74,13 @@ export function SourceRangeNote({
     <span className={className}>
       {t("labs.sourceRange.fromReport", { range: inForce })}
       {reading.printedReferenceText && reading.sourceUnit
-        ? ` · ${t("labs.sourceRange.printed", {
+        ? `, ${t("labs.sourceRange.printed", {
             range: reading.printedReferenceText,
             unit: reading.sourceUnit,
           })}`
         : null}
       {reading.referenceDivergesFromCatalog && catalog
-        ? ` · ${t("labs.sourceRange.catalogDiffers", {
+        ? `, ${t("labs.sourceRange.catalogDiffers", {
             range: withLabUnit(catalog, reading.unit),
           })}`
         : null}

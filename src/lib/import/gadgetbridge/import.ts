@@ -7,14 +7,16 @@
  *                      writes one table per device family and one series per
  *                      device; two devices worn on one day would double the
  *                      day if summed, so each day keeps the device with the
- *                      most steps. A newer export of the same day overwrites
- *                      the total (it holds more of that day).
+ *                      most steps. A later export of the same day raises
+ *                      the total (it holds more of that day); an older one
+ *                      uploaded after it does not lower it.
  *                    → PULSE, one mean per local hour from the samples'
  *                      `HEART_RATE` (30 to 220 bpm; Gadgetbridge writes 0,
  *                      -1 and 255 for "no reading"), overwritten likewise.
  *   SpO2 samples     → OXYGEN_SATURATION, one row per reading.
  *   resting HR       → RESTING_HEART_RATE, one row per reading.
  *   manual HR        → PULSE, one spot row per reading.
+ *                      Both in the same 30 to 220 bpm.
  *   sleep sessions   → SLEEP_DURATION in minutes, one ASLEEP row per night,
  *                      at wake-up.
  *   weight samples   → WEIGHT in kilograms.
@@ -100,7 +102,7 @@ export async function importGadgetbridgeExport(input: {
       });
     }
     await writeImportedMeasurements(input.userId, totals, tally, {
-      overwrite: true,
+      overwrite: "larger",
     });
     const means: ImportedMeasurement[] = [];
     for (const [key, { sum, n }] of pulse) {
@@ -173,15 +175,27 @@ async function readActivity(
 
 const SPOT: Record<
   Exclude<GbTable["kind"], "activity" | "sleep">,
-  { type: MeasurementType; column: string; prefix: string }
+  {
+    type: MeasurementType;
+    column: string;
+    prefix: string;
+    /** The readings outside are Gadgetbridge's "no reading" values. */
+    bounds?: [number, number];
+  }
 > = {
   spo2: { type: "OXYGEN_SATURATION", column: "SPO2", prefix: "spo2" },
   restingHeartRate: {
     type: "RESTING_HEART_RATE",
     column: "HEART_RATE",
     prefix: "rhr",
+    bounds: [MIN_BPM, MAX_BPM],
   },
-  spotHeartRate: { type: "PULSE", column: "HEART_RATE", prefix: "hr" },
+  spotHeartRate: {
+    type: "PULSE",
+    column: "HEART_RATE",
+    prefix: "hr",
+    bounds: [MIN_BPM, MAX_BPM],
+  },
   weight: { type: "WEIGHT", column: "WEIGHT_KG", prefix: "weight" },
 };
 
@@ -222,7 +236,11 @@ async function readSamples(
       }
       const spec = SPOT[table.kind];
       const v = gbNumber(row.v);
-      if (v === null || v <= 0) {
+      if (
+        v === null ||
+        v <= 0 ||
+        (spec.bounds && (v < spec.bounds[0] || v > spec.bounds[1]))
+      ) {
         tally.skip(table.name, "invalid_value");
         continue;
       }

@@ -401,7 +401,7 @@ under your own Apple identity. Everything below is that path.
    **own bundle identifier** and **your team** as the signing team, then
    build to your device (or distribute via your own TestFlight).
 3. **Create your own APNs `.p8` auth key** in the Apple Developer Portal,
-   under **Keys → Create a Key → Apple Push Notifications service (APNs)**.
+   under **Keys > Create a Key > Apple Push Notifications service (APNs)**.
    Note the **Key ID**, and your **Team ID** (top-right of the portal).
    Scope the key **Sandbox & Production** (see the gotcha below).
 4. **Point your bundle ID at your server.** Build the iOS app against your

@@ -72,7 +72,7 @@ async function postLifeEvent(request: NextRequest): Promise<Response> {
       entity_type: "life_event",
       entity_id: created.id,
     },
-    meta: { category: created.category, precision: created.precision },
+    meta: { precision: created.precision },
   });
   return apiSuccess(toLifeEventDTO(created), 201);
 }

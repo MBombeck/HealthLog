@@ -312,10 +312,10 @@ describe("buildDoctorReportPdfDocument", () => {
   });
 });
 
-// ── embedded font ── the report draws in an embedded Unicode font, so the
-// GLP-1 summary's arrow separator prints as the arrow and not as ASCII.
-describe("doctor-report arrows", () => {
-  it("renders the GLP-1 weight summary with its arrow separator", async () => {
+// ── GLP-1 weight summary ── the change reads as a phrase ("von 92,0 kg auf
+// 86,0 kg"), never as an arrow or its ASCII stand-in.
+describe("doctor-report GLP-1 weight summary", () => {
+  it("renders the weight change as a from-to phrase", async () => {
     const data = makeData({
       glp1: {
         weightStartKg: 92,
@@ -333,8 +333,9 @@ describe("doctor-report arrows", () => {
       now: FIXED_NOW,
     });
     const text = await extractText(bytes);
-    expect(text).toMatch(/92[.,]0 kg → 86[.,]0 kg/);
+    expect(text).toMatch(/von 92[.,]0 kg auf 86[.,]0 kg/);
     expect(text).not.toContain("->");
+    expect(text).not.toMatch(/kg → /);
   });
 });
 

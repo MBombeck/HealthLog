@@ -433,7 +433,7 @@ function drawTriggers(p: Pen): void {
     paragraph(
       section.triggers
         .map((tr) => `${t(`seizures.trigger.${tr.trigger}`)}: ${tr.count}`)
-        .join(" · "),
+        .join(", "),
     );
     paragraph(t("seizures.report.triggersNote"), 8);
   }

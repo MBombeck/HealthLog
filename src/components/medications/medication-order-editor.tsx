@@ -373,7 +373,7 @@ function SortableMedicationRow({
         </span>
         <span className="text-muted-foreground block truncate text-xs">
           {formatDose(medication.dose, t)}
-          {!medication.active && <> · {labels.inactive}</>}
+          {!medication.active && <>, {labels.inactive}</>}
         </span>
       </span>
       <Button
