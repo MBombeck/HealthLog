@@ -41,6 +41,7 @@ import {
   BIOMARKER_PANELS,
   type BiomarkerPanelKey,
 } from "./biomarker-catalog";
+import { ownValue } from "@/lib/own-key";
 
 export const OTHER_CATEGORY = "other";
 const CUSTOM_PREFIX = "custom:";
@@ -86,7 +87,7 @@ const SEED_PANEL = new Map<string, BiomarkerPanelKey>(
 
 /** The catalog panel of an analyte key, from its seed or the alias table. */
 export function panelForAnalyte(key: string): BiomarkerPanelKey | null {
-  return SEED_PANEL.get(key) ?? ALIAS_PANEL[key] ?? null;
+  return SEED_PANEL.get(key) ?? ownValue(ALIAS_PANEL, key) ?? null;
 }
 
 function customKey(folded: string): string {

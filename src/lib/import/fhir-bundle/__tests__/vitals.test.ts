@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { mapVital } from "../import";
 
+import {
+  PROTOTYPE_KEYS,
+  expectPrototypesUntouched,
+  snapshotPrototypes,
+} from "../../../../../tests/property/prototype-keys";
+
 const NOW = new Date("2026-06-01T00:00:00Z");
 
 function observation(extra: Record<string, unknown>) {
@@ -106,5 +112,59 @@ describe("mapVital", () => {
     ]) {
       expect(Array.isArray(pulse(hostile))).toBe(false);
     }
+  });
+});
+
+describe("mapVital with codes and units an object answers for", () => {
+  const before = snapshotPrototypes();
+
+  // The nightly counterexample: a LOINC code of "__proto__" reached the
+  // table lookup and the unit read off Object.prototype threw.
+  it.each(PROTOTYPE_KEYS)("refuses code %s as unsupported", (code) => {
+    expect(
+      mapVital(
+        observation({
+          code: { coding: [{ code }] },
+          valueQuantity: { value: 0, code: "" },
+        }),
+        "x",
+        NOW,
+        "UTC",
+      ),
+    ).toEqual({ reason: "unsupported_vital" });
+  });
+
+  it.each(PROTOTYPE_KEYS)("ignores %s as a panel component code", (code) => {
+    expect(
+      mapVital(
+        observation({
+          code: { coding: [{ system: "http://loinc.org", code: "85354-9" }] },
+          component: [
+            { code: { coding: [{ code }] }, valueQuantity: { value: 1 } },
+          ],
+        }),
+        "x",
+        NOW,
+        "UTC",
+      ),
+    ).toEqual({ reason: "no_value" });
+  });
+
+  it.each(PROTOTYPE_KEYS)("refuses %s as a unit", (unit) => {
+    expect(
+      mapVital(
+        observation({
+          code: { coding: [{ system: "http://loinc.org", code: "29463-7" }] },
+          valueQuantity: { value: 70, code: unit, unit },
+        }),
+        "x",
+        NOW,
+        "UTC",
+      ),
+    ).toEqual({ reason: "unit_mismatch" });
+  });
+
+  it("leaves the shared prototypes as they were", () => {
+    expectPrototypesUntouched(before);
   });
 });

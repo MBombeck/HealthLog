@@ -8,6 +8,7 @@ import {
   PersonStanding,
   type LucideIcon,
 } from "lucide-react";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * Shared sport-type → icon map. Previously three private copies
@@ -42,5 +43,5 @@ export const SPORT_TYPE_ICON: Record<string, LucideIcon> = {
 };
 
 export function iconForSport(sportType: string): LucideIcon {
-  return SPORT_TYPE_ICON[sportType] ?? Activity;
+  return ownValue(SPORT_TYPE_ICON, sportType) ?? Activity;
 }

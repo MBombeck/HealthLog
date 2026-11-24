@@ -37,6 +37,7 @@ import {
   type Formula,
 } from "./atomic-weights";
 import { scaleUnitOf, shiftPowerOfTen } from "./scale";
+import { hasOwnKey } from "@/lib/own-key";
 
 export interface Affine {
   a: number;
@@ -65,7 +66,7 @@ export function defineAnalyteConversion(
   const where = `unit-conversion registry entry "${entry.key}"`;
   if (!entry.source.trim()) throw new Error(`${where} has no source`);
   const hub = normaliseLabUnit(entry.hub);
-  if (!(hub in entry.units)) {
+  if (!hasOwnKey(entry.units, hub)) {
     throw new Error(`${where}: hub "${entry.hub}" is not one of its units`);
   }
   for (const [unit, { a, b }] of Object.entries(entry.units)) {

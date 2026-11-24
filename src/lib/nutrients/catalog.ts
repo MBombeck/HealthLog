@@ -51,6 +51,7 @@
  */
 
 import type { BinaryReferenceSex } from "@/lib/profile/sex";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * The codes the nutrient batch accepts. `NUTRIENT_CODES` adds the
@@ -860,7 +861,7 @@ export function parseNutrientInputUnit(
   raw: string,
 ): NutrientInputUnitCode | null {
   const folded = raw.trim().toLowerCase().replace(/[\s.]/g, "");
-  return INPUT_UNIT_SPELLINGS[folded] ?? null;
+  return ownValue(INPUT_UNIT_SPELLINGS, folded) ?? null;
 }
 
 /** Whether `unit` is the code's canonical unit (nothing to convert). */

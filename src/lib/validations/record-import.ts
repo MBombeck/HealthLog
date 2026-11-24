@@ -17,6 +17,7 @@ import { z } from "zod/v4";
 
 import { MAX_COLUMNS } from "@/lib/import/csv-stream";
 import { isValidTimezone } from "@/lib/tz/format";
+import { ownValue } from "@/lib/own-key";
 
 const column = z.coerce
   .number()
@@ -77,7 +78,7 @@ function distinctColumns(
   keys: readonly string[],
 ): boolean {
   const used = keys
-    .map((k) => value[k])
+    .map((k) => ownValue(value, k))
     .filter((v): v is number => typeof v === "number");
   return new Set(used).size === used.length;
 }

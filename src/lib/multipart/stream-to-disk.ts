@@ -23,6 +23,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Writable } from "node:stream";
+import { ownRecord, type OwnRecord } from "@/lib/own-key";
 
 export interface MultipartFileResult {
   /** Absolute path the captured file landed at. */
@@ -34,7 +35,8 @@ export interface MultipartFileResult {
   /** Optional original filename pulled from `Content-Disposition`. */
   originalFilename: string | null;
   /** Other named text fields encountered in the multipart body. */
-  textFields: Record<string, string>;
+  /** Keyed by the request's own field names, so it has no prototype. */
+  textFields: OwnRecord<string>;
 }
 
 export interface MultipartStreamOptions {
@@ -257,7 +259,7 @@ export async function streamMultipartToDisk(
     opts.maxBytes,
   );
   let originalFilename: string | null = null;
-  const textFields: Record<string, string> = {};
+  const textFields = ownRecord<string>();
 
   // Buffer holding bytes awaiting boundary scan. Capped at twice the
   // boundary length so we never accumulate more than necessary.

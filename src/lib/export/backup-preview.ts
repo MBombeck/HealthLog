@@ -39,6 +39,7 @@ import {
   BACKUP_SCHEMA_VERSION,
   type BackupSummary,
 } from "@/lib/validations/backup-summary";
+import { ownValue } from "@/lib/own-key";
 
 export interface BackupPreview {
   version: 1;
@@ -247,7 +248,7 @@ function sectionChecker(
       ? unwrap(schema.unwrap() as z.ZodType)
       : schema;
   return (member, value) => {
-    const declared = shape[member];
+    const declared = ownValue(shape, member);
     if (!declared) return true;
     const section = unwrap(declared);
     if (section instanceof z.ZodArray) {

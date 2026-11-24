@@ -14,6 +14,8 @@
  * Pure and server-safe: the caller hands in its own `t`.
  */
 
+import { ownValue } from "@/lib/own-key";
+
 /**
  * Types whose unit word depends on what is counted, not on the token. A
  * device sends "count" for both falls and breathing disturbances; the reader
@@ -72,11 +74,11 @@ export function measurementUnitLabel(
   unit: string,
   t: (key: string) => string,
 ): string {
-  const typeKey = TYPE_UNIT_LABEL_KEYS[type];
+  const typeKey = ownValue(TYPE_UNIT_LABEL_KEYS, type);
   if (typeKey) return t(typeKey);
-  const tokenKey = TOKEN_UNIT_LABEL_KEYS[unit];
+  const tokenKey = ownValue(TOKEN_UNIT_LABEL_KEYS, unit);
   if (tokenKey) return t(tokenKey);
-  const symbol = TOKEN_SYMBOLS[unit];
+  const symbol = ownValue(TOKEN_SYMBOLS, unit);
   if (symbol) return symbol;
   if (UNITLESS_UNIT_TOKENS.has(unit)) return "";
   return unit;
