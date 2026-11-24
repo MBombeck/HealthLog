@@ -12538,7 +12538,7 @@
     "openDetail": "Mostra dettagli",
     "historyLoadError": "Non è stato possibile caricare la cronologia dei test",
     "historyLoadErrorHint": "Questo non significa che non ci siano risultati: non è stato possibile recuperare l'elenco. Riprova.",
-    "privacyNote": "Le tue risposte sono salvate cifrate e non raggiungono mai il Coach IA.",
+    "privacyNote": "Le tue risposte sono salvate cifrate. Risposte e punteggi non raggiungono mai il Coach IA, un'altra funzione IA o un assistente IA che hai collegato.",
     "trend": {
       "sincePrevious": "Dal tuo check-in precedente del {date}: {change, plural, one {# punto} other {# punti}}.",
       "sinceFirst": "Dal tuo primo check-in del {date}: {change, plural, one {# punto} other {# punti}}.",

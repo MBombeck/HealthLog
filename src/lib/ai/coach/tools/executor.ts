@@ -44,6 +44,7 @@
  * and the snapshot plumbing they share in `run/shared.ts`.
  */
 import { annotate } from "@/lib/logging/context";
+import { withoutModelBoundExclusions } from "@/lib/ai/model-bound-data";
 import type { CoachScope, CoachScopeWindow } from "@/lib/ai/coach/types";
 import {
   isCoachToolName,
@@ -155,7 +156,7 @@ export async function executeCoachTool(args: {
       action: { name: "coach.tool.executed" },
       meta: { tool: name, present: result.present },
     });
-    return result;
+    return forModel(name, result);
   } catch (err) {
     // A read failure must degrade to a grounded "no data" rather than break
     // the loop — the model then says it could not retrieve the metric.
@@ -168,6 +169,22 @@ export async function executeCoachTool(args: {
     });
     return { present: false, reason: "retrieval_failed" };
   }
+}
+
+/**
+ * The last step before a tool result reaches the model: the data kinds no
+ * model receives (`model-bound-data.ts`) are taken out, whatever the reader
+ * did. The readers leave them out already; a drop here is a reader that did
+ * not, and the wide event names the tool.
+ */
+function forModel(name: string, result: CoachToolResult): CoachToolResult {
+  const { value, dropped } = withoutModelBoundExclusions(result);
+  if (dropped === 0) return result;
+  annotate({
+    action: { name: "coach.excluded_data.dropped" },
+    meta: { tool: name, dropped },
+  });
+  return value ?? { present: false, reason: "not_available" };
 }
 
 async function dispatch(

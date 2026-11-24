@@ -49,6 +49,7 @@ import type { SeizuresBackupCounts } from "@/lib/export/seizures-backup";
 import type { VaccinationsBackupCounts } from "@/lib/export/vaccinations-backup";
 import type { VisitsBackupCounts } from "@/lib/export/visits-backup";
 import { BACKUP_SCHEMA_VERSION } from "@/lib/validations/backup-summary";
+import { ownRecord } from "@/lib/own-key";
 
 export { isDeferredRows } from "@/lib/export/deferred-rows";
 
@@ -93,6 +94,7 @@ export interface FullBackupCounts
 }
 
 export interface FullBackupResult {
+  /** Keyed by section name, with no prototype (see `own-key.ts`). */
   payload: Record<string, unknown>;
   counts: FullBackupCounts;
 }
@@ -137,11 +139,10 @@ export async function buildFullBackupPayload(
     BACKUP_EXPORT_SECTIONS.map((section) => section.build(ctx)),
   );
 
-  const payload: Record<string, unknown> = {
-    schemaVersion: BACKUP_SCHEMA_VERSION,
-    exportedAt: (options.exportedAt ?? new Date()).toISOString(),
-    userId,
-  };
+  const payload = ownRecord<unknown>();
+  payload.schemaVersion = BACKUP_SCHEMA_VERSION;
+  payload.exportedAt = (options.exportedAt ?? new Date()).toISOString();
+  payload.userId = userId;
   for (const part of parts) {
     for (const [key, value] of Object.entries(part.section)) {
       payload[key] =

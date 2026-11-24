@@ -11,6 +11,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { HealthKitRequestSyncTrigger } from "@/lib/integrations/healthkit-type-sync";
 import { getUnitForType, VALUE_RANGES } from "@/lib/validations/measurement";
 import type { DeviceType } from "@/lib/validations/source-priority";
+import { ownValue } from "@/lib/own-key";
 
 /** One HealthKit sample (or `stats:` aggregate) as the route parsed it. */
 export interface BatchIngestEntry {
@@ -120,7 +121,7 @@ export function outOfRangeResult(
   type: string,
   convertedValue: number,
 ): EntryResult {
-  const band = VALUE_RANGES[type];
+  const band = ownValue(VALUE_RANGES, type);
   return {
     index,
     status: "skipped",

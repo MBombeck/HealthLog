@@ -19,6 +19,7 @@ import {
   patientRef,
   type FhirBuildOptions,
 } from "@/lib/fhir/resources/common";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * Build a `medicationCodeableConcept` from a medication's free-text name
@@ -70,7 +71,7 @@ function doseQuantity(
   value: number,
   unit: string,
 ): { value: number; unit: string; system?: string; code?: string } {
-  const ucum = UCUM_DOSE_CODES[unit];
+  const ucum = ownValue(UCUM_DOSE_CODES, unit);
   return ucum
     ? { value, unit, system: UCUM_SYSTEM, code: ucum }
     : { value, unit };
@@ -99,7 +100,7 @@ function routeConcept(
         ? "Injection"
         : undefined;
   if (!text) return undefined;
-  const snomed = ROUTE_SNOMED[deliveryForm as string];
+  const snomed = ownValue(ROUTE_SNOMED, deliveryForm as string);
   return snomed
     ? {
         coding: [
@@ -131,7 +132,7 @@ const SITE_SNOMED: Record<string, { code: string; display: string }> = {
 };
 
 function siteConcept(injectionSite: string): FhirCodeableConcept {
-  const snomed = SITE_SNOMED[injectionSite];
+  const snomed = ownValue(SITE_SNOMED, injectionSite);
   // Preserve the full enum value (incl. laterality) as the readable anchor.
   const text = injectionSite;
   return snomed

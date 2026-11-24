@@ -32,13 +32,16 @@ import {
 } from "@/lib/insights/status-pipeline";
 import { userDayKey } from "@/lib/tz/resolver";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
+import { isModelVisibleMeasurementType } from "@/lib/ai/model-bound-data";
 
 // Derived from canonical enum so a new measurement type is auto-included
 // in the AI general-status fetch (V3 audit: enum drift cousins).
 // A category state (`STATE_MEASUREMENT_TYPES`) is a codepoint, not a
-// magnitude, so it is no numeric series for the model to summarise.
+// magnitude, so it is no numeric series for the model to summarise. A
+// questionnaire total never reaches a model (`model-bound-data.ts`).
 const MEASUREMENT_TYPES = measurementTypeEnum.options.filter(
-  (type) => !STATE_MEASUREMENT_TYPES.has(type),
+  (type) =>
+    !STATE_MEASUREMENT_TYPES.has(type) && isModelVisibleMeasurementType(type),
 );
 
 // The general overview folds its per-type graded series in memory from a

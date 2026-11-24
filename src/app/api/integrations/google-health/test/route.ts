@@ -15,6 +15,7 @@ import { GOOGLE_HEALTH_DATA_TYPES } from "@/lib/google-health/mappers";
 import { GoogleHealthApiError } from "@/lib/google-health/response-classifier";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
+import { ownRecord } from "@/lib/own-key";
 
 export const dynamic = "force-dynamic";
 
@@ -110,7 +111,7 @@ async function runStructureProbe(
   const listStart = new Date(now - 14 * 24 * 60 * 60 * 1000);
   const rollupStart = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
-  const results: Record<string, ProbeResult> = {};
+  const results = ownRecord<ProbeResult>();
   for (const [name, dataType] of Object.entries(GOOGLE_HEALTH_DATA_TYPES)) {
     try {
       let points: Record<string, unknown>[];

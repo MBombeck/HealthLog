@@ -12538,7 +12538,7 @@
     "openDetail": "Show details",
     "historyLoadError": "Your assessment history could not be loaded",
     "historyLoadErrorHint": "This does not mean you have no results; the list could not be fetched. Try again.",
-    "privacyNote": "Your answers are stored encrypted and never reach the AI Coach.",
+    "privacyNote": "Your answers are stored encrypted. Answers and scores never reach the AI Coach, any other AI feature or an AI assistant you connected.",
     "trend": {
       "sincePrevious": "Since your previous check-in on {date}: {change, plural, one {# point} other {# points}}.",
       "sinceFirst": "Since your first check-in on {date}: {change, plural, one {# point} other {# points}}.",

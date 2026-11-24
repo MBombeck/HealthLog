@@ -17,6 +17,7 @@
 import { importValue } from "@/lib/integrations/import-value";
 import { canonicalDailyTimestamp } from "@/lib/measurements/consolidation-tz";
 import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * One data type's on-the-wire encodings. `path` is the kebab-case segment
@@ -283,7 +284,7 @@ function readPath(obj: unknown, path: string): unknown {
   let cur: unknown = obj;
   for (const seg of path.split(".")) {
     if (cur === null || typeof cur !== "object") return undefined;
-    cur = (cur as Record<string, unknown>)[seg];
+    cur = ownValue(cur as Record<string, unknown>, seg);
   }
   return cur;
 }
@@ -876,8 +877,8 @@ export function mapGoogleHealthSleepStage(
     .toLowerCase()
     .replace(/[\s-]+/g, "_");
   return (
-    GOOGLE_HEALTH_SLEEP_STAGE_MAP[key] ??
-    GOOGLE_HEALTH_SLEEP_STAGE_MAP[key.replace(/_/g, "")] ??
+    ownValue(GOOGLE_HEALTH_SLEEP_STAGE_MAP, key) ??
+    ownValue(GOOGLE_HEALTH_SLEEP_STAGE_MAP, key.replace(/_/g, "")) ??
     null
   );
 }
@@ -1151,8 +1152,8 @@ export function mapGoogleHealthSportType(raw: unknown): string {
     .toLowerCase()
     .replace(/[\s-]+/g, "_");
   return (
-    GOOGLE_HEALTH_EXERCISE_TYPE_MAP[key] ??
-    GOOGLE_HEALTH_EXERCISE_TYPE_MAP[key.replace(/_/g, "")] ??
+    ownValue(GOOGLE_HEALTH_EXERCISE_TYPE_MAP, key) ??
+    ownValue(GOOGLE_HEALTH_EXERCISE_TYPE_MAP, key.replace(/_/g, "")) ??
     "other"
   );
 }

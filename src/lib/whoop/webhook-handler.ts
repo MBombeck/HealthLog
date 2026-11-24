@@ -39,6 +39,7 @@ import {
   WHOOP_SLEEP_SYNC_QUEUE,
   WHOOP_WORKOUT_SYNC_QUEUE,
 } from "@/lib/jobs/integration-poll-queues";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * Maximum age of a webhook timestamp before it is treated as a replay. Five
@@ -190,7 +191,7 @@ export async function processWhoopNotification(
   }
 
   const [resource, verb] = type.split(".");
-  const queue = WHOOP_RESOURCE_QUEUE[resource ?? ""];
+  const queue = ownValue(WHOOP_RESOURCE_QUEUE, resource ?? "");
 
   if (verb === "deleted") {
     // Soft-delete every row derived from the deleted resource for this user.

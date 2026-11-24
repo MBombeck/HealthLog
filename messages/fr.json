@@ -12538,7 +12538,7 @@
     "openDetail": "Voir les détails",
     "historyLoadError": "Votre historique d'évaluations n'a pas pu être chargé",
     "historyLoadErrorHint": "Cela ne veut pas dire que vous n'avez aucun résultat : la liste n'a pas pu être récupérée. Réessayez.",
-    "privacyNote": "Vos réponses sont stockées chiffrées et n'atteignent jamais le Coach IA.",
+    "privacyNote": "Vos réponses sont stockées chiffrées. Ni les réponses ni les scores n'atteignent jamais le Coach IA, une autre fonction d'IA ou un assistant IA que vous avez connecté.",
     "trend": {
       "sincePrevious": "Depuis votre bilan précédent du {date} : {change, plural, one {# point} other {# points}}.",
       "sinceFirst": "Depuis votre premier bilan du {date} : {change, plural, one {# point} other {# points}}.",

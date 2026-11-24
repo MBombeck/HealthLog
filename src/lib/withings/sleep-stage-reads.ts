@@ -81,15 +81,15 @@ export function serialiseSleepStageReads(reads: SleepStageReads): {
   v: 1;
   nights: Record<string, SerialisedNight>;
 } {
-  const nights: Record<string, SerialisedNight> = {};
+  const nights: [string, SerialisedNight][] = [];
   for (const [key, night] of reads) {
     if (night.empty === 0 && !night.failed && night.failures === 0) continue;
     const out: SerialisedNight = { empty: night.empty };
     if (night.failed) out.failed = true;
     if (night.failures > 0) out.failures = night.failures;
-    nights[key] = out;
+    nights.push([key, out]);
   }
-  return { v: 1, nights };
+  return { v: 1, nights: Object.fromEntries(nights) };
 }
 
 /** The outcome of one night's read in this run. */
