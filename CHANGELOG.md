@@ -32,12 +32,14 @@
 ### Security
 
 - A file import upload is held to its size limit as a whole, not only in the file it carries. The other parts of the form and their headers were read into memory without a limit, so a signed-in caller could send a body that grew the server's memory until the app stopped. Every byte of the body now counts against the import's cap, and the small form fields and part headers have their own ceilings.
+- The audit log is append-only for the database role the app runs as. That role could update and delete any audit row, so a compromised app process could have rewritten or erased the record of what it did. A trigger now refuses every deletion and every change to who, what, when and from where; the role keeps only the updates the app makes (the location of a sign-in, filled once, and the details a later step completes). The three deletions the app needs run through functions owned by the database owner, each with its own condition: the retention sweep takes only rows past the retention window and never rows from the last six days, an account's trail goes only with an account that is being deleted, and the cycle rows go when a person deletes their cycle data. An install that runs the app as the database owner (`DB_APP_ROLE=off`) keeps the old behaviour.
 
 ### Updating
 
 - Apple Wallet passes need the server reached over HTTPS and either the push relay on or the `WALLET_APPLE_*` variables set (all six are on the compose `environment:` list). A reverse proxy in front of the server has to let `/api/wallet/apple/v1/` through without a login of its own: Wallet calls it from the phone. Migrations 0563 and 0564 add the name item and the pass tables.
 - Migration 0565 adds the treatment series table and an empty `series_id` column on visits. Nothing stored changes, and it runs in a moment on any size of database.
 - Migration 0562 merges the Apple Health workout pairs already stored the same way: the app's row is kept, filled from the export row and given its track, series, insight and personal records where it has none, and the export row is deleted. Export workouts without a synced twin stay as they are. It runs in one transaction with a ten-minute statement timeout and reports the number it merged in the boot log. The query to count the pairs before updating is in the migration file.
+- Migration 0569 adds the audit log's trigger and its three functions, and the next start takes the app role's delete right on the table back. Nothing stored changes. The demo seed and a restore run as the owner and are not affected.
 
 ### Thanks
 

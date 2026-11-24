@@ -24,6 +24,9 @@
  *   - SELECT, INSERT, UPDATE, DELETE on every table of the app's schema, and
  *     USAGE, SELECT, UPDATE on its sequences. `_prisma_migrations` is SELECT
  *     only: the app reads the migration history, it never writes it.
+ *     `audit_logs` is append-only: no DELETE, and the table's trigger allows
+ *     only the updates the app makes (migration 0569); its deletions run
+ *     through the owner's `audit_logs_*` functions, which the role may call.
  *   - MAINTAIN on `measurements` (Postgres 17+): the maintenance job's
  *     `VACUUM (ANALYZE)` and `REINDEX INDEX CONCURRENTLY`.
  *   - Rows of the queue schema `pgboss`, which stays the owner's. See
@@ -162,6 +165,20 @@ export const MAINTAINED_TABLES = Object.freeze(["measurements"]);
 
 /** Tables the role may only read. */
 export const READ_ONLY_TABLES = Object.freeze(["_prisma_migrations"]);
+
+/**
+ * Tables the role may read, insert into and (within what the table's trigger
+ * allows) update, but never delete from: the audit log (migration 0569).
+ * Its deletions go through the owner's functions below.
+ */
+export const APPEND_ONLY_TABLES = Object.freeze(["audit_logs"]);
+
+/** The owner's functions that delete audit rows under their own conditions. */
+export const AUDIT_FUNCTIONS = Object.freeze([
+  "audit_logs_purge(text[], timestamp)",
+  "audit_logs_erase_account(text)",
+  "audit_logs_erase_cycle(text)",
+]);
 
 /** The label the password is derived under. A new label is a new password. */
 const PASSWORD_LABEL = "healthlog database app role v2";
@@ -725,7 +742,21 @@ export async function applyAppRole(client, options) {
         `notice: the schema ${schema} is not the database user's to change; PUBLIC may still create objects in it`,
       );
     }
-    await grantRows(client, { schema, role: name, readOnly: READ_ONLY_TABLES });
+    await grantRows(client, {
+      schema,
+      role: name,
+      readOnly: READ_ONLY_TABLES,
+      appendOnly: APPEND_ONLY_TABLES,
+    });
+    for (const fn of AUDIT_FUNCTIONS) {
+      const { rows } = await client.query(
+        `SELECT to_regprocedure($1) IS NOT NULL AS present`,
+        [`${app}.${fn}`],
+      );
+      if (rows[0].present) {
+        await client.query(`GRANT EXECUTE ON FUNCTION ${app}.${fn} TO ${role}`);
+      }
+    }
 
     // Objects the owner creates later in this schema (the migrations of the
     // next update) are granted at creation as well. The per-boot pass above
@@ -787,7 +818,10 @@ export async function applyAppRole(client, options) {
  * Grant rows on every table of a schema that lacks them, and read only on
  * `readOnly` (any write it holds there is taken away); sequences alike.
  */
-async function grantRows(client, { schema, role: name, readOnly }) {
+async function grantRows(
+  client,
+  { schema, role: name, readOnly, appendOnly = [] },
+) {
   const role = ident(name);
   const where = ident(schema);
   const { rows: tables } = await client.query(
@@ -800,7 +834,7 @@ async function grantRows(client, { schema, role: name, readOnly }) {
              AND has_table_privilege($2, c.oid, 'INSERT')
              AND has_table_privilege($2, c.oid, 'UPDATE')
              AND has_table_privilege($2, c.oid, 'DELETE'))`,
-    [schema, name, readOnly],
+    [schema, name, [...readOnly, ...appendOnly]],
   );
   for (const { name: table } of tables) {
     await client.query(
@@ -817,6 +851,19 @@ async function grantRows(client, { schema, role: name, readOnly }) {
       `REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON ${where}.${ident(table)} FROM ${role}`,
     );
     await client.query(`GRANT SELECT ON ${where}.${ident(table)} TO ${role}`);
+  }
+  for (const table of appendOnly) {
+    const { rows } = await client.query(
+      `SELECT to_regclass($1) IS NOT NULL AS present`,
+      [`${where}.${ident(table)}`],
+    );
+    if (!rows[0].present) continue;
+    await client.query(
+      `REVOKE DELETE, TRUNCATE, TRIGGER, REFERENCES ON ${where}.${ident(table)} FROM ${role}`,
+    );
+    await client.query(
+      `GRANT SELECT, INSERT, UPDATE ON ${where}.${ident(table)} TO ${role}`,
+    );
   }
   const { rows: sequences } = await client.query(
     `SELECT c.relname AS name
