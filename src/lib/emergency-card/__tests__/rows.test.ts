@@ -48,6 +48,33 @@ describe("emergencyCardRows", () => {
     expect(rows[0].emphasise).toBe(false);
   });
 
+  it("writes an allergy as substance, quiet grade, reaction", () => {
+    const tr = (key: string) =>
+      ({
+        "records.allergies.severity.SEVERE": "Schwer",
+        "records.allergies.severity.MODERATE": "Mittel",
+      })[key] ?? key;
+    const rows = emergencyCardRows(
+      view({
+        fields: ["ALLERGIES"],
+        allergies: [
+          { substance: "Penicillin", severity: "SEVERE", reaction: "Hives" },
+          { substance: "Peanuts", severity: "MODERATE", reaction: null },
+          { substance: "Latex", severity: null, reaction: "Rash" },
+          { substance: "Dust", severity: null, reaction: null },
+        ],
+      }),
+      tr,
+      "de",
+    );
+    expect(rows[0].lines).toEqual([
+      "Penicillin (schwer): Hives",
+      "Peanuts (mittel)",
+      "Latex: Rash",
+      "Dust",
+    ]);
+  });
+
   it("names the pregnancy week", () => {
     const rows = emergencyCardRows(
       view({

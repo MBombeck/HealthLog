@@ -169,7 +169,9 @@ function WalletBody({ apple }: { apple: EmergencyWalletApple }) {
       </p>
     ) : null;
 
-  // Live: add it to this device, or withdraw it.
+  // Live: add it to one more device, or withdraw it. Withdrawing is the
+  // secondary action (outline, behind a confirmation), never a second red
+  // button beside the one a person came for.
   if (pass && pass.state === "live") {
     return (
       <>
@@ -186,7 +188,7 @@ function WalletBody({ apple }: { apple: EmergencyWalletApple }) {
             confirmLabel={t("emergencyCard.appleWallet.withdraw")}
             onConfirm={() => withdraw.mutate()}
             pending={withdraw.isPending}
-            variant="destructive"
+            variant="outline"
             destructive
             size="sm"
             slot="wallet-withdraw"
@@ -196,7 +198,10 @@ function WalletBody({ apple }: { apple: EmergencyWalletApple }) {
             data-slot="wallet-add"
             onClick={() => openPass(pass.downloadPath)}
           >
-            {t("emergencyCard.appleWallet.add")}
+            {/* Once a device has fetched it, the next one is another device. */}
+            {pass.lastFetchedAt
+              ? t("emergencyCard.appleWallet.addAnother")
+              : t("emergencyCard.appleWallet.add")}
           </Button>
         </SettingsCardActions>
       </>

@@ -7,7 +7,7 @@
  * the relay's file.
  *
  * The images are checked against this server's own pinned hashes
- * (`wallet-assets.v1.json`), which are the ones the service pins. The
+ * (`wallet-assets.v2.json`), which are the ones the service pins. The
  * reading is the service's, strict: the relay's own test vectors run
  * through it with the same answers.
  */

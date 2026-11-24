@@ -83,6 +83,14 @@ describe("the images", () => {
       expect(sha1(bytes), name).toBe(WALLET_ASSET_HASHES[name]);
       expect(pngSize(bytes), name).toEqual(WALLET_ASSET_SIZES[name]);
     }
+    // The artwork carries most of the pass's weight; its share is fixed so
+    // the whole stays under the budget below with room for the text.
+    expect(assets.get("artwork@2x.png")!.byteLength).toBeLessThanOrEqual(
+      120 * 1024,
+    );
+    expect(assets.get("artwork@3x.png")!.byteLength).toBeLessThanOrEqual(
+      220 * 1024,
+    );
   });
 });
 

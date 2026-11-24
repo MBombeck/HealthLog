@@ -25,11 +25,20 @@ export function formatCardDay(locale: string, day: string): string {
   }
 }
 
-function allergyLine(t: Translate, a: EmergencyCardAllergy): string {
-  const parts = [a.substance];
-  if (a.severity) parts.push(t(`records.allergies.severity.${a.severity}`));
-  if (a.reaction) parts.push(a.reaction);
-  return parts.join(", ");
+/**
+ * "Penicillin (severe): Hives": the substance first, the grade as a quiet
+ * lower-case aside, the reaction after a colon. A grade in capitals in the
+ * middle of a comma list read as a second substance.
+ */
+function allergyLine(
+  t: Translate,
+  locale: string,
+  a: EmergencyCardAllergy,
+): string {
+  const grade = a.severity
+    ? ` (${t(`records.allergies.severity.${a.severity}`).toLocaleLowerCase(locale)})`
+    : "";
+  return `${a.substance}${grade}${a.reaction ? `: ${a.reaction}` : ""}`;
 }
 
 /** The pregnancy line, in the card's words. */
@@ -116,7 +125,7 @@ export function emergencyCardRows(
   push(
     "ALLERGIES",
     t("emergencyCard.allergies"),
-    view.allergies?.map((a) => allergyLine(t, a)) ?? null,
+    view.allergies?.map((a) => allergyLine(t, locale, a)) ?? null,
     true,
   );
   push(

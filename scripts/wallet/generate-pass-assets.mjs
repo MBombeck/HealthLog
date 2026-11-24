@@ -17,14 +17,24 @@
  * chunk and nothing else, so the bytes depend only on the pixels.
  *
  *   - icon: the HealthLog mark (heart and pulse line, `public/favicon.svg`)
- *     in white on the pass colour, square, no rounding (Wallet rounds it);
- *   - logo, primaryLogo: the mark alone on transparency, cropped tight (the
- *     Watch trims white space, so the images carry none);
- *   - artwork: the poster background. A quiet diagonal from deep red to
- *     plum, a soft light from the top left, one fine pulse line at 38 %
- *     height at 8 % opacity, and a sparse grain against banding. No text,
- *     no logo, nothing that matters in the lower 40 %, where Wallet lays the
- *     material strip with the QR code.
+ *     filled white on the pass red, the pulse line cut out of it, so it reads
+ *     at 38 pt; square, no rounding (Wallet rounds it);
+ *   - logo, primaryLogo: the mark alone on transparency, cropped tight to
+ *     its own proportions (the Watch trims white space, so the images carry
+ *     none), with a heavier line than the favicon for its small size;
+ *   - artwork: the poster background (wallet-design v2, §5.2). One red hue
+ *     from light at the top to dark under the strip, a soft light behind the
+ *     mark, five faint rings around it, the mark itself as the one subject
+ *     in the free upper half, and a darker band behind the logo row. No
+ *     text, nothing that matters below 245 pt, where Wallet lays the QR code
+ *     and the material strip. The tones are computed here, not in the
+ *     canvas: the canvas dithers gradients with noise, and noise costs the
+ *     PNG several hundred kilobytes the pass size budget does not have. A
+ *     4 x 4 ordered dither was tried as well; it cost 60 % more bytes and
+ *     removed no banding visible even at quadrupled contrast.
+ *
+ * The output file names the hash list's version; a new design is a new
+ * version, never an edit of an old list.
  */
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -49,80 +59,140 @@ const PULSE = [
   [15.5, 12.5],
   [21, 12.5],
 ];
-/** The heart's bounds in the 24-unit box, stroke included. */
-const MARK_BOX = { x: 1.4, y: 2.4, w: 21.2, h: 19.55 };
+/** The mark's line widths in the 24-unit box: heavier than the favicon. */
+const MARK_STROKE = 1.6;
+const MARK_PULSE = 2.0;
+/**
+ * The heart's bounds in the 24-unit box, stroke included, with a sliver
+ * more so the anti-aliased edge of the line is not cut.
+ */
+const EDGE = MARK_STROKE / 2 + 0.15;
+const MARK_BOX = {
+  x: 2 - EDGE,
+  y: 3 - EDGE,
+  w: 20 + 2 * EDGE,
+  h: 18.35 + 2 * EDGE,
+};
+const MARK_RATIO = MARK_BOX.w / MARK_BOX.h;
+const markWidth = (h) => Math.round(h * MARK_RATIO);
+
+/** The hash list this run writes. */
+const VERSION = 2;
 
 const IMAGES = [
   { name: "icon.png", w: 38, h: 38, kind: "icon" },
   { name: "icon@2x.png", w: 76, h: 76, kind: "icon" },
   { name: "icon@3x.png", w: 114, h: 114, kind: "icon" },
-  { name: "logo@2x.png", w: 100, h: 100, kind: "mark" },
-  { name: "logo@3x.png", w: 150, h: 150, kind: "mark" },
-  { name: "primaryLogo@2x.png", w: 60, h: 60, kind: "mark" },
-  { name: "primaryLogo@3x.png", w: 90, h: 90, kind: "mark" },
+  { name: "logo@2x.png", w: markWidth(100), h: 100, kind: "mark" },
+  { name: "logo@3x.png", w: markWidth(150), h: 150, kind: "mark" },
+  { name: "primaryLogo@2x.png", w: markWidth(60), h: 60, kind: "mark" },
+  { name: "primaryLogo@3x.png", w: markWidth(90), h: 90, kind: "mark" },
   { name: "artwork@2x.png", w: 716, h: 896, kind: "artwork" },
   { name: "artwork@3x.png", w: 1074, h: 1344, kind: "artwork" },
 ];
 
+/** The artwork, in points (358 x 448): where the mark and its rings sit. */
+const ART = {
+  w: 358,
+  h: 448,
+  cx: 179,
+  cy: 148,
+  markWidth: 104,
+  rings: [
+    [60, 0.13],
+    [92, 0.095],
+    [128, 0.07],
+    [168, 0.05],
+    [212, 0.035],
+  ],
+};
+
 /** Runs in the page: draw one image, return its RGBA pixels as base64. */
-function draw({ w, h, kind, heart, pulse, box }) {
+function draw({ w, h, kind, heart, pulse, box, stroke, pulseWidth, art, bg }) {
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d", { colorSpace: "srgb" });
 
-  const mark = (size, cx, cy) => {
-    // Fit the heart's bounds into a square of `size`, centred on cx, cy.
-    const s = size / Math.max(box.w, box.h);
-    ctx.save();
+  /** Map the 24-unit box so the heart's bounds are `width` wide at cx, cy. */
+  const place = (width, cx, cy) => {
+    const s = width / box.w;
     ctx.translate(cx - (box.x + box.w / 2) * s, cy - (box.y + box.h / 2) * s);
     ctx.scale(s, s);
-    const path = new Path2D(heart);
-    ctx.fillStyle = "rgba(255,255,255,0.22)";
-    ctx.fill(path);
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 1.3;
-    ctx.stroke(path);
-    ctx.clip(path);
+    return s;
+  };
+  const pulseLine = () => {
     ctx.beginPath();
     pulse.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-    ctx.lineWidth = 1.6;
-    ctx.stroke();
-    ctx.restore();
   };
+  const path = new Path2D(heart);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
 
   if (kind === "icon") {
-    ctx.fillStyle = "rgb(122, 22, 44)";
+    // Filled heart, the pulse cut out in the pass red.
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
-    mark(w * 0.66, w / 2, h / 2 + h * 0.02);
-  } else if (kind === "mark") {
-    mark(w, w / 2, h / 2);
-  } else {
-    // Only the pulse line is drawn here, opaque on transparency; the
-    // background is computed in Node (`artwork` below), because the
-    // canvas dithers gradients, and dither noise costs several hundred
-    // kilobytes of PNG that the pass size budget does not have.
-    const y0 = h * 0.38;
-    const unit = w / 34;
-    const beatX = w * 0.8;
-    const beat = [
-      [-2.2, 0],
-      [-1.2, -1.4],
-      [0, 3.0],
-      [1.2, -4.2],
-      [2.4, 0],
-    ];
-    ctx.beginPath();
-    ctx.moveTo(0, y0);
-    for (const [dx, dy] of beat) ctx.lineTo(beatX + dx * unit, y0 + dy * unit);
-    ctx.lineTo(w, y0);
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = w / 358;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
+    ctx.save();
+    place(w * 0.68, w / 2, h / 2 + h * 0.02);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill(path);
+    ctx.clip(path);
+    pulseLine();
+    ctx.strokeStyle = bg;
+    ctx.lineWidth = 2.2;
     ctx.stroke();
+    ctx.restore();
+  } else if (kind === "mark") {
+    ctx.save();
+    place(w, w / 2, h / 2);
+    ctx.fillStyle = "rgba(255,255,255,0.22)";
+    ctx.fill(path);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = stroke;
+    ctx.stroke(path);
+    ctx.clip(path);
+    pulseLine();
+    ctx.lineWidth = pulseWidth;
+    ctx.stroke();
+    ctx.restore();
+  } else {
+    // Only what sits on the background is drawn here, on transparency: the
+    // rings, the soft light in the shape of the heart, the mark. The
+    // background itself is computed in Node (`artwork` below).
+    const k = w / art.w;
+    ctx.save();
+    ctx.scale(k, k);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1;
+    for (const [r, a] of art.rings) {
+      ctx.globalAlpha = a;
+      ctx.beginPath();
+      ctx.arc(art.cx, art.cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.filter = `blur(${16 * k}px)`;
+    ctx.globalAlpha = 0.35;
+    place(art.markWidth * k, art.cx * k, art.cy * k);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill(path);
+    ctx.restore();
+
+    ctx.save();
+    const s = place(art.markWidth * k, art.cx * k, art.cy * k);
+    ctx.fillStyle = "rgba(255,255,255,0.14)";
+    ctx.fill(path);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = (2.4 * k) / s;
+    ctx.stroke(path);
+    ctx.clip(path);
+    pulseLine();
+    ctx.lineWidth = (3.4 * k) / s;
+    ctx.stroke();
+    ctx.restore();
   }
   const data = ctx.getImageData(0, 0, w, h).data;
   let bin = "";
@@ -132,66 +202,69 @@ function draw({ w, h, kind, heart, pulse, box }) {
   return btoa(bin);
 }
 
-/** A small, seeded generator, so the grain is the same on every run. */
-function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+/** The pass red (backgroundColor), for the icon. */
+const PASS_RED = "#8A0E24";
+/** Top to bottom, at these fractions of the height. */
+const STOPS = [
+  [0, hex("#A51430")],
+  [0.42, hex("#8A0E24")],
+  [0.8, hex("#5E0918")],
+  [1, hex("#4A0712")],
+];
+/** Light behind the mark: colour, radius in pt, alpha at its stops. */
+const GLOSS = {
+  rgb: hex("#FF4D66"),
+  r: 175,
+  stops: [
+    [0, 0.42],
+    [0.55, 0.12],
+    [1, 0],
+  ],
+};
+/** A darker band behind the logo row, so the header reads over the light. */
+const SCRIM = { rgb: hex("#2A0008"), h: 72, alpha: 0.3 };
 
-/**
- * Sparse monochrome grain: one pixel in a hundred moves one level up or
- * down. Enough to break the steps of a dark 8-bit gradient; denser grain is
- * noise to the PNG encoder and costs more than the pass size budget allows.
- */
-function grain(rgba, seed) {
-  const rand = mulberry32(seed);
-  for (let i = 0; i < rgba.length; i += 4) {
-    const r = rand();
-    if (r >= 0.01) continue;
-    const d = r < 0.005 ? -1 : 1;
-    for (let c = 0; c < 3; c++) {
-      rgba[i + c] = Math.max(0, Math.min(255, rgba[i + c] + d));
+function ramp(stops, t) {
+  for (let i = 1; i < stops.length; i++) {
+    const [t1, v1] = stops[i];
+    const [t0, v0] = stops[i - 1];
+    if (t <= t1) {
+      const f = (t - t0) / (t1 - t0);
+      return Array.isArray(v0)
+        ? v0.map((c, j) => c + (v1[j] - c) * f)
+        : v0 + (v1 - v0) * f;
     }
   }
+  return stops[stops.length - 1][1];
 }
 
-const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-const TOP_LEFT = hex("#8E1B2B");
-const BOTTOM_RIGHT = hex("#3B0F3F");
-const GLOW = [255, 170, 150];
-const GLOW_ALPHA = 0.16;
-const PULSE_ALPHA = 0.08;
-
 /**
- * The poster background under the pulse line `line` (RGBA, line in alpha):
- * the diagonal, the glow from the top left, the line, all in sRGB with
- * source-over, rounded once at the end. Written into `line` in place.
+ * The poster background under the overlay `top` (RGBA from the canvas), in
+ * sRGB with source-over: the vertical ramp, the light behind the mark, the
+ * band behind the header, then the overlay; rounded once.
+ * Written into `top` in place.
  */
-function artwork(line, w, h) {
-  const len2 = w * w + h * h;
-  const gx = w * 0.18;
-  const gy = h * 0.08;
-  const gr = w * 0.95;
+function artwork(top, w, h) {
+  const k = w / ART.w;
   for (let y = 0; y < h; y++) {
+    const base = ramp(STOPS, (y + 0.5) / h);
+    const ypt = (y + 0.5) / k;
+    const sa = ypt < SCRIM.h ? SCRIM.alpha * (1 - ypt / SCRIM.h) : 0;
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4;
-      const t = Math.min(1, Math.max(0, (x * w + y * h) / len2));
-      const d = Math.hypot(x + 0.5 - gx, y + 0.5 - gy) / gr;
-      const ga = GLOW_ALPHA * Math.max(0, 1 - d);
-      const la = (line[i + 3] / 255) * PULSE_ALPHA;
+      const d = Math.hypot((x + 0.5) / k - ART.cx, ypt - ART.cy) / GLOSS.r;
+      const ga = d < 1 ? ramp(GLOSS.stops, d) : 0;
+      const oa = top[i + 3] / 255;
       for (let c = 0; c < 3; c++) {
-        let v = TOP_LEFT[c] + (BOTTOM_RIGHT[c] - TOP_LEFT[c]) * t;
-        v = v * (1 - ga) + GLOW[c] * ga;
-        v = v * (1 - la) + 255 * la;
-        line[i + c] = Math.round(v);
+        let v = base[c];
+        v = v * (1 - ga) + GLOSS.rgb[c] * ga;
+        v = v * (1 - sa) + SCRIM.rgb[c] * sa;
+        // The canvas hands back un-premultiplied colour.
+        v = v * (1 - oa) + top[i + c] * oa;
+        top[i + c] = Math.max(0, Math.min(255, Math.round(v)));
       }
-      line[i + 3] = 255;
+      top[i + 3] = 255;
     }
   }
 }
@@ -291,12 +364,13 @@ async function main() {
       heart: HEART,
       pulse: PULSE,
       box: MARK_BOX,
+      stroke: MARK_STROKE,
+      pulseWidth: MARK_PULSE,
+      art: ART,
+      bg: PASS_RED,
     });
     const rgba = Buffer.from(b64, "base64");
-    if (img.kind === "artwork") {
-      artwork(rgba, img.w, img.h);
-      grain(rgba, img.w * 7919 + img.h);
-    }
+    if (img.kind === "artwork") artwork(rgba, img.w, img.h);
     const png = encodePng(rgba, img.w, img.h, img.kind === "mark");
     writeFileSync(join(OUT, img.name), png);
     hashes[img.name] = createHash("sha1").update(png).digest("hex");
@@ -307,7 +381,7 @@ async function main() {
   }
   await browser.close();
   writeFileSync(
-    join(OUT, "wallet-assets.v1.json"),
+    join(OUT, `wallet-assets.v${VERSION}.json`),
     `${JSON.stringify(hashes, null, 2)}\n`,
   );
   console.log(`total ${total} bytes`);

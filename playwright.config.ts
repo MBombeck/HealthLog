@@ -13,6 +13,7 @@ import {
   SMTP_STUB_FROM,
   SMTP_STUB_HOST,
 } from "./e2e/setup/smtp-stub";
+import { walletTestSignerEnv } from "./e2e/setup/wallet-test-signer";
 
 /**
  * Playwright configuration for the HealthLog E2E suite.
@@ -312,6 +313,11 @@ export default defineConfig({
         // the switch and the measurement. It sets the 390 px phone width
         // itself inside the desktop project.
         "header-height-locales.spec.ts",
+        // The Wallet journey makes and withdraws the one pass its account may
+        // hold; a second project would meet the first one's live pass (409)
+        // or withdraw it mid-assertion. It proves a flow through stable
+        // data-slots and the signed file, not a mobile layout.
+        "emergency-card-wallet.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs
@@ -390,6 +396,12 @@ export default defineConfig({
             // Disable the prefetch for the e2e server — the suite keeps the
             // deterministic client-fetch path.
             DASHBOARD_SSR_PREFETCH: "false",
+            // Local Wallet signing with the push relay's public test chain,
+            // so the Wallet journey (`emergency-card-wallet.spec.ts`) makes
+            // and downloads a real signed pass. It switches nothing on for
+            // the other specs: a pass also needs an https origin, which only
+            // that journey's requests claim.
+            ...walletTestSignerEnv(),
           },
         },
         // The SHIPPED configuration, on its own port.

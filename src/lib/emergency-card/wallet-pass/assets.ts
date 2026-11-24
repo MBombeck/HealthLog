@@ -16,7 +16,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import hashes from "./assets/wallet-assets.v1.json";
+import hashes from "./assets/wallet-assets.v2.json";
 
 /** Read from disk by a path the tracer cannot follow (next.config.ts). */
 const ASSET_DIR = join(
@@ -31,10 +31,11 @@ export const WALLET_ASSET_SIZES: Readonly<
   "icon.png": [38, 38],
   "icon@2x.png": [76, 76],
   "icon@3x.png": [114, 114],
-  "logo@2x.png": [100, 100],
-  "logo@3x.png": [150, 150],
-  "primaryLogo@2x.png": [60, 60],
-  "primaryLogo@3x.png": [90, 90],
+  // The logos are as wide as the mark is: 50 and 30 pt high, no margin.
+  "logo@2x.png": [108, 100],
+  "logo@3x.png": [162, 150],
+  "primaryLogo@2x.png": [65, 60],
+  "primaryLogo@3x.png": [97, 90],
   "artwork@2x.png": [716, 896],
   "artwork@3x.png": [1074, 1344],
 };
