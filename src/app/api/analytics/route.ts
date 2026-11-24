@@ -2,7 +2,6 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import { analyticsQuerySchema } from "@/lib/validations/analytics";
-import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { readSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { loadRecoveryEmpty } from "@/lib/insights/recovery-empty-read";
@@ -93,10 +92,7 @@ export const GET = apiHandler(async (request?: Request) => {
       slim.lastSeenByType,
       slimModules,
     );
-    // v1.4.34 — bfcache-friendly directive on the slim slice too
-    // so a back-forward navigation that landed on the dashboard tile
-    // strip can restore from memory instead of paying a full reload.
-    const slimRes = apiSuccess({
+    return apiSuccess({
       ...slim,
       summaries: slimGated.summaries,
       lastSeenByType: slimGated.lastSeenByType,
@@ -104,8 +100,6 @@ export const GET = apiHandler(async (request?: Request) => {
       // a client renders the recovery page's empty note without deciding it.
       recoveryEmpty: await loadRecoveryEmpty(user.id, slimGated.summaries),
     });
-    slimRes.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
-    return slimRes;
   }
 
   // v1.4.34 — wrap the heavy default-slice body in the analytics
@@ -139,14 +133,5 @@ export const GET = apiHandler(async (request?: Request) => {
   // type and stays on the hot path's Map-lookup side of the cache.
   const body = enrichLastSeenDaysAgo(cachedBody);
 
-  const response = apiSuccess(body);
-  // v1.4.34 — bfcache-friendly directive so back-forward navigation
-  // restores the dashboard from memory. Per `src/lib/http/cache-headers.ts`:
-  // `private` keeps shared caches out of personal data, `max-age=0` forces
-  // revalidation on every navigation so session swaps detect on the wire,
-  // and `must-revalidate` holds the staleness contract. Replaces the
-  // framework's stock `no-store` which Chromium treats as a hard
-  // bfcache breaker.
-  response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
-  return response;
+  return apiSuccess(body);
 });

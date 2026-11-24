@@ -44,7 +44,7 @@
     "lib/gamification/achievements.ts": 913,
     "lib/google-health/mappers.ts": 1284,
     "lib/google-health/sync-core.ts": 1620,
-    "lib/idempotency.ts": 879,
+    "lib/idempotency.ts": 898,
     "lib/illness/correlation.ts": 1059,
     "lib/import/health-connect/import.ts": 1685,
     "lib/import/unzip-export-xml.ts": 825,

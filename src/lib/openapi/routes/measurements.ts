@@ -174,7 +174,7 @@ const batchEntryResult = z
     status: z
       .enum(["inserted", "updated", "duplicate", "skipped", "failed"])
       .describe(
-        "`inserted`/`duplicate` — the row landed (advance the cursor). `updated` — a `stats:` aggregate overwrote an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must not advance the entry cursor; the response is marked `Cache-Control: no-store`.",
+        "`inserted`/`duplicate` — the row landed (advance the cursor). `updated` — a `stats:` aggregate overwrote an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must not advance the entry cursor; the response is not replayed for its `Idempotency-Key`.",
       ),
     reason: z
       .string()

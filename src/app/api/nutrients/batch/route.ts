@@ -22,7 +22,7 @@
  * write (`writeNutrientDayTotals`) runs as two batched groups; a write failure
  * marks its WHOLE group `skipped upsert_failed` — the request itself never
  * fails. That reason is transient, unlike the validation skips: the client
- * sends those entries again, and the response is marked `no-store` so an
+ * sends those entries again, and the response is marked not replayable so an
  * idempotent retry is not answered from the cache.
  *
  * Module gate FIRST: the opt-in `nutrients` module (default off)
@@ -42,7 +42,7 @@ import {
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
-import { withIdempotency } from "@/lib/idempotency";
+import { markNotReplayable, withIdempotency } from "@/lib/idempotency";
 import { withIngestAdmission } from "@/lib/ingest/admission";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
@@ -289,11 +289,9 @@ async function postBatch(request: NextRequest): Promise<Response> {
     entries: results,
   });
   // `upsert_failed` is transient: nothing was stored for those entries and the
-  // client sends them again. `no-store` keeps the idempotency layer from
-  // caching this answer, so a retry under the same key writes instead of
-  // replaying the failure. The measurement batch does the same for `failed`.
-  if (skippedByReason.upsert_failed) {
-    response.headers.set("Cache-Control", "private, no-store");
-  }
+  // client sends them again. Marked so the idempotency layer does not cache
+  // this answer, and a retry under the same key writes instead of replaying
+  // the failure. The measurement batch does the same for `failed`.
+  if (skippedByReason.upsert_failed) markNotReplayable(response);
   return response;
 }

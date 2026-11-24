@@ -9,7 +9,6 @@ import { apiSuccess } from "@/lib/api-response";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
-import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { buildTargetsResponse } from "@/lib/targets/build-response";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +31,5 @@ export const GET = apiHandler(async () => {
     () => buildTargetsResponse(user),
     annotate,
   );
-  const response = apiSuccess(body);
-  response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
-  return response;
+  return apiSuccess(body);
 });
