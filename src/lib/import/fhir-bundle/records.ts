@@ -25,7 +25,7 @@ import type {
   EncounterStatus,
   Prisma,
 } from "@/generated/prisma/client";
-import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { prisma } from "@/lib/db";
 import { setMedicationCategory } from "@/lib/medication-category";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
@@ -83,7 +83,11 @@ interface Built {
   /** What identifies the resource when it carries no id. */
   fallback: string;
   create(tx: Tx, userId: string): Promise<string>;
+  /** The rows, deleted ones included, that say what this resource says. */
+  same(userId: string): Promise<string[]>;
 }
+
+const ids = (rows: Array<{ id: string }>) => rows.map((r) => r.id);
 
 function buildCondition(r: Json, now: Date): Built | { skip: string } {
   const verification = statusCode(r.verificationStatus);
@@ -108,6 +112,13 @@ function buildCondition(r: Json, now: Date): Built | { skip: string } {
     !resolvedAt && (clinical === "active" || clinical === "recurrence");
   return {
     fallback: `${label}|${onsetAt.toISOString()}`,
+    same: async (userId) =>
+      ids(
+        await prisma.illnessEpisode.findMany({
+          where: { userId, label, onsetAt },
+          select: { id: true },
+        }),
+      ),
     create: async (tx, userId) =>
       (
         await tx.illnessEpisode.create({
@@ -141,6 +152,13 @@ function buildImmunization(r: Json, now: Date): Built | { skip: string } {
   const dose = obj(arr(r.protocolApplied)[0])?.doseNumberPositiveInt;
   return {
     fallback: `${name}|${occurredAt.toISOString()}`,
+    same: async (userId) =>
+      ids(
+        await prisma.vaccinationRecord.findMany({
+          where: { userId, vaccineName: name, occurredAt },
+          select: { id: true },
+        }),
+      ),
     create: async (tx, userId) =>
       (
         await tx.vaccinationRecord.create({
@@ -186,6 +204,21 @@ function buildMedication(r: Json, now: Date): Built | { skip: string } {
   const endKey = endDated?.dateKey ?? null;
   return {
     fallback: `${name}|${start?.toISOString() ?? ""}`,
+    same: async (userId) =>
+      ids(
+        await prisma.medication.findMany({
+          where: {
+            userId,
+            name,
+            dose,
+            startsOn:
+              start && startKey && start <= now
+                ? dayKeyAsUtcMidnight(startKey)
+                : null,
+          },
+          select: { id: true },
+        }),
+      ),
     create: async (tx, userId) => {
       const course =
         start && startKey && start <= now
@@ -257,8 +290,22 @@ function buildEncounter(r: Json): Built | { skip: string } {
   const classCode = str(obj(r.class)?.code, 16)?.toUpperCase() ?? "";
   const reason =
     conceptText(arr(r.reasonCode)[0], 500) ?? conceptText(arr(r.type)[0], 500);
+  const kind = ENCOUNTER_CLASS[classCode] ?? "OTHER";
   return {
     fallback: `${occurredAt.toISOString()}|${reason ?? ""}`,
+    same: async (userId) =>
+      ids(
+        (
+          await prisma.encounter.findMany({
+            where: { userId, occurredAt, status, kind },
+            select: { id: true, reasonEncrypted: true },
+          })
+        ).filter(
+          (e) =>
+            (e.reasonEncrypted ? decryptFromBytes(e.reasonEncrypted) : null) ===
+            (reason ?? null),
+        ),
+      ),
     create: async (tx, userId) =>
       (
         await tx.encounter.create({
@@ -266,7 +313,7 @@ function buildEncounter(r: Json): Built | { skip: string } {
             userId,
             occurredAt,
             status,
-            kind: ENCOUNTER_CLASS[classCode] ?? "OTHER",
+            kind,
             reasonEncrypted: reason ? encryptToBytes(reason) : null,
           },
           select: { id: true },
@@ -292,10 +339,54 @@ function build(
   }
 }
 
-/** Write one record resource unless the ledger already holds it. */
+async function heldUnder(
+  userId: string,
+  resourceType: RecordResourceType,
+  resourceKey: string,
+): Promise<{ recordId: string } | null> {
+  return prisma.fhirImportedResource.findUnique({
+    where: {
+      userId_resourceType_resourceKey: { userId, resourceType, resourceKey },
+    },
+    select: { recordId: true },
+  });
+}
+
+/**
+ * The record an earlier import wrote for this resource under the key its
+ * issuer had then (`legacyIssuer`): the key itself when the same Bundle comes
+ * again, else an imported row with the same content that no second resource
+ * has claimed (one ledger row). Its id, or null.
+ */
+async function legacyRecord(
+  input: { userId: string; type: RecordResourceType; resource: Json },
+  built: Built,
+  legacyIssuer: string,
+): Promise<string | null> {
+  const { userId, type } = input;
+  const old = resourceKey(legacyIssuer, type, input.resource, built.fallback);
+  const exact = await heldUnder(userId, type, old);
+  if (exact) return exact.recordId;
+  const candidates = await built.same(userId);
+  if (candidates.length === 0) return null;
+  const claims = await prisma.fhirImportedResource.groupBy({
+    by: ["recordId"],
+    where: { userId, resourceType: type, recordId: { in: candidates } },
+    _count: { _all: true },
+  });
+  return claims.find((c) => c._count._all === 1)?.recordId ?? null;
+}
+
+/**
+ * Write one record resource unless the ledger already holds it. A resource
+ * whose issuer changed (`legacyIssuer`, the key an earlier version derived)
+ * and that an earlier import already wrote is re-keyed onto that record: a
+ * second ledger row under the current key, nothing written twice.
+ */
 export async function importRecordResource(input: {
   userId: string;
   issuer: string;
+  legacyIssuer?: string;
   type: RecordResourceType;
   resource: Json;
   now: Date;
@@ -308,18 +399,24 @@ export async function importRecordResource(input: {
     input.resource,
     built.fallback,
   );
-  const held = await prisma.fhirImportedResource.findUnique({
-    where: {
-      userId_resourceType_resourceKey: {
-        userId: input.userId,
-        resourceType: input.type,
-        resourceKey: key,
-      },
-    },
-    select: { id: true },
-  });
-  if (held) return { status: "duplicate" };
+  if (await heldUnder(input.userId, input.type, key)) {
+    return { status: "duplicate" };
+  }
+  const earlier = input.legacyIssuer
+    ? await legacyRecord(input, built, input.legacyIssuer)
+    : null;
   try {
+    if (earlier) {
+      await prisma.fhirImportedResource.create({
+        data: {
+          userId: input.userId,
+          resourceType: input.type,
+          resourceKey: key,
+          recordId: earlier,
+        },
+      });
+      return { status: "duplicate" };
+    }
     await prisma.$transaction(async (tx) => {
       const recordId = await built.create(tx, input.userId);
       await tx.fhirImportedResource.create({

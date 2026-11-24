@@ -30,6 +30,7 @@ import {
 import type { MappedFhirLab } from "@/lib/labs/fhir-import/types";
 import { writeFhirLabReadings } from "@/lib/labs/fhir-import/write";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
+import { prisma } from "@/lib/db";
 import { importValue } from "@/lib/integrations/import-value";
 
 import {
@@ -182,7 +183,7 @@ async function importEntries(
 ): Promise<void> {
   const { tally, userId } = input;
   const now = new Date();
-  const labs: Array<{ mapping: FhirLabMapping }> = [];
+  const labs: Array<{ mapping: FhirLabMapping; urn: boolean }> = [];
   const vitals: ImportedMeasurement[] = [];
   let medications = 0;
   for (const raw of entries) {
@@ -203,6 +204,7 @@ async function importEntries(
             { resource, fhirVersion: "4.0.1", sourceURL: issuer },
             now,
           ),
+          urn: issuer === "urn",
         });
       } else if (cats.includes("vital-signs")) {
         const mapped = mapVital(resource, issuer, now);
@@ -218,6 +220,8 @@ async function importEntries(
       const outcome = await importRecordResource({
         userId,
         issuer,
+        // A urn entry used to be keyed on its Bundle; the old key still counts.
+        legacyIssuer: issuer === "urn" ? `bundle:${bundleId}` : undefined,
         type: recordType,
         resource,
         now,
@@ -241,15 +245,23 @@ async function importEntries(
 
 async function writeLabs(
   input: { userId: string; tz: string; tally: RecordFileImportTally },
-  labs: Array<{ mapping: FhirLabMapping }>,
+  labs: Array<{ mapping: FhirLabMapping; urn: boolean }>,
 ): Promise<void> {
   const { tally } = input;
   assignPanels(labs.map((l) => l.mapping));
   const readings: MappedFhirLab[] = [];
-  for (const { mapping } of labs) {
-    if (mapping.kind === "reading") readings.push(mapping.reading);
-    else if (mapping.kind === "skip") tally.skip("Observation", mapping.reason);
-    else tally.failed("Observation", mapping.reason);
+  const urnReadings: MappedFhirLab[] = [];
+  for (const { mapping, urn } of labs) {
+    if (mapping.kind === "reading") {
+      (urn ? urnReadings : readings).push(mapping.reading);
+    } else if (mapping.kind === "skip") {
+      tally.skip("Observation", mapping.reason);
+    } else tally.failed("Observation", mapping.reason);
+  }
+  const deleted = await deletedUnderOldKey(input.userId, urnReadings);
+  for (const reading of urnReadings) {
+    if (deleted(reading)) tally.duplicate("lab");
+    else readings.push(reading);
   }
   if (readings.length === 0) return;
   const written = await writeFhirLabReadings({
@@ -269,4 +281,49 @@ async function writeLabs(
     newestTakenAt: written.newestTakenAt,
     source: "fhir_bundle",
   });
+}
+
+/**
+ * A urn entry's lab reading used to be keyed on its Bundle, so the identity
+ * of one the person deleted since is not the one it arrives under now. The
+ * writer's content check reads the live record only; this one finds the
+ * deleted imported row with the same name, instant and value, so the reading
+ * stays deleted.
+ */
+async function deletedUnderOldKey(
+  userId: string,
+  readings: readonly MappedFhirLab[],
+): Promise<(reading: MappedFhirLab) => boolean> {
+  if (readings.length === 0) return () => false;
+  const rows = await prisma.labResult.findMany({
+    where: {
+      userId,
+      source: FHIR_FILE_SOURCE,
+      deletedAt: { not: null },
+      externalId: { startsWith: "fhir:" },
+      takenAt: { in: [...new Set(readings.map((r) => r.takenAt))] },
+      analyte: { in: [...new Set(readings.map((r) => r.analyte))] },
+    },
+    select: {
+      analyte: true,
+      takenAt: true,
+      value: true,
+      sourceValue: true,
+      valueText: true,
+    },
+  });
+  // `sourceValue` is set only when the value was moved into another unit.
+  const held = new Set(
+    rows.map((r) =>
+      [
+        r.analyte,
+        r.takenAt.getTime(),
+        r.sourceValue ?? r.value ?? r.valueText,
+      ].join("|"),
+    ),
+  );
+  return (r) =>
+    held.has(
+      [r.analyte, r.takenAt.getTime(), r.value ?? r.valueText].join("|"),
+    );
 }
