@@ -85,6 +85,29 @@ Procedure:
 
 An out-of-schedule release does not move or replace the next Saturday.
 
+## Third-party updates
+
+Dependabot proposes updates weekly for npm, GitHub Actions, the Docker base
+image and the compose file; the dependency audit and the image scan run every
+day. An advisory is rated by what it means for HealthLog: whether the
+vulnerable code is reachable on a default install or from an ordinary
+account, not only by the score the advisory carries. The clock starts when a
+fixed version of the dependency is available.
+
+| Rating                        | Ships                                                 | At the latest                    |
+| ----------------------------- | ----------------------------------------------------- | -------------------------------- |
+| Critical or high, reachable   | an out-of-schedule patch (reason: security)           | 7 days                           |
+| Medium                        | the next patch Saturday                               | the Saturday after next          |
+| Low, or not reachable         | the next minor                                        | the first Saturday of next month |
+| No advisory (routine updates) | collected on `release/vX.Y.0`, shipped with the minor | monthly                          |
+
+A security update that needs a major version of a dependency is still a
+security fix and follows the table, not the "major dependency update" row
+above. When no fixed version exists yet, the release notes or the advisory
+say what an operator can do in the meantime. The image scan fails on a
+critical finding in the published image, so a critical one cannot sit
+unnoticed.
+
 ## Where work collects
 
 - **`main`** is the fix line. Fixes land continuously through `fix/X` branches
