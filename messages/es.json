@@ -12537,7 +12537,7 @@
     "openDetail": "Ver detalles",
     "historyLoadError": "No se pudo cargar tu historial de evaluaciones",
     "historyLoadErrorHint": "Esto no significa que no tengas resultados: no se pudo obtener la lista. Vuelve a intentarlo.",
-    "privacyNote": "Tus respuestas se guardan cifradas y nunca llegan al Coach de IA.",
+    "privacyNote": "Tus respuestas se guardan cifradas. Ni las respuestas ni las puntuaciones llegan nunca al Coach de IA, a otra función de IA ni a un asistente de IA que hayas conectado.",
     "trend": {
       "sincePrevious": "Desde tu revisión anterior del {date}: {change, plural, one {# punto} other {# puntos}}.",
       "sinceFirst": "Desde tu primera revisión del {date}: {change, plural, one {# punto} other {# puntos}}.",

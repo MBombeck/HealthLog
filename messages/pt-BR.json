@@ -12537,7 +12537,7 @@
     "openDetail": "Mostrar detalhes",
     "historyLoadError": "Não foi possível carregar seu histórico de avaliações",
     "historyLoadErrorHint": "Isso não significa que você não tem resultados; a lista não pôde ser buscada. Tente novamente.",
-    "privacyNote": "Suas respostas são armazenadas criptografadas e nunca chegam ao AI Coach.",
+    "privacyNote": "Suas respostas são armazenadas criptografadas. Respostas e pontuações nunca chegam ao AI Coach, a outro recurso de IA nem a um assistente de IA que você conectou.",
     "trend": {
       "sincePrevious": "Desde a sua avaliação anterior, em {date}: {change, plural, one {# ponto} other {# pontos}}.",
       "sinceFirst": "Desde a sua primeira avaliação, em {date}: {change, plural, one {# ponto} other {# pontos}}.",
