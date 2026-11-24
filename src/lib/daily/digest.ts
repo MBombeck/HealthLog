@@ -24,7 +24,7 @@ import type { DailyBriefing, DailyBriefingSignal } from "@/lib/ai/schema";
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 import type { ArrivalKind } from "@/lib/arrivals/types";
 import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
-import { visitsPath } from "@/lib/encounters/visit-links";
+import { CARE_WIRE_PATH, visitsPath } from "@/lib/encounters/visit-links";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { ServerTranslator } from "@/lib/i18n/server-translator";
@@ -672,7 +672,7 @@ function buildPreventiveCareItem(
       {
         labelKey: "daily.action.viewCheckups",
         intent: "checkup.view",
-        href: "/checkups", // /checkups kept on the wire for iOS builds before 1.7; switch to /care in 1.50.
+        href: CARE_WIRE_PATH,
       },
     ],
   };

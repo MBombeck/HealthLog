@@ -28,6 +28,7 @@ import type {
   NotificationPayload,
   SentEventType,
 } from "@/lib/notifications/types";
+import { CARE_WIRE_PATH } from "@/lib/encounters/visit-links";
 import { isManagedGuardianDelivery } from "@/lib/notifications/managed-delivery";
 
 /**
@@ -47,8 +48,8 @@ export const NOTIFICATION_TAP_PATHS: Record<SentEventType, string | null> = {
   CYCLE_FERTILE_SOON: "/cycle",
   COACH_NUDGE: "/coach",
   MEDICATION_LOW_STOCK: "/medications",
-  // /checkups kept on the wire for iOS builds before 1.7; switch to /care in 1.50.
-  MEASUREMENT_REMINDER: "/checkups",
+  // The wire spelling of the care page (`visit-links.ts` says when it changes).
+  MEASUREMENT_REMINDER: CARE_WIRE_PATH,
   MEDICATION_INTAKE_SYNC: null,
   MEDICATION_INTAKE_RECORDED: "/medications",
   SECURITY_ALERT: "/settings/security",

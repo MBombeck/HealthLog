@@ -1,6 +1,7 @@
 /**
  * A link to a visit is built by `src/lib/encounters/visit-links.ts`, and a
- * bare `/care` (or `/checkups`, its spelling on the wire until 1.50) is a link
+ * bare `/care` (or `/checkups`, its spelling on the wire until iOS 1.7 has
+ * been in the App Store for one release cycle) is a link
  * to the checkups, never to a visit.
  *
  * Visits are the second tab of `/care`. The bare path opens the first
@@ -12,8 +13,9 @@
  *
  * Two rules, both over code lines (comments are skipped):
  *
- *  1. The visit and tab query forms (`/care?visit=`, `/care?view=`, and the
- *     same under `/checkups`) appear only in the builder.
+ *  1. The visit and tab query forms (`/care?visit=`, `/care?view=`, the
+ *     same under `/checkups`, and either built on `CARE_WIRE_PATH` or
+ *     `CARE_WEB_PATH`) appear only in the builder.
  *  2. The bare `/care` or `/checkups` literal appears only where the target IS the
  *     checkups list, counted per file. A new occurrence fails the run until
  *     someone decides whether it names a checkup (add it here, with the
@@ -57,23 +59,6 @@ const BARE_CHECKUPS: Record<string, { count: number; why: string }> = {
   "components/illness/illness-episode-detail.tsx": {
     count: 2,
     why: "the body-site view (`?site=`); the bare fallback never renders",
-  },
-  "lib/navigation/shared-record.ts": {
-    count: 2,
-    why: "route lists for domain visibility, not links",
-  },
-  "lib/daily/digest.ts": {
-    count: 1,
-    why: "the due check-ups rail item (wire spelling)",
-  },
-  "lib/day/records.ts": {
-    count: 1,
-    why: "a check-up satisfied that day (wire spelling)",
-  },
-  "lib/onboarding/tour-state.ts": { count: 1, why: "the checkups tour step" },
-  "lib/notifications/tap-target.ts": {
-    count: 1,
-    why: "a checkup push (wire spelling); an appointment's names its visit as override",
   },
 };
 
@@ -119,7 +104,8 @@ function codeLines(source: string): string[] {
   return out;
 }
 
-const QUERY_FORM = /\/(?:care|checkups)\?(visit|view)=/;
+const QUERY_FORM =
+  /(?:\/(?:care|checkups)|\$\{CARE_(?:WIRE|WEB)_PATH\})\?(visit|view)=/;
 // The bare page, or the page with a query the builder does not own.
 const BARE = /["'`]\/(?:care|checkups)(?:["'`]|\?(?!visit=|view=))/g;
 
@@ -181,8 +167,9 @@ describe("links to a visit go through the visit-links builder", () => {
       },
       { path: "b.ts", source: "const p = `/care?visit=${id}`;" },
       { path: "c.ts", source: "const q = `/care?${params}`;" },
+      { path: "d.ts", source: "const r = `${CARE_WIRE_PATH}?view=visits`;" },
     ]);
-    expect(queryForms).toEqual(["b.ts"]);
+    expect(queryForms).toEqual(["b.ts", "d.ts"]);
     expect(bare).toEqual({ "a.tsx": 1, "c.ts": 1 });
   });
 });
