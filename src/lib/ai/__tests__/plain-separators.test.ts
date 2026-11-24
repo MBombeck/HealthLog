@@ -35,6 +35,23 @@ describe("plainSeparators", () => {
     expect(plainSeparators("down by −2 kg")).toBe("down by −2 kg");
   });
 
+  it("writes a dash between two figures as a range, spaced or not", () => {
+    expect(plainSeparators("Aim for 3 – 5 walks")).toBe("Aim for 3–5 walks");
+    expect(plainSeparators("between 120 — 130 mmHg")).toBe(
+      "between 120–130 mmHg",
+    );
+    expect(plainSeparators("7.5—8 h of sleep")).toBe("7.5–8 h of sleep");
+    // A dash before a negative figure is a pause, not a range.
+    expect(plainSeparators("Weight moved — −2 kg")).toBe("Weight moved, −2 kg");
+  });
+
+  it("passes code blocks and inline code through untouched", () => {
+    const text = "Like this — see:\n```\na — b · 3 – 5\n```\nor `x · y`.";
+    expect(plainSeparators(text)).toBe(
+      "Like this, see:\n```\na — b · 3 – 5\n```\nor `x · y`.",
+    );
+  });
+
   it("keeps the punctuation a dash stood in front of", () => {
     expect(plainSeparators("Held steady — .")).toBe("Held steady.");
   });
@@ -50,6 +67,12 @@ describe("plainSeparators", () => {
   it("keeps Russian dashes, which carry grammar there, but not the dot", () => {
     expect(plainSeparators("Сводка за неделю — всё спокойно · 3 дня")).toBe(
       "Сводка за неделю — всё спокойно, 3 дня",
+    );
+  });
+
+  it("reads a reply as Russian even when code splits it", () => {
+    expect(plainSeparators("Код `x` — это пример")).toBe(
+      "Код `x` — это пример",
     );
   });
 
