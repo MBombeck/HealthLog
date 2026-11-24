@@ -24,7 +24,7 @@
  * or the export folder from `vitest.mutation.config.mts`, and a case here
  * names the file.
  */
-import { existsSync, globSync, readFileSync } from "node:fs";
+import { existsSync, globSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -32,7 +32,7 @@ import { describe, expect, it } from "vitest";
 
 import strykerConfig from "../../stryker.config.mjs";
 import floors from "../../stryker.floors.json";
-import { requireFloor } from "./helpers/source-files";
+import { readSourceText, requireFloor } from "./helpers/source-files";
 
 const ROOT = resolve(__dirname, "../..");
 
@@ -88,7 +88,7 @@ const MOCK = /\bvi\.(?:mock|doMock)\(\s*["']([^"']+)["']/g;
 
 /** Mutated files a test imports for real, not through a `vi.mock`. */
 function mutatedImportsOf(testFile: string): string[] {
-  const source = readFileSync(join(ROOT, testFile), "utf8");
+  const source = readSourceText(join(ROOT, testFile));
   const mocked = new Set(
     [...source.matchAll(MOCK)].map((m) => resolveImport(testFile, m[1])),
   );
