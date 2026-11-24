@@ -545,10 +545,7 @@ export async function destroySession(): Promise<void> {
 
 // The one function behind every "end this user's sessions" action lives in
 // its own module; re-exported so every caller keeps importing it from here.
-export {
-  destroyAllSessions,
-  type AllSessionsDestroyed,
-} from "@/lib/auth/end-all-sessions";
+export { destroyAllSessions } from "@/lib/auth/end-all-sessions";
 
 /**
  * How the caller of a "revoke everything else" action authenticated.

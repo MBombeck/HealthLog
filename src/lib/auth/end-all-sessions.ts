@@ -19,7 +19,7 @@ import { liveRefreshTokenWhere } from "@/lib/devices/live-sign-in";
 import { afterRefreshRevocation } from "@/lib/devices/signed-out-push";
 
 /** What ended: web sessions, and the device sign-ins that were live. */
-export type AllSessionsDestroyed = {
+type AllSessionsDestroyed = {
   webSessions: number;
   deviceSignIns: number;
 };
