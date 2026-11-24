@@ -12,6 +12,7 @@ interface SessionRow {
   id: string;
   userId: string;
   tokenHash: string | null;
+  createdAt: Date;
   expiresAt: Date;
   lastActiveAt: Date | null;
   user: { id: string; locale?: string | null };
@@ -119,6 +120,7 @@ function seed(row: Partial<SessionRow> & { id: string }): SessionRow {
   const full: SessionRow = {
     userId: "user-1",
     tokenHash: null,
+    createdAt: new Date(),
     expiresAt: new Date(Date.now() + THIRTY_DAYS_MS),
     lastActiveAt: new Date(),
     user: { id: row.userId ?? "user-1" },
@@ -347,6 +349,127 @@ describe("getSession — sliding expiry", () => {
 
     expect(result).not.toBeNull();
     expect(prisma.session.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("getSession — absolute lifetime", () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const useSecretCookie = () => {
+    cookieState.sessionId = SECRET;
+  };
+
+  afterEach(() => {
+    delete process.env.SESSION_MAX_LIFETIME_DAYS;
+    delete process.env.SESSION_IDLE_TIMEOUT_DAYS;
+  });
+
+  it("starts a new session with the idle window and records its sign-in", async () => {
+    cookieState.sessionId = undefined;
+    const before = Date.now();
+    await createSession("user-1", false);
+
+    const data = vi.mocked(prisma.session.create).mock.calls[0][0].data as {
+      createdAt: Date;
+      expiresAt: Date;
+    };
+    expect(data.createdAt.getTime()).toBeGreaterThanOrEqual(before);
+    expect(data.expiresAt.getTime() - data.createdAt.getTime()).toBe(
+      THIRTY_DAYS_MS,
+    );
+    const maxAge = cookieState.set.mock.calls.find(
+      (c) => c[0] === "healthlog_session",
+    )![2].maxAge as number;
+    expect(Math.abs(maxAge - THIRTY_DAYS_MS / 1000)).toBeLessThanOrEqual(1);
+  });
+
+  it("refuses a session past its absolute lifetime though its expiry is still ahead", async () => {
+    // A row written before the limit existed carries an idle expiry only; the
+    // limit holds for it, read from the sign-in.
+    seed({
+      id: "sess_old",
+      tokenHash: `hash:${SECRET}`,
+      createdAt: new Date(Date.now() - 91 * DAY_MS),
+      expiresAt: new Date(Date.now() + 5 * DAY_MS),
+    });
+    useSecretCookie();
+
+    await expect(getSession()).resolves.toBeNull();
+    expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+      where: { id: "sess_old" },
+    });
+    expectSessionCookiesExpired();
+    await expect(validateSessionFromCookieValue(SECRET)).resolves.toBeNull();
+    await expect(validateSessionWithCreatedAt(SECRET)).resolves.toBeNull();
+  });
+
+  it("keeps a busy session only up to the absolute end counted from its sign-in", async () => {
+    const createdAt = new Date(Date.now() - 89 * DAY_MS);
+    seed({
+      id: "sess_busy",
+      tokenHash: `hash:${SECRET}`,
+      createdAt,
+      expiresAt: new Date(Date.now() + 10 * DAY_MS),
+    });
+    useSecretCookie();
+
+    const result = await getSession();
+
+    expect(result).not.toBeNull();
+    const update = vi.mocked(prisma.session.update).mock.calls[0][0] as {
+      data: { expiresAt: Date };
+    };
+    expect(update.data.expiresAt.getTime()).toBe(
+      createdAt.getTime() + 90 * DAY_MS,
+    );
+    const maxAge = cookieState.set.mock.calls.find(
+      (c) => c[0] === "healthlog_session",
+    )![2].maxAge as number;
+    expect(maxAge).toBeLessThanOrEqual(DAY_MS / 1000);
+    expect(maxAge).toBeGreaterThan(DAY_MS / 1000 - 5);
+  });
+
+  it("writes nothing once the expiry has reached the absolute end", async () => {
+    const createdAt = new Date(Date.now() - 89 * DAY_MS);
+    seed({
+      id: "sess_capped",
+      tokenHash: `hash:${SECRET}`,
+      createdAt,
+      expiresAt: new Date(createdAt.getTime() + 90 * DAY_MS),
+    });
+    useSecretCookie();
+
+    await getSession();
+
+    expect(prisma.session.update).not.toHaveBeenCalled();
+  });
+
+  it("follows the operator's settings", async () => {
+    process.env.SESSION_MAX_LIFETIME_DAYS = "7";
+    seed({
+      id: "sess_week",
+      tokenHash: `hash:${SECRET}`,
+      createdAt: new Date(Date.now() - 8 * DAY_MS),
+    });
+    useSecretCookie();
+    await expect(getSession()).resolves.toBeNull();
+
+    delete process.env.SESSION_MAX_LIFETIME_DAYS;
+    process.env.SESSION_IDLE_TIMEOUT_DAYS = "2";
+    vi.mocked(prisma.session.update).mockClear();
+    store.sessions = [];
+    seed({
+      id: "sess_short_idle",
+      tokenHash: `hash:${SECRET}`,
+      expiresAt: new Date(Date.now() + 20 * DAY_MS),
+    });
+    await expect(getSession()).resolves.not.toBeNull();
+    // An expiry further out than the shortened idle window is pulled in.
+    const update = vi.mocked(prisma.session.update).mock.calls[0][0] as {
+      data: { expiresAt: Date };
+    };
+    expect(update.data.expiresAt.getTime()).toBeLessThanOrEqual(
+      Date.now() + 2 * DAY_MS,
+    );
   });
 });
 

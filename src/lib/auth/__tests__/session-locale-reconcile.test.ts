@@ -74,6 +74,7 @@ function seedSession(userLocale: string | null) {
     userId: "user-1",
     tokenHash: `hash:${SECRET}`,
     // Far enough out that the sliding-expiry refresh stays quiet.
+    createdAt: new Date(),
     expiresAt: new Date(Date.now() + THIRTY_DAYS_MS),
     lastActiveAt: new Date(),
     actingAsUserId: null,
