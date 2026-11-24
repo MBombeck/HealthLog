@@ -308,7 +308,8 @@ describe("coach chat — Guard I at the route level (G1)", () => {
     const out = await toolTurn(content, [
       { present: true, data: { metric: "bp", aggregate: { avgSys30: 128 } } },
     ]);
-    expect(out).toBe(content);
+    // Only the spaced dash becomes the app's comma; the wording is untouched.
+    expect(out).toBe(content.replace(" — ", ", "));
     expect(out).not.toContain("[…]");
   });
 

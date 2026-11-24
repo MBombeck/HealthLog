@@ -33,6 +33,7 @@ import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
 import { formatRelativeTime } from "@/lib/i18n/relative-time";
 import { queryKeys } from "@/lib/query-keys";
 
+import { AppleWalletCard } from "./apple-wallet-card";
 import { EmergencyCardSheet } from "./emergency-card-sheet";
 
 /**
@@ -191,7 +192,10 @@ export function EmergencyCardPage() {
           </CardContent>
         </Card>
 
-        <LinkCard minted={minted} onMinted={setMinted} />
+        <div className="space-y-4">
+          <LinkCard minted={minted} onMinted={setMinted} />
+          <AppleWalletCard />
+        </div>
       </div>
     </div>
   );

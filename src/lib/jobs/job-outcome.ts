@@ -390,6 +390,15 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "users_skipped_restoring",
   "users_synced",
   "users_useful",
+  // The Apple Wallet pass jobs (v1.50): passes rebuilt, changed, withdrawn,
+  // held back by the push throttle or past retention, and their pushes.
+  "wallet_passes_changed",
+  "wallet_passes_deferred",
+  "wallet_passes_deleted",
+  "wallet_passes_refreshed",
+  "wallet_passes_voided",
+  "wallet_pushes_accepted",
+  "wallet_registrations_dropped",
   "wedge_skipped",
   // The full rollup backfill: calendar-year windows one run folded.
   "windows_folded",

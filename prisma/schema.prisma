@@ -8984,7 +8984,6 @@ model EmergencyCardLink {
   /// code again from it. The one emergency-card credential stored
   /// recoverably; a CARD link keeps the HMAC-only rule. The whole model is
   /// excluded from backups (backup-plan.ts).
-  /// @pending-consumer(v1.50.0) read by the wallet pass routes, which build the pass from it.
   tokenEncrypted String?                  @map("token_encrypted")
 
   user       User        @relation("EmergencyCardLinkSubject", fields: [userId], references: [id], onDelete: Cascade)
@@ -9046,35 +9045,25 @@ model WalletPass {
   /// The owner, or the guardian of a managed profile.
   createdById        String                @map("created_by_id")
   linkId             String                @unique @map("link_id")
-  /// @pending-consumer(v1.50.0) read by the wallet pass routes, which pick the signing path from it.
   signer             WalletSigner          @map("signer")
-  /// @pending-consumer(v1.50.0) read by Apple's pass web service, which matches the path against it.
   passTypeIdentifier String                @map("pass_type_identifier")
-  /// @pending-consumer(v1.50.0) read by the wallet pass routes, which write it into pass.json.
   teamIdentifier     String                @map("team_identifier")
   /// A random UUIDv4, Apple's `serialNumber`. Public inside the pass.
-  /// @pending-consumer(v1.50.0) read by Apple's pass web service, which looks the pass up by it.
   serialNumber       String                @unique @map("serial_number")
   /// The https origin frozen at mint; `webServiceURL` and the QR link use it.
-  /// @pending-consumer(v1.50.0) read by the wallet pass routes, which write it into pass.json.
   webServiceOrigin   String                @map("web_service_origin")
   /// SHA-256 over the pass's content (pass.json and every pass.strings, the
   /// per-build nonce left out), so a refresh can tell a change from none.
-  /// @pending-consumer(v1.50.0) read by the pass refresh job, which compares against it.
   contentHash        String                @map("content_hash")
   /// When the content last changed: the web service's Last-Modified and the
   /// "As of" date on the pass.
-  /// @pending-consumer(v1.50.0) read by the wallet pass routes and Apple's pass web service.
   contentChangedAt   DateTime              @map("content_changed_at")
   /// @internal: evidence of the relay disclosure the owner accepted at mint.
   consentTextVersion String                @map("consent_text_version")
   createdAt          DateTime              @default(now()) @map("created_at")
-  /// @pending-consumer(v1.50.0) read by the wallet pass routes, which serve the voided version.
   voidedAt           DateTime?             @map("voided_at")
-  /// @pending-consumer(v1.50.0) read by the card page's pass status.
   voidReason         WalletPassVoidReason? @map("void_reason")
   /// The last time a device or the app fetched the pass; shown on the card page.
-  /// @pending-consumer(v1.50.0) read by the card page's pass status.
   lastFetchedAt      DateTime?             @map("last_fetched_at")
 
   user          User                     @relation("WalletPassSubject", fields: [userId], references: [id], onDelete: Cascade)
@@ -9093,14 +9082,11 @@ model WalletPassRegistration {
   id                  String    @id @default(cuid())
   walletPassId        String    @map("wallet_pass_id")
   /// HMAC (`hashToken`) of Apple's `deviceLibraryIdentifier`; looked up by hash.
-  /// @pending-consumer(v1.50.0) read by Apple's pass web service, which looks a device up by it.
   deviceLibraryIdHash String    @map("device_library_id_hash")
   /// Apple's pass push token, AES-256-GCM under `encrypt()`; needed raw to push.
-  /// @pending-consumer(v1.50.0) read by the pass push, which sends to it.
   pushTokenEncrypted  String    @map("push_token_encrypted")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
-  /// @pending-consumer(v1.50.0) read by the pass push, which throttles on it.
   lastPushAt          DateTime? @map("last_push_at")
 
   walletPass WalletPass @relation(fields: [walletPassId], references: [id], onDelete: Cascade)

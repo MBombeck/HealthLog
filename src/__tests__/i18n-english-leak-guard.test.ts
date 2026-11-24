@@ -75,6 +75,8 @@ function isMaskPlaceholder(words: string[]): boolean {
  * reason. Prune an entry only when the value genuinely diverges in a locale.
  */
 const LEGIT_IDENTICAL = new Set<string>([
+  // "Apple Wallet" is Apple's product name in these languages.
+  "emergencyCard.appleWallet.title",
   // #1350 — "Google Calendar" is the product's own name in the Spanish and
   // Italian UI, and "Cycle (HealthLog)" is the French word for the same thing.
   "cycle.feed.fetcher.GOOGLE",

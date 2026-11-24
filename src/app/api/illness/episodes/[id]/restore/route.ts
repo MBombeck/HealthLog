@@ -21,6 +21,7 @@ import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { withIdempotency } from "@/lib/idempotency";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import { toIllnessEpisodeDTO } from "@/lib/illness/dto";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -73,6 +74,7 @@ export const POST = apiHandler(
       },
     });
 
+    await enqueueWalletRefresh(user.id);
     return apiSuccess(toIllnessEpisodeDTO(restored));
   }),
 );

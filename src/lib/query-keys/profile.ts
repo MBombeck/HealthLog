@@ -7,4 +7,6 @@ export const profileKeys = {
   emergencyCard: () => ["emergency-card"] as const,
   /** The card's QR link status (`/api/emergency-card/link`). */
   emergencyCardLink: () => ["emergency-card", "link"] as const,
+  /** The card's Apple Wallet pass mutations (`/api/emergency-card/wallet/apple`). */
+  emergencyCardWallet: () => ["emergency-card", "wallet"] as const,
 };

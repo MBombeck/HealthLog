@@ -226,6 +226,30 @@ only when no relay holds a binding of this server any more.
   server has received nothing from it for six hours while the app is still
   in use.
 
+### Apple Wallet passes
+
+The relay also carries the emergency card's Apple Wallet pass (from v1.50,
+`docs/using/emergency-card.md`), in two ways that are not pushes of the app:
+
+- **Signing.** The server sends the pass's `manifest.json` (file names and the
+  SHA-1 of each file) and gets a signature by the project's Pass Type ID back.
+  The relay never sees the pass's text, its link or its serial number; each
+  text table carries a random line per build, so a hash cannot confirm a guess
+  at the content. It keeps the SHA-256 of each signed manifest with the
+  instance id and the day for 400 days, readable only by the relay operator,
+  to trace a pass reported as misuse.
+- **Update pushes.** When a pass changes or is withdrawn, the server asks the
+  relay to send an empty push to the devices that hold it. Wallet registers
+  with your server directly, not with the relay; the relay sees each pass push
+  token only while it forwards, and the time. The timing can show that
+  something on a card changed (a medication or an allergy, say), never what.
+  Content changes are held to one push per pass every 15 minutes and 24 a
+  day; a withdrawal goes at once.
+
+A server that signs with its own Pass Type ID (`WALLET_APPLE_*`,
+`docs/self-hosting/apple-wallet.md`) uses neither: it signs and pushes to
+Apple itself.
+
 ### Live Activity start and update
 
 Starting a medication Live Activity from the server, and updating it as the

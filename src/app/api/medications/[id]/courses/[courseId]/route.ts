@@ -22,6 +22,7 @@ import {
 import { dayKeyOfDate } from "@/lib/medications/course-window";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { updateMedicationCourseSchema } from "@/lib/validations/medication";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,7 @@ export const PATCH = apiHandler(
         action: { name: "medication.course.update" },
         meta: { medicationId: id },
       });
+      await enqueueWalletRefresh(user.id);
       return apiSuccess({
         id: updated.id,
         startsOn: dayKeyOfDate(updated.startsOn),
@@ -106,6 +108,7 @@ export const DELETE = apiHandler(
       action: { name: "medication.course.delete" },
       meta: { medicationId: id },
     });
+    await enqueueWalletRefresh(user.id);
     return apiSuccess({ id: courseId, deleted: true });
   },
 );

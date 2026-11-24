@@ -16202,6 +16202,52 @@
     },
     "entry": {
       "description": "응급 상황용 혈액형, 알레르기, 약, 연락처. 오프라인 사본, 지갑용 카드, QR 링크를 함께 제공합니다."
+    },
+    "appleWallet": {
+      "title": "Apple 지갑",
+      "lead": "지갑 속 내 카드, 스스로 최신 상태를 유지합니다.",
+      "learnMore": "자세히 알아보기",
+      "add": "Apple 지갑에 추가",
+      "makeNew": "새 패스 만들기",
+      "withdraw": "패스 철회",
+      "withdrawTitle": "지갑 패스를 철회할까요?",
+      "withdrawBody": "QR 코드가 즉시 작동을 멈추고, 지갑의 패스에도 그렇게 표시됩니다.",
+      "fieldsLabel": "패스에 표시할 항목",
+      "expiryLabel": "패스 종료",
+      "otherDevice": "이 카드를 지갑에 추가하려면 iPhone이나 Mac에서 이 페이지를 여세요.",
+      "error": "패스를 변경하지 못했습니다. 다시 시도하세요.",
+      "consentTitle": "HealthLog 프로젝트가 서명",
+      "consentBody": "서명 서비스는 파일 해시와 시각만 보며, 카드 내용은 절대 보지 않습니다.",
+      "expired": "만료됨. 지갑이 회색으로 표시합니다.",
+      "fetched": "기기에 있음, 마지막 업데이트 {when}.",
+      "notFetched": "아직 어느 기기에도 없습니다.",
+      "state": {
+        "live": "사용 중",
+        "voided": "철회됨",
+        "expired": "만료됨"
+      },
+      "withdrawn": {
+        "owner": "{when} 직접 철회했습니다.",
+        "credential_reset": "{when} 비밀번호 변경 후 철회되었습니다.",
+        "handover": "{when} 프로필 인계 때 철회되었습니다.",
+        "guardian_lost": "{when} 철회됨: 이 프로필을 관리할 권한이 끝났습니다.",
+        "account_deletion": "{when} 계정 삭제 요청 때 철회되었습니다."
+      },
+      "unavailable": {
+        "signer_off": "이 서버는 지갑 패스에 서명하지 않습니다.",
+        "relay_not_ready": "지금은 이 서버에서 지갑 패스를 사용할 수 없습니다.",
+        "no_https_origin": "지갑 패스는 이 서버에 HTTPS로 접속해야 합니다.",
+        "api_disabled": "이 서버의 외부 접근이 꺼져 있어 지갑 패스도 사용할 수 없습니다.",
+        "not_allowed": "카드의 당사자나 그 보호자만 추가할 수 있습니다."
+      },
+      "more": {
+        "frozen": "패스는 여기서 선택한 항목을 보여 줍니다. 바꾸려면 철회하고 새로 만드세요.",
+        "updates": "카드가 바뀌면 패스가 스스로 업데이트됩니다. QR 코드는 인쇄된 카드와 별개인 자체 코드입니다.",
+        "lock": "지갑은 Face ID나 암호 후에 패스를 보여 줍니다. 잠긴 iPhone 앞의 구조자를 위해 건강 앱의 의료 정보를 채우세요.",
+        "signerRelay": "HealthLog 프로젝트가 서명합니다. 서명 서비스는 파일 해시와 시각만 보며 내용은 보지 않습니다.",
+        "signerLocal": "이 서버가 자체 인증서로 서명합니다.",
+        "withdraw": "철회하면 QR 코드가 즉시 멈춥니다. 오프라인인 휴대폰은 다시 연결될 때까지 이전 패스를 유지합니다. 패스가 업데이트되지 않으면 지갑에서 삭제하세요."
+      }
     }
   },
   "treatmentSeries": {

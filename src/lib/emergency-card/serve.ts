@@ -45,6 +45,8 @@ import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { loadEmergencyCard, type EmergencyCardView } from "./card-data";
 import { parseCardTokenSegment } from "./token";
 import { guardianMintRefusal } from "@/lib/sharing/guardian-minted";
+import { enqueueWalletVoidPush } from "./wallet-pass/queues";
+import { voidWalletPassesWhere } from "./wallet-pass/void";
 
 /** Per card and address: how many openings are counted and audited. */
 const AUDIT_LIMIT_PER_HOUR = 60;
@@ -107,7 +109,17 @@ export async function readEmergencyCardByToken(
   if (!apiOn) return miss("api_disabled");
   // A guardian's link rests on their live grant and the profile's marker.
   const refusal = await guardianMintRefusal(link);
-  if (refusal) return miss(refusal);
+  if (refusal) {
+    // A guardian's Wallet pass ends with the right it rested on: stamped
+    // withdrawn, and its devices told.
+    if (link.purpose === "WALLET") {
+      const voided = await prisma.$transaction((tx) =>
+        voidWalletPassesWhere(tx, { linkId: link.id }, "GUARDIAN_LOST", now),
+      );
+      if (voided > 0) await enqueueWalletVoidPush();
+    }
+    return miss(refusal);
+  }
   const owner = await prisma.user.findFirst({
     where: activeAccount({ id: link.userId }),
     select: { timezone: true },

@@ -66,6 +66,7 @@ export const PUBLIC_PATHS = [
   "/api/cycle/feed/",
   "/api/care/feed/",
   "/e/",
+  "/api/wallet/apple/v1/", // Apple Wallet; a pass token or a device id, checked in the routes
   "/api/monitoring/",
   "/api/withings/webhook",
   // v1.11.0 — WHOOP webhook (`recovery.updated` / `sleep.updated` /

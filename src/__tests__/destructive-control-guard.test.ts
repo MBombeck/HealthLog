@@ -576,6 +576,13 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["ConfirmButton"],
   },
   {
+    file: "components/emergency-card/apple-wallet-card.tsx",
+    destroys:
+      "the emergency card's Apple Wallet pass; its QR code stops working and Wallet replaces the pass with a withdrawn one, and a new pass has to be added again",
+    recovery: "permanent",
+    confirm: ["ConfirmButton"],
+  },
+  {
     file: "components/settings/care-calendar-feed-card.tsx",
     destroys:
       "the record's care calendar-feed link; calendars subscribed to it stop updating, and turning it on again issues a new link",

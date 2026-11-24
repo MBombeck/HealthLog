@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { queueRelayUnbindsWhere } from "@/lib/push-relay/unbind-rows";
+import { withdrawWalletPassesBeforeWipe } from "@/lib/emergency-card/wallet-pass/wipe";
 import {
   apiHandler,
   requireAdmin,
@@ -101,6 +102,10 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     ipAddress: getClientIp(request),
     details: { confirm: "DELETE ALL" },
   });
+
+  // Every Apple Wallet pass goes with the wipe: withdrawn and its devices
+  // told first, bounded, never in the way of the wipe.
+  await withdrawWalletPassesBeforeWipe({});
 
   const counts = await prisma.$transaction(
     async (tx) => {

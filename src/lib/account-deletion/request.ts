@@ -25,6 +25,7 @@ import {
   eraseAccount,
   lockAccountForDeletion,
 } from "@/lib/account-deletion/lifecycle";
+import { enqueueWalletVoidPush } from "@/lib/emergency-card/wallet-pass/queues";
 
 type Tx = Prisma.TransactionClient;
 
@@ -77,5 +78,8 @@ export async function requestAccountDeletion(input: {
   );
 
   if (!purgeAt) await kickOffhostPurge();
+  // A Wallet pass the lock withdrew: its devices fetch the withdrawn version
+  // while the window keeps the row.
+  else await enqueueWalletVoidPush();
   return { purgeAt };
 }
