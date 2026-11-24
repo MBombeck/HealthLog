@@ -9780,7 +9780,8 @@
           "off": "Os cookies não têm o atributo Secure.",
           "secure_over_https": "Cookies seguros por HTTPS, como deve ser.",
           "plain_http": "HTTP simples sem o atributo Secure: tudo bem para um servidor acessível só na sua própria rede.",
-          "secure_over_http": "Esta página chegou por HTTP simples, mas os cookies têm o atributo Secure, então os navegadores descartam o login. Use HTTPS ou defina SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Esta página chegou ao app por HTTP simples. Atrás de um proxy HTTPS, faça-o enviar X-Forwarded-Proto: https; em HTTP simples, defina SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "O HTTPS funciona, mas seu proxy reverso não informa isso. Faça-o enviar X-Forwarded-Proto: https.",
           "insecure_over_https": "Esta página chegou por HTTPS, mas os cookies não têm o atributo Secure. Remova SESSION_COOKIE_SECURE=false."
         },
         "app_url": {

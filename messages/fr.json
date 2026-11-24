@@ -9780,7 +9780,8 @@
           "off": "Les cookies ne portent pas l'attribut Secure.",
           "secure_over_https": "Cookies sécurisés via HTTPS, comme il se doit.",
           "plain_http": "HTTP simple sans attribut Secure : convient à un serveur accessible uniquement sur votre propre réseau.",
-          "secure_over_http": "Cette page est arrivée en HTTP simple, mais les cookies portent l'attribut Secure, donc les navigateurs rejettent la connexion. Servez le site en HTTPS ou définissez SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Cette page est arrivée à l'application en HTTP simple. Derrière un proxy HTTPS, faites-lui envoyer X-Forwarded-Proto: https ; en HTTP simple, définissez SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "HTTPS fonctionne, mais votre proxy inverse ne le signale pas. Faites-lui envoyer X-Forwarded-Proto: https.",
           "insecure_over_https": "Cette page est arrivée en HTTPS, mais les cookies n'ont pas l'attribut Secure. Retirez SESSION_COOKIE_SECURE=false."
         },
         "app_url": {

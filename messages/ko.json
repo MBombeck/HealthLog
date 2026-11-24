@@ -9780,7 +9780,8 @@
           "off": "쿠키에 Secure 플래그가 없습니다.",
           "secure_over_https": "HTTPS로 보안 쿠키를 사용 중입니다. 정상입니다.",
           "plain_http": "Secure 플래그 없는 일반 HTTP: 내 네트워크에서만 접속하는 서버라면 괜찮습니다.",
-          "secure_over_http": "이 페이지는 일반 HTTP로 열렸지만 쿠키에 Secure 플래그가 있어 브라우저가 로그인을 버립니다. HTTPS를 제공하거나 SESSION_COOKIE_SECURE=false로 설정하세요.",
+          "secure_over_http": "이 페이지는 일반 HTTP로 앱에 도착했습니다. HTTPS 프록시 뒤에 있다면 X-Forwarded-Proto: https를 보내도록 설정하고, 일반 HTTP라면 SESSION_COOKIE_SECURE=false로 설정하세요.",
+          "proxy_scheme_unreported": "HTTPS는 작동하지만 리버스 프록시가 이를 알려 주지 않습니다. X-Forwarded-Proto: https를 보내도록 설정하세요.",
           "insecure_over_https": "이 페이지는 HTTPS로 열렸지만 쿠키에 Secure 플래그가 없습니다. SESSION_COOKIE_SECURE=false를 제거하세요."
         },
         "app_url": {

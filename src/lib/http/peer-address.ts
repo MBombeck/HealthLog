@@ -15,6 +15,13 @@
  * request handler runs, and writes the socket's remote address into
  * `PEER_ADDRESS_HEADER`, overwriting whatever the caller sent under that
  * name. It is installed once, at boot, from `src/instrumentation.ts`.
+ *
+ * The same stamp keeps the `X-Forwarded-Proto` the request arrived with in
+ * `FORWARDED_PROTO_SENT_HEADER` (empty when there was none). Next fills
+ * `X-Forwarded-Proto` with `http` on every request that lacks it, so by the
+ * time a route reads the header it cannot tell a proxy that said `http` from
+ * a proxy that said nothing; the scheme resolver in `./origin.ts` needs the
+ * difference.
  */
 import { subscribe, unsubscribe } from "node:diagnostics_channel";
 import type { IncomingMessage } from "node:http";
@@ -23,6 +30,9 @@ import type { Socket } from "node:net";
 
 /** The header the socket's address is written to. Never trusted from a caller. */
 export const PEER_ADDRESS_HEADER = "x-healthlog-peer-address";
+
+/** The `X-Forwarded-Proto` as received, before Next fills it. Never trusted from a caller. */
+export const FORWARDED_PROTO_SENT_HEADER = "x-healthlog-forwarded-proto";
 
 const INSTALLED = Symbol.for("healthlog.peerAddressStamp");
 
@@ -36,6 +46,9 @@ function stamp(message: unknown): void {
     socket: Socket;
   };
   request.headers[PEER_ADDRESS_HEADER] = socket.remoteAddress ?? "";
+  const sent = request.headers["x-forwarded-proto"];
+  request.headers[FORWARDED_PROTO_SENT_HEADER] =
+    typeof sent === "string" ? sent : "";
 }
 
 /** Start writing each request's socket address into `PEER_ADDRESS_HEADER`. */
@@ -62,7 +75,9 @@ export function peerAddressStampInstalled(): boolean {
  * IPv4). `undefined` when the request carries no stamp, `null` when it
  * carries one that is not an address (a socket already gone).
  */
-export function readPeerAddress(request: Request): string | null | undefined {
+export function readPeerAddress(request: {
+  headers: Headers;
+}): string | null | undefined {
   const raw = request.headers.get(PEER_ADDRESS_HEADER);
   if (raw === null) return undefined;
   const trimmed = raw.trim();
