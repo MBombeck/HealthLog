@@ -425,7 +425,9 @@ APNs is **all-or-none**: either set the three IDs plus exactly one key
 source, or leave the whole block unset. A partial config is rejected so
 the channel never silently half-works (`scripts/check-env.ts`). When more
 than one key source is present, the precedence is `APNS_KEY_B64` >
-`APNS_KEY` > `APNS_KEY_FILE`.
+`APNS_KEY` > `APNS_KEY_FILE`. `APNS_KEY_B64_FILE` reads `APNS_KEY_B64`
+from a file the way every other secret can ([secrets from files](secrets.md));
+`APNS_KEY_FILE` keeps its own meaning, a path to the `.p8` file.
 
 `APNS_CRITICAL_ENTITLEMENT=true` is honoured only if Apple has actually
 granted your app the Critical Alerts entitlement (a separate request to

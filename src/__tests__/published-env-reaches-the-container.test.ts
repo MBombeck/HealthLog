@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { SECRET_ENV_NAMES } from "@/lib/boot/secret-files.mjs";
+
 /**
  * An environment variable the product SHOWS a user has to reach the container.
  *
@@ -146,10 +148,22 @@ describe("a variable the product publishes reaches the container", () => {
   }
 });
 
-/** Every `NAME: "${NAME…` entry on the compose whitelist. */
+/**
+ * Every `NAME: "${NAME…` entry on the compose whitelist, less the
+ * `<SECRET>_FILE` twins: `pnpm check-env` reads those through the secret's
+ * own manifest entry, and `secret-files-guard.test.ts` holds them to the list.
+ */
 const COMPOSE_NAMES: string[] = [
   ...COMPOSE.matchAll(/^\s*([A-Z][A-Z0-9_]+):\s*"\$\{\1\b/gm),
-].map((m) => m[1]);
+]
+  .map((m) => m[1])
+  .filter(
+    (name) =>
+      !(
+        name.endsWith("_FILE") &&
+        SECRET_ENV_NAMES.includes(name.slice(0, -"_FILE".length))
+      ),
+  );
 
 /**
  * Whitelisted variables the manifest has never declared, frozen when this
