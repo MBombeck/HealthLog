@@ -34,6 +34,7 @@
 - A field's name starts on the same line as the text and the controls around it. Every form label sat a few pixels to the right of the sentence above it and of a switch's name in the same card; it now shares their left edge, in Settings, Admin and every form sheet.
 - A checkup that has never been done no longer shows "Last done" with a dash. The line is left out, as on the medication cards.
 - The Spanish, French, Italian and Polish texts write an ellipsis as one character, as the other languages do, and one Spanish loading line no longer ends in four dots.
+- Signing in on a phone or browser set to another language no longer resets the language you picked. The sign-in page shows the device's language until you choose one, and that guess used to be saved as your choice, so the app, the reminders and the Telegram messages switched to it. The account's language now wins until you pick another one on that device. A tab opened before you switched language in another tab no longer puts the old language back either: it follows the new one.
 
 ### Security
 
