@@ -47,6 +47,12 @@ jobs:
       # Prettier formatting gate. The format pass excludes generator-owned
       # artifacts via .prettierignore (notably docs/api/openapi.yaml, which
       # the OpenAPI drift check below enforces byte-for-byte).
+      # The licences of the shipped dependency tree against the policy in
+      # THIRD_PARTY_NOTICES.md: a refused licence, or one not yet listed
+      # there, fails the job.
+      - name: Third-party licence policy
+        run: node scripts/third-party-notices.mjs
+
       - name: Prettier format check
         run: pnpm format:check
 

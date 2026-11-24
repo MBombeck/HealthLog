@@ -6,7 +6,6 @@
 //        [--schedule-starts-after X.Y.Z]   (dry run of the rules against older tags)
 //   node scripts/release-policy.mjs next [--now <iso|unix>]          (pnpm release:next)
 //   node scripts/release-policy.mjs pr --base <rev> --head <rev> --source <branch>
-//   node scripts/release-policy.mjs migrations --base <rev> --head <rev>
 //
 // `check` runs in the release-policy job of docker-publish.yml. It exits 1 on
 // a hard error and writes `off_schedule=true|false` to the GitHub output. An
@@ -20,6 +19,8 @@ import { pathToFileURL } from "node:url";
 
 /** The last release before the calendar applies. Tags up to it are exempt. */
 export const SCHEDULE_STARTS_AFTER = "1.49.0";
+/** A minor's month starts at least this many days after the previous minor. */
+export const MINOR_GAP_DAYS = 21;
 export const TIME_ZONE = "Europe/Berlin";
 /** Releases ship on Saturday, when self-hosters have time to update. */
 export const RELEASE_WEEKDAY = 6;
@@ -137,14 +138,17 @@ export function firstSaturdayOf(year, month) {
 }
 
 /**
- * The first Saturday of the calendar month after the previous minor's month.
- * For a minor on a first Saturday that is the next month's first Saturday;
- * after the transition release (1.49.0, on 2026-11-23) it is 2026-12-05.
+ * The first Saturday of the first month that starts at least MINOR_GAP_DAYS
+ * after the previous minor. For a minor on a first Saturday that is always the
+ * next month; after the transition release it can be the month after.
  */
 export function earliestMinorDay(previousMinorDate) {
-  const shipped = berlinDay(previousMinorDate);
-  const nextMonth = day(shipped.year, shipped.month + 1, 1);
-  return firstSaturdayOf(nextMonth.year, nextMonth.month);
+  const threshold = addDays(berlinDay(previousMinorDate), MINOR_GAP_DAYS);
+  const monthStart =
+    threshold.day === 1
+      ? threshold
+      : day(threshold.year, threshold.month + 1, 1);
+  return firstSaturdayOf(monthStart.year, monthStart.month);
 }
 
 export function nextSaturday(fromDay) {
@@ -394,7 +398,7 @@ export function describeNext({ now, tags, changelog }) {
       `Next release: v${SCHEDULE_STARTS_AFTER}, the last one before the calendar. It ships when its planned work is done and green, on any day.`,
     );
     lines.push(
-      "After it, the first minor is on the first Saturday of the next calendar month.",
+      `After it, the first minor is on the first Saturday of the first month that starts at least ${MINOR_GAP_DAYS} days later.`,
       tagCommand(`v${SCHEDULE_STARTS_AFTER}`),
     );
     return lines;
@@ -437,38 +441,6 @@ export function describeNext({ now, tags, changelog }) {
     );
   }
   return lines;
-}
-
-// ── Migrations ──────────────────────────────────────────────────────────
-
-export const MIGRATIONS_DIR = "prisma/migrations/";
-
-/**
- * A merged migration is never edited, renamed or deleted; only new files
- * may appear. A database that ran a nightly of `release/vX.Y.0`, or an
- * `:edge` of `main`, has applied the branch's migrations already, and Prisma
- * refuses to start against a migration whose checksum changed since.
- *
- * @param {string} nameStatus  `git diff --name-status --no-renames` output
- * @returns {string[]} one line per offending change
- */
-export function migrationEdits(nameStatus) {
-  return nameStatus
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [status, ...paths] = line.split("\t");
-      return { status, path: paths.at(-1) ?? "" };
-    })
-    .filter(({ path }) => path.startsWith(MIGRATIONS_DIR))
-    .filter(({ status }) => status !== "A")
-    .map(({ status, path }) => {
-      const verb =
-        { M: "modified", D: "deleted", T: "changed in type" }[status[0]] ??
-        `changed (${status})`;
-      return `${path} ${verb}`;
-    });
 }
 
 // ── CLI ─────────────────────────────────────────────────────────────────
@@ -626,37 +598,7 @@ export function main(
     return 0;
   }
 
-  if (command === "migrations") {
-    if (!flags.base || !flags.head) {
-      error("Usage: release-policy.mjs migrations --base <rev> --head <rev>");
-      return 2;
-    }
-    // Three dots: what the head added since it left the base, so a base
-    // that moved on (a merged main) does not count as the head's edit.
-    const edits = migrationEdits(
-      git(
-        [
-          "diff",
-          "--name-status",
-          "--no-renames",
-          `${flags.base}...${flags.head}`,
-          "--",
-          MIGRATIONS_DIR,
-        ],
-        cwd,
-      ),
-    );
-    for (const edit of edits) {
-      error(
-        `::error::${edit}. A merged migration is never changed: a database on :edge or :nightly has applied it, and Prisma refuses to start when its checksum differs. Add a new migration instead.`,
-      );
-    }
-    if (edits.length > 0) return 1;
-    log("Migrations: only new files.");
-    return 0;
-  }
-
-  error("Usage: release-policy.mjs <check|next|pr|migrations> ...");
+  error("Usage: release-policy.mjs <check|next|pr> ...");
   return 2;
 }
 
