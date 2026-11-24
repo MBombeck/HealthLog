@@ -3951,7 +3951,22 @@
         "empty": "Voor deze dag is geen nacht vastgelegd.",
         "estimateNote": "Deze bron levert fasetotalen zonder tijden, dus voor deze nacht is er geen verloop.",
         "noStages": "Deze nacht heeft geen fasetijden.",
-        "ariaLabel": "Slaapfasen door de nacht: {asleep} slaap, {awakenings, plural, other {#×}} wakker"
+        "ariaLabel": "Slaapfasen door de nacht: {asleep} slaap, {awakenings, plural, other {#×}} wakker",
+        "overlay": {
+          "group": "Lijnen over de nacht",
+          "kinds": {
+            "pulse": "Hartslag",
+            "hrv": "HRV",
+            "respiration": "Ademhaling",
+            "spo2": "SpO₂",
+            "skinTemperature": "Huidtemp.",
+            "roomTemperature": "Kamertemp."
+          },
+          "range": "{min} tot {max}",
+          "nightValues": "Voor de nacht",
+          "srSeries": "{metric} tijdens de nacht: laagste {min}, hoogste {max}, gemiddeld {avg}",
+          "srNight": "{metric} voor de nacht: {value}"
+        }
       },
       "empty": {
         "title": "Nog geen slaapgegevens",

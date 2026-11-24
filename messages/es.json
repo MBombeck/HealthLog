@@ -3951,7 +3951,22 @@
         "empty": "No hay ninguna noche registrada para este día.",
         "estimateNote": "Esta fuente da totales por fase sin horas, así que no hay evolución para esta noche.",
         "noStages": "Esta noche no tiene horas por fase.",
-        "ariaLabel": "Fases del sueño durante la noche: {asleep} dormido, {awakenings, plural, one {# despertar} other {# despertares}}"
+        "ariaLabel": "Fases del sueño durante la noche: {asleep} dormido, {awakenings, plural, one {# despertar} other {# despertares}}",
+        "overlay": {
+          "group": "Líneas sobre la noche",
+          "kinds": {
+            "pulse": "Pulso",
+            "hrv": "VFC",
+            "respiration": "Respiración",
+            "spo2": "SpO₂",
+            "skinTemperature": "Temp. piel",
+            "roomTemperature": "Temp. ambiente"
+          },
+          "range": "{min} a {max}",
+          "nightValues": "De la noche",
+          "srSeries": "{metric} durante la noche: mínimo {min}, máximo {max}, media {avg}",
+          "srNight": "{metric} de la noche: {value}"
+        }
       },
       "empty": {
         "title": "Aún no hay datos de sueño",

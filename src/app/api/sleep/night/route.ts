@@ -25,6 +25,13 @@
  * list's drill-down reads them (`readNightSessions`), so any past night is
  * answered and a long history never reaches the heap.
  *
+ * `overlays` (#1419) carries the night metrics the timeline can draw as lines
+ * over the stages: pulse, HRV, breathing rate, SpO2, skin and room
+ * temperature, each a series bucketed over the session or one value a night,
+ * from one source per metric (`sleep/night-overlays.ts`). It is null when
+ * there is no main night, and on a night of stage totals, which has no
+ * timeline to lay a line on.
+ *
  * Auth: cookie session OR Bearer token (`requireAuth`). Soft-delete-filtered.
  */
 import { NextRequest } from "next/server";
@@ -48,6 +55,10 @@ import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { isCalendarDateKey } from "@/lib/tz/date-only";
+import {
+  readNightOverlays,
+  visibleOverlayTypes,
+} from "@/lib/sleep/night-overlays";
 
 const querySchema = z.object({
   // Optional wake-day key; when omitted the latest night is returned.
@@ -146,12 +157,23 @@ export const GET = apiHandler(async (request: NextRequest) => {
       )
     : { main: null, naps: [] };
 
+  const overlays =
+    main && !main.reconstructed
+      ? await readNightOverlays({
+          userId: user.id,
+          session: { ...main, timeZone: main.timeZone ?? tz },
+          priorityJson,
+          visibleTypes: await visibleOverlayTypes(user.id),
+        })
+      : null;
+
   annotate({
     action: { name: "sleep.night" },
     meta: {
       night: targetDay ?? null,
       has_main: main != null,
       nap_count: naps.length,
+      overlay_kinds: overlays?.metrics.map((m) => m.kind).join(",") ?? null,
     },
   });
 
@@ -160,5 +182,6 @@ export const GET = apiHandler(async (request: NextRequest) => {
     night: targetDay ?? null,
     main: main ? serializeSession(main) : null,
     naps: naps.map(serializeSession),
+    overlays,
   });
 });

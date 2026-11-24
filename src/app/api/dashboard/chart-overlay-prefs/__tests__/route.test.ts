@@ -141,3 +141,29 @@ describe("PUT /api/dashboard/chart-overlay-prefs — 422 multi-issue (v1.4.43 W6
     expect(res.status).toBe(422);
   });
 });
+
+describe("PUT /api/dashboard/chart-overlay-prefs — night timeline lines (#1419)", () => {
+  const BASE = {
+    showTrendIndicator: false,
+    showTrendArrow: false,
+    showTargetRange: false,
+  };
+
+  it("refuses an unknown metric and a third line", async () => {
+    const unknown = await PUT(
+      putReq({
+        chartKey: "sleepNight",
+        prefs: { ...BASE, overlayLines: ["steps"] },
+      }),
+    );
+    expect(unknown.status).toBe(422);
+    const third = await PUT(
+      putReq({
+        chartKey: "sleepNight",
+        prefs: { ...BASE, overlayLines: ["pulse", "hrv", "spo2"] },
+      }),
+    );
+    expect(third.status).toBe(422);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});

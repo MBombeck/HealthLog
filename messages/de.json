@@ -3951,7 +3951,22 @@
         "empty": "Für diesen Tag ist keine Nacht erfasst.",
         "estimateNote": "Diese Quelle meldet Phasensummen ohne Uhrzeiten, deshalb gibt es für diese Nacht keinen Verlauf.",
         "noStages": "Diese Nacht hat keine Phasenzeiten.",
-        "ariaLabel": "Schlafphasen über die Nacht: {asleep} Schlaf, {awakenings, plural, other {#× wach}}"
+        "ariaLabel": "Schlafphasen über die Nacht: {asleep} Schlaf, {awakenings, plural, other {#× wach}}",
+        "overlay": {
+          "group": "Linien über der Nacht",
+          "kinds": {
+            "pulse": "Puls",
+            "hrv": "HRV",
+            "respiration": "Atmung",
+            "spo2": "SpO₂",
+            "skinTemperature": "Hauttemp.",
+            "roomTemperature": "Raumtemp."
+          },
+          "range": "{min} bis {max}",
+          "nightValues": "Für die Nacht",
+          "srSeries": "{metric} über die Nacht: niedrigster Wert {min}, höchster {max}, Mittel {avg}",
+          "srNight": "{metric} für die Nacht: {value}"
+        }
       },
       "empty": {
         "title": "Noch keine Schlafdaten",

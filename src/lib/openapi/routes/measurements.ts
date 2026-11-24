@@ -33,6 +33,7 @@ import {
   stdResponses,
 } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
+import { NIGHT_OVERLAY_KINDS } from "@/lib/sleep/night-overlay-kinds";
 
 const batchEntrySchema = z
   .object({
@@ -582,11 +583,68 @@ const sleepSessionResource = z.object({
     ),
 });
 
+const sleepNightOverlayMetric = z
+  .object({
+    kind: z
+      .enum(NIGHT_OVERLAY_KINDS)
+      .describe(
+        "The metric. `hrv` is SDNN or RMSSD and `skinTemperature` an absolute wrist reading or a deviation from baseline; `type` says which.",
+      ),
+    type: measurementTypeEnum,
+    unit: z.string().describe("Canonical unit token of `type`."),
+    source: measurementSourceEnum,
+    points: z
+      .array(
+        z.object({
+          at: isoDateTime().describe(
+            "Bucket start. Every metric of the night shares the grid that starts at `from`.",
+          ),
+          value: z.number().describe("Mean of the bucket's readings."),
+          min: z.number(),
+          max: z.number(),
+        }),
+      )
+      .describe(
+        "The series, ascending, one point per bucket that holds a reading; a missing bucket is a gap, not a zero. Empty when the night holds one value only.",
+      ),
+    nightValue: z
+      .number()
+      .nullable()
+      .describe(
+        "The night's one value (a nightly average from Garmin, Oura or WHOOP, or a single sample) when there is no series. Show it as a number, never as a line.",
+      ),
+    summary: z
+      .object({ min: z.number(), max: z.number(), avg: z.number() })
+      .nullable()
+      .describe("Over the readings inside the session. Null without a series."),
+  })
+  .meta({ id: "SleepNightOverlayMetric" });
+
+const sleepNightOverlays = z
+  .object({
+    from: isoDateTime().describe(
+      "Grid origin: the session start less 15 minutes.",
+    ),
+    to: isoDateTime().describe("Grid end: the session end plus 15 minutes."),
+    bucketMinutes: z.number().int().positive(),
+    metrics: z
+      .array(sleepNightOverlayMetric)
+      .describe(
+        "One entry per metric the night holds, in a fixed order; a metric without readings that night is absent. One source per metric: the source that recorded the night when it holds the metric, else the user's source ladder for the type.",
+      ),
+  })
+  .meta({ id: "SleepNightOverlays" });
+
 const sleepNightResponse = z
   .object({
     night: z.string().nullable(),
     main: sleepSessionResource.nullable(),
     naps: z.array(sleepSessionResource),
+    overlays: sleepNightOverlays
+      .nullable()
+      .describe(
+        "Night metrics to draw as lines over the main night's timeline (#1419), resolved and bucketed server-side; draw them as given. Null when there is no main night, or when the main night is `reconstructed` (stage totals have no timeline to lay a line on).",
+      ),
   })
   .meta({
     id: "SleepNightResource",

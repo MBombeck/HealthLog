@@ -34,7 +34,7 @@
     "lib/daily/digest.ts": 1341,
     "lib/daily/load-digest.ts": 1012,
     "lib/daily/today-overview.ts": 838,
-    "lib/dashboard-layout.ts": 981,
+    "lib/dashboard-layout.ts": 997,
     "lib/dashboard/snapshot.ts": 1479,
     "lib/day/records.ts": 1147,
     "lib/export/coach-backup.ts": 1070,

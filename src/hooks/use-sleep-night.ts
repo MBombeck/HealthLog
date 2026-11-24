@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 import type { SleepSourceDiscrepancyDto } from "@/components/insights/sleep-source-discrepancy-marker";
+import type { NightOverlayKind } from "@/lib/sleep/night-overlay-kinds";
 
 /**
  * One reconstructed night from `GET /api/sleep/night?date=YYYY-MM-DD`.
@@ -45,11 +46,37 @@ export interface SleepNightSession {
   sourceDiscrepancy?: SleepSourceDiscrepancyDto | null;
 }
 
+/** One night metric over the timeline (#1419), resolved by the server. */
+export interface SleepNightOverlayMetric {
+  kind: NightOverlayKind;
+  /** The measurement type drawn: says SDNN vs RMSSD, wrist vs deviation. */
+  type: string;
+  unit: string;
+  source: string;
+  /** Bucket starts on the shared grid; empty when the night has one value. */
+  points: Array<{ at: string; value: number; min: number; max: number }>;
+  nightValue: number | null;
+  summary: { min: number; max: number; avg: number } | null;
+}
+
+export interface SleepNightOverlays {
+  from: string;
+  to: string;
+  bucketMinutes: number;
+  metrics: SleepNightOverlayMetric[];
+}
+
 export interface SleepNightPayload {
   night: string | null;
   /** `null` when nothing scorable was recorded for that night. */
   main: SleepNightSession | null;
   naps: SleepNightSession[];
+  /**
+   * Night metrics to draw over the main night's timeline. `null` without a
+   * main night and on a night of stage totals. Optional: an older server
+   * does not send it.
+   */
+  overlays?: SleepNightOverlays | null;
 }
 
 export interface UseSleepNightResult {

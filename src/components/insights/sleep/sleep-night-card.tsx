@@ -17,6 +17,11 @@ import {
 } from "@/components/insights/sleep-source-discrepancy-marker";
 import { useSleepNight } from "@/hooks/use-sleep-night";
 import {
+  SleepNightOverlayChips,
+  SleepNightOverlayFacts,
+  useNightOverlays,
+} from "@/components/insights/sleep/sleep-night-overlays";
+import {
   useDateFormatPreference,
   useDisplayTimezone,
   useFormatters,
@@ -68,6 +73,10 @@ function SleepHypnogramChart(
  *
  * The axis reads in the night's own zone when the readings carry one and in
  * the profile zone otherwise.
+ *
+ * Under a drawn timeline, toggles lay the night's pulse, HRV, breathing,
+ * SpO2 or temperature over the stages as lines, from the series the server
+ * resolved for that night (`sleep-night-overlays.tsx`).
  */
 export function SleepNightCard({ enabled }: { enabled: boolean }) {
   const { t, locale } = useTranslations();
@@ -98,6 +107,7 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
   const track = session
     ? hasHypnogramTrack(layout, session.reconstructed)
     : false;
+  const overlayState = useNightOverlays(track ? data?.overlays : null, enabled);
 
   const stageLabels: Record<HypnogramStage, string> = {
     AWAKE: t("insights.sleep.stages.awake"),
@@ -202,18 +212,23 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
             title={t("insights.sleep.hypnogram.empty")}
           />
         ) : track ? (
-          <SleepHypnogramChart
-            layout={layout}
-            fromMs={Date.parse(session.start)}
-            toMs={Date.parse(session.end)}
-            timeZone={timeZone}
-            stageLabels={stageLabels}
-            formatTime={(ms) => axisFormat.time(new Date(ms))}
-            ariaLabel={t("insights.sleep.hypnogram.ariaLabel", {
-              asleep: formatDurationMinutes(session.asleepMinutes, t),
-              awakenings: session.awakenings,
-            })}
-          />
+          <div className="flex flex-col gap-3">
+            <SleepHypnogramChart
+              layout={layout}
+              fromMs={Date.parse(session.start)}
+              toMs={Date.parse(session.end)}
+              timeZone={timeZone}
+              stageLabels={stageLabels}
+              formatTime={(ms) => axisFormat.time(new Date(ms))}
+              ariaLabel={t("insights.sleep.hypnogram.ariaLabel", {
+                asleep: formatDurationMinutes(session.asleepMinutes, t),
+                awakenings: session.awakenings,
+              })}
+              overlay={overlayState.chartOverlay}
+            />
+            <SleepNightOverlayChips state={overlayState} />
+            <SleepNightOverlayFacts state={overlayState} />
+          </div>
         ) : (
           <p
             className="text-muted-foreground py-6 text-center text-xs"

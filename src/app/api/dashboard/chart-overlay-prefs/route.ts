@@ -30,6 +30,10 @@ import {
 } from "@/lib/dashboard-layout";
 import { invalidateUserDashboardWidgets } from "@/lib/cache/invalidate";
 import { z } from "zod/v4";
+import {
+  MAX_NIGHT_OVERLAY_LINES,
+  NIGHT_OVERLAY_KINDS,
+} from "@/lib/sleep/night-overlay-kinds";
 import type { NextRequest } from "next/server";
 
 const prefsSchema = z
@@ -48,6 +52,12 @@ const prefsSchema = z
         // 422. Literal set mirrors `CHART_RANGE_POINTS` in dashboard-layout.
         rangePoints: z
           .union([z.literal(0), z.literal(7), z.literal(30), z.literal(90)])
+          .optional(),
+        // #1419 — the night metrics the sleep timeline draws over its
+        // stages. Optional for the same older-bundle reason as rangePoints.
+        overlayLines: z
+          .array(z.enum(NIGHT_OVERLAY_KINDS))
+          .max(MAX_NIGHT_OVERLAY_LINES)
           .optional(),
       })
       .strict(),

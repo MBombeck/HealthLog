@@ -3951,7 +3951,22 @@
         "empty": "이 날에 기록된 밤이 없습니다.",
         "estimateNote": "이 소스는 시각 없이 단계별 합계만 제공하므로 이 밤의 흐름은 없습니다.",
         "noStages": "이 밤에는 단계별 시각이 없습니다.",
-        "ariaLabel": "밤 동안의 수면 단계: 수면 {asleep}, 깸 {awakenings, plural, other {#회}}"
+        "ariaLabel": "밤 동안의 수면 단계: 수면 {asleep}, 깸 {awakenings, plural, other {#회}}",
+        "overlay": {
+          "group": "밤 위의 선",
+          "kinds": {
+            "pulse": "맥박",
+            "hrv": "HRV",
+            "respiration": "호흡",
+            "spo2": "SpO₂",
+            "skinTemperature": "피부 온도",
+            "roomTemperature": "실내 온도"
+          },
+          "range": "{min}~{max}",
+          "nightValues": "밤 기준",
+          "srSeries": "{metric} 밤 동안: 최저 {min}, 최고 {max}, 평균 {avg}",
+          "srNight": "{metric} 밤 값: {value}"
+        }
       },
       "empty": {
         "title": "아직 수면 데이터가 없어요",
