@@ -470,7 +470,7 @@ export function InviteTokensSection() {
                     <div className="flex justify-between gap-2">
                       <dt>{t("admin.invites.colExpires")}</dt>
                       <dd className="text-right tabular-nums">
-                        {relative !== "—" ? `${relative} · ` : ""}
+                        {relative !== "—" ? `${relative}, ` : ""}
                         {fmt.date(invite.expiresAt)}
                       </dd>
                     </div>
@@ -767,8 +767,7 @@ function RedemptionsCell({
                 {entry.user?.username ?? t("admin.invites.redeemerDeleted")}
                 {entry.user?.email && (
                   <span className="text-muted-foreground">
-                    {" "}
-                    · {entry.user.email}
+                    , {entry.user.email}
                   </span>
                 )}
               </div>

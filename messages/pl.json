@@ -14,7 +14,7 @@
     "moreOptions": "Więcej opcji",
     "create": "Utwórz",
     "close": "Zamknij",
-    "loading": "Ładowanie…...",
+    "loading": "Ładowanie…",
     "loadFailed": "Nie udało się załadować",
     "error": "Błąd",
     "saved": "Zapisano",
@@ -332,7 +332,7 @@
     "bmiRow": "BMI:{bmi} kg/m², Classification: {class} (WHO)",
     "complianceTitle": "Przestrzeganie leków",
     "glp1Title": "Terapia GLP-1",
-    "glp1WeightSummary": "Waga w okresie raportu: {start} kg → {end} kg ({delta} kg)",
+    "glp1WeightSummary": "Waga w okresie raportu: z {start} kg do {end} kg ({delta} kg)",
     "glp1CurrentDose": "Aktualna dawka:{value} {unit} (since {since})",
     "glp1Compliance": "Przestrzeganie zaleceń:{taken} / {total} ({rate}%)",
     "glp1SideEffectsTitle": "Zarejestrowane działania niepożądane",
@@ -1532,7 +1532,7 @@
     "importIntakes": "Importuj przyjęcia",
     "importDescription": "Wklej tablicę JSON z danymi przyjęć. Oczekiwany format:",
     "importUploadFile": "Prześlij plik JSON",
-    "importPaste": "Wklej tutaj JSON...",
+    "importPaste": "Wklej tutaj JSON…",
     "importFileLoaded": "Plik „{name}” wczytany",
     "importInvalidJson": "Plik nie zawiera prawidłowego JSON",
     "importNoArray": "Nie znaleziono tablicy",
@@ -2406,7 +2406,7 @@
         "timesTitle": "Godziny przyjęcia",
         "timesNote": "Dostosuj godzinę i okno punktualności każdej dawki. Częstotliwość (codziennie, co tydzień…) zmieniasz w edytorze w sekcji Zaawansowane.",
         "scheduleLabel": "Harmonogram {index}",
-        "fullEditNote": "Częstotliwość, klasę leczenia i okres leczenia edytujesz w edytorze w sekcji Zaawansowane → Cykl życia.",
+        "fullEditNote": "Częstotliwość, klasę leczenia i okres leczenia edytujesz w edytorze w sekcji Zaawansowane > Cykl życia.",
         "graceEcho": "Czas przypomnień: {minutes, plural, one {# minuta} few {# minuty} many {# minut} other {# minuty}}",
         "reminderTitle": "Przypomnienie",
         "manageChannels": "Zarządzaj kanałami powiadomień",
@@ -2520,7 +2520,7 @@
         "error": "Nie udało się zapisać tej zmiany. Spróbuj ponownie."
       },
       "beforeAfter": {
-        "summary": "Ø {before} przedtem → Ø {after} od tego czasu, zmiana o {delta}.",
+        "summary": "Ø {before} przedtem, Ø {after} od tego czasu, zmiana o {delta}.",
         "counts": "Na podstawie {beforeCount, plural, one {# pomiaru} few {# pomiarów} many {# pomiarów} other {# pomiaru}} przedtem i {afterCount} od tego czasu.",
         "needBefore": "Za mało pomiarów przed rozpoczęciem. Do porównania potrzeba około {weeks, plural, one {# tygodnia} few {# tygodni} many {# tygodni} other {# tygodnia}} przed i po.",
         "needAfter": "Za mało pomiarów od rozpoczęcia. Do porównania potrzeba około {weeks, plural, one {# tygodnia} few {# tygodni} many {# tygodni} other {# tygodnia}} przed i po.",
@@ -3082,7 +3082,7 @@
       "emptyDescription": "Ukryto wszystkie sekcje. Otwórz Dostosuj, aby je ponownie pokazać."
     },
     "bmiEmptyTitle": "Dodaj wzrost, aby obliczyć BMI",
-    "bmiEmptyDescription": "BMI wymaga twojego wzrostu. Zapisz go w Ustawieniach → Konto.",
+    "bmiEmptyDescription": "BMI wymaga twojego wzrostu. Zapisz go w Ustawieniach > Konto.",
     "bmiEmptyAction": "Otwórz ustawienia konta",
     "loadError": "Nie udało się załadować analiz",
     "heroPersonalBaseline": "Na podstawie ostatnich 90 dni",
@@ -5371,7 +5371,7 @@
       "steps": {
         "dashboardOverview": {
           "title": "Twój pulpit",
-          "body": "Pulpit zbiera wszystkie moduły na jednym ekranie. Przytrzymaj kafelek, aby go przestawić lub ukryć (Ustawienia → Układ pulpitu). Kafelek jest wart tyle, ile dane za nim, a kolejne moduły je wypełniają."
+          "body": "Pulpit zbiera wszystkie moduły na jednym ekranie. Przytrzymaj kafelek, aby go przestawić lub ukryć (Ustawienia > Układ pulpitu). Kafelek jest wart tyle, ile dane za nim, a kolejne moduły je wypełniają."
         },
         "quickAdd": {
           "title": "Zapisane w kilka sekund",
@@ -5427,7 +5427,7 @@
         },
         "wrapUp": {
           "title": "To koniec przewodnika",
-          "body": "Ten przewodnik pokazuje się tylko raz i nie otworzy się ponownie sam. Wszystko, co pokazał, zostaje na miejscu, a funkcje możesz włączać i wyłączać w dowolnym momencie w Ustawienia → Moduły."
+          "body": "Ten przewodnik pokazuje się tylko raz i nie otworzy się ponownie sam. Wszystko, co pokazał, zostaje na miejscu, a funkcje możesz włączać i wyłączać w dowolnym momencie w Ustawienia > Moduły."
         }
       }
     },
@@ -5624,12 +5624,12 @@
           "cta": "Połącz {target}",
           "checking": "Sprawdzanie połączenia.",
           "waiting": "Jeszcze nie połączono.",
-          "openSettings": "Otwórz Ustawienia → Integracje",
+          "openSettings": "Otwórz Ustawienia > Integracje",
           "noDate": "nieznany",
           "throughGoogleHealth": "Dane z {source} trafiają teraz przez {target}: klasyczne połączenie z {source} zostało wyłączone. Połącz {target} z kontem Google, na którym zalogowany jest Twój {source}, a pomiary zaczną napływać stamtąd.",
           "needsCredentials": {
             "title": "Ta instancja nie ma jeszcze zapisanej aplikacji {target}.",
-            "detail": "Wpisz własne dane dostępowe w Ustawieniach → Integracje, wtedy połączenie będzie mogło ruszyć."
+            "detail": "Wpisz własne dane dostępowe w Ustawieniach > Integracje, wtedy połączenie będzie mogło ruszyć."
           },
           "state": {
             "pending_first_sync": {
@@ -5646,11 +5646,11 @@
             },
             "stalled": {
               "title": "{target} jest połączony, ale synchronizacja się zatrzymała.",
-              "detail": "Ostatnia próba {when}. Sprawdź połączenie w Ustawieniach → Integracje."
+              "detail": "Ostatnia próba {when}. Sprawdź połączenie w Ustawieniach > Integracje."
             },
             "failing": {
               "title": "{target} jest połączony, ale synchronizacja się nie udaje.",
-              "detail": "Od {when} nic nie dotarło. Sprawdź połączenie w Ustawieniach → Integracje."
+              "detail": "Od {when} nic nie dotarło. Sprawdź połączenie w Ustawieniach > Integracje."
             },
             "reauth_required": {
               "title": "Połączenie z {target} wymaga odnowienia.",
@@ -5658,7 +5658,7 @@
             },
             "parked": {
               "title": "Połączenie z {target} jest wstrzymane.",
-              "detail": "Sprawdź połączenie w Ustawieniach → Integracje."
+              "detail": "Sprawdź połączenie w Ustawieniach > Integracje."
             }
           }
         },
@@ -6187,7 +6187,7 @@
           "charCount": "{used} / {max, plural, one {# znak} few {# znaki} many {# znaków} other {# znaku}}",
           "appleHealth": {
             "title": "Apple Health",
-            "description": "Prześlij plik export.zip z aplikacji Zdrowie na iPhonie (Profil → Eksportuj wszystkie dane zdrowotne).",
+            "description": "Prześlij plik export.zip z aplikacji Zdrowie na iPhonie (Profil > Eksportuj wszystkie dane zdrowotne).",
             "dropLabel": "Upuść tutaj export.zip",
             "dropHint": "lub kliknij, aby wybrać plik",
             "fileInputLabel": "Wybierz plik export.zip z Apple Health",
@@ -6948,7 +6948,7 @@
       "deviceCodeCancel": "Anuluj",
       "oauthNotConfigured": "OAuth ChatGPT nie jest skonfigurowany w tej instancji. Użyj zamiast tego własnego klucza API poniżej.",
       "modelLabel": "Model",
-      "modelOptionDefault": "— Domyślny —",
+      "modelOptionDefault": "Domyślny",
       "modelOptionCustom": "Niestandardowy…",
       "customModelLabel": "Nazwa niestandardowego modelu",
       "anthropicKeyLabel": "Klucz API Anthropic",
@@ -6982,7 +6982,7 @@
         "saveFailed": "Zapis łańcucha nie powiódł się",
         "resetDefaults": "Przywróć domyślne",
         "resetConfirmTitle": "Przywrócić domyślny łańcuch?",
-        "resetConfirmBody": "Łańcuch wraca do Codex → OpenAI → Anthropic → Lokalny → OpenAI administratora. Zapisane dane logowania pozostają nienaruszone."
+        "resetConfirmBody": "Łańcuch wraca do Codex, OpenAI, Anthropic, Lokalny, OpenAI administratora. Zapisane dane logowania pozostają nienaruszone."
       },
       "namedChains": {
         "title": "Łańcuchy dla zadań",
@@ -8125,7 +8125,7 @@
         "unavailable": "Stan Apple Health jest niedostępny"
       },
       "setupTitle": "Włącz synchronizację na żywo",
-      "permissionStep": "W aplikacji HealthLog na iOS otwórz Ustawienia → Apple Health i zezwól na udostępnianie wybranych kategorii zdrowotnych.",
+      "permissionStep": "W aplikacji HealthLog na iOS otwórz Ustawienia > Apple Health i zezwól na udostępnianie wybranych kategorii zdrowotnych.",
       "backgroundStep": "Pozostaw włączone odświeżanie aplikacji w tle. Aplikacja synchronizuje nowe dane automatycznie na pierwszym planie oraz gdy iOS przydzieli jej czas w tle.",
       "importNote": "Potrzebujesz starszej historii lub nie możesz użyć aplikacji iOS? Przesłanie pliku XML/ZIP z Apple Health jest jednorazową alternatywą i nie włącza synchronizacji na żywo.",
       "importAction": "Otwórz jednorazowy import",
@@ -8423,7 +8423,7 @@
     "measurementsCount": "Pomiary",
     "activeTokens": "Aktywne tokeny API",
     "activeSessions": "Aktywne sesje",
-    "loadingStatus": "Ładowanie stanu...",
+    "loadingStatus": "Ładowanie stanu…",
     "systemStatusLoadError": "Nie udało się załadować stanu systemu.",
     "systemStatusRetry": "Spróbuj ponownie",
     "adminSettingsLoadError": "Nie udało się załadować ustawień administracyjnych. Przełączniki poniżej mogą nie odzwierciedlać bieżącego stanu, odśwież stronę.",
@@ -8488,7 +8488,7 @@
     },
     "aiQuality": {
       "title": "Jakość analiz",
-      "loading": "Ładowanie podsumowania opinii...",
+      "loading": "Ładowanie podsumowania opinii…",
       "loadError": "Nie udało się załadować podsumowania jakości analiz. Spróbuj odświeżyć stronę.",
       "empty": "Brak opinii. Agregator uruchamia się codziennie o 04:00. Gdy użytkownicy zaczną oceniać rekomendacje, tutaj pojawią się wskaźniki przydatności.",
       "windowLabel": "{days, plural, one {Ostatni # dzień} few {Ostatnie # dni} many {Ostatnie # dni} other {Ostatnie # dnia}}",
@@ -8503,7 +8503,7 @@
     },
     "coachFeedback": {
       "title": "Opinie o Coachu",
-      "loading": "Ładowanie podsumowania opinii o Coachu...",
+      "loading": "Ładowanie podsumowania opinii o Coachu…",
       "loadError": "Nie udało się załadować podsumowania opinii o Coachu. Spróbuj odświeżyć stronę.",
       "empty": "Brak opinii o Coachu. Agregator uruchamia się codziennie o 04:00. Gdy użytkownicy ocenią odpowiedzi Coacha, tutaj pojawią się wskaźniki przydatności.",
       "windowLabel": "{days, plural, one {Ostatni # dzień} few {Ostatnie # dni} many {Ostatnie # dni} other {Ostatnie # dnia}}",
@@ -8690,7 +8690,7 @@
     "newPasswordPlaceholder": "Co najmniej 12 znaków",
     "passwordReset": "Hasło zostało zresetowane",
     "reset": "Resetuj",
-    "loadingUsers": "Ładowanie użytkowników...",
+    "loadingUsers": "Ładowanie użytkowników…",
     "apiTokens": "Tokeny API",
     "apiTokensDescription": "Wszystkie aktywne i unieważnione tokeny API ze wszystkich kont.",
     "tokenUser": "Użytkownik",
@@ -8703,7 +8703,7 @@
     "tokenCreated": "Utworzono",
     "tokenNeverUsed": "Nigdy",
     "tokensEmptyTitle": "Brak tokenów API",
-    "tokensEmptyDescription": "Tokeny są wydawane, gdy klient natywny się loguje, lub przez Ustawienia → Konto.",
+    "tokensEmptyDescription": "Tokeny są wydawane, gdy klient natywny się loguje, lub przez Ustawienia > Konto.",
     "loginOverviewDescription": "Zdarzenia logowania i uwierzytelniania wszystkich kont, z filtrowaniem i eksportem CSV.",
     "loginOverviewFilterLabel": "Filtruj zdarzenia",
     "allAuthEvents": "Wszystkie zdarzenia uwierzytelniania",
@@ -8795,11 +8795,11 @@
       "versionTileUpToDate": "Aktualne",
       "versionTileCheckOff": "Sprawdzanie aktualizacji wyłączone",
       "snapshotLoadError": "Nie udało się załadować migawki systemu.",
-      "snapshotLoading": "Ładowanie migawki...",
+      "snapshotLoading": "Ładowanie migawki…",
       "auditTitle": "Ostatnia aktywność",
       "auditEmpty": "Brak ostatnich wpisów audytu.",
       "auditLoadError": "Nie udało się załadować ostatniej aktywności.",
-      "auditLoading": "Ładowanie aktywności...",
+      "auditLoading": "Ładowanie aktywności…",
       "auditViewAll": "Pokaż wszystko"
     },
     "section": {
@@ -8940,7 +8940,7 @@
         "runNow": "Utwórz kopię teraz",
         "runEnqueued": "Zadanie kopii zapasowej dodano do kolejki",
         "runFailed": "Nie udało się dodać kopii do kolejki",
-        "loading": "Ładowanie kopii zapasowych...",
+        "loading": "Ładowanie kopii zapasowych…",
         "loadError": "Nie udało się załadować kopii zapasowych.",
         "emptyTitle": "Brak kopii zapasowych",
         "emptyDescription": "Kopie zapasowe wykonują się automatycznie w każdą niedzielę o 03:00. Możesz też uruchomić jedną teraz, aby utworzyć pierwszą migawkę.",
@@ -8999,7 +8999,7 @@
         "previewCustomMetrics": "Własne metryki",
         "previewHealthScores": "Historia wyniku",
         "restoreConfirm": "Przywróć teraz",
-        "restoreInProgress": "Przywracanie...",
+        "restoreInProgress": "Przywracanie…",
         "restoreSuccess": "Przywracanie zakończone",
         "restoreFailed": "Przywracanie nie powiodło się",
         "restoreSkippedToast": "Przywracanie zakończone, {links, plural, one {# powiązania objawu} few {# powiązań objawów} many {# powiązań objawów} other {# powiązania objawów}} nie udało się odtworzyć",
@@ -10143,7 +10143,7 @@
     "eventColumn": "Zdarzenie",
     "subtitle": "Wybierz, które powiadomienia chcesz otrzymywać i którym kanałem.",
     "loadError": "Nie udało się załadować ustawień powiadomień.",
-    "noChannels": "Najpierw skonfiguruj kanał powiadomień w Ustawienia → Integracje.",
+    "noChannels": "Najpierw skonfiguruj kanał powiadomień w Ustawienia > Integracje.",
     "goToSettings": "Przejdź do ustawień kanału",
     "channelDisabled": "Wyłączone",
     "admin": {
@@ -13278,7 +13278,7 @@
       "dismiss": "Odrzuć",
       "empty": "Nie udało się nic odczytać z tego dokumentu.",
       "unavailableBody": "Skonfiguruj dostawcę AI, aby zaproponować tytuł, typ i datę.",
-      "unavailableLocalOcr": "Włącz „Odczytuj skany na tym urządzeniu” w Ustawienia → Moduły → Badania, aby odczytywać obrazy na tym urządzeniu.",
+      "unavailableLocalOcr": "Włącz „Odczytuj skany na tym urządzeniu” w Ustawienia > Moduły > Badania, aby odczytywać obrazy na tym urządzeniu.",
       "unavailableAction": "Otwórz ustawienia AI",
       "errorGeneric": "Nie udało się odczytać dokumentu. Spróbuj ponownie.",
       "errorOcr": "Nie udało się odczytać tekstu z tego obrazu.",
@@ -13291,7 +13291,7 @@
       "errorFileType": "Tego typu pliku nie można odczytać.",
       "errorNotIndexed": "Najpierw odczytaj dokument, potem wyodrębnij.",
       "errorOutputLimit": "Dostawca AI osiągnął limit odpowiedzi, zanim zwrócił choć jedną wartość. Spróbuj modelu, który pozwala na dłuższe odpowiedzi.",
-      "errorLocalOcrDisabled": "Najpierw włącz „Odczytuj skany na tym urządzeniu” w Ustawienia → Moduły → Badania.",
+      "errorLocalOcrDisabled": "Najpierw włącz „Odczytuj skany na tym urządzeniu” w Ustawienia > Moduły > Badania.",
       "errorProvider": "Nie skonfigurowano dostawcy AI do tego celu.",
       "errorTextImageOnly": "Lokalne OCR odczytuje tylko obrazy, nie ten plik.",
       "errorConsent": "Odczyt dokumentów przez AI wymaga najpierw Twojej zgody.",
@@ -14039,7 +14039,7 @@
     "invite": {
       "title": "Zaproś kogoś",
       "description": "Nic nie jest udostępniane, dopóki ta osoba nie zaakceptuje.",
-      "needsAccount": "Ta osoba potrzebuje własnego konta HealthLog na tej instancji i znajdzie zaproszenie w Ustawienia → Udostępniony dostęp.",
+      "needsAccount": "Ta osoba potrzebuje własnego konta HealthLog na tej instancji i znajdzie zaproszenie w Ustawienia > Udostępniony dostęp.",
       "identifierLabel": "Nazwa użytkownika lub e-mail",
       "identifierPlaceholder": "Nazwa, którą się loguje",
       "identifierHint": "Ta osoba potrzebuje konta na tej instancji. Nie można wysłać zaproszenia na niezarejestrowany adres.",
@@ -14203,7 +14203,7 @@
       "guardianErrorNoAccount": "W tej instancji nie ma konta o takiej nazwie ani takim adresie e-mail.",
       "guardianErrorRateLimit": "Zbyt wiele zaproszeń w ostatniej godzinie. Odczekaj chwilę i spróbuj ponownie.",
       "guardianErrorFailed": "Nie udało się wysłać zaproszenia.",
-      "errorMfaRequired": "To wymaga drugiego składnika logowania albo klucza dostępu, a Twoje konto nie ma jeszcze żadnego z nich. Skonfiguruj jeden w Ustawieniach → Bezpieczeństwo i spróbuj ponownie.",
+      "errorMfaRequired": "To wymaga drugiego składnika logowania albo klucza dostępu, a Twoje konto nie ma jeszcze żadnego z nich. Skonfiguruj jeden w Ustawieniach > Bezpieczeństwo i spróbuj ponownie.",
       "rosterLoadError": "Nie udało się wczytać, kto opiekuje się tą kartą.",
       "errorRateLimit": "Zbyt wiele profili utworzonych w ostatniej godzinie. Odczekaj chwilę i spróbuj ponownie.",
       "handover": {
@@ -16119,7 +16119,8 @@
     "wallet": {
       "instructions": "Wydrukuj w skali 100 procent, wytnij wzdłuż obrysu, złóż na linii przerywanej.",
       "scan": "Zeskanuj, by zobaczyć całą kartę",
-      "cut": "Skrócono, by się zmieściło. Pełna karta jest pod kodem QR."
+      "cut": "Skrócono, by się zmieściło. Pełna karta jest pod kodem QR.",
+      "cutNoCode": "Skrócono, aby się zmieściło. Pełna karta jest w aplikacji."
     },
     "link": {
       "validUntil": "Tylko do odczytu. Ten link działa do {date}.",

@@ -184,9 +184,7 @@ export function EncounterLinkPickers({
   // underneath. A visit links the whole panel from a day in one "select all".
   const labOptions: EntityLinkOption[] = labs.items.map((result) => {
     const dayLabel = format.date(result.takenAt);
-    const groupLabel = result.panel
-      ? `${result.panel} · ${dayLabel}`
-      : dayLabel;
+    const groupLabel = result.panel ? `${result.panel}, ${dayLabel}` : dayLabel;
     return {
       id: result.id,
       label: result.analyte,

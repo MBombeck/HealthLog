@@ -234,11 +234,11 @@ export function DoseWindowEditor({
                   end: fmt.wallTime(row.end),
                 })}
                 {scale === "dayScale"
-                  ? ` · ${t("medications.detail.zeitplan.window.lateDays", {
+                  ? `, ${t("medications.detail.zeitplan.window.lateDays", {
                       days: lateTailDays(),
                     })}`
                   : lateEnd
-                    ? ` · ${t("medications.detail.zeitplan.window.lateUntil", {
+                    ? `, ${t("medications.detail.zeitplan.window.lateUntil", {
                         time: fmt.wallTime(lateEnd),
                       })}`
                     : ""}

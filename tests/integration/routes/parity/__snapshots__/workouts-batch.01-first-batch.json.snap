@@ -73,6 +73,7 @@
         "enriched": 0,
         "updated": 0,
         "skipped": 2,
+        "export_rows_folded": 0,
         "routes_dropped": 1
       },
       "warnings": null,

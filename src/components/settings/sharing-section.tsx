@@ -238,7 +238,7 @@ function ShareLinksCard() {
                         </span>{" "}
                         {link.accessCount}
                         {link.lastAccessAt
-                          ? ` · ${fmt.dateTime(link.lastAccessAt)}`
+                          ? `, ${fmt.dateTime(link.lastAccessAt)}`
                           : ""}
                       </p>
                       {/* §12 — a right-aligned row action, not a full-width

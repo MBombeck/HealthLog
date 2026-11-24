@@ -114,7 +114,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
       entity_type: "seizure_type",
       entity_id: created.id,
     },
-    meta: { ilae_type: created.ilaeType },
   });
 
   return apiSuccess(toSeizureTypeDTO(created), 201);

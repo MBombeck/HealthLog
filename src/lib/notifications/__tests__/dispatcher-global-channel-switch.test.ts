@@ -28,7 +28,10 @@ vi.mock("@/lib/crypto", () => ({
 }));
 
 vi.mock("@/lib/logging/context", () => ({
+  // A background event, as the dispatcher runs in a job: the instance
+  // switches are read afresh on every call (`readOperatorRow`).
   getEvent: () => ({
+    getKind: () => "background",
     addWarning: vi.fn(),
     addMeta: vi.fn(),
     addExternalCall: vi.fn(),

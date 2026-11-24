@@ -67,7 +67,7 @@ export const DELETE = apiHandler(
         entity_type: "medication_side_effect",
         entity_id: logId,
       },
-      meta: { medication_id: id, entry: existing.entry },
+      meta: { medication_id: id },
     });
 
     return apiSuccess({ id: logId, deleted: true });

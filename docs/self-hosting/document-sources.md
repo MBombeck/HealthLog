@@ -44,10 +44,10 @@ can still delete their stored connection.
 
 ## What each person sets up
 
-Settings → Integrations → Document archives:
+Settings > Integrations > Document archives:
 
 - **Paperless-ngx:** the base address and an API token (Paperless-ngx: My
-  Profile → API token). Paperless-ngx 2.16 or later (API version 9).
+  Profile > API token). Paperless-ngx 2.16 or later (API version 9).
 - **Papra:** the base address, the organization id (from the Papra address
   bar, `org_` followed by 24 letters and digits) and an API key with
   `documents:read` and `tags:read`. The connection test reads the tags too,

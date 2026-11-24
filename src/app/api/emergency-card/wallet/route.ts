@@ -5,8 +5,12 @@
  * Body `{ token? }`: the raw `hlm_` token of the caller's live link, which
  * the page holds only in the moment it was made. With it the card carries
  * the link's QR code; the server checks that the token is the caller's own
- * live link before it prints it, so the PDF can only ever point at the
- * owner's card. Without it the card prints without a code.
+ * link and that it would open right now (`cardLinkRefusal`, the scan's own
+ * check: not revoked, not past its end, the operator's switch on), so the PDF
+ * only ever points at the owner's card and never at a code that answers
+ * nothing. A card with the code prints the items the link shows, because
+ * whoever holds the card is whoever scans it, and the card says the rest is
+ * behind the code. Without a token the card prints every item, without a code.
  *
  * The owner's card, or the card of a managed profile for its guardian
  * (`requireGuardianAuth`), cookie session only.
@@ -18,12 +22,18 @@ import { apiError } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { hashToken } from "@/lib/auth/hmac";
 import { prisma } from "@/lib/db";
+import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { loadEmergencyCard } from "@/lib/emergency-card/card-data";
-import { emergencyWalletBodySchema } from "@/lib/emergency-card/fields";
+import {
+  EMERGENCY_CARD_FIELDS,
+  emergencyWalletBodySchema,
+  type EmergencyCardField,
+} from "@/lib/emergency-card/fields";
 import {
   cardCookieOnlyRefusal,
   cardLinkUrl,
 } from "@/lib/emergency-card/manage";
+import { cardLinkRefusal } from "@/lib/emergency-card/serve";
 import { parseCardTokenSegment } from "@/lib/emergency-card/token";
 import { buildWalletCardPdf } from "@/lib/emergency-card/wallet-pdf";
 import { resolveOrigin } from "@/lib/http/origin";
@@ -46,31 +56,42 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
   if (!parsed.ok) return parsed.error;
 
+  const now = new Date();
   let linkUrl: string | null = null;
+  let fields: readonly EmergencyCardField[] = EMERGENCY_CARD_FIELDS;
   if (parsed.data.token !== undefined) {
     const raw = parseCardTokenSegment(parsed.data.token);
-    const live = raw
+    const link = raw
       ? await prisma.emergencyCardLink.findFirst({
           where: {
             userId: user.id,
             tokenHash: hashToken(raw),
-            revokedAt: null,
             purpose: "CARD",
           },
-          select: { id: true },
+          select: {
+            userId: true,
+            createdById: true,
+            fields: true,
+            expiresAt: true,
+            revokedAt: true,
+          },
         })
       : null;
-    if (!raw || !live) {
+    const refusal = link
+      ? await cardLinkRefusal(link, await isApiGloballyEnabled(), now)
+      : "unknown";
+    if (!raw || !link || refusal) {
       return apiError("Not your live emergency card link", 422, {
         errorCode: "emergency-card.wallet.token",
       });
     }
     linkUrl = cardLinkUrl(resolveOrigin(request), raw);
+    fields = link.fields;
   }
 
-  const today = moodDateKey(new Date(), user.timezone ?? DEFAULT_TIMEZONE);
+  const today = moodDateKey(now, user.timezone ?? DEFAULT_TIMEZONE);
   const [card, locale] = await Promise.all([
-    loadEmergencyCard(user.id, today),
+    loadEmergencyCard(user.id, today, fields),
     // In the language of the person printing it.
     resolveServerLocale({ request, userLocale: actor.locale ?? undefined }),
   ]);

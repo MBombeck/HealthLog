@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 
 import { getEvent } from "@/lib/logging/context";
+import { keepRecordAiUsageRow } from "@/lib/ai/capabilities/usage-row";
 import { auditLog } from "@/lib/auth/audit";
 import { stampDeviceLastSeen } from "@/lib/auth/device-last-seen";
 import {
@@ -92,6 +93,7 @@ export async function authenticateCaller(
         auth_method: "session",
       });
     }
+    keepRecordAiUsageRow(sessionData.user.id, sessionData.user);
     return { ...sessionData, authMethod: "cookie" };
   }
 
@@ -108,7 +110,12 @@ export async function authenticateCaller(
     authHeader = null;
   }
   if (authHeader?.startsWith("Bearer ")) {
-    return await authenticateBearer(authHeader.slice(7), requiredPermission);
+    const bearer = await authenticateBearer(
+      authHeader.slice(7),
+      requiredPermission,
+    );
+    keepRecordAiUsageRow(bearer.user.id, bearer.user);
+    return bearer;
   }
 
   // 3. No credentials.

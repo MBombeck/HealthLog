@@ -109,7 +109,6 @@ export const POST = apiHandler(
         entity_id: result.reminderId,
       },
       meta: {
-        antigen_slug: result.antigen,
         minted: result.outcome === "minted",
       },
     });
