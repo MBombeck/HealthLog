@@ -13,6 +13,8 @@
 - A FHIR Bundle import no longer fails as a whole on a date the calendar does not have, such as month 13. The day is taken from the next date field that reads, and a day like 30 February counts as unreadable instead of becoming 2 March. Before, the import stopped at that resource, and the vital signs and lab results of the file were not written.
 - A FHIR Bundle whose entries are named by `urn:uuid:` (a patient summary, many portal exports) is recognised in the next export of the same record. Its resources were keyed on the Bundle's id, which such exports change every time, so each new export imported every condition, medication, vaccination, visit and vital sign a second time. A record imported that way before is carried over: its next export adds nothing, and a row deleted since stays deleted.
 - A FHIR Bundle import reads a time written without a zone offset on the clock of the time zone in the person's profile. It was read on the server's clock, usually UTC, so a visit or a vital sign at 08:00 in Berlin landed an hour or two off.
+- A Gadgetbridge export uploaded after a newer one no longer lowers a day's step total to what the older file had seen of that day.
+- A Gadgetbridge spot or resting heart rate of 255, the value Gadgetbridge writes for no reading, is no longer imported as a pulse of 255. Spot and resting readings now take the same 30 to 220 bpm as the hourly pulse.
 - A Withings sync that runs long no longer skips a reading uploaded while it was writing. The next sync's window started ten minutes before the end of the previous run instead of before the start of its read.
 
 ### Security
