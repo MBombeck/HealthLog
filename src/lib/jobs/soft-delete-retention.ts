@@ -152,6 +152,7 @@ export const SOFT_DELETE_RETENTION: Readonly<
   IllnessEpisode: standard("illness_episodes", [
     live("illness_episodes", "parent_condition_id"),
     live("symptom_events", "episode_id"),
+    live("treatment_series", "episode_id"),
   ]),
   IllnessDayLog: standard("illness_day_logs"),
   // Only an occurrence imported from Apple Health is tombstoned; the

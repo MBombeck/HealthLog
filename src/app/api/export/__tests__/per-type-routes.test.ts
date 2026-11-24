@@ -168,7 +168,7 @@ beforeEach(() => {
   );
   vi.mocked(prisma.healthScoreRecord.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.practitioner.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.treatmentSeries.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.treatmentSeries.findMany).mockResolvedValue([]);
   vi.mocked(prisma.encounter.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.encounterDocumentLink.findMany).mockResolvedValue(
     [] as never,
