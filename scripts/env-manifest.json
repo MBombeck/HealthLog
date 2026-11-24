@@ -9,11 +9,13 @@
       "variables": [
         {
           "name": "DATABASE_URL",
+          "secret": true,
           "purpose": "Postgres connection string. App boot fails if missing.",
           "example": "postgresql://healthlog:<pw>@db:5432/healthlog?schema=public"
         },
         {
           "name": "POSTGRES_PASSWORD",
+          "secret": true,
           "purpose": "Database password for the bundled `db` service in docker-compose.yml.",
           "example": "<openssl rand -hex 32>"
         },
@@ -27,10 +29,12 @@
         },
         {
           "name": "ENCRYPTION_KEY",
+          "secret": true,
           "purpose": "AES-256-GCM key for at-rest encryption of provider tokens. 64 hex chars (32 bytes). Required unless ENCRYPTION_KEYS is set."
         },
         {
           "name": "API_TOKEN_HMAC_KEY",
+          "secret": true,
           "purpose": "HMAC-SHA256 key for hashing external Bearer tokens AND web session cookies. 64 hex chars. Rotating it signs every browser session out on top of invalidating every issued token."
         }
       ]
@@ -42,6 +46,7 @@
       "variables": [
         {
           "name": "WITHINGS_WEBHOOK_SECRET",
+          "secret": true,
           "purpose": "Random secret carried as a path segment in the Withings webhook callback URL. Generate with `openssl rand -hex 32`."
         }
       ]
@@ -58,6 +63,7 @@
         },
         {
           "name": "POLAR_CLIENT_SECRET",
+          "secret": true,
           "purpose": "Polar AccessLink OAuth client secret."
         }
       ]
@@ -74,6 +80,7 @@
         },
         {
           "name": "OURA_CLIENT_SECRET",
+          "secret": true,
           "purpose": "Oura Cloud OAuth client secret."
         }
       ]
@@ -94,6 +101,7 @@
         },
         {
           "name": "OIDC_CLIENT_SECRET",
+          "secret": true,
           "purpose": "OIDC confidential client secret."
         }
       ]
@@ -167,6 +175,7 @@
         },
         {
           "name": "MAXMIND_LICENSE_KEY",
+          "secret": true,
           "purpose": "MaxMind licence key for the runtime GeoLite2 fetch (issue #659). Set it and the worker downloads both databases into GEOLITE2_DIR on boot and monthly, no rebuild or manual mount. Free at maxmind.com/en/geolite2/signup."
         }
       ]
@@ -265,6 +274,7 @@
       "variables": [
         {
           "name": "DEPLOY_WEBHOOK_SECRET",
+          "secret": true,
           "purpose": "Shared secret of POST /api/internal/deploy-webhook. 64 hex chars. A request authenticates by sending it in the X-Deploy-Webhook-Secret header (Coolify's stock sender; no replay protection), or by signing: X-Deploy-Webhook-Signature: sha256=<HMAC-SHA256 under this secret of the X-Deploy-Webhook-Timestamp value, a dot and the raw body>, the timestamp within 5 minutes."
         },
         {
@@ -400,6 +410,7 @@
         },
         {
           "name": "WALLET_APPLE_KEY_B64",
+          "secret": true,
           "purpose": "The certificate's RSA private key, PEM (PKCS#8 or PKCS#1, optionally encrypted), base64-encoded."
         }
       ]
@@ -411,6 +422,7 @@
       "variables": [
         {
           "name": "WALLET_APPLE_KEY_PASSPHRASE",
+          "secret": true,
           "purpose": "The passphrase of an encrypted WALLET_APPLE_KEY_B64."
         },
         {
@@ -446,14 +458,17 @@
         },
         {
           "name": "BACKUP_S3_ACCESS_KEY",
+          "secret": true,
           "purpose": "S3 access key."
         },
         {
           "name": "BACKUP_S3_SECRET_KEY",
+          "secret": true,
           "purpose": "S3 secret key."
         },
         {
           "name": "BACKUP_ENCRYPTION_KEY",
+          "secret": true,
           "purpose": "Separate AES key for the backup body \u2014 MUST NOT match ENCRYPTION_KEY."
         }
       ]
@@ -537,6 +552,7 @@
         },
         {
           "name": "BACKUP_ENCRYPTION_PREVIOUS_KEYS",
+          "secret": true,
           "purpose": "Comma-separated off-host backup keys that are no longer written with but may still be needed to read older objects. Set during a rotation of BACKUP_ENCRYPTION_KEY until the bucket's lifecycle rule has retired every object written under the old key.",
           "example": ""
         },
