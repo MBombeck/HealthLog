@@ -16210,8 +16210,6 @@
       "title": "Emergency card",
       "description": "Your emergency information for when you are away from home.",
       "loadError": "The emergency card could not be loaded.",
-      "editHint": "Blood type, contacts, implants and the declarations come from your emergency details.",
-      "editLink": "Edit them",
       "offlineHint": "The app does not work offline on purpose. Save a copy to your phone to carry the card without a connection; it shows what it held on the day you saved it.",
       "downloadError": "The download did not work. Try again.",
       "saveOffline": "Save offline copy",

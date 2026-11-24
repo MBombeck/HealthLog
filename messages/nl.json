@@ -16210,8 +16210,6 @@
       "title": "Noodkaart",
       "description": "Je noodgegevens voor onderweg.",
       "loadError": "De noodkaart kon niet worden geladen.",
-      "editHint": "Bloedgroep, contacten, implantaten en verklaringen komen uit je noodgegevens.",
-      "editLink": "Bewerken",
       "offlineHint": "De app werkt bewust niet offline. Sla een kopie op je telefoon op om de kaart zonder verbinding bij je te hebben; die toont de stand van de dag van opslaan.",
       "downloadError": "Downloaden is mislukt. Probeer het opnieuw.",
       "saveOffline": "Offline kopie opslaan",

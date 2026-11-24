@@ -16210,8 +16210,6 @@
       "title": "Cartão de emergência",
       "description": "Seus dados de emergência para quando estiver fora de casa.",
       "loadError": "Não foi possível carregar o cartão de emergência.",
-      "editHint": "Tipo sanguíneo, contatos, implantes e declarações vêm dos seus dados de emergência.",
-      "editLink": "Editar",
       "offlineHint": "O app não funciona offline de propósito. Salve uma cópia no celular para levar o cartão sem conexão; ela mostra o conteúdo do dia em que foi salva.",
       "downloadError": "O download não funcionou. Tente de novo.",
       "saveOffline": "Salvar cópia offline",

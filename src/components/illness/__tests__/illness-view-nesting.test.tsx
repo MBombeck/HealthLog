@@ -43,6 +43,9 @@ vi.mock("@/hooks/use-record-capabilities", () => ({
 vi.mock("../illness-insights-card", () => ({
   IllnessInsightsCard: () => null,
 }));
+vi.mock("../conditions-note-card", () => ({
+  ConditionsNoteCard: () => null,
+}));
 vi.mock("@/components/symptoms/symptoms-section", () => ({
   SymptomsSection: () => null,
 }));

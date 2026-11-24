@@ -1,7 +1,14 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import type { EmergencyCardView } from "@/lib/emergency-card/card-data";
-import { normaliseFields } from "@/lib/emergency-card/fields";
+import { emergencyCardTargets } from "@/lib/emergency-card/edit-targets";
+import {
+  EMERGENCY_CARD_FIELDS,
+  normaliseFields,
+} from "@/lib/emergency-card/fields";
 import {
   buildOfflineCardHtml,
   escapeHtml,
@@ -160,5 +167,103 @@ describe("buildOfflineCardHtml", () => {
     expect(html).not.toContain("<script>");
     expect(html).toContain(escapeHtml('<script>alert("x")</script>'));
     expect(html).not.toMatch(/https?:\/\//);
+  });
+});
+
+describe("where the owner edits each line", () => {
+  const modules = {
+    illness: true,
+    medications: true,
+    cycle: true,
+    coach: true,
+  };
+
+  it("links every line to the surface that owns it", () => {
+    const targets = emergencyCardTargets({
+      conditionEpisodeIds: ["ep1", null],
+      medicationIds: ["med1"],
+      modules,
+    });
+    const rows = emergencyCardRows(
+      view({
+        fields: ["ALLERGIES", "CONDITIONS", "MEDICATIONS", "CONTACTS", "NAME"],
+        allergies: [
+          { substance: "Penicillin", severity: null, reaction: null },
+        ],
+        conditions: ["Asthma", "Migraine since childhood"],
+        medications: [{ name: "Metformin", dose: "500 mg" }],
+        contacts: "Anna\nBen",
+        name: "A. Person",
+      }),
+      t,
+      "en",
+      targets,
+    );
+    const by = Object.fromEntries(rows.map((r) => [r.key, r.hrefs]));
+    expect(by.ALLERGIES).toEqual(["/settings/anamnesis#allergies"]);
+    expect(by.CONDITIONS).toEqual([
+      "/illness/ep1",
+      "/settings/anamnesis#conditions",
+    ]);
+    expect(by.MEDICATIONS).toEqual(["/medications/med1"]);
+    expect(by.CONTACTS).toEqual([
+      "/settings/anamnesis#emergency",
+      "/settings/anamnesis#emergency",
+    ]);
+    expect(by.NAME).toEqual(["/settings/account#profile"]);
+    // Every item of the card has a surface while its module is on.
+    for (const field of EMERGENCY_CARD_FIELDS) {
+      expect(targets.fields[field], field).not.toBeNull();
+    }
+  });
+
+  it("sends an empty item to where it is filled in", () => {
+    const rows = emergencyCardRows(
+      view({ fields: ["MEDICATIONS"] }),
+      t,
+      "en",
+      emergencyCardTargets({
+        conditionEpisodeIds: [],
+        medicationIds: [],
+        modules,
+      }),
+    );
+    expect(rows[0].hrefs).toEqual(["/medications"]);
+  });
+
+  it("links nothing whose surface is switched off", () => {
+    const targets = emergencyCardTargets({
+      conditionEpisodeIds: ["ep1", null],
+      medicationIds: ["med1"],
+      modules: {
+        illness: false,
+        medications: false,
+        cycle: false,
+        coach: false,
+      },
+    });
+    expect(targets.conditions).toEqual([null, "/settings/anamnesis"]);
+    expect(targets.medications).toEqual([null]);
+    expect(targets.fields.PREGNANCY).toBeNull();
+    expect(targets.fields.CONDITIONS).toBe("/settings/anamnesis");
+  });
+
+  it("gives the read-only renderings no links", () => {
+    const rows = emergencyCardRows(
+      view({ fields: ["BLOOD_TYPE"], bloodType: "O_NEG" }),
+      t,
+      "en",
+    );
+    expect(rows[0].hrefs).toBeUndefined();
+    // The public read and the files built for carrying never ask for them.
+    for (const file of [
+      "src/lib/emergency-card/serve.ts",
+      "src/lib/emergency-card/offline-html.ts",
+      "src/lib/emergency-card/wallet-pdf.ts",
+      "src/app/e/[token]/route.ts",
+    ]) {
+      const text = readFileSync(join(process.cwd(), file), "utf8");
+      expect(text, file).not.toMatch(/loadOwnerEmergencyCard|targets/);
+    }
   });
 });

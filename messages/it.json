@@ -16210,8 +16210,6 @@
       "title": "Tessera di emergenza",
       "description": "I tuoi dati di emergenza per quando sei fuori casa.",
       "loadError": "Impossibile caricare la tessera di emergenza.",
-      "editHint": "Gruppo sanguigno, contatti, impianti e dichiarazioni provengono dai tuoi dati di emergenza.",
-      "editLink": "Modificali",
       "offlineHint": "L'app non funziona offline di proposito. Salva una copia sul telefono per avere la tessera senza connessione; mostra il contenuto del giorno in cui l'hai salvata.",
       "downloadError": "Il download non è riuscito. Riprova.",
       "saveOffline": "Salva copia offline",

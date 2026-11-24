@@ -16210,8 +16210,6 @@
       "title": "Tarjeta de emergencia",
       "description": "Tus datos de emergencia para cuando estás fuera de casa.",
       "loadError": "No se pudo cargar la tarjeta de emergencia.",
-      "editHint": "El grupo sanguíneo, los contactos, los implantes y las declaraciones vienen de tus datos de emergencia.",
-      "editLink": "Editarlos",
       "offlineHint": "La app no funciona sin conexión a propósito. Guarda una copia en el móvil para llevar la tarjeta sin conexión; muestra lo que contenía el día que la guardaste.",
       "downloadError": "La descarga no funcionó. Inténtalo de nuevo.",
       "saveOffline": "Guardar copia sin conexión",
