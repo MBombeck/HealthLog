@@ -165,8 +165,8 @@ describe("diagnostic shapes", () => {
       relayState: "none",
       relayConflictAt: null,
       relayBoundAt: null,
-      laStartedAt: null,
       envelopeReportedAt: null,
+      relayDeliveries: [],
     });
     expect(device.hasApnsToken).toBe(false);
     expect(device.apnsTokenPrefix).toBeNull();

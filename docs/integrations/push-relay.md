@@ -268,9 +268,16 @@ switch is on, and only for a dose entering its window: from two hours before
 the scheduled time until the dose turns overdue. A dose already overdue,
 missed, taken or skipped never gets a start, also not on the first run after
 the consent, so nothing that is already behind turns up on the lock screen.
-When several doses qualify, the earliest one starts. Turning a medication's
-switch off, pausing or ending the medication ends an Activity the server
-started for it.
+When several doses qualify, the earliest one starts first. Each start carries
+a random id of its own, which the relay writes into the Activity and the app
+reports back, so the server knows which dose each Activity shows: two doses
+due close together get one Activity each, up to four on a phone, and ending
+one leaves the others running. An app version that does not report the id
+keeps one server-started Activity at a time, and a dose whose Activity was
+ended for an earlier one starts again once that one is done. The id tells
+the relay and Apple nothing about the dose. Turning a medication's switch
+off, pausing or ending the medication ends an Activity the server started
+for it.
 
 On the server it is held back by `PUSH_RELAY_LIVE_ACTIVITY` until the app's
 device test has passed; while that is off only the end of a Live Activity goes

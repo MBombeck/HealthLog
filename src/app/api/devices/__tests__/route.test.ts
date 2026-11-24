@@ -50,6 +50,11 @@ vi.mock("@/lib/db", () => ({
     pushRelayRegistration: {
       findUnique: async () => null,
     },
+    // No Live Activity start on record for the push block.
+    pushRelayDelivery: {
+      findFirst: async () => null,
+      findMany: async () => [],
+    },
   },
 }));
 

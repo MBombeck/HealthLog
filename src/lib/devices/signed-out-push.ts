@@ -52,10 +52,7 @@ export function clearedPushCredentials() {
     apnsToken: null,
     apnsEnvironment: null,
     liveActivityPushToken: null,
-    laStartedMedicationId: null,
-    laStartedSlot: null,
-    laStartedAt: null,
-    laStartRef: null,
+    laStartIdsAt: null,
     ...clearedRelayFields({ pushKey: true }),
   };
 }

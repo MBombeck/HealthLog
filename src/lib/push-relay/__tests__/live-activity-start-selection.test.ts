@@ -7,8 +7,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   ACTIVITY_LEAD_MS,
-  pickStartDose,
   startableDose,
+  startCandidates,
 } from "@/lib/push-relay/live-activity";
 import {
   resolveDoseState,
@@ -16,6 +16,12 @@ import {
 } from "@/lib/medications/dose-state/resolve";
 
 const MIN = 60_000;
+
+/** The first dose the pass tries, as the 1.49 rule starts it. */
+const pickStartDose = <T extends Parameters<typeof startCandidates>[0][number]>(
+  doses: readonly T[],
+  now: Date,
+): T | null => startCandidates(doses, now)[0] ?? null;
 const NOW = new Date("2026-11-22T20:26:12Z");
 
 /**
@@ -130,6 +136,18 @@ describe("the dose the pass picks", () => {
     });
     const next = dose("c", minutesFrom(NOW, 40));
     expect(pickStartDose([overdue, optedOut, next], NOW)).toBe(next);
+  });
+
+  it("lists every startable dose in that order, for an app that names each by its start", () => {
+    const later = dose("c", minutesFrom(NOW, 60));
+    const tieB = dose("b", minutesFrom(NOW, 20));
+    const tieA = dose("a", minutesFrom(NOW, 20));
+    const overdue = dose("d", minutesFrom(NOW, -90));
+    expect(startCandidates([later, overdue, tieB, tieA], NOW)).toEqual([
+      tieA,
+      tieB,
+      later,
+    ]);
   });
 
   it("is none when nothing is entering its window", () => {

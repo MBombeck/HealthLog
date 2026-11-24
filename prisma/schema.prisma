@@ -6684,23 +6684,14 @@ model Device {
   laStartToken               String?             @map("la_start_token")
   laStartStatement           Json?               @map("la_start_statement")
   laStartSignature           String?             @map("la_start_signature")
-  /// The dose the last relay start was for, so the app's registration of
-  /// the started Activity (`relayStart: true`) finds its dose. Only the
-  /// last: once per dose is kept by the start's outbox row
-  /// (`PushRelayDelivery.medicationId`, `slotInstant`). Reader and writer:
-  /// `push-relay/live-activity.ts`.
-  laStartedMedicationId      String?             @map("la_started_medication_id")
-  laStartedSlot              DateTime?           @map("la_started_slot")
-  /// When the relay accepted the last start; null while it is in flight.
-  /// `liveActivityStarted` names the dose only once this is set. Readers: the
-  /// admin diagnostic (`/api/admin/notifications/diagnostic`,
-  /// `liveActivityStartedAt`) and `push-relay/live-activity-started.ts`.
-  laStartedAt                DateTime?           @map("la_started_at")
-  /// The outbox ref of the last start, so its final answer settles exactly
-  /// that start: accepted sets `laStartedAt`, a failure for good clears the
-  /// dose so the next pass tries again. Writer and reader:
-  /// `push-relay/live-activity-settle.ts`.
-  laStartRef                 String?             @map("la_start_ref")
+  /// When the app last reported a relay-started Activity with its start id
+  /// (`liveActivityTokens[].startId`, the `s` attribute the relay writes into
+  /// `HealthLogDoseAttributes`); null before, and again once it reports one
+  /// without. While set the relay pass names every Activity by its start and
+  /// may run several at once; while null it keeps the device to one
+  /// relay-started Activity, the rule of builds that echo no id. Writer:
+  /// `POST /api/devices`; reader: `push-relay/live-activity.ts`.
+  laStartIdsAt               DateTime?           @map("la_start_ids_at")
   /// When the relay last confirmed the binding. Reader: the admin diagnostic
   /// (`relayBoundAt`).
   relayBoundAt               DateTime?           @map("relay_bound_at")
@@ -11948,6 +11939,12 @@ model PushRelayDelivery {
   /// (`doseStartHeld`).
   medicationId      String?   @map("medication_id")
   slotInstant       DateTime? @map("slot_instant")
+  /// A Live Activity start only: when the device first registered the
+  /// Activity it started (by its start id, or attributed to it), so it holds
+  /// no other start back as one the device may run unseen. The start's
+  /// `ref` is its start id. Writer: `POST /api/devices`; reader:
+  /// `push-relay/live-activity.ts`.
+  laReportedAt      DateTime? @map("la_reported_at")
   createdAt         DateTime  @default(now()) @map("created_at")
 
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
