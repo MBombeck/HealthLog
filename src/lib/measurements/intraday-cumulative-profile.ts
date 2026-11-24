@@ -32,6 +32,7 @@
  * takes a value off this table that the measurement rows do not already carry.
  */
 import type {
+  MeasurementSource,
   MeasurementType,
   Prisma,
   PrismaClient,
@@ -76,6 +77,19 @@ export const CUMULATIVE_PROFILE_LIVE_FOLD_DAYS = 2;
 
 /** Prefix marking an already-collapsed daily-stats row. */
 const DAILY_STATS_PREFIX = "stats:";
+
+/**
+ * The sources whose rows are samples of a cumulative day. The stored profiles
+ * are built from these alone (the cumulative drain folds `APPLE_HEALTH` rows,
+ * the phone posts Apple's hours), so the live fold reads the same rows. Every
+ * other source writes the day as one total (Garmin `daily:…`, Withings
+ * `withings:activity:…`, Gadgetbridge `gb:steps:…` under `IMPORT`, Health
+ * Connect, Oura, WHOOP, Polar), and a total folded as a sample puts the whole
+ * day into the hour it is stamped at.
+ */
+export const CUMULATIVE_SAMPLE_SOURCES: readonly MeasurementSource[] = [
+  "APPLE_HEALTH",
+];
 
 /** One local day's cumulative shape, as the pure fold produces it. */
 export interface CumulativeDayFold {
@@ -399,6 +413,7 @@ async function foldLiveDay(
     dateKey,
     timeZone: timezone,
     bucketMinutes: 60,
+    sources: CUMULATIVE_SAMPLE_SOURCES,
     db,
   });
   const perHour = new Array<number>(PROFILE_HOURS).fill(0);
