@@ -54,6 +54,7 @@
         "src/lib/export/relation-links-backup-schema.ts",
         "src/lib/export/reminders-backup-schema.ts",
         "src/lib/export/sensitive-backup-schema.ts",
+        "src/lib/export/seizures-backup-schema.ts",
         "src/lib/export/symptoms-backup-schema.ts",
         "src/lib/export/vaccinations-backup-schema.ts",
         "src/lib/export/visits-backup-schema.ts",
@@ -62,6 +63,29 @@
         "src/lib/cycle/backup-schema.ts"
       ],
       "floor": 53
+    },
+    "medication-scheduling": {
+      "paths": ["src/lib/medications/scheduling/"],
+      "floor": 0
+    },
+    "auth-primitives": {
+      "paths": ["src/lib/auth/hmac.ts", "src/lib/auth/oidc-native-handoff.ts"],
+      "floor": 0
+    },
+    "egress": {
+      "paths": [
+        "src/lib/validations/notifications.ts",
+        "src/lib/safe-fetch.ts"
+      ],
+      "floor": 0
+    },
+    "push-relay-wire": {
+      "paths": [
+        "src/lib/push-relay/encoding.ts",
+        "src/lib/push-relay/envelope.ts",
+        "src/lib/push-relay/hpke.ts"
+      ],
+      "floor": 0
     }
   }
 }
