@@ -3649,7 +3649,7 @@ export async function seed(given?: pg.Pool) {
         },
       ],
       primaryRecommendation:
-        "Keep the morning measurement habit going — the steadier the cadence, " +
+        "Keep the morning measurement habit going, the steadier the cadence, " +
         "the easier your trends are to read.",
       recommendations: [
         {
@@ -3693,7 +3693,7 @@ export async function seed(given?: pg.Pool) {
           "rate is low, and last night's sleep landed right around your " +
           "target. Weight is holding at its new steady place and your mood " +
           "has been on a quiet upward run all week. There is nothing here " +
-          "that needs fixing — the work now is simply keeping the rhythm " +
+          "that needs fixing, the work now is simply keeping the rhythm " +
           "you have built, logging each morning and protecting your sleep " +
           "window. Small, consistent days are exactly what these trends are " +
           "made of.",
@@ -3719,7 +3719,7 @@ export async function seed(given?: pg.Pool) {
             sourceMetric: "resting_hr",
             tone: "info",
             headline: "Resting heart rate is steady around 58 bpm.",
-            nudge: "Keep the daily movement going — it shows up here.",
+            nudge: "Keep the daily movement going, it shows up here.",
             delta: null,
           },
         ],
@@ -3770,7 +3770,7 @@ export async function seed(given?: pg.Pool) {
       trendAnnotations: {
         bp: "After a higher stretch and a ramipril dose increase, your systolic has come back down into the optimal band.",
         weight:
-          "Weight has levelled off after an earlier decline — a stable, healthy place to hold.",
+          "Weight has levelled off after an earlier decline, a stable, healthy place to hold.",
         mood: "Mood has been on a quiet upward run across the quarter.",
         sleep:
           "Nights have lengthened toward a steady 7.5 hours over the window.",
@@ -3834,13 +3834,13 @@ export async function seed(given?: pg.Pool) {
           "Your resting heart rate is sitting around 58 bpm this week, a few " +
           "beats below your monthly mean and among your lowest readings in " +
           "the window. That tracks with the steady daily movement you have " +
-          "kept up. Nothing to change here — just keep the rhythm going.",
+          "kept up. Nothing to change here, just keep the rhythm going.",
       },
       {
         scope: "weight",
         text:
           "Your weight has settled at about 82 kg after trending down earlier " +
-          "in the quarter — a stable, healthy place rather than a continuing " +
+          "in the quarter, a stable, healthy place rather than a continuing " +
           "decline. Holding here is exactly the right goal. Weighing in at a " +
           "consistent time keeps the reading clean.",
       },
@@ -3875,7 +3875,7 @@ export async function seed(given?: pg.Pool) {
           "Across the board your numbers are in a good place: blood pressure " +
           "in the optimal band, weight steady, resting heart rate low, and " +
           "sleep and mood both trending up. The throughline is your " +
-          "consistency — daily logging is what makes all of this readable. " +
+          "consistency, daily logging is what makes all of this readable. " +
           "Keep the cadence and the picture stays clear.",
       },
     ];
@@ -3946,7 +3946,7 @@ export async function seed(given?: pg.Pool) {
           "consistent daily activity. Sleep lengthened and steadied, and " +
           "your mood trend continued its quiet climb. The month reads less " +
           "like a change in progress and more like a routine that is paying " +
-          "off — worth protecting exactly as it stands.",
+          "off, worth protecting exactly as it stands.",
         window: { from: narrativeWindowFrom, to: nowIso },
       },
     ];
