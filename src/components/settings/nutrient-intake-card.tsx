@@ -110,7 +110,7 @@ export function NutrientIntakeCard() {
                   unit: UNIT_LABELS[row.unit] ?? row.unit,
                   date: row.latestDay,
                 })}
-                {" · "}
+                {", "}
                 {t("settings.sections.sources.nutrients.daysWithData", {
                   count: row.daysWithData,
                   days: WINDOW_DAYS,

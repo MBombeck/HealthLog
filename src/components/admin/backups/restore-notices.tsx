@@ -276,7 +276,7 @@ export function RestoreSkipReport({
                   <span className="font-mono">{entry.key}</span>{" "}
                   <span className="text-muted-foreground">
                     {catalogueLabel(entry.catalogue, t)}
-                    {" · "}
+                    {", "}
                     {t("admin.section.backups.restoreSkippedLinks", {
                       count: String(entry.links),
                     })}

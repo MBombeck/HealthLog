@@ -526,7 +526,7 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
                                     gets no share-of-night percentage. */}
                                   {isNap
                                     ? formatDurationMinutes(minutes, t)
-                                    : `${formatDurationMinutes(minutes, t)} · ${pct}%`}
+                                    : `${formatDurationMinutes(minutes, t)}, ${pct}%`}
                                 </span>
                               </div>
                             );

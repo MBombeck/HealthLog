@@ -212,7 +212,7 @@ export function SecuritySessionsCard({
                       s.ipMasked,
                     ]
                       .filter(Boolean)
-                      .join(" · ")}
+                      .join(", ")}
                   </p>
                   {s.lastActiveAt && (
                     <p className="text-muted-foreground text-xs">
