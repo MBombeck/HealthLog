@@ -16242,6 +16242,8 @@
     "reportColSessions": "Zabiegi",
     "reportColPeriod": "Okres",
     "period": "{from} do {to}",
-    "periodOpen": "od {from}"
+    "periodOpen": "od {from}",
+    "expiryPushTitle": "Seria zabiegów wygasa",
+    "expiryPushBody": "{title}: ważna do {date}, {count, plural, one {pozostał # zabieg} few {pozostały # zabiegi} many {pozostało # zabiegów} other {pozostało # zabiegu}}."
   }
 }

@@ -16242,6 +16242,8 @@
     "reportColSessions": "Sessies",
     "reportColPeriod": "Periode",
     "period": "{from} tot {to}",
-    "periodOpen": "sinds {from}"
+    "periodOpen": "sinds {from}",
+    "expiryPushTitle": "Behandelreeks verloopt",
+    "expiryPushBody": "{title}: geldig tot {date}, nog {count, plural, one {# sessie} other {# sessies}} over."
   }
 }

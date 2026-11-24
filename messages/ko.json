@@ -16242,6 +16242,8 @@
     "reportColSessions": "회차",
     "reportColPeriod": "기간",
     "period": "{from} ~ {to}",
-    "periodOpen": "{from}부터"
+    "periodOpen": "{from}부터",
+    "expiryPushTitle": "치료 과정 만료 예정",
+    "expiryPushBody": "{title}: {date}까지 유효, {count, plural, other {#회}} 남음."
   }
 }

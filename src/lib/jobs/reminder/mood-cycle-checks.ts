@@ -15,6 +15,7 @@ import {
   runReminderSatisfyForUser,
 } from "@/lib/jobs/measurement-reminder";
 import type { ReminderSatisfyPayload } from "@/lib/jobs/reminder-satisfy";
+import { runTreatmentSeriesExpiryTick } from "@/lib/treatment-series/expiry-reminder";
 import { getWorkerPrisma } from "./shared";
 
 export interface MoodReminderPayload {
@@ -123,7 +124,10 @@ export async function handleMeasurementReminderCheck(
   return withBackgroundEvent("job.measurement_reminder", async (evt) => {
     const prisma = getWorkerPrisma();
     try {
-      const summary = await runMeasurementReminderTick(prisma, new Date());
+      const now = new Date();
+      const summary = await runMeasurementReminderTick(prisma, now);
+      // A treatment series about to run out rides the same tick and channels.
+      const series = await runTreatmentSeriesExpiryTick(prisma, now);
       evt.setBackground({
         task_name: "job.measurement_reminder",
         result: {
@@ -136,6 +140,8 @@ export async function handleMeasurementReminderCheck(
           skipped_no_channel: summary.skippedNoChannel,
           skipped_repeat_held: summary.skippedRepeatHeld,
           failed: summary.failed,
+          series_expiry_dispatched: series.dispatched,
+          series_expiry_failed: series.failed,
         },
       });
       // `failed` counts per-reminder dispatch failures the tick isolated. The

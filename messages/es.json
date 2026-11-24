@@ -16242,6 +16242,8 @@
     "reportColSessions": "Sesiones",
     "reportColPeriod": "Periodo",
     "period": "{from} a {to}",
-    "periodOpen": "desde {from}"
+    "periodOpen": "desde {from}",
+    "expiryPushTitle": "La serie de tratamiento caduca",
+    "expiryPushBody": "{title}: válida hasta el {date}, {count, plural, one {queda # sesión} other {quedan # sesiones}}."
   }
 }

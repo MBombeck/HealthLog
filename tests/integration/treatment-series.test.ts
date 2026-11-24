@@ -12,7 +12,9 @@
  *     visit that names it;
  *   - deleting a series leaves its visits, and a restore brings it back;
  *   - the backup carries the series and the visit's reference both ways;
- *   - the calendar feed, the timeline lane and the doctor report read it.
+ *   - the calendar feed, the timeline lane and the doctor report read it;
+ *   - a series about to run out with sessions left is reminded once, through
+ *     the check-up reminder's claim ledger, and an ended or used-up one never.
  *
  * Mutation checks (each run, each seen red):
  *   - count CANCELLED as done in `summarizeSessions` → "cancelled sessions use
@@ -48,6 +50,10 @@ import {
   restoreVisitsData,
 } from "@/lib/export/visits-backup";
 import { LANE_READERS } from "@/lib/timeline/lanes";
+import { runTreatmentSeriesExpiryTick } from "@/lib/treatment-series/expiry-reminder";
+import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
 import { backupPayloadSchema } from "@/lib/validations/backup";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
@@ -526,5 +532,92 @@ describe("treatment series elsewhere in the record", () => {
         performerName: "Physio Practice",
       }),
     ]);
+  });
+});
+
+describe("the expiry reminder", () => {
+  // 09:15 today on the owner's clock (Europe/Berlin). Today rather than a
+  // fixed date: the claim ledger stamps its rows with the real clock.
+  const today = userDayKey(new Date(), "Europe/Berlin");
+  const [year, month, day] = today.split("-").map(Number);
+  const now = zonedWallClockToUtc(
+    { year, month, day, hour: 9, minute: 15 },
+    "Europe/Berlin",
+  );
+  const validUntil = shiftDateKey(today, 5);
+
+  async function seedExpiring(
+    overrides: { endedOn?: Date; done?: number } = {},
+  ) {
+    const prisma = getPrismaClient();
+    const series = await prisma.treatmentSeries.create({
+      data: {
+        userId: OWNER_ID,
+        titleEncrypted: encryptToBytes("Physiotherapy"),
+        plannedSessions: 3,
+        startsOn: dayKeyAsUtcMidnight(shiftDateKey(today, -30)),
+        validUntil: dayKeyAsUtcMidnight(validUntil),
+        endedOn: overrides.endedOn ?? null,
+      },
+    });
+    for (let i = 0; i < (overrides.done ?? 1); i += 1) {
+      await prisma.encounter.create({
+        data: {
+          userId: OWNER_ID,
+          occurredAt: dayKeyAsUtcMidnight(shiftDateKey(today, -20 + i)),
+          status: "DONE",
+          kind: "THERAPY",
+          seriesId: series.id,
+        },
+      });
+    }
+    return series;
+  }
+
+  it("goes out once per series and expiry date, on the check-up event", async () => {
+    const series = await seedExpiring();
+    const dispatch = vi.fn().mockResolvedValue({ dispatched: true });
+    const prisma = getPrismaClient();
+
+    const first = await runTreatmentSeriesExpiryTick(prisma, now, {
+      dispatch,
+    });
+    const second = await runTreatmentSeriesExpiryTick(
+      prisma,
+      new Date(now.getTime() + 15 * 60_000),
+      { dispatch },
+    );
+
+    expect(first.dispatched).toBe(1);
+    expect(second.skippedAlreadyClaimed).toBe(1);
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch.mock.calls[0][0]).toMatchObject({
+      eventType: "MEASUREMENT_REMINDER",
+      userId: OWNER_ID,
+      metadata: { treatmentSeriesId: series.id },
+    });
+    expect(dispatch.mock.calls[0][0].message).toContain("2 sessions left");
+    const claims = await prisma.notificationEvent.findMany({
+      where: { recordUserId: OWNER_ID },
+    });
+    expect(claims.map((c) => c.dedupKey)).toEqual([
+      `series-expiry:${series.id}:${validUntil}`,
+    ]);
+  });
+
+  it("stays silent for an ended series and one with nothing left", async () => {
+    await seedExpiring({
+      endedOn: dayKeyAsUtcMidnight(shiftDateKey(today, -1)),
+    });
+    await seedExpiring({ done: 3 });
+    const dispatch = vi.fn().mockResolvedValue({ dispatched: true });
+
+    const summary = await runTreatmentSeriesExpiryTick(getPrismaClient(), now, {
+      dispatch,
+    });
+
+    expect(summary.candidates).toBe(1);
+    expect(summary.skippedNothingLeft).toBe(1);
+    expect(dispatch).not.toHaveBeenCalled();
   });
 });

@@ -16242,6 +16242,8 @@
     "reportColSessions": "Sitzungen",
     "reportColPeriod": "Zeitraum",
     "period": "{from} bis {to}",
-    "periodOpen": "seit {from}"
+    "periodOpen": "seit {from}",
+    "expiryPushTitle": "Behandlungsserie läuft ab",
+    "expiryPushBody": "{title}: gültig bis {date}, noch {count, plural, one {# Sitzung} other {# Sitzungen}} offen."
   }
 }

@@ -39,6 +39,11 @@ HealthLog counts from the visits, every time it shows a series:
   **End series**. **Reopen** undoes that.
 - **Expired** when the last valid day has passed with sessions left.
 
+In the week before the last valid day, if sessions are still left, you get
+one reminder on the channels you chose for check-up reminders, in the morning on
+your own clock. Moving the last valid day can bring a new one; a series that
+is ended, completed or without a number of sessions gets none.
+
 Each visit of a series shows its place in it, such as "Session 3 of 6".
 
 ## Where else it shows

@@ -16242,6 +16242,8 @@
     "reportColSessions": "Séances",
     "reportColPeriod": "Période",
     "period": "du {from} au {to}",
-    "periodOpen": "depuis le {from}"
+    "periodOpen": "depuis le {from}",
+    "expiryPushTitle": "Série de soins bientôt expirée",
+    "expiryPushBody": "{title} : valable jusqu’au {date}, {count, plural, one {# séance restante} other {# séances restantes}}."
   }
 }

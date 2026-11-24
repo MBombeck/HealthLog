@@ -16242,6 +16242,8 @@
     "reportColSessions": "Сеансы",
     "reportColPeriod": "Период",
     "period": "с {from} по {to}",
-    "periodOpen": "с {from}"
+    "periodOpen": "с {from}",
+    "expiryPushTitle": "Курс лечения истекает",
+    "expiryPushBody": "{title}: действует до {date}, {count, plural, one {остался # сеанс} few {осталось # сеанса} many {осталось # сеансов} other {осталось # сеанса}}."
   }
 }

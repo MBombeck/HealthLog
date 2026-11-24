@@ -16242,6 +16242,8 @@
     "reportColSessions": "Sedute",
     "reportColPeriod": "Periodo",
     "period": "dal {from} al {to}",
-    "periodOpen": "dal {from}"
+    "periodOpen": "dal {from}",
+    "expiryPushTitle": "Ciclo di trattamento in scadenza",
+    "expiryPushBody": "{title}: valido fino al {date}, {count, plural, one {resta # seduta} other {restano # sedute}}."
   }
 }
