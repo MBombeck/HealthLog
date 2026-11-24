@@ -465,3 +465,25 @@ describe("runStatusCompletion — cost owner decides the ceiling", () => {
     expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
   });
 });
+
+describe("runStatusCompletion, the reply's punctuation", () => {
+  it("hands its caller the reply without spaced dashes or dots", async () => {
+    runRawCompletionWithFallback.mockResolvedValue({
+      result: {
+        content: '{"summary":"Steady week — nothing to change · 7 days"}',
+        model: "m",
+        tokensUsed: 10,
+      },
+      workingProvider: { providerType: "admin-openai" },
+      fallbackHops: [],
+      tokensSpent: 0,
+    });
+
+    const result = await runStatusCompletion(completionArgs());
+
+    expect(result).toMatchObject({
+      kind: "ok",
+      content: '{"summary":"Steady week, nothing to change, 7 days"}',
+    });
+  });
+});
