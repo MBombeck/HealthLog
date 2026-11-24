@@ -3931,6 +3931,7 @@
         "title": "Evolución de la noche",
         "wokeOn": "Despertar el {date}",
         "summary": "{asleep} dormido, {awakenings, plural, one {# despertar} other {# despertares}}",
+        "asleepOnly": "{asleep} dormido",
         "source": "de {source}",
         "previous": "Noche anterior",
         "next": "Noche siguiente",

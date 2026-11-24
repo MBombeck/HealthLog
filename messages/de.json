@@ -3931,6 +3931,7 @@
         "title": "Nachtverlauf",
         "wokeOn": "Aufgewacht am {date}",
         "summary": "{asleep} Schlaf, {awakenings, plural, other {#× wach}}",
+        "asleepOnly": "{asleep} Schlaf",
         "source": "von {source}",
         "previous": "Vorherige Nacht",
         "next": "Nächste Nacht",

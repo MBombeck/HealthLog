@@ -3931,6 +3931,7 @@
         "title": "Déroulé de la nuit",
         "wokeOn": "Réveil le {date}",
         "summary": "{asleep} de sommeil, {awakenings, plural, one {# réveil} other {# réveils}}",
+        "asleepOnly": "{asleep} de sommeil",
         "source": "depuis {source}",
         "previous": "Nuit précédente",
         "next": "Nuit suivante",

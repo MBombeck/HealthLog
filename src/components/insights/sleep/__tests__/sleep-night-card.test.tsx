@@ -93,6 +93,40 @@ describe("<SleepNightCard>", () => {
     expect(html).toContain(en.insights.sleep.hypnogram.estimateNote);
   });
 
+  it("names neither a timeline nor awakenings for a night of stage totals (#1419)", () => {
+    // A daily sleep summary (Garmin) stamps every stage total on the wake
+    // instant; the server flags the night and the card shows its total only.
+    const totals = {
+      ...session(true),
+      source: "GARMIN",
+      awakenings: 0,
+      segments: [
+        {
+          stage: "CORE",
+          start: "2026-06-01T23:40:00.000Z",
+          end: "2026-06-02T04:40:00.000Z",
+          minutes: 300,
+        },
+        {
+          stage: "DEEP",
+          start: "2026-06-02T03:20:00.000Z",
+          end: "2026-06-02T04:40:00.000Z",
+          minutes: 80,
+        },
+      ],
+    };
+    reads.latest = {
+      data: { night: "2026-06-02", main: totals, naps: [] },
+    };
+    const html = render();
+    expect(html).not.toContain('data-slot="hypnogram-chart"');
+    expect(html).toContain('data-slot="sleep-hypnogram-estimate-note"');
+    expect(html).toMatch(
+      /data-slot="sleep-hypnogram-summary">6h 52m asleep<\/span>/,
+    );
+    expect(html).not.toContain("awakening");
+  });
+
   it("says a day carried no night", () => {
     reads.latest = { data: { night: null, main: null, naps: [] } };
     const html = render();

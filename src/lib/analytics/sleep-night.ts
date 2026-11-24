@@ -141,6 +141,7 @@ import {
   getSourceLadder,
   parseSourcePriority,
 } from "@/lib/validations/source-priority";
+import { hasStageTimeline } from "@/lib/sleep/stage-timeline";
 
 /**
  * The GRANULAR asleep stages (iOS 16+ `asleepCore` / `asleepDeep` /
@@ -369,21 +370,6 @@ export interface SleepNight {
 const NO_SOURCE = "__none__";
 
 /**
- * Sources whose per-segment stage ORDER is synthesised, not measured. WHOOP's
- * v2 API exposes only per-stage duration totals (no onset timestamps), so the
- * ingest mapper reconstructs a contiguous timeline in a fixed physiological
- * order (`whoop/client.ts` + `polar/client.ts` `mapSleep`, both via the shared
- * `reconstructContiguousSleepTimeline` builder). A session won by such a source
- * carries `reconstructed: true` so the UI labels it as an approximate layout.
- * Apple Health / Oura / Withings / Fitbit all store a real per-segment series
- * and stay off this set.
- */
-const RECONSTRUCTED_TIMELINE_SOURCES: ReadonlySet<string> = new Set<string>([
-  "WHOOP",
-  "POLAR",
-]);
-
-/**
  * Separator between the source and device-type parts of a writer key.
  * The unit-separator character (U+241F) cannot appear in a
  * `MeasurementSource` enum literal or a device-type tag, so the
@@ -563,20 +549,20 @@ function pickSessionWriter(
     writers = writers.filter((key) => (richnessOf.get(key) ?? 0) > 0);
   }
   // Timeline gate — BETWEEN granular presence and the max-richness count.
-  // A writer whose stage rows carry ≥2 distinct measuredAt instants has
-  // real per-segment timing; a summary-shaped writer stamps every stage
-  // total on one instant (WHOOP's stage_summary stamps everything on the
-  // sleep END), and the hypnogram would reconstruct its "segments" as
-  // five spans all touching the night's right edge. When at least one
-  // timeline writer covers the session, summary-only writers are out of
-  // the running BEFORE the richness count — WHOOP's guaranteed full-house
-  // stage count must not eliminate a partial but genuinely-timed Apple
-  // night. A summary-only writer still wins nights nobody else recorded.
-  const distinctInstantsOf = (writerRows: readonly SleepStageRow[]): number =>
-    new Set(writerRows.map((r) => r.measuredAt.getTime())).size;
-  const timelineWriters = writers.filter(
-    (key) => distinctInstantsOf(rowsByWriter.get(key) ?? []) > 1,
-  );
+  // A writer whose stage spans carry a measured order (`hasStageTimeline`)
+  // beats a writer that only knows the night's stage totals, whether those
+  // totals are stamped on one instant (Garmin, Oura's fallback, legacy WHOOP)
+  // or laid back to back in a fixed order at ingest (WHOOP, Polar). When at
+  // least one timeline writer covers the session, totals-only writers are out
+  // of the running BEFORE the richness count and BEFORE the ladder — a
+  // totals source's guaranteed full-house stage count or its higher ladder
+  // rank must not eliminate a genuinely timed night of the same sleep. A
+  // totals-only writer still wins nights nobody else recorded, and so does
+  // a richer writer over a lone span (a sync that has only begun).
+  const timelineWriters = writers.filter((key) => {
+    const spans = writerSegments(rowsByWriter.get(key) ?? []);
+    return spans.length > 1 && hasStageTimeline(spans);
+  });
   if (timelineWriters.length > 0) {
     writers = timelineWriters;
   }
@@ -872,14 +858,12 @@ export interface SleepSession {
    */
   segments: SleepSegment[];
   /**
-   * `true` when the winning writer's stage ORDER is synthesised rather than
-   * measured. WHOOP's v2 API returns only per-stage duration totals — no onset
-   * timestamps — so the server reconstructs a contiguous timeline in a fixed
-   * physiological order (`whoop/client.ts` `mapSleep`). The segment positions
-   * are then approximate, not measured, and the UI / iOS must label the night
-   * as an approximate layout (never present it as measured stage timing).
-   * Sources that store a real per-segment series (Apple Health, Withings,
-   * Fitbit) stay `false`.
+   * `true` when the winning writer knows the night's stage totals but not the
+   * order they came in (`hasStageTimeline`): totals stamped on one instant
+   * (Garmin, Oura's fallback) or laid back to back in a fixed order at ingest
+   * (WHOOP, Polar). The segment positions then say nothing about when a stage
+   * happened, so the web and iOS show the totals instead of a timeline and
+   * `awakenings` is 0. Decided from the spans' shape, not the source's name.
    */
   reconstructed: boolean;
   /**
@@ -1027,6 +1011,20 @@ function countAwakenings(segments: readonly SleepSegment[]): number {
 }
 
 /**
+ * One writer's spans as the night draws them: the redundant bare-ASLEEP twin
+ * of a granular partition dropped, overlapping spans of one stage merged into
+ * their union, sorted by start.
+ */
+function writerSegments(rows: readonly SleepStageRow[]): SleepSegment[] {
+  const sawGranular = sawGranularStage(rows);
+  return mergeOverlappingSegments(
+    rows
+      .filter((r) => !isRedundantBareAsleep(r.sleepStage, sawGranular))
+      .map(segmentOf),
+  );
+}
+
+/**
  * Reconstruct per-SESSION sleep blocks from raw per-stage rows. Unlike
  * `reconstructSleepNights` (which merges same-wake-day sessions under one
  * key for the single headline number), this returns EACH session
@@ -1077,18 +1075,12 @@ export function reconstructSleepSessions(
     // session also carries the granular CORE/DEEP/REM partition, so the
     // hypnogram never draws a double-height ASLEEP lane on top of the
     // granular stages and the `stages` map is the granular set OR the bare
-    // aggregate, never both.
-    const sawGranular = sawGranularStage(pool);
-    // Overlapping spans of ONE stage merge into their union before anything
-    // is drawn or summed: a corrected re-export (same start, later end, fresh
-    // external id) must not paint a second bar over the night it revises, nor
-    // add its minutes on top of the row it supersedes. Returned sorted by
-    // start, as the hypnogram expects.
-    const segments = mergeOverlappingSegments(
-      pool
-        .filter((r) => !isRedundantBareAsleep(r.sleepStage, sawGranular))
-        .map(segmentOf),
-    );
+    // aggregate, never both. Overlapping spans of ONE stage merge into their
+    // union before anything is drawn or summed: a corrected re-export (same
+    // start, later end, fresh external id) must not paint a second bar over
+    // the night it revises, nor add its minutes on top of the row it
+    // supersedes. Returned sorted by start, as the hypnogram expects.
+    const segments = writerSegments(pool);
 
     // The granular-over-bare filter can empty a non-empty pool (a session whose
     // only rows are the redundant bare ASLEEP aggregate / stage-less twins of a
@@ -1130,6 +1122,7 @@ export function reconstructSleepSessions(
     }
     const asleep = asleepMinutesOf(pool);
     const canonicalSource = sourceOfWriterKey(canonical);
+    const timeline = hasStageTimeline(segments);
     const zone = sessionZoneOf(session, tz);
     sessions.push({
       night: wakeDayOf(session, tz),
@@ -1146,13 +1139,14 @@ export function reconstructSleepSessions(
       inBedMinutes: inBedEnvelope,
       awakeMinutes: sawAwake ? awake : null,
       stages,
-      awakenings: countAwakenings(segments),
+      // Stage totals know no order, so they know no awakening between two
+      // stretches of sleep either: a count read off their spans would be an
+      // artefact of how long each stage lasted.
+      awakenings: timeline ? countAwakenings(segments) : 0,
       segments,
-      // The winning writer's stage order is synthetic when its source
-      // reconstructs the timeline (WHOOP). The UI labels such a night as an
-      // approximate layout; a real-series source (Apple/Withings/Fitbit) is
-      // measured.
-      reconstructed: RECONSTRUCTED_TIMELINE_SOURCES.has(canonicalSource),
+      // The winning writer knows stage totals but not their order
+      // (`hasStageTimeline`). The UI shows a note instead of a timeline.
+      reconstructed: !timeline,
       // Compared across the RAW session (every writer, pre-collapse) so a
       // losing bucket's disagreement is visible; the served totals above
       // stay winner-only.

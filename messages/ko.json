@@ -3931,6 +3931,7 @@
         "title": "밤 수면 흐름",
         "wokeOn": "{date} 기상",
         "summary": "수면 {asleep}, 깸 {awakenings, plural, other {#회}}",
+        "asleepOnly": "수면 {asleep}",
         "source": "{source} 기준",
         "previous": "이전 밤",
         "next": "다음 밤",

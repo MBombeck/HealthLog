@@ -3931,6 +3931,7 @@
         "title": "Andamento della notte",
         "wokeOn": "Risveglio il {date}",
         "summary": "{asleep} di sonno, {awakenings, plural, one {# risveglio} other {# risvegli}}",
+        "asleepOnly": "{asleep} di sonno",
         "source": "da {source}",
         "previous": "Notte precedente",
         "next": "Notte successiva",
