@@ -408,10 +408,10 @@ RUN set -e; \
 
 # The OCR engine for scanned documents (`scripts/stage-ocr-runtime.mjs`), and
 # a start of it against the language data `public/tesseract/lang` carries:
-# the core file it picks and both languages have to load here, or the build
-# fails instead of every scan quietly staying unread.
+# the core file it picks and every app language has to load here, or the
+# build fails instead of every scan quietly staying unread.
 COPY --from=builder --chown=nextjs:nodejs /app/.ocr-runtime/ ./node_modules/
-RUN node --input-type=module -e "const { default: t } = await import('/app/node_modules/tesseract.js/src/index.js'); const w = await t.createWorker(['deu', 'eng'], 1, { langPath: '/app/public/tesseract/lang', cacheMethod: 'none', gzip: true }); await w.terminate(); console.log('ocr engine loads with deu+eng');"
+RUN node --input-type=module -e "const { default: t } = await import('/app/node_modules/tesseract.js/src/index.js'); const langs = ['deu', 'eng', 'fra', 'spa', 'ita', 'pol', 'nld', 'por', 'rus', 'kor']; const w = await t.createWorker(langs, 1, { langPath: '/app/public/tesseract/lang', cacheMethod: 'none', gzip: true }); await w.terminate(); console.log('ocr engine loads with ' + langs.join('+'));"
 
 # Copy Prisma for migrations (schema, migration SQL, config, engines)
 COPY --from=builder /app/prisma ./prisma

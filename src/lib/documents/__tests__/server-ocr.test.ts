@@ -15,23 +15,44 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 const { annotate } = vi.hoisted(() => ({ annotate: vi.fn() }));
 vi.mock("@/lib/logging/context", () => ({ annotate }));
 
+import { locales } from "@/lib/i18n/config";
+
 import { PdfReaderUnavailableError } from "../pdfjs";
 import {
   __resetServerOcrStatusForTests,
+  readLanguages,
   readScanText,
   serverOcrStatus,
 } from "../server-ocr";
 import { localExtractText } from "../local-extract";
-import { syntheticLabScanJpeg, syntheticLabScanPdf } from "./synthetic-scan";
+import {
+  syntheticLabScanJpeg,
+  syntheticLabScanPdf,
+  syntheticScriptScanJpeg,
+} from "./synthetic-scan";
 
 const require = createRequire(import.meta.url);
 let langDir: string;
+
+/** Every language the build stages, in the order the status lists them. */
+const LANGUAGES = [
+  "deu",
+  "eng",
+  "fra",
+  "spa",
+  "ita",
+  "pol",
+  "nld",
+  "por",
+  "rus",
+  "kor",
+];
 
 beforeAll(() => {
   // The language data the build stages into `public/tesseract/lang`, staged
   // here into a directory of the suite's own.
   langDir = mkdtempSync(join(tmpdir(), "hl-ocr-lang-"));
-  for (const lang of ["deu", "eng"]) {
+  for (const lang of LANGUAGES) {
     const manifest = require.resolve(`@tesseract.js-data/${lang}/package.json`);
     copyFileSync(
       join(dirname(manifest), "4.0.0_best_int", `${lang}.traineddata.gz`),
@@ -50,7 +71,7 @@ describe("serverOcrStatus", () => {
   it("finds the engine and the staged languages, German first", () => {
     expect(serverOcrStatus()).toEqual({
       available: true,
-      languages: ["deu", "eng"],
+      languages: LANGUAGES,
     });
   });
 
@@ -66,6 +87,32 @@ describe("serverOcrStatus", () => {
       __resetServerOcrStatusForTests(langDir);
       rmSync(empty, { recursive: true, force: true });
     }
+  });
+});
+
+describe("readLanguages", () => {
+  it("reads German and English, plus the account's own language", () => {
+    expect(readLanguages(LANGUAGES, null)).toEqual(["deu", "eng"]);
+    expect(readLanguages(LANGUAGES, "de")).toEqual(["deu", "eng"]);
+    expect(readLanguages(LANGUAGES, "en")).toEqual(["deu", "eng"]);
+    expect(readLanguages(LANGUAGES, "ru")).toEqual(["deu", "eng", "rus"]);
+    expect(readLanguages(LANGUAGES, "ko")).toEqual(["deu", "eng", "kor"]);
+    expect(readLanguages(LANGUAGES, "pt-BR")).toEqual(["deu", "eng", "por"]);
+  });
+
+  it("has data for every app locale", () => {
+    for (const locale of locales) {
+      expect(readLanguages(LANGUAGES, locale).length).toBe(
+        locale === "de" || locale === "en" ? 2 : 3,
+      );
+    }
+  });
+
+  it("leaves out what the build does not carry, and an unknown locale", () => {
+    expect(readLanguages(["deu", "eng"], "ru")).toEqual(["deu", "eng"]);
+    expect(readLanguages(LANGUAGES, "xx")).toEqual(["deu", "eng"]);
+    expect(readLanguages(["rus"], "ko")).toEqual(["rus"]);
+    expect(readLanguages([], "ru")).toEqual([]);
   });
 });
 
@@ -102,6 +149,49 @@ describe("readScanText with the real engine", () => {
       // OCR may drop the umlaut; the catalog match folds it either way.
       expect(result.text).toMatch(/H.moglobin\s+14,6/u);
     }
+  }, 120_000);
+});
+
+describe("readScanText in the account's language", () => {
+  it("reads a Russian scan for an account in Russian", async () => {
+    const result = await readScanText(
+      syntheticScriptScanJpeg("ru"),
+      "image/jpeg",
+      { locale: async () => "ru" },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.text).toContain("Гемоглобин");
+    expect(result.text).toMatch(/Глюкоза\s+5,4\s+ммоль\/л/u);
+    expect(annotate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: { name: "documents.localOcr.read" },
+        meta: expect.objectContaining({ languages: "deu+eng+rus" }),
+      }),
+    );
+  }, 120_000);
+
+  it("reads a Korean scan for an account in Korean", async () => {
+    const result = await readScanText(
+      syntheticScriptScanJpeg("ko"),
+      "image/jpeg",
+      { locale: async () => "ko" },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.text.replace(/\s+/gu, "")).toContain("헤모글로빈14.6");
+    expect(result.text.replace(/\s+/gu, "")).toContain("포도당5.4");
+  }, 120_000);
+
+  it("reads Cyrillic only when the account's language brings it", async () => {
+    const result = await readScanText(
+      syntheticScriptScanJpeg("ru"),
+      "image/jpeg",
+      { locale: async () => "de" },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.text).not.toContain("Гемоглобин");
   }, 120_000);
 });
 

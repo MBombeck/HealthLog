@@ -56,7 +56,7 @@ beforeAll(async () => {
   // The build stages the language data into `public/tesseract/lang`; the
   // suite stages its own copy.
   langDir = mkdtempSync(join(tmpdir(), "hl-int-ocr-lang-"));
-  for (const lang of ["deu", "eng"]) {
+  for (const lang of ["deu", "eng", "rus", "kor"]) {
     const manifest = require.resolve(`@tesseract.js-data/${lang}/package.json`);
     copyFileSync(
       join(dirname(manifest), "4.0.0_best_int", `${lang}.traineddata.gz`),
@@ -81,10 +81,11 @@ beforeEach(async () => {
   headerJar.clear();
 });
 
-async function seedUser() {
+async function seedUser(locale: string | null = null) {
   const prisma = getPrismaClient();
   const user = await prisma.user.create({
     data: {
+      locale,
       username: "local-lab-values",
       email: "local-lab-values@example.test",
       role: "USER",
@@ -271,4 +272,37 @@ describe("POST /api/documents/inbound/{id}/lab-values", () => {
       "documents.inbound.notIndexed",
     );
   });
+});
+
+describe("a scan in the account's language", () => {
+  it.each([
+    ["ru", "Гемоглобин"],
+    ["ko", "헤모글로빈"],
+  ] as const)(
+    "is read in %s when the account uses it",
+    async (locale, word) => {
+      const user = await seedUser(locale);
+      const { syntheticScriptScanJpeg } =
+        await import("@/lib/documents/__tests__/synthetic-scan");
+      const id = await upload(
+        syntheticScriptScanJpeg(locale),
+        `scan-${locale}.jpg`,
+      );
+
+      const { runDocumentIndex } = await import("@/lib/jobs/document-index");
+      await runDocumentIndex({ userId: user.id, documentId: id });
+
+      const prisma = getPrismaClient();
+      const index = await prisma.documentContentIndex.findFirstOrThrow({
+        where: { documentId: id },
+        select: { source: true, verbatimTextEncrypted: true },
+      });
+      expect(index.source).toBe("local-ocr");
+      const { decryptVerbatimText } =
+        await import("@/lib/documents/content-index");
+      expect(index.verbatimTextEncrypted).not.toBeNull();
+      expect(decryptVerbatimText(index.verbatimTextEncrypted!)).toContain(word);
+    },
+    180_000,
+  );
 });

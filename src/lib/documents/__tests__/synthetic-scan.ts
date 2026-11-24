@@ -3,7 +3,9 @@
  * no text layer, either as a photo (JPEG) or as an image-only PDF. Every
  * value is made up; nothing here is anyone's record.
  */
-import { createCanvas } from "@napi-rs/canvas";
+import { join } from "node:path";
+
+import { createCanvas, GlobalFonts } from "@napi-rs/canvas";
 import { jsPDF } from "jspdf";
 
 /** The rows drawn, in columns: name, value, unit, range. */
@@ -47,4 +49,50 @@ export function syntheticLabScanPdf(pages = 1): Buffer {
     doc.addImage(`data:image/jpeg;base64,${jpeg}`, "JPEG", 0, 0, 210, 297);
   }
   return Buffer.from(doc.output("arraybuffer"));
+}
+
+/**
+ * Faces with Cyrillic and Hangul for the scans below, the ones the doctor
+ * report embeds, so the drawing does not depend on the fonts of the machine.
+ */
+const SCRIPT_FONTS = {
+  ru: ["ReportSans-Regular.ttf", "HL Synthetic Sans"],
+  ko: ["ReportSansKR-Regular.ttf", "HL Synthetic Sans KR"],
+} as const;
+
+/** The lines of a short synthetic report in Russian and in Korean. */
+const SCRIPT_LINES: Record<keyof typeof SCRIPT_FONTS, readonly string[]> = {
+  ru: [
+    "Лаборатория Примерного города",
+    "Гемоглобин 14,6 г/дл",
+    "Глюкоза 5,4 ммоль/л",
+    "Холестерин 4,8 ммоль/л",
+  ],
+  ko: [
+    "혈액 검사 결과",
+    "헤모글로빈 14.6 g/dL",
+    "포도당 5.4 mmol/L",
+    "콜레스테롤 4.8 mmol/L",
+  ],
+};
+
+/** A photo of a short synthetic report in Russian or Korean, as JPEG. */
+export function syntheticScriptScanJpeg(
+  script: keyof typeof SCRIPT_FONTS,
+): Buffer {
+  const [file, family] = SCRIPT_FONTS[script];
+  GlobalFonts.registerFromPath(
+    join(process.cwd(), "src", "lib", "doctor-report-pdf", "fonts", file),
+    family,
+  );
+  const canvas = createCanvas(1800, 900);
+  const g = canvas.getContext("2d");
+  g.fillStyle = "#ffffff";
+  g.fillRect(0, 0, 1800, 900);
+  g.fillStyle = "#000000";
+  g.font = `56px "${family}"`;
+  SCRIPT_LINES[script].forEach((line, i) =>
+    g.fillText(line, 120, 180 + i * 150),
+  );
+  return canvas.toBuffer("image/jpeg", 92);
 }

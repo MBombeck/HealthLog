@@ -26,6 +26,7 @@ import { Buffer } from "node:buffer";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
+import { isLocale, type Locale } from "@/lib/i18n/config";
 import { readImageDimensions } from "@/lib/image-dimensions";
 import { annotate } from "@/lib/logging/context";
 
@@ -71,9 +72,9 @@ const RENDER_TIMEOUT_PER_PAGE_MS = 10_000;
 const MIN_PAGE_CHARS = 3;
 
 /**
- * The languages read with, in this order, when their data is present. Lab
- * reports mix German and English; the rest of the app's languages are read
- * when the build carries their data.
+ * The languages a build can carry, in the order the status lists them. Lab
+ * reports mix German and English, so those two are read with every time;
+ * the account's own language joins them when the build carries its data.
  */
 const LANGUAGE_ORDER = [
   "deu",
@@ -88,8 +89,22 @@ const LANGUAGE_ORDER = [
   "kor",
 ] as const;
 
-/** At most this many languages per read: every one slows the read down. */
-const MAX_LANGUAGES = 3;
+/** Read with every time, when present. */
+const BASE_LANGUAGES = ["deu", "eng"] as const;
+
+/** The language data for each app locale. */
+const LOCALE_LANGUAGE: Record<Locale, (typeof LANGUAGE_ORDER)[number]> = {
+  de: "deu",
+  en: "eng",
+  fr: "fra",
+  es: "spa",
+  it: "ita",
+  pl: "pol",
+  ko: "kor",
+  nl: "nld",
+  "pt-BR": "por",
+  ru: "rus",
+};
 
 /** Image types tesseract decodes itself. */
 const OCR_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -155,9 +170,26 @@ export function __resetServerOcrStatusForTests(
   languageDirOverride = languages;
 }
 
-/** The languages one read uses: the first of the present ones. */
-function readLanguages(available: readonly string[]): string[] {
-  return available.slice(0, MAX_LANGUAGES);
+/**
+ * The languages one read uses: German and English, then the account's own
+ * language when it is another one and its data is present. A build carrying
+ * neither German nor English reads with what it has, the first present one.
+ */
+export function readLanguages(
+  available: readonly string[],
+  locale: string | null | undefined,
+): string[] {
+  const languages: string[] = BASE_LANGUAGES.filter((lang) =>
+    available.includes(lang),
+  );
+  const own = isLocale(locale) ? LOCALE_LANGUAGE[locale] : null;
+  if (own && available.includes(own) && !languages.includes(own)) {
+    languages.push(own);
+  }
+  if (languages.length === 0 && available.length > 0) {
+    languages.push(available[0]);
+  }
+  return languages;
 }
 
 export type ServerOcrResult =
@@ -188,6 +220,11 @@ export interface ServerOcrOptions {
   signal?: AbortSignal;
   /** Asked between pages; false when the document is gone. */
   stillWanted?: () => Promise<boolean>;
+  /**
+   * The account's locale, asked once when a page is about to be read: its
+   * language is read with alongside German and English.
+   */
+  locale?: () => Promise<string | null>;
   /** Replaces the child runs; the suites use it. */
   run?: PdfChildLimits["run"];
 }
@@ -330,6 +367,10 @@ async function readPages(
   const startedAt = Date.now();
   const source = await pageImages(bytes, mime, options);
   if (!source.ok) return source;
+  const langs = readLanguages(
+    languages,
+    options.locale ? await options.locale() : null,
+  );
 
   const texts: string[] = [];
   let weighted = 0;
@@ -345,7 +386,7 @@ async function readPages(
         op: "ocr",
         data: image,
         options: {
-          languages: readLanguages(languages),
+          languages: langs,
           langPath: languageDir(),
           ...(source.dpi ? { dpi: source.dpi } : {}),
         },
@@ -395,7 +436,7 @@ async function readPages(
       pagesWithText: texts.length,
       failedPages,
       ms: Date.now() - startedAt,
-      languages: readLanguages(languages).join("+"),
+      languages: langs.join("+"),
     },
   });
   if (texts.length === 0) {
