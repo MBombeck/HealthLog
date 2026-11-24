@@ -330,7 +330,7 @@
     "lib/auth/__tests__/enrollment-proof-second-factor.test.ts": 12,
     "lib/auth/__tests__/login-alert.test.ts": 9,
     "lib/auth/__tests__/login-throttle.test.ts": 4,
-    "lib/auth/__tests__/mfa-enrollment.test.ts": 6,
+    "lib/auth/__tests__/mfa-enrollment.test.ts": 4,
     "lib/auth/__tests__/native-handoff-flow.test.ts": 10,
     "lib/auth/__tests__/oidc-native-handoff.test.ts": 13,
     "lib/auth/__tests__/passkey.test.ts": 7,

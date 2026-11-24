@@ -243,10 +243,6 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
       data: { role: string };
     };
     expect(createArgs.data.role).toBe("ADMIN");
-    // The first account closes open registration.
-    expect(prisma.appSettings.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ update: { registrationEnabled: false } }),
-    );
   });
 
   it.each([

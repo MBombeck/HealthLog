@@ -4,7 +4,7 @@
  *
  *   a) the first account needs the setup token, by body or by the proof
  *      cookie `POST /api/auth/register/setup` sets; it becomes the admin and
- *      closes open registration; the token opens nothing afterwards;
+ *      the token opens nothing afterwards;
  *   b) the admin policy (on by default) gives a factor-less admin the grace
  *      period from when the policy took effect, stamps it on a new session,
  *      and after it refuses a native sign-in and confines the web session to
@@ -81,7 +81,7 @@ describe("the first account", () => {
     expect(await getPrismaClient().user.count()).toBe(0);
   });
 
-  it("becomes the admin with the token and closes registration", async () => {
+  it("becomes the admin with the token", async () => {
     const res = await register({
       ...first,
       password: PASSWORD,
@@ -93,10 +93,6 @@ describe("the first account", () => {
       where: { username: "first" },
     });
     expect(user.role).toBe("ADMIN");
-    const settings = await prisma.appSettings.findUniqueOrThrow({
-      where: { id: "singleton" },
-    });
-    expect(settings.registrationEnabled).toBe(false);
     const audit = await prisma.auditLog.findFirst({
       where: { action: "auth.setup.claimed" },
     });

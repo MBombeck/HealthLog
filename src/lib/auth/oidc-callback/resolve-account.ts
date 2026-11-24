@@ -115,7 +115,7 @@ async function createProvisionedUser(
     const priorUsers = await tx.user.count();
     // The first account becomes the admin: only a browser that showed the
     // setup token may create it, as with the password registration.
-    await firstAccount.claimIfFirst(tx, priorUsers, setupProven);
+    firstAccount.claimIfFirst(priorUsers, setupProven);
     const role = priorUsers === 0 ? "ADMIN" : "USER";
     return tx.user.create({
       data: {

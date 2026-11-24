@@ -144,9 +144,9 @@ Paste the `hlu_…` token, then register with a username, email and password
 (or sign in with single sign-on, if configured). To choose the token
 yourself, set `SETUP_TOKEN` (at least 32 characters) before the first
 start; the log then names the variable instead of printing a token. Once
-the first account exists the token opens nothing, and open registration
-is switched off: invite people from the admin settings, or switch
-registration on there.
+the first account exists the token opens nothing. Every later
+registration creates a regular user; close open registration in the admin
+settings once everyone has an account (invites work either way).
 
 The admin account is asked to add a second factor (an authenticator app,
 a security key or a passkey) within 14 days; after that it can only be

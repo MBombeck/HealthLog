@@ -69,19 +69,31 @@ async function readPolicy(): Promise<{
 }> {
   const row = await readOperatorRow();
   if (row) return row;
-  // No settings row yet: create the singleton with its defaults, so the grace
-  // period of an install that never saved a setting starts once and ends.
-  return prisma.appSettings.upsert({
-    where: { id: "singleton" },
-    create: {},
-    update: {},
-    select: {
-      mfaRequired: true,
-      mfaRequiredForAdmins: true,
-      mfaGraceDays: true,
-      mfaPolicySince: true,
-    },
-  });
+  // No settings row: the defaults, with the grace period counted from when
+  // the migration that introduced the policy ran. A row is not created here:
+  // its column defaults are not what an absent row means elsewhere (the
+  // default locale, for one).
+  return {
+    mfaRequired: false,
+    mfaRequiredForAdmins: true,
+    mfaGraceDays: 14,
+    mfaPolicySince: await policyIntroducedAt(),
+  };
+}
+
+let introducedAt: Promise<Date> | null = null;
+
+/** When migration 0568 ran on this database; now when it cannot be read. */
+function policyIntroducedAt(): Promise<Date> {
+  introducedAt ??= prisma.$queryRaw<{ finished_at: Date | null }[]>`
+      SELECT finished_at FROM _prisma_migrations
+       WHERE migration_name = '0568_mfa_policy_for_admins'`
+    .then((rows) => rows[0]?.finished_at ?? new Date())
+    .catch(() => {
+      introducedAt = null;
+      return new Date();
+    });
+  return introducedAt;
 }
 
 /**

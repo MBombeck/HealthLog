@@ -19,6 +19,7 @@ export const appSettingsBackupSchema = z
     // 1.50. Absent on an older file; the host keeps its own values.
     mfaRequiredForAdmins: z.boolean().optional(),
     mfaGraceDays: z.number().int().min(0).max(90).optional(),
+    mfaPolicySince: isoDateTime.optional(),
     defaultLocale: z.string(),
     telegramGlobal: z.boolean(),
     ntfyGlobal: z.boolean(),

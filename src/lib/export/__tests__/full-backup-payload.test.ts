@@ -54,6 +54,9 @@ const appSettings = {
   id: "singleton",
   registrationEnabled: false,
   mfaRequired: true,
+  mfaRequiredForAdmins: true,
+  mfaGraceDays: 14,
+  mfaPolicySince: new Date("2026-07-01T08:00:00.000Z"),
   defaultLocale: "en",
   telegramGlobal: false,
   ntfyGlobal: false,
@@ -686,6 +689,7 @@ describe("buildFullBackupPayload disaster-recovery mode", () => {
         adminCodexTokenExpiresAt:
           appSettings.adminCodexTokenExpiresAt.toISOString(),
         adminCodexConnectedAt: appSettings.adminCodexConnectedAt.toISOString(),
+        mfaPolicySince: appSettings.mfaPolicySince.toISOString(),
         documentQuotaBytes: appSettings.documentQuotaBytes.toString(),
       },
       measurements: [

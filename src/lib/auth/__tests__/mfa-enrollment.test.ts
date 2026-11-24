@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    appSettings: { findUnique: vi.fn(), upsert: vi.fn() },
+    appSettings: { findUnique: vi.fn() },
+    $queryRaw: vi.fn(),
     webauthnMfaCredential: { count: vi.fn() },
     passkey: { count: vi.fn() },
     session: { update: vi.fn() },
@@ -127,14 +128,14 @@ describe("resolveMfaEnrollment", () => {
     expect((await resolveMfaEnrollment("u1", ADMIN, NOW)).state).toBe("none");
   });
 
-  it("creates the settings row once when an install never saved one", async () => {
-    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
-    vi.mocked(prisma.appSettings.upsert).mockResolvedValue(
-      policy({ mfaPolicySince: NOW }) as never,
-    );
+  it("counts from the migration when an install never saved a setting, and creates no row", async () => {
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ finished_at: NOW }]);
     const result = await resolveMfaEnrollment("u1", ADMIN, NOW);
-    expect(prisma.appSettings.upsert).toHaveBeenCalledTimes(1);
-    expect(result.dueAt?.getTime()).toBe(NOW.getTime() + 14 * DAY_MS);
+    expect(result).toEqual({
+      state: "grace",
+      dueAt: new Date(NOW.getTime() + 14 * DAY_MS),
+    });
   });
 });
 

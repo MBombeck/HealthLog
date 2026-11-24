@@ -24,7 +24,6 @@
 import { createHmac, hkdfSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
-import type { Prisma } from "@/generated/prisma/client";
 import { apiError } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
@@ -171,23 +170,9 @@ export function setupRefusal(): Response {
   );
 }
 
-/**
- * Inside the first-account lock: refuse the first account without the token,
- * and close open registration with it. The admin opens it again, or invites,
- * once the instance is theirs.
- */
-export async function claimIfFirst(
-  tx: Pick<Prisma.TransactionClient, "appSettings">,
-  priorUsers: number,
-  setupProven: boolean,
-): Promise<void> {
-  if (priorUsers > 0) return;
-  if (!setupProven) throw new SetupRequired();
-  await tx.appSettings.upsert({
-    where: { id: "singleton" },
-    create: { registrationEnabled: false },
-    update: { registrationEnabled: false },
-  });
+/** Inside the first-account lock: no first account without the token. */
+export function claimIfFirst(priorUsers: number, setupProven: boolean): void {
+  if (priorUsers === 0 && !setupProven) throw new SetupRequired();
 }
 
 /** After the first account exists: the proof is spent, and the claim audited. */

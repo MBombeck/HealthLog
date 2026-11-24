@@ -221,7 +221,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         FROM pg_advisory_xact_lock(hashtextextended('register:first-admin', 0))
       `;
       const priorUsers = await tx.user.count();
-      await firstAccount.claimIfFirst(tx, priorUsers, setupProven);
+      firstAccount.claimIfFirst(priorUsers, setupProven);
       const role = priorUsers === 0 ? "ADMIN" : "USER";
       return tx.user.create({
         data: {
