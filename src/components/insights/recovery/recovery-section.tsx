@@ -24,7 +24,7 @@ import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { RestModeBanner } from "@/components/insights/rest-mode-banner";
 import type { RestModeAnnotation } from "@/lib/analytics/score/types";
-import type { ChartOverlayKey } from "@/lib/dashboard-layout";
+import type { ChartOverlayKey } from "@/lib/dashboard/chart-overlay-prefs";
 import type { MetricStatusMetricId } from "@/lib/insights/metric-status-registry";
 import { RecoveryMetricBlock } from "@/components/insights/recovery/recovery-metric-block";
 import { ResilienceTile } from "@/components/insights/recovery/resilience-tile";

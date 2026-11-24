@@ -20,7 +20,7 @@ import {
   OPEN_DAY_LINE,
   type ChartDayLinks,
 } from "@/components/day/chart-day-links";
-import type { ComparisonBaseline } from "@/lib/dashboard-layout";
+import type { ComparisonBaseline } from "@/lib/dashboard/chart-overlay-prefs";
 import type { Formatters } from "@/lib/format-locale";
 import { computeTickPositions } from "@/lib/charts/x-axis-density";
 import {

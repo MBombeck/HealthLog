@@ -17,7 +17,7 @@ process.env.ENCRYPTION_KEY ??=
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
-import { CHART_OVERLAY_KEYS } from "@/lib/dashboard-layout";
+import { CHART_OVERLAY_KEYS } from "@/lib/dashboard/chart-overlay-prefs";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");

@@ -7,7 +7,7 @@ import {
   type ChartBucketType,
 } from "@/lib/charts/bucket-time-series";
 import { bucketPeriod, pickRangeBucket } from "@/lib/charts/range-grain";
-import type { ChartRangePoints } from "@/lib/dashboard-layout";
+import type { ChartRangePoints } from "@/lib/dashboard/chart-overlay-prefs";
 
 import { dayKeyToTimestamp } from "../health-chart/series-math";
 

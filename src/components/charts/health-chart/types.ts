@@ -4,7 +4,7 @@ import type { ComponentType } from "react";
 import type {
   ChartOverlayKey,
   ComparisonBaseline,
-} from "@/lib/dashboard-layout";
+} from "@/lib/dashboard/chart-overlay-prefs";
 import type { MetricWindowStats } from "@/lib/charts/window-stats";
 
 import type { DataWindow } from "../mini-window";

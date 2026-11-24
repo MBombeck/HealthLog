@@ -18,8 +18,6 @@ import {
 import {
   resolveDashboardLayout,
   DASHBOARD_WIDGET_CATALOGUE_IDS,
-  COMPARISON_BASELINES,
-  CHART_OVERLAY_KEYS,
   SCORE_RING_IDS,
   MAX_SELECTED_SCORE_RINGS,
   HERO_RING_IDS,
@@ -28,6 +26,10 @@ import {
   type DashboardLayout,
   type DashboardLayoutWithToken,
 } from "@/lib/dashboard-layout";
+import {
+  COMPARISON_BASELINES,
+  CHART_OVERLAY_KEYS,
+} from "@/lib/dashboard/chart-overlay-prefs";
 import { buildDashboardLayout } from "@/lib/dashboard/widgets/read-layout";
 import { resolveUnavailableWidgetIds } from "@/lib/dashboard/widgets/unavailable-widgets";
 import { dropUnknownWidgetIds } from "@/lib/dashboard/widgets/unknown-ids";

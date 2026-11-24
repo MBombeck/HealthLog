@@ -1,7 +1,7 @@
 "use client";
 
 import { Segmented } from "@/components/ui/segmented";
-import type { ChartRangePoints } from "@/lib/dashboard-layout";
+import type { ChartRangePoints } from "@/lib/dashboard/chart-overlay-prefs";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
