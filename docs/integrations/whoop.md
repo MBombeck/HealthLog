@@ -36,10 +36,10 @@ grant scoped to credentials they control.
    keep the secret out of any chat log; it grants read access to the
    linked account's full WHOOP history.
 
-## 2. Wire the credentials in Settings → Integrations
+## 2. Wire the credentials in Settings > Integrations
 
 WHOOP credentials are stored per user, not in `.env`. Sign in as the
-target user, open **Settings → Integrations → WHOOP**, and paste the
+target user, open **Settings > Integrations > WHOOP**, and paste the
 client ID and secret. They are encrypted AES-256-GCM at rest.
 
 ## 3. Connect

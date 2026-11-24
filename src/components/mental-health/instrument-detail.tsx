@@ -72,7 +72,7 @@ export function InstrumentDetail({
               data-slot="instrument-detail-last-score"
             >
               {last.totalScore}
-              {" · "}
+              {", "}
               {t(`mentalHealth.band.${last.instrument}.${last.severityBand}`)}
             </span>
           </div>

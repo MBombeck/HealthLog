@@ -451,7 +451,6 @@ function finaliseSnapshot(input: {
       action: { name: "coach.grounding.attached" },
       meta: {
         metrics: groundingMetrics.map((m) => m.metric).sort(),
-        hasDiabetes: input.hasDiabetes,
       },
     });
   }

@@ -99,7 +99,6 @@ async function handlePost(request: NextRequest) {
       action: { name: "insights.recommendation.feedback" },
       meta: {
         outcome: "created",
-        severity: body.recommendationSeverity,
         helpful: body.helpful,
         providerType: attribution.providerType,
       },

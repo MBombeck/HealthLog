@@ -313,7 +313,7 @@ export function TodayHero({
             className="text-muted-foreground text-sm"
           >
             {signalLine.headline}
-            {signalLine.headline && signalLine.delta ? " · " : null}
+            {signalLine.headline && signalLine.delta ? ", " : null}
             {signalLine.delta}
           </p>
         ) : null}

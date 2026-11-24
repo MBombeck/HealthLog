@@ -211,7 +211,7 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
                             <p className="text-foreground truncate text-sm">
                               {[row.practice, row.specialty]
                                 .filter(Boolean)
-                                .join(" · ")}
+                                .join(", ")}
                             </p>
                           ) : null}
                           {row.location ? (

@@ -65,8 +65,7 @@ export function MedicationStatusPill({
       />
       {!compact && (
         <span className={suffixClass}>
-          {" "}
-          —{" "}
+          ,{" "}
           {formatTimeWindowRange(windowStart, windowEnd, locale, fmt.wallTime)}
         </span>
       )}

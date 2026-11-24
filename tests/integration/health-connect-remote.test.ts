@@ -186,6 +186,36 @@ describe("scheduled Health Connect fetch", () => {
     expect(sent).toHaveLength(1);
   });
 
+  it("fetches the same file again when its import failed, unless the file was refused", async () => {
+    await save({
+      folderUrl: `${origin}/remote.php/dav/files/me/Health`,
+      username: "me",
+      password: "app-pass",
+    });
+    expect(await pass()).toBe("imported");
+    const prisma = getPrismaClient();
+    const failJob = (failureReason: string) =>
+      prisma.importJob.updateMany({
+        where: { userId, kind: "health_connect" },
+        data: { status: "failed", failureReason, completedAt: new Date() },
+      });
+
+    // The import stopped on the server's side: the same file is due again.
+    await failJob(
+      "staging_missing: the uploaded file is no longer on the server.",
+    );
+    expect(await pass()).toBe("imported");
+    expect(sent).toHaveLength(2);
+    expect(requests.at(-1)?.headers["if-none-match"]).toBeUndefined();
+
+    // A file the importer refused is not fetched again until it changes.
+    await failJob(
+      "not_health_connect: the archive holds no Health Connect database",
+    );
+    expect(await pass()).toBe("unchanged");
+    expect(sent).toHaveLength(2);
+  });
+
   it("refuses a private folder that is not granted", async () => {
     delete process.env.HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS;
     const saved = await save({

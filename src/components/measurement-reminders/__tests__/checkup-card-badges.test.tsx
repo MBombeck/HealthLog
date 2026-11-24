@@ -72,3 +72,11 @@ describe("checkup state badges", () => {
     },
   );
 });
+
+describe("checkup next/last lines", () => {
+  it("draws no last-done line, and no dash, for a checkup never done", () => {
+    const html = render("cards");
+    expect(html).not.toContain("Last done");
+    expect(html).not.toContain("—");
+  });
+});

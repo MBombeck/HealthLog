@@ -11,7 +11,7 @@
  * of the seed is that the lists the contract run reads are not empty.
  */
 import { NextRequest } from "next/server";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { join } from "node:path";
 
 import type { PrismaClient } from "@/generated/prisma/client";
@@ -347,6 +347,24 @@ export async function seedContractAccount(
       reason: "Check-up",
     }),
   );
+  keep(
+    "treatmentSeries",
+    await write("treatment-series", "POST", "api/treatment-series", {
+      title: "Physiotherapy",
+      kind: "THERAPY",
+      plannedSessions: 10,
+      startsOn: dayKey(daysAgo(20)),
+    }),
+  );
+  if (ids.treatmentSeries) {
+    // One session, so the series read answers with a visit in its list.
+    await write("treatment-series-session", "POST", "api/encounters", {
+      kind: "THERAPY",
+      occurredAt: daysAgo(10).toISOString(),
+      reason: "Physiotherapy session",
+      seriesId: ids.treatmentSeries,
+    });
+  }
   keep(
     "vaccination",
     await write("vaccination", "POST", "api/vaccinations", {
@@ -1115,6 +1133,42 @@ export async function seedContractAccount(
     });
   }
 
+  // ── Wallet pass with one registered device ─────────────────────────────
+  // The Apple Wallet web service lists a device's updated passes. The pass is
+  // written through the store the issuing route uses; the device registers
+  // the way Wallet does, by its library id's hash.
+  const { hashToken } = await import("@/lib/auth/hmac");
+  const { mintCardToken } = await import("@/lib/emergency-card/token");
+  const { createWalletPass } =
+    await import("@/lib/emergency-card/wallet-pass/store");
+  const walletToken = mintCardToken();
+  const walletPass = await prisma.$transaction((tx) =>
+    createWalletPass(tx, {
+      userId: CONTRACT_USER_ID,
+      createdById: CONTRACT_USER_ID,
+      token: walletToken,
+      serialNumber: randomUUID(),
+      fields: ["NAME", "BLOOD_TYPE"],
+      expiresAt: null,
+      signer: "RELAY",
+      passTypeIdentifier: WALLET_PASS_TYPE,
+      teamIdentifier: "ABCDE12345",
+      webServiceOrigin: "https://health.example.org",
+      contentHash: "0".repeat(64),
+      contentChangedAt: new Date(),
+      consentTextVersion: "1",
+    }),
+  );
+  await prisma.walletPassRegistration.create({
+    data: {
+      walletPassId: walletPass.walletPassId,
+      deviceLibraryIdHash: hashToken(WALLET_DEVICE_ID),
+      pushTokenEncrypted: encrypt("ab".repeat(32)),
+    },
+  });
+  ids.walletDevice = WALLET_DEVICE_ID;
+  ids.walletPassType = WALLET_PASS_TYPE;
+
   // Fixed keys for the parameters that are not row ids.
   ids.today = dayKey(daysAgo(1));
   ids.paperless = "paperless";
@@ -1224,4 +1278,13 @@ const PATH_PARAM_SOURCES: Record<string, Record<string, string>> = {
   "/api/documents/sources/{system}/search": { system: "paperless" },
   "/api/day/{date}": { date: "today" },
   "/api/record-settings/{family}": { family: "profileFamily" },
+  "/api/treatment-series/{id}": { id: "treatmentSeries" },
+  "/api/wallet/apple/v1/devices/{deviceId}/registrations/{passTypeId}": {
+    deviceId: "walletDevice",
+    passTypeId: "walletPassType",
+  },
 };
+
+/** The device library id and pass type the seeded wallet pass is under. */
+const WALLET_DEVICE_ID = "contractdevice0001";
+const WALLET_PASS_TYPE = "pass.dev.healthlog.emergency";

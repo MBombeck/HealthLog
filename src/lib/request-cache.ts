@@ -49,6 +49,41 @@ export interface MemoizeOptions {
    * sets this.
    */
   freshInBackground?: boolean;
+  /**
+   * Memoise only inside a GET or HEAD request. A read that a write in the
+   * same request may change (a registration the request is updating, a
+   * preference it just stored) is shared between the readers of a GET, which
+   * writes nothing, and read afresh on every call anywhere else.
+   */
+  readsOnly?: boolean;
+}
+
+function isReadRequest(event: WideEventBuilder): boolean {
+  const method = (event.getHttpMethod?.() ?? "").toUpperCase();
+  return method === "GET" || method === "HEAD";
+}
+
+/**
+ * Hand a row the request has already read to later readers of the same
+ * request, under `key`. Only inside a GET or HEAD request, for the reason
+ * `readsOnly` gives; a key already present is left alone.
+ */
+export function primePerRequest<T>(key: string, value: T): void {
+  const event = getEvent();
+  if (!event || event.getKind?.() === "background" || !isReadRequest(event)) {
+    return;
+  }
+  const cache = getCache(event);
+  if (!cache.has(key)) cache.set(key, Promise.resolve(value));
+}
+
+/** What `primePerRequest` (or a memoised read) stored under `key`, if any. */
+export function peekPerRequest<T>(key: string): Promise<T> | undefined {
+  const event = getEvent();
+  if (!event || event.getKind?.() === "background" || !isReadRequest(event)) {
+    return undefined;
+  }
+  return getCache(event).get(key) as Promise<T> | undefined;
 }
 
 /**
@@ -72,6 +107,9 @@ export function memoizePerRequest<T>(
     return factory();
   }
   if (options.freshInBackground && event.getKind() === "background") {
+    return factory();
+  }
+  if (options.readsOnly && !isReadRequest(event)) {
     return factory();
   }
   const cache = getCache(event);

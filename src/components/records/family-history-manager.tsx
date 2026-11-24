@@ -81,7 +81,7 @@ export function FamilyHistoryManager() {
         : null,
     ]
       .filter(Boolean)
-      .join(" · ");
+      .join(", ");
     return (
       <li
         key={row.id}

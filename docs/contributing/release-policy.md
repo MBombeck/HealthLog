@@ -94,7 +94,10 @@ An out-of-schedule release does not move or replace the next Saturday.
 - **`release/vX.Y.0`** collects the next minor. It is cut from `main` the day
   the previous minor ships and takes features through `feat/X` branches. After
   each patch tag, `main` is merged into it: one direction, never a rebase,
-  never a force-push.
+  never a force-push. A pull request into it, and a push to it, runs the same
+  battery as one into `main`; only the fix-line check is `main`'s alone.
+  `src/__tests__/release-branch-ci-coverage-guard.test.ts` fails when a gate
+  workflow covers `main` and not `release/**`.
 - **`CHANGELOG.md`** keeps an `## [Unreleased]` section at the top. Each fix
   adds its line there in the same pull request; on release day the section
   becomes the version heading. The release branch keeps its own section for
