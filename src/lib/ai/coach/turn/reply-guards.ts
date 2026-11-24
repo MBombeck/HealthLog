@@ -23,6 +23,7 @@ import {
   figuresForPersistence,
 } from "@/lib/ai/coach/grounding-ledger";
 import { scrubUnknownLearnLinks } from "@/lib/ai/coach/learn-link-guard";
+import { plainSeparators } from "@/lib/ai/plain-separators";
 import { parseSuggestReminder } from "@/lib/ai/coach/suggest-reminder";
 import {
   parseRememberSentinel,
@@ -192,7 +193,7 @@ export async function guardReply(args: {
     latest: conversation.latestMessages,
   });
   const resultRefs = stripResultRefs(replyText);
-  replyText = resultRefs.prose.trim() || replyText;
+  replyText = plainSeparators(resultRefs.prose.trim() || replyText);
 
   // v1.18.10 — OUTBOUND safety screen on the assembled assistant
   // reply, before persistence and streaming. The inbound `detectRefusal`
