@@ -211,6 +211,20 @@ worker container that start together wait for each other on an advisory lock
 and derive the same password. Going back to 1.46 runs as the owner, as 1.46
 always did, and finds nothing in the queue schema it did not create.
 
+### v1.50.0 notes
+
+- `0566` names each Live Activity start by its own row. It adds
+  `push_relay_deliveries.la_reported_at` and `devices.la_start_ids_at`
+  (both nullable, no rewrite), marks every Live Activity start but each
+  device's last one as reported (and the last one too when the device
+  already registered a server-started Activity), and drops the four
+  `devices` columns that held the last start (`la_start_ref`,
+  `la_started_medication_id`, `la_started_slot`, `la_started_at`). The
+  update touches only `LIVE_ACTIVITY_START` rows. One transaction, 5 s lock
+  wait, retried on boot after a timeout. An image before v1.50.0 needs
+  those four columns back (see Rollback below); added empty, they read as
+  "no start on record", and at worst a dose's Activity starts once more.
+
 ### v1.49.0 notes
 
 The sequence above covers this release, with one possible stop (`0517`, see
@@ -709,7 +723,8 @@ roll back:
    release drops are named in its notes above: for v1.46.0 that is
    `users.preview_features_json` (`0485`) and the four
    `app_settings.encryption_key_backup_confirmed_*` columns (`0487`); the
-   key backup confirmation then has to be given again on v1.45.
+   key backup confirmation then has to be given again on v1.45. For
+   v1.50.0 it is the four `devices.la_start*` columns of `0566`.
 4. Rolling back from v1.40.2 or later to v1.40.1 or earlier: an account
    that saved the Coach lookback "Last year" reads its whole Coach
    preference blob as defaults on the older version, metric exclusions

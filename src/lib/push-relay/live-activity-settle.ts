@@ -6,14 +6,14 @@
  * A start or update counts as done only once the relay answered `accepted`,
  * which it does once Apple took the push:
  *
- * - a start: its outbox row keeps the dose it was for (`medicationId`,
- *   `slotInstant`), so no later pass starts that dose twice
- *   ({@link doseStartHeld}). The device row names the last start
- *   (`laStartedMedicationId`, `laStartedSlot`, `laStartRef`); `accepted`
- *   sets `laStartedAt`, and only then does `push.device.liveActivityStarted`
- *   name the dose. A start that failed for good (refused, or dropped at its
- *   deadline) clears the device's dose again, and its row no longer holds
- *   it, so a later pass starts it anew.
+ * - a start: its outbox row is the start's whole record. It keeps the dose
+ *   it was for (`medicationId`, `slotInstant`), so no later pass starts that
+ *   dose twice ({@link doseStartHeld}); its `ref` is the start id the relay
+ *   writes into the Activity's attributes; and only once `accepted` does
+ *   `push.device` name it (`live-activity-started.ts`). A start that failed
+ *   for good (refused, or dropped at its deadline) holds nothing, so a later
+ *   pass starts the dose anew. The row's own status says all of it: nothing
+ *   else is written here.
  * - an update: `accepted` stores its content state as the Activity's
  *   `lastRelayState`; a failed one leaves the state that is really showing,
  *   so the next pass sends the change again.
@@ -63,23 +63,7 @@ function activityOf(item: unknown): {
 export async function settleLiveActivityPush(
   push: SettledPush,
   status: "accepted" | "dropped" | "failed",
-  now: Date = new Date(),
 ): Promise<void> {
-  if (push.eventType === LA_START_EVENT) {
-    await prisma.device.updateMany({
-      where: { id: push.deviceId, laStartRef: push.ref },
-      data:
-        status === "accepted"
-          ? { laStartedAt: now }
-          : {
-              laStartedMedicationId: null,
-              laStartedSlot: null,
-              laStartedAt: null,
-              laStartRef: null,
-            },
-    });
-    return;
-  }
   if (push.eventType !== LA_UPDATE_EVENT || status !== "accepted") return;
   const { token, state } = activityOf(push.item);
   if (!token || !state) return;
@@ -157,26 +141,29 @@ export async function releaseReopenedDoseStarts(
   doses: ReadonlyArray<{ medicationId: string; slotInstant: Date }>,
 ): Promise<void> {
   for (const dose of doses) {
-    const slotInstant = activitySlotWindow(dose.slotInstant);
-    await prisma.pushRelayDelivery.updateMany({
-      where: {
-        device: { userId },
-        eventType: LA_START_EVENT,
-        medicationId: dose.medicationId,
-        slotInstant,
-      },
-      data: { medicationId: null, slotInstant: null },
-    });
-    await prisma.device.updateMany({
-      where: {
-        userId,
-        laStartRef: { not: null },
-        laStartedMedicationId: dose.medicationId,
-        laStartedSlot: slotInstant,
-      },
-      data: { laStartRef: null },
-    });
+    await releaseDoseStarts({ device: { userId } }, dose);
   }
+}
+
+/**
+ * Let the starts of one dose go: their rows no longer hold it
+ * ({@link doseStartHeld}), so a later pass may start it again, and they hold
+ * no other start back. `where` scopes the rows (one device, or the owner's
+ * devices).
+ */
+export async function releaseDoseStarts(
+  where: Prisma.PushRelayDeliveryWhereInput,
+  dose: { medicationId: string; slotInstant: Date },
+): Promise<void> {
+  await prisma.pushRelayDelivery.updateMany({
+    where: {
+      ...where,
+      eventType: LA_START_EVENT,
+      medicationId: dose.medicationId,
+      slotInstant: activitySlotWindow(dose.slotInstant),
+    },
+    data: { medicationId: null, slotInstant: null },
+  });
 }
 
 /** The Activity tokens an update is still in flight for, lower case. */

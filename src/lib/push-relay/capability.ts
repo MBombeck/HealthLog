@@ -24,7 +24,8 @@
  *
  * `push.device`: `transport` (`relay` | `direct` | `none`), `consent`,
  * `relayState`, `intakeSync` (`ok` | `degraded`), `liveActivityConsent`,
- * `liveActivityStarted` (`{ medicationId, slotInstant }` | null).
+ * `liveActivityStarted` (`{ medicationId, slotInstant }` | null) and
+ * `liveActivityStarts` (`[{ startId, medicationId, slotInstant }]`).
  */
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
@@ -50,6 +51,8 @@ import { readOperatorRow } from "@/lib/settings/operator-row";
 import { relayStateAt } from "@/lib/push-relay/relay-state";
 import {
   liveActivityStartedOf,
+  liveActivityStartsOf,
+  type LiveActivityStart,
   type LiveActivityStarted,
 } from "@/lib/push-relay/live-activity-started";
 import {
@@ -102,8 +105,10 @@ export interface DevicePushBlock {
   senderKeys: PublishedSenderKey[];
   relayInstanceId: string | null;
   liveActivityConsent: boolean;
-  /** The dose the server-started Live Activity shows (`live-activity-started.ts`). */
+  /** The dose of the device's last server start (`live-activity-started.ts`). */
   liveActivityStarted: LiveActivityStarted | null;
+  /** Every server start that may still run, by start id. */
+  liveActivityStarts: LiveActivityStart[];
 }
 
 /** The health the app sees for a registration. */
@@ -376,9 +381,6 @@ const DEVICE_BLOCK_SELECT = {
   envelopeReportedAt: true,
   liveActivityConsentAt: true,
   userId: true,
-  laStartedMedicationId: true,
-  laStartedSlot: true,
-  laStartedAt: true,
   relayConflictAt: true,
 } as const;
 
@@ -406,13 +408,15 @@ async function devicePushBlockOf(
 ): Promise<DevicePushBlock> {
   const row = inputs.registration;
   const transport = device ? displayTransport(device, inputs) : "none";
-  const [intakeSync, senderKeys, liveActivityStarted] = await Promise.all([
-    device && transport === "relay"
-      ? intakeSyncOf(device, row).then((sync) => sync.state)
-      : ("ok" as const),
-    inputs.senderKeys,
-    device ? liveActivityStartedOf(device) : null,
-  ]);
+  const [intakeSync, senderKeys, liveActivityStarted, liveActivityStarts] =
+    await Promise.all([
+      device && transport === "relay"
+        ? intakeSyncOf(device, row).then((sync) => sync.state)
+        : ("ok" as const),
+      inputs.senderKeys,
+      device ? liveActivityStartedOf(device) : null,
+      device ? liveActivityStartsOf(device) : [],
+    ]);
   return {
     transport,
     envelope: device?.pushKeyPublic && transport !== "none" ? 1 : null,
@@ -425,6 +429,7 @@ async function devicePushBlockOf(
       device?.relayConsentAt && device.liveActivityConsentAt,
     ),
     liveActivityStarted,
+    liveActivityStarts,
   };
 }
 

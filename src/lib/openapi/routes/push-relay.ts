@@ -156,10 +156,34 @@ export const devicePushBlockSchema = z
       .object({
         medicationId: z.string(),
         slotInstant: isoDateTime(),
+        startId: z
+          .string()
+          .describe("v1.50.0. The start's id, as in `liveActivityStarts`."),
+        startedAt: isoDateTime().describe(
+          "v1.50.0. When the relay accepted the start.",
+        ),
       })
       .nullable()
       .describe(
-        "The dose the Live Activity the server started on this device (over the relay) shows. The start push never carries it, so the app reads it here, and in the `POST /api/devices` answer right after it registers the started Activity's token (`relayStart: true`). Null until the relay accepted the start (a start still in flight or one the relay refused shows null; a refused one is tried again later), when no server start is running, or once that slot is taken, skipped or missed, its medication paused, ended or deleted, or the Activity ended.",
+        "The dose of the last Live Activity the server started on this device (over the relay). The start push never carries it, so the app reads it here, and in the `POST /api/devices` answer right after it registers the started Activity's token (`relayStart: true`). Null until the relay accepted the start (a start still in flight or one the relay refused shows null; a refused one is tried again later), when no server start is running, or once that slot is taken, skipped or missed, its medication paused, ended or deleted, or the Activity ended. Names one start only: an app that reads the start id uses `liveActivityStarts`.",
+      ),
+    liveActivityStarts: z
+      .array(
+        z.object({
+          startId: z
+            .string()
+            .describe(
+              "The start id, the `s` attribute the relay writes into the Activity's `HealthLogDoseAttributes`: opaque ASCII of at most 64 characters, random, holding no medication, dose or time.",
+            ),
+          medicationId: z.string(),
+          slotInstant: isoDateTime(),
+          startedAt: isoDateTime().describe(
+            "When the relay accepted the start.",
+          ),
+        }),
+      )
+      .describe(
+        "v1.50.0. Every Live Activity the server started on this device that may still run, oldest first: started over the relay, accepted by it in the last eight hours, its dose still open on a medication that keeps its Live Activity opt-in. Name a relay-started Activity by the entry whose `startId` equals its `s` attribute; an Activity whose id is not listed has nothing left to show. Empty when none runs.",
       ),
   })
   .meta({ id: "DevicePushState" });

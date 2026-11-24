@@ -36,6 +36,7 @@ import {
   type RelayHealth,
 } from "@/lib/push-relay/capability";
 import { relayConfig } from "@/lib/push-relay/config";
+import { LA_START_EVENT } from "@/lib/push-relay/live-activity-settle";
 import { relayStateAt } from "@/lib/push-relay/relay-state";
 import { loadRegistration } from "@/lib/push-relay/registration";
 import {
@@ -119,8 +120,13 @@ export const DIAGNOSTIC_DEVICE_SELECT = {
   relayState: true,
   relayConflictAt: true,
   relayBoundAt: true,
-  laStartedAt: true,
   envelopeReportedAt: true,
+  relayDeliveries: {
+    where: { eventType: LA_START_EVENT },
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    select: { acceptedAt: true },
+  },
 } as const;
 
 export function diagnosticDevice(d: {
@@ -132,8 +138,9 @@ export function diagnosticDevice(d: {
   relayState: string;
   relayConflictAt: Date | null;
   relayBoundAt: Date | null;
-  laStartedAt: Date | null;
   envelopeReportedAt: Date | null;
+  /** The device's last Live Activity start, when there is one. */
+  relayDeliveries: ReadonlyArray<{ acceptedAt: Date | null }>;
 }): DiagnosticDevice {
   const { prefix, suffix } = maskApnsToken(d.apnsToken);
   return {
@@ -146,7 +153,8 @@ export function diagnosticDevice(d: {
     lastSeenAt: d.lastSeen.toISOString(),
     relayState: relayStateAt(d),
     relayBoundAt: d.relayBoundAt?.toISOString() ?? null,
-    liveActivityStartedAt: d.laStartedAt?.toISOString() ?? null,
+    liveActivityStartedAt:
+      d.relayDeliveries[0]?.acceptedAt?.toISOString() ?? null,
     envelopesReportedAt: d.envelopeReportedAt?.toISOString() ?? null,
   };
 }

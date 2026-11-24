@@ -173,6 +173,7 @@ describe("GET /api/admin/notifications/diagnostic — device masking", () => {
         apnsToken: token64,
         apnsEnvironment: "production",
         lastSeen: new Date("2026-05-22T10:00:00.000Z"),
+        relayDeliveries: [],
       },
     ] as never);
 
@@ -203,6 +204,7 @@ describe("GET /api/admin/notifications/diagnostic — device masking", () => {
         apnsToken: null,
         apnsEnvironment: null,
         lastSeen: new Date("2026-05-22T11:00:00.000Z"),
+        relayDeliveries: [],
       },
     ] as never);
 

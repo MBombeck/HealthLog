@@ -125,6 +125,8 @@ export class FakeRelay {
   registrationInvites: Array<string | undefined> = [];
   /** Merged into the `GET /v1/status` answer (the relay's state, devices). */
   status: Record<string, unknown> = {};
+  /** Write the start id (`s`, the item's ref) into a start's attributes. */
+  startIds = false;
   /** Every manifest `POST /v1/wallet/apple/sign` received, as its bytes. */
   walletManifests: Buffer[] = [];
   /** Every item `POST /v1/wallet/apple/notify` received. */
@@ -471,7 +473,11 @@ export class FakeRelay {
               ...(event === "start"
                 ? {
                     "attributes-type": "HealthLogDoseAttributes",
-                    attributes: { v: 1 },
+                    // A relay that names its starts copies the item's ref
+                    // into the attributes as the start id.
+                    attributes: this.startIds
+                      ? { v: 1, s: item.ref }
+                      : { v: 1 },
                   }
                 : {}),
             },
