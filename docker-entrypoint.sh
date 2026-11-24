@@ -1,6 +1,18 @@
 #!/bin/sh
 set -e
 
+# ── Secrets from files ───────────────────────────────────────
+# Every secret can come from a file named by `<NAME>_FILE` (Docker secrets, a
+# Vault agent; docs/self-hosting/secrets.md). Resolved first, so the
+# checks below and every process after them see plain variables. The script
+# hands `export NAME='…'` lines over on descriptor 3 only, never on stdout or
+# stderr, and unsets each `_FILE` variable it read. A file that cannot be
+# read, an empty one, or a value that disagrees with `<NAME>` stops the boot
+# with the variable named.
+secret_exports="$(node scripts/secret-files.mjs export 3>&1 1>&2)" || exit 1
+eval "$secret_exports"
+unset secret_exports
+
 # ── Validate required env vars ───────────────────────────────
 # We do this in the entrypoint instead of in docker-compose.yml's
 # environment block (which used to use the ${VAR:?error} syntax)

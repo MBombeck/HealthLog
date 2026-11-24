@@ -6,16 +6,16 @@
  * first. That was the oldest open row of the day: a dose an hour and a half
  * past its window, of a medication whose Live Activity opt-in was off, won
  * over the opted-in dose that was due, on the first pass after the consent.
- * The rule now lives in `pickStartDose` (`src/lib/push-relay/live-activity.ts`):
+ * The rule now lives in `startCandidates` (`src/lib/push-relay/live-activity.ts`):
  * the opt-in, the lead, pending or due by the resolver, earliest slot, ties
- * on the medication id. Its matrix is in
+ * on the medication id; the pass tries the candidates in that order. Its matrix is in
  * `src/lib/push-relay/__tests__/live-activity-start-selection.test.ts`.
  *
  * What is frozen here:
  *   - exactly one file builds a relay start item (`eventType: LA_START_EVENT`
  *     beside `event: "start"`), so a second start path cannot pick its dose
  *     some other way;
- *   - that file reads its candidate through `pickStartDose` over
+ *   - that file reads its candidates through `startCandidates` over
  *     `openActivityDoses`, and never takes an element of the open doses by
  *     position;
  *   - the dose a started Activity reports to the app, and the pass's end of
@@ -63,10 +63,10 @@ describe("the relay Live Activity start", () => {
   it("picks its dose through the one start rule", () => {
     const text = code(START_FILE, [
       "async function startItem",
-      "pickStartDose",
+      "startCandidates",
     ]);
     expect(
-      text.match(/pickStartDose\(\s*await\s+openActivityDoses\(/g) ?? [],
+      text.match(/startCandidates\(\s*await\s+openActivityDoses\(/g) ?? [],
     ).toHaveLength(1);
     // No candidate by position: `const [dose] = await openActivityDoses(…)`
     // or `(await openActivityDoses(…))[0]` is the defect this guard exists for.

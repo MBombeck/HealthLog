@@ -83,13 +83,20 @@ const deviceRegisterRequest = z
             .string()
             .optional()
             .describe(
-              "The medication the Activity shows. Required unless `relayStart` is true.",
+              "The medication the Activity shows. Required unless `relayStart` is true or `startId` is given.",
             ),
           relayStart: z
             .boolean()
             .optional()
             .describe(
               "The Activity was started by the server over the relay (attributes type `HealthLogDoseAttributes`), so the app does not know its dose: the server fills in `medicationId` and `slotInstant` of the dose it started. Send its update token with an `hl-activity-v1` statement as for any Activity. Only Activities registered with it get relay updates; one the app started itself gets the direct path and the end push only. The mark sticks to the token on later posts of the set; a rotated token is sent with it again.",
+            ),
+          startId: z
+            .string()
+            .regex(/^[A-Za-z0-9._:-]{1,64}$/)
+            .optional()
+            .describe(
+              "v1.50.0. The start id of an Activity the server started over the relay: the `s` attribute of its `HealthLogDoseAttributes`, sent as read, never derived: opaque ASCII of at most 64 characters. Implies `relayStart`. The server names the Activity's dose from its own record of that start, whatever `medicationId` and `slotInstant` say, so several relay-started Activities can run at once, one per dose. A start it no longer holds (its dose answered and reopened, or the device signed out) names none, and the Activity is ended. Once a relay-started Activity is reported with it, the device may run several relay-started Activities at once; one reported without it puts the device back to one. `push.device.liveActivityStarts` lists the starts by this id.",
             ),
           slotInstant: isoDateTime()
             .optional()

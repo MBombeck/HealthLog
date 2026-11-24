@@ -332,3 +332,55 @@ describe("environment inventory", () => {
     ).not.toThrow();
   });
 });
+
+describe("checkEnv — secrets from files", () => {
+  const SECRET_MANIFEST: Parameters<typeof checkEnv>[0] = {
+    description: "secrets",
+    groups: [
+      {
+        name: "Core",
+        description: "required",
+        required: true,
+        variables: [
+          { name: "ENCRYPTION_KEY", purpose: "crypto", secret: true },
+          { name: "APP_URL", purpose: "url" },
+        ],
+      },
+    ],
+  };
+
+  it("counts NAME_FILE as setting a secret, and only a secret", () => {
+    const out = checkEnv(SECRET_MANIFEST, {
+      ENCRYPTION_KEY_FILE: "/run/secrets/encryption_key",
+      APP_URL_FILE: "/run/secrets/app_url",
+    });
+    expect(out.find((r) => r.variable === "ENCRYPTION_KEY")).toMatchObject({
+      present: true,
+      satisfiedBy: "ENCRYPTION_KEY_FILE",
+    });
+    expect(out.find((r) => r.variable === "APP_URL")?.present).toBe(false);
+  });
+
+  it("reports NAME and NAME_FILE both set as a required error", () => {
+    const out = checkEnv(SECRET_MANIFEST, {
+      ENCRYPTION_KEY: "k",
+      ENCRYPTION_KEY_FILE: "/run/secrets/encryption_key",
+      APP_URL: "https://example.com",
+    });
+    const row = out.find((r) => r.variable === "ENCRYPTION_KEY");
+    expect(row).toMatchObject({ present: false, required: true });
+    expect(row?.note).toBe(
+      "Both ENCRYPTION_KEY and ENCRYPTION_KEY_FILE are set. Set one of them.",
+    );
+  });
+
+  it("ignores an empty NAME_FILE, as the compose whitelist sends it", () => {
+    const out = checkEnv(SECRET_MANIFEST, {
+      ENCRYPTION_KEY: "k",
+      ENCRYPTION_KEY_FILE: "",
+    });
+    expect(out.find((r) => r.variable === "ENCRYPTION_KEY")?.present).toBe(
+      true,
+    );
+  });
+});

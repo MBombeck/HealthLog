@@ -16,15 +16,23 @@
  * The content state is the relay's closed template and nothing else
  * ({@link relayContentState}): six keys, fixed types, closed enumerations, a
  * bounded `countdownTarget` in unix seconds, no medication name and no free
- * text. A start names the fixed attributes the relay sets itself
- * (`HealthLogDoseAttributes`, `{ "v": 1 }`); the dose never travels.
+ * text. A start names the attributes the relay sets itself
+ * (`HealthLogDoseAttributes`, `{ "v": 1, "s": "<start id>" }`); the dose
+ * never travels.
  *
- * The pass (`push-live-activity`, every five minutes) starts an Activity for
- * one dose of each eligible device, once per dose, unless the device already
- * runs one for it. Once per dose is the server's own record: each start's
- * outbox row keeps its dose (`doseStartHeld`), before the device reports the
- * Activity and across restarts. The dose is the earliest of those entering their window
- * ({@link pickStartDose}): its medication has the person's Live Activity
+ * The pass (`push-live-activity`, every five minutes) starts at most one
+ * Activity per eligible device and pass, once per dose, unless the device
+ * already runs one for it. Once per dose is the server's own record: each
+ * start's outbox row keeps its dose (`doseStartHeld`), before the device
+ * reports the Activity and across restarts; the row's ref is the start id
+ * the relay writes into the Activity's attributes (`"s"`), which the app
+ * echoes when it registers the Activity, so each Activity is named by its
+ * own start. How many run at once depends on the app: one that echoes the
+ * start id gets one Activity per dose, up to {@link MAX_DEVICE_ACTIVITIES};
+ * one that does not keeps to one relay-started Activity on the device
+ * ({@link runDeviceLiveActivities}). The dose is the earliest of those
+ * entering their window ({@link startCandidates}): its medication has the
+ * person's Live Activity
  * opt-in (`liveActivityEnabled`), it lies no more than the lead ahead, and
  * the resolver calls it pending or due. A dose already overdue, missed,
  * taken or skipped never gets a start, so the first pass after the consent
@@ -49,6 +57,7 @@
  * A server with its own APNs key does none of this: its direct path is
  * unchanged.
  */
+import { randomBytes } from "node:crypto";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
@@ -96,8 +105,13 @@ import {
   LA_UPDATE_EVENT,
   refusedRecently,
   doseStartHeld,
+  releaseDoseStarts,
   updatesInFlight,
 } from "@/lib/push-relay/live-activity-settle";
+import {
+  RELAY_ACTIVITY_RUNNING_MAX_MS,
+  unreportedStartCount,
+} from "@/lib/push-relay/live-activity-started";
 
 /**
  * How long before its scheduled time a dose gets an Activity. The app owns
@@ -112,14 +126,13 @@ const ACTIVITY_STATEMENT_MAX_AGE_S = 12 * 3600 - 300;
 /** A start or update is worth nothing late. */
 const PUSH_LIFETIME_S = 15 * 60;
 /**
- * How long a relay-started Activity can still be running after the relay
- * accepted its start. ActivityKit ends an Activity eight hours after it
- * started; an ended one may stay on the lock screen up to twelve hours in
- * all, but it takes no further update, cannot be ended twice, and is not an
- * Activity the app reports as running. So past eight hours a start is over
- * whatever the server's records say, and holds no other start back.
+ * The most Live Activities the pass lets a device run, its own and the app's
+ * together: those registered, and the relay starts not reported yet. The
+ * system refuses an app's Activities past a limit of its own, which Apple
+ * does not document; this stays below it and leaves the app room for one of
+ * its own. Doses due together past this wait until one is answered.
  */
-export const RELAY_ACTIVITY_RUNNING_MAX_MS = 8 * 3600_000;
+export const MAX_DEVICE_ACTIVITIES = 4;
 
 const DEVICE_SELECT = {
   ...ROUTABLE_DEVICE_SELECT,
@@ -129,10 +142,7 @@ const DEVICE_SELECT = {
   laStartToken: true,
   laStartStatement: true,
   laStartSignature: true,
-  laStartRef: true,
-  laStartedMedicationId: true,
-  laStartedSlot: true,
-  laStartedAt: true,
+  laStartIdsAt: true,
   liveActivities: {
     select: {
       id: true,
@@ -229,29 +239,28 @@ export function startableDose(
 }
 
 /**
- * The one dose the pass starts an Activity for, or null: of the startable
- * doses, the earliest slot; on a tie the lowest medication id, so the
- * choice never depends on the order the rows were read in.
+ * The doses the pass may start an Activity for, in the order it tries them:
+ * the startable doses ({@link startableDose}), earliest slot first; on a tie
+ * the lowest medication id, so the order never depends on the order the
+ * rows were read in.
  */
-export function pickStartDose<
+export function startCandidates<
   T extends Pick<
     ActivityDose,
     "medicationId" | "scheduledFor" | "resolved" | "liveActivityEnabled"
   >,
->(doses: readonly T[], now: Date): T | null {
-  let best: T | null = null;
-  for (const dose of doses) {
-    if (!startableDose(dose, now)) continue;
-    if (
-      !best ||
-      dose.scheduledFor.getTime() < best.scheduledFor.getTime() ||
-      (dose.scheduledFor.getTime() === best.scheduledFor.getTime() &&
-        dose.medicationId < best.medicationId)
-    ) {
-      best = dose;
-    }
-  }
-  return best;
+>(doses: readonly T[], now: Date): T[] {
+  return doses
+    .filter((dose) => startableDose(dose, now))
+    .sort(
+      (a, b) =>
+        a.scheduledFor.getTime() - b.scheduledFor.getTime() ||
+        (a.medicationId < b.medicationId
+          ? -1
+          : a.medicationId > b.medicationId
+            ? 1
+            : 0),
+    );
 }
 
 export interface LaPassFacts {
@@ -262,11 +271,20 @@ export interface LaPassFacts {
   failed: number;
 }
 
-/** The start item for `device`'s dose to start, or null when none is. */
+/**
+ * The start item for `device`'s next dose to start, or null when none is.
+ *
+ * `exact`: the app names each relay-started Activity by its start id, so
+ * the first candidate that is neither started nor shown yet goes. Without
+ * it only the earliest candidate may go (the 1.49 rule): a later dose never
+ * starts beside the one running, so the server can name the one Activity an
+ * app without start ids registers.
+ */
 async function startItem(
   device: LaDevice,
   timeFormat: string | null,
   now: Date,
+  exact: boolean,
 ): Promise<{ item: RelayItemInput; dose: ActivityDose } | null> {
   const nowS = Math.floor(now.getTime() / 1000);
   const iat = statementIat(device.laStartStatement);
@@ -278,19 +296,35 @@ async function startItem(
   ) {
     return null;
   }
-  const dose = pickStartDose(await openActivityDoses(device.userId, now), now);
-  if (!dose) return null;
+  if (await refusedRecently(device.id, LA_START_EVENT, now)) return null;
+  const candidates = startCandidates(
+    await openActivityDoses(device.userId, now),
+    now,
+  );
+  for (const dose of exact ? candidates : candidates.slice(0, 1)) {
+    const item = await doseStartItem(device, dose, timeFormat, now);
+    if (item) return { dose, item };
+  }
+  return null;
+}
+
+/** The start item for `dose`, or null when the dose is started or shown. */
+async function doseStartItem(
+  device: LaDevice,
+  dose: ActivityDose,
+  timeFormat: string | null,
+  now: Date,
+): Promise<RelayItemInput | null> {
+  const nowS = Math.floor(now.getTime() / 1000);
   const state = doseContentState(dose, timeFormat, now);
   if (!state) return null;
   // Once per dose: a start the relay accepted, or one still in flight, read
-  // from the start rows themselves. The device row names only the last
-  // start, which a start for another dose replaces, and the device reports
-  // the Activity only once the app runs again. A start that failed for good
-  // no longer holds the dose (`live-activity-settle.ts`).
+  // from the start rows themselves, before the device reports the Activity
+  // and whatever it runs. A start that failed for good no longer holds the
+  // dose (`live-activity-settle.ts`).
   if (await doseStartHeld(device.id, dose.medicationId, dose.scheduledFor)) {
     return null;
   }
-  if (await refusedRecently(device.id, LA_START_EVENT, now)) return null;
   // One owner per dose: an Activity the device already runs for it, the
   // app's own (`MedicationActivityAttributes`, with its Take button) above
   // all, keeps the relay from starting a second one beside it. The reverse
@@ -304,23 +338,22 @@ async function startItem(
     return null;
   }
   return {
-    dose,
-    item: {
-      deviceId: device.id,
-      ref: `las-${newUlid(now.getTime())}`,
-      pushClass: "liveactivity",
-      eventType: LA_START_EVENT,
-      activity: {
-        event: "start",
-        state,
-        token: device.laStartToken,
-        bindingKey: device.relayBindingKey as string,
-        statement: device.laStartStatement as Record<string, unknown>,
-        signature: device.laStartSignature,
-      },
-      expiresAt: new Date((nowS + PUSH_LIFETIME_S) * 1000),
-      dose: { medicationId: dose.medicationId, slotInstant: dose.scheduledFor },
+    deviceId: device.id,
+    // The start id the relay writes into the Activity's attributes, which
+    // it and Apple see in the clear: random, and nothing else in it.
+    ref: `las-${randomBytes(16).toString("base64url")}`,
+    pushClass: "liveactivity",
+    eventType: LA_START_EVENT,
+    activity: {
+      event: "start",
+      state,
+      token: device.laStartToken as string,
+      bindingKey: device.relayBindingKey as string,
+      statement: device.laStartStatement as Record<string, unknown>,
+      signature: device.laStartSignature as string,
     },
+    expiresAt: new Date((nowS + PUSH_LIFETIME_S) * 1000),
+    dose: { medicationId: dose.medicationId, slotInstant: dose.scheduledFor },
   };
 }
 
@@ -516,43 +549,50 @@ async function updateItems(
 }
 
 /**
- * Whether the device's last relay start may still be running unseen, so
- * that no other relay start may join it (its token is unknown: it cannot be
- * ended). That holds only while all of these do:
+ * For an app without start ids: whether the device's last relay start may
+ * still be running unseen, so that no other relay start may join it (its
+ * token is unknown: it cannot be ended). That holds only while all of these
+ * do:
  *
- * - the start is in flight, or the relay accepted it less than
+ * - the start is in flight, or the relay accepted it, less than
  *   {@link RELAY_ACTIVITY_RUNNING_MAX_MS} ago (the system has ended it after
  *   that);
  * - the app has not registered it (a registered one is ended before the
- *   next start, or the next start waits for that end), and has not dropped
- *   it from its registered set either (`POST /api/devices` then forgets the
- *   start: the Activity is gone);
- * - its medication still keeps a relay Activity, and its dose is still in
- *   its window: pending or due.
+ *   next start, or the next start waits for that end; one the app has
+ *   registered and dropped again is gone);
+ * - it still holds its dose, its medication still keeps a relay Activity,
+ *   and its dose is still in its window: pending or due.
  *
  * The last bound is the grace an unregistered start gets. The app registers
  * a running Activity whenever it runs; once the dose's own window is over
  * without that, holding the next dose back would trade a reminder the
  * person needs for an ambiguity the device route already resolves safely
  * (two Activities posted without their dose keep none, and the pass ends
- * both). A start that holds nothing never holds forever: on a server
- * upgraded with a last start whose dose was left open, every device would
- * otherwise wait until that dose turned missed, start after start.
+ * both). A start that holds nothing never holds forever.
  */
 async function unreportedRelayStart(
   device: LaDevice,
   now: Date,
 ): Promise<boolean> {
-  const {
-    laStartRef,
-    laStartedAt,
-    laStartedMedicationId: medicationId,
-  } = device;
-  const slot = device.laStartedSlot;
-  if (!laStartRef || !medicationId || !slot) return false;
+  const last = await prisma.pushRelayDelivery.findFirst({
+    where: { deviceId: device.id, eventType: LA_START_EVENT },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: {
+      status: true,
+      laReportedAt: true,
+      medicationId: true,
+      slotInstant: true,
+      createdAt: true,
+    },
+  });
+  if (!last) return false;
+  const { medicationId, slotInstant: slot } = last;
   if (
-    laStartedAt &&
-    now.getTime() - laStartedAt.getTime() > RELAY_ACTIVITY_RUNNING_MAX_MS
+    (last.status !== "pending" && last.status !== "accepted") ||
+    last.laReportedAt !== null ||
+    !medicationId ||
+    !slot ||
+    now.getTime() - last.createdAt.getTime() > RELAY_ACTIVITY_RUNNING_MAX_MS
   ) {
     return false;
   }
@@ -604,32 +644,41 @@ export async function runDeviceLiveActivities(
     select: { timeFormat: true },
   });
   const timeFormat = user?.timeFormat ?? null;
-  let start = await startItem(device, timeFormat, now);
+  // An app that echoes the start id names each relay-started Activity by
+  // its start (`POST /api/devices`), so the device may run one per dose, up
+  // to MAX_DEVICE_ACTIVITIES with its own, and a new start ends nothing.
+  //
+  // An app without it (iOS builds up to 1.7) registers a relay-started
+  // Activity without its dose and leaves the server to name it, which it can
+  // only while one runs. So that device keeps one relay-started Activity: a
+  // start for an earlier dose first ends the relay-started Activities still
+  // running, and goes out only once the relay took every one of those ends,
+  // in the same pass; otherwise it waits for a later pass. A start whose
+  // Activity the app has not registered yet cannot be ended: the new one
+  // waits until it is registered, dropped, or its dose's window is over
+  // ({@link unreportedRelayStart}). An Activity ended that way gives its
+  // dose back, so it starts again once the earlier dose is done.
+  const exact = device.laStartIdsAt !== null;
+  const room = exact
+    ? device.liveActivities.length +
+        (await unreportedStartCount(device.id, now)) <
+      MAX_DEVICE_ACTIVITIES
+    : !(await unreportedRelayStart(device, now));
+  let start = room ? await startItem(device, timeFormat, now, exact) : null;
   const { updates: proposed, ending } = await updateItems(
     device,
     timeFormat,
     now,
   );
-  // At most one relay-started Activity per device. An app build that
-  // registers such an Activity without its dose leaves the server to name
-  // it, and the server names the one relay start it has running
-  // (`POST /api/devices`); with two running both got the newer dose. So a
-  // start for a new dose first ends the relay-started Activities still
-  // running, and goes out only once the relay took every one of those ends,
-  // in the same pass; otherwise it waits for a later pass. A start whose
-  // Activity the app has not registered yet cannot be ended: the new one
-  // waits until it is registered, dropped, or its dose's window is over
-  // ({@link unreportedRelayStart}). Lift this when the app echoes a
-  // per-start id (1.50).
-  if (start && (await unreportedRelayStart(device, now))) start = null;
-  const making = start
-    ? device.liveActivities.filter(
-        (a) =>
-          relayActivityKind(a) === "relay_started" &&
-          !ending.includes(a) &&
-          relayEndable(a, now),
-      )
-    : [];
+  const making =
+    start && !exact
+      ? device.liveActivities.filter(
+          (a) =>
+            relayActivityKind(a) === "relay_started" &&
+            !ending.includes(a) &&
+            relayEndable(a, now),
+        )
+      : [];
   const spent = new Set<string>();
   if (ending.length > 0 || making.length > 0) {
     // A missed dose has nothing left to show, and a medication without the
@@ -648,24 +697,19 @@ export async function runDeviceLiveActivities(
       });
     }
   }
+  for (const made of making) {
+    if (!spent.has(made.id) || !made.medicationId || !made.slotInstant) {
+      continue;
+    }
+    await releaseDoseStarts(
+      { deviceId: device.id },
+      { medicationId: made.medicationId, slotInstant: made.slotInstant },
+    );
+  }
   if (making.some((a) => !spent.has(a.id))) start = null;
   const updates = proposed.filter((u) => !spent.has(u.rowId));
   const items = [...(start ? [start.item] : []), ...updates.map((u) => u.item)];
   if (items.length === 0) return { started: 0, updated: 0 };
-  if (start) {
-    // The dose is held while the start is in flight; `laStartedAt` follows
-    // only when the relay accepts it, and a failure for good clears the
-    // dose again (`live-activity-settle.ts`, run by the outbox).
-    await prisma.device.update({
-      where: { id: device.id },
-      data: {
-        laStartedMedicationId: start.dose.medicationId,
-        laStartedSlot: start.dose.scheduledFor,
-        laStartedAt: null,
-        laStartRef: start.item.ref,
-      },
-    });
-  }
   const summary = await sendRelayItems(items, ctx.config);
   const accepted = new Set(
     summary.answers

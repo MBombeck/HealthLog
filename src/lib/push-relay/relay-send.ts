@@ -328,7 +328,6 @@ async function finish(
         item: row.item,
       },
       status,
-      now,
     );
   }
 }

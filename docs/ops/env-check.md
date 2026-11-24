@@ -51,6 +51,15 @@ The grep-friendly format lets a CI pipeline do `grep -q
 .env.production.example` on every PR and fails on missing required
 vars.
 
+## Secrets from files
+
+A variable marked `"secret": true` in the manifest is also satisfied by
+`<NAME>_FILE`, the path of a file the container reads it from
+(`docs/self-hosting/secrets.md`). Both set is reported as
+`[MISSING-REQUIRED]` with the note `Both <NAME> and <NAME>_FILE are set`,
+because the container refuses that start too. The check does not open the
+file; the container does, and stops the start when it cannot.
+
 ## All-or-none groups
 
 Some groups (e.g. off-host backups) are marked `allOrNone: true` in
