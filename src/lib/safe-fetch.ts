@@ -34,9 +34,10 @@ export interface SafeFetchOptions {
    * When true, run `isPublicUrl(url)` before dispatching. Throws
    * `SafeFetchError({ kind: "private_host" })` if the URL points at an
    * internal range, the cloud metadata endpoint, or any of the IPv4 /
-   * IPv6 alt-notation classes `isPublicUrl` catches. The DNS-rebinding
-   * follow-up (issue #217) extends this same flag with a connect-time
-   * IP pin via a dedicated undici dispatcher.
+   * IPv6 alt-notation classes `isPublicUrl` catches. The same flag also
+   * pins the connection to the vetted address through a dedicated undici
+   * dispatcher (`./safe-fetch-dispatcher.ts`), which closes the
+   * DNS-rebinding gap of issue #217.
    */
   requirePublicHost?: boolean;
   /**
