@@ -151,7 +151,7 @@ export function toReportMedicationRows(
       windowEnd: s.windowEnd,
       label: s.label,
     })),
-    // v1.40 (#1024) — the courses inside the window, one line each.
+    // The courses inside the window, one line each (#1024).
     courses: m.courses
       .filter(
         (c) =>

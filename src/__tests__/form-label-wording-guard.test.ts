@@ -20,12 +20,12 @@
  * or more than one child. They are a minority and read differently in a
  * sweep.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import {
+  readSource,
   readSourceText,
   requireFloor,
   stripComments,
@@ -33,9 +33,10 @@ import {
 } from "./helpers/source-files";
 
 const SRC = join(__dirname, "..");
-const EN = JSON.parse(
-  readFileSync(join(SRC, "..", "messages", "en.json"), "utf8"),
-) as Record<string, unknown>;
+const EN = JSON.parse(readSource("messages/en.json", '"encounters"')) as Record<
+  string,
+  unknown
+>;
 
 /** Ends in a question mark, an exclamation mark or a colon (any script). */
 const NOT_A_NAME = /[?!:？！：]\s*$/;
