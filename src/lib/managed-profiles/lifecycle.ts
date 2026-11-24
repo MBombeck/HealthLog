@@ -13,6 +13,7 @@ import {
 } from "@/lib/managed-profiles/guardian-where";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
+import { voidWalletPassesWhere } from "@/lib/emergency-card/wallet-pass/void";
 import { afterIdentityFieldsChanged } from "@/lib/auth/identity-change";
 import { releaseUnbackedClientApps } from "@/lib/integrations/oauth-kit/connect-target";
 import type { Prisma } from "@/generated/prisma/client";
@@ -620,6 +621,13 @@ export async function clearManagedProfileMarker(
           client,
         });
       }
+      // A Wallet pass the guardian made carries one of those links; it is
+      // stamped withdrawn, and the void-push cron tells its devices.
+      await voidWalletPassesWhere(
+        client,
+        { userId: profile.id, createdById: { not: profile.id } },
+        "HANDOVER",
+      );
       if (cardLinks.count > 0) {
         await auditLog("emergency-card.link.revoke.handover", {
           userId: profile.id,

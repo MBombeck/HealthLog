@@ -404,6 +404,15 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "push-relay-maintenance": short(
     "One relay status probe, at most 500 outbox items in batches of 50, one receipt report; each relay call is bounded at 10 s.",
   ),
+  "wallet-pass-refresh": short(
+    "One pass: one card read, an unsigned rebuild, and at most one relay notify batch or one APNs batch bounded at 10 s.",
+  ),
+  "wallet-pass-sweep": short(
+    "At most 2000 live passes, each an unsigned rebuild and at most one bounded push batch, then one retention DELETE.",
+  ),
+  "wallet-pass-void-push": short(
+    "At most 2000 withdrawn passes of the last 30 days; only those with devices still to tell are rebuilt, without card data, and pushed in bounded batches.",
+  ),
   "push-data-changed": short(
     "At most 500 pending accounts, one claim and one sealed silent send each, then one retention DELETE.",
   ),

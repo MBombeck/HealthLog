@@ -8,6 +8,7 @@ import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isInputRefusal, isP2025 } from "@/lib/prisma-errors";
 import { SessionStoreUnavailableError } from "@/lib/api-errors";
 import { credentialRevocations } from "@/lib/auth/credential-revocations";
+import { enqueueWalletVoidPush } from "@/lib/emergency-card/wallet-pass/queues";
 import { afterRefreshRevocation } from "@/lib/devices/signed-out-push";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
@@ -563,6 +564,7 @@ export async function destroyAllSessions(userId: string): Promise<void> {
   await prisma.$transaction(credentialRevocations(prisma, userId));
   // Every native sign-in ended: the account's devices take no more pushes.
   await afterRefreshRevocation(userId);
+  await enqueueWalletVoidPush(); // a withdrawn Wallet pass tells its devices
 }
 
 /**

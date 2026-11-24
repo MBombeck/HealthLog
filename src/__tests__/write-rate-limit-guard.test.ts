@@ -63,6 +63,8 @@ const LIMITING_HELPERS: Record<string, string[]> = {
   // The staged file uploads (Apple Health, Health Connect, FIT, Gadgetbridge,
   // FHIR Bundle): five files a minute per acting account and kind.
   handleStagedUpload: ["lib/import/staged-upload.ts"],
+  // Apple Wallet's pass web service: the per-address limit, before any lookup.
+  walletWebServiceGate: ["lib/emergency-card/wallet-pass/web-service.ts"],
 };
 
 /** Mutating routes with no limit, each with the reason it needs none. */

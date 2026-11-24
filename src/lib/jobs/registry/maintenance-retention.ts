@@ -11,6 +11,7 @@ import {
 import { cronIsTheRetry } from "@/lib/jobs/reminder/registrar-shared";
 
 import { defineJob, type JobDefinition } from "./define-job";
+import { MAINTENANCE_WALLET_JOBS } from "./maintenance-wallet";
 
 export const MAINTENANCE_RETENTION_JOBS: readonly JobDefinition[] = [
   // The Telegram reminder and Coach usage ledgers.
@@ -23,4 +24,6 @@ export const MAINTENANCE_RETENTION_JOBS: readonly JobDefinition[] = [
       (await import("@/lib/jobs/ledger-retention-cleanup"))
         .handleLedgerRetentionCleanup,
   }),
+  // The Apple Wallet pass queues, which carry their withdrawn passes' retention.
+  ...MAINTENANCE_WALLET_JOBS,
 ];

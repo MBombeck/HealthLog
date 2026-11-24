@@ -33,6 +33,8 @@ import {
 import { WALLET_DOWNLOAD_PATH } from "./constants";
 import { buildPassContent, type WalletSignerIdentity } from "./content";
 import { openWalletLinkToken, walletAuthToken } from "./link-token";
+import { enqueueWalletVoidPush } from "./queues";
+import { voidWalletPassesWhere, type WalletPassVoidReason } from "./void";
 import { signWalletManifest, walletSigningMode } from "./sign";
 
 /** Downloads per pass and hour, shared with Wallet's own fetches. */
@@ -56,6 +58,7 @@ export const WALLET_PASS_SELECT = {
   contentChangedAt: true,
   createdAt: true,
   voidedAt: true,
+  voidReason: true,
   lastFetchedAt: true,
   link: {
     select: {
@@ -81,6 +84,7 @@ export interface WalletPassRow {
   contentChangedAt: Date;
   createdAt: Date;
   voidedAt: Date | null;
+  voidReason: WalletPassVoidReason | null;
   lastFetchedAt: Date | null;
   link: {
     id: string;
@@ -99,6 +103,7 @@ export interface WalletPassSummary {
   contentChangedAt: string;
   expiresAt: string | null;
   voidedAt: string | null;
+  voidReason: Lowercase<WalletPassVoidReason> | null;
   lastFetchedAt: string | null;
   downloadPath: typeof WALLET_DOWNLOAD_PATH;
 }
@@ -135,6 +140,9 @@ export function toWalletPassSummary(
     contentChangedAt: row.contentChangedAt.toISOString(),
     expiresAt: row.link.expiresAt?.toISOString() ?? null,
     voidedAt: walletPassVoidedAt(row)?.toISOString() ?? null,
+    voidReason: row.voidReason
+      ? (row.voidReason.toLowerCase() as Lowercase<WalletPassVoidReason>)
+      : null,
     lastFetchedAt: row.lastFetchedAt?.toISOString() ?? null,
     downloadPath: WALLET_DOWNLOAD_PATH,
   };
@@ -147,6 +155,16 @@ export function latestWalletPass(
   return prisma.walletPass.findFirst({
     where: { userId },
     orderBy: { createdAt: "desc" },
+    select: WALLET_PASS_SELECT,
+  });
+}
+
+/** One pass by its id, withdrawn or not, or null. */
+export function latestWalletPassById(
+  walletPassId: string,
+): Promise<WalletPassRow | null> {
+  return prisma.walletPass.findUnique({
+    where: { id: walletPassId },
     select: WALLET_PASS_SELECT,
   });
 }
@@ -241,14 +259,23 @@ export type SignedPass =
     }
   | { ok: false; reason: string; retryAfter: number };
 
+export interface SyncedPassContent {
+  files: PassFiles;
+  contentChangedAt: Date;
+  /** The content differed from the stored hash and the row moved on. */
+  changed: boolean;
+}
+
 /**
- * Build and sign the current version of `row`. Moves `contentHash` and
- * `contentChangedAt` on when the content changed since the last build.
+ * Build the current files of `row` (unsigned) and compare them with the
+ * stored `contentHash`. When the card changed since the last build, the hash
+ * and `contentChangedAt` move on, so the "As of" date on the pass, the web
+ * service's `Last-Modified` and its list of updated passes are true.
  */
-export async function buildSignedPass(
+export async function syncWalletPassContent(
   row: WalletPassRow,
   now: Date = new Date(),
-): Promise<SignedPass> {
+): Promise<SyncedPassContent> {
   const raw = row.link.tokenEncrypted
     ? openWalletLinkToken(row.link.tokenEncrypted)
     : null;
@@ -284,16 +311,46 @@ export async function buildSignedPass(
 
   let contentChangedAt = row.contentChangedAt;
   let built = await buildWalletPassFiles({ ...base, contentChangedAt });
-  if (built.contentHash !== row.contentHash) {
-    contentChangedAt = now;
-    built = await buildWalletPassFiles({ ...base, contentChangedAt });
-    await prisma.walletPass.update({
-      where: { id: row.id },
-      data: { contentHash: built.contentHash, contentChangedAt },
-    });
+  if (built.contentHash === row.contentHash) {
+    return { files: built.files, contentChangedAt, changed: false };
   }
+  contentChangedAt = now;
+  built = await buildWalletPassFiles({ ...base, contentChangedAt });
+  await prisma.walletPass.update({
+    where: { id: row.id },
+    data: { contentHash: built.contentHash, contentChangedAt },
+  });
+  return { files: built.files, contentChangedAt, changed: true };
+}
 
-  const manifest = passManifest(built.files);
+/**
+ * Bring the stored content state of one pass up to date, unsigned: what the
+ * refresh job, the sweep and the void push do before they push. Null when
+ * the pass is gone.
+ */
+export async function refreshWalletPass(
+  walletPassId: string,
+  now: Date = new Date(),
+): Promise<{ row: WalletPassRow; changed: boolean } | null> {
+  const row = await prisma.walletPass.findUnique({
+    where: { id: walletPassId },
+    select: WALLET_PASS_SELECT,
+  });
+  if (!row) return null;
+  const synced = await syncWalletPassContent(row, now);
+  return {
+    row: { ...row, contentChangedAt: synced.contentChangedAt },
+    changed: synced.changed,
+  };
+}
+
+/** Sign files already built by `syncWalletPassContent`. */
+export async function signSyncedPass(
+  row: WalletPassRow,
+  synced: SyncedPassContent,
+  now: Date = new Date(),
+): Promise<SignedPass> {
+  const manifest = passManifest(synced.files);
   const signed = await signWalletManifest(manifest, {
     signer: row.signer,
     passTypeIdentifier: row.passTypeIdentifier,
@@ -302,18 +359,24 @@ export async function buildSignedPass(
   if (!signed.ok) return signed;
   return {
     ok: true,
-    bytes: assemblePkpass(built.files, manifest, signed.signature),
+    bytes: assemblePkpass(synced.files, manifest, signed.signature),
     state: walletPassState(row, now),
-    contentChangedAt,
+    contentChangedAt: synced.contentChangedAt,
   };
 }
 
-export type WalletPassVoidReason =
-  | "OWNER"
-  | "CREDENTIAL_RESET"
-  | "HANDOVER"
-  | "GUARDIAN_LOST"
-  | "ACCOUNT_DELETION";
+/**
+ * Build and sign the current version of `row`. Moves `contentHash` and
+ * `contentChangedAt` on when the content changed since the last build.
+ */
+export async function buildSignedPass(
+  row: WalletPassRow,
+  now: Date = new Date(),
+): Promise<SignedPass> {
+  return signSyncedPass(row, await syncWalletPassContent(row, now), now);
+}
+
+export type { WalletPassVoidReason };
 
 /**
  * Withdraw the record's live pass: its link stops answering and the pass is
@@ -330,7 +393,7 @@ export async function voidWalletPass(
   serialNumber: string;
   createdAt: Date;
 } | null> {
-  return prisma.$transaction(async (tx) => {
+  const voided = await prisma.$transaction(async (tx) => {
     const pass = await tx.walletPass.findFirst({
       where: { userId, voidedAt: null },
       orderBy: { createdAt: "desc" },
@@ -357,4 +420,24 @@ export async function voidWalletPass(
       createdAt: pass.createdAt,
     };
   });
+  // The devices that hold the pass are told at once, so Wallet fetches the
+  // withdrawn version; the void-push cron is the net under a lost send.
+  if (voided) await enqueueWalletVoidPush();
+  return voided;
+}
+
+/**
+ * Withdraw one pass by its id (a guardian's pass whose MANAGE grant is gone)
+ * and tell its devices. False when it was already withdrawn.
+ */
+export async function voidWalletPassById(
+  walletPassId: string,
+  reason: WalletPassVoidReason,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const count = await prisma.$transaction((tx) =>
+    voidWalletPassesWhere(tx, { id: walletPassId }, reason, now),
+  );
+  if (count > 0) await enqueueWalletVoidPush();
+  return count > 0;
 }

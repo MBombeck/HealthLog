@@ -23,6 +23,7 @@ import { illnessEpisodeUpdateSchema } from "@/lib/validations/illness";
 import { toIllnessEpisodeDTO } from "@/lib/illness/dto";
 import type { Prisma } from "@/generated/prisma/client";
 import { withRelated } from "@/lib/links/related";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -212,6 +213,7 @@ export const PATCH = apiHandler(
       },
     });
 
+    await enqueueWalletRefresh(user.id);
     return apiSuccess(toIllnessEpisodeDTO(updated));
   },
 );
@@ -259,6 +261,7 @@ export const DELETE = apiHandler(
 
     // Standard `{ deleted: true }` envelope (the cross-module DELETE shape) so
     // the client never has to special-case a bodyless 204 here.
+    await enqueueWalletRefresh(user.id);
     return apiSuccess({ deleted: true });
   },
 );

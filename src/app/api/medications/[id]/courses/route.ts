@@ -36,6 +36,7 @@ import {
 import { dayKeyOfDate } from "@/lib/medications/course-window";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { createMedicationCourseSchema } from "@/lib/validations/medication";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 export const dynamic = "force-dynamic";
 
@@ -111,6 +112,7 @@ async function postCourse(
       action: { name: "medication.course.create" },
       meta: { medicationId: id },
     });
+    await enqueueWalletRefresh(user.id);
     return apiSuccess(
       {
         id: created.id,

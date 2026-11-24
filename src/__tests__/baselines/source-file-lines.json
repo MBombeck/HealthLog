@@ -77,6 +77,6 @@
     "lib/validations/inbound-documents.ts": 989,
     "lib/withings/sync-sleep.ts": 879,
     "lib/withings/sync.ts": 926,
-    "proxy.ts": 833
+    "proxy.ts": 834
   }
 }

@@ -35,6 +35,7 @@ import {
 import { toIllnessEpisodeDTO } from "@/lib/illness/dto";
 import { apiListSuccess } from "@/lib/api/list-cap";
 import { listPage } from "@/lib/http/list-query";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "illness");
@@ -170,5 +171,6 @@ async function postEpisode(request: NextRequest): Promise<Response> {
     meta: { type: created.type, lifecycle: created.lifecycle },
   });
 
+  await enqueueWalletRefresh(user.id);
   return apiSuccess(toIllnessEpisodeDTO(created), 201);
 }
