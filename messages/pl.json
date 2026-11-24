@@ -8819,7 +8819,7 @@
         "filterLabel": "Filtruj użytkowników",
         "forceLogout": "Wymuś wylogowanie",
         "forceLogoutConfirmTitle": "Wymusić wylogowanie {name}?",
-        "forceLogoutConfirmBody": "Wszystkie aktywne sesje tego użytkownika zostaną unieważnione. Będzie musiał zalogować się ponownie na każdym urządzeniu.",
+        "forceLogoutConfirmBody": "Wszystkie aktywne sesje tego użytkownika zostaną unieważnione. Będzie musiał zalogować się ponownie na każdym urządzeniu. Tokeny API, połączeni asystenci i udostępnione linki również przestaną działać.",
         "forceLogoutSuccess": "Wylogowano {name} z {count, plural, one {# sesji} few {# sesji} many {# sesji} other {# sesji}}",
         "forceLogoutFailed": "Nie udało się wymusić wylogowania",
         "cannotLogoutSelf": "Nie można wymusić wylogowania samego siebie",

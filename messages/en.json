@@ -8819,7 +8819,7 @@
         "filterLabel": "Filter users",
         "forceLogout": "Force logout",
         "forceLogoutConfirmTitle": "Force logout {name}?",
-        "forceLogoutConfirmBody": "All active sessions for this user will be revoked. They will need to sign in again on every device.",
+        "forceLogoutConfirmBody": "All active sessions for this user will be revoked. They will need to sign in again on every device. Their API tokens, connected assistants and share links stop working too.",
         "forceLogoutSuccess": "Logged {name} out of {count, plural, one {# session} other {# sessions}}",
         "forceLogoutFailed": "Failed to force logout",
         "cannotLogoutSelf": "Cannot force-logout yourself",

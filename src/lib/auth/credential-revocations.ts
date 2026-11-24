@@ -33,6 +33,7 @@ export function credentialRevocations(
 ): Prisma.PrismaPromise<unknown>[] {
   const now = new Date();
   return [
+    // Stays first: `destroyAllSessions` reads the web-session count from it.
     db.session.deleteMany({ where: { userId } }),
     db.apiToken.updateMany({
       where: { userId, revoked: false },

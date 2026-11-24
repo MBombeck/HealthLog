@@ -8819,7 +8819,7 @@
         "filterLabel": "Filtrar usuarios",
         "forceLogout": "Forzar cierre de sesión",
         "forceLogoutConfirmTitle": "¿Forzar el cierre de sesión de {name}?",
-        "forceLogoutConfirmBody": "Se revocarán todas las sesiones activas de este usuario. Tendrá que volver a iniciar sesión en todos los dispositivos.",
+        "forceLogoutConfirmBody": "Se revocarán todas las sesiones activas de este usuario. Tendrá que volver a iniciar sesión en todos los dispositivos. Sus tokens de API, asistentes conectados y enlaces compartidos también dejarán de funcionar.",
         "forceLogoutSuccess": "Se cerró la sesión de {name} en {count, plural, one {# sesión} other {# sesiones}}",
         "forceLogoutFailed": "No se pudo forzar el cierre de sesión",
         "cannotLogoutSelf": "No puedes forzar tu propio cierre de sesión",
