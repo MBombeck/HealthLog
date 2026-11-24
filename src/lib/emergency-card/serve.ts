@@ -91,6 +91,7 @@ export async function readEmergencyCardByToken(
         userId: true,
         createdById: true,
         tokenPrefix: true,
+        purpose: true,
         fields: true,
         expiresAt: true,
         revokedAt: true,
@@ -129,7 +130,11 @@ export async function readEmergencyCardByToken(
     });
     await auditLog("emergency-card.link.access", {
       userId: link.userId,
-      details: { linkId: link.id, tokenPrefix: link.tokenPrefix },
+      details: {
+        linkId: link.id,
+        tokenPrefix: link.tokenPrefix,
+        purpose: link.purpose,
+      },
     });
   } else {
     annotate({ meta: { emergency_card_audit_throttled: true } });

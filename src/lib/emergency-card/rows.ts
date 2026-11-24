@@ -58,19 +58,36 @@ export function pregnancyLine(
     : t("emergencyCard.postpartumNoDate");
 }
 
+export type EmergencyCardRow = {
+  key: string;
+  label: string;
+  lines: string[];
+  emphasise: boolean;
+};
+
+/**
+ * The name as a title line, and the rest. A recorded name is the card's
+ * title, above its rows; a name asked for but not recorded stays a row that
+ * reads "Not recorded", like every other empty item.
+ */
+export function splitCardTitle(rows: EmergencyCardRow[]): {
+  title: string | null;
+  rows: EmergencyCardRow[];
+} {
+  const name = rows.find((r) => r.key === "NAME");
+  // `emphasise` is set only on a row that holds a value.
+  if (!name || !name.emphasise) return { title: null, rows };
+  return { title: name.lines[0], rows: rows.filter((r) => r !== name) };
+}
+
 /** One item as label and lines, or null when the card was not asked for it. */
 export function emergencyCardRows(
   view: EmergencyCardView,
   t: Translate,
   locale: string,
-): Array<{ key: string; label: string; lines: string[]; emphasise: boolean }> {
+): EmergencyCardRow[] {
   const none = t("records.emergency.notRecorded");
-  const rows: Array<{
-    key: string;
-    label: string;
-    lines: string[];
-    emphasise: boolean;
-  }> = [];
+  const rows: EmergencyCardRow[] = [];
   const push = (
     key: string,
     label: string,
@@ -87,6 +104,7 @@ export function emergencyCardRows(
       emphasise: emphasise && lines !== null && lines.length > 0,
     });
   };
+  push("NAME", t("emergencyCard.name"), view.name ? [view.name] : null, true);
   push(
     "BLOOD_TYPE",
     t("records.emergency.bloodType"),

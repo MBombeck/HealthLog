@@ -16133,7 +16133,9 @@
       "walletWithQr": "QR 코드 포함 지갑 카드 (PDF)",
       "preview": "내 카드"
     },
+    "name": "이름",
     "fields": {
+      "NAME": "이름",
       "BLOOD_TYPE": "혈액형",
       "ALLERGIES": "알레르기",
       "CONDITIONS": "만성 질환",

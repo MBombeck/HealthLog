@@ -208,6 +208,19 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
     field: "tokenEncrypted",
     kind: "string",
   },
+  // ───── Apple Wallet passes of the emergency card (v1.50) ─────
+  // A WALLET link's raw `hlm_` token (the pass draws its QR code from it on
+  // every update) and a device's pass push token.
+  {
+    model: "EmergencyCardLink",
+    field: "tokenEncrypted",
+    kind: "string",
+  },
+  {
+    model: "WalletPassRegistration",
+    field: "pushTokenEncrypted",
+    kind: "string",
+  },
   // The WebDAV credentials of the Health Connect folder fetch.
   {
     model: "HealthConnectRemoteSource",
@@ -734,6 +747,7 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "User",
   "UserHealthProfile",
   "VaccinationRecord",
+  "WalletPassRegistration",
   "WhoopConnection",
   "WithingsConnection",
 ]);

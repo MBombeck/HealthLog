@@ -16133,7 +16133,9 @@
       "walletWithQr": "Brieftaschenkarte mit QR-Code (PDF)",
       "preview": "Deine Karte"
     },
+    "name": "Name",
     "fields": {
+      "NAME": "Name",
       "BLOOD_TYPE": "Blutgruppe",
       "ALLERGIES": "Allergien",
       "CONDITIONS": "Chronische Erkrankungen",

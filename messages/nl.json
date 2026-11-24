@@ -16133,7 +16133,9 @@
       "walletWithQr": "Portemonneekaart met QR-code (PDF)",
       "preview": "Jouw kaart"
     },
+    "name": "Naam",
     "fields": {
+      "NAME": "Naam",
       "BLOOD_TYPE": "Bloedgroep",
       "ALLERGIES": "Allergieën",
       "CONDITIONS": "Chronische aandoeningen",

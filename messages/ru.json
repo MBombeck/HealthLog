@@ -16133,7 +16133,9 @@
       "walletWithQr": "Карта с QR-кодом (PDF)",
       "preview": "Ваша карта"
     },
+    "name": "Имя",
     "fields": {
+      "NAME": "Имя",
       "BLOOD_TYPE": "Группа крови",
       "ALLERGIES": "Аллергии",
       "CONDITIONS": "Хронические заболевания",

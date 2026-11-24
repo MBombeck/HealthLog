@@ -16133,7 +16133,9 @@
       "walletWithQr": "Tessera con codice QR (PDF)",
       "preview": "La tua tessera"
     },
+    "name": "Nome",
     "fields": {
+      "NAME": "Nome",
       "BLOOD_TYPE": "Gruppo sanguigno",
       "ALLERGIES": "Allergie",
       "CONDITIONS": "Malattie croniche",

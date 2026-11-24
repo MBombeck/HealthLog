@@ -16133,7 +16133,9 @@
       "walletWithQr": "Tarjeta con código QR (PDF)",
       "preview": "Tu tarjeta"
     },
+    "name": "Nombre",
     "fields": {
+      "NAME": "Nombre",
       "BLOOD_TYPE": "Grupo sanguíneo",
       "ALLERGIES": "Alergias",
       "CONDITIONS": "Enfermedades crónicas",

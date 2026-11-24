@@ -1,11 +1,12 @@
 /**
  * The items an emergency card can show (v1.49). Mirrors the Prisma enum
- * `EmergencyCardField` one for one; the order is the card's reading order,
- * the one a first responder needs first at the top.
+ * `EmergencyCardField` one for one; the order is the card's reading order:
+ * who the card is about, then what a first responder needs first.
  */
 import { z } from "zod/v4";
 
 export const EMERGENCY_CARD_FIELDS = [
+  "NAME",
   "BLOOD_TYPE",
   "ALLERGIES",
   "CONDITIONS",
@@ -23,8 +24,9 @@ export type EmergencyCardField = (typeof EMERGENCY_CARD_FIELDS)[number];
 
 /**
  * What the link form ticks before the owner changes anything: what a first
- * responder acts on. The birth date, the note and the declarations are left
- * for the owner to add on purpose.
+ * responder acts on. The name, the birth date, the note and the declarations
+ * are left for the owner to add on purpose: a lost printed card should not
+ * name its owner unless they chose that.
  */
 export const DEFAULT_LINK_FIELDS: readonly EmergencyCardField[] = [
   "BLOOD_TYPE",
@@ -34,6 +36,15 @@ export const DEFAULT_LINK_FIELDS: readonly EmergencyCardField[] = [
   "PREGNANCY",
   "IMPLANTS",
   "CONTACTS",
+];
+
+/**
+ * What an Apple Wallet pass ticks first (v1.50): the link's items and the
+ * name, which is the pass's title. The owner can untick it.
+ */
+export const DEFAULT_WALLET_FIELDS: readonly EmergencyCardField[] = [
+  "NAME",
+  ...DEFAULT_LINK_FIELDS,
 ];
 
 /** Longest expiry a link may be given, in days. */
