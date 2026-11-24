@@ -374,6 +374,131 @@ describe("the restricted role (Postgres 17+)", () => {
     }
   });
 
+  it("keeps the audit log append-only: no rewrite, no delete, but the owner's narrow functions", async (ctx) => {
+    if (serverVersion < 170000) ctx.skip();
+    const probe = "user-audit-probe";
+    await owner.query(
+      `INSERT INTO users (id, username, email, role, created_at, updated_at)
+       VALUES ($1, 'audit-probe', 'audit-probe@example.test', 'USER', now(), now())`,
+      [probe],
+    );
+    const insert = (id: string, action: string, ageDays: number) =>
+      owner.query(
+        `INSERT INTO audit_logs (id, user_id, action, details, ip_address, created_at)
+         VALUES ($1, $2, $3, '{"n":1}', '198.51.100.7',
+                 (now() AT TIME ZONE 'UTC') - make_interval(days => $4))`,
+        [id, probe, action, ageDays],
+      );
+    await insert("al-recent", "auth.login.password", 0);
+    await insert("al-old", "auth.login.password", 30);
+    await insert("al-counter", "sharing.record.accessed", 0);
+    await insert("al-cycle", "cycle.period.update", 0);
+
+    try {
+      // Rewriting who, what, when or from where is refused, and so is any
+      // deletion, by grant (DELETE was taken back) and by the trigger.
+      const refused = {
+        action: await sqlState(
+          app,
+          `UPDATE audit_logs SET action = 'auth.nothing' WHERE id = 'al-recent'`,
+        ),
+        details: await sqlState(
+          app,
+          `UPDATE audit_logs SET details = '{}' WHERE id = 'al-recent'`,
+        ),
+        ip: await sqlState(
+          app,
+          `UPDATE audit_logs SET ip_address = NULL WHERE id = 'al-recent'`,
+        ),
+        createdAt: await sqlState(
+          app,
+          `UPDATE audit_logs SET created_at = created_at - interval '1 year' WHERE id = 'al-recent'`,
+        ),
+        delete: await sqlState(
+          app,
+          `DELETE FROM audit_logs WHERE id = 'al-recent'`,
+        ),
+        deleteOld: await sqlState(
+          app,
+          `DELETE FROM audit_logs WHERE id = 'al-old'`,
+        ),
+        truncate: await sqlState(app, `TRUNCATE audit_logs`),
+        dropTrigger: await sqlState(
+          app,
+          `ALTER TABLE audit_logs DISABLE TRIGGER audit_logs_append_only_rows`,
+        ),
+      };
+      expect(refused).toEqual({
+        action: "42501",
+        details: "42501",
+        ip: "42501",
+        createdAt: "42501",
+        delete: "42501",
+        deleteOld: "42501",
+        truncate: "42501",
+        dropTrigger: "42501",
+      });
+
+      // The three updates the app makes: a location filled once, the
+      // delegated-access counter, and nothing else.
+      expect(
+        await sqlState(
+          app,
+          `UPDATE audit_logs SET location = 'Berlin, DE', asn = 3320, carrier = 'Telekom' WHERE id = 'al-recent'`,
+        ),
+      ).toBeNull();
+      expect(
+        await sqlState(
+          app,
+          `UPDATE audit_logs SET location = 'Elsewhere' WHERE id = 'al-recent'`,
+        ),
+      ).toBe("42501");
+      expect(
+        await sqlState(
+          app,
+          `UPDATE audit_logs SET details = '{"accesses":2}' WHERE id = 'al-counter'`,
+        ),
+      ).toBeNull();
+
+      // Retention: only rows older than the cutoff, never a recent cutoff.
+      expect(
+        await sqlState(
+          app,
+          `SELECT audit_logs_purge(ARRAY['al-recent','al-old'], (now() AT TIME ZONE 'UTC')::timestamp(3))`,
+        ),
+      ).toBe("22023");
+      const purged = await app.query<{ n: number }>(
+        `SELECT audit_logs_purge(ARRAY['al-recent','al-old'],
+           ((now() AT TIME ZONE 'UTC') - interval '10 days')::timestamp(3)) AS n`,
+      );
+      expect(purged.rows[0].n).toBe(1);
+
+      // Cycle erasure takes the cycle rows and nothing else.
+      const cycle = await app.query<{ n: number }>(
+        `SELECT audit_logs_erase_cycle($1) AS n`,
+        [probe],
+      );
+      expect(cycle.rows[0].n).toBe(1);
+
+      // Account erasure only for an account being deleted.
+      expect(
+        await sqlState(app, `SELECT audit_logs_erase_account('${probe}')`),
+      ).toBe("42501");
+      await app.query(
+        `UPDATE users SET deletion_requested_at = now() WHERE id = $1`,
+        [probe],
+      );
+      const erased = await app.query<{ n: number }>(
+        `SELECT audit_logs_erase_account($1) AS n`,
+        [probe],
+      );
+      expect(erased.rows[0].n).toBe(2);
+    } finally {
+      await owner.query(`DELETE FROM audit_logs WHERE user_id = $1`, [probe]);
+      await owner.query(`DELETE FROM users WHERE id = $1`, [probe]);
+    }
+  });
+
   it("is refused schema changes, triggers, functions, roles, server files and the queue's executed tables", async (ctx) => {
     if (serverVersion < 170000) ctx.skip();
     const refused = {

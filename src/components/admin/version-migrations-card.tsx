@@ -16,10 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiGet } from "@/lib/api/api-fetch";
-import {
-  UPDATE_CHANNEL_TAG,
-  updateChannelOf,
-} from "@/lib/admin/update-channel";
+import { UPDATE_CHANNEL_TAG } from "@/lib/admin/update-channel";
 import type { MigrationStatus } from "@/lib/admin/migration-status";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -36,9 +33,8 @@ export function VersionMigrationsCard() {
     staleTime: 60_000,
   });
   const k = "admin.versionMigrations";
-  const channel = version.data
-    ? updateChannelOf(version.data.version, version.data.buildSha ?? null)
-    : null;
+  // Resolved by the server; the card only names it.
+  const channel = version.data?.channel ?? null;
   const tag = channel ? UPDATE_CHANNEL_TAG[channel] : null;
   const m = migrations.data;
 

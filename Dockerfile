@@ -56,6 +56,12 @@ ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 ARG NEXT_PUBLIC_APP_BUILD_SHA
 ENV NEXT_PUBLIC_APP_BUILD_SHA=$NEXT_PUBLIC_APP_BUILD_SHA
 
+# Which image line this is (release, edge, nightly), from the workflow that
+# builds it. Inlined at build time like the SHA; /api/version reports it as
+# `channel` (src/lib/admin/update-channel.ts). Unset means a release.
+ARG NEXT_PUBLIC_APP_CHANNEL
+ENV NEXT_PUBLIC_APP_CHANNEL=$NEXT_PUBLIC_APP_CHANNEL
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -282,6 +288,9 @@ ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 # deploy). Provided by docker-publish.yml alongside the version arg.
 ARG NEXT_PUBLIC_APP_BUILD_SHA
 ENV NEXT_PUBLIC_APP_BUILD_SHA=$NEXT_PUBLIC_APP_BUILD_SHA
+# The image line, as in the builder stage.
+ARG NEXT_PUBLIC_APP_CHANNEL
+ENV NEXT_PUBLIC_APP_CHANNEL=$NEXT_PUBLIC_APP_CHANNEL
 
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs --create-home --home-dir /home/nextjs \

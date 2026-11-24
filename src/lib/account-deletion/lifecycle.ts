@@ -103,7 +103,15 @@ export async function eraseAccount(
 ): Promise<void> {
   if (reason === "account_deleted") {
     await tx.session.deleteMany({ where: { userId } });
-    await tx.auditLog.deleteMany({ where: { userId } });
+    // The audit log is append-only for the app (migration 0569): its rows go
+    // through the owner's function, which erases only an account marked as
+    // being deleted. A deletion without a grace window marks it here, in the
+    // transaction that removes the row a moment later.
+    await tx.user.updateMany({
+      where: { id: userId, deletionRequestedAt: null },
+      data: { deletionRequestedAt: new Date() },
+    });
+    await tx.$queryRaw`SELECT "audit_logs_erase_account"(${userId}) AS n`;
   }
   // The nightly off-host copies go with the account. The request commits
   // with the deletion; the purge job deletes the objects.
