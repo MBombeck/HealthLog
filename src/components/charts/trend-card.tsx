@@ -16,6 +16,7 @@ import {
   type TrendDirectionSentiment,
 } from "@/lib/insights/trend-sentiment";
 import { TrendTile } from "@/components/ui/trend-tile";
+import { TileHeader } from "@/components/insights/tile-header";
 
 interface SecondaryMetric {
   /** Sub-value latest reading (e.g. diastolic when latest is systolic). */
@@ -244,40 +245,33 @@ export function TrendCard({
 
   return (
     <TrendTile data-slot="trend-card">
-      {/* The heading row has a deterministic height so the value row below
-          sits at the same baseline across every tile in the strip. It
-          reserves two lines, not one: a one-line row could only keep that
-          promise by cutting the label, and the label is the only thing that
-          names the figure. An uppercase German compound
-          ("HERZFREQUENZVARIABILITÄT") or a glucose context ("GLUKOSE, VOR
-          DEM SCHLAFEN") does not fit a strip tile on one line in any width
-          the grid hands out, and ended in an ellipsis. `hyphens-auto` splits
-          a compound at a syllable (driven by the document's `lang`),
-          `break-words` is the floor, and the rare label that needs a third
-          line clamps with its full text in `title`. `h-10` is two
-          `text-xs leading-5` lines; identical across every tile. */}
-      <div className="flex h-10 min-w-0 items-start justify-between gap-2">
-        <span
-          className="text-muted-foreground line-clamp-2 min-w-0 flex-1 text-xs leading-5 font-medium tracking-wide break-words hyphens-auto uppercase"
-          data-slot="trend-card-label"
-          title={label}
-        >
-          {label}
-        </span>
-        <Icon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
-      </div>
+      {/* The heading is the tile header every other metric tile uses
+          (`TileHeader`, UI standards §1): foreground icon on the left,
+          title beside it. The strip used to set its own uppercase muted
+          label with the icon on the right, so the same reading looked
+          different on the dashboard and on Insights. The header reserves
+          two lines (`reserveLines`), so the value row below sits at the
+          same baseline across the strip whether a label takes one line or
+          two ("Herzfrequenzvariabilität", "Glukose, vor dem Schlafen"); a
+          rare third line clamps with its full text in `title`. */}
+      <TileHeader
+        icon={Icon}
+        title={label}
+        reserveLines={2}
+        className="min-w-0"
+      />
       {/* v1.4.25 — baseline-aligned value row. The headline value,
           unit, and trend arrow share a single flex line with
           `items-baseline` so the digits line up at the same y-coordinate
           across every tile in the strip (Weight 80 kg vs. BP 122 mmHg used
           to land at different heights when one tile had a one-line heading
           and another had a two-line wrap). The arrow slot is always
-          present — when there is no signal yet, a muted "—" placeholder
-          renders so the value row keeps a deterministic width. The maintainer's
+          present; when there is no signal yet it stays empty at the same
+          width, so the value row keeps a deterministic width. The maintainer's
           ask: "rechts neben der Zahl … der Pfeil [ist], wie gerade der
           Trend ist". */}
       <div
-        className="mt-2 flex items-baseline gap-x-1.5"
+        className="mt-3 flex items-baseline gap-x-1.5"
         data-slot="trend-card-value-row"
       >
         {latest === null && emptyHint ? (
@@ -285,7 +279,7 @@ export function TrendCard({
           // text (e.g. "collecting data") where the numeric headline would
           // sit, at a smaller size so the longer phrase fits the tile's
           // deterministic height. No unit; the arrow slot below still
-          // renders its muted placeholder so the row width stays stable.
+          // keeps its width (empty) so the row width stays stable.
           <span
             className="text-muted-foreground min-w-0 truncate text-base leading-none font-medium"
             data-slot="trend-card-empty-hint"
@@ -351,11 +345,12 @@ export function TrendCard({
           data-slot="trend-card-arrow"
           aria-hidden="true"
         >
+          {/* No signal yet: the slot stays empty and keeps its width, so the
+              value row lines up across the grid. It never prints a glyph
+              of its own; a dash beside the value read as a value. */}
           {primarySignal != null ? (
             <TrendIcon className={`h-4 w-4 ${trendColor}`} />
-          ) : (
-            <span className="text-muted-foreground text-xs opacity-30">—</span>
-          )}
+          ) : null}
         </span>
       </div>
       {/* v1.4.29 — `min-h-[18px]` reserves the callout slot at every

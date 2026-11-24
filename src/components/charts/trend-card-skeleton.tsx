@@ -31,15 +31,15 @@ export function TrendCardSkeleton({ className }: { className?: string }) {
       // legacy empty silhouette reserved.
       className={cn("min-h-[8rem]", className)}
     >
-      {/* Heading row — label + icon (TrendCard reserves two label lines,
-          h-10, so the loaded tile does not move the value row). */}
-      <div className="flex h-10 items-start justify-between gap-2">
-        <Skeleton className="mt-1 h-3 w-16" />
-        <Skeleton className="mt-0.5 h-4 w-4 shrink-0" />
+      {/* Heading row: icon + title, the loaded tile's `TileHeader` with its
+          two reserved lines (h-10), so the swap does not move the value row. */}
+      <div className="flex h-10 items-start gap-2">
+        <Skeleton className="size-5 shrink-0" />
+        <Skeleton className="mt-0.5 h-4 w-24" />
       </div>
       {/* Headline value row — `text-3xl leading-none` ≈ 30 px, plus the
           unit slot, baseline-aligned exactly like the loaded tile. */}
-      <div className="mt-2 flex items-baseline gap-x-1.5">
+      <div className="mt-3 flex items-baseline gap-x-1.5">
         <Skeleton className="h-[30px] w-20" />
         <Skeleton className="h-3.5 w-8" />
       </div>

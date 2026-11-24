@@ -21,8 +21,8 @@ import { I18nProvider } from "@/lib/i18n/context";
  *   2. Trend arrow rendered as a wrapping flex child after the unit —
  *      sometimes wrapped to its own line, sometimes missing entirely
  *      when slope30 was null. Now sits in a fixed `h-4 w-4` slot with
- *      `items-baseline` alignment; when there's no slope yet a muted
- *      "—" placeholder keeps the slot reserved.
+ *      `items-baseline` alignment; when there's no slope yet the slot
+ *      stays reserved and empty (a muted "—" there read as a value).
  *   3. Value rows of two adjacent tiles (e.g. "Weight 80 kg" vs.
  *      "Blood Pressure 122 mmHg") landed at different y-coordinates
  *      because heading-row height was variable. The fixed heading
@@ -56,10 +56,11 @@ describe("<TrendCard> W20a baseline alignment", () => {
       />,
     );
 
-    // h-10 is the load-bearing class — keeps the value row below at the
-    // same y-coordinate whether the label takes one line or two.
+    // The header is the shared TileHeader with its two reserved lines;
+    // h-10 keeps the value row below at the same y-coordinate whether the
+    // label takes one line or two.
     expect(html).toMatch(
-      /class="flex h-10 [^"]*"[^>]*><span[^>]*data-slot="trend-card-label"/,
+      /data-slot="tile-header" data-reserve-lines="2" class="flex [^"]*h-10/,
     );
   });
 
@@ -79,11 +80,10 @@ describe("<TrendCard> W20a baseline alignment", () => {
       />,
     );
 
-    const label = html.match(
-      /<span class="([^"]*)" data-slot="trend-card-label" title="([^"]*)"/,
-    );
-    expect(label, "label span not found").not.toBeNull();
-    const [, classes, title] = label!;
+    const tag = html.match(/<[a-z0-9]+ [^>]*data-slot="card-title"[^>]*>/)?.[0];
+    expect(tag, "tile title not found").toBeDefined();
+    const classes = tag!.match(/class="([^"]*)"/)?.[1] ?? "";
+    const title = tag!.match(/title="([^"]*)"/)?.[1];
     // Wraps at a syllable, clamps only past the two reserved lines, and the
     // clamp keeps the whole name reachable.
     expect(classes).toContain("hyphens-auto");
@@ -112,6 +112,28 @@ describe("<TrendCard> W20a baseline alignment", () => {
     // Headline font-size + zero line-height — across-tile baseline.
     expect(html).toContain("text-3xl");
     expect(html).toContain("leading-none");
+  });
+
+  it("names the reading the way every other metric tile does", () => {
+    const html = render(
+      <TrendCard
+        label="Weight"
+        latest={80}
+        unit="kg"
+        avg7={80}
+        avg30={80}
+        slope30={RISING}
+        icon={Activity}
+      />,
+    );
+    // Foreground icon first, then the title: no uppercase muted label with
+    // the glyph pushed to the right, which made the dashboard strip a
+    // second header language beside the Insights tiles.
+    const header = html.match(/data-slot="tile-header"[\s\S]*?<\/div>/)?.[0];
+    expect(header, "tile header not found").toBeDefined();
+    expect(header).toMatch(/<svg[^>]*class="[^"]*text-foreground/);
+    expect(header!.indexOf("<svg")).toBeLessThan(header!.indexOf("Weight"));
+    expect(html).not.toContain("uppercase");
   });
 
   it("places the trend arrow inline at the end of the value row", () => {
@@ -152,8 +174,8 @@ describe("<TrendCard> W20a baseline alignment", () => {
 
     // Slot still rendered (deterministic width across the strip).
     expect(html).toContain('data-slot="trend-card-arrow"');
-    // Placeholder dash + muted opacity so the slot reads as "no data".
-    expect(html).toMatch(/opacity-30[^"]*"[^>]*>—/);
+    // ...and empty: a dash beside the value read as a second value.
+    expect(html).toMatch(/data-slot="trend-card-arrow"[^>]*><\/span>/);
   });
 
   it("renders consistent layout across the five top-row tile metrics", () => {
@@ -183,7 +205,7 @@ describe("<TrendCard> W20a baseline alignment", () => {
 
       // Same heading-row height contract — two reserved label lines.
       expect(html).toMatch(
-        /class="flex h-10 [^"]*"[^>]*><span[^>]*data-slot="trend-card-label"/,
+        /data-slot="tile-header" data-reserve-lines="2" class="flex [^"]*h-10/,
       );
       // Same value-row baseline contract — `items-baseline` + `text-3xl`
       // + `leading-none`. Identical font geometry across all five tiles
