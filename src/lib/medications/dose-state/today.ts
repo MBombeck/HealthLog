@@ -3,6 +3,7 @@
  * every affected medication's dose ledger. A row the ledger does not place on
  * a slot (an ad-hoc take, a placeholder outside every band) gets no entry.
  */
+import { SNOOZE_ANCHOR_INCLUDE } from "@/lib/medications/snooze-scope";
 import { prisma } from "@/lib/db";
 import {
   DOSE_LEDGER_MEDICATION_INCLUDE,
@@ -22,11 +23,14 @@ const LOOKBACK_MS = 2 * 24 * 60 * 60 * 1000;
 export function readLedgerMedications(
   userId: string,
   ids: readonly string[],
-): Promise<DoseLedgerMedication[]> {
+): Promise<
+  Array<DoseLedgerMedication & { snooze: { snoozedAt: Date } | null }>
+> {
   if (ids.length === 0) return Promise.resolve([]);
   return prisma.medication.findMany({
     where: { id: { in: [...new Set(ids)] }, userId },
-    include: DOSE_LEDGER_MEDICATION_INCLUDE,
+    // The snooze's own instant, for the today list's snooze scope.
+    include: { ...DOSE_LEDGER_MEDICATION_INCLUDE, ...SNOOZE_ANCHOR_INCLUDE },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
   });
 }

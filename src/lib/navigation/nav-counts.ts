@@ -21,7 +21,11 @@ import {
 } from "@/lib/medications/dose-state/ledger";
 import { resolveLedgerSlot } from "@/lib/medications/dose-state/resolve";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
-import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
+import {
+  SNOOZE_ANCHOR_INCLUDE,
+  slotsHeldBySnooze,
+  snoozeAnchor,
+} from "@/lib/medications/snooze-scope";
 import { isCheckupDueNow } from "@/lib/measurement-reminders/due-now";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 
@@ -42,7 +46,7 @@ async function countDosesDue(
 ): Promise<number> {
   const medications = await prisma.medication.findMany({
     where: { userId, active: true, ...TRACKED_INTAKE_WHERE },
-    include: DOSE_LEDGER_MEDICATION_INCLUDE,
+    include: { ...DOSE_LEDGER_MEDICATION_INCLUDE, ...SNOOZE_ANCHOR_INCLUDE },
   });
   if (medications.length === 0) return 0;
   const ledgers = await loadDoseLedgers({
@@ -65,7 +69,7 @@ async function countDosesDue(
     );
     const held = slotsHeldBySnooze({
       snoozedUntil: medication.snoozedUntil,
-      snoozedAt: medication.updatedAt,
+      snoozedAt: snoozeAnchor(medication),
       schedules: medication.schedules,
       slotInstants: rows.map((row) => row.at),
       tz: userTz,
