@@ -1,0 +1,154 @@
+{
+  "formatVersion": 1,
+  "passTypeIdentifier": "pass.dev.healthlog.emergency",
+  "teamIdentifier": "ABCDE12345",
+  "serialNumber": "3b2f8a5e-6c1d-4f7a-9b0e-2d4c6a8e1f35",
+  "authenticationToken": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "webServiceURL": "https://health.example.org/api/wallet/apple/",
+  "organizationName": "HealthLog",
+  "description": "Emergency card",
+  "logoText": "HealthLog",
+  "sharingProhibited": true,
+  "voided": false,
+  "backgroundColor": "rgb(122, 22, 44)",
+  "foregroundColor": "rgb(255, 255, 255)",
+  "labelColor": "rgb(255, 214, 222)",
+  "footerBackgroundColor": "rgb(40, 10, 30)",
+  "barcodes": [
+    {
+      "format": "PKBarcodeFormatQR",
+      "message": "https://health.example.org/e/hlm_000000000000000000000000000000000000000000000000",
+      "messageEncoding": "iso-8859-1",
+      "altText": "Scan for the full card"
+    }
+  ],
+  "posterGeneric": {
+    "headerFields": [
+      {
+        "key": "as_of",
+        "label": "AS OF",
+        "value": "2026-11-24T12:00:00Z",
+        "dateStyle": "PKDateStyleMedium",
+        "ignoresTimeZone": true
+      }
+    ],
+    "primaryFields": [
+      {
+        "key": "name",
+        "value": "Emergency card"
+      },
+      {
+        "key": "blood",
+        "label": "BLOOD TYPE",
+        "value": "A+"
+      }
+    ],
+    "footerFields": [],
+    "additionalInfoFields": [
+      {
+        "key": "f_blood_type",
+        "label": "BLOOD TYPE",
+        "value": "A positive"
+      },
+      {
+        "key": "m_valid",
+        "label": "VALID UNTIL",
+        "value": "Until withdrawn"
+      },
+      {
+        "key": "m_asof",
+        "label": "AS OF",
+        "value": "Nov 24, 2026, updates by itself"
+      },
+      {
+        "key": "m_issuer",
+        "label": "ISSUED BY",
+        "value": "health.example.org",
+        "attributedValue": "<a href=\"https://health.example.org\">health.example.org</a>"
+      },
+      {
+        "key": "m_signer",
+        "label": "SIGNED BY",
+        "value": "HealthLog project, healthlog.dev"
+      },
+      {
+        "key": "m_note",
+        "label": "PLEASE NOTE",
+        "value": "Entered by its owner, not a medical document. The QR code opens the current card for as long as it is not withdrawn."
+      },
+      {
+        "key": "m_lock",
+        "label": "LOCK SCREEN",
+        "value": "Wallet shows this card only after Face ID or the passcode. For helpers at a locked iPhone, also fill in the Medical ID in the Health app."
+      }
+    ]
+  },
+  "generic": {
+    "headerFields": [
+      {
+        "key": "kind",
+        "value": "EMERGENCY CARD"
+      }
+    ],
+    "primaryFields": [
+      {
+        "key": "name",
+        "value": "Emergency card"
+      }
+    ],
+    "secondaryFields": [
+      {
+        "key": "blood",
+        "label": "BLOOD TYPE",
+        "value": "A+"
+      }
+    ],
+    "auxiliaryFields": [
+      {
+        "key": "as_of",
+        "label": "AS OF",
+        "value": "2026-11-24T12:00:00Z",
+        "dateStyle": "PKDateStyleMedium",
+        "ignoresTimeZone": true
+      }
+    ],
+    "backFields": [
+      {
+        "key": "f_blood_type",
+        "label": "BLOOD TYPE",
+        "value": "A positive"
+      },
+      {
+        "key": "m_valid",
+        "label": "VALID UNTIL",
+        "value": "Until withdrawn"
+      },
+      {
+        "key": "m_asof",
+        "label": "AS OF",
+        "value": "Nov 24, 2026, updates by itself"
+      },
+      {
+        "key": "m_issuer",
+        "label": "ISSUED BY",
+        "value": "health.example.org",
+        "attributedValue": "<a href=\"https://health.example.org\">health.example.org</a>"
+      },
+      {
+        "key": "m_signer",
+        "label": "SIGNED BY",
+        "value": "HealthLog project, healthlog.dev"
+      },
+      {
+        "key": "m_note",
+        "label": "PLEASE NOTE",
+        "value": "Entered by its owner, not a medical document. The QR code opens the current card for as long as it is not withdrawn."
+      },
+      {
+        "key": "m_lock",
+        "label": "LOCK SCREEN",
+        "value": "Wallet shows this card only after Face ID or the passcode. For helpers at a locked iPhone, also fill in the Medical ID in the Health app."
+      }
+    ]
+  }
+}

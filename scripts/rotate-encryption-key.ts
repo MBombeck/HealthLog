@@ -366,6 +366,24 @@ async function main() {
     ),
   );
 
+  // ───── Apple Wallet passes (String) ─────
+  // A WALLET link's raw token, and a device's pass push token. CARD links
+  // carry NULL and are skipped by `shouldRotate`.
+  results.push(
+    await rotateStringColumn(
+      "EmergencyCardLink",
+      "tokenEncrypted",
+      prisma.emergencyCardLink,
+    ),
+  );
+  results.push(
+    await rotateStringColumn(
+      "WalletPassRegistration",
+      "pushTokenEncrypted",
+      prisma.walletPassRegistration,
+    ),
+  );
+
   // ───── Health Connect folder fetch (String) ─────
   // Column: "credentialsEncrypted" — the WebDAV user name and app password.
   results.push(

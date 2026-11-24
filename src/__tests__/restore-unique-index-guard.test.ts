@@ -64,6 +64,12 @@ const DECISIONS: Record<string, Decision> = {
   },
   emergency_card_links_token_hash_key: { reason: NOT_IN_BACKUP },
   emergency_card_links_live_user_key: { reason: NOT_IN_BACKUP },
+  emergency_card_links_live_user_purpose_key: { reason: NOT_IN_BACKUP },
+  wallet_passes_link_id_key: { reason: NOT_IN_BACKUP },
+  wallet_passes_serial_number_key: { reason: NOT_IN_BACKUP },
+  wallet_pass_registrations_wallet_pass_id_device_library_id__key: {
+    reason: NOT_IN_BACKUP,
+  },
   ai_job_failures_user_id_job_subject_id_key: { reason: NOT_IN_BACKUP },
 };
 

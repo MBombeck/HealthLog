@@ -55,6 +55,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
             userId: user.id,
             tokenHash: hashToken(raw),
             revokedAt: null,
+            purpose: "CARD",
           },
           select: { id: true },
         })

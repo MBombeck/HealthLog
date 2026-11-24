@@ -794,7 +794,11 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
   CareCalendarFeed:
     "A live calendar-feed URL for visits and dates coming due: a credential a calendar provider polls, stored only as its hash. Excluded for the cycle feed's reason: restoring it would bring back a link the owner may have revoked, naming a host that may not be this one. After a restore the owner turns the subscription on again.",
   EmergencyCardLink:
-    "The emergency card's QR link (v1.49): a credential printed on a card, stored only as its hash. Restoring it would bring back a link the owner may have revoked; after a restore the owner makes a new link and prints the card again.",
+    "The emergency card's QR links (v1.49): a credential printed on a card, stored only as its hash, and from v1.50 the link of an Apple Wallet pass, whose raw token is stored sealed so the pass can draw its QR code again. Restoring either would bring back a link the owner may have revoked, and a backup must never carry a credential that opens the card. After a restore the owner makes a new link and prints the card again, and adds the pass again.",
+  WalletPass:
+    "An Apple Wallet pass of the emergency card (v1.50): a credential like the card's link, whose QR code is its own link. Restoring it would bring back a pass the owner may have withdrawn, pointing at a host that may not be this one, and its link is not carried either. After a restore the owner adds the pass to Wallet again.",
+  WalletPassRegistration:
+    "A device that asked Apple Wallet for updates of a pass, with the device's push token. It belongs to a pass that is not carried, and the token addresses a phone on behalf of this host only.",
   ClinicianShareLinkDocument:
     "Names which documents a share link exposed. Without the link it grants nothing, and with it, it would re-expose files through a URL the account may have revoked.",
 

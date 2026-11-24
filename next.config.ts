@@ -358,6 +358,9 @@ const nextConfig: NextConfig = {
       // The doctor-report PDF embeds its fonts, read from disk by a path the
       // tracer cannot follow (`src/lib/doctor-report-pdf/fonts.ts`).
       "./src/lib/doctor-report-pdf/fonts/**",
+      // The Wallet pass images, read from disk the same way
+      // (`src/lib/emergency-card/wallet-pass/assets.ts`).
+      "./src/lib/emergency-card/wallet-pass/assets/*.png",
       // Document AI local text extraction and rasterization both run the
       // app's one pdfjs-dist (`src/lib/documents/pdfjs.ts`) server-side; the
       // text read is the provider-free fallback that keeps content search

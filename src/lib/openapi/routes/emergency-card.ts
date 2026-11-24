@@ -37,6 +37,12 @@ const emergencyCardView = z
     fields: z
       .array(emergencyCardFieldSchema)
       .describe("The items the card was read for, in reading order."),
+    name: z
+      .string()
+      .nullable()
+      .describe(
+        "The record's full name, else its display name; the card's title line. Never the username. Added in v1.50.",
+      ),
     bloodType: emergencyBloodTypeSchema.nullable(),
     allergies: z
       .array(
