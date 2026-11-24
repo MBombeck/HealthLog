@@ -9791,7 +9791,8 @@
         "encryption_keys": "Claves de cifrado",
         "secure_cookie": "Cookies seguras",
         "app_url": "Dirección pública",
-        "database_dump": "Volcado de la base de datos"
+        "database_dump": "Volcado de la base de datos",
+        "local_ocr": "Reconocimiento de texto de escaneos"
       },
       "reason": {
         "encryption_keys": {
@@ -9816,6 +9817,12 @@
           "disabled": "No se hace ningún volcado nocturno de la base de datos. Haz la copia de otra forma.",
           "not_persistent": "La carpeta de volcados no está en un volumen montado, así que se pierden con la próxima actualización.",
           "scheduled": "Volcado nocturno programado ({cron})."
+        },
+        "local_ocr": {
+          "ready": "Los PDF escaneados y las fotos se leen en este servidor, sin IA ({languages}).",
+          "recent_failures": "Documentos escaneados que este servidor no pudo leer en los últimos 7 días: {count}. Cada uno indica el motivo en su página. Lo habitual es una máquina lenta o con poca memoria.",
+          "engine_missing": "Esta compilación no tiene motor de reconocimiento de texto. Los escaneos y las fotos quedan sin leer, salvo que los lea un proveedor de IA.",
+          "languages_missing": "El motor de reconocimiento está, pero sin datos de idioma. Construye la imagen con los datos de idioma preparados (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -13185,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "No se encontró texto legible. Parece un documento escaneado; un proveedor de visión de IA puede leerlo.",
+          "local-empty": "No se encontró texto legible, ni en el archivo ni con el reconocimiento de texto de este servidor. Un proveedor de visión de IA quizá pueda leerlo.",
           "local-unsupported": "Este tipo de archivo no se puede leer para la búsqueda.",
           "decrypt-error": "El archivo guardado no se pudo abrir para su lectura.",
           "raster-failed": "Las páginas del PDF no se pudieron procesar para su lectura. Los formatos de compresión de fax escaneados son una causa conocida.",
           "provider-error": "El proveedor de IA no pudo leer este documento en el último intento.",
           "pdf-needs-anthropic": "El procesador de este servidor no puede renderizar páginas PDF y este PDF no tiene capa de texto. Puede leerlo un proveedor de IA que acepte archivos PDF directamente, o sube fotos de las páginas.",
           "empty-transcription": "El proveedor de IA no devolvió texto para este documento.",
-          "resource-limit": "Este PDF es demasiado grande o complejo para leerlo aquí. El archivo en sí está bien y se sigue pudiendo abrir."
+          "resource-limit": "Este PDF es demasiado grande o complejo para leerlo aquí. El archivo en sí está bien y se sigue pudiendo abrir.",
+          "ocr-failed": "El reconocimiento de texto de este servidor no pudo terminar este documento. Tardó demasiado, necesitó demasiada memoria o falló. El archivo en sí está bien."
         }
       },
       "loadError": "No se pudo cargar este documento.",
@@ -13344,6 +13352,9 @@
       "extractHint": "Usa el texto ya leído de este documento. Los valores extraídos esperan tu revisión; nada se guarda automáticamente.",
       "extractEmpty": "No se pudieron extraer valores de este documento.",
       "extractIncomplete": "Una parte del documento no se pudo leer por completo, así que pueden faltar valores. Compara la lista con el documento.",
+      "readLocally": "Leer los valores sin IA",
+      "readLocallyPending": "Leyendo…",
+      "readLocallyHint": "Lee las filas de la tabla del texto que este servidor ya leyó, sin IA y sin enviar nada fuera. Revisa cada valor antes de guardarlo.",
       "failUnitRequired": "Un valor numérico necesita una unidad antes de poder guardarse.",
       "failUnitMismatch": "La unidad indicada no coincide con la unidad guardada de este marcador. Ajústala y termina la revisión de nuevo.",
       "failGeneric": "Este valor no se pudo guardar.",

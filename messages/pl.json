@@ -9791,7 +9791,8 @@
         "encryption_keys": "Klucze szyfrowania",
         "secure_cookie": "Bezpieczne ciasteczka",
         "app_url": "Adres publiczny",
-        "database_dump": "Zrzut bazy danych"
+        "database_dump": "Zrzut bazy danych",
+        "local_ocr": "Rozpoznawanie tekstu skanów"
       },
       "reason": {
         "encryption_keys": {
@@ -9816,6 +9817,12 @@
           "disabled": "Nie jest tworzony nocny zrzut bazy danych. Zabezpiecz bazę w inny sposób.",
           "not_persistent": "Katalog zrzutów nie leży na podłączonym wolumenie, więc zrzuty przepadną przy następnej aktualizacji.",
           "scheduled": "Nocny zrzut zaplanowany ({cron})."
+        },
+        "local_ocr": {
+          "ready": "Zeskanowane pliki PDF i zdjęcia są odczytywane na tym serwerze, bez AI ({languages}).",
+          "recent_failures": "Zeskanowane dokumenty, których ten serwer nie odczytał w ostatnich 7 dniach: {count}. Każdy podaje przyczynę na swojej stronie. Zwykle maszyna jest zbyt wolna lub ma za mało pamięci.",
+          "engine_missing": "Ta kompilacja nie ma silnika rozpoznawania tekstu. Skany i zdjęcia pozostają nieodczytane, chyba że odczyta je dostawca AI.",
+          "languages_missing": "Silnik rozpoznawania jest, ale bez danych językowych. Zbuduj obraz z przygotowanymi danymi językowymi (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -13185,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "Nie znaleziono czytelnego tekstu. To wygląda na skan; dostawca wizji AI może go odczytać.",
+          "local-empty": "Nie znaleziono czytelnego tekstu ani w pliku, ani przez rozpoznawanie tekstu na tym serwerze. Dostawca wizji AI może jednak go odczytać.",
           "local-unsupported": "Tego typu pliku nie można odczytać na potrzeby wyszukiwania.",
           "decrypt-error": "Nie udało się otworzyć zapisanego pliku do odczytu.",
           "raster-failed": "Nie udało się przetworzyć stron PDF do odczytu. Znaną przyczyną są skany w faksowych formatach kompresji.",
           "provider-error": "Dostawca AI nie zdołał odczytać tego dokumentu przy ostatniej próbie.",
           "pdf-needs-anthropic": "Procesor tego serwera nie potrafi renderować stron PDF, a ten PDF nie ma warstwy tekstowej. Odczyta go dostawca AI, który przyjmuje pliki PDF bezpośrednio, albo prześlij zdjęcia stron.",
           "empty-transcription": "Dostawca AI nie zwrócił tekstu dla tego dokumentu.",
-          "resource-limit": "Ten PDF jest zbyt duży lub zbyt złożony, żeby odczytać go tutaj. Sam plik jest w porządku i nadal się otwiera."
+          "resource-limit": "Ten PDF jest zbyt duży lub zbyt złożony, żeby odczytać go tutaj. Sam plik jest w porządku i nadal się otwiera.",
+          "ocr-failed": "Rozpoznawanie tekstu na tym serwerze nie zdołało dokończyć tego dokumentu. Trwało za długo, wymagało za dużo pamięci albo zakończyło się błędem. Sam plik jest w porządku."
         }
       },
       "loadError": "Nie udało się wczytać tego dokumentu.",
@@ -13344,6 +13352,9 @@
       "extractHint": "Korzysta z tekstu już odczytanego z tego dokumentu. Odczytane wartości czekają na Twoją weryfikację; nic nie zapisuje się automatycznie.",
       "extractEmpty": "Z tego dokumentu nie udało się odczytać żadnych wartości.",
       "extractIncomplete": "Części dokumentu nie udało się odczytać w całości, więc może brakować niektórych wartości. Porównaj listę z dokumentem.",
+      "readLocally": "Odczytaj wartości bez AI",
+      "readLocallyPending": "Odczytywanie…",
+      "readLocallyHint": "Odczytuje wiersze tabeli z tekstu, który ten serwer już odczytał, bez AI i bez wysyłania czegokolwiek na zewnątrz. Sprawdź każdą wartość przed zapisaniem.",
       "failUnitRequired": "Wartość liczbowa potrzebuje jednostki, zanim będzie można ją zapisać.",
       "failUnitMismatch": "Podana jednostka nie zgadza się z zapisaną jednostką tego wskaźnika. Popraw ją i zakończ przegląd ponownie.",
       "failGeneric": "Nie udało się zapisać tej wartości.",

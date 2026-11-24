@@ -71,6 +71,9 @@ notes, and machine-readable specs that ship alongside the source:
   of several visits, such as a physiotherapy prescription.
   [`using/medication-leaflets.md`](./using/medication-leaflets.md) covers
   finding a medication's official leaflet and saving its link.
+  [`using/documents-without-ai.md`](./using/documents-without-ai.md) covers
+  what the server reads with no AI: text layers, scans by OCR, and lab
+  values read by rule into the review.
 - [`migration/`](./migration/) — migration notes. Currently only
   v1.3 to v1.4; later releases are covered by `CHANGELOG.md` and
   <https://docs.healthlog.dev>.

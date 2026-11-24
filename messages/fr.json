@@ -9791,7 +9791,8 @@
         "encryption_keys": "Clés de chiffrement",
         "secure_cookie": "Cookies sécurisés",
         "app_url": "Adresse publique",
-        "database_dump": "Sauvegarde de la base"
+        "database_dump": "Sauvegarde de la base",
+        "local_ocr": "Reconnaissance de texte des scans"
       },
       "reason": {
         "encryption_keys": {
@@ -9816,6 +9817,12 @@
           "disabled": "Aucune sauvegarde nocturne de la base n'est faite. Sauvegardez la base d'une autre manière.",
           "not_persistent": "Le dossier des sauvegardes n'est pas sur un volume monté, elles seront perdues à la prochaine mise à jour.",
           "scheduled": "Sauvegarde nocturne planifiée ({cron})."
+        },
+        "local_ocr": {
+          "ready": "Les PDF scannés et les photos sont lus sur ce serveur, sans IA ({languages}).",
+          "recent_failures": "Documents scannés que ce serveur n’a pas pu lire ces 7 derniers jours : {count}. Chacun en indique la raison sur sa page. Le plus souvent, la machine est trop lente ou manque de mémoire.",
+          "engine_missing": "Cette version n’a pas de moteur de reconnaissance de texte. Les scans et les photos restent non lus, sauf si un fournisseur IA les lit.",
+          "languages_missing": "Le moteur de reconnaissance est présent, mais sans données de langue. Construisez l’image avec les données de langue (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -13185,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "Aucun texte lisible n’a été trouvé. Cela ressemble à un scan ; un fournisseur de vision IA peut le lire.",
+          "local-empty": "Aucun texte lisible n’a été trouvé, ni dans le fichier ni par la reconnaissance de texte de ce serveur. Un fournisseur de vision IA peut peut-être encore le lire.",
           "local-unsupported": "Ce type de fichier ne peut pas être lu pour la recherche.",
           "decrypt-error": "Le fichier stocké n’a pas pu être ouvert pour la lecture.",
           "raster-failed": "Les pages du PDF n’ont pas pu être rendues pour la lecture. Les formats de compression de fax numérisés en sont une cause connue.",
           "provider-error": "Le fournisseur d’IA n’a pas pu lire ce document lors de la dernière tentative.",
           "pdf-needs-anthropic": "Le processeur de ce serveur ne peut pas faire le rendu des pages PDF, et ce PDF n’a pas de couche texte. Un fournisseur d’IA qui accepte directement les fichiers PDF peut le lire, ou des photos des pages.",
           "empty-transcription": "Le fournisseur d’IA n’a renvoyé aucun texte pour ce document.",
-          "resource-limit": "Ce PDF est trop volumineux ou trop complexe pour être lu ici. Le fichier lui-même est intact et s'ouvre toujours."
+          "resource-limit": "Ce PDF est trop volumineux ou trop complexe pour être lu ici. Le fichier lui-même est intact et s'ouvre toujours.",
+          "ocr-failed": "La reconnaissance de texte de ce serveur n’a pas pu terminer ce document. Elle a pris trop de temps ou trop de mémoire, ou elle a échoué. Le fichier lui-même est intact."
         }
       },
       "loadError": "Impossible de charger ce document.",
@@ -13344,6 +13352,9 @@
       "extractHint": "Utilise le texte déjà lu de ce document. Les valeurs extraites attendent votre vérification ; rien n’est enregistré automatiquement.",
       "extractEmpty": "Aucune valeur n’a pu être extraite de ce document.",
       "extractIncomplete": "Une partie du document n’a pas pu être lue entièrement, des valeurs peuvent donc manquer. Comparez la liste avec le document.",
+      "readLocally": "Lire les valeurs sans IA",
+      "readLocallyPending": "Lecture…",
+      "readLocallyHint": "Lit les lignes du tableau dans le texte déjà lu sur ce serveur, sans IA et sans rien envoyer ailleurs. Vérifiez chaque valeur avant de l’enregistrer.",
       "failUnitRequired": "Une valeur numérique a besoin d’une unité avant de pouvoir être enregistrée.",
       "failUnitMismatch": "L’unité indiquée ne correspond pas à l’unité enregistrée pour ce marqueur. Ajustez-la, puis terminez à nouveau la vérification.",
       "failGeneric": "Cette valeur n’a pas pu être enregistrée.",

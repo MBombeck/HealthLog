@@ -14,11 +14,15 @@ vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 vi.mock("@/lib/documents/auto-stage-labs", () => ({
   maybeAutoStageLabFacts: vi.fn().mockResolvedValue(undefined),
 }));
+vi.mock("@/lib/documents/local-lab-values", () => ({
+  maybeStageLabValuesWithoutModel: vi.fn().mockResolvedValue(undefined),
+}));
 const { findUnique } = vi.hoisted(() => ({ findUnique: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: { user: { findUnique } } }));
 
 import {
   enqueueDocumentIndex,
+  needsStagingWithoutModel,
   runDocumentIndex,
   stagingSchedule,
 } from "../document-index";
@@ -38,6 +42,7 @@ import {
 import { indexDocumentContent } from "@/lib/documents/index-document";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { maybeAutoStageLabFacts } from "@/lib/documents/auto-stage-labs";
+import { maybeStageLabValuesWithoutModel } from "@/lib/documents/local-lab-values";
 
 /** A document the local text layer indexed. */
 const INDEXED_LOCALLY = {
@@ -136,6 +141,75 @@ describe("runDocumentIndex", () => {
   it("ignores a payload missing ids without calling the tree", async () => {
     await runDocumentIndex({ userId: "", documentId: "" });
     expect(indexDocumentContent).not.toHaveBeenCalled();
+  });
+
+  it("reads the values by rule when the AI may not stage them", async () => {
+    vi.mocked(indexDocumentContent).mockResolvedValue(INDEXED_LOCALLY);
+    vi.mocked(maybeAutoStageLabFacts).mockResolvedValue({
+      staged: false,
+      reason: "not-eligible",
+    });
+    await runDocumentIndex({ userId: "user-1", documentId: "doc-1" });
+    expect(maybeStageLabValuesWithoutModel).toHaveBeenCalledWith(
+      "user-1",
+      "doc-1",
+    );
+  });
+
+  it("leaves the values to the AI when it staged them", async () => {
+    vi.mocked(indexDocumentContent).mockResolvedValue(INDEXED_LOCALLY);
+    vi.mocked(maybeAutoStageLabFacts).mockResolvedValue({
+      staged: true,
+      facts: 4,
+    });
+    await runDocumentIndex({ userId: "user-1", documentId: "doc-1" });
+    expect(maybeStageLabValuesWithoutModel).not.toHaveBeenCalled();
+  });
+
+  it("a deferred import is read by neither", async () => {
+    vi.mocked(indexDocumentContent).mockResolvedValue(INDEXED_LOCALLY);
+    await runDocumentIndex({
+      userId: "user-1",
+      documentId: "doc-1",
+      localOnly: true,
+    });
+    expect(maybeStageLabValuesWithoutModel).not.toHaveBeenCalled();
+  });
+
+  it("hands the job's abort signal to the index", async () => {
+    vi.mocked(indexDocumentContent).mockResolvedValue(INDEXED_LOCALLY);
+    const signal = new AbortController().signal;
+    await runDocumentIndex(
+      { userId: "user-1", documentId: "doc-1" },
+      { signal },
+    );
+    expect(vi.mocked(indexDocumentContent).mock.calls[0][2]).toMatchObject({
+      signal,
+    });
+  });
+});
+
+describe("needsStagingWithoutModel", () => {
+  it("is true when the AI could not stage, and only then", () => {
+    expect(needsStagingWithoutModel(undefined)).toBe(true);
+    for (const reason of [
+      "not-eligible",
+      "budget",
+      "extract-failed",
+    ] as const) {
+      expect(needsStagingWithoutModel({ staged: false, reason })).toBe(true);
+    }
+    for (const reason of [
+      "modules-off",
+      "already-handled",
+      "deferred",
+      "no-text",
+      "not-lab",
+      "raced",
+    ] as const) {
+      expect(needsStagingWithoutModel({ staged: false, reason })).toBe(false);
+    }
+    expect(needsStagingWithoutModel({ staged: true, facts: 1 })).toBe(false);
   });
 });
 

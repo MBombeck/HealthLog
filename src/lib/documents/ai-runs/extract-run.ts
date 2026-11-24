@@ -91,7 +91,8 @@ export interface DocumentExtraction {
   incomplete: boolean;
 }
 
-class StagingRefused extends Error {
+/** Staging was refused by the re-check under the row lock; `outcome` says why. */
+export class StagingRefused extends Error {
   constructor(readonly outcome: AiRunOutcome<never>) {
     super("staging refused");
   }
@@ -106,7 +107,7 @@ class StagingRefused extends Error {
  * approved row or sever a committed-record provenance link: the only facts
  * present are PENDING / REJECTED leftovers from an earlier run.
  */
-async function stageExtraction(
+export async function stageExtraction(
   documentId: string,
   userId: string,
   result: InboundExtractionResult,

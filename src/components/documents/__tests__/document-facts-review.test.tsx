@@ -165,6 +165,43 @@ describe("<DocumentFactsSection>", () => {
     expect(html).toBe("");
   });
 
+  it("offers the read without AI beside the AI extract", () => {
+    const html = render(
+      <DocumentFactsSection
+        doc={doc({ status: "STORED", facts: [], factCount: 0 })}
+        {...baseProps}
+      />,
+    );
+    expect(html).toContain('data-slot="document-facts-read-locally"');
+    expect(html).toContain("Read values without AI");
+  });
+
+  it("offers the read without AI with AI off, and only that one", () => {
+    const html = render(
+      <DocumentFactsSection
+        doc={doc({ status: "STORED", facts: [], factCount: 0 })}
+        {...baseProps}
+        aiEnabled={false}
+      />,
+    );
+    expect(html).toContain('data-slot="document-facts-read-locally"');
+    expect(html).not.toContain('data-slot="document-facts-extract"');
+  });
+
+  it("offers the AI read over values read by rule, and not over the AI's own", () => {
+    const byRule = render(
+      <DocumentFactsSection
+        doc={doc({ providerType: "local-parser" })}
+        {...baseProps}
+      />,
+    );
+    expect(byRule).toContain('data-slot="document-facts-review-open"');
+    expect(byRule).toContain('data-slot="document-facts-extract"');
+    expect(byRule).not.toContain('data-slot="document-facts-read-locally"');
+    const byAi = render(<DocumentFactsSection doc={doc()} {...baseProps} />);
+    expect(byAi).not.toContain('data-slot="document-facts-extract"');
+  });
+
   it("renders nothing for an unread non-lab document", () => {
     const html = render(
       <DocumentFactsSection

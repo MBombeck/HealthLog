@@ -14,6 +14,8 @@ import {
   resolveBackupDir,
   resolveBackupSchedule,
 } from "@/lib/database-backup/dump-core.mjs";
+import { prisma } from "@/lib/db";
+import { serverOcrStatus } from "@/lib/documents/server-ocr";
 import { resolveOrigin } from "@/lib/http/origin";
 
 import {
@@ -30,10 +32,35 @@ function safely<T>(read: () => T, fallback: T): T {
   }
 }
 
-export function readSetupHealthInputs(
+/** How far back an OCR failure counts. */
+const OCR_FAILURE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Documents whose last index attempt ended in an OCR failure in the window:
+ * a count across accounts, nothing about any one of them. A read that fails
+ * answers 0 rather than failing the whole check.
+ */
+async function recentOcrFailures(now: Date): Promise<number> {
+  try {
+    return await prisma.inboundDocument.count({
+      where: {
+        deletedAt: null,
+        lastIndexOutcome: "ocr-failed",
+        lastIndexAttemptAt: {
+          gte: new Date(now.getTime() - OCR_FAILURE_WINDOW_MS),
+        },
+      },
+    });
+  } catch {
+    return 0;
+  }
+}
+
+export async function readSetupHealthInputs(
   request: Request,
   env: Record<string, string | undefined> = process.env,
-): SetupHealthInputs {
+  now: Date = new Date(),
+): Promise<SetupHealthInputs> {
   const requestOrigin = safely(() => resolveOrigin(request), null);
   const protocol = requestOrigin?.startsWith("https:")
     ? "https"
@@ -62,9 +89,13 @@ export function readSetupHealthInputs(
         : false,
       cron: resolveBackupSchedule(env).cron,
     },
+    localOcr: {
+      status: serverOcrStatus(),
+      recentFailures: await recentOcrFailures(now),
+    },
   };
 }
 
-export function readSetupHealth(request: Request): SetupHealth {
-  return evaluateSetupHealth(readSetupHealthInputs(request));
+export async function readSetupHealth(request: Request): Promise<SetupHealth> {
+  return evaluateSetupHealth(await readSetupHealthInputs(request));
 }

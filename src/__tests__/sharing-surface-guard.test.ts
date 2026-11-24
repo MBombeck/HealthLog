@@ -1424,6 +1424,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "documents",
     why: 'Making one document searchable, and the lab staging that follows it. Same capability, provider and egress re-check as extract; `"guardian"` only.',
   },
+  "app/api/documents/inbound/[id]/lab-values/route.ts": {
+    domain: "documents",
+    why: "Reading a lab report's values into staged facts by rule from the record's own stored text, with no model and no capability to ask. Owner-scoped load under the resolved user id, the same confirmed and partly-confirmed refusals as extract; `\"guardian\"` only, as staging writes into the record's review.",
+  },
   "app/api/documents/inbound/reindex/route.ts": {
     domain: "documents",
     why: "Queueing the record's unindexed documents for search. The worker re-asks the record's capability before every read; `\"guardian\"` only.",
@@ -2430,6 +2434,8 @@ const DELEGABLE_GUARDIAN_ROUTES: Record<string, string> = {
     "A summary or the transcribed text, on request.",
   "app/api/documents/inbound/[id]/index/route.ts":
     "Making one document searchable, and the lab staging it continues into.",
+  "app/api/documents/inbound/[id]/lab-values/route.ts":
+    "Reading a lab report's values by rule into staged facts, from the record's stored text; no model, no egress.",
   "app/api/documents/inbound/reindex/route.ts":
     "Queueing the record's unindexed documents; the worker re-checks the record's capability.",
   "app/api/documents/inbound/[id]/chat/route.ts":
@@ -2638,8 +2644,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * 1.49: the getting-started checklist's optional-row presence read joins the
  * guardian list. 342 -> 343.
+ *
+ * Reading a lab report's values by rule, with no model (`lab-values`), joins
+ * the record list and the guardian list. 352 -> 354.
  */
-const FROZEN_ENTRY_COUNT = 352;
+const FROZEN_ENTRY_COUNT = 354;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

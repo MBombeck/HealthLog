@@ -131,6 +131,7 @@ export const DOCUMENT_INDEX_OUTCOMES = [
   "provider-error",
   "pdf-needs-anthropic",
   "empty-transcription",
+  "ocr-failed",
 ] as const;
 export type DocumentIndexOutcomeValue =
   (typeof DOCUMENT_INDEX_OUTCOMES)[number];
