@@ -19,8 +19,8 @@
  * nothing written to disk.
  *
  * Bounds (denial-of-service + vision token cost): render at most the first
- * `RASTER_MAX_PAGES` pages, each capped to `RASTER_TARGET_LONG_EDGE` on its long
- * edge (never upscaled), JPEG at `RASTER_JPEG_QUALITY`. A discharge letter / lab
+ * `RASTER_MAX_PAGES` pages, each rendered at `RASTER_DPI` and capped to
+ * `RASTER_MAX_LONG_EDGE` on its long edge, JPEG at `RASTER_JPEG_QUALITY`. A discharge letter / lab
  * is 1-4 pages; the cap keeps a pathological 200-page PDF from draining the
  * subscription allowance in one job.
  *
@@ -59,11 +59,39 @@ export const RASTER_MAX_PAGES = 10;
 export const RASTER_HARD_MAX_PAGES = 20;
 
 /**
- * Longest-edge pixel cap per page. Tighter than the client upload downscale
- * ceiling because these feed a token-metered vision model; ~1600px is legible
- * for a document read without blowing up the tile count.
+ * Resolution a page renders at. pdf.js measures pages in points, so its scale
+ * 1 is 72 dpi and an A4 page came out 842 px tall: decimal commas vanished and
+ * `mmol/l` read as `mmo`. 200 dpi is the usual floor for reading small print
+ * from a scan; an A5 sheet or a supplement label stays under the edge cap at
+ * that resolution and gets all of it.
  */
-export const RASTER_TARGET_LONG_EDGE = 1600;
+export const RASTER_DPI = 200;
+
+/**
+ * Longest edge of a rendered page, in pixels. The vision wires that receive
+ * these pages, as their providers document them:
+ *
+ * - OpenAI (`openai`, `codex`, `admin-*`, at `detail: "high"`): every image is
+ *   fitted inside 2048 x 2048 first. Patch-priced models then shrink it to a
+ *   2,500-patch budget of 32 px (an A4 page lands near 1345 x 1902); tile
+ *   models scale the short side to 768.
+ * - Anthropic: long edge 1568 px on the standard tier, 2576 px on the
+ *   high-resolution tier (Claude 4.7 and later); a larger image is downscaled,
+ *   never refused.
+ *
+ * 2000 sits under the smallest hard bound (OpenAI's 2048), so no wire is sent
+ * pixels it throws away for its fit, and it is near what OpenAI's patch budget
+ * keeps of an A4 page. At this edge an A4 page renders at about 171 dpi and a
+ * US Letter page at about 182 dpi, against 72 before. Cost per page on the
+ * patch-priced wires is bounded by the provider's own budget (2,500 patches,
+ * about 3,000 tokens; up to 4,784 visual tokens on Anthropic's high-resolution
+ * tier), and `RASTER_MAX_PAGES` bounds a document.
+ *
+ * Memory: one page at the cap is a 1415 x 2000 RGBA canvas, about 11 MB,
+ * rendered and released page by page in the reader child under
+ * `PDF_CHILD_MEMORY_MB`; what the child keeps is each page's JPEG.
+ */
+export const RASTER_MAX_LONG_EDGE = 2000;
 
 /** JPEG quality (0-100). ~80 keeps text legible at a fraction of PNG's bytes. */
 export const RASTER_JPEG_QUALITY = 80;
@@ -170,7 +198,8 @@ export async function rasterizePdf(
       data: buffer,
       options: {
         maxPages: cap,
-        targetLongEdge: RASTER_TARGET_LONG_EDGE,
+        dpi: RASTER_DPI,
+        maxLongEdge: RASTER_MAX_LONG_EDGE,
         jpegQuality: RASTER_JPEG_QUALITY,
         minInkRatio: RASTER_MIN_INK_RATIO,
         withText: opts.withText === true,

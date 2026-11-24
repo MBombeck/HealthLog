@@ -124,7 +124,8 @@ async function imagePdf(size: number, softMask = false): Promise<Buffer> {
 
 const RENDER_ONE_PAGE = {
   maxPages: 1,
-  targetLongEdge: 1600,
+  dpi: 200,
+  maxLongEdge: 2000,
   jpegQuality: 80,
   minInkRatio: 0.0001,
 };
