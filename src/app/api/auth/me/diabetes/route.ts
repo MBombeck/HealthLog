@@ -103,7 +103,6 @@ export const PATCH = apiHandler(async (req: Request) => {
 
   annotate({
     action: { name: "auth.me.diabetes.patch" },
-    meta: { hasDiabetes: next },
   });
 
   const payload: DiabetesResponse = { hasDiabetes: next };

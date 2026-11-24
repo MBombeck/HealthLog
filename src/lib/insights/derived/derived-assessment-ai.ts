@@ -413,7 +413,6 @@ export async function generateDerivedScoreAssessment(args: {
       meta: {
         metric: args.metric,
         count: ungrounded.length,
-        sample: ungrounded[0]?.source,
       },
     });
     return {
