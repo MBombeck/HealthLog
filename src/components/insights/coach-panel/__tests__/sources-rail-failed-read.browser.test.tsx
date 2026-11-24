@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 
 import { renderWithApp } from "../../../../../tests/browser/render";
 import { stubFetch } from "../../../../../tests/browser/fetch-stub";
+import { CoachPrefsSection } from "@/components/settings/coach-prefs-section";
 import { SourcesRail } from "../sources-rail";
 
 const PREFS = "/api/auth/me/coach-prefs";
@@ -69,5 +70,29 @@ describe("SourcesRail after a failed preferences read", () => {
     expect(fetchStub.calls("PUT", PREFS)[0].body).toMatchObject({
       baseUpdatedAt: "2026-11-24T10:00:00.000Z",
     });
+  });
+});
+
+describe("Settings > Coach after a failed preferences read", () => {
+  it("says the read failed instead of loading for ever", async () => {
+    const fetchStub = stubFetch().on("GET", PREFS, {
+      status: 502,
+      error: "Bad gateway",
+    });
+    const { screen } = await renderWithApp(
+      <CoachPrefsSection isAuthenticated />,
+    );
+    await expect
+      .poll(
+        () =>
+          screen.container.querySelector('[data-slot="query-error-row"]') !==
+          null,
+        { timeout: 10_000 },
+      )
+      .toBe(true);
+    expect(
+      screen.container.querySelector('[data-slot="coach-prefs-skeleton"]'),
+    ).toBeNull();
+    expect(fetchStub.calls("PUT", PREFS)).toHaveLength(0);
   });
 });

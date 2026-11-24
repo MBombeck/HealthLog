@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -106,6 +107,27 @@ function sourcesSummary(
   });
 }
 
+/** The form's shape while the stored preferences load. */
+function CoachPrefsSkeleton() {
+  return (
+    <div data-slot="coach-prefs-skeleton" className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-9 w-full" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-9 w-full" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-3 w-28" />
+        <Skeleton className="h-3 w-3/4" />
+        <Skeleton className="h-44 w-full" />
+      </div>
+    </div>
+  );
+}
+
 export interface CoachPrefsSectionProps {
   isAuthenticated: boolean;
 }
@@ -115,7 +137,8 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
   const coach = useAiCapability("coach");
   const reasoningState = reasoningStateOrDefault(useCoachReasoning());
 
-  const { data: persisted } = useCoachPrefs({ enabled: isAuthenticated });
+  const prefsQuery = useCoachPrefs({ enabled: isAuthenticated });
+  const persisted = prefsQuery.data;
 
   // Local working copy edited by the form; re-syncs to the persisted
   // shape on every fetch via the in-render setState pattern (the
@@ -161,22 +184,16 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
         title={t("insights.coach.settingsTitle")}
         description={t("insights.coach.settingsDescription")}
       />
-      {isLoading ? (
-        <div data-slot="coach-prefs-skeleton" className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-9 w-full" />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-9 w-full" />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-3 w-28" />
-            <Skeleton className="h-3 w-3/4" />
-            <Skeleton className="h-44 w-full" />
-          </div>
-        </div>
+      {isLoading && prefsQuery.isError ? (
+        // A failed read is not the defaults: the form would save them over
+        // the stored preferences. Say so and offer the read again.
+        <QueryErrorRow
+          inset
+          error={prefsQuery.error}
+          onRetry={() => void prefsQuery.refetch()}
+        />
+      ) : isLoading ? (
+        <CoachPrefsSkeleton />
       ) : (
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
