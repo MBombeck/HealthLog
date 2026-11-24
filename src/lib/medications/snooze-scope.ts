@@ -23,6 +23,7 @@ import {
   type SlotPhaseWindow,
   type WorkerScheduleRow,
 } from "@/lib/medications/scheduling/worker-helpers";
+import { prisma } from "@/lib/db";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 
 /**
@@ -163,4 +164,29 @@ export function snoozeAnchor(medication: {
   snooze?: { snoozedAt: Date } | null;
 }): Date {
   return medication.snooze?.snoozedAt ?? medication.updatedAt;
+}
+
+/**
+ * `medications` with the snooze record {@link snoozeAnchor} reads, for a
+ * read that does not include it: one statement, and none while no snooze
+ * runs (the navigation count, read on every page).
+ */
+export async function withSnoozeRecords<
+  T extends { id: string; snoozedUntil: Date | null },
+>(
+  medications: readonly T[],
+  now: Date,
+): Promise<Array<T & { snooze: { snoozedAt: Date } | null }>> {
+  const running = medications
+    .filter((m) => m.snoozedUntil !== null && now < m.snoozedUntil)
+    .map((m) => m.id);
+  const rows =
+    running.length === 0
+      ? []
+      : await prisma.medicationSnooze.findMany({
+          where: { medicationId: { in: running } },
+          select: { medicationId: true, snoozedAt: true },
+        });
+  const byId = new Map(rows.map((r) => [r.medicationId, r]));
+  return medications.map((m) => ({ ...m, snooze: byId.get(m.id) ?? null }));
 }
