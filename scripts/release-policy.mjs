@@ -7,6 +7,7 @@
 //   node scripts/release-policy.mjs next [--now <iso|unix>]          (pnpm release:next)
 //   node scripts/release-policy.mjs pr --base <rev> --head <rev> --source <branch>
 //   node scripts/release-policy.mjs migrations --base <rev> --head <rev>
+//   node scripts/release-policy.mjs deletions --base <rev> --head <rev> [--body-file <file>]
 //
 // `check` runs in the release-policy job of docker-publish.yml. It exits 1 on
 // a hard error and writes `off_schedule=true|false` to the GitHub output. An
@@ -471,6 +472,70 @@ export function migrationEdits(nameStatus) {
     });
 }
 
+// ── Deleted base files ──────────────────────────────────────────────────
+
+/** Where a pull request may not delete a file without naming it. */
+export const GUARDED_PREFIXES = [
+  ".github/workflows/",
+  "scripts/",
+  "prisma/migrations/",
+  "docs/",
+];
+
+/**
+ * The paths a pull request body names on `Removes:` lines. A line may name
+ * several paths, separated by commas or spaces; backticks are ignored. A
+ * path ending in `/` names everything below it.
+ *
+ * @param {string} body
+ * @returns {string[]}
+ */
+export function namedRemovals(body) {
+  const names = [];
+  for (const line of (body ?? "").split(/\r?\n/)) {
+    const match = /^\s*(?:[-*]\s+)?Removes:\s*(.*)$/.exec(line);
+    if (!match) continue;
+    for (const part of match[1].split(/[\s,]+/)) {
+      const name = part.replace(/`/g, "").replace(/^\.\//, "").trim();
+      if (name) names.push(name);
+    }
+  }
+  return names;
+}
+
+/**
+ * Files under a guarded prefix that the head deleted while the base still
+ * has them, minus the ones the body names. A branch that was rebuilt from a
+ * stale copy deletes whatever landed on the base after it was cut, and a
+ * green test run does not notice a test file that is gone.
+ *
+ * @param {string} nameStatus  `git diff --name-status base...head` output
+ * @param {string[]} removals  paths named on `Removes:` lines
+ * @param {(path: string) => boolean} onBase  whether the base has the path
+ * @returns {string[]} the unnamed deletions
+ */
+export function unnamedDeletions(nameStatus, removals, onBase = () => true) {
+  const named = (path) =>
+    removals.some((name) =>
+      name.endsWith("/") ? path.startsWith(name) : path === name,
+    );
+  return nameStatus
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [status, ...paths] = line.split("\t");
+      return { status, path: paths[0] ?? "" };
+    })
+    .filter(({ status }) => status === "D")
+    .map(({ path }) => path)
+    .filter((path) =>
+      GUARDED_PREFIXES.some((prefix) => path.startsWith(prefix)),
+    )
+    .filter((path) => onBase(path))
+    .filter((path) => !named(path));
+}
+
 // ── CLI ─────────────────────────────────────────────────────────────────
 
 export function parseNow(value) {
@@ -656,7 +721,51 @@ export function main(
     return 0;
   }
 
-  error("Usage: release-policy.mjs <check|next|pr|migrations> ...");
+  if (command === "deletions") {
+    if (!flags.base || !flags.head) {
+      error(
+        "Usage: release-policy.mjs deletions --base <rev> --head <rev> [--body-file <file>]",
+      );
+      return 2;
+    }
+    const body = flags["body-file"]
+      ? readFileSync(resolve(cwd, flags["body-file"]), "utf8")
+      : "";
+    // Three dots: what the head did since it left the base. No rename
+    // detection: git guesses renames by similarity, so a deleted file could
+    // pass as moved into any new file of similar shape. A move names its old
+    // path like any other removal.
+    const nameStatus = git(
+      [
+        "diff",
+        "--name-status",
+        "--no-renames",
+        `${flags.base}...${flags.head}`,
+        "--",
+        ...GUARDED_PREFIXES,
+      ],
+      cwd,
+    );
+    const onBase = (path) => {
+      try {
+        git(["cat-file", "-e", `${flags.base}:${path}`], cwd);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const deletions = unnamedDeletions(nameStatus, namedRemovals(body), onBase);
+    for (const path of deletions) {
+      error(
+        `::error::${path} is deleted, and the base branch still has it. If the deletion is intended, add a line \`Removes: ${path}\` to the pull request body; otherwise rebase on the base and restore the file.`,
+      );
+    }
+    if (deletions.length > 0) return 1;
+    log("Deletions: none unnamed.");
+    return 0;
+  }
+
+  error("Usage: release-policy.mjs <check|next|pr|migrations|deletions> ...");
   return 2;
 }
 

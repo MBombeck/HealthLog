@@ -40,7 +40,7 @@ type WorkflowJob = {
 type Workflow = {
   on?: {
     push?: { branches?: string[]; tags?: string[] };
-    pull_request?: { branches?: string[] };
+    pull_request?: { branches?: string[]; types?: string[] };
     workflow_call?: { inputs?: Record<string, { required?: boolean }> };
   };
   jobs: Record<string, WorkflowJob>;
@@ -694,6 +694,26 @@ describe("migration immutability", () => {
     );
     expect(script).toContain("node scripts/release-policy.mjs migrations");
     expect(script).toContain('base="origin/main"');
+  });
+
+  it("refuses unnamed deletions of base files on every pull request, body edits included", () => {
+    const workflow = loadWorkflow("migration-immutability.yml");
+    expect(workflow.on?.pull_request?.types).toEqual([
+      "opened",
+      "synchronize",
+      "reopened",
+      "edited",
+    ]);
+    const job = workflow.jobs.deletions;
+    expect(job?.if).toBe("github.event_name == 'pull_request'");
+    const step = job?.steps?.find(
+      (s) => s.name === "Refuse unnamed deletions of base files",
+    );
+    expect(step?.env?.PR_BODY).toBe("${{ github.event.pull_request.body }}");
+    expect(step?.run).not.toContain("github.event");
+    expect(step?.run).toContain(
+      'node scripts/release-policy.mjs deletions --base "$PR_BASE" --head "$PR_HEAD" --body-file',
+    );
   });
 });
 

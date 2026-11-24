@@ -216,7 +216,12 @@ one minor and removed no earlier than two minors later.
 - `.github/workflows/edge-image.yml` publishes `:edge` on every push to
   `main`.
 - `.github/workflows/migration-immutability.yml` refuses a change to a merged
-  migration on `main` and `release/**`.
+  migration on `main` and `release/**`, and a pull request to either that
+  deletes a file under `.github/workflows/`, `scripts/`, `prisma/migrations/`
+  or `docs/` which the base still has, unless the description names the file
+  on a `Removes:` line (`node scripts/release-policy.mjs deletions`). A
+  branch rebuilt from a stale copy deletes whatever landed on its base after
+  it was cut, and no test notices a workflow or a page that is gone.
 - `.github/workflows/nightly-image.yml` publishes `:nightly` from the newest
   `release/vX.Y.0` every night, skips a night on which the branch did not
   move or is not green, and checks the published image's `/api/version` through

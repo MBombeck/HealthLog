@@ -20,10 +20,12 @@ import {
   formatDay,
   main,
   migrationEdits,
+  namedRemovals,
   outOfScheduleLine,
   readTags,
   releaseWindow,
   tagCommand,
+  unnamedDeletions,
 } from "../release-policy.mjs";
 
 const at = (iso: string) => new Date(iso);
@@ -553,6 +555,53 @@ describe("merged migrations", () => {
   });
 });
 
+describe("deleted base files", () => {
+  const status = [
+    "D\t.github/workflows/nightly-image.yml",
+    "D\tscripts/__tests__/release-workflows.test.ts",
+    "D\tdocs/self-hosting/channels.md",
+    "D\tprisma/migrations/0001_init/migration.sql",
+    "D\tsrc/lib/old.ts",
+    "M\tscripts/release-policy.mjs",
+    "A\tdocs/new.md",
+    "R100\tdocs/old-name.md\tdocs/new-name.md",
+  ].join("\n");
+
+  it("reads Removes: lines, several paths per line, backticks ignored", () => {
+    expect(
+      namedRemovals(
+        [
+          "Some text naming Removes: in passing is not a line of its own.",
+          "Removes: `docs/a.md`, docs/b.md",
+          "- Removes: ./scripts/c.mjs",
+          "removes: docs/lowercase.md",
+          "Removes: docs/legacy/",
+        ].join("\r\n"),
+      ),
+    ).toEqual(["docs/a.md", "docs/b.md", "scripts/c.mjs", "docs/legacy/"]);
+    expect(namedRemovals("")).toEqual([]);
+  });
+
+  it("refuses every guarded deletion the body does not name", () => {
+    expect(unnamedDeletions(status, [])).toEqual([
+      ".github/workflows/nightly-image.yml",
+      "scripts/__tests__/release-workflows.test.ts",
+      "docs/self-hosting/channels.md",
+      "prisma/migrations/0001_init/migration.sql",
+    ]);
+  });
+
+  it("lets named files, named directories and files gone from the base through", () => {
+    expect(
+      unnamedDeletions(
+        status,
+        [".github/workflows/nightly-image.yml", "docs/"],
+        (path) => path !== "prisma/migrations/0001_init/migration.sql",
+      ),
+    ).toEqual(["scripts/__tests__/release-workflows.test.ts"]);
+  });
+});
+
 describe("command line against a real repository", { timeout: 30_000 }, () => {
   const directories: string[] = [];
   afterEach(() => {
@@ -825,6 +874,53 @@ describe("command line against a real repository", { timeout: 30_000 }, () => {
     );
     expect(renamed.code).toBe(1);
     expect(renamed.err).toContain("0002_next/migration.sql deleted");
+  });
+
+  it("refuses a deleted base file unless the body names it", () => {
+    const { cwd, run, commit } = repository();
+    mkdirSync(join(cwd, ".github/workflows"), { recursive: true });
+    mkdirSync(join(cwd, "docs"), { recursive: true });
+    writeFileSync(join(cwd, ".github/workflows/nightly.yml"), "name: n\n");
+    writeFileSync(join(cwd, "docs/channels.md"), "# Channels\n");
+    writeFileSync(join(cwd, "docs/moved.md"), "# Moved\n");
+    commit("chore: base", "2026-11-24T10:00:00+01:00");
+    run(["branch", "base"]);
+
+    run(["rm", "-q", ".github/workflows/nightly.yml", "docs/channels.md"]);
+    run(["mv", "docs/moved.md", "docs/renamed.md"]);
+    commit("chore: licences", "2026-11-24T11:00:00+01:00");
+
+    const refused = capture(
+      ["deletions", "--base", "base", "--head", "HEAD"],
+      cwd,
+    );
+    expect(refused.code).toBe(1);
+    expect(refused.err).toContain(".github/workflows/nightly.yml is deleted");
+    expect(refused.err).toContain("docs/channels.md is deleted");
+    // A move is a removal of its old path too: rename detection guesses by
+    // similarity and could pass a deletion off as a move into a new file.
+    expect(refused.err).toContain("docs/moved.md is deleted");
+
+    const body = join(cwd, "body.md");
+    writeFileSync(body, "Drops the old page.\n\nRemoves: docs/channels.md\n");
+    const partly = capture(
+      ["deletions", "--base", "base", "--head", "HEAD", "--body-file", body],
+      cwd,
+    );
+    expect(partly.code).toBe(1);
+    expect(partly.err).toContain(".github/workflows/nightly.yml is deleted");
+    expect(partly.err).not.toContain("docs/channels.md");
+
+    writeFileSync(
+      body,
+      "Removes: docs/channels.md, `.github/workflows/nightly.yml`\nRemoves: docs/moved.md\n",
+    );
+    const named = capture(
+      ["deletions", "--base", "base", "--head", "HEAD", "--body-file", body],
+      cwd,
+    );
+    expect(named.code, named.err).toBe(0);
+    expect(named.out).toContain("Deletions: none unnamed.");
   });
 
   it("checks a pull request range", () => {
