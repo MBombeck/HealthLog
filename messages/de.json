@@ -1849,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "z. B. 4",
           "dosesPerUnitHint": "Wie viele Tabletten oder Einheiten eine neue Packung oder ein Pen enthält, z. B. 28 Tabletten oder ein Pen mit 4 Dosen. Wird beim Erfassen einer Packung vorausgefüllt; leer lassen, wenn Packungen variieren.",
           "short": "Dosis",
-          "unitsPerDoseLabel": "Wie viele Tabletten oder Einheiten ergeben diese Dosis?",
+          "unitsPerDoseLabel": "Tabletten oder Einheiten pro Dosis",
           "unitsPerDoseHint": "z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis oder ½ Tablette bei geteilter Dosis",
           "packSizeToggle": "Packungsgröße (optional)"
         },
@@ -10789,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Kinderwunsch",
       "PERIMENOPAUSE": "Perimenopause",
       "OFF": "Tracking aus",
-      "label": "Wofür trackst du?",
+      "label": "Ziel",
       "description": "Das bestimmt die Sprache und welche Prognosen du siehst. Hinweise zum fruchtbaren Fenster erscheinen nur bei Kinderwunsch."
     },
     "ring": {
@@ -15248,7 +15248,7 @@
     "saved": "Lebensereignis gespeichert",
     "deleted": "Lebensereignis gelöscht",
     "fields": {
-      "title": "Was war?",
+      "title": "Titel",
       "category": "Art",
       "when": "Wann",
       "precision": "Genauigkeit",
@@ -16217,7 +16217,7 @@
     "performer": "Durchgeführt von",
     "condition": "Erkrankung",
     "form": {
-      "title": "Was ist es?",
+      "title": "Bezeichnung",
       "titlePlaceholder": "Physiotherapie, linkes Knie",
       "plannedSessions": "Sitzungen",
       "startsOn": "Beginn",
@@ -16242,6 +16242,8 @@
     "reportColSessions": "Sitzungen",
     "reportColPeriod": "Zeitraum",
     "period": "{from} bis {to}",
-    "periodOpen": "seit {from}"
+    "periodOpen": "seit {from}",
+    "expiryPushTitle": "Behandlungsserie läuft ab",
+    "expiryPushBody": "{title}: gültig bis {date}, noch {count, plural, one {# Sitzung} other {# Sitzungen}} offen."
   }
 }

@@ -89,6 +89,10 @@ export const CLIENT_MANAGED_APNS_EVENTS: Record<string, ClientManagedGate> = {
     isClientManaged: isMeasurementReminderClientManaged,
     metaKey: "measurement_reminder.suppressed_client_managed",
     tag: (metadata) => str(metadata?.reminderId),
+    // The phone schedules the check-ups and appointments it knows locally. A
+    // treatment series running out is not one of them, so the flag leaves
+    // that push alone (`treatment-series/expiry-reminder.ts`).
+    covers: (metadata) => typeof metadata?.treatmentSeriesId !== "string",
   },
 };
 

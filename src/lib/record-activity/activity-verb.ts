@@ -68,7 +68,7 @@ export function recordActivityVerbLine(
   const cycle =
     cycleManageVerb(t, action, name) ?? seizureVerb(t, action, name);
   if (cycle !== null) return cycle;
-  const document = documentVerb(t, action, name);
+  const document = documentVerb(t, action, name) ?? visitVerb(t, action, name);
   if (document !== null) return document;
   switch (action) {
     case "measurement.create":
@@ -89,10 +89,6 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.symptomEventCreate", { name });
     case "symptoms.batch.ingest":
       return t("recordSharing.activityVerb.symptomBatchIngest", { name });
-    case "encounter.visit.create":
-      return t("recordSharing.activityVerb.encounterVisitCreate", { name });
-    case "treatment-series.create":
-      return t("recordSharing.activityVerb.treatmentSeriesCreate", { name });
     case "vaccination.record.create":
       return t("recordSharing.activityVerb.vaccinationRecordCreate", { name });
     case "vaccination.custom.create":
@@ -231,18 +227,6 @@ export function recordActivityVerbLine(
     case "symptoms.delete.by_external_ids":
       return t("recordSharing.activityVerb.symptomImportDelete", { name });
 
-    case "encounter.visit.update":
-      return t("recordSharing.activityVerb.encounterVisitUpdate", { name });
-    case "encounter.visit.delete":
-      return t("recordSharing.activityVerb.encounterVisitDelete", { name });
-    case "encounter.visit.restore":
-      return t("recordSharing.activityVerb.encounterVisitRestore", { name });
-    case "treatment-series.update":
-      return t("recordSharing.activityVerb.treatmentSeriesUpdate", { name });
-    case "treatment-series.delete":
-      return t("recordSharing.activityVerb.treatmentSeriesDelete", { name });
-    case "treatment-series.restore":
-      return t("recordSharing.activityVerb.treatmentSeriesRestore", { name });
     case "vaccination.record.update":
       return t("recordSharing.activityVerb.vaccinationRecordUpdate", { name });
     case "vaccination.record.delete":
@@ -324,6 +308,30 @@ export function recordActivityVerbLine(
 
     default:
       return t("recordSharing.activity.acted", { name });
+  }
+}
+
+/** The visits and their treatment series, or null when `action` is not one. */
+function visitVerb(t: Translator, action: string, name: string): string | null {
+  switch (action) {
+    case "encounter.visit.create":
+      return t("recordSharing.activityVerb.encounterVisitCreate", { name });
+    case "treatment-series.create":
+      return t("recordSharing.activityVerb.treatmentSeriesCreate", { name });
+    case "encounter.visit.update":
+      return t("recordSharing.activityVerb.encounterVisitUpdate", { name });
+    case "encounter.visit.delete":
+      return t("recordSharing.activityVerb.encounterVisitDelete", { name });
+    case "encounter.visit.restore":
+      return t("recordSharing.activityVerb.encounterVisitRestore", { name });
+    case "treatment-series.update":
+      return t("recordSharing.activityVerb.treatmentSeriesUpdate", { name });
+    case "treatment-series.delete":
+      return t("recordSharing.activityVerb.treatmentSeriesDelete", { name });
+    case "treatment-series.restore":
+      return t("recordSharing.activityVerb.treatmentSeriesRestore", { name });
+    default:
+      return null;
   }
 }
 

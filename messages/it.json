@@ -1849,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "es. 4",
           "dosesPerUnitHint": "Quante compresse o unità contiene una nuova confezione o penna, ad es. 28 compresse o una penna da 4 dosi. Precompila la quantità quando aggiungi una confezione; lascia vuoto se le confezioni variano.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Quante compresse o unità formano questa dose?",
+          "unitsPerDoseLabel": "Compresse o unità per dose",
           "unitsPerDoseHint": "ad es. 2 compresse da 2 mg per una dose da 4 mg, oppure ½ compressa per una dose divisa",
           "packSizeToggle": "Dimensione confezione (facoltativa)"
         },
@@ -10789,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Cerco una gravidanza",
       "PERIMENOPAUSE": "Perimenopausa",
       "OFF": "Monitoraggio disattivato",
-      "label": "Per cosa stai monitorando?",
+      "label": "Obiettivo",
       "description": "Questo definisce il linguaggio e quali previsioni vedi. Le indicazioni sulla finestra fertile compaiono solo se cerchi una gravidanza."
     },
     "ring": {
@@ -15248,7 +15248,7 @@
     "saved": "Evento di vita salvato",
     "deleted": "Evento di vita eliminato",
     "fields": {
-      "title": "Cosa è successo?",
+      "title": "Titolo",
       "category": "Tipo",
       "when": "Quando",
       "precision": "Precisione",
@@ -16217,7 +16217,7 @@
     "performer": "Eseguito da",
     "condition": "Patologia",
     "form": {
-      "title": "Di cosa si tratta?",
+      "title": "Nome",
       "titlePlaceholder": "Fisioterapia, ginocchio sinistro",
       "plannedSessions": "Sedute",
       "startsOn": "Inizio",
@@ -16242,6 +16242,8 @@
     "reportColSessions": "Sedute",
     "reportColPeriod": "Periodo",
     "period": "dal {from} al {to}",
-    "periodOpen": "dal {from}"
+    "periodOpen": "dal {from}",
+    "expiryPushTitle": "Ciclo di trattamento in scadenza",
+    "expiryPushBody": "{title}: valido fino al {date}, {count, plural, one {resta # seduta} other {restano # sedute}}."
   }
 }

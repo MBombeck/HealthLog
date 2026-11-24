@@ -39,13 +39,7 @@
  * titles are, because a host renders them in a list.
  */
 import { textContains } from "@/lib/db-like";
-import type {
-  EncounterKind,
-  IllnessLifecycle,
-  IllnessType,
-  InboundDocumentKind,
-  Laterality,
-} from "@/generated/prisma/client";
+import type { EncounterKind, Laterality } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { fenceUserText, scrubFenceMarkers } from "@/lib/ai/coach/data-fence";
@@ -81,6 +75,16 @@ import {
   type SearchCandidate,
 } from "@/lib/search/match";
 import { visitPath } from "@/lib/encounters/visit-links";
+import {
+  enumWords,
+  ENCOUNTER_KIND_ALIASES,
+  LATERALITY_WORDS,
+  sideTerms,
+  documentKindLabel,
+  illnessTypeLabel,
+  lifecycleLabel,
+  vaccineCatalogName,
+} from "./record-search-terms";
 
 // ── Bounds ───────────────────────────────────────────────────────────
 
@@ -138,66 +142,6 @@ function resolveLocale(locale: string | null | undefined): Locale {
   return locales.includes(locale as Locale)
     ? (locale as Locale)
     : defaultLocale;
-}
-
-/** "DISCHARGE_LETTER" → "discharge letter". */
-function enumWords(value: string): string {
-  return value.toLowerCase().replace(/_/g, " ");
-}
-
-/**
- * Words a person uses for a visit kind that neither the enum nor the bundle
- * label carries. "Operation" is the common one: nobody asks for their "left
- * knee procedure or surgery".
- */
-const ENCOUNTER_KIND_ALIASES: Partial<Record<EncounterKind, string>> = {
-  PROCEDURE: "surgery surgical operation operiert eingriff",
-  HOSPITAL: "inpatient krankenhaus klinik",
-  EMERGENCY: "notaufnahme notfall",
-};
-
-const LATERALITY_WORDS: Record<Laterality, string> = {
-  LEFT: "left",
-  RIGHT: "right",
-  BOTH: "both sides",
-};
-
-function sideTerms(
-  laterality: Laterality | null,
-  owner: Locale,
-): string | null {
-  if (!laterality) return null;
-  const key =
-    laterality === "LEFT"
-      ? "encounters.laterality.left"
-      : laterality === "RIGHT"
-        ? "encounters.laterality.right"
-        : "encounters.laterality.both";
-  const en = getServerTranslator("en").t(key);
-  const own = getServerTranslator(owner).t(key);
-  return `${LATERALITY_WORDS[laterality]} ${en} ${own}`;
-}
-
-function documentKindLabel(kind: InboundDocumentKind, locale: Locale): string {
-  return getServerTranslator(locale).t(`documents.kind.${kind}`);
-}
-
-function illnessTypeLabel(type: IllnessType, locale: Locale): string {
-  return getServerTranslator(locale).t(`illness.type.${type}`);
-}
-
-function lifecycleLabel(lifecycle: IllnessLifecycle): string {
-  return getServerTranslator("en").t(`illness.lifecycle.${lifecycle}`);
-}
-
-/** The catalogue name of a dose's slug, or null for a slug it does not know. */
-function vaccineCatalogName(
-  slug: string | null,
-  locale: Locale,
-): string | null {
-  const entry = resolveVaccineEntry({ antigenSlug: slug });
-  if (!entry?.slug) return null;
-  return getServerTranslator(locale).t(`vaccinations.catalog.${entry.slug}`);
 }
 
 /** Decrypt a free-text `Bytes` column fail-soft: a rotation gap reads as absent. */

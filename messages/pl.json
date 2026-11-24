@@ -1849,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "np. 4",
           "dosesPerUnitHint": "Ile tabletek lub jednostek zawiera nowe opakowanie lub wstrzykiwacz, np. 28 tabletek albo wstrzykiwacz na 4 dawki. Uzupełnia ilość przy dodawaniu opakowania; zostaw puste, jeśli opakowania się różnią.",
           "short": "Dawka",
-          "unitsPerDoseLabel": "Ile tabletek lub jednostek składa się na tę dawkę?",
+          "unitsPerDoseLabel": "Tabletki lub jednostki na dawkę",
           "unitsPerDoseHint": "np. 2 tabletki po 2 mg na dawkę 4 mg lub ½ tabletki przy dzielonej dawce",
           "packSizeToggle": "Wielkość opakowania (opcjonalnie)"
         },
@@ -10789,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Staranie o dziecko",
       "PERIMENOPAUSE": "Perimenopauza",
       "OFF": "Śledzenie wyłączone",
-      "label": "W jakim celu śledzisz?",
+      "label": "Cel",
       "description": "To dostosowuje język i widoczne prognozy. Wskazówki dotyczące okna płodnego pojawiają się tylko przy staraniu o dziecko."
     },
     "ring": {
@@ -15248,7 +15248,7 @@
     "saved": "Zapisano wydarzenie życiowe",
     "deleted": "Usunięto wydarzenie życiowe",
     "fields": {
-      "title": "Co się wydarzyło?",
+      "title": "Tytuł",
       "category": "Rodzaj",
       "when": "Kiedy",
       "precision": "Dokładność",
@@ -16217,7 +16217,7 @@
     "performer": "Wykonuje",
     "condition": "Schorzenie",
     "form": {
-      "title": "Czego dotyczy?",
+      "title": "Nazwa",
       "titlePlaceholder": "Fizjoterapia, lewe kolano",
       "plannedSessions": "Zabiegi",
       "startsOn": "Początek",
@@ -16242,6 +16242,8 @@
     "reportColSessions": "Zabiegi",
     "reportColPeriod": "Okres",
     "period": "{from} do {to}",
-    "periodOpen": "od {from}"
+    "periodOpen": "od {from}",
+    "expiryPushTitle": "Seria zabiegów wygasa",
+    "expiryPushBody": "{title}: ważna do {date}, {count, plural, one {pozostał # zabieg} few {pozostały # zabiegi} many {pozostało # zabiegów} other {pozostało # zabiegu}}."
   }
 }
