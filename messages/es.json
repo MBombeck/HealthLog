@@ -304,7 +304,7 @@
     }
   },
   "doctorReport": {
-    "title": "Informe de salud",
+    "title": "Informe médico",
     "anamnesisTitle": "Perfil de salud",
     "anamnesisNotRecorded": "No registrado",
     "anamnesisUnreadable": "No se pudo leer el valor guardado",
@@ -314,7 +314,7 @@
     "anamnesisShiftSchedule": "Horario de trabajo",
     "anamnesisColFact": "Dato del perfil",
     "anamnesisColValue": "Valor registrado",
-    "subtitle": "HealthLog: informe personal de salud",
+    "subtitle": "Creado con HealthLog",
     "patient": "Paciente",
     "dateOfBirth": "Fecha de nacimiento",
     "gender": "Sexo",
@@ -396,7 +396,7 @@
     "summaryTrend": "{label}: último {latest} {arrow}",
     "summaryAdherence": "Adherencia a la medicación: {rate}% (media ponderada).",
     "chartsTitle": "Gráficos de tendencia",
-    "packageReadme": "Historial de salud de HealthLog\n\nEste paquete contiene:\n- report.pdf: el informe de salud para su médico.\n- bundle.json: los mismos datos como Bundle de documento HL7 FHIR R4, compatible con ePA.\n\nGenerado con HealthLog.",
+    "packageReadme": "Informe médico de HealthLog\n\nEste paquete contiene:\n- report.pdf: el informe médico en PDF.\n- bundle.json: los mismos datos como Bundle de documento HL7 FHIR R4, compatible con ePA.\n\nCreado con HealthLog.",
     "wellnessTitle": "Resumen de bienestar",
     "wellnessDisclaimer": "Son puntuaciones de bienestar descriptivas calculadas a partir de tus señales registradas (0–100). No son evaluaciones clínicas ni diagnósticos.",
     "wellnessRecovery": "Recuperación",
@@ -417,7 +417,7 @@
       "OVULATORY": "Ovulatoria",
       "LUTEAL": "Lútea"
     },
-    "labsTitle": "Resultados de análisis",
+    "labsTitle": "Resultados de laboratorio",
     "labsColAnalyte": "Biomarcador",
     "labsColValue": "Valor",
     "labsColReference": "Referencia",
@@ -438,7 +438,7 @@
       "cv": "Variabilidad (CV%)",
       "spotCaveat": "Son estimaciones a partir de mediciones puntuales, no un perfil de monitor continuo. Léelas como una tendencia, no como un veredicto clínico."
     },
-    "illnessTitle": "Afecciones y enfermedades",
+    "illnessTitle": "Episodios de enfermedad",
     "illnessOngoing": "En curso",
     "illnessColCondition": "Afección",
     "illnessColBodySite": "Zona del cuerpo",
@@ -460,7 +460,7 @@
     "familyHistoryColAgeAtOnset": "Edad de inicio",
     "labsSourceRangeNote": "* El rango de referencia procede del propio informe y difiere del rango guardado:",
     "labsCatalogRangeLabel": "rango guardado",
-    "visitsTitle": "Visitas médicas",
+    "visitsTitle": "Citas",
     "visitsColDate": "Fecha",
     "visitsColPractice": "Consulta",
     "visitsColKind": "Tipo",
@@ -642,19 +642,19 @@
       "recentMeasurementDescription": "Medición registrada hace poco"
     },
     "cycle": "Ciclo",
-    "labs": "Análisis",
-    "profile": "Perfil",
+    "labs": "Resultados de laboratorio",
+    "profile": "Antecedentes médicos",
     "vorsorge": "Revisiones",
     "illness": "Enfermedad",
     "documents": "Documentos",
     "vaccinations": "Vacunas",
     "mentalWellbeing": "Bienestar mental",
     "timeline": "Cronología",
-    "seizures": "Crisis",
+    "seizures": "Diario de crisis",
     "emergencyCard": "Tarjeta de emergencia",
     "groups": {
       "tracking": "Seguimiento",
-      "record": "Historial médico",
+      "record": "Historial de salud",
       "analysis": "Análisis"
     },
     "dueCount": "{label}, {count, plural, one {# pendiente} other {# pendientes}}"
@@ -754,7 +754,7 @@
       "signOut": "Cerrar sesión y continuar",
       "guardiansTitle": "Quién conserva el acceso por ahora",
       "guardiansHint": "Lo proponen las personas que llevaron tu historial. Tú decides justo después de iniciar sesión.",
-      "guardianUnnamed": "Una persona tutora",
+      "guardianUnnamed": "Una persona responsable",
       "usernameHint": "De 3 a 30 letras, números, _ o -.",
       "usernameReserved": "Los nombres de usuario que empiezan por managed- están reservados.",
       "emailHint": "Obligatorio, para que puedas volver a entrar si olvidas tu contraseña.",
@@ -860,9 +860,9 @@
     "heroContentScore": "Puntuación de salud y resumen del día",
     "heroContentReminders": "Destacados de hoy",
     "heroItems": {
-      "coach_checkin": "Revisión con Coach",
+      "coach_checkin": "Seguimiento con Coach",
       "dose_window": "Dosis de medicamentos",
-      "preventive_care": "Atención preventiva",
+      "preventive_care": "Revisiones",
       "sync_issue": "Problemas de sincronización",
       "milestone": "Hitos",
       "ecg_new_recording": "Nuevos registros de ECG",
@@ -1181,7 +1181,7 @@
   "mood": {
     "title": "Estado de ánimo",
     "subtitle": "Tendencia y registros de estado de ánimo",
-    "mentalWellbeingLink": "Hacer un chequeo de bienestar mental",
+    "mentalWellbeingLink": "Hacer un cuestionario de bienestar mental",
     "addEntry": "Añadir",
     "editEntry": "Editar entrada",
     "moodLevel": "Estado de ánimo",
@@ -1513,8 +1513,8 @@
       "linkedActiveEnergy": "Energía activa",
       "linkedRestingHeartRate": "Pulso en reposo",
       "linkedHrv": "Variabilidad cardiaca",
-      "bodyLogged": "Registrado en el diario de enfermedad: {count, plural, one {# síntoma} other {# síntomas}}",
-      "bodyNotLogged": "No hay nada registrado en el diario de enfermedad para este día",
+      "bodyLogged": "Registrado en Enfermedad: {count, plural, one {# síntoma} other {# síntomas}}",
+      "bodyNotLogged": "No hay nada registrado en Enfermedad para este día",
       "openIllness": "Abrir"
     },
     "sourceNotification": "Notificación",
@@ -5079,7 +5079,7 @@
     },
     "settings": {
       "overviewTitle": "Organizar la vista general",
-      "overviewDescription": "Muestra u oculta secciones y define su orden en la vista general de Análisis."
+      "overviewDescription": "Muestra u oculta secciones y define su orden en la vista general de Insights."
     },
     "pillOrder": {
       "title": "Ordenar las pestañas de navegación",
@@ -5091,7 +5091,7 @@
       "empty": "Aún no hay pestañas de navegación disponibles.",
       "detail": "Las páginas de detalle ocultas también se quitan de la navegación superior."
     },
-    "customize": "Personalizar Análisis",
+    "customize": "Personalizar Insights",
     "regenerateRateLimited": "Límite de actualizaciones alcanzado: inténtalo de nuevo más tarde.",
     "regenerateUnavailable": "No llegó un análisis nuevo: inténtalo de nuevo más tarde.",
     "regenerateError": "Aún se está actualizando: inténtalo de nuevo en un momento.",
@@ -5410,7 +5410,7 @@
         },
         "quickAdd": {
           "title": "Registrado en segundos",
-          "body": "Con «+ Añadir» registras cualquier medición en segundos: peso, tensión, pulso, glucosa. Fuerza oculta: fechar valores olvidados. Todo lo que registras aquí alimenta las tendencias, la puntuación de salud y las ideas de IA."
+          "body": "Con «+ Añadir» registras cualquier medición en segundos: peso, tensión, pulso, glucosa. Fuerza oculta: fechar valores olvidados. Todo lo que registras aquí alimenta las tendencias, la puntuación de salud y los insights de IA."
         },
         "measurements": {
           "title": "Mediciones y rangos objetivo",
@@ -5421,12 +5421,12 @@
           "body": "Medicación gestiona horarios, tomas, existencias y titulación. Oculto: planes recurrentes (RRULE/rotativos) y avisos de poco stock. Tu tasa de tomas alimenta el pilar de cumplimiento del panel y el contexto de la IA."
         },
         "labs": {
-          "title": "Valores de laboratorio",
-          "body": "Laboratorio recoge biomarcadores con rangos de referencia: hemograma, colesterol, HbA1c. Fuerza: importación y exportación FHIR. Los valores fuera de rango reaparecen como pruebas en las ideas y en el informe médico."
+          "title": "Resultados de laboratorio",
+          "body": "La página Resultados de laboratorio recoge biomarcadores con rangos de referencia: hemograma, colesterol, HbA1c. Fuerza: importación y exportación FHIR. Los resultados fuera de rango reaparecen como pruebas en Insights y en el informe médico."
         },
         "illness": {
-          "title": "Diario de enfermedades",
-          "body": "El diario de enfermedades registra episodios agudos y diagnósticos crónicos con sus brotes. Oculto: correlacionar un episodio con tus mediciones y el Modo descanso que pausa los recordatorios. Así el Coach entiende por qué los valores varían un tiempo."
+          "title": "Enfermedad",
+          "body": "Enfermedad registra episodios agudos y diagnósticos crónicos con sus brotes. Oculto: correlacionar un episodio con tus mediciones y el Modo descanso que pausa los recordatorios. Así el Coach entiende por qué los valores varían un tiempo."
         },
         "vorsorge": {
           "title": "Revisiones",
@@ -5437,32 +5437,32 @@
           "body": "El seguimiento del ciclo registra fases y síntomas. Oculto: comparar síntomas con el ánimo y el sueño. El ciclo aporta contexto a variaciones que de otro modo parecerían inexplicables."
         },
         "mood": {
-          "title": "Ánimo",
+          "title": "Estado de ánimo",
           "body": "Ánimo capta cómo te sientes y etiquetas en dos segundos. Fuerza: tus propias etiquetas. Las tendencias de ánimo se correlacionan con el sueño, la medicación y el ciclo: el Coach detecta los patrones."
         },
         "insights": {
-          "title": "Ideas",
-          "body": "Ideas es el corazón: análisis dinámico y basado en pruebas en lugar de consejos genéricos; cada afirmación apunta a tus datos reales. Oculto: el diseño es personalizable. Ideas reúne todo lo que aportan los módulos anteriores."
+          "title": "Insights",
+          "body": "Insights es el corazón: análisis dinámico y basado en pruebas en lugar de consejos genéricos; cada afirmación apunta a tus datos reales. Oculto: el diseño es personalizable. Insights reúne todo lo que aportan los módulos anteriores."
         },
         "coach": {
           "title": "Coach",
-          "body": "El Coach responde preguntas sobre tus datos en diálogo, usando tu historial, medicación y valores de laboratorio como contexto. Tú eliges el proveedor de IA (tu propia clave o local). No recalcula nada: lee las mismas cifras que el panel."
+          "body": "El Coach responde preguntas sobre tus datos en diálogo, usando tu historial, medicación y resultados de laboratorio como contexto. Tú eliges el proveedor de IA (tu propia clave o local). No recalcula nada: lee las mismas cifras que el panel."
         },
         "integrations": {
           "title": "Integraciones",
-          "body": "Las integraciones sincronizan Withings, WHOOP, Polar, Oura y Apple Health automáticamente. Peso, sueño y recuperación se rellenan sin teclear, y a su vez alimentan las ideas y el Coach."
+          "body": "Las integraciones sincronizan Withings, WHOOP, Polar, Oura y Apple Health automáticamente. Peso, sueño y recuperación se rellenan sin teclear, y a su vez alimentan Insights y el Coach."
         },
         "export": {
           "title": "Informe médico",
-          "body": "El informe médico reúne mediciones, medicación, valores de laboratorio y revisiones en PDF o FHIR para la cita. Aquí convergen todos los módulos: un informe completo solo sale de datos bien cuidados."
+          "body": "El informe médico reúne mediciones, medicación, resultados de laboratorio y revisiones en PDF o FHIR para la cita. Aquí convergen todos los módulos: un informe completo solo sale de datos bien cuidados."
         },
         "achievements": {
           "title": "Logros",
           "body": "Los logros premian la constancia: rachas e hitos. Un pequeño bucle de motivación que facilita seguir adelante."
         },
         "wrapUp": {
-          "title": "Esto es la visita",
-          "body": "Esta visita guiada se muestra una sola vez, no volverá a abrirse por sí sola. Todo lo que has visto sigue disponible, y puedes activar o desactivar funciones cuando quieras en Ajustes > Módulos."
+          "title": "Fin del recorrido",
+          "body": "Este recorrido guiado se muestra una sola vez y no volverá a abrirse por sí solo. Todo lo que has visto sigue disponible, y puedes activar o desactivar funciones cuando quieras en Ajustes > Módulos."
         }
       }
     },
@@ -5529,7 +5529,7 @@
       "areas": "Qué quieres vigilar",
       "medication": "Medicación",
       "sources": "De dónde vienen las mediciones",
-      "visit": "Visita médica",
+      "visit": "Cita médica",
       "units": "Región y unidades",
       "confirm": "Confirmar",
       "first-result": "Primer resultado",
@@ -5609,8 +5609,8 @@
         }
       },
       "visit": {
-        "title": "¿Tienes una visita médica próximamente?",
-        "body": "Una visita activa el informe médico y añade su preparación a tu lista de tareas.",
+        "title": "¿Tienes una cita médica próximamente?",
+        "body": "Una cita activa el informe médico y añade su preparación a tu lista de tareas.",
         "options": {
           "within-a-month": "Sí, en menos de un mes",
           "later": "Más adelante",
@@ -5775,9 +5775,9 @@
       "insightsTitle": "Activar insights (opcional)",
       "insightsDescription": "Añade un modelo local o tu propia clave de IA para desbloquear el resumen diario y Coach.",
       "insightsCta": "Activar insights",
-      "visitTitle": "Prepararse para la visita",
+      "visitTitle": "Prepararse para la cita",
       "visitDescription": "Anota la cita en el calendario; el informe médico reúne lo que debes llevar.",
-      "visitCta": "Abrir visitas",
+      "visitCta": "Abrir citas",
       "dataSourceNamedTitle": "Conectar {source}",
       "managedProfileTitle": "Crear el perfil de la persona a tu cargo",
       "managedProfileDescription": "Tus respuestas eran para el registro de otra persona; se crea en Acceso compartido.",
@@ -5794,7 +5794,7 @@
           "cta": "Abrir"
         },
         "careFeed": {
-          "title": "Suscripción de calendario de citas",
+          "title": "Suscripción al calendario de revisiones",
           "description": "Citas y revisiones en la app de calendario que ya usas.",
           "cta": "Suscribirse"
         },
@@ -5968,10 +5968,10 @@
           "none": "Ningún proveedor de IA",
           "yourDefault": "Tu cadena predeterminada",
           "yourChain": "Tu cadena «{name}»",
-          "otherGuardian": "Una cadena de otro tutor",
+          "otherGuardian": "Una cadena de otra persona responsable",
           "noInstanceKey": "Este servidor no tiene clave de IA, así que con esta opción el perfil se queda sin IA.",
           "yourCredentials": "Tus propias claves e inicios de sesión atienden a este perfil, en el orden de esa cadena y nada más. Lo que envía el perfil cuenta en tus cuentas de proveedor.",
-          "unusable": "La cadena elegida no puede atender ahora: el tutor que la eligió ya no gestiona este perfil o la cadena se eliminó. El perfil no tiene IA hasta que alguien vuelva a elegir."
+          "unusable": "La cadena elegida no puede atender ahora: la persona responsable que la eligió ya no gestiona este perfil o la cadena se eliminó. El perfil no tiene IA hasta que alguien vuelva a elegir."
         }
       },
       "unavailableTitle": "No disponible en este registro compartido",
@@ -6044,7 +6044,7 @@
           "description": "Diseño y orden de los mosaicos."
         },
         "insights": {
-          "title": "Análisis",
+          "title": "Insights",
           "description": "Orden de la vista general y de las pestañas de navegación."
         },
         "subtitle": "Elige el orden y la vista de tu panel, tus análisis y tus listas de seguimiento.",
@@ -6057,7 +6057,7 @@
           "description": "Vista, orden y orden manual."
         },
         "illness": {
-          "title": "Diario de enfermedades",
+          "title": "Enfermedad",
           "description": "Vista de lista y orden de episodios."
         },
         "checkups": {
@@ -6237,7 +6237,7 @@
             "failureInsufficientMemory": "El límite de memoria del servidor es demasiado bajo para un archivo de este tamaño. Pide a quien administra el servidor que aumente el límite de memoria de Node.js (NODE_OPTIONS=--max-old-space-size) y vuelve a subir el archivo.",
             "rowsImported": "{count, plural, one {# fila importada} other {# filas importadas}} hasta ahora",
             "doneSummary": "Listo: {imported} de {read, plural, one {# registro} other {# registros}} importados, {skipped, plural, one {# registro clínico omitido} other {# registros clínicos omitidos}}.",
-            "doneSummaryAuxOnly": "Listo: nada nuevo {read, plural, =1 {en el único registro} other {entre los # registros}}, pero sí se importaron los resultados de análisis o ECG de abajo.",
+            "doneSummaryAuxOnly": "Listo: nada nuevo {read, plural, =1 {en el único registro} other {entre los # registros}}, pero sí se importaron los resultados de laboratorio o ECG de abajo.",
             "doneNothing": "No se importó nada de ese archivo: llegaron 0 de {read, plural, one {# registro} other {# registros}}.",
             "writtenByHealthLogOne": "Se omitió {count} registro que HealthLog escribió en Apple Health, porque ya está en tus datos.",
             "writtenByHealthLogOther": "Se omitieron {count} registros que HealthLog escribió en Apple Health, porque ya están en tus datos.",
@@ -6272,10 +6272,10 @@
               "archive_unreadable": "no se pudo leer el archivo comprimido",
               "missing_member": "falta el archivo en el archivo comprimido"
             },
-            "labsMarkersCreatedOne": "Se añadió {count} marcador nuevo a Análisis.",
-            "labsMarkersCreatedOther": "Se añadieron {count} marcadores nuevos a Análisis.",
-            "labsMarkersCreatedFew": "Se añadieron {count} marcadores nuevos a Análisis.",
-            "viewInLabs": "Ver en Análisis",
+            "labsMarkersCreatedOne": "Se añadió {count} marcador nuevo a Resultados de laboratorio.",
+            "labsMarkersCreatedOther": "Se añadieron {count} marcadores nuevos a Resultados de laboratorio.",
+            "labsMarkersCreatedFew": "Se añadieron {count} marcadores nuevos a Resultados de laboratorio.",
+            "viewInLabs": "Ver en Resultados de laboratorio",
             "estimateWarning": "Los totales acumulados de {count, plural, one {# día} other {# días}} se estimaron a partir de la mayor fuente de la exportación. Las estadísticas nativas de Apple Health siguen siendo la referencia.",
             "phase": {
               "queued": "En cola…",
@@ -6516,7 +6516,7 @@
             },
             "fhirBundle": {
               "title": "Historia clínica (FHIR)",
-              "description": "Importa resultados de laboratorio, constantes vitales, enfermedades, vacunas, medicamentos y visitas de un Bundle FHIR R4 que exporta un portal del paciente.",
+              "description": "Importa resultados de laboratorio, constantes vitales, enfermedades, vacunas, medicamentos y citas de un Bundle FHIR R4 que exporta un portal del paciente.",
               "steps": {
                 "export": "En el portal del paciente, exporta tu historia como FHIR R4 (JSON). Los archivos C-CDA no se leen.",
                 "upload": "Sube aquí el archivo .json. Hasta 32 MB."
@@ -6661,8 +6661,8 @@
         }
       },
       "health-record": {
-        "title": "Historial médico",
-        "subtitle": "Exporta un historial de salud completo, listo para el médico."
+        "title": "Informe médico y exportación",
+        "subtitle": "Crea el informe médico y exporta un historial de salud completo, listo para el médico."
       },
       "coach": {
         "title": "Coach",
@@ -7234,7 +7234,7 @@
         "request": {
           "title": "Tu acuerdo antes de que empiece la IA",
           "body": "La IA de este servidor funciona con un servicio que proporciona el operador: {providers}. Hasta que aceptes, nada de tus registros va allí.",
-          "data": "Cuando aceptes, HealthLog envía a ese servicio lo que necesitan las funciones de IA: mediciones como peso, presión arterial, pulso, sueño y actividad, tus medicamentos, estado de ánimo, valores de laboratorio y registros del ciclo si los llevas, lo que escribes en tu perfil y al Coach, y los documentos que decidas que se lean. El servicio lo usa para escribir tu resumen diario, las notas sobre tus mediciones y las respuestas del Coach.",
+          "data": "Cuando aceptes, HealthLog envía a ese servicio lo que necesitan las funciones de IA: mediciones como peso, presión arterial, pulso, sueño y actividad, tus medicamentos, estado de ánimo, resultados de laboratorio y registros del ciclo si los llevas, lo que escribes en tu perfil y al Coach, y los documentos que decidas que se lean. El servicio lo usa para escribir tu resumen diario, las notas sobre tus mediciones y las respuestas del Coach.",
           "withdrawHint": "Puedes retirar tu acuerdo en cualquier momento en Ajustes, IA. Desde ese momento no se envía nada más.",
           "agree": "Aceptar",
           "dismiss": "Ahora no"
@@ -7611,7 +7611,7 @@
     "dangerZone": "Eliminar todos los datos",
     "dangerZoneDescription": "Borra todo tu historial de salud y todas las conexiones de integración.",
     "dangerZoneConfirm": "¿Eliminar todos los datos?",
-    "dangerZoneConfirmDescription": "Esto elimina de forma permanente todo lo que hay en tu historial: mediciones, medicamentos, entradas de ánimo, resultados de laboratorio, entradas de ciclo, documentos, conversaciones con la IA y todas las conexiones de integración, junto con todo lo derivado de ello y todo lo que eliminaste antes. Los enlaces compartidos que diste a una consulta dejan de funcionar de inmediato. Tu cuenta se mantiene, junto con las credenciales con las que inicias sesión y los ajustes de presentación como el idioma, la zona horaria y las unidades. Esto no se puede deshacer.",
+    "dangerZoneConfirmDescription": "Esto elimina de forma permanente todo lo que hay en tu historial: mediciones, medicamentos, entradas de ánimo, resultados de laboratorio, entradas de ciclo, documentos, conversaciones con la IA y todas las conexiones de integración, junto con todo lo derivado de ello y todo lo que eliminaste antes. Los enlaces para compartir que diste a una consulta dejan de funcionar de inmediato. Tu cuenta se mantiene, junto con las credenciales con las que inicias sesión y los ajustes de presentación como el idioma, la zona horaria y las unidades. Esto no se puede deshacer.",
     "dangerZoneSuccess": "Se ha eliminado tu historial de salud. Tu cuenta y tu inicio de sesión no han cambiado.",
     "dangerZoneDeleteFailed": "Falló la eliminación",
     "finalDelete": "Eliminar permanentemente",
@@ -7999,7 +7999,7 @@
       "revokeSessionConfirmBody": "{device} tendrá que iniciar sesión de nuevo. Lo registrado en él no se ve afectado.",
       "signOutEverywhereConfirmTitle": "¿Cerrar la sesión en los demás dispositivos?",
       "signOutEverywhereConfirmBody": "Todos los demás dispositivos, cada asistente de IA conectado y cada token de API tendrán que volver a iniciar sesión o configurarse de nuevo. Este dispositivo sigue con la sesión iniciada. Nada de lo que has registrado se ve afectado.",
-      "signOutEverywhereShareLinks": "Terminar también los enlaces compartidos con profesionales médicos",
+      "signOutEverywhereShareLinks": "Terminar también los enlaces para compartir",
       "signOutEverywhereInvites": "Se retiran las invitaciones a tu historial que nadie ha aceptado todavía. Quien ya aceptó conserva el acceso; puedes quitárselo a continuación.",
       "signOutEverywhereInvitesDone": "{count, plural, one {Se retiró # invitación que nadie había aceptado.} other {Se retiraron # invitaciones que nadie había aceptado.}}",
       "grantsKeptTitle": "Estas personas todavía pueden ver tu historial",
@@ -8058,11 +8058,11 @@
         "doors": {
           "accounts": {
             "title": "Otras cuentas",
-            "description": "Personas de este servidor con las que compartes tu historial, y los tutores de los perfiles que gestionas.",
+            "description": "Personas de este servidor con las que compartes tu historial, y las personas responsables de los perfiles que gestionas.",
             "link": "Abrir acceso compartido"
           },
           "shareLinks": {
-            "title": "Enlaces para profesionales",
+            "title": "Enlaces para compartir",
             "description": "Enlaces de solo lectura a tu informe médico que caducan en la fecha que elijas.",
             "link": "Abrir los enlaces"
           },
@@ -8220,7 +8220,7 @@
     "documentSources": {
       "title": "Archivos de documentos",
       "description": "Busca en Paperless-ngx o Papra desde HealthLog e importa los documentos que elijas.",
-      "explainer": "Aparece un botón de importar allí donde vinculas documentos: en visitas, vacunas y afecciones, y en Documentos. HealthLog guarda su propia copia cifrada de cada documento importado y solo consulta tu archivo cuando buscas o importas.",
+      "explainer": "Aparece un botón de importar allí donde vinculas documentos: en citas, vacunas y afecciones, y en Documentos. HealthLog guarda su propia copia cifrada de cada documento importado y solo consulta tu archivo cuando buscas o importas.",
       "systemLabel": "Archivo",
       "statusConnected": "Conectado",
       "statusNotConnected": "No conectado",
@@ -8386,12 +8386,12 @@
       "change": "Cambiar en Módulos"
     },
     "timezoneUseDevice": "Usar la zona horaria de este dispositivo ({zone})",
-    "dangerZoneConfirmDescriptionGrace": "Esto elimina todo lo que hay en tu historial: mediciones, medicamentos, entradas de ánimo, resultados de laboratorio, entradas de ciclo, documentos, conversaciones con la IA y todas las conexiones de integración, junto con todo lo derivado de ello y todo lo que eliminaste antes. Los enlaces compartidos que diste a una consulta dejan de funcionar de inmediato. Tu cuenta se mantiene, junto con las credenciales con las que inicias sesión y los ajustes de presentación como el idioma, la zona horaria y las unidades. Se guarda una copia de tu historial durante {days, plural, one {# día} other {# días}}, para que un administrador de este servidor pueda restaurarla hasta entonces. Después, la eliminación es definitiva.",
+    "dangerZoneConfirmDescriptionGrace": "Esto elimina todo lo que hay en tu historial: mediciones, medicamentos, entradas de ánimo, resultados de laboratorio, entradas de ciclo, documentos, conversaciones con la IA y todas las conexiones de integración, junto con todo lo derivado de ello y todo lo que eliminaste antes. Los enlaces para compartir que diste a una consulta dejan de funcionar de inmediato. Tu cuenta se mantiene, junto con las credenciales con las que inicias sesión y los ajustes de presentación como el idioma, la zona horaria y las unidades. Se guarda una copia de tu historial durante {days, plural, one {# día} other {# días}}, para que un administrador de este servidor pueda restaurarla hasta entonces. Después, la eliminación es definitiva.",
     "deleteAccountCardDetailGrace": "Tu cuenta se bloquea de inmediato y se borra al cabo de {days, plural, one {# día} other {# días}}. Hasta entonces, un administrador de este servidor puede deshacer la eliminación.",
     "deleteAccountConfirmDescriptionGrace": "Se cierra tu sesión y tu cuenta se bloquea de inmediato. Al cabo de {days, plural, one {# día} other {# días}} se borra para siempre, con todos tus datos de salud, llaves de acceso, sesiones y entradas de auditoría. Hasta entonces, un administrador de este servidor puede deshacer la eliminación. Las copias en las copias de seguridad de este servidor caducan al terminar su periodo de conservación.",
     "deleteAccountScheduled": "Tu cuenta está bloqueada y se borrará el {date}. Cerrando tu sesión.",
     "dangerZoneSuccessGrace": "Tu historial de salud se ha eliminado. Un administrador de este servidor puede restaurarlo hasta el {date}.",
-    "dangerZoneRestoreLimits": "También termina el acceso: lo que compartes con otras personas, lo que ellas comparten contigo y cualquier papel de persona responsable. Una restauración devuelve el historial tal como está ahora. Lo que se añada después de la eliminación se sustituye, y las conexiones de integración, lo compartido, los papeles de persona responsable y los enlaces compartidos no vuelven; hay que configurarlos de nuevo.",
+    "dangerZoneRestoreLimits": "También termina el acceso: lo que compartes con otras personas, lo que ellas comparten contigo y cualquier papel de persona responsable. Una restauración devuelve el historial tal como está ahora. Lo que se añada después de la eliminación se sustituye, y las conexiones de integración, lo compartido, los papeles de persona responsable y los enlaces para compartir no vuelven; hay que configurarlos de nuevo.",
     "garmin": "Garmin",
     "garminTag": "Personal API",
     "garminDescription": "Pega una clave de la Garmin Personal API para sincronizar sueño, VFC, Body Battery, estrés, pasos, peso y actividades desde Garmin Connect.",
@@ -8886,11 +8886,11 @@
         "deletionPendingNoDate": "Eliminación pendiente",
         "undoDeletion": "Deshacer eliminación",
         "undoDeletionTitle": "¿Deshacer la eliminación de {name}?",
-        "undoDeletionBody": "{name} pidió eliminar esta cuenta, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. {name} puede volver a iniciar sesión, pero los tokens de API, los enlaces compartidos y los dispositivos de confianza siguen revocados y hay que configurarlos de nuevo.",
-        "undoDeletionBodyGuardian": "Una persona responsable eliminó el perfil gestionado {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva el perfil y todo su contenido tal como estaba, y las personas responsables vuelven a tener acceso. Sus enlaces compartidos y tokens siguen revocados y hay que configurarlos de nuevo.",
+        "undoDeletionBody": "{name} pidió eliminar esta cuenta, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. {name} puede volver a iniciar sesión, pero los tokens de API, los enlaces para compartir y los dispositivos de confianza siguen revocados y hay que configurarlos de nuevo.",
+        "undoDeletionBodyGuardian": "Una persona responsable eliminó el perfil gestionado {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva el perfil y todo su contenido tal como estaba, y las personas responsables vuelven a tener acceso. Sus enlaces para compartir y tokens siguen revocados y hay que configurarlos de nuevo.",
         "undoDeletionDone": "Eliminación de {name} deshecha",
         "undoDeletionFailed": "No se pudo deshacer la eliminación",
-        "undoDeletionBodyAdmin": "Un administrador eliminó la cuenta {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. {name} puede volver a iniciar sesión, pero los tokens de API, los enlaces compartidos y los dispositivos de confianza siguen revocados y hay que configurarlos de nuevo.",
+        "undoDeletionBodyAdmin": "Un administrador eliminó la cuenta {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. {name} puede volver a iniciar sesión, pero los tokens de API, los enlaces para compartir y los dispositivos de confianza siguen revocados y hay que configurarlos de nuevo.",
         "deleteUser": "Eliminar cuenta",
         "deleteUserTitle": "¿Eliminar la cuenta {name}?",
         "deleteUserBodyGrace": "{name} cierra sesión en todas partes al instante y ya no puede iniciar sesión. La cuenta y todo su contenido se borran el {date}. Hasta entonces puedes deshacer la eliminación aquí.",
@@ -9030,9 +9030,9 @@
         "previewDocuments": "Documentos",
         "previewWorkouts": "Entrenamientos",
         "previewCycles": "Datos del ciclo",
-        "previewVisits": "Visitas médicas",
+        "previewVisits": "Citas médicas",
         "previewVaccinations": "Vacunas",
-        "previewReminders": "Recordatorios preventivos",
+        "previewReminders": "Recordatorios de revisión",
         "previewCustomMetrics": "Métricas propias",
         "previewHealthScores": "Historial de puntuación",
         "restoreConfirm": "Restaurar ahora",
@@ -9047,7 +9047,7 @@
         "restoreSkippedIllnessSymptom": "Síntoma de enfermedad",
         "restoreSkippedMoodFactor": "Factor de ánimo",
         "restoreSkippedMoodTag": "Etiqueta de ánimo",
-        "restoreSkippedVisitReference": "Referencia de visita",
+        "restoreSkippedVisitReference": "Referencia de cita",
         "restoreSkippedVaccinationReference": "Referencia de vacunación",
         "restoreSkippedCheckupClosure": "Cierre de revisión",
         "restoreSkippedReminderReference": "Referencia de recordatorio",
@@ -9139,7 +9139,7 @@
         "restoreSkippedSymptomDuplicate": "Código de síntoma o muestra de Apple Salud repetidos en el archivo (se conserva el primero; un síntoma repetido se conserva sin el código)",
         "restoreSkippedCycleCiphertext": "Nota o etiqueta del ciclo cifrada con una clave que este servidor no tiene (el día o el síntoma se conserva sin ella)",
         "restoreSkippedMoodLabelCiphertext": "Nombre de etiqueta o grupo de ánimo cifrado con una clave que este servidor no tiene (se conserva sin el nombre)",
-        "restoreSkippedVisitCiphertext": "Texto de visita o profesional cifrado con una clave que este servidor no tiene (se conserva sin él)",
+        "restoreSkippedVisitCiphertext": "Texto de cita o profesional cifrado con una clave que este servidor no tiene (se conserva sin él)",
         "restoreSkippedVaccinationCiphertext": "Nota de vacunación cifrada con una clave que este servidor no tiene (la dosis se conserva sin ella)",
         "restoreSkippedEnvironmentLocationCiphertext": "Ubicación de un periodo o día ambiental cifrada con una clave que este servidor no tiene (se conserva cifrada, esos días no se actualizan)",
         "typePreWipe": "Antes de eliminar todos los datos",
@@ -9166,7 +9166,7 @@
           "offhostLastUpload": "El volcado más reciente del bucket es del {when}.",
           "offhostNeverUploaded": "Todavía no ha llegado ningún volcado de la base de datos al bucket."
         },
-        "restorePreWipeLimits": "Esta copia se tomó antes de que se eliminaran los datos de la cuenta, y restaurarla deshace esa eliminación hasta donde una copia puede: lo que la cuenta añadió desde entonces se sustituye, y las conexiones de integración, lo compartido, el acceso de personas responsables y los enlaces compartidos no vuelven.",
+        "restorePreWipeLimits": "Esta copia se tomó antes de que se eliminaran los datos de la cuenta, y restaurarla deshace esa eliminación hasta donde una copia puede: lo que la cuenta añadió desde entonces se sustituye, y las conexiones de integración, lo compartido, el acceso de personas responsables y los enlaces para compartir no vuelven.",
         "target": {
           "title": "Restaurar en otra cuenta",
           "description": "{file} pertenece a una cuenta que ya no está en este servidor. Elige la cuenta a la que van sus registros. Una restauración reemplaza los registros de una cuenta, así que solo una cuenta sin registros puede recibirlos. El archivo se sube una vez más.",
@@ -9612,7 +9612,7 @@
       "description": "Notificaciones cifradas de extremo a extremo para la app del App Store; cada persona decide en su propio dispositivo.",
       "seesSummary": "Qué ve el relé",
       "seesHeading": "El relé ve",
-      "seesWhen": "que este servidor envía algo a un dispositivo, cuándo y de qué tipo: una alerta, una sincronización silenciosa o el final de una Actividad en vivo",
+      "seesWhen": "que este servidor envía algo a un dispositivo, cuándo y de qué tipo: una alerta, una sincronización silenciosa o el final de una Actividad en directo",
       "seesToken": "el token push del dispositivo mientras entrega (guardado solo como hash con clave), y el id de instancia de este servidor",
       "seesAddress": "la dirección de este servidor mientras está conectado, sin guardarla ni registrarla",
       "seesConsent": "un hash de la clave de vinculación del dispositivo, y la versión y el día del consentimiento de la persona",
@@ -10283,8 +10283,8 @@
     "eventMedicationLowStock": "Existencias de medicación bajas",
     "eventMedicationLowStockDesc": "Cuando unas existencias registradas cubren menos días que tu umbral de existencias",
     "eventCoachNudge": "Aviso del Coach",
-    "eventCoachNudgeDesc": "Aviso ocasional de tu Coach cuando tus tendencias recientes justifican una revisión.",
-    "eventMeasurementReminder": "Recordatorio de medición",
+    "eventCoachNudgeDesc": "Aviso ocasional de tu Coach cuando tus tendencias recientes justifican un seguimiento.",
+    "eventMeasurementReminder": "Recordatorio de revisión",
     "eventMeasurementReminderDesc": "Se envía cuando una medición registrada está pendiente.",
     "eventMedicationIntakeSync": "Sincronización de tomas",
     "eventMedicationIntakeSyncDesc": "Actualización entre dispositivos cuando se registra, toma u omite una dosis.",
@@ -10367,8 +10367,8 @@
       "saveError": "No se pudo guardar. Inténtalo de nuevo más tarde."
     },
     "checkupReminders": {
-      "title": "Recordatorios de chequeos",
-      "description": "Activa o desactiva recordatorios de chequeos concretos."
+      "title": "Recordatorios de revisión",
+      "description": "Activa o desactiva recordatorios de revisión concretos."
     },
     "eventBackupHealth": "Estado de las copias de seguridad",
     "eventBackupHealthDesc": "Cuando una copia de seguridad se detiene, se retrasa o se recupera. Solo se envía a los administradores.",
@@ -10626,7 +10626,7 @@
     "period": "Período del informe: {start}–{end}",
     "expires": "Este enlace caduca el {date}.",
     "provenance": "Este es un resumen de solo lectura compartido por la persona a la que pertenece, exportado de sus datos de HealthLog autorregistrados. Los valores son autoinformados y pueden incluir lecturas sincronizadas desde dispositivos; trátelos como informados por el paciente, no como un examen clínico.",
-    "labs": "Valores de laboratorio",
+    "labs": "Resultados de laboratorio",
     "medications": "Medicamentos y adherencia",
     "bmi": "Índice de masa corporal (IMC)",
     "statSummary": "último {latest} (prom. {avg}, rango {min}–{max})",
@@ -10789,7 +10789,7 @@
       "loadError": "No se pudo cargar tu ciclo."
     },
     "disclaimer": "Estas predicciones son estimaciones descriptivas a partir de tus datos registrados, no un método anticonceptivo ni un consejo médico. Nunca indican que sea seguro tener relaciones sin protección. Para anticoncepción o cualquier decisión médica, consulta a un profesional sanitario.",
-    "title": "Tu ciclo",
+    "title": "Ciclo",
     "subtitle": "Registra tu periodo y síntomas, y mira qué viene después.",
     "tabs": {
       "calendar": "Calendario",
@@ -11322,7 +11322,7 @@
     }
   },
   "labs": {
-    "title": "Resultados de análisis",
+    "title": "Resultados de laboratorio",
     "subtitle": "Analíticas de sangre y biomarcadores",
     "addResult": "Añadir valor",
     "addDescription": "Registra un biomarcador a partir de un informe de laboratorio.",
@@ -11808,7 +11808,7 @@
       "description": "Pautas, tomas y cumplimiento."
     },
     "illness": {
-      "label": "Diario de enfermedad",
+      "label": "Enfermedad",
       "description": "Registra episodios de enfermedad y dolencias con un historial diario de síntomas."
     },
     "mcp": {
@@ -11837,7 +11837,7 @@
     },
     "timeline": {
       "label": "Cronología",
-      "description": "Años de un vistazo: enfermedades, medicamentos y visitas junto a tus valores, además de tus propios acontecimientos vitales."
+      "description": "Años de un vistazo: enfermedades, medicamentos y citas junto a tus valores, además de tus propios acontecimientos vitales."
     },
     "seizures": {
       "label": "Diario de crisis",
@@ -12028,7 +12028,7 @@
       "viewDescription": "Elige si los episodios se muestran como tarjetas o como lista compacta.",
       "orderDescription": "Arrastra tus episodios al orden en que quieres verlos."
     },
-    "customize": "Personalizar diario de enfermedad",
+    "customize": "Personalizar Enfermedad",
     "newEpisode": "Nuevo episodio",
     "logDay": "Registrar un día",
     "markRecovered": "Marcar como recuperado",
@@ -12235,7 +12235,7 @@
       "readOnlyNote": "El Coach no está disponible ahora mismo, pero aún puedes leer y eliminar tus planes.",
       "ifThen": "Si {cue}, entonces {action}.",
       "targetPrefix": "Objetivo: {target}",
-      "reviewPrefix": "Revisión: {when}",
+      "reviewPrefix": "Seguimiento: {when}",
       "accept": "Aceptar plan",
       "decline": "Rechazar",
       "accepted": "Plan aceptado: el Coach lo tendrá en cuenta.",
@@ -12256,7 +12256,7 @@
         "active": "Activo",
         "met": "Cumplido",
         "abandoned": "Finalizado",
-        "review_due": "Revisión pendiente",
+        "review_due": "Seguimiento pendiente",
         "reviewed": "Revisado"
       }
     },
@@ -12481,7 +12481,7 @@
     "pageDescription": "Cuatro autoevaluaciones validadas y voluntarias: cuenta la evolución, no un valor aislado.",
     "attributionLabel": "Fuente",
     "attributionShow": "Fuente y licencia de {instrument}",
-    "choosePrompt": "Elige una revisión",
+    "choosePrompt": "Elige un cuestionario",
     "start": "Empezar",
     "back": "Atrás",
     "submit": "Ver mi resultado",
@@ -12505,7 +12505,7 @@
       "title": "Tu resultado",
       "totalLabel": "Puntuación total",
       "bandLabel": "Rango para este cribado",
-      "takeAnother": "Hacer otra revisión",
+      "takeAnother": "Hacer otro cuestionario",
       "scoreOf": "de {max}",
       "firstCheckIn": "Es tu primer resultado con este cuestionario. A partir del próximo verás aquí el cambio.",
       "nextStep": "Puedes repetir este cuestionario dentro de dos semanas o más tarde para seguir el cambio. Si algo te preocupa, habla con un profesional de la salud en cualquier momento."
@@ -12535,13 +12535,13 @@
     },
     "history": {
       "title": "Tu historial",
-      "empty": "Aún no hay revisiones. Tu tendencia aparecerá aquí cuando completes una.",
+      "empty": "Aún no hay cuestionarios. Tu tendencia aparecerá aquí cuando completes uno.",
       "flaggedBadge": "Apoyo mostrado",
       "chartTitle": "Evolución de la puntuación",
       "totalLabel": "Puntuación",
       "bandLabel": "Categoría",
       "answersToggle": "Respuestas",
-      "answersUnavailable": "Las respuestas guardadas de esta revisión no se pueden descifrar.",
+      "answersUnavailable": "Las respuestas guardadas de este cuestionario no se pueden descifrar.",
       "answersNotShared": "Realizado en Apple Health. Solo se compartió la puntuación, no las respuestas."
     },
     "crisis": {
@@ -12622,8 +12622,8 @@
     "historyLoadErrorHint": "Esto no significa que no tengas resultados: no se pudo obtener la lista. Vuelve a intentarlo.",
     "privacyNote": "Tus respuestas se guardan cifradas y nunca llegan al Coach de IA.",
     "trend": {
-      "sincePrevious": "Desde tu revisión anterior del {date}: {change, plural, one {# punto} other {# puntos}}.",
-      "sinceFirst": "Desde tu primera revisión del {date}: {change, plural, one {# punto} other {# puntos}}.",
+      "sincePrevious": "Desde tu cuestionario anterior del {date}: {change, plural, one {# punto} other {# puntos}}.",
+      "sinceFirst": "Desde tu primer cuestionario del {date}: {change, plural, one {# punto} other {# puntos}}.",
       "verdict": {
         "improved": "Alcanza el cambio de {threshold} puntos que los estudios consideran relevante, en la dirección favorable.",
         "worsened": "Alcanza el cambio de {threshold} puntos que los estudios consideran relevante, en la dirección menos favorable.",
@@ -13277,10 +13277,10 @@
       "sourceOther": "otro sistema",
       "sourceReportSchedule": "tu calendario de informes",
       "share": "Compartir",
-      "labValuesLink": "Ver {count, plural, one {# valor de laboratorio} other {# valores de laboratorio}}",
+      "labValuesLink": "Ver {count, plural, one {# resultado de laboratorio} other {# resultados de laboratorio}}",
       "visitsLabel": "Pertenece a la cita",
       "vaccinationsLabel": "Vacunas",
-      "noVisitsToLink": "Aún no hay consultas registradas.",
+      "noVisitsToLink": "Aún no hay citas registradas.",
       "noVaccinationsToLink": "Aún no hay vacunas registradas.",
       "saved": "Cambios guardados",
       "saving": "Guardando…",
@@ -13359,9 +13359,9 @@
     },
     "ai": {
       "readDone": "La IA leyó tu documento.",
-      "readStagedOne": "La IA leyó tu documento. 1 valor de laboratorio espera tu revisión.",
-      "readStagedFew": "La IA leyó tu documento. {count} valores de laboratorio esperan tu revisión.",
-      "readStagedOther": "La IA leyó tu documento. {count} valores de laboratorio esperan tu revisión.",
+      "readStagedOne": "La IA leyó tu documento. 1 resultado de laboratorio está listo para revisar.",
+      "readStagedFew": "La IA leyó tu documento. {count} resultados de laboratorio están listos para revisar.",
+      "readStagedOther": "La IA leyó tu documento. {count} resultados de laboratorio están listos para revisar.",
       "read": "Leer con IA",
       "reread": "Leer de nuevo",
       "reading": "Leyendo…",
@@ -13375,7 +13375,7 @@
       "openOther": "Revisar valores extraídos ({count})",
       "includeAria": "Incluir {value}",
       "type": {
-        "OBSERVATION": "Valor de laboratorio",
+        "OBSERVATION": "Resultado de laboratorio",
         "CONDITION": "Afección",
         "MEDICATION_STATEMENT": "Medicamento"
       },
@@ -13400,7 +13400,7 @@
       "savedToastFew": "{count} valores guardados",
       "savedToastOther": "{count} valores guardados",
       "nothingSavedToast": "Revisión guardada. No se añadió ningún valor.",
-      "extract": "Extraer valores de laboratorio",
+      "extract": "Extraer resultados de laboratorio",
       "extracting": "Extrayendo…",
       "extractHint": "Usa el texto ya leído de este documento. Los valores extraídos esperan tu revisión; nada se guarda automáticamente.",
       "extractEmpty": "No se pudieron extraer valores de este documento.",
@@ -13552,7 +13552,7 @@
     }
   },
   "selfDescription": {
-    "dataPosture": "HealthLog es autoalojado: tus datos de salud están en la base de datos de tu propia instancia. Las notas y otros textos libres, los documentos, las respuestas a cuestionarios, los textos escritos por la IA y los tokens de acceso se cifran en reposo; los valores de mediciones, los valores de laboratorio, los nombres de medicamentos y las puntuaciones de ánimo se guardan sin cifrar y dependen de la seguridad de tu servidor. Las funciones de IA envían datos solo al proveedor de IA configurado para tu cuenta, y no hay analítica de terceros sobre tus datos de salud."
+    "dataPosture": "HealthLog es autoalojado: tus datos de salud están en la base de datos de tu propia instancia. Las notas y otros textos libres, los documentos, las respuestas a cuestionarios, los textos escritos por la IA y los tokens de acceso se cifran en reposo; los valores de mediciones, los resultados de laboratorio, los nombres de medicamentos y las puntuaciones de ánimo se guardan sin cifrar y dependen de la seguridad de tu servidor. Las funciones de IA envían datos solo al proveedor de IA configurado para tu cuenta, y no hay analítica de terceros sobre tus datos de salud."
   },
   "customMetrics": {
     "sectionTitle": "Métricas personalizadas",
@@ -14028,14 +14028,14 @@
     "leafCycle": "Ciclo menstrual",
     "templateStandard": "Informe médico estándar",
     "applyStandard": "Aplicar {template}",
-    "standardHint": "Un clic rellena lo que suele necesitar una consulta general. Cada entrada sigue siendo editable.",
+    "standardHint": "Un clic rellena lo que suele necesitar una cita de medicina general. Cada entrada sigue siendo editable.",
     "groupCount": "{on}/{total}",
     "groupDisclosure": "Mostrar las entradas de {group}",
     "sensitiveHint": "Aquí nunca hay nada preseleccionado. Elige cada entrada tú mismo.",
     "scopeNone": "Nada seleccionado todavía. Elige qué incluir o aplica el informe estándar.",
     "scopeCount": "{count, plural, one {# entrada} other {# entradas}} de {groups, plural, one {# área} other {# áreas}}",
     "scopeSensitive": "incl. {names}",
-    "leafVisits": "Visitas médicas",
+    "leafVisits": "Citas",
     "leafSurgicalHistory": "Antecedentes quirúrgicos",
     "leafImmunizations": "Vacunas",
     "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)",
@@ -14176,10 +14176,10 @@
     },
     "managedActivity": {
       "title": "Actividad en el perfil de {name}",
-      "hint": "Quién hizo qué en este perfil: los cambios de cada tutor, incluidos los tuyos.",
+      "hint": "Quién hizo qué en este perfil: los cambios de cada persona responsable, incluidos los tuyos.",
       "action": "Mostrar actividad",
       "emptyTitle": "Aún no hay nada registrado",
-      "emptyDescription": "Los cambios que hace un tutor en este perfil aparecen aquí, y las aperturas en una línea por tutor y día.",
+      "emptyDescription": "Los cambios que hace una persona responsable en este perfil aparecen aquí, y las aperturas en una línea por persona responsable y día.",
       "you": "Tú",
       "opened": "{name} abrió el perfil {count}×",
       "acted": "{name} hizo un cambio en el perfil",
@@ -14190,12 +14190,12 @@
     },
     "lookingAfter": {
       "kindShared": "Registro compartido",
-      "kindManaged": "Perfil administrado"
+      "kindManaged": "Perfil gestionado"
     },
     "managed": {
       "title": "Perfiles de los que te ocupas",
       "description": "Historiales de salud sin inicio de sesión propio.",
-      "explainer": "Un perfil administrado es un historial de salud para alguien que no inicia sesión, como una criatura o una persona a la que cuidas. No tiene inicio de sesión ni dirección de correo, y tú pasas a ser su primera persona responsable. Más adelante puedes añadir otras, y cualquiera de vosotras puede entrar en el historial para mantenerlo al día.",
+      "explainer": "Un perfil gestionado es un historial de salud para alguien que no inicia sesión, como una criatura o una persona a la que cuidas. No tiene inicio de sesión ni dirección de correo, y tú pasas a ser su primera persona responsable. Más adelante puedes añadir otras, y cualquiera de vosotras puede entrar en el historial para mantenerlo al día.",
       "nameLabel": "Nombre",
       "namePlaceholder": "El nombre con el que reconocerás este historial",
       "nameHint": "Hasta 80 caracteres. Se muestra allá donde aparezca este historial.",
@@ -14251,7 +14251,7 @@
       "guardianExpiresHint": "Opcional. El acceso termina al final de ese día en tu zona horaria.",
       "guardianPendingNote": "Una persona invitada solo cuenta cuando acepta. Hasta entonces sigues siendo la última, y devolver tu propio acceso se sigue rechazando.",
       "guardianErrorDuplicate": "Esa cuenta ya tiene acceso a este historial.",
-      "guardianErrorManagedInvitee": "Un perfil administrado no puede ocuparse de otro historial. Invita a una cuenta que inicie sesión.",
+      "guardianErrorManagedInvitee": "Un perfil gestionado no puede ocuparse de otro historial. Invita a una cuenta que inicie sesión.",
       "guardianErrorNoAccount": "En esta instancia no hay ninguna cuenta con ese nombre o correo.",
       "guardianErrorRateLimit": "Demasiadas invitaciones en la última hora. Espera un poco y vuelve a intentarlo.",
       "guardianErrorFailed": "No se pudo enviar la invitación.",
@@ -14321,13 +14321,13 @@
       "measurementDelete": "{name} eliminó una medición",
       "measurementDeleteBulk": "{name} eliminó varias mediciones a la vez",
       "measurementRestore": "{name} restauró una medición",
-      "measurementReminderCreate": "{name} añadió un recordatorio de medición",
-      "measurementReminderUpdate": "{name} cambió un recordatorio de medición",
-      "measurementReminderDelete": "{name} eliminó un recordatorio de medición",
-      "measurementReminderComplete": "{name} completó un recordatorio de medición",
-      "measurementReminderSatisfy": "{name} cerró un recordatorio de medición",
-      "measurementReminderSkip": "{name} omitió un recordatorio de medición",
-      "measurementReminderSnooze": "{name} aplazó un recordatorio de medición",
+      "measurementReminderCreate": "{name} añadió un recordatorio de revisión",
+      "measurementReminderUpdate": "{name} cambió un recordatorio de revisión",
+      "measurementReminderDelete": "{name} eliminó un recordatorio de revisión",
+      "measurementReminderComplete": "{name} completó un recordatorio de revisión",
+      "measurementReminderSatisfy": "{name} cerró un recordatorio de revisión",
+      "measurementReminderSkip": "{name} omitió un recordatorio de revisión",
+      "measurementReminderSnooze": "{name} aplazó un recordatorio de revisión",
       "labResultUpdate": "{name} cambió un resultado de laboratorio",
       "labResultDelete": "{name} eliminó un resultado de laboratorio",
       "labResultRestore": "{name} restauró un resultado de laboratorio",
@@ -14341,10 +14341,10 @@
       "illnessEpisodeDelete": "{name} eliminó una enfermedad",
       "illnessEpisodeResolve": "{name} marcó una enfermedad como terminada",
       "illnessEpisodeRestore": "{name} restauró una enfermedad",
-      "encounterVisitCreate": "{name} añadió una visita médica",
-      "encounterVisitUpdate": "{name} editó una visita médica",
-      "encounterVisitDelete": "{name} eliminó una visita médica",
-      "encounterVisitRestore": "{name} restauró una visita médica",
+      "encounterVisitCreate": "{name} añadió una cita",
+      "encounterVisitUpdate": "{name} editó una cita",
+      "encounterVisitDelete": "{name} eliminó una cita",
+      "encounterVisitRestore": "{name} restauró una cita",
       "vaccinationRecordCreate": "{name} añadió una vacuna",
       "vaccinationRecordUpdate": "{name} editó una vacuna",
       "vaccinationRecordDelete": "{name} eliminó una vacuna",
@@ -14401,8 +14401,8 @@
       "rejectedLabUpdate": "{name} intentó cambiar un resultado de laboratorio y fue rechazado",
       "rejectedBiomarkerCreate": "{name} intentó añadir un biomarcador y fue rechazado",
       "rejectedBiomarkerUpdate": "{name} intentó cambiar un biomarcador y fue rechazado",
-      "rejectedReminderCreate": "{name} intentó añadir un recordatorio de medición y fue rechazado",
-      "rejectedReminderUpdate": "{name} intentó cambiar un recordatorio de medición y fue rechazado",
+      "rejectedReminderCreate": "{name} intentó añadir un recordatorio de revisión y fue rechazado",
+      "rejectedReminderUpdate": "{name} intentó cambiar un recordatorio de revisión y fue rechazado",
       "rejectedMoodCreate": "{name} intentó añadir una entrada de ánimo y fue rechazado",
       "rejectedMoodUpdate": "{name} intentó cambiar una entrada de ánimo y fue rechazado",
       "rejectedDoseCreate": "{name} intentó registrar una dosis y fue rechazado",
@@ -14486,10 +14486,10 @@
       },
       "profile": {
         "label": "Antecedentes de salud",
-        "detail": "Alergias, antecedentes familiares, los datos de tu perfil de salud, tus visitas médicas y consultas, y tu cartilla de vacunación."
+        "detail": "Alergias, antecedentes familiares, los datos de tu perfil de salud, tus citas y consultas, y tu cartilla de vacunación."
       },
       "illness": {
-        "label": "Enfermedades",
+        "label": "Enfermedad",
         "detail": "Los episodios de enfermedad y los registros diarios asociados, tus propios síntomas y el diario de crisis. Una dosis de rescate registrada en el diario de crisis también queda registrada en su medicamento."
       },
       "mind": {
@@ -14545,14 +14545,14 @@
   },
   "encounters": {
     "kind": {
-      "routine": "Visita de rutina",
-      "acute": "Visita por urgencia",
-      "specialist": "Visita al especialista",
+      "routine": "Cita de rutina",
+      "acute": "Cita urgente",
+      "specialist": "Cita con especialista",
       "preventive": "Revisión preventiva",
       "emergency": "Urgencia",
       "hospital": "Hospital",
       "therapy": "Sesión de terapia",
-      "other": "Cita médica",
+      "other": "Otra cita",
       "procedure": "Procedimiento o cirugía"
     },
     "laterality": {
@@ -14563,7 +14563,7 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Citas",
-    "sectionDescription": "Visitas médicas y citas reservadas en un solo sitio.",
+    "sectionDescription": "Citas pasadas y reservadas en un solo sitio.",
     "add": "Cita",
     "loadError": "No se pudieron cargar las citas.",
     "emptyTitle": "Todavía no hay ninguna cita",
@@ -14642,13 +14642,13 @@
       "loadError": "No se pudieron cargar los procedimientos."
     },
     "preparation": {
-      "practitioner": "Desde tu última visita con {name} el {date}",
-      "specialty": "Desde tu última visita ({specialty}) el {date}",
-      "kind": "Desde tu última visita del mismo tipo ({kind}) el {date}",
+      "practitioner": "Desde tu última cita con {name} el {date}",
+      "specialty": "Desde tu última cita ({specialty}) el {date}",
+      "kind": "Desde tu última cita del mismo tipo ({kind}) el {date}",
       "default": "{days, plural, =1 {El último día} other {Los últimos # días}}",
-      "defaultReason": "No hay ninguna visita anterior con la misma consulta, especialidad o tipo.",
+      "defaultReason": "No hay ninguna cita anterior con la misma consulta, especialidad o tipo.",
       "capped": "Los últimos dos años",
-      "cappedReason": "La última visita coincidente fue hace más de dos años, y un informe abarca como máximo dos años."
+      "cappedReason": "La última cita coincidente fue hace más de dos años, y un informe abarca como máximo dos años."
     },
     "deleted": "Cita eliminada",
     "restoreFailed": "No se pudo restaurar la cita."
@@ -14710,20 +14710,20 @@
       "title": "Relacionado",
       "kind": {
         "labResult": "Resultado de laboratorio",
-        "encounter": "Consulta",
+        "encounter": "Cita",
         "document": "Documento",
         "conditionEpisode": "Enfermedad",
         "medication": "Medicamento",
         "vaccination": "Vacuna"
       },
       "via": {
-        "encounter": "a través de una consulta",
+        "encounter": "a través de una cita",
         "efficacyTarget": "a través del objetivo de eficacia"
       },
       "pick": {
         "conditionEpisode": "Enfermedades",
         "document": "Documentos",
-        "encounter": "Consultas",
+        "encounter": "Citas",
         "medication": "Medicamentos",
         "vaccination": "Vacunas"
       },
@@ -15010,7 +15010,7 @@
       "fewer": "Mostrar menos",
       "note": "Reunido a partir de tus entradas, sin valoración. Cada fecha abre el día completo.",
       "report": "Informe médico del {date} hasta hoy",
-      "loadError": "No se pudo cargar lo ocurrido desde la última visita."
+      "loadError": "No se pudo cargar lo ocurrido desde la última cita."
     },
     "travel": "De viaje",
     "event": {
@@ -15063,7 +15063,7 @@
     },
     "lanes": {
       "life": "Vida",
-      "illness": "Enfermedades",
+      "illness": "Enfermedad",
       "allergies": "Alergias",
       "medications": "Medicamentos",
       "vaccinations": "Vacunas",
@@ -15122,12 +15122,12 @@
         "vaccinationsOne": "{count} vacuna",
         "vaccinationsFew": "{count} vacunas",
         "vaccinationsOther": "{count} vacunas",
-        "visitsOne": "{count} visita, {procedures} con intervención",
-        "visitsFew": "{count} visitas, {procedures} con intervención",
-        "visitsOther": "{count} visitas, {procedures} con intervención",
-        "visitsPlannedOne": "{count} visita, solo planificada",
-        "visitsPlannedFew": "{count} visitas, solo planificadas",
-        "visitsPlannedOther": "{count} visitas, solo planificadas",
+        "visitsOne": "{count} cita, {procedures} con intervención",
+        "visitsFew": "{count} citas, {procedures} con intervención",
+        "visitsOther": "{count} citas, {procedures} con intervención",
+        "visitsPlannedOne": "{count} cita, solo planificada",
+        "visitsPlannedFew": "{count} citas, solo planificadas",
+        "visitsPlannedOther": "{count} citas, solo planificadas",
         "labsOne": "{count} día con resultados",
         "labsFew": "{count} días con resultados",
         "labsOther": "{count} días con resultados",
@@ -15155,7 +15155,7 @@
         "valuesEmpty": "Conectar fuentes",
         "illnessEmpty": "Añadir episodio",
         "medicationsWithoutStart": "Completar",
-        "visitsEmpty": "Añadir visita",
+        "visitsEmpty": "Añadir cita",
         "documentsUndated": "Revisar",
         "labsEmpty": "Añadir resultado",
         "vaccinationsEmpty": "Añadir vacunas",
@@ -15171,7 +15171,7 @@
         "documentsUndatedOther": "{count} documentos sin fecha",
         "valuesEmpty": "Aún no hay valores durante un periodo largo",
         "illnessEmpty": "Aún no hay enfermedades con fecha de inicio",
-        "visitsEmpty": "Aún no hay visitas médicas realizadas",
+        "visitsEmpty": "Aún no hay citas realizadas",
         "labsEmpty": "Aún no hay resultados de laboratorio",
         "vaccinationsEmpty": "Aún no hay vacunas",
         "lifeEventsEmpty": "Aún no hay acontecimientos vitales",
@@ -15219,7 +15219,7 @@
       "end": "Fin",
       "seriesCaption": "Medias por periodo",
       "period": "Periodo",
-      "labsCaption": "Valores de laboratorio por día",
+      "labsCaption": "Resultados de laboratorio por día",
       "marker": "Marcador",
       "date": "Fecha",
       "value": "Valor"
@@ -15264,9 +15264,9 @@
       "apply": "Aplicar"
     },
     "item": {
-      "labValuesOne": "1 valor de laboratorio",
-      "labValuesFew": "{count} valores de laboratorio",
-      "labValuesOther": "{count} valores de laboratorio",
+      "labValuesOne": "1 resultado de laboratorio",
+      "labValuesFew": "{count} resultados de laboratorio",
+      "labValuesOther": "{count} resultados de laboratorio",
       "seizuresOne": "1 crisis",
       "seizuresFew": "{count} crisis",
       "seizuresOther": "{count} crisis",
@@ -15274,9 +15274,9 @@
       "postpartum": "Después del parto"
     },
     "labs": {
-      "menuTitle": "Valores de laboratorio",
+      "menuTitle": "Resultados de laboratorio",
       "otherPanel": "Otros",
-      "full": "Hasta {max, plural, one {# valor} other {# valores}} de laboratorio a la vez. Quita uno para añadir otro.",
+      "full": "Hasta {max, plural, one {# resultado} other {# resultados}} de laboratorio a la vez. Quita uno para añadir otro.",
       "above": "por encima del intervalo",
       "below": "por debajo del intervalo",
       "reference": "referencia {range}",
@@ -15286,7 +15286,7 @@
       "excludedFew": "{name}: {count} valores en otra unidad no se muestran",
       "excludedOther": "{name}: {count} valores en otra unidad no se muestran"
     },
-    "legendLabValue": "Valor de laboratorio, tal como se midió",
+    "legendLabValue": "Resultado de laboratorio, tal como se midió",
     "legendLabOutside": "Fuera del intervalo de referencia",
     "legendLabRange": "Intervalo de referencia",
     "legendSymptom": "Línea de síntoma: la intensidad más alta de cada día registrado (0 a 10), promediada sobre los días registrados",
@@ -15384,7 +15384,7 @@
       "error": "No se pudo buscar en tus registros. Inténtalo de nuevo en un momento.",
       "truncated": "Solo se buscaron las entradas más recientes.",
       "kind": {
-        "visit": "Consulta",
+        "visit": "Cita",
         "condition": "Enfermedad",
         "document": "Documento",
         "vaccination": "Vacuna",
@@ -15397,7 +15397,7 @@
       "source": {
         "mood": "Nota de ánimo",
         "measurement": "Nota de una medición",
-        "illness": "Diario de enfermedad"
+        "illness": "Enfermedad"
       }
     },
     "keywords": {
@@ -16102,12 +16102,12 @@
     "sectionTitle": "Calendario",
     "sectionSubtitle": "Tus citas y lo que vence, en la app de calendario que ya usas.",
     "title": "Calendario de salud",
-    "description": "Las visitas reservadas a su hora, y los chequeos y refuerzos de vacunas el día que vencen.",
+    "description": "Las citas reservadas a su hora, y las revisiones y los refuerzos de vacunas el día que vencen.",
     "loadError": "No se pudo cargar la suscripción de calendario.",
     "linkHidden": "Hay un enlace activo que empieza por {prefix}. Solo se muestra una vez, al crearlo; desactiva y vuelve a activar la suscripción para obtener uno nuevo.",
     "linkOnce": "Solo se muestra ahora. Pégalo en tu app de calendario.",
-    "visits": "Visitas reservadas",
-    "checkups": "Chequeos que vencen",
+    "visits": "Citas reservadas",
+    "checkups": "Revisiones que vencen",
     "vaccinations": "Refuerzos de vacunas que vencen",
     "ics": {
       "calendarName": "Citas y vencimientos (HealthLog)",
@@ -16297,7 +16297,7 @@
         "relay_not_ready": "Los pases de Wallet no están disponibles en este servidor ahora mismo.",
         "no_https_origin": "Los pases de Wallet necesitan acceder a este servidor por HTTPS.",
         "api_disabled": "El acceso externo está desactivado en este servidor, y con él los pases de Wallet.",
-        "not_allowed": "Solo la persona de la tarjeta, o su tutor, puede añadirlo."
+        "not_allowed": "Solo la persona de la tarjeta, o una persona responsable de su perfil, puede añadirlo."
       },
       "more": {
         "frozen": "El pase muestra lo que marques aquí. Para cambiarlo, retíralo y crea uno nuevo.",
@@ -16350,7 +16350,7 @@
     "end": "Finalizar serie",
     "reopen": "Reabrir",
     "deleteTitle": "¿Eliminar esta serie?",
-    "deleteDescription": "Las visitas se mantienen. Solo dejan de estar agrupadas.",
+    "deleteDescription": "Las citas se mantienen. Solo dejan de estar agrupadas.",
     "deleted": "Serie eliminada",
     "deleteFailed": "No se pudo eliminar la serie.",
     "reportTitle": "Series de tratamiento",

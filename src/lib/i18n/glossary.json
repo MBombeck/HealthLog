@@ -71,19 +71,19 @@
         },
         "fr": {
           "name": "Mesures",
-          "item": "Mesure"
+          "item": "mesure"
         },
         "es": {
           "name": "Mediciones",
-          "item": "Medición"
+          "item": "medición"
         },
         "it": {
           "name": "Misurazioni",
-          "item": "Misurazione"
+          "item": "misurazione"
         },
         "pl": {
           "name": "Pomiary",
-          "item": "Pomiar"
+          "item": "pomiar"
         },
         "ko": {
           "name": "측정",
@@ -91,15 +91,15 @@
         },
         "nl": {
           "name": "Metingen",
-          "item": "Meting"
+          "item": "meting"
         },
         "pt-BR": {
           "name": "Medições",
-          "item": "Medição"
+          "item": "medição"
         },
         "ru": {
           "name": "Измерения",
-          "item": "Измерение"
+          "item": "измерение"
         }
       },
       "anchors": [
@@ -146,19 +146,19 @@
         },
         "fr": {
           "name": "Médicaments",
-          "item": "Médicament"
+          "item": "médicament"
         },
         "es": {
           "name": "Medicamentos",
-          "item": "Medicamento"
+          "item": "medicamento"
         },
         "it": {
           "name": "Farmaci",
-          "item": "Farmaco"
+          "item": "farmaco"
         },
         "pl": {
           "name": "Leki",
-          "item": "Lek"
+          "item": "lek"
         },
         "ko": {
           "name": "복약",
@@ -166,15 +166,15 @@
         },
         "nl": {
           "name": "Medicatie",
-          "item": "Medicatie"
+          "item": "medicatie"
         },
         "pt-BR": {
           "name": "Medicamentos",
-          "item": "Medicamento"
+          "item": "medicamento"
         },
         "ru": {
           "name": "Лекарства",
-          "item": "Лекарство"
+          "item": "лекарство"
         }
       },
       "anchors": [
@@ -230,36 +230,36 @@
           "item": "dose"
         },
         "fr": {
-          "name": null,
-          "item": null
+          "name": "Doses",
+          "item": "dose"
         },
         "es": {
-          "name": null,
-          "item": null
+          "name": "Dosis",
+          "item": "dosis"
         },
         "it": {
-          "name": null,
-          "item": null
+          "name": "Dosi",
+          "item": "dose"
         },
         "pl": {
-          "name": null,
-          "item": null
+          "name": "Dawki",
+          "item": "dawka"
         },
         "ko": {
-          "name": null,
-          "item": null
+          "name": "용량",
+          "item": "용량"
         },
         "nl": {
-          "name": null,
-          "item": null
+          "name": "Doses",
+          "item": "dosis"
         },
         "pt-BR": {
-          "name": null,
-          "item": null
+          "name": "Doses",
+          "item": "dose"
         },
         "ru": {
-          "name": null,
-          "item": null
+          "name": "Дозы",
+          "item": "доза"
         }
       },
       "anchors": [],
@@ -289,36 +289,36 @@
           "item": "intake"
         },
         "fr": {
-          "name": null,
-          "item": null
+          "name": "Prise",
+          "item": "prise"
         },
         "es": {
-          "name": null,
-          "item": null
+          "name": "Toma",
+          "item": "toma"
         },
         "it": {
-          "name": null,
-          "item": null
+          "name": "Assunzione",
+          "item": "assunzione"
         },
         "pl": {
-          "name": null,
-          "item": null
+          "name": "Przyjęcie",
+          "item": "przyjęcie"
         },
         "ko": {
-          "name": null,
-          "item": null
+          "name": "복용",
+          "item": "복용"
         },
         "nl": {
-          "name": null,
-          "item": null
+          "name": "Inname",
+          "item": "inname"
         },
         "pt-BR": {
-          "name": null,
-          "item": null
+          "name": "Tomada",
+          "item": "tomada"
         },
         "ru": {
-          "name": null,
-          "item": null
+          "name": "Приём",
+          "item": "приём"
         }
       },
       "anchors": [
@@ -464,28 +464,28 @@
           "name": "Remind me later"
         },
         "fr": {
-          "name": null
+          "name": "Me le rappeler plus tard"
         },
         "es": {
-          "name": null
+          "name": "Recordar más tarde"
         },
         "it": {
-          "name": null
+          "name": "Ricordamelo più tardi"
         },
         "pl": {
-          "name": null
+          "name": "Przypomnij później"
         },
         "ko": {
-          "name": null
+          "name": "나중에 알림"
         },
         "nl": {
-          "name": null
+          "name": "Later herinneren"
         },
         "pt-BR": {
-          "name": null
+          "name": "Lembrar mais tarde"
         },
         "ru": {
-          "name": null
+          "name": "Напомнить позже"
         }
       },
       "anchors": [
@@ -522,7 +522,7 @@
           "name": "Humeur"
         },
         "es": {
-          "name": "Ánimo"
+          "name": "Estado de ánimo"
         },
         "it": {
           "name": "Umore"
@@ -719,7 +719,7 @@
           "name": "Controlli"
         },
         "pl": {
-          "name": "Badania"
+          "name": "Profilaktyka"
         },
         "ko": {
           "name": "건강검진"
@@ -759,13 +759,38 @@
       "forbidden": {
         "de": [],
         "en": [],
-        "fr": [],
-        "es": [],
-        "it": [],
+        "fr": [
+          "rappels de prévention",
+          {
+            "text": "Dépistages",
+            "caseSensitive": true,
+            "wholeWord": true
+          },
+          {
+            "text": "Prévention",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ],
+        "es": ["atención preventiva", "recordatorios preventivos"],
+        "it": [
+          {
+            "text": "Prevenzione",
+            "caseSensitive": true,
+            "wholeWord": true
+          },
+          "promemoria di prevenzione"
+        ],
         "pl": [],
-        "ko": [],
+        "ko": ["예방 관리"],
         "nl": [],
-        "pt-BR": [],
+        "pt-BR": [
+          "cuidados preventivos",
+          {
+            "text": "checks",
+            "wholeWord": true
+          }
+        ],
         "ru": []
       }
     },
@@ -784,35 +809,35 @@
         },
         "fr": {
           "name": "Rappel d’examen",
-          "item": null
+          "item": "examen"
         },
         "es": {
           "name": "Recordatorio de revisión",
-          "item": null
+          "item": "revisión"
         },
         "it": {
           "name": "Promemoria di controllo",
-          "item": null
+          "item": "controllo"
         },
         "pl": {
           "name": "Przypomnienie o badaniu",
-          "item": null
+          "item": "badanie kontrolne"
         },
         "ko": {
           "name": "건강검진 알림",
-          "item": null
+          "item": "건강검진"
         },
         "nl": {
           "name": "Controleherinnering",
-          "item": null
+          "item": "controle"
         },
         "pt-BR": {
           "name": "Lembrete de check-up",
-          "item": null
+          "item": "check-up"
         },
         "ru": {
-          "name": "Напоминание о проверке",
-          "item": null
+          "name": "Напоминание об обследовании",
+          "item": "обследование"
         }
       },
       "anchors": [
@@ -830,14 +855,36 @@
       "forbidden": {
         "de": ["Mess-Erinnerung", "Messerinnerung", "Checkup", "Check-up"],
         "en": ["checkup", "measurement reminder"],
-        "fr": [],
-        "es": [],
-        "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
+        "fr": ["rappel de mesure", "rappels de mesure"],
+        "es": [
+          "recordatorio de medición",
+          "recordatorios de medición",
+          "chequeo"
+        ],
+        "it": ["promemoria di misurazione", "promemoria misurazione"],
+        "pl": [
+          "przypomnienie o pomiar",
+          "przypomnienia o pomiar",
+          "przypomnień o pomiar"
+        ],
+        "ko": ["측정 알림"],
+        "nl": ["meetherinnering"],
+        "pt-BR": [
+          "lembrete de medição",
+          "lembretes de medição",
+          {
+            "text": "lembrete de check-in",
+            "wholeWord": true
+          }
+        ],
+        "ru": [
+          "напоминание об измерени",
+          "напоминания об измерени",
+          "напоминаний об измерени",
+          "напоминание о проверк",
+          "напоминания о проверк",
+          "напоминаний о проверк"
+        ]
       }
     },
     {
@@ -855,35 +902,35 @@
         },
         "fr": {
           "name": "Rendez-vous",
-          "item": null
+          "item": "rendez-vous"
         },
         "es": {
           "name": "Citas",
-          "item": null
+          "item": "cita"
         },
         "it": {
-          "name": "Appuntamenti",
-          "item": null
+          "name": "Visite",
+          "item": "visita"
         },
         "pl": {
           "name": "Wizyty",
-          "item": null
+          "item": "wizyta"
         },
         "ko": {
           "name": "진료",
-          "item": null
+          "item": "진료"
         },
         "nl": {
           "name": "Bezoeken",
-          "item": null
+          "item": "bezoek"
         },
         "pt-BR": {
           "name": "Consultas",
-          "item": null
+          "item": "consulta"
         },
         "ru": {
           "name": "Визиты",
-          "item": null
+          "item": "визит"
         }
       },
       "anchors": [
@@ -912,14 +959,41 @@
           }
         ],
         "en": ["appointment"],
-        "fr": [],
-        "es": [],
-        "it": [],
+        "fr": ["consultation", "visite médicale", "visites médicales"],
+        "es": [
+          {
+            "text": "visita",
+            "wholeWord": true
+          },
+          {
+            "text": "visitas",
+            "wholeWord": true
+          }
+        ],
+        "it": ["appuntament"],
         "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
+        "ko": ["진료 예약", "병원 방문", "예약된 방문"],
+        "nl": [
+          {
+            "text": "afspraak",
+            "wholeWord": true
+          },
+          {
+            "text": "afspraken",
+            "wholeWord": true
+          }
+        ],
+        "pt-BR": ["compromisso"],
+        "ru": [
+          "приём у врач",
+          "приёма у врач",
+          "приёмы у врач",
+          "приёмов у врач",
+          "на приём к врач",
+          "записи на приём",
+          "запись на приём",
+          "записями на приём"
+        ]
       }
     },
     {
@@ -937,35 +1011,35 @@
         },
         "fr": {
           "name": "Séries de soins",
-          "item": null
+          "item": "série de soins"
         },
         "es": {
           "name": "Series de tratamiento",
-          "item": null
+          "item": "serie de tratamiento"
         },
         "it": {
           "name": "Cicli di trattamento",
-          "item": null
+          "item": "ciclo di trattamento"
         },
         "pl": {
           "name": "Serie zabiegów",
-          "item": null
+          "item": "seria zabiegów"
         },
         "ko": {
           "name": "치료 과정",
-          "item": null
+          "item": "치료 과정"
         },
         "nl": {
           "name": "Behandelreeksen",
-          "item": null
+          "item": "behandelreeks"
         },
         "pt-BR": {
           "name": "Séries de tratamento",
-          "item": null
+          "item": "série de tratamento"
         },
         "ru": {
           "name": "Курсы лечения",
-          "item": null
+          "item": "курс лечения"
         }
       },
       "anchors": [
@@ -982,9 +1056,9 @@
         "es": [],
         "it": [],
         "pl": [],
-        "ko": [],
+        "ko": ["치료 코스"],
         "nl": [],
-        "pt-BR": [],
+        "pt-BR": ["curso de tratamento"],
         "ru": []
       }
     },
@@ -1001,36 +1075,36 @@
           "item": "lab result"
         },
         "fr": {
-          "name": "Valeurs de laboratoire",
-          "item": null
+          "name": "Résultats de laboratoire",
+          "item": "résultat de laboratoire"
         },
         "es": {
-          "name": "Valores de laboratorio",
-          "item": null
+          "name": "Resultados de laboratorio",
+          "item": "resultado de laboratorio"
         },
         "it": {
-          "name": "Valori di laboratorio",
-          "item": null
+          "name": "Esami di laboratorio",
+          "item": "risultato di laboratorio"
         },
         "pl": {
-          "name": "Wyniki laboratoryjne",
-          "item": null
+          "name": "Wyniki badań",
+          "item": "wynik badania"
         },
         "ko": {
-          "name": "검사 수치",
-          "item": null
+          "name": "검사 결과",
+          "item": "검사 결과"
         },
         "nl": {
-          "name": "Labwaarden",
-          "item": null
+          "name": "Labuitslagen",
+          "item": "labuitslag"
         },
         "pt-BR": {
-          "name": "Valores laboratoriais",
-          "item": null
+          "name": "Resultados laboratoriais",
+          "item": "resultado laboratorial"
         },
         "ru": {
-          "name": "Лабораторные показатели",
-          "item": null
+          "name": "Результаты анализов",
+          "item": "результат анализа"
         }
       },
       "anchors": [
@@ -1060,14 +1134,51 @@
           }
         ],
         "en": ["lab value"],
-        "fr": [],
-        "es": [],
-        "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
+        "fr": [
+          "valeur de laboratoire",
+          "valeurs de laboratoire",
+          "résultat d'analyse",
+          "résultat d’analyse",
+          "résultats d'analyse",
+          "résultats d’analyse",
+          {
+            "text": "labo",
+            "wholeWord": true
+          }
+        ],
+        "es": [
+          "valor de laboratorio",
+          "valores de laboratorio",
+          "resultado de análisis",
+          "resultados de análisis"
+        ],
+        "it": [
+          "valore di laboratorio",
+          "valori di laboratorio",
+          "risultati degli esami",
+          "analisi di laboratorio"
+        ],
+        "pl": [
+          "wynik laboratoryjn",
+          "wyniki laboratoryjn",
+          "wyników laboratoryjn",
+          "wyniku laboratoryjn",
+          "wynikiem laboratoryjn"
+        ],
+        "ko": ["검사 수치"],
+        "nl": ["labwaarde"],
+        "pt-BR": [
+          "valor laboratorial",
+          "valores laboratoriais",
+          "resultado de exame",
+          "resultados de exames",
+          "valores de exames"
+        ],
+        "ru": [
+          "лабораторные показател",
+          "лабораторных показател",
+          "лабораторным показател"
+        ]
       }
     },
     {
@@ -1084,36 +1195,36 @@
           "item": "illness episode"
         },
         "fr": {
-          "name": "Journal des maladies",
-          "item": null
+          "name": "Maladie",
+          "item": "épisode de maladie"
         },
         "es": {
-          "name": "Diario de enfermedades",
-          "item": null
+          "name": "Enfermedad",
+          "item": "episodio de enfermedad"
         },
         "it": {
-          "name": "Diario delle malattie",
-          "item": null
+          "name": "Malattia",
+          "item": "episodio di malattia"
         },
         "pl": {
-          "name": "Dziennik chorób",
-          "item": null
+          "name": "Choroby",
+          "item": "epizod choroby"
         },
         "ko": {
-          "name": "아픈 날 다이어리",
-          "item": null
+          "name": "아픈 날",
+          "item": "아픈 기간"
         },
         "nl": {
-          "name": "Ziektedagboek",
-          "item": null
+          "name": "Ziekte",
+          "item": "ziekte-episode"
         },
         "pt-BR": {
-          "name": "Diário de doenças",
-          "item": null
+          "name": "Doenças",
+          "item": "episódio de doença"
         },
         "ru": {
-          "name": "Дневник болезней",
-          "item": null
+          "name": "Заболевания",
+          "item": "эпизод заболевания"
         }
       },
       "anchors": [
@@ -1161,14 +1272,30 @@
       "forbidden": {
         "de": ["Krankheitstagebuch", "Krankheits-Journal"],
         "en": ["illness journal", "illness diary"],
-        "fr": [],
-        "es": [],
-        "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
+        "fr": ["journal de maladie", "journal des maladies"],
+        "es": ["diario de enfermedad"],
+        "it": [
+          "diario delle malattie",
+          "diario di malattia",
+          "diario delle condizioni"
+        ],
+        "pl": [
+          "dziennik chor",
+          "dziennika chor",
+          "dzienniku chor",
+          "dziennikiem chor"
+        ],
+        "ko": ["아픈 날 일지", "아픈 날 다이어리", "질병 일지"],
+        "nl": ["ziektedagboek", "ziektelogboek"],
+        "pt-BR": ["diário de doenças", "diário de doença"],
+        "ru": [
+          "дневник болезн",
+          "дневника болезн",
+          "дневнике болезн",
+          "дневник заболеван",
+          "дневника заболеван",
+          "дневнике заболеван"
+        ]
       }
     },
     {
@@ -1184,36 +1311,36 @@
           "item": "symptom"
         },
         "fr": {
-          "name": null,
-          "item": "Symptôme"
+          "name": "Symptômes",
+          "item": "symptôme"
         },
         "es": {
-          "name": null,
-          "item": "Síntoma"
+          "name": "Síntomas",
+          "item": "síntoma"
         },
         "it": {
-          "name": null,
-          "item": "Sintomo"
+          "name": "Sintomi",
+          "item": "sintomo"
         },
         "pl": {
-          "name": null,
-          "item": "Objaw"
+          "name": "Objawy",
+          "item": "objaw"
         },
         "ko": {
-          "name": null,
+          "name": "증상",
           "item": "증상"
         },
         "nl": {
-          "name": null,
-          "item": "Symptoom"
+          "name": "Symptomen",
+          "item": "symptoom"
         },
         "pt-BR": {
-          "name": null,
-          "item": "Sintoma"
+          "name": "Sintomas",
+          "item": "sintoma"
         },
         "ru": {
-          "name": null,
-          "item": "Симптом"
+          "name": "Симптомы",
+          "item": "симптом"
         }
       },
       "anchors": [
@@ -1250,36 +1377,36 @@
           "item": "seizure"
         },
         "fr": {
-          "name": "Crises",
-          "item": "Crise"
+          "name": "Journal des crises",
+          "item": "crise"
         },
         "es": {
-          "name": "Crisis",
-          "item": "Crisis"
+          "name": "Diario de crisis",
+          "item": "crisis"
         },
         "it": {
-          "name": "Crisi",
-          "item": "Crisi"
+          "name": "Diario delle crisi",
+          "item": "crisi"
         },
         "pl": {
-          "name": "Napady",
-          "item": "Napad"
+          "name": "Dzienniczek napadów",
+          "item": "napad"
         },
         "ko": {
-          "name": "발작",
+          "name": "발작 일지",
           "item": "발작"
         },
         "nl": {
-          "name": "Aanvallen",
-          "item": "Aanval"
+          "name": "Aanvalsdagboek",
+          "item": "aanval"
         },
         "pt-BR": {
-          "name": "Crises",
-          "item": "Crise"
+          "name": "Diário de crises",
+          "item": "crise"
         },
         "ru": {
-          "name": "Приступы",
-          "item": "Приступ"
+          "name": "Дневник приступов",
+          "item": "приступ"
         }
       },
       "anchors": [
@@ -1310,11 +1437,11 @@
         "fr": [],
         "es": [],
         "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
+        "pl": ["dziennik napad", "kalendarz napad", "rejestr napad"],
+        "ko": ["발작 다이어리", "발작 캘린더"],
+        "nl": ["aanvallendagboek", "aanvalslogboek", "aanvalskalender"],
+        "pt-BR": ["registro de crises", "calendário de crises"],
+        "ru": ["журнал приступ", "календарь приступ"]
       }
     },
     {
@@ -1331,35 +1458,35 @@
         },
         "fr": {
           "name": "Vaccinations",
-          "item": null
+          "item": "vaccination"
         },
         "es": {
           "name": "Vacunas",
-          "item": null
+          "item": "vacuna"
         },
         "it": {
           "name": "Vaccinazioni",
-          "item": null
+          "item": "vaccinazione"
         },
         "pl": {
           "name": "Szczepienia",
-          "item": null
+          "item": "szczepienie"
         },
         "ko": {
           "name": "예방접종",
-          "item": null
+          "item": "예방접종"
         },
         "nl": {
           "name": "Vaccinaties",
-          "item": null
+          "item": "vaccinatie"
         },
         "pt-BR": {
           "name": "Vacinas",
-          "item": null
+          "item": "vacina"
         },
         "ru": {
           "name": "Вакцинации",
-          "item": null
+          "item": "вакцинация"
         }
       },
       "anchors": [
@@ -1401,35 +1528,35 @@
         },
         "fr": {
           "name": "Documents",
-          "item": null
+          "item": "document"
         },
         "es": {
           "name": "Documentos",
-          "item": null
+          "item": "documento"
         },
         "it": {
           "name": "Documenti",
-          "item": null
+          "item": "documento"
         },
         "pl": {
           "name": "Dokumenty",
-          "item": null
+          "item": "dokument"
         },
         "ko": {
           "name": "문서",
-          "item": null
+          "item": "문서"
         },
         "nl": {
           "name": "Documenten",
-          "item": null
+          "item": "document"
         },
         "pt-BR": {
           "name": "Documentos",
-          "item": null
+          "item": "documento"
         },
         "ru": {
           "name": "Документы",
-          "item": null
+          "item": "документ"
         }
       },
       "anchors": [
@@ -1531,10 +1658,10 @@
           "name": "Analyses"
         },
         "es": {
-          "name": "Ideas"
+          "name": "Insights"
         },
         "it": {
-          "name": "Analisi"
+          "name": "Insights"
         },
         "pl": {
           "name": "Analizy"
@@ -1567,14 +1694,32 @@
       "forbidden": {
         "de": [],
         "en": [],
-        "fr": [],
+        "fr": ["insight"],
         "es": [],
         "it": [],
-        "pl": [],
+        "pl": [
+          {
+            "text": "Insights",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ],
         "ko": [],
-        "nl": [],
+        "nl": [
+          {
+            "text": "Insights",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ],
         "pt-BR": [],
-        "ru": []
+        "ru": [
+          {
+            "text": "Insights",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ]
       }
     },
     {
@@ -1816,10 +1961,10 @@
         "fr": [],
         "es": [],
         "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
+        "pl": ["paszport ratunkow"],
+        "ko": ["응급카드", "비상 카드"],
+        "nl": ["noodpas"],
+        "pt-BR": ["ficha de emergência", "passe de emergência"],
         "ru": []
       }
     },
@@ -1834,28 +1979,28 @@
           "name": "Medical history"
         },
         "fr": {
-          "name": "Profil"
+          "name": "Antécédents médicaux"
         },
         "es": {
-          "name": "Perfil"
+          "name": "Antecedentes médicos"
         },
         "it": {
-          "name": "Profilo"
+          "name": "Anamnesi"
         },
         "pl": {
-          "name": "Profil"
+          "name": "Wywiad medyczny"
         },
         "ko": {
-          "name": "프로필"
+          "name": "병력"
         },
         "nl": {
-          "name": "Profiel"
+          "name": "Medische voorgeschiedenis"
         },
         "pt-BR": {
-          "name": "Perfil"
+          "name": "Histórico médico"
         },
         "ru": {
-          "name": "Профиль"
+          "name": "Анамнез"
         }
       },
       "anchors": [
@@ -1876,11 +2021,20 @@
         "fr": [],
         "es": [],
         "it": [],
-        "pl": [],
+        "pl": ["anamnez", "wywiad zdrowotn"],
         "ko": [],
-        "nl": [],
+        "nl": [
+          {
+            "text": "anamnese",
+            "wholeWord": true
+          }
+        ],
         "pt-BR": [],
-        "ru": []
+        "ru": [
+          "медицинский анамнез",
+          "медицинского анамнез",
+          "медицинском анамнез"
+        ]
       }
     },
     {
@@ -1894,13 +2048,13 @@
           "name": "Health record"
         },
         "fr": {
-          "name": "Dossier médical"
+          "name": "Dossier de santé"
         },
         "es": {
-          "name": "Historial médico"
+          "name": "Historial de salud"
         },
         "it": {
-          "name": "Cartella clinica"
+          "name": "Cartella sanitaria"
         },
         "pl": {
           "name": "Dokumentacja zdrowotna"
@@ -1928,9 +2082,9 @@
       "forbidden": {
         "de": [],
         "en": [],
-        "fr": [],
-        "es": [],
-        "it": [],
+        "fr": ["dossier médical"],
+        "es": ["historial médico"],
+        "it": ["cartella clinica"],
         "pl": [],
         "ko": [],
         "nl": [],
@@ -1950,28 +2104,28 @@
           "name": "Doctor report"
         },
         "fr": {
-          "name": "Rapport de santé"
+          "name": "Rapport médical"
         },
         "es": {
-          "name": "Informe de salud"
+          "name": "Informe médico"
         },
         "it": {
-          "name": "Rapporto sanitario"
+          "name": "Referto medico"
         },
         "pl": {
-          "name": "Raport zdrowotny"
+          "name": "Raport dla lekarza"
         },
         "ko": {
-          "name": "건강 리포트"
+          "name": "진료용 리포트"
         },
         "nl": {
-          "name": "Gezondheidsrapport"
+          "name": "Artsenrapport"
         },
         "pt-BR": {
-          "name": "Relatório de Saúde"
+          "name": "Relatório médico"
         },
         "ru": {
-          "name": "Отчёт о здоровье"
+          "name": "Отчёт для врача"
         }
       },
       "anchors": [
@@ -2006,14 +2160,49 @@
           "doctor's report",
           "medical report"
         ],
-        "fr": [],
-        "es": [],
-        "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
+        "fr": [
+          "rapport de santé",
+          "compte rendu médical",
+          "rapport personnel de santé"
+        ],
+        "es": ["informe de salud", "informes de salud"],
+        "it": [
+          "rapporto sanitario",
+          "rapporto personale di salute",
+          "referto sanitario",
+          "referto per il medico"
+        ],
+        "pl": [
+          "raport zdrowotn",
+          "raportu zdrowotn",
+          "raporty zdrowotn",
+          "raport lekarsk",
+          "raportu lekarsk",
+          "raporty lekarsk",
+          "raport medyczn",
+          "raportu medyczn",
+          "raporcie medyczn",
+          "raport o zdrowiu"
+        ],
+        "ko": ["진료 보고서", "건강 리포트", "건강 보고서"],
+        "nl": [
+          "gezondheidsrapport",
+          "artsrapport",
+          "doktersrapport",
+          "medisch rapport"
+        ],
+        "pt-BR": ["relatório de saúde", "relatório pessoal de saúde"],
+        "ru": [
+          "отчёт о здоровье",
+          "отчет о здоровье",
+          "отчёта о здоровье",
+          "отчета о здоровье",
+          "отчёте о здоровье",
+          "медицинский отчёт",
+          "медицинский отчет",
+          "врачебный отчёт",
+          "врачебный отчет"
+        ]
       }
     },
     {
@@ -2028,28 +2217,28 @@
           "name": "Doctor report and export"
         },
         "fr": {
-          "name": "Dossier médical"
+          "name": "Rapport médical et export"
         },
         "es": {
-          "name": "Historial médico"
+          "name": "Informe médico y exportación"
         },
         "it": {
-          "name": "Cartella clinica"
+          "name": "Referto medico ed esportazione"
         },
         "pl": {
-          "name": "Dokumentacja zdrowotna"
+          "name": "Raport dla lekarza i eksport"
         },
         "ko": {
-          "name": "건강 기록"
+          "name": "진료용 리포트 및 내보내기"
         },
         "nl": {
-          "name": "Gezondheidsdossier"
+          "name": "Artsenrapport en export"
         },
         "pt-BR": {
-          "name": "Registro de saúde"
+          "name": "Relatório médico e exportação"
         },
         "ru": {
-          "name": "Медицинская карта"
+          "name": "Отчёт для врача и экспорт"
         }
       },
       "anchors": [
@@ -2132,14 +2321,20 @@
             "caseSensitive": true
           }
         ],
-        "fr": [],
+        "fr": ["score santé"],
         "es": [],
-        "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
+        "it": ["health score", "punteggio salute"],
+        "pl": ["Health Score", "Health-Score"],
+        "ko": ["건강점수", "헬스 스코어"],
+        "nl": ["Health Score", "gezondheids-score"],
+        "pt-BR": [
+          {
+            "text": "Pontuação de Saúde",
+            "caseSensitive": true
+          },
+          "escore de saúde"
+        ],
+        "ru": ["Health Score", "индекс здоровья"]
       }
     },
     {
@@ -2647,7 +2842,7 @@
         "pl": [],
         "ko": [],
         "nl": [],
-        "pt-BR": [],
+        "pt-BR": ["pontuação do sono"],
         "ru": []
       }
     },
@@ -2728,28 +2923,28 @@
           "name": "Push relay"
         },
         "fr": {
-          "name": null
+          "name": "Relais push"
         },
         "es": {
-          "name": null
+          "name": "Relé push"
         },
         "it": {
-          "name": null
+          "name": "Relay push"
         },
         "pl": {
-          "name": null
+          "name": "Przekaźnik push"
         },
         "ko": {
-          "name": null
+          "name": "푸시 릴레이"
         },
         "nl": {
-          "name": null
+          "name": "Pushrelay"
         },
         "pt-BR": {
-          "name": null
+          "name": "Relay de push"
         },
         "ru": {
-          "name": null
+          "name": "Push-ретранслятор"
         }
       },
       "anchors": [
@@ -2767,7 +2962,7 @@
         "it": [],
         "pl": [],
         "ko": [],
-        "nl": [],
+        "nl": ["push-relay"],
         "pt-BR": [],
         "ru": []
       }
@@ -2783,28 +2978,28 @@
           "name": "Live Activity"
         },
         "fr": {
-          "name": null
+          "name": "Activité en direct"
         },
         "es": {
-          "name": null
+          "name": "Actividad en directo"
         },
         "it": {
-          "name": null
+          "name": "Attività Live"
         },
         "pl": {
-          "name": null
+          "name": "Aktywności na żywo"
         },
         "ko": {
-          "name": null
+          "name": "실시간 현황"
         },
         "nl": {
-          "name": null
+          "name": "Live-activiteit"
         },
         "pt-BR": {
-          "name": null
+          "name": "Atividade ao Vivo"
         },
         "ru": {
-          "name": null
+          "name": "Живые активности"
         }
       },
       "anchors": [
@@ -2818,7 +3013,7 @@
         "de": [],
         "en": [],
         "fr": [],
-        "es": [],
+        "es": ["actividad en vivo", "actividades en vivo"],
         "it": [],
         "pl": [],
         "ko": [],
@@ -2841,36 +3036,36 @@
           "item": "guardian"
         },
         "fr": {
-          "name": null,
-          "item": null
+          "name": "Personne responsable",
+          "item": "personne responsable"
         },
         "es": {
-          "name": null,
-          "item": null
+          "name": "Persona responsable",
+          "item": "persona responsable"
         },
         "it": {
-          "name": null,
-          "item": null
+          "name": "Persona responsabile",
+          "item": "persona responsabile"
         },
         "pl": {
-          "name": null,
-          "item": null
+          "name": "Opiekun",
+          "item": "opiekun"
         },
         "ko": {
-          "name": null,
-          "item": null
+          "name": "보호자",
+          "item": "보호자"
         },
         "nl": {
-          "name": null,
-          "item": null
+          "name": "Verzorger",
+          "item": "verzorger"
         },
         "pt-BR": {
-          "name": null,
-          "item": null
+          "name": "Responsável",
+          "item": "responsável"
         },
         "ru": {
-          "name": null,
-          "item": null
+          "name": "Ухаживающее лицо",
+          "item": "ухаживающее лицо"
         }
       },
       "anchors": [
@@ -2883,14 +3078,32 @@
       "forbidden": {
         "de": ["Vormund"],
         "en": [],
-        "fr": [],
-        "es": [],
-        "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
+        "fr": ["tuteur", "tutrice", "tutelle"],
+        "es": [
+          {
+            "text": "tutor",
+            "wholeWord": true
+          },
+          {
+            "text": "tutora",
+            "wholeWord": true
+          },
+          {
+            "text": "tutores",
+            "wholeWord": true
+          },
+          {
+            "text": "tutoras",
+            "wholeWord": true
+          },
+          "tutela"
+        ],
+        "it": ["tutor", "tutel"],
+        "pl": ["opiekując", "opiekun prawn"],
+        "ko": ["후견인", "법정 대리인"],
+        "nl": ["voogd"],
+        "pt-BR": ["guardião", "guardiões", "guardiã", "tutor legal"],
+        "ru": ["опекун", "попечител"]
       }
     },
     {
@@ -2908,13 +3121,13 @@
           "name": "Profil géré"
         },
         "es": {
-          "name": "Perfil administrado"
+          "name": "Perfil gestionado"
         },
         "it": {
           "name": "Profilo gestito"
         },
         "pl": {
-          "name": "Zarządzany profil"
+          "name": "Profil zarządzany"
         },
         "ko": {
           "name": "관리 프로필"
@@ -2940,13 +3153,18 @@
         "de": ["betreutes Profil", "betreuten Profil", "Kinderprofil"],
         "en": ["child profile", "dependent profile"],
         "fr": [],
-        "es": [],
+        "es": ["perfil administrado", "perfiles administrados"],
         "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
+        "pl": [
+          "zarządzany profil",
+          "zarządzanego profilu",
+          "zarządzanym profil",
+          "profil dziecka"
+        ],
+        "ko": ["자녀 프로필"],
+        "nl": ["kindprofiel"],
+        "pt-BR": ["perfil infantil", "perfil de dependente"],
+        "ru": ["детский профиль", "профиль ребёнка", "профиль ребенка"]
       }
     },
     {
@@ -2963,36 +3181,36 @@
           "item": "share link"
         },
         "fr": {
-          "name": null,
-          "item": null
+          "name": "Lien de partage",
+          "item": "lien de partage"
         },
         "es": {
-          "name": null,
-          "item": null
+          "name": "Enlace para compartir",
+          "item": "enlace para compartir"
         },
         "it": {
-          "name": null,
-          "item": null
+          "name": "Link di condivisione",
+          "item": "link di condivisione"
         },
         "pl": {
-          "name": null,
-          "item": null
+          "name": "Link udostępniania",
+          "item": "link udostępniania"
         },
         "ko": {
-          "name": null,
-          "item": null
+          "name": "공유 링크",
+          "item": "공유 링크"
         },
         "nl": {
-          "name": null,
-          "item": null
+          "name": "Deellink",
+          "item": "deellink"
         },
         "pt-BR": {
-          "name": null,
-          "item": null
+          "name": "Link de compartilhamento",
+          "item": "link de compartilhamento"
         },
         "ru": {
-          "name": null,
-          "item": null
+          "name": "Ссылка общего доступа",
+          "item": "ссылка общего доступа"
         }
       },
       "anchors": [
@@ -3005,14 +3223,35 @@
       "forbidden": {
         "de": ["Freigabe-Link"],
         "en": ["clinician link", "doctor share link"],
-        "fr": [],
-        "es": [],
-        "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
+        "fr": ["lien clinicien", "liens cliniciens"],
+        "es": [
+          "enlace compartido",
+          "enlaces compartidos",
+          "enlaces para profesionales"
+        ],
+        "it": ["link di condivisione con i medici"],
+        "pl": [
+          "link do udostępni",
+          "linki do udostępni",
+          "link dla lekarz",
+          "linki dla lekarz",
+          "linków dla lekarz",
+          "udostępniania dla lekarz"
+        ],
+        "ko": ["공유링크", "의료진 링크", "의료진용 링크"],
+        "nl": ["deel-link", "deellinks voor arts", "links voor zorgverlener"],
+        "pt-BR": [
+          "link para profissionais",
+          "links para profissionais",
+          "link para clínico"
+        ],
+        "ru": [
+          "ссылка для врач",
+          "ссылки для врач",
+          "ссылок для врач",
+          "ссылку для врач",
+          "общего доступа для врач"
+        ]
       }
     },
     {
@@ -3088,36 +3327,36 @@
           "item": "data source"
         },
         "fr": {
-          "name": null,
-          "item": null
+          "name": "Source de données",
+          "item": "source de données"
         },
         "es": {
-          "name": null,
-          "item": null
+          "name": "Fuente de datos",
+          "item": "fuente de datos"
         },
         "it": {
-          "name": null,
-          "item": null
+          "name": "Fonte di dati",
+          "item": "fonte di dati"
         },
         "pl": {
-          "name": null,
-          "item": null
+          "name": "Źródło danych",
+          "item": "źródło danych"
         },
         "ko": {
-          "name": null,
-          "item": null
+          "name": "데이터 소스",
+          "item": "데이터 소스"
         },
         "nl": {
-          "name": null,
-          "item": null
+          "name": "Gegevensbron",
+          "item": "gegevensbron"
         },
         "pt-BR": {
-          "name": null,
-          "item": null
+          "name": "Fonte de dados",
+          "item": "fonte de dados"
         },
         "ru": {
-          "name": null,
-          "item": null
+          "name": "Источник данных",
+          "item": "источник данных"
         }
       },
       "anchors": [
@@ -3132,9 +3371,9 @@
         "en": [],
         "fr": [],
         "es": [],
-        "it": [],
+        "it": ["fonte dati", "fonti dati"],
         "pl": [],
-        "ko": [],
+        "ko": ["데이터 원본"],
         "nl": [],
         "pt-BR": [],
         "ru": []
@@ -3152,28 +3391,28 @@
           "name": "quiet"
         },
         "fr": {
-          "name": null
+          "name": "silencieux"
         },
         "es": {
-          "name": null
+          "name": "en silencio"
         },
         "it": {
-          "name": null
+          "name": "in silenzio"
         },
         "pl": {
-          "name": null
+          "name": "milczy"
         },
         "ko": {
-          "name": null
+          "name": "조용"
         },
         "nl": {
-          "name": null
+          "name": "stil"
         },
         "pt-BR": {
-          "name": null
+          "name": "em silêncio"
         },
         "ru": {
-          "name": null
+          "name": "молчит"
         }
       },
       "anchors": [
@@ -3244,6 +3483,90 @@
       "key": "emergencyCard.appleWallet.more.lock",
       "text": "Notfallpass",
       "reason": "Apple's German name for the Health app's Medical ID, which this sentence points to."
+    },
+    {
+      "locale": "fr",
+      "key": "palette.keywords.fhirBundle",
+      "text": "dossier médical",
+      "reason": "Search keyword: the everyday word for a medical record still finds the FHIR bundle import."
+    },
+    {
+      "locale": "it",
+      "key": "mood.context.eventType.appointment",
+      "text": "appuntament",
+      "reason": "A mood context event of any kind (a meeting, an errand), not a recorded doctor's visit."
+    },
+    {
+      "locale": "it",
+      "key": "palette.keywords.careCalendar",
+      "text": "appuntament",
+      "reason": "Search keyword: someone typing the everyday word still finds the care calendar."
+    },
+    {
+      "locale": "it",
+      "key": "palette.keywords.fhirBundle",
+      "text": "cartella clinica",
+      "reason": "Search keyword: the everyday word for a medical record still finds the FHIR import."
+    },
+    {
+      "locale": "it",
+      "key": "emergencyCard.appleWallet.more.lock",
+      "text": "cartella clinica",
+      "reason": "Apple's Italian name for the Health app's Medical ID, which this sentence points to."
+    },
+    {
+      "locale": "es",
+      "key": "achievements.badges.hiddenDoctorPdf.title",
+      "text": "visita",
+      "reason": "Badge name \"House call\" (a doctor visiting at home), a pun, not a recorded visit."
+    },
+    {
+      "locale": "pt-BR",
+      "key": "mood.context.eventType.appointment",
+      "text": "compromisso",
+      "reason": "A mood context event of any kind (a meeting, an errand), not a recorded doctor's visit."
+    },
+    {
+      "locale": "pt-BR",
+      "key": "admin.section.backups.restoreSkippedFactCommitment",
+      "text": "compromisso",
+      "reason": "A health-profile fact commitment in a restore summary, not a doctor's visit."
+    },
+    {
+      "locale": "nl",
+      "key": "palette.keywords.careCalendar",
+      "text": "afspraken",
+      "reason": "Search keyword: someone typing the everyday word still finds the care calendar."
+    },
+    {
+      "locale": "nl",
+      "key": "mood.context.eventType.appointment",
+      "text": "afspraak",
+      "reason": "A mood context event of any kind (a meeting, an errand), not a recorded doctor's visit."
+    },
+    {
+      "locale": "nl",
+      "key": "cycle.feed.description",
+      "text": "afspraken",
+      "reason": "Calendar entries in the person's own calendar app, not doctor's visits."
+    },
+    {
+      "locale": "nl",
+      "key": "cycle.feed.titles",
+      "text": "afspraken",
+      "reason": "Titles of calendar entries in the person's own calendar app, not doctor's visits."
+    },
+    {
+      "locale": "nl",
+      "key": "cycle.feed.forecastStyleHint.MARGIN",
+      "text": "afspraken",
+      "reason": "Calendar entries in the person's own calendar app, not doctor's visits."
+    },
+    {
+      "locale": "nl",
+      "key": "cycle.feed.forecastStyleHint.BAND",
+      "text": "afspraak",
+      "reason": "A calendar entry in the person's own calendar app, not a doctor's visit."
     }
   ]
 }

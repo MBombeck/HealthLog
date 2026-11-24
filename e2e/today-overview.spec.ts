@@ -83,7 +83,7 @@ const FACTS: DailyDigest["today"] = [
   },
   {
     kind: "appointment",
-    label: "Appointment",
+    label: "Visit",
     value: "Tomorrow 09:30, Routine visit",
     href: "/checkups",
   },

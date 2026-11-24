@@ -304,7 +304,7 @@
     }
   },
   "doctorReport": {
-    "title": "Relatório de Saúde",
+    "title": "Relatório médico",
     "anamnesisTitle": "Perfil de saúde",
     "anamnesisNotRecorded": "Não registrado",
     "anamnesisUnreadable": "Não foi possível ler o valor armazenado",
@@ -314,7 +314,7 @@
     "anamnesisShiftSchedule": "Escala de trabalho",
     "anamnesisColFact": "Item do perfil",
     "anamnesisColValue": "Valor registrado",
-    "subtitle": "HealthLog: Relatório Pessoal de Saúde",
+    "subtitle": "Criado com o HealthLog",
     "patient": "Paciente",
     "dateOfBirth": "Data de nascimento",
     "gender": "Gênero",
@@ -432,7 +432,7 @@
     "summaryTrend": "{label}: mais recente {latest} {arrow}",
     "summaryAdherence": "Adesão à medicação: {rate}% (média ponderada).",
     "chartsTitle": "Gráficos de tendência",
-    "packageReadme": "Registro de saúde HealthLog\n\nEste pacote contém:\n- report.pdf: o relatório de saúde para seu médico.\n- bundle.json: os mesmos dados como um Bundle de documento HL7 FHIR R4, compatível com ePA.\n\nGerado com HealthLog.",
+    "packageReadme": "Relatório médico do HealthLog\n\nEste pacote contém:\n- report.pdf: o relatório médico em PDF.\n- bundle.json: os mesmos dados como um Bundle de documento HL7 FHIR R4, compatível com ePA.\n\nGerado com HealthLog.",
     "wellnessTitle": "Resumo de bem-estar",
     "wellnessDisclaimer": "Estes são escores descritivos de bem-estar calculados a partir dos sinais que você registrou (0–100). Não são avaliações clínicas nem diagnósticos.",
     "wellnessRecovery": "Recuperação",
@@ -594,7 +594,7 @@
     "dashboard": "Painel",
     "measurements": "Medições",
     "medications": "Medicamentos",
-    "insights": "Análises",
+    "insights": "Insights",
     "achievements": "Conquistas",
     "settings": "Configurações",
     "admin": "Console de administração",
@@ -642,15 +642,15 @@
       "recentMeasurementDescription": "Medição registrada recentemente"
     },
     "cycle": "Ciclo",
-    "labs": "Exames",
-    "profile": "Perfil",
+    "labs": "Resultados laboratoriais",
+    "profile": "Histórico médico",
     "vorsorge": "Prevenção",
     "illness": "Doenças",
     "documents": "Documentos",
     "vaccinations": "Vacinas",
     "mentalWellbeing": "Bem-estar mental",
     "timeline": "Linha do tempo",
-    "seizures": "Crises",
+    "seizures": "Diário de crises",
     "emergencyCard": "Cartão de emergência",
     "groups": {
       "tracking": "Acompanhamento",
@@ -862,13 +862,13 @@
     "heroItems": {
       "coach_checkin": "Check-ins do Coach",
       "dose_window": "Doses de medicamentos",
-      "preventive_care": "Cuidados preventivos",
+      "preventive_care": "Prevenção",
       "sync_issue": "Problemas de sincronização",
       "milestone": "Marcos",
       "ecg_new_recording": "Novas gravações de ECG",
       "tension_window": "Janelas de tensão",
       "same_time_baseline": "Atividade no mesmo horário",
-      "upcoming_visit": "Compromissos"
+      "upcoming_visit": "Consultas"
     },
     "layoutReset": "Redefinir para padrões",
     "layoutResetTitle": "Redefinir o layout do painel?",
@@ -1102,7 +1102,7 @@
     "typeSleepDisturbanceCount": "Distúrbios do sono",
     "typeAnsCharge": "Carga do SNA",
     "typeCardioLoad": "Carga cardiovascular",
-    "typeSleepScore": "Pontuação do sono",
+    "typeSleepScore": "Pontuação de sono",
     "typeBodyTemperatureDeviation": "Desvio da temperatura corporal",
     "typeResilience": "Resiliência",
     "sourceComputed": "Calculado",
@@ -1513,8 +1513,8 @@
       "linkedActiveEnergy": "Energia ativa",
       "linkedRestingHeartRate": "Frequência cardíaca em repouso",
       "linkedHrv": "Variabilidade da frequência cardíaca",
-      "bodyLogged": "Registrado no diário de doenças: {count, plural, one {# sintoma} other {# sintomas}}",
-      "bodyNotLogged": "Nada registrado no diário de doenças para este dia",
+      "bodyLogged": "Registrado em Doenças: {count, plural, one {# sintoma} other {# sintomas}}",
+      "bodyNotLogged": "Nada registrado em Doenças para este dia",
       "openIllness": "Abrir"
     },
     "sourceNotification": "Notificação",
@@ -3118,7 +3118,7 @@
     "heroGreetingEvening": "Boa noite",
     "heroActionAskCoach": "Perguntar ao coach",
     "healthScore": {
-      "label": "Pontuação de Saúde",
+      "label": "Pontuação de saúde",
       "band": {
         "green": "Dentro da faixa de referência",
         "yellow": "Alguns pilares precisam de atenção",
@@ -3206,7 +3206,7 @@
         "no_personal_goal": "Defina uma meta de peso pessoal para ver o progresso aqui.",
         "weight_not_tracked": "Registre uma leitura de peso para ver o progresso em direção à sua meta.",
         "read_failed": "Não foi possível carregar os dados de peso. Tente novamente.",
-        "notScored": "O progresso da meta de peso é contexto pessoal e não afeta a Pontuação de Saúde.",
+        "notScored": "O progresso da meta de peso é contexto pessoal e não afeta a pontuação de saúde.",
         "pregnancy_context": "Na gravidez e após o parto, o peso aparece como dado, não em relação a uma meta."
       },
       "configureLink": "Escolher o que conta para sua pontuação",
@@ -4249,7 +4249,7 @@
         "title": "Visão geral da glicose",
         "subtitle": "Uma leitura {days, plural, one {do seu último # dia} other {dos seus últimos # dias}}, a partir de {count, plural, one {# leitura} other {# leituras}}.",
         "spotCaveat": "Estas são estimativas de leitura pontual a partir de medições individuais, não um perfil de monitor contínuo. Leia-as como uma direção de viagem em vez de um veredito clínico.",
-        "labsLink": "Resultados laboratoriais? Registre uma HbA1c de coleta de sangue ou glicose em jejum em Exames.",
+        "labsLink": "Resultados laboratoriais? Registre uma HbA1c de coleta de sangue ou glicose em jejum em Resultados laboratoriais.",
         "learningTitle": "Ainda aprendendo sua glicose",
         "learningBody": "Até agora são {count} em {days}. Um pouco mais de histórico e um quadro mais completo entra em foco. Continue registrando, ou deixe um dispositivo conectado preencher.",
         "learningBodyEmpty": "Assim que algumas leituras chegarem (registradas por você ou sincronizadas de um dispositivo), seu tempo na faixa, média e variabilidade tomarão forma aqui.",
@@ -5317,8 +5317,8 @@
       "coachPrefill": "Ainda não adicionei nenhum medicamento. O que devo saber antes de começar a acompanhar a adesão à medicação aqui?"
     },
     "scoreHistory": {
-      "healthTitle": "Histórico da Pontuação de Saúde",
-      "healthDescription": "Sua Pontuação de Saúde dia a dia, como era exibida em cada dia.",
+      "healthTitle": "Histórico da pontuação de saúde",
+      "healthDescription": "Sua pontuação de saúde dia a dia, como era exibida em cada dia.",
       "emptyDescription": "Nenhuma pontuação foi registrada nesta faixa ainda.",
       "usualRange": "Sombreado: sua faixa habitual, {lo} a {hi}.",
       "seam": "A linha quebra onde o que conta para a pontuação mudou."
@@ -5421,16 +5421,16 @@
           "body": "Medicamentos gerencia cronogramas, tomadas, estoque e titulação. Ocultos: planos recorrentes (RRULE/contínuos) e alertas de estoque baixo. Sua taxa de tomadas alimenta o pilar de adesão no painel e o contexto da IA."
         },
         "labs": {
-          "title": "Valores laboratoriais",
-          "body": "Exames captura biomarcadores com faixas de referência: hemograma, colesterol, HbA1c. Força: importação e exportação FHIR. Valores laboratoriais fora da faixa ressurgem como evidência nos insights e no relatório médico."
+          "title": "Resultados laboratoriais",
+          "body": "Resultados laboratoriais registra biomarcadores com faixas de referência: hemograma, colesterol, HbA1c. Força: importação e exportação FHIR. Resultados laboratoriais fora da faixa ressurgem como evidência nos insights e no relatório médico."
         },
         "illness": {
-          "title": "Diário de doenças",
-          "body": "O diário de doenças registra episódios agudos e diagnósticos crônicos com seus surtos. Oculto: correlacione um episódio com suas leituras e o Modo de Repouso que pausa lembretes. É assim que o Coach entende por que os valores oscilam por um tempo."
+          "title": "Doenças",
+          "body": "Doenças registra episódios agudos e diagnósticos crônicos com seus surtos. Oculto: correlacione um episódio com suas leituras e o Modo de Repouso que pausa lembretes. É assim que o Coach entende por que os valores oscilam por um tempo."
         },
         "vorsorge": {
           "title": "Prevenção",
-          "body": "Checks lembram você de triagens e vacinas no seu próprio intervalo. Dica: “Concluído” pode criar uma leitura ou resultado laboratorial diretamente. Itens previstos aparecem como lembretes e no relatório médico."
+          "body": "Prevenção lembra você de triagens e vacinas no seu próprio intervalo. Dica: “Concluído” pode criar uma leitura ou resultado laboratorial diretamente. Itens previstos aparecem como lembretes e no relatório médico."
         },
         "cycle": {
           "title": "Ciclo",
@@ -5446,7 +5446,7 @@
         },
         "coach": {
           "title": "Coach",
-          "body": "O Coach responde perguntas sobre seus dados em diálogo, usando seu histórico, medicamentos e valores laboratoriais como contexto. Escolha seu provedor de IA você mesmo (sua própria chave ou local). Ele não recalcula nada; lê os mesmos números que o painel."
+          "body": "O Coach responde perguntas sobre seus dados em diálogo, usando seu histórico, medicamentos e resultados laboratoriais como contexto. Escolha seu provedor de IA você mesmo (sua própria chave ou local). Ele não recalcula nada; lê os mesmos números que o painel."
         },
         "integrations": {
           "title": "Integrações",
@@ -5454,7 +5454,7 @@
         },
         "export": {
           "title": "Relatório médico",
-          "body": "O relatório médico reúne leituras, medicamentos, valores laboratoriais e checks em PDF ou FHIR para a consulta. É aqui que todos os módulos convergem: um relatório completo só vem de dados bem mantidos."
+          "body": "O relatório médico reúne leituras, medicamentos, resultados laboratoriais e check-ups em PDF ou FHIR para a consulta. É aqui que todos os módulos convergem: um relatório completo só vem de dados bem mantidos."
         },
         "achievements": {
           "title": "Conquistas",
@@ -5947,7 +5947,7 @@
             "rhythmEvents": "Eventos de ritmo",
             "healthStatus": "Estado de saúde",
             "breathing": "Respiração",
-            "labsChanges": "Alterações em exames",
+            "labsChanges": "Alterações em resultados laboratoriais",
             "ecg": "ECG"
           }
         },
@@ -6053,11 +6053,11 @@
           "description": "Visualização em lista e ordem manual."
         },
         "labs": {
-          "title": "Exames",
+          "title": "Resultados laboratoriais",
           "description": "Visualização, ordenação e ordem manual."
         },
         "illness": {
-          "title": "Diário de doenças",
+          "title": "Doenças",
           "description": "Visualização em lista e ordem dos episódios."
         },
         "checkups": {
@@ -6213,7 +6213,7 @@
             "passphraseHelp": "Deriva a chave do arquivo com Argon2id e a sela com AES-256-GCM. Salve o arquivo com a extensão .hlx.",
             "noRecoveryWarning": "Não há recuperação. Se você perder esta frase-senha, o arquivo não poderá ser aberto. Guarde-a em um lugar seguro.",
             "detail": "Uma cópia portátil do seu registro para guardar e ler: valores em JSON simples, documentos apenas com os metadados. Não é a cópia semanal da conta que este servidor mantém para reverter uma conta, e não consegue recriar uma conta em outro servidor. Alguns tipos de dados ainda não estão incluídos; o manifesto do arquivo informa o que ele contém.",
-            "contents": "Suas medições, medicamentos, humor, ciclo, exames, episódios de doença, alergias, histórico familiar, nutrientes, treinos, perfil de saúde e métricas personalizadas em um único arquivo JSON."
+            "contents": "Suas medições, medicamentos, humor, ciclo, resultados laboratoriais, episódios de doença, alergias, histórico familiar, nutrientes, treinos, perfil de saúde e métricas personalizadas em um único arquivo JSON."
           }
         },
         "import": {
@@ -6237,19 +6237,19 @@
             "failureInsufficientMemory": "O limite de memória do servidor é baixo demais para um arquivo desse tamanho. Peça a quem administra o servidor para aumentar o limite de heap do Node.js (NODE_OPTIONS=--max-old-space-size) e envie a exportação novamente.",
             "rowsImported": "{count, plural, one {# linha importada} other {# linhas importadas}} até agora",
             "doneSummary": "Concluído: {imported} de {read, plural, one {# registro} other {# registros}} importados, {skipped, plural, one {# registro clínico pulado} other {# registros clínicos pulados}}.",
-            "doneSummaryAuxOnly": "Concluído: nada novo entre {read, plural, one {o # registro} other {os # registros}}, mas os resultados de exames ou ECGs abaixo foram importados.",
+            "doneSummaryAuxOnly": "Concluído: nada novo entre {read, plural, one {o # registro} other {os # registros}}, mas os resultados laboratoriais ou ECGs abaixo foram importados.",
             "doneNothing": "Nada foi importado desse arquivo: 0 de {read, plural, one {# registro} other {# registros}} foram processados.",
             "writtenByHealthLogOne": "{count} registro que o próprio HealthLog gravou no Apple Health foi deixado de fora, porque já está nos seus dados.",
             "writtenByHealthLogOther": "{count} registros que o próprio HealthLog gravou no Apple Health foram deixados de fora, porque já estão nos seus dados.",
             "writtenByHealthLogFew": "{count} registros que o próprio HealthLog gravou no Apple Health foram deixados de fora, porque já estão nos seus dados.",
             "ecgResult": "ECGs: {discovered} descobertos, {imported} importados, {updated} atualizados, {skipped} pulados, {failed} falharam.",
             "ecgFailedNote": "Falhas de ECG não descartam registros compatíveis importados do export.xml.",
-            "labsResult": "Resultados de exames dos registros de saúde: {discovered} descobertos, {imported} importados, {duplicate} já registrados, {skipped} pulados, {failed} falharam.",
+            "labsResult": "Resultados laboratoriais dos registros de saúde: {discovered} descobertos, {imported} importados, {duplicate} já registrados, {skipped} pulados, {failed} falharam.",
             "labsFailedNote": "Um resultado com falha não descarta mais nada do arquivo.",
             "labsReasons": "Não importados: {reasons}.",
             "labsReason": {
               "not_observation": "não é uma observação",
-              "not_lab": "não é um resultado de exame",
+              "not_lab": "não é um resultado laboratorial",
               "not_final": "ainda não é definitivo",
               "withdrawn": "retirado pelo laboratório",
               "panel_header": "título de um painel",
@@ -6272,10 +6272,10 @@
               "archive_unreadable": "não foi possível ler o arquivo compactado",
               "missing_member": "arquivo ausente do arquivo compactado"
             },
-            "labsMarkersCreatedOne": "{count} novo marcador foi adicionado a Exames.",
-            "labsMarkersCreatedOther": "{count} novos marcadores foram adicionados a Exames.",
-            "labsMarkersCreatedFew": "{count} novos marcadores foram adicionados a Exames.",
-            "viewInLabs": "Ver em Exames",
+            "labsMarkersCreatedOne": "{count} novo marcador foi adicionado a Resultados laboratoriais.",
+            "labsMarkersCreatedOther": "{count} novos marcadores foram adicionados a Resultados laboratoriais.",
+            "labsMarkersCreatedFew": "{count} novos marcadores foram adicionados a Resultados laboratoriais.",
+            "viewInLabs": "Ver em Resultados laboratoriais",
             "estimateWarning": "Os totais acumulados de {count, plural, one {# dia} other {# dias}} foram estimados a partir da maior fonte de exportação. As estatísticas nativas do Apple Health continuam sendo a referência.",
             "phase": {
               "queued": "Na fila…",
@@ -6650,7 +6650,7 @@
             "description": "Grupos, suas próprias tags e tags arquivadas."
           },
           "labs": {
-            "title": "Exames",
+            "title": "Resultados laboratoriais",
             "description": "Biomarcadores e reconhecimento de texto no dispositivo para laudos de exames."
           },
           "arrangementTitle": "Ordem e visualização",
@@ -6661,8 +6661,8 @@
         }
       },
       "health-record": {
-        "title": "Registro de saúde",
-        "subtitle": "Exporte um registro de saúde completo, pronto para o clínico."
+        "title": "Relatório médico e exportação",
+        "subtitle": "Gere o relatório médico e exporte um registro de saúde completo, pronto para o clínico."
       },
       "coach": {
         "title": "Coach",
@@ -6782,7 +6782,7 @@
         "notice": {
           "upgrade": {
             "title": "O que conta agora é você quem escolhe",
-            "body": "Quais pilares contavam para sua Pontuação de Saúde costumavam seguir os módulos que você tinha ativado. Agora é uma escolha separada, e esta página é onde você a faz. Seu número não mudou quando isso chegou: ele continua contando exatamente o que contava antes."
+            "body": "Quais pilares contavam para sua pontuação de saúde costumavam seguir os módulos que você tinha ativado. Agora é uma escolha separada, e esta página é onde você a faz. Seu número não mudou quando isso chegou: ele continua contando exatamente o que contava antes."
           },
           "changed": {
             "title": "Você mudou o que conta",
@@ -7234,7 +7234,7 @@
         "request": {
           "title": "Seu acordo antes de a IA começar",
           "body": "A IA neste servidor roda em um serviço fornecido pela administração: {providers}. Nada dos seus registros vai para lá até você concordar.",
-          "data": "Depois que você concordar, o HealthLog envia ao serviço o que os recursos de IA precisam: leituras como peso, pressão arterial, pulso, sono e atividade; seus medicamentos; humor; valores de exames e registros do ciclo, se você os mantiver; o que você escreve no perfil e ao Coach; e documentos que você escolher ter lidos. O serviço os usa para escrever seu resumo diário, as notas sobre suas leituras e as respostas do Coach.",
+          "data": "Depois que você concordar, o HealthLog envia ao serviço o que os recursos de IA precisam: leituras como peso, pressão arterial, pulso, sono e atividade; seus medicamentos; humor; resultados laboratoriais e registros do ciclo, se você os mantiver; o que você escreve no perfil e ao Coach; e documentos que você escolher ter lidos. O serviço os usa para escrever seu resumo diário, as notas sobre suas leituras e as respostas do Coach.",
           "withdrawHint": "Você pode retirar seu acordo a qualquer momento em Configurações, IA. Nada mais é enviado a partir desse momento.",
           "agree": "Concordar",
           "dismiss": "Agora não"
@@ -7611,7 +7611,7 @@
     "dangerZone": "Excluir todos os dados",
     "dangerZoneDescription": "Apaga todo o seu registro de saúde e todas as conexões de integração.",
     "dangerZoneConfirm": "Excluir todos os dados?",
-    "dangerZoneConfirmDescription": "Isso exclui permanentemente tudo no seu registro: medições, medicamentos, registros de humor, resultados de exames, registros de ciclo, documentos, conversas de IA e todas as conexões de integração, junto com tudo derivado deles e qualquer coisa que você tenha excluído antes. Os links de compartilhamento que você deu a um médico param de funcionar imediatamente. Sua conta permanece, junto com as credenciais que você usa para entrar e as configurações de exibição, como idioma, fuso horário e unidades. Não é possível desfazer.",
+    "dangerZoneConfirmDescription": "Isso exclui permanentemente tudo no seu registro: medições, medicamentos, registros de humor, resultados laboratoriais, registros de ciclo, documentos, conversas de IA e todas as conexões de integração, junto com tudo derivado deles e qualquer coisa que você tenha excluído antes. Os links de compartilhamento que você deu a um médico param de funcionar imediatamente. Sua conta permanece, junto com as credenciais que você usa para entrar e as configurações de exibição, como idioma, fuso horário e unidades. Não é possível desfazer.",
     "dangerZoneSuccess": "Seu registro de saúde foi excluído. Sua conta e seu login permanecem inalterados.",
     "dangerZoneDeleteFailed": "Falha na exclusão",
     "finalDelete": "Excluir permanentemente",
@@ -7999,7 +7999,7 @@
       "revokeSessionConfirmBody": "{device} precisará entrar novamente. Nada registrado nele é afetado.",
       "signOutEverywhereConfirmTitle": "Desconectar todos os outros dispositivos?",
       "signOutEverywhereConfirmBody": "Todos os outros dispositivos, todos os assistentes de IA conectados e todos os tokens de API precisarão entrar ou ser configurados novamente. Este dispositivo permanece conectado. Nada que você tenha registrado é afetado.",
-      "signOutEverywhereShareLinks": "Também encerrar os links de compartilhamento com médicos",
+      "signOutEverywhereShareLinks": "Também encerrar os links de compartilhamento",
       "signOutEverywhereInvites": "Convites para o seu registro que ninguém aceitou ainda são retirados. Pessoas que já aceitaram mantêm o acesso; você pode encerrá-lo depois.",
       "signOutEverywhereInvitesDone": "{count, plural, one {# convite que ninguém havia aceitado foi retirado.} other {# convites que ninguém havia aceitado foram retirados.}}",
       "grantsKeptTitle": "Estas pessoas ainda podem ver seu registro",
@@ -8062,7 +8062,7 @@
             "link": "Abrir acesso compartilhado"
           },
           "shareLinks": {
-            "title": "Links para profissionais",
+            "title": "Links de compartilhamento",
             "description": "Links somente leitura para o seu relatório médico, que expiram na data que você escolher.",
             "link": "Abrir os links"
           },
@@ -8386,12 +8386,12 @@
       "change": "Alterar em Módulos"
     },
     "timezoneUseDevice": "Usar o fuso horário deste dispositivo ({zone})",
-    "dangerZoneConfirmDescriptionGrace": "Isso exclui tudo no seu registro: medições, medicamentos, registros de humor, resultados de exames, registros de ciclo, documentos, conversas de IA e todas as conexões de integração, junto com tudo derivado deles e qualquer coisa que você tenha excluído antes. Os links de compartilhamento que você deu a um médico param de funcionar imediatamente. Sua conta permanece, junto com as credenciais que você usa para entrar e as configurações de exibição, como idioma, fuso horário e unidades. Uma cópia do seu registro é mantida por {days, plural, one {# dia} other {# dias}}, para que um administrador deste servidor possa restaurá-la até lá. Depois disso, a exclusão é definitiva.",
+    "dangerZoneConfirmDescriptionGrace": "Isso exclui tudo no seu registro: medições, medicamentos, registros de humor, resultados laboratoriais, registros de ciclo, documentos, conversas de IA e todas as conexões de integração, junto com tudo derivado deles e qualquer coisa que você tenha excluído antes. Os links de compartilhamento que você deu a um médico param de funcionar imediatamente. Sua conta permanece, junto com as credenciais que você usa para entrar e as configurações de exibição, como idioma, fuso horário e unidades. Uma cópia do seu registro é mantida por {days, plural, one {# dia} other {# dias}}, para que um administrador deste servidor possa restaurá-la até lá. Depois disso, a exclusão é definitiva.",
     "deleteAccountCardDetailGrace": "Sua conta é bloqueada na hora e apagada depois de {days, plural, one {# dia} other {# dias}}. Até lá, um administrador deste servidor pode desfazer a exclusão.",
     "deleteAccountConfirmDescriptionGrace": "Você sai da sessão e sua conta é bloqueada na hora. Depois de {days, plural, one {# dia} other {# dias}}, ela é apagada de vez, com todos os dados de saúde, chaves de acesso, sessões e registros de auditoria. Até lá, um administrador deste servidor pode desfazer a exclusão. As cópias nos backups deste servidor expiram depois do período de retenção.",
     "deleteAccountScheduled": "Sua conta está bloqueada e será apagada em {date}. Saindo da sessão.",
     "dangerZoneSuccessGrace": "Seu registro de saúde foi excluído. Um administrador deste servidor pode restaurá-lo até {date}.",
-    "dangerZoneRestoreLimits": "O acesso também termina: o que você compartilha com outras pessoas, o que elas compartilham com você e qualquer papel de guardião. Uma restauração traz o registro de volta como está agora. O que for adicionado depois da exclusão é substituído, e conexões de integração, compartilhamentos, papéis de guardião e links de compartilhamento não voltam; precisam ser configurados de novo.",
+    "dangerZoneRestoreLimits": "O acesso também termina: o que você compartilha com outras pessoas, o que elas compartilham com você e qualquer papel de responsável. Uma restauração traz o registro de volta como está agora. O que for adicionado depois da exclusão é substituído, e conexões de integração, compartilhamentos, papéis de responsável e links de compartilhamento não voltam; precisam ser configurados de novo.",
     "garmin": "Garmin",
     "garminTag": "Personal API",
     "garminDescription": "Cole uma chave da Garmin Personal API para sincronizar sono, VFC, Body Battery, estresse, passos, peso e atividades do Garmin Connect.",
@@ -8887,7 +8887,7 @@
         "undoDeletion": "Desfazer exclusão",
         "undoDeletionTitle": "Desfazer a exclusão de {name}?",
         "undoDeletionBody": "{name} pediu para excluir esta conta, e ela é apagada quando o prazo de carência termina. Desfazer mantém a conta e tudo o que há nela como estava. {name} pode entrar de novo, mas os tokens de API, os links de compartilhamento e os dispositivos confiáveis continuam revogados e precisam ser configurados de novo.",
-        "undoDeletionBodyGuardian": "Um guardião excluiu o perfil gerenciado {name}, e ele é apagado quando o prazo de carência termina. Desfazer mantém o perfil e tudo o que há nele como estava, e os guardiões voltam a ter acesso. Os links de compartilhamento e tokens continuam revogados e precisam ser configurados de novo.",
+        "undoDeletionBodyGuardian": "Um responsável excluiu o perfil gerenciado {name}, e ele é apagado quando o prazo de carência termina. Desfazer mantém o perfil e tudo o que há nele como estava, e os responsáveis voltam a ter acesso. Os links de compartilhamento e tokens continuam revogados e precisam ser configurados de novo.",
         "undoDeletionDone": "Exclusão de {name} desfeita",
         "undoDeletionFailed": "Não foi possível desfazer a exclusão",
         "undoDeletionBodyAdmin": "Um administrador excluiu a conta {name}, e ela é apagada quando o prazo de carência termina. Desfazer mantém a conta e tudo o que há nela como estava. {name} pode entrar de novo, mas os tokens de API, os links de compartilhamento e os dispositivos confiáveis continuam revogados e precisam ser configurados de novo.",
@@ -9026,13 +9026,13 @@
         "previewMeasurements": "Medições",
         "previewMedications": "Medicamentos e tomadas",
         "previewMood": "Registros de humor",
-        "previewLabs": "Resultados de exames",
+        "previewLabs": "Resultados laboratoriais",
         "previewDocuments": "Documentos",
         "previewWorkouts": "Treinos",
         "previewCycles": "Dados do ciclo",
         "previewVisits": "Consultas médicas",
         "previewVaccinations": "Vacinas",
-        "previewReminders": "Lembretes de cuidados preventivos",
+        "previewReminders": "Lembretes de prevenção",
         "previewCustomMetrics": "Métricas personalizadas",
         "previewHealthScores": "Histórico de pontuações",
         "restoreConfirm": "Restaurar agora",
@@ -9166,7 +9166,7 @@
           "offhostLastUpload": "O dump mais recente no bucket é de {when}.",
           "offhostNeverUploaded": "Nenhum dump do banco de dados chegou ao bucket ainda."
         },
-        "restorePreWipeLimits": "Esta cópia foi feita antes de os dados da conta serem excluídos, e restaurá-la desfaz essa exclusão até onde uma cópia consegue: o que a conta adicionou desde então é substituído, e conexões de integração, compartilhamentos, acesso de guardiões e links de compartilhamento não voltam.",
+        "restorePreWipeLimits": "Esta cópia foi feita antes de os dados da conta serem excluídos, e restaurá-la desfaz essa exclusão até onde uma cópia consegue: o que a conta adicionou desde então é substituído, e conexões de integração, compartilhamentos, acesso de responsáveis e links de compartilhamento não voltam.",
         "target": {
           "title": "Restaurar em outra conta",
           "description": "{file} pertence a uma conta que não está mais neste servidor. Escolha a conta para onde vão os registros. Uma restauração substitui os registros de uma conta, então só uma conta sem registros pode recebê-los. O arquivo é enviado mais uma vez.",
@@ -9185,7 +9185,7 @@
           "submitting": "Enviando…",
           "success": "Backup guardado para {username} ({count, plural, one {# registro} other {# registros}}). Restaure-o pela linha dele.",
           "failureHoldsRecords": "Esta conta já tem registros. Uma restauração substitui os registros em vez de somá-los, então escolha uma conta sem registros ou crie uma nova.",
-          "failureManagedProfile": "Esta conta é um perfil gerenciado. Os guardiões cuidam dela, então uma cópia não pode ir para ela.",
+          "failureManagedProfile": "Esta conta é um perfil gerenciado. Os responsáveis cuidam dela, então uma cópia não pode ir para ela.",
           "failurePendingDeletion": "Esta conta está aguardando exclusão. Desfaça a exclusão primeiro ou escolha outra conta.",
           "failureAdminAccount": "Esta é uma conta de administrador. Os registros de outra pessoa não podem ir para ela, então escolha uma conta comum ou crie uma nova.",
           "failureNotFound": "Esta conta não existe mais.",
@@ -10203,7 +10203,7 @@
       "tlsPinChangedTitle": "Certificado folha TLS alterado: {host}",
       "tlsPinChangedBody": "O certificado folha TLS servido por {host} agora tem o pin SPKI {servedPin}, que não está no conjunto de pins conhecidos. Clientes com pin (o aplicativo nativo) falharão ao conectar quando o pin antigo sumir. Extraia novamente o pin da nova folha, adicione-o a TLS_LEAF_SPKI_PINS e ao conjunto de pins do cliente nativo, e publique uma build antes que este certificado expire em {validTo}. Veja docs/ops/tls-cert-pin.md.",
       "accountErasureRefusedTitle": "Não foi possível apagar a conta: {username}",
-      "accountErasureRefusedBody": "O prazo de exclusão de {username} terminou, mas a conta é o último guardião ativo de um perfil gerenciado, então não foi apagada. Ela continua bloqueada. Adicione outro guardião ao perfil, exclua o perfil ou desfaça a exclusão em Administração, Usuários.",
+      "accountErasureRefusedBody": "O prazo de exclusão de {username} terminou, mas a conta é o último responsável ativo de um perfil gerenciado, então não foi apagada. Ela continua bloqueada. Adicione outro responsável ao perfil, exclua o perfil ou desfaça a exclusão em Administração, Usuários.",
       "accountErasureFailedBody": "O prazo de exclusão de {username} terminou, mas apagar a conta falhou. Ela continua bloqueada e uma nova tentativa é feita a cada hora, depois das outras contas pendentes. O erro aparece no cartão de tarefas com falha em Administração."
     },
     "user": {
@@ -10284,7 +10284,7 @@
     "eventMedicationLowStockDesc": "Quando o estoque de um medicamento acompanhado cobre menos dias do que seu limite de estoque baixo",
     "eventCoachNudge": "Lembrete do Coach",
     "eventCoachNudgeDesc": "Lembrete ocasional do seu Coach quando suas tendências recentes justificam um check-in.",
-    "eventMeasurementReminder": "Lembrete de medição",
+    "eventMeasurementReminder": "Lembrete de check-up",
     "eventMeasurementReminderDesc": "Enviado quando uma medição acompanhada está pendente.",
     "eventMedicationIntakeSync": "Sincronização de tomadas de medicamentos",
     "eventMedicationIntakeSyncDesc": "Atualização entre dispositivos quando uma dose é registrada, tomada ou pulada.",
@@ -10626,7 +10626,7 @@
     "period": "Período do relatório: {start}–{end}",
     "expires": "Este link expira em {date}.",
     "provenance": "Este é um resumo somente leitura compartilhado pela pessoa a quem pertence, exportado dos dados de HealthLog autorregistrados por ela. Os valores são autorregistrados e podem incluir leituras sincronizadas de dispositivos; trate-os como relatados pelo paciente, não como um exame clínico.",
-    "labs": "Valores laboratoriais",
+    "labs": "Resultados laboratoriais",
     "medications": "Medicamentos e adesão",
     "bmi": "Índice de massa corporal (IMC)",
     "statSummary": "mais recente {latest} (média {avg}, faixa {min}–{max})",
@@ -10789,7 +10789,7 @@
       "loadError": "Não foi possível carregar o seu ciclo."
     },
     "disclaimer": "Estas previsões são estimativas descritivas a partir dos seus dados registrados, não um método contraceptivo e não conselhos médicos. Elas nunca indicam que seja seguro ter relações sexuais sem proteção. Para contracepção ou qualquer decisão médica, consulte um profissional de saúde.",
-    "title": "Seu ciclo",
+    "title": "Ciclo",
     "subtitle": "Registre sua menstruação e sintomas, veja o que vem a seguir.",
     "tabs": {
       "calendar": "Calendário",
@@ -11338,7 +11338,7 @@
     "deletedToast": "Resultado excluído",
     "deleteError": "Não foi possível excluir o resultado",
     "loadError": "Não foi possível carregar os resultados laboratoriais",
-    "customize": "Personalizar laboratórios",
+    "customize": "Personalizar resultados laboratoriais",
     "localOcr": {
       "heading": "Ler digitalizações neste dispositivo",
       "description": "Lê a foto no seu dispositivo e envia apenas o texto extraído ao seu provedor.",
@@ -11808,7 +11808,7 @@
       "description": "Horários, tomadas e adesão."
     },
     "illness": {
-      "label": "Diário de doenças",
+      "label": "Doenças",
       "description": "Acompanhe episódios de doença e condição com uma linha do tempo diária de sintomas."
     },
     "mcp": {
@@ -12028,7 +12028,7 @@
       "viewDescription": "Escolha se os episódios aparecem como cartões ou como uma lista compacta.",
       "orderDescription": "Arraste seus episódios para a ordem em que quer vê-los."
     },
-    "customize": "Personalizar diário de doenças",
+    "customize": "Personalizar Doenças",
     "newEpisode": "Novo episódio",
     "logDay": "Registrar um dia",
     "markRecovered": "Marcar como recuperado",
@@ -12213,7 +12213,7 @@
       "dismissed": "Dispensado",
       "failed": "Não foi possível adicionar isso. Tente novamente",
       "checkup": {
-        "title": "Adicionar um lembrete de check-in?"
+        "title": "Adicionar um lembrete de check-up?"
       },
       "note": {
         "title": "Salvar um lembrete?"
@@ -13277,7 +13277,7 @@
       "sourceOther": "outro sistema",
       "sourceReportSchedule": "seu agendamento de relatórios",
       "share": "Compartilhar",
-      "labValuesLink": "Ver {count, plural, one {# valor laboratorial} other {# valores laboratoriais}}",
+      "labValuesLink": "Ver {count, plural, one {# resultado laboratorial} other {# resultados laboratoriais}}",
       "visitsLabel": "Pertence à consulta",
       "vaccinationsLabel": "Vacinas",
       "noVisitsToLink": "Nenhuma consulta registrada ainda.",
@@ -13330,7 +13330,7 @@
       "dismiss": "Dispensar",
       "empty": "Nada pôde ser lido deste documento.",
       "unavailableBody": "Configure um provedor de IA para sugerir um título, tipo e data.",
-      "unavailableLocalOcr": "Ative “Ler digitalizações neste dispositivo” em Configurações > Módulos > Exames para ler imagens neste dispositivo.",
+      "unavailableLocalOcr": "Ative “Ler digitalizações neste dispositivo” em Configurações > Módulos > Resultados laboratoriais para ler imagens neste dispositivo.",
       "unavailableAction": "Abrir configurações de IA",
       "errorGeneric": "Não foi possível ler o documento. Tente novamente.",
       "errorOcr": "Não foi possível ler texto desta imagem.",
@@ -13343,12 +13343,12 @@
       "errorFileType": "Este tipo de arquivo não pode ser lido.",
       "errorNotIndexed": "Leia o documento primeiro, depois extraia.",
       "errorOutputLimit": "O provedor de IA atingiu o limite de saída antes de devolver um único valor. Tente um modelo que permita respostas mais longas.",
-      "errorLocalOcrDisabled": "Ative primeiro “Ler digitalizações neste dispositivo” em Configurações > Módulos > Exames.",
+      "errorLocalOcrDisabled": "Ative primeiro “Ler digitalizações neste dispositivo” em Configurações > Módulos > Resultados laboratoriais.",
       "errorProvider": "Nenhum provedor de IA está configurado para isso.",
       "errorTextImageOnly": "O OCR local lê apenas imagens, não este arquivo.",
       "errorConsent": "Ler documentos com IA precisa do seu consentimento primeiro.",
       "errorUnavailable": "Ler documentos com IA não está disponível aqui agora.",
-      "unavailableLocalOcrAction": "Abrir configurações de exames"
+      "unavailableLocalOcrAction": "Abrir configurações de resultados laboratoriais"
     },
     "summary": {
       "summarise": "Resumir",
@@ -13359,9 +13359,9 @@
     },
     "ai": {
       "readDone": "A IA leu seu documento.",
-      "readStagedOne": "A IA leu seu documento. {count} valor laboratorial está pronto para revisão.",
-      "readStagedFew": "A IA leu seu documento. {count} valores laboratoriais estão prontos para revisão.",
-      "readStagedOther": "A IA leu seu documento. {count} valores laboratoriais estão prontos para revisão.",
+      "readStagedOne": "A IA leu seu documento. {count} resultado laboratorial está pronto para revisão.",
+      "readStagedFew": "A IA leu seu documento. {count} resultados laboratoriais estão prontos para revisão.",
+      "readStagedOther": "A IA leu seu documento. {count} resultados laboratoriais estão prontos para revisão.",
       "read": "Ler com IA",
       "reread": "Ler novamente",
       "reading": "Lendo…",
@@ -13375,7 +13375,7 @@
       "openOther": "Revisar valores extraídos ({count})",
       "includeAria": "Incluir {value}",
       "type": {
-        "OBSERVATION": "Valor laboratorial",
+        "OBSERVATION": "Resultado laboratorial",
         "CONDITION": "Condição",
         "MEDICATION_STATEMENT": "Medicamento"
       },
@@ -13400,7 +13400,7 @@
       "savedToastFew": "{count} valores salvos",
       "savedToastOther": "{count} valores salvos",
       "nothingSavedToast": "Revisão salva. Nenhum valor foi adicionado.",
-      "extract": "Extrair valores laboratoriais",
+      "extract": "Extrair resultados laboratoriais",
       "extracting": "Extraindo…",
       "extractHint": "Usa o texto já lido deste documento. Valores extraídos aguardam sua revisão; nada é salvo automaticamente.",
       "extractEmpty": "Nenhum valor pôde ser extraído deste documento.",
@@ -13425,7 +13425,7 @@
       "title": "Compartilhar este documento",
       "multiTitle": "Compartilhar estes documentos",
       "multiLabel": "{count, plural, one {# documento} other {# documentos}}",
-      "description": "Crie um link somente leitura para clínico com este documento anexado. O link e sua frase-senha aparecem uma vez."
+      "description": "Crie um link de compartilhamento somente leitura para um profissional de saúde, com este documento anexado. O link e sua frase-senha aparecem uma vez."
     },
     "chat": {
       "title": "Conversar sobre este documento",
@@ -13552,7 +13552,7 @@
     }
   },
   "selfDescription": {
-    "dataPosture": "O HealthLog é auto-hospedado: seus dados de saúde ficam no banco de dados da sua própria instância. Notas e outros textos livres, documentos, respostas de questionários, textos escritos pela IA e tokens de acesso são criptografados em repouso; valores de medições, resultados de exames, nomes de medicamentos e notas de humor são armazenados sem criptografia e dependem da segurança do seu servidor. Os recursos de IA enviam dados apenas ao provedor de IA configurado para a sua conta, e não há análise de terceiros sobre os seus dados de saúde."
+    "dataPosture": "O HealthLog é auto-hospedado: seus dados de saúde ficam no banco de dados da sua própria instância. Notas e outros textos livres, documentos, respostas de questionários, textos escritos pela IA e tokens de acesso são criptografados em repouso; valores de medições, resultados laboratoriais, nomes de medicamentos e notas de humor são armazenados sem criptografia e dependem da segurança do seu servidor. Os recursos de IA enviam dados apenas ao provedor de IA configurado para a sua conta, e não há análise de terceiros sobre os seus dados de saúde."
   },
   "customMetrics": {
     "sectionTitle": "Métricas personalizadas",
@@ -13846,7 +13846,7 @@
         }
       },
       "upcomingVisit": {
-        "title": "Compromisso se aproximando",
+        "title": "Consulta se aproximando",
         "bodyToday": "{what} hoje",
         "bodyTomorrow": "{what} amanhã",
         "bodyDayAfterTomorrow": "{what} depois de amanhã"
@@ -13969,7 +13969,7 @@
         "next": "Próxima dose às {time}"
       },
       "appointment": {
-        "label": "Compromisso",
+        "label": "Consulta",
         "today": "Hoje {time}, {what}",
         "tomorrow": "Amanhã {time}, {what}"
       },
@@ -14195,7 +14195,7 @@
     "managed": {
       "title": "Registros que você cuida",
       "description": "Registros de saúde sem login próprio.",
-      "explainer": "Um perfil gerenciado é um registro de saúde para alguém que não entra por conta própria, como uma criança ou uma pessoa sob seus cuidados. Não tem login nem endereço de e-mail, e você se torna seu primeiro guardião. Você pode adicionar mais guardiões depois, e qualquer um de vocês pode entrar no registro para mantê-lo atualizado.",
+      "explainer": "Um perfil gerenciado é um registro de saúde para alguém que não entra por conta própria, como uma criança ou uma pessoa sob seus cuidados. Não tem login nem endereço de e-mail, e você se torna seu primeiro responsável. Você pode adicionar mais responsáveis depois, e qualquer um de vocês pode entrar no registro para mantê-lo atualizado.",
       "nameLabel": "Nome",
       "namePlaceholder": "O nome pelo qual reconhecerá este registro",
       "nameHint": "Até 80 caracteres. Exibido onde quer que este registro apareça.",
@@ -14232,7 +14232,7 @@
       "deleteGuardiansOne": "{count} pessoa cuida deste registro hoje e o perderá.",
       "deleteGuardiansFew": "{count} pessoas cuidam deste registro hoje e o perderão.",
       "deleteGuardiansOther": "{count} pessoas cuidam deste registro hoje e o perderão.",
-      "deleteFloorNote": "Esta também é a saída quando você é o último guardião: você pode encerrar o registro, mas não pode deixá-lo sem ninguém cuidando.",
+      "deleteFloorNote": "Esta também é a saída quando você é o último responsável: você pode encerrar o registro, mas não pode deixá-lo sem ninguém cuidando.",
       "deleteConfirm": "Excluir perfil",
       "guardiansTitle": "Quem cuida de {name}",
       "guardianYou": "(você)",
@@ -14244,12 +14244,12 @@
       "guardianWithdrawBody": "O convite para {name} foi retirado. Ela nunca abriu {profile}, então nada muda no registro.",
       "guardianRemoveConfirm": "Encerrar acesso",
       "soleGuardian": "Você é a única pessoa cuidando de {name}, então não há acesso aqui que possa encerrar. Convide alguém e espere aceitar, devolva seu próprio acesso em “Registros que posso abrir”, ou exclua o perfil.",
-      "guardianInviteLabel": "Convidar outro guardião",
+      "guardianInviteLabel": "Convidar outro responsável",
       "guardianInvite": "Enviar convite",
       "guardianInviting": "Enviando…",
       "guardianInvited": "Convite enviado para {name}.",
       "guardianExpiresHint": "Opcional. O acesso termina no fim daquele dia no seu fuso horário.",
-      "guardianPendingNote": "Um guardião convidado conta apenas quando aceita. Até lá você ainda é o último, e devolver seu próprio acesso ainda é recusado.",
+      "guardianPendingNote": "Um responsável convidado conta apenas quando aceita. Até lá você ainda é o último, e devolver seu próprio acesso ainda é recusado.",
       "guardianErrorDuplicate": "Essa conta já tem acesso a este registro.",
       "guardianErrorManagedInvitee": "Um perfil gerenciado não pode cuidar de outro registro. Convide uma conta que faça login.",
       "guardianErrorNoAccount": "Nenhuma conta nesta instância usa esse nome ou e-mail.",
@@ -14293,7 +14293,7 @@
         "revoked": "Link retirado",
         "revokeFailed": "O link não pôde ser retirado. Tente novamente.",
         "errorFailed": "O link de transferência não pôde ser criado.",
-        "errorRosterChanged": "A lista de guardiões mudou nesse meio-tempo. Feche e abra novamente.",
+        "errorRosterChanged": "A lista de responsáveis mudou nesse meio-tempo. Feche e abra novamente.",
         "oidcOnly": "Transferir um perfil não está disponível neste servidor.",
         "loadError": "O status da transferência não pôde ser carregado.",
         "entryHint": "Quando {name} estiver pronto para cuidar deste registro por conta própria.",
@@ -14321,13 +14321,13 @@
       "measurementDelete": "{name} removeu uma leitura",
       "measurementDeleteBulk": "{name} removeu várias leituras de uma vez",
       "measurementRestore": "{name} restaurou uma leitura",
-      "measurementReminderCreate": "{name} adicionou um lembrete de medição",
-      "measurementReminderUpdate": "{name} alterou um lembrete de medição",
-      "measurementReminderDelete": "{name} removeu um lembrete de medição",
-      "measurementReminderComplete": "{name} concluiu um lembrete de medição",
-      "measurementReminderSatisfy": "{name} limpou um lembrete de medição",
-      "measurementReminderSkip": "{name} pulou um lembrete de medição",
-      "measurementReminderSnooze": "{name} adiou um lembrete de medição",
+      "measurementReminderCreate": "{name} adicionou um lembrete de check-up",
+      "measurementReminderUpdate": "{name} alterou um lembrete de check-up",
+      "measurementReminderDelete": "{name} removeu um lembrete de check-up",
+      "measurementReminderComplete": "{name} concluiu um lembrete de check-up",
+      "measurementReminderSatisfy": "{name} limpou um lembrete de check-up",
+      "measurementReminderSkip": "{name} pulou um lembrete de check-up",
+      "measurementReminderSnooze": "{name} adiou um lembrete de check-up",
       "labResultUpdate": "{name} alterou um resultado laboratorial",
       "labResultDelete": "{name} removeu um resultado laboratorial",
       "labResultRestore": "{name} restaurou um resultado laboratorial",
@@ -14401,8 +14401,8 @@
       "rejectedLabUpdate": "{name} tentou alterar um resultado laboratorial e foi recusado",
       "rejectedBiomarkerCreate": "{name} tentou adicionar um biomarcador e foi recusado",
       "rejectedBiomarkerUpdate": "{name} tentou alterar um biomarcador e foi recusado",
-      "rejectedReminderCreate": "{name} tentou adicionar um lembrete de medição e foi recusado",
-      "rejectedReminderUpdate": "{name} tentou alterar um lembrete de medição e foi recusado",
+      "rejectedReminderCreate": "{name} tentou adicionar um lembrete de check-up e foi recusado",
+      "rejectedReminderUpdate": "{name} tentou alterar um lembrete de check-up e foi recusado",
       "rejectedMoodCreate": "{name} tentou adicionar uma entrada de humor e foi recusado",
       "rejectedMoodUpdate": "{name} tentou alterar uma entrada de humor e foi recusado",
       "rejectedDoseCreate": "{name} tentou registrar uma dose e foi recusado",
@@ -14514,7 +14514,7 @@
       "acceptNotPending": "Esse convite já foi aceito.",
       "acceptNotFound": "Esse convite não está mais lá.",
       "acceptFailed": "O convite não pôde ser aceito.",
-      "lastGuardian": "Esta é a única pessoa cuidando desse perfil, então este acesso ainda não pode terminar. Adicione outro guardião primeiro ou exclua o perfil.",
+      "lastGuardian": "Esta é a única pessoa cuidando desse perfil, então este acesso ainda não pode terminar. Adicione outro responsável primeiro ou exclua o perfil.",
       "alreadyEnded": "Esse acesso já terminou.",
       "notFound": "Esse acesso não está mais lá.",
       "revokeFailed": "O acesso não pôde ser encerrado.",
@@ -14537,7 +14537,7 @@
       "saving": "Salvando…",
       "decideLater": "Depois",
       "errorFailed": "Sua decisão não pôde ser salva. Tente novamente.",
-      "loadError": "Seus ex-guardiões não puderam ser carregados.",
+      "loadError": "Seus ex-responsáveis não puderam ser carregados.",
       "notificationsTitle": "Configure seus próprios lembretes",
       "notificationsBody": "Os lembretes deste registro costumavam chegar às pessoas que cuidavam dele. A partir de agora chegam a você, assim que adicionar um canal de notificação.",
       "notificationsAction": "Abrir configurações de notificação"
@@ -14552,7 +14552,7 @@
       "emergency": "Emergência",
       "hospital": "Hospital",
       "therapy": "Sessão de terapia",
-      "other": "Compromisso",
+      "other": "Outra consulta",
       "procedure": "Procedimento ou cirurgia"
     },
     "laterality": {
@@ -14563,7 +14563,7 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Consultas",
-    "sectionDescription": "Consultas médicas e compromissos agendados em um só lugar.",
+    "sectionDescription": "Consultas passadas e agendadas em um só lugar.",
     "add": "Consulta",
     "loadError": "Não foi possível carregar as consultas.",
     "emptyTitle": "Nenhuma consulta registrada ainda",
@@ -14590,7 +14590,7 @@
     },
     "form": {
       "date": "Data e hora",
-      "dateDerivesStatusHint": "Uma data no futuro é um compromisso agendado.",
+      "dateDerivesStatusHint": "Uma data no futuro é uma consulta agendada.",
       "status": "Status",
       "practitioner": "Clínica ou médico",
       "practitionerHint": "Opcional: você pode adicionar o nome depois.",
@@ -14624,7 +14624,7 @@
       "add": "Adicionar uma consulta"
     },
     "dashboard": {
-      "nextVisit": "Próximo compromisso: {what} em {when}"
+      "nextVisit": "Próxima consulta: {what} em {when}"
     },
     "procedures": {
       "title": "Procedimentos e cirurgias",
@@ -15063,12 +15063,12 @@
     },
     "lanes": {
       "life": "Vida",
-      "illness": "Condições",
+      "illness": "Doenças",
       "allergies": "Alergias",
       "medications": "Medicamentos",
       "vaccinations": "Vacinas",
       "visits": "Médico e procedimentos",
-      "labs": "Exames",
+      "labs": "Resultados laboratoriais",
       "documents": "Documentos",
       "cycle": "Ciclo",
       "seizures": "Crises"
@@ -15219,7 +15219,7 @@
       "end": "Fim",
       "seriesCaption": "Médias de valores por período",
       "period": "Período",
-      "labsCaption": "Valores de exames por dia",
+      "labsCaption": "Resultados laboratoriais por dia",
       "marker": "Marcador",
       "date": "Data",
       "value": "Valor"
@@ -15264,9 +15264,9 @@
       "apply": "Aplicar"
     },
     "item": {
-      "labValuesOne": "{count} valor laboratorial",
-      "labValuesFew": "{count} valores laboratoriais",
-      "labValuesOther": "{count} valores laboratoriais",
+      "labValuesOne": "{count} resultado laboratorial",
+      "labValuesFew": "{count} resultados laboratoriais",
+      "labValuesOther": "{count} resultados laboratoriais",
       "seizuresOne": "{count} crise",
       "seizuresFew": "{count} crises",
       "seizuresOther": "{count} crises",
@@ -15274,9 +15274,9 @@
       "postpartum": "Após o parto"
     },
     "labs": {
-      "menuTitle": "Valores de exames",
+      "menuTitle": "Resultados laboratoriais",
       "otherPanel": "Outros",
-      "full": "Até {max, plural, one {# valor} other {# valores}} de exames ao mesmo tempo. Remova um para adicionar outro.",
+      "full": "Até {max, plural, one {# resultado laboratorial} other {# resultados laboratoriais}} ao mesmo tempo. Remova um para adicionar outro.",
       "above": "acima da faixa",
       "below": "abaixo da faixa",
       "reference": "referência {range}",
@@ -15397,7 +15397,7 @@
       "source": {
         "mood": "Nota de humor",
         "measurement": "Nota sobre uma leitura",
-        "illness": "Diário de doenças"
+        "illness": "Doenças"
       }
     },
     "keywords": {
@@ -15566,15 +15566,15 @@
     "metricLink": "De onde vêm estes valores"
   },
   "recordImport": {
-    "title": "Resultados de exames e medicamentos a partir de uma planilha",
-    "description": "Traga anos de resultados de exames ou uma lista de medicamentos a partir de um arquivo CSV.",
+    "title": "Resultados laboratoriais e medicamentos a partir de uma planilha",
+    "description": "Traga anos de resultados laboratoriais ou uma lista de medicamentos a partir de um arquivo CSV.",
     "detail": "Você escolhe qual coluna contém o quê; o HealthLog confere cada linha primeiro e não importa nada até você confirmar. Linhas que já estão no seu registro são ignoradas.",
     "kind": {
-      "labs": "Resultados de exames",
+      "labs": "Resultados laboratoriais",
       "medications": "Medicamentos"
     },
     "sheetTitle": {
-      "labs": "Importar resultados de exames",
+      "labs": "Importar resultados laboratoriais",
       "medications": "Importar medicamentos"
     },
     "sheetDescription": {
