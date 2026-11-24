@@ -1217,6 +1217,8 @@ model User {
   encounterDocumentLinks                    EncounterDocumentLink[]
   encounterLabLinks                         EncounterLabLink[]
   encounterConditionLinks                   EncounterConditionLink[]
+  // Courses of several visits (physiotherapy, radiation, a dental plan).
+  treatmentSeries                           TreatmentSeries[]
   // v1.38.0 — the immunization log. One row per administered dose, plus the
   // link table that files the scanned Impfpass page beside it. Gated by the
   // `vaccinations` module key, which governs the surfaces and not the store.
@@ -1293,6 +1295,8 @@ model User {
   careCalendarFeedsMinted  CareCalendarFeed[]  @relation("CareCalendarFeedCreator")
   emergencyCardLinks       EmergencyCardLink[] @relation("EmergencyCardLinkSubject")
   emergencyCardLinksMinted EmergencyCardLink[] @relation("EmergencyCardLinkCreator")
+  walletPasses             WalletPass[]        @relation("WalletPassSubject")
+  walletPassesMinted       WalletPass[]        @relation("WalletPassCreator")
 
   // v1.39 — the needs-based onboarding's answers and step ledger for THIS
   // record. 1:1, and keyed by record rather than by the person at the
@@ -2766,11 +2770,13 @@ model Workout {
   /// paired sensors — e.g. Apple Watch + Withings ScanWatch — under
   /// different `source`/`externalId` pairs) is handled in two layers,
   /// mirroring the measurement-side `pickCanonicalSourceRows()`:
-  ///   * WRITE-time — `dedupeWorkoutBatch()` in
-  ///     src/lib/workouts/canonical-rows.ts groups an inbound batch by
-  ///     (userId, activityType, startedAt ± 90 s) and keeps one
-  ///     canonical row per logical workout BEFORE the insert, so the
-  ///     duplicate never reaches storage.
+  ///   * WRITE-time — `incomingWorkoutsToKeep()` in
+  ///     src/lib/workouts/canonical-read.ts clusters an inbound batch with
+  ///     the stored rows around it by the read's own rule and drops a
+  ///     batch row another batch row of its cluster beats. An Apple Health
+  ///     export workout and the HealthKit row of the same session
+  ///     (`workoutSessionKey`) are merged into the HealthKit row whichever
+  ///     arrives second (src/lib/workouts/export-healthkit-twins.ts, #1414).
   ///   * READ-time — `pickCanonicalWorkoutRows()` in
   ///     src/lib/measurements/pick-canonical-workout-rows.ts collapses
   ///     any cross-batch twins (e.g. one source's row from Monday's
@@ -8921,6 +8927,9 @@ model CareCalendarFeed {
 /// What one emergency-card link shows. The owner ticks each item at
 /// mint; nothing that is not ticked is ever read for the link.
 enum EmergencyCardField {
+  /// v1.50: the record's name (`fullName`, else `displayName`), the card's
+  /// title line. Never the username.
+  NAME
   BLOOD_TYPE
   ALLERGIES
   CONDITIONS
@@ -8966,12 +8975,125 @@ model EmergencyCardLink {
   lastAccessAt DateTime? @map("last_access_at")
   accessCount  Int       @default(0) @map("access_count")
 
-  user      User @relation("EmergencyCardLinkSubject", fields: [userId], references: [id], onDelete: Cascade)
-  createdBy User @relation("EmergencyCardLinkCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  /// What the link is for (v1.50): the printed card's QR code, or the QR code
+  /// of an Apple Wallet pass. At most one live link per record and purpose (a
+  /// partial index in migration 0564). Revoking one never touches the other.
+  purpose        EmergencyCardLinkPurpose @default(CARD) @map("purpose")
+  /// WALLET only (a CHECK constraint holds it to that): the raw `hlm_` token,
+  /// AES-256-GCM under `encrypt()`, because every pass update draws the QR
+  /// code again from it. The one emergency-card credential stored
+  /// recoverably; a CARD link keeps the HMAC-only rule. The whole model is
+  /// excluded from backups (backup-plan.ts).
+  tokenEncrypted String?                  @map("token_encrypted")
+
+  user       User        @relation("EmergencyCardLinkSubject", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy  User        @relation("EmergencyCardLinkCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  walletPass WalletPass?
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([createdById])
   @@map("emergency_card_links")
+}
+
+/// What an emergency-card link is for (v1.50).
+enum EmergencyCardLinkPurpose {
+  /// The QR code of the printed wallet card.
+  CARD
+  /// The QR code of an Apple Wallet pass.
+  WALLET
+
+  @@map("emergency_card_link_purpose")
+}
+
+/// Who signs a record's Apple Wallet passes (v1.50).
+enum WalletSigner {
+  /// The project's pass identity, signed blind by the push relay: it sees the
+  /// file hashes, never the content.
+  RELAY
+  /// The operator's own Pass Type ID (`WALLET_APPLE_*`).
+  LOCAL
+
+  @@map("wallet_signer")
+}
+
+/// Why a wallet pass was voided (v1.50).
+enum WalletPassVoidReason {
+  /// Withdrawn on the card page.
+  OWNER
+  /// Password change or admin reset, the rule the card link follows.
+  CREDENTIAL_RESET
+  /// A managed profile was handed over; a guardian's pass ends.
+  HANDOVER
+  /// The guardian's MANAGE grant is gone.
+  GUARDIAN_LOST
+  /// The account asked to be deleted; voided before the cascade.
+  ACCOUNT_DELETION
+
+  @@map("wallet_pass_void_reason")
+}
+
+/// One Apple Wallet pass of a record's emergency card (v1.50). It holds no
+/// card content: every fetch builds the pass again from the record and signs
+/// it anew. Its QR code is its own `WALLET` link, so revoking the printed
+/// card's link leaves the pass alone and the other way round. The pass's
+/// `authenticationToken` is not stored: it is derived from the link's raw
+/// token and the serial number, so whoever holds the pass cannot recover the
+/// link from it.
+model WalletPass {
+  id                 String                @id @default(cuid())
+  userId             String                @map("user_id")
+  /// The owner, or the guardian of a managed profile.
+  createdById        String                @map("created_by_id")
+  linkId             String                @unique @map("link_id")
+  signer             WalletSigner          @map("signer")
+  passTypeIdentifier String                @map("pass_type_identifier")
+  teamIdentifier     String                @map("team_identifier")
+  /// A random UUIDv4, Apple's `serialNumber`. Public inside the pass.
+  serialNumber       String                @unique @map("serial_number")
+  /// The https origin frozen at mint; `webServiceURL` and the QR link use it.
+  webServiceOrigin   String                @map("web_service_origin")
+  /// SHA-256 over the pass's content (pass.json and every pass.strings, the
+  /// per-build nonce left out), so a refresh can tell a change from none.
+  contentHash        String                @map("content_hash")
+  /// When the content last changed: the web service's Last-Modified and the
+  /// "As of" date on the pass.
+  contentChangedAt   DateTime              @map("content_changed_at")
+  /// @internal: evidence of the relay disclosure the owner accepted at mint.
+  consentTextVersion String                @map("consent_text_version")
+  createdAt          DateTime              @default(now()) @map("created_at")
+  voidedAt           DateTime?             @map("voided_at")
+  voidReason         WalletPassVoidReason? @map("void_reason")
+  /// The last time a device or the app fetched the pass; shown on the card page.
+  lastFetchedAt      DateTime?             @map("last_fetched_at")
+
+  user          User                     @relation("WalletPassSubject", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy     User                     @relation("WalletPassCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  link          EmergencyCardLink        @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  registrations WalletPassRegistration[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdById])
+  @@map("wallet_passes")
+}
+
+/// A device that asked Apple Wallet's web service for updates of a pass
+/// (v1.50). At most ten per pass; the eleventh replaces the oldest.
+model WalletPassRegistration {
+  id                  String    @id @default(cuid())
+  walletPassId        String    @map("wallet_pass_id")
+  /// HMAC (`hashToken`) of Apple's `deviceLibraryIdentifier`; looked up by hash.
+  deviceLibraryIdHash String    @map("device_library_id_hash")
+  /// Apple's pass push token, AES-256-GCM under `encrypt()`; needed raw to push.
+  pushTokenEncrypted  String    @map("push_token_encrypted")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  lastPushAt          DateTime? @map("last_push_at")
+
+  walletPass WalletPass @relation(fields: [walletPassId], references: [id], onDelete: Cascade)
+
+  @@unique([walletPassId, deviceLibraryIdHash])
+  @@index([deviceLibraryIdHash])
+  @@map("wallet_pass_registrations")
 }
 
 /// One row per menstrual cycle (a period-start anchor + derived span).
@@ -9283,6 +9405,8 @@ model IllnessEpisode {
   documentLinks   DocumentConditionLink[]
   encounterLinks  EncounterConditionLink[]
   medicationLinks MedicationConditionLink[]
+  /// Treatment series given for this condition.
+  treatmentSeries TreatmentSeries[]
   /// Symptom events the person filed against this episode while it was open.
   symptomEvents   SymptomEvent[]
 
@@ -10738,6 +10862,11 @@ model Encounter {
   /// is PLANNED. Satisfying the reminder is the side effect, not this
   /// column.
   reminderId        String?         @map("reminder_id")
+  /// The treatment series this visit is one session of. A
+  /// session stays a visit in every respect (reminder, links, calendar); the
+  /// series only groups and counts. SetNull: purging a series leaves its
+  /// sessions standing as the visits they were.
+  seriesId          String?         @map("series_id")
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
@@ -10746,6 +10875,7 @@ model Encounter {
   user             User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   practitioner     Practitioner?              @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
   reminder         MeasurementReminder?       @relation(fields: [reminderId], references: [id], onDelete: SetNull)
+  series           TreatmentSeries?           @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   documentLinks    EncounterDocumentLink[]
   labLinks         EncounterLabLink[]
   conditionLinks   EncounterConditionLink[]
@@ -10760,7 +10890,73 @@ model Encounter {
   @@index([practitionerId])
   // Leads the foreign key, so a cascade from the parent row is an index lookup.
   @@index([reminderId])
+  @@index([seriesId])
   @@map("encounters")
+}
+
+/// A course of several sessions: a physiotherapy
+/// prescription of six, a run of radiation, injection or chemotherapy cycles,
+/// a dental treatment plan. The FHIR `ServiceRequest` cut: how many, over
+/// which window, who ordered it, who gives it, for which condition. The
+/// sessions are ordinary `Encounter` rows pointing here by `seriesId`, so
+/// everything a visit already does (its reminder, its calendar entry, its
+/// links) a session does too, and nothing is stored twice.
+///
+/// Nothing is counted here. Done, booked and remaining sessions, the first and
+/// last session and the status (planned, active, completed, expired) are
+/// derived from the sessions on every read (`src/lib/treatment-series/`), so
+/// filing, moving or cancelling a visit corrects the series with it.
+///
+/// No module gate, for the reason `Encounter` states: a series is visits.
+model TreatmentSeries {
+  id              String        @id @default(cuid())
+  userId          String        @map("user_id")
+  /// What the course is, in the person's words ("Physiotherapy, left knee").
+  /// The one required field: a series nobody can name is not findable. Health
+  /// data, so AES-256-GCM like the visit reason.
+  titleEncrypted  Bytes         @map("title_encrypted")
+  /// The kind a new session starts as. THERAPY covers most courses; a run of
+  /// infusions may be PROCEDURE or HOSPITAL.
+  kind            EncounterKind @default(THERAPY)
+  /// Sessions the prescription or plan covers. NULL = open-ended (radiation
+  /// "until further notice").
+  plannedSessions Int?          @map("planned_sessions")
+  /// First day, on the person's clock: the prescription date or the planned
+  /// start.
+  startsOn        DateTime      @map("starts_on") @db.Date
+  /// Last day the course may run, inclusive: a prescription's validity or the
+  /// planned end. Passed with sessions left, the series reads as expired.
+  validUntil      DateTime?     @map("valid_until") @db.Date
+  /// Set by "End series": the day the person ended it, early or on schedule.
+  /// An ended series is completed whatever the count says.
+  endedOn         DateTime?     @map("ended_on") @db.Date
+  /// Who ordered it (the oncologist, the GP who wrote the prescription).
+  prescriberId    String?       @map("prescriber_id")
+  /// Who gives it, usually a practice rather than a person, since the
+  /// therapist changes from session to session. A new session starts with it.
+  performerId     String?       @map("performer_id")
+  /// The condition it treats. One scalar rather than a link table: a
+  /// prescription carries one indication, and the sessions can still link any
+  /// number of conditions themselves.
+  episodeId       String?       @map("episode_id")
+  /// Free-text note, AES-256-GCM.
+  noteEncrypted   Bytes?        @map("note_encrypted")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
+  deletedAt       DateTime?     @map("deleted_at")
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prescriber Practitioner?   @relation("TreatmentSeriesPrescriber", fields: [prescriberId], references: [id], onDelete: SetNull)
+  performer  Practitioner?   @relation("TreatmentSeriesPerformer", fields: [performerId], references: [id], onDelete: SetNull)
+  episode    IllnessEpisode? @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  sessions   Encounter[]
+
+  @@index([userId, deletedAt, startsOn])
+  @@index([prescriberId])
+  @@index([performerId])
+  @@index([episodeId])
+  @@map("treatment_series")
 }
 
 /// Where a visit sits in its lifecycle. Terminal states keep the row.
@@ -10852,9 +11048,11 @@ model Practitioner {
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
   deletedAt         DateTime? @map("deleted_at")
 
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  encounters   Encounter[]
-  vaccinations VaccinationRecord[]
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  encounters       Encounter[]
+  vaccinations     VaccinationRecord[]
+  prescribedSeries TreatmentSeries[]   @relation("TreatmentSeriesPrescriber")
+  performedSeries  TreatmentSeries[]   @relation("TreatmentSeriesPerformer")
 
   @@index([userId, deletedAt, name])
   // `practitioners_contact_backfill_idx` is a partial index over

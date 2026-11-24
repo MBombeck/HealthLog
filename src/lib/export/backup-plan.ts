@@ -164,6 +164,7 @@ export const BACKED_UP_MODELS = [
 
   // ── Visits ────────────────────────────────────────────────────────────────
   "Practitioner",
+  "TreatmentSeries",
   "Encounter",
   "EncounterDocumentLink",
   "EncounterLabLink",
@@ -267,6 +268,8 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   // relation-shaped proof would be attributed to whichever one a matcher found
   // first — the `symptomLinks` confusion, avoided by construction.
   "src/lib/export/visits-backup.ts",
+  // Treatment series, the visits section's second half, same arrangement.
+  "src/lib/export/treatment-series-backup.ts",
   // The immunization log and its document link, same arrangement for the same
   // reason: `documentLinks` is a field name on three models now, so each of
   // these reads through its OWN delegate here.
@@ -328,6 +331,8 @@ export const BACKUP_RESTORE_FILES: readonly string[] = [
   "src/lib/export/measurements-restore.ts",
   "src/lib/export/medications-restore.ts",
   "src/lib/export/mood-restore.ts",
+  // The visits' three link tables, written after the encounters.
+  "src/lib/export/visit-links-restore.ts",
   ...BACKUP_WRITER_FILES.filter(
     (file) => !WRITER_FILES_WITHOUT_RESTORE.has(file),
   ),
@@ -404,6 +409,7 @@ export const TWO_ENDED_MODELS = [
   // pending would return visits and documents with nothing between them — the
   // same loss, one layer deeper — so the links land carried rather than owed.
   "Practitioner",
+  "TreatmentSeries",
   "Encounter",
   "EncounterDocumentLink",
   "EncounterLabLink",
@@ -641,41 +647,6 @@ export const STRUCTURALLY_UNATTRIBUTABLE: Readonly<Record<string, string>> = {
 };
 
 /**
- * Recomputable from backed-up rows. The reason names what rebuilds it, so a
- * future reader can check the claim rather than trust it.
- */
-export const DERIVED_MODELS: Readonly<Record<string, string>> = {
-  MeasurementRollup:
-    "A per-day, per-metric reconstruction of `Measurement`. The boot-time rollup backfill rebuilds it for an account that has none.",
-  MoodEntryRollup:
-    "A per-day reconstruction of `MoodEntry`, rebuilt by the same rollup tier that rebuilds the measurement one.",
-  MoodPrediction:
-    "What the account's own past days imply about a day, fitted from `MoodEntry` + `MoodContext` and the linked modules. The nightly `mood-prognosis-refresh` job rebuilds it after a restore, and rebuilding it is better than carrying it: a restored row would state a forecast made by a model version that may no longer exist, against data the restore has just moved.",
-  CyclePrediction:
-    "A forecast derived from `MenstrualCycle` history; regenerated on the next cycle read.",
-  StrainTrimpCache:
-    "A cache of a pure function over `Workout` and heart-rate samples.",
-  WorkoutInsight:
-    "Generated narrative over `Workout`; regenerates on demand. Carrying it would restore an interpretation of data rather than the data.",
-  WorkoutInsightGenerationClaim:
-    "A concurrency claim and the daily-cap ledger for the generator above. It outlives a deleted workout for at most a week and means nothing on another instance or day.",
-  InsightNarrative:
-    "Generated prose over measurements. Same reasoning as WorkoutInsight — the record restores, the essay about it does not.",
-  InsightStatusCache:
-    "Regenerable cache: the per-metric status notes a model wrote over measurements, rewritten by the nightly run. Same reasoning as InsightNarrative.",
-  DocumentContentIndex:
-    "A search index over `InboundDocument` text; rebuilt by the indexer.",
-  DocumentThumbnail:
-    "Rendered from the stored document bytes on demand. Those bytes travel in a disaster-recovery payload, so the picture rebuilds itself on first view; a portable export carries metadata only, and there the thumbnail has nothing to rebuild from — but neither does the document, so nothing is lost that the export did not already disclose.",
-  DocumentThumbnailFailure:
-    "Why a document's preview could not be rendered on this host, kept so the boot backfill stops retrying it. The receiving host renders the restored document itself, and its own failure, if any, writes the row again; carrying this one would stop a host whose renderer can draw the page from ever trying.",
-  ArrivalReaction:
-    "Derived from what changed since the last visit; recomputed per visit.",
-  DismissedPriorityItem:
-    "A per-item dismissal of a recomputed priority list. The list regenerates; a stale dismissal would suppress an item the new list means to raise.",
-};
-
-/**
  * Deliberately excluded, with the reason. These are the entries most likely to
  * be argued with later, so each says what it would cost to include.
  */
@@ -794,7 +765,11 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
   CareCalendarFeed:
     "A live calendar-feed URL for visits and dates coming due: a credential a calendar provider polls, stored only as its hash. Excluded for the cycle feed's reason: restoring it would bring back a link the owner may have revoked, naming a host that may not be this one. After a restore the owner turns the subscription on again.",
   EmergencyCardLink:
-    "The emergency card's QR link (v1.49): a credential printed on a card, stored only as its hash. Restoring it would bring back a link the owner may have revoked; after a restore the owner makes a new link and prints the card again.",
+    "The emergency card's QR links (v1.49): a credential printed on a card, stored only as its hash, and from v1.50 the link of an Apple Wallet pass, whose raw token is stored sealed so the pass can draw its QR code again. Restoring either would bring back a link the owner may have revoked, and a backup must never carry a credential that opens the card. After a restore the owner makes a new link and prints the card again, and adds the pass again.",
+  WalletPass:
+    "An Apple Wallet pass of the emergency card (v1.50): a credential like the card's link, whose QR code is its own link. Restoring it would bring back a pass the owner may have withdrawn, pointing at a host that may not be this one, and its link is not carried either. After a restore the owner adds the pass to Wallet again.",
+  WalletPassRegistration:
+    "A device that asked Apple Wallet for updates of a pass, with the device's push token. It belongs to a pass that is not carried, and the token addresses a phone on behalf of this host only.",
   ClinicianShareLinkDocument:
     "Names which documents a share link exposed. Without the link it grants nothing, and with it, it would re-expose files through a URL the account may have revoked.",
 
@@ -814,3 +789,4 @@ export {
   COVERAGE_PENDING,
   RAW_SQL_TABLES,
 } from "./backup-auth-models";
+export { DERIVED_MODELS } from "./backup-derived-models";

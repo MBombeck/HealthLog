@@ -10,6 +10,10 @@
  *
  * It lives permanently on Admin → System status; the server setup's last step
  * shows the same card.
+ *
+ * `local_ocr` says whether this server reads scans by itself: the OCR
+ * engine and its language data in this build, and how many scans it could
+ * not read lately (a slow or small machine shows up there first).
  */
 
 export const SETUP_HEALTH_SIGNALS = [
@@ -17,6 +21,7 @@ export const SETUP_HEALTH_SIGNALS = [
   "secure_cookie",
   "app_url",
   "database_dump",
+  "local_ocr",
 ] as const;
 
 export type SetupHealthSignalId = (typeof SETUP_HEALTH_SIGNALS)[number];
@@ -43,6 +48,10 @@ export const SETUP_HEALTH_FIX: Record<
   database_dump: {
     path: "/admin/backups",
     docs: "https://docs.healthlog.dev/guides/backups/",
+  },
+  local_ocr: {
+    path: null,
+    docs: "https://docs.healthlog.dev/guides/document-vault/",
   },
 };
 
@@ -74,6 +83,14 @@ export interface SetupHealthInputs {
   /** The origin this request was made to, as the server saw it. */
   requestOrigin: string | null;
   backups: { enabled: boolean; persistent: boolean; cron: string };
+  localOcr: {
+    /** The engine and its languages in this build (`serverOcrStatus`). */
+    status:
+      | { available: true; languages: string[] }
+      | { available: false; reason: "engine-missing" | "languages-missing" };
+    /** Documents whose last index attempt was an OCR failure, last 7 days. */
+    recentFailures: number;
+  };
 }
 
 function signal(
@@ -162,6 +179,50 @@ export function evaluateDatabaseDump(
   return signal("database_dump", "ok", "scheduled", { cron: input.cron });
 }
 
+/** tesseract's language names as the two-letter codes an admin reads. */
+const LANGUAGE_CODES: Record<string, string> = {
+  deu: "de",
+  eng: "en",
+  fra: "fr",
+  spa: "es",
+  ita: "it",
+  pol: "pl",
+  nld: "nl",
+  por: "pt",
+  rus: "ru",
+  kor: "ko",
+};
+
+/**
+ * Scans read on this server. A build without the engine or its languages is
+ * worth a look rather than failing: everything else works, and a provider
+ * can still read scans. So are recent failures, which a slow or small
+ * machine produces before anything else shows it.
+ */
+export function evaluateLocalOcr(
+  input: SetupHealthInputs["localOcr"],
+): SetupHealthSignal {
+  if (!input.status.available) {
+    return signal(
+      "local_ocr",
+      "attention",
+      input.status.reason === "engine-missing"
+        ? "engine_missing"
+        : "languages_missing",
+    );
+  }
+  if (input.recentFailures > 0) {
+    return signal("local_ocr", "attention", "recent_failures", {
+      count: input.recentFailures,
+    });
+  }
+  return signal("local_ocr", "ok", "ready", {
+    languages: input.status.languages
+      .map((lang) => LANGUAGE_CODES[lang] ?? lang)
+      .join(", "),
+  });
+}
+
 const RANK: Record<SetupHealthState, number> = {
   ok: 0,
   attention: 1,
@@ -174,6 +235,7 @@ export function evaluateSetupHealth(input: SetupHealthInputs): SetupHealth {
     evaluateSecureCookie(input.secureCookie, input.requestProtocol),
     evaluateAppUrl(input.appUrl, input.requestOrigin),
     evaluateDatabaseDump(input.backups),
+    evaluateLocalOcr(input.localOcr),
   ];
   const state = signals.reduce<SetupHealthState>(
     (worst, s) => (RANK[s.state] > RANK[worst] ? s.state : worst),

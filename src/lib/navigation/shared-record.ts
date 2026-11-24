@@ -1,3 +1,4 @@
+import { CARE_WEB_PATH } from "@/lib/encounters/visit-links";
 import {
   isRecordSurfacePagePresentable,
   type RecordViewer,
@@ -31,7 +32,7 @@ export const SHARED_RECORD_DOMAIN_ROUTE_FAMILIES = {
   // domains means a grant naming either presents the page — and the handler
   // still evaluates the grant on every read, because this is a presentation
   // inventory and not an authorization table.
-  measurements: ["/measurements", "/care"],
+  measurements: ["/measurements", CARE_WEB_PATH],
   medications: ["/medications"],
   labs: ["/labs"],
   // `/vaccinations` joins `profile`: an immunization history is health
@@ -39,7 +40,7 @@ export const SHARED_RECORD_DOMAIN_ROUTE_FAMILIES = {
   // delegate scoped to `profile` must be able to present the page the API
   // already lets them read — without this line the grant reads the data and
   // the chrome hides the only page that shows it.
-  profile: ["/profile", "/care", "/vaccinations"],
+  profile: ["/profile", CARE_WEB_PATH, "/vaccinations"],
   // The seizure diary rides the illness section (`scope.ts`).
   illness: ["/illness", "/seizures"],
   mind: ["/mood", "/mental-wellbeing"],

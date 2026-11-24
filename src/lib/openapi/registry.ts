@@ -77,6 +77,11 @@ const openApiBase: Pick<
     { name: "Illness" },
     { name: "Documents" },
     { name: "Records" },
+    {
+      name: "wallet-web-service",
+      description:
+        "Apple Wallet's pass web service (v1.50): the `webServiceURL` inside an emergency-card pass. Apple's fixed protocol, raw bodies, called by Wallet on the device.",
+    },
     { name: "Admin" },
     { name: "Meta" },
     {

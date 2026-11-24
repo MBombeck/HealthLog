@@ -63,7 +63,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     const raw = parseCardTokenSegment(parsed.data.token);
     const link = raw
       ? await prisma.emergencyCardLink.findFirst({
-          where: { userId: user.id, tokenHash: hashToken(raw) },
+          where: {
+            userId: user.id,
+            tokenHash: hashToken(raw),
+            purpose: "CARD",
+          },
           select: {
             userId: true,
             createdById: true,

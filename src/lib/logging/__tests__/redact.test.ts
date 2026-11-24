@@ -427,4 +427,23 @@ describe("redactSecrets — the native sign-in's https return (#163)", () => {
       redactSecrets("/auth/native-return?code=hlh_abcdef0123456789"),
     ).not.toContain("hlh_abcdef0123456789");
   });
+
+  describe("Apple Wallet's pass web service (v1.50)", () => {
+    it("scrubs the ApplePass header value", () => {
+      const token = "ab".repeat(32);
+      expect(redactSecrets(`authorization: ApplePass ${token}`)).toBe(
+        "authorization: ApplePass [REDACTED]",
+      );
+    });
+
+    it("scrubs the device library id and keeps the rest of the path", () => {
+      expect(
+        redactSecrets(
+          "/api/wallet/apple/v1/devices/a1b2c3d4e5/registrations/pass.dev.healthlog.emergency/6f1d2c3b-4a59-4687-9a0b-1c2d3e4f5a6b",
+        ),
+      ).toBe(
+        "/api/wallet/apple/v1/devices/[REDACTED]/registrations/pass.dev.healthlog.emergency/6f1d2c3b-4a59-4687-9a0b-1c2d3e4f5a6b",
+      );
+    });
+  });
 });

@@ -228,7 +228,8 @@
       "invalid": "Controleer de gegevens van het bezoek en probeer het opnieuw.",
       "practitioner-not-found": "Deze praktijk of arts bestaat niet meer. Kies een andere of geen.",
       "reminder-not-found": "Deze controle bestaat niet meer. Kies een andere of geen.",
-      "reminder-conflict": "Een gepland bezoek kan geen controle afsluiten, want het heeft nog niet plaatsgevonden."
+      "reminder-conflict": "Een gepland bezoek kan geen controle afsluiten, want het heeft nog niet plaatsgevonden.",
+      "series-not-found": "Deze behandelreeks bestaat niet meer. Kies een andere of geen."
     },
     "vaccination": {
       "invalid": "Controleer de gegevens van de vaccinatie en probeer het opnieuw.",
@@ -289,6 +290,11 @@
         "limit": "Er zijn al 12 aanvalstypen. Archiveer er een om een nieuw type toe te voegen.",
         "notFound": "Dit aanvalstype bestaat niet meer."
       }
+    },
+    "treatment_series": {
+      "invalid": "Controleer de gegevens van de reeks en probeer het opnieuw.",
+      "practitioner-not-found": "Deze praktijk of arts bestaat niet meer. Kies een andere of geen.",
+      "condition-not-found": "Deze aandoening bestaat niet meer. Kies een andere of geen."
     }
   },
   "doctorReport": {
@@ -1604,7 +1610,6 @@
     "intakeToastExtra": "{name}: ingenomen, {time}, als extra dosis",
     "intakeToastSkipped": "{name}: overgeslagen",
     "intakeToastFailed": "{name} kon niet worden geregistreerd. Probeer het opnieuw",
-    "intakeUndone": "Registratie teruggedraaid",
     "intakeAlreadyTaken": "{name} was al als ingenomen vastgelegd. Er is niets nieuws opgeslagen.",
     "intakeUndoFailed": "Ongedaan maken mislukt. Open de geschiedenis om het te corrigeren",
     "glp1LastInjection": "{label}",
@@ -1844,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "bijv. 4",
           "dosesPerUnitHint": "Hoeveel tabletten of eenheden een nieuwe verpakking of pen bevat, bijv. 28 tabletten of een pen met 4 doses. Vult de hoeveelheid in bij het toevoegen van een verpakking; laat leeg als verpakkingen verschillen.",
           "short": "Dosis",
-          "unitsPerDoseLabel": "Hoeveel tabletten of eenheden vormen deze dosis?",
+          "unitsPerDoseLabel": "Tabletten of eenheden per dosis",
           "unitsPerDoseHint": "bijv. 2 tabletten van 2 mg voor een dosis van 4 mg, of ½ tablet voor een gedeelde dosis",
           "packSizeToggle": "Verpakkingsgrootte (optioneel)"
         },
@@ -2131,9 +2136,7 @@
           "failed": "De inname kon niet worden bijgewerkt."
         },
         "deleteRow": {
-          "toast": "Inname verwijderd",
-          "failed": "De inname kon niet worden verwijderd.",
-          "restored": "Inname hersteld"
+          "failed": "De inname kon niet worden verwijderd."
         },
         "viewRecent90": "Afgelopen 90 dagen",
         "viewAll": "Volledige geschiedenis",
@@ -2682,6 +2685,17 @@
       "invalidRow": "Kies in elke regel een voedingsstof en voer een hoeveelheid groter dan nul in."
     },
     "dose": {
+      "which": {
+        "slotTaken": "de dosis van {slot}, ingenomen om {taken}",
+        "slotSkipped": "de dosis van {slot}, overgeslagen",
+        "slot": "de dosis van {slot}",
+        "taken": "de dosis ingenomen om {taken}",
+        "plain": "de dosis"
+      },
+      "removed": "Verwijderd: {dose}",
+      "restored": "Hersteld: {dose}",
+      "deleteLabel": "Verwijder {dose}",
+      "removedMany": "{count, plural, one {# dosis verwijderd} other {# doses verwijderd}}",
       "action": {
         "take": "Innemen",
         "skip": "Overslaan",
@@ -4862,7 +4876,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Je lopende totaal voor vandaag, afgezet tegen de mediaan van hetzelfde lokale uur over je afgelopen vier weken, met een robuuste band van mediaan ± MAD eromheen. Alleen dagen met voldoende vastgelegde details tellen mee, en er wordt geen vergelijking getoond totdat er minstens veertien van zijn.",
-          "caveat": "Een vergelijking met je eigen recente geschiedenis, geen doel. Het laat zien waar vandaag staat ten opzichte van je gebruikelijke patroon op dit uur en zegt niets over de vraag of dat patroon goed voor je is."
+          "caveat": "Een vergelijking met je eigen recente geschiedenis, geen doel. Het laat zien waar vandaag staat ten opzichte van je gebruikelijke patroon op dit uur en zegt niets over de vraag of dat patroon goed voor je is.",
+          "methodDailyTotal": "Je bron meldt elke dag als één totaal, dus er is geen uur om mee te vergelijken. Het lopende totaal van vandaag, zoals de bron het het laatst meldde, staat tegenover je dagtotalen van de laatste 14 volledige dagen: het streepje markeert hun mediaan, de gearceerde band hun middelste helft. Het bereik verschijnt zodra 7 van die dagen een totaal hebben."
         }
       },
       "scores": {
@@ -4904,7 +4919,11 @@
         "sectionSubtitle": "Je lopende totalen vergeleken met wat op dit uur gebruikelijk is voor jou",
         "learning": "Je gebruikelijke dag leren kennen: {count} van {target, plural, one {# dag} other {# dagen}}",
         "framing": "Gebruikelijk tot {time}: {typical} {unit}",
-        "comparisonLabel": "Je gebruikelijke dag"
+        "comparisonLabel": "Je gebruikelijke dag",
+        "sectionSubtitleDailyTotal": "Je lopende totalen vergeleken met je gebruikelijke volle dag",
+        "sectionSubtitleMixed": "Je lopende totalen vergeleken met wat gebruikelijk is voor jou",
+        "dailyFraming": "Gebruikelijke volle dag: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {
@@ -9553,8 +9572,7 @@
     "auditActedByColumn": "Uitgevoerd door",
     "pushRelay": {
       "title": "HealthLog-pushrelay",
-      "description": "Laat de app uit de App Store meldingen van deze server ontvangen via de relay van het HealthLog-project.",
-      "whatItSees": "Elke melding wordt op deze server versleuteld voor het apparaat waarvoor hij bedoeld is, dus de relay kan hem niet lezen. Hij ziet wanneer deze server een apparaat iets stuurt.",
+      "description": "End-to-end versleutelde meldingen voor de app uit de App Store; ieder kiest zelf op het eigen apparaat.",
       "seesSummary": "Wat de relay ziet",
       "seesHeading": "De relay ziet",
       "seesWhen": "dat deze server een apparaat iets stuurt, wanneer en van welke soort: een melding, een stille synchronisatie of het einde van een live-activiteit",
@@ -9564,43 +9582,45 @@
       "notSeesHeading": "De relay ziet niet",
       "notSeesContent": "wat er in een melding staat: namen van medicijnen, doses, metingen, notities, accountnamen of iets anders erin",
       "seesTiming": "Het moment kan toch iets zeggen. Een medicatieherinnering via de relay laat de relay en Apple zien wanneer een dosis aan de beurt is, en leg je op het ene apparaat een dosis vast en krijgt een ander apparaat van je de bevestiging, dan zien ze dat er op dat moment iets gebeurde.",
-      "seesSource": "De volledige privacyverklaring van de relay",
-      "toggleLabel": "De HealthLog-pushrelay aanbieden aan de gebruikers van deze server",
-      "toggleDescription": "Uit tot je het aanzet. Daarna beslist iedereen in de eigen app.",
-      "toggleDescriptionOn": "Aan. Iedereen beslist in de eigen app of de eigen apparaten het gebruiken.",
+      "toggleLabel": "Aanbieden aan de gebruikers van deze server",
+      "ownApns": {
+        "inUse": "Pushberichten gaan met de eigen APNs-sleutel van deze server rechtstreeks naar Apple; verwijder de APNS_*-variabelen om de relay te gebruiken.",
+        "registered": "Pushberichten gaan met de eigen APNs-sleutel van deze server rechtstreeks naar Apple, dus de relay vervoert niets."
+      },
       "devices": "{count, plural, one {# apparaat gekoppeld} other {# apparaten gekoppeld}}",
       "unbindsPending": "Apparaatafmeldingen die op de relay wachten: {count}",
-      "unreachable": "Deze server is nog aangemeld bij {host}, maar kan die met de huidige instellingen niet bereiken (PUSH_RELAY_MODE of PUSH_RELAY_URL is gewijzigd). Die relay houdt de apparaatkoppelingen van deze server tot de server zich afmeldt: zet de instelling terug en zet de relay daarna hier uit.",
+      "unreachable": "Nog geregistreerd bij {host}, dat de huidige instelling van PUSH_RELAY_MODE of PUSH_RELAY_URL niet bereikt: zet die terug en schakel de relay dan hier uit.",
       "since": "sinds {time}",
       "docs": "Meer informatie",
       "privacy": "Privacyverklaring",
       "terms": "Relayvoorwaarden",
-      "dialogTitle": "HealthLog-pushrelay aanbieden",
-      "dialogBody": "De relay wordt beheerd door de maintainer van het HealthLog-project. Elke melding wordt op deze server versleuteld voor het eigen apparaat; de relay kan hem niet lezen, maar ziet dat deze server een apparaat iets stuurt, en wanneer. Ook medicatieherinneringen gaan via de relay, naar elk apparaat dat zijn herinneringen van deze server krijgt, dus de relay en Apple kunnen zien wanneer een dosis aan de beurt is. Na het aanzetten ziet iedereen op deze server één keer een aanbod in de app en beslist zelf. De relay is voor privé- en huishoudelijk gebruik en is geen medische dienst.",
-      "acceptTerms": "Ik ga akkoord met de relayvoorwaarden.",
-      "readPrivacy": "Ik heb de privacyverklaring van de relay gelezen.",
+      "dialogTitle": "De HealthLog-pushrelay aanzetten",
+      "acceptTerms": "Ik ga akkoord met de {terms}.",
+      "readPrivacy": "Ik heb de {privacy} gelezen.",
       "householdOnly": "Ik beheer deze server privé voor mezelf of mijn huishouden.",
       "enable": "Aanzetten",
       "cancel": "Annuleren",
-      "disableTitle": "Relay uitzetten?",
-      "disableBody": "Deze server meldt zich af bij de relay. Apparaten die erdoor gekoppeld zijn, krijgen geen relaymeldingen meer en de apps schakelen vanzelf terug naar lokale herinneringen.",
+      "disableTitle": "De HealthLog-pushrelay uitzetten?",
+      "disableBody": "Gekoppelde apparaten krijgen geen relaymeldingen meer en vallen terug op lokale herinneringen.",
       "disable": "Uitzetten",
-      "enabled": "De pushrelay staat aan",
-      "disabled": "De pushrelay staat uit",
+      "enabled": "De HealthLog-pushrelay staat aan",
+      "disabled": "De HealthLog-pushrelay staat uit",
       "saveFailed": "De relay-instelling kon niet worden opgeslagen",
       "reconfirm": {
-        "notice": "De tekst van de relay is veranderd sinds deze server hem aanzette. Lees hem en bevestig hem één keer. De relay blijft intussen werken.",
+        "notice": "De relayvoorwaarden zijn gewijzigd; de relay blijft werken tot je ze bevestigt.",
         "button": "Lezen en bevestigen",
-        "title": "Bijgewerkte relaytekst bevestigen",
+        "title": "Gewijzigde relayvoorwaarden bevestigen",
         "confirm": "Bevestigen",
-        "done": "De bijgewerkte relaytekst is bevestigd"
+        "done": "Gewijzigde relayvoorwaarden bevestigd"
       },
       "loadError": "De status van de pushrelay kon niet worden gelezen.",
       "state": {
         "ok": "Verbonden",
         "degraded": "Verstoord",
         "down": "Niet bereikbaar",
-        "off": "Uit"
+        "off": "Uit",
+        "ownApnsKey": "Eigen APNs-sleutel",
+        "unavailable": "Niet beschikbaar"
       },
       "unavailable": {
         "modeOff": "De relay is uitgeschakeld voor deze server (PUSH_RELAY_MODE=off).",
@@ -9608,8 +9628,8 @@
         "keysUnpinned": "Voor deze relay zijn geen sleutels vastgelegd, dus zijn antwoorden kunnen niet worden gecontroleerd. Stel PUSH_RELAY_KEYS in."
       },
       "question": {
-        "title": "Pushmeldingen via de HealthLog-relay versturen?",
-        "body": "De HealthLog-app uit de App Store krijgt meldingen van een server zonder eigen Apple-pushsleutel via de relay van het HealthLog-project. De inhoud wordt hier per apparaat versleuteld en de relay kan hem niet lezen; hij ziet wanneer deze server een apparaat iets stuurt. Je antwoord geldt voor de hele server, en iedereen beslist nog steeds in de eigen app.",
+        "title": "De HealthLog-pushrelay gebruiken?",
+        "body": "Meldingen voor de app uit de App Store, end-to-end versleuteld: de relay ziet alleen wanneer er een wordt verstuurd.",
         "yes": "Ja",
         "no": "Nee",
         "declined": "De relay blijft uit. Je kunt hem later aanzetten onder Push en kanalen."
@@ -9617,7 +9637,7 @@
       "test": {
         "button": "Testpush versturen",
         "failed": "De testpush kon niet worden verstuurd",
-        "noDevice": "Geen van je eigen apparaten is aan de relay gekoppeld. Zet de relay eerst aan in de HealthLog-app op je iPhone.",
+        "noDevice": "Geen van je apparaten gebruikt de relay al; zet hem eerst aan in de HealthLog-app op je iPhone.",
         "line": "{device}: relay antwoordde {answer}, aflevering {delivery}",
         "unsigned": "niets ondertekends (niet bereikbaar of niet geverifieerd)"
       },
@@ -9626,34 +9646,35 @@
         "done": "De relaysleutel is vernieuwd",
         "failed": "De relaysleutel kon nu niet worden vernieuwd; de relay staat één vernieuwing per dag toe",
         "confirmTitle": "Relaysleutel nu vernieuwen?",
-        "confirmBody": "Deze server vervangt de sleutel waarmee hij verzoeken aan de relay ondertekent nu meteen, in plaats van volgens zijn cyclus van 30 dagen. De relay staat één vernieuwing per dag toe."
+        "confirmBody": "Vervangt de sleutel waarmee deze server relayverzoeken ondertekent; de relay staat één rotatie per dag toe."
       },
       "invite": {
-        "label": "Uitnodigingscode (optioneel)",
-        "hint": "Alleen nodig zolang de relay nieuwe servers alleen op uitnodiging toelaat. De code heeft 24 tekens en werkt één keer.",
+        "label": "Uitnodigingscode",
+        "hint": "Alleen voor een relay op uitnodiging: 24 tekens, één keer geldig.",
         "invalid": "Een uitnodigingscode heeft precies 24 tekens: letters, cijfers, - of _.",
-        "enter": "Uitnodigingscode invoeren"
+        "enter": "Uitnodigingscode invoeren",
+        "reveal": "Ik heb een uitnodigingscode"
       },
       "reason": {
-        "inviteRequired": "Deze relay laat nieuwe servers alleen op uitnodiging toe. Voer een uitnodigingscode in.",
-        "inviteRejected": "De relay heeft deze uitnodigingscode niet geaccepteerd. Misschien is hij verlopen of al gebruikt. Vraag een nieuwe aan en voer die in.",
-        "registrationPaused": "De relay neemt op dit moment geen nieuwe servers aan. Deze server probeert het later vanzelf opnieuw."
+        "inviteRequired": "Deze relay laat nieuwe servers alleen op uitnodiging toe: voer een uitnodigingscode in.",
+        "inviteRejected": "De relay heeft deze uitnodigingscode geweigerd; misschien is hij al gebruikt of verlopen.",
+        "registrationPaused": "De relay neemt op dit moment geen nieuwe servers aan; deze server vraagt het later zelf opnieuw."
       },
       "usage": {
         "accepted": "Aangenomen",
         "pending": "Wachtend",
         "dropped": "Verworpen",
         "failed": "Mislukt",
-        "window": "Pushberichten die deze server de afgelopen {days, plural, one {# dag} other {# dagen}} aan de relay gaf.",
+        "window": "Afgelopen {days, plural, one {# dag} other {# dagen}}",
         "lastSuccess": "Laatst bezorgd {time}.",
         "lastFailure": "Laatste fout {time}: {reason}.",
         "noReason": "geen reden opgegeven"
       },
       "stateReason": {
-        "badSignature": "De relay accepteert de handtekening van deze server niet, dus er komt geen push aan. Zet de relay hier uit en weer aan om deze server opnieuw aan te melden.",
-        "relayDegraded": "De relay meldt een storing aan zijn kant. Pushes wachten en gaan de deur uit zodra hij hersteld is.",
-        "relayMaintenance": "De relay is in onderhoud. Pushes wachten en gaan de deur uit zodra hij terug is.",
-        "relayMisconfigured": "De relay meldt dat Apple zijn pushsleutel op dit moment niet accepteert. Pushes wachten tot de beheerder van de relay het heeft opgelost."
+        "badSignature": "De relay accepteert de handtekening van deze server niet: zet de relay uit en weer aan om opnieuw te registreren.",
+        "relayDegraded": "De relay meldt een storing; pushberichten wachten en gaan eruit zodra hij hersteld is.",
+        "relayMaintenance": "De relay is in onderhoud; pushberichten wachten tot hij terug is.",
+        "relayMisconfigured": "Apple accepteert de pushsleutel van de relay nu niet; pushberichten wachten tot de beheerder van de relay het oplost."
       },
       "notice": "Melding van de relay ({level}): {id}",
       "noticeLevel": {
@@ -9682,7 +9703,10 @@
         "seconds": "{value} s",
         "empty": "Geen pushberichten in de afgelopen {hours, plural, one {# uur} other {# uur}}",
         "helper": "Van het in de wachtrij zetten op deze server tot het antwoord van de relay. De relay antwoordt zodra Apple het pushbericht heeft aangenomen."
-      }
+      },
+      "termsLink": "relayvoorwaarden",
+      "privacyLink": "privacyverklaring van de relay",
+      "deliverySummary": "Bezorgdetails"
     },
     "serverSetup": {
       "stepsLabel": "Stappen van de serverinrichting",
@@ -9696,7 +9720,7 @@
       },
       "notice": {
         "title": "Deze server inrichten",
-        "body": "Vijf korte stappen voor de keuzes die alleen jij hier kunt maken: wie zich mag registreren, hoe meldingen de server verlaten, wat AI mag en wat er verder naar buiten gaat. Elke stap kun je overslaan en later wijzigen.",
+        "body": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy; elke stap kun je overslaan of later wijzigen.",
         "open": "Inrichting starten",
         "dismiss": "Niet nu"
       },
@@ -9708,7 +9732,7 @@
       },
       "notifications": {
         "title": "Hoe meldingen de server verlaten",
-        "body": "Kies welke kanalen mensen mogen gebruiken. De push-relay voor de app uit de App Store blijft uit tot je hem aanzet."
+        "body": "Kies welke kanalen gebruikt mogen worden; de HealthLog-pushrelay blijft uit tot je hem aanzet."
       },
       "ai": {
         "title": "Wat AI mag",
@@ -9767,7 +9791,8 @@
         "encryption_keys": "Versleutelingssleutels",
         "secure_cookie": "Veilige cookies",
         "app_url": "Openbaar adres",
-        "database_dump": "Databasedump"
+        "database_dump": "Databasedump",
+        "local_ocr": "Tekstherkenning voor scans"
       },
       "reason": {
         "encryption_keys": {
@@ -9792,6 +9817,12 @@
           "disabled": "Er wordt geen nachtelijke databasedump gemaakt. Maak op een andere manier een back-up van de database.",
           "not_persistent": "De dumpmap staat niet op een gekoppeld volume, dus dumps gaan bij de volgende update verloren.",
           "scheduled": "Nachtelijke dump gepland ({cron})."
+        },
+        "local_ocr": {
+          "ready": "Gescande pdf's en foto's worden op deze server gelezen, zonder AI ({languages}).",
+          "recent_failures": "Gescande documenten die deze server de afgelopen 7 dagen niet kon lezen: {count}. Elk document noemt de reden op zijn pagina. Meestal is de machine te traag of heeft ze te weinig geheugen.",
+          "engine_missing": "Deze build heeft geen tekstherkenning. Scans en foto's blijven ongelezen, tenzij een AI-provider ze leest.",
+          "languages_missing": "De tekstherkenning is er, maar zonder taalgegevens. Bouw de image met de taalgegevens klaargezet (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -10765,7 +10796,7 @@
       "TRYING_TO_CONCEIVE": "Zwanger proberen te worden",
       "PERIMENOPAUSE": "Perimenopauze",
       "OFF": "Bijhouden uit",
-      "label": "Waarvoor houd je je cyclus bij?",
+      "label": "Doel",
       "description": "Dit bepaalt de formulering en welke voorspellingen je ziet. Begeleiding rond de vruchtbare periode verschijnt alleen als je zwanger probeert te worden."
     },
     "ring": {
@@ -13161,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "Er is geen leesbare tekst gevonden. Dit lijkt een scan; een AI-provider met beeldherkenning kan hem lezen.",
+          "local-empty": "Er is geen leesbare tekst gevonden, niet in het bestand en niet met de tekstherkenning op deze server. Een AI-provider met beeldherkenning kan hem misschien wel lezen.",
           "local-unsupported": "Dit bestandstype kan niet worden gelezen voor de zoekfunctie.",
           "decrypt-error": "Het opgeslagen bestand kon niet worden geopend om te lezen.",
           "raster-failed": "De PDF-pagina's konden niet worden weergegeven om te lezen. Compressieformaten van gescande faxen zijn een bekende oorzaak.",
           "provider-error": "De AI-provider kon dit document bij de laatste poging niet lezen.",
           "pdf-needs-anthropic": "De processor van deze server kan geen PDF-pagina's weergeven en deze PDF heeft geen tekstlaag. Een AI-provider die PDF-bestanden rechtstreeks aanneemt kan hem lezen, of upload foto's van de pagina's.",
           "empty-transcription": "De AI-provider gaf geen tekst terug voor dit document.",
-          "resource-limit": "Deze pdf is te groot of te complex om hier te lezen. Het bestand zelf is in orde en opent nog steeds."
+          "resource-limit": "Deze pdf is te groot of te complex om hier te lezen. Het bestand zelf is in orde en opent nog steeds.",
+          "ocr-failed": "De tekstherkenning op deze server kon dit document niet afmaken. Het duurde te lang, vroeg te veel geheugen of mislukte. Het bestand zelf is in orde."
         }
       },
       "loadError": "Dit document kon niet worden geladen.",
@@ -13320,6 +13352,9 @@
       "extractHint": "Gebruikt de tekst die al uit dit document is gelezen. Geëxtraheerde waarden wachten op jouw controle; er wordt niets automatisch opgeslagen.",
       "extractEmpty": "Er konden geen waarden uit dit document worden geëxtraheerd.",
       "extractIncomplete": "Een deel van het document kon niet volledig worden gelezen, dus er kunnen waarden ontbreken. Vergelijk de lijst met het document.",
+      "readLocally": "Waarden zonder AI uitlezen",
+      "readLocallyPending": "Bezig met lezen…",
+      "readLocallyHint": "Leest de tabelregels uit de tekst die deze server al heeft gelezen, zonder AI en zonder iets te versturen. Controleer elke waarde voordat je die opslaat.",
       "failUnitRequired": "Een numerieke waarde heeft een eenheid nodig voordat ze kan worden opgeslagen.",
       "failUnitMismatch": "De opgegeven eenheid komt niet overeen met de opgeslagen eenheid voor deze biomarker. Pas de eenheid aan en rond de controle daarna opnieuw af.",
       "failGeneric": "Deze waarde kon niet worden opgeslagen.",
@@ -14377,7 +14412,11 @@
       "seizureTypeDelete": "{name} heeft een aanvalstype verwijderd",
       "seizureSettingsUpdate": "{name} heeft de clusterregel gewijzigd",
       "symptomBatchIngest": "{name} heeft symptomen uit Apple Health overgenomen",
-      "symptomImportDelete": "{name} heeft overgenomen symptomen verwijderd"
+      "symptomImportDelete": "{name} heeft overgenomen symptomen verwijderd",
+      "treatmentSeriesCreate": "{name} heeft een behandelreeks toegevoegd",
+      "treatmentSeriesUpdate": "{name} heeft een behandelreeks bewerkt",
+      "treatmentSeriesDelete": "{name} heeft een behandelreeks verwijderd",
+      "treatmentSeriesRestore": "{name} heeft een behandelreeks hersteld"
     },
     "section": {
       "measurements": {
@@ -15220,7 +15259,7 @@
     "saved": "Levensgebeurtenis opgeslagen",
     "deleted": "Levensgebeurtenis verwijderd",
     "fields": {
-      "title": "Wat is er gebeurd?",
+      "title": "Titel",
       "category": "Soort",
       "when": "Wanneer",
       "precision": "Nauwkeurigheid",
@@ -16021,7 +16060,12 @@
       "visit": "Afspraak",
       "visitWith": "Afspraak: {name}",
       "checkupDue": "Aan de beurt: {label}",
-      "boosterDue": "Booster aan de beurt: {label}"
+      "boosterDue": "Booster aan de beurt: {label}",
+      "sessionOf": "Sessie {number} van {planned}",
+      "session": "Sessie {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Behandelreeks eindigt",
+      "seriesEndsWith": "Behandelreeks eindigt: {name}"
     }
   },
   "reportSchedule": {
@@ -16121,7 +16165,30 @@
       "walletWithQr": "Portemonneekaart met QR-code (PDF)",
       "preview": "Jouw kaart"
     },
+    "name": "Naam",
+    "walletPass": {
+      "kind": "Noodkaart",
+      "allergy": "Allergie",
+      "severeAllergy": "Ernstige allergie",
+      "asOf": "Bijgewerkt",
+      "week": "Week {weeks}+{days}",
+      "postpartum": "Kraambed",
+      "scan": "Scan voor de volledige kaart",
+      "validUntil": "Geldig tot",
+      "untilRevoked": "Tot intrekking",
+      "asOfValue": "{date}, werkt zichzelf bij",
+      "issuedBy": "Uitgegeven door",
+      "signedBy": "Ondertekend door",
+      "signerRelay": "HealthLog-project, healthlog.dev",
+      "noteLabel": "Let op",
+      "note": "Ingevuld door de eigenaar, geen medisch document. De QR-code opent de actuele kaart zolang die niet is ingetrokken.",
+      "lockLabel": "Toegangsscherm",
+      "lock": "Wallet toont deze kaart pas na Face ID of de toegangscode. Vul voor hulpverleners bij een vergrendelde iPhone ook de Medische ID in de Gezondheid-app in.",
+      "withdrawn": "Ingetrokken",
+      "withdrawnBody": "Deze kaart is op {date} ingetrokken. De QR-code werkt niet meer."
+    },
     "fields": {
+      "NAME": "Naam",
       "BLOOD_TYPE": "Bloedgroep",
       "ALLERGIES": "Allergieën",
       "CONDITIONS": "Chronische aandoeningen",
@@ -16136,6 +16203,105 @@
     },
     "entry": {
       "description": "Bloedgroep, allergieën, medicijnen en contactpersonen voor een noodgeval, met offline kopie, pasje en QR-link."
+    },
+    "appleWallet": {
+      "title": "Apple Wallet",
+      "lead": "Je kaart in Wallet, die zichzelf bijwerkt.",
+      "learnMore": "Meer informatie",
+      "add": "Voeg toe aan Apple Wallet",
+      "makeNew": "Nieuwe pas maken",
+      "withdraw": "Pas intrekken",
+      "withdrawTitle": "Wallet-pas intrekken?",
+      "withdrawBody": "De QR-code werkt meteen niet meer, en de pas in Wallet laat dat zien.",
+      "fieldsLabel": "Wat de pas toont",
+      "expiryLabel": "Pas eindigt",
+      "otherDevice": "Open deze pagina op je iPhone of Mac om deze kaart aan Wallet toe te voegen.",
+      "error": "De pas kon niet worden gewijzigd. Probeer het opnieuw.",
+      "consentTitle": "Ondertekend door het HealthLog-project",
+      "consentBody": "De ondertekendienst ziet de bestandshashes en het tijdstip, nooit wat er op je kaart staat.",
+      "expired": "Verlopen. Wallet maakt hem grijs.",
+      "fetched": "Op een apparaat, laatst bijgewerkt {when}.",
+      "notFetched": "Nog op geen apparaat.",
+      "state": {
+        "live": "Actief",
+        "voided": "Ingetrokken",
+        "expired": "Verlopen"
+      },
+      "withdrawn": {
+        "owner": "Je hebt hem {when} ingetrokken.",
+        "credential_reset": "{when} ingetrokken na een wachtwoordwijziging.",
+        "handover": "{when} ingetrokken bij de overdracht van het profiel.",
+        "guardian_lost": "{when} ingetrokken: het recht om dit profiel te beheren is vervallen.",
+        "account_deletion": "{when} ingetrokken toen het account verwijderd zou worden."
+      },
+      "unavailable": {
+        "signer_off": "Deze server ondertekent geen Wallet-passen.",
+        "relay_not_ready": "Wallet-passen zijn op deze server nu niet beschikbaar.",
+        "no_https_origin": "Wallet-passen vereisen dat deze server via HTTPS bereikt wordt.",
+        "api_disabled": "Externe toegang staat op deze server uit, en daarmee ook Wallet-passen.",
+        "not_allowed": "Alleen de persoon om wie het gaat, of diens voogd, kan hem toevoegen."
+      },
+      "more": {
+        "frozen": "De pas toont wat je hier aanvinkt. Trek hem in en maak een nieuwe om dat te wijzigen.",
+        "updates": "Als je kaart verandert, werkt de pas zichzelf bij. De QR-code is een eigen code, los van die van de gedrukte kaart.",
+        "lock": "Wallet toont hem pas na Face ID of je code. Vul voor hulpverleners bij een vergrendelde iPhone de Medische ID in Gezondheid in.",
+        "signerRelay": "Het HealthLog-project ondertekent hem. De ondertekendienst ziet bestandshashes en tijdstippen, nooit de inhoud.",
+        "signerLocal": "Deze server ondertekent hem met een eigen certificaat.",
+        "withdraw": "Intrekken stopt de QR-code meteen. Een telefoon zonder verbinding houdt de oude pas tot hij weer online is; lukt bijwerken niet, verwijder de pas dan in Wallet."
+      }
     }
+  },
+  "treatmentSeries": {
+    "heading": "Behandelreeksen",
+    "add": "Nieuwe reeks",
+    "createTitle": "Nieuwe behandelreeks",
+    "untitled": "Behandelreeks",
+    "progress": "{done} van {planned}",
+    "sessionsDoneCount": "{count, plural, one {# sessie} other {# sessies}}",
+    "sessionOf": "Sessie {number} van {planned}",
+    "session": "Sessie {number}",
+    "status": {
+      "planned": "Niet begonnen",
+      "active": "Loopt",
+      "completed": "Afgerond",
+      "expired": "Verlopen"
+    },
+    "next": "Volgende {date}",
+    "validUntil": "Geldig tot {date}",
+    "firstSession": "Sinds {date}",
+    "sessionsHeading": "Sessies",
+    "addSession": "Sessie toevoegen",
+    "prescriber": "Voorgeschreven door",
+    "performer": "Uitgevoerd door",
+    "condition": "Aandoening",
+    "form": {
+      "title": "Naam",
+      "titlePlaceholder": "Fysiotherapie, linkerknie",
+      "plannedSessions": "Sessies",
+      "startsOn": "Begin",
+      "validUntil": "Geldig tot",
+      "note": "Notitie",
+      "series": "Behandelreeks",
+      "seriesNone": "Geen"
+    },
+    "created": "Reeks opgeslagen",
+    "updated": "Reeks bijgewerkt",
+    "saveFailed": "De reeks kon niet worden opgeslagen.",
+    "ended": "Reeks beëindigd",
+    "reopened": "Reeks heropend",
+    "end": "Reeks beëindigen",
+    "reopen": "Heropenen",
+    "deleteTitle": "Deze reeks verwijderen?",
+    "deleteDescription": "De afspraken blijven. Ze zijn alleen niet meer gegroepeerd.",
+    "deleted": "Reeks verwijderd",
+    "deleteFailed": "De reeks kon niet worden verwijderd.",
+    "reportTitle": "Behandelreeksen",
+    "reportColSeries": "Reeks",
+    "reportColSessions": "Sessies",
+    "reportColPeriod": "Periode",
+    "period": "{from} tot {to}",
+    "periodOpen": "sinds {from}",
+    "expiryPushTitle": "Behandelreeks verloopt",
+    "expiryPushBody": "{title}: geldig tot {date}, nog {count, plural, one {# sessie} other {# sessies}} over."
   }
 }

@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useActiveRecordName } from "@/hooks/use-record-capabilities";
 import { apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   invalidateKeys,
   medicationDependentKeys,
@@ -68,6 +68,7 @@ export function useDoseHistoryLedger({
   windowDays: number;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const { user } = useAuth();
   // The record this ledger's writes land in, when it is not the caller's own.
   // The two sibling intake paths in `use-medication-intake.ts` already drop
@@ -150,11 +151,14 @@ export function useDoseHistoryLedger({
         // `takenAt` on the same instant, matching the optimistic paint. The
         // POST returns the created event; its id drives the Undo affordance
         // (the same soft-delete route the cards use).
-        const created = await apiPost<{ id?: string } | undefined>(
+        const created = await apiPost<
+          { id?: string; takenAt?: string | null } | undefined
+        >(
           `/api/medications/${medicationId}/intake`,
           slotMarkRequestBody(row, action),
         );
         const eventId: string | undefined = created?.id;
+        const skipped = action === "skipped";
         toast.success(
           t(
             action === "skipped"
@@ -172,6 +176,12 @@ export function useDoseHistoryLedger({
               void runUndoIntake({
                 medication: { id: medicationId, name: medicationName },
                 eventId: id,
+                dose: {
+                  slotAt: row.at,
+                  takenAt: skipped ? null : (created?.takenAt ?? row.at),
+                  skipped,
+                },
+                formatTime: (at) => fmt.time(at),
                 t,
                 queryClient,
               }),
@@ -189,6 +199,7 @@ export function useDoseHistoryLedger({
       }
     },
     [
+      fmt,
       marking,
       medicationId,
       medicationName,
@@ -229,6 +240,7 @@ function useDoseHistoryEdits({
   queryKey: readonly unknown[];
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   // The pending "Slot zuordnen" confirm: which intake to pin
   // onto which slot. The confirm names the consequence (counts as late).
@@ -305,6 +317,8 @@ function useDoseHistoryEdits({
       medicationId,
       intake,
       t,
+      formatTime: (at) => fmt.time(at),
+      wallTime: fmt.wallTime,
       reconcile: () => reconcileLedger(queryClient, queryKey),
     });
 

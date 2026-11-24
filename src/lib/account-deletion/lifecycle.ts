@@ -19,6 +19,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { credentialRevocations } from "@/lib/auth/credential-revocations";
+import { voidWalletPassesWhere } from "@/lib/emergency-card/wallet-pass/void";
 import { stripSignedOutDevicePush } from "@/lib/devices/signed-out-push";
 import { remainingGuardianWhere } from "@/lib/managed-profiles/guardian-where";
 import { queueRelayUnbindsForAccount } from "@/lib/push-relay/unbind-queue";
@@ -57,6 +58,16 @@ export async function lockAccountForDeletion(
     },
     select: { id: true },
   });
+  // An Apple Wallet pass of the account, or one it made for a profile it
+  // guards, is withdrawn with this reason before the remediation below would
+  // stamp it as a credential reset; the void-push cron tells its devices
+  // while the window keeps the row.
+  await voidWalletPassesWhere(
+    tx,
+    { OR: [{ userId: input.userId }, { createdById: input.userId }] },
+    "ACCOUNT_DELETION",
+    input.requestedAt,
+  );
   for (const revoke of credentialRevocations(tx, input.userId)) {
     await revoke;
   }

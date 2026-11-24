@@ -11,7 +11,12 @@
  * held on the day it was saved, which the file says.
  */
 import type { EmergencyCardView } from "./card-data";
-import { emergencyCardRows, formatCardDay, type Translate } from "./rows";
+import {
+  emergencyCardRows,
+  formatCardDay,
+  splitCardTitle,
+  type Translate,
+} from "./rows";
 
 const ESCAPES: Record<string, string> = {
   "&": "&amp;",
@@ -31,6 +36,7 @@ const STYLE =
   "body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,sans-serif}" +
   "main{max-width:36rem;margin:0 auto;padding:16px}" +
   "h1{margin:0 0 4px;font-size:1.5rem;color:var(--accent)}" +
+  "h2{margin:0 0 8px;font-size:1.25rem;overflow-wrap:anywhere}" +
   "p{margin:0 0 12px;color:var(--muted);font-size:.875rem}" +
   "dl{margin:0}div.row{padding:12px 0;border-top:1px solid var(--line)}" +
   "dt{font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}" +
@@ -54,7 +60,10 @@ function cardHtml(
   locale: string,
   note: string,
 ): string {
-  const rows = emergencyCardRows(view, t, locale)
+  const { title, rows: items } = splitCardTitle(
+    emergencyCardRows(view, t, locale),
+  );
+  const rows = items
     .map(
       (row) =>
         `<div class="row"><dt>${escapeHtml(row.label)}</dt>${row.lines
@@ -69,6 +78,7 @@ function cardHtml(
     locale,
     t("emergencyCard.title"),
     `<h1>${escapeHtml(t("emergencyCard.title"))}</h1>` +
+      (title ? `<h2>${escapeHtml(title)}</h2>` : "") +
       `<p>${escapeHtml(t("emergencyCard.subtitle"))}</p>` +
       `<p>${escapeHtml(note)}</p>` +
       `<dl>${rows}</dl>`,

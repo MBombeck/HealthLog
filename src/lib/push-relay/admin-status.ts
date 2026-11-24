@@ -134,6 +134,18 @@ function relayCheckOf(row: RegistrationRow | null) {
   };
 }
 
+/** What the relay card's status pill says, in order of what matters most. */
+export function relaySummaryState(input: {
+  ownApnsKey: boolean;
+  available: boolean;
+  offered: boolean;
+  state: "ok" | "degraded" | "down" | "off";
+}): "own_apns_key" | "unavailable" | "ok" | "degraded" | "down" | "off" {
+  if (input.ownApnsKey) return "own_apns_key";
+  if (!input.available && !input.offered) return "unavailable";
+  return input.state;
+}
+
 export async function adminRelayStatus(now = new Date()) {
   const config = relayConfig();
   const [row, stored, bound, consented, usage, handoff, unbindsPending, held] =
@@ -152,6 +164,7 @@ export async function adminRelayStatus(now = new Date()) {
       }),
     ]);
   const health = relayHealth(row);
+  const ownApnsKey = loadApnsConfig() !== null;
   const docs = config.origin ? relayDocumentUrls(config.origin) : null;
   return {
     allowed: config.allowed,
@@ -189,6 +202,22 @@ export async function adminRelayStatus(now = new Date()) {
     termsUrl: docs?.termsUrl ?? null,
     privacyUrl: docs?.privacyUrl ?? null,
     docsUrl: RELAY_DOCS_URL,
+    // An APNs key of this server's own (`APNS_*`) is in use: `routeFor`
+    // sends every push directly to Apple with it and never over the relay,
+    // whatever the switch says. The card says so instead of offering a
+    // switch that would change nothing.
+    ownApnsKey,
+    // The one state the card's status pill shows, resolved here so the
+    // client renders it and does not weigh the fields against each other:
+    // an APNs key of the server's own wins (the relay carries nothing while
+    // it is set), then a relay this server cannot use and never joined,
+    // then the relay's health.
+    summaryState: relaySummaryState({
+      ownApnsKey,
+      available: config.available,
+      offered: row !== null,
+      state: health.state,
+    }),
     // The operator's one answer for the whole server, as `/api/auth/me`
     // publishes it (`push.relay.operatorDecision`): the relay question is
     // asked while it is `undecided`, and never again once it is `off`.
@@ -197,7 +226,7 @@ export async function adminRelayStatus(now = new Date()) {
       offered: row !== null,
       registered: row?.instanceId != null,
       available: config.available,
-      apnsConfigured: loadApnsConfig() !== null,
+      apnsConfigured: ownApnsKey,
     }),
   };
 }

@@ -111,6 +111,20 @@ export function makeItemWords(
           ? { label: item.label, sub: kind }
           : { label: kind ?? "", sub: null };
       }
+      case "treatmentSeries": {
+        // `sub` is "done/planned", or "done" for an open-ended series.
+        const [done, planned] = (item.sub ?? "").split("/").map(Number);
+        return {
+          label: item.label || t("treatmentSeries.untitled"),
+          sub: null,
+          tag:
+            Number.isInteger(done) && Number.isInteger(planned)
+              ? t("treatmentSeries.progress", { done, planned })
+              : Number.isInteger(done)
+                ? t("treatmentSeries.sessionsDoneCount", { count: done })
+                : null,
+        };
+      }
       case "labDay": {
         const count = Number(item.sub);
         // The label lists analyte names; the count is set apart from them.

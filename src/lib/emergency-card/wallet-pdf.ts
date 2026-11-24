@@ -3,8 +3,9 @@
  *
  * One A4 page with the card's two sides at credit-card size (85.6 × 54 mm)
  * next to each other, joined at a fold line: print, cut along the outline,
- * fold, and it fits a wallet. The front holds what a first responder acts on
- * first (blood type, allergies, conditions, medications, pregnancy); the back
+ * fold, and it fits a wallet. The front holds the name, when the card shows
+ * it, under the title, then what a first responder acts on first (blood
+ * type, allergies, conditions, medications, pregnancy); the back
  * holds who to call, implants and the declarations, and, when the owner hands
  * in the live link, its QR code. Text that does not fit is cut with an
  * ellipsis and the card says so: with a code, that the full card is behind
@@ -24,12 +25,18 @@ import {
 import type { Locale } from "@/lib/i18n/config";
 
 import type { EmergencyCardView } from "./card-data";
-import { emergencyCardRows, formatCardDay, type Translate } from "./rows";
+import {
+  emergencyCardRows,
+  formatCardDay,
+  splitCardTitle,
+  type Translate,
+} from "./rows";
 
 const CARD_W = 85.6;
 const CARD_H = 54;
 const PAD = 3;
 const FRONT_KEYS = [
+  "NAME",
   "BLOOD_TYPE",
   "ALLERGIES",
   "CONDITIONS",
@@ -100,7 +107,11 @@ export async function buildWalletCardPdf(args: {
 
   const left = 20;
   const top = 30;
-  const rows = emergencyCardRows(view, t, locale);
+  // A recorded name is the front's title line; asked for and not recorded,
+  // it stays a row on the front that says so.
+  const { title: name, rows } = splitCardTitle(
+    emergencyCardRows(view, t, locale),
+  );
   const front = rows.filter((r) => FRONT_KEYS.includes(r.key));
   const back = rows.filter((r) => !FRONT_KEYS.includes(r.key));
 
@@ -126,14 +137,25 @@ export async function buildWalletCardPdf(args: {
   doc.setFontSize(9);
   doc.setTextColor(180, 30, 30);
   doc.text(t("emergencyCard.title"), left + PAD + 2, top + PAD + 3);
-  let cut = writeRows(
-    doc,
-    front,
-    left + PAD + 2,
-    top + PAD + 8,
-    CARD_W - 2 * PAD - 2,
-    top + CARD_H - PAD - 3,
-  );
+  let rowsTop = top + PAD + 8;
+  let nameCut = false;
+  if (name) {
+    doc.setFontSize(8.5);
+    doc.setTextColor(25, 25, 35);
+    const lines = doc.splitTextToSize(name, CARD_W - 2 * PAD - 2) as string[];
+    doc.text(lines[0], left + PAD + 2, top + PAD + 7.5);
+    nameCut = lines.length > 1;
+    rowsTop += 4;
+  }
+  let cut =
+    writeRows(
+      doc,
+      front,
+      left + PAD + 2,
+      rowsTop,
+      CARD_W - 2 * PAD - 2,
+      top + CARD_H - PAD - 3,
+    ) || nameCut;
 
   // Back.
   const bx = left + CARD_W + PAD;

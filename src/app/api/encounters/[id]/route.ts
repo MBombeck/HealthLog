@@ -24,10 +24,10 @@ import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
-import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encounterUpdateSchema } from "@/lib/validations/encounters";
 import { encounterKindLabel } from "@/lib/encounters/kind-label";
 import { toEncounterDTO } from "@/lib/encounters/dto";
+import { encounterFieldUpdate } from "@/lib/encounters/field-update";
 import {
   ENCOUNTER_INCLUDE,
   applyEncounterLinks,
@@ -47,9 +47,12 @@ import {
   summarizeRestoreSkips,
   type RestoreSkipLog,
 } from "@/lib/export/restore-skips";
-import type { Prisma } from "@/generated/prisma/client";
 import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 import { withRelated } from "@/lib/links/related";
+import {
+  loadEncounterSeriesRefs,
+  seriesRelationUpdate,
+} from "@/lib/treatment-series/service";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -67,7 +70,10 @@ export const GET = apiHandler(
     }
 
     const visible = await actingDomainVisibility(prisma, grantId);
-    const links = await loadEncounterLinks(prisma, user.id, id, visible);
+    const [links, seriesRefs] = await Promise.all([
+      loadEncounterLinks(prisma, user.id, id, visible),
+      loadEncounterSeriesRefs(prisma, user.id, [row]),
+    ]);
 
     annotate({
       action: {
@@ -78,12 +84,16 @@ export const GET = apiHandler(
     });
 
     return apiSuccess(
-      await withRelated(prisma, toEncounterDTO(row, links), {
-        userId: user.id,
-        grantId,
-        kind: "encounter",
-        id,
-      }),
+      await withRelated(
+        prisma,
+        { ...toEncounterDTO(row, links), series: seriesRefs.get(id) ?? null },
+        {
+          userId: user.id,
+          grantId,
+          kind: "encounter",
+          id,
+        },
+      ),
     );
   },
 );
@@ -150,26 +160,10 @@ export const PATCH = apiHandler(
         practitionerName = resolved?.name ?? null;
       }
 
-      const data: Prisma.EncounterUpdateInput = {};
-      if (entry.occurredAt !== undefined) data.occurredAt = nextOccurredAt;
-      if (entry.status !== undefined) data.status = entry.status;
-      if (entry.kind !== undefined) data.kind = entry.kind;
-      if (entry.reason !== undefined) {
-        data.reasonEncrypted = entry.reason
-          ? encryptToBytes(entry.reason)
-          : null;
-      }
-      if (entry.outcome !== undefined) {
-        data.outcomeEncrypted = entry.outcome
-          ? encryptToBytes(entry.outcome)
-          : null;
-      }
-      if (entry.bodySite !== undefined) {
-        data.bodySiteEncrypted = entry.bodySite?.trim()
-          ? encryptToBytes(entry.bodySite.trim())
-          : null;
-      }
-      if (entry.laterality !== undefined) data.laterality = entry.laterality;
+      const data = encounterFieldUpdate(entry, nextOccurredAt);
+      const series = await seriesRelationUpdate(tx, user.id, entry.seriesId);
+      if (series === "unknown-series") return series;
+      if (series) data.series = series;
       if (entry.practitionerId !== undefined) {
         data.practitioner = practitionerId
           ? { connect: { id: practitionerId } }
@@ -188,27 +182,17 @@ export const PATCH = apiHandler(
 
       let reminderId = existing.reminderId;
 
-      if (shouldHaveReminder(nextStatus, nextOccurredAt, now)) {
-        // The same contradiction the create arm refuses, and it has to be
-        // refused here too: a body that books a visit AND names the checkup it
-        // closed would walk the foreign key off the visit's own reminder,
-        // leaving it live, armed and unreachable.
-        if (entry.reminderId) return "contradictory-reminder" as const;
-        reminderId = await syncAppointmentReminder(
-          tx,
-          {
-            userId: user.id,
-            occurredAt: nextOccurredAt,
-            practitionerName,
-            kindLabel: encounterKindLabel(entry.kind ?? existing.kind, locale),
-            status: nextStatus,
-            existingReminderId: ownAppointmentReminderId,
-          },
-          timezone,
-          now,
-        );
-      } else if (ownAppointmentReminderId) {
-        // No longer a future appointment: the row stays, switched off.
+      const wantsReminder = shouldHaveReminder(nextStatus, nextOccurredAt, now);
+      // The same contradiction the create arm refuses, and it has to be
+      // refused here too: a body that books a visit AND names the checkup it
+      // closed would walk the foreign key off the visit's own reminder,
+      // leaving it live, armed and unreachable.
+      if (wantsReminder && entry.reminderId) {
+        return "contradictory-reminder" as const;
+      }
+      // A visit that is no longer a future appointment keeps its own
+      // reminder row, switched off by the same sync.
+      if (wantsReminder || ownAppointmentReminderId) {
         reminderId = await syncAppointmentReminder(
           tx,
           {
@@ -304,6 +288,11 @@ export const PATCH = apiHandler(
         errorCode: "encounter.practitioner-not-found",
       });
     }
+    if (outcome === "unknown-series") {
+      return apiError("Treatment series not found", 404, {
+        errorCode: "encounter.series-not-found",
+      });
+    }
     if (outcome === "unknown-reminder") {
       return apiError("Checkup not found", 404, {
         errorCode: "encounter.reminder-not-found",
@@ -315,7 +304,10 @@ export const PATCH = apiHandler(
       include: ENCOUNTER_INCLUDE,
     });
     const visible = await actingDomainVisibility(prisma, grantId);
-    const links = await loadEncounterLinks(prisma, user.id, id, visible);
+    const [links, seriesRefs] = await Promise.all([
+      loadEncounterLinks(prisma, user.id, id, visible),
+      loadEncounterSeriesRefs(prisma, user.id, [row]),
+    ]);
 
     await auditLog("encounter.visit.update", {
       userId: user.id,
@@ -331,6 +323,7 @@ export const PATCH = apiHandler(
             kind: existing.kind,
             laterality: existing.laterality,
             practitionerId: existing.practitionerId,
+            seriesId: existing.seriesId,
           },
           after: {
             occurredAt: outcome.updated.occurredAt,
@@ -338,6 +331,7 @@ export const PATCH = apiHandler(
             kind: outcome.updated.kind,
             laterality: outcome.updated.laterality,
             practitionerId: outcome.updated.practitionerId,
+            seriesId: outcome.updated.seriesId,
           },
         }),
       },
@@ -356,7 +350,10 @@ export const PATCH = apiHandler(
       meta: { status: row.status },
     });
 
-    return apiSuccess(toEncounterDTO(row, links, summarizeRestoreSkips(skips)));
+    return apiSuccess({
+      ...toEncounterDTO(row, links, summarizeRestoreSkips(skips)),
+      series: seriesRefs.get(id) ?? null,
+    });
   },
 );
 

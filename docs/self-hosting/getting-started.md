@@ -257,6 +257,7 @@ many hops to read back.
 | Apple Health `export.zip` import                                    | `docs/integrations/apple-health.md`                                                                                   |
 | AI provider setup (OpenAI / Anthropic / local / ChatGPT OAuth)      | `docs/integrations/ai-providers.md`                                                                                   |
 | Push relay for the App Store iPhone app                             | `docs/integrations/push-relay.md`                                                                                     |
+| Apple Wallet passes of the emergency card, own Pass Type ID         | `docs/self-hosting/apple-wallet.md`                                                                                   |
 | Health Connect, Gadgetbridge and FHIR R4 Bundle imports             | `docs/integrations/health-connect.md`, `docs/integrations/gadgetbridge.md`, `docs/integrations/fhir-bundle-import.md` |
 
 ## Troubleshooting

@@ -10,6 +10,7 @@ import { buildWalletCardPdf } from "@/lib/emergency-card/wallet-pdf";
 
 const LONG: EmergencyCardView = {
   fields: [...EMERGENCY_CARD_FIELDS],
+  name: null,
   bloodType: null,
   allergies: null,
   conditions: null,

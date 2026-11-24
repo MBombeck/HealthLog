@@ -228,7 +228,8 @@
       "invalid": "Sprawdź dane wizyty i spróbuj ponownie.",
       "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny wpis albo „Nie podano”.",
       "reminder-not-found": "To badanie już nie istnieje. Wybierz inne albo pozostaw pole puste.",
-      "reminder-conflict": "Zaplanowana wizyta nie może zamknąć badania, bo jeszcze się nie odbyła."
+      "reminder-conflict": "Zaplanowana wizyta nie może zamknąć badania, bo jeszcze się nie odbyła.",
+      "series-not-found": "Ta seria zabiegów już nie istnieje. Wybierz inną lub żadną."
     },
     "vaccination": {
       "invalid": "Sprawdź dane szczepienia i spróbuj ponownie.",
@@ -289,6 +290,11 @@
         "limit": "Jest już 12 rodzajów napadów. Zarchiwizuj jeden, aby dodać kolejny.",
         "notFound": "Ten rodzaj napadu już nie istnieje."
       }
+    },
+    "treatment_series": {
+      "invalid": "Sprawdź dane serii i spróbuj ponownie.",
+      "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny lub żaden.",
+      "condition-not-found": "To schorzenie już nie istnieje. Wybierz inne lub żadne."
     }
   },
   "doctorReport": {
@@ -1604,7 +1610,6 @@
     "intakeToastExtra": "{name}: przyjęte, {time}, jako dodatkowa dawka",
     "intakeToastSkipped": "{name}: pominięte",
     "intakeToastFailed": "Nie udało się zapisać {name}. Spróbuj ponownie",
-    "intakeUndone": "Wpis cofnięty",
     "intakeAlreadyTaken": "{name} był już zapisany jako przyjęty. Nic nowego nie zapisano.",
     "intakeUndoFailed": "Nie udało się cofnąć. Popraw w historii",
     "glp1LastInjection": "{label}",
@@ -1844,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "np. 4",
           "dosesPerUnitHint": "Ile tabletek lub jednostek zawiera nowe opakowanie lub wstrzykiwacz, np. 28 tabletek albo wstrzykiwacz na 4 dawki. Uzupełnia ilość przy dodawaniu opakowania; zostaw puste, jeśli opakowania się różnią.",
           "short": "Dawka",
-          "unitsPerDoseLabel": "Ile tabletek lub jednostek składa się na tę dawkę?",
+          "unitsPerDoseLabel": "Tabletki lub jednostki na dawkę",
           "unitsPerDoseHint": "np. 2 tabletki po 2 mg na dawkę 4 mg lub ½ tabletki przy dzielonej dawce",
           "packSizeToggle": "Wielkość opakowania (opcjonalnie)"
         },
@@ -2131,9 +2136,7 @@
           "failed": "Nie udało się zaktualizować przyjęcia."
         },
         "deleteRow": {
-          "toast": "Przyjęcie usunięte",
-          "failed": "Nie udało się usunąć przyjęcia.",
-          "restored": "Przyjęcie przywrócone"
+          "failed": "Nie udało się usunąć przyjęcia."
         },
         "viewRecent90": "Ostatnie 90 dni",
         "viewAll": "Pełna historia",
@@ -2682,6 +2685,17 @@
       "invalidRow": "W każdej linii wybierz składnik i wpisz ilość większą od zera."
     },
     "dose": {
+      "which": {
+        "slotTaken": "dawka z {slot}, przyjęta o {taken}",
+        "slotSkipped": "dawka z {slot}, pominięta",
+        "slot": "dawka z {slot}",
+        "taken": "dawka przyjęta o {taken}",
+        "plain": "dawka"
+      },
+      "removed": "Usunięto: {dose}",
+      "restored": "Przywrócono: {dose}",
+      "deleteLabel": "Usuń: {dose}",
+      "removedMany": "Usunięto {count, plural, one {# dawkę} few {# dawki} many {# dawek} other {# dawki}}",
       "action": {
         "take": "Przyjmij",
         "skip": "Pomiń",
@@ -4862,7 +4876,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Twoja dzisiejsza suma narastająca zestawiona z medianą tej samej godziny lokalnej z ostatnich czterech tygodni, z odpornym pasmem mediana ± MAD wokół niej. Liczą się tylko dni z wystarczającą liczbą zapisów, a porównanie nie pojawia się, dopóki nie ma ich co najmniej czternastu.",
-          "caveat": "Porównanie z twoją własną niedawną historią, a nie cel. Mówi, gdzie dziś jesteś względem swojego zwykłego wzorca o tej godzinie, i nic o tym, czy ten wzorzec jest dla ciebie właściwy."
+          "caveat": "Porównanie z twoją własną niedawną historią, a nie cel. Mówi, gdzie dziś jesteś względem swojego zwykłego wzorca o tej godzinie, i nic o tym, czy ten wzorzec jest dla ciebie właściwy.",
+          "methodDailyTotal": "Twoje źródło podaje każdy dzień jako jedną sumę, więc nie ma godziny, z którą można porównać. Dzisiejsza suma narastająca, tak jak źródło ostatnio ją podało, jest zestawiona z twoimi sumami dziennymi z ostatnich 14 pełnych dni: kreska oznacza ich medianę, zacieniowany pas ich środkową połowę. Zakres pojawia się, gdy 7 z tych dni ma sumę."
         }
       },
       "scores": {
@@ -4904,7 +4919,11 @@
         "sectionSubtitle": "Twoje sumy narastające względem tego, co o tej godzinie jest u ciebie zwykłe",
         "learning": "Uczę się twojego zwykłego dnia: {count} z {target, plural, one {# dnia} few {# dni} many {# dni} other {# dnia}}",
         "framing": "Zwykle do {time}: {typical} {unit}",
-        "comparisonLabel": "Twój zwykły dzień"
+        "comparisonLabel": "Twój zwykły dzień",
+        "sectionSubtitleDailyTotal": "Twoje sumy narastające względem twojego zwykłego pełnego dnia",
+        "sectionSubtitleMixed": "Twoje sumy narastające względem tego, co jest u ciebie zwykłe",
+        "dailyFraming": "Zwykły pełny dzień: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {
@@ -9553,8 +9572,7 @@
     "auditActedByColumn": "Wykonane przez",
     "pushRelay": {
       "title": "Przekaźnik push HealthLog",
-      "description": "Pozwala aplikacji z App Store odbierać powiadomienia z tego serwera przez przekaźnik projektu HealthLog.",
-      "whatItSees": "Każde powiadomienie jest szyfrowane na tym serwerze dla urządzenia docelowego, więc przekaźnik nie może go odczytać. Widzi, kiedy ten serwer coś wysyła do urządzenia.",
+      "description": "Szyfrowane end-to-end powiadomienia dla aplikacji z App Store; każda osoba decyduje na własnym urządzeniu.",
       "seesSummary": "Co widzi przekaźnik",
       "seesHeading": "Przekaźnik widzi",
       "seesWhen": "że ten serwer coś wysyła do urządzenia, kiedy i jakiego rodzaju: alert, cichą synchronizację albo koniec aktywności na żywo",
@@ -9564,43 +9582,45 @@
       "notSeesHeading": "Nie widzi",
       "notSeesContent": "treści powiadomienia: nazw leków, dawek, pomiarów, notatek, nazw kont ani niczego innego, co zawiera",
       "seesTiming": "Sam moment może jednak coś zdradzić. Przypomnienie o leku przez przekaźnik pokazuje przekaźnikowi i Apple, kiedy dawka jest do przyjęcia, a gdy zapiszesz dawkę na jednym urządzeniu i inne Twoje urządzenie dostanie potwierdzenie, widzą, że w tej chwili coś się stało.",
-      "seesSource": "Pełna informacja o prywatności przekaźnika",
-      "toggleLabel": "Udostępnij przekaźnik push HealthLog użytkownikom tego serwera",
-      "toggleDescription": "Wyłączone, dopóki go nie włączysz. Potem każda osoba decyduje we własnej aplikacji.",
-      "toggleDescriptionOn": "Włączone. Każda osoba decyduje we własnej aplikacji, czy jej urządzenia z niego korzystają.",
+      "toggleLabel": "Udostępnij użytkownikom tego serwera",
+      "ownApns": {
+        "inUse": "Powiadomienia push trafiają bezpośrednio do Apple z własnym kluczem APNs tego serwera; usuń zmienne APNS_*, aby korzystać z przekaźnika.",
+        "registered": "Powiadomienia push trafiają bezpośrednio do Apple z własnym kluczem APNs tego serwera, więc przekaźnik niczego nie przenosi."
+      },
       "devices": "{count, plural, one {# powiązane urządzenie} few {# powiązane urządzenia} many {# powiązanych urządzeń} other {# powiązanego urządzenia}}",
       "unbindsPending": "Odłączenia urządzeń czekające na przekaźnik: {count}",
-      "unreachable": "Ten serwer jest nadal zarejestrowany w {host}, ale przy obecnych ustawieniach nie może się z nim połączyć (zmieniono PUSH_RELAY_MODE lub PUSH_RELAY_URL). Ten przekaźnik przechowuje powiązania urządzeń tego serwera, dopóki serwer się z niego nie wypisze: przywróć ustawienie, a potem wyłącz przekaźnik tutaj.",
+      "unreachable": "Nadal zarejestrowany w {host}, którego obecne ustawienie PUSH_RELAY_MODE lub PUSH_RELAY_URL nie osiąga: przywróć je, a potem wyłącz tutaj przekaźnik.",
       "since": "od {time}",
       "docs": "Dowiedz się więcej",
       "privacy": "Informacja o prywatności",
       "terms": "Warunki przekaźnika",
-      "dialogTitle": "Udostępnij przekaźnik push HealthLog",
-      "dialogBody": "Przekaźnik prowadzi opiekun projektu HealthLog. Każde powiadomienie jest szyfrowane na tym serwerze dla swojego urządzenia; przekaźnik nie może go odczytać, ale widzi, że ten serwer coś wysyła do urządzenia, i kiedy. Przez przekaźnik idą też przypomnienia o lekach, do każdego urządzenia, które dostaje przypomnienia z tego serwera, więc przekaźnik i Apple widzą, kiedy dawka jest do przyjęcia. Po włączeniu każda osoba na tym serwerze raz zobaczy propozycję w swojej aplikacji i sama zdecyduje. Przekaźnik służy do użytku prywatnego i domowego i nie jest usługą medyczną.",
-      "acceptTerms": "Akceptuję warunki przekaźnika.",
-      "readPrivacy": "Zapoznałem(-am) się z informacją o prywatności przekaźnika.",
+      "dialogTitle": "Włącz przekaźnik push HealthLog",
+      "acceptTerms": "Akceptuję {terms}.",
+      "readPrivacy": "Zapoznałem(-am) się z {privacy}.",
       "householdOnly": "Prowadzę ten serwer prywatnie dla siebie lub mojego gospodarstwa domowego.",
       "enable": "Włącz",
       "cancel": "Anuluj",
-      "disableTitle": "Wyłączyć przekaźnik?",
-      "disableBody": "Ten serwer wyrejestruje się z przekaźnika. Powiązane przez niego urządzenia przestaną dostawać powiadomienia z przekaźnika, a aplikacje same wrócą do lokalnych przypomnień.",
+      "disableTitle": "Wyłączyć przekaźnik push HealthLog?",
+      "disableBody": "Powiązane urządzenia przestają dostawać powiadomienia z przekaźnika i wracają do lokalnych przypomnień.",
       "disable": "Wyłącz",
-      "enabled": "Przekaźnik push jest włączony",
-      "disabled": "Przekaźnik push jest wyłączony",
+      "enabled": "Przekaźnik push HealthLog jest włączony",
+      "disabled": "Przekaźnik push HealthLog jest wyłączony",
       "saveFailed": "Nie udało się zapisać ustawienia przekaźnika",
       "reconfirm": {
-        "notice": "Tekst przekaźnika zmienił się od czasu, gdy ten serwer go włączył. Przeczytaj go i potwierdź jeden raz. Do tego czasu przekaźnik działa dalej.",
+        "notice": "Warunki przekaźnika się zmieniły; przekaźnik działa dalej, dopóki ich nie potwierdzisz.",
         "button": "Przeczytaj i potwierdź",
-        "title": "Potwierdź zaktualizowany tekst przekaźnika",
+        "title": "Potwierdź zmienione warunki przekaźnika",
         "confirm": "Potwierdź",
-        "done": "Zaktualizowany tekst przekaźnika jest potwierdzony"
+        "done": "Zmienione warunki przekaźnika potwierdzone"
       },
       "loadError": "Nie udało się odczytać stanu przekaźnika push.",
       "state": {
         "ok": "Połączono",
         "degraded": "Zakłócony",
         "down": "Niedostępny",
-        "off": "Wyłączony"
+        "off": "Wyłączony",
+        "ownApnsKey": "Własny klucz APNs",
+        "unavailable": "Nie do użycia"
       },
       "unavailable": {
         "modeOff": "Przekaźnik jest wyłączony dla tego serwera (PUSH_RELAY_MODE=off).",
@@ -9608,8 +9628,8 @@
         "keysUnpinned": "Dla tego przekaźnika nie przypięto kluczy, więc nie można sprawdzić jego odpowiedzi. Ustaw PUSH_RELAY_KEYS."
       },
       "question": {
-        "title": "Wysyłać powiadomienia push przez przekaźnik HealthLog?",
-        "body": "Aplikacja HealthLog z App Store dostaje powiadomienia z serwera bez własnego klucza push Apple przez przekaźnik projektu HealthLog. Treść jest tu szyfrowana dla każdego urządzenia i przekaźnik nie może jej odczytać; widzi, kiedy ten serwer coś wysyła do urządzenia. Twoja odpowiedź obowiązuje dla całego serwera, a każda osoba i tak decyduje we własnej aplikacji.",
+        "title": "Korzystać z przekaźnika push HealthLog?",
+        "body": "Powiadomienia dla aplikacji z App Store, szyfrowane end-to-end: przekaźnik widzi tylko, kiedy jakieś zostaje wysłane.",
         "yes": "Tak",
         "no": "Nie",
         "declined": "Przekaźnik pozostaje wyłączony. Możesz go włączyć później w sekcji Push i kanały."
@@ -9617,7 +9637,7 @@
       "test": {
         "button": "Wyślij testowy push",
         "failed": "Nie udało się wysłać testowego pusha",
-        "noDevice": "Żadne z twoich urządzeń nie jest powiązane z przekaźnikiem. Najpierw włącz przekaźnik w aplikacji HealthLog na iPhonie.",
+        "noDevice": "Żadne z twoich urządzeń nie korzysta jeszcze z przekaźnika; najpierw włącz go w aplikacji HealthLog na iPhonie.",
         "line": "{device}: przekaźnik odpowiedział {answer}, dostarczenie {delivery}",
         "unsigned": "nic podpisanego (niedostępny lub niezweryfikowany)"
       },
@@ -9626,34 +9646,35 @@
         "done": "Klucz przekaźnika został odnowiony",
         "failed": "Nie udało się teraz odnowić klucza przekaźnika; przekaźnik pozwala na jedno odnowienie dziennie",
         "confirmTitle": "Odnowić teraz klucz przekaźnika?",
-        "confirmBody": "Ten serwer od razu wymieni klucz, którym podpisuje żądania do przekaźnika, zamiast czekać na swój 30-dniowy cykl. Przekaźnik pozwala na jedno odnowienie dziennie."
+        "confirmBody": "Zastępuje klucz, którym ten serwer podpisuje żądania do przekaźnika; przekaźnik pozwala na jedną rotację dziennie."
       },
       "invite": {
-        "label": "Kod zaproszenia (opcjonalnie)",
-        "hint": "Potrzebny tylko wtedy, gdy przekaźnik przyjmuje nowe serwery wyłącznie na zaproszenie. Kod ma 24 znaki i działa jeden raz.",
+        "label": "Kod zaproszenia",
+        "hint": "Tylko dla przekaźnika na zaproszenie: 24 znaki, ważny raz.",
         "invalid": "Kod zaproszenia ma dokładnie 24 znaki: litery, cyfry, - lub _.",
-        "enter": "Wpisz kod zaproszenia"
+        "enter": "Wpisz kod zaproszenia",
+        "reveal": "Mam kod zaproszenia"
       },
       "reason": {
-        "inviteRequired": "Ten przekaźnik przyjmuje nowe serwery tylko na zaproszenie. Wpisz kod zaproszenia.",
-        "inviteRejected": "Przekaźnik nie przyjął tego kodu zaproszenia. Mógł wygasnąć albo został już użyty. Poproś o nowy i wpisz go.",
-        "registrationPaused": "Przekaźnik nie przyjmuje teraz nowych serwerów. Ten serwer sam spróbuje ponownie później."
+        "inviteRequired": "Ten przekaźnik przyjmuje nowe serwery tylko na zaproszenie: wpisz kod zaproszenia.",
+        "inviteRejected": "Przekaźnik odrzucił ten kod zaproszenia; mógł już zostać użyty lub wygasnąć.",
+        "registrationPaused": "Przekaźnik nie przyjmuje teraz nowych serwerów; ten serwer sam zapyta ponownie."
       },
       "usage": {
         "accepted": "Przyjęte",
         "pending": "Oczekujące",
         "dropped": "Odrzucone",
         "failed": "Nieudane",
-        "window": "Powiadomienia push przekazane przez ten serwer do przekaźnika w ciągu {days, plural, one {ostatniego # dnia} few {ostatnich # dni} many {ostatnich # dni} other {ostatnich # dnia}}.",
+        "window": "{days, plural, one {Ostatni dzień} few {Ostatnie # dni} many {Ostatnie # dni} other {Ostatnie # dnia}}",
         "lastSuccess": "Ostatnio dostarczono {time}.",
         "lastFailure": "Ostatni błąd {time}: {reason}.",
         "noReason": "bez podanej przyczyny"
       },
       "stateReason": {
-        "badSignature": "Przekaźnik nie przyjmuje podpisu tego serwera, więc nie dociera do niego żaden push. Wyłącz tutaj przekaźnik i włącz go ponownie, aby zarejestrować ten serwer od nowa.",
-        "relayDegraded": "Przekaźnik zgłasza zakłócenie po swojej stronie. Pushe czekają i wyjdą, gdy wróci do normy.",
-        "relayMaintenance": "Przekaźnik jest w trakcie konserwacji. Pushe czekają i wyjdą, gdy wróci.",
-        "relayMisconfigured": "Przekaźnik zgłasza, że Apple nie przyjmuje teraz jego klucza push. Pushe czekają, aż operator przekaźnika to naprawi."
+        "badSignature": "Przekaźnik nie przyjmuje podpisu tego serwera: wyłącz i ponownie włącz przekaźnik, aby zarejestrować serwer od nowa.",
+        "relayDegraded": "Przekaźnik zgłasza zakłócenie; powiadomienia czekają i wyjdą, gdy wróci do normy.",
+        "relayMaintenance": "Przekaźnik jest w trakcie konserwacji; powiadomienia czekają na jego powrót.",
+        "relayMisconfigured": "Apple nie przyjmuje teraz klucza push przekaźnika; powiadomienia czekają, aż operator przekaźnika to naprawi."
       },
       "notice": "Komunikat przekaźnika ({level}): {id}",
       "noticeLevel": {
@@ -9682,7 +9703,10 @@
         "seconds": "{value} s",
         "empty": "Brak powiadomień push w ciągu {hours, plural, one {ostatniej # godziny} few {ostatnich # godzin} many {ostatnich # godzin} other {ostatnich # godziny}}",
         "helper": "Od dodania do kolejki na tym serwerze do odpowiedzi przekaźnika. Przekaźnik odpowiada, gdy Apple przyjmie powiadomienie."
-      }
+      },
+      "termsLink": "warunki przekaźnika",
+      "privacyLink": "informacją o prywatności przekaźnika",
+      "deliverySummary": "Szczegóły dostarczania"
     },
     "serverSetup": {
       "stepsLabel": "Kroki konfiguracji serwera",
@@ -9696,7 +9720,7 @@
       },
       "notice": {
         "title": "Skonfiguruj ten serwer",
-        "body": "Pięć krótkich kroków dla decyzji, które tylko ty możesz tu podjąć: kto może się rejestrować, jak powiadomienia opuszczają serwer, co wolno AI i co jeszcze wychodzi na zewnątrz. Każdy krok można pominąć i zmienić później.",
+        "body": "Pięć krótkich kroków o rejestracji, powiadomieniach, AI i prywatności; każdy możesz pominąć lub zmienić później.",
         "open": "Rozpocznij konfigurację",
         "dismiss": "Nie teraz"
       },
@@ -9708,7 +9732,7 @@
       },
       "notifications": {
         "title": "Jak powiadomienia opuszczają serwer",
-        "body": "Wybierz, z których kanałów mogą korzystać ludzie. Przekaźnik push dla aplikacji z App Store pozostaje wyłączony, dopóki go nie włączysz."
+        "body": "Wybierz, z których kanałów można korzystać; przekaźnik push HealthLog pozostaje wyłączony, dopóki go nie włączysz."
       },
       "ai": {
         "title": "Co wolno AI",
@@ -9767,7 +9791,8 @@
         "encryption_keys": "Klucze szyfrowania",
         "secure_cookie": "Bezpieczne ciasteczka",
         "app_url": "Adres publiczny",
-        "database_dump": "Zrzut bazy danych"
+        "database_dump": "Zrzut bazy danych",
+        "local_ocr": "Rozpoznawanie tekstu skanów"
       },
       "reason": {
         "encryption_keys": {
@@ -9792,6 +9817,12 @@
           "disabled": "Nie jest tworzony nocny zrzut bazy danych. Zabezpiecz bazę w inny sposób.",
           "not_persistent": "Katalog zrzutów nie leży na podłączonym wolumenie, więc zrzuty przepadną przy następnej aktualizacji.",
           "scheduled": "Nocny zrzut zaplanowany ({cron})."
+        },
+        "local_ocr": {
+          "ready": "Zeskanowane pliki PDF i zdjęcia są odczytywane na tym serwerze, bez AI ({languages}).",
+          "recent_failures": "Zeskanowane dokumenty, których ten serwer nie odczytał w ostatnich 7 dniach: {count}. Każdy podaje przyczynę na swojej stronie. Zwykle maszyna jest zbyt wolna lub ma za mało pamięci.",
+          "engine_missing": "Ta kompilacja nie ma silnika rozpoznawania tekstu. Skany i zdjęcia pozostają nieodczytane, chyba że odczyta je dostawca AI.",
+          "languages_missing": "Silnik rozpoznawania jest, ale bez danych językowych. Zbuduj obraz z przygotowanymi danymi językowymi (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -10765,7 +10796,7 @@
       "TRYING_TO_CONCEIVE": "Staranie o dziecko",
       "PERIMENOPAUSE": "Perimenopauza",
       "OFF": "Śledzenie wyłączone",
-      "label": "W jakim celu śledzisz?",
+      "label": "Cel",
       "description": "To dostosowuje język i widoczne prognozy. Wskazówki dotyczące okna płodnego pojawiają się tylko przy staraniu o dziecko."
     },
     "ring": {
@@ -13161,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "Nie znaleziono czytelnego tekstu. To wygląda na skan; dostawca wizji AI może go odczytać.",
+          "local-empty": "Nie znaleziono czytelnego tekstu ani w pliku, ani przez rozpoznawanie tekstu na tym serwerze. Dostawca wizji AI może jednak go odczytać.",
           "local-unsupported": "Tego typu pliku nie można odczytać na potrzeby wyszukiwania.",
           "decrypt-error": "Nie udało się otworzyć zapisanego pliku do odczytu.",
           "raster-failed": "Nie udało się przetworzyć stron PDF do odczytu. Znaną przyczyną są skany w faksowych formatach kompresji.",
           "provider-error": "Dostawca AI nie zdołał odczytać tego dokumentu przy ostatniej próbie.",
           "pdf-needs-anthropic": "Procesor tego serwera nie potrafi renderować stron PDF, a ten PDF nie ma warstwy tekstowej. Odczyta go dostawca AI, który przyjmuje pliki PDF bezpośrednio, albo prześlij zdjęcia stron.",
           "empty-transcription": "Dostawca AI nie zwrócił tekstu dla tego dokumentu.",
-          "resource-limit": "Ten PDF jest zbyt duży lub zbyt złożony, żeby odczytać go tutaj. Sam plik jest w porządku i nadal się otwiera."
+          "resource-limit": "Ten PDF jest zbyt duży lub zbyt złożony, żeby odczytać go tutaj. Sam plik jest w porządku i nadal się otwiera.",
+          "ocr-failed": "Rozpoznawanie tekstu na tym serwerze nie zdołało dokończyć tego dokumentu. Trwało za długo, wymagało za dużo pamięci albo zakończyło się błędem. Sam plik jest w porządku."
         }
       },
       "loadError": "Nie udało się wczytać tego dokumentu.",
@@ -13320,6 +13352,9 @@
       "extractHint": "Korzysta z tekstu już odczytanego z tego dokumentu. Odczytane wartości czekają na Twoją weryfikację; nic nie zapisuje się automatycznie.",
       "extractEmpty": "Z tego dokumentu nie udało się odczytać żadnych wartości.",
       "extractIncomplete": "Części dokumentu nie udało się odczytać w całości, więc może brakować niektórych wartości. Porównaj listę z dokumentem.",
+      "readLocally": "Odczytaj wartości bez AI",
+      "readLocallyPending": "Odczytywanie…",
+      "readLocallyHint": "Odczytuje wiersze tabeli z tekstu, który ten serwer już odczytał, bez AI i bez wysyłania czegokolwiek na zewnątrz. Sprawdź każdą wartość przed zapisaniem.",
       "failUnitRequired": "Wartość liczbowa potrzebuje jednostki, zanim będzie można ją zapisać.",
       "failUnitMismatch": "Podana jednostka nie zgadza się z zapisaną jednostką tego wskaźnika. Popraw ją i zakończ przegląd ponownie.",
       "failGeneric": "Nie udało się zapisać tej wartości.",
@@ -14377,7 +14412,11 @@
       "seizureTypeDelete": "{name} usunął rodzaj napadu",
       "seizureSettingsUpdate": "{name} zmienił regułę napadów gromadnych",
       "symptomBatchIngest": "{name} zaimportował(a) objawy z Apple Health",
-      "symptomImportDelete": "{name} usunął(-ęła) zaimportowane objawy"
+      "symptomImportDelete": "{name} usunął(-ęła) zaimportowane objawy",
+      "treatmentSeriesCreate": "{name} dodał(a) serię zabiegów",
+      "treatmentSeriesUpdate": "{name} edytował(a) serię zabiegów",
+      "treatmentSeriesDelete": "{name} usunął/usunęła serię zabiegów",
+      "treatmentSeriesRestore": "{name} przywrócił(a) serię zabiegów"
     },
     "section": {
       "measurements": {
@@ -15220,7 +15259,7 @@
     "saved": "Zapisano wydarzenie życiowe",
     "deleted": "Usunięto wydarzenie życiowe",
     "fields": {
-      "title": "Co się wydarzyło?",
+      "title": "Tytuł",
       "category": "Rodzaj",
       "when": "Kiedy",
       "precision": "Dokładność",
@@ -16021,7 +16060,12 @@
       "visit": "Wizyta",
       "visitWith": "Wizyta: {name}",
       "checkupDue": "Termin: {label}",
-      "boosterDue": "Dawka przypominająca: {label}"
+      "boosterDue": "Dawka przypominająca: {label}",
+      "sessionOf": "Zabieg {number} z {planned}",
+      "session": "Zabieg {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Koniec serii zabiegów",
+      "seriesEndsWith": "Koniec serii zabiegów: {name}"
     }
   },
   "reportSchedule": {
@@ -16121,7 +16165,30 @@
       "walletWithQr": "Karta z kodem QR (PDF)",
       "preview": "Twoja karta"
     },
+    "name": "Imię i nazwisko",
+    "walletPass": {
+      "kind": "Karta ratunkowa",
+      "allergy": "Alergia",
+      "severeAllergy": "Ciężka alergia",
+      "asOf": "Stan na",
+      "week": "Tydzień {weeks}+{days}",
+      "postpartum": "Połóg",
+      "scan": "Zeskanuj, by zobaczyć całą kartę",
+      "validUntil": "Ważna do",
+      "untilRevoked": "Do wycofania",
+      "asOfValue": "{date}, aktualizuje się sama",
+      "issuedBy": "Wystawiona przez",
+      "signedBy": "Podpisana przez",
+      "signerRelay": "Projekt HealthLog, healthlog.dev",
+      "noteLabel": "Uwaga",
+      "note": "Wpisana przez właściciela, to nie jest dokument medyczny. Kod QR otwiera aktualną kartę, dopóki nie zostanie wycofana.",
+      "lockLabel": "Ekran blokady",
+      "lock": "Wallet pokazuje tę kartę dopiero po Face ID lub kodzie. Dla ratowników przy zablokowanym iPhonie wypełnij też Kartę medyczną w aplikacji Zdrowie.",
+      "withdrawn": "Wycofana",
+      "withdrawnBody": "Ta karta została wycofana {date}. Jej kod QR już nie działa."
+    },
     "fields": {
+      "NAME": "Imię i nazwisko",
       "BLOOD_TYPE": "Grupa krwi",
       "ALLERGIES": "Alergie",
       "CONDITIONS": "Choroby przewlekłe",
@@ -16136,6 +16203,105 @@
     },
     "entry": {
       "description": "Grupa krwi, alergie, leki i kontakty na nagły wypadek, z kopią offline, kartą do portfela i linkiem QR."
+    },
+    "appleWallet": {
+      "title": "Apple Wallet",
+      "lead": "Twoja karta w Wallet, która sama się aktualizuje.",
+      "learnMore": "Dowiedz się więcej",
+      "add": "Dodaj do Apple Wallet",
+      "makeNew": "Utwórz nową przepustkę",
+      "withdraw": "Wycofaj przepustkę",
+      "withdrawTitle": "Wycofać przepustkę z Wallet?",
+      "withdrawBody": "Jej kod QR od razu przestaje działać, a przepustka w Wallet to pokazuje.",
+      "fieldsLabel": "Co pokazuje przepustka",
+      "expiryLabel": "Koniec przepustki",
+      "otherDevice": "Aby dodać tę kartę do Wallet, otwórz tę stronę na iPhonie lub Macu.",
+      "error": "Nie udało się zmienić przepustki. Spróbuj ponownie.",
+      "consentTitle": "Podpisane przez projekt HealthLog",
+      "consentBody": "Jego usługa podpisu widzi skróty plików i czas, nigdy treści Twojej karty.",
+      "expired": "Wygasła. Wallet ją wyszarza.",
+      "fetched": "Na urządzeniu, ostatnio zaktualizowana {when}.",
+      "notFetched": "Jeszcze na żadnym urządzeniu.",
+      "state": {
+        "live": "Aktywna",
+        "voided": "Wycofana",
+        "expired": "Wygasła"
+      },
+      "withdrawn": {
+        "owner": "Wycofano ją {when}.",
+        "credential_reset": "Wycofana {when} po zmianie hasła.",
+        "handover": "Wycofana {when} przy przekazaniu profilu.",
+        "guardian_lost": "Wycofana {when}: wygasło prawo do zarządzania tym profilem.",
+        "account_deletion": "Wycofana {when}, gdy konto miało zostać usunięte."
+      },
+      "unavailable": {
+        "signer_off": "Ten serwer nie podpisuje przepustek Wallet.",
+        "relay_not_ready": "Przepustki Wallet są teraz niedostępne na tym serwerze.",
+        "no_https_origin": "Przepustki Wallet wymagają dostępu do tego serwera przez HTTPS.",
+        "api_disabled": "Dostęp zewnętrzny jest wyłączony na tym serwerze, a z nim przepustki Wallet.",
+        "not_allowed": "Tylko osoba, której dotyczy karta, lub jej opiekun może ją dodać."
+      },
+      "more": {
+        "frozen": "Przepustka pokazuje to, co tu zaznaczysz. Aby to zmienić, wycofaj ją i utwórz nową.",
+        "updates": "Gdy Twoja karta się zmienia, przepustka aktualizuje się sama. Ma własny kod QR, oddzielny od kodu drukowanej karty.",
+        "lock": "Wallet pokazuje ją po Face ID lub kodzie. Dla ratowników przy zablokowanym iPhonie wypełnij kartę medyczną w aplikacji Zdrowie.",
+        "signerRelay": "Podpisuje ją projekt HealthLog. Jego usługa podpisu widzi skróty plików i czasy, nigdy treści.",
+        "signerLocal": "Ten serwer podpisuje ją własnym certyfikatem.",
+        "withdraw": "Wycofanie od razu zatrzymuje kod QR. Telefon bez sieci zachowa starą przepustkę, dopóki nie wróci online; jeśli przepustki nie da się zaktualizować, usuń ją w Wallet."
+      }
     }
+  },
+  "treatmentSeries": {
+    "heading": "Serie zabiegów",
+    "add": "Nowa seria",
+    "createTitle": "Nowa seria zabiegów",
+    "untitled": "Seria zabiegów",
+    "progress": "{done} z {planned}",
+    "sessionsDoneCount": "{count, plural, one {# zabieg} few {# zabiegi} many {# zabiegów} other {# zabiegu}}",
+    "sessionOf": "Zabieg {number} z {planned}",
+    "session": "Zabieg {number}",
+    "status": {
+      "planned": "Nierozpoczęta",
+      "active": "W toku",
+      "completed": "Zakończona",
+      "expired": "Wygasła"
+    },
+    "next": "Następny {date}",
+    "validUntil": "Ważna do {date}",
+    "firstSession": "Od {date}",
+    "sessionsHeading": "Zabiegi",
+    "addSession": "Dodaj zabieg",
+    "prescriber": "Zlecił(a)",
+    "performer": "Wykonuje",
+    "condition": "Schorzenie",
+    "form": {
+      "title": "Nazwa",
+      "titlePlaceholder": "Fizjoterapia, lewe kolano",
+      "plannedSessions": "Zabiegi",
+      "startsOn": "Początek",
+      "validUntil": "Ważna do",
+      "note": "Notatka",
+      "series": "Seria zabiegów",
+      "seriesNone": "Brak"
+    },
+    "created": "Seria zapisana",
+    "updated": "Seria zaktualizowana",
+    "saveFailed": "Nie udało się zapisać serii.",
+    "ended": "Seria zakończona",
+    "reopened": "Seria wznowiona",
+    "end": "Zakończ serię",
+    "reopen": "Wznów",
+    "deleteTitle": "Usunąć tę serię?",
+    "deleteDescription": "Wizyty zostają. Po prostu nie są już zgrupowane.",
+    "deleted": "Seria usunięta",
+    "deleteFailed": "Nie udało się usunąć serii.",
+    "reportTitle": "Serie zabiegów",
+    "reportColSeries": "Seria",
+    "reportColSessions": "Zabiegi",
+    "reportColPeriod": "Okres",
+    "period": "{from} do {to}",
+    "periodOpen": "od {from}",
+    "expiryPushTitle": "Seria zabiegów wygasa",
+    "expiryPushBody": "{title}: ważna do {date}, {count, plural, one {pozostał # zabieg} few {pozostały # zabiegi} many {pozostało # zabiegów} other {pozostało # zabiegu}}."
   }
 }

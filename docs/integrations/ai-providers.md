@@ -480,8 +480,10 @@ at a glance that their context stayed on the host.
 
 The document vault is local-first by default: an uploaded document is
 only read by an external AI provider when you tap a per-document AI
-action, and every text-layer PDF is indexed for search locally with no
-egress at all — **unless you opt into automatic AI reading in AI
+action, every text-layer PDF is indexed for search locally with no
+egress at all, and since 1.50 a scanned PDF or a photo is read by OCR on
+the server and a lab report's values are read by rule for the review
+([documents without AI](../using/documents-without-ai.md)) — **unless you opt into automatic AI reading in AI
 settings** (next section).
 
 ## Automatic document reading (opt-in)

@@ -228,7 +228,8 @@
       "invalid": "Controlla i dati dell'appuntamento e riprova.",
       "practitioner-not-found": "Questo studio o medico non esiste più. Scegline un altro o nessuno.",
       "reminder-not-found": "Questo controllo non esiste più. Scegline un altro o nessuno.",
-      "reminder-conflict": "Un appuntamento previsto non può chiudere un controllo, perché non è ancora avvenuto."
+      "reminder-conflict": "Un appuntamento previsto non può chiudere un controllo, perché non è ancora avvenuto.",
+      "series-not-found": "Questo ciclo di trattamento non esiste più. Scegline un altro o nessuno."
     },
     "vaccination": {
       "invalid": "Controlla i dati della vaccinazione e riprova.",
@@ -289,6 +290,11 @@
         "limit": "Ci sono già 12 tipi di crisi. Archiviane uno per aggiungerne un altro.",
         "notFound": "Questo tipo di crisi non esiste più."
       }
+    },
+    "treatment_series": {
+      "invalid": "Controlla i dati del ciclo e riprova.",
+      "practitioner-not-found": "Questo studio o questo medico non esiste più. Scegline un altro o nessuno.",
+      "condition-not-found": "Questa patologia non esiste più. Scegline un'altra o nessuna."
     }
   },
   "doctorReport": {
@@ -1604,7 +1610,6 @@
     "intakeToastExtra": "{name}: assunta, {time}, come dose extra",
     "intakeToastSkipped": "{name}: saltata",
     "intakeToastFailed": "Impossibile registrare {name}; riprova",
-    "intakeUndone": "Voce annullata",
     "intakeAlreadyTaken": "{name} era già registrato come assunto. Non è stato salvato nulla di nuovo.",
     "intakeUndoFailed": "Impossibile annullare; correggi nella cronologia",
     "glp1LastInjection": "{label}",
@@ -1844,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "es. 4",
           "dosesPerUnitHint": "Quante compresse o unità contiene una nuova confezione o penna, ad es. 28 compresse o una penna da 4 dosi. Precompila la quantità quando aggiungi una confezione; lascia vuoto se le confezioni variano.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Quante compresse o unità formano questa dose?",
+          "unitsPerDoseLabel": "Compresse o unità per dose",
           "unitsPerDoseHint": "ad es. 2 compresse da 2 mg per una dose da 4 mg, oppure ½ compressa per una dose divisa",
           "packSizeToggle": "Dimensione confezione (facoltativa)"
         },
@@ -2131,9 +2136,7 @@
           "failed": "Impossibile aggiornare l’assunzione."
         },
         "deleteRow": {
-          "toast": "Assunzione eliminata",
-          "failed": "Impossibile eliminare l’assunzione.",
-          "restored": "Assunzione ripristinata"
+          "failed": "Impossibile eliminare l’assunzione."
         },
         "viewRecent90": "Ultimi 90 giorni",
         "viewAll": "Storico completo",
@@ -2682,6 +2685,17 @@
       "invalidRow": "Scegli un nutriente e inserisci una quantità maggiore di zero in ogni riga."
     },
     "dose": {
+      "which": {
+        "slotTaken": "la dose delle {slot}, presa alle {taken}",
+        "slotSkipped": "la dose delle {slot}, saltata",
+        "slot": "la dose delle {slot}",
+        "taken": "la dose presa alle {taken}",
+        "plain": "la dose"
+      },
+      "removed": "Rimossa: {dose}",
+      "restored": "Ripristinata: {dose}",
+      "deleteLabel": "Elimina {dose}",
+      "removedMany": "{count, plural, one {# dose rimossa} other {# dosi rimosse}}",
       "action": {
         "take": "Assumi",
         "skip": "Salta",
@@ -4862,7 +4876,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Il tuo totale progressivo di oggi confrontato con la mediana della stessa ora locale nelle ultime quattro settimane, con una banda robusta mediana ± MAD attorno. Contano solo i giorni con abbastanza dettaglio registrato, e nessun confronto viene mostrato finché non ce ne sono almeno quattordici.",
-          "caveat": "Un confronto con la tua storia recente, non un obiettivo. Dice dove si colloca oggi rispetto alla tua abitudine a quest'ora, e nulla sul fatto che quell'abitudine sia quella giusta per te."
+          "caveat": "Un confronto con la tua storia recente, non un obiettivo. Dice dove si colloca oggi rispetto alla tua abitudine a quest'ora, e nulla sul fatto che quell'abitudine sia quella giusta per te.",
+          "methodDailyTotal": "La tua fonte riporta ogni giorno come un unico totale, quindi non c'è un'ora a cui confrontare. Il totale progressivo di oggi, come la fonte l'ha riportato l'ultima volta, è messo a confronto con i tuoi totali giornalieri degli ultimi 14 giorni completi: la tacca ne segna la mediana, la fascia ombreggiata la metà centrale. L'intervallo compare non appena 7 di quei giorni hanno un totale."
         }
       },
       "scores": {
@@ -4904,7 +4919,11 @@
         "sectionSubtitle": "I tuoi totali progressivi rispetto a ciò che per te è abituale a quest'ora",
         "learning": "Sto imparando la tua giornata tipo: {count} di {target, plural, one {# giorno} other {# giorni}}",
         "framing": "Abituale entro le {time}: {typical} {unit}",
-        "comparisonLabel": "La tua giornata tipo"
+        "comparisonLabel": "La tua giornata tipo",
+        "sectionSubtitleDailyTotal": "I tuoi totali progressivi rispetto alla tua giornata intera abituale",
+        "sectionSubtitleMixed": "I tuoi totali progressivi rispetto a ciò che per te è abituale",
+        "dailyFraming": "Giornata intera abituale: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {
@@ -9553,8 +9572,7 @@
     "auditActedByColumn": "Eseguito da",
     "pushRelay": {
       "title": "Relay push di HealthLog",
-      "description": "Permette all'app dell'App Store di ricevere le notifiche di questo server tramite il relay del progetto HealthLog.",
-      "whatItSees": "Ogni notifica viene cifrata su questo server per il dispositivo a cui è destinata, quindi il relay non può leggerla. Vede quando questo server invia qualcosa a un dispositivo.",
+      "description": "Notifiche crittografate end-to-end per l'app dell'App Store; ogni persona decide sul proprio dispositivo.",
       "seesSummary": "Cosa vede il relay",
       "seesHeading": "Il relay vede",
       "seesWhen": "che questo server invia qualcosa a un dispositivo, quando e di che tipo: un avviso, una sincronizzazione silenziosa o la fine di un’Attività Live",
@@ -9564,43 +9582,45 @@
       "notSeesHeading": "Non vede",
       "notSeesContent": "cosa dice una notifica: nomi di farmaci, dosi, misurazioni, note, nomi di account o qualsiasi altra cosa contenga",
       "seesTiming": "Il momento può comunque dire qualcosa. Un promemoria del farmaco tramite il relay mostra al relay e ad Apple quando una dose è da assumere, e se registri una dose su un dispositivo e un altro tuo dispositivo riceve la conferma, vedono che in quel momento è successo qualcosa.",
-      "seesSource": "L’informativa sulla privacy completa del relay",
-      "toggleLabel": "Offrire il relay push di HealthLog agli utenti di questo server",
-      "toggleDescription": "Disattivato finché non lo attivi. Poi ogni persona decide nella propria app.",
-      "toggleDescriptionOn": "Attivo. Ogni persona decide nella propria app se i suoi dispositivi lo usano.",
+      "toggleLabel": "Offrire agli utenti di questo server",
+      "ownApns": {
+        "inUse": "Le notifiche push vanno direttamente ad Apple con la chiave APNs propria di questo server; rimuovi le variabili APNS_* per usare il relay.",
+        "registered": "Le notifiche push vanno direttamente ad Apple con la chiave APNs propria di questo server, quindi il relay non trasporta nulla."
+      },
       "devices": "{count, plural, one {# dispositivo collegato} other {# dispositivi collegati}}",
       "unbindsPending": "Scollegamenti di dispositivi in attesa del relay: {count}",
-      "unreachable": "Questo server è ancora registrato presso {host}, ma con le impostazioni attuali non riesce a raggiungerlo (è cambiato PUSH_RELAY_MODE o PUSH_RELAY_URL). Quel relay conserva i collegamenti dei dispositivi di questo server finché il server non lo lascia: ripristina l'impostazione, poi disattiva il relay qui.",
+      "unreachable": "Ancora registrato presso {host}, che l'impostazione attuale di PUSH_RELAY_MODE o PUSH_RELAY_URL non raggiunge: ripristinala, poi disattiva qui il relay.",
       "since": "dal {time}",
       "docs": "Scopri di più",
       "privacy": "Informativa sulla privacy",
       "terms": "Condizioni del relay",
-      "dialogTitle": "Offrire il relay push di HealthLog",
-      "dialogBody": "Il relay è gestito dal maintainer del progetto HealthLog. Ogni notifica viene cifrata su questo server per il suo dispositivo; il relay non può leggerla, ma vede che questo server invia qualcosa a un dispositivo, e quando. Anche i promemoria dei farmaci passano dal relay, verso ogni dispositivo che riceve i promemoria da questo server, quindi il relay e Apple possono vedere quando una dose è da assumere. Dopo l'attivazione, ogni persona su questo server vede una volta un'offerta nella propria app e decide da sé. Il relay è per uso privato e familiare e non è un servizio medico.",
-      "acceptTerms": "Accetto le condizioni del relay.",
-      "readPrivacy": "Ho letto l’informativa sulla privacy del relay.",
+      "dialogTitle": "Attivare il relay push di HealthLog",
+      "acceptTerms": "Accetto le {terms}.",
+      "readPrivacy": "Ho letto l’{privacy}.",
       "householdOnly": "Gestisco questo server privatamente per me o la mia famiglia.",
       "enable": "Attiva",
       "cancel": "Annulla",
-      "disableTitle": "Disattivare il relay?",
-      "disableBody": "Questo server esce dal relay. I dispositivi collegati tramite esso non ricevono più notifiche dal relay e le app tornano da sole ai promemoria locali.",
+      "disableTitle": "Disattivare il relay push di HealthLog?",
+      "disableBody": "I dispositivi collegati non ricevono più notifiche dal relay e tornano ai promemoria locali.",
       "disable": "Disattiva",
-      "enabled": "Il relay push è attivo",
-      "disabled": "Il relay push è disattivato",
+      "enabled": "Il relay push di HealthLog è attivo",
+      "disabled": "Il relay push di HealthLog è disattivato",
       "saveFailed": "Non è stato possibile salvare l'impostazione del relay",
       "reconfirm": {
-        "notice": "Il testo del relay è cambiato da quando questo server lo ha attivato. Leggilo e confermalo una volta. Nel frattempo il relay continua a funzionare.",
+        "notice": "Le condizioni del relay sono cambiate; il relay continua a funzionare finché non le confermi.",
         "button": "Leggi e conferma",
-        "title": "Conferma il testo aggiornato del relay",
+        "title": "Conferma le condizioni aggiornate del relay",
         "confirm": "Conferma",
-        "done": "Il testo aggiornato del relay è confermato"
+        "done": "Condizioni aggiornate del relay confermate"
       },
       "loadError": "Impossibile leggere lo stato del relay push.",
       "state": {
         "ok": "Connesso",
         "degraded": "Disturbato",
         "down": "Non raggiungibile",
-        "off": "Disattivato"
+        "off": "Disattivato",
+        "ownApnsKey": "Chiave APNs propria",
+        "unavailable": "Non disponibile"
       },
       "unavailable": {
         "modeOff": "Il relay è disattivato per questo server (PUSH_RELAY_MODE=off).",
@@ -9608,8 +9628,8 @@
         "keysUnpinned": "Nessuna chiave è fissata per questo relay, quindi le sue risposte non possono essere verificate. Imposta PUSH_RELAY_KEYS."
       },
       "question": {
-        "title": "Inviare le notifiche push tramite il relay di HealthLog?",
-        "body": "L'app HealthLog dell'App Store riceve le notifiche di un server senza una propria chiave push Apple tramite il relay del progetto HealthLog. Il contenuto viene cifrato qui per ogni dispositivo e il relay non può leggerlo; vede quando questo server invia qualcosa a un dispositivo. La tua risposta vale per tutto il server, e ogni persona decide comunque nella propria app.",
+        "title": "Usare il relay push di HealthLog?",
+        "body": "Notifiche per l'app dell'App Store, crittografate end-to-end: il relay vede solo quando ne viene inviata una.",
         "yes": "Sì",
         "no": "No",
         "declined": "Il relay resta disattivato. Puoi attivarlo più tardi in Push e canali."
@@ -9617,7 +9637,7 @@
       "test": {
         "button": "Invia push di prova",
         "failed": "Non è stato possibile inviare il push di prova",
-        "noDevice": "Nessuno dei tuoi dispositivi è collegato al relay. Attiva prima il relay nell'app HealthLog sul tuo iPhone.",
+        "noDevice": "Nessuno dei tuoi dispositivi usa ancora il relay; attivalo prima nell'app HealthLog sul tuo iPhone.",
         "line": "{device}: il relay ha risposto {answer}, consegna {delivery}",
         "unsigned": "niente di firmato (non raggiungibile o non verificato)"
       },
@@ -9626,34 +9646,35 @@
         "done": "La chiave del relay è stata rinnovata",
         "failed": "Non è stato possibile rinnovare ora la chiave del relay; il relay consente un rinnovo al giorno",
         "confirmTitle": "Rinnovare ora la chiave del relay?",
-        "confirmBody": "Questo server sostituisce subito la chiave con cui firma le richieste al relay, invece di attendere il ciclo di 30 giorni. Il relay consente un rinnovo al giorno."
+        "confirmBody": "Sostituisce la chiave con cui questo server firma le richieste al relay; il relay consente una rotazione al giorno."
       },
       "invite": {
-        "label": "Codice di invito (facoltativo)",
-        "hint": "Serve solo finché il relay accetta nuovi server soltanto su invito. Il codice ha 24 caratteri e vale una volta.",
+        "label": "Codice di invito",
+        "hint": "Solo per un relay su invito: 24 caratteri, valido una volta.",
         "invalid": "Un codice di invito ha esattamente 24 caratteri: lettere, cifre, - o _.",
-        "enter": "Inserisci codice di invito"
+        "enter": "Inserisci codice di invito",
+        "reveal": "Ho un codice di invito"
       },
       "reason": {
-        "inviteRequired": "Questo relay accetta nuovi server solo su invito. Inserisci un codice di invito.",
-        "inviteRejected": "Il relay non ha accettato questo codice di invito. Potrebbe essere scaduto o già usato. Chiedine uno nuovo e inseriscilo.",
-        "registrationPaused": "Il relay al momento non accetta nuovi server. Questo server riproverà più tardi da solo."
+        "inviteRequired": "Questo relay accetta nuovi server solo su invito: inserisci un codice di invito.",
+        "inviteRejected": "Il relay ha rifiutato questo codice di invito; forse è già stato usato o è scaduto.",
+        "registrationPaused": "Il relay al momento non accetta nuovi server; questo server riprova da solo."
       },
       "usage": {
         "accepted": "Accettati",
         "pending": "In attesa",
         "dropped": "Scartati",
         "failed": "Non riusciti",
-        "window": "Notifiche push che questo server ha passato al relay {days, plural, =1 {nell'ultimo giorno} other {negli ultimi # giorni}}.",
+        "window": "{days, plural, =1 {Ultimo giorno} other {Ultimi # giorni}}",
         "lastSuccess": "Ultimo recapito {time}.",
         "lastFailure": "Ultimo errore {time}: {reason}.",
         "noReason": "motivo non indicato"
       },
       "stateReason": {
-        "badSignature": "Il relay non accetta la firma di questo server, quindi non gli arriva nessun push. Disattiva e riattiva il relay qui per registrare di nuovo questo server.",
-        "relayDegraded": "Il relay segnala un disservizio da parte sua. I push restano in attesa e partono appena si è ripreso.",
-        "relayMaintenance": "Il relay è in manutenzione. I push restano in attesa e partono appena torna disponibile.",
-        "relayMisconfigured": "Il relay segnala che Apple al momento non accetta la sua chiave push. I push restano in attesa finché chi gestisce il relay non risolve."
+        "badSignature": "Il relay non accetta la firma di questo server: disattiva e riattiva il relay per registrarlo di nuovo.",
+        "relayDegraded": "Il relay segnala un disservizio; le notifiche attendono e partono appena si riprende.",
+        "relayMaintenance": "Il relay è in manutenzione; le notifiche attendono il suo ritorno.",
+        "relayMisconfigured": "Apple al momento non accetta la chiave push del relay; le notifiche attendono che il suo gestore risolva il problema."
       },
       "notice": "Avviso del relay ({level}): {id}",
       "noticeLevel": {
@@ -9682,7 +9703,10 @@
         "seconds": "{value} s",
         "empty": "Nessuna notifica push {hours, plural, =1 {nell'ultima ora} other {nelle ultime # ore}}",
         "helper": "Dall'inserimento in coda su questo server alla risposta del relay. Il relay risponde quando Apple ha accettato la notifica."
-      }
+      },
+      "termsLink": "condizioni del relay",
+      "privacyLink": "informativa sulla privacy del relay",
+      "deliverySummary": "Dettagli di consegna"
     },
     "serverSetup": {
       "stepsLabel": "Passaggi della configurazione del server",
@@ -9696,7 +9720,7 @@
       },
       "notice": {
         "title": "Configura questo server",
-        "body": "Cinque brevi passaggi per le decisioni che solo tu puoi prendere qui: chi può registrarsi, come le notifiche lasciano il server, cosa può fare l'IA e cos'altro esce. Ogni passaggio si può saltare e cambiare in seguito.",
+        "body": "Cinque brevi passaggi su registrazioni, notifiche, IA e privacy; puoi saltarli o cambiarli più tardi.",
         "open": "Inizia la configurazione",
         "dismiss": "Non ora"
       },
@@ -9708,7 +9732,7 @@
       },
       "notifications": {
         "title": "Come le notifiche lasciano il server",
-        "body": "Scegli quali canali possono usare le persone. Il relay push per l'app dell'App Store resta spento finché non lo attivi."
+        "body": "Scegli quali canali si possono usare; il relay push di HealthLog resta spento finché non lo attivi."
       },
       "ai": {
         "title": "Cosa può fare l'IA",
@@ -9767,7 +9791,8 @@
         "encryption_keys": "Chiavi di cifratura",
         "secure_cookie": "Cookie sicuri",
         "app_url": "Indirizzo pubblico",
-        "database_dump": "Dump del database"
+        "database_dump": "Dump del database",
+        "local_ocr": "Riconoscimento del testo delle scansioni"
       },
       "reason": {
         "encryption_keys": {
@@ -9792,6 +9817,12 @@
           "disabled": "Non viene fatto nessun dump notturno del database. Esegui il backup in un altro modo.",
           "not_persistent": "La cartella dei dump non è su un volume montato, quindi i dump vanno persi al prossimo aggiornamento.",
           "scheduled": "Dump notturno pianificato ({cron})."
+        },
+        "local_ocr": {
+          "ready": "I PDF scansionati e le foto vengono letti su questo server, senza IA ({languages}).",
+          "recent_failures": "Documenti scansionati che questo server non è riuscito a leggere negli ultimi 7 giorni: {count}. Ognuno indica il motivo nella sua pagina. Di solito la macchina è lenta o ha poca memoria.",
+          "engine_missing": "Questa build non ha un motore di riconoscimento del testo. Scansioni e foto restano non lette, a meno che non le legga un provider IA.",
+          "languages_missing": "Il motore di riconoscimento c’è, ma senza dati linguistici. Crea l’immagine con i dati linguistici preparati (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -10765,7 +10796,7 @@
       "TRYING_TO_CONCEIVE": "Cerco una gravidanza",
       "PERIMENOPAUSE": "Perimenopausa",
       "OFF": "Monitoraggio disattivato",
-      "label": "Per cosa stai monitorando?",
+      "label": "Obiettivo",
       "description": "Questo definisce il linguaggio e quali previsioni vedi. Le indicazioni sulla finestra fertile compaiono solo se cerchi una gravidanza."
     },
     "ring": {
@@ -13161,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "Non è stato trovato testo leggibile. Sembra una scansione; un provider di visione IA può leggerla.",
+          "local-empty": "Non è stato trovato testo leggibile, né nel file né con il riconoscimento del testo di questo server. Un provider di visione IA potrebbe comunque leggerlo.",
           "local-unsupported": "Questo tipo di file non può essere letto per la ricerca.",
           "decrypt-error": "Il file archiviato non può essere aperto per la lettura.",
           "raster-failed": "Le pagine del PDF non possono essere elaborate per la lettura. I formati di compressione fax digitalizzati sono una causa nota.",
           "provider-error": "Il provider IA non è riuscito a leggere questo documento all’ultimo tentativo.",
           "pdf-needs-anthropic": "Il processore di questo server non può eseguire il rendering delle pagine PDF e questo PDF non ha un livello di testo. Può leggerlo un provider IA che accetta direttamente i file PDF, oppure carica le foto delle pagine.",
           "empty-transcription": "Il provider IA non ha restituito testo per questo documento.",
-          "resource-limit": "Questo PDF è troppo grande o complesso per essere letto qui. Il file in sé è a posto e si apre ancora."
+          "resource-limit": "Questo PDF è troppo grande o complesso per essere letto qui. Il file in sé è a posto e si apre ancora.",
+          "ocr-failed": "Il riconoscimento del testo di questo server non è riuscito a finire questo documento. Ha richiesto troppo tempo o troppa memoria, oppure non è riuscito. Il file in sé è a posto."
         }
       },
       "loadError": "Impossibile caricare questo documento.",
@@ -13320,6 +13352,9 @@
       "extractHint": "Usa il testo già letto da questo documento. I valori estratti attendono la tua revisione; nulla viene salvato automaticamente.",
       "extractEmpty": "Non è stato possibile estrarre valori da questo documento.",
       "extractIncomplete": "Una parte del documento non è stata letta per intero, quindi possono mancare dei valori. Confronta l'elenco con il documento.",
+      "readLocally": "Leggi i valori senza IA",
+      "readLocallyPending": "Lettura…",
+      "readLocallyHint": "Legge le righe della tabella dal testo che questo server ha già letto, senza IA e senza inviare nulla altrove. Controlla ogni valore prima di salvarlo.",
       "failUnitRequired": "Un valore numerico ha bisogno di un’unità prima di poter essere salvato.",
       "failUnitMismatch": "L’unità indicata non corrisponde all’unità salvata per questo marcatore. Correggila e concludi di nuovo la revisione.",
       "failGeneric": "Questo valore non è stato salvato.",
@@ -14377,7 +14412,11 @@
       "seizureTypeDelete": "{name} ha eliminato un tipo di crisi",
       "seizureSettingsUpdate": "{name} ha cambiato la regola delle crisi a grappolo",
       "symptomBatchIngest": "{name} ha importato sintomi da Apple Health",
-      "symptomImportDelete": "{name} ha rimosso sintomi importati"
+      "symptomImportDelete": "{name} ha rimosso sintomi importati",
+      "treatmentSeriesCreate": "{name} ha aggiunto un ciclo di trattamento",
+      "treatmentSeriesUpdate": "{name} ha modificato un ciclo di trattamento",
+      "treatmentSeriesDelete": "{name} ha eliminato un ciclo di trattamento",
+      "treatmentSeriesRestore": "{name} ha ripristinato un ciclo di trattamento"
     },
     "section": {
       "measurements": {
@@ -15220,7 +15259,7 @@
     "saved": "Evento di vita salvato",
     "deleted": "Evento di vita eliminato",
     "fields": {
-      "title": "Cosa è successo?",
+      "title": "Titolo",
       "category": "Tipo",
       "when": "Quando",
       "precision": "Precisione",
@@ -16021,7 +16060,12 @@
       "visit": "Appuntamento",
       "visitWith": "Appuntamento: {name}",
       "checkupDue": "In scadenza: {label}",
-      "boosterDue": "Richiamo in scadenza: {label}"
+      "boosterDue": "Richiamo in scadenza: {label}",
+      "sessionOf": "Seduta {number} di {planned}",
+      "session": "Seduta {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Fine del ciclo di trattamento",
+      "seriesEndsWith": "Fine del ciclo di trattamento: {name}"
     }
   },
   "reportSchedule": {
@@ -16121,7 +16165,30 @@
       "walletWithQr": "Tessera con codice QR (PDF)",
       "preview": "La tua tessera"
     },
+    "name": "Nome",
+    "walletPass": {
+      "kind": "Emergenza",
+      "allergy": "Allergia",
+      "severeAllergy": "Allergia grave",
+      "asOf": "Aggiornata al",
+      "week": "Settimana {weeks}+{days}",
+      "postpartum": "Post partum",
+      "scan": "Scansiona per la tessera completa",
+      "validUntil": "Valida fino al",
+      "untilRevoked": "Fino al ritiro",
+      "asOfValue": "{date}, si aggiorna da sola",
+      "issuedBy": "Emessa da",
+      "signedBy": "Firmata da",
+      "signerRelay": "Progetto HealthLog, healthlog.dev",
+      "noteLabel": "Nota",
+      "note": "Compilata dal titolare, non è un documento medico. Il codice QR apre la tessera attuale finché non viene ritirata.",
+      "lockLabel": "Schermata di blocco",
+      "lock": "Wallet mostra questa tessera solo dopo Face ID o il codice. Per chi soccorre davanti a un iPhone bloccato, compila anche la scheda medica nell'app Salute.",
+      "withdrawn": "Ritirata",
+      "withdrawnBody": "Questa tessera è stata ritirata il {date}. Il suo codice QR non funziona più."
+    },
     "fields": {
+      "NAME": "Nome",
       "BLOOD_TYPE": "Gruppo sanguigno",
       "ALLERGIES": "Allergie",
       "CONDITIONS": "Malattie croniche",
@@ -16136,6 +16203,105 @@
     },
     "entry": {
       "description": "Gruppo sanguigno, allergie, farmaci e contatti per un’emergenza, con copia offline, tessera e link QR."
+    },
+    "appleWallet": {
+      "title": "Apple Wallet",
+      "lead": "La tua tessera in Wallet, che si aggiorna da sola.",
+      "learnMore": "Scopri di più",
+      "add": "Aggiungi a Apple Wallet",
+      "makeNew": "Crea un nuovo pass",
+      "withdraw": "Ritira il pass",
+      "withdrawTitle": "Ritirare il pass di Wallet?",
+      "withdrawBody": "Il suo codice QR smette subito di funzionare e il pass in Wallet lo indica.",
+      "fieldsLabel": "Cosa mostra il pass",
+      "expiryLabel": "Il pass scade",
+      "otherDevice": "Per aggiungere questa tessera a Wallet, apri questa pagina su iPhone o Mac.",
+      "error": "Non è stato possibile modificare il pass. Riprova.",
+      "consentTitle": "Firmato dal progetto HealthLog",
+      "consentBody": "Il suo servizio di firma vede gli hash dei file e l'ora, mai il contenuto della tua tessera.",
+      "expired": "Scaduto. Wallet lo mostra in grigio.",
+      "fetched": "Su un dispositivo, aggiornato {when}.",
+      "notFetched": "Non ancora su un dispositivo.",
+      "state": {
+        "live": "Attivo",
+        "voided": "Ritirato",
+        "expired": "Scaduto"
+      },
+      "withdrawn": {
+        "owner": "L'hai ritirato {when}.",
+        "credential_reset": "Ritirato {when} dopo un cambio di password.",
+        "handover": "Ritirato {when} alla consegna del profilo.",
+        "guardian_lost": "Ritirato {when}: il diritto di gestire questo profilo è terminato.",
+        "account_deletion": "Ritirato {when} alla richiesta di eliminazione dell'account."
+      },
+      "unavailable": {
+        "signer_off": "Questo server non firma pass di Wallet.",
+        "relay_not_ready": "I pass di Wallet non sono disponibili su questo server al momento.",
+        "no_https_origin": "I pass di Wallet richiedono che questo server sia raggiunto via HTTPS.",
+        "api_disabled": "L'accesso esterno è disattivato su questo server, e con esso i pass di Wallet.",
+        "not_allowed": "Solo la persona della tessera, o il suo tutore, può aggiungerlo."
+      },
+      "more": {
+        "frozen": "Il pass mostra ciò che spunti qui. Per cambiarlo, ritiralo e creane uno nuovo.",
+        "updates": "Quando la tua tessera cambia, il pass si aggiorna da solo. Il suo codice QR è proprio, separato da quello della tessera stampata.",
+        "lock": "Wallet lo mostra dopo Face ID o il codice. Per chi soccorre davanti a un iPhone bloccato, compila la Cartella sanitaria in Salute.",
+        "signerRelay": "Lo firma il progetto HealthLog. Il suo servizio di firma vede hash dei file e orari, mai il contenuto.",
+        "signerLocal": "Questo server lo firma con il proprio certificato.",
+        "withdraw": "Il ritiro ferma subito il codice QR. Un telefono offline tiene il vecchio pass finché non torna online; se un pass non si aggiorna, eliminalo in Wallet."
+      }
     }
+  },
+  "treatmentSeries": {
+    "heading": "Cicli di trattamento",
+    "add": "Nuovo ciclo",
+    "createTitle": "Nuovo ciclo di trattamento",
+    "untitled": "Ciclo di trattamento",
+    "progress": "{done} di {planned}",
+    "sessionsDoneCount": "{count, plural, one {# seduta} other {# sedute}}",
+    "sessionOf": "Seduta {number} di {planned}",
+    "session": "Seduta {number}",
+    "status": {
+      "planned": "Non iniziato",
+      "active": "In corso",
+      "completed": "Concluso",
+      "expired": "Scaduto"
+    },
+    "next": "Prossima {date}",
+    "validUntil": "Valido fino al {date}",
+    "firstSession": "Dal {date}",
+    "sessionsHeading": "Sedute",
+    "addSession": "Aggiungi seduta",
+    "prescriber": "Prescritto da",
+    "performer": "Eseguito da",
+    "condition": "Patologia",
+    "form": {
+      "title": "Nome",
+      "titlePlaceholder": "Fisioterapia, ginocchio sinistro",
+      "plannedSessions": "Sedute",
+      "startsOn": "Inizio",
+      "validUntil": "Valido fino al",
+      "note": "Nota",
+      "series": "Ciclo di trattamento",
+      "seriesNone": "Nessuno"
+    },
+    "created": "Ciclo salvato",
+    "updated": "Ciclo aggiornato",
+    "saveFailed": "Non è stato possibile salvare il ciclo.",
+    "ended": "Ciclo concluso",
+    "reopened": "Ciclo riaperto",
+    "end": "Concludi ciclo",
+    "reopen": "Riapri",
+    "deleteTitle": "Eliminare questo ciclo?",
+    "deleteDescription": "Le visite restano. Semplicemente non sono più raggruppate.",
+    "deleted": "Ciclo eliminato",
+    "deleteFailed": "Non è stato possibile eliminare il ciclo.",
+    "reportTitle": "Cicli di trattamento",
+    "reportColSeries": "Ciclo",
+    "reportColSessions": "Sedute",
+    "reportColPeriod": "Periodo",
+    "period": "dal {from} al {to}",
+    "periodOpen": "dal {from}",
+    "expiryPushTitle": "Ciclo di trattamento in scadenza",
+    "expiryPushBody": "{title}: valido fino al {date}, {count, plural, one {resta # seduta} other {restano # sedute}}."
   }
 }

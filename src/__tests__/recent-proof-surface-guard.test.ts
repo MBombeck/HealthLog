@@ -116,6 +116,7 @@ const RECORD_COOKIE_ONLY_PROOF_ROUTES = [
   "app/api/cycle/feed-subscription/route.ts",
   "app/api/cycle/feed-subscription/rotate/route.ts",
   "app/api/emergency-card/link/route.ts",
+  "app/api/emergency-card/wallet/apple/route.ts",
 ].sort();
 
 /**

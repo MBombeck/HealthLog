@@ -20,6 +20,7 @@
  * Locks per `.planning/research/v1434-r-1-xml-import.md` §6.
  */
 
+import type { WorkoutRouteReference } from "@/lib/apple-health/route-import";
 import { createReadStream } from "node:fs";
 import { StringDecoder } from "node:string_decoder";
 import { Writable } from "node:stream";
@@ -79,6 +80,11 @@ export interface ImportJobResult {
     inserted: number;
     updated: number;
     duplicate: number; // repeats of a workout the export already stated
+    /**
+     * Of `updated`: workouts the iPhone app had already stored under their
+     * HealthKit UUID, filled from the export instead of stored again (#1414).
+     */
+    mergedIntoHealthKit: number;
 
     unknownActivityType: number;
     routesAttached: number;
@@ -184,7 +190,7 @@ export interface StreamParseInput {
    * the reference is not even read. The track is attached after the XML
    * pass, from the archive (`src/lib/apple-health/route-import.ts`).
    */
-  onWorkoutRoute?: (ref: { externalId: string; path: string }) => void;
+  onWorkoutRoute?: (ref: WorkoutRouteReference) => void;
   /** Called once per lab-result `<ClinicalRecord>`; without it every clinical
    *  record is counted as skipped (`src/lib/apple-health/clinical-labs-import.ts`). */
   onClinicalLabRecord?: (ref: ClinicalLabReference) => void;

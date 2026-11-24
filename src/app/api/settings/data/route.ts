@@ -25,6 +25,7 @@ import {
 } from "@/lib/data-wipe/wipe-plan";
 import { resolveWipeDelegate } from "@/lib/data-wipe/wipe-delegates";
 import { queueRelayUnbindsForAccount } from "@/lib/push-relay/unbind-queue";
+import { withdrawWalletPassesBeforeWipe } from "@/lib/emergency-card/wallet-pass/wipe";
 import { stampSyncReset } from "@/lib/sync/reset";
 import {
   accountDeletionGraceDays,
@@ -114,6 +115,12 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
       );
     }
   }
+
+  // An Apple Wallet pass goes with the wipe: withdrawn and its devices told
+  // first, bounded, never in the way of the wipe.
+  await withdrawWalletPassesBeforeWipe({
+    OR: [{ userId }, { createdById: userId }],
+  });
 
   let counts: Record<string, number>;
   try {

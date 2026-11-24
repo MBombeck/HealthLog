@@ -340,9 +340,7 @@ export function LifeEventForm({
       data-slot="life-event-form"
     >
       <div className="space-y-2">
-        <Label htmlFor={ids.title} noColon>
-          {t("lifeEvents.fields.title")}
-        </Label>
+        <Label htmlFor={ids.title}>{t("lifeEvents.fields.title")}</Label>
         <Input
           id={ids.title}
           value={draft.title}
@@ -357,7 +355,7 @@ export function LifeEventForm({
       </div>
 
       <div className="space-y-2">
-        <Label id={ids.category} noColon asChild>
+        <Label id={ids.category} asChild>
           <span>{t("lifeEvents.fields.category")}</span>
         </Label>
         <CategoryChips
@@ -374,9 +372,7 @@ export function LifeEventForm({
 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
         <div className="space-y-2">
-          <Label htmlFor={ids.start} noColon>
-            {t("lifeEvents.fields.when")}
-          </Label>
+          <Label htmlFor={ids.start}>{t("lifeEvents.fields.when")}</Label>
           <PrecisionDate
             id={ids.start}
             value={draft.start}
@@ -389,7 +385,7 @@ export function LifeEventForm({
           <FieldError id={`${ids.start}-error`} message={fieldError("start")} />
         </div>
         <div className="space-y-2">
-          <Label id={`${ids.start}-precision`} noColon asChild>
+          <Label id={`${ids.start}-precision`} asChild>
             <span>{t("lifeEvents.fields.precision")}</span>
           </Label>
           <Segmented
@@ -422,9 +418,7 @@ export function LifeEventForm({
       ) : (
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <Label htmlFor={ids.end} noColon>
-              {t("lifeEvents.fields.endDate")}
-            </Label>
+            <Label htmlFor={ids.end}>{t("lifeEvents.fields.endDate")}</Label>
             <Button
               type="button"
               variant="ghost"
@@ -451,7 +445,7 @@ export function LifeEventForm({
       )}
 
       <div className="space-y-2">
-        <Label htmlFor={ids.note} noColon className="gap-1">
+        <Label htmlFor={ids.note} className="gap-1">
           {t("lifeEvents.fields.note")}{" "}
           <span className="text-muted-foreground font-normal">
             {t("lifeEvents.fields.optionalTag")}

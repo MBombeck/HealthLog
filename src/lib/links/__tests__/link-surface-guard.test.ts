@@ -72,6 +72,9 @@ const MODULE_DIR = "lib/links/";
  */
 const RESTORE_EXEMPTIONS = [
   "lib/export/visits-backup.ts",
+  // The visits restore's own link half, kept in its own file beside it: the
+  // same restore, the same standing rule.
+  "lib/export/visit-links-restore.ts",
   "lib/export/vaccinations-backup.ts",
   // The document↔condition filing, carried and restored from the release that
   // takes it off the backup debt register. Same standing rule as the two
@@ -136,7 +139,7 @@ describe("link-surface guard — the tables have one gateway", () => {
     }
   });
 
-  it("the restore exemption set is exactly the four backup writers", () => {
+  it("the restore exemption set is exactly the backup writers named here", () => {
     // Freeze the exemption list so widening it is a reviewed diff, not a quiet
     // addition. Every file must exist and must actually write a link table.
     for (const rel of RESTORE_EXEMPTIONS) {
@@ -147,6 +150,7 @@ describe("link-surface guard — the tables have one gateway", () => {
         "lib/export/document-filing-backup.ts",
         "lib/export/relation-links-backup.ts",
         "lib/export/vaccinations-backup.ts",
+        "lib/export/visit-links-restore.ts",
         "lib/export/visits-backup.ts",
       ].sort(),
     );

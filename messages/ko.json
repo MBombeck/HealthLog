@@ -228,7 +228,8 @@
       "invalid": "진료 정보를 확인하고 다시 시도해 주세요.",
       "practitioner-not-found": "이 병원 또는 의사가 더 이상 없어요. 다른 항목을 고르거나 '지정 안 함'을 선택해 주세요.",
       "reminder-not-found": "이 건강검진이 더 이상 없어요. 다른 검진을 고르거나 선택을 비워 두세요.",
-      "reminder-conflict": "예정된 진료는 아직 이루어지지 않았기 때문에 건강검진을 완료할 수 없어요."
+      "reminder-conflict": "예정된 진료는 아직 이루어지지 않았기 때문에 건강검진을 완료할 수 없어요.",
+      "series-not-found": "이 치료 과정은 더 이상 없습니다. 다른 과정을 선택하거나 선택하지 마세요."
     },
     "vaccination": {
       "invalid": "예방접종 정보를 확인하고 다시 시도해 주세요.",
@@ -289,6 +290,11 @@
         "limit": "발작 유형이 이미 12개예요. 새로 추가하려면 하나를 보관하세요.",
         "notFound": "이 발작 유형이 더 이상 없어요."
       }
+    },
+    "treatment_series": {
+      "invalid": "과정 정보를 확인하고 다시 시도하세요.",
+      "practitioner-not-found": "이 의원 또는 의사는 더 이상 없습니다. 다른 곳을 선택하거나 선택하지 마세요.",
+      "condition-not-found": "이 질환은 더 이상 없습니다. 다른 질환을 선택하거나 선택하지 마세요."
     }
   },
   "doctorReport": {
@@ -1604,7 +1610,6 @@
     "intakeToastExtra": "{name}: 복용함, {time}, 추가 복용",
     "intakeToastSkipped": "{name}: 건너뜀",
     "intakeToastFailed": "기록하지 못했어요: {name}. 다시 시도해 주세요",
-    "intakeUndone": "기록을 되돌렸어요",
     "intakeAlreadyTaken": "{name}은(는) 이미 복용한 것으로 기록되어 있습니다. 새로 저장된 내용은 없습니다.",
     "intakeUndoFailed": "되돌리지 못했어요. 기록에서 수정해 주세요",
     "glp1LastInjection": "{label}",
@@ -1844,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "예: 4",
           "dosesPerUnitHint": "새 포장이나 펜 하나에 든 정제 또는 단위 수예요. 예: 정제 28개, 4회분 펜. 포장을 추가할 때 수량이 미리 채워져요. 포장마다 다르면 비워 두세요.",
           "short": "용량",
-          "unitsPerDoseLabel": "이 용량은 정제나 단위 몇 개인가요?",
+          "unitsPerDoseLabel": "1회 용량당 정제 또는 단위 수",
           "unitsPerDoseHint": "예: 4mg 용량이면 2mg 2정, 반으로 나눠 먹으면 ½정",
           "packSizeToggle": "포장 크기(선택)"
         },
@@ -2131,9 +2136,7 @@
           "failed": "복용 기록을 수정하지 못했어요."
         },
         "deleteRow": {
-          "toast": "복용 기록을 삭제했어요",
-          "failed": "복용 기록을 삭제하지 못했어요.",
-          "restored": "복용 기록을 되돌렸어요"
+          "failed": "복용 기록을 삭제하지 못했어요."
         },
         "viewRecent90": "최근 90일",
         "viewAll": "전체 기록",
@@ -2682,6 +2685,17 @@
       "invalidRow": "모든 줄에서 영양소를 고르고 0보다 큰 함량을 입력하세요."
     },
     "dose": {
+      "which": {
+        "slotTaken": "{slot} 복용분({taken}에 복용)",
+        "slotSkipped": "{slot} 복용분(건너뜀)",
+        "slot": "{slot} 복용분",
+        "taken": "{taken}에 복용한 분",
+        "plain": "복용분"
+      },
+      "removed": "삭제됨: {dose}",
+      "restored": "복원됨: {dose}",
+      "deleteLabel": "삭제: {dose}",
+      "removedMany": "{count, plural, other {#회분 삭제됨}}",
       "action": {
         "take": "복용",
         "skip": "건너뛰기",
@@ -4862,7 +4876,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "오늘 누적값을 최근 4주 동안 같은 시각의 중앙값과 비교하고, 그 주위에 중앙값 ± MAD 범위를 함께 보여줘요. 기록이 충분한 날만 계산에 넣고, 그런 날이 14일 이상 모이기 전에는 비교를 보여주지 않아요.",
-          "caveat": "목표가 아니라 내 최근 기록과의 비교예요. 이 시각의 평소 패턴에서 오늘이 어디쯤인지 알려줄 뿐, 그 패턴이 나에게 맞는지는 말해 주지 않아요."
+          "caveat": "목표가 아니라 내 최근 기록과의 비교예요. 이 시각의 평소 패턴에서 오늘이 어디쯤인지 알려줄 뿐, 그 패턴이 나에게 맞는지는 말해 주지 않아요.",
+          "methodDailyTotal": "연결된 소스가 하루를 합계 하나로만 보내서 비교할 시각이 없어요. 소스가 마지막으로 보낸 오늘 누적값을 최근 14일(하루가 끝난 날) 동안의 하루 합계와 비교해요. 눈금은 그 중앙값, 음영 띠는 가운데 절반을 나타내요. 그중 7일에 합계가 생기면 범위를 보여줘요."
         }
       },
       "scores": {
@@ -4904,7 +4919,11 @@
         "sectionSubtitle": "이 시각의 평소 수준과 비교한 오늘 누적값",
         "learning": "평소 하루를 익히는 중: {target, plural, other {#일}} 중 {count}일",
         "framing": "{time}까지 평소: {typical} {unit}",
-        "comparisonLabel": "평소 하루"
+        "comparisonLabel": "평소 하루",
+        "sectionSubtitleDailyTotal": "평소 하루 전체와 비교한 오늘 누적값",
+        "sectionSubtitleMixed": "평소 수준과 비교한 오늘 누적값",
+        "dailyFraming": "평소 하루 전체: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {
@@ -9553,8 +9572,7 @@
     "auditActedByColumn": "수행한 사람",
     "pushRelay": {
       "title": "HealthLog 푸시 릴레이",
-      "description": "App Store 앱이 HealthLog 프로젝트가 운영하는 릴레이를 통해 이 서버의 알림을 받을 수 있게 합니다.",
-      "whatItSees": "모든 알림은 이 서버에서 받는 기기용으로 암호화되므로 릴레이는 내용을 읽을 수 없습니다. 릴레이는 이 서버가 언제 기기에 무언가를 보내는지만 봅니다.",
+      "description": "App Store 앱을 위한 종단간 암호화 알림이며, 사용 여부는 각자 자기 기기에서 정합니다.",
       "seesSummary": "릴레이가 보는 것",
       "seesHeading": "볼 수 있는 것",
       "seesWhen": "이 서버가 기기에 무언가를 보낸다는 사실, 그 시점과 종류(알림, 무음 동기화, 실시간 현황 종료)",
@@ -9564,43 +9582,45 @@
       "notSeesHeading": "볼 수 없는 것",
       "notSeesContent": "알림의 내용: 약 이름, 용량, 측정값, 메모, 계정 이름 등 알림 안의 모든 것",
       "seesTiming": "그래도 시점은 무언가를 알려 줄 수 있어요. 릴레이로 가는 복약 리마인더는 릴레이와 Apple에 언제 복용 시간인지 보여 주고, 한 기기에서 복용을 기록하고 다른 기기가 확인 알림을 받으면 그때 무슨 일이 있었다는 것도 알 수 있어요.",
-      "seesSource": "릴레이 개인정보 안내 전문",
-      "toggleLabel": "이 서버 사용자에게 HealthLog 푸시 릴레이 제공",
-      "toggleDescription": "켜기 전까지는 꺼져 있습니다. 켠 뒤에는 각자 자신의 앱에서 결정합니다.",
-      "toggleDescriptionOn": "켜져 있어요. 기기에서 사용할지는 각자 자신의 앱에서 정해요.",
+      "toggleLabel": "이 서버 사용자에게 제공",
+      "ownApns": {
+        "inUse": "이 서버의 자체 APNs 키로 푸시가 Apple에 직접 가므로, 릴레이를 쓰려면 APNS_* 변수를 제거하세요.",
+        "registered": "이 서버의 자체 APNs 키로 푸시가 Apple에 직접 가므로 릴레이는 아무것도 전달하지 않습니다."
+      },
       "devices": "연결된 기기 {count, plural, other {#대}}",
       "unbindsPending": "릴레이를 기다리는 기기 연결 해제: {count}",
-      "unreachable": "이 서버는 아직 {host}에 등록되어 있지만 지금 설정으로는 연결할 수 없습니다 (PUSH_RELAY_MODE 또는 PUSH_RELAY_URL이 바뀌었습니다). 이 서버가 등록을 해제할 때까지 해당 릴레이는 이 서버의 기기 연결을 보관합니다. 설정을 되돌린 다음 여기에서 릴레이를 끄세요.",
+      "unreachable": "{host}에 아직 등록되어 있으나 현재 PUSH_RELAY_MODE 또는 PUSH_RELAY_URL 설정으로는 닿지 않으니, 설정을 되돌린 뒤 여기서 릴레이를 끄세요.",
       "since": "{time}부터",
       "docs": "자세히 알아보기",
       "privacy": "개인정보 안내",
       "terms": "릴레이 이용 조건",
-      "dialogTitle": "HealthLog 푸시 릴레이 제공",
-      "dialogBody": "릴레이는 HealthLog 프로젝트 관리자가 운영합니다. 각 알림은 이 서버에서 해당 기기용으로 암호화되어 릴레이가 읽을 수 없지만, 이 서버가 기기에 무언가를 보낸다는 사실과 그 시점은 볼 수 있습니다. 이 서버에서 리마인더를 받는 모든 기기에는 복약 리마인더도 릴레이를 거쳐 가므로, 릴레이와 Apple은 언제 복용 시간인지 알 수 있습니다. 켜면 이 서버의 모든 사람이 앱에서 한 번 제안을 보고 스스로 결정합니다. 릴레이는 개인 및 가정용이며 의료 서비스가 아닙니다.",
-      "acceptTerms": "릴레이 이용 조건에 동의합니다.",
-      "readPrivacy": "릴레이 개인정보 안내를 읽었습니다.",
+      "dialogTitle": "HealthLog 푸시 릴레이 켜기",
+      "acceptTerms": "{terms}에 동의합니다.",
+      "readPrivacy": "{privacy}를 읽었습니다.",
       "householdOnly": "이 서버를 나 자신이나 가족을 위해 개인적으로 운영합니다.",
       "enable": "켜기",
       "cancel": "취소",
-      "disableTitle": "릴레이를 끌까요?",
-      "disableBody": "이 서버가 릴레이에서 탈퇴합니다. 릴레이로 연결된 기기는 더 이상 릴레이 알림을 받지 않으며, 앱은 스스로 로컬 리마인더로 돌아갑니다.",
+      "disableTitle": "HealthLog 푸시 릴레이를 끌까요?",
+      "disableBody": "연결된 기기는 더 이상 릴레이 알림을 받지 않고 로컬 알림으로 돌아갑니다.",
       "disable": "끄기",
-      "enabled": "푸시 릴레이가 켜졌습니다",
-      "disabled": "푸시 릴레이가 꺼졌습니다",
+      "enabled": "HealthLog 푸시 릴레이가 켜졌습니다",
+      "disabled": "HealthLog 푸시 릴레이가 꺼졌습니다",
       "saveFailed": "릴레이 설정을 저장하지 못했습니다",
       "reconfirm": {
-        "notice": "이 서버가 릴레이를 켠 뒤로 릴레이 안내문이 바뀌었습니다. 읽고 한 번 확인해 주세요. 그동안에도 릴레이는 계속 작동합니다.",
-        "button": "읽고 확인하기",
-        "title": "바뀐 릴레이 안내문 확인",
+        "notice": "릴레이 이용 조건이 바뀌었으며, 확인할 때까지 릴레이는 계속 작동합니다.",
+        "button": "읽고 확인",
+        "title": "바뀐 릴레이 이용 조건 확인",
         "confirm": "확인",
-        "done": "바뀐 릴레이 안내문을 확인했습니다"
+        "done": "바뀐 릴레이 이용 조건을 확인했습니다"
       },
       "loadError": "푸시 릴레이 상태를 읽을 수 없습니다.",
       "state": {
         "ok": "연결됨",
         "degraded": "장애",
         "down": "연결 불가",
-        "off": "꺼짐"
+        "off": "꺼짐",
+        "ownApnsKey": "자체 APNs 키",
+        "unavailable": "사용 불가"
       },
       "unavailable": {
         "modeOff": "이 서버에서는 릴레이가 꺼져 있습니다 (PUSH_RELAY_MODE=off).",
@@ -9608,8 +9628,8 @@
         "keysUnpinned": "이 릴레이에 고정된 키가 없어 응답을 확인할 수 없습니다. PUSH_RELAY_KEYS를 설정하세요."
       },
       "question": {
-        "title": "HealthLog 릴레이를 통해 푸시 알림을 보낼까요?",
-        "body": "자체 Apple 푸시 키가 없는 서버의 알림은 HealthLog 프로젝트가 운영하는 릴레이를 통해 App Store의 HealthLog 앱으로 전달됩니다. 내용은 여기서 기기마다 암호화되어 릴레이가 읽을 수 없으며, 릴레이는 이 서버가 언제 기기에 무언가를 보내는지만 봅니다. 이 답변은 서버 전체에 적용되며, 각자는 여전히 자신의 앱에서 결정합니다.",
+        "title": "HealthLog 푸시 릴레이를 사용할까요?",
+        "body": "App Store 앱을 위한 종단간 암호화 알림으로, 릴레이는 알림이 언제 보내지는지만 봅니다.",
         "yes": "예",
         "no": "아니요",
         "declined": "릴레이는 꺼진 상태로 유지됩니다. 나중에 푸시와 채널에서 켤 수 있습니다."
@@ -9617,7 +9637,7 @@
       "test": {
         "button": "테스트 푸시 보내기",
         "failed": "테스트 푸시를 보내지 못했습니다",
-        "noDevice": "내 기기 중 릴레이에 연결된 기기가 없습니다. 먼저 iPhone의 HealthLog 앱에서 릴레이를 켜세요.",
+        "noDevice": "아직 릴레이를 쓰는 기기가 없으니, 먼저 iPhone의 HealthLog 앱에서 릴레이를 켜세요.",
         "line": "{device}: 릴레이 응답 {answer}, 전달 {delivery}",
         "unsigned": "서명된 응답 없음 (연결 불가 또는 검증 실패)"
       },
@@ -9626,34 +9646,35 @@
         "done": "릴레이 키가 교체되었습니다",
         "failed": "지금 릴레이 키를 교체하지 못했습니다. 릴레이는 하루에 한 번만 교체를 허용합니다",
         "confirmTitle": "지금 릴레이 키를 교체할까요?",
-        "confirmBody": "이 서버가 릴레이 요청에 서명하는 키를 30일 주기를 기다리지 않고 지금 바로 교체합니다. 릴레이는 하루에 한 번만 교체를 허용합니다."
+        "confirmBody": "이 서버가 릴레이 요청에 서명하는 키를 교체하며, 릴레이는 하루에 한 번만 교체를 허용합니다."
       },
       "invite": {
-        "label": "초대 코드 (선택)",
-        "hint": "릴레이가 초대로만 새 서버를 받는 동안에만 필요합니다. 코드는 24자이며 한 번만 쓸 수 있습니다.",
+        "label": "초대 코드",
+        "hint": "초대제 릴레이에만 필요: 24자, 한 번만 사용.",
         "invalid": "초대 코드는 정확히 24자의 영문자, 숫자, - 또는 _ 입니다.",
-        "enter": "초대 코드 입력"
+        "enter": "초대 코드 입력",
+        "reveal": "초대 코드가 있습니다"
       },
       "reason": {
-        "inviteRequired": "이 릴레이는 초대로만 새 서버를 받습니다. 초대 코드를 입력하세요.",
-        "inviteRejected": "릴레이가 이 초대 코드를 받아들이지 않았습니다. 만료되었거나 이미 사용되었을 수 있습니다. 새 코드를 받아 입력하세요.",
-        "registrationPaused": "릴레이가 지금은 새 서버를 받지 않습니다. 이 서버가 나중에 스스로 다시 시도합니다."
+        "inviteRequired": "이 릴레이는 초대로만 새 서버를 받으니 초대 코드를 입력하세요.",
+        "inviteRejected": "릴레이가 이 초대 코드를 거부했으며, 이미 사용되었거나 만료되었을 수 있습니다.",
+        "registrationPaused": "릴레이가 지금은 새 서버를 받지 않으며, 이 서버가 나중에 스스로 다시 요청합니다."
       },
       "usage": {
         "accepted": "수락됨",
         "pending": "대기 중",
         "dropped": "폐기됨",
         "failed": "실패",
-        "window": "최근 {days, plural, other {#일}} 동안 이 서버가 릴레이에 넘긴 푸시.",
+        "window": "최근 {days, plural, other {#일}}",
         "lastSuccess": "마지막 전송 {time}.",
         "lastFailure": "마지막 실패 {time}: {reason}.",
         "noReason": "사유 없음"
       },
       "stateReason": {
-        "badSignature": "릴레이가 이 서버의 서명을 받아들이지 않아 어떤 푸시도 전달되지 않습니다. 여기에서 릴레이를 껐다가 다시 켜서 이 서버를 새로 등록하세요.",
-        "relayDegraded": "릴레이 측에서 장애가 있다고 알려 왔습니다. 푸시는 대기하다가 릴레이가 복구되면 전송됩니다.",
-        "relayMaintenance": "릴레이가 점검 중입니다. 푸시는 대기하다가 릴레이가 돌아오면 전송됩니다.",
-        "relayMisconfigured": "Apple이 지금 릴레이의 푸시 키를 받아들이지 않는다고 릴레이가 알려 왔습니다. 릴레이 운영자가 해결할 때까지 푸시는 대기합니다."
+        "badSignature": "릴레이가 이 서버의 서명을 받지 않으니, 릴레이를 껐다가 다시 켜서 새로 등록하세요.",
+        "relayDegraded": "릴레이 쪽에 장애가 있어, 푸시는 대기했다가 복구되면 전송됩니다.",
+        "relayMaintenance": "릴레이가 점검 중이라, 푸시는 복구될 때까지 대기합니다.",
+        "relayMisconfigured": "Apple이 지금 릴레이의 푸시 키를 받지 않아, 릴레이 운영자가 고칠 때까지 푸시가 대기합니다."
       },
       "notice": "릴레이 공지 ({level}): {id}",
       "noticeLevel": {
@@ -9682,7 +9703,10 @@
         "seconds": "{value}초",
         "empty": "최근 {hours, plural, other {#시간}} 동안 푸시 없음",
         "helper": "이 서버의 대기열에 들어간 때부터 릴레이가 응답할 때까지입니다. 릴레이는 Apple이 푸시를 수락한 뒤에 응답합니다."
-      }
+      },
+      "termsLink": "릴레이 이용 조건",
+      "privacyLink": "릴레이 개인정보 안내",
+      "deliverySummary": "전송 세부 정보"
     },
     "serverSetup": {
       "stepsLabel": "서버 설정 단계",
@@ -9696,7 +9720,7 @@
       },
       "notice": {
         "title": "이 서버 설정하기",
-        "body": "여기서만 정할 수 있는 결정을 위한 짧은 다섯 단계입니다: 누가 가입할 수 있는지, 알림이 서버를 어떻게 나가는지, AI가 무엇을 할 수 있는지, 그 밖에 무엇이 밖으로 나가는지. 모든 단계는 건너뛸 수 있고 나중에 바꿀 수 있습니다.",
+        "body": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계이며, 어느 단계든 건너뛰거나 나중에 바꿀 수 있습니다.",
         "open": "설정 시작",
         "dismiss": "나중에"
       },
@@ -9708,7 +9732,7 @@
       },
       "notifications": {
         "title": "알림이 서버를 나가는 방법",
-        "body": "사람들이 쓸 수 있는 채널을 고르세요. App Store 앱용 푸시 릴레이는 직접 켜기 전까지 꺼져 있습니다."
+        "body": "사용할 수 있는 채널을 정하세요. HealthLog 푸시 릴레이는 직접 켜기 전까지 꺼져 있습니다."
       },
       "ai": {
         "title": "AI가 할 수 있는 일",
@@ -9767,7 +9791,8 @@
         "encryption_keys": "암호화 키",
         "secure_cookie": "보안 쿠키",
         "app_url": "공개 주소",
-        "database_dump": "데이터베이스 덤프"
+        "database_dump": "데이터베이스 덤프",
+        "local_ocr": "스캔 문자 인식"
       },
       "reason": {
         "encryption_keys": {
@@ -9792,6 +9817,12 @@
           "disabled": "야간 데이터베이스 덤프가 만들어지지 않습니다. 다른 방법으로 데이터베이스를 백업하세요.",
           "not_persistent": "덤프 폴더가 마운트된 볼륨에 있지 않아 다음 업데이트 때 덤프가 사라집니다.",
           "scheduled": "야간 덤프 예약됨({cron})."
+        },
+        "local_ocr": {
+          "ready": "스캔한 PDF와 사진을 AI 없이 이 서버에서 읽어요({languages}).",
+          "recent_failures": "지난 7일 동안 이 서버가 읽지 못한 스캔 문서: {count}개. 각 문서 페이지에 이유가 나와 있어요. 대개 기기가 느리거나 메모리가 부족해서예요.",
+          "engine_missing": "이 빌드에는 문자 인식 엔진이 없어요. AI 제공자가 읽지 않으면 스캔과 사진은 읽히지 않아요.",
+          "languages_missing": "문자 인식 엔진은 있지만 언어 데이터가 없어요. 언어 데이터를 준비해서 이미지를 빌드하세요(scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -10765,7 +10796,7 @@
       "TRYING_TO_CONCEIVE": "임신 준비",
       "PERIMENOPAUSE": "폐경 이행기",
       "OFF": "추적 끄기",
-      "label": "무엇을 위해 기록하나요?",
+      "label": "기록 목적",
       "description": "이 설정에 따라 문구와 보이는 예측이 달라져요. 가임기 안내는 임신을 준비할 때만 보여요."
     },
     "ring": {
@@ -13161,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "읽을 수 있는 텍스트가 없어요. 스캔 문서로 보이는데, AI 비전 제공자로는 읽을 수 있어요.",
+          "local-empty": "파일에서도, 이 서버의 문자 인식으로도 읽을 수 있는 텍스트를 찾지 못했어요. AI 비전 제공자라면 읽을 수도 있어요.",
           "local-unsupported": "이 파일 형식은 검색용으로 읽을 수 없어요.",
           "decrypt-error": "저장된 파일을 열어 읽지 못했어요.",
           "raster-failed": "PDF 페이지를 읽기용으로 렌더링하지 못했어요. 스캔 팩스 압축 형식이 흔한 원인이에요.",
           "provider-error": "지난번에 AI 제공자가 이 문서를 읽지 못했어요.",
           "pdf-needs-anthropic": "이 서버의 프로세서로는 PDF 페이지를 렌더링할 수 없고, 이 PDF에는 텍스트 레이어가 없어요. PDF 파일을 직접 받는 AI 제공자는 읽을 수 있고, 페이지 사진을 올려도 돼요.",
           "empty-transcription": "AI 제공자가 이 문서에서 텍스트를 찾지 못했어요.",
-          "resource-limit": "이 PDF는 너무 크거나 복잡해서 여기서 읽을 수 없습니다. 파일 자체는 정상이며 계속 열 수 있습니다."
+          "resource-limit": "이 PDF는 너무 크거나 복잡해서 여기서 읽을 수 없습니다. 파일 자체는 정상이며 계속 열 수 있습니다.",
+          "ocr-failed": "이 서버의 문자 인식이 이 문서를 끝까지 읽지 못했어요. 시간이 너무 오래 걸렸거나 메모리가 부족했거나 오류가 났어요. 파일 자체는 괜찮아요."
         }
       },
       "loadError": "이 문서를 불러오지 못했어요.",
@@ -13320,6 +13352,9 @@
       "extractHint": "이 문서에서 이미 읽은 텍스트를 사용해요. 추출한 값은 검토를 기다리며, 자동으로 저장되지 않아요.",
       "extractEmpty": "이 문서에서 추출할 수 있는 값이 없었어요.",
       "extractIncomplete": "문서 일부를 끝까지 읽지 못해서 빠진 값이 있을 수 있어요. 목록을 문서와 비교해 주세요.",
+      "readLocally": "AI 없이 수치 읽기",
+      "readLocallyPending": "읽는 중…",
+      "readLocallyHint": "이 서버가 이미 읽은 텍스트에서 표의 행을 읽어요. AI를 쓰지 않고 아무것도 밖으로 보내지 않아요. 저장하기 전에 값을 하나씩 확인하세요.",
       "failUnitRequired": "숫자 값을 저장하려면 단위가 필요해요.",
       "failUnitMismatch": "기재된 단위가 이 지표에 저장된 단위와 달라요. 수정한 뒤 검토를 다시 완료해 주세요.",
       "failGeneric": "이 값을 저장하지 못했어요.",
@@ -14377,7 +14412,11 @@
       "seizureTypeDelete": "{name} 님이 발작 유형을 삭제했어요",
       "seizureSettingsUpdate": "{name} 님이 군집 발작 기준을 변경했어요",
       "symptomBatchIngest": "{name}님이 Apple Health에서 증상을 가져왔습니다",
-      "symptomImportDelete": "{name}님이 가져온 증상 기록을 삭제했습니다"
+      "symptomImportDelete": "{name}님이 가져온 증상 기록을 삭제했습니다",
+      "treatmentSeriesCreate": "{name}님이 치료 과정을 추가했습니다",
+      "treatmentSeriesUpdate": "{name}님이 치료 과정을 수정했습니다",
+      "treatmentSeriesDelete": "{name}님이 치료 과정을 삭제했습니다",
+      "treatmentSeriesRestore": "{name}님이 치료 과정을 복원했습니다"
     },
     "section": {
       "measurements": {
@@ -15220,7 +15259,7 @@
     "saved": "삶의 사건을 저장했어요",
     "deleted": "삶의 사건을 삭제했어요",
     "fields": {
-      "title": "무슨 일이 있었나요?",
+      "title": "제목",
       "category": "종류",
       "when": "언제",
       "precision": "정확도",
@@ -16021,7 +16060,12 @@
       "visit": "진료 예약",
       "visitWith": "진료 예약: {name}",
       "checkupDue": "예정: {label}",
-      "boosterDue": "추가 접종 예정: {label}"
+      "boosterDue": "추가 접종 예정: {label}",
+      "sessionOf": "{planned}회 중 {number}회차",
+      "session": "{number}회차",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "치료 과정 종료",
+      "seriesEndsWith": "치료 과정 종료: {name}"
     }
   },
   "reportSchedule": {
@@ -16121,7 +16165,30 @@
       "walletWithQr": "QR 코드 포함 지갑 카드 (PDF)",
       "preview": "내 카드"
     },
+    "name": "이름",
+    "walletPass": {
+      "kind": "응급 카드",
+      "allergy": "알레르기",
+      "severeAllergy": "중증 알레르기",
+      "asOf": "기준일",
+      "week": "임신 {weeks}주 {days}일",
+      "postpartum": "산후",
+      "scan": "스캔하면 전체 카드가 열립니다",
+      "validUntil": "유효 기간",
+      "untilRevoked": "철회할 때까지",
+      "asOfValue": "{date}, 자동으로 업데이트됨",
+      "issuedBy": "발급처",
+      "signedBy": "서명",
+      "signerRelay": "HealthLog 프로젝트, healthlog.dev",
+      "noteLabel": "참고",
+      "note": "소유자가 직접 입력한 정보이며 의료 문서가 아닙니다. QR 코드는 철회되지 않은 동안 최신 카드를 엽니다.",
+      "lockLabel": "잠금 화면",
+      "lock": "Wallet은 Face ID 또는 암호 입력 후에만 이 카드를 보여 줍니다. 잠긴 iPhone 앞에서 도움을 주는 사람을 위해 건강 앱의 의료 ID도 작성하세요.",
+      "withdrawn": "철회됨",
+      "withdrawnBody": "이 카드는 {date}에 철회되었습니다. QR 코드는 더 이상 작동하지 않습니다."
+    },
     "fields": {
+      "NAME": "이름",
       "BLOOD_TYPE": "혈액형",
       "ALLERGIES": "알레르기",
       "CONDITIONS": "만성 질환",
@@ -16136,6 +16203,105 @@
     },
     "entry": {
       "description": "응급 상황용 혈액형, 알레르기, 약, 연락처. 오프라인 사본, 지갑용 카드, QR 링크를 함께 제공합니다."
+    },
+    "appleWallet": {
+      "title": "Apple 지갑",
+      "lead": "지갑 속 내 카드, 스스로 최신 상태를 유지합니다.",
+      "learnMore": "자세히 알아보기",
+      "add": "Apple 지갑에 추가",
+      "makeNew": "새 패스 만들기",
+      "withdraw": "패스 철회",
+      "withdrawTitle": "지갑 패스를 철회할까요?",
+      "withdrawBody": "QR 코드가 즉시 작동을 멈추고, 지갑의 패스에도 그렇게 표시됩니다.",
+      "fieldsLabel": "패스에 표시할 항목",
+      "expiryLabel": "패스 종료",
+      "otherDevice": "이 카드를 지갑에 추가하려면 iPhone이나 Mac에서 이 페이지를 여세요.",
+      "error": "패스를 변경하지 못했습니다. 다시 시도하세요.",
+      "consentTitle": "HealthLog 프로젝트가 서명",
+      "consentBody": "서명 서비스는 파일 해시와 시각만 보며, 카드 내용은 절대 보지 않습니다.",
+      "expired": "만료됨. 지갑이 회색으로 표시합니다.",
+      "fetched": "기기에 있음, 마지막 업데이트 {when}.",
+      "notFetched": "아직 어느 기기에도 없습니다.",
+      "state": {
+        "live": "사용 중",
+        "voided": "철회됨",
+        "expired": "만료됨"
+      },
+      "withdrawn": {
+        "owner": "{when} 직접 철회했습니다.",
+        "credential_reset": "{when} 비밀번호 변경 후 철회되었습니다.",
+        "handover": "{when} 프로필 인계 때 철회되었습니다.",
+        "guardian_lost": "{when} 철회됨: 이 프로필을 관리할 권한이 끝났습니다.",
+        "account_deletion": "{when} 계정 삭제 요청 때 철회되었습니다."
+      },
+      "unavailable": {
+        "signer_off": "이 서버는 지갑 패스에 서명하지 않습니다.",
+        "relay_not_ready": "지금은 이 서버에서 지갑 패스를 사용할 수 없습니다.",
+        "no_https_origin": "지갑 패스는 이 서버에 HTTPS로 접속해야 합니다.",
+        "api_disabled": "이 서버의 외부 접근이 꺼져 있어 지갑 패스도 사용할 수 없습니다.",
+        "not_allowed": "카드의 당사자나 그 보호자만 추가할 수 있습니다."
+      },
+      "more": {
+        "frozen": "패스는 여기서 선택한 항목을 보여 줍니다. 바꾸려면 철회하고 새로 만드세요.",
+        "updates": "카드가 바뀌면 패스가 스스로 업데이트됩니다. QR 코드는 인쇄된 카드와 별개인 자체 코드입니다.",
+        "lock": "지갑은 Face ID나 암호 후에 패스를 보여 줍니다. 잠긴 iPhone 앞의 구조자를 위해 건강 앱의 의료 정보를 채우세요.",
+        "signerRelay": "HealthLog 프로젝트가 서명합니다. 서명 서비스는 파일 해시와 시각만 보며 내용은 보지 않습니다.",
+        "signerLocal": "이 서버가 자체 인증서로 서명합니다.",
+        "withdraw": "철회하면 QR 코드가 즉시 멈춥니다. 오프라인인 휴대폰은 다시 연결될 때까지 이전 패스를 유지합니다. 패스가 업데이트되지 않으면 지갑에서 삭제하세요."
+      }
     }
+  },
+  "treatmentSeries": {
+    "heading": "치료 과정",
+    "add": "새 치료 과정",
+    "createTitle": "새 치료 과정",
+    "untitled": "치료 과정",
+    "progress": "{planned}회 중 {done}회",
+    "sessionsDoneCount": "{count, plural, other {#회}}",
+    "sessionOf": "{planned}회 중 {number}회차",
+    "session": "{number}회차",
+    "status": {
+      "planned": "시작 전",
+      "active": "진행 중",
+      "completed": "완료",
+      "expired": "만료"
+    },
+    "next": "다음 {date}",
+    "validUntil": "{date}까지 유효",
+    "firstSession": "{date}부터",
+    "sessionsHeading": "회차",
+    "addSession": "회차 추가",
+    "prescriber": "처방",
+    "performer": "시행",
+    "condition": "질환",
+    "form": {
+      "title": "이름",
+      "titlePlaceholder": "물리치료, 왼쪽 무릎",
+      "plannedSessions": "회차 수",
+      "startsOn": "시작",
+      "validUntil": "유효 기간",
+      "note": "메모",
+      "series": "치료 과정",
+      "seriesNone": "없음"
+    },
+    "created": "치료 과정을 저장했습니다",
+    "updated": "치료 과정을 수정했습니다",
+    "saveFailed": "치료 과정을 저장하지 못했습니다.",
+    "ended": "치료 과정을 종료했습니다",
+    "reopened": "치료 과정을 다시 열었습니다",
+    "end": "과정 종료",
+    "reopen": "다시 열기",
+    "deleteTitle": "이 치료 과정을 삭제할까요?",
+    "deleteDescription": "방문 기록은 남습니다. 묶음만 해제됩니다.",
+    "deleted": "치료 과정을 삭제했습니다",
+    "deleteFailed": "치료 과정을 삭제하지 못했습니다.",
+    "reportTitle": "치료 과정",
+    "reportColSeries": "과정",
+    "reportColSessions": "회차",
+    "reportColPeriod": "기간",
+    "period": "{from} ~ {to}",
+    "periodOpen": "{from}부터",
+    "expiryPushTitle": "치료 과정 만료 예정",
+    "expiryPushBody": "{title}: {date}까지 유효, {count, plural, other {#회}} 남음."
   }
 }

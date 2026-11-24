@@ -456,6 +456,16 @@ x-healthlog-env: &healthlog_env
   # the relay for devices whose owner gave the separate Live Activity consent;
   # off by default until the app's device test passed.
   PUSH_RELAY_LIVE_ACTIVITY: "${PUSH_RELAY_LIVE_ACTIVITY:-}"
+  # Apple Wallet with the operator's own Pass Type ID
+  # (docs/self-hosting/apple-wallet.md). Unset, the emergency card's pass is
+  # signed by the project's signing service over the push relay. All four
+  # core variables or none; the passphrase and the intermediate are optional.
+  WALLET_APPLE_PASS_TYPE_ID: "${WALLET_APPLE_PASS_TYPE_ID:-}"
+  WALLET_APPLE_TEAM_ID: "${WALLET_APPLE_TEAM_ID:-}"
+  WALLET_APPLE_CERT_B64: "${WALLET_APPLE_CERT_B64:-}"
+  WALLET_APPLE_KEY_B64: "${WALLET_APPLE_KEY_B64:-}"
+  WALLET_APPLE_KEY_PASSPHRASE: "${WALLET_APPLE_KEY_PASSPHRASE:-}"
+  WALLET_APPLE_WWDR_B64: "${WALLET_APPLE_WWDR_B64:-}"
   # Structured logging. LOG_LEVEL is one of debug/info/warn/error (default
   # info) — drop to debug while chasing a problem, raise to warn on a busy
   # instance. LOG_SAMPLE_RATE keeps that fraction of successful events

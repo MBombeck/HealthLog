@@ -182,6 +182,27 @@ export const SAME_TIME_BASELINE_WINDOW_DAYS = 28;
  */
 export const SAME_TIME_BASELINE_MIN_HISTORY_DAYS = 14;
 
+/**
+ * The complete days the day-total form of the same-time baseline draws the
+ * usual full day from.
+ *
+ * A source that reports the day as one total (Garmin, Withings, a Gadgetbridge
+ * import) carries no hours, so "usual by this hour" cannot be known for it.
+ * What can be known is the usual full day, and the card sets today's running
+ * total against that instead. Two weeks: every weekday twice, and recent
+ * enough to describe the current routine.
+ */
+export const SAME_TIME_DAILY_TOTAL_WINDOW_DAYS = 14;
+
+/**
+ * Days with a total the day-total form needs before it shows a range. Seven,
+ * as for the vitals baseline: the range is the middle half of whole days, and
+ * a week of them bounds it, where the hourly form needs fourteen to tell a
+ * weekday morning from a weekend one. Below it the metric returns the
+ * `insufficient` arm with `learning_usual_total`.
+ */
+export const SAME_TIME_DAILY_TOTAL_MIN_HISTORY_DAYS = 7;
+
 const REGISTRY: Record<DerivedMetricId, DerivedMetricMeta> = {
   VITALS_BASELINE: {
     id: "VITALS_BASELINE",

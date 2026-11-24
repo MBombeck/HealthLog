@@ -24,7 +24,7 @@ import type { DailyBriefing, DailyBriefingSignal } from "@/lib/ai/schema";
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 import type { ArrivalKind } from "@/lib/arrivals/types";
 import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
-import { visitsPath } from "@/lib/encounters/visit-links";
+import { CARE_WIRE_PATH, visitsPath } from "@/lib/encounters/visit-links";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { ServerTranslator } from "@/lib/i18n/server-translator";
@@ -229,9 +229,8 @@ export interface DailyDigestTensionWindow {
  * band verdict, the two totals and the hour are the server's, and the copy is
  * a deterministic template over them.
  *
- * Null whenever the engine returned its `insufficient` arm — still learning
- * the usual day, no intraday rows today, or the day too young to compare. The
- * rail stays quiet in every one of those cases rather than guessing.
+ * Null on the engine's `insufficient` arm and on its day-total form (no hour
+ * to compare at). The rail stays quiet in those cases rather than guessing.
  */
 export interface DailyDigestSameTime {
   /** The cumulative metric compared (`ACTIVITY_STEPS`). */
@@ -672,7 +671,7 @@ function buildPreventiveCareItem(
       {
         labelKey: "daily.action.viewCheckups",
         intent: "checkup.view",
-        href: "/checkups", // /checkups kept on the wire for iOS builds before 1.7; switch to /care in 1.50.
+        href: CARE_WIRE_PATH,
       },
     ],
   };

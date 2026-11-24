@@ -16,6 +16,8 @@
  *   - conditions: ongoing chronic conditions plus the anamnesis text;
  *   - medications: active, not paused, not ended;
  *   - pregnancy: the cycle's pregnancy or postpartum state, when it holds;
+ *   - name: the record's full name, else its display name (a managed
+ *     profile's own, never the guardian's), never the username;
  *   - birth date: the profile's.
  */
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
@@ -68,6 +70,8 @@ export interface EmergencyCardPregnancy {
  */
 export interface EmergencyCardView {
   fields: EmergencyCardField[];
+  /** The record's name, the card's title line. */
+  name: string | null;
   bloodType: EmergencyBloodTypeValue | null;
   allergies: EmergencyCardAllergy[] | null;
   conditions: string[] | null;
@@ -224,17 +228,26 @@ export async function loadEmergencyCard(
       has("CONDITIONS") ? readConditions(userId) : null,
       has("MEDICATIONS") ? readMedications(userId, today) : null,
       has("PREGNANCY") ? readPregnancy(userId, today) : null,
-      has("DATE_OF_BIRTH")
+      has("DATE_OF_BIRTH") || has("NAME")
         ? prisma.user.findUnique({
             where: { id: userId },
-            select: { dateOfBirth: true, timezone: true },
+            select: {
+              dateOfBirth: true,
+              timezone: true,
+              fullName: true,
+              displayName: true,
+            },
           })
         : null,
     ]);
 
   const text = (value: string | null | undefined) => value ?? null;
+  const named = (value: string | null | undefined) => value?.trim() || null;
   return {
     fields: asked,
+    name: has("NAME")
+      ? (named(user?.fullName) ?? named(user?.displayName))
+      : null,
     bloodType: has("BLOOD_TYPE") ? (profile?.bloodType ?? null) : null,
     allergies: allergies && allergies.length > 0 ? allergies : null,
     conditions: conditions && conditions.length > 0 ? conditions : null,
@@ -247,9 +260,10 @@ export async function loadEmergencyCard(
       : null,
     organDonor: has("ORGAN_DONOR") ? (profile?.organDonor ?? null) : null,
     note: has("NOTE") ? text(profile?.note) : null,
-    dateOfBirth: user?.dateOfBirth
-      ? dateOfBirthKey(user.dateOfBirth, user.timezone)
-      : null,
+    dateOfBirth:
+      has("DATE_OF_BIRTH") && user?.dateOfBirth
+        ? dateOfBirthKey(user.dateOfBirth, user.timezone)
+        : null,
     asOf: today,
   };
 }
@@ -257,6 +271,7 @@ export async function loadEmergencyCard(
 /** Does the card hold anything at all? */
 export function emergencyCardHasContent(view: EmergencyCardView): boolean {
   return (
+    view.name !== null ||
     view.bloodType !== null ||
     view.allergies !== null ||
     view.conditions !== null ||

@@ -120,6 +120,9 @@ export const WIPE_MODELS = [
   "MedicationDocumentLink",
   "MedicationConditionLink",
   "Encounter",
+  // The series after the sessions that name it (SetNull), before the
+  // practitioners and conditions it names.
+  "TreatmentSeries",
 
   // ── Vaccinations ────────────────────────────────────────────────────────
   // Same ordering argument as the visit links: the document link cascades
@@ -249,6 +252,11 @@ export const WIPE_MODELS = [
   "CycleCalendarFeed",
   // The care calendar feed; deleting the row is the revocation.
   "CareCalendarFeed",
+  // An Apple Wallet pass of the emergency card (v1.50), before its link (the
+  // link's row cascades to it). Its device registrations cascade with it.
+  // Deleting the row is the revocation: the web service answers an unknown
+  // serial number like a wrong token.
+  "WalletPass",
   // The emergency card's QR link; deleting the row is the revocation.
   "EmergencyCardLink",
   // v1.36.0 — account grants, on BOTH sides (see WIPE_OWNER_FIELDS): the ones
@@ -668,6 +676,9 @@ export const WIPE_OWNER_FIELDS: Readonly<Record<string, readonly string[]>> = {
   // guardian made for a managed profile.
   CareCalendarFeed: ["userId", "createdById"],
   EmergencyCardLink: ["userId", "createdById"],
+  // A wallet pass on this record, and one this account made as the guardian
+  // of a managed profile.
+  WalletPass: ["userId", "createdById"],
   // Both sides. Wiping only the grantor side would leave the account still
   // holding read access to other people's records after it asked for
   // everything of its own to be deleted.

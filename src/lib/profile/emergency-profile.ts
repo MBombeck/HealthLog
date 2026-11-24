@@ -17,6 +17,7 @@ import type {
   EmergencyProfileDto,
   EmergencyProfileUpdate,
 } from "@/lib/validations/emergency-profile";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 interface EmergencyProfileRow {
   emergencyBloodType: EmergencyProfileDto["bloodType"] | null;
@@ -133,6 +134,8 @@ export async function readEmergencyProfile(
     where: { userId },
     select: EMERGENCY_SELECT,
   });
+  // The emergency card reads this profile: a Wallet pass of it is rebuilt.
+  await enqueueWalletRefresh(userId);
   return toEmergencyProfileDto(row, userId);
 }
 

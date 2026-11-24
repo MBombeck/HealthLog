@@ -152,6 +152,7 @@ export const SOFT_DELETE_RETENTION: Readonly<
   IllnessEpisode: standard("illness_episodes", [
     live("illness_episodes", "parent_condition_id"),
     live("symptom_events", "episode_id"),
+    live("treatment_series", "episode_id"),
   ]),
   IllnessDayLog: standard("illness_day_logs"),
   // Only an occurrence imported from Apple Health is tombstoned; the
@@ -166,7 +167,14 @@ export const SOFT_DELETE_RETENTION: Readonly<
   ]),
   Practitioner: standard("practitioners", [
     live("encounters", "practitioner_id"),
+    live("treatment_series", "prescriber_id"),
+    live("treatment_series", "performer_id"),
     live("vaccination_records", "practitioner_id"),
+  ]),
+  // A deleted series is purged only once no live visit names it; until then
+  // its sessions would lose the grouping a restore could still give back.
+  TreatmentSeries: standard("treatment_series", [
+    live("encounters", "series_id"),
   ]),
   VaccinationRecord: standard("vaccination_records"),
   CustomVaccine: standard("custom_vaccines", [

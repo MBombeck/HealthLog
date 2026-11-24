@@ -61,6 +61,10 @@ export default function CarePageClient() {
   // the visits tab, where the section opens it.
   const searchParams = useSearchParams();
   const linkedVisit = searchParams?.get("visit");
+  // A link to one treatment series (`?series=<id>`, from the
+  // timeline or the search) lands on the visits tab, where the section
+  // opens it.
+  const linkedSeries = searchParams?.get("series");
   // A link to one body site (`?site=<text>&side=<LEFT|RIGHT|BOTH>`, from a
   // condition's page) lands on the body-site tab with that site picked.
   const linkedSite = searchParams?.get("site")?.trim() || null;
@@ -75,7 +79,7 @@ export default function CarePageClient() {
   // appointments). Built by `src/lib/encounters/visit-links.ts`, never by hand.
   const linkedView = parseCheckupsView(searchParams?.get("view"));
   const [view, setView] = useState<string>(
-    linkedVisit
+    linkedVisit || linkedSeries
       ? "visits"
       : linkedSite
         ? "body-sites"
@@ -88,6 +92,11 @@ export default function CarePageClient() {
   if (linkedVisit !== observedVisit) {
     setObservedVisit(linkedVisit);
     if (linkedVisit) setView("visits");
+  }
+  const [observedSeries, setObservedSeries] = useState(linkedSeries);
+  if (linkedSeries !== observedSeries) {
+    setObservedSeries(linkedSeries);
+    if (linkedSeries) setView("visits");
   }
   const [observedView, setObservedView] = useState(linkedView);
   if (linkedView !== observedView) {

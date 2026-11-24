@@ -1,11 +1,15 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { describe, expect, it, vi } from "vitest";
 import { jsPDF } from "jspdf";
 
 /**
  * Local, provider-free text extraction. Pins: a real text-layer PDF yields its
  * text with source "local-pdf" (no provider, no OCR); a PDF below the min-chars
- * gate is treated as empty (scanned); an image is the deferred-OCR seam
- * (unsupported); malformed bytes fail closed to "error" without throwing.
+ * gate is treated as empty (scanned); an image on a build without OCR is
+ * unsupported; malformed bytes fail closed to "error" without throwing.
  */
 
 const { annotate, logCaught } = vi.hoisted(() => ({
@@ -20,6 +24,7 @@ import {
   localExtractText,
   LOCAL_TEXT_MIN_CHARS,
 } from "../local-extract";
+import { __resetServerOcrStatusForTests } from "../server-ocr";
 
 /** Build a real text-layer PDF (jsPDF is isomorphic; Helvetica text layer). */
 function textLayerPdf(lines: string[]): Buffer {
@@ -118,12 +123,21 @@ describe("localExtractText", () => {
     if (result.ok) expect(result.source).toBe("local-pdf");
   });
 
-  it("returns unsupported for images (deferred server-OCR seam)", async () => {
-    const result = await localExtractText(
-      Buffer.from([0xff, 0xd8]),
-      "image/jpeg",
-    );
-    expect(result).toEqual({ ok: false, reason: "unsupported" });
+  it("returns unsupported for an image on a build without OCR", async () => {
+    // A build that carries no language data reads no scans; the real OCR
+    // path is pinned in `server-ocr.test.ts`.
+    const empty = mkdtempSync(join(tmpdir(), "hl-no-ocr-"));
+    __resetServerOcrStatusForTests(empty);
+    try {
+      const result = await localExtractText(
+        Buffer.from([0xff, 0xd8]),
+        "image/jpeg",
+      );
+      expect(result).toEqual({ ok: false, reason: "unsupported" });
+    } finally {
+      __resetServerOcrStatusForTests();
+      rmSync(empty, { recursive: true, force: true });
+    }
   });
 
   it("returns unsupported for any other MIME", async () => {

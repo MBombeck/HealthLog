@@ -471,6 +471,10 @@ function inkRatio(context, width, height) {
  * @property {number} jpegQuality
  * @property {number} minInkRatio Below this share of dark pixels a page counts as blank.
  * @property {boolean} [withText] Also read each rendered page's text layer.
+ * @property {boolean} [upscale] Render to `targetLongEdge` even when that is
+ *   larger than the page's own size in points. OCR needs it: an A4 page is
+ *   842 points long, 72 dpi at scale 1, and a scan's small print is
+ *   unreadable at that resolution.
  *
  * @typedef {object} RenderedPage
  * @property {Buffer} jpeg
@@ -482,6 +486,12 @@ function inkRatio(context, width, height) {
  * @property {RenderedPage[]} pages
  * @property {boolean} assetsMissing Whether pdf.js ran without its font and decoder data.
  */
+
+/**
+ * The most a page is enlarged when `upscale` is asked for. A page declared a
+ * few points wide would otherwise become a canvas of any size.
+ */
+const MAX_UPSCALE = 6;
 
 /**
  * Render the first `maxPages` pages of a PDF to JPEG. Throws what pdf.js
@@ -506,9 +516,11 @@ export async function renderPdfPages(data, options) {
       try {
         const base = page.getViewport({ scale: 1 });
         const longEdge = Math.max(base.width, base.height);
-        // Cap the long edge, never upscale (scale <= 1).
-        const scale =
-          longEdge > 0 ? Math.min(1, options.targetLongEdge / longEdge) : 1;
+        // Cap the long edge; never upscale unless asked to (OCR).
+        const fit = longEdge > 0 ? options.targetLongEdge / longEdge : 1;
+        const scale = options.upscale
+          ? Math.min(fit, MAX_UPSCALE)
+          : Math.min(1, fit);
         const viewport = page.getViewport({ scale });
 
         const factory = /** @type {RenderTargetFactory} */ (doc.canvasFactory);

@@ -39,11 +39,16 @@ export function PractitionerCombobox({
   /** The already-resolved entry, so the closed trigger names it without a read. */
   selected,
   disabled,
+  label,
+  slot = "encounter-practitioner-trigger",
 }: {
   value: string | null;
   onChange: (next: Practitioner | null) => void;
   selected: Practitioner | null;
   disabled?: boolean;
+  /** The field's name, when a form holds more than one of these. */
+  label?: string;
+  slot?: string;
 }) {
   const { t } = useTranslations();
   const [open, setOpen] = useState(false);
@@ -71,9 +76,9 @@ export function PractitionerCombobox({
               // placeholder span does not give the trigger an accessible name,
               // so name it from the field's own label. Applies wherever this
               // combobox is embedded (the visit form and the immunization form).
-              aria-label={t("encounters.form.practitioner")}
+              aria-label={label ?? t("encounters.form.practitioner")}
               disabled={disabled}
-              data-slot="encounter-practitioner-trigger"
+              data-slot={slot}
               className="min-h-11 min-w-0 flex-1 justify-between font-normal"
             >
               <span

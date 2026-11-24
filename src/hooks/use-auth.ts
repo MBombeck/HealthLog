@@ -46,6 +46,7 @@ import {
 } from "@/lib/query-keys/record-session-transition";
 import type { AccountAccess } from "@/lib/sharing/account-access-view";
 import { parseAccountAccess } from "@/lib/sharing/account-access-parse";
+import { readMeEmergency, type MeEmergency } from "@/lib/auth/me-emergency";
 
 /**
  * v1.36.0 — an account with no sharing at all. The shape `fetchMe` falls back
@@ -278,6 +279,7 @@ export interface AuthUser {
    * against a payload that does not carry a well-formed block.
    */
   ai?: AiCapabilities | null;
+  emergencyCard?: MeEmergency | null;
   /**
    * v1.41 — the Coach's thinking depth, resolved on the server: the level a
    * turn runs at, the person's own pick, the highest option the operator
@@ -578,6 +580,7 @@ export function adoptMePayload(
       typeof data.ai.provider === "object"
         ? data.ai
         : null,
+    emergencyCard: readMeEmergency(data.emergencyCard),
     // v1.41 — an older server image publishes no reasoning block; null, which
     // the hook reads as "not available here".
     coachReasoning:

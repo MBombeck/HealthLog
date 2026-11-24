@@ -109,6 +109,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         createdById: actor.id,
         tokenHash: minted.hash,
         tokenPrefix: minted.prefix,
+        purpose: "CARD",
         fields,
         expiresAt,
       },
@@ -149,8 +150,9 @@ export const DELETE = apiHandler(async () => {
   if (!live) return cardNoLiveLink();
 
   const revokedAt = new Date();
+  // The printed card's link only: a wallet pass keeps its own.
   await prisma.emergencyCardLink.updateMany({
-    where: { userId: user.id, revokedAt: null },
+    where: { userId: user.id, revokedAt: null, purpose: "CARD" },
     data: { revokedAt },
   });
   await auditLog("emergency-card.link.revoke", {

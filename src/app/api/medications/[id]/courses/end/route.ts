@@ -35,6 +35,7 @@ import {
 import { dayKeyOfDate } from "@/lib/medications/course-window";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +82,7 @@ async function postEndCourse(
       action: { name: "medication.course.end" },
       meta: { medicationId: id },
     });
+    await enqueueWalletRefresh(user.id);
     return apiSuccess(body);
   } catch (err) {
     if (err instanceof CourseWriteError) {

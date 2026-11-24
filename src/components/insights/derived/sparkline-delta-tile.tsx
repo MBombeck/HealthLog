@@ -65,6 +65,17 @@ export interface SparklineDeltaTileProps {
   comparisonSeries?: number[];
   /** Accessible name for `comparisonSeries` (e.g. "your typical day"). */
   comparisonLabel?: string;
+  /**
+   * A picture of the caller's own in the sparkline's place, in the
+   * same fixed 40 px band. For a reading that has no trailing curve to draw,
+   * such as a day total set against a usual range. Wins over `series`.
+   */
+  visual?: React.ReactNode;
+  /**
+   * One meta line under the framing row: where a number came from
+   * and when it was last updated. Muted, one line.
+   */
+  caption?: React.ReactNode;
   /** Signed delta vs the baseline; drives the arrow + the (Δ) caption. */
   delta?: number | null;
   /** Whether an up move is good / bad / neutral for this metric. */
@@ -104,6 +115,8 @@ export function SparklineDeltaTile({
   series,
   comparisonSeries,
   comparisonLabel,
+  visual,
+  caption,
   delta = null,
   directionSentiment = "neutral",
   framing,
@@ -211,7 +224,14 @@ export function SparklineDeltaTile({
           When there is no trailing series the row collapses entirely rather
           than reserving an empty dashed placeholder (which read as visual
           dead space across the whole grid). */}
-      {sparkData ? (
+      {visual ? (
+        <div
+          className="mt-3 h-10 w-full"
+          data-slot="sparkline-delta-tile-visual"
+        >
+          {visual}
+        </div>
+      ) : sparkData ? (
         <div
           className="mt-3 h-10 w-full"
           data-slot="sparkline-delta-tile-spark"
@@ -249,6 +269,15 @@ export function SparklineDeltaTile({
           </span>
         )}
       </div>
+
+      {caption ? (
+        <span
+          className="text-muted-foreground mt-1 line-clamp-1 text-xs leading-snug"
+          data-slot="sparkline-delta-tile-caption"
+        >
+          {caption}
+        </span>
+      ) : null}
 
       {staleDays != null && staleDays > 7 && (
         <span

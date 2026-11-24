@@ -22,6 +22,7 @@ import { withLeafletSearch } from "@/lib/medications/leaflet-registries";
 import { resolveMedicineRegistry } from "@/lib/medications/medicine-registry";
 import { withIdempotency } from "@/lib/idempotency";
 import { NextRequest } from "next/server";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 export const GET = apiHandler(async () => {
   const { user, actor, grantId } = await requireRecordAuth(
@@ -111,6 +112,7 @@ async function postMedication(request: NextRequest): Promise<Response> {
     case "existing":
       return apiSuccess(outcome.body);
     case "created":
+      await enqueueWalletRefresh(user.id);
       return apiSuccess(outcome.body, 201);
   }
 }

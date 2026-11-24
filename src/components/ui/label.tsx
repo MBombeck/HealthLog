@@ -14,9 +14,10 @@ import { cn } from "@/lib/utils";
  * release, so every field name sat 4 px right of the sentence above it and
  * of a switch's name in the same card, which `SwitchRow` had to undo.
  *
- * A label that already ends in punctuation takes no colon: a field named by
- * a question read "What are you tracking for?:". The label knows its own
- * text, so the call site does not have to remember.
+ * A label that already ends in punctuation takes no colon: an abbreviation
+ * such as "Dose no." would read "Dose no.:". The label knows its own text, so
+ * the call site does not have to remember. A field is named by a noun, never a
+ * question (`form-label-wording-guard.test.ts`).
  *
  * The label is `inline-block`, not `inline-flex`. In a flex box the colon is
  * a flex item of its own, so a label that wraps (a long German or French

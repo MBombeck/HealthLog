@@ -38,32 +38,42 @@ export function parseCheckupsView(
 }
 
 /*
- * Two spellings of the page's address.
+ * Two spellings of the page's address, each spelled once.
  *
- * The wire one, `/checkups`, is what the server sends to a client: push and
- * webhook targets, and every `href` / `path` in an API response. `/checkups`
- * kept on the wire for iOS builds before 1.7; switch to `/care` in 1.50. The
- * released iPhone app parses only these `/checkups` shapes; the browser
- * follows the permanent redirect from `/checkups` to `/care` in
- * `next.config.ts`. `care-wire-paths.test.ts` pins the wire values.
+ * The wire one, `CARE_WIRE_PATH`, is what the server sends to a client: push,
+ * ntfy, Telegram, email and webhook targets, and every `href` / `path` in an
+ * API response. It stays `/checkups` because iOS builds before 1.7 parse only
+ * the `/checkups` shapes. Switch it to `/care` once iOS 1.7 has been in the
+ * App Store for one release cycle; that is this one line. The browser follows
+ * the permanent redirect from `/checkups` to `/care` in `next.config.ts`,
+ * which stays after the switch for old bookmarks and old notifications.
+ * `care-wire-paths.test.ts` refuses a copy of either spelling elsewhere in the
+ * server code.
  *
- * The web one, `/care`, is for links the browser renders itself.
+ * The web one, `CARE_WEB_PATH`, is for links and routes the browser renders
+ * itself.
  */
 
+/** The page on the wire: what a push target or an API link names. */
+export const CARE_WIRE_PATH = "/checkups";
+
+/** The page in the web app. */
+export const CARE_WEB_PATH = "/care";
+
 /** The visits list on the wire: the page opened on its visits tab. */
-export const VISITS_PATH = "/checkups?view=visits";
+export const VISITS_PATH = `${CARE_WIRE_PATH}?view=visits`;
 
 /** One visit on the wire: the visits tab, scrolled to the visit and opened. */
 export function visitPath(id: string): string {
-  return `/checkups?visit=${encodeURIComponent(id)}`;
+  return `${CARE_WIRE_PATH}?visit=${encodeURIComponent(id)}`;
 }
 
 /** The visits list, as a link the web app renders itself. */
-export const CARE_VISITS_PATH = "/care?view=visits";
+export const CARE_VISITS_PATH = `${CARE_WEB_PATH}?view=visits`;
 
 /** One visit, as a link the web app renders itself. */
 export function careVisitPath(id: string): string {
-  return `/care?visit=${encodeURIComponent(id)}`;
+  return `${CARE_WEB_PATH}?visit=${encodeURIComponent(id)}`;
 }
 
 /**
@@ -72,4 +82,12 @@ export function careVisitPath(id: string): string {
  */
 export function visitsPath(ids: readonly string[]): string {
   return ids.length === 1 ? visitPath(ids[0]) : VISITS_PATH;
+}
+
+/**
+ * One treatment series on the wire: the visits tab, with the series
+ * opened. The page reads `series` the way it reads `visit`.
+ */
+export function treatmentSeriesPath(id: string): string {
+  return `${CARE_WIRE_PATH}?series=${encodeURIComponent(id)}`;
 }

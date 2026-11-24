@@ -324,6 +324,7 @@ export const SCHEDULED_AND_SENT_QUEUES: ReadonlySet<string> = new Set([
   "period-narrative-warm",
   "polar-sync",
   "pr-detection",
+  "wallet-pass-void-push",
   "whoop-recovery-sync",
   "whoop-sleep-sync",
   "whoop-workout-sync",

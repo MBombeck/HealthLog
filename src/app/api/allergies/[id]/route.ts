@@ -25,6 +25,7 @@ import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { allergyUpdateSchema } from "@/lib/validations/allergy";
 import { toAllergyDTO } from "@/lib/records/dto";
 import type { Prisma } from "@/generated/prisma/client";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -142,6 +143,7 @@ export const PATCH = apiHandler(
       action: { name: "allergy.update", entity_type: "allergy", entity_id: id },
     });
 
+    await enqueueWalletRefresh(user.id);
     return apiSuccess(toAllergyDTO(updated));
   },
 );
@@ -208,6 +210,7 @@ export const DELETE = apiHandler(
       action: { name: "allergy.delete", entity_type: "allergy", entity_id: id },
     });
 
+    await enqueueWalletRefresh(user.id);
     return apiSuccess({ deleted: true });
   },
 );

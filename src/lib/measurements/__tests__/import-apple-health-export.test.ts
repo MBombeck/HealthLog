@@ -503,16 +503,27 @@ function makeFakePrisma(
       findMany: async ({
         where,
       }: {
-        where: { userId: string; source: string; externalId: { in: string[] } };
+        where: {
+          userId: string;
+          source: string;
+          externalId?: { in: string[] };
+          startedAt?: { in: Date[] };
+        };
       }) => {
+        // By key (the stored totals, the legacy keys) or by start (the
+        // HealthKit-row probe, #1414).
+        const starts = where.startedAt?.in.map((d) => d.getTime());
         return workouts
           .filter(
             (w) =>
               w.userId === where.userId &&
               w.source === where.source &&
-              where.externalId.in.includes(w.externalId as string),
+              (where.externalId
+                ? where.externalId.in.includes(w.externalId as string)
+                : w.startedAt instanceof Date &&
+                  starts!.includes(w.startedAt.getTime())),
           )
-          .map((w) => ({ ...w }));
+          .map((w) => ({ route: null, samples: null, insight: null, ...w }));
       },
       upsert: async ({
         where,

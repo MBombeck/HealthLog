@@ -85,6 +85,10 @@ export const PATH_SECRET_PATHS: ReadonlyArray<{
   // from a wallet card's QR code. `pathStart`, so a later segment named `e`
   // in some other route is never taken for it.
   { prefix: "/e/", pathStart: true },
+  // Apple Wallet's pass web service. The device library id rides
+  // the segment after `devices/` and is the only credential of the list of
+  // updated passes; the rest of the path (Pass Type ID, serial) stays.
+  { prefix: "/api/wallet/apple/v1/devices/" },
 ];
 
 function redactPathSegments(input: string): string {
@@ -140,6 +144,9 @@ export function redactSecrets(input: string): string {
       .replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]")
       // A Garmin Personal API key rides as `Authorization: ApiKey <key>`.
       .replace(/\bApiKey\s+\S+/g, "ApiKey [REDACTED]")
+      // Apple Wallet's pass web service authenticates with
+      // `Authorization: ApplePass <authenticationToken>`.
+      .replace(/\bApplePass\s+\S+/g, "ApplePass [REDACTED]")
       .replace(/bot\d+:[A-Za-z0-9_-]+/g, "bot[REDACTED]")
       // `sk-` is a common English-prefix substring (task-force, risk-
       // management, disk-io). Without a word-boundary, the original

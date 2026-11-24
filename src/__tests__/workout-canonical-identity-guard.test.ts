@@ -177,13 +177,14 @@ describe("the shared pick select carries the identity", () => {
 });
 
 describe("the identity cannot quietly grow a field callers do not fetch", () => {
-  it("keys the session on sportType, startedAt and durationSec only", () => {
+  it("keys the session on source, sportType, startedAt and durationSec only", () => {
     const picker = read(PICKER);
     const body = picker.slice(
-      picker.indexOf("function exactSessionKey"),
+      picker.indexOf("export function workoutSessionKey"),
       picker.indexOf("function rowRichness"),
     );
 
+    expect(body).toContain("row.source");
     expect(body).toContain("row.sportType");
     expect(body).toContain("row.startedAt");
     expect(body).toContain("row.durationSec");

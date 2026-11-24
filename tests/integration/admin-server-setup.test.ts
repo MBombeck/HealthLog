@@ -242,6 +242,7 @@ describe("the server setup for an admin", () => {
       "secure_cookie",
       "app_url",
       "database_dump",
+      "local_ocr",
     ]);
     const keys = health.signals.find((s) => s.id === "encryption_keys");
     expect(keys?.state).toBe("ok");

@@ -45,6 +45,13 @@ export function isAiReadSource(
   return source === "vision";
 }
 
+/**
+ * The `providerType` of a document whose values were read by rule, with no
+ * model (`local-lab-values.ts`). The review offers a read with AI over them
+ * while none is confirmed.
+ */
+export const LOCAL_PARSER_PROVIDER = "local-parser";
+
 export const DOCUMENT_LIST_DEFAULT_LIMIT = 50;
 
 /**

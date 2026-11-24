@@ -510,6 +510,15 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
+    file: "hooks/use-treatment-series.ts",
+    destroys:
+      "a treatment series with its title, count and window; its sessions stay as the visits they are",
+    triggers: ["components/encounters/treatment-series-sheet.tsx"],
+    // The delete toast offers the Undo that calls the restore route.
+    recovery: "restorable",
+    confirm: ["AlertDialog"],
+  },
+  {
     file: "hooks/use-practitioners.ts",
     destroys: "one address-book entry",
     triggers: ["components/practitioners/practitioner-list.tsx"],
@@ -563,6 +572,13 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/emergency-card/emergency-card-page.tsx",
     destroys:
       "the emergency card's QR link; printed cards with its code stop working, and a new link needs the card printed again",
+    recovery: "permanent",
+    confirm: ["ConfirmButton"],
+  },
+  {
+    file: "components/emergency-card/apple-wallet-card.tsx",
+    destroys:
+      "the emergency card's Apple Wallet pass; its QR code stops working and Wallet replaces the pass with a withdrawn one, and a new pass has to be added again",
     recovery: "permanent",
     confirm: ["ConfirmButton"],
   },

@@ -6,7 +6,7 @@ import {
   buildOfflineCardHtml,
   escapeHtml,
 } from "@/lib/emergency-card/offline-html";
-import { emergencyCardRows } from "@/lib/emergency-card/rows";
+import { emergencyCardRows, splitCardTitle } from "@/lib/emergency-card/rows";
 
 const t = (key: string, vars?: Record<string, string | number>) =>
   vars ? `${key}(${Object.values(vars).join(",")})` : key;
@@ -14,6 +14,7 @@ const t = (key: string, vars?: Record<string, string | number>) =>
 function view(over: Partial<EmergencyCardView>): EmergencyCardView {
   return {
     fields: [],
+    name: null,
     bloodType: null,
     allergies: null,
     conditions: null,
@@ -67,9 +68,55 @@ describe("emergencyCardRows", () => {
   });
 });
 
+describe("the name", () => {
+  it("comes first and becomes the title line when recorded", () => {
+    const rows = emergencyCardRows(
+      view({
+        fields: ["NAME", "BLOOD_TYPE"],
+        name: "Alex Example",
+        bloodType: "A_POS",
+      }),
+      t,
+      "en",
+    );
+    expect(rows.map((r) => r.key)).toEqual(["NAME", "BLOOD_TYPE"]);
+    const split = splitCardTitle(rows);
+    expect(split.title).toBe("Alex Example");
+    expect(split.rows.map((r) => r.key)).toEqual(["BLOOD_TYPE"]);
+  });
+
+  it("stays a row that says so when asked for and not recorded", () => {
+    const split = splitCardTitle(
+      emergencyCardRows(view({ fields: ["NAME"] }), t, "en"),
+    );
+    expect(split.title).toBeNull();
+    expect(split.rows[0].lines).toEqual(["records.emergency.notRecorded"]);
+  });
+
+  it("is not shown when not asked for", () => {
+    const rows = emergencyCardRows(
+      view({ fields: ["BLOOD_TYPE"], name: "Alex Example" }),
+      t,
+      "en",
+    );
+    expect(splitCardTitle(rows).title).toBeNull();
+    expect(JSON.stringify(rows)).not.toContain("Alex Example");
+  });
+
+  it("titles the offline copy, escaped", () => {
+    const html = buildOfflineCardHtml(
+      view({ fields: ["NAME"], name: "Alex <Example>" }),
+      t,
+      "en",
+    );
+    expect(html).toContain("<h2>Alex &lt;Example&gt;</h2>");
+  });
+});
+
 describe("normaliseFields", () => {
   it("puts the ticked items in reading order, each once", () => {
-    expect(normaliseFields(["NOTE", "BLOOD_TYPE", "NOTE"])).toEqual([
+    expect(normaliseFields(["NOTE", "BLOOD_TYPE", "NAME", "NOTE"])).toEqual([
+      "NAME",
       "BLOOD_TYPE",
       "NOTE",
     ]);

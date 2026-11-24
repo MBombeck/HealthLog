@@ -40,6 +40,7 @@ const DOCS_SITE_PAGES: readonly string[] = [
   "guides/connect-strava/",
   "guides/connect-whoop/",
   "guides/connect-withings/",
+  "guides/document-vault/",
   "guides/encryption-key-rotation/",
   "guides/import-csv/",
   "guides/invites/",

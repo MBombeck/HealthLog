@@ -34,7 +34,7 @@ import { surfaceModule } from "@/lib/modules/surface";
 import type { ShareDomain } from "@/lib/sharing/scope";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
-import { visitPath } from "@/lib/encounters/visit-links";
+import { treatmentSeriesPath, visitPath } from "@/lib/encounters/visit-links";
 import { decryptSeizureText } from "@/lib/seizures/server";
 import { pregnancySpans } from "@/lib/cycle/pregnancy";
 import { loadPregnancyFields } from "@/lib/cycle/pregnancy-store";
@@ -404,35 +404,109 @@ async function vaccinationsLane(frame: LaneFrame): Promise<LaneRead> {
 }
 
 async function visitsLane(frame: LaneFrame): Promise<LaneRead> {
-  const rows = await prisma.encounter.findMany({
-    where: { userId: frame.userId, deletedAt: null, status: "DONE" },
-    select: {
-      id: true,
-      occurredAt: true,
-      kind: true,
-      reasonEncrypted: true,
-      practitioner: { select: { name: true } },
-    },
-    orderBy: { occurredAt: "asc" },
-  });
+  const [rows, series] = await Promise.all([
+    prisma.encounter.findMany({
+      where: { userId: frame.userId, deletedAt: null, status: "DONE" },
+      select: {
+        id: true,
+        occurredAt: true,
+        kind: true,
+        reasonEncrypted: true,
+        seriesId: true,
+        practitioner: { select: { name: true } },
+      },
+      orderBy: { occurredAt: "asc" },
+    }),
+    prisma.treatmentSeries.findMany({
+      where: { userId: frame.userId, deletedAt: null },
+      select: {
+        id: true,
+        titleEncrypted: true,
+        plannedSessions: true,
+        startsOn: true,
+        validUntil: true,
+        endedOn: true,
+      },
+      orderBy: { startsOn: "asc" },
+    }),
+  ]);
   return {
-    items: rows.map((r) =>
-      item({
-        id: r.id,
-        kind: r.kind === "PROCEDURE" ? "procedure" : "visit",
-        start: userDayKey(r.occurredAt, frame.tz),
-        end: null,
-        open: false,
-        label:
-          openText(r.reasonEncrypted, "visit reason") ??
-          r.practitioner?.name ??
-          "",
-        sub: r.kind,
-        href: visitPath(r.id),
-      }),
-    ),
+    items: [
+      ...seriesItems(series, rows, frame.tz),
+      ...rows.map((r) =>
+        item({
+          id: r.id,
+          kind: r.kind === "PROCEDURE" ? "procedure" : "visit",
+          start: userDayKey(r.occurredAt, frame.tz),
+          end: null,
+          open: false,
+          label:
+            openText(r.reasonEncrypted, "visit reason") ??
+            r.practitioner?.name ??
+            "",
+          sub: r.kind,
+          href: visitPath(r.id),
+        }),
+      ),
+    ],
     standing: [],
   };
+}
+
+/**
+ * Each treatment series as a stretch in the visits lane: from its
+ * first session (its start day while none took place) to the day it ended,
+ * its last session once every planned one took place, or its last valid day
+ * once that has passed; open while it runs. The sessions stay the lane's
+ * points; the sub carries "done/planned" for the label's tag.
+ */
+function seriesItems(
+  series: ReadonlyArray<{
+    id: string;
+    titleEncrypted: Uint8Array;
+    plannedSessions: number | null;
+    startsOn: Date;
+    validUntil: Date | null;
+    endedOn: Date | null;
+  }>,
+  sessions: ReadonlyArray<{ seriesId: string | null; occurredAt: Date }>,
+  tz: string,
+): TimelineItem[] {
+  const today = userDayKey(new Date(), tz);
+  const done = new Map<string, Date[]>();
+  for (const s of sessions) {
+    if (!s.seriesId) continue;
+    const list = done.get(s.seriesId) ?? [];
+    list.push(s.occurredAt);
+    done.set(s.seriesId, list);
+  }
+  return series.map((s) => {
+    const dates = done.get(s.id) ?? [];
+    const first = dates[0] ? userDayKey(dates[0], tz) : null;
+    const last = dates.length ? userDayKey(dates[dates.length - 1], tz) : null;
+    const validUntil = s.validUntil ? dateOnlyKey(s.validUntil) : null;
+    const end = s.endedOn
+      ? dateOnlyKey(s.endedOn)
+      : s.plannedSessions !== null && dates.length >= s.plannedSessions
+        ? last
+        : validUntil !== null && validUntil < today
+          ? validUntil
+          : null;
+    const start = first ?? dateOnlyKey(s.startsOn);
+    return item({
+      id: s.id,
+      kind: "treatmentSeries",
+      start,
+      end: end !== null && end < start ? start : end,
+      open: end === null,
+      label: openText(s.titleEncrypted, "treatment series title") ?? "",
+      sub:
+        s.plannedSessions !== null
+          ? `${dates.length}/${s.plannedSessions}`
+          : String(dates.length),
+      href: treatmentSeriesPath(s.id),
+    });
+  });
 }
 
 /** At most this many analytes name a lab day. */

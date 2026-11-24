@@ -34,6 +34,10 @@ vi.mock("@/lib/measurements/dense-bucket-read", async () => {
     (prisma.measurement.findMany as (a: unknown) => never)(args),
   );
 });
+// The same-time baseline's day totals fold in SQL; an empty account has none.
+vi.mock("@/lib/measurements/cumulative-day-totals", () => ({
+  readCanonicalCumulativeDayTotals: vi.fn().mockResolvedValue([]),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {

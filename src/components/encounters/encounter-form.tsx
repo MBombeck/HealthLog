@@ -30,6 +30,7 @@ import { FieldGroup } from "@/components/ui/field-group";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
+import { useTreatmentSeriesList } from "@/hooks/use-treatment-series";
 import { useTranslations } from "@/lib/i18n/context";
 import type { Encounter, EncounterWriteBody } from "@/hooks/use-encounters";
 import type { Practitioner } from "@/hooks/use-practitioners";
@@ -58,6 +59,12 @@ export interface EncounterDraft {
   documentIds: string[];
   labResultIds: string[];
   episodeIds: string[];
+  /**
+   * The treatment series this visit is a session of. `undefined`
+   * when the row it was seeded from did not say (a save then leaves it
+   * alone), null for none.
+   */
+  seriesId?: string | null;
   /**
    * The links the visit carried when the sheet opened, as its read names
    * them, so their chips show whatever page the pickers have loaded. Display
@@ -116,6 +123,7 @@ export function draftFromEncounter(row: Encounter): EncounterDraft {
     documentIds: row.links?.documents.map((link) => link.id) ?? [],
     labResultIds: row.links?.labResults.map((link) => link.id) ?? [],
     episodeIds: row.links?.conditions.map((link) => link.id) ?? [],
+    ...(row.series !== undefined ? { seriesId: row.series?.id ?? null } : {}),
     links: row.links ?? null,
   };
 }
@@ -151,6 +159,7 @@ export function draftToBody(
     bodySite: draft.bodySite.trim() || null,
     laterality: draft.laterality,
     ...(options.reminderId ? { reminderId: options.reminderId } : {}),
+    ...(draft.seriesId !== undefined ? { seriesId: draft.seriesId } : {}),
     documentIds: draft.documentIds,
     labResultIds: draft.labResultIds,
     episodeIds: draft.episodeIds,
@@ -191,6 +200,17 @@ export function EncounterForm({
   // visit that already carries one keeps the fields in view whatever its kind:
   // switching the kind away must not hide text the person typed, and the
   // server keeps it either way.
+  // The series field shows once there is a series to pick, or when
+  // this visit already belongs to one.
+  const seriesList = useTreatmentSeriesList();
+  const seriesOptions = (seriesList.data ?? []).filter(
+    (s) =>
+      s.id === draft.seriesId ||
+      s.status === "PLANNED" ||
+      s.status === "ACTIVE",
+  );
+  const showSeries = seriesOptions.length > 0 || Boolean(draft.seriesId);
+
   const showBodySite =
     draft.kind === "PROCEDURE" ||
     draft.bodySite.trim().length > 0 ||
@@ -261,6 +281,29 @@ export function EncounterForm({
           ))}
         </NativeSelect>
       </FieldGroup>
+
+      {showSeries ? (
+        <FieldGroup
+          htmlFor="encounter-series"
+          label={t("treatmentSeries.form.series")}
+        >
+          <NativeSelect
+            id="encounter-series"
+            value={draft.seriesId ?? ""}
+            onChange={(event) =>
+              patch({ seriesId: event.target.value || null })
+            }
+            data-testid="encounter-series"
+          >
+            <option value="">{t("treatmentSeries.form.seriesNone")}</option>
+            {seriesOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.title ?? t("treatmentSeries.untitled")}
+              </option>
+            ))}
+          </NativeSelect>
+        </FieldGroup>
+      ) : null}
 
       {showBodySite ? (
         <BodySiteFields

@@ -5,7 +5,10 @@
  *
  * The job runs the shared AI-first decision tree (`indexDocumentContent`):
  * provider (vision) first when one is configured + consented, else local
- * text-layer extraction. Owner-scoped; the provider path is consent + budget
+ * text-layer extraction, and OCR on this server for a scan or a photo. Then
+ * the lab values of a lab report are staged for review: by the AI when its
+ * staging may run, by rule (`maybeStageLabValuesWithoutModel`) when it may
+ * not or did not. Owner-scoped; the provider path is consent + budget
  * gated; the local path needs neither (no egress). Serial concurrency keeps the
  * provider calls + PDF parsing off the request pool.
  *
@@ -13,7 +16,11 @@
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it.
  */
 import { STATUS_MODEL_CALLS } from "@/lib/ai/ai-budgets";
-import { maybeAutoStageLabFacts } from "@/lib/documents/auto-stage-labs";
+import {
+  maybeAutoStageLabFacts,
+  type AutoStageOutcome,
+} from "@/lib/documents/auto-stage-labs";
+import { maybeStageLabValuesWithoutModel } from "@/lib/documents/local-lab-values";
 import { indexDocumentContent } from "@/lib/documents/index-document";
 import { withPdfWork } from "@/lib/documents/pdf-isolation";
 import type { OcrSchedule } from "@/lib/documents/ocr-plan";
@@ -46,13 +53,21 @@ export interface DocumentIndexPayload {
  */
 export async function runDocumentIndex(
   payload: DocumentIndexPayload,
-  options: { deadlineAt?: number; now?: () => number } = {},
+  options: {
+    deadlineAt?: number;
+    now?: () => number;
+    /** pg-boss's abort signal: a long OCR read stops between pages. */
+    signal?: AbortSignal;
+  } = {},
 ): Promise<void> {
   const { userId, documentId } = payload;
   if (!userId || !documentId) return;
   const localOnly = payload.localOnly === true;
   const outcome = await withPdfWork({ owner: userId, lane: "background" }, () =>
-    indexDocumentContent(userId, documentId, { localOnly }),
+    indexDocumentContent(userId, documentId, {
+      localOnly,
+      signal: options.signal,
+    }),
   );
   annotate({
     action: { name: "documents.autoIndex.run" },
@@ -73,10 +88,37 @@ export async function runDocumentIndex(
       options.deadlineAt === undefined
         ? undefined
         : await stagingSchedule(userId, options.deadlineAt, options.now);
-    await withPdfWork({ owner: userId, lane: "background" }, () =>
-      maybeAutoStageLabFacts(userId, documentId, { schedule }),
+    const staging = await withPdfWork(
+      { owner: userId, lane: "background" },
+      () => maybeAutoStageLabFacts(userId, documentId, { schedule }),
     ).catch(caughtAs("documents.auto_index.lab_staging_failed"));
+    // The AI could not stage (none may run, its budget is spent, the read
+    // failed): the values are read by rule instead. Reading data never
+    // depends on an AI setting.
+    if (needsStagingWithoutModel(staging)) {
+      await maybeStageLabValuesWithoutModel(userId, documentId).catch(
+        caughtAs("documents.auto_index.local_lab_values_failed"),
+      );
+    }
   }
+}
+
+/**
+ * Whether the AI staging's answer leaves the lab values to the reading by
+ * rule: it was not allowed to run, ran out of budget, failed, or threw. A
+ * document it staged, one that was already handled or held back, and one
+ * that is no lab report are left as they are.
+ */
+export function needsStagingWithoutModel(
+  staging: AutoStageOutcome | void,
+): boolean {
+  if (!staging) return true;
+  if (staging.staged) return false;
+  return (
+    staging.reason === "not-eligible" ||
+    staging.reason === "budget" ||
+    staging.reason === "extract-failed"
+  );
 }
 
 /**

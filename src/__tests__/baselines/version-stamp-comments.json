@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2835,
-  "total": 8816,
+  "total": 8813,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -954,7 +954,7 @@
     "components/insights/derived/standards.ts": 1,
     "components/insights/derived/use-dashboard-derived.ts": 2,
     "components/insights/derived/use-derived-metric.ts": 3,
-    "components/insights/derived/vitals-dashboard.tsx": 11,
+    "components/insights/derived/vitals-dashboard.tsx": 9,
     "components/insights/derived/wellness-scores.tsx": 4,
     "components/insights/device-score-tile-skeleton.tsx": 1,
     "components/insights/device-score-tile.tsx": 3,
@@ -1934,7 +1934,7 @@
     "lib/doctor-report-types.ts": 20,
     "lib/doctor-report/__tests__/leaf-gating-sweep.test.ts": 1,
     "lib/doctor-report/clinical-records.ts": 2,
-    "lib/doctor-report/collect.ts": 2,
+    "lib/doctor-report/collect.ts": 1,
     "lib/documents/__tests__/commit.test.ts": 1,
     "lib/documents/__tests__/extract.test.ts": 1,
     "lib/documents/__tests__/fenced-chat-module-graph.test.ts": 1,

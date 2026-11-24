@@ -42,6 +42,7 @@ import {
 } from "@/lib/cycle/pregnancy-store";
 import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 /** The owner's calendar day, the day every cycle date is counted on. */
 function ownerToday(timezone: string | null | undefined): string {
@@ -175,5 +176,6 @@ export const PATCH = apiHandler(async (req: Request) => {
     meta: { changed: Object.keys(p), enabled: resolved },
   });
 
+  await enqueueWalletRefresh(user.id);
   return apiSuccess(toCycleProfileDTO(updated, resolved, today));
 });

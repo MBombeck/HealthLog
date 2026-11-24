@@ -179,6 +179,7 @@ const SUMMARY_COUNTS = [
   "healthScoreRecords",
   "onboardingRecords",
   "practitioners",
+  "treatmentSeries",
   "encounters",
   "encounterLinks",
   "vaccinations",

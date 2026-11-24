@@ -91,12 +91,15 @@ export function toCardLinkSummary(
   };
 }
 
-/** The record's live (unrevoked) link, or null. At most one exists. */
+/**
+ * The record's live (unrevoked) printed-card link, or null. At most one
+ * exists per purpose; a wallet pass's link is not this one.
+ */
 export function findLiveCardLink(
   userId: string,
 ): Promise<CardLinkSummaryRow | null> {
   return prisma.emergencyCardLink.findFirst({
-    where: { userId, revokedAt: null },
+    where: { userId, revokedAt: null, purpose: "CARD" },
     select: CARD_LINK_SUMMARY_SELECT,
   });
 }

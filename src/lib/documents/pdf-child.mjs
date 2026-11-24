@@ -1,7 +1,7 @@
 // @ts-check
 /**
- * The process a PDF is read and rendered in, and an uploaded image is decoded
- * into its thumbnail in. `./pdf-isolation.ts` starts it for one request,
+ * The process a PDF is read and rendered in, an uploaded image is decoded
+ * into its thumbnail in, and a page image is read by OCR in. `./pdf-isolation.ts` starts it for one request,
  * hands it the bytes over the IPC channel, and takes back either the result
  * or the fact that it died. It holds no secrets: it is started with an almost
  * empty environment and never opens the database.
@@ -15,6 +15,7 @@ import { writeFileSync } from "node:fs";
 import * as nodeModule from "node:module";
 
 import { renderImageThumbnail } from "./image-engine.mjs";
+import { recognizePage } from "./ocr-engine.mjs";
 import { readPageTexts, readTextLayer, renderPdfPages } from "./pdf-engine.mjs";
 
 // The parent closed the canvas gate (`./native-canvas-support.ts`): this CPU
@@ -45,7 +46,8 @@ try {
  * @typedef {{ op: "text"; data: Uint8Array; maxPages: number }
  *   | { op: "page-texts"; data: Uint8Array; maxPages: number }
  *   | { op: "render"; data: Uint8Array; options: import("./pdf-engine.mjs").RenderOptions }
- *   | { op: "image-thumbnail"; data: Uint8Array; options: import("./image-engine.mjs").ImageThumbnailOptions }} PdfChildRequest
+ *   | { op: "image-thumbnail"; data: Uint8Array; options: import("./image-engine.mjs").ImageThumbnailOptions }
+ *   | { op: "ocr"; data: Uint8Array; options: import("./ocr-engine.mjs").OcrOptions }} PdfChildRequest
  */
 
 /**
@@ -86,6 +88,9 @@ async function handle(request) {
         ok: true,
         thumbnail: await renderImageThumbnail(data, request.options),
       };
+    }
+    if (request.op === "ocr") {
+      return { ok: true, ocr: await recognizePage(data, request.options) };
     }
     return failure(new Error("unknown request"));
   } catch (err) {

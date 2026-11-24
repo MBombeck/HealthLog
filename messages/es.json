@@ -228,7 +228,8 @@
       "invalid": "Comprueba los datos de la cita e inténtalo de nuevo.",
       "practitioner-not-found": "Esta consulta o este médico ya no existe. Elige otro o ninguno.",
       "reminder-not-found": "Esta revisión ya no existe. Elige otra o ninguna.",
-      "reminder-conflict": "Una cita prevista no puede cerrar una revisión, porque todavía no ha tenido lugar."
+      "reminder-conflict": "Una cita prevista no puede cerrar una revisión, porque todavía no ha tenido lugar.",
+      "series-not-found": "Esta serie de tratamiento ya no existe. Elige otra o ninguna."
     },
     "vaccination": {
       "invalid": "Comprueba los datos de la vacuna e inténtalo de nuevo.",
@@ -289,6 +290,11 @@
         "limit": "Ya hay 12 tipos de crisis. Archiva uno para añadir otro.",
         "notFound": "Este tipo de crisis ya no existe."
       }
+    },
+    "treatment_series": {
+      "invalid": "Revisa los datos de la serie e inténtalo de nuevo.",
+      "practitioner-not-found": "Esta consulta o este médico ya no existe. Elige otro o ninguno.",
+      "condition-not-found": "Esta afección ya no existe. Elige otra o ninguna."
     }
   },
   "doctorReport": {
@@ -1604,7 +1610,6 @@
     "intakeToastExtra": "{name}: tomada, {time}, como dosis extra",
     "intakeToastSkipped": "{name}: omitida",
     "intakeToastFailed": "No se pudo registrar {name}; inténtalo de nuevo",
-    "intakeUndone": "Entrada revertida",
     "intakeAlreadyTaken": "{name} ya estaba registrado como tomado. No se guardó nada nuevo.",
     "intakeUndoFailed": "No se pudo deshacer; corrígelo en el historial",
     "glp1LastInjection": "{label}",
@@ -1844,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "p. ej. 4",
           "dosesPerUnitHint": "Cuántos comprimidos o unidades trae un envase o pluma nuevo, p. ej. 28 comprimidos o una pluma de 4 dosis. Se rellena al registrar un envase; déjalo vacío si los envases varían.",
           "short": "Dosis",
-          "unitsPerDoseLabel": "¿Cuántos comprimidos o unidades forman esta dosis?",
+          "unitsPerDoseLabel": "Comprimidos o unidades por dosis",
           "unitsPerDoseHint": "p. ej., 2 comprimidos de 2 mg para una dosis de 4 mg, o ½ comprimido para una dosis partida",
           "packSizeToggle": "Tamaño del envase (opcional)"
         },
@@ -2131,9 +2136,7 @@
           "failed": "No se pudo actualizar la toma."
         },
         "deleteRow": {
-          "toast": "Toma eliminada",
-          "failed": "No se pudo eliminar la toma.",
-          "restored": "Toma restaurada"
+          "failed": "No se pudo eliminar la toma."
         },
         "viewRecent90": "Últimos 90 días",
         "viewAll": "Historial completo",
@@ -2682,6 +2685,17 @@
       "invalidRow": "Elige un nutriente e introduce una cantidad mayor que cero en cada línea."
     },
     "dose": {
+      "which": {
+        "slotTaken": "la dosis de las {slot}, tomada a las {taken}",
+        "slotSkipped": "la dosis de las {slot}, omitida",
+        "slot": "la dosis de las {slot}",
+        "taken": "la dosis tomada a las {taken}",
+        "plain": "la dosis"
+      },
+      "removed": "Eliminada: {dose}",
+      "restored": "Restaurada: {dose}",
+      "deleteLabel": "Eliminar {dose}",
+      "removedMany": "{count, plural, one {# dosis eliminada} other {# dosis eliminadas}}",
       "action": {
         "take": "Tomar",
         "skip": "Omitir",
@@ -4862,7 +4876,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Tu total acumulado de hoy frente a la mediana de esa misma hora local durante tus últimas cuatro semanas, con una banda robusta de mediana ± MAD alrededor. Solo cuentan los días con suficiente detalle registrado, y no se muestra ninguna comparación hasta tener al menos catorce.",
-          "caveat": "Una comparación con tu propio historial reciente, no un objetivo. Indica dónde se sitúa hoy frente a tu patrón habitual a esta hora, y nada sobre si ese patrón es el adecuado para ti."
+          "caveat": "Una comparación con tu propio historial reciente, no un objetivo. Indica dónde se sitúa hoy frente a tu patrón habitual a esta hora, y nada sobre si ese patrón es el adecuado para ti.",
+          "methodDailyTotal": "Tu fuente informa cada día como un único total, así que no hay una hora con la que comparar. El total acumulado de hoy, tal como la fuente lo informó por última vez, se compara con tus totales diarios de los últimos 14 días completos: la marca señala su mediana y la banda sombreada su mitad central. El rango aparece en cuanto 7 de esos días tienen un total."
         }
       },
       "scores": {
@@ -4904,7 +4919,11 @@
         "sectionSubtitle": "Tus totales acumulados frente a lo que es habitual en ti a esta hora",
         "learning": "Aprendiendo tu día habitual: {count} de {target, plural, one {# día} other {# días}}",
         "framing": "Habitual a las {time}: {typical} {unit}",
-        "comparisonLabel": "Tu día habitual"
+        "comparisonLabel": "Tu día habitual",
+        "sectionSubtitleDailyTotal": "Tus totales acumulados frente a tu día completo habitual",
+        "sectionSubtitleMixed": "Tus totales acumulados frente a lo que es habitual en ti",
+        "dailyFraming": "Día completo habitual: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {
@@ -9553,8 +9572,7 @@
     "auditActedByColumn": "Realizado por",
     "pushRelay": {
       "title": "Relé push de HealthLog",
-      "description": "Permite que la app de la App Store reciba notificaciones de este servidor a través del relé del proyecto HealthLog.",
-      "whatItSees": "Cada notificación se cifra en este servidor para el dispositivo que la recibe, así que el relé no puede leerla. Ve cuándo este servidor envía algo a un dispositivo.",
+      "description": "Notificaciones cifradas de extremo a extremo para la app del App Store; cada persona decide en su propio dispositivo.",
       "seesSummary": "Qué ve el relé",
       "seesHeading": "El relé ve",
       "seesWhen": "que este servidor envía algo a un dispositivo, cuándo y de qué tipo: una alerta, una sincronización silenciosa o el final de una Actividad en vivo",
@@ -9564,43 +9582,45 @@
       "notSeesHeading": "No ve",
       "notSeesContent": "lo que dice una notificación: nombres de medicamentos, dosis, mediciones, notas, nombres de cuenta ni nada más de su contenido",
       "seesTiming": "El momento aún puede decir algo. Un recordatorio de medicación por el relé muestra al relé y a Apple cuándo es la hora de una dosis, y si registras una dosis en un dispositivo y otro de tus dispositivos recibe la confirmación, ven que algo pasó en ese momento.",
-      "seesSource": "El aviso de privacidad completo del relé",
-      "toggleLabel": "Ofrecer el relé push de HealthLog a los usuarios de este servidor",
-      "toggleDescription": "Desactivado hasta que lo actives. Después, cada persona decide en su propia app.",
-      "toggleDescriptionOn": "Activado. Cada persona decide en su propia app si sus dispositivos lo usan.",
+      "toggleLabel": "Ofrecer a los usuarios de este servidor",
+      "ownApns": {
+        "inUse": "Las notificaciones push van directamente a Apple con la clave APNs propia de este servidor; elimina las variables APNS_* para usar el relé.",
+        "registered": "Las notificaciones push van directamente a Apple con la clave APNs propia de este servidor, así que el relé no transporta nada."
+      },
       "devices": "{count, plural, one {# dispositivo vinculado} other {# dispositivos vinculados}}",
       "unbindsPending": "Bajas de dispositivos que esperan al relé: {count}",
-      "unreachable": "Este servidor sigue registrado en {host}, pero con su configuración actual no puede alcanzarlo (cambió PUSH_RELAY_MODE o PUSH_RELAY_URL). Ese relé conserva los vínculos de dispositivos de este servidor hasta que el servidor se dé de baja: vuelve a poner el ajuste anterior y luego desactiva el relé aquí.",
+      "unreachable": "Sigue registrado en {host}, que la configuración actual de PUSH_RELAY_MODE o PUSH_RELAY_URL no alcanza: restablécela y luego desactiva el relé aquí.",
       "since": "desde {time}",
       "docs": "Más información",
       "privacy": "Aviso de privacidad",
       "terms": "Condiciones del relé",
-      "dialogTitle": "Ofrecer el relé push de HealthLog",
-      "dialogBody": "El relé lo opera el mantenedor del proyecto HealthLog. Cada notificación se cifra en este servidor para su dispositivo; el relé no puede leerla, pero ve que este servidor envía algo a un dispositivo y cuándo. Los recordatorios de medicación también pasan por el relé, a cada dispositivo que recibe sus recordatorios de este servidor, así que el relé y Apple pueden ver cuándo es la hora de una dosis. Cuando lo actives, cada persona de este servidor verá una vez una oferta en su app y decidirá por sí misma. El relé es para uso privado y doméstico y no es un servicio médico.",
-      "acceptTerms": "Acepto las condiciones del relé.",
-      "readPrivacy": "He leído el aviso de privacidad del relé.",
+      "dialogTitle": "Activar el relé push de HealthLog",
+      "acceptTerms": "Acepto las {terms}.",
+      "readPrivacy": "He leído el {privacy}.",
       "householdOnly": "Mantengo este servidor de forma privada para mí o mi hogar.",
       "enable": "Activar",
       "cancel": "Cancelar",
-      "disableTitle": "¿Desactivar el relé?",
-      "disableBody": "Este servidor sale del relé. Los dispositivos vinculados a través de él dejan de recibir notificaciones del relé, y las apps vuelven solas a los recordatorios locales.",
+      "disableTitle": "¿Desactivar el relé push de HealthLog?",
+      "disableBody": "Los dispositivos vinculados dejan de recibir notificaciones del relé y vuelven a los recordatorios locales.",
       "disable": "Desactivar",
-      "enabled": "El relé push está activado",
-      "disabled": "El relé push está desactivado",
+      "enabled": "El relé push de HealthLog está activado",
+      "disabled": "El relé push de HealthLog está desactivado",
       "saveFailed": "No se pudo guardar el ajuste del relé",
       "reconfirm": {
-        "notice": "El texto del relé ha cambiado desde que este servidor lo activó. Léelo y confírmalo una vez. Mientras tanto, el relé sigue funcionando.",
-        "button": "Leer y confirmar",
-        "title": "Confirmar el texto actualizado del relé",
+        "notice": "Las condiciones del relé han cambiado; el relé sigue funcionando hasta que las confirmes.",
+        "button": "Revisar y confirmar",
+        "title": "Confirmar las condiciones actualizadas del relé",
         "confirm": "Confirmar",
-        "done": "El texto actualizado del relé está confirmado"
+        "done": "Condiciones actualizadas del relé confirmadas"
       },
       "loadError": "No se pudo leer el estado del relé push.",
       "state": {
         "ok": "Conectado",
         "degraded": "Con problemas",
         "down": "No disponible",
-        "off": "Desactivado"
+        "off": "Desactivado",
+        "ownApnsKey": "Clave APNs propia",
+        "unavailable": "No utilizable"
       },
       "unavailable": {
         "modeOff": "El relé está desactivado para este servidor (PUSH_RELAY_MODE=off).",
@@ -9608,8 +9628,8 @@
         "keysUnpinned": "No hay claves fijadas para este relé, así que sus respuestas no se pueden comprobar. Define PUSH_RELAY_KEYS."
       },
       "question": {
-        "title": "¿Enviar notificaciones push a través del relé de HealthLog?",
-        "body": "La app HealthLog de la App Store recibe las notificaciones de un servidor sin clave push de Apple propia a través del relé del proyecto HealthLog. El contenido se cifra aquí para cada dispositivo y el relé no puede leerlo; ve cuándo este servidor envía algo a un dispositivo. Tu respuesta vale para todo el servidor, y cada persona sigue decidiendo en su propia app.",
+        "title": "¿Usar el relé push de HealthLog?",
+        "body": "Notificaciones para la app del App Store, cifradas de extremo a extremo: el relé solo ve cuándo se envía una.",
         "yes": "Sí",
         "no": "No",
         "declined": "El relé sigue desactivado. Puedes activarlo más tarde en Push y canales."
@@ -9617,7 +9637,7 @@
       "test": {
         "button": "Enviar push de prueba",
         "failed": "No se pudo enviar el push de prueba",
-        "noDevice": "Ninguno de tus dispositivos está vinculado al relé. Activa primero el relé en la app HealthLog de tu iPhone.",
+        "noDevice": "Ninguno de tus dispositivos usa el relé todavía; actívalo primero en la app HealthLog de tu iPhone.",
         "line": "{device}: el relé respondió {answer}, entrega {delivery}",
         "unsigned": "nada firmado (no disponible o sin verificar)"
       },
@@ -9626,34 +9646,35 @@
         "done": "La clave del relé se renovó",
         "failed": "No se pudo renovar ahora la clave del relé; el relé permite una renovación al día",
         "confirmTitle": "¿Renovar ahora la clave del relé?",
-        "confirmBody": "Este servidor sustituye ahora la clave con la que firma sus solicitudes al relé, en lugar de esperar a su ciclo de 30 días. El relé permite una renovación al día."
+        "confirmBody": "Sustituye la clave con la que este servidor firma las solicitudes al relé; el relé permite una rotación al día."
       },
       "invite": {
-        "label": "Código de invitación (opcional)",
-        "hint": "Solo hace falta mientras el relé admite servidores nuevos únicamente por invitación. El código tiene 24 caracteres y sirve una vez.",
+        "label": "Código de invitación",
+        "hint": "Solo para un relé que admite servidores por invitación: 24 caracteres, válido una vez.",
         "invalid": "Un código de invitación tiene exactamente 24 caracteres: letras, cifras, - o _.",
-        "enter": "Introducir código de invitación"
+        "enter": "Introducir código de invitación",
+        "reveal": "Tengo un código de invitación"
       },
       "reason": {
-        "inviteRequired": "Este relé solo admite servidores nuevos por invitación. Introduce un código de invitación.",
-        "inviteRejected": "El relé no aceptó este código de invitación. Puede que haya caducado o que ya se haya usado. Pide uno nuevo e introdúcelo.",
-        "registrationPaused": "El relé no admite servidores nuevos en este momento. Este servidor volverá a intentarlo más tarde por sí solo."
+        "inviteRequired": "Este relé solo admite servidores nuevos por invitación: introduce un código de invitación.",
+        "inviteRejected": "El relé ha rechazado este código de invitación; puede que ya se haya usado o haya caducado.",
+        "registrationPaused": "El relé no admite servidores nuevos en este momento; este servidor volverá a intentarlo por sí solo."
       },
       "usage": {
         "accepted": "Aceptados",
         "pending": "En espera",
         "dropped": "Descartados",
         "failed": "Fallidos",
-        "window": "Notificaciones push que este servidor entregó al relé {days, plural, =1 {en el último día} other {en los últimos # días}}.",
+        "window": "{days, plural, =1 {Último día} other {Últimos # días}}",
         "lastSuccess": "Última entrega {time}.",
         "lastFailure": "Último fallo {time}: {reason}.",
         "noReason": "sin motivo indicado"
       },
       "stateReason": {
-        "badSignature": "El relé no acepta la firma de este servidor, así que no le llega ningún push. Desactiva el relé aquí y vuelve a activarlo para registrar este servidor de nuevo.",
-        "relayDegraded": "El relé informa de una incidencia por su parte. Los pushes esperan y salen en cuanto se recupere.",
-        "relayMaintenance": "El relé está en mantenimiento. Los pushes esperan y salen en cuanto vuelva.",
-        "relayMisconfigured": "El relé informa de que Apple no acepta ahora su clave de push. Los pushes esperan hasta que quien gestiona el relé lo resuelva."
+        "badSignature": "El relé no acepta la firma de este servidor: desactiva y vuelve a activar el relé para registrarlo de nuevo.",
+        "relayDegraded": "El relé informa de una incidencia; las notificaciones esperan y salen en cuanto se recupere.",
+        "relayMaintenance": "El relé está en mantenimiento; las notificaciones esperan hasta que vuelva.",
+        "relayMisconfigured": "Apple no acepta ahora la clave push del relé; las notificaciones esperan hasta que su operador lo corrija."
       },
       "notice": "Aviso del relé ({level}): {id}",
       "noticeLevel": {
@@ -9682,7 +9703,10 @@
         "seconds": "{value} s",
         "empty": "Ninguna notificación push {hours, plural, =1 {en la última hora} other {en las últimas # horas}}",
         "helper": "Desde que entra en la cola de este servidor hasta la respuesta del relé. El relé responde cuando Apple ha aceptado la notificación."
-      }
+      },
+      "termsLink": "condiciones del relé",
+      "privacyLink": "aviso de privacidad del relé",
+      "deliverySummary": "Detalles de entrega"
     },
     "serverSetup": {
       "stepsLabel": "Pasos de configuración del servidor",
@@ -9696,7 +9720,7 @@
       },
       "notice": {
         "title": "Configurar este servidor",
-        "body": "Cinco pasos cortos para las decisiones que solo tú puedes tomar aquí: quién puede registrarse, cómo salen las notificaciones del servidor, qué puede hacer la IA y qué más sale de él. Cada paso se puede saltar y cambiar más tarde.",
+        "body": "Cinco pasos cortos sobre registros, notificaciones, IA y privacidad; puedes omitir o cambiar cualquiera más tarde.",
         "open": "Empezar la configuración",
         "dismiss": "Ahora no"
       },
@@ -9708,7 +9732,7 @@
       },
       "notifications": {
         "title": "Cómo salen las notificaciones del servidor",
-        "body": "Elige qué canales puede usar la gente. El relé push para la app de la App Store sigue desactivado hasta que lo actives."
+        "body": "Elige qué canales pueden usarse; el relé push de HealthLog sigue desactivado hasta que lo actives."
       },
       "ai": {
         "title": "Qué puede hacer la IA",
@@ -9767,7 +9791,8 @@
         "encryption_keys": "Claves de cifrado",
         "secure_cookie": "Cookies seguras",
         "app_url": "Dirección pública",
-        "database_dump": "Volcado de la base de datos"
+        "database_dump": "Volcado de la base de datos",
+        "local_ocr": "Reconocimiento de texto de escaneos"
       },
       "reason": {
         "encryption_keys": {
@@ -9792,6 +9817,12 @@
           "disabled": "No se hace ningún volcado nocturno de la base de datos. Haz la copia de otra forma.",
           "not_persistent": "La carpeta de volcados no está en un volumen montado, así que se pierden con la próxima actualización.",
           "scheduled": "Volcado nocturno programado ({cron})."
+        },
+        "local_ocr": {
+          "ready": "Los PDF escaneados y las fotos se leen en este servidor, sin IA ({languages}).",
+          "recent_failures": "Documentos escaneados que este servidor no pudo leer en los últimos 7 días: {count}. Cada uno indica el motivo en su página. Lo habitual es una máquina lenta o con poca memoria.",
+          "engine_missing": "Esta compilación no tiene motor de reconocimiento de texto. Los escaneos y las fotos quedan sin leer, salvo que los lea un proveedor de IA.",
+          "languages_missing": "El motor de reconocimiento está, pero sin datos de idioma. Construye la imagen con los datos de idioma preparados (scripts/stage-tesseract-assets.mjs)."
         }
       }
     },
@@ -10765,7 +10796,7 @@
       "TRYING_TO_CONCEIVE": "Buscando embarazo",
       "PERIMENOPAUSE": "Perimenopausia",
       "OFF": "Seguimiento desactivado",
-      "label": "¿Para qué haces seguimiento?",
+      "label": "Objetivo",
       "description": "Esto define el lenguaje y qué predicciones ves. La guía de ventana fértil solo aparece si buscas embarazo."
     },
     "ring": {
@@ -13161,14 +13192,15 @@
       },
       "index": {
         "outcome": {
-          "local-empty": "No se encontró texto legible. Parece un documento escaneado; un proveedor de visión de IA puede leerlo.",
+          "local-empty": "No se encontró texto legible, ni en el archivo ni con el reconocimiento de texto de este servidor. Un proveedor de visión de IA quizá pueda leerlo.",
           "local-unsupported": "Este tipo de archivo no se puede leer para la búsqueda.",
           "decrypt-error": "El archivo guardado no se pudo abrir para su lectura.",
           "raster-failed": "Las páginas del PDF no se pudieron procesar para su lectura. Los formatos de compresión de fax escaneados son una causa conocida.",
           "provider-error": "El proveedor de IA no pudo leer este documento en el último intento.",
           "pdf-needs-anthropic": "El procesador de este servidor no puede renderizar páginas PDF y este PDF no tiene capa de texto. Puede leerlo un proveedor de IA que acepte archivos PDF directamente, o sube fotos de las páginas.",
           "empty-transcription": "El proveedor de IA no devolvió texto para este documento.",
-          "resource-limit": "Este PDF es demasiado grande o complejo para leerlo aquí. El archivo en sí está bien y se sigue pudiendo abrir."
+          "resource-limit": "Este PDF es demasiado grande o complejo para leerlo aquí. El archivo en sí está bien y se sigue pudiendo abrir.",
+          "ocr-failed": "El reconocimiento de texto de este servidor no pudo terminar este documento. Tardó demasiado, necesitó demasiada memoria o falló. El archivo en sí está bien."
         }
       },
       "loadError": "No se pudo cargar este documento.",
@@ -13320,6 +13352,9 @@
       "extractHint": "Usa el texto ya leído de este documento. Los valores extraídos esperan tu revisión; nada se guarda automáticamente.",
       "extractEmpty": "No se pudieron extraer valores de este documento.",
       "extractIncomplete": "Una parte del documento no se pudo leer por completo, así que pueden faltar valores. Compara la lista con el documento.",
+      "readLocally": "Leer los valores sin IA",
+      "readLocallyPending": "Leyendo…",
+      "readLocallyHint": "Lee las filas de la tabla del texto que este servidor ya leyó, sin IA y sin enviar nada fuera. Revisa cada valor antes de guardarlo.",
       "failUnitRequired": "Un valor numérico necesita una unidad antes de poder guardarse.",
       "failUnitMismatch": "La unidad indicada no coincide con la unidad guardada de este marcador. Ajústala y termina la revisión de nuevo.",
       "failGeneric": "Este valor no se pudo guardar.",
@@ -14377,7 +14412,11 @@
       "seizureTypeDelete": "{name} eliminó un tipo de crisis",
       "seizureSettingsUpdate": "{name} cambió la regla de crisis en racimo",
       "symptomBatchIngest": "{name} importó síntomas de Apple Health",
-      "symptomImportDelete": "{name} eliminó síntomas importados"
+      "symptomImportDelete": "{name} eliminó síntomas importados",
+      "treatmentSeriesCreate": "{name} añadió una serie de tratamiento",
+      "treatmentSeriesUpdate": "{name} editó una serie de tratamiento",
+      "treatmentSeriesDelete": "{name} eliminó una serie de tratamiento",
+      "treatmentSeriesRestore": "{name} restauró una serie de tratamiento"
     },
     "section": {
       "measurements": {
@@ -15220,7 +15259,7 @@
     "saved": "Acontecimiento vital guardado",
     "deleted": "Acontecimiento vital eliminado",
     "fields": {
-      "title": "¿Qué pasó?",
+      "title": "Título",
       "category": "Tipo",
       "when": "Cuándo",
       "precision": "Precisión",
@@ -16021,7 +16060,12 @@
       "visit": "Cita",
       "visitWith": "Cita: {name}",
       "checkupDue": "Vence: {label}",
-      "boosterDue": "Refuerzo pendiente: {label}"
+      "boosterDue": "Refuerzo pendiente: {label}",
+      "sessionOf": "Sesión {number} de {planned}",
+      "session": "Sesión {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Termina la serie de tratamiento",
+      "seriesEndsWith": "Termina la serie de tratamiento: {name}"
     }
   },
   "reportSchedule": {
@@ -16121,7 +16165,30 @@
       "walletWithQr": "Tarjeta con código QR (PDF)",
       "preview": "Tu tarjeta"
     },
+    "name": "Nombre",
+    "walletPass": {
+      "kind": "Emergencia",
+      "allergy": "Alergia",
+      "severeAllergy": "Alergia grave",
+      "asOf": "Actualizado",
+      "week": "Semana {weeks}+{days}",
+      "postpartum": "Posparto",
+      "scan": "Escanea para ver la tarjeta completa",
+      "validUntil": "Válida hasta",
+      "untilRevoked": "Hasta su retirada",
+      "asOfValue": "{date}, se actualiza sola",
+      "issuedBy": "Emitida por",
+      "signedBy": "Firmada por",
+      "signerRelay": "Proyecto HealthLog, healthlog.dev",
+      "noteLabel": "Aviso",
+      "note": "Introducida por su titular, no es un documento médico. El código QR abre la tarjeta actual mientras no se retire.",
+      "lockLabel": "Pantalla bloqueada",
+      "lock": "Wallet solo muestra esta tarjeta tras Face ID o el código. Para quien ayude ante un iPhone bloqueado, rellena también la Ficha Médica en la app Salud.",
+      "withdrawn": "Retirada",
+      "withdrawnBody": "Esta tarjeta se retiró el {date}. Su código QR ya no funciona."
+    },
     "fields": {
+      "NAME": "Nombre",
       "BLOOD_TYPE": "Grupo sanguíneo",
       "ALLERGIES": "Alergias",
       "CONDITIONS": "Enfermedades crónicas",
@@ -16136,6 +16203,105 @@
     },
     "entry": {
       "description": "Grupo sanguíneo, alergias, medicamentos y contactos para una emergencia, con copia sin conexión, tarjeta y enlace QR."
+    },
+    "appleWallet": {
+      "title": "Apple Wallet",
+      "lead": "Tu tarjeta en Wallet, y se mantiene al día sola.",
+      "learnMore": "Más información",
+      "add": "Añadir a Apple Wallet",
+      "makeNew": "Crear un pase nuevo",
+      "withdraw": "Retirar pase",
+      "withdrawTitle": "¿Retirar el pase de Wallet?",
+      "withdrawBody": "Su código QR deja de funcionar al instante, y el pase en Wallet lo indica.",
+      "fieldsLabel": "Qué muestra el pase",
+      "expiryLabel": "El pase termina",
+      "otherDevice": "Para añadir esta tarjeta a Wallet, abre esta página en tu iPhone o Mac.",
+      "error": "No se pudo cambiar el pase. Inténtalo de nuevo.",
+      "consentTitle": "Firmado por el proyecto HealthLog",
+      "consentBody": "Su servicio de firma ve los hashes de los archivos y la hora, nunca lo que dice tu tarjeta.",
+      "expired": "Caducado. Wallet lo muestra en gris.",
+      "fetched": "En un dispositivo, actualizado {when}.",
+      "notFetched": "Aún en ningún dispositivo.",
+      "state": {
+        "live": "Activo",
+        "voided": "Retirado",
+        "expired": "Caducado"
+      },
+      "withdrawn": {
+        "owner": "Lo retiraste {when}.",
+        "credential_reset": "Retirado {when} tras un cambio de contraseña.",
+        "handover": "Retirado {when} al entregar el perfil.",
+        "guardian_lost": "Retirado {when}: terminó el derecho a gestionar este perfil.",
+        "account_deletion": "Retirado {when} al pedir la eliminación de la cuenta."
+      },
+      "unavailable": {
+        "signer_off": "Este servidor no firma pases de Wallet.",
+        "relay_not_ready": "Los pases de Wallet no están disponibles en este servidor ahora mismo.",
+        "no_https_origin": "Los pases de Wallet necesitan acceder a este servidor por HTTPS.",
+        "api_disabled": "El acceso externo está desactivado en este servidor, y con él los pases de Wallet.",
+        "not_allowed": "Solo la persona de la tarjeta, o su tutor, puede añadirlo."
+      },
+      "more": {
+        "frozen": "El pase muestra lo que marques aquí. Para cambiarlo, retíralo y crea uno nuevo.",
+        "updates": "Cuando tu tarjeta cambia, el pase se actualiza solo. Su código QR es propio, distinto del de la tarjeta impresa.",
+        "lock": "Wallet lo muestra tras Face ID o tu código. Para quien ayude ante un iPhone bloqueado, rellena la ficha médica en Salud.",
+        "signerRelay": "Lo firma el proyecto HealthLog. Su servicio de firma ve hashes de archivos y horas, nunca el contenido.",
+        "signerLocal": "Este servidor lo firma con su propio certificado.",
+        "withdraw": "Retirarlo detiene el código QR al instante. Un teléfono sin conexión conserva el pase antiguo hasta volver a estar en línea; si un pase no se puede actualizar, bórralo en Wallet."
+      }
     }
+  },
+  "treatmentSeries": {
+    "heading": "Series de tratamiento",
+    "add": "Nueva serie",
+    "createTitle": "Nueva serie de tratamiento",
+    "untitled": "Serie de tratamiento",
+    "progress": "{done} de {planned}",
+    "sessionsDoneCount": "{count, plural, one {# sesión} other {# sesiones}}",
+    "sessionOf": "Sesión {number} de {planned}",
+    "session": "Sesión {number}",
+    "status": {
+      "planned": "Sin empezar",
+      "active": "En curso",
+      "completed": "Completada",
+      "expired": "Caducada"
+    },
+    "next": "Próxima {date}",
+    "validUntil": "Válida hasta {date}",
+    "firstSession": "Desde {date}",
+    "sessionsHeading": "Sesiones",
+    "addSession": "Añadir sesión",
+    "prescriber": "Indicada por",
+    "performer": "Realizada por",
+    "condition": "Afección",
+    "form": {
+      "title": "Nombre",
+      "titlePlaceholder": "Fisioterapia, rodilla izquierda",
+      "plannedSessions": "Sesiones",
+      "startsOn": "Inicio",
+      "validUntil": "Válida hasta",
+      "note": "Nota",
+      "series": "Serie de tratamiento",
+      "seriesNone": "Ninguna"
+    },
+    "created": "Serie guardada",
+    "updated": "Serie actualizada",
+    "saveFailed": "No se pudo guardar la serie.",
+    "ended": "Serie finalizada",
+    "reopened": "Serie reabierta",
+    "end": "Finalizar serie",
+    "reopen": "Reabrir",
+    "deleteTitle": "¿Eliminar esta serie?",
+    "deleteDescription": "Las visitas se mantienen. Solo dejan de estar agrupadas.",
+    "deleted": "Serie eliminada",
+    "deleteFailed": "No se pudo eliminar la serie.",
+    "reportTitle": "Series de tratamiento",
+    "reportColSeries": "Serie",
+    "reportColSessions": "Sesiones",
+    "reportColPeriod": "Periodo",
+    "period": "{from} a {to}",
+    "periodOpen": "desde {from}",
+    "expiryPushTitle": "La serie de tratamiento caduca",
+    "expiryPushBody": "{title}: válida hasta el {date}, {count, plural, one {queda # sesión} other {quedan # sesiones}}."
   }
 }

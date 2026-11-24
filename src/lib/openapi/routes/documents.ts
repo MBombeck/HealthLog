@@ -50,6 +50,7 @@ import {
   idempotencyKeyParameter,
   idempotentWrite,
   listEnvelope,
+  MODULE_DISABLED_DESCRIPTION,
   recordRefusal,
   stdResponses,
 } from "./shared";
@@ -327,6 +328,7 @@ const inboundDocument = z
         "provider-error",
         "pdf-needs-anthropic",
         "empty-transcription",
+        "ocr-failed",
       ])
       .nullable(),
     hasThumbnail: z.boolean(),
@@ -1327,6 +1329,47 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...aiRunAccepted,
         ...documentAiRefusals,
         ...stdResponses,
+      },
+    },
+  },
+  "/api/documents/inbound/{id}/lab-values": {
+    post: {
+      tags: ["Documents"],
+      summary: "Read a stored lab report's values without AI",
+      description:
+        "Reads the lab values of an already-stored document by rule, with no model, and stages them as OBSERVATION facts PENDING for the same review the AI extraction fills (`providerType` on the document becomes `local-parser`). It reads the document's stored text: the PDF text layer, or what OCR on this server read off a scanned PDF or a photo when the document was indexed. One reading per table row (name, value, printed flag dropped, unit, printed range, the range also before the unit); a row counts when its name is a marker the app knows, or when it has a recognised unit and a range that reduces to bounds. Nothing is interpreted: no code is set unless printed, no value is compared to its range, no unit converted. A row the reader is unsure about (an OCR unit repaired, a number that reads two ways, no unit) arrives with `needsReview`. No AI capability is asked for: the route answers with AI turned off and with no provider configured. Requires the documents and labs modules. Replaces earlier staged facts; refused once any fact is APPROVED (409 `documents.inbound.alreadyPartlyConfirmed`) or the document is CONFIRMED (422 `documents.inbound.alreadyConfirmed`), re-checked under a row lock. 422 `documents.inbound.notIndexed` when the document has no stored text yet. 30 requests a minute per account (429 `documents.inbound.rateLimited`). Nothing reaches the structured stores here; the confirm route is the only write path.",
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+        },
+      ],
+      responses: {
+        "200": {
+          description: "The document with its newly staged facts.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                inboundDocumentDetail,
+                "InboundLabValuesEnvelope",
+              ),
+            },
+          },
+        },
+        "409": {
+          description:
+            "Refused: at least one fact on this document is already APPROVED. `meta.errorCode` = `documents.inbound.alreadyPartlyConfirmed`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        ...recordRefusal(MODULE_DISABLED_DESCRIPTION),
+        "422": {
+          description:
+            "The document is confirmed (`documents.inbound.alreadyConfirmed`) or has no stored text yet (`documents.inbound.notIndexed`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

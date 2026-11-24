@@ -22,6 +22,13 @@ import { getEvent } from "@/lib/logging/context";
 import { decryptAllergyReaction } from "@/lib/doctor-report-helpers";
 import type { DoctorReportData } from "@/lib/doctor-report-types";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
+import {
+  deriveSeriesStatus,
+  summarizeSessions,
+} from "@/lib/treatment-series/derive";
+import { loadSeriesSessions } from "@/lib/treatment-series/service";
+import { dateOnlyKey } from "@/lib/tz/date-only";
+import { userDayKey } from "@/lib/tz/format";
 import { decryptHealthProfileFactValue } from "@/lib/profile/health-facts";
 import { loadLifeClinicalSummary } from "@/lib/profile/life-circumstances";
 import {
@@ -236,6 +243,94 @@ export async function loadVisits(
       .filter((link) => link.episode?.deletedAt === null)
       .map((link) => link.episode.label),
   }));
+  return mapped.length > 0 ? mapped : null;
+}
+
+/**
+ * The treatment series the window touched: a session of it took place
+ * inside the window, or it was running during it (started on or before the
+ * window's end and not ended or run out before its start). Progress is derived
+ * from the sessions exactly as the record shows it (`deriveSeries*`), so the
+ * report reproduces the numbers on screen. The note is never read here.
+ */
+export async function loadTreatmentSeriesReport(
+  userId: string,
+  start: Date,
+  end: Date,
+  timezone: string,
+  now: Date = new Date(),
+): Promise<DoctorReportData["treatmentSeries"]> {
+  const rows = await prisma.treatmentSeries.findMany({
+    where: { userId, deletedAt: null, startsOn: { lte: end } },
+    orderBy: [{ startsOn: "asc" }, { id: "asc" }],
+    select: {
+      id: true,
+      titleEncrypted: true,
+      kind: true,
+      plannedSessions: true,
+      startsOn: true,
+      validUntil: true,
+      endedOn: true,
+      prescriber: { select: { name: true } },
+      performer: { select: { name: true } },
+      episode: { select: { label: true, deletedAt: true } },
+    },
+  });
+  if (rows.length === 0) return null;
+  const sessions = await loadSeriesSessions(
+    prisma,
+    userId,
+    rows.map((r) => r.id),
+  );
+  const today = userDayKey(now, timezone);
+  const startKey = userDayKey(start, timezone);
+  const mapped = rows.flatMap((row) => {
+    const facts = sessions.get(row.id) ?? [];
+    const inWindow = facts.some(
+      (f) =>
+        f.status === "DONE" && f.occurredAt >= start && f.occurredAt <= end,
+    );
+    const validUntil = row.validUntil ? dateOnlyKey(row.validUntil) : null;
+    const endedOn = row.endedOn ? dateOnlyKey(row.endedOn) : null;
+    const closedBefore =
+      (endedOn !== null && endedOn < startKey) ||
+      (validUntil !== null && validUntil < startKey);
+    if (!inWindow && closedBefore) return [];
+    const summary = summarizeSessions(facts, now);
+    let title: string | null = null;
+    try {
+      title = decryptFromBytes(row.titleEncrypted);
+    } catch {
+      getEvent()?.addWarning(
+        `doctor-report: treatment series title decrypt failed for ${userId}`,
+      );
+    }
+    return [
+      {
+        title,
+        kind: row.kind,
+        status: deriveSeriesStatus(
+          { plannedSessions: row.plannedSessions, validUntil, endedOn },
+          summary.done,
+          today,
+        ),
+        done: summary.done,
+        plannedSessions: row.plannedSessions,
+        startsOn: dateOnlyKey(row.startsOn),
+        validUntil,
+        endedOn,
+        firstSessionAt: summary.firstSessionAt?.toISOString() ?? null,
+        lastSessionAt: summary.lastSessionAt?.toISOString() ?? null,
+        prescriberName: row.prescriber?.name ?? null,
+        performerName: row.performer?.name ?? null,
+        // A condition the person deleted is not named in a clinical document.
+        conditionLabel:
+          row.episode && row.episode.deletedAt === null
+            ? row.episode.label
+            : null,
+      },
+    ];
+  });
   return mapped.length > 0 ? mapped : null;
 }
 

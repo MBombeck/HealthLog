@@ -40,6 +40,11 @@ const API_ROOT = resolve(__dirname, "..");
  * reason below always covers everything it claims to cover.
  */
 const DELIBERATELY_OPEN: Record<string, { count: number; reason: string }> = {
+  "wallet/apple/v1/log/route.ts": {
+    count: 1,
+    reason:
+      "Apple Wallet's error log: Apple owns the body's shape, only the length of `logs` is read, and nothing of it is stored.",
+  },
   // ---------------------------------------------------------------
   // 1. Query schemas fed a hand-built object. The handler names each
   //    param it reads (`{ limit: searchParams.get("limit"), … }`), so an

@@ -32,25 +32,21 @@ function labelOf<T extends Record<string, string>>(
 }
 
 /**
- * What the relay itself says, on the relay card of a registered instance:
- * why the state is not `ok` when the reason is one the admin can read
- * (a refused signature, the relay's own disruption), the relay's current
- * notice, and the last hourly status check with this instance's bindings
- * at the relay.
+ * What the relay itself says that the admin should act on or know, in view
+ * on the relay card of a registered instance: why the state is not `ok` when
+ * the reason is one the admin can read (a refused signature, the relay's own
+ * disruption), and the relay's current notice.
  */
-export function PushRelayCheck({ status }: { status: AdminPushRelayStatus }) {
+export function PushRelayAlerts({ status }: { status: AdminPushRelayStatus }) {
   const { t } = useTranslations();
-  const fmt = useFormatters();
   if (!status.offered || !status.instanceId) return null;
   const reasonKey =
     status.state !== "ok"
       ? labelOf(STATE_REASON_LABEL, status.reason)
       : undefined;
-  const check = status.relayCheck ?? null;
-  const checkState = labelOf(CHECK_STATE_LABEL, check?.state);
   const notice = status.notice;
   const levelKey = labelOf(NOTICE_LEVEL_LABEL, notice?.level);
-  if (!reasonKey && !check && !notice) return null;
+  if (!reasonKey && !notice) return null;
   return (
     <div className="space-y-1" data-slot="push-relay-check">
       {reasonKey && (
@@ -66,28 +62,55 @@ export function PushRelayCheck({ status }: { status: AdminPushRelayStatus }) {
           })}
         </p>
       )}
-      {check?.answeredAt && checkState && (
-        <p className="text-muted-foreground text-xs">
-          {t("admin.pushRelay.check.line", {
-            time: fmt.dateTime(check.answeredAt),
-            state: t(checkState),
-          })}
-          {check.devices
-            ? ` ${t("admin.pushRelay.check.devices", {
-                active: check.devices.active,
-                provisional: check.devices.provisional,
-                limit: check.devices.limit,
-              })}`
-            : ""}
-        </p>
-      )}
-      {check && !check.answeredAt && check.checkedAt && (
-        <p className="text-muted-foreground text-xs">
-          {t("admin.pushRelay.check.unanswered", {
-            time: fmt.dateTime(check.checkedAt),
-          })}
-        </p>
-      )}
     </div>
   );
+}
+
+/**
+ * The relay's last hourly status check, with this instance's bindings at the
+ * relay, among the delivery details.
+ */
+export function PushRelayCheckLine({
+  status,
+}: {
+  status: AdminPushRelayStatus;
+}) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  if (!status.offered || !status.instanceId) return null;
+  const check = status.relayCheck ?? null;
+  const checkState = labelOf(CHECK_STATE_LABEL, check?.state);
+  if (check?.answeredAt && checkState) {
+    return (
+      <p
+        className="text-muted-foreground text-xs"
+        data-slot="push-relay-check-line"
+      >
+        {t("admin.pushRelay.check.line", {
+          time: fmt.dateTime(check.answeredAt),
+          state: t(checkState),
+        })}
+        {check.devices
+          ? ` ${t("admin.pushRelay.check.devices", {
+              active: check.devices.active,
+              provisional: check.devices.provisional,
+              limit: check.devices.limit,
+            })}`
+          : ""}
+      </p>
+    );
+  }
+  if (check && !check.answeredAt && check.checkedAt) {
+    return (
+      <p
+        className="text-muted-foreground text-xs"
+        data-slot="push-relay-check-line"
+      >
+        {t("admin.pushRelay.check.unanswered", {
+          time: fmt.dateTime(check.checkedAt),
+        })}
+      </p>
+    );
+  }
+  return null;
 }

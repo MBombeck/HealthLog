@@ -244,6 +244,8 @@ const COUNT_BACK: Record<
     p.inboundDocument.count({ where: { userId } }),
   Practitioner: (p, userId) => p.practitioner.count({ where: { userId } }),
   Encounter: (p, userId) => p.encounter.count({ where: { userId } }),
+  TreatmentSeries: (p, userId) =>
+    p.treatmentSeries.count({ where: { userId } }),
   EncounterDocumentLink: (p, userId) =>
     p.encounterDocumentLink.count({ where: { userId } }),
   EncounterLabLink: (p, userId) =>
@@ -1440,6 +1442,40 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       restoredEncounter.reminderId,
       "the encounter's reminder reference must survive now that the reminder travels",
     ).toBe(restoredReminder.id);
+
+    // The treatment series comes back whole, and its session still
+    // names it.
+    const restoredSeries = await prisma.treatmentSeries.findFirstOrThrow({
+      where: { userId: OWNER_ID },
+      include: { sessions: { select: { id: true } } },
+    });
+    expect({
+      title: decryptFromBytes(restoredSeries.titleEncrypted),
+      note: restoredSeries.noteEncrypted
+        ? decryptFromBytes(restoredSeries.noteEncrypted)
+        : null,
+      kind: restoredSeries.kind,
+      plannedSessions: restoredSeries.plannedSessions,
+      startsOn: restoredSeries.startsOn.toISOString().slice(0, 10),
+      validUntil: restoredSeries.validUntil?.toISOString().slice(0, 10),
+      endedOn: restoredSeries.endedOn?.toISOString().slice(0, 10),
+      prescriber: restoredSeries.prescriberId !== null,
+      performer: restoredSeries.performerId !== null,
+      episode: restoredSeries.episodeId !== null,
+      sessions: restoredSeries.sessions.length,
+    }).toEqual({
+      title: "Physiotherapy, left knee",
+      note: "bring a towel",
+      kind: "THERAPY",
+      plannedSessions: 6,
+      startsOn: "2026-06-20",
+      validUntil: "2026-08-31",
+      endedOn: "2026-07-30",
+      prescriber: true,
+      performer: true,
+      episode: true,
+      sessions: 1,
+    });
 
     // The bests, read back column by column.
     //

@@ -1,7 +1,8 @@
 /**
  * 1.49 — `GET /api/admin/setup-health`: the read-only check list of the
  * server's setup (encryption keys present, the secure-cookie setting against
- * how this request arrived, the database dump schedule, the public URL).
+ * how this request arrived, the database dump schedule, the public URL, and
+ * whether scans are read on this server).
  * Shown on Admin → System status and in the server setup's last step.
  *
  * Cookie-only (`requireAdmin`); answers closed reason codes and key ids or
@@ -16,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async (request: Request) => {
   await requireAdmin();
-  const health = readSetupHealth(request);
+  const health = await readSetupHealth(request);
   annotate({
     action: { name: "admin.setup_health.get" },
     meta: { state: health.state },

@@ -45,6 +45,8 @@ import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { loadEmergencyCard, type EmergencyCardView } from "./card-data";
 import { parseCardTokenSegment } from "./token";
 import { guardianMintRefusal } from "@/lib/sharing/guardian-minted";
+import { enqueueWalletVoidPush } from "./wallet-pass/queues";
+import { voidWalletPassesWhere } from "./wallet-pass/void";
 
 /** Per card and address: how many openings are counted and audited. */
 const AUDIT_LIMIT_PER_HOUR = 60;
@@ -62,6 +64,13 @@ function miss(reason: string): CardRead {
   annotate({ meta: { url_credential_miss: reason } });
   return { ok: false, reason };
 }
+
+/** The refusals `cardLinkRefusal` gives before it asks the guardian check. */
+const LINK_REFUSALS: ReadonlySet<string> = new Set([
+  "unknown",
+  "expired",
+  "api_disabled",
+]);
 
 /**
  * Why a looked-up link would not open right now, or null when it would: it is
@@ -117,6 +126,7 @@ export async function readEmergencyCardByToken(
         userId: true,
         createdById: true,
         tokenPrefix: true,
+        purpose: true,
         fields: true,
         expiresAt: true,
         revokedAt: true,
@@ -126,7 +136,18 @@ export async function readEmergencyCardByToken(
   ]);
   if (!link) return miss("unknown");
   const refusal = await cardLinkRefusal(link, apiOn, now);
-  if (refusal) return miss(refusal);
+  if (refusal) {
+    // A guardian's Wallet pass ends with the right it rested on: stamped
+    // withdrawn, and its devices told. Only a guardian refusal ends it; a
+    // revoked, expired or switched-off link answers as before.
+    if (link.purpose === "WALLET" && !LINK_REFUSALS.has(refusal)) {
+      const voided = await prisma.$transaction((tx) =>
+        voidWalletPassesWhere(tx, { linkId: link.id }, "GUARDIAN_LOST", now),
+      );
+      if (voided > 0) await enqueueWalletVoidPush();
+    }
+    return miss(refusal);
+  }
   const owner = await prisma.user.findFirst({
     where: activeAccount({ id: link.userId }),
     select: { timezone: true },
@@ -149,7 +170,11 @@ export async function readEmergencyCardByToken(
     });
     await auditLog("emergency-card.link.access", {
       userId: link.userId,
-      details: { linkId: link.id, tokenPrefix: link.tokenPrefix },
+      details: {
+        linkId: link.id,
+        tokenPrefix: link.tokenPrefix,
+        purpose: link.purpose,
+      },
     });
   } else {
     annotate({ meta: { emergency_card_audit_throttled: true } });

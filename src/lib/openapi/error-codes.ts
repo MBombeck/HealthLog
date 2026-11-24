@@ -279,6 +279,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "encounter.practitioner-not-found",
       "encounter.reminder-conflict",
       "encounter.reminder-not-found",
+      "encounter.series-not-found",
     ],
     "emergency-card": [
       "emergency-card.api_disabled",
@@ -286,7 +287,12 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "emergency-card.exists",
       "emergency-card.none",
       "emergency-card.rateLimited",
+      "emergency-card.wallet.consent",
+      "emergency-card.wallet.exists",
+      "emergency-card.wallet.none",
+      "emergency-card.wallet.signer_unavailable",
       "emergency-card.wallet.token",
+      "emergency-card.wallet.unavailable",
     ],
     encryption: ["encryption.key_mismatch"],
     environment: [
@@ -578,6 +584,11 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "symptoms.invalid",
     ],
     timeline: ["timeline.invalid"],
+    treatment_series: [
+      "treatment_series.condition-not-found",
+      "treatment_series.invalid",
+      "treatment_series.practitioner-not-found",
+    ],
     tokens: [
       "tokens.documents.ceiling_reached",
       "tokens.measurements.ceiling_reached",

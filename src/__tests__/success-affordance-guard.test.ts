@@ -138,6 +138,9 @@ const PINNED_AFFORDANCES: Record<
   // Reads the server's verdict, writes nothing: the check and the green mark
   // say a backup signal is ok as the readiness model judged it, not that a
   // request this card made succeeded.
+  // The relay card's status pill in its "Connected" tone, a state the relay
+  // is in (the integration cards' badge), not the outcome of a write.
+  "src/components/admin/push-relay-section.tsx": { "text-success": 1 },
   "src/components/admin/recovery-readiness-card.tsx": {
     CheckCircle2: 2,
     "text-success": 1,
@@ -225,6 +228,10 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 1,
   },
   "src/components/encounters/encounter-sheet.tsx": { "toast.success": 1 },
+  // The delete toast carries the Undo, which the outcome module cannot hold.
+  "src/components/encounters/treatment-series-sheet.tsx": {
+    "toast.success": 1,
+  },
   "src/components/error-details.tsx": { CheckCircle2: 2, "text-success": 1 },
   "src/components/illness/episode-menu.tsx": {
     CheckCircle2: 2,

@@ -10,6 +10,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { applyProfileUpdate } from "@/lib/auth/profile-update";
 import { authorizeSensitiveChange } from "@/lib/auth/existing-factor-proof";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 export const PUT = apiHandler(async (request: NextRequest) => {
   const auth = await requireAuth();
@@ -42,6 +43,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   annotate({ action: { name: "auth.profile.update" } });
 
+  await enqueueWalletRefresh(user.id);
   return apiSuccess({
     id: result.user.id,
     username: result.user.username,

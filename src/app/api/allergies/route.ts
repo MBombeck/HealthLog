@@ -29,6 +29,7 @@ import {
 import { toAllergyDTO } from "@/lib/records/dto";
 import { apiListSuccess } from "@/lib/api/list-cap";
 import { listPage } from "@/lib/http/list-query";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "profile");
@@ -131,5 +132,6 @@ async function postAllergy(request: NextRequest): Promise<Response> {
     },
   });
 
+  await enqueueWalletRefresh(user.id);
   return apiSuccess(toAllergyDTO(created), 201);
 }

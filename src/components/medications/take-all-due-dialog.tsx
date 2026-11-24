@@ -57,6 +57,7 @@ export function TakeAllDueDialog({
         t,
         queryClient,
         recordName,
+        formatTime: (at) => fmt.time(at),
       });
       // Close regardless of partial failures — the summary toast carries
       // the counts and failed medications stay due on the page behind it.

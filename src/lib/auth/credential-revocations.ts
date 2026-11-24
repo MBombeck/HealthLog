@@ -18,6 +18,7 @@ type CredentialStore = Pick<
   | "cycleCalendarFeed"
   | "careCalendarFeed"
   | "emergencyCardLink"
+  | "walletPass"
   | "stepUpElevation"
 >;
 
@@ -73,6 +74,13 @@ export function credentialRevocations(
     db.careCalendarFeed.updateMany({
       where: { OR: [{ userId }, { createdById: userId }], revokedAt: null },
       data: { revokedAt: now },
+    }),
+    // An Apple Wallet pass carries such a link too (v1.50). The pass is
+    // stamped with the reason here and its link ends in the statement below;
+    // the void-push cron tells the devices that hold it.
+    db.walletPass.updateMany({
+      where: { OR: [{ userId }, { createdById: userId }], voidedAt: null },
+      data: { voidedAt: now, voidReason: "CREDENTIAL_RESET" },
     }),
     // The emergency card's QR link opens the card without signing in. A
     // printed card goes dark with it; the owner prints a fresh one.

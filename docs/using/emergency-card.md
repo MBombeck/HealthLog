@@ -1,8 +1,8 @@
 # The emergency card
 
 The emergency card is the emergency information from your health profile, in
-a form you can carry: on your phone, in your wallet, and behind a QR code a
-first responder can scan. It holds what you have entered and nothing more.
+a form you can carry: on your phone, in your wallet, in Apple Wallet, and
+behind a QR code a first responder can scan. It holds what you have entered and nothing more.
 
 ## What is on it
 
@@ -76,10 +76,63 @@ restore, make a new link. If the operator turns off the **API** switch
 ("Allow API endpoints and API tokens.") under **Admin > Push and channels**, the link
 stops working too, as do the cycle and care calendar feed links.
 
-## Wallet passes
+## In Apple Wallet
 
-An Apple Wallet pass would need a pass-type certificate from Apple's
-developer program, signed on the server for every pass. HealthLog does not
-ship one. A self-hoster who wants passes would need their own Apple developer
-account and certificate, so it is not offered; the printed card and the iOS
-app's own lock-screen options cover the same need.
+**Add to Apple Wallet**, under **Apple Wallet** on the card page, makes a pass
+of the card for Wallet on an iPhone, an iPad, a Mac or an Apple Watch. On
+another device the page asks you to open it on one of those.
+
+**What is on it.** The front holds your name, blood type, the first allergy
+(marked severe when it is) and a pregnancy when there is one, the date the
+pass is as of, and a QR code. Everything else you tick is on the back, behind
+the pass's details. The name is ticked by default; untick it to keep it off.
+What you tick is frozen when you add the pass. To change it, withdraw the pass
+and make a new one.
+
+**It updates itself.** When something on the card changes (an allergy, a
+medication, your emergency details, your name), the pass is rebuilt about a
+minute later and Wallet fetches it; the date on the front moves with it. A
+burst of edits reaches a phone at most once every 15 minutes, and the server
+also looks every six hours, so a new day (a medication course ending, the
+next week of a pregnancy) reaches the pass without an edit.
+
+**Its own QR code.** The pass carries a link of its own, apart from the
+printed card's, with the same rules: read-only, rate-limited, every opening on
+your audit log, an optional end. Revoking the printed card's link leaves the
+pass alone, and withdrawing the pass leaves the printed card's link alone.
+
+**Withdrawing.** **Withdraw pass** stops its QR code at once, and Wallet
+replaces the pass with one that says it is withdrawn and holds no health data.
+A password change, an administrator's reset, asking for the account to be
+deleted, the handover of a managed profile, or a guardian losing the right to
+manage the profile withdraw it the same way. The card page says when and why.
+A phone that is offline keeps showing the old pass until it is back online;
+the QR code is dead either way. When a pass cannot be updated any more (after
+a restore from backup, after "Delete all data", or when the server changed
+how it signs passes), delete it in Wallet by hand.
+
+**When it ends.** A pass made with an end date is greyed out by Wallet itself
+on that day, even offline.
+
+**On a locked phone.** Wallet shows the pass only after Face ID or your code.
+For helpers at a locked iPhone, fill in the Medical ID in the Health app as
+well. If you sync passes through iCloud, they are end-to-end encrypted only
+with Advanced Data Protection turned on.
+
+**Who signs it, and what they see.** A pass has to be signed with an Apple
+certificate. By default the HealthLog project signs it through the push relay:
+the signing service gets the list of file names and their hashes, and so it
+learns that your server asked and when, never what the card says, its link or
+the pass's serial number. You confirm that once before the first pass. For
+updates, the relay passes an empty push to the phones that hold the pass; it
+sees the pass's push token while it forwards and the time, so the timing can
+show that something on the card changed, never what. An operator with an
+Apple developer account can sign on the server instead and push straight to
+Apple, with nothing going through the project
+(`docs/self-hosting/apple-wallet.md`). On a server without either, the button
+is not offered and the page says why.
+
+Passes are not part of a backup: after a restore, add the card again.
+
+Google Wallet follows later, as a pointer card with the QR code and no health
+data.
