@@ -4579,6 +4579,10 @@ model RefreshToken {
   accessTokenHash String?   @map("access_token_hash")
   expiresAt       DateTime  @map("expires_at")
   createdAt       DateTime  @default(now()) @map("created_at")
+  /// When the family this token belongs to signed in. Every rotation hands it
+  /// on unchanged, and the family ends `REFRESH_TOKEN_MAX_LIFETIME_DAYS` after
+  /// it however often it rotates (`src/lib/auth/refresh-token.ts`).
+  familyStartedAt DateTime  @default(now()) @map("family_started_at")
   revokedAt       DateTime? @map("revoked_at")
   /// When this token was used (one-time-use). Set during rotation; a second
   /// use of the same token is a hard fail and triggers reuse-detection.

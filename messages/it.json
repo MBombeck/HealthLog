@@ -9833,6 +9833,7 @@
       "channel": {
         "release": "Rilascio",
         "edge": "Edge",
+        "nightly": "Nightly",
         "development": "Build di sviluppo"
       },
       "built": "Versione compilata {sha}, {time}",

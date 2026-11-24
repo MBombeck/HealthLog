@@ -49134,6 +49134,16 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: ISO-8601 build timestamp. Null for a local dev run.
+        channel:
+          type: string
+          enum:
+            - release
+            - edge
+            - nightly
+            - development
+          description: "The image line the build came from, resolved by the server: `release` (`:latest` and the version tags),
+            `edge` (every push to main, `:edge`), `nightly` (the newest release branch, `:nightly`, not for production)
+            or `development` (no commit SHA, a local run). Render it; do not derive it from `version`."
         license:
           type: string
         repository:
@@ -49261,6 +49271,7 @@ components:
         - version
         - buildSha
         - builtAt
+        - channel
         - license
         - repository
         - changelog

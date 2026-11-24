@@ -61,15 +61,10 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     // purge that promises "nothing reproductive persists" must clear it too.
     // The purge's own audit row is written AFTER this transaction, so it
     // survives (counts only, no reproductive content).
-    const auditRows = await tx.auditLog.deleteMany({
-      where: {
-        userId: user.id,
-        OR: [
-          { action: { startsWith: "cycle." } },
-          { action: "user.cycle-prefs.update" },
-        ],
-      },
-    });
+    // Through the owner's function: the audit log is append-only for the
+    // app (migration 0569), which erases exactly these rows.
+    const [auditRows] = await tx.$queryRaw<{ count: number }[]>`
+      SELECT "audit_logs_erase_cycle"(${user.id}) AS count`;
     // The shared push-attempts ledger holds dated cycle reminder-delivery
     // rows (eventType + createdAt) for up to 90 days — drop the cycle ones.
     const pushRows = await tx.pushAttempt.deleteMany({

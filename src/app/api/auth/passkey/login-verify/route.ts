@@ -21,6 +21,7 @@ import {
   isCookielessNativeCaller,
 } from "@/lib/auth/native-client";
 import { issueAccessAndRefresh } from "@/lib/auth/refresh-token";
+import { webSessionHardEnd } from "@/lib/auth/session-lifetime";
 import { isOidcOnly } from "@/lib/auth/oidc";
 import { completePendingOidcLink } from "@/lib/auth/oidc-pending-link";
 
@@ -227,6 +228,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
       name: `web auto-login ${new Date().toISOString()}`,
       permissions: ["*"],
       expiresInDays: policy.accessTokenDays,
+      // A Bearer stand-in for a web session ends when one would.
+      notAfter: webSessionHardEnd(new Date()),
     });
     await auditLog("auth.token.autoissue.native", {
       userId: user.id,
