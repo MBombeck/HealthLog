@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { prisma, toJson } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
@@ -100,30 +101,37 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // Preserve-when-absent: a PUT carrying only `groupOrder` must not wipe
   // the stored placements, and a placements-only PUT must not reset the
   // group order.
-  const row = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { moodTagLayoutJson: true },
-  });
-  const stored = parseStoredMoodTagLayout(row?.moodTagLayoutJson);
-  const merged: MoodTagLayout = mergeMoodTagLayout(stored, {
-    ...(parsed.data.groupOrder !== undefined
-      ? { groupOrder: parsed.data.groupOrder }
-      : {}),
-    ...(parsed.data.placements !== undefined
-      ? { placements: parsed.data.placements }
-      : {}),
-  });
+  // Read, merge and write under the row lock: a tokenless write is
+  // unconditional, and two that overlap would each carry forward a stored
+  // copy without the other's change.
+  const { merged, guarded } = await withUserRowLock(user.id, async (tx) => {
+    const row = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { moodTagLayoutJson: true },
+    });
+    const stored = parseStoredMoodTagLayout(row?.moodTagLayoutJson);
+    const merged: MoodTagLayout = mergeMoodTagLayout(stored, {
+      ...(parsed.data.groupOrder !== undefined
+        ? { groupOrder: parsed.data.groupOrder }
+        : {}),
+      ...(parsed.data.placements !== undefined
+        ? { placements: parsed.data.placements }
+        : {}),
+    });
 
-  const guarded = await guardedUserDocumentUpdate({
-    userId: user.id,
-    document: "moodTagLayout",
-    base,
-    data: { moodTagLayoutJson: toJson(merged) },
-    conflict: {
-      action: "mood.tag.layout.conflict",
-      errorCode: "mood_tag_layout_conflict",
-      message: "Mood-tag layout changed since it was loaded",
-    },
+    const guarded = await guardedUserDocumentUpdate({
+      userId: user.id,
+      document: "moodTagLayout",
+      base,
+      data: { moodTagLayoutJson: toJson(merged) },
+      conflict: {
+        action: "mood.tag.layout.conflict",
+        errorCode: "mood_tag_layout_conflict",
+        message: "Mood-tag layout changed since it was loaded",
+      },
+      client: tx,
+    });
+    return { merged, guarded };
   });
   if ("conflict" in guarded) return guarded.conflict;
 
