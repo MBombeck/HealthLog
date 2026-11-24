@@ -4,10 +4,12 @@
  *
  *   - A spot reading (one sample at one instant) is first-write-wins: a second
  *     run finds it and counts a duplicate.
- *   - A derived total (a day's steps, an hour's mean pulse) is overwritten
+ *   - A derived value (a day's steps, an hour's mean pulse) is overwritten
  *     when a later export of the same source has a different value for the
- *     same bucket, since a newer export holds more of that day. A row the
- *     person deleted stays deleted.
+ *     same bucket, since a newer export holds more of that day. A total that
+ *     only grows (`overwrite: "larger"`) is overwritten only by a larger one,
+ *     so an older export uploaded after a newer one does not lower it. A row
+ *     the person deleted stays deleted.
  *
  * Values outside the plausible range are refused per row and counted.
  */
@@ -36,7 +38,7 @@ export async function writeImportedMeasurements(
   userId: string,
   rows: readonly ImportedMeasurement[],
   tally: RecordFileImportTally,
-  options: { overwrite?: boolean; skipKey?: string } = {},
+  options: { overwrite?: boolean | "larger"; skipKey?: string } = {},
 ): Promise<void> {
   const valid: ImportedMeasurement[] = [];
   for (const row of rows) {
@@ -64,7 +66,7 @@ async function writeChunk(
   userId: string,
   chunk: readonly ImportedMeasurement[],
   tally: RecordFileImportTally,
-  options: { overwrite?: boolean },
+  options: { overwrite?: boolean | "larger" },
 ): Promise<void> {
   const inserted = await insertNewMeasurementRows(
     prisma,
@@ -113,7 +115,12 @@ async function writeChunk(
   const byKey = new Map(existing.map((e) => [`${e.type}|${e.externalId}`, e]));
   for (const row of rest) {
     const found = byKey.get(`${row.type}|${row.externalId}`);
-    if (!found || found.deletedAt !== null || found.value === row.value) {
+    if (
+      !found ||
+      found.deletedAt !== null ||
+      found.value === row.value ||
+      (options.overwrite === "larger" && row.value < found.value)
+    ) {
       tally.duplicate(row.type);
       continue;
     }

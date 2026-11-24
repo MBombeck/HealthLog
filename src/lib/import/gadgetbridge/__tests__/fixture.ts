@@ -14,7 +14,7 @@ import type { DatabaseSync } from "node:sqlite";
 export const GB_T0 = Date.UTC(2026, 2, 2, 8, 0, 0) / 1000;
 
 export function buildGadgetbridgeFixture(
-  options: { extraSteps?: number } = {},
+  options: { extraSteps?: number; heartRateSentinels?: boolean } = {},
 ): string {
   const dir = mkdtempSync(join(tmpdir(), "gb-fixture-"));
   const path = join(dir, "Gadgetbridge");
@@ -69,6 +69,22 @@ export function buildGadgetbridgeFixture(
     GB_T0,
   );
   db.prepare("INSERT INTO HUAMI_STRESS_SAMPLE VALUES (?, 1, 1, 40)").run(GB_T0);
+  if (options.heartRateSentinels) {
+    // Spot and resting readings beside the "no reading" values 255 and 1.
+    db.exec(
+      "CREATE TABLE HUAMI_HEART_RATE_MANUAL_SAMPLE (TIMESTAMP INTEGER, DEVICE_ID INTEGER, USER_ID INTEGER, HEART_RATE INTEGER)",
+    );
+    const manual = db.prepare(
+      "INSERT INTO HUAMI_HEART_RATE_MANUAL_SAMPLE VALUES (?, 1, 1, ?)",
+    );
+    manual.run(GB_T0, 72);
+    manual.run(GB_T0 + 60, 255);
+    manual.run(GB_T0 + 120, 1);
+    const resting = db.prepare(
+      "INSERT INTO HUAMI_HEART_RATE_RESTING_SAMPLE VALUES (?, 1, 1, ?)",
+    );
+    resting.run(GB_T0 + 60, 255);
+  }
   db.close();
   return path;
 }
