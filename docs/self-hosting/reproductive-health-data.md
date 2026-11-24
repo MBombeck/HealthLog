@@ -101,7 +101,7 @@ different things depending on which button you press.
   two actions below, the row stays. A start that was folded into a later
   cycle stays for as long as that cycle does, because deleting the later
   cycle gives it back.
-- **Settings → Advanced → Delete all data** removes the rows, tombstones
+- **Settings > Advanced > Delete all data** removes the rows, tombstones
   included. Everything the account owns goes except what you sign in
   with; the confirmation dialog lists it. Before it does, it keeps a copy
   of the account on the server for the deletion grace window (14 days by

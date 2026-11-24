@@ -46,8 +46,8 @@ to defeat IP-based rate limits.
 | --------------------------------------------------------- | ---------------------------------- |
 | App is internet-facing with no proxy                      | `0` (the connection's own address) |
 | Single proxy in front (Caddy / Traefik / Nginx / Coolify) | `1` (default)                      |
-| Cloudflare → your proxy → app                             | `2`                                |
-| Cloudflare → Coolify-Tunnel → Coolify → app               | `3`                                |
+| Cloudflare > your proxy > app                             | `2`                                |
+| Cloudflare > Coolify-Tunnel > Coolify > app               | `3`                                |
 
 A misconfigured count logs a one-shot warning to stderr and collapses
 every anonymous caller into one shared rate-limit bucket. Match the
@@ -197,7 +197,7 @@ that Cloudflare placed in the chain.
 
 In the NPM UI:
 
-1. **Proxy Hosts → Add Proxy Host.**
+1. **Proxy Hosts > Add Proxy Host.**
 2. **Domain Names:** `your-instance.example.com`.
 3. **Scheme:** `http`; **Forward Hostname / IP:** the Docker host or
    internal hostname; **Forward Port:** `3000`.
@@ -225,16 +225,16 @@ Pair with `TRUST_PROXY_HOPS=1`.
 Coolify's bundled Traefik handles most of this. The pieces that need
 operator attention:
 
-1. **Application → Domains:** set `https://your-instance.example.com`.
+1. **Application > Domains:** set `https://your-instance.example.com`.
    Coolify provisions the certificate and adds the Traefik labels.
-2. **Application → Environment Variables:** set
+2. **Application > Environment Variables:** set
    `NEXT_PUBLIC_APP_URL`, `APP_URL`, and any optional secrets
    (`WITHINGS_*`, `APNS_*`, `LOKI_*`).
-3. **Application → General → Pull policy:** `always`. The bundled
+3. **Application > General > Pull policy:** `always`. The bundled
    `docker-compose.yml` declares this explicitly (v1.4.34.2 fix) so
    Coolify re-checks the GHCR digest on every redeploy instead of
    reusing the cached `:latest` layer.
-4. **Notifications → Webhook:** point at `/api/internal/deploy-webhook`
+4. **Notifications > Webhook:** point at `/api/internal/deploy-webhook`
    with the `X-Deploy-Webhook-Secret` header set to
    `DEPLOY_WEBHOOK_SECRET`. The app gates the endpoint with a
    timing-safe compare against that env var.

@@ -42,6 +42,10 @@ export const OPERATOR_ROW_SELECT = {
   aiReasoningEnabled: true,
   aiReasoningMaxEffort: true,
   pushRelayDecision: true,
+  telegramGlobal: true,
+  ntfyGlobal: true,
+  webPushGlobal: true,
+  apiGlobal: true,
 } as const satisfies Prisma.AppSettingsSelect;
 
 export type OperatorRow = Prisma.AppSettingsGetPayload<{

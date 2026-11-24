@@ -21,6 +21,7 @@ import { readOperatorRow } from "@/lib/settings/operator-row";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import { memoizePerRequest } from "@/lib/request-cache";
+import { keptUsageRow } from "@/lib/ai/capabilities/usage-row";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
@@ -121,10 +122,11 @@ export function loadRecordAiUsage(recordId: string): Promise<RecordAiUsage> {
   const read = async (): Promise<RecordAiUsage> => {
     const [settings, row] = await Promise.all([
       loadAiUsageSettings(),
-      prisma.user.findUnique({
-        where: { id: recordId },
-        select: { aiUsageLevel: true, deletionRequestedAt: true },
-      }),
+      keptUsageRow(recordId) ??
+        prisma.user.findUnique({
+          where: { id: recordId },
+          select: { aiUsageLevel: true, deletionRequestedAt: true },
+        }),
     ]);
     const preference = usageLevelFromDb(row?.aiUsageLevel);
     return {

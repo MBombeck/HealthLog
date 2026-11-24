@@ -239,7 +239,7 @@ export default function PrivacyPage() {
           >
             <time dateTime={LAST_UPDATED}>
               <span lang="de">Stand: {LAST_UPDATED_DE}</span>
-              {" · "}
+              {", "}
               <span lang="en">Last updated: {LAST_UPDATED_EN}</span>
             </time>
           </p>

@@ -56,7 +56,7 @@ function DayLogRow({ log }: { log: IllnessDayLogDTO }) {
               <Badge key={s.key} variant="secondary">
                 {t(labelKey)}
                 {typeof s.severity === "number"
-                  ? ` · ${t("illness.timeline.severity", {
+                  ? `, ${t("illness.timeline.severity", {
                       severity: s.severity,
                     })}`
                   : ""}

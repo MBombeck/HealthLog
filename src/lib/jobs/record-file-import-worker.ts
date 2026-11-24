@@ -40,7 +40,8 @@ function failureReason(err: unknown): string {
   ) {
     return "staging_missing: the uploaded file is no longer on the server. Upload it again.";
   }
-  return err instanceof Error ? err.message : String(err);
+  // The error itself goes to the run's event; the row keeps a closed code.
+  return "import_failed: the import stopped on an unexpected error. Upload the file again.";
 }
 
 export async function handleRecordFileImport(

@@ -210,7 +210,7 @@ Then:
 > internet.** Registration stays **open** after the first admin so you
 > can invite the rest of your household — but on a publicly reachable
 > host that means strangers can still sign up. Once everyone who needs
-> an account has one, turn it off in **`/admin` → registration toggle**
+> an account has one, turn it off in **`/admin` > registration toggle**
 > (or keep it open and hand out invite links instead). The admin
 > settings show a reminder underneath the toggle while registration is
 > open.

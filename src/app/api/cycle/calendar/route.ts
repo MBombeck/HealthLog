@@ -182,13 +182,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     horizon: PROJECTION_MAX_HORIZON,
   });
 
+  // Sizes only. The verdict's state says whether a period is late, which
+  // is reproductive health and stays out of the logs.
   annotate({
     action: { name: "cycle.calendar.read" },
     meta: {
       days: days.length,
       cycles_observed: prediction?.cyclesObserved ?? 0,
       has_prediction: prediction !== null,
-      verdict_state: verdict.state,
     },
   });
 

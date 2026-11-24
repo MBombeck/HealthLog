@@ -4,7 +4,7 @@
  * ticked ones and never reads the rest; every access is counted and audited;
  * revoked, expired and malformed links read as the same miss; one live link
  * per record; a credential remediation ends it; the wallet PDF prints only
- * the caller's own live link; the offline copy escapes what it carries.
+ * the caller's own link, and only while it opens; the offline copy escapes what it carries.
  */
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -35,6 +35,23 @@ vi.mock("next/headers", async () => {
       set: (name: string, value: string) => cookieJar.set(name, value),
       delete: (name: string) => cookieJar.delete(name),
     })),
+  };
+});
+
+// The renderer runs as shipped; the spy only records what it was handed.
+const pdfCalls = vi.hoisted(
+  () => [] as { linkUrl: string | null; fields: string[] }[],
+);
+vi.mock("@/lib/emergency-card/wallet-pdf", async (orig) => {
+  const real = await orig<typeof import("@/lib/emergency-card/wallet-pdf")>();
+  return {
+    ...real,
+    buildWalletCardPdf: async (
+      args: Parameters<typeof real.buildWalletCardPdf>[0],
+    ) => {
+      pdfCalls.push({ linkUrl: args.linkUrl, fields: [...args.view.fields] });
+      return real.buildWalletCardPdf(args);
+    },
   };
 });
 
@@ -112,6 +129,7 @@ async function seedCard(userId: string) {
 
 beforeEach(async () => {
   await truncateAllTables(db());
+  pdfCalls.length = 0;
 });
 
 describe("emergency card", () => {
@@ -282,6 +300,37 @@ describe("emergency card", () => {
     );
   });
 
+  it("prints no code for a revoked link or on a switched-off instance", async () => {
+    const owner = await makeUser();
+    await signIn(owner.id);
+    const { url } = (
+      await (await call("link", "POST", { fields: ["BLOOD_TYPE"] })).json()
+    ).data;
+
+    await db().appSettings.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", apiGlobal: false },
+      update: { apiGlobal: false },
+    });
+    const off = await call("wallet", "POST", { token: tokenOf(url) });
+    expect(off.status).toBe(422);
+    await db().appSettings.update({
+      where: { id: "singleton" },
+      data: { apiGlobal: true },
+    });
+    expect((await call("wallet", "POST", { token: tokenOf(url) })).status).toBe(
+      200,
+    );
+
+    await db().emergencyCardLink.updateMany({
+      where: { userId: owner.id },
+      data: { revokedAt: new Date() },
+    });
+    const revoked = await call("wallet", "POST", { token: tokenOf(url) });
+    expect(revoked.status).toBe(422);
+    expect(pdfCalls).toHaveLength(1);
+  });
+
   it("prints only the caller's own live link and escapes the offline copy", async () => {
     const owner = await makeUser();
     const other = await makeUser();
@@ -301,12 +350,31 @@ describe("emergency card", () => {
     expect(pdf.headers.get("content-type")).toBe("application/pdf");
     const bytes = new Uint8Array(await pdf.arrayBuffer());
     expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
+    // The card with the code carries what the code shows.
+    expect(pdfCalls.at(-1)).toEqual({
+      linkUrl: expect.stringMatching(/\/e\/hlm_[0-9a-f]{48}$/),
+      fields: ["BLOOD_TYPE"],
+    });
 
     const refused = await call("wallet", "POST", { token: tokenOf(foreign) });
     expect(refused.status).toBe(422);
     expect((await refused.json()).meta.errorCode).toBe(
       "emergency-card.wallet.token",
     );
+
+    // A link past its end answers nothing, so its code is not printed.
+    await db().emergencyCardLink.updateMany({
+      where: { userId: owner.id, revokedAt: null },
+      data: { expiresAt: new Date(Date.now() - 60_000) },
+    });
+    const ended = await call("wallet", "POST", { token: tokenOf(url) });
+    expect(ended.status).toBe(422);
+    expect((await ended.json()).meta.errorCode).toBe(
+      "emergency-card.wallet.token",
+    );
+    expect((await call("wallet", "POST", {})).status).toBe(200);
+    expect(pdfCalls.at(-1)?.linkUrl).toBeNull();
+    expect(pdfCalls.at(-1)?.fields.length).toBeGreaterThan(1);
 
     const html = await call("offline", "GET");
     expect(html.status).toBe(200);

@@ -130,7 +130,7 @@ export function BiomarkerManager() {
             {range
               ? `${t("labs.referenceLabel")} ${withLabUnit(range, marker.unit)}`
               : t("labs.biomarker.noRange")}
-            {marker.panel ? ` · ${marker.panel}` : ""}
+            {marker.panel ? `, ${marker.panel}` : ""}
           </p>
           {marker.aliases && marker.aliases.length > 0 ? (
             <p

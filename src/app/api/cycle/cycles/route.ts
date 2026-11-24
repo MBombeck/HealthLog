@@ -95,7 +95,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   annotate({
     action: { name: "cycle.cycles.read" },
-    meta: { returned: rows.length, regularity },
+    // Sizes only; the regularity is reproductive health, not a log field.
+    meta: { returned: rows.length },
   });
 
   return apiListSuccess(

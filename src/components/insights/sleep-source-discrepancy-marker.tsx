@@ -97,7 +97,7 @@ export function SleepSourceDiscrepancyMarker({
                 (b) =>
                   `${sourceDisplayName(b.source, b.deviceType, t)} ${formatDurationMinutes(b.asleepMinutes, t)}`,
               )
-              .join(" · ")}
+              .join(", ")}
           </>
         }
         label={t("insights.sleep.sourceDiscrepancy.tooltipTitle")}

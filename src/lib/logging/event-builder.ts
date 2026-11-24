@@ -4,6 +4,10 @@ import type { ProviderWorkAuthority } from "@/lib/sharing/provider-work-authorit
 import { LOG_LEVEL_PRIORITY } from "./types";
 import { getDeployContext } from "./config";
 import { redactOptional, redactSecrets } from "./redact";
+import {
+  isHealthClassificationKey,
+  redactHealthClassifications,
+} from "@/lib/observability/redact-payload";
 
 /**
  * Apply `redactSecrets` to every string a value contains, at any depth.
@@ -263,7 +267,15 @@ export class WideEventBuilder {
     // and the AI provider chain feeds upstream error bodies through it, so a
     // gateway that echoes the offending request put prompt content and
     // non-standard credentials into the logs. Scrub every string, at any depth.
-    this.event.meta[key] = redactDeep(value);
+    // A health classification (illness type, allergy category, mood, ...)
+    // never leaves either; see `HEALTH_CLASSIFICATION_KEY_PATTERNS`.
+    const unclassified =
+      isHealthClassificationKey(key) &&
+      value !== null &&
+      (typeof value === "string" || typeof value === "object")
+        ? "[redacted]"
+        : redactHealthClassifications(value);
+    this.event.meta[key] = redactDeep(unclassified);
     return this;
   }
 

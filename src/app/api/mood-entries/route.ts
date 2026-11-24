@@ -372,7 +372,6 @@ async function postMoodEntry(request: NextRequest) {
       // could not tell an abandoned section from a deliberate one.
       meta: {
         moodEntryId: entry.id,
-        mood,
         mood_context: contextOutcome,
         dropped_tag_keys: droppedKeys.droppedTagKeys.length,
         dropped_factor_keys: droppedKeys.droppedFactorKeys.length,

@@ -262,7 +262,7 @@ function ChannelRow({
               <dd className="inline" data-testid="last-failure">
                 {formatDateTime(channel.lastFailureAt)}
                 {channel.lastFailureReason
-                  ? ` · ${channel.lastFailureReason}`
+                  ? `, ${channel.lastFailureReason}`
                   : ""}
               </dd>
             </div>
