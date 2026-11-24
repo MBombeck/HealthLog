@@ -19,6 +19,7 @@
 import {
   createHash,
   createPrivateKey,
+  KeyObject,
   sign,
   X509Certificate,
 } from "node:crypto";
@@ -120,8 +121,8 @@ function issuerAndSerial(cert: X509Certificate): Buffer {
 export interface LocalSigner {
   /** The pass certificate, PEM. */
   certificatePem: string;
-  /** Its private key, PKCS#8 PEM without a password. RSA. */
-  privateKeyPem: string;
+  /** Its private key: a key object, or PKCS#8 PEM without a password. RSA. */
+  privateKey: KeyObject | string;
   /** The intermediate that issued it (Apple WWDR), PEM. */
   intermediatePem: string;
 }
@@ -134,7 +135,10 @@ export function signManifestLocally(
 ): Uint8Array {
   const cert = new X509Certificate(signer.certificatePem);
   const intermediate = new X509Certificate(signer.intermediatePem);
-  const key = createPrivateKey(signer.privateKeyPem);
+  const key =
+    signer.privateKey instanceof KeyObject
+      ? signer.privateKey
+      : createPrivateKey(signer.privateKey);
   if (key.asymmetricKeyType !== "rsa") {
     throw new Error("a pass certificate key is RSA");
   }

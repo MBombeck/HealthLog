@@ -41,6 +41,10 @@ notes, and machine-readable specs that ship alongside the source:
   [`self-hosting/support.md`](./self-hosting/support.md) — reporting a
   problem: error ids, the support info every account can copy, the
   operator's redacted support report, and finding an error in the admin log.
+  And [`self-hosting/apple-wallet.md`](./self-hosting/apple-wallet.md) —
+  how the emergency card's Apple Wallet pass is signed, by the project's
+  signing service by default or with your own Pass Type ID
+  (`WALLET_APPLE_*`).
 - [`using/`](./using/) — notes on using the app that sit close to the
   code. [`using/search.md`](./using/search.md) covers the command palette's
   record search: opening it, what it finds, how matching works, and its

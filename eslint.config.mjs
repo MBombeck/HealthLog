@@ -28,6 +28,9 @@ const eslintConfig = defineConfig([
     // Third-party OCR engine copied from node_modules at prebuild/predev by
     // scripts/stage-tesseract-assets.mjs; gitignored, minified, not ours.
     "public/tesseract/**",
+    // The push relay's Wallet reference and vectors, copied byte for byte
+    // from healthlog-push (CC0) and pinned by hash in the test beside them.
+    "src/lib/emergency-card/wallet-pass/__tests__/relay-spec/**",
   ]),
   // Factory enforcement for every client module: all components/hooks plus
   // `"use client"` app/lib modules. Tests and `src/lib/query-keys/**` own

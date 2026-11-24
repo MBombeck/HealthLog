@@ -40,7 +40,7 @@
       {
         "key": "blood",
         "label": "BLOOD TYPE",
-        "value": "A+"
+        "value": "A positive"
       }
     ],
     "footerFields": [],
@@ -100,7 +100,7 @@
       {
         "key": "blood",
         "label": "BLOOD TYPE",
-        "value": "A+"
+        "value": "A positive"
       }
     ],
     "auxiliaryFields": [

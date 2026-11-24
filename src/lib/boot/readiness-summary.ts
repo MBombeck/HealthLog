@@ -27,6 +27,7 @@ import {
   resolveDailyKeep,
   type BackupDirectoryStatus,
 } from "@/lib/database-backup/dump-core.mjs";
+import { readLocalWalletConfig } from "@/lib/emergency-card/wallet-pass/local-signer";
 
 export interface ReadinessLine {
   /** Short label, e.g. "ENCRYPTION_KEY". */
@@ -222,6 +223,22 @@ export function collectReadiness(
   }
 
   lines.push(...databaseBackupReadiness(env, directoryStatus));
+
+  // --- Apple Wallet with the operator's own Pass Type ID ------------------
+  // Said only when set: unset is the default (the project's signing service
+  // over the relay). A set that does not hold together turns Wallet off, so
+  // it is named here with its closed problem code, never a value.
+  const wallet = readLocalWalletConfig(env);
+  if (wallet.state !== "off") {
+    lines.push({
+      label: "WALLET_APPLE_*",
+      status: wallet.state === "ready" ? "ok" : "warn",
+      detail:
+        wallet.state === "ready"
+          ? "own Pass Type ID, passes are signed on this server"
+          : `set but unusable (${wallet.problem}); Apple Wallet is off until it is fixed`,
+    });
+  }
 
   // --- Optional subsystems (informational) --------------------------------
   const optional: Array<[string, boolean]> = [

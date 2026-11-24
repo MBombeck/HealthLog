@@ -79,3 +79,24 @@ export function normaliseFields(
 export const emergencyWalletBodySchema = z
   .object({ token: z.string().max(80).optional() })
   .strict();
+
+/** `POST /api/emergency-card/wallet/apple`: make the record's Wallet pass. */
+export const emergencyWalletAppleCreateSchema = z
+  .object({
+    fields: z.array(emergencyCardFieldSchema).min(1).max(20),
+    /** Days until the pass's link stops working; omitted or null lasts until withdrawn. */
+    expiresInDays: z
+      .number()
+      .int()
+      .min(1)
+      .max(EMERGENCY_LINK_MAX_DAYS)
+      .nullable()
+      .optional(),
+    /**
+     * The version of the signing-service sentence the owner accepted. Must
+     * be the server's current one when the project's service signs; any
+     * value when the operator signs with their own Pass Type ID.
+     */
+    consentTextVersion: z.string().max(20),
+  })
+  .strict();

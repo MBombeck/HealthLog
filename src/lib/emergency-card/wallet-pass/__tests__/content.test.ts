@@ -55,8 +55,9 @@ describe("pass.json", () => {
       "pregnancy",
     ]);
     expect(poster.primaryFields.slice(1).map((f) => f.value)).toEqual([
-      "A+",
-      "Penicillin +2",
+      "A positive",
+      // Under "Severe allergy" only further severe ones count: there are none.
+      "Penicillin",
       "Week 23+4",
     ]);
     expect(poster.primaryFields[2].label).toBe("SEVERE ALLERGY");
@@ -144,10 +145,58 @@ describe("pass.json", () => {
     ).toThrow();
   });
 
+  it("counts only what the allergy label claims", () => {
+    const front = (allergies: (typeof SAMPLE_VIEW)["allergies"]) =>
+      buildPassContent({
+        ...SAMPLE_INPUT,
+        view: { ...SAMPLE_VIEW, allergies },
+      }).passJson.posterGeneric.primaryFields.find((f) => f.key === "allergy");
+    expect(
+      front([
+        { substance: "Penicillin", severity: "SEVERE", reaction: null },
+        { substance: "Bee venom", severity: "SEVERE", reaction: null },
+        { substance: "Peanuts", severity: "MODERATE", reaction: null },
+        { substance: "Latex", severity: null, reaction: null },
+      ]),
+    ).toEqual({
+      key: "allergy",
+      label: "SEVERE ALLERGY",
+      value: "Penicillin +1",
+    });
+    expect(
+      front([
+        { substance: "Peanuts", severity: "MODERATE", reaction: null },
+        { substance: "Latex", severity: null, reaction: null },
+      ]),
+    ).toEqual({ key: "allergy", label: "ALLERGY", value: "Peanuts +1" });
+  });
+
+  it("writes the blood type the same way front and back, in every language", () => {
+    for (const locale of locales) {
+      const { passJson } = buildPassContent({ ...SAMPLE_INPUT, locale });
+      const front = passJson.posterGeneric.primaryFields.find(
+        (f) => f.key === "blood",
+      );
+      const back = passJson.generic.backFields.find(
+        (f) => f.key === "f_blood_type",
+      );
+      expect(front?.value, locale).toBeTruthy();
+      expect(back?.value, locale).toBe(front?.value);
+      expect(
+        passJson.generic.secondaryFields.find((f) => f.key === "blood")?.value,
+      ).toBe(front?.value);
+    }
+  });
+
   it("carries a call button only for a contacts card with a number", () => {
     expect(buildPassContent(SAMPLE_INPUT).passJson.featuredActions).toEqual([
       { identifier: "ice", type: "call", url: "tel:+491700000000" },
     ]);
+    // No text of ours on the button: Wallet labels a call action itself, in
+    // the phone's language, so there is nothing for pass.strings to carry.
+    const [action] = buildPassContent({ ...SAMPLE_INPUT, locale: "de" })
+      .passJson.featuredActions!;
+    expect(Object.keys(action).sort()).toEqual(["identifier", "type", "url"]);
     expect(
       buildPassContent({
         ...SAMPLE_INPUT,
@@ -214,7 +263,7 @@ describe("pass.json", () => {
     ]) {
       expect(text).not.toContain(secret);
     }
-    expect(text).toContain("A+");
+    expect(text).toContain("A positive");
   });
 });
 
@@ -256,7 +305,7 @@ describe("pass.strings", () => {
   it("maps whole rows into the language, the owner's free text as entered", () => {
     const de = table("de");
     expect(de.get("SEVERE ALLERGY")).toBe("SCHWERE ALLERGIE");
-    expect(de.get("A+")).toBe("A Rh+");
+    expect(de.get("A positive")).toBe("A positiv");
     expect(de.get("Penicillin, Severe, Hives\nPeanuts, Moderate\nLatex")).toBe(
       "Penicillin, Schwer, Hives\nPeanuts, Mittel\nLatex",
     );

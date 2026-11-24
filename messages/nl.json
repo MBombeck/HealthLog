@@ -16146,16 +16146,6 @@
       "asOf": "Bijgewerkt",
       "week": "Week {weeks}+{days}",
       "postpartum": "Kraambed",
-      "bloodShort": {
-        "A_POS": "A+",
-        "A_NEG": "A−",
-        "B_POS": "B+",
-        "B_NEG": "B−",
-        "AB_POS": "AB+",
-        "AB_NEG": "AB−",
-        "O_POS": "O+",
-        "O_NEG": "O−"
-      },
       "scan": "Scan voor de volledige kaart",
       "validUntil": "Geldig tot",
       "untilRevoked": "Tot intrekking",

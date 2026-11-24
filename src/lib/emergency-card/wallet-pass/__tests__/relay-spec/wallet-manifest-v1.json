@@ -1,0 +1,22 @@
+{
+  "format": "healthlog-wallet-manifest-v1",
+  "maxBytes": 8192,
+  "maxEntries": 40,
+  "required": ["pass.json", "icon.png"],
+  "free": ["pass.json"],
+  "localized": {
+    "locales": ["de", "en", "es", "fr", "it", "ko", "nl", "pl", "pt-BR", "pt_BR", "ru"],
+    "file": "pass.strings"
+  },
+  "pinned": {
+    "icon.png": [],
+    "icon@2x.png": [],
+    "icon@3x.png": [],
+    "logo@2x.png": [],
+    "logo@3x.png": [],
+    "primaryLogo@2x.png": [],
+    "primaryLogo@3x.png": [],
+    "artwork@2x.png": [],
+    "artwork@3x.png": []
+  }
+}

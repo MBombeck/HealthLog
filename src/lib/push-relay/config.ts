@@ -49,6 +49,14 @@ export const RELAY_CONSENT_TEXT_VERSION = "2026-11-22";
  * (`termsConfirmationNeeded`, `admin-status.ts`).
  */
 export const RELAY_TERMS_VERSION = "2026-11-22";
+/**
+ * The version of the sentence an owner accepts before the project's signing
+ * service signs their emergency card's Apple Wallet pass (v1.50): what it
+ * sees (this server, the time, the file names and hashes of the pass), and
+ * what it never sees (the content, the link). The card page shows it; a
+ * pass made with another version is refused.
+ */
+export const WALLET_RELAY_CONSENT_TEXT_VERSION = "2026-11-24";
 /** The client name and version every signed request names. */
 export const RELAY_CLIENT_NAME = "healthlog";
 

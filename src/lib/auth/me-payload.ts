@@ -45,6 +45,8 @@ import { loadCoachReasoningState } from "@/lib/ai/reasoning/controls";
 import { parseCoachPrefs } from "@/lib/validations/coach-prefs";
 import { storedGlucoseUnit } from "@/lib/glucose";
 import { accountPushState } from "@/lib/push-relay/capability";
+import { resolveEmergencyWalletApple } from "@/lib/emergency-card/wallet-pass/availability";
+import { resolveOrigin } from "@/lib/http/origin";
 import { settleMedicineRegistry } from "@/lib/medications/medicine-registry";
 import type { MedicineRegistryChoice } from "@/lib/medications/leaflet-registries";
 
@@ -259,8 +261,37 @@ export async function buildAuthMePayload(
     features: SERVER_FEATURES,
     // Relay offer, plus the `X-Device-Id` device's state (null when server-rendered).
     push: (await sidecar).push,
+    // The emergency card's Apple Wallet pass for the RECORD on screen, resolved by the server: whether a pass can be made here, who
+    // would sign it, and the pass it has. Record-scoped like `modules`; a
+    // delegate on an adult's record reads `not_allowed` and no pass. Needs
+    // the origin the request reached (https or not), so it is null when
+    // server-rendered and the client reads it from this route.
+    emergencyCard: await emergencyCardBlock(auth, accountAccess, request),
   };
   return payload;
+}
+
+/**
+ * `emergencyCard.wallet.apple`, for the record the session is inside. The
+ * owner on their own record, or the guardian of a managed profile with
+ * MANAGE, may make a pass; anybody else reads `not_allowed`.
+ */
+async function emergencyCardBlock(
+  auth: AuthContext,
+  accountAccess: AccountAccess,
+  request: Request | undefined,
+) {
+  if (!request) return null;
+  const active = accountAccess.active;
+  const allowed =
+    !active || (active.recordKind === "managed" && active.level === "manage");
+  const apple = await resolveEmergencyWalletApple({
+    recordUserId: active?.accountId ?? auth.user.id,
+    allowed,
+    origin: resolveOrigin(request),
+    authMethod: auth.authMethod,
+  });
+  return { wallet: { apple } };
 }
 
 /**
