@@ -2,8 +2,9 @@
  * The night metrics that can be drawn as lines over the hypnogram (#1419).
  *
  * Shared by the server read (`night-overlays.ts`), the persisted chart
- * preference (`dashboard-layout.ts`, `chartOverlayPrefs.sleepNight`) and the
- * card, so the three agree on one closed set. Client-safe: no database code.
+ * preference (`dashboard/chart-overlay-prefs.ts`,
+ * `chartOverlayPrefs.sleepNight`) and the card, so the three agree on one
+ * closed set. Client-safe: no database code.
  *
  * Each kind names the measurement types that can carry it, in the order a
  * tie between them is broken. HRV is two estimators (SDNN, RMSSD) and skin
@@ -20,6 +21,27 @@ export const NIGHT_OVERLAY_KINDS = [
 ] as const;
 
 export type NightOverlayKind = (typeof NIGHT_OVERLAY_KINDS)[number];
+
+/**
+ * The longest stretch, in minutes, a line may draw across between two
+ * readings of a kind. A line through a gap states values nobody measured, so
+ * it is only drawn where the readings are close enough that the straight
+ * line between them is a fair guess: pulse, HRV, breathing and SpO2 follow
+ * the stages and shift within minutes; skin temperature drifts over half an
+ * hour; a room cools over hours. A watch that measures HRV about once an
+ * hour therefore shows its readings as points, not as a line across hours.
+ * The line's own spacing narrows this further (`buildOverlayRows`).
+ */
+export const NIGHT_OVERLAY_MAX_BRIDGE_MINUTES: Readonly<
+  Record<NightOverlayKind, number>
+> = {
+  pulse: 20,
+  hrv: 20,
+  respiration: 20,
+  spo2: 20,
+  skinTemperature: 30,
+  roomTemperature: 60,
+};
 
 /** How many lines the night timeline draws at once. */
 export const MAX_NIGHT_OVERLAY_LINES = 2;
