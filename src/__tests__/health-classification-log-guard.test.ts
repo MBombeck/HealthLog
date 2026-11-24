@@ -176,8 +176,22 @@ function entries(body: string): { key: string; value: string }[] {
  * than the class itself (`x ? "catalog" : y ? "custom" : "free-text"`; string
  * literals are blanked to `""` by then).
  */
-const COUNT_OR_FLAG =
-  /\.(?:length|size)\b|^\d+$|^(?:true|false)$|\bBoolean\(|[!=]==?|\?\?\s*0$|\bNumber\(|^[^?:]+\?\s*""\s*:\s*(?:[^?:]+\?\s*""\s*:\s*)*""$/;
+const COUNT_OR_FLAG_EXPRESSION =
+  /\.(?:length|size)\b|^\d+$|^(?:true|false)$|\bBoolean\(|[!=]==?|\?\?\s*0$|\bNumber\(/;
+
+/** `a ? "" : b ? "" : ""`: every branch a literal, split rather than matched. */
+function isLiteralChoice(value: string): boolean {
+  const parts = value.split(/[?:]/).map((part) => part.trim());
+  if (parts.length < 3 || parts.length % 2 === 0) return false;
+  return parts.every((part, i) =>
+    i % 2 === 1 || i === parts.length - 1 ? part === '""' : part !== "",
+  );
+}
+
+const COUNT_OR_FLAG = {
+  test: (value: string): boolean =>
+    COUNT_OR_FLAG_EXPRESSION.test(value) || isLiteralChoice(value),
+};
 
 /** Record domains whose type and category fields are the classification. */
 const CLASSIFIED_DOMAINS =

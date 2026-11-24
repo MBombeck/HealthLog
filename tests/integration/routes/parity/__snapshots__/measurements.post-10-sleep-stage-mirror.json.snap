@@ -39,7 +39,6 @@
       },
       "meta": {
         "status": "duplicate",
-        "stage": "DEEP",
         "source": "APPLE_HEALTH",
         "cross_source_merge": true
       },
