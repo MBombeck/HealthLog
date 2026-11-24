@@ -107,7 +107,6 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
   const track = session
     ? hasHypnogramTrack(layout, session.reconstructed)
     : false;
-  const overlayState = useNightOverlays(track ? data?.overlays : null, enabled);
 
   const stageLabels: Record<HypnogramStage, string> = {
     AWAKE: t("insights.sleep.stages.awake"),
@@ -117,6 +116,8 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
     CORE: t("insights.sleep.stages.core"),
     DEEP: t("insights.sleep.stages.deep"),
   };
+
+  const overlayState = useNightOverlays(track ? data?.overlays : null, enabled);
 
   const canStepForward =
     shownNight !== null && latest !== null && shownNight < latest;
