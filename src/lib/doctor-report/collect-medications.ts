@@ -1,8 +1,9 @@
 /**
- * The doctor report's two medication reads, apart from the collector that
- * assembles the report around them.
+ * The doctor report's two medication reads and the list rows made from them,
+ * apart from the collector that assembles the report around them.
  */
 import { prisma } from "@/lib/db";
+import { courseStatusOn, dayKeyOfDate } from "@/lib/medications/course-window";
 import {
   COURSES_COMPLIANCE_SELECT,
   SCHEDULE_COMPLIANCE_SELECT,
@@ -131,4 +132,36 @@ export function findReportIntakeEvents(userId: string, start: Date, end: Date) {
     },
     orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
   });
+}
+
+/** The medication list rows: each medication with the courses inside the window. */
+export function toReportMedicationRows(
+  medications: Awaited<ReturnType<typeof findReportMedications>>,
+  firstDay: Date,
+  lastDay: Date,
+) {
+  return medications.map((m) => ({
+    id: m.id,
+    name: m.name,
+    dose: m.dose,
+    atcCode: m.atcCode,
+    rxNormCode: m.rxNormCode,
+    schedules: m.schedules.map((s) => ({
+      windowStart: s.windowStart,
+      windowEnd: s.windowEnd,
+      label: s.label,
+    })),
+    // v1.40 (#1024) — the courses inside the window, one line each.
+    courses: m.courses
+      .filter(
+        (c) =>
+          c.startsOn.getTime() <= lastDay.getTime() &&
+          (c.endsOn === null || c.endsOn.getTime() >= firstDay.getTime()),
+      )
+      .map((c) => ({
+        startsOn: dayKeyOfDate(c.startsOn),
+        endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,
+        status: courseStatusOn(c, dayKeyOfDate(lastDay)),
+      })),
+  }));
 }
