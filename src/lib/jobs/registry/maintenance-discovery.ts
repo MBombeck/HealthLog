@@ -95,6 +95,13 @@ export const MAINTENANCE_DISCOVERY: readonly BootDiscovery[] = [
         await import("@/lib/jobs/wearable-cycle-repair")
       ).enqueueBootTimeWearableCycleRepair(),
   },
+  // Demo deploys only: a refresh the worker missed at its hour (a deploy, a
+  // restart). Anywhere else it returns before its first query.
+  {
+    name: "demo-refresh",
+    run: async () =>
+      (await import("@/lib/jobs/demo-refresh")).enqueueBootTimeDemoRefresh(),
+  },
   // Self-limiting and idempotent; a boot with no backlog costs one query.
   {
     name: "compaction-tombstone-purge",

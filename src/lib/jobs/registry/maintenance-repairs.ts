@@ -8,6 +8,7 @@ import { LAB_DOCUMENT_DATE_REPAIR_QUEUE } from "@/lib/jobs/lab-document-date-rep
 import { WEARABLE_CYCLE_REPAIR_QUEUE } from "@/lib/jobs/wearable-cycle-repair-queue";
 
 import { defineJob, type JobDefinition } from "./define-job";
+import { maintenanceDemoJobs } from "./maintenance-demo";
 
 export const MAINTENANCE_REPAIR_JOBS: readonly JobDefinition[] = [
   // Document lab values filed under their confirmation moment.
@@ -36,4 +37,6 @@ export const MAINTENANCE_REPAIR_JOBS: readonly JobDefinition[] = [
       (await import("@/lib/jobs/wearable-cycle-repair"))
         .handleWearableCycleRepair,
   }),
+  // Demo deploys only (`DEMO_MODE=true`); empty everywhere else.
+  ...maintenanceDemoJobs(),
 ];

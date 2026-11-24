@@ -125,6 +125,7 @@ const subsystemSurface = {
   "compaction-tombstone-purge": { audience: "system" },
   "measurement-fold-repair": { audience: "system" },
   "lab-document-date-repair": { audience: "system" },
+  "demo-refresh": { audience: "system" },
   "wearable-cycle-repair": { audience: "system" },
   "measurement-maintenance": { audience: "system" },
   "pulse-day-mean": { audience: "system" },

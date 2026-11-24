@@ -4,14 +4,14 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { allJobDefinitions } from "@/lib/jobs/registry";
+import { everyJobDefinition } from "@/__tests__/helpers/every-job-definition";
 import {
   SUBSYSTEM_SURFACE,
   type SubsystemSurface,
 } from "@/lib/jobs/subsystem-surface";
 
 function registeredQueueNames(): string[] {
-  return allJobDefinitions().map((job) => job.queue);
+  return everyJobDefinition().map((job) => job.queue);
 }
 
 export function findSurfaceDrift(
