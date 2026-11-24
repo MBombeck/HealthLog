@@ -110,7 +110,7 @@ export function InsightsSettingsForm({
           {/* A name beside a short number, inside a list row: the kit's
               Label, laid out inline rather than over the control. */}
           <div className="flex items-center gap-2">
-            <Label htmlFor={`${kind}-order-${item.id}`} className="pl-0">
+            <Label htmlFor={`${kind}-order-${item.id}`}>
               {t("settings.sharedRecord.managedSettings.insights.order")}
             </Label>
             <Input

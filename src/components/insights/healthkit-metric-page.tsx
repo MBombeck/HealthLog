@@ -453,7 +453,7 @@ export function HealthKitMetricPage({
           fractionDigits={resolvedFractionDigits}
           seriesLabel={
             bothMeasures && primaryMeasureLabel
-              ? `${title} · ${primaryMeasureLabel}`
+              ? `${title}, ${primaryMeasureLabel}`
               : title
           }
           icon={statIcon}
@@ -489,9 +489,9 @@ export function HealthKitMetricPage({
         types={[effectiveType]}
         title={
           usingFallback && fallbackMeasureLabel
-            ? `${t(`${i18nPrefix}.chartTitle`)} · ${fallbackMeasureLabel}`
+            ? `${t(`${i18nPrefix}.chartTitle`)}, ${fallbackMeasureLabel}`
             : bothMeasures && primaryMeasureLabel
-              ? `${t(`${i18nPrefix}.chartTitle`)} · ${primaryMeasureLabel}`
+              ? `${t(`${i18nPrefix}.chartTitle`)}, ${primaryMeasureLabel}`
               : t(`${i18nPrefix}.chartTitle`)
         }
         titleIcon={statIcon}
@@ -513,7 +513,7 @@ export function HealthKitMetricPage({
           types={[fallbackMeasurementType as string]}
           title={
             fallbackMeasureLabel
-              ? `${t(`${i18nPrefix}.chartTitle`)} · ${fallbackMeasureLabel}`
+              ? `${t(`${i18nPrefix}.chartTitle`)}, ${fallbackMeasureLabel}`
               : t(`${i18nPrefix}.chartTitle`)
           }
           titleIcon={statIcon}

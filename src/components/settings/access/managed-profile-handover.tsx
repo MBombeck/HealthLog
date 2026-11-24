@@ -287,7 +287,7 @@ function HandoverProposalForm({
                 <Label
                   noColon
                   htmlFor={id}
-                  className="block min-w-0 flex-1 truncate pl-0 text-sm font-normal"
+                  className="block min-w-0 flex-1 truncate text-sm font-normal"
                 >
                   {accountLabel(guardian.account)}
                   {isSelf ? ` ${t("recordSharing.managed.guardianYou")}` : ""}

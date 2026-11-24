@@ -93,13 +93,6 @@ const FALLBACK_UNIT: Partial<Record<MeasurementType, string>> = {
 /** Where today's running total sits against the typical band at this hour. */
 export type SameTimeBand = "below" | "within" | "above";
 
-/**
- * Which comparison answered. `hourly`: today's curve against the usual curve
- * up to the last completed hour. `daily_total`: today's running total against
- * the usual full day, for a day owned by a source that reports one total.
- */
-export type SameTimeMode = "hourly" | "daily_total";
-
 /** The successful `value` payload of the hourly comparison. */
 export interface SameTimeBaselineHourlyValue {
   mode: "hourly";

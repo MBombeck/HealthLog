@@ -332,7 +332,7 @@
     "bmiRow": "BMI: {bmi} kg/m², Klassifikation: {class} (WHO)",
     "complianceTitle": "Therapietreue",
     "glp1Title": "GLP-1-Therapie",
-    "glp1WeightSummary": "Gewicht im Berichtszeitraum: {start} kg → {end} kg ({delta} kg)",
+    "glp1WeightSummary": "Gewicht im Berichtszeitraum: von {start} kg auf {end} kg ({delta} kg)",
     "glp1CurrentDose": "Aktuelle Dosis: {value} {unit} (seit {since})",
     "glp1Compliance": "Therapietreue: {taken} / {total} ({rate}%)",
     "glp1SideEffectsTitle": "Erfasste Nebenwirkungen",
@@ -2406,7 +2406,7 @@
         "timesTitle": "Einnahmezeiten",
         "timesNote": "Passe die Uhrzeiten und das Zeitfenster jeder Dosis an. Die Häufigkeit (täglich, wöchentlich…) änderst du im Editor unter Erweitert.",
         "scheduleLabel": "Zeitplan {index}",
-        "fullEditNote": "Häufigkeit, Wirkstoffklasse und Zeitraum bearbeitest du im Editor unter Erweitert → Lebenszyklus.",
+        "fullEditNote": "Häufigkeit, Wirkstoffklasse und Zeitraum bearbeitest du im Editor unter Erweitert > Lebenszyklus.",
         "graceEcho": "Erinnerungsdauer: {minutes, plural, one {# Minute} other {# Minuten}}",
         "reminderTitle": "Erinnerung",
         "manageChannels": "Benachrichtigungskanäle verwalten",
@@ -2520,7 +2520,7 @@
         "error": "Diese Änderung konnte nicht gespeichert werden. Bitte erneut versuchen."
       },
       "beforeAfter": {
-        "summary": "Ø {before} davor → Ø {after} seitdem, eine Veränderung von {delta}.",
+        "summary": "Ø {before} davor, Ø {after} seitdem, eine Veränderung von {delta}.",
         "counts": "Basierend auf {beforeCount, plural, one {# Wert} other {# Werten}} davor und {afterCount} seitdem.",
         "needBefore": "Noch zu wenige Werte vor dem Beginn. Für einen Vergleich {weeks, plural, one {wird etwa # Woche} other {werden etwa # Wochen}} davor und danach benötigt.",
         "needAfter": "Noch zu wenige Werte seit dem Beginn. Für einen Vergleich {weeks, plural, one {wird etwa # Woche} other {werden etwa # Wochen}} davor und danach benötigt.",
@@ -3080,7 +3080,7 @@
       "emptyDescription": "Du hast alle Bereiche ausgeblendet. Öffne „Anpassen“, um Karten wieder einzublenden."
     },
     "bmiEmptyTitle": "Größe hinzufügen für BMI",
-    "bmiEmptyDescription": "Für den BMI wird deine Körpergröße benötigt. Hinterlege sie unter Einstellungen → Account.",
+    "bmiEmptyDescription": "Für den BMI wird deine Körpergröße benötigt. Hinterlege sie unter Einstellungen > Account.",
     "bmiEmptyAction": "Account-Einstellungen öffnen",
     "noAnalysisYet": "Noch keine Einschätzung vorhanden.",
     "assessmentPreparing": "Einschätzung wird vorbereitet…",
@@ -5371,7 +5371,7 @@
       "steps": {
         "dashboardOverview": {
           "title": "Dein Dashboard",
-          "body": "Das Dashboard bündelt alle Module auf einen Blick. Halte eine Kachel lange gedrückt, um sie neu anzuordnen oder auszublenden (Einstellungen → Dashboard-Layout). Jede Kachel ist nur so aussagekräftig wie die Daten dahinter. Die folgenden Module füllen sie."
+          "body": "Das Dashboard bündelt alle Module auf einen Blick. Halte eine Kachel lange gedrückt, um sie neu anzuordnen oder auszublenden (Einstellungen > Dashboard-Layout). Jede Kachel ist nur so aussagekräftig wie die Daten dahinter. Die folgenden Module füllen sie."
         },
         "quickAdd": {
           "title": "In Sekunden erfasst",
@@ -5427,7 +5427,7 @@
         },
         "wrapUp": {
           "title": "Das war die Tour",
-          "body": "Diese Führung läuft einmalig und öffnet sich nicht von selbst erneut. Alles Gezeigte bleibt erhalten, und du kannst Funktionen jederzeit unter Einstellungen → Module ein- oder ausschalten."
+          "body": "Diese Führung läuft einmalig und öffnet sich nicht von selbst erneut. Alles Gezeigte bleibt erhalten, und du kannst Funktionen jederzeit unter Einstellungen > Module ein- oder ausschalten."
         }
       }
     },
@@ -5624,12 +5624,12 @@
           "cta": "{target} verbinden",
           "checking": "Verbindung wird geprüft.",
           "waiting": "Noch nicht verbunden.",
-          "openSettings": "Einstellungen → Integrationen öffnen",
+          "openSettings": "Einstellungen > Integrationen öffnen",
           "noDate": "unbekannt",
           "throughGoogleHealth": "{source}-Daten kommen jetzt über {target}: Die klassische {source}-Verbindung wurde abgeschaltet. Verbinde {target} mit dem Google-Konto, an dem dein {source} angemeldet ist, dann kommen deine Werte von dort.",
           "needsCredentials": {
             "title": "Diese Instanz hat noch keine {target}-App hinterlegt.",
-            "detail": "Trage deine eigenen Zugangsdaten unter Einstellungen → Integrationen ein, dann kann die Verbindung starten."
+            "detail": "Trage deine eigenen Zugangsdaten unter Einstellungen > Integrationen ein, dann kann die Verbindung starten."
           },
           "state": {
             "pending_first_sync": {
@@ -5646,11 +5646,11 @@
             },
             "stalled": {
               "title": "{target} ist verbunden, aber es wird nicht mehr synchronisiert.",
-              "detail": "Letzter Versuch {when}. Prüfe die Verbindung unter Einstellungen → Integrationen."
+              "detail": "Letzter Versuch {when}. Prüfe die Verbindung unter Einstellungen > Integrationen."
             },
             "failing": {
               "title": "{target} ist verbunden, aber die Synchronisierung schlägt fehl.",
-              "detail": "Ohne Erfolg seit {when}. Prüfe die Verbindung unter Einstellungen → Integrationen."
+              "detail": "Ohne Erfolg seit {when}. Prüfe die Verbindung unter Einstellungen > Integrationen."
             },
             "reauth_required": {
               "title": "Die Verbindung zu {target} muss erneuert werden.",
@@ -5658,7 +5658,7 @@
             },
             "parked": {
               "title": "Die Verbindung zu {target} ist pausiert.",
-              "detail": "Prüfe die Verbindung unter Einstellungen → Integrationen."
+              "detail": "Prüfe die Verbindung unter Einstellungen > Integrationen."
             }
           }
         },
@@ -6187,7 +6187,7 @@
           "charCount": "{used} / {max, plural, one {# Zeichen} other {# Zeichen}}",
           "appleHealth": {
             "title": "Apple Health",
-            "description": "Lade die export.zip aus der Health-App auf dem iPhone hoch (Profil → Alle Gesundheitsdaten exportieren).",
+            "description": "Lade die export.zip aus der Health-App auf dem iPhone hoch (Profil > Alle Gesundheitsdaten exportieren).",
             "dropLabel": "export.zip hier ablegen",
             "dropHint": "oder zum Auswählen klicken",
             "fileInputLabel": "Eine Apple-Health-export.zip-Datei auswählen",
@@ -6948,7 +6948,7 @@
       "deviceCodeCancel": "Abbrechen",
       "oauthNotConfigured": "ChatGPT-OAuth ist auf dieser Instanz nicht konfiguriert. Nutze stattdessen einen eigenen API-Key unten.",
       "modelLabel": "Modell",
-      "modelOptionDefault": "— Standard —",
+      "modelOptionDefault": "Standard",
       "modelOptionCustom": "Eigenes…",
       "customModelLabel": "Eigener Modellname",
       "anthropicKeyLabel": "Anthropic API-Key",
@@ -6982,7 +6982,7 @@
         "saveFailed": "Speichern der Kette fehlgeschlagen",
         "resetDefaults": "Zurücksetzen",
         "resetConfirmTitle": "Kette auf Standard zurücksetzen?",
-        "resetConfirmBody": "Die Kette wird auf Codex → OpenAI → Anthropic → Lokal → Admin-OpenAI zurückgesetzt. Gespeicherte Zugangsdaten bleiben erhalten."
+        "resetConfirmBody": "Die Kette wird auf Codex, OpenAI, Anthropic, Lokal, Admin-OpenAI zurückgesetzt. Gespeicherte Zugangsdaten bleiben erhalten."
       },
       "namedChains": {
         "title": "Ketten pro Aufgabe",
@@ -8125,7 +8125,7 @@
         "unavailable": "Apple-Health-Status nicht verfügbar"
       },
       "setupTitle": "Live-Synchronisierung aktivieren",
-      "permissionStep": "Öffne in der HealthLog-iOS-App Einstellungen → Apple Health und erlaube die Gesundheitskategorien, die du teilen möchtest.",
+      "permissionStep": "Öffne in der HealthLog-iOS-App Einstellungen > Apple Health und erlaube die Gesundheitskategorien, die du teilen möchtest.",
       "backgroundStep": "Lass die Hintergrundaktualisierung aktiviert. Die App synchronisiert neue Daten automatisch im Vordergrund und wenn iOS Hintergrundzeit gewährt.",
       "importNote": "Du brauchst ältere Daten oder kannst die iOS-App nicht nutzen? Der Apple-Health-XML/ZIP-Upload ist ein einmaliger Ersatzweg und aktiviert keine Live-Synchronisierung.",
       "importAction": "Einmaligen Import öffnen",
@@ -8703,7 +8703,7 @@
     "tokenCreated": "Erstellt",
     "tokenNeverUsed": "Nie",
     "tokensEmptyTitle": "Noch keine API-Tokens",
-    "tokensEmptyDescription": "Tokens werden bei der Anmeldung nativer Clients oder über Einstellungen → Account ausgestellt.",
+    "tokensEmptyDescription": "Tokens werden bei der Anmeldung nativer Clients oder über Einstellungen > Account ausgestellt.",
     "loginOverviewDescription": "Anmelde- und Auth-Ereignisse aller Konten, filterbar und als CSV exportierbar.",
     "loginOverviewFilterLabel": "Ereignisse filtern",
     "allAuthEvents": "Alle Auth-Ereignisse",
@@ -10142,7 +10142,7 @@
     "eventColumn": "Ereignis",
     "subtitle": "Wähle aus, welche Benachrichtigungen du über welchen Kanal erhalten möchtest.",
     "loadError": "Benachrichtigungseinstellungen konnten nicht geladen werden.",
-    "noChannels": "Konfiguriere zuerst einen Benachrichtigungskanal unter Einstellungen → Integrationen.",
+    "noChannels": "Konfiguriere zuerst einen Benachrichtigungskanal unter Einstellungen > Integrationen.",
     "goToSettings": "Zu den Kanal-Einstellungen",
     "channelDisabled": "Deaktiviert",
     "admin": {
@@ -13277,7 +13277,7 @@
       "dismiss": "Verwerfen",
       "empty": "Aus diesem Dokument konnte nichts gelesen werden.",
       "unavailableBody": "Richte einen KI-Anbieter ein, um Titel, Typ und Datum vorzuschlagen.",
-      "unavailableLocalOcr": "Schalte „Scans auf diesem Gerät lesen“ unter Einstellungen → Module → Labor ein, um Bilder auf diesem Gerät zu lesen.",
+      "unavailableLocalOcr": "Schalte „Scans auf diesem Gerät lesen“ unter Einstellungen > Module > Labor ein, um Bilder auf diesem Gerät zu lesen.",
       "unavailableAction": "KI-Einstellungen öffnen",
       "errorGeneric": "Dokument konnte nicht gelesen werden. Bitte erneut versuchen.",
       "errorOcr": "Aus diesem Bild konnte kein Text gelesen werden.",
@@ -13290,7 +13290,7 @@
       "errorFileType": "Dieser Dateityp kann nicht gelesen werden.",
       "errorNotIndexed": "Lies das Dokument zuerst aus, dann extrahiere.",
       "errorOutputLimit": "Der KI-Anbieter hat sein Ausgabelimit erreicht, bevor er einen einzigen Wert geliefert hat. Versuche ein Modell, das längere Antworten erlaubt.",
-      "errorLocalOcrDisabled": "Schalte zuerst „Scans auf diesem Gerät lesen“ unter Einstellungen → Module → Labor ein.",
+      "errorLocalOcrDisabled": "Schalte zuerst „Scans auf diesem Gerät lesen“ unter Einstellungen > Module > Labor ein.",
       "errorProvider": "Dafür ist kein KI-Anbieter eingerichtet.",
       "errorTextImageOnly": "Lokale Texterkennung liest nur Bilder, nicht diese Datei.",
       "errorConsent": "Für das Lesen von Dokumenten mit KI brauchst du zuerst deine Einwilligung.",
@@ -14038,7 +14038,7 @@
     "invite": {
       "title": "Jemanden einladen",
       "description": "Vor der Zustimmung wird nichts geteilt.",
-      "needsAccount": "Die Person braucht ein eigenes HealthLog-Konto auf dieser Instanz und findet die Einladung dort unter Einstellungen → Geteilter Zugriff.",
+      "needsAccount": "Die Person braucht ein eigenes HealthLog-Konto auf dieser Instanz und findet die Einladung dort unter Einstellungen > Geteilter Zugriff.",
       "identifierLabel": "Benutzername oder E-Mail",
       "identifierPlaceholder": "Der Name, mit dem sie sich anmeldet",
       "identifierHint": "Die Person braucht ein Konto auf dieser Instanz. An eine E-Mail-Adresse ohne Registrierung lässt sich keine Einladung schicken.",
@@ -14202,7 +14202,7 @@
       "guardianErrorNoAccount": "Auf dieser Instanz gibt es kein Konto mit diesem Namen oder dieser E-Mail-Adresse.",
       "guardianErrorRateLimit": "Zu viele Einladungen in der letzten Stunde. Warte etwas und versuche es erneut.",
       "guardianErrorFailed": "Die Einladung konnte nicht gesendet werden.",
-      "errorMfaRequired": "Dafür ist ein zweiter Faktor oder ein Passkey nötig, und dein Konto hat noch keins von beiden. Richte unter Einstellungen → Sicherheit eins ein und versuche es dann erneut.",
+      "errorMfaRequired": "Dafür ist ein zweiter Faktor oder ein Passkey nötig, und dein Konto hat noch keins von beiden. Richte unter Einstellungen > Sicherheit eins ein und versuche es dann erneut.",
       "rosterLoadError": "Es ließ sich nicht laden, wer sich um diese Akte kümmert.",
       "errorRateLimit": "Zu viele Profile in der letzten Stunde angelegt. Warte etwas und versuche es erneut.",
       "handover": {
@@ -16118,7 +16118,8 @@
     "wallet": {
       "instructions": "In Originalgröße drucken, entlang des Rahmens ausschneiden, an der gestrichelten Linie falten.",
       "scan": "Für die ganze Karte scannen",
-      "cut": "Gekürzt, damit es passt. Die ganze Karte steht hinter dem QR-Code."
+      "cut": "Gekürzt, damit es passt. Die ganze Karte steht hinter dem QR-Code.",
+      "cutNoCode": "Gekürzt, damit es passt. Die ganze Karte steht in der App."
     },
     "link": {
       "validUntil": "Nur lesbar. Dieser Link gilt bis {date}.",

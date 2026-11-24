@@ -368,7 +368,7 @@
     "bmiRow": "BMI: {bmi} kg/m², Classification: {class} (WHO)",
     "complianceTitle": "Medication adherence",
     "glp1Title": "GLP-1 therapy",
-    "glp1WeightSummary": "Weight over report period: {start} kg → {end} kg ({delta} kg)",
+    "glp1WeightSummary": "Weight over report period: from {start} kg to {end} kg ({delta} kg)",
     "glp1CurrentDose": "Current dose: {value} {unit} (since {since})",
     "glp1Compliance": "Adherence: {taken} / {total} ({rate}%)",
     "glp1SideEffectsTitle": "Side effects logged",
@@ -2406,7 +2406,7 @@
         "timesTitle": "Dose times",
         "timesNote": "Adjust each dose's time and on-time window. The frequency (daily, weekly…) is edited in the editor under Advanced.",
         "scheduleLabel": "Schedule {index}",
-        "fullEditNote": "Frequency, treatment class and course are edited in the editor under Advanced → Lifecycle.",
+        "fullEditNote": "Frequency, treatment class and course are edited in the editor under Advanced > Lifecycle.",
         "graceEcho": "Reminder duration: {minutes, plural, one {# minute} other {# minutes}}",
         "reminderTitle": "Reminder",
         "manageChannels": "Manage notification channels",
@@ -2520,7 +2520,7 @@
         "error": "Could not save that change. Try again."
       },
       "beforeAfter": {
-        "summary": "Ø {before} before → Ø {after} since, a change of {delta}.",
+        "summary": "Ø {before} before, Ø {after} since, a change of {delta}.",
         "counts": "Based on {beforeCount, plural, one {# reading} other {# readings}} before and {afterCount} since.",
         "needBefore": "Not enough readings before the start yet. {weeks, plural, one {About # week is} other {About # weeks are}} needed before and after to compare.",
         "needAfter": "Not enough readings since the start yet. {weeks, plural, one {About # week is} other {About # weeks are}} needed before and after to compare.",
@@ -3082,7 +3082,7 @@
       "emptyDescription": "You've hidden every section. Open customize to bring cards back."
     },
     "bmiEmptyTitle": "Set your height to see BMI",
-    "bmiEmptyDescription": "BMI needs your height. Add it under Settings → Account.",
+    "bmiEmptyDescription": "BMI needs your height. Add it under Settings > Account.",
     "bmiEmptyAction": "Open account settings",
     "loadError": "Failed to load insights",
     "heroPersonalBaseline": "Based on your last 90 days",
@@ -5371,7 +5371,7 @@
       "steps": {
         "dashboardOverview": {
           "title": "Your dashboard",
-          "body": "The dashboard pulls every module together at a glance. Long-press a tile to reorder or hide it (Settings → Dashboard layout). Each tile is only as telling as the data behind it, and the modules ahead fill them."
+          "body": "The dashboard pulls every module together at a glance. Long-press a tile to reorder or hide it (Settings > Dashboard layout). Each tile is only as telling as the data behind it, and the modules ahead fill them."
         },
         "quickAdd": {
           "title": "Logged in seconds",
@@ -5427,7 +5427,7 @@
         },
         "wrapUp": {
           "title": "That’s the tour",
-          "body": "This walkthrough runs once and won't reopen on its own. Everything it covered stays put, and you can turn features on or off any time under Settings → Modules."
+          "body": "This walkthrough runs once and won't reopen on its own. Everything it covered stays put, and you can turn features on or off any time under Settings > Modules."
         }
       }
     },
@@ -5624,12 +5624,12 @@
           "cta": "Connect {target}",
           "checking": "Checking the connection.",
           "waiting": "Not connected yet.",
-          "openSettings": "Open Settings → Integrations",
+          "openSettings": "Open Settings > Integrations",
           "noDate": "unknown",
           "throughGoogleHealth": "{source} data now comes through {target}: the classic {source} connection has been shut down. Connect {target} with the Google account your {source} is signed in to, and your readings arrive from there.",
           "needsCredentials": {
             "title": "This instance has no {target} app on file yet.",
-            "detail": "Enter your own credentials under Settings → Integrations, then the connection can start."
+            "detail": "Enter your own credentials under Settings > Integrations, then the connection can start."
           },
           "state": {
             "pending_first_sync": {
@@ -5646,11 +5646,11 @@
             },
             "stalled": {
               "title": "{target} is connected, but it has stopped syncing.",
-              "detail": "Last attempt {when}. Check the connection under Settings → Integrations."
+              "detail": "Last attempt {when}. Check the connection under Settings > Integrations."
             },
             "failing": {
               "title": "{target} is connected, but the sync keeps failing.",
-              "detail": "Nothing has come through since {when}. Check the connection under Settings → Integrations."
+              "detail": "Nothing has come through since {when}. Check the connection under Settings > Integrations."
             },
             "reauth_required": {
               "title": "The connection to {target} needs renewing.",
@@ -5658,7 +5658,7 @@
             },
             "parked": {
               "title": "The connection to {target} is paused.",
-              "detail": "Check the connection under Settings → Integrations."
+              "detail": "Check the connection under Settings > Integrations."
             }
           }
         },
@@ -6187,7 +6187,7 @@
           "charCount": "{used} / {max, plural, one {# character} other {# characters}}",
           "appleHealth": {
             "title": "Apple Health",
-            "description": "Upload the export.zip from the Health app on iPhone (Profile → Export All Health Data).",
+            "description": "Upload the export.zip from the Health app on iPhone (Profile > Export All Health Data).",
             "dropLabel": "Drop export.zip here",
             "dropHint": "or click to choose a file",
             "fileInputLabel": "Choose an Apple Health export.zip file",
@@ -6948,7 +6948,7 @@
       "deviceCodeCancel": "Cancel",
       "oauthNotConfigured": "ChatGPT OAuth is not configured on this instance. Use your own API key below instead.",
       "modelLabel": "Model",
-      "modelOptionDefault": "— Default —",
+      "modelOptionDefault": "Default",
       "modelOptionCustom": "Custom…",
       "customModelLabel": "Custom model name",
       "anthropicKeyLabel": "Anthropic API key",
@@ -6982,7 +6982,7 @@
         "saveFailed": "Saving the chain failed",
         "resetDefaults": "Reset to defaults",
         "resetConfirmTitle": "Reset chain to defaults?",
-        "resetConfirmBody": "The chain reverts to Codex → OpenAI → Anthropic → Local → Admin OpenAI. Your saved credentials are not touched."
+        "resetConfirmBody": "The chain reverts to Codex, OpenAI, Anthropic, Local, Admin OpenAI. Your saved credentials are not touched."
       },
       "namedChains": {
         "title": "Chains per task",
@@ -8125,7 +8125,7 @@
         "unavailable": "Apple Health status unavailable"
       },
       "setupTitle": "Turn on live sync",
-      "permissionStep": "In the HealthLog iOS app, open Settings → Apple Health and allow the health categories you want to share.",
+      "permissionStep": "In the HealthLog iOS app, open Settings > Apple Health and allow the health categories you want to share.",
       "backgroundStep": "Keep Background App Refresh enabled. The app syncs new data automatically in the foreground and when iOS grants background time.",
       "importNote": "Need older history or cannot use the iOS app? The Apple Health XML/ZIP upload is a one-shot fallback and does not enable live sync.",
       "importAction": "Open one-shot import",
@@ -8703,7 +8703,7 @@
     "tokenCreated": "Created",
     "tokenNeverUsed": "Never",
     "tokensEmptyTitle": "No API tokens yet",
-    "tokensEmptyDescription": "Tokens are issued when a native client signs in or via Settings → Account.",
+    "tokensEmptyDescription": "Tokens are issued when a native client signs in or via Settings > Account.",
     "loginOverviewDescription": "Sign-in and auth events across all accounts, filterable and exportable as CSV.",
     "loginOverviewFilterLabel": "Filter events",
     "allAuthEvents": "All auth events",
@@ -10142,7 +10142,7 @@
     "eventColumn": "Event",
     "subtitle": "Choose which notifications you want to receive through which channel.",
     "loadError": "Notification preferences could not be loaded.",
-    "noChannels": "Configure a notification channel in Settings → Integrations first.",
+    "noChannels": "Configure a notification channel in Settings > Integrations first.",
     "goToSettings": "Go to channel settings",
     "channelDisabled": "Disabled",
     "admin": {
@@ -13277,7 +13277,7 @@
       "dismiss": "Dismiss",
       "empty": "Nothing could be read from this document.",
       "unavailableBody": "Set up an AI provider to suggest a title, type, and date.",
-      "unavailableLocalOcr": "Turn on “Read scans on this device” under Settings → Modules → Labs to read images on this device.",
+      "unavailableLocalOcr": "Turn on “Read scans on this device” under Settings > Modules > Labs to read images on this device.",
       "unavailableAction": "Open AI settings",
       "errorGeneric": "Couldn't read the document. Try again.",
       "errorOcr": "Couldn't read text from this image.",
@@ -13290,7 +13290,7 @@
       "errorFileType": "This file type can't be read.",
       "errorNotIndexed": "Read the document first, then extract.",
       "errorOutputLimit": "The AI provider reached its output limit before it returned a single value. Try a model that allows longer answers.",
-      "errorLocalOcrDisabled": "Turn on “Read scans on this device” under Settings → Modules → Labs first.",
+      "errorLocalOcrDisabled": "Turn on “Read scans on this device” under Settings > Modules > Labs first.",
       "errorProvider": "No AI provider is set up for this.",
       "errorTextImageOnly": "Local OCR reads images only, not this file.",
       "errorConsent": "Reading documents with AI needs your consent first.",
@@ -14038,7 +14038,7 @@
     "invite": {
       "title": "Invite someone",
       "description": "Nothing is shared until they accept.",
-      "needsAccount": "The person needs their own HealthLog account on this instance and will find the invitation under Settings → Shared access.",
+      "needsAccount": "The person needs their own HealthLog account on this instance and will find the invitation under Settings > Shared access.",
       "identifierLabel": "Username or e-mail",
       "identifierPlaceholder": "The name they sign in with",
       "identifierHint": "They need an account on this instance. Invitations cannot be sent to an e-mail address that has not registered.",
@@ -14202,7 +14202,7 @@
       "guardianErrorNoAccount": "No account on this instance carries that name or e-mail.",
       "guardianErrorRateLimit": "Too many invitations in the last hour. Wait a while and try again.",
       "guardianErrorFailed": "The invitation could not be sent.",
-      "errorMfaRequired": "This needs a second factor or a passkey, and your account has neither yet. Set one up under Settings → Security, then try again.",
+      "errorMfaRequired": "This needs a second factor or a passkey, and your account has neither yet. Set one up under Settings > Security, then try again.",
       "rosterLoadError": "Could not load who looks after this record.",
       "errorRateLimit": "Too many profiles created in the last hour. Wait a while and try again.",
       "handover": {
@@ -16118,7 +16118,8 @@
     "wallet": {
       "instructions": "Print at 100 percent, cut along the outline, fold at the dashed line.",
       "scan": "Scan for the full card",
-      "cut": "Shortened to fit. The full card is behind the QR code."
+      "cut": "Shortened to fit. The full card is behind the QR code.",
+      "cutNoCode": "Shortened to fit. The full card is in the app."
     },
     "link": {
       "validUntil": "Read-only. This link works until {date}.",

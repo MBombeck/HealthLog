@@ -89,7 +89,7 @@ function NestedEpisodes({ episodes }: { episodes?: IllnessEpisodeDTO[] }) {
               <span className="text-muted-foreground shrink-0">
                 {allFlares
                   ? fmt.dateShortSmart(new Date(child.onsetAt))
-                  : `${t(`illness.lifecycle.${child.lifecycle}`)} · ${fmt.dateShortSmart(new Date(child.onsetAt))}`}
+                  : `${t(`illness.lifecycle.${child.lifecycle}`)}, ${fmt.dateShortSmart(new Date(child.onsetAt))}`}
                 {child.resolvedAt
                   ? `–${fmt.dateShortSmart(new Date(child.resolvedAt))}`
                   : ""}
@@ -236,7 +236,7 @@ function EpisodeCard({
           )}
           {episode.resolvedAt ? (
             <>
-              {" · "}
+              {", "}
               {withDayLinkSlot(
                 t("illness.recoveredOn", { date: DAY_LINK_SLOT }),
                 <DayLinkStated at={episode.resolvedAt}>

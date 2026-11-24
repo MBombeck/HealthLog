@@ -94,7 +94,7 @@ export function AllergyManager({
       row.reaction,
     ]
       .filter(Boolean)
-      .join(" · ");
+      .join(", ");
     return (
       <li
         key={row.id}

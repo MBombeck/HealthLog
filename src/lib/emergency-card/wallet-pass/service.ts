@@ -148,16 +148,68 @@ export function toWalletPassSummary(
   };
 }
 
-/** The record's newest pass, withdrawn or not, or null. */
-export function latestWalletPass(
+/**
+ * The record's newest pass, withdrawn or not, or null.
+ *
+ * One statement, the pass and its link joined in SQL: the relation select of
+ * `WALLET_PASS_SELECT` costs Prisma a second statement, and this read rides
+ * every `/api/auth/me` (the emergency card block), whose statement budget is
+ * held by `query-budget-hot-routes.test.ts`. The columns are the ones
+ * `WALLET_PASS_SELECT` names; `wallet-pass-latest-shape.test.ts` holds the two
+ * lists together.
+ */
+export async function latestWalletPass(
   userId: string,
 ): Promise<WalletPassRow | null> {
-  return prisma.walletPass.findFirst({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    select: WALLET_PASS_SELECT,
-  });
+  const rows = await prisma.$queryRaw<LatestPassRow[]>`
+    SELECT wp.id, wp.user_id AS "userId", wp.created_by_id AS "createdById",
+           wp.signer::text AS signer,
+           wp.pass_type_identifier AS "passTypeIdentifier",
+           wp.team_identifier AS "teamIdentifier",
+           wp.serial_number AS "serialNumber",
+           wp.web_service_origin AS "webServiceOrigin",
+           wp.content_hash AS "contentHash",
+           wp.content_changed_at AS "contentChangedAt",
+           wp.created_at AS "createdAt", wp.voided_at AS "voidedAt",
+           wp.void_reason::text AS "voidReason",
+           wp.last_fetched_at AS "lastFetchedAt",
+           l.id AS "linkId", l.fields::text[] AS "linkFields",
+           l.expires_at AS "linkExpiresAt", l.revoked_at AS "linkRevokedAt",
+           l.token_encrypted AS "linkTokenEncrypted"
+      FROM wallet_passes wp
+      JOIN emergency_card_links l ON l.id = wp.link_id
+     WHERE wp.user_id = ${userId}
+     ORDER BY wp.created_at DESC
+     LIMIT 1`;
+  const row = rows[0];
+  if (!row) return null;
+  const {
+    linkId,
+    linkFields,
+    linkExpiresAt,
+    linkRevokedAt,
+    linkTokenEncrypted,
+    ...pass
+  } = row;
+  return {
+    ...pass,
+    link: {
+      id: linkId,
+      fields: linkFields,
+      expiresAt: linkExpiresAt,
+      revokedAt: linkRevokedAt,
+      tokenEncrypted: linkTokenEncrypted,
+    },
+  };
 }
+
+type LatestPassRow = Omit<WalletPassRow, "link"> & {
+  linkId: string;
+  linkFields: EmergencyCardField[];
+  linkExpiresAt: Date | null;
+  linkRevokedAt: Date | null;
+  linkTokenEncrypted: string | null;
+};
 
 /** One pass by its id, withdrawn or not, or null. */
 export function latestWalletPassById(

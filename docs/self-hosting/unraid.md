@@ -37,11 +37,11 @@ This installs the app and its database together, exactly as the project's
 
 1. Install **Compose Manager** from Community Applications (search "Compose
    Manager", by dcflachs).
-2. **Settings → Docker → Compose Manager → Add New Stack**, name it `healthlog`.
+2. **Settings > Docker > Compose Manager > Add New Stack**, name it `healthlog`.
 3. Paste the project
    [`docker-compose.yml`](https://github.com/MBombeck/HealthLog/blob/main/docker-compose.yml)
    into the stack's compose file.
-4. Edit the stack's `.env` (the "Edit Stack → env" field) and set:
+4. Edit the stack's `.env` (the "Edit Stack > env" field) and set:
 
    ```env
    POSTGRES_PASSWORD=<your openssl rand -hex 32>
@@ -91,7 +91,7 @@ then add HealthLog pointed at it.
 
 The template lives at
 [`docs/self-hosting/unraid/healthlog.xml`](unraid/healthlog.xml). Add it via
-**Docker → Add Container → Template** and paste the raw URL, or copy it into
+**Docker > Add Container > Template** and paste the raw URL, or copy it into
 `/boot/config/plugins/dockerMan/templates-user/` and pick it from the template
 dropdown.
 

@@ -14,7 +14,7 @@
     "moreOptions": "Más opciones",
     "create": "Crear",
     "close": "Cerrar",
-    "loading": "Cargando…...",
+    "loading": "Cargando…",
     "loadFailed": "No se pudo cargar",
     "error": "Error",
     "saved": "Guardado",
@@ -332,7 +332,7 @@
     "bmiRow": "IMC:{bmi} kg/m², Classification: {class} (WHO)",
     "complianceTitle": "Cumplimiento de medicación",
     "glp1Title": "Terapia GLP-1",
-    "glp1WeightSummary": "Peso en el periodo del informe: {start} kg → {end} kg ({delta} kg)",
+    "glp1WeightSummary": "Peso en el periodo del informe: de {start} kg a {end} kg ({delta} kg)",
     "glp1CurrentDose": "Dosis actual:{value} {unit} (since {since})",
     "glp1Compliance": "Cumplimiento:{taken} / {total} ({rate}%)",
     "glp1SideEffectsTitle": "Efectos secundarios registrados",
@@ -1532,7 +1532,7 @@
     "importIntakes": "Importar tomas",
     "importDescription": "Pega un array JSON con los datos de tomas. Formato esperado:",
     "importUploadFile": "Subir archivo JSON",
-    "importPaste": "Pega el JSON aquí...",
+    "importPaste": "Pega el JSON aquí…",
     "importFileLoaded": "Archivo \"{name}\" cargado",
     "importInvalidJson": "El archivo no contiene un JSON válido",
     "importNoArray": "No se encontró ningún array",
@@ -2406,7 +2406,7 @@
         "timesTitle": "Horas de toma",
         "timesNote": "Ajusta la hora y la ventana puntual de cada dosis. La frecuencia (diaria, semanal…) se cambia en el editor, en Avanzado.",
         "scheduleLabel": "Horario {index}",
-        "fullEditNote": "La frecuencia, la clase de tratamiento y el periodo de tratamiento se editan en el editor, en Avanzado → Ciclo de vida.",
+        "fullEditNote": "La frecuencia, la clase de tratamiento y el periodo de tratamiento se editan en el editor, en Avanzado > Ciclo de vida.",
         "graceEcho": "Duración de los recordatorios: {minutes, plural, one {# minuto} other {# minutos}}",
         "reminderTitle": "Recordatorio",
         "manageChannels": "Gestionar canales de notificación",
@@ -2520,7 +2520,7 @@
         "error": "No se pudo guardar ese cambio. Inténtalo de nuevo."
       },
       "beforeAfter": {
-        "summary": "Ø {before} antes → Ø {after} desde entonces: un cambio de {delta}.",
+        "summary": "Ø {before} antes, Ø {after} desde entonces: un cambio de {delta}.",
         "counts": "Basado en {beforeCount, plural, one {# lectura} other {# lecturas}} antes y {afterCount} desde entonces.",
         "needBefore": "Aún no hay suficientes lecturas antes del inicio: {weeks, plural, one {se necesita aproximadamente # semana} other {se necesitan unas # semanas}} antes y después para comparar.",
         "needAfter": "Aún no hay suficientes lecturas desde el inicio: {weeks, plural, one {se necesita aproximadamente # semana} other {se necesitan unas # semanas}} antes y después para comparar.",
@@ -3082,7 +3082,7 @@
       "emptyDescription": "Has ocultado todas las secciones. Abre Personalizar para volver a mostrarlas."
     },
     "bmiEmptyTitle": "Añade tu altura para calcular el IMC",
-    "bmiEmptyDescription": "El IMC necesita tu altura. Guárdala en Ajustes → Cuenta.",
+    "bmiEmptyDescription": "El IMC necesita tu altura. Guárdala en Ajustes > Cuenta.",
     "bmiEmptyAction": "Abrir ajustes de cuenta",
     "loadError": "No se han podido cargar los análisis",
     "heroPersonalBaseline": "Basado en tus últimos 90 días",
@@ -3829,7 +3829,7 @@
         "weightBody": "El peso corporal es una de las señales más simples del balance energético a largo plazo y de la salud general. La tendencia a lo largo de las semanas importa mucho más que cualquier lectura individual, que varía con la hidratación, la comida y la hora del día.",
         "bmiBody": "El IMC es tu peso dividido por tu altura al cuadrado, un único número que te sitúa en una categoría amplia de peso. Es un cribado poblacional, no un diagnóstico, y no distingue el músculo de la grasa.",
         "sleepBody": "La duración del sueño es cuánto dormiste realmente durante la noche, dividido en fases ligera, profunda y REM. La mayoría de los adultos necesita entre siete y nueve horas; tanto la cantidad como la calidad constantes favorecen la recuperación, el ánimo y el metabolismo.",
-        "moodBody": "El registro del estado de ánimo anota cómo te sientes con el tiempo en una escala sencilla. Anotarlo con regularidad revela patrones —cómo el sueño, la actividad o la medicación se relacionan con cómo te sientes— que un solo día nunca muestra.",
+        "moodBody": "El registro del estado de ánimo anota cómo te sientes con el tiempo en una escala sencilla. Anotarlo con regularidad revela patrones (cómo el sueño, la actividad o la medicación se relacionan con cómo te sientes) que un solo día nunca muestra.",
         "medicationsBody": "La adherencia es la fiabilidad con la que tomas tu medicación según lo prescrito, aquí como la proporción de dosis previstas que registraste. Una toma constante suele ser lo que hace que un tratamiento funcione como se pretende.",
         "restingHrBody": "La frecuencia cardíaca en reposo es tu ritmo cardíaco cuando estás completamente en reposo, normalmente medido durante la noche. Una frecuencia más baja suele indicar mejor forma cardiovascular, y una tendencia al alza puede ser una señal temprana de estrés o enfermedad.",
         "hrvBody": "La VFC es la pequeña variación en el tiempo entre latidos consecutivos. Una mayor variabilidad suele reflejar un sistema nervioso bien recuperado y adaptable, mientras que una caída sostenida puede señalar fatiga, estrés o recuperación insuficiente.",
@@ -3841,7 +3841,7 @@
         "bodyWaterBody": "El agua corporal total es la parte de tu peso compuesta por líquido, dentro y alrededor de las células. Varía con la hidratación, la comida y la actividad, así que la tendencia a lo largo de semanas dice más que una sola medición.",
         "boneMassBody": "La masa ósea es el peso estimado del mineral de tu esqueleto. Las estimaciones de la báscula son aproximadas, pero una tendencia estable o al alza favorece la fortaleza ósea a largo plazo.",
         "fatFreeMassBody": "La masa libre de grasa es todo lo que en tu cuerpo no es grasa: músculo, hueso, órganos y agua. Mantenerla o aumentarla mientras pierdes peso suele indicar una composición corporal más sana.",
-        "fatMassBody": "La masa grasa es el peso total de la grasa de tu cuerpo. Algo de grasa es esencial para las hormonas y la reserva de energía, pero un exceso —sobre todo en el abdomen— eleva el riesgo para la salud a largo plazo (WHO 2024).",
+        "fatMassBody": "La masa grasa es el peso total de la grasa de tu cuerpo. Algo de grasa es esencial para las hormonas y la reserva de energía, pero un exceso (sobre todo en el abdomen) eleva el riesgo para la salud a largo plazo (WHO 2024).",
         "bodyFatBody": "El porcentaje de grasa corporal es la parte de tu peso que es grasa. Los rangos saludables dependen del sexo y la edad, y las básculas lo estiman por bioimpedancia, así que la tendencia de varias semanas dice más que una sola lectura.",
         "muscleMassBody": "La masa muscular es el peso estimado del músculo de tu cuerpo. Más músculo favorece la fuerza, el metabolismo y la movilidad, y suele requerir esfuerzo activo para conservarse con la edad.",
         "visceralFatBody": "La grasa visceral es la grasa almacenada en lo profundo del abdomen, alrededor de los órganos. A diferencia de la grasa bajo la piel, un nivel alto se asocia estrechamente con enfermedad cardíaca y diabetes tipo 2, por lo que cuanto más baja, mejor.",
@@ -3876,7 +3876,7 @@
         "recoveryBody": "La recuperación refleja lo bien que tu cuerpo se ha repuesto, a partir de señales nocturnas como la variabilidad de la frecuencia cardíaca y la frecuencia en reposo. Una puntuación alta es luz verde para exigirte; una más baja sugiere que tu organismo aún se está reconstruyendo.",
         "strainBody": "El esfuerzo capta cuánta carga cardiovascular y física le has impuesto a tu cuerpo, desde los entrenamientos hasta un día activo de pie. Cuando ya hay suficiente historial, se valora frente a tu propio esfuerzo habitual, no frente a un estándar ajeno.",
         "stressBody": "El estrés aquí es una estimación de la carga fisiológica sobre tu sistema nervioso, leída sobre todo a partir de patrones de variabilidad de la frecuencia cardíaca y no de cómo te sientes conscientemente. Una puntuación más baja apunta a un estado calmado y bien regulado; una más alta es una invitación a incorporar recuperación.",
-        "recoveryPageBody": "La recuperación reúne las señales nocturnas que registra tu wearable —recarga, esfuerzo, carga y los totales de frecuencia cardiaca y energía del día— para mostrar cómo se ha recuperado tu cuerpo. Fíjate en el patrón a lo largo de los días más que en un solo número; un valor más bajo es una invitación a bajar el ritmo, no una alarma.",
+        "recoveryPageBody": "La recuperación reúne las señales nocturnas que registra tu wearable (recarga, esfuerzo, carga y los totales de frecuencia cardiaca y energía del día) para mostrar cómo se ha recuperado tu cuerpo. Fíjate en el patrón a lo largo de los días más que en un solo número; un valor más bajo es una invitación a bajar el ritmo, no una alarma.",
         "pulsePressureBody": "La presión de pulso es la diferencia entre tu valor sistólico y diastólico (sistólico menos diastólico). Como orientación general, unos 40 mmHg es lo típico en reposo; una diferencia amplia por encima de unos 60 mmHg en la mediana edad puede reflejar arterias más rígidas, mientras que una diferencia estrecha por debajo de unos 25 mmHg puede acompañar a un bajo volumen sistólico (StatPearls/NIH 2023). Es un motivo de conversación, no un diagnóstico.",
         "meanArterialPressureBody": "La presión arterial media es la presión promedio que ven tus órganos a lo largo de un latido, aproximadamente la diastólica más un tercio de la diferencia con la sistólica. Como orientación general, un valor en reposo ronda los 70–100 mmHg (StatPearls/NIH 2023). El umbral de ~60 mmHg que se suele citar es un concepto de cuidados agudos, no una alarma para el autocontrol.",
         "cycleEducationBody": "Tu ciclo atraviesa cuatro fases impulsadas por hormonas, y su duración y regularidad son una ventana accesible a la salud general. Como orientación general, los ciclos en personas adultas suelen durar 21–35 días (las referencias clínicas citan 24–38), con un sangrado de unos cinco días (ACOG 2015). La fase lútea es el ancla estable, así que la ovulación se estima mejor contando hacia atrás desde tu próxima regla prevista, nunca con un «día 14» fijo. Una ventana fértil predicha es una estimación que necesita varios ciclos registrados y sigue siendo aproximada, y la temperatura basal confirma la ovulación a posteriori en lugar de predecirla. No es un método anticonceptivo.",
@@ -4217,7 +4217,7 @@
         "labsLink": "¿Resultados de laboratorio? Registra una HbA1c o glucosa en ayunas de una analítica en Laboratorio.",
         "learningTitle": "Aún conociendo tu glucosa",
         "learningBody": "De momento son {count} en {days}. Con algo más de historial el panorama se aclara: sigue registrando o deja que lo complete un dispositivo conectado.",
-        "learningBodyEmpty": "En cuanto lleguen unas cuantas mediciones —registradas por ti o sincronizadas desde un dispositivo— tu tiempo en rango, promedio y variabilidad tomarán forma aquí.",
+        "learningBodyEmpty": "En cuanto lleguen unas cuantas mediciones (registradas por ti o sincronizadas desde un dispositivo) tu tiempo en rango, promedio y variabilidad tomarán forma aquí.",
         "readingsCount": "{count, plural, one {# medición} other {# mediciones}}",
         "readingsCountOne": "1 medición",
         "daysCount": "{days, plural, one {# día} other {# días}}",
@@ -5371,7 +5371,7 @@
       "steps": {
         "dashboardOverview": {
           "title": "Tu panel",
-          "body": "El panel reúne todos los módulos de un vistazo. Mantén pulsada una tarjeta para reordenarla u ocultarla (Ajustes → Diseño del panel). Cada tarjeta vale tanto como los datos que tiene detrás: los módulos siguientes los rellenan."
+          "body": "El panel reúne todos los módulos de un vistazo. Mantén pulsada una tarjeta para reordenarla u ocultarla (Ajustes > Diseño del panel). Cada tarjeta vale tanto como los datos que tiene detrás: los módulos siguientes los rellenan."
         },
         "quickAdd": {
           "title": "Registrado en segundos",
@@ -5427,7 +5427,7 @@
         },
         "wrapUp": {
           "title": "Esto es la visita",
-          "body": "Esta visita guiada se muestra una sola vez, no volverá a abrirse por sí sola. Todo lo que has visto sigue disponible, y puedes activar o desactivar funciones cuando quieras en Ajustes → Módulos."
+          "body": "Esta visita guiada se muestra una sola vez, no volverá a abrirse por sí sola. Todo lo que has visto sigue disponible, y puedes activar o desactivar funciones cuando quieras en Ajustes > Módulos."
         }
       }
     },
@@ -5458,7 +5458,7 @@
       "title": "Todo listo",
       "body": "Bienvenido a bordo. Tu panel ya está preparado.",
       "returnCta": "Abrir el panel",
-      "learning": "Algunas conclusiones —glucosa, ritmo de sueño, tendencias de presión arterial, ciclo— se afinan durante la primera semana o dos a medida que se acumulan tus datos. Las casillas vacías ahora solo significan que aún estamos aprendiendo tu línea base.",
+      "learning": "Algunas conclusiones (glucosa, ritmo de sueño, tendencias de presión arterial, ciclo) se afinan durante la primera semana o dos a medida que se acumulan tus datos. Las casillas vacías ahora solo significan que aún estamos aprendiendo tu línea base.",
       "connectCta": "Conectar un dispositivo",
       "logCta": "Registra tu primera medición",
       "importCta": "Importar historial existente",
@@ -5624,12 +5624,12 @@
           "cta": "Conectar {target}",
           "checking": "Comprobando la conexión.",
           "waiting": "Aún no conectado.",
-          "openSettings": "Abrir Ajustes → Integraciones",
+          "openSettings": "Abrir Ajustes > Integraciones",
           "noDate": "desconocido",
           "throughGoogleHealth": "Los datos de {source} llegan ahora a través de {target}: la conexión clásica de {source} se ha cerrado. Conecta {target} con la cuenta de Google en la que tienes iniciada la sesión de {source} y tus lecturas llegarán desde ahí.",
           "needsCredentials": {
             "title": "Esta instancia aún no tiene una aplicación de {target} registrada.",
-            "detail": "Introduce tus propias credenciales en Ajustes → Integraciones y la conexión podrá empezar."
+            "detail": "Introduce tus propias credenciales en Ajustes > Integraciones y la conexión podrá empezar."
           },
           "state": {
             "pending_first_sync": {
@@ -5646,11 +5646,11 @@
             },
             "stalled": {
               "title": "{target} está conectado, pero ha dejado de sincronizar.",
-              "detail": "Último intento {when}. Revisa la conexión en Ajustes → Integraciones."
+              "detail": "Último intento {when}. Revisa la conexión en Ajustes > Integraciones."
             },
             "failing": {
               "title": "{target} está conectado, pero la sincronización falla.",
-              "detail": "No ha llegado nada desde {when}. Revisa la conexión en Ajustes → Integraciones."
+              "detail": "No ha llegado nada desde {when}. Revisa la conexión en Ajustes > Integraciones."
             },
             "reauth_required": {
               "title": "Hay que renovar la conexión con {target}.",
@@ -5658,7 +5658,7 @@
             },
             "parked": {
               "title": "La conexión con {target} está en pausa.",
-              "detail": "Revisa la conexión en Ajustes → Integraciones."
+              "detail": "Revisa la conexión en Ajustes > Integraciones."
             }
           }
         },
@@ -6187,7 +6187,7 @@
           "charCount": "{used} / {max, plural, one {# carácter} other {# caracteres}}",
           "appleHealth": {
             "title": "Apple Health",
-            "description": "Sube el archivo export.zip de la app Salud del iPhone (Perfil → Exportar todos los datos de salud).",
+            "description": "Sube el archivo export.zip de la app Salud del iPhone (Perfil > Exportar todos los datos de salud).",
             "dropLabel": "Suelta export.zip aquí",
             "dropHint": "o haz clic para elegir un archivo",
             "fileInputLabel": "Elegir un archivo export.zip de Apple Health",
@@ -6948,7 +6948,7 @@
       "deviceCodeCancel": "Cancelar",
       "oauthNotConfigured": "El OAuth de ChatGPT no está configurado en esta instancia. Usa tu propia clave de API a continuación.",
       "modelLabel": "Modelo",
-      "modelOptionDefault": "— Predeterminado —",
+      "modelOptionDefault": "Predeterminado",
       "modelOptionCustom": "Personalizado…",
       "customModelLabel": "Nombre del modelo personalizado",
       "anthropicKeyLabel": "Clave de API de Anthropic",
@@ -6982,7 +6982,7 @@
         "saveFailed": "Falló el guardado de la cadena",
         "resetDefaults": "Restablecer",
         "resetConfirmTitle": "¿Restablecer la cadena a los valores predeterminados?",
-        "resetConfirmBody": "La cadena vuelve a Codex → OpenAI → Anthropic → Local → OpenAI de administrador. Tus credenciales guardadas no se modifican."
+        "resetConfirmBody": "La cadena vuelve a Codex, OpenAI, Anthropic, Local, OpenAI de administrador. Tus credenciales guardadas no se modifican."
       },
       "namedChains": {
         "title": "Cadenas por tarea",
@@ -8125,7 +8125,7 @@
         "unavailable": "Estado de Apple Health no disponible"
       },
       "setupTitle": "Activar la sincronización en vivo",
-      "permissionStep": "En la app HealthLog para iOS, abre Ajustes → Apple Health y permite las categorías de salud que quieras compartir.",
+      "permissionStep": "En la app HealthLog para iOS, abre Ajustes > Apple Health y permite las categorías de salud que quieras compartir.",
       "backgroundStep": "Mantén activada la actualización en segundo plano. La app sincroniza datos nuevos automáticamente en primer plano y cuando iOS le concede tiempo en segundo plano.",
       "importNote": "¿Necesitas un historial anterior o no puedes usar la app de iOS? La carga XML/ZIP de Apple Health es una alternativa puntual y no activa la sincronización en vivo.",
       "importAction": "Abrir importación puntual",
@@ -8423,7 +8423,7 @@
     "measurementsCount": "Mediciones",
     "activeTokens": "Tokens de API activos",
     "activeSessions": "Sesiones activas",
-    "loadingStatus": "Cargando estado...",
+    "loadingStatus": "Cargando estado…",
     "systemStatusLoadError": "No se pudo cargar el estado del sistema.",
     "systemStatusRetry": "Reintentar",
     "adminSettingsLoadError": "No se pudieron cargar los ajustes de administración. Los interruptores de abajo pueden no reflejar el estado actual: recarga la página.",
@@ -8488,7 +8488,7 @@
     },
     "aiQuality": {
       "title": "Calidad de los análisis",
-      "loading": "Cargando resumen de comentarios...",
+      "loading": "Cargando resumen de comentarios…",
       "loadError": "No se pudo cargar el resumen de calidad de los análisis. Prueba a recargar la página.",
       "empty": "Aún no hay comentarios. El agregador se ejecuta a diario a las 04:00; en cuanto los usuarios valoren las recomendaciones, aquí aparecerán las tasas de utilidad.",
       "windowLabel": "{days, plural, =1 {Último día} other {Últimos # días}}",
@@ -8503,7 +8503,7 @@
     },
     "coachFeedback": {
       "title": "Comentarios del Coach",
-      "loading": "Cargando resumen de comentarios del Coach...",
+      "loading": "Cargando resumen de comentarios del Coach…",
       "loadError": "No se pudo cargar el resumen de comentarios del Coach. Prueba a recargar la página.",
       "empty": "Aún no hay comentarios del Coach. El agregador se ejecuta a diario a las 04:00; en cuanto los usuarios valoren las respuestas del Coach, aquí aparecerán las tasas de utilidad.",
       "windowLabel": "{days, plural, =1 {Último día} other {Últimos # días}}",
@@ -8690,7 +8690,7 @@
     "newPasswordPlaceholder": "Al menos 12 caracteres",
     "passwordReset": "La contraseña se ha restablecido",
     "reset": "Restablecer",
-    "loadingUsers": "Cargando usuarios...",
+    "loadingUsers": "Cargando usuarios…",
     "apiTokens": "Tokens de API",
     "apiTokensDescription": "Todos los tokens de API activos y revocados de todas las cuentas.",
     "tokenUser": "Usuario",
@@ -8703,7 +8703,7 @@
     "tokenCreated": "Creado",
     "tokenNeverUsed": "Nunca",
     "tokensEmptyTitle": "Aún no hay tokens de API",
-    "tokensEmptyDescription": "Los tokens se emiten cuando un cliente nativo inicia sesión o desde Ajustes → Cuenta.",
+    "tokensEmptyDescription": "Los tokens se emiten cuando un cliente nativo inicia sesión o desde Ajustes > Cuenta.",
     "loginOverviewDescription": "Eventos de inicio de sesión y autenticación de todas las cuentas, filtrables y exportables como CSV.",
     "loginOverviewFilterLabel": "Filtrar eventos",
     "allAuthEvents": "Todos los eventos de autenticación",
@@ -8795,11 +8795,11 @@
       "versionTileUpToDate": "Actualizado",
       "versionTileCheckOff": "Comprobación de actualizaciones desactivada",
       "snapshotLoadError": "No se pudo cargar la instantánea del sistema.",
-      "snapshotLoading": "Cargando instantánea...",
+      "snapshotLoading": "Cargando instantánea…",
       "auditTitle": "Actividad reciente",
       "auditEmpty": "No hay entradas de auditoría recientes.",
       "auditLoadError": "No se pudo cargar la actividad reciente.",
-      "auditLoading": "Cargando actividad...",
+      "auditLoading": "Cargando actividad…",
       "auditViewAll": "Ver todo"
     },
     "section": {
@@ -8940,7 +8940,7 @@
         "runNow": "Hacer copia ahora",
         "runEnqueued": "Tarea de copia de seguridad en cola",
         "runFailed": "No se pudo poner en cola la copia de seguridad",
-        "loading": "Cargando copias de seguridad...",
+        "loading": "Cargando copias de seguridad…",
         "loadError": "No se pudieron cargar las copias de seguridad.",
         "emptyTitle": "Aún no hay copias de seguridad",
         "emptyDescription": "Las copias de seguridad se ejecutan automáticamente cada domingo a las 03:00, o inicia una ahora para crear la primera instantánea.",
@@ -8999,7 +8999,7 @@
         "previewCustomMetrics": "Métricas propias",
         "previewHealthScores": "Historial de puntuación",
         "restoreConfirm": "Restaurar ahora",
-        "restoreInProgress": "Restaurando...",
+        "restoreInProgress": "Restaurando…",
         "restoreSuccess": "Restauración completada",
         "restoreFailed": "La restauración falló",
         "restoreSkippedToast": "Restauración completada, {links, plural, one {# vínculo de síntomas no se pudo recuperar} other {# vínculos de síntomas no se pudieron recuperar}}",
@@ -10142,7 +10142,7 @@
     "eventColumn": "Evento",
     "subtitle": "Elige qué notificaciones recibes y por qué canal.",
     "loadError": "No se han podido cargar los ajustes de notificación.",
-    "noChannels": "Configura primero un canal de notificación en Ajustes → Integraciones.",
+    "noChannels": "Configura primero un canal de notificación en Ajustes > Integraciones.",
     "goToSettings": "Ir a los ajustes del canal",
     "channelDisabled": "Desactivado",
     "admin": {
@@ -11475,9 +11475,9 @@
         "ft3": "El T3 libre (triyodotironina) es la forma no unida y biológicamente activa de la hormona tiroidea más potente, la fracción disponible para actuar sobre los tejidos. La mayor parte del T3 circulante está unida a proteínas transportadoras e inactiva, de modo que la porción libre refleja la disponibilidad real de la hormona. Se mide para caracterizar la función tiroidea, sobre todo junto con la TSH y el T4 libre cuando los resultados no están claros. Los niveles dependen mucho del método de análisis y se leen en su contexto clínico.",
         "ft4": "El T4 libre (tiroxina) es la forma no unida de la principal hormona que el tiroides libera a la sangre, y actúa como reserva que los tejidos convierten en el T3 más activo según lo necesiten. La fracción libre refleja lo que realmente está disponible para el cuerpo, con independencia del nivel de proteínas transportadoras. Suele medirse junto con la TSH para distinguir los problemas del tiroides de los de la señalización hipofisaria. El embarazo y ciertos medicamentos pueden desplazarlo.",
         "ferritin": "La ferritina es la principal proteína de almacenamiento de hierro del cuerpo, y su nivel en sangre refleja a grandes rasgos las reservas totales de hierro. Un valor bajo apunta a unas reservas agotadas, mientras que uno alto puede reflejar una sobrecarga de hierro, o simplemente una inflamación, ya que la ferritina también sube como reactante de fase aguda. Por eso suele interpretarse junto con otros marcadores de hierro y signos de inflamación. Es una de las medidas centrales para evaluar el estado del hierro.",
-        "transferrin-saturation": "La saturación de transferrina es el porcentaje de transferrina —la proteína que transporta el hierro por la sangre— que está cargado de hierro en ese momento. Relaciona la cantidad de hierro en tránsito con la capacidad de transporte del cuerpo, ofreciendo una instantánea de la disponibilidad de hierro que complementa la visión de las reservas que da la ferritina. Una saturación baja sugiere que el hierro escasea, mientras que un valor alto puede indicar sobrecarga. Se lee junto con la ferritina y el perfil completo del hierro.",
+        "transferrin-saturation": "La saturación de transferrina es el porcentaje de transferrina (la proteína que transporta el hierro por la sangre) que está cargado de hierro en ese momento. Relaciona la cantidad de hierro en tránsito con la capacidad de transporte del cuerpo, ofreciendo una instantánea de la disponibilidad de hierro que complementa la visión de las reservas que da la ferritina. Una saturación baja sugiere que el hierro escasea, mientras que un valor alto puede indicar sobrecarga. Se lee junto con la ferritina y el perfil completo del hierro.",
         "vitamin-d": "La vitamina D se mide como 25-hidroxivitamina D, la forma de almacenamiento circulante y el marcador estándar del estado global de vitamina D. El cuerpo la fabrica en la piel expuesta a la luz solar y absorbe una parte de los alimentos, y contribuye al equilibrio del calcio, la salud ósea y la función inmunitaria. Los niveles varían con la estación, la latitud, el tono de piel y la suplementación. Se registra para valorar a lo largo del tiempo si las reservas son adecuadas.",
-        "vitamin-b12": "La vitamina B12 (cobalamina) es una vitamina esencial que se obtiene sobre todo de alimentos de origen animal y se almacena en gran parte en el hígado. Es necesaria para la formación de glóbulos rojos, la síntesis de ADN y la salud del sistema nervioso. Una carencia prolongada —por baja ingesta o absorción deficiente— puede provocar anemia y síntomas neurológicos. Se mide para evaluar el estado nutricional, en especial cuando la ingesta o la absorción pueden estar limitadas.",
+        "vitamin-b12": "La vitamina B12 (cobalamina) es una vitamina esencial que se obtiene sobre todo de alimentos de origen animal y se almacena en gran parte en el hígado. Es necesaria para la formación de glóbulos rojos, la síntesis de ADN y la salud del sistema nervioso. Una carencia prolongada (por baja ingesta o absorción deficiente) puede provocar anemia y síntomas neurológicos. Se mide para evaluar el estado nutricional, en especial cuando la ingesta o la absorción pueden estar limitadas.",
         "folate": "El folato (vitamina B9) es una vitamina del grupo B presente en las verduras de hoja verde, las legumbres y los alimentos enriquecidos, central para la formación de glóbulos rojos y la síntesis de ADN. Trabaja en estrecha relación con la vitamina B12, y una carencia de cualquiera de las dos puede producir un tipo de anemia similar. Un folato adecuado es especialmente importante en torno al inicio del embarazo para el desarrollo sano del feto. Se mide para evaluar el estado nutricional y la causa de ciertas anemias.",
         "hs-crp": "La PCR de alta sensibilidad mide la proteína C reactiva, un marcador que el hígado libera en respuesta a la inflamación, con una técnica afinada para detectar las bajas concentraciones relevantes para el riesgo cardiovascular. A diferencia de la PCR estándar usada para infecciones agudas, la versión de alta sensibilidad capta la inflamación sutil y crónica vinculada a la enfermedad vascular. Como cualquier infección o lesión reciente puede elevarla, se interpreta lejos de una enfermedad aguda y a menudo se confirma con una muestra repetida. Se lee como un factor más del riesgo cardiovascular global.",
         "creatinine": "La creatinina es un producto de desecho del metabolismo muscular normal que los riñones filtran de la sangre a un ritmo bastante constante. Como la producción es relativamente estable, su nivel en sangre sirve de medida práctica de la eficacia con que los riñones eliminan los desechos. Los valores también dependen de la masa muscular, la hidratación y la dieta, por lo que suelen interpretarse junto con la tasa de filtración estimada. Es un marcador central de la función renal.",
@@ -11493,8 +11493,8 @@
         "platelets": "Las plaquetas son pequeños fragmentos celulares de la sangre que se agregan y forman el tapón inicial que detiene el sangrado de un vaso dañado. Su recuento refleja el equilibrio entre la producción en la médula ósea y el consumo o la destrucción. Un recuento bajo puede aumentar la tendencia al sangrado, mientras que uno alto puede seguir a una inflamación u otros estímulos. Forman parte del hemograma completo y son una medida básica de la capacidad de coagulación.",
         "apob": "La apolipoproteína B es la proteína estructural que lleva cada una de las partículas de lipoproteína aterogénicas, de modo que medirla cuenta directamente esas partículas en lugar del colesterol que transportan. Como hay una molécula de ApoB en cada partícula de LDL, VLDL y afines, puede captar un riesgo cardiovascular que un valor de colesterol LDL pasa por alto, sobre todo cuando el número de partículas y su contenido de colesterol divergen. Por eso se usa cada vez más para afinar la evaluación del riesgo basada en los lípidos. Se interpreta junto con el perfil lipídico habitual.",
         "lp-a": "La lipoproteína(a) es una partícula similar al LDL con una proteína adicional unida, cuyo nivel viene determinado en gran medida por la genética y se mantiene bastante estable a lo largo de la vida. Una Lp(a) elevada es un factor de riesgo independiente y hereditario de enfermedad cardiovascular y de estrechamiento de la válvula aórtica. Como cambia poco, suele medirse una sola vez para establecer el riesgo vital de una persona, en lugar de seguirla de forma repetida. Se expresa en unidades molares y se lee como parte del riesgo cardiovascular global.",
-        "fasting-insulin": "La insulina en ayunas es el nivel de insulina —la hormona que traslada la glucosa de la sangre a las células— medido tras un ayuno nocturno. Junto con la glucosa en ayunas, ayuda a estimar la resistencia a la insulina, el estado en el que el cuerpo necesita más insulina para mantener la glucosa dentro de su rango. Una insulina en ayunas alta con una glucosa normal puede ser un signo temprano de que esa compensación está en marcha. Se lee como parte de un cuadro de salud metabólica y no de forma aislada.",
-        "omega-3-index": "El índice omega-3 es la proporción de EPA y DHA —los dos ácidos grasos omega-3 marinos de cadena larga— entre los ácidos grasos de las membranas de los glóbulos rojos. Como los glóbulos rojos se renuevan despacio, refleja la ingesta de omega-3 a largo plazo y no una comida reciente. Un índice más alto se ha asociado en estudios observacionales a un menor riesgo cardiovascular. Se sigue como un marcador estable del estado de omega-3 que responde a la dieta a lo largo de meses.",
+        "fasting-insulin": "La insulina en ayunas es el nivel de insulina (la hormona que traslada la glucosa de la sangre a las células) medido tras un ayuno nocturno. Junto con la glucosa en ayunas, ayuda a estimar la resistencia a la insulina, el estado en el que el cuerpo necesita más insulina para mantener la glucosa dentro de su rango. Una insulina en ayunas alta con una glucosa normal puede ser un signo temprano de que esa compensación está en marcha. Se lee como parte de un cuadro de salud metabólica y no de forma aislada.",
+        "omega-3-index": "El índice omega-3 es la proporción de EPA y DHA (los dos ácidos grasos omega-3 marinos de cadena larga) entre los ácidos grasos de las membranas de los glóbulos rojos. Como los glóbulos rojos se renuevan despacio, refleja la ingesta de omega-3 a largo plazo y no una comida reciente. Un índice más alto se ha asociado en estudios observacionales a un menor riesgo cardiovascular. Se sigue como un marcador estable del estado de omega-3 que responde a la dieta a lo largo de meses.",
         "alkaline-phosphatase": "La fosfatasa alcalina es una enzima presente sobre todo en el hígado, las vías biliares y el hueso. Sube cuando se obstruye el flujo de la bilis y en fases de formación ósea activa, como el crecimiento en niños y adolescentes o la consolidación de una fractura. Como la liberan ambos órganos, un valor alto suele leerse junto con la GGT y los demás marcadores hepáticos para distinguir un origen hepático de uno óseo. Es uno de los marcadores habituales del perfil hepático.",
         "bilirubin-total": "La bilirrubina total es el producto amarillo de la degradación de la hemoglobina de los glóbulos rojos envejecidos, medido como la suma de sus formas no conjugada y conjugada. El hígado la capta, la conjuga y la elimina por la bilis, de modo que su nivel refleja cómo funciona esa vía. Puede subir con enfermedades del hígado, obstrucción de las vías biliares o mayor destrucción de glóbulos rojos, y de forma inofensiva en el síndrome de Gilbert. Se interpreta junto con los demás marcadores hepáticos."
       },
@@ -13277,7 +13277,7 @@
       "dismiss": "Descartar",
       "empty": "No se pudo leer nada de este documento.",
       "unavailableBody": "Configura un proveedor de IA para sugerir título, tipo y fecha.",
-      "unavailableLocalOcr": "Activa «Leer escaneos en este dispositivo» en Ajustes → Módulos → Laboratorio para leer imágenes en este dispositivo.",
+      "unavailableLocalOcr": "Activa «Leer escaneos en este dispositivo» en Ajustes > Módulos > Laboratorio para leer imágenes en este dispositivo.",
       "unavailableAction": "Abrir ajustes de IA",
       "errorGeneric": "No se pudo leer el documento. Inténtalo de nuevo.",
       "errorOcr": "No se pudo leer texto de esta imagen.",
@@ -13290,7 +13290,7 @@
       "errorFileType": "Este tipo de archivo no se puede leer.",
       "errorNotIndexed": "Primero lee el documento y luego extrae.",
       "errorOutputLimit": "El proveedor de IA alcanzó su límite de salida antes de devolver un solo valor. Prueba con un modelo que permita respuestas más largas.",
-      "errorLocalOcrDisabled": "Activa primero «Leer escaneos en este dispositivo» en Ajustes → Módulos → Laboratorio.",
+      "errorLocalOcrDisabled": "Activa primero «Leer escaneos en este dispositivo» en Ajustes > Módulos > Laboratorio.",
       "errorProvider": "No hay ningún proveedor de IA configurado para esto.",
       "errorTextImageOnly": "El OCR local solo lee imágenes, no este archivo.",
       "errorConsent": "Leer documentos con IA necesita primero tu consentimiento.",
@@ -14038,7 +14038,7 @@
     "invite": {
       "title": "Invitar a alguien",
       "description": "No se comparte nada hasta que acepte.",
-      "needsAccount": "La persona necesita su propia cuenta de HealthLog en esta instancia y encontrará la invitación en Ajustes → Acceso compartido.",
+      "needsAccount": "La persona necesita su propia cuenta de HealthLog en esta instancia y encontrará la invitación en Ajustes > Acceso compartido.",
       "identifierLabel": "Usuario o correo electrónico",
       "identifierPlaceholder": "El nombre con el que inicia sesión",
       "identifierHint": "Necesita una cuenta en esta instancia. No se pueden enviar invitaciones a una dirección que no se haya registrado.",
@@ -14202,7 +14202,7 @@
       "guardianErrorNoAccount": "En esta instancia no hay ninguna cuenta con ese nombre o correo.",
       "guardianErrorRateLimit": "Demasiadas invitaciones en la última hora. Espera un poco y vuelve a intentarlo.",
       "guardianErrorFailed": "No se pudo enviar la invitación.",
-      "errorMfaRequired": "Esto necesita un segundo factor o una llave de acceso, y tu cuenta aún no tiene ninguno. Configura uno en Ajustes → Seguridad y vuelve a intentarlo.",
+      "errorMfaRequired": "Esto necesita un segundo factor o una llave de acceso, y tu cuenta aún no tiene ninguno. Configura uno en Ajustes > Seguridad y vuelve a intentarlo.",
       "rosterLoadError": "No se pudo cargar quién se ocupa de este historial.",
       "errorRateLimit": "Demasiados perfiles creados en la última hora. Espera un poco y vuelve a intentarlo.",
       "handover": {
@@ -16118,7 +16118,8 @@
     "wallet": {
       "instructions": "Imprime al 100 por ciento, recorta por el contorno y dobla por la línea discontinua.",
       "scan": "Escanea para la tarjeta completa",
-      "cut": "Recortado para que quepa. La tarjeta completa está tras el código QR."
+      "cut": "Recortado para que quepa. La tarjeta completa está tras el código QR.",
+      "cutNoCode": "Acortada para que quepa. La tarjeta completa está en la app."
     },
     "link": {
       "validUntil": "Solo lectura. Este enlace funciona hasta el {date}.",

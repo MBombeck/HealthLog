@@ -705,7 +705,7 @@ function MedicationTableRowItem({
           </span>
           <span className="text-muted-foreground block text-xs">
             {formatDose(medication.dose, t)}
-            {!medication.active && <> · {t("common.inactive")}</>}
+            {!medication.active && <>, {t("common.inactive")}</>}
           </span>
           <span className="sr-only">{t("medications.openDetailPage")}</span>
         </Link>

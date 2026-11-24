@@ -86,12 +86,12 @@ export function RecordHitContent({ hit }: { hit: SearchHit }) {
               the highlighted option sets it in the accent's own ink. */}
           <span className="text-muted-foreground group-aria-selected:text-accent-foreground">
             {hit.title ? label : null}
-            {hit.title && hit.day ? " · " : null}
+            {hit.title && hit.day ? ", " : null}
             {hit.day ? fmt.dateShortSmartCalendar(hit.day) : null}
           </span>
           {hit.context.map((part, i) => (
             <span key={i}>
-              {hit.title || hit.day || i > 0 ? " · " : null}
+              {hit.title || hit.day || i > 0 ? ", " : null}
               <Marked value={part} />
             </span>
           ))}

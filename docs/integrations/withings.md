@@ -68,7 +68,7 @@ from the sleep summary.
   reconnect. Connections that an earlier version parked over it are
   released on the next hourly sync, and that sync imports everything since
   the last successful one.
-- Settings → Integrations → Withings shows a short note naming the
+- Settings > Integrations > Withings shows a short note naming the
   readings your plan withholds, with a link to the Withings plans page.
 
 Nothing needs to be configured. If you move your developer app to the
@@ -93,10 +93,10 @@ or right away after reconnecting Withings once.
    **Client Secret** — keep the secret out of any chat log; it grants
    read access to every linked account's full health history.
 
-## 2. Wire the credentials in Settings → Integrations
+## 2. Wire the credentials in Settings > Integrations
 
 Withings credentials are stored per user, not in `.env`. Sign in as
-the target user, open **Settings → Integrations → Withings**, and
+the target user, open **Settings > Integrations > Withings**, and
 paste the client ID and secret. They are encrypted AES-256-GCM at
 rest (`src/lib/withings/credentials.ts`). On a shared instance every
 user brings their own Withings app credentials; there is no
@@ -181,14 +181,14 @@ import:
   when Apple Health is also linked, so the Apple Health stream wins
   for the cumulative axis. The Withings rows stay in the DB.
 
-Override per-user via Settings → Source priority (`/settings/sources`).
+Override per-user via Settings > Source priority (`/settings/sources`).
 
 ## Troubleshooting
 
 ### The Connect button errors out
 
 - **`Withings credentials not configured`** — the signed-in user has
-  not saved a client ID + secret under **Settings → Integrations →
+  not saved a client ID + secret under **Settings > Integrations >
   Withings**. Credentials live per user in the database, not in
   `.env` — paste the pair from the developer portal and retry.
 - **`Callback URI mismatch`** — the URL HealthLog sends to Withings

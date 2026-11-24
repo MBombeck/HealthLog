@@ -59,7 +59,7 @@ facts, narrate from them, stop at the clinical line.
 
 ```
 User:   Help me get ready for my appointment Thursday.
-Skill:  → run the `doctor_visit_summary` prompt (default last 90 days)
+Skill:  > run the `doctor_visit_summary` prompt (default last 90 days)
         ← grounded summary: vitals with units + bands, medications &
           adherence, labs with reference ranges, notable context.
 Skill:  Organise into vitals / medications & adherence / labs / changes.
@@ -75,7 +75,7 @@ the prompt reads the same data path.
 
 ```
 User:   How was my week?
-Skill:  → run `weekly_review` (window last7days)
+Skill:  > run `weekly_review` (window last7days)
         ← vital trends, adherence, sleep, recovery, discovered drivers,
           readiness/recovery signals, illness/cycle context — each
           { present } honestly.
@@ -89,9 +89,9 @@ Skill:  Summarise what changed. For drivers, keep the language
 
 ```
 User:   I started a new BP med last month — is it working?
-Skill:  → `medication_check` with metric:"bp"
+Skill:  > `medication_check` with metric:"bp"
           (adherence + the linked BP series)
-        → optionally `detect_changepoints` metric:"bp" with a
+        > optionally `detect_changepoints` metric:"bp" with a
           { from, to } range spanning the start date, or
           `compare_metric` metric:"bp" before vs after that date.
 Skill:  Report adherence and whether BP shifted, with the server's
@@ -103,17 +103,17 @@ Skill:  Report adherence and whether BP shifted, with the server's
 ### Log my morning blood pressure (write)
 
 Requires a `health:write` token / connection. Writes use a
-preview→confirm handshake:
+preview > confirm handshake:
 
 ```
 User:   Log my BP: 128 over 81.
-Skill:  → log_blood_pressure { systolic:128, diastolic:81,
+Skill:  > log_blood_pressure { systolic:128, diastolic:81,
             idempotencyKey:"<stable-key>" }   (confirm omitted/false)
         ← { requiresConfirmation:true, written:false,
             preview:{ systolic:128, diastolic:81, unit:"mmHg", … } }
 Skill:  "I'll log 128/81 mmHg for now — confirm?"
 User:   Yes.
-Skill:  → log_blood_pressure { systolic:128, diastolic:81,
+Skill:  > log_blood_pressure { systolic:128, diastolic:81,
             idempotencyKey:"<same-key>", confirm:true }
         ← { written:true, record:{ … } }
 ```
@@ -134,7 +134,7 @@ skill so the operator stays in control:
 - **Default to read-only.** Request the write scope only if the skill
   genuinely logs data; a read-only session never even sees the write
   tools. Tell the user which one they are granting.
-- **Never paper over the confirm step.** The preview→confirm handshake is
+- **Never paper over the confirm step.** The preview > confirm handshake is
   the human-in-the-loop guard for writes — surface the preview to the
   user and wait for a real yes.
 
