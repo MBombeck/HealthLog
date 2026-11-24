@@ -56,7 +56,17 @@ export async function cleanupOldAuditLogs(
           take,
         })
       ).map((row) => row.id),
-    deleteIds: async (ids) =>
-      (await prisma.auditLog.deleteMany({ where: { id: { in: ids } } })).count,
+    // The audit log is append-only for the app (migration 0569): the sweep
+    // deletes through the owner's function, which takes only rows older than
+    // the cutoff and refuses a cutoff less than six days back. The cutoff is
+    // bound as an ISO instant read as UTC, the zone of the column.
+    deleteIds: async (ids) => {
+      const [row] = await prisma.$queryRaw<{ count: number }[]>`
+        SELECT "audit_logs_purge"(
+          ${ids}::text[],
+          (${cutoff.toISOString()}::timestamptz AT TIME ZONE 'UTC')::timestamp(3)
+        ) AS count`;
+      return Number(row?.count ?? 0);
+    },
   });
 }
