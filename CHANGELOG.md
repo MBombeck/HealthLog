@@ -5,6 +5,9 @@
 ### Fixed
 
 - The bottom bar of the installed iPhone app reaches the bottom edge again. iOS 26 and 27 can lay out a home-screen app a status bar's height short of the screen, and the strip below the bar showed the page colour as a separate band; that strip now takes the bar's colour, in light and dark, by colour alone, so nothing is measured or moved and the loop from 1.48.4 cannot come back. The band behind the status bar and the top bar are one colour as well, and the page now ends a full 1rem above the Coach button instead of half of that. Every edge of the app reads the screen's safe areas from one place. Thanks to @2q2code for the report and the video. ([#1426](https://github.com/MBombeck/HealthLog/issues/1426))
+- A take or skip undone while its dose is still in its window brings the dose's Live Activity back over the push relay. The server's record of the first start used to hold the dose for good, so the lock screen stayed empty after a mistaken take was deleted.
+- A Live Activity the server started over the push relay ends when its dose time is edited away. It used to stay on the lock screen, showing a dose that was no longer due, until the next dose started or the system ended it after eight hours.
+- Editing a dose time no longer drops an earlier dose of the same day that is still open. Moving the evening time in the morning removed the morning dose from the today list and the dashboard count while the history and the iPhone app still showed it due.
 
 ## [1.49.0] — 2026-11-23
 
