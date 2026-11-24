@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -13,6 +19,7 @@ import {
   evaluateRelease,
   formatDay,
   main,
+  migrationEdits,
   outOfScheduleLine,
   readTags,
   releaseWindow,
@@ -37,7 +44,7 @@ function changelog(
   return parts.join("\n");
 }
 
-// 1.49.0 ships on a Thursday in December; the calendar starts after it.
+// A hypothetical 1.49.0 on a Thursday in December; the calendar starts after it.
 const HISTORY = [
   tag("v1.48.5", "2026-11-21T09:44:00+01:00"),
   tag("v1.49.0", "2026-12-10T18:00:00+01:00"),
@@ -75,15 +82,17 @@ describe("release windows", () => {
   });
 
   it.each([
-    // An early-December 1.49.0 leaves room for a January minor.
-    ["2026-12-08T20:00:00+01:00", "2027-01-02"],
-    // A mid-December one is too close to January: the first minor is February.
-    ["2026-12-19T20:00:00+01:00", "2027-02-06"],
+    // The real transition release, a Monday late in November: December.
+    ["2026-11-23T21:54:49+01:00", "2026-12-05"],
+    // The month counts, not the distance: the last evening of a month.
+    ["2026-11-30T23:30:00+01:00", "2026-12-05"],
+    ["2026-12-19T20:00:00+01:00", "2027-01-02"],
     // A regular minor on a first Saturday is followed by next month's.
     ["2027-01-02T20:00:00+01:00", "2027-02-06"],
     ["2027-07-03T20:00:00+02:00", "2027-08-07"],
-    // Exactly three weeks before the 1st still counts.
-    ["2027-03-11T12:00:00+01:00", "2027-04-03"],
+    // Across the year boundary, in Berlin time (23:30 UTC is already January).
+    ["2027-12-31T23:30:00Z", "2028-02-05"],
+    ["2027-12-04T20:00:00+01:00", "2028-01-01"],
   ])("dates the minor after one shipped at %s to %s", (iso, expected) => {
     expect(formatDay(earliestMinorDay(at(iso)))).toBe(expected);
   });
@@ -158,16 +167,16 @@ describe("release calendar", () => {
     expect(result.violations[0]).toContain("first Saturday");
   });
 
-  it("flags a minor before three weeks have passed since the last one", () => {
+  it("flags a minor in the same month as the one before it", () => {
     const result = judge({
       tag: "v1.50.0",
-      now: at("2027-01-02T20:00:00+01:00"),
+      now: at("2026-12-05T20:00:00+01:00"),
       tags: [
         tag("v1.48.5", "2026-11-21T09:44:00+01:00"),
-        tag("v1.49.0", "2026-12-15T18:00:00+01:00"),
+        tag("v1.49.0", "2026-12-01T18:00:00+01:00"),
       ],
     });
-    expect(result.violations[0]).toContain("due on 2027-02-06");
+    expect(result.violations[0]).toContain("due on 2027-01-02");
   });
 
   it("accepts a patch on a later Saturday, until Sunday 06:00", () => {
@@ -199,11 +208,11 @@ describe("release calendar", () => {
 
   it("allows a patch on a first Saturday that no minor claims", () => {
     const result = judge({
-      tag: "v1.49.3",
-      now: at("2027-01-02T20:00:00+01:00"),
+      tag: "v1.49.1",
+      now: at("2026-12-05T20:00:00+01:00"),
       tags: [
         tag("v1.48.5", "2026-11-21T09:44:00+01:00"),
-        tag("v1.49.0", "2026-12-15T18:00:00+01:00"),
+        tag("v1.49.0", "2026-12-01T18:00:00+01:00"),
       ],
     });
     expect(result.violations).toEqual([]);
@@ -216,6 +225,83 @@ describe("release calendar", () => {
       tags: [...HISTORY, tag("v1.49.1", "2026-12-19T19:00:00+01:00")],
     });
     expect(result.violations[0]).toContain("v1.49.1 already shipped");
+  });
+});
+
+// The real transition: 1.49.0 shipped on Monday 2026-11-23 with an annotated
+// tag. The first scheduled minor is 1.50.0 on 2026-12-05, the next 1.51.0 on
+// 2027-01-02.
+describe("the calendar after the real 1.49.0", () => {
+  const REAL = [
+    tag("v1.48.5", "2026-11-21T09:44:00+01:00"),
+    tag("v1.49.0", "2026-11-23T21:54:49+01:00"),
+  ];
+
+  it("accepts 1.50.0 on the first Saturday of December", () => {
+    const result = judge({
+      tag: "v1.50.0",
+      now: at("2026-12-05T20:00:00+01:00"),
+      tags: REAL,
+      changelog: changelog({ "1.50.0": ["Added", "Fixed"] }),
+      commitSubjects: ["feat(documents): read scanned documents"],
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.violations).toEqual([]);
+    expect(result.offSchedule).toBe(false);
+  });
+
+  it("keeps a patch off the minor's Saturday and on the one before", () => {
+    const onMinorDay = judge({
+      tag: "v1.49.2",
+      now: at("2026-12-05T20:00:00+01:00"),
+      tags: REAL,
+    });
+    expect(onMinorDay.violations[0]).toContain("minor release's Saturday");
+    const before = judge({
+      tag: "v1.49.1",
+      now: at("2026-11-28T20:00:00+01:00"),
+      tags: REAL,
+    });
+    expect(before.violations).toEqual([]);
+  });
+
+  it("puts 1.51.0 on the first Saturday of January", () => {
+    const tags = [...REAL, tag("v1.50.0", "2026-12-05T20:10:00+01:00")];
+    const accepted = judge({
+      tag: "v1.51.0",
+      now: at("2027-01-02T20:00:00+01:00"),
+      tags,
+      changelog: changelog({ "1.51.0": ["Added"] }),
+    });
+    expect(accepted.violations).toEqual([]);
+    const lines = describeNext({
+      now: at("2026-12-07T12:00:00+01:00"),
+      tags,
+      changelog: changelog({ Unreleased: ["Fixed"] }),
+    }).join("\n");
+    expect(lines).toContain("Next patch: v1.50.1 on Saturday 2026-12-12");
+    expect(lines).toContain("Next minor: v1.51.0 on Saturday 2027-01-02");
+  });
+
+  it("prints 2026-12-05 for 1.50.0 on the day after 1.49.0", () => {
+    const lines = describeNext({
+      now: at("2026-11-24T12:00:00+01:00"),
+      tags: REAL,
+      changelog: changelog({ Unreleased: ["Fixed"] }),
+    }).join("\n");
+    expect(lines).toContain("Next patch: v1.49.1 on Saturday 2026-11-28");
+    expect(lines).toContain("Next minor: v1.50.0 on Saturday 2026-12-05");
+    expect(lines).toContain("not a release day");
+  });
+
+  it("says 2026-12-05 is the release day for 1.50.0", () => {
+    const lines = describeNext({
+      now: at("2026-12-05T10:00:00+01:00"),
+      tags: [...REAL, tag("v1.49.1", "2026-11-28T20:00:00+01:00")],
+      changelog: changelog({ Unreleased: ["Fixed"] }),
+    }).join("\n");
+    expect(lines).toContain("Today: release day for v1.50.0");
+    expect(lines).toContain("Next patch: v1.49.2 on Saturday 2026-12-12");
   });
 });
 
@@ -441,7 +527,33 @@ describe("release:next", () => {
   });
 });
 
-describe("command line against a real repository", () => {
+describe("merged migrations", () => {
+  it("lets new migration files through", () => {
+    expect(
+      migrationEdits(
+        "A\tprisma/migrations/0562_x/migration.sql\nM\tsrc/a.ts\nD\tdocs/b.md\n",
+      ),
+    ).toEqual([]);
+  });
+
+  it("refuses an edited, deleted or retyped migration", () => {
+    expect(
+      migrationEdits(
+        [
+          "M\tprisma/migrations/0560_a/migration.sql",
+          "D\tprisma/migrations/0561_b/migration.sql",
+          "T\tprisma/migrations/migration_lock.toml",
+        ].join("\n"),
+      ),
+    ).toEqual([
+      "prisma/migrations/0560_a/migration.sql modified",
+      "prisma/migrations/0561_b/migration.sql deleted",
+      "prisma/migrations/migration_lock.toml changed in type",
+    ]);
+  });
+});
+
+describe("command line against a real repository", { timeout: 30_000 }, () => {
   const directories: string[] = [];
   afterEach(() => {
     for (const path of directories.splice(0)) {
@@ -634,6 +746,85 @@ describe("command line against a real repository", () => {
     );
     expect(result.code, result.err).toBe(0);
     expect(readFileSync(output, "utf8")).toBe("off_schedule=false\n");
+  });
+
+  it("passes a v1.50.0 tag pushed on 2026-12-05 after the real 1.49.0", () => {
+    const { cwd, run, commit } = repository();
+    const output = join(cwd, "github-output");
+    writeFileSync(output, "");
+    commit("chore(release): v1.48.5", "2026-11-21T09:44:00+01:00");
+    run(["tag", "v1.48.5"]);
+    commit(
+      "chore(release): v1.49.0",
+      "2026-11-23T21:40:00+01:00",
+      changelog({ "1.49.0": ["Added"] }),
+    );
+    run(["tag", "-a", "-m", "v1.49.0", "v1.49.0"], "2026-11-23T21:54:49+01:00");
+    commit(
+      "feat(documents): read scanned documents",
+      "2026-11-25T10:00:00+01:00",
+    );
+    commit(
+      "chore(release): v1.50.0",
+      "2026-12-05T19:30:00+01:00",
+      changelog({ "1.50.0": ["Added", "Fixed"], "1.49.0": ["Added"] }),
+    );
+    run(["tag", "-a", "-m", "v1.50.0", "v1.50.0"], "2026-12-05T19:45:00+01:00");
+    const result = capture(
+      [
+        "check",
+        "v1.50.0",
+        "--now",
+        "2026-12-05T19:46:00+01:00",
+        "--github-output",
+        output,
+      ],
+      cwd,
+    );
+    expect(result.code, result.err).toBe(0);
+    expect(result.out).toContain("passes the release policy without approval");
+    expect(readFileSync(output, "utf8")).toBe("off_schedule=false\n");
+  });
+
+  it("refuses a change to a merged migration and lets a new one through", () => {
+    const { cwd, run, commit } = repository();
+    const sql = (dir: string, text: string) => {
+      mkdirSync(join(cwd, "prisma/migrations", dir), { recursive: true });
+      writeFileSync(join(cwd, "prisma/migrations", dir, "migration.sql"), text);
+    };
+    sql("0001_init", "CREATE TABLE a (id int);\n");
+    commit("chore: base", "2026-11-24T10:00:00+01:00");
+    run(["branch", "base"]);
+
+    sql("0002_next", "CREATE TABLE b (id int);\n");
+    commit("feat(b): a table", "2026-11-24T11:00:00+01:00");
+    const added = capture(
+      ["migrations", "--base", "base", "--head", "HEAD"],
+      cwd,
+    );
+    expect(added.code, added.err).toBe(0);
+    run(["branch", "added"]);
+
+    sql("0001_init", "CREATE TABLE a (id bigint);\n");
+    commit("fix(a): wider id", "2026-11-24T12:00:00+01:00");
+    const edited = capture(
+      ["migrations", "--base", "added", "--head", "HEAD"],
+      cwd,
+    );
+    expect(edited.code).toBe(1);
+    expect(edited.err).toContain(
+      "prisma/migrations/0001_init/migration.sql modified",
+    );
+
+    run(["checkout", "-q", "-b", "renumber", "added"]);
+    run(["mv", "prisma/migrations/0002_next", "prisma/migrations/0003_next"]);
+    commit("chore: renumber", "2026-11-24T13:00:00+01:00");
+    const renamed = capture(
+      ["migrations", "--base", "added", "--head", "HEAD"],
+      cwd,
+    );
+    expect(renamed.code).toBe(1);
+    expect(renamed.err).toContain("0002_next/migration.sql deleted");
   });
 
   it("checks a pull request range", () => {
