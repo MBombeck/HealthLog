@@ -76,6 +76,11 @@ export interface LoadDayArgs {
   tz?: string;
   /** The earliest instant a comparison may read (a lookback limit). */
   floor?: Date | null;
+  /**
+   * The day is read for a model (`readDayForTool`): the scores are read in
+   * their model-bound form (`readDayScores`).
+   */
+  modelBound?: boolean;
 }
 
 export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
@@ -151,6 +156,7 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
           modules: access.modules,
           priorityJson: priority,
           floor: args.floor ?? null,
+          modelBound: args.modelBound === true,
         })
       : Promise.resolve([]),
     access.readable.has("environment")

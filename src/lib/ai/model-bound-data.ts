@@ -13,6 +13,11 @@
  *     (`score-projection.ts`), which every generic measurement read would
  *     otherwise pick up like any other reading.
  *
+ *   - the health score's wellbeing pillar, which is scored from those
+ *     questionnaires alone. A score leaves for a model in its model-bound
+ *     form, recomposed from the other pillars
+ *     (`analytics/score/model-bound.ts`).
+ *
  * Life events sit in the day section list for the same reason
  * (`MODEL_EXCLUDED_DAY_SECTIONS`). AUDIT-C is not on this list: it belongs to
  * the life circumstances, whose sections reach the Coach only when the person
@@ -27,11 +32,19 @@
  */
 import { MODEL_EXCLUDED_DAY_SECTIONS } from "@/lib/day/contract";
 import { INSTRUMENT_MEASUREMENT_TYPE } from "@/lib/mental-health/instruments";
+import type { ScorePillarId } from "@/lib/analytics/score/types";
 
 /** Measurement types that never reach a model: the questionnaire totals. */
 export const MODEL_EXCLUDED_MEASUREMENT_TYPES: ReadonlySet<string> = new Set(
   Object.values(INSTRUMENT_MEASUREMENT_TYPE),
 );
+
+/**
+ * Health score pillars that never reach a model, in a score or on their own:
+ * the wellbeing pillar is the questionnaire totals under another name.
+ */
+export const MODEL_EXCLUDED_SCORE_PILLARS: ReadonlySet<ScorePillarId> =
+  new Set<ScorePillarId>(["WELLBEING"]);
 
 /** Day sections that never reach a model. */
 export const MODEL_EXCLUDED_SECTIONS: ReadonlySet<string> = new Set(
