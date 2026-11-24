@@ -20,6 +20,7 @@ import { randomBytes } from "node:crypto";
 
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { memoizePerRequest } from "@/lib/request-cache";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { getEvent } from "@/lib/logging/context";
 import { loadApnsConfig } from "@/lib/notifications/senders/apns";
@@ -67,9 +68,16 @@ export async function loadRegistration(
   options: { includeDeleting?: boolean } = {},
 ): Promise<RegistrationRow | null> {
   if (!config.host) return null;
-  const row = await prisma.pushRelayRegistration.findUnique({
-    where: { relayHost: config.host },
-  });
+  const host = config.host;
+  // One read per GET request: `/api/auth/me` asks for it from the push block
+  // and again from the Wallet signer's readiness. Any request that writes
+  // the registration reads it afresh.
+  const row = await memoizePerRequest(
+    `push-relay-registration:${host}`,
+    () =>
+      prisma.pushRelayRegistration.findUnique({ where: { relayHost: host } }),
+    { readsOnly: true, freshInBackground: true },
+  );
   if (row?.state === "deleting" && !options.includeDeleting) return null;
   return row;
 }

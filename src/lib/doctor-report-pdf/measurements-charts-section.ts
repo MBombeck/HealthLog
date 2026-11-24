@@ -582,7 +582,7 @@ export function buildMeasurementsChartsSection(
     doc.setFont(PDF_FONT_FAMILY, "normal");
     const bpClass = t(getBpClassificationKey(sysStat.avg, diaStat.avg));
     doc.text(
-      `${t("doctorReport.avgBp")}: ${num(sysStat.avg, 0)}/${num(diaStat.avg, 0)} mmHg — ${t("doctorReport.classification")}: ${bpClass}`,
+      `${t("doctorReport.avgBp")}: ${num(sysStat.avg, 0)}/${num(diaStat.avg, 0)} mmHg, ${t("doctorReport.classification")}: ${bpClass}`,
       margin,
       y,
     );

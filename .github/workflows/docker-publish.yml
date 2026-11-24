@@ -18,7 +18,7 @@ on:
   push:
     tags: ["v*"]
   pull_request:
-    branches: [main]
+    branches: [main, "release/**"]
   workflow_dispatch:
 
 # Default for any job that doesn't declare its own block; both jobs

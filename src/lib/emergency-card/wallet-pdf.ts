@@ -8,8 +8,9 @@
  * type, allergies, conditions, medications, pregnancy); the back
  * holds who to call, implants and the declarations, and, when the owner hands
  * in the live link, its QR code. Text that does not fit is cut with an
- * ellipsis and the card says so: the full card is behind the QR code and in
- * the app.
+ * ellipsis and the card says so: with a code, that the full card is behind
+ * it; without one, only that it was shortened, since there is no code to
+ * point at.
  *
  * Rendered with the doctor report's embedded fonts, so every language the app
  * speaks prints, Hangul included.
@@ -194,7 +195,13 @@ export async function buildWalletCardPdf(args: {
   });
   doc.text(footer, left + PAD + 2, top + CARD_H - PAD);
   doc.text(
-    cut ? t("emergencyCard.wallet.cut") : t("emergencyCard.subtitle"),
+    cut
+      ? t(
+          linkUrl
+            ? "emergencyCard.wallet.cut"
+            : "emergencyCard.wallet.cutNoCode",
+        )
+      : t("emergencyCard.subtitle"),
     bx,
     top + CARD_H - PAD,
     { maxWidth: CARD_W - 2 * PAD },

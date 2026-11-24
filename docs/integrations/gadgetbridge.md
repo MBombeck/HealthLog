@@ -40,8 +40,8 @@ It finds tables by the shape of their name and looks columns up by name:
 | `*_ACTIVITY_SAMPLE` (`TIMESTAMP`, `STEPS`) | `ACTIVITY_STEPS`, one total per local day. With two devices on one day the device with the most steps counts. |
 | the same, `HEART_RATE`                     | `PULSE`, one mean per local hour, from readings between 30 and 220 bpm (0, -1 and 255 mean "no reading").     |
 | `*_SPO2_SAMPLE` (`SPO2`)                   | `OXYGEN_SATURATION`, one row per reading                                                                      |
-| `*HEART_RATE_RESTING*` (`HEART_RATE`)      | `RESTING_HEART_RATE`                                                                                          |
-| `*HEART_RATE_MANUAL*` (`HEART_RATE`)       | `PULSE`, one row per spot reading                                                                             |
+| `*HEART_RATE_RESTING*` (`HEART_RATE`)      | `RESTING_HEART_RATE`, from readings between 30 and 220 bpm                                                    |
+| `*HEART_RATE_MANUAL*` (`HEART_RATE`)       | `PULSE`, one row per spot reading between 30 and 220 bpm                                                      |
 | `*SLEEP*` (`TIMESTAMP`, `WAKEUP_TIME`)     | `SLEEP_DURATION` in minutes, one row per night at wake-up                                                     |
 | `*WEIGHT*` (`WEIGHT_KG`)                   | `WEIGHT`                                                                                                      |
 
@@ -57,9 +57,11 @@ count, so you can see what the file had that HealthLog did not read.
 
 Each row is written under a stable identity: the day or hour for a total,
 the table, device and instant for a single reading. Importing the same file
-again writes nothing new. A later export of the same phone replaces a day's
-step total or an hour's mean when it holds a different value (it has seen
-more of that day); a reading you deleted in HealthLog stays deleted.
+again writes nothing new. A later export of the same phone raises a day's
+step total (it has seen more of that day), and an older export uploaded
+afterwards does not lower it. An hour's mean pulse is replaced when the
+export holds a different value. A reading you deleted in HealthLog stays
+deleted.
 
 ## 5. Limits and safety
 

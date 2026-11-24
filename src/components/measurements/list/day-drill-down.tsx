@@ -149,7 +149,7 @@ export function SleepNightCaption({ m }: { m: Measurement }) {
   if (parts.length === 0) return null;
   return (
     <span className="text-muted-foreground ml-2 text-xs font-normal">
-      {parts.join(" · ")}
+      {parts.join(", ")}
     </span>
   );
 }

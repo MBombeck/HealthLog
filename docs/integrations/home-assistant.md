@@ -11,7 +11,7 @@ or anything else that can set a header works the same way.
 
 ## Mint a token
 
-Settings → API & Tokens → **Measurement ingest token**. Name it after the thing
+Settings > API & Tokens > **Measurement ingest token**. Name it after the thing
 you are pasting it into, because that name is what you will be reading later
 when you decide whether to revoke it.
 
@@ -218,7 +218,7 @@ same series and blur both, and two pushes in the same minute collide on a 409
 
 Then import the blueprint (Home Assistant 2024.10 or newer), either from
 [`docs/integrations/blueprints/healthlog-room-climate.yaml`](./blueprints/healthlog-room-climate.yaml)
-or by its raw GitHub URL under Settings → Automations & scenes → Blueprints →
+or by its raw GitHub URL under Settings > Automations & scenes > Blueprints >
 Import blueprint, and create one automation from it for that room. It asks for
 the three sensors (each optional) and an interval of 5, 10, 15, 20, 30 or 60
 minutes, counted from the full hour. Every push:

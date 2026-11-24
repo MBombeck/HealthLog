@@ -1033,7 +1033,7 @@ export function summariseCadence(
         : t("medications.wizard.summary.noEndDate");
   return [cadenceLine, timesPhrase, startPhrase, endPhrase]
     .filter(Boolean)
-    .join(" · ");
+    .join(", ");
 }
 
 /**
@@ -1055,7 +1055,7 @@ export function summariseScheduleDraft(
           times: sortTimes(draft.timesOfDay).map(wallTime).join(", "),
         })
       : "";
-  return [cadenceLine, timesPhrase].filter(Boolean).join(" · ");
+  return [cadenceLine, timesPhrase].filter(Boolean).join(", ");
 }
 
 // ────────────────────────────────────────────────────────────────────

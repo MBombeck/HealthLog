@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 136,
+  "registeredQueueCount": 139,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -123,6 +123,9 @@
     "supplement-nutrient-recompute",
     "system-job-alert",
     "tls-pin-monitor",
+    "wallet-pass-refresh",
+    "wallet-pass-sweep",
+    "wallet-pass-void-push",
     "wearable-cycle-repair",
     "whoop-backfill",
     "whoop-cycle-sync",
@@ -1974,6 +1977,51 @@
       "deletion_seconds": 604800,
       "expire_seconds": 900,
       "heartbeat_seconds": null,
+      "name": "wallet-pass-refresh",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "wallet-pass-sweep",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "wallet-pass-void-push",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
       "name": "wearable-cycle-repair",
       "notify": false,
       "partition": false,
@@ -3103,6 +3151,30 @@
       "timezone": "Europe/Berlin"
     },
     {
+      "cron": "41 */6 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "wallet-pass-sweep",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "3-59/5 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "wallet-pass-void-push",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
       "cron": "50 * * * *",
       "data": {},
       "key": "",
@@ -4019,6 +4091,25 @@
       "options": {
         "localConcurrency": 1,
         "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "wallet-pass-refresh",
+      "options": {
+        "localConcurrency": 2
+      }
+    },
+    {
+      "queue": "wallet-pass-sweep",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "wallet-pass-void-push",
+      "options": {
+        "localConcurrency": 1
       }
     },
     {

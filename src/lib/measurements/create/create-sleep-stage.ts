@@ -203,7 +203,6 @@ async function namedSleepStageResponse(
     },
     meta: {
       status,
-      stage: meta.stage,
       source: meta.source,
       cross_source_merge: meta.crossSource,
     },

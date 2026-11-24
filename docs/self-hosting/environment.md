@@ -11,7 +11,7 @@ dashboard shows a quiet note on a day with high pollen, a warm night or very
 poor air.
 
 The module is on by default. Nothing leaves the host until a person sets a
-home location in Settings → Location & weather.
+home location in Settings > Location & weather.
 
 ## What leaves the host
 
@@ -48,14 +48,14 @@ on the LAN is allowed).
 
 ## Switches
 
-- **Per account:** Settings → Location & weather → Air quality and pollen.
+- **Per account:** Settings > Location & weather > Air quality and pollen.
   On by default. Off stops the air-quality requests for that account and
   leaves the air-quality values out of every surface; the days already
   stored keep theirs.
 - **For the whole instance:** `ENVIRONMENT_AIR_QUALITY_DISABLED=1` turns the
   air-quality part off for every account (`1`, `true`, `yes` or `on`). The
   weather keeps working. Settings then says the operator turned it off.
-- The whole module is a normal module switch (Settings → Modules), and an
+- The whole module is a normal module switch (Settings > Modules), and an
   operator can make it unavailable like any other module.
 
 All four variables are on the compose `environment:` whitelist.

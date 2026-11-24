@@ -100,7 +100,7 @@ export function LabsChangesCard({
                 </p>
                 <p className="text-muted-foreground text-xs">
                   {withLabUnit(labNumber(c.latest), c.unit)}
-                  {labelKey ? ` · ${t(labelKey)}` : ""}
+                  {labelKey ? `, ${t(labelKey)}` : ""}
                 </p>
               </div>
               {/* The delta is CONTENT — the number the row exists to report —

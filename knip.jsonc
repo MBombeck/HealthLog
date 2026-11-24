@@ -155,6 +155,9 @@
     // The runtime GeoLite2 fetch extracts in pure Node, but its test builds a
     // MaxMind-shaped tar.gz fixture with the POSIX `tar` (present in CI + dev).
     "tar",
+    // The Wallet pass signing test checks the CMS signature with the system
+    // `openssl` and skips where it is not on the path.
+    "openssl",
   ],
   // Scoped to a single file: an export used only inside its own module is not
   // a finding. It is also why the default pass cannot answer the question the
