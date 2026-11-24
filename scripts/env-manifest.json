@@ -511,6 +511,21 @@
           "example": "false"
         },
         {
+          "name": "SESSION_IDLE_TIMEOUT_DAYS",
+          "purpose": "Days a browser session lasts without use (30 by default, 1 to 90). Each use slides it, never past SESSION_MAX_LIFETIME_DAYS.",
+          "example": "30"
+        },
+        {
+          "name": "SESSION_MAX_LIFETIME_DAYS",
+          "purpose": "Days a browser session lasts after its sign-in however often it is used (90 by default, 1 to 365). The person signs in again after it.",
+          "example": "90"
+        },
+        {
+          "name": "REFRESH_TOKEN_MAX_LIFETIME_DAYS",
+          "purpose": "Days the iOS app's refresh tokens and an MCP connection last after the sign-in or consent, however often they rotate (180 by default, 1 to 730). Published: the MCP consent screen states it.",
+          "example": "180"
+        },
+        {
           "name": "HEALTHLOG_PLATFORM",
           "purpose": "Where this server's environment is configured (compose, truenas, coolify, unraid, portainer). Shown back to the admin: the \"Back up your encryption key\" step opens on that platform's instructions. Unset means compose.",
           "example": "compose"

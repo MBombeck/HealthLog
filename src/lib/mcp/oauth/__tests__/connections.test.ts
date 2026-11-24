@@ -34,6 +34,7 @@ const CONN = {
   userId: "user-1",
   clientId: "https://app.example/client.json",
   currentJti: "jti-current",
+  createdAt: new Date(),
   revokedAt: null as Date | null,
 };
 

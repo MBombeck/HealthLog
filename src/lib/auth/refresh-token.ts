@@ -16,6 +16,10 @@ import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { issueApiToken } from "@/lib/auth/issue-token";
 import type { TokenPolicyDecision } from "@/lib/auth/native-client";
 import { afterRefreshRevocation } from "@/lib/devices/signed-out-push";
+import {
+  capAtRefreshFamilyEnd,
+  refreshFamilyHardEnd,
+} from "@/lib/auth/session-lifetime";
 
 export interface IssuedRefreshBundle {
   accessToken: string;
@@ -32,6 +36,12 @@ export interface IssueRefreshOpts {
   ipAddress?: string | null;
   /** Token name suffix for the underlying ApiToken row. */
   source: string;
+  /**
+   * When the family this pair belongs to signed in. A rotation passes the
+   * consumed row's value on; a sign-in leaves it out and starts a family now.
+   * Neither token of the pair lives past the family's absolute end.
+   */
+  familyStartedAt?: Date;
 }
 
 /**
@@ -74,18 +84,21 @@ export async function issueAccessAndRefresh(
     );
   }
 
+  const familyStartedAt = opts.familyStartedAt ?? new Date();
   const access = await issueApiToken({
     userId: opts.userId,
     name: `${opts.policy.tokenLabel} ${opts.source} ${new Date().toISOString()}`,
     permissions: ["*"],
     expiresInDays: opts.policy.accessTokenDays,
+    notAfter: refreshFamilyHardEnd(familyStartedAt),
   });
 
   const refresh = generateRefreshTokenSecret();
   const refreshHash = hashToken(refresh);
   const accessTokenHash = hashToken(access.token);
-  const expiresAt = new Date(
-    Date.now() + opts.policy.refreshTokenDays * 24 * 60 * 60 * 1000,
+  const expiresAt = capAtRefreshFamilyEnd(
+    new Date(Date.now() + opts.policy.refreshTokenDays * 24 * 60 * 60 * 1000),
+    familyStartedAt,
   );
 
   await prisma.refreshToken.create({
@@ -95,6 +108,7 @@ export async function issueAccessAndRefresh(
       accessTokenHash,
       deviceId: opts.deviceId ?? null,
       expiresAt,
+      familyStartedAt,
       userAgent: opts.userAgent ?? null,
       ipAddress: opts.ipAddress ?? null,
     },
@@ -109,6 +123,9 @@ export async function issueAccessAndRefresh(
 }
 
 /**
+ * `family_ended` is a family past its absolute end, read from
+ * `familyStartedAt` rather than the row's expiry so a row stored under a longer
+ * setting ends on time too; the client signs in again.
  * `already_used` is the replay of a consumed token: reuse detection fired and
  * the device family is revoked. `superseded` is the loser of two concurrent
  * rotations of the same live token: nothing was revoked, the winner's pair is
@@ -118,6 +135,7 @@ export async function issueAccessAndRefresh(
 export type RotationFailureReason =
   | "not_found"
   | "expired"
+  | "family_ended"
   | "already_used"
   | "superseded"
   | "revoked"
@@ -149,6 +167,8 @@ export async function rotateRefreshToken(input: {
   if (row.revokedAt) return { ok: false, reason: "revoked" };
   if (row.expiresAt.getTime() <= Date.now())
     return { ok: false, reason: "expired" };
+  if (refreshFamilyHardEnd(row.familyStartedAt).getTime() <= Date.now())
+    return { ok: false, reason: "family_ended" };
 
   if (row.usedAt) {
     // Reuse-detection: a previously-consumed refresh token shouldn't be
@@ -239,6 +259,7 @@ export async function rotateRefreshToken(input: {
     userAgent: input.userAgent ?? row.userAgent,
     ipAddress: input.ipAddress ?? row.ipAddress,
     source: "refresh",
+    familyStartedAt: row.familyStartedAt,
   });
 
   // Find the row we just created so we can store its id as replacedById.
