@@ -8,6 +8,14 @@ import { Prisma } from "@/generated/prisma/client";
 import { lockPersonalRecordsForUser } from "@/lib/personal-records/pr-detection-worker";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
 import { routeClimbM } from "@/lib/workouts/route-climb";
+import { workoutSessionKey } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  exportRowsOf,
+  foldExportCopiesInto,
+  healthKitRowOf,
+  isHealthKitWorkout,
+  readAppleHealthSessionRows,
+} from "@/lib/workouts/export-healthkit-twins";
 
 import type { EntryResult, PreparedWorkout } from "./entries";
 import { MANUAL_OVERWRITE_FIELDS, type WritePlan } from "./plan";
@@ -26,6 +34,12 @@ export interface WriteOutcome {
   insertedIdByIndex: Map<number, string>;
   /** Workout ids of the manual edits this request actually wrote. */
   overwrittenIdByIndex: Map<number, string>;
+  /**
+   * Inserted HealthKit workouts an Apple Health export had already stored:
+   * the export row folded into the new one (#1414). The session arrived
+   * when the export stored it, so these raise no arrival.
+   */
+  foldedExportIndices: Set<number>;
 }
 
 export async function writeWorkoutPlan(
@@ -41,6 +55,7 @@ export async function writeWorkoutPlan(
     duplicates: 0,
     insertedIdByIndex: new Map<number, string>(),
     overwrittenIdByIndex: new Map<number, string>(),
+    foldedExportIndices: new Set<number>(),
   };
   if (!(toInsert.length > 0 || toEnrich.length > 0 || toOverwrite.length > 0)) {
     return outcome;
@@ -64,6 +79,13 @@ export async function writeWorkoutPlan(
     });
     await fillClimbFromAttachedRoutes(tx, userId, toEnrich, routesLanded);
     await mergePerformanceFigures(tx, userId, toEnrich, figuresLanded);
+    await foldExportCopiesIntoInserted(
+      tx,
+      userId,
+      toInsert,
+      insertedIdByIndex,
+      outcome.foldedExportIndices,
+    );
   });
 
   outcome.insertedCount = insertedIdByIndex.size;
@@ -108,6 +130,65 @@ export async function writeWorkoutPlan(
     outcome.duplicates += 1;
   }
   return outcome;
+}
+
+/**
+ * A HealthKit workout this request inserted whose session an Apple Health
+ * export had already stored takes the export row over: the export's data
+ * fills what the new row leaves empty, its track, series and insight move
+ * when the new row has none, its personal records follow, and the export
+ * row goes (`foldExportCopiesInto`). The HealthKit UUID stays the identity,
+ * so a deletion the phone reports later still finds the workout. After the
+ * children, so a track or series this entry carried is the one kept.
+ */
+async function foldExportCopiesIntoInserted(
+  tx: Tx,
+  userId: string,
+  toInsert: readonly PreparedWorkout[],
+  insertedIdByIndex: ReadonlyMap<number, string>,
+  folded: Set<number>,
+): Promise<void> {
+  const inserted = toInsert.filter(
+    (p) =>
+      insertedIdByIndex.has(p.index) &&
+      isHealthKitWorkout({
+        source: p.row.source ?? "MANUAL",
+        externalId: p.row.externalId,
+      }),
+  );
+  if (inserted.length === 0) return;
+  const sessionOf = (p: PreparedWorkout) => ({
+    source: p.row.source ?? ("MANUAL" as const),
+    sportType: p.row.sportType,
+    startedAt: p.row.startedAt as Date,
+    durationSec: p.row.durationSec,
+  });
+  const stored = await readAppleHealthSessionRows(
+    tx,
+    userId,
+    inserted.map(sessionOf),
+  );
+  let locked = false;
+  for (const p of inserted) {
+    const group = stored.get(workoutSessionKey(sessionOf(p)) ?? "");
+    const copies = exportRowsOf(group);
+    // The oldest HealthKit row of the session, as the export importer and
+    // migration 0562 choose it: this one, unless the phone stored the
+    // session earlier under another UUID.
+    const kept = healthKitRowOf(group);
+    if (!kept || copies.length === 0) continue;
+    if (!locked) {
+      // The copies' personal records are re-pointed; the detector must not
+      // write one against a copy in the meantime.
+      await lockPersonalRecordsForUser(tx, userId);
+      locked = true;
+    }
+    await foldExportCopiesInto(tx, userId, kept, copies);
+    folded.add(p.index);
+    // Spent: a second HealthKit row of the session in this batch finds no
+    // copy left.
+    stored.set(workoutSessionKey(sessionOf(p)) ?? "", [kept]);
+  }
 }
 
 /**

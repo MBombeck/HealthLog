@@ -5,6 +5,7 @@
  * (`import-apple-health-export-writer.ts`, `-cycle.ts`). The record-level helpers the
  * handlers share live here too.
  */
+import type { WorkoutRouteReference } from "@/lib/apple-health/route-import";
 import { createHash } from "node:crypto";
 
 import type { Prisma } from "@/generated/prisma/client";
@@ -280,7 +281,7 @@ export interface ExportTagContext {
   cycle: ExportCycleWriter;
   state: ExportParseState;
   exportWorkouts: ReturnType<typeof exportWorkoutTracker>;
-  onWorkoutRoute?: (ref: { externalId: string; path: string }) => void;
+  onWorkoutRoute?: (ref: WorkoutRouteReference) => void;
   onClinicalLabRecord?: (ref: ClinicalLabReference) => void;
 }
 

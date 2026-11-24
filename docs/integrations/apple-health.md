@@ -119,6 +119,15 @@ CSVs into the existing HealthLog schema (CHANGELOG v1.4.34):
 | `<ClinicalRecord>` | `LabResult` rows (lab results only) | Lab-result entries (`type="HKClinicalTypeIdentifierLabResultRecord"`, or `type="Observation"` in current exports): the referenced FHIR Observation (DSTU2 or R4) becomes a lab reading under source `APPLE_HEALTH`. Other clinical types and resources are counted as skipped. |
 | ECG CSV            | `EcgRecording` rows                 | The source-provided waveform is encrypted before persistence; descriptors and the device's classification are stored without diagnostic inference.                                                                                                                             |
 
+A workout the iPhone app already synced is not stored a second time. The
+app keys a workout on its HealthKit id, which the export does not carry, so
+the import looks for the app's row of the same session (same sport, start
+and duration) and fills only what that row leaves empty: distance, energy,
+heart rate and, when routes are kept, the GPS track. The app's row keeps its
+id. A workout the app syncs after an export takes over the export's row the
+same way. The import summary counts such a workout under `updated` and
+again under `mergedIntoHealthKit`.
+
 The HK quantity types that map to HealthLog metric types live in
 `src/lib/measurements/apple-health-mapping.ts`. Anything outside the
 mapped set (for example workout routes) is counted as unsupported and

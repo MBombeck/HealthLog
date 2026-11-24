@@ -2766,11 +2766,13 @@ model Workout {
   /// paired sensors — e.g. Apple Watch + Withings ScanWatch — under
   /// different `source`/`externalId` pairs) is handled in two layers,
   /// mirroring the measurement-side `pickCanonicalSourceRows()`:
-  ///   * WRITE-time — `dedupeWorkoutBatch()` in
-  ///     src/lib/workouts/canonical-rows.ts groups an inbound batch by
-  ///     (userId, activityType, startedAt ± 90 s) and keeps one
-  ///     canonical row per logical workout BEFORE the insert, so the
-  ///     duplicate never reaches storage.
+  ///   * WRITE-time — `incomingWorkoutsToKeep()` in
+  ///     src/lib/workouts/canonical-read.ts clusters an inbound batch with
+  ///     the stored rows around it by the read's own rule and drops a
+  ///     batch row another batch row of its cluster beats. An Apple Health
+  ///     export workout and the HealthKit row of the same session
+  ///     (`workoutSessionKey`) are merged into the HealthKit row whichever
+  ///     arrives second (src/lib/workouts/export-healthkit-twins.ts, #1414).
   ///   * READ-time — `pickCanonicalWorkoutRows()` in
   ///     src/lib/measurements/pick-canonical-workout-rows.ts collapses
   ///     any cross-batch twins (e.g. one source's row from Monday's
