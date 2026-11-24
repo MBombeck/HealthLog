@@ -1849,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "ex.: 4",
           "dosesPerUnitHint": "Quantos comprimidos ou unidades vêm em uma embalagem ou caneta nova, por ex. 28 comprimidos ou uma caneta de 4 doses. Preenche a quantidade ao registrar uma embalagem; deixe em branco se as embalagens variam.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Quantos comprimidos ou unidades formam esta dose?",
+          "unitsPerDoseLabel": "Comprimidos ou unidades por dose",
           "unitsPerDoseHint": "ex.: 2 comprimidos de 2 mg para uma dose de 4 mg, ou ½ comprimido para uma dose dividida",
           "packSizeToggle": "Tamanho da embalagem (opcional)"
         },
@@ -10789,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Tentando engravidar",
       "PERIMENOPAUSE": "Perimenopausa",
       "OFF": "Acompanhamento desativado",
-      "label": "Para que você está acompanhando?",
+      "label": "Objetivo",
       "description": "Isso molda a linguagem e quais previsões você vê. A orientação da janela fértil aparece apenas quando você está tentando engravidar."
     },
     "ring": {
@@ -15248,7 +15248,7 @@
     "saved": "Evento de vida salvo",
     "deleted": "Evento de vida excluído",
     "fields": {
-      "title": "O que aconteceu?",
+      "title": "Título",
       "category": "Tipo",
       "when": "Quando",
       "precision": "Precisão",
@@ -16217,7 +16217,7 @@
     "performer": "Realizada por",
     "condition": "Condição",
     "form": {
-      "title": "O que é?",
+      "title": "Nome",
       "titlePlaceholder": "Fisioterapia, joelho esquerdo",
       "plannedSessions": "Sessões",
       "startsOn": "Início",

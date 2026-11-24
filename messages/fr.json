@@ -1849,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "p. ex. 4",
           "dosesPerUnitHint": "Nombre de comprimés ou d'unités dans une nouvelle boîte ou un nouveau stylo, p. ex. 28 comprimés ou un stylo de 4 doses. Pré-remplit la quantité à l'ajout d'une boîte ; laisser vide si les boîtes varient.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Combien de comprimés ou d'unités font cette dose ?",
+          "unitsPerDoseLabel": "Comprimés ou unités par dose",
           "unitsPerDoseHint": "p. ex. 2 comprimés de 2 mg pour une dose de 4 mg, ou ½ comprimé pour une dose fractionnée",
           "packSizeToggle": "Taille du conditionnement (facultatif)"
         },
@@ -10789,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Désir d'enfant",
       "PERIMENOPAUSE": "Périménopause",
       "OFF": "Suivi désactivé",
-      "label": "Pourquoi faites-vous ce suivi ?",
+      "label": "Objectif",
       "description": "Cela adapte le langage et les prévisions affichées. Les conseils sur la fenêtre fertile n'apparaissent qu'en cas de désir d'enfant."
     },
     "ring": {
@@ -15248,7 +15248,7 @@
     "saved": "Événement de vie enregistré",
     "deleted": "Événement de vie supprimé",
     "fields": {
-      "title": "Que s’est-il passé ?",
+      "title": "Titre",
       "category": "Type",
       "when": "Quand",
       "precision": "Précision",
@@ -16217,7 +16217,7 @@
     "performer": "Réalisée par",
     "condition": "Affection",
     "form": {
-      "title": "De quoi s’agit-il ?",
+      "title": "Nom",
       "titlePlaceholder": "Kinésithérapie, genou gauche",
       "plannedSessions": "Séances",
       "startsOn": "Début",

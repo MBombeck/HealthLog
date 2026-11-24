@@ -1849,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "예: 4",
           "dosesPerUnitHint": "새 포장이나 펜 하나에 든 정제 또는 단위 수예요. 예: 정제 28개, 4회분 펜. 포장을 추가할 때 수량이 미리 채워져요. 포장마다 다르면 비워 두세요.",
           "short": "용량",
-          "unitsPerDoseLabel": "이 용량은 정제나 단위 몇 개인가요?",
+          "unitsPerDoseLabel": "1회 용량당 정제 또는 단위 수",
           "unitsPerDoseHint": "예: 4mg 용량이면 2mg 2정, 반으로 나눠 먹으면 ½정",
           "packSizeToggle": "포장 크기(선택)"
         },
@@ -10789,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "임신 준비",
       "PERIMENOPAUSE": "폐경 이행기",
       "OFF": "추적 끄기",
-      "label": "무엇을 위해 기록하나요?",
+      "label": "기록 목적",
       "description": "이 설정에 따라 문구와 보이는 예측이 달라져요. 가임기 안내는 임신을 준비할 때만 보여요."
     },
     "ring": {
@@ -15248,7 +15248,7 @@
     "saved": "삶의 사건을 저장했어요",
     "deleted": "삶의 사건을 삭제했어요",
     "fields": {
-      "title": "무슨 일이 있었나요?",
+      "title": "제목",
       "category": "종류",
       "when": "언제",
       "precision": "정확도",
@@ -16217,7 +16217,7 @@
     "performer": "시행",
     "condition": "질환",
     "form": {
-      "title": "어떤 치료인가요?",
+      "title": "이름",
       "titlePlaceholder": "물리치료, 왼쪽 무릎",
       "plannedSessions": "회차 수",
       "startsOn": "시작",

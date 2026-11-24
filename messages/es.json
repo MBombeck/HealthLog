@@ -1849,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "p. ej. 4",
           "dosesPerUnitHint": "Cuántos comprimidos o unidades trae un envase o pluma nuevo, p. ej. 28 comprimidos o una pluma de 4 dosis. Se rellena al registrar un envase; déjalo vacío si los envases varían.",
           "short": "Dosis",
-          "unitsPerDoseLabel": "¿Cuántos comprimidos o unidades forman esta dosis?",
+          "unitsPerDoseLabel": "Comprimidos o unidades por dosis",
           "unitsPerDoseHint": "p. ej., 2 comprimidos de 2 mg para una dosis de 4 mg, o ½ comprimido para una dosis partida",
           "packSizeToggle": "Tamaño del envase (opcional)"
         },
@@ -10789,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Buscando embarazo",
       "PERIMENOPAUSE": "Perimenopausia",
       "OFF": "Seguimiento desactivado",
-      "label": "¿Para qué haces seguimiento?",
+      "label": "Objetivo",
       "description": "Esto define el lenguaje y qué predicciones ves. La guía de ventana fértil solo aparece si buscas embarazo."
     },
     "ring": {
@@ -15248,7 +15248,7 @@
     "saved": "Acontecimiento vital guardado",
     "deleted": "Acontecimiento vital eliminado",
     "fields": {
-      "title": "¿Qué pasó?",
+      "title": "Título",
       "category": "Tipo",
       "when": "Cuándo",
       "precision": "Precisión",
@@ -16217,7 +16217,7 @@
     "performer": "Realizada por",
     "condition": "Afección",
     "form": {
-      "title": "¿Qué es?",
+      "title": "Nombre",
       "titlePlaceholder": "Fisioterapia, rodilla izquierda",
       "plannedSessions": "Sesiones",
       "startsOn": "Inicio",

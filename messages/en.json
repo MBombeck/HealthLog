@@ -1849,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "e.g. 4",
           "dosesPerUnitHint": "How many tablets or units one new pack or pen holds, e.g. 28 tablets or a 4-dose pen. Fills in the amount when you add a pack; leave empty if packs vary.",
           "short": "Dose",
-          "unitsPerDoseLabel": "How many tablets or units make up this dose?",
+          "unitsPerDoseLabel": "Tablets or units per dose",
           "unitsPerDoseHint": "e.g. 2 tablets of 2 mg for a 4 mg dose, or ½ a tablet for a split dose",
           "packSizeToggle": "Pack size (optional)"
         },
@@ -10789,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Trying to conceive",
       "PERIMENOPAUSE": "Perimenopause",
       "OFF": "Tracking off",
-      "label": "What are you tracking for?",
+      "label": "Tracking goal",
       "description": "This shapes the language and which predictions you see. Fertile-window guidance shows only when you are trying to conceive."
     },
     "ring": {
@@ -15248,7 +15248,7 @@
     "saved": "Life event saved",
     "deleted": "Life event deleted",
     "fields": {
-      "title": "What happened?",
+      "title": "Title",
       "category": "Kind",
       "when": "When",
       "precision": "Precision",
@@ -16217,7 +16217,7 @@
     "performer": "Given by",
     "condition": "Condition",
     "form": {
-      "title": "What is it?",
+      "title": "Name",
       "titlePlaceholder": "Physiotherapy, left knee",
       "plannedSessions": "Sessions",
       "startsOn": "Start",

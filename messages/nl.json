@@ -1849,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "bijv. 4",
           "dosesPerUnitHint": "Hoeveel tabletten of eenheden een nieuwe verpakking of pen bevat, bijv. 28 tabletten of een pen met 4 doses. Vult de hoeveelheid in bij het toevoegen van een verpakking; laat leeg als verpakkingen verschillen.",
           "short": "Dosis",
-          "unitsPerDoseLabel": "Hoeveel tabletten of eenheden vormen deze dosis?",
+          "unitsPerDoseLabel": "Tabletten of eenheden per dosis",
           "unitsPerDoseHint": "bijv. 2 tabletten van 2 mg voor een dosis van 4 mg, of ½ tablet voor een gedeelde dosis",
           "packSizeToggle": "Verpakkingsgrootte (optioneel)"
         },
@@ -10789,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Zwanger proberen te worden",
       "PERIMENOPAUSE": "Perimenopauze",
       "OFF": "Bijhouden uit",
-      "label": "Waarvoor houd je je cyclus bij?",
+      "label": "Doel",
       "description": "Dit bepaalt de formulering en welke voorspellingen je ziet. Begeleiding rond de vruchtbare periode verschijnt alleen als je zwanger probeert te worden."
     },
     "ring": {
@@ -15248,7 +15248,7 @@
     "saved": "Levensgebeurtenis opgeslagen",
     "deleted": "Levensgebeurtenis verwijderd",
     "fields": {
-      "title": "Wat is er gebeurd?",
+      "title": "Titel",
       "category": "Soort",
       "when": "Wanneer",
       "precision": "Nauwkeurigheid",
@@ -16217,7 +16217,7 @@
     "performer": "Uitgevoerd door",
     "condition": "Aandoening",
     "form": {
-      "title": "Wat is het?",
+      "title": "Naam",
       "titlePlaceholder": "Fysiotherapie, linkerknie",
       "plannedSessions": "Sessies",
       "startsOn": "Begin",
