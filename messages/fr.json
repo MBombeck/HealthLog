@@ -326,7 +326,7 @@
     "bmiRow": "IMC:{bmi} kg/m², classification: {class} (WHO)",
     "complianceTitle": "Observance des médicaments",
     "glp1Title": "Traitement GLP-1",
-    "glp1WeightSummary": "Poids sur la période du rapport : {start} kg → {end} kg ({delta} kg)",
+    "glp1WeightSummary": "Poids sur la période du rapport : de {start} kg à {end} kg ({delta} kg)",
     "glp1CurrentDose": "Dose actuelle:{value} {unit} (since {since})",
     "glp1Compliance": "Observance:{taken} / {total} ({rate}%)",
     "glp1SideEffectsTitle": "Effets secondaires consignés",
@@ -2403,7 +2403,7 @@
         "timesTitle": "Heures de prise",
         "timesNote": "Ajustez l'heure et la fenêtre à l'heure de chaque dose. La fréquence (quotidienne, hebdomadaire…) se modifie dans l'éditeur, sous Avancé.",
         "scheduleLabel": "Horaire {index}",
-        "fullEditNote": "La fréquence, la classe de traitement et la période de traitement se modifient dans l'éditeur, sous Avancé → Cycle de vie.",
+        "fullEditNote": "La fréquence, la classe de traitement et la période de traitement se modifient dans l'éditeur, sous Avancé > Cycle de vie.",
         "graceEcho": "Durée des rappels : {minutes, plural, one {# minute} other {# minutes}}",
         "reminderTitle": "Rappel",
         "manageChannels": "Gérer les canaux de notification",
@@ -2517,7 +2517,7 @@
         "error": "Impossible d'enregistrer cette modification. Réessayez."
       },
       "beforeAfter": {
-        "summary": "Ø {before} avant → Ø {after} depuis, soit un écart de {delta}.",
+        "summary": "Ø {before} avant, Ø {after} depuis, soit un écart de {delta}.",
         "counts": "D'après {beforeCount, plural, one {# mesure} other {# mesures}} avant et {afterCount} depuis.",
         "needBefore": "Pas encore assez de mesures avant le début. Il faut environ {weeks, plural, one {# semaine} other {# semaines}} avant et après pour comparer.",
         "needAfter": "Pas encore assez de mesures depuis le début. Il faut environ {weeks, plural, one {# semaine} other {# semaines}} avant et après pour comparer.",
@@ -3068,7 +3068,7 @@
       "emptyDescription": "Vous avez masqué toutes les sections. Ouvrez Personnaliser pour les réafficher."
     },
     "bmiEmptyTitle": "Ajoutez votre taille pour l’IMC",
-    "bmiEmptyDescription": "L’IMC nécessite votre taille. Renseignez-la dans Paramètres → Compte.",
+    "bmiEmptyDescription": "L’IMC nécessite votre taille. Renseignez-la dans Paramètres > Compte.",
     "bmiEmptyAction": "Ouvrir les paramètres du compte",
     "loadError": "Impossible de charger les analyses",
     "heroPersonalBaseline": "Basé sur vos 90 derniers jours",
@@ -5352,7 +5352,7 @@
       "steps": {
         "dashboardOverview": {
           "title": "Votre tableau de bord",
-          "body": "Le tableau de bord rassemble tous les modules d’un coup d’œil. Appuyez longuement sur une tuile pour la réorganiser ou la masquer (Réglages → Disposition du tableau de bord). Une tuile ne vaut que par les données derrière elle, et les modules suivants les remplissent."
+          "body": "Le tableau de bord rassemble tous les modules d’un coup d’œil. Appuyez longuement sur une tuile pour la réorganiser ou la masquer (Réglages > Disposition du tableau de bord). Une tuile ne vaut que par les données derrière elle, et les modules suivants les remplissent."
         },
         "quickAdd": {
           "title": "Saisi en quelques secondes",
@@ -5408,7 +5408,7 @@
         },
         "wrapUp": {
           "title": "C’est la fin de la visite",
-          "body": "Cette visite guidée ne s'affiche qu'une fois et ne se rouvrira pas d'elle-même. Tout ce qu'elle a montré reste en place, et vous pouvez activer ou désactiver des fonctionnalités à tout moment dans Réglages → Modules."
+          "body": "Cette visite guidée ne s'affiche qu'une fois et ne se rouvrira pas d'elle-même. Tout ce qu'elle a montré reste en place, et vous pouvez activer ou désactiver des fonctionnalités à tout moment dans Réglages > Modules."
         }
       }
     },
@@ -5605,12 +5605,12 @@
           "cta": "Connecter {target}",
           "checking": "Vérification de la connexion.",
           "waiting": "Pas encore connecté.",
-          "openSettings": "Ouvrir Paramètres → Intégrations",
+          "openSettings": "Ouvrir Paramètres > Intégrations",
           "noDate": "inconnue",
           "throughGoogleHealth": "Les données {source} passent désormais par {target} : l'ancienne connexion {source} a été arrêtée. Connectez {target} avec le compte Google auquel votre {source} est associé, et vos mesures arriveront par là.",
           "needsCredentials": {
             "title": "Cette instance n’a pas encore d’application {target} enregistrée.",
-            "detail": "Saisissez vos propres identifiants dans Paramètres → Intégrations, la connexion pourra alors démarrer."
+            "detail": "Saisissez vos propres identifiants dans Paramètres > Intégrations, la connexion pourra alors démarrer."
           },
           "state": {
             "pending_first_sync": {
@@ -5627,11 +5627,11 @@
             },
             "stalled": {
               "title": "{target} est connecté, mais la synchronisation ne tourne plus.",
-              "detail": "Dernière tentative {when}. Vérifiez la connexion dans Paramètres → Intégrations."
+              "detail": "Dernière tentative {when}. Vérifiez la connexion dans Paramètres > Intégrations."
             },
             "failing": {
               "title": "{target} est connecté, mais la synchronisation échoue.",
-              "detail": "Plus rien n’est arrivé depuis {when}. Vérifiez la connexion dans Paramètres → Intégrations."
+              "detail": "Plus rien n’est arrivé depuis {when}. Vérifiez la connexion dans Paramètres > Intégrations."
             },
             "reauth_required": {
               "title": "La connexion à {target} doit être renouvelée.",
@@ -5639,7 +5639,7 @@
             },
             "parked": {
               "title": "La connexion à {target} est en pause.",
-              "detail": "Vérifiez la connexion dans Paramètres → Intégrations."
+              "detail": "Vérifiez la connexion dans Paramètres > Intégrations."
             }
           }
         },
@@ -6168,7 +6168,7 @@
           "charCount": "{used} / {max, plural, one {# caractère} other {# caractères}}",
           "appleHealth": {
             "title": "Apple Santé",
-            "description": "Importez le fichier export.zip de l'app Santé sur iPhone (Profil → Exporter toutes les données de santé).",
+            "description": "Importez le fichier export.zip de l'app Santé sur iPhone (Profil > Exporter toutes les données de santé).",
             "dropLabel": "Déposez export.zip ici",
             "dropHint": "ou cliquez pour choisir un fichier",
             "fileInputLabel": "Choisir un fichier export.zip d'Apple Santé",
@@ -6929,7 +6929,7 @@
       "deviceCodeCancel": "Annuler",
       "oauthNotConfigured": "L’OAuth ChatGPT n’est pas configuré sur cette instance. Utilisez plutôt votre propre clé API ci-dessous.",
       "modelLabel": "Modèle",
-      "modelOptionDefault": "— Par défaut —",
+      "modelOptionDefault": "Par défaut",
       "modelOptionCustom": "Personnalisé…",
       "customModelLabel": "Nom du modèle personnalisé",
       "anthropicKeyLabel": "Clé API Anthropic",
@@ -6963,7 +6963,7 @@
         "saveFailed": "Échec de l’enregistrement de la chaîne",
         "resetDefaults": "Réinitialiser",
         "resetConfirmTitle": "Réinitialiser la chaîne aux valeurs par défaut ?",
-        "resetConfirmBody": "La chaîne revient à Codex → OpenAI → Anthropic → Local → OpenAI administrateur. Vos identifiants enregistrés ne sont pas affectés."
+        "resetConfirmBody": "La chaîne revient à Codex, OpenAI, Anthropic, Local, OpenAI administrateur. Vos identifiants enregistrés ne sont pas affectés."
       },
       "namedChains": {
         "title": "Chaînes par tâche",
@@ -8106,7 +8106,7 @@
         "unavailable": "Statut Apple Health indisponible"
       },
       "setupTitle": "Activer la synchronisation en direct",
-      "permissionStep": "Dans l’app HealthLog pour iOS, ouvrez Réglages → Apple Health et autorisez les catégories de santé que vous souhaitez partager.",
+      "permissionStep": "Dans l’app HealthLog pour iOS, ouvrez Réglages > Apple Health et autorisez les catégories de santé que vous souhaitez partager.",
       "backgroundStep": "Laissez l’actualisation en arrière-plan activée. L’app synchronise automatiquement les nouvelles données au premier plan et lorsque iOS lui accorde du temps en arrière-plan.",
       "importNote": "Besoin d’un ancien historique ou impossible d’utiliser l’app iOS ? L’envoi XML/ZIP Apple Health est une solution ponctuelle et n’active pas la synchronisation en direct.",
       "importAction": "Ouvrir l’import ponctuel",
@@ -8684,7 +8684,7 @@
     "tokenCreated": "Créé",
     "tokenNeverUsed": "Jamais",
     "tokensEmptyTitle": "Aucun jeton d'API pour l'instant",
-    "tokensEmptyDescription": "Les jetons sont émis lorsqu'un client natif se connecte ou via Paramètres → Compte.",
+    "tokensEmptyDescription": "Les jetons sont émis lorsqu'un client natif se connecte ou via Paramètres > Compte.",
     "loginOverviewDescription": "Événements de connexion et d’authentification de tous les comptes, filtrables et exportables en CSV.",
     "loginOverviewFilterLabel": "Filtrer les événements",
     "allAuthEvents": "Tous les événements d'authentification",
@@ -10111,7 +10111,7 @@
     "eventColumn": "Événement",
     "subtitle": "Choisissez quelles notifications vous recevez et par quel canal.",
     "loadError": "Impossible de charger les paramètres de notification.",
-    "noChannels": "Configurez d’abord un canal de notification dans Paramètres → Intégrations.",
+    "noChannels": "Configurez d’abord un canal de notification dans Paramètres > Intégrations.",
     "goToSettings": "Aller aux paramètres du canal",
     "channelDisabled": "Désactivé",
     "admin": {
@@ -13245,7 +13245,7 @@
       "dismiss": "Ignorer",
       "empty": "Impossible de lire ce document.",
       "unavailableBody": "Configurez un fournisseur d'IA pour suggérer un titre, un type et une date.",
-      "unavailableLocalOcr": "Activez « Lire les scans sur cet appareil » dans Paramètres → Modules → Analyses pour lire les images sur cet appareil.",
+      "unavailableLocalOcr": "Activez « Lire les scans sur cet appareil » dans Paramètres > Modules > Analyses pour lire les images sur cet appareil.",
       "unavailableAction": "Ouvrir les paramètres d'IA",
       "errorGeneric": "Impossible de lire le document. Réessayez.",
       "errorOcr": "Impossible de lire le texte de cette image.",
@@ -13258,7 +13258,7 @@
       "errorFileType": "Ce type de fichier ne peut pas être lu.",
       "errorNotIndexed": "Lisez d’abord le document, puis extrayez.",
       "errorOutputLimit": "Le fournisseur d’IA a atteint sa limite de sortie avant de renvoyer la moindre valeur. Essayez un modèle qui accepte des réponses plus longues.",
-      "errorLocalOcrDisabled": "Activez d'abord « Lire les scans sur cet appareil » dans Paramètres → Modules → Analyses.",
+      "errorLocalOcrDisabled": "Activez d'abord « Lire les scans sur cet appareil » dans Paramètres > Modules > Analyses.",
       "errorProvider": "Aucun fournisseur d'IA n'est configuré pour cela.",
       "errorTextImageOnly": "L'OCR local ne lit que les images, pas ce fichier.",
       "errorConsent": "La lecture de documents par IA nécessite d'abord votre consentement.",
@@ -14003,7 +14003,7 @@
     "invite": {
       "title": "Inviter quelqu'un",
       "description": "Rien n'est partagé avant son acceptation.",
-      "needsAccount": "La personne a besoin de son propre compte HealthLog sur cette instance et trouvera l'invitation dans Paramètres → Accès partagé.",
+      "needsAccount": "La personne a besoin de son propre compte HealthLog sur cette instance et trouvera l'invitation dans Paramètres > Accès partagé.",
       "identifierLabel": "Nom d'utilisateur ou e-mail",
       "identifierPlaceholder": "Le nom avec lequel elle se connecte",
       "identifierHint": "Cette personne a besoin d'un compte sur cette instance. Une invitation ne peut pas être envoyée à une adresse non inscrite.",
@@ -14167,7 +14167,7 @@
       "guardianErrorNoAccount": "Aucun compte de cette instance ne porte ce nom ou cette adresse e-mail.",
       "guardianErrorRateLimit": "Trop d'invitations dans la dernière heure. Patientez un peu et réessayez.",
       "guardianErrorFailed": "L'invitation n'a pas pu être envoyée.",
-      "errorMfaRequired": "Cela demande un deuxième facteur ou une clé d'accès, et votre compte n'a encore ni l'un ni l'autre. Configurez-en un dans Réglages → Sécurité, puis réessayez.",
+      "errorMfaRequired": "Cela demande un deuxième facteur ou une clé d'accès, et votre compte n'a encore ni l'un ni l'autre. Configurez-en un dans Réglages > Sécurité, puis réessayez.",
       "rosterLoadError": "Impossible de charger qui s'occupe de ce dossier.",
       "errorRateLimit": "Trop de profils créés dans la dernière heure. Patientez un peu et réessayez.",
       "handover": {

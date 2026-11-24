@@ -118,8 +118,8 @@ in the account-settings backup; keys never do.
 ## OpenAI setup
 
 1. Sign in at <https://platform.openai.com/api-keys>.
-2. **Create new secret key.** Scope: "Restricted → Model capabilities
-   → Write" is sufficient for HealthLog's use of the Responses /
+2. **Create new secret key.** Scope: "Restricted > Model capabilities >
+   Write" is sufficient for HealthLog's use of the Responses /
    Chat Completions APIs.
 3. Copy the `sk-…` key.
 4. In HealthLog, open `/settings/ai`. Set provider to **OpenAI**,
@@ -425,7 +425,7 @@ subscription-based AI account for the whole instance — an
 operator-shared subscription provider that users without any
 personal AI setup can opt into.
 
-- **Admin side.** Under **Admin → AI** the operator runs the same
+- **Admin side.** Under **Admin > AI** the operator runs the same
   device-code OAuth flow as the per-user connection
   (`POST /api/admin/central-codex/device-start` +
   `device-poll`). The tokens land AES-256-GCM-encrypted in the

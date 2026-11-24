@@ -41,7 +41,7 @@ under `v1` (the synthetic id assigned to the existing `ENCRYPTION_KEY`).
    Restart the app. New writes are now encrypted under `v2`; existing
    `v1`-keyed and legacy bare rows still decrypt because the `v1` entry is
    retained.
-3. **Re-encrypt the stored data under the new key.** Open **Admin →
+3. **Re-encrypt the stored data under the new key.** Open **Admin >
    Encryption** and press **Rotate now**. The button needs an admin account
    with a second factor or a passkey, confirmed recently; it queues one background run
    (`POST /api/admin/encryption/rotate`) on the app's own worker, so it
@@ -97,7 +97,7 @@ under `v1` (the synthetic id assigned to the existing `ENCRYPTION_KEY`).
 
 4. **Confirm nothing is left on the old key, THEN drop it.** This is the step
    that destroys data if it is taken on a bad signal, so check the corpus
-   rather than the absence of complaints. Open **Admin → Encryption** and
+   rather than the absence of complaints. Open **Admin > Encryption** and
    confirm the status view reports zero rows outside the active key, or
    re-run the script: a clean second pass reports `rotated=0`, `errors=0` and
    a full `Columns walked` line. Both read the same registry the rotation
@@ -134,7 +134,7 @@ under `v1` (the synthetic id assigned to the existing `ENCRYPTION_KEY`).
 > needs the old key for its notes, documents and coach history, and so does
 > every copy in the off-host bucket and every backup file you downloaded.
 >
-> So before step 4, also check **Admin → Encryption → Keys the backups still
+> So before step 4, also check **Admin > Encryption > Keys the backups still
 > need**. It lists, per key id, the stored copies that need it with the oldest
 > date, and when the last off-host copy needing it expires under the bucket's
 > lifecycle rule. The database dumps are listed too: a dump is restored only
@@ -159,7 +159,7 @@ under `v1` (the synthetic id assigned to the existing `ENCRYPTION_KEY`).
 > that key back into `ENCRYPTION_KEYS` and re-run the rotation on this release
 > before removing it again.
 
-## Adding a third key (v2 → v3)
+## Adding a third key (v2 > v3)
 
 Same procedure, just shift the labels — keep `v2` in the map until a full
 run (every registered column walked) reports zero `v2.`-prefixed rows
@@ -168,7 +168,7 @@ remaining.
 ```
 ENCRYPTION_KEYS='{"v2":"<old>","v3":"<new>"}'
 ENCRYPTION_ACTIVE_KEY_ID="v3"
-# restart, then Admin → Encryption → Rotate now
+# restart, then Admin > Encryption > Rotate now
 # (or: pnpm dlx tsx scripts/rotate-encryption-key.ts v3 from a checkout)
 ENCRYPTION_KEYS='{"v3":"<new>"}'
 ```

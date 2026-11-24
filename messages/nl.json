@@ -362,7 +362,7 @@
     "bmiRow": "BMI: {bmi} kg/m², classificatie: {class} (WHO)",
     "complianceTitle": "Therapietrouw medicatie",
     "glp1Title": "GLP-1-therapie",
-    "glp1WeightSummary": "Gewicht in de rapportageperiode: {start} kg → {end} kg ({delta} kg)",
+    "glp1WeightSummary": "Gewicht in de rapportageperiode: van {start} kg naar {end} kg ({delta} kg)",
     "glp1CurrentDose": "Huidige dosis: {value} {unit} (sinds {since})",
     "glp1Compliance": "Therapietrouw: {taken} / {total} ({rate}%)",
     "glp1SideEffectsTitle": "Vastgelegde bijwerkingen",
@@ -2403,7 +2403,7 @@
         "timesTitle": "Innametijden",
         "timesNote": "Pas per dosis het tijdstip en het venster voor op tijd aan. De frequentie (dagelijks, wekelijks…) bewerk je in de editor onder Geavanceerd.",
         "scheduleLabel": "Schema {index}",
-        "fullEditNote": "Frequentie, behandelklasse en kuurperiode bewerk je in de editor onder Geavanceerd → Levenscyclus.",
+        "fullEditNote": "Frequentie, behandelklasse en kuurperiode bewerk je in de editor onder Geavanceerd > Levenscyclus.",
         "graceEcho": "Herinneringsduur: {minutes, plural, one {# minuut} other {# minuten}}",
         "reminderTitle": "Herinnering",
         "manageChannels": "Meldingskanalen beheren",
@@ -2517,7 +2517,7 @@
         "error": "Die wijziging kan niet worden opgeslagen. Probeer het opnieuw."
       },
       "beforeAfter": {
-        "summary": "Ø {before} ervoor → Ø {after} sindsdien, een verandering van {delta}.",
+        "summary": "Ø {before} ervoor, Ø {after} sindsdien, een verandering van {delta}.",
         "counts": "Op basis van {beforeCount, plural, one {# meting} other {# metingen}} ervoor en {afterCount} sindsdien.",
         "needBefore": "Nog niet genoeg metingen van vóór de start. Om te vergelijken zijn ongeveer {weeks, plural, one {# week} other {# weken}} ervoor en erna nodig.",
         "needAfter": "Nog niet genoeg metingen sinds de start. Om te vergelijken zijn ongeveer {weeks, plural, one {# week} other {# weken}} ervoor en erna nodig.",
@@ -3068,7 +3068,7 @@
       "emptyDescription": "Je hebt alle secties verborgen. Open Aanpassen om kaarten terug te halen."
     },
     "bmiEmptyTitle": "Stel je lengte in om je BMI te zien",
-    "bmiEmptyDescription": "Voor de BMI is je lengte nodig. Voeg die toe onder Instellingen → Account.",
+    "bmiEmptyDescription": "Voor de BMI is je lengte nodig. Voeg die toe onder Instellingen > Account.",
     "bmiEmptyAction": "Accountinstellingen openen",
     "loadError": "Inzichten kunnen niet worden geladen",
     "heroPersonalBaseline": "Op basis van je afgelopen 90 dagen",
@@ -5352,7 +5352,7 @@
       "steps": {
         "dashboardOverview": {
           "title": "Je dashboard",
-          "body": "Het dashboard brengt alle modules in één oogopslag samen. Houd een tegel lang ingedrukt om hem te verplaatsen of te verbergen (Instellingen → Dashboardindeling). Elke tegel is maar zo veelzeggend als de gegevens erachter, en de modules die nu volgen vullen ze."
+          "body": "Het dashboard brengt alle modules in één oogopslag samen. Houd een tegel lang ingedrukt om hem te verplaatsen of te verbergen (Instellingen > Dashboardindeling). Elke tegel is maar zo veelzeggend als de gegevens erachter, en de modules die nu volgen vullen ze."
         },
         "quickAdd": {
           "title": "In enkele seconden vastgelegd",
@@ -5408,7 +5408,7 @@
         },
         "wrapUp": {
           "title": "Dat was de rondleiding",
-          "body": "Deze rondleiding wordt één keer getoond en gaat niet vanzelf opnieuw open. Alles wat erin aan bod kwam, blijft staan, en je kunt functies altijd aan- of uitzetten onder Instellingen → Modules."
+          "body": "Deze rondleiding wordt één keer getoond en gaat niet vanzelf opnieuw open. Alles wat erin aan bod kwam, blijft staan, en je kunt functies altijd aan- of uitzetten onder Instellingen > Modules."
         }
       }
     },
@@ -5605,12 +5605,12 @@
           "cta": "{target} koppelen",
           "checking": "Koppeling wordt gecontroleerd.",
           "waiting": "Nog niet gekoppeld.",
-          "openSettings": "Instellingen → Koppelingen openen",
+          "openSettings": "Instellingen > Koppelingen openen",
           "noDate": "onbekend",
           "throughGoogleHealth": "{source}-gegevens komen nu binnen via {target}: de klassieke {source}-koppeling is stopgezet. Koppel {target} met het Google-account waarmee je {source} is aangemeld, dan komen je metingen daarvandaan.",
           "needsCredentials": {
             "title": "Deze instantie heeft nog geen {target}-app geregistreerd.",
-            "detail": "Voer je eigen inloggegevens in onder Instellingen → Koppelingen, daarna kan de koppeling starten."
+            "detail": "Voer je eigen inloggegevens in onder Instellingen > Koppelingen, daarna kan de koppeling starten."
           },
           "state": {
             "pending_first_sync": {
@@ -5627,11 +5627,11 @@
             },
             "stalled": {
               "title": "{target} is gekoppeld, maar synchroniseert niet meer.",
-              "detail": "Laatste poging {when}. Controleer de koppeling onder Instellingen → Koppelingen."
+              "detail": "Laatste poging {when}. Controleer de koppeling onder Instellingen > Koppelingen."
             },
             "failing": {
               "title": "{target} is gekoppeld, maar de synchronisatie mislukt steeds.",
-              "detail": "Sinds {when} is er niets binnengekomen. Controleer de koppeling onder Instellingen → Koppelingen."
+              "detail": "Sinds {when} is er niets binnengekomen. Controleer de koppeling onder Instellingen > Koppelingen."
             },
             "reauth_required": {
               "title": "De koppeling met {target} moet worden vernieuwd.",
@@ -5639,7 +5639,7 @@
             },
             "parked": {
               "title": "De koppeling met {target} is gepauzeerd.",
-              "detail": "Controleer de koppeling onder Instellingen → Koppelingen."
+              "detail": "Controleer de koppeling onder Instellingen > Koppelingen."
             }
           }
         },
@@ -6168,7 +6168,7 @@
           "charCount": "{used} / {max, plural, one {# teken} other {# tekens}}",
           "appleHealth": {
             "title": "Apple Health",
-            "description": "Upload het bestand export.zip uit de Gezondheid-app op je iPhone (Profiel → Exporteer alle gezondheidsgegevens).",
+            "description": "Upload het bestand export.zip uit de Gezondheid-app op je iPhone (Profiel > Exporteer alle gezondheidsgegevens).",
             "dropLabel": "Sleep export.zip hierheen",
             "dropHint": "of klik om een bestand te kiezen",
             "fileInputLabel": "Kies een export.zip-bestand van Apple Health",
@@ -6929,7 +6929,7 @@
       "deviceCodeCancel": "Annuleren",
       "oauthNotConfigured": "ChatGPT OAuth is niet geconfigureerd op deze instantie. Gebruik in plaats daarvan hieronder je eigen API-sleutel.",
       "modelLabel": "Model",
-      "modelOptionDefault": "— Standaard —",
+      "modelOptionDefault": "Standaard",
       "modelOptionCustom": "Aangepast…",
       "customModelLabel": "Naam van aangepast model",
       "anthropicKeyLabel": "Anthropic-API-sleutel",
@@ -6963,7 +6963,7 @@
         "saveFailed": "Opslaan van de keten is mislukt",
         "resetDefaults": "Standaardwaarden herstellen",
         "resetConfirmTitle": "Keten terugzetten naar standaard?",
-        "resetConfirmBody": "De keten wordt teruggezet naar Codex → OpenAI → Anthropic → Lokaal → OpenAI van beheerder. Je opgeslagen inloggegevens blijven onaangeroerd."
+        "resetConfirmBody": "De keten wordt teruggezet naar Codex, OpenAI, Anthropic, Lokaal, OpenAI van beheerder. Je opgeslagen inloggegevens blijven onaangeroerd."
       },
       "namedChains": {
         "title": "Ketens per taak",
@@ -8106,7 +8106,7 @@
         "unavailable": "Status van Apple Health niet beschikbaar"
       },
       "setupTitle": "Live synchronisatie inschakelen",
-      "permissionStep": "Open in de HealthLog-app voor iOS Instellingen → Apple Health en sta de gezondheidscategorieën toe die je wilt delen.",
+      "permissionStep": "Open in de HealthLog-app voor iOS Instellingen > Apple Health en sta de gezondheidscategorieën toe die je wilt delen.",
       "backgroundStep": "Laat Ververs op achtergrond ingeschakeld. De app synchroniseert nieuwe gegevens automatisch op de voorgrond en wanneer iOS achtergrondtijd toekent.",
       "importNote": "Heb je oudere geschiedenis nodig of kun je de iOS-app niet gebruiken? Het uploaden van een Apple Health-XML/ZIP-bestand is een eenmalig alternatief en schakelt geen live synchronisatie in.",
       "importAction": "Eenmalige import openen",
@@ -8684,7 +8684,7 @@
     "tokenCreated": "Aangemaakt",
     "tokenNeverUsed": "Nooit",
     "tokensEmptyTitle": "Nog geen API-tokens",
-    "tokensEmptyDescription": "Tokens worden uitgegeven wanneer een native client inlogt of via Instellingen → Account.",
+    "tokensEmptyDescription": "Tokens worden uitgegeven wanneer een native client inlogt of via Instellingen > Account.",
     "loginOverviewDescription": "Inlog- en authenticatiegebeurtenissen van alle accounts, te filteren en te exporteren als CSV.",
     "loginOverviewFilterLabel": "Gebeurtenissen filteren",
     "allAuthEvents": "Alle authenticatiegebeurtenissen",
@@ -10111,7 +10111,7 @@
     "eventColumn": "Gebeurtenis",
     "subtitle": "Kies welke meldingen je via welk kanaal wilt ontvangen.",
     "loadError": "Je meldingsvoorkeuren konden niet worden geladen.",
-    "noChannels": "Stel eerst een meldingskanaal in via Instellingen → Integraties.",
+    "noChannels": "Stel eerst een meldingskanaal in via Instellingen > Integraties.",
     "goToSettings": "Naar kanaalinstellingen",
     "channelDisabled": "Uitgeschakeld",
     "admin": {
@@ -13245,7 +13245,7 @@
       "dismiss": "Negeren",
       "empty": "Er kon niets uit dit document worden gelezen.",
       "unavailableBody": "Stel een AI-provider in om een titel, soort en datum voor te stellen.",
-      "unavailableLocalOcr": "Zet “Scans op dit apparaat lezen” aan onder Instellingen → Modules → Labwaarden om afbeeldingen op dit apparaat te lezen.",
+      "unavailableLocalOcr": "Zet “Scans op dit apparaat lezen” aan onder Instellingen > Modules > Labwaarden om afbeeldingen op dit apparaat te lezen.",
       "unavailableAction": "AI-instellingen openen",
       "errorGeneric": "Het document kon niet worden gelezen. Probeer het opnieuw.",
       "errorOcr": "Er kon geen tekst uit deze afbeelding worden gelezen.",
@@ -13258,7 +13258,7 @@
       "errorFileType": "Dit bestandstype kan niet worden gelezen.",
       "errorNotIndexed": "Laat het document eerst lezen en extraheer daarna.",
       "errorOutputLimit": "De AI-provider bereikte zijn uitvoerlimiet voordat hij één waarde teruggaf. Probeer een model dat langere antwoorden toestaat.",
-      "errorLocalOcrDisabled": "Zet eerst “Scans op dit apparaat lezen” aan onder Instellingen → Modules → Labwaarden.",
+      "errorLocalOcrDisabled": "Zet eerst “Scans op dit apparaat lezen” aan onder Instellingen > Modules > Labwaarden.",
       "errorProvider": "Hiervoor is geen AI-provider ingesteld.",
       "errorTextImageOnly": "Lokale OCR leest alleen afbeeldingen, niet dit bestand.",
       "errorConsent": "Voor het lezen van documenten met AI is eerst je toestemming nodig.",
@@ -14003,7 +14003,7 @@
     "invite": {
       "title": "Iemand uitnodigen",
       "description": "Er wordt niets gedeeld totdat de ander accepteert.",
-      "needsAccount": "De persoon heeft een eigen HealthLog-account op deze instantie nodig en vindt de uitnodiging onder Instellingen → Gedeelde toegang.",
+      "needsAccount": "De persoon heeft een eigen HealthLog-account op deze instantie nodig en vindt de uitnodiging onder Instellingen > Gedeelde toegang.",
       "identifierLabel": "Gebruikersnaam of e-mailadres",
       "identifierPlaceholder": "De naam waarmee de ander inlogt",
       "identifierHint": "De ander heeft een account op deze instantie nodig. Uitnodigingen kunnen niet worden verstuurd naar een e-mailadres dat niet geregistreerd is.",
@@ -14167,7 +14167,7 @@
       "guardianErrorNoAccount": "Er is geen account op deze instantie met die naam of dat e-mailadres.",
       "guardianErrorRateLimit": "Te veel uitnodigingen in het afgelopen uur. Wacht even en probeer het opnieuw.",
       "guardianErrorFailed": "De uitnodiging kon niet worden verstuurd.",
-      "errorMfaRequired": "Hiervoor is een tweede factor of passkey nodig, en je account heeft nog geen van beide. Stel er een in onder Instellingen → Beveiliging en probeer het daarna opnieuw.",
+      "errorMfaRequired": "Hiervoor is een tweede factor of passkey nodig, en je account heeft nog geen van beide. Stel er een in onder Instellingen > Beveiliging en probeer het daarna opnieuw.",
       "rosterLoadError": "Kan niet laden wie voor dit dossier zorgt.",
       "errorRateLimit": "Te veel profielen aangemaakt in het afgelopen uur. Wacht even en probeer het opnieuw.",
       "handover": {

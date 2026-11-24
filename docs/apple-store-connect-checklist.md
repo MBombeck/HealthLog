@@ -20,7 +20,7 @@ Plus pre-submit final checks.
 
 ## Section 1 — Regulated-Medical-Device declaration
 
-**Where**: App Store Connect → App Information → "Health & Fitness" → "Medical device" toggle
+**Where**: App Store Connect > App Information > "Health & Fitness" > "Medical device" toggle
 
 **Decision**: HealthLog is **NOT a medical device** under EU MDR 2017/745 / FDA 21 CFR 880 / Apple's interpretation.
 
@@ -38,7 +38,7 @@ Plus pre-submit final checks.
 
 ## Section 2 — Privacy Nutrition Labels
 
-**Where**: App Store Connect → App Privacy → "Edit" the privacy choices.
+**Where**: App Store Connect > App Privacy > "Edit" the privacy choices.
 
 **Cross-reference**: every data category here MUST match what the iOS Privacy Manifest (in the iOS repo) declares. The iOS client's v0.3.0 release extended the manifest to: Email + OtherUserContent + SensitiveInfo + DeviceID + UserID + AccountManagement-purpose.
 
@@ -155,7 +155,7 @@ Run through this list:
 
 ## Section 5 — Common First-Submission Rejection Reasons (Apple Health-App-Specific)
 
-- Guideline 1.4.1: "Medical claims" — wording in app or screenshots implies diagnosis/treatment → fix: tone down wording, lean on the MDR-boundary disclaimer
+- Guideline 1.4.1: "Medical claims" — wording in app or screenshots implies diagnosis/treatment > fix: tone down wording, lean on the MDR-boundary disclaimer
 - Guideline 5.1.1(v): "Account Deletion missing" — the iOS client added this in v0.3.0
 - Guideline 5.1.2(i): "Third-Party AI consent" — DEFERRED to v0.3.1 per the iOS release notes; resubmission may flag
 - Guideline 5.1.2: "Privacy Manifest mismatch" — see §2; the iOS release process needs to ensure the manifest matches

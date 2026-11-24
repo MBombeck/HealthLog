@@ -41,7 +41,7 @@ scroll.
 
 ## 1. Apple Health `export.zip`
 
-On the iPhone: **Health app → profile picture → Export All Health
+On the iPhone: **Health app > profile picture > Export All Health
 Data**, then move the resulting `export.zip` somewhere you can reach
 from a browser. In HealthLog open **Settings > Export & import** and drop
 the archive onto the Apple Health control (or click to pick it). The
@@ -74,7 +74,7 @@ Existing rows (matched on the type + timestamp uniqueness, or on
 `externalId` for mood entries) are skipped and counted under `skipped` in
 the response.
 
-The app's own files go straight in: the JSON export (**Export → JSON**,
+The app's own files go straight in: the JSON export (**Export > JSON**,
 read inside its `data` envelope) and the portable full backup. Every field
 either file writes for a reading or a mood entry comes back, apart from
 the row ids, the source (every imported row is stored as `IMPORT`) and the
@@ -306,7 +306,7 @@ matching is case-insensitive.
 | ---------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `type`           | yes      | A `MeasurementType` from the table above.                                                                                                                                                        |
 | `value`          | yes      | A number, in the row's `unit`.                                                                                                                                                                   |
-| `unit`           | yes      | The canonical unit, or a recognised alias: `mmol/L` → `mg/dL`, `lb` → `kg`, `in` → `cm`, `°F` → `°C`.                                                                                            |
+| `unit`           | yes      | The canonical unit, or a recognised alias: `mmol/L` > `mg/dL`, `lb` > `kg`, `in` > `cm`, `°F` > `°C`.                                                                                            |
 | `measuredAt`     | yes      | ISO-8601 **with an explicit offset** (`Z` or `±HH:MM`, and `±HHMM` is accepted). No offset, no import.                                                                                           |
 | `glucoseContext` | no       | Only for `BLOOD_GLUCOSE`; blank means no context. See [Glucose context](#glucose-context).                                                                                                       |
 | `notes`          | no       | Free text, up to 200 characters.                                                                                                                                                                 |
@@ -424,8 +424,8 @@ for many. The steps are the same either way:
    the table above. A "Weight (kg)" column becomes `type: "WEIGHT"`,
    `unit: "kg"`.
 3. **Normalise the unit.** Convert each value into the canonical unit
-   before writing it — e.g. pounds → kg, hours of sleep → minutes,
-   `mmol/L` glucose → `mg/dL`. The importer rejects values outside the
+   before writing it — e.g. pounds > kg, hours of sleep > minutes,
+   `mmol/L` glucose > `mg/dL`. The importer rejects values outside the
    plausible range for the type, which catches most unit mistakes.
 4. **Format the timestamp.** Turn the CSV date/time column into an
    ISO-8601 `measuredAt` (mood uses a `YYYY-MM-DD` `date`). Include the
