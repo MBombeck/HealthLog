@@ -55,7 +55,10 @@ vi.mock("@/lib/app-settings", () => ({
 }));
 vi.mock("@/lib/mcp/oauth/connections", () => ({
   createConnection: vi.fn(async () => "conn-1"),
-  rotateConnection: vi.fn(async () => ({ ok: true })),
+  rotateConnection: vi.fn(async () => ({
+    ok: true,
+    endsAt: new Date(Date.now() + 86_400_000),
+  })),
 }));
 
 import { randomUUID } from "node:crypto";
@@ -69,6 +72,9 @@ import {
 } from "@/lib/mcp/oauth/connections";
 import { signArtifact, verifyArtifact } from "@/lib/mcp/oauth/artifacts";
 import { s256Challenge } from "@/lib/mcp/oauth/pkce";
+
+/** A connection end far enough out that it caps nothing. */
+const FAR_END = new Date(Date.now() + 86_400_000);
 
 const CLIENT_ID = "https://app.example/client.json";
 const REDIRECT = "https://claude.ai/api/mcp/auth_callback";
@@ -111,7 +117,7 @@ beforeEach(() => {
   });
   vi.mocked(isApiGloballyEnabled).mockResolvedValue(true);
   vi.mocked(createConnection).mockResolvedValue("conn-1");
-  vi.mocked(rotateConnection).mockResolvedValue({ ok: true });
+  vi.mocked(rotateConnection).mockResolvedValue({ ok: true, endsAt: FAR_END });
   transaction.mockImplementation(
     async (callback: (tx: typeof transactionClient) => unknown) =>
       callback(transactionClient),
@@ -301,7 +307,7 @@ describe("refresh_token grant", () => {
     vi.mocked(rotateConnection).mockImplementationOnce(async (args) => {
       state.currentJti = args.newJti;
       state.accessRevoked = true;
-      return { ok: true };
+      return { ok: true, endsAt: FAR_END };
     });
     vi.mocked(issueApiToken).mockRejectedValueOnce(
       new Error("injected successor insertion failure"),

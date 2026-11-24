@@ -60,7 +60,7 @@ const warned = new Set<string>();
 /** Whole days from the environment, or the default when the value is unusable. */
 export function readDays(
   setting: DaysSetting,
-  env: NodeJS.ProcessEnv = process.env,
+  env: Record<string, string | undefined> = process.env,
 ): number {
   const raw = env[setting.name]?.trim();
   if (!raw) return setting.fallback;
