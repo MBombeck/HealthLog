@@ -4,9 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 
+import { rasterScale } from "../pdf-engine.mjs";
 import {
   pageText,
+  RASTER_DPI,
   RASTER_HARD_MAX_PAGES,
+  RASTER_MAX_LONG_EDGE,
   RASTER_MAX_PAGES,
   RASTER_PAGE_TEXT_MAX,
   rasterizePdf,
@@ -83,6 +86,102 @@ function isJpeg(base64: string): boolean {
   const head = Buffer.from(base64, "base64").subarray(0, 2).toString("hex");
   return head === "ffd8";
 }
+
+/** Width and height from a baseline or progressive JPEG's frame header. */
+function jpegSize(base64: string): { width: number; height: number } {
+  const bytes = Buffer.from(base64, "base64");
+  let at = 2;
+  while (at < bytes.length) {
+    const marker = bytes[at + 1]!;
+    const length = bytes.readUInt16BE(at + 2);
+    if (marker === 0xc0 || marker === 0xc1 || marker === 0xc2) {
+      return {
+        height: bytes.readUInt16BE(at + 5),
+        width: bytes.readUInt16BE(at + 7),
+      };
+    }
+    at += 2 + length;
+  }
+  throw new Error("no JPEG frame header");
+}
+
+/** A page with some ink, on the given media box. */
+function sizedPdf(mediaBox: string): Buffer {
+  return buildPdfFromContents(
+    [
+      `0 0 1 rg 40 40 120 120 re f 0 g BT /F1 9 Tf 40 30 Td (12,34 mmol/l) Tj ET`,
+    ],
+    mediaBox,
+  );
+}
+
+describe("page resolution", () => {
+  // The provider bound the edge cap answers to: OpenAI fits every image into
+  // 2048 x 2048 before it reads it.
+  const SMALLEST_PROVIDER_FIT = 2048;
+
+  it("keeps the edge cap under every vision wire's hard fit", () => {
+    expect(RASTER_MAX_LONG_EDGE).toBeLessThanOrEqual(SMALLEST_PROVIDER_FIT);
+    expect(RASTER_DPI).toBeGreaterThanOrEqual(150);
+  });
+
+  it("renders an A4 page to the edge cap, well above 72 dpi", async () => {
+    const result = await rasterizePdf(sizedPdf("0 0 595.28 841.89"), 1);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { width, height } = jpegSize(result.images[0]!.dataBase64);
+    expect(height).toBe(RASTER_MAX_LONG_EDGE);
+    expect(width).toBe(Math.round((595.28 * RASTER_MAX_LONG_EDGE) / 841.89));
+    // 842 px was the old height: scale 1, 72 dpi.
+    expect((height / 841.89) * 72).toBeGreaterThan(170);
+  });
+
+  it("renders a US Letter page to the edge cap", async () => {
+    const result = await rasterizePdf(sizedPdf("0 0 612 792"), 1);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { width, height } = jpegSize(result.images[0]!.dataBase64);
+    expect(height).toBe(RASTER_MAX_LONG_EDGE);
+    expect(width).toBe(Math.round((612 * RASTER_MAX_LONG_EDGE) / 792));
+  });
+
+  it("renders a landscape page with the cap on its width", async () => {
+    const result = await rasterizePdf(sizedPdf("0 0 841.89 595.28"), 1);
+    expect(result.ok && jpegSize(result.images[0]!.dataBase64).width).toBe(
+      RASTER_MAX_LONG_EDGE,
+    );
+  });
+
+  it("gives a small page the full dpi when it stays under the cap", async () => {
+    // A label of 3 x 4 inches: 600 x 800 px at 200 dpi.
+    const result = await rasterizePdf(sizedPdf("0 0 216 288"), 1);
+    expect(result.ok && jpegSize(result.images[0]!.dataBase64)).toEqual({
+      width: (216 / 72) * RASTER_DPI,
+      height: (288 / 72) * RASTER_DPI,
+    });
+  });
+
+  it("never passes the cap, whatever the page size", async () => {
+    // An A0 poster and an absurd strip.
+    for (const box of ["0 0 2383.94 3370.39", "0 0 14400 200"]) {
+      const result = await rasterizePdf(sizedPdf(box), 1);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const { width, height } = jpegSize(result.images[0]!.dataBase64);
+      expect(Math.max(width, height)).toBeLessThanOrEqual(RASTER_MAX_LONG_EDGE);
+    }
+  });
+
+  it("fits the scale to the cap exactly and otherwise uses the dpi", () => {
+    const opts = { dpi: RASTER_DPI, maxLongEdge: RASTER_MAX_LONG_EDGE };
+    expect(rasterScale(595.28, 841.89, opts) * 841.89).toBeCloseTo(
+      RASTER_MAX_LONG_EDGE,
+      6,
+    );
+    expect(rasterScale(216, 288, opts)).toBe(RASTER_DPI / 72);
+    expect(rasterScale(0, 0, opts)).toBe(1);
+  });
+});
 
 describe("rasterizePdf", () => {
   it("renders a text-layer PDF's pages to JPEG images", async () => {
