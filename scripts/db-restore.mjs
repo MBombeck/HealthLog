@@ -76,6 +76,10 @@ import {
   listBucketDumps,
   removeStaleScratch,
 } from "../src/lib/database-backup/dump-core.mjs";
+import {
+  SecretFileError,
+  applySecretFiles,
+} from "../src/lib/boot/secret-files.mjs";
 import { shippedMigrations } from "./pending-migrations.mjs";
 
 const out = (line = "") => console.log(line);
@@ -508,6 +512,16 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  // The `db-restore` service starts this script directly, not through the
+  // entrypoint, so `<NAME>_FILE` secrets are resolved here.
+  try {
+    applySecretFiles();
+  } catch (error) {
+    if (!(error instanceof SecretFileError)) throw error;
+    for (const problem of error.problems)
+      console.error(`db-restore: ${problem}`);
+    process.exit(1);
+  }
   // Ctrl-C or `docker stop` ends the process before its own `finally`: take
   // the decrypted copy with it.
   for (const [signal, code] of [

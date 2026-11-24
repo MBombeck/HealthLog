@@ -35,6 +35,12 @@
 # host allowlist. One shared block makes that drift structurally
 # impossible. HEALTHLOG_PROCESS_TYPE is the one value that's meant to
 # differ per service and is overridden after the merge.
+#
+# Every secret below has a `<NAME>_FILE` twin: set it to a path inside the
+# container (a Docker secret under /run/secrets, a Vault agent file) and the
+# value is read from that file at start, before anything else. Set one of the
+# two, not both. The example at the end of this file and
+# docs/self-hosting/secrets.md show how.
 x-healthlog-env: &healthlog_env
   # connection_limit is set explicitly: Prisma's own default is
   # cpu_count*2+1, which starves the combined web+worker process
@@ -44,6 +50,7 @@ x-healthlog-env: &healthlog_env
   # migrations, and backups). pool_timeout is the seconds a query waits for
   # a free connection before erroring.
   DATABASE_URL: "postgresql://healthlog:${POSTGRES_PASSWORD}@db:5432/healthlog?schema=public&connection_limit=${DB_CONNECTION_LIMIT:-20}&pool_timeout=${DB_POOL_TIMEOUT:-20}"
+  DATABASE_URL_FILE: "${DATABASE_URL_FILE:-}"
   NODE_ENV: production
   # Encryption at rest (AES-256-GCM). Generate each secret with
   # `openssl rand -hex 32` (a 64-char hex string = 32 bytes). ENCRYPTION_KEY
@@ -53,9 +60,12 @@ x-healthlog-env: &healthlog_env
   # values stable and backed up: lose them and the encrypted columns are
   # unrecoverable.
   ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
+  ENCRYPTION_KEY_FILE: "${ENCRYPTION_KEY_FILE:-}"
   ENCRYPTION_KEYS: "${ENCRYPTION_KEYS:-}"
+  ENCRYPTION_KEYS_FILE: "${ENCRYPTION_KEYS_FILE:-}"
   ENCRYPTION_ACTIVE_KEY_ID: "${ENCRYPTION_ACTIVE_KEY_ID:-}"
   API_TOKEN_HMAC_KEY: "${API_TOKEN_HMAC_KEY}"
+  API_TOKEN_HMAC_KEY_FILE: "${API_TOKEN_HMAC_KEY_FILE:-}"
   NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
   APP_URL: "${APP_URL:-http://localhost:3000}"
   # Session-cookie Secure-flag opt-out. SET THIS TO false FOR LAN / plain-HTTP
@@ -80,6 +90,7 @@ x-healthlog-env: &healthlog_env
   # API_TOKEN_HMAC_KEY to the log while the instance has no account. Set it
   # (at least 32 characters) to choose your own; it opens nothing afterwards.
   SETUP_TOKEN: "${SETUP_TOKEN:-}"
+  SETUP_TOKEN_FILE: "${SETUP_TOKEN_FILE:-}"
   NATIVE_CANVAS: "${NATIVE_CANVAS:-}"
   # Read-only showcase instance. DEMO_MODE=true makes the proxy refuse every
   # mutation except login and paints the demo banner. Leave it unset on a
@@ -101,6 +112,7 @@ x-healthlog-env: &healthlog_env
   # manages database roles). See docs/self-hosting/database-role.md.
   DB_APP_ROLE: "${DB_APP_ROLE:-}"
   WITHINGS_WEBHOOK_SECRET: "${WITHINGS_WEBHOOK_SECRET:-}"
+  WITHINGS_WEBHOOK_SECRET_FILE: "${WITHINGS_WEBHOOK_SECRET_FILE:-}"
   # Overrides the derived `${NEXT_PUBLIC_APP_URL}/api/withings/callback`;
   # set it when the URL registered with Withings differs from the app's own
   # public URL. The WHOOP / Polar / Oura / Strava equivalents are below.
@@ -109,6 +121,7 @@ x-healthlog-env: &healthlog_env
   # same value you register with BotFather; without it the settings page
   # cannot install the webhook and inbound updates are refused.
   TELEGRAM_WEBHOOK_SECRET: "${TELEGRAM_WEBHOOK_SECRET:-}"
+  TELEGRAM_WEBHOOK_SECRET_FILE: "${TELEGRAM_WEBHOOK_SECRET_FILE:-}"
   # v1.18.11 (W3) — client-IP resolution + geo lookup. Behind Cloudflare
   # the real visitor IP is in `cf-connecting-ip`; set
   # TRUST_CF_CONNECTING_IP=1 ONLY when the origin accepts connections from
@@ -166,6 +179,7 @@ x-healthlog-env: &healthlog_env
   # value in .env reaches the container (the `environment:` block is a
   # whitelist). See docs/self-hosting/geolite2.md.
   MAXMIND_LICENSE_KEY: "${MAXMIND_LICENSE_KEY:-}"
+  MAXMIND_LICENSE_KEY_FILE: "${MAXMIND_LICENSE_KEY_FILE:-}"
   # all = bundle web + worker in this container (default, single-host)
   # web = serve HTTP only; pair with a separate app-worker service
   HEALTHLOG_PROCESS_TYPE: "${HEALTHLOG_PROCESS_TYPE:-all}"
@@ -192,11 +206,15 @@ x-healthlog-env: &healthlog_env
   DB_BACKUP_KEEP: "${DB_BACKUP_KEEP:-}"
   DB_BACKUP_BEFORE_MIGRATE: "${DB_BACKUP_BEFORE_MIGRATE:-}"
   BACKUP_ENCRYPTION_KEY: "${BACKUP_ENCRYPTION_KEY:-}"
+  BACKUP_ENCRYPTION_KEY_FILE: "${BACKUP_ENCRYPTION_KEY_FILE:-}"
   BACKUP_ENCRYPTION_PREVIOUS_KEYS: "${BACKUP_ENCRYPTION_PREVIOUS_KEYS:-}"
+  BACKUP_ENCRYPTION_PREVIOUS_KEYS_FILE: "${BACKUP_ENCRYPTION_PREVIOUS_KEYS_FILE:-}"
   BACKUP_S3_ENDPOINT: "${BACKUP_S3_ENDPOINT:-}"
   BACKUP_S3_BUCKET: "${BACKUP_S3_BUCKET:-}"
   BACKUP_S3_ACCESS_KEY: "${BACKUP_S3_ACCESS_KEY:-}"
+  BACKUP_S3_ACCESS_KEY_FILE: "${BACKUP_S3_ACCESS_KEY_FILE:-}"
   BACKUP_S3_SECRET_KEY: "${BACKUP_S3_SECRET_KEY:-}"
+  BACKUP_S3_SECRET_KEY_FILE: "${BACKUP_S3_SECRET_KEY_FILE:-}"
   BACKUP_S3_REGION: "${BACKUP_S3_REGION:-auto}"
   BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-30}"
   # Largest stored backup of one account, in MB of encrypted copy (default
@@ -243,6 +261,7 @@ x-healthlog-env: &healthlog_env
   # differs. Listed here so an operator override in .env reaches the
   # container (the `environment:` block is a whitelist).
   WHOOP_WEBHOOK_SECRET: "${WHOOP_WEBHOOK_SECRET:-}"
+  WHOOP_WEBHOOK_SECRET_FILE: "${WHOOP_WEBHOOK_SECRET_FILE:-}"
   WHOOP_REDIRECT_URI: "${WHOOP_REDIRECT_URI:-}"
   # v1.17.0 (F4) — Polar AccessLink + Oura Cloud OAuth (shared app from
   # env). Both pairs together enable each connect button; an unset pair
@@ -252,9 +271,11 @@ x-healthlog-env: &healthlog_env
   # block is a whitelist).
   POLAR_CLIENT_ID: "${POLAR_CLIENT_ID:-}"
   POLAR_CLIENT_SECRET: "${POLAR_CLIENT_SECRET:-}"
+  POLAR_CLIENT_SECRET_FILE: "${POLAR_CLIENT_SECRET_FILE:-}"
   POLAR_REDIRECT_URI: "${POLAR_REDIRECT_URI:-}"
   OURA_CLIENT_ID: "${OURA_CLIENT_ID:-}"
   OURA_CLIENT_SECRET: "${OURA_CLIENT_SECRET:-}"
+  OURA_CLIENT_SECRET_FILE: "${OURA_CLIENT_SECRET_FILE:-}"
   OURA_REDIRECT_URI: "${OURA_REDIRECT_URI:-}"
   # v1.28.x — Strava OAuth (shared app from env; per-user BYO keys override).
   # Both together enable the connect button; an unset pair leaves it
@@ -264,6 +285,7 @@ x-healthlog-env: &healthlog_env
   # whitelist).
   STRAVA_CLIENT_ID: "${STRAVA_CLIENT_ID:-}"
   STRAVA_CLIENT_SECRET: "${STRAVA_CLIENT_SECRET:-}"
+  STRAVA_CLIENT_SECRET_FILE: "${STRAVA_CLIENT_SECRET_FILE:-}"
   STRAVA_REDIRECT_URI: "${STRAVA_REDIRECT_URI:-}"
   # Google Health is a per-user BYO-key integration, so there is no client
   # id/secret env for it. This overrides the derived
@@ -325,6 +347,7 @@ x-healthlog-env: &healthlog_env
   OIDC_ISSUER_URL: "${OIDC_ISSUER_URL:-}"
   OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:-}"
   OIDC_CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-}"
+  OIDC_CLIENT_SECRET_FILE: "${OIDC_CLIENT_SECRET_FILE:-}"
   OIDC_SCOPES: "${OIDC_SCOPES:-}"
   OIDC_BUTTON_LABEL: "${OIDC_BUTTON_LABEL:-}"
   OIDC_ONLY: "${OIDC_ONLY:-}"
@@ -342,6 +365,7 @@ x-healthlog-env: &healthlog_env
   # container (the `environment:` block is a whitelist). See
   # docs/ops/deploy.md.
   DEPLOY_WEBHOOK_SECRET: "${DEPLOY_WEBHOOK_SECRET:-}"
+  DEPLOY_WEBHOOK_SECRET_FILE: "${DEPLOY_WEBHOOK_SECRET_FILE:-}"
   DEPLOY_LOGS_URL: "${DEPLOY_LOGS_URL:-}"
   DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP: "${DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP:-}"
   DEPLOY_WEBHOOK_REQUIRE_SIGNATURE: "${DEPLOY_WEBHOOK_REQUIRE_SIGNATURE:-}"
@@ -425,6 +449,7 @@ x-healthlog-env: &healthlog_env
   SMTP_FROM: "${SMTP_FROM:-}"
   SMTP_USER: "${SMTP_USER:-}"
   SMTP_PASS: "${SMTP_PASS:-}"
+  SMTP_PASS_FILE: "${SMTP_PASS_FILE:-}"
   SMTP_SECURE: "${SMTP_SECURE:-}"
   # v1.17.1 — Web Push VAPID keys (optional). The admin Settings panel stores
   # these in the DB (the supported path); these env vars are the fallback the
@@ -433,6 +458,7 @@ x-healthlog-env: &healthlog_env
   # docs/self-hosting/notifications.md.
   VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}"
   VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY:-}"
+  VAPID_PRIVATE_KEY_FILE: "${VAPID_PRIVATE_KEY_FILE:-}"
   VAPID_SUBJECT: "${VAPID_SUBJECT:-}"
   # APNs for a self-hosted native iOS build (optional, env-only — no admin UI
   # for the .p8). APNS_KEY_B64 is the escape-free base64 form preferred over
@@ -440,6 +466,7 @@ x-healthlog-env: &healthlog_env
   # PWA users need none of this (Web Push covers them). See
   # docs/self-hosting/notifications.md.
   APNS_KEY_B64: "${APNS_KEY_B64:-}"
+  APNS_KEY_B64_FILE: "${APNS_KEY_B64_FILE:-}"
   # The other two key sources, in precedence order after APNS_KEY_B64:
   # APNS_KEY is the raw PEM body, APNS_KEY_FILE a path to the .p8 inside the
   # container (mount it yourself). Both are documented in
@@ -477,7 +504,9 @@ x-healthlog-env: &healthlog_env
   WALLET_APPLE_TEAM_ID: "${WALLET_APPLE_TEAM_ID:-}"
   WALLET_APPLE_CERT_B64: "${WALLET_APPLE_CERT_B64:-}"
   WALLET_APPLE_KEY_B64: "${WALLET_APPLE_KEY_B64:-}"
+  WALLET_APPLE_KEY_B64_FILE: "${WALLET_APPLE_KEY_B64_FILE:-}"
   WALLET_APPLE_KEY_PASSPHRASE: "${WALLET_APPLE_KEY_PASSPHRASE:-}"
+  WALLET_APPLE_KEY_PASSPHRASE_FILE: "${WALLET_APPLE_KEY_PASSPHRASE_FILE:-}"
   WALLET_APPLE_WWDR_B64: "${WALLET_APPLE_WWDR_B64:-}"
   # Structured logging. LOG_LEVEL is one of debug/info/warn/error (default
   # info) — drop to debug while chasing a problem, raise to warn on a busy
@@ -505,6 +534,7 @@ x-healthlog-env: &healthlog_env
   LOKI_ENDPOINT: "${LOKI_ENDPOINT:-}"
   LOKI_USERNAME: "${LOKI_USERNAME:-}"
   LOKI_PASSWORD: "${LOKI_PASSWORD:-}"
+  LOKI_PASSWORD_FILE: "${LOKI_PASSWORD_FILE:-}"
   # Server-side prefetch for the dashboard, insights, coach and checkups
   # pages. On by default; set "false" to fall back to pure client fetching,
   # which is the escape hatch when a prefetch is misbehaving on your host.
@@ -706,6 +736,8 @@ services:
     environment:
       POSTGRES_USER: healthlog
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      # The Postgres image reads the password from this file itself.
+      POSTGRES_PASSWORD_FILE: "${POSTGRES_PASSWORD_FILE:-}"
       POSTGRES_DB: healthlog
     # From 18 on, the image keeps its data under /var/lib/postgresql/18/docker
     # and expects the volume one level up, so the next major can sit beside
@@ -766,6 +798,7 @@ services:
       - no-new-privileges:true
     environment:
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_PASSWORD_FILE: "${POSTGRES_PASSWORD_FILE:-}"
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Read-only, only to check there is room for the copy before starting.
@@ -788,7 +821,12 @@ services:
         OLD=/var/lib/postgresql/data
         MARK="$$OLD/HEALTHLOG_MOVED_TO_POSTGRES_18"
         MOVING="$$OLD/HEALTHLOG_MOVING_TO_POSTGRES_18"
-        export PGPASSWORD="$$POSTGRES_PASSWORD"
+        if [ -n "$${POSTGRES_PASSWORD_FILE:-}" ]; then
+          PGPASSWORD=$$(cat "$$POSTGRES_PASSWORD_FILE")
+        else
+          PGPASSWORD="$$POSTGRES_PASSWORD"
+        fi
+        export PGPASSWORD
         new() { psql -h db -U healthlog -d healthlog -v ON_ERROR_STOP=1 -Atqc "$$1"; }
         old() { psql -h /tmp -U healthlog -d healthlog -v ON_ERROR_STOP=1 -Atqc "$$1"; }
         empty_new() {
@@ -924,6 +962,50 @@ services:
         condition: service_healthy
     entrypoint: ["node", "scripts/db-restore.mjs"]
     command: ["list"]
+
+# Secrets from files. Put the lines below into a docker-compose.override.yml
+# next to this file (compose merges it in, and an update of this file leaves
+# it alone), create the files under ./secrets (owner and mode in
+# docs/self-hosting/secrets.md), and leave the same variables out of .env.
+# Each file holds the bare value; one trailing newline is ignored. The bundled
+# DATABASE_URL is built from POSTGRES_PASSWORD, so with the password in a
+# file the whole URL comes from a file too, and DATABASE_URL is emptied. Any
+# secret in the block above works the same way; docs/self-hosting/secrets.md
+# has the list.
+#
+# services:
+#   app:
+#     environment:
+#       DATABASE_URL: ""
+#       DATABASE_URL_FILE: /run/secrets/database_url
+#       ENCRYPTION_KEY_FILE: /run/secrets/encryption_key
+#       API_TOKEN_HMAC_KEY_FILE: /run/secrets/api_token_hmac_key
+#     secrets: [database_url, encryption_key, api_token_hmac_key]
+#   db:
+#     environment:
+#       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+#     secrets: [postgres_password]
+#   db-upgrade:
+#     environment:
+#       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+#     secrets: [postgres_password]
+#   db-restore:
+#     environment:
+#       DATABASE_URL: ""
+#       DATABASE_URL_FILE: /run/secrets/database_url
+#       ENCRYPTION_KEY_FILE: /run/secrets/encryption_key
+#       API_TOKEN_HMAC_KEY_FILE: /run/secrets/api_token_hmac_key
+#     secrets: [database_url, encryption_key, api_token_hmac_key]
+#
+# secrets:
+#   database_url:
+#     file: ./secrets/database_url
+#   encryption_key:
+#     file: ./secrets/encryption_key
+#   api_token_hmac_key:
+#     file: ./secrets/api_token_hmac_key
+#   postgres_password:
+#     file: ./secrets/postgres_password
 
 volumes:
   postgres-data:

@@ -35,6 +35,19 @@ async function logProxyTrustAtBootSafely(): Promise<void> {
   }
 }
 
+/**
+ * `<NAME>_FILE` into `<NAME>`, before anything reads a secret. In the
+ * container the entrypoint has done it and this finds nothing; a start without
+ * the entrypoint (`node server.js`) is resolved here. An unusable file refuses
+ * the start with the variable named, never the value.
+ */
+async function applySecretFilesAtBoot(): Promise<void> {
+  // Guarded here too: the module reads files with `node:fs`.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    (await import("@/lib/boot/secret-files.mjs")).applySecretFiles();
+  }
+}
+
 /** A fresh instance prints the token that claims its first account. */
 async function logSetupTokenAtBootSafely(): Promise<void> {
   // Node-only, guarded like the helpers above.
@@ -56,6 +69,7 @@ async function logSetupTokenAtBootSafely(): Promise<void> {
 export async function register() {
   // Only start the worker on the Node.js server runtime (not Edge, not build)
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    await applySecretFilesAtBoot();
     // First: every request then carries its socket's address (peer-address).
     (await import("@/lib/http/peer-address")).installPeerAddressStamp();
 
@@ -70,9 +84,8 @@ export async function register() {
     );
     startEventLoopLagMonitor();
 
-    // Every locale falls back to the English message catalog, so a process
-    // without a readable `messages/en.json` cannot serve a page or a job.
-    // Refuse to start with the file named, rather than fail every request.
+    // Every locale falls back to the English message catalog: a process
+    // without a readable `messages/en.json` refuses to start, the file named.
     const { assertDefaultCatalogReadable } =
       await import("@/lib/i18n/server-catalogs");
     assertDefaultCatalogReadable();

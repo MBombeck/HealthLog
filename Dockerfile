@@ -441,9 +441,11 @@ COPY --from=builder /app/src/generated ./src/generated
 # pending migration count, the second runs `migrate deploy` with its
 # lock-timeout retry. `db-dump.mjs` takes the dump before migrating, and
 # `db-restore.mjs` is the `db-restore` service; both share
-# `src/lib/database-backup/dump-core.mjs` with the app. The files are
-# root-owned, so the app user can run them but not edit them in place. The
-# directory around them stays the app user's.
+# `src/lib/database-backup/dump-core.mjs` with the app. `secret-files.mjs`
+# reads `<NAME>_FILE` secrets before anything else in the entrypoint, and
+# shares `src/lib/boot/secret-files.mjs` with the app and the scripts above.
+# The files are root-owned, so the app user can run them but not edit them in
+# place. The directory around them stays the app user's.
 COPY --from=builder /app/scripts/reset-password.mjs ./scripts/reset-password.mjs
 COPY --from=builder /app/scripts/pending-migrations.mjs ./scripts/pending-migrations.mjs
 COPY --from=builder /app/scripts/migrate-deploy.mjs ./scripts/migrate-deploy.mjs
@@ -453,7 +455,11 @@ COPY --from=builder /app/scripts/db-app-role.mjs ./scripts/db-app-role.mjs
 COPY --from=builder /app/src/lib/jobs/retired-measurement-indexes.mjs ./src/lib/jobs/retired-measurement-indexes.mjs
 COPY --from=builder /app/src/lib/database-backup/dump-core.mjs ./src/lib/database-backup/dump-core.mjs
 COPY --from=builder /app/src/lib/auth/argon2-params.mjs ./src/lib/auth/argon2-params.mjs
+COPY --from=builder /app/scripts/secret-files.mjs ./scripts/secret-files.mjs
+COPY --from=builder /app/src/lib/boot/secret-files.mjs ./src/lib/boot/secret-files.mjs
 COPY --from=builder /app/scripts/repair-intake-anomalies.ts ./scripts/repair-intake-anomalies.ts
+# The entrypoint's first step loads and, with no `_FILE` variable set, passes.
+RUN node scripts/secret-files.mjs check
 # Prove the reset CLI's imports resolve in this tree: with every import found
 # it stops at its own usage line; a missing module throws before reaching it.
 RUN node scripts/reset-password.mjs 2>&1 | grep -q "reset-password: usage:"

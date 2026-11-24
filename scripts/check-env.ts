@@ -46,6 +46,13 @@ interface ManifestVariable {
    * considered satisfied. Used for APNS_KEY vs APNS_KEY_FILE.
    */
   anyOf?: string[];
+  /**
+   * A credential or key. Satisfied by `NAME` or by `NAME_FILE`, the path
+   * of a file the entrypoint reads it from (`src/lib/boot/secret-files.mjs`);
+   * both set is an error. `secret-files-guard.test.ts` keeps these flags in
+   * step with the loader's list.
+   */
+  secret?: boolean;
 }
 
 interface ManifestGroup {
@@ -136,7 +143,20 @@ export function checkEnv(
     let absentInGroup = 0;
 
     for (const v of group.variables) {
-      const names = v.anyOf ?? [v.name];
+      const fileVar = `${v.name}_FILE`;
+      if (v.secret && isPresent(env[v.name]) && isPresent(env[fileVar])) {
+        // Configured, but twice: the start refuses it, so the check does too.
+        results.push({
+          group: group.name,
+          variable: v.name,
+          present: false,
+          required: true,
+          note: `Both ${v.name} and ${fileVar} are set. Set one of them.`,
+        });
+        presentInGroup++;
+        continue;
+      }
+      const names = [...(v.anyOf ?? [v.name]), ...(v.secret ? [fileVar] : [])];
       const matched = names.find((n) => isPresent(env[n]));
       const present = matched !== undefined;
       const note = v.anyOf

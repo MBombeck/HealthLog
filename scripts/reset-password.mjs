@@ -17,14 +17,20 @@
  * password is never printed back. Exits non-zero with a clear message when the
  * identifier matches zero or more than one user.
  *
- * Reads `DATABASE_URL` from the environment (the same var the app uses). The
- * connection honours any `sslmode=` in the URL exactly like the app pool.
+ * Reads `DATABASE_URL` from the environment (the same var the app uses), or
+ * from the file `DATABASE_URL_FILE` names: `docker compose exec` does not
+ * inherit what the entrypoint resolved. The connection honours any `sslmode=`
+ * in the URL exactly like the app pool.
  */
 
 import { createInterface } from "node:readline";
 import { hash } from "@node-rs/argon2";
 import pg from "pg";
 import { ARGON2_HASH_OPTIONS } from "../src/lib/auth/argon2-params.mjs";
+import {
+  SecretFileError,
+  applySecretFiles,
+} from "../src/lib/boot/secret-files.mjs";
 
 function fail(message) {
   console.error(`reset-password: ${message}`);
@@ -52,6 +58,12 @@ function promptHidden(label) {
 }
 
 async function main() {
+  try {
+    applySecretFiles();
+  } catch (error) {
+    if (error instanceof SecretFileError) fail(error.message);
+    throw error;
+  }
   const identifier = process.argv[2];
   if (!identifier) {
     fail(
