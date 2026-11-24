@@ -72,6 +72,65 @@ const CRLF = Buffer.from("\r\n");
 const DOUBLE_CRLF = Buffer.from("\r\n\r\n");
 
 /**
+ * A reader over `body` that refuses once more than the file cap plus the
+ * envelope has been read, whatever part the bytes belong to.
+ */
+function cappedReader(body: ReadableStream<Uint8Array>, maxBytes: number) {
+  const reader = body.getReader();
+  let read = 0;
+  return {
+    async read(): Promise<ReadableStreamReadResult<Uint8Array>> {
+      const next = await reader.read();
+      read += next.value?.length ?? 0;
+      if (read > maxBytes + MULTIPART_ENVELOPE_RESERVE_BYTES) {
+        throw new MultipartTooLargeError(maxBytes);
+      }
+      return next;
+    },
+    cancel: () => reader.cancel(),
+  };
+}
+
+/** Where a part's header block ends, or -1 while it may still come. */
+function headerBlockEnd(buffer: Buffer): number {
+  const eoh = buffer.indexOf(DOUBLE_CRLF);
+  if ((eoh === -1 ? buffer.length : eoh) > MULTIPART_MAX_HEADER_BYTES) {
+    throw new Error("Multipart part headers too large");
+  }
+  return eoh;
+}
+
+/**
+ * The text parts' bytes. They are held in memory, unlike the file, so all of
+ * them together share a small ceiling.
+ */
+class TextParts {
+  private bytes = 0;
+  private parts: Buffer[] = [];
+
+  constructor(private readonly maxBytes: number) {}
+
+  push(chunk: Buffer): void {
+    this.bytes += chunk.length;
+    if (this.bytes > MULTIPART_MAX_TEXT_BYTES) {
+      throw new MultipartTooLargeError(this.maxBytes);
+    }
+    this.parts.push(chunk);
+  }
+
+  /** The current part's text; the next part starts empty. */
+  take(): string {
+    const text = Buffer.concat(this.parts).toString("utf8");
+    this.parts = [];
+    return text;
+  }
+
+  reset(): void {
+    this.parts = [];
+  }
+}
+
+/**
  * Parse the multipart boundary from a `Content-Type` header. Returns
  * `null` if the header is missing or unparseable.
  */
@@ -143,20 +202,7 @@ export async function streamMultipartToDisk(
     | "epilogue";
   let state: ParserState = "preamble";
   let currentFieldName: string | null = null;
-  let currentTextBuffer: Buffer[] = [];
-  let textBytes = 0;
-  let bodyBytesRead = 0;
-  const maxBodyBytes = opts.maxBytes + MULTIPART_ENVELOPE_RESERVE_BYTES;
-
-  // A text part is kept in memory, so it is held to a small ceiling of its
-  // own; only the file part streams to disk under `maxBytes`.
-  const keepText = (chunk: Buffer): void => {
-    textBytes += chunk.length;
-    if (textBytes > MULTIPART_MAX_TEXT_BYTES) {
-      throw new MultipartTooLargeError(opts.maxBytes);
-    }
-    currentTextBuffer.push(chunk);
-  };
+  const text = new TextParts(opts.maxBytes);
 
   const writeFileChunk = (chunk: Buffer): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -185,7 +231,7 @@ export async function streamMultipartToDisk(
     });
   };
 
-  const reader = body.getReader();
+  const reader = cappedReader(body, opts.maxBytes);
   let streamDone = false;
 
   // The classic SAX-style boundary scanner: accumulate into `buffer`,
@@ -258,16 +304,8 @@ export async function streamMultipartToDisk(
       }
 
       if (state === "headers") {
-        const eoh = buffer.indexOf(DOUBLE_CRLF);
-        if (eoh === -1) {
-          if (buffer.length > MULTIPART_MAX_HEADER_BYTES) {
-            throw new Error("Multipart part headers too large");
-          }
-          return;
-        }
-        if (eoh > MULTIPART_MAX_HEADER_BYTES) {
-          throw new Error("Multipart part headers too large");
-        }
+        const eoh = headerBlockEnd(buffer);
+        if (eoh === -1) return;
         const headerBlock = buffer.slice(0, eoh).toString("utf8");
         buffer = buffer.slice(eoh + DOUBLE_CRLF.length);
 
@@ -288,7 +326,7 @@ export async function streamMultipartToDisk(
           originalFilename = filenameMatch?.[1] ?? null;
         } else {
           state = "body-text";
-          currentTextBuffer = [];
+          text.reset();
         }
         continue;
       }
@@ -305,7 +343,7 @@ export async function streamMultipartToDisk(
           if (state === "body-file") {
             await writeFileChunk(emit);
           } else {
-            keepText(emit);
+            text.push(emit);
           }
         }
         buffer = buffer.slice(buffer.length - keep);
@@ -317,14 +355,12 @@ export async function streamMultipartToDisk(
         if (state === "body-file") {
           await writeFileChunk(emit);
         } else {
-          keepText(emit);
+          text.push(emit);
         }
       }
       // Finalise the text field if applicable.
       if (state === "body-text" && currentFieldName) {
-        textFields[currentFieldName] =
-          Buffer.concat(currentTextBuffer).toString("utf8");
-        currentTextBuffer = [];
+        textFields[currentFieldName] = text.take();
       }
       if (state === "body-file") {
         await closeFileSink();
@@ -343,10 +379,6 @@ export async function streamMultipartToDisk(
       if (done) {
         streamDone = true;
         break;
-      }
-      bodyBytesRead += value.length;
-      if (bodyBytesRead > maxBodyBytes) {
-        throw new MultipartTooLargeError(opts.maxBytes);
       }
       buffer = Buffer.concat([buffer, Buffer.from(value)]);
       await processBuffer();
