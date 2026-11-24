@@ -1,0 +1,3249 @@
+{
+  "about": "Canonical product vocabulary: one term per concept per locale. `name` is the label form (nav entry, page title, section heading); `item` is the countable noun used in running text. Anchors are message keys that must carry the term (exact, or containing it). Forbidden lists the retired synonyms per locale; `allow` names the few message values that keep one for a stated reason. Display strings only: wire values, routes and enum ids never change with this file. Guarded by src/__tests__/glossary-guard.test.ts.",
+  "locales": ["de", "en", "fr", "es", "it", "pl", "ko", "nl", "pt-BR", "ru"],
+  "concepts": [
+    {
+      "id": "dashboard",
+      "description": "The home page.",
+      "terms": {
+        "de": {
+          "name": "Dashboard"
+        },
+        "en": {
+          "name": "Dashboard"
+        },
+        "fr": {
+          "name": "Tableau de bord"
+        },
+        "es": {
+          "name": "Panel"
+        },
+        "it": {
+          "name": "Dashboard"
+        },
+        "pl": {
+          "name": "Panel"
+        },
+        "ko": {
+          "name": "대시보드"
+        },
+        "nl": {
+          "name": "Dashboard"
+        },
+        "pt-BR": {
+          "name": "Painel"
+        },
+        "ru": {
+          "name": "Сводка"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.dashboard",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "measurements",
+      "description": "Readings of any metric (weight, blood pressure, pulse ...) and their page.",
+      "terms": {
+        "de": {
+          "name": "Messungen",
+          "item": "Messung"
+        },
+        "en": {
+          "name": "Measurements",
+          "item": "measurement"
+        },
+        "fr": {
+          "name": "Mesures",
+          "item": "Mesure"
+        },
+        "es": {
+          "name": "Mediciones",
+          "item": "Medición"
+        },
+        "it": {
+          "name": "Misurazioni",
+          "item": "Misurazione"
+        },
+        "pl": {
+          "name": "Pomiary",
+          "item": "Pomiar"
+        },
+        "ko": {
+          "name": "측정",
+          "item": "측정"
+        },
+        "nl": {
+          "name": "Metingen",
+          "item": "Meting"
+        },
+        "pt-BR": {
+          "name": "Medições",
+          "item": "Medição"
+        },
+        "ru": {
+          "name": "Измерения",
+          "item": "Измерение"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.measurements",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurements.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.capture.measurement",
+          "form": "item",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "medication",
+      "description": "A medication the person takes; the medications area.",
+      "terms": {
+        "de": {
+          "name": "Medikamente",
+          "item": "Medikament"
+        },
+        "en": {
+          "name": "Medications",
+          "item": "medication"
+        },
+        "fr": {
+          "name": "Médicaments",
+          "item": "Médicament"
+        },
+        "es": {
+          "name": "Medicamentos",
+          "item": "Medicamento"
+        },
+        "it": {
+          "name": "Farmaci",
+          "item": "Farmaco"
+        },
+        "pl": {
+          "name": "Leki",
+          "item": "Lek"
+        },
+        "ko": {
+          "name": "복약",
+          "item": "약"
+        },
+        "nl": {
+          "name": "Medicatie",
+          "item": "Medicatie"
+        },
+        "pt-BR": {
+          "name": "Medicamentos",
+          "item": "Medicamento"
+        },
+        "ru": {
+          "name": "Лекарства",
+          "item": "Лекарство"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.medications",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "medications.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.capture.medication",
+          "form": "item",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          {
+            "text": "Medis",
+            "wholeWord": true
+          }
+        ],
+        "en": [
+          {
+            "text": "meds",
+            "wholeWord": true
+          }
+        ],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "dose",
+      "description": "One scheduled or logged amount of a medication.",
+      "terms": {
+        "de": {
+          "name": "Dosen",
+          "item": "Dosis"
+        },
+        "en": {
+          "name": "Doses",
+          "item": "dose"
+        },
+        "fr": {
+          "name": null,
+          "item": null
+        },
+        "es": {
+          "name": null,
+          "item": null
+        },
+        "it": {
+          "name": null,
+          "item": null
+        },
+        "pl": {
+          "name": null,
+          "item": null
+        },
+        "ko": {
+          "name": null,
+          "item": null
+        },
+        "nl": {
+          "name": null,
+          "item": null
+        },
+        "pt-BR": {
+          "name": null,
+          "item": null
+        },
+        "ru": {
+          "name": null,
+          "item": null
+        }
+      },
+      "anchors": [],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "intake",
+      "description": "Recording that a dose was taken; the intake log.",
+      "terms": {
+        "de": {
+          "name": "Einnahme",
+          "item": "Einnahme"
+        },
+        "en": {
+          "name": "Intake",
+          "item": "intake"
+        },
+        "fr": {
+          "name": null,
+          "item": null
+        },
+        "es": {
+          "name": null,
+          "item": null
+        },
+        "it": {
+          "name": null,
+          "item": null
+        },
+        "pl": {
+          "name": null,
+          "item": null
+        },
+        "ko": {
+          "name": null,
+          "item": null
+        },
+        "nl": {
+          "name": null,
+          "item": null
+        },
+        "pt-BR": {
+          "name": null,
+          "item": null
+        },
+        "ru": {
+          "name": null,
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "medications.intakeForm.title",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "take",
+      "description": "Action: mark a dose as taken. Enforced in detail by i18n-dose-vocabulary.test.ts.",
+      "wire": "dose state `taken`",
+      "terms": {
+        "de": {
+          "name": "Einnehmen"
+        },
+        "en": {
+          "name": "Take"
+        },
+        "fr": {
+          "name": "Prendre"
+        },
+        "es": {
+          "name": "Tomar"
+        },
+        "it": {
+          "name": "Assumi"
+        },
+        "pl": {
+          "name": "Przyjmij"
+        },
+        "ko": {
+          "name": "복용"
+        },
+        "nl": {
+          "name": "Innemen"
+        },
+        "pt-BR": {
+          "name": "Tomar"
+        },
+        "ru": {
+          "name": "Принять"
+        }
+      },
+      "anchors": [
+        {
+          "key": "medications.dose.action.take",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "skip",
+      "description": "Action: mark a dose as skipped. Enforced in detail by i18n-dose-vocabulary.test.ts.",
+      "wire": "dose state `skipped`",
+      "terms": {
+        "de": {
+          "name": "Überspringen"
+        },
+        "en": {
+          "name": "Skip"
+        },
+        "fr": {
+          "name": "Sauter"
+        },
+        "es": {
+          "name": "Omitir"
+        },
+        "it": {
+          "name": "Salta"
+        },
+        "pl": {
+          "name": "Pomiń"
+        },
+        "ko": {
+          "name": "건너뛰기"
+        },
+        "nl": {
+          "name": "Overslaan"
+        },
+        "pt-BR": {
+          "name": "Pular"
+        },
+        "ru": {
+          "name": "Пропустить"
+        }
+      },
+      "anchors": [
+        {
+          "key": "medications.dose.action.skip",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "snooze",
+      "description": "Action: be reminded of a due dose again later.",
+      "terms": {
+        "de": {
+          "name": "Später erinnern"
+        },
+        "en": {
+          "name": "Remind me later"
+        },
+        "fr": {
+          "name": null
+        },
+        "es": {
+          "name": null
+        },
+        "it": {
+          "name": null
+        },
+        "pl": {
+          "name": null
+        },
+        "ko": {
+          "name": null
+        },
+        "nl": {
+          "name": null
+        },
+        "pt-BR": {
+          "name": null
+        },
+        "ru": {
+          "name": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "medications.dose.action.snooze",
+          "form": "name",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "mood",
+      "description": "Mood entries and their page.",
+      "terms": {
+        "de": {
+          "name": "Stimmung"
+        },
+        "en": {
+          "name": "Mood"
+        },
+        "fr": {
+          "name": "Humeur"
+        },
+        "es": {
+          "name": "Ánimo"
+        },
+        "it": {
+          "name": "Umore"
+        },
+        "pl": {
+          "name": "Nastrój"
+        },
+        "ko": {
+          "name": "기분"
+        },
+        "nl": {
+          "name": "Stemming"
+        },
+        "pt-BR": {
+          "name": "Humor"
+        },
+        "ru": {
+          "name": "Настроение"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.mood.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.mood",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "mood.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "mentalWellbeing",
+      "description": "The questionnaire area (PHQ-9, GAD-7 ...).",
+      "terms": {
+        "de": {
+          "name": "Seelisches Wohlbefinden"
+        },
+        "en": {
+          "name": "Mental wellbeing"
+        },
+        "fr": {
+          "name": "Bien-être mental"
+        },
+        "es": {
+          "name": "Bienestar mental"
+        },
+        "it": {
+          "name": "Benessere mentale"
+        },
+        "pl": {
+          "name": "Dobrostan psychiczny"
+        },
+        "ko": {
+          "name": "정신 건강"
+        },
+        "nl": {
+          "name": "Mentaal welzijn"
+        },
+        "pt-BR": {
+          "name": "Bem-estar mental"
+        },
+        "ru": {
+          "name": "Психическое благополучие"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.mentalWellbeing",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "mentalHealth.pageTitle",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "cycle",
+      "description": "Menstrual cycle tracking.",
+      "terms": {
+        "de": {
+          "name": "Zyklus"
+        },
+        "en": {
+          "name": "Cycle"
+        },
+        "fr": {
+          "name": "Cycle"
+        },
+        "es": {
+          "name": "Ciclo"
+        },
+        "it": {
+          "name": "Ciclo"
+        },
+        "pl": {
+          "name": "Cykl"
+        },
+        "ko": {
+          "name": "생리 주기"
+        },
+        "nl": {
+          "name": "Cyclus"
+        },
+        "pt-BR": {
+          "name": "Ciclo"
+        },
+        "ru": {
+          "name": "Цикл"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.cycle.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.cycle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "cycle.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "care",
+      "description": "The preventive-care area at /care: check-ups, visits, procedures, body sites.",
+      "wire": "route /care, API /api/measurement-reminders",
+      "terms": {
+        "de": {
+          "name": "Vorsorge"
+        },
+        "en": {
+          "name": "Care"
+        },
+        "fr": {
+          "name": "Examens"
+        },
+        "es": {
+          "name": "Revisiones"
+        },
+        "it": {
+          "name": "Controlli"
+        },
+        "pl": {
+          "name": "Badania"
+        },
+        "ko": {
+          "name": "건강검진"
+        },
+        "nl": {
+          "name": "Controles"
+        },
+        "pt-BR": {
+          "name": "Prevenção"
+        },
+        "ru": {
+          "name": "Профилактика"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.vorsorge.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.vorsorge",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurementReminders.sectionTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "checkups.tabVorsorge",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "checkup",
+      "description": "One recurring preventive item (a screening, a blood count) and its reminder.",
+      "wire": "notification event MEASUREMENT_REMINDER",
+      "terms": {
+        "de": {
+          "name": "Vorsorge-Erinnerung",
+          "item": "Vorsorge"
+        },
+        "en": {
+          "name": "Check-up reminder",
+          "item": "check-up"
+        },
+        "fr": {
+          "name": "Rappel d’examen",
+          "item": null
+        },
+        "es": {
+          "name": "Recordatorio de revisión",
+          "item": null
+        },
+        "it": {
+          "name": "Promemoria di controllo",
+          "item": null
+        },
+        "pl": {
+          "name": "Przypomnienie o badaniu",
+          "item": null
+        },
+        "ko": {
+          "name": "건강검진 알림",
+          "item": null
+        },
+        "nl": {
+          "name": "Controleherinnering",
+          "item": null
+        },
+        "pt-BR": {
+          "name": "Lembrete de check-up",
+          "item": null
+        },
+        "ru": {
+          "name": "Напоминание о проверке",
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurementReminders.pushTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "notifications.eventMeasurementReminder",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Mess-Erinnerung", "Messerinnerung", "Checkup", "Check-up"],
+        "en": ["checkup", "measurement reminder"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "visit",
+      "description": "A doctor's visit, booked or done (encounter).",
+      "wire": "model Encounter",
+      "terms": {
+        "de": {
+          "name": "Termine",
+          "item": "Termin"
+        },
+        "en": {
+          "name": "Visits",
+          "item": "visit"
+        },
+        "fr": {
+          "name": "Rendez-vous",
+          "item": null
+        },
+        "es": {
+          "name": "Citas",
+          "item": null
+        },
+        "it": {
+          "name": "Appuntamenti",
+          "item": null
+        },
+        "pl": {
+          "name": "Wizyty",
+          "item": null
+        },
+        "ko": {
+          "name": "진료",
+          "item": null
+        },
+        "nl": {
+          "name": "Bezoeken",
+          "item": null
+        },
+        "pt-BR": {
+          "name": "Consultas",
+          "item": null
+        },
+        "ru": {
+          "name": "Визиты",
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "checkups.tabVisits",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "encounters.sectionTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "dashboard.heroItems.upcoming_visit",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          "Arztbesuch",
+          {
+            "text": "Besuch",
+            "caseSensitive": true
+          }
+        ],
+        "en": ["appointment"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "treatmentSeries",
+      "description": "A prescribed course of sessions (physiotherapy, radiotherapy ...).",
+      "wire": "model TreatmentSeries",
+      "terms": {
+        "de": {
+          "name": "Behandlungsserien",
+          "item": "Behandlungsserie"
+        },
+        "en": {
+          "name": "Treatment series",
+          "item": "treatment series"
+        },
+        "fr": {
+          "name": "Séries de soins",
+          "item": null
+        },
+        "es": {
+          "name": "Series de tratamiento",
+          "item": null
+        },
+        "it": {
+          "name": "Cicli di trattamento",
+          "item": null
+        },
+        "pl": {
+          "name": "Serie zabiegów",
+          "item": null
+        },
+        "ko": {
+          "name": "치료 과정",
+          "item": null
+        },
+        "nl": {
+          "name": "Behandelreeksen",
+          "item": null
+        },
+        "pt-BR": {
+          "name": "Séries de tratamento",
+          "item": null
+        },
+        "ru": {
+          "name": "Курсы лечения",
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "treatmentSeries.heading",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Behandlungsreihe", "Behandlungskurs"],
+        "en": ["treatment course"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "labs",
+      "description": "Lab results and their page.",
+      "terms": {
+        "de": {
+          "name": "Laborwerte",
+          "item": "Laborwert"
+        },
+        "en": {
+          "name": "Lab results",
+          "item": "lab result"
+        },
+        "fr": {
+          "name": "Valeurs de laboratoire",
+          "item": null
+        },
+        "es": {
+          "name": "Valores de laboratorio",
+          "item": null
+        },
+        "it": {
+          "name": "Valori di laboratorio",
+          "item": null
+        },
+        "pl": {
+          "name": "Wyniki laboratoryjne",
+          "item": null
+        },
+        "ko": {
+          "name": "검사 수치",
+          "item": null
+        },
+        "nl": {
+          "name": "Labwaarden",
+          "item": null
+        },
+        "pt-BR": {
+          "name": "Valores laboratoriais",
+          "item": null
+        },
+        "ru": {
+          "name": "Лабораторные показатели",
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.labs.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.labs",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "labs.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          "Laborergebnis",
+          {
+            "text": "Labore",
+            "wholeWord": true,
+            "caseSensitive": true
+          }
+        ],
+        "en": ["lab value"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "illness",
+      "description": "The illness area: illness episodes with symptoms, flares and recovery.",
+      "wire": "module illness, model ConditionEpisode",
+      "terms": {
+        "de": {
+          "name": "Krankheit",
+          "item": "Krankheitsepisode"
+        },
+        "en": {
+          "name": "Illness",
+          "item": "illness episode"
+        },
+        "fr": {
+          "name": "Journal des maladies",
+          "item": null
+        },
+        "es": {
+          "name": "Diario de enfermedades",
+          "item": null
+        },
+        "it": {
+          "name": "Diario delle malattie",
+          "item": null
+        },
+        "pl": {
+          "name": "Dziennik chorób",
+          "item": null
+        },
+        "ko": {
+          "name": "아픈 날 다이어리",
+          "item": null
+        },
+        "nl": {
+          "name": "Ziektedagboek",
+          "item": null
+        },
+        "pt-BR": {
+          "name": "Diário de doenças",
+          "item": null
+        },
+        "ru": {
+          "name": "Дневник болезней",
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.illness.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.illness",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "illness.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "modules.illness.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "timeline.lanes.illness",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "recordSharing.section.illness.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "palette.records.source.illness",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.layout.illness.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Krankheitstagebuch", "Krankheits-Journal"],
+        "en": ["illness journal", "illness diary"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "symptom",
+      "description": "A symptom logged with its strength.",
+      "terms": {
+        "de": {
+          "name": "Symptome",
+          "item": "Symptom"
+        },
+        "en": {
+          "name": "Symptoms",
+          "item": "symptom"
+        },
+        "fr": {
+          "name": null,
+          "item": "Symptôme"
+        },
+        "es": {
+          "name": null,
+          "item": "Síntoma"
+        },
+        "it": {
+          "name": null,
+          "item": "Sintomo"
+        },
+        "pl": {
+          "name": null,
+          "item": "Objaw"
+        },
+        "ko": {
+          "name": null,
+          "item": "증상"
+        },
+        "nl": {
+          "name": null,
+          "item": "Symptoom"
+        },
+        "pt-BR": {
+          "name": null,
+          "item": "Sintoma"
+        },
+        "ru": {
+          "name": null,
+          "item": "Симптом"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.capture.symptom",
+          "form": "item",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "seizures",
+      "description": "The seizure diary.",
+      "wire": "module seizures",
+      "terms": {
+        "de": {
+          "name": "Anfallskalender",
+          "item": "Anfall"
+        },
+        "en": {
+          "name": "Seizure diary",
+          "item": "seizure"
+        },
+        "fr": {
+          "name": "Crises",
+          "item": "Crise"
+        },
+        "es": {
+          "name": "Crisis",
+          "item": "Crisis"
+        },
+        "it": {
+          "name": "Crisi",
+          "item": "Crisi"
+        },
+        "pl": {
+          "name": "Napady",
+          "item": "Napad"
+        },
+        "ko": {
+          "name": "발작",
+          "item": "발작"
+        },
+        "nl": {
+          "name": "Aanvallen",
+          "item": "Aanval"
+        },
+        "pt-BR": {
+          "name": "Crises",
+          "item": "Crise"
+        },
+        "ru": {
+          "name": "Приступы",
+          "item": "Приступ"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.seizures",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "seizures.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "modules.seizures.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.capture.seizure",
+          "form": "item",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Anfallstagebuch", "Anfallsprotokoll"],
+        "en": ["seizure log", "seizure calendar"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "vaccinations",
+      "description": "The immunization log.",
+      "terms": {
+        "de": {
+          "name": "Impfungen",
+          "item": "Impfung"
+        },
+        "en": {
+          "name": "Vaccinations",
+          "item": "vaccination"
+        },
+        "fr": {
+          "name": "Vaccinations",
+          "item": null
+        },
+        "es": {
+          "name": "Vacunas",
+          "item": null
+        },
+        "it": {
+          "name": "Vaccinazioni",
+          "item": null
+        },
+        "pl": {
+          "name": "Szczepienia",
+          "item": null
+        },
+        "ko": {
+          "name": "예방접종",
+          "item": null
+        },
+        "nl": {
+          "name": "Vaccinaties",
+          "item": null
+        },
+        "pt-BR": {
+          "name": "Vacinas",
+          "item": null
+        },
+        "ru": {
+          "name": "Вакцинации",
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.vaccinations",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "vaccinations.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "documents",
+      "description": "Inbound clinical documents (letters, findings, scans).",
+      "terms": {
+        "de": {
+          "name": "Dokumente",
+          "item": "Dokument"
+        },
+        "en": {
+          "name": "Documents",
+          "item": "document"
+        },
+        "fr": {
+          "name": "Documents",
+          "item": null
+        },
+        "es": {
+          "name": "Documentos",
+          "item": null
+        },
+        "it": {
+          "name": "Documenti",
+          "item": null
+        },
+        "pl": {
+          "name": "Dokumenty",
+          "item": null
+        },
+        "ko": {
+          "name": "문서",
+          "item": null
+        },
+        "nl": {
+          "name": "Documenten",
+          "item": null
+        },
+        "pt-BR": {
+          "name": "Documentos",
+          "item": null
+        },
+        "ru": {
+          "name": "Документы",
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.documents",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "documents.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "timeline",
+      "description": "The life timeline.",
+      "terms": {
+        "de": {
+          "name": "Zeitleiste"
+        },
+        "en": {
+          "name": "Timeline"
+        },
+        "fr": {
+          "name": "Chronologie"
+        },
+        "es": {
+          "name": "Cronología"
+        },
+        "it": {
+          "name": "Cronologia"
+        },
+        "pl": {
+          "name": "Oś czasu"
+        },
+        "ko": {
+          "name": "타임라인"
+        },
+        "nl": {
+          "name": "Tijdlijn"
+        },
+        "pt-BR": {
+          "name": "Linha do tempo"
+        },
+        "ru": {
+          "name": "Хронология"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.timeline",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "timeline.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "insights",
+      "description": "The analysis area.",
+      "terms": {
+        "de": {
+          "name": "Insights"
+        },
+        "en": {
+          "name": "Insights"
+        },
+        "fr": {
+          "name": "Analyses"
+        },
+        "es": {
+          "name": "Ideas"
+        },
+        "it": {
+          "name": "Analisi"
+        },
+        "pl": {
+          "name": "Analizy"
+        },
+        "ko": {
+          "name": "인사이트"
+        },
+        "nl": {
+          "name": "Inzichten"
+        },
+        "pt-BR": {
+          "name": "Insights"
+        },
+        "ru": {
+          "name": "Аналитика"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.insights.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.insights",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "coach",
+      "description": "The AI Coach.",
+      "terms": {
+        "de": {
+          "name": "Coach"
+        },
+        "en": {
+          "name": "Coach"
+        },
+        "fr": {
+          "name": "Coach"
+        },
+        "es": {
+          "name": "Coach"
+        },
+        "it": {
+          "name": "Coach"
+        },
+        "pl": {
+          "name": "Coach"
+        },
+        "ko": {
+          "name": "코치"
+        },
+        "nl": {
+          "name": "Coach"
+        },
+        "pt-BR": {
+          "name": "Coach"
+        },
+        "ru": {
+          "name": "Тренер"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.coach.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.coach",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "achievements",
+      "description": "Achievements.",
+      "terms": {
+        "de": {
+          "name": "Erfolge"
+        },
+        "en": {
+          "name": "Achievements"
+        },
+        "fr": {
+          "name": "Réussites"
+        },
+        "es": {
+          "name": "Logros"
+        },
+        "it": {
+          "name": "Traguardi"
+        },
+        "pl": {
+          "name": "Osiągnięcia"
+        },
+        "ko": {
+          "name": "업적"
+        },
+        "nl": {
+          "name": "Prestaties"
+        },
+        "pt-BR": {
+          "name": "Conquistas"
+        },
+        "ru": {
+          "name": "Достижения"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.achievements.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.achievements",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "achievements.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "notifications",
+      "description": "The per-channel notification inbox page.",
+      "terms": {
+        "de": {
+          "name": "Benachrichtigungen je Kanal"
+        },
+        "en": {
+          "name": "Notifications per channel"
+        },
+        "fr": {
+          "name": "Notifications par canal"
+        },
+        "es": {
+          "name": "Notificaciones por canal"
+        },
+        "it": {
+          "name": "Notifiche per canale"
+        },
+        "pl": {
+          "name": "Powiadomienia wg kanału"
+        },
+        "ko": {
+          "name": "채널별 알림"
+        },
+        "nl": {
+          "name": "Meldingen per kanaal"
+        },
+        "pt-BR": {
+          "name": "Notificações por canal"
+        },
+        "ru": {
+          "name": "Уведомления по каналам"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.notifications",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "notifications.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "emergencyCard",
+      "description": "The emergency card (page, offline copy, Wallet pass, QR link).",
+      "wire": "route /emergency-card",
+      "terms": {
+        "de": {
+          "name": "Notfallkarte"
+        },
+        "en": {
+          "name": "Emergency card"
+        },
+        "fr": {
+          "name": "Carte d'urgence"
+        },
+        "es": {
+          "name": "Tarjeta de emergencia"
+        },
+        "it": {
+          "name": "Tessera di emergenza"
+        },
+        "pl": {
+          "name": "Karta ratunkowa"
+        },
+        "ko": {
+          "name": "응급 카드"
+        },
+        "nl": {
+          "name": "Noodkaart"
+        },
+        "pt-BR": {
+          "name": "Cartão de emergência"
+        },
+        "ru": {
+          "name": "Экстренная карта"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.emergencyCard",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "emergencyCard.page.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Notfallausweis", "Notfallpass"],
+        "en": ["emergency pass"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "medicalHistory",
+      "description": "The anamnesis: history, family history, allergies, emergency information.",
+      "terms": {
+        "de": {
+          "name": "Anamnese"
+        },
+        "en": {
+          "name": "Medical history"
+        },
+        "fr": {
+          "name": "Profil"
+        },
+        "es": {
+          "name": "Perfil"
+        },
+        "it": {
+          "name": "Profilo"
+        },
+        "pl": {
+          "name": "Profil"
+        },
+        "ko": {
+          "name": "프로필"
+        },
+        "nl": {
+          "name": "Profiel"
+        },
+        "pt-BR": {
+          "name": "Perfil"
+        },
+        "ru": {
+          "name": "Профиль"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.profile",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.anamnesis.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "healthRecord",
+      "description": "Everything recorded about one person; the rail group and the shared record.",
+      "terms": {
+        "de": {
+          "name": "Gesundheitsakte"
+        },
+        "en": {
+          "name": "Health record"
+        },
+        "fr": {
+          "name": "Dossier médical"
+        },
+        "es": {
+          "name": "Historial médico"
+        },
+        "it": {
+          "name": "Cartella clinica"
+        },
+        "pl": {
+          "name": "Dokumentacja zdrowotna"
+        },
+        "ko": {
+          "name": "건강 기록"
+        },
+        "nl": {
+          "name": "Gezondheidsdossier"
+        },
+        "pt-BR": {
+          "name": "Registro de saúde"
+        },
+        "ru": {
+          "name": "Медицинская карта"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.groups.record",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "doctorReport",
+      "description": "The PDF (and FHIR bundle) for a doctor. The PDF header carries this name.",
+      "wire": "module doctorReport, document kind DOCTOR_REPORT",
+      "terms": {
+        "de": {
+          "name": "Arztbericht"
+        },
+        "en": {
+          "name": "Doctor report"
+        },
+        "fr": {
+          "name": "Rapport de santé"
+        },
+        "es": {
+          "name": "Informe de salud"
+        },
+        "it": {
+          "name": "Rapporto sanitario"
+        },
+        "pl": {
+          "name": "Raport zdrowotny"
+        },
+        "ko": {
+          "name": "건강 리포트"
+        },
+        "nl": {
+          "name": "Gezondheidsrapport"
+        },
+        "pt-BR": {
+          "name": "Relatório de Saúde"
+        },
+        "ru": {
+          "name": "Отчёт о здоровье"
+        }
+      },
+      "anchors": [
+        {
+          "key": "doctorReport.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "modules.doctorReport.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "documents.kind.DOCTOR_REPORT",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "onboarding.tour.steps.export.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Gesundheitsbericht", "Arztreport"],
+        "en": [
+          {
+            "text": "health report",
+            "wholeWord": true
+          },
+          "doctor's report",
+          "medical report"
+        ],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "doctorReportAndExport",
+      "description": "The settings section that builds the doctor report and exports the record.",
+      "wire": "settings section id health-record",
+      "terms": {
+        "de": {
+          "name": "Arztbericht und Export"
+        },
+        "en": {
+          "name": "Doctor report and export"
+        },
+        "fr": {
+          "name": "Dossier médical"
+        },
+        "es": {
+          "name": "Historial médico"
+        },
+        "it": {
+          "name": "Cartella clinica"
+        },
+        "pl": {
+          "name": "Dokumentacja zdrowotna"
+        },
+        "ko": {
+          "name": "건강 기록"
+        },
+        "nl": {
+          "name": "Gezondheidsdossier"
+        },
+        "pt-BR": {
+          "name": "Registro de saúde"
+        },
+        "ru": {
+          "name": "Медицинская карта"
+        }
+      },
+      "anchors": [
+        {
+          "key": "settings.sections.health-record.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "healthScore",
+      "description": "The 0 to 100 Health score.",
+      "terms": {
+        "de": {
+          "name": "Gesundheitsscore"
+        },
+        "en": {
+          "name": "Health score"
+        },
+        "fr": {
+          "name": "Score de santé"
+        },
+        "es": {
+          "name": "Puntuación de salud"
+        },
+        "it": {
+          "name": "Punteggio di salute"
+        },
+        "pl": {
+          "name": "Wynik zdrowia"
+        },
+        "ko": {
+          "name": "건강 점수"
+        },
+        "nl": {
+          "name": "Gezondheidsscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de saúde"
+        },
+        "ru": {
+          "name": "Балл здоровья"
+        }
+      },
+      "anchors": [
+        {
+          "key": "settings.sections.score.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.today.scoreLabel",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.healthScore.label",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Health Score", "Health-Score", "Gesundheits-Score"],
+        "en": [
+          {
+            "text": "Health Score",
+            "caseSensitive": true
+          }
+        ],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.bloodPressure",
+      "description": "Health score pillar `bloodPressure`.",
+      "wire": "pillar id bloodPressure",
+      "terms": {
+        "de": {
+          "name": "Blutdruck"
+        },
+        "en": {
+          "name": "Blood pressure"
+        },
+        "fr": {
+          "name": "Tension artérielle"
+        },
+        "es": {
+          "name": "Presión arterial"
+        },
+        "it": {
+          "name": "Pressione arteriosa"
+        },
+        "pl": {
+          "name": "Ciśnienie krwi"
+        },
+        "ko": {
+          "name": "혈압"
+        },
+        "nl": {
+          "name": "Bloeddruk"
+        },
+        "pt-BR": {
+          "name": "Pressão arterial"
+        },
+        "ru": {
+          "name": "АД"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.bloodPressure",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.glycaemia",
+      "description": "Health score pillar `glycaemia`.",
+      "wire": "pillar id glycaemia",
+      "terms": {
+        "de": {
+          "name": "Blutzucker"
+        },
+        "en": {
+          "name": "Glycaemia"
+        },
+        "fr": {
+          "name": "Glycémie"
+        },
+        "es": {
+          "name": "Glucemia"
+        },
+        "it": {
+          "name": "Glicemia"
+        },
+        "pl": {
+          "name": "Glikemia"
+        },
+        "ko": {
+          "name": "혈당"
+        },
+        "nl": {
+          "name": "Glykemie"
+        },
+        "pt-BR": {
+          "name": "Glicemia"
+        },
+        "ru": {
+          "name": "Гликемия"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.glycaemia",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.activity",
+      "description": "Health score pillar `activity`.",
+      "wire": "pillar id activity",
+      "terms": {
+        "de": {
+          "name": "Aktivität"
+        },
+        "en": {
+          "name": "Activity"
+        },
+        "fr": {
+          "name": "Activité"
+        },
+        "es": {
+          "name": "Actividad"
+        },
+        "it": {
+          "name": "Attività"
+        },
+        "pl": {
+          "name": "Aktywność"
+        },
+        "ko": {
+          "name": "활동"
+        },
+        "nl": {
+          "name": "Activiteit"
+        },
+        "pt-BR": {
+          "name": "Atividade"
+        },
+        "ru": {
+          "name": "Активность"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.activity",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.sleep",
+      "description": "Health score pillar `sleep`.",
+      "wire": "pillar id sleep",
+      "terms": {
+        "de": {
+          "name": "Schlaf"
+        },
+        "en": {
+          "name": "Sleep"
+        },
+        "fr": {
+          "name": "Sommeil"
+        },
+        "es": {
+          "name": "Sueño"
+        },
+        "it": {
+          "name": "Sonno"
+        },
+        "pl": {
+          "name": "Sen"
+        },
+        "ko": {
+          "name": "수면"
+        },
+        "nl": {
+          "name": "Slaap"
+        },
+        "pt-BR": {
+          "name": "Sono"
+        },
+        "ru": {
+          "name": "Сон"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.sleep",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.adiposity",
+      "description": "Health score pillar `adiposity`.",
+      "wire": "pillar id adiposity",
+      "terms": {
+        "de": {
+          "name": "Körperfettverteilung"
+        },
+        "en": {
+          "name": "Adiposity"
+        },
+        "fr": {
+          "name": "Adiposité"
+        },
+        "es": {
+          "name": "Adiposidad"
+        },
+        "it": {
+          "name": "Adiposità"
+        },
+        "pl": {
+          "name": "Otłuszczenie"
+        },
+        "ko": {
+          "name": "체지방"
+        },
+        "nl": {
+          "name": "Lichaamsvet"
+        },
+        "pt-BR": {
+          "name": "Adiposidade"
+        },
+        "ru": {
+          "name": "Жировая масса"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.adiposity",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.wellbeing",
+      "description": "Health score pillar `wellbeing`.",
+      "wire": "pillar id wellbeing",
+      "terms": {
+        "de": {
+          "name": "Wohlbefinden"
+        },
+        "en": {
+          "name": "Wellbeing"
+        },
+        "fr": {
+          "name": "Bien-être"
+        },
+        "es": {
+          "name": "Bienestar"
+        },
+        "it": {
+          "name": "Benessere"
+        },
+        "pl": {
+          "name": "Samopoczucie"
+        },
+        "ko": {
+          "name": "마음 건강"
+        },
+        "nl": {
+          "name": "Welzijn"
+        },
+        "pt-BR": {
+          "name": "Bem-estar"
+        },
+        "ru": {
+          "name": "Благополучие"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.wellbeing",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.lipids",
+      "description": "Health score pillar `lipids`.",
+      "wire": "pillar id lipids",
+      "terms": {
+        "de": {
+          "name": "Blutfette"
+        },
+        "en": {
+          "name": "Lipids"
+        },
+        "fr": {
+          "name": "Lipides"
+        },
+        "es": {
+          "name": "Lípidos"
+        },
+        "it": {
+          "name": "Lipidi"
+        },
+        "pl": {
+          "name": "Lipidy"
+        },
+        "ko": {
+          "name": "지질"
+        },
+        "nl": {
+          "name": "Bloedvetten"
+        },
+        "pt-BR": {
+          "name": "Lipídios"
+        },
+        "ru": {
+          "name": "Липиды"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.lipids",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "readiness",
+      "description": "The composite readiness score.",
+      "wire": "composite READINESS",
+      "terms": {
+        "de": {
+          "name": "Bereitschaft"
+        },
+        "en": {
+          "name": "Readiness"
+        },
+        "fr": {
+          "name": "Disponibilité"
+        },
+        "es": {
+          "name": "Disposición"
+        },
+        "it": {
+          "name": "Prontezza"
+        },
+        "pl": {
+          "name": "Gotowość"
+        },
+        "ko": {
+          "name": "준비도"
+        },
+        "nl": {
+          "name": "Paraatheid"
+        },
+        "pt-BR": {
+          "name": "Prontidão"
+        },
+        "ru": {
+          "name": "Готовность"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.derived.composite.READINESS.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "sleepScore",
+      "description": "The composite sleep score.",
+      "wire": "composite SLEEP_SCORE",
+      "terms": {
+        "de": {
+          "name": "Schlafscore"
+        },
+        "en": {
+          "name": "Sleep score"
+        },
+        "fr": {
+          "name": "Score de sommeil"
+        },
+        "es": {
+          "name": "Puntuación de sueño"
+        },
+        "it": {
+          "name": "Punteggio del sonno"
+        },
+        "pl": {
+          "name": "Wynik snu"
+        },
+        "ko": {
+          "name": "수면 점수"
+        },
+        "nl": {
+          "name": "Slaapscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de sono"
+        },
+        "ru": {
+          "name": "Балл сна"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.derived.composite.SLEEP_SCORE.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurements.typeSleepScore",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "recoveryScore",
+      "description": "The composite recovery score.",
+      "wire": "measurement type RECOVERY_SCORE",
+      "terms": {
+        "de": {
+          "name": "Erholungsscore"
+        },
+        "en": {
+          "name": "Recovery score"
+        },
+        "fr": {
+          "name": "Score de récupération"
+        },
+        "es": {
+          "name": "Puntuación de recuperación"
+        },
+        "it": {
+          "name": "Punteggio di recupero"
+        },
+        "pl": {
+          "name": "Wynik regeneracji"
+        },
+        "ko": {
+          "name": "회복 점수"
+        },
+        "nl": {
+          "name": "Herstelscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de recuperação"
+        },
+        "ru": {
+          "name": "Балл восстановления"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.derived.scores.recovery",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurements.typeRecoveryScore",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "clinicianView.wellness.recovery",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pushRelay",
+      "description": "The optional HealthLog push relay that carries iPhone notifications.",
+      "terms": {
+        "de": {
+          "name": "Push-Relay"
+        },
+        "en": {
+          "name": "Push relay"
+        },
+        "fr": {
+          "name": null
+        },
+        "es": {
+          "name": null
+        },
+        "it": {
+          "name": null
+        },
+        "pl": {
+          "name": null
+        },
+        "ko": {
+          "name": null
+        },
+        "nl": {
+          "name": null
+        },
+        "pt-BR": {
+          "name": null
+        },
+        "ru": {
+          "name": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "admin.pushRelay.title",
+          "form": "name",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": ["Push-Relais"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "liveActivity",
+      "description": "An iOS Live Activity (Apple's term, translated as Apple does).",
+      "terms": {
+        "de": {
+          "name": "Live-Aktivität"
+        },
+        "en": {
+          "name": "Live Activity"
+        },
+        "fr": {
+          "name": null
+        },
+        "es": {
+          "name": null
+        },
+        "it": {
+          "name": null
+        },
+        "pl": {
+          "name": null
+        },
+        "ko": {
+          "name": null
+        },
+        "nl": {
+          "name": null
+        },
+        "pt-BR": {
+          "name": null
+        },
+        "ru": {
+          "name": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "admin.pushRelay.seesWhen",
+          "form": "name",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "guardian",
+      "description": "A person who looks after a managed profile.",
+      "wire": "grant role GUARDIAN",
+      "terms": {
+        "de": {
+          "name": "Betreuende Person",
+          "item": "betreuende Person"
+        },
+        "en": {
+          "name": "Guardian",
+          "item": "guardian"
+        },
+        "fr": {
+          "name": null,
+          "item": null
+        },
+        "es": {
+          "name": null,
+          "item": null
+        },
+        "it": {
+          "name": null,
+          "item": null
+        },
+        "pl": {
+          "name": null,
+          "item": null
+        },
+        "ko": {
+          "name": null,
+          "item": null
+        },
+        "nl": {
+          "name": null,
+          "item": null
+        },
+        "pt-BR": {
+          "name": null,
+          "item": null
+        },
+        "ru": {
+          "name": null,
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "recordSharing.managed.guardianInviteLabel",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": ["Vormund"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "managedProfile",
+      "description": "A health record for someone who does not sign in (a child, a relative).",
+      "wire": "account kind MANAGED",
+      "terms": {
+        "de": {
+          "name": "Verwaltetes Profil"
+        },
+        "en": {
+          "name": "Managed profile"
+        },
+        "fr": {
+          "name": "Profil géré"
+        },
+        "es": {
+          "name": "Perfil administrado"
+        },
+        "it": {
+          "name": "Profilo gestito"
+        },
+        "pl": {
+          "name": "Zarządzany profil"
+        },
+        "ko": {
+          "name": "관리 프로필"
+        },
+        "nl": {
+          "name": "Beheerd profiel"
+        },
+        "pt-BR": {
+          "name": "Perfil gerenciado"
+        },
+        "ru": {
+          "name": "Управляемый профиль"
+        }
+      },
+      "anchors": [
+        {
+          "key": "recordSharing.lookingAfter.kindManaged",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["betreutes Profil", "betreuten Profil", "Kinderprofil"],
+        "en": ["child profile", "dependent profile"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "clinicianLink",
+      "description": "A read-only, passphrase-protected link to the record for a clinician.",
+      "wire": "route /c/[token]",
+      "terms": {
+        "de": {
+          "name": "Freigabelink",
+          "item": "Freigabelink"
+        },
+        "en": {
+          "name": "Share link",
+          "item": "share link"
+        },
+        "fr": {
+          "name": null,
+          "item": null
+        },
+        "es": {
+          "name": null,
+          "item": null
+        },
+        "it": {
+          "name": null,
+          "item": null
+        },
+        "pl": {
+          "name": null,
+          "item": null
+        },
+        "ko": {
+          "name": null,
+          "item": null
+        },
+        "nl": {
+          "name": null,
+          "item": null
+        },
+        "pt-BR": {
+          "name": null,
+          "item": null
+        },
+        "ru": {
+          "name": null,
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "settings.sharing.createTitle",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": ["Freigabe-Link"],
+        "en": ["clinician link", "doctor share link"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "integrations",
+      "description": "Connected data sources (Withings, Apple Health, Oura ...) and their settings page.",
+      "terms": {
+        "de": {
+          "name": "Integrationen"
+        },
+        "en": {
+          "name": "Integrations"
+        },
+        "fr": {
+          "name": "Intégrations"
+        },
+        "es": {
+          "name": "Integraciones"
+        },
+        "it": {
+          "name": "Integrazioni"
+        },
+        "pl": {
+          "name": "Integracje"
+        },
+        "ko": {
+          "name": "연동"
+        },
+        "nl": {
+          "name": "Koppelingen"
+        },
+        "pt-BR": {
+          "name": "Integrações"
+        },
+        "ru": {
+          "name": "Интеграции"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.integrations.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.integrations.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "dataSource",
+      "description": "One source that delivers readings.",
+      "terms": {
+        "de": {
+          "name": "Datenquelle",
+          "item": "Datenquelle"
+        },
+        "en": {
+          "name": "Data source",
+          "item": "data source"
+        },
+        "fr": {
+          "name": null,
+          "item": null
+        },
+        "es": {
+          "name": null,
+          "item": null
+        },
+        "it": {
+          "name": null,
+          "item": null
+        },
+        "pl": {
+          "name": null,
+          "item": null
+        },
+        "ko": {
+          "name": null,
+          "item": null
+        },
+        "nl": {
+          "name": null,
+          "item": null
+        },
+        "pt-BR": {
+          "name": null,
+          "item": null
+        },
+        "ru": {
+          "name": null,
+          "item": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "gettingStarted.items.dataSourceTitle",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "quietSource",
+      "description": "A source that usually delivers daily and has stopped.",
+      "wire": "digest reasons no_new_data, sync_stalled",
+      "terms": {
+        "de": {
+          "name": "verstummt"
+        },
+        "en": {
+          "name": "quiet"
+        },
+        "fr": {
+          "name": null
+        },
+        "es": {
+          "name": null
+        },
+        "it": {
+          "name": null
+        },
+        "pl": {
+          "name": null
+        },
+        "ko": {
+          "name": null
+        },
+        "nl": {
+          "name": null
+        },
+        "pt-BR": {
+          "name": null
+        },
+        "ru": {
+          "name": null
+        }
+      },
+      "anchors": [
+        {
+          "key": "settings.appleHealth.quietSince",
+          "form": "name",
+          "match": "contains"
+        },
+        {
+          "key": "notifications.syncStalled.title",
+          "form": "name",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": ["still seit"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    }
+  ],
+  "allow": [
+    {
+      "locale": "en",
+      "key": "palette.keywords.careCalendar",
+      "text": "appointment",
+      "reason": "Search keyword: someone typing the everyday word still finds the care calendar."
+    },
+    {
+      "locale": "en",
+      "key": "mood.context.eventType.appointment",
+      "text": "appointment",
+      "reason": "A mood context event of any kind (a meeting, an errand), not a recorded doctor's visit."
+    },
+    {
+      "locale": "en",
+      "key": "nutrients.sparseNote",
+      "text": "health report",
+      "reason": "\"Apple Health report the same day\": the verb, not the doctor report."
+    },
+    {
+      "locale": "de",
+      "key": "day.movement.places",
+      "text": "Besuch",
+      "reason": "\"Besuchte Orte\" are places visited on a walk, not doctor's visits."
+    },
+    {
+      "locale": "de",
+      "key": "labs.aliases.empty",
+      "text": "Labore",
+      "reason": "Laboratories that print a result, not the lab results area."
+    },
+    {
+      "locale": "de",
+      "key": "palette.keywords.emergencyCard",
+      "text": "Notfallausweis",
+      "reason": "Search keyword: the everyday word still finds the emergency card."
+    },
+    {
+      "locale": "de",
+      "key": "emergencyCard.appleWallet.more.lock",
+      "text": "Notfallpass",
+      "reason": "Apple's German name for the Health app's Medical ID, which this sentence points to."
+    }
+  ]
+}

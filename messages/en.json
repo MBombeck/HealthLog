@@ -233,8 +233,8 @@
     "encounter": {
       "invalid": "Check the visit details and try again.",
       "practitioner-not-found": "This practice or doctor no longer exists. Choose another or none.",
-      "reminder-not-found": "This checkup no longer exists. Choose another or none.",
-      "reminder-conflict": "A planned visit cannot close a checkup, because it has not happened yet.",
+      "reminder-not-found": "This check-up no longer exists. Choose another or none.",
+      "reminder-conflict": "A planned visit cannot close a check-up, because it has not happened yet.",
       "series-not-found": "This treatment series no longer exists. Choose another or none."
     },
     "vaccination": {
@@ -304,7 +304,7 @@
     }
   },
   "doctorReport": {
-    "title": "Health Report",
+    "title": "Doctor report",
     "anamnesisTitle": "Health profile",
     "anamnesisNotRecorded": "Not recorded",
     "anamnesisUnreadable": "Stored value could not be read",
@@ -314,7 +314,7 @@
     "anamnesisShiftSchedule": "Work schedule",
     "anamnesisColFact": "Profile item",
     "anamnesisColValue": "Recorded value",
-    "subtitle": "HealthLog: Personal Health Report",
+    "subtitle": "Created with HealthLog",
     "patient": "Patient",
     "dateOfBirth": "Date of birth",
     "gender": "Gender",
@@ -432,7 +432,7 @@
     "summaryTrend": "{label}: latest {latest} {arrow}",
     "summaryAdherence": "Medication adherence: {rate}% (weighted mean).",
     "chartsTitle": "Trend charts",
-    "packageReadme": "HealthLog health record\n\nThis package contains:\n- report.pdf: the health report for your doctor.\n- bundle.json: the same data as an HL7 FHIR R4 document Bundle, ePA-compatible.\n\nGenerated with HealthLog.",
+    "packageReadme": "HealthLog doctor report\n\nThis package contains:\n- report.pdf: the doctor report as a PDF.\n- bundle.json: the same data as an HL7 FHIR R4 document Bundle, ePA-compatible.\n\nGenerated with HealthLog.",
     "wellnessTitle": "Wellness summary",
     "wellnessDisclaimer": "These are descriptive wellness scores computed from your tracked signals (0–100). They are not clinical assessments or diagnoses.",
     "wellnessRecovery": "Recovery",
@@ -474,7 +474,7 @@
       "cv": "Variability (CV%)",
       "spotCaveat": "These are spot-reading estimates from individual measurements, not a continuous-monitor profile. Read them as a direction of travel rather than a clinical verdict."
     },
-    "illnessTitle": "Conditions & illnesses",
+    "illnessTitle": "Illness episodes",
     "illnessOngoing": "Ongoing",
     "illnessColCondition": "Condition",
     "illnessColBodySite": "Body site",
@@ -642,15 +642,15 @@
       "recentMeasurementDescription": "Recently logged measurement"
     },
     "cycle": "Cycle",
-    "labs": "Labs",
-    "profile": "Profile",
+    "labs": "Lab results",
+    "profile": "Medical history",
     "vorsorge": "Care",
     "illness": "Illness",
     "documents": "Documents",
     "vaccinations": "Vaccinations",
     "mentalWellbeing": "Mental wellbeing",
     "timeline": "Timeline",
-    "seizures": "Seizures",
+    "seizures": "Seizure diary",
     "emergencyCard": "Emergency card",
     "groups": {
       "tracking": "Tracking",
@@ -868,7 +868,7 @@
       "ecg_new_recording": "New ECG recordings",
       "tension_window": "Tension windows",
       "same_time_baseline": "Same-time activity",
-      "upcoming_visit": "Appointments"
+      "upcoming_visit": "Visits"
     },
     "layoutReset": "Reset to defaults",
     "layoutResetTitle": "Reset the dashboard layout?",
@@ -1513,8 +1513,8 @@
       "linkedActiveEnergy": "Active energy",
       "linkedRestingHeartRate": "Resting heart rate",
       "linkedHrv": "Heart rate variability",
-      "bodyLogged": "Logged in the illness journal: {count, plural, one {# symptom} other {# symptoms}}",
-      "bodyNotLogged": "Nothing is logged in the illness journal for this day",
+      "bodyLogged": "Logged under Illness: {count, plural, one {# symptom} other {# symptoms}}",
+      "bodyNotLogged": "Nothing is logged under Illness for this day",
       "openIllness": "Open"
     },
     "sourceNotification": "Notification",
@@ -3118,7 +3118,7 @@
     "heroGreetingEvening": "Good evening",
     "heroActionAskCoach": "Ask the coach",
     "healthScore": {
-      "label": "Health Score",
+      "label": "Health score",
       "band": {
         "green": "In the reference range",
         "yellow": "Some pillars need attention",
@@ -3206,7 +3206,7 @@
         "no_personal_goal": "Set a personal weight goal to see progress here.",
         "weight_not_tracked": "Log a weight reading to see progress toward your goal.",
         "read_failed": "Weight data could not be loaded. Try again.",
-        "notScored": "Weight-goal progress is personal context and does not affect the Health Score.",
+        "notScored": "Weight-goal progress is personal context and does not affect the Health score.",
         "pregnancy_context": "During a pregnancy and after the birth, weight is shown as data, not against a goal."
       },
       "configureLink": "Choose what counts toward your score",
@@ -5317,8 +5317,8 @@
       "coachPrefill": "I haven’t added any medications yet. What should I know before I start tracking medication compliance here?"
     },
     "scoreHistory": {
-      "healthTitle": "Health Score history",
-      "healthDescription": "Your Health Score day by day, as it was shown on each day.",
+      "healthTitle": "Health score history",
+      "healthDescription": "Your Health score day by day, as it was shown on each day.",
       "emptyDescription": "No score was recorded in this range yet.",
       "usualRange": "Shaded: your usual range, {lo} to {hi}.",
       "seam": "The line breaks where what counts toward the score changed."
@@ -5421,12 +5421,12 @@
           "body": "Medications manages schedules, intakes, stock, and titration. Hidden: recurring plans (RRULE/rolling) and low-stock warnings. Your intake rate feeds the adherence pillar on the dashboard and the AI’s context."
         },
         "labs": {
-          "title": "Lab values",
-          "body": "Labs captures biomarkers with reference ranges: blood count, cholesterol, HbA1c. Strength: import and FHIR export. Out-of-range lab values resurface as evidence in the insights and the doctor report."
+          "title": "Lab results",
+          "body": "The lab results page captures biomarkers with reference ranges: blood count, cholesterol, HbA1c. Strength: import and FHIR export. Out-of-range lab results resurface as evidence in the insights and the doctor report."
         },
         "illness": {
-          "title": "Illness journal",
-          "body": "The illness journal records acute episodes and chronic diagnoses with their flares. Hidden: correlate an episode with your readings, and Rest Mode that pauses reminders. That’s how the Coach understands why values drift for a while."
+          "title": "Illness",
+          "body": "Illness records acute episodes and chronic diagnoses with their flares. Hidden: correlate an episode with your readings, and Rest Mode that pauses reminders. That’s how the Coach understands why values drift for a while."
         },
         "vorsorge": {
           "title": "Care",
@@ -5446,7 +5446,7 @@
         },
         "coach": {
           "title": "Coach",
-          "body": "The Coach answers questions about your data in a dialogue, using your history, medications, and lab values as context. Pick your AI provider yourself (your own key or local). It recomputes nothing; it reads the same numbers as the dashboard."
+          "body": "The Coach answers questions about your data in a dialogue, using your history, medications, and lab results as context. Pick your AI provider yourself (your own key or local). It recomputes nothing; it reads the same numbers as the dashboard."
         },
         "integrations": {
           "title": "Integrations",
@@ -5454,7 +5454,7 @@
         },
         "export": {
           "title": "Doctor report",
-          "body": "The doctor report bundles readings, medications, lab values, and checkups as PDF or FHIR for the appointment. This is where every module converges: a complete report only comes from well-kept data."
+          "body": "The doctor report bundles readings, medications, lab results and check-ups as PDF or FHIR for the visit. This is where every module converges: a complete report only comes from well-kept data."
         },
         "achievements": {
           "title": "Achievements",
@@ -5776,7 +5776,7 @@
       "insightsDescription": "Add a local model or your own AI key to unlock the daily briefing and Coach.",
       "insightsCta": "Turn on insights",
       "visitTitle": "Prepare for the visit",
-      "visitDescription": "Put the appointment on the calendar; the doctor report bundles what to bring.",
+      "visitDescription": "Put the visit on the calendar; the doctor report bundles what to bring.",
       "visitCta": "Open visits",
       "dataSourceNamedTitle": "Connect {source}",
       "managedProfileTitle": "Create the profile you look after",
@@ -5795,7 +5795,7 @@
         },
         "careFeed": {
           "title": "Care calendar subscription",
-          "description": "Appointments and check-ups in the calendar app you already use.",
+          "description": "Visits and check-ups in the calendar app you already use.",
           "cta": "Subscribe"
         },
         "sharing": {
@@ -6057,7 +6057,7 @@
           "description": "View, sort, and manual order."
         },
         "illness": {
-          "title": "Illness journal",
+          "title": "Illness",
           "description": "List view and episode order."
         },
         "checkups": {
@@ -6661,8 +6661,8 @@
         }
       },
       "health-record": {
-        "title": "Health record",
-        "subtitle": "Export a complete, clinician-ready health record."
+        "title": "Doctor report and export",
+        "subtitle": "Build the doctor report and export a complete, clinician-ready health record."
       },
       "coach": {
         "title": "Coach",
@@ -6782,7 +6782,7 @@
         "notice": {
           "upgrade": {
             "title": "What counts is now yours to choose",
-            "body": "Which pillars counted toward your Health Score used to follow the modules you had switched on. It is a separate choice now, and this page is where you make it. Your number did not move when this arrived: it still counts exactly what it counted before."
+            "body": "Which pillars counted toward your Health score used to follow the modules you had switched on. It is a separate choice now, and this page is where you make it. Your number did not move when this arrived: it still counts exactly what it counted before."
           },
           "changed": {
             "title": "You changed what counts",
@@ -7234,7 +7234,7 @@
         "request": {
           "title": "Your agreement before AI starts",
           "body": "AI on this server runs on a service the operator provides: {providers}. Nothing from your records goes there until you agree.",
-          "data": "Once you agree, HealthLog sends that service what the AI features need: readings such as weight, blood pressure, pulse, sleep and activity, your medications, mood, lab values and cycle entries if you keep them, what you write in your profile and to the Coach, and documents you choose to have read. The service uses it to write your daily briefing, the notes on your readings and the Coach's answers.",
+          "data": "Once you agree, HealthLog sends that service what the AI features need: readings such as weight, blood pressure, pulse, sleep and activity, your medications, mood, lab results and cycle entries if you keep them, what you write in your profile and to the Coach, and documents you choose to have read. The service uses it to write your daily briefing, the notes on your readings and the Coach's answers.",
           "withdrawHint": "You can withdraw your agreement at any time in Settings, AI. Nothing more is sent from that moment on.",
           "agree": "Agree",
           "dismiss": "Not now"
@@ -7723,7 +7723,7 @@
       "errorGeneric": "The export could not be generated. Please try again.",
       "errorRateLimit": "You have reached the export limit for this hour.",
       "errorModuleDisabled": "The health record export is switched off for this account.",
-      "visitOffer": "An appointment is coming up on {when}: {what}.",
+      "visitOffer": "A visit is coming up on {when}: {what}.",
       "visitOfferApplyWindow": "Use this window"
     },
     "globalExcludedInjectionSitesLabel": "Globally excluded injection sites",
@@ -7999,7 +7999,7 @@
       "revokeSessionConfirmBody": "{device} will need to sign in again. Nothing recorded on it is affected.",
       "signOutEverywhereConfirmTitle": "Sign out every other device?",
       "signOutEverywhereConfirmBody": "Every other device, every connected AI assistant and every API token will need to sign in or be set up again. This device stays signed in. Nothing you have recorded is affected.",
-      "signOutEverywhereShareLinks": "Also end the doctor share links",
+      "signOutEverywhereShareLinks": "Also end the share links",
       "signOutEverywhereInvites": "Invitations to your record that nobody has accepted yet are withdrawn. People who already accepted keep their access; you can end it next.",
       "signOutEverywhereInvitesDone": "Withdrew {count, plural, one {# invitation} other {# invitations}} nobody had accepted.",
       "grantsKeptTitle": "These people can still see your record",
@@ -8062,9 +8062,9 @@
             "link": "Open shared access"
           },
           "shareLinks": {
-            "title": "Clinician links",
+            "title": "Share links",
             "description": "Read-only links to your doctor report that end on a date you set.",
-            "link": "Open clinician links"
+            "link": "Open share links"
           },
           "emergencyCard": {
             "title": "Emergency card link",
@@ -9049,7 +9049,7 @@
         "restoreSkippedMoodTag": "Mood tag",
         "restoreSkippedVisitReference": "Visit reference",
         "restoreSkippedVaccinationReference": "Vaccination reference",
-        "restoreSkippedCheckupClosure": "Checkup closure",
+        "restoreSkippedCheckupClosure": "Check-up closure",
         "restoreSkippedReminderReference": "Reminder reference",
         "restoreSkippedCoachAttachment": "Coach document link",
         "restoreSkippedCoachReference": "Coach reference",
@@ -9892,7 +9892,7 @@
   },
   "achievements": {
     "title": "Achievements",
-    "subtitle": "Earn achievements by tracking your health and taking your meds on time.",
+    "subtitle": "Earn achievements by tracking your health and taking your medications on time.",
     "loginRequired": "Please sign in to view achievements.",
     "points": "Points",
     "unlocked": "Unlocked",
@@ -10237,7 +10237,7 @@
       "groupVitals": "Vitals",
       "groupVitalsDesc": "Blood pressure, recovery, weight trend, sleep.",
       "groupRoutine": "Routine",
-      "groupRoutineDesc": "Abrupt tracking stops and self-context check-ups.",
+      "groupRoutineDesc": "Abrupt tracking stops and questions about yourself.",
       "frequencyLabel": "Frequency",
       "frequencyWeekly": "At most once a week",
       "frequencyBiweekly": "At most every two weeks",
@@ -10284,7 +10284,7 @@
     "eventMedicationLowStockDesc": "When a tracked medication supply covers fewer days than your low-stock threshold",
     "eventCoachNudge": "Coach nudge",
     "eventCoachNudgeDesc": "Occasional prompt from your Coach when your recent trends warrant a check-in.",
-    "eventMeasurementReminder": "Measurement reminder",
+    "eventMeasurementReminder": "Check-up reminder",
     "eventMeasurementReminderDesc": "Sent when a tracked measurement is due.",
     "eventMedicationIntakeSync": "Medication intake sync",
     "eventMedicationIntakeSyncDesc": "Cross-device update when a dose is logged, taken or skipped.",
@@ -10367,8 +10367,8 @@
       "saveError": "Could not save. Please try again later."
     },
     "checkupReminders": {
-      "title": "Checkup reminders",
-      "description": "Switch individual checkup reminders on or off."
+      "title": "Check-up reminders",
+      "description": "Switch individual check-up reminders on or off."
     },
     "eventBackupHealth": "Backup health",
     "eventBackupHealthDesc": "When a backup stops, falls behind or recovers. Sent to admins only.",
@@ -10626,7 +10626,7 @@
     "period": "Reporting period: {start}–{end}",
     "expires": "This link expires on {date}.",
     "provenance": "This is a read-only summary shared by the person it belongs to, exported from their self-tracked HealthLog data. Values are self-recorded and may include device-synced readings; treat them as patient-reported, not as a clinical examination.",
-    "labs": "Lab values",
+    "labs": "Lab results",
     "medications": "Medications & adherence",
     "bmi": "Body mass index (BMI)",
     "statSummary": "latest {latest} (avg {avg}, range {min}–{max})",
@@ -10789,7 +10789,7 @@
       "loadError": "Could not load your cycle."
     },
     "disclaimer": "These predictions are descriptive estimates from your logged data, not a contraceptive method and not medical advice. They never indicate that it is safe to have unprotected sex. For contraception or any medical decision, consult a healthcare professional.",
-    "title": "Your cycle",
+    "title": "Cycle",
     "subtitle": "Log your period and symptoms, see what comes next.",
     "tabs": {
       "calendar": "Calendar",
@@ -11189,7 +11189,7 @@
     "markDone": "Done",
     "delete": "Delete",
     "deleteConfirmTitle": "Delete reminder?",
-    "deleteConfirmDescription": "This checkup reminder will be permanently deleted.",
+    "deleteConfirmDescription": "This check-up reminder will be permanently deleted.",
     "postpone": {
       "menuItem": "Postpone…",
       "title": "Postpone due date",
@@ -11276,7 +11276,7 @@
       "rruleHint": "RFC-5545, e.g. FREQ=YEARLY for an annual check.",
       "firstDue": "First due (optional)"
     },
-    "pushTitle": "Checkup reminder",
+    "pushTitle": "Check-up reminder",
     "pushBody": "Time for: {label}",
     "pushLocation": "(at {location})",
     "edit": "Edit",
@@ -11302,7 +11302,7 @@
       "empty": "No reminders to customize yet."
     },
     "dashboard": {
-      "empty": "No upcoming checkup reminders.",
+      "empty": "No upcoming check-up reminders.",
       "openLink": "Open Care"
     },
     "showMeasurements": "Show measurements",
@@ -11808,7 +11808,7 @@
       "description": "Schedules, intakes, and adherence."
     },
     "illness": {
-      "label": "Illness journal",
+      "label": "Illness",
       "description": "Track illness and condition episodes with a daily symptom timeline."
     },
     "mcp": {
@@ -12028,7 +12028,7 @@
       "viewDescription": "Choose whether episodes show as cards or as a compact list.",
       "orderDescription": "Drag your episodes into the order you want to see them in."
     },
-    "customize": "Customize illness journal",
+    "customize": "Customize Illness",
     "newEpisode": "New episode",
     "logDay": "Log a day",
     "markRecovered": "Mark recovered",
@@ -13277,7 +13277,7 @@
       "sourceOther": "another system",
       "sourceReportSchedule": "the report schedule",
       "share": "Share",
-      "labValuesLink": "View {count, plural, one {# lab value} other {# lab values}}",
+      "labValuesLink": "View {count, plural, one {# lab result} other {# lab results}}",
       "visitsLabel": "Belongs to visit",
       "vaccinationsLabel": "Vaccinations",
       "noVisitsToLink": "No visits recorded yet.",
@@ -13359,9 +13359,9 @@
     },
     "ai": {
       "readDone": "The AI read your document.",
-      "readStagedOne": "The AI read your document. 1 lab value is ready to review.",
-      "readStagedFew": "The AI read your document. {count} lab values are ready to review.",
-      "readStagedOther": "The AI read your document. {count} lab values are ready to review.",
+      "readStagedOne": "The AI read your document. 1 lab result is ready to review.",
+      "readStagedFew": "The AI read your document. {count} lab results are ready to review.",
+      "readStagedOther": "The AI read your document. {count} lab results are ready to review.",
       "read": "Read with AI",
       "reread": "Read again",
       "reading": "Reading…",
@@ -13375,7 +13375,7 @@
       "openOther": "Review extracted values ({count})",
       "includeAria": "Include {value}",
       "type": {
-        "OBSERVATION": "Lab value",
+        "OBSERVATION": "Lab result",
         "CONDITION": "Condition",
         "MEDICATION_STATEMENT": "Medication"
       },
@@ -13400,7 +13400,7 @@
       "savedToastFew": "{count} values saved",
       "savedToastOther": "{count} values saved",
       "nothingSavedToast": "Review saved. No values were added.",
-      "extract": "Extract lab values",
+      "extract": "Extract lab results",
       "extracting": "Extracting…",
       "extractHint": "Uses the text already read from this document. Extracted values wait for your review; nothing is saved automatically.",
       "extractEmpty": "No values could be extracted from this document.",
@@ -13425,7 +13425,7 @@
       "title": "Share this document",
       "multiTitle": "Share these documents",
       "multiLabel": "{count, plural, one {# document} other {# documents}}",
-      "description": "Create a read-only clinician link with this document attached. The link and its passphrase appear once."
+      "description": "Create a read-only share link for a clinician with this document attached. The link and its passphrase appear once."
     },
     "chat": {
       "title": "Chat about this document",
@@ -13552,7 +13552,7 @@
     }
   },
   "selfDescription": {
-    "dataPosture": "HealthLog is self-hosted: your health data lives in your own instance's database. Notes and other free text, documents, questionnaire answers, AI-written text and access tokens are encrypted at rest; measurement values, lab values, medication names and mood scores are stored unencrypted and rely on the security of your server. AI features send data only to the AI provider set up for your account, and there is no third-party analytics on your health data."
+    "dataPosture": "HealthLog is self-hosted: your health data lives in your own instance's database. Notes and other free text, documents, questionnaire answers, AI-written text and access tokens are encrypted at rest; measurement values, lab results, medication names and mood scores are stored unencrypted and rely on the security of your server. AI features send data only to the AI provider set up for your account, and there is no third-party analytics on your health data."
   },
   "customMetrics": {
     "sectionTitle": "Custom metrics",
@@ -13846,7 +13846,7 @@
         }
       },
       "upcomingVisit": {
-        "title": "Appointment coming up",
+        "title": "Visit coming up",
         "bodyToday": "{what} today",
         "bodyTomorrow": "{what} tomorrow",
         "bodyDayAfterTomorrow": "{what} the day after tomorrow"
@@ -13856,8 +13856,8 @@
       "logDose": "Take",
       "reconnect": "Reconnect",
       "viewCheckups": "Open Care",
-      "viewAppointment": "View appointment",
-      "viewAppointments": "View appointments",
+      "viewAppointment": "View visit",
+      "viewAppointments": "View visits",
       "checkinKeep": "Keep it",
       "checkinAdjust": "Adjust",
       "checkinLetGo": "Let it go",
@@ -13969,7 +13969,7 @@
         "next": "Next dose at {time}"
       },
       "appointment": {
-        "label": "Appointment",
+        "label": "Visit",
         "today": "Today {time}, {what}",
         "tomorrow": "Tomorrow {time}, {what}"
       },
@@ -14026,7 +14026,7 @@
     "leafFamilyHistory": "Family history",
     "leafMood": "Mood",
     "leafCycle": "Menstrual cycle",
-    "templateStandard": "Standard doctor's report",
+    "templateStandard": "Standard doctor report",
     "applyStandard": "Apply {template}",
     "standardHint": "One click fills in what a general visit usually needs. Every entry stays editable.",
     "groupCount": "{on}/{total}",
@@ -14321,13 +14321,13 @@
       "measurementDelete": "{name} removed a reading",
       "measurementDeleteBulk": "{name} removed several readings at once",
       "measurementRestore": "{name} restored a reading",
-      "measurementReminderCreate": "{name} added a measurement reminder",
-      "measurementReminderUpdate": "{name} changed a measurement reminder",
-      "measurementReminderDelete": "{name} removed a measurement reminder",
-      "measurementReminderComplete": "{name} completed a measurement reminder",
-      "measurementReminderSatisfy": "{name} cleared a measurement reminder",
-      "measurementReminderSkip": "{name} skipped a measurement reminder",
-      "measurementReminderSnooze": "{name} postponed a measurement reminder",
+      "measurementReminderCreate": "{name} added a check-up reminder",
+      "measurementReminderUpdate": "{name} changed a check-up reminder",
+      "measurementReminderDelete": "{name} removed a check-up reminder",
+      "measurementReminderComplete": "{name} completed a check-up reminder",
+      "measurementReminderSatisfy": "{name} cleared a check-up reminder",
+      "measurementReminderSkip": "{name} skipped a check-up reminder",
+      "measurementReminderSnooze": "{name} postponed a check-up reminder",
       "labResultUpdate": "{name} changed a lab result",
       "labResultDelete": "{name} removed a lab result",
       "labResultRestore": "{name} restored a lab result",
@@ -14401,8 +14401,8 @@
       "rejectedLabUpdate": "{name} tried to change a lab result and was refused",
       "rejectedBiomarkerCreate": "{name} tried to add a biomarker and was refused",
       "rejectedBiomarkerUpdate": "{name} tried to change a biomarker and was refused",
-      "rejectedReminderCreate": "{name} tried to add a measurement reminder and was refused",
-      "rejectedReminderUpdate": "{name} tried to change a measurement reminder and was refused",
+      "rejectedReminderCreate": "{name} tried to add a check-up reminder and was refused",
+      "rejectedReminderUpdate": "{name} tried to change a check-up reminder and was refused",
       "rejectedMoodCreate": "{name} tried to add a mood entry and was refused",
       "rejectedMoodUpdate": "{name} tried to change a mood entry and was refused",
       "rejectedDoseCreate": "{name} tried to record a dose and was refused",
@@ -14552,7 +14552,7 @@
       "emergency": "Emergency",
       "hospital": "Hospital",
       "therapy": "Therapy session",
-      "other": "Appointment",
+      "other": "Other visit",
       "procedure": "Procedure or surgery"
     },
     "laterality": {
@@ -14563,7 +14563,7 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Visits",
-    "sectionDescription": "Doctor's visits and booked appointments in one place.",
+    "sectionDescription": "Past and booked visits in one place.",
     "add": "Visit",
     "loadError": "Visits could not be loaded.",
     "emptyTitle": "No visit recorded yet",
@@ -14576,7 +14576,7 @@
     "created": "Visit saved",
     "updated": "Visit updated",
     "saveFailed": "The visit could not be saved.",
-    "checkupNotClosed": "Visit saved. The checkup stays open; your access does not cover that.",
+    "checkupNotClosed": "Visit saved. The check-up stays open; your access does not cover that.",
     "status": {
       "planned": "Planned",
       "done": "Attended",
@@ -14590,7 +14590,7 @@
     },
     "form": {
       "date": "Date and time",
-      "dateDerivesStatusHint": "A date in the future is a booked appointment.",
+      "dateDerivesStatusHint": "A date in the future is a booked visit.",
       "status": "Status",
       "practitioner": "Practice or doctor",
       "practitionerHint": "Optional: you can add the name later.",
@@ -14624,7 +14624,7 @@
       "add": "Add a visit"
     },
     "dashboard": {
-      "nextVisit": "Next appointment: {what} on {when}"
+      "nextVisit": "Next visit: {what} on {when}"
     },
     "procedures": {
       "title": "Procedures and surgeries",
@@ -14654,7 +14654,7 @@
     "restoreFailed": "The visit could not be restored."
   },
   "checkups": {
-    "viewSwitchLabel": "Show checkups, visits, procedures or body sites",
+    "viewSwitchLabel": "Show check-ups, visits, procedures or body sites",
     "tabVorsorge": "Care",
     "tabVisits": "Visits",
     "tabProcedures": "Procedures",
@@ -15063,7 +15063,7 @@
     },
     "lanes": {
       "life": "Life",
-      "illness": "Conditions",
+      "illness": "Illness",
       "allergies": "Allergies",
       "medications": "Medications",
       "vaccinations": "Vaccinations",
@@ -15219,7 +15219,7 @@
       "end": "End",
       "seriesCaption": "Value means by period",
       "period": "Period",
-      "labsCaption": "Lab values by day",
+      "labsCaption": "Lab results by day",
       "marker": "Marker",
       "date": "Date",
       "value": "Value"
@@ -15264,9 +15264,9 @@
       "apply": "Apply"
     },
     "item": {
-      "labValuesOne": "1 lab value",
-      "labValuesFew": "{count} lab values",
-      "labValuesOther": "{count} lab values",
+      "labValuesOne": "1 lab result",
+      "labValuesFew": "{count} lab results",
+      "labValuesOther": "{count} lab results",
       "seizuresOne": "1 seizure",
       "seizuresFew": "{count} seizures",
       "seizuresOther": "{count} seizures",
@@ -15274,9 +15274,9 @@
       "postpartum": "After the birth"
     },
     "labs": {
-      "menuTitle": "Lab values",
+      "menuTitle": "Lab results",
       "otherPanel": "Other",
-      "full": "Up to {max, plural, one {# lab value} other {# lab values}} at once. Remove one to add another.",
+      "full": "Up to {max, plural, one {# lab result} other {# lab results}} at once. Remove one to add another.",
       "above": "above range",
       "below": "below range",
       "reference": "reference {range}",
@@ -15286,7 +15286,7 @@
       "excludedFew": "{name}: {count} values in another unit are not drawn",
       "excludedOther": "{name}: {count} values in another unit are not drawn"
     },
-    "legendLabValue": "Lab value, as measured",
+    "legendLabValue": "Lab result, as measured",
     "legendLabOutside": "Outside the reference range",
     "legendLabRange": "Reference range",
     "legendSymptom": "Symptom line: each logged day's highest intensity (0 to 10), averaged over the logged days",
@@ -15397,7 +15397,7 @@
       "source": {
         "mood": "Mood note",
         "measurement": "Note on a reading",
-        "illness": "Illness diary"
+        "illness": "Illness"
       }
     },
     "keywords": {
@@ -16100,7 +16100,7 @@
   },
   "careFeed": {
     "sectionTitle": "Calendar",
-    "sectionSubtitle": "Your appointments and what is coming due, in the calendar app you already use.",
+    "sectionSubtitle": "Your visits and what is coming due, in the calendar app you already use.",
     "title": "Care calendar",
     "description": "Booked visits at their time, and check-ups and vaccination boosters on the day they come due.",
     "loadError": "The calendar subscription could not be loaded.",
@@ -16111,8 +16111,8 @@
     "vaccinations": "Vaccination boosters coming due",
     "ics": {
       "calendarName": "Care dates (HealthLog)",
-      "visit": "Appointment",
-      "visitWith": "Appointment: {name}",
+      "visit": "Visit",
+      "visitWith": "Visit: {name}",
       "checkupDue": "Due: {label}",
       "boosterDue": "Booster due: {label}",
       "sessionOf": "Session {number} of {planned}",
