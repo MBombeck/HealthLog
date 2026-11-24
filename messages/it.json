@@ -16074,7 +16074,8 @@
     "wallet": {
       "instructions": "Stampa al 100 per cento, ritaglia lungo il bordo, piega sulla linea tratteggiata.",
       "scan": "Scansiona per la tessera completa",
-      "cut": "Accorciato per starci. La tessera completa è dietro il codice QR."
+      "cut": "Accorciato per starci. La tessera completa è dietro il codice QR.",
+      "cutNoCode": "Accorciata per farla stare. La scheda completa è nell’app."
     },
     "link": {
       "validUntil": "Sola lettura. Questo link funziona fino al {date}.",

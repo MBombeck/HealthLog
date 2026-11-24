@@ -16074,7 +16074,8 @@
     "wallet": {
       "instructions": "Imprimez à 100 pour cent, découpez le long du contour, pliez sur la ligne pointillée.",
       "scan": "Scannez pour la carte complète",
-      "cut": "Raccourci pour tenir. La carte complète est derrière le code QR."
+      "cut": "Raccourci pour tenir. La carte complète est derrière le code QR.",
+      "cutNoCode": "Raccourcie pour tenir. La carte complète se trouve dans l’app."
     },
     "link": {
       "validUntil": "Lecture seule. Ce lien fonctionne jusqu'au {date}.",

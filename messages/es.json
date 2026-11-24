@@ -16074,7 +16074,8 @@
     "wallet": {
       "instructions": "Imprime al 100 por ciento, recorta por el contorno y dobla por la línea discontinua.",
       "scan": "Escanea para la tarjeta completa",
-      "cut": "Recortado para que quepa. La tarjeta completa está tras el código QR."
+      "cut": "Recortado para que quepa. La tarjeta completa está tras el código QR.",
+      "cutNoCode": "Acortada para que quepa. La tarjeta completa está en la app."
     },
     "link": {
       "validUntil": "Solo lectura. Este enlace funciona hasta el {date}.",
