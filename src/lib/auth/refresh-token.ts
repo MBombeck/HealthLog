@@ -123,6 +123,9 @@ export async function issueAccessAndRefresh(
 }
 
 /**
+ * `family_ended` is a family past its absolute end, read from
+ * `familyStartedAt` rather than the row's expiry so a row stored under a longer
+ * setting ends on time too; the client signs in again.
  * `already_used` is the replay of a consumed token: reuse detection fired and
  * the device family is revoked. `superseded` is the loser of two concurrent
  * rotations of the same live token: nothing was revoked, the winner's pair is
@@ -162,10 +165,6 @@ export async function rotateRefreshToken(input: {
 
   if (!row) return { ok: false, reason: "not_found" };
   if (row.revokedAt) return { ok: false, reason: "revoked" };
-  // The row's own expiry, and the family's absolute end counted from its
-  // sign-in: a family rotated every day still ends there, and the client
-  // signs in again. Read from `familyStartedAt` rather than trusted to the
-  // row's expiry, so a row issued under a longer setting ends on time too.
   if (row.expiresAt.getTime() <= Date.now())
     return { ok: false, reason: "expired" };
   if (refreshFamilyHardEnd(row.familyStartedAt).getTime() <= Date.now())

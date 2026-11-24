@@ -146,8 +146,12 @@ function refreshArtifactTtlMs(endsAt: Date | undefined): number {
 }
 
 async function mintTokenPair(args: TokenPairArgs): Promise<Response> {
-  const access = await persistAccessToken(args);
-  return finalizeTokenPair(args, access);
+  // A connection opened by this consent ends a fixed time from now.
+  const pair = args.connectionId
+    ? { ...args, endsAt: refreshFamilyHardEnd(new Date()) }
+    : args;
+  const access = await persistAccessToken(pair);
+  return finalizeTokenPair(pair, access);
 }
 
 async function persistAccessToken(
@@ -351,7 +355,6 @@ export async function POST(request: NextRequest): Promise<Response> {
         grant: "authorization_code",
         connectionId,
         refreshJti,
-        endsAt: connectionId ? refreshFamilyHardEnd(new Date()) : undefined,
       });
     }
 
@@ -418,22 +421,19 @@ export async function POST(request: NextRequest): Promise<Response> {
         refreshJti: newJti,
       };
 
-      // Rotation and successor insertion are one serialized state transition.
-      // A replay transaction commits family revocation; a successful
-      // transaction commits both JTI advancement and the successor access row.
-      // Any insertion error rejects the callback and PostgreSQL rolls every
-      // earlier state change back. No artifact is signed inside this callback.
+      // One serialized state transition: a replay commits the family's
+      // revocation, a success the JTI advance and the successor access row
+      // (capped at the connection's end); an insertion error rolls all of it
+      // back. No artifact is signed inside this callback.
       const exchange = await prisma.$transaction(
         async (tx) => {
           const rotation = await rotateConnection(rotationArgs, tx);
           if (!rotation.ok) {
             return { ok: false as const, rotation };
           }
-          const access = await persistAccessToken(
-            { ...pairArgs, endsAt: rotation.endsAt },
-            tx,
-          );
-          return { ok: true as const, access, endsAt: rotation.endsAt };
+          pairArgs.endsAt = rotation.endsAt;
+          const access = await persistAccessToken(pairArgs, tx);
+          return { ok: true as const, access };
         },
         { timeout: 10_000 },
       );
@@ -459,10 +459,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
       // The transaction has committed. Only now may the stateless successor
       // refresh artifact be signed and returned to the client.
-      return finalizeTokenPair(
-        { ...pairArgs, endsAt: exchange.endsAt },
-        exchange.access,
-      );
+      return finalizeTokenPair(pairArgs, exchange.access);
     }
 
     return oauthError(

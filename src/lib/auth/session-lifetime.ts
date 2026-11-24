@@ -93,6 +93,14 @@ export function webSessionHardEnd(createdAt: Date): Date {
   return new Date(createdAt.getTime() + sessionMaxLifetimeMs());
 }
 
+/** Whether a web session is inside both its idle expiry and its absolute end. */
+export function isWebSessionLive(
+  session: { createdAt: Date; expiresAt: Date },
+  now = new Date(),
+): boolean {
+  return session.expiresAt >= now && webSessionHardEnd(session.createdAt) > now;
+}
+
 /**
  * The expiry a web session carries after a use at `now`: the idle window from
  * now, never past its absolute end.
@@ -100,6 +108,23 @@ export function webSessionHardEnd(createdAt: Date): Date {
 export function webSessionExpiry(createdAt: Date, now = new Date()): Date {
   const idleEnd = now.getTime() + sessionIdleTimeoutMs();
   return new Date(Math.min(idleEnd, webSessionHardEnd(createdAt).getTime()));
+}
+
+/**
+ * The expiry to write after a use of a web session, or null when the stored
+ * one stands. The idle window moves at most once a day and never past the
+ * absolute end; once the expiry has reached that end it stops moving and the
+ * session runs out there, however busy it is. An expiry further out than the
+ * settings now allow (the operator shortened the idle timeout) is pulled in.
+ */
+export function slidWebSessionExpiry(
+  createdAt: Date,
+  expiresAt: Date,
+  now = new Date(),
+): Date | null {
+  const next = webSessionExpiry(createdAt, now);
+  const drift = next.getTime() - expiresAt.getTime();
+  return drift >= DAY_MS || drift < 0 ? next : null;
 }
 
 /** The instant a refresh family (native app or MCP connection) ends for good. */
