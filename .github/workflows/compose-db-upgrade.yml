@@ -10,13 +10,13 @@ name: Compose database move
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, "release/**"]
     paths:
       - docker-compose.yml
       - scripts/compose-db-upgrade-check.sh
       - .github/workflows/compose-db-upgrade.yml
   push:
-    branches: [main]
+    branches: [main, "release/**"]
     paths:
       - docker-compose.yml
       - scripts/compose-db-upgrade-check.sh

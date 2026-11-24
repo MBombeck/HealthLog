@@ -273,7 +273,7 @@ export function SecurityKeysCard({
                                 date: fmt.date(key.lastUsedAt),
                               })
                             : t("settings.security.keys.neverUsed")}
-                          {" · "}
+                          {", "}
                           {t("settings.security.keys.added", {
                             date: fmt.date(key.createdAt),
                           })}

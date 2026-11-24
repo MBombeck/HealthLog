@@ -150,7 +150,7 @@ export function SecurityActivityCard({
                       e.ipMasked,
                     ]
                       .filter(Boolean)
-                      .join(" · ")}
+                      .join(", ")}
                   </p>
                 </div>
                 <p className="text-muted-foreground shrink-0 text-xs">

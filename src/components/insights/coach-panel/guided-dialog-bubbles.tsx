@@ -216,7 +216,7 @@ export function GuidedSummaryBubble({
         </p>
         <p className="text-muted-foreground mt-1 text-xs">
           {t("insights.coach.guided.summaryAnswered", { answered, total })}
-          {" · "}
+          {", "}
           {adopted > 0
             ? t("insights.coach.guided.summaryAdopted", { adopted })
             : t("insights.coach.guided.summaryAdoptedNone")}

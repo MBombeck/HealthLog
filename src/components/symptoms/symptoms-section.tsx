@@ -133,9 +133,9 @@ export function SymptomEventRow({
                   to: fmt.time(new Date(event.endAt)),
                 })
               : fmt.time(new Date(event.occurredAt))}
-            {annotation ? ` · ${annotation}` : ""}
+            {annotation ? `, ${annotation}` : ""}
             {event.source === "APPLE_HEALTH"
-              ? ` · ${t("symptoms.sourceAppleHealth")}`
+              ? `, ${t("symptoms.sourceAppleHealth")}`
               : ""}
           </p>
           {event.note ? (

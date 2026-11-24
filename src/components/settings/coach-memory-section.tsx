@@ -189,7 +189,7 @@ function FactRow({
               })}
               {sourceKey ? (
                 <span data-slot="settings-coach-memory-source">
-                  <span aria-hidden="true"> · </span>
+                  <span aria-hidden="true">, </span>
                   <span className="sr-only">, </span>
                   {t(sourceKey)}
                 </span>

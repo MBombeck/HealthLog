@@ -121,7 +121,8 @@ describe("readScanText with the real engine", () => {
     const result = await readScanText(syntheticLabScanJpeg(), "image/jpeg");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.text).toMatch(/Natrium\s+141\s+mmol\/l\s+135 - 145/u);
+    // The engine sets the range's dash with or without spaces by build.
+    expect(result.text).toMatch(/Natrium\s+141\s+mmol\/l\s+135\s*-\s*145/u);
     expect(result.text).toMatch(/Kreatinin\s+1,08\s+mg\/dl/u);
     expect(result.text).toContain("03.11.2026");
     expect(result.pagesRead).toBe(1);

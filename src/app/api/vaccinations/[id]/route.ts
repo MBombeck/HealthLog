@@ -249,8 +249,11 @@ export const PATCH = apiHandler(
         entity_id: id,
       },
       meta: {
-        antigen_slug:
-          row.antigenSlug ?? (row.customVaccineId ? "custom" : "free-text"),
+        antigen_source: row.antigenSlug
+          ? "catalog"
+          : row.customVaccineId
+            ? "custom"
+            : "free-text",
       },
     });
 

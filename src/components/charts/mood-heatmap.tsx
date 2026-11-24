@@ -279,7 +279,7 @@ export function MoodHeatmap({
     }
     const labelKey = moodLabelKeyForScore(Math.round(cell.cell.score));
     const moodLabel = labelKey ? t(labelKey) : "";
-    return `${formatDay(cell.dateKey)}: ${fmt.number(cell.cell.score, 1)}${moodLabel ? ` · ${moodLabel}` : ""}`;
+    return `${formatDay(cell.dateKey)}: ${fmt.number(cell.cell.score, 1)}${moodLabel ? `, ${moodLabel}` : ""}`;
   };
   // Only the logged days go into the data table; the empty-tinted cells
   // are already covered by the aggregate summary on the SVG, so a rotor
@@ -425,7 +425,7 @@ export function MoodHeatmap({
             formatValue={(value) => {
               const labelKey = moodLabelKeyForScore(Math.round(value));
               return labelKey
-                ? `${fmt.number(value, 1)} · ${t(labelKey)}`
+                ? `${fmt.number(value, 1)}, ${t(labelKey)}`
                 : fmt.number(value, 1);
             }}
             formatDate={(date) => formatDay(dateOnlyKey(date))}

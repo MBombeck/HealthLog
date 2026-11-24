@@ -44,7 +44,7 @@ changing the environment.
 
 ## Connect safely
 
-Open **Settings → Integrations → Nightscout** and enter the instance base URL
+Open **Settings > Integrations > Nightscout** and enter the instance base URL
 and, when required, its Nightscout API token. HealthLog stores the connection
 credentials encrypted. A public, read-only Nightscout instance can omit the
 token.

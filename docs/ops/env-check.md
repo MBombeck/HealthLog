@@ -10,7 +10,7 @@ This is the answer to the v1.4.40 AP-2 silent-disable: the `.p8` file
 went missing during a Coolify migration, three of four `APNS_*` vars
 remained set, the app booted cleanly, and APNs notifications stopped
 working — undetected for three days because the dispatcher's fallback
-chain hid the gap behind the Telegram → ntfy → Web Push path.
+chain hid the gap behind the Telegram > ntfy > Web Push path.
 
 ## Usage
 

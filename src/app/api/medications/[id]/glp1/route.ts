@@ -377,7 +377,7 @@ async function postGlp1Update(
         entity_type: "medication_dose_change",
         entity_id: created.id,
       },
-      meta: { medication_id: id, doseValue, doseUnit },
+      meta: { medication_id: id },
     });
 
     // A dose change shifts the daily-dose estimate the list payload's

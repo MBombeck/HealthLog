@@ -49,7 +49,7 @@ export function CrisisCard({ crisis }: { crisis: CrisisSet }) {
                   {t(`mentalHealth.crisisResource.${r.id}.name`)}
                 </span>
                 <span className="text-muted-foreground">
-                  {r.contacts.join(" · ")}
+                  {r.contacts.join(", ")}
                 </span>
               </li>
             ))}

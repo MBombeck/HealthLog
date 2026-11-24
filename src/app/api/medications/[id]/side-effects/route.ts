@@ -194,7 +194,7 @@ async function postSideEffect(
       entity_type: "medication_side_effect",
       entity_id: created.id,
     },
-    meta: { medication_id: id, entry, severity },
+    meta: { medication_id: id },
   });
 
   return apiSuccess(shapeSideEffectNotes(created), 201);

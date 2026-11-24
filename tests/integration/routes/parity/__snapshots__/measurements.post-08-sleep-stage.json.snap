@@ -39,7 +39,6 @@
       },
       "meta": {
         "status": "inserted",
-        "stage": "DEEP",
         "source": "MANUAL",
         "cross_source_merge": false
       },

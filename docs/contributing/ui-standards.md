@@ -6,7 +6,7 @@ The binding reference for building or touching any surface of the web app. The r
 
 ## 1. Card anatomy
 
-**The Card is gap-based, not padding-based** (`src/components/ui/card.tsx:24`): `flex flex-col gap-4 rounded-xl border py-4 md:gap-6 md:py-6`; header/content/footer carry `px-4 md:px-6`. The header→body distance comes from the **parent flex gap**, never from slot padding.
+**The Card is gap-based, not padding-based** (`src/components/ui/card.tsx:24`): `flex flex-col gap-4 rounded-xl border py-4 md:gap-6 md:py-6`; header/content/footer carry `px-4 md:px-6`. The header > body distance comes from the **parent flex gap**, never from slot padding.
 
 - FORBIDDEN: `pb-*` on `CardHeader`, `pt-*` on `CardContent`. Under the gap model these add on top of the gap (or are no-ops) and invert their intent. Want a tighter card? Override the gap on the Card itself: `<Card className="gap-2">`.
 - Two densities, nothing else:
@@ -57,7 +57,7 @@ The base tokens are AA-tuned in both themes (`--muted-foreground`: 5.0–6.4:1, 
 ## 4. Colour token rules
 
 - **Semantic tokens only** in components: `--foreground/--muted-foreground/--primary/--success/--warning/--info/--destructive/--chart-1..5/--border/--card`. The light theme remaps them wholesale; anything outside the token layer is invisible to a retune.
-- **No raw `dracula-*` utilities in new code.** Only `--dracula-yellow` has a light override; `text-dracula-green` on a light card is 1.4:1. Status meaning → semantic token; brand identity (Coach gradient) → a named `--brand-*` token with per-theme values.
+- **No raw `dracula-*` utilities in new code.** Only `--dracula-yellow` has a light override; `text-dracula-green` on a light card is 1.4:1. Status meaning > semantic token; brand identity (Coach gradient) > a named `--brand-*` token with per-theme values.
 - **No hex in JS props.** Chart colours are passed as `var(--token)` strings, never `color="#22c55e"`. Data series use the `--chart-1..5` tokens (`color="var(--chart-2)"`); status tokens (`--success`, `--warning`, `--destructive`, `--info`) only where the colour carries meaning, such as a target band, time in range or a mood scale (v1.42). Recharts `stroke`/`fill` likewise. This is the known lint blind spot; review for it explicitly until the rule covers it.
 - **No arbitrary-value colours** (`bg-[#…]`, `text-[oklch(…)]`).
 - Exemptions (documented at the definition site): `global-error.tsx` (renders without the stylesheet), the `themeColor` meta, the QR quiet-zone `bg-white`.
@@ -120,10 +120,10 @@ No `text-[9px]`. No off-scale sizes (`text-[28px]`); round to the neighbouring s
 
 **What a failed read offers is decided by the primitive, never the call site.** `QueryErrorCard`, `QueryErrorRow` and `ChartErrorState` take the query's `error` (required) and branch on `readFailureKind` (`src/lib/api/read-failure.ts`). It reads `meta.errorCode` first and the status second, because every error envelope carries a code (`http.*` when the route names none): a step-up or re-proof code on a 401 is a failure with retry, not an ended session; an unknown code falls back to the status.
 
-- **Session ended** (a session code, or a 401 without a more specific one) → one sentence and a Sign in button (back to the current page). Never a silent blank.
-- **403, refused** → the surface's `refused` state if it has one, otherwise nothing. A refusal is an answer, not a failure; no retry.
-- **429, throttled** → one sentence that the read budget is spent, no retry (an immediate retry would only be refused again).
-- **anything else** → the surface's message with Retry.
+- **Session ended** (a session code, or a 401 without a more specific one) > one sentence and a Sign in button (back to the current page). Never a silent blank.
+- **403, refused** > the surface's `refused` state if it has one, otherwise nothing. A refusal is an answer, not a failure; no retry.
+- **429, throttled** > one sentence that the read budget is spent, no retry (an immediate retry would only be refused again).
+- **anything else** > the surface's message with Retry.
 
 The `queryFn` hands the `ApiError` through untouched: no `try { … } catch { throw new Error(t(…)) }` around the fetch, the surface's sentence goes in through `message`. A call site does not inspect `error.status` around a read-failure primitive, and does not pass `error={null}`. `query-error-error-prop-guard.test.ts` enforces the prop and the untouched error at every site, `read-failure-markup-guard.test.ts` refuses hand-rolled failure markup next to a read hook. Error codes become sentences through `src/lib/i18n/translate-code.ts`, never through a `t(key) === key` probe at the call site (`translate-probe-guard.test.ts`).
 
@@ -137,7 +137,7 @@ Planned (until it lands, this is a review-checklist item):
 
 1. A tile-header icon-colour check (`text-muted-foreground` / `text-primary` on a glyph inside a `CardTitle` or tile-header row).
 
-**PR checklist for any UI change:** both themes checked visually · no new `dracula-*`/hex/opacity-muted · headers via a primitive · card gap untouched by slot padding · `isError` → `QueryErrorCard` or `QueryErrorRow` by surface, with `error` · mobile modal = `ResponsiveSheet` · `pnpm format` + `pnpm lint` + `pnpm typecheck` green.
+**PR checklist for any UI change:** both themes checked visually · no new `dracula-*`/hex/opacity-muted · headers via a primitive · card gap untouched by slot padding · `isError` shows `QueryErrorCard` or `QueryErrorRow` by surface, with `error` · mobile modal = `ResponsiveSheet` · `pnpm format` + `pnpm lint` + `pnpm typecheck` green.
 
 ---
 
@@ -196,7 +196,7 @@ A card's actions live in **one** row, and that row is the **last thing in the ca
 
 ## 13. Settings + Admin card rhythm; owned by the container
 
-- **`SettingsCard` is gap-based**, like `Card`: `flex flex-col gap-4 p-4 md:p-6`. The header→body distance comes from the container's gap. A call site never adds `mt-4` to its first body child, never `mb-4` to the header, never `space-y-4` to the card. A denser card overrides the gap on the card itself (`className="gap-2"`), exactly as `Card` does.
+- **`SettingsCard` is gap-based**, like `Card`: `flex flex-col gap-4 p-4 md:p-6`. The header > body distance comes from the container's gap. A call site never adds `mt-4` to its first body child, never `mb-4` to the header, never `space-y-4` to the card. A denser card overrides the gap on the card itself (`className="gap-2"`), exactly as `Card` does.
 - **The body starts at the card edge.** The old `pl-7` gutter (icon box + `gap-2`) is abolished: it is off the scale in §2, it broke the moment two neighbouring cards disagreed, and it silently mis-aligned action rows against their own forms. Header text is offset from the card edge by the icon gutter; body content is not. This is the deliberate difference from §8's Insights gutter, where the tiles carry no body form.
 - **Group headings above a group of cards use `SectionHeading`** (`ui/section-heading.tsx`, the heading of the Insights overview, shared by every area), not a bare `SettingsCardHeader`. `text-base` on the group, `text-lg` on the card title: that step is what says which one labels which.
 - **Admin uses the Settings anatomy verbatim.** No admin-only card shell, no admin-only header, no admin-only mini tile; `SettingsCard`, `SettingsCardHeader`, `SettingsCardActions`, `StatTile` (`admin/_stat-tile.tsx`) are the whole vocabulary.
