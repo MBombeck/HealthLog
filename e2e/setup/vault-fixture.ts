@@ -383,6 +383,9 @@ export async function resetEncounters(): Promise<void> {
       [userId],
     );
     await pool.query("DELETE FROM encounters WHERE user_id = $1", [userId]);
+    await pool.query("DELETE FROM treatment_series WHERE user_id = $1", [
+      userId,
+    ]);
   } finally {
     await pool.end();
   }

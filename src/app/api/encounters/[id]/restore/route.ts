@@ -20,6 +20,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { encounterKindLabel } from "@/lib/encounters/kind-label";
 import { toEncounterDTO } from "@/lib/encounters/dto";
+import { loadEncounterSeriesRefs } from "@/lib/treatment-series/service";
 import {
   ENCOUNTER_INCLUDE,
   loadEncounterLinks,
@@ -84,7 +85,10 @@ export const POST = apiHandler(
       include: ENCOUNTER_INCLUDE,
     });
     const visible = await actingDomainVisibility(prisma, grantId);
-    const links = await loadEncounterLinks(prisma, user.id, id, visible);
+    const [links, seriesRefs] = await Promise.all([
+      loadEncounterLinks(prisma, user.id, id, visible),
+      loadEncounterSeriesRefs(prisma, user.id, [row]),
+    ]);
 
     await auditLog("encounter.visit.restore", {
       userId: user.id,
@@ -104,6 +108,9 @@ export const POST = apiHandler(
       },
     });
 
-    return apiSuccess(toEncounterDTO(row, links));
+    return apiSuccess({
+      ...toEncounterDTO(row, links),
+      series: seriesRefs.get(id) ?? null,
+    });
   },
 );

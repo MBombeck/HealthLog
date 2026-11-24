@@ -77,6 +77,7 @@ import {
   loadIllnessEpisodes,
   loadImmunizations,
   loadVisits,
+  loadTreatmentSeriesReport,
   loadSurgicalHistory,
   loadLabResults,
 } from "./clinical-records";
@@ -543,6 +544,7 @@ export async function collectDoctorReportData(
     illnessEpisodes,
     seizureDiary,
     visits,
+    treatmentSeries,
     surgicalHistory,
     immunizations,
     allergies,
@@ -593,6 +595,10 @@ export async function collectDoctorReportData(
       : Promise.resolve(null),
     gate.admits("VISITS")
       ? loadVisits(userId, start, end)
+      : Promise.resolve(null),
+    // A series is visits, so it rides the same leaf.
+    gate.admits("VISITS")
+      ? loadTreatmentSeriesReport(userId, start, end, reportTz)
       : Promise.resolve(null),
     // Reference data, not windowed, like the immunization history below.
     gate.admits("SURGICAL_HISTORY")
@@ -688,6 +694,7 @@ export async function collectDoctorReportData(
     illnessEpisodes,
     seizureDiary,
     visits,
+    treatmentSeries,
     surgicalHistory,
     immunizations,
     allergies,

@@ -83,6 +83,7 @@ export const RESTORE_CLEARED_KEYS = [
   "healthScoreRecords",
   "onboardingRecords",
   "practitioners",
+  "treatmentSeries",
   "encounters",
   "encounterLinks",
   "vaccinations",

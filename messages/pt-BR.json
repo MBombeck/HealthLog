@@ -228,7 +228,8 @@
       "invalid": "Verifique os dados da consulta e tente novamente.",
       "practitioner-not-found": "Esta clínica ou médico não existe mais. Escolha outro ou nenhum.",
       "reminder-not-found": "Este check-up não existe mais. Escolha outro ou nenhum.",
-      "reminder-conflict": "Uma consulta planejada não pode fechar um check-up, porque ainda não aconteceu."
+      "reminder-conflict": "Uma consulta planejada não pode fechar um check-up, porque ainda não aconteceu.",
+      "series-not-found": "Esta série de tratamento não existe mais. Escolha outra ou nenhuma."
     },
     "vaccination": {
       "invalid": "Verifique os dados da vacina e tente novamente.",
@@ -289,6 +290,11 @@
         "limit": "Já existem 12 tipos de crise. Arquive um para adicionar outro.",
         "notFound": "Este tipo de crise não existe mais."
       }
+    },
+    "treatment_series": {
+      "invalid": "Confira os dados da série e tente novamente.",
+      "practitioner-not-found": "Este consultório ou médico não existe mais. Escolha outro ou nenhum.",
+      "condition-not-found": "Esta condição não existe mais. Escolha outra ou nenhuma."
     }
   },
   "doctorReport": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} excluiu um tipo de crise",
       "seizureSettingsUpdate": "{name} alterou a regra de crises em salvas",
       "symptomBatchIngest": "{name} importou sintomas do Apple Health",
-      "symptomImportDelete": "{name} removeu sintomas importados"
+      "symptomImportDelete": "{name} removeu sintomas importados",
+      "treatmentSeriesCreate": "{name} adicionou uma série de tratamento",
+      "treatmentSeriesUpdate": "{name} editou uma série de tratamento",
+      "treatmentSeriesDelete": "{name} excluiu uma série de tratamento",
+      "treatmentSeriesRestore": "{name} restaurou uma série de tratamento"
     },
     "section": {
       "measurements": {
@@ -16039,7 +16049,12 @@
       "visit": "Consulta",
       "visitWith": "Consulta: {name}",
       "checkupDue": "Vence: {label}",
-      "boosterDue": "Reforço a vencer: {label}"
+      "boosterDue": "Reforço a vencer: {label}",
+      "sessionOf": "Sessão {number} de {planned}",
+      "session": "Sessão {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Fim da série de tratamento",
+      "seriesEndsWith": "Fim da série de tratamento: {name}"
     }
   },
   "reportSchedule": {
@@ -16187,5 +16202,56 @@
     "entry": {
       "description": "Tipo sanguíneo, alergias, medicamentos e contatos para uma emergência, com cópia offline, cartão e link QR."
     }
+  },
+  "treatmentSeries": {
+    "heading": "Séries de tratamento",
+    "add": "Nova série",
+    "createTitle": "Nova série de tratamento",
+    "untitled": "Série de tratamento",
+    "progress": "{done} de {planned}",
+    "sessionsDoneCount": "{count, plural, one {# sessão} other {# sessões}}",
+    "sessionOf": "Sessão {number} de {planned}",
+    "session": "Sessão {number}",
+    "status": {
+      "planned": "Não iniciada",
+      "active": "Em andamento",
+      "completed": "Concluída",
+      "expired": "Expirada"
+    },
+    "next": "Próxima {date}",
+    "validUntil": "Válida até {date}",
+    "firstSession": "Desde {date}",
+    "sessionsHeading": "Sessões",
+    "addSession": "Adicionar sessão",
+    "prescriber": "Indicada por",
+    "performer": "Realizada por",
+    "condition": "Condição",
+    "form": {
+      "title": "O que é?",
+      "titlePlaceholder": "Fisioterapia, joelho esquerdo",
+      "plannedSessions": "Sessões",
+      "startsOn": "Início",
+      "validUntil": "Válida até",
+      "note": "Nota",
+      "series": "Série de tratamento",
+      "seriesNone": "Nenhuma"
+    },
+    "created": "Série salva",
+    "updated": "Série atualizada",
+    "saveFailed": "Não foi possível salvar a série.",
+    "ended": "Série encerrada",
+    "reopened": "Série reaberta",
+    "end": "Encerrar série",
+    "reopen": "Reabrir",
+    "deleteTitle": "Excluir esta série?",
+    "deleteDescription": "As consultas continuam. Elas só deixam de ficar agrupadas.",
+    "deleted": "Série excluída",
+    "deleteFailed": "Não foi possível excluir a série.",
+    "reportTitle": "Séries de tratamento",
+    "reportColSeries": "Série",
+    "reportColSessions": "Sessões",
+    "reportColPeriod": "Período",
+    "period": "{from} a {to}",
+    "periodOpen": "desde {from}"
   }
 }

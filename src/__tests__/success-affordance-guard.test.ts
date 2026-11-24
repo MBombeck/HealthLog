@@ -228,6 +228,10 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 1,
   },
   "src/components/encounters/encounter-sheet.tsx": { "toast.success": 1 },
+  // The delete toast carries the Undo, which the outcome module cannot hold.
+  "src/components/encounters/treatment-series-sheet.tsx": {
+    "toast.success": 1,
+  },
   "src/components/error-details.tsx": { CheckCircle2: 2, "text-success": 1 },
   "src/components/illness/episode-menu.tsx": {
     CheckCircle2: 2,

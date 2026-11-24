@@ -1082,6 +1082,14 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "profile",
     why: "Which of the record's visits a document or lab panel dated around a given day belongs to. A read over the same rows the visit list serves, reduced to a verdict — the caller learns nothing about the record it could not learn from the list itself, and the anchor it passes is a date rather than an id, so it cannot address a row.",
   },
+  "app/api/treatment-series/route.ts": {
+    domain: "profile",
+    why: "The record's treatment series, courses of several visits, and starting one. They group the visits under this domain, so they sit with them; the condition each names comes back as an unlabelled placeholder when the grant does not cover illness. The create arm is a delegable write.",
+  },
+  "app/api/treatment-series/[id]/route.ts": {
+    domain: "profile",
+    why: "One treatment series of the record with its sessions, fetch-then-guard against the resolved user. The sessions are the record's own visits, read for the same id.",
+  },
   "app/api/vaccinations/route.ts": {
     domain: "profile",
     why: "The record's immunization history. Health background in the same sense as the allergies and the visits already under this domain: it names no credential, no integration and no notification channel. It carries the same honest cost as those two, which is that a delegate granted `profile` to read an allergy list also sees every dose the person has had; the consent copy names the immunization history for exactly this reason. The create arm is a delegable write.",
@@ -1516,6 +1524,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "profile",
     why: "Reopening a deleted visit with its links intact. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
   },
+  "app/api/treatment-series/[id]/restore/route.ts": {
+    domain: "profile",
+    why: "Reopening a deleted treatment series; its sessions never lost the reference. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
+  },
   "app/api/practitioners/[id]/restore/route.ts": {
     domain: "profile",
     why: "Reopening a deleted address-book entry. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
@@ -1787,6 +1799,8 @@ const DELEGABLE_WRITE_ROUTES: Record<string, string> = {
     "Adding a rescue dose to a seizure already recorded, for the carer who gave it after the timer stopped. Same lookups and the same intake write as the create.",
   "app/api/encounters/route.ts":
     "Filing a visit, or booking one. Every id the body may carry — the practitioner, the checkup it closes, the three link arrays — is re-narrowed to the resolved record before anything is written, so a delegate cannot attach one record's document to another's visit. Booking mints the appointment reminder under the RECORD, which is correct: it is the owner's appointment and the owner's channels that should be nudged about it.",
+  "app/api/treatment-series/route.ts":
+    "Starting a treatment series. The two practitioners and the condition the body names are re-narrowed to the resolved record before anything is written, so a delegate cannot point one record's series at another's address book or condition.",
   "app/api/practitioners/route.ts":
     "Adding a doctor or practice to the record's address book. Nothing is unique across accounts here by design, so a delegate adding a practice the owner already has produces a second row rather than a collision with somebody else's namespace.",
   "app/api/vaccinations/route.ts":
@@ -1935,6 +1949,16 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     domain: "profile",
     conditions: [],
     why: "Reopening a deleted visit with its links intact.",
+  },
+  "app/api/treatment-series/[id]/route.ts": {
+    domain: "profile",
+    conditions: ["C4"],
+    why: "Editing, ending and deleting a treatment series; the delete soft-deletes and leaves every session standing as the visit it is. C4 on the edit: the count, the window and the kind are filed before and after, and the encrypted title and note deliberately are not.",
+  },
+  "app/api/treatment-series/[id]/restore/route.ts": {
+    domain: "profile",
+    conditions: [],
+    why: "Reopening a deleted treatment series; its sessions name it again.",
   },
   "app/api/practitioners/[id]/route.ts": {
     domain: "profile",
@@ -2611,7 +2635,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  * 1.49: the getting-started checklist's optional-row presence read joins the
  * guardian list. 342 -> 343.
  */
-const FROZEN_ENTRY_COUNT = 344;
+const FROZEN_ENTRY_COUNT = 350;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -3390,7 +3414,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(106);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(110);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

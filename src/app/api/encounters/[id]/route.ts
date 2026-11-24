@@ -50,6 +50,10 @@ import {
 import type { Prisma } from "@/generated/prisma/client";
 import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 import { withRelated } from "@/lib/links/related";
+import {
+  loadEncounterSeriesRefs,
+  seriesRelationUpdate,
+} from "@/lib/treatment-series/service";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -67,7 +71,10 @@ export const GET = apiHandler(
     }
 
     const visible = await actingDomainVisibility(prisma, grantId);
-    const links = await loadEncounterLinks(prisma, user.id, id, visible);
+    const [links, seriesRefs] = await Promise.all([
+      loadEncounterLinks(prisma, user.id, id, visible),
+      loadEncounterSeriesRefs(prisma, user.id, [row]),
+    ]);
 
     annotate({
       action: {
@@ -78,12 +85,16 @@ export const GET = apiHandler(
     });
 
     return apiSuccess(
-      await withRelated(prisma, toEncounterDTO(row, links), {
-        userId: user.id,
-        grantId,
-        kind: "encounter",
-        id,
-      }),
+      await withRelated(
+        prisma,
+        { ...toEncounterDTO(row, links), series: seriesRefs.get(id) ?? null },
+        {
+          userId: user.id,
+          grantId,
+          kind: "encounter",
+          id,
+        },
+      ),
     );
   },
 );
@@ -170,6 +181,9 @@ export const PATCH = apiHandler(
           : null;
       }
       if (entry.laterality !== undefined) data.laterality = entry.laterality;
+      const series = await seriesRelationUpdate(tx, user.id, entry.seriesId);
+      if (series === "unknown-series") return series;
+      if (series) data.series = series;
       if (entry.practitionerId !== undefined) {
         data.practitioner = practitionerId
           ? { connect: { id: practitionerId } }
@@ -304,6 +318,11 @@ export const PATCH = apiHandler(
         errorCode: "encounter.practitioner-not-found",
       });
     }
+    if (outcome === "unknown-series") {
+      return apiError("Treatment series not found", 404, {
+        errorCode: "encounter.series-not-found",
+      });
+    }
     if (outcome === "unknown-reminder") {
       return apiError("Checkup not found", 404, {
         errorCode: "encounter.reminder-not-found",
@@ -315,7 +334,10 @@ export const PATCH = apiHandler(
       include: ENCOUNTER_INCLUDE,
     });
     const visible = await actingDomainVisibility(prisma, grantId);
-    const links = await loadEncounterLinks(prisma, user.id, id, visible);
+    const [links, seriesRefs] = await Promise.all([
+      loadEncounterLinks(prisma, user.id, id, visible),
+      loadEncounterSeriesRefs(prisma, user.id, [row]),
+    ]);
 
     await auditLog("encounter.visit.update", {
       userId: user.id,
@@ -331,6 +353,7 @@ export const PATCH = apiHandler(
             kind: existing.kind,
             laterality: existing.laterality,
             practitionerId: existing.practitionerId,
+            seriesId: existing.seriesId,
           },
           after: {
             occurredAt: outcome.updated.occurredAt,
@@ -338,6 +361,7 @@ export const PATCH = apiHandler(
             kind: outcome.updated.kind,
             laterality: outcome.updated.laterality,
             practitionerId: outcome.updated.practitionerId,
+            seriesId: outcome.updated.seriesId,
           },
         }),
       },
@@ -356,7 +380,10 @@ export const PATCH = apiHandler(
       meta: { status: row.status },
     });
 
-    return apiSuccess(toEncounterDTO(row, links, summarizeRestoreSkips(skips)));
+    return apiSuccess({
+      ...toEncounterDTO(row, links, summarizeRestoreSkips(skips)),
+      series: seriesRefs.get(id) ?? null,
+    });
   },
 );
 

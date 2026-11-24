@@ -83,6 +83,8 @@ export interface BackupSummary {
   onboardingRecords: number;
   /** v1.37.19 — the visit address book. */
   practitioners: number;
+  /** Treatment series (courses of several visits). */
+  treatmentSeries: number;
   /** v1.37.19 — doctor visits, planned and past. */
   encounters: number;
   /** v1.37.19 — the three encounter link tables, summed. */
@@ -184,6 +186,7 @@ export function summarizeBackup(payload: BackupPayload): BackupSummary {
     // restore" answer silently under-counted a file that carried visits or
     // an Impfpass.
     practitioners: payload.practitioners.length,
+    treatmentSeries: payload.treatmentSeries.length,
     encounters: payload.encounters.length,
     encounterLinks:
       payload.encounterDocumentLinks.length +

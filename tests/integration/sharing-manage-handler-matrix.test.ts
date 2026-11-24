@@ -280,7 +280,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(106);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(110);
   });
 });
 
@@ -534,6 +534,18 @@ async function makeVisit(userId: string) {
       occurredAt: new Date(ISO),
       status: "DONE",
       kind: "ROUTINE",
+    },
+  });
+}
+
+/** One treatment series of six sessions. */
+async function makeSeries(userId: string) {
+  return getPrismaClient().treatmentSeries.create({
+    data: {
+      userId,
+      titleEncrypted: encryptToBytes("Physiotherapy"),
+      startsOn: new Date(`${ISO.slice(0, 10)}T00:00:00.000Z`),
+      plannedSessions: 6,
     },
   });
 }
@@ -1948,6 +1960,112 @@ manageContract("POST /api/encounters/[id]/restore", {
       ?.deletedAt === null,
 });
 
+writeEffectContract("POST /api/treatment-series", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/treatment-series" && entry.action === "POST",
+  )!,
+  prepare: async (ownerId) => ({ ownerId }),
+  act: async () => {
+    const { POST } = await import("@/app/api/treatment-series/route");
+    return call(POST as Handler, "POST", "/api/treatment-series", {
+      title: "Physiotherapy",
+      startsOn: ISO.slice(0, 10),
+      plannedSessions: 6,
+    });
+  },
+  ok: 201,
+  auditAction: "treatment-series.create",
+  applied: async ({ ownerId }) =>
+    (await getPrismaClient().treatmentSeries.count({
+      where: { userId: ownerId },
+    })) === 1,
+});
+
+manageContract("PATCH /api/treatment-series/[id]", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/treatment-series/[id]" && entry.action === "PATCH",
+  )!,
+  prepare: (ownerId) => makeSeries(ownerId),
+  act: async (row) => {
+    const { PATCH } = await import("@/app/api/treatment-series/[id]/route");
+    return call(
+      PATCH as Handler,
+      "PATCH",
+      `/api/treatment-series/${row.id}`,
+      { plannedSessions: 10 },
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "treatment-series.update",
+  applied: async (row) =>
+    (
+      await getPrismaClient().treatmentSeries.findUnique({
+        where: { id: row.id },
+      })
+    )?.plannedSessions === 10,
+});
+
+manageContract("DELETE /api/treatment-series/[id]", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/treatment-series/[id]" && entry.action === "DELETE",
+  )!,
+  prepare: (ownerId) => makeSeries(ownerId),
+  act: async (row) => {
+    const { DELETE } = await import("@/app/api/treatment-series/[id]/route");
+    return call(
+      DELETE as Handler,
+      "DELETE",
+      `/api/treatment-series/${row.id}`,
+      undefined,
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "treatment-series.delete",
+  applied: async (row) =>
+    (
+      await getPrismaClient().treatmentSeries.findUnique({
+        where: { id: row.id },
+      })
+    )?.deletedAt !== null,
+});
+
+manageContract("POST /api/treatment-series/[id]/restore", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) => entry.route === "/api/treatment-series/[id]/restore",
+  )!,
+  prepare: async (ownerId) => {
+    const row = await makeSeries(ownerId);
+    return getPrismaClient().treatmentSeries.update({
+      where: { id: row.id },
+      data: { deletedAt: new Date() },
+    });
+  },
+  act: async (row) => {
+    const { POST } =
+      await import("@/app/api/treatment-series/[id]/restore/route");
+    return call(
+      POST as Handler,
+      "POST",
+      `/api/treatment-series/${row.id}/restore`,
+      {},
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "treatment-series.restore",
+  applied: async (row) =>
+    (
+      await getPrismaClient().treatmentSeries.findUnique({
+        where: { id: row.id },
+      })
+    )?.deletedAt === null,
+});
+
 writeEffectContract("POST /api/practitioners", {
   contract: ADMITTED_MUTATING_HANDLERS.find(
     (entry) => entry.route === "/api/practitioners" && entry.action === "POST",
@@ -3324,7 +3442,7 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(106);
+    expect(STRICT_DRIVER_KEYS.size).toBe(110);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 });
@@ -3336,6 +3454,6 @@ describe("the complete MANAGE handler matrix", () => {
 afterAll(() => {
   if (EFFECT_CASES_STARTED.size !== STRICT_DRIVER_KEYS.size) return;
   const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-  expect(REAL_EFFECT_KEYS.size).toBe(106);
+  expect(REAL_EFFECT_KEYS.size).toBe(110);
   expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
 });

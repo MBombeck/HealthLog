@@ -324,6 +324,8 @@ export const TIMELINE_ITEM_KINDS = [
   "vaccination",
   "visit",
   "procedure",
+  // A treatment series: its stretch, drawn under its sessions.
+  "treatmentSeries",
   "labDay",
   "seizureDay",
   "document",

@@ -1217,6 +1217,8 @@ model User {
   encounterDocumentLinks                    EncounterDocumentLink[]
   encounterLabLinks                         EncounterLabLink[]
   encounterConditionLinks                   EncounterConditionLink[]
+  // Courses of several visits (physiotherapy, radiation, a dental plan).
+  treatmentSeries                           TreatmentSeries[]
   // v1.38.0 — the immunization log. One row per administered dose, plus the
   // link table that files the scanned Impfpass page beside it. Gated by the
   // `vaccinations` module key, which governs the surfaces and not the store.
@@ -9417,6 +9419,8 @@ model IllnessEpisode {
   documentLinks   DocumentConditionLink[]
   encounterLinks  EncounterConditionLink[]
   medicationLinks MedicationConditionLink[]
+  /// Treatment series given for this condition.
+  treatmentSeries TreatmentSeries[]
   /// Symptom events the person filed against this episode while it was open.
   symptomEvents   SymptomEvent[]
 
@@ -10872,6 +10876,11 @@ model Encounter {
   /// is PLANNED. Satisfying the reminder is the side effect, not this
   /// column.
   reminderId        String?         @map("reminder_id")
+  /// The treatment series this visit is one session of. A
+  /// session stays a visit in every respect (reminder, links, calendar); the
+  /// series only groups and counts. SetNull: purging a series leaves its
+  /// sessions standing as the visits they were.
+  seriesId          String?         @map("series_id")
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
@@ -10880,6 +10889,7 @@ model Encounter {
   user             User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   practitioner     Practitioner?              @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
   reminder         MeasurementReminder?       @relation(fields: [reminderId], references: [id], onDelete: SetNull)
+  series           TreatmentSeries?           @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   documentLinks    EncounterDocumentLink[]
   labLinks         EncounterLabLink[]
   conditionLinks   EncounterConditionLink[]
@@ -10894,7 +10904,73 @@ model Encounter {
   @@index([practitionerId])
   // Leads the foreign key, so a cascade from the parent row is an index lookup.
   @@index([reminderId])
+  @@index([seriesId])
   @@map("encounters")
+}
+
+/// A course of several sessions: a physiotherapy
+/// prescription of six, a run of radiation, injection or chemotherapy cycles,
+/// a dental treatment plan. The FHIR `ServiceRequest` cut: how many, over
+/// which window, who ordered it, who gives it, for which condition. The
+/// sessions are ordinary `Encounter` rows pointing here by `seriesId`, so
+/// everything a visit already does (its reminder, its calendar entry, its
+/// links) a session does too, and nothing is stored twice.
+///
+/// Nothing is counted here. Done, booked and remaining sessions, the first and
+/// last session and the status (planned, active, completed, expired) are
+/// derived from the sessions on every read (`src/lib/treatment-series/`), so
+/// filing, moving or cancelling a visit corrects the series with it.
+///
+/// No module gate, for the reason `Encounter` states: a series is visits.
+model TreatmentSeries {
+  id              String        @id @default(cuid())
+  userId          String        @map("user_id")
+  /// What the course is, in the person's words ("Physiotherapy, left knee").
+  /// The one required field: a series nobody can name is not findable. Health
+  /// data, so AES-256-GCM like the visit reason.
+  titleEncrypted  Bytes         @map("title_encrypted")
+  /// The kind a new session starts as. THERAPY covers most courses; a run of
+  /// infusions may be PROCEDURE or HOSPITAL.
+  kind            EncounterKind @default(THERAPY)
+  /// Sessions the prescription or plan covers. NULL = open-ended (radiation
+  /// "until further notice").
+  plannedSessions Int?          @map("planned_sessions")
+  /// First day, on the person's clock: the prescription date or the planned
+  /// start.
+  startsOn        DateTime      @map("starts_on") @db.Date
+  /// Last day the course may run, inclusive: a prescription's validity or the
+  /// planned end. Passed with sessions left, the series reads as expired.
+  validUntil      DateTime?     @map("valid_until") @db.Date
+  /// Set by "End series": the day the person ended it, early or on schedule.
+  /// An ended series is completed whatever the count says.
+  endedOn         DateTime?     @map("ended_on") @db.Date
+  /// Who ordered it (the oncologist, the GP who wrote the prescription).
+  prescriberId    String?       @map("prescriber_id")
+  /// Who gives it, usually a practice rather than a person, since the
+  /// therapist changes from session to session. A new session starts with it.
+  performerId     String?       @map("performer_id")
+  /// The condition it treats. One scalar rather than a link table: a
+  /// prescription carries one indication, and the sessions can still link any
+  /// number of conditions themselves.
+  episodeId       String?       @map("episode_id")
+  /// Free-text note, AES-256-GCM.
+  noteEncrypted   Bytes?        @map("note_encrypted")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
+  deletedAt       DateTime?     @map("deleted_at")
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prescriber Practitioner?   @relation("TreatmentSeriesPrescriber", fields: [prescriberId], references: [id], onDelete: SetNull)
+  performer  Practitioner?   @relation("TreatmentSeriesPerformer", fields: [performerId], references: [id], onDelete: SetNull)
+  episode    IllnessEpisode? @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  sessions   Encounter[]
+
+  @@index([userId, deletedAt, startsOn])
+  @@index([prescriberId])
+  @@index([performerId])
+  @@index([episodeId])
+  @@map("treatment_series")
 }
 
 /// Where a visit sits in its lifecycle. Terminal states keep the row.
@@ -10986,9 +11062,11 @@ model Practitioner {
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
   deletedAt         DateTime? @map("deleted_at")
 
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  encounters   Encounter[]
-  vaccinations VaccinationRecord[]
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  encounters       Encounter[]
+  vaccinations     VaccinationRecord[]
+  prescribedSeries TreatmentSeries[]   @relation("TreatmentSeriesPrescriber")
+  performedSeries  TreatmentSeries[]   @relation("TreatmentSeriesPerformer")
 
   @@index([userId, deletedAt, name])
   // `practitioners_contact_backfill_idx` is a partial index over

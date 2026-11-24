@@ -19633,7 +19633,7 @@ paths:
             schema:
               $ref: "#/components/schemas/OcrTextExtractRequest"
       responses:
-        "202": &a50
+        "202": &a51
           description: Queued for the background worker. Every refusal the route can answer quickly (capability, provider, rate
             limit, budget, validation) has already been answered; anything that goes wrong from here is reported on the
             run.
@@ -20560,6 +20560,168 @@ paths:
         "404": *a43
         "422": *a4
         "429": *a5
+  /api/treatment-series:
+    get:
+      tags:
+        - Records
+      summary: List treatment series
+      description: The caller's live treatment series, open ones (PLANNED, ACTIVE) first, each newest start first. Read at the
+        same section and level as the visit list.
+      parameters:
+        - in: query
+          name: episodeId
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 40
+      responses:
+        "200":
+          description: The series.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListTreatmentSeriesEnvelope"
+        "401": *a1
+        "403": *a18
+        "422": *a4
+        "429": *a5
+    post:
+      tags:
+        - Records
+      summary: Start a treatment series
+      description: Creates one series. Honours `Idempotency-Key`. Audits as `treatment-series.create`.
+      parameters:
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTreatmentSeriesRequest"
+      responses:
+        "201":
+          description: Series created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateTreatmentSeriesEnvelope"
+        "401": *a1
+        "403": *a18
+        "404":
+          description: A named practitioner or condition is not the caller's.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
+        "422": *a4
+        "429": *a12
+  /api/treatment-series/{id}:
+    get:
+      tags:
+        - Records
+      summary: Read a treatment series with its sessions
+      description: The series and, in `visits`, every live session oldest first, each with its links and its session number.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: The series.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetTreatmentSeriesEnvelope"
+        "401": *a1
+        "403": *a18
+        "404": &a44
+          description: Treatment series not found (or owned by another user).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Records
+      summary: Edit, end or reopen a treatment series
+      description: Partial edit. Audits as `treatment-series.update`, without the title or the note.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTreatmentSeriesRequest"
+      responses:
+        "200":
+          description: Series updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateTreatmentSeriesEnvelope"
+        "401": *a1
+        "403": *a18
+        "404": *a44
+        "422": *a4
+        "429": *a5
+    delete:
+      tags:
+        - Records
+      summary: Soft-delete a treatment series
+      description: Stamps `deletedAt`. The sessions stay the visits they are and stop naming the series until it is restored.
+        Idempotent. Audits as `treatment-series.delete`.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Soft-deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteTreatmentSeriesEnvelope"
+        "401": *a1
+        "403": *a18
+        "404": *a44
+        "422": *a4
+        "429": *a5
+  /api/treatment-series/{id}/restore:
+    post:
+      tags:
+        - Records
+      summary: Restore a soft-deleted treatment series
+      description: Clears the tombstone; the sessions name the series again. Restoring a live series is a no-op that still succeeds.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Series restored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestoreTreatmentSeriesEnvelope"
+        "401": *a1
+        "403": *a18
+        "404": *a44
+        "422": *a4
+        "429": *a5
   /api/vaccinations/custom:
     get:
       tags:
@@ -20601,7 +20763,7 @@ paths:
                 $ref: "#/components/schemas/CreateCustomVaccineEnvelope"
         "401": *a1
         "403": *a18
-        "409": &a44
+        "409": &a45
           description: A live definition on the record already carries this name, compared without case
             (`vaccination.custom.name-taken`).
           content:
@@ -20638,13 +20800,13 @@ paths:
                 $ref: "#/components/schemas/UpdateCustomVaccineEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a45
+        "404": &a46
           description: No live definition with this id on the record (`vaccination.custom.not-found`).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "409": *a44
+        "409": *a45
         "422": *a4
         "429": *a5
     delete:
@@ -20669,7 +20831,7 @@ paths:
                 $ref: "#/components/schemas/DeleteCustomVaccineEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a45
+        "404": *a46
         "422": *a4
         "429": *a5
   /api/vaccinations:
@@ -20781,7 +20943,7 @@ paths:
                 $ref: "#/components/schemas/GetVaccinationEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a46
+        "404": &a47
           description: Vaccination not found (or owned by another user).
           content:
             application/json:
@@ -20816,7 +20978,7 @@ paths:
                 $ref: "#/components/schemas/UpdateVaccinationEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a46
+        "404": *a47
         "422": *a4
         "429": *a5
     delete:
@@ -20841,7 +21003,7 @@ paths:
                 $ref: "#/components/schemas/DeleteVaccinationEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a46
+        "404": *a47
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/restore:
@@ -20866,7 +21028,7 @@ paths:
                 $ref: "#/components/schemas/RestoreVaccinationEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a46
+        "404": *a47
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/booster:
@@ -20934,7 +21096,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": *a46
+        "404": *a47
         "422": *a4
         "429": *a5
   /api/vaccinations/suggest:
@@ -20995,7 +21157,7 @@ paths:
                 $ref: "#/components/schemas/LinkVaccinationEnvelope"
         "401": *a1
         "403": *a9
-        "404": *a46
+        "404": *a47
         "422": *a4
         "429": *a5
     delete:
@@ -21025,7 +21187,7 @@ paths:
                 $ref: "#/components/schemas/UnlinkVaccinationEnvelope"
         "401": *a1
         "403": *a9
-        "404": *a46
+        "404": *a47
         "422": *a4
         "429": *a5
   /api/illness/episodes:
@@ -21140,7 +21302,7 @@ paths:
                 $ref: "#/components/schemas/GetIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a47
+        "404": &a48
           description: Illness episode not found (or owned by another user).
           content:
             application/json:
@@ -21175,7 +21337,7 @@ paths:
                 $ref: "#/components/schemas/UpdateIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a47
+        "404": *a48
         "422": *a4
         "429": *a5
     delete:
@@ -21199,7 +21361,7 @@ paths:
                 $ref: "#/components/schemas/DeleteIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a47
+        "404": *a48
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/restore:
@@ -21227,7 +21389,7 @@ paths:
                 $ref: "#/components/schemas/RestoreIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a47
+        "404": *a48
         "409": *a7
         "422": *a4
         "429": *a5
@@ -21260,7 +21422,7 @@ paths:
                 $ref: "#/components/schemas/ResolveIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a47
+        "404": *a48
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/day-logs:
@@ -21311,7 +21473,7 @@ paths:
                 $ref: "#/components/schemas/GetIllnessDayLogEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a47
+        "404": *a48
         "422": *a4
         "429": *a5
     post:
@@ -21348,7 +21510,7 @@ paths:
                 $ref: "#/components/schemas/UpsertIllnessDayLogCreatedEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a47
+        "404": *a48
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/correlation:
@@ -21376,7 +21538,7 @@ paths:
                 $ref: "#/components/schemas/IllnessCorrelationEnvelope"
         "401": *a1
         "403": *a9
-        "404": *a47
+        "404": *a48
         "422": *a4
         "429": *a5
   /api/illness/insights:
@@ -21593,7 +21755,7 @@ paths:
                 $ref: "#/components/schemas/GetAllergyEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a48
+        "404": &a49
           description: Allergy not found (or owned by another user).
           content:
             application/json:
@@ -21627,7 +21789,7 @@ paths:
                 $ref: "#/components/schemas/UpdateAllergyEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a48
+        "404": *a49
         "422": *a4
         "429": *a5
     delete:
@@ -21651,7 +21813,7 @@ paths:
                 $ref: "#/components/schemas/DeleteAllergyEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a48
+        "404": *a49
         "422": *a4
         "429": *a5
   /api/family-history:
@@ -21725,7 +21887,7 @@ paths:
                 $ref: "#/components/schemas/GetFamilyHistoryEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a49
+        "404": &a50
           description: Family history entry not found (or owned by another user).
           content:
             application/json:
@@ -21759,7 +21921,7 @@ paths:
                 $ref: "#/components/schemas/UpdateFamilyHistoryEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a49
+        "404": *a50
         "422": *a4
         "429": *a5
     delete:
@@ -21783,7 +21945,7 @@ paths:
                 $ref: "#/components/schemas/DeleteFamilyHistoryEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a49
+        "404": *a50
         "422": *a4
         "429": *a5
   /api/documents/inbound:
@@ -22554,7 +22716,7 @@ paths:
           required: true
           schema:
             type: string
-        - &a51
+        - &a52
           name: Prefer
           in: header
           required: false
@@ -22579,9 +22741,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InboundExtractEnvelope"
-        "202": *a50
+        "202": *a51
         "401": *a1
-        "403": &a52
+        "403": &a53
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: AI refusal: the `documentAi`
@@ -22619,7 +22781,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "503": &a53
+        "503": &a54
           description: "`ai.unavailable` — the inputs behind the AI capability could not be read, and the answer failed closed.
             Nothing was sent. Retry later."
           content:
@@ -22649,7 +22811,7 @@ paths:
           required: true
           schema:
             type: string
-        - *a51
+        - *a52
       requestBody:
         required: false
         content:
@@ -22685,12 +22847,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentSuggestEnvelope"
-        "202": *a50
+        "202": *a51
         "401": *a1
-        "403": *a52
+        "403": *a53
         "422": *a4
         "429": *a5
-        "503": *a53
+        "503": *a54
   /api/documents/inbound/{id}/summary:
     post:
       tags:
@@ -22740,7 +22902,7 @@ paths:
             type: boolean
             default: false
           description: With `persist=true`, explicitly replace an existing stored summary.
-        - *a51
+        - *a52
       requestBody:
         required: false
         content:
@@ -22776,12 +22938,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentSummaryEnvelope"
-        "202": *a50
+        "202": *a51
         "401": *a1
-        "403": *a52
+        "403": *a53
         "422": *a4
         "429": *a5
-        "503": *a53
+        "503": *a54
   /api/documents/inbound/{id}/index:
     post:
       tags:
@@ -22809,7 +22971,7 @@ paths:
           required: true
           schema:
             type: string
-        - *a51
+        - *a52
       requestBody:
         required: false
         content:
@@ -22845,12 +23007,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentIndexEnvelope"
-        "202": *a50
+        "202": *a51
         "401": *a1
-        "403": *a52
+        "403": *a53
         "422": *a4
         "429": *a5
-        "503": *a53
+        "503": *a54
   /api/documents/inbound/{id}/chat:
     post:
       tags:
@@ -22890,10 +23052,10 @@ paths:
                 type: string
                 description: "SSE frames: `data: <json>\\n\\n`. See the operation description for the per-`type` frame shapes."
         "401": *a1
-        "403": *a52
+        "403": *a53
         "422": *a4
         "429": *a5
-        "503": *a53
+        "503": *a54
     get:
       tags:
         - Documents
@@ -22957,10 +23119,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentReindexEnvelope"
         "401": *a1
-        "403": *a52
+        "403": *a53
         "422": *a4
         "429": *a5
-        "503": *a53
+        "503": *a54
   /api/documents/inbound/{id}/facts/{factId}:
     patch:
       tags:
@@ -23073,7 +23235,7 @@ paths:
                 $ref: "#/components/schemas/CreateCustomMetricResponse"
         "401": *a1
         "403": *a9
-        "409": &a55
+        "409": &a56
           description: A custom metric with this name already exists for the caller.
           content:
             application/json:
@@ -23102,7 +23264,7 @@ paths:
                 $ref: "#/components/schemas/GetCustomMetricResponse"
         "401": *a1
         "403": *a18
-        "404": &a54
+        "404": &a55
           description: Custom metric not found (or owned by another user).
           content:
             application/json:
@@ -23137,8 +23299,8 @@ paths:
                 $ref: "#/components/schemas/UpdateCustomMetricResponse"
         "401": *a1
         "403": *a9
-        "404": *a54
-        "409": *a55
+        "404": *a55
+        "409": *a56
         "422": *a4
         "429": *a5
     delete:
@@ -23162,7 +23324,7 @@ paths:
                 $ref: "#/components/schemas/DeleteCustomMetricResponse"
         "401": *a1
         "403": *a9
-        "404": *a54
+        "404": *a55
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries:
@@ -23206,7 +23368,7 @@ paths:
                 $ref: "#/components/schemas/ListCustomMetricEntriesEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a54
+        "404": *a55
         "422": *a4
         "429": *a5
     post:
@@ -23248,7 +23410,7 @@ paths:
                 $ref: "#/components/schemas/CreateCustomMetricEntryResponse"
         "401": *a1
         "403": *a9
-        "404": *a54
+        "404": *a55
         "409": *a7
         "422": *a4
         "429": *a12
@@ -23285,7 +23447,7 @@ paths:
                 $ref: "#/components/schemas/UpdateCustomMetricEntryResponse"
         "401": *a1
         "403": *a9
-        "404": &a56
+        "404": &a57
           description: Custom metric entry not found (or owned by another user).
           content:
             application/json:
@@ -23319,7 +23481,7 @@ paths:
                 $ref: "#/components/schemas/DeleteCustomMetricEntryResponse"
         "401": *a1
         "403": *a9
-        "404": *a56
+        "404": *a57
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries/restore:
@@ -23646,7 +23808,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientCatalogEnvelope"
         "401": *a1
-        "403": &a57
+        "403": &a58
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: The opt-in `nutrients` module is
@@ -23793,7 +23955,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientBatchEnvelope"
         "401": *a1
-        "403": &a58
+        "403": &a59
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: The opt-in `nutrients` module is
             off for this account (errorCode `module.disabled`). Stop syncing and do not retry; offer the
@@ -23829,7 +23991,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientOverviewEnvelope"
         "401": *a1
-        "403": *a57
+        "403": *a58
         "422": *a4
         "429": *a5
   /api/nutrients/daily:
@@ -23869,7 +24031,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientDailySeriesEnvelope"
         "401": *a1
-        "403": *a57
+        "403": *a58
         "422": *a4
         "429": *a5
   /api/nutrients/energy-balance:
@@ -23900,7 +24062,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnergyBalanceEnvelope"
         "401": *a1
-        "403": *a57
+        "403": *a58
         "422": *a4
         "429": *a5
   /api/nutrients/water:
@@ -23929,7 +24091,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientWaterWriteEnvelope"
         "401": *a1
-        "403": *a57
+        "403": *a58
         "409": *a7
         "422": *a4
         "429": *a5
@@ -23950,7 +24112,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientTargetsEnvelope"
         "401": *a1
-        "403": *a58
+        "403": *a59
         "422": *a4
         "429": *a5
     patch:
@@ -23974,7 +24136,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientTargetsPatchEnvelope"
         "401": *a1
-        "403": *a58
+        "403": *a59
         "422": *a4
         "429": *a12
   /api/integrations/healthkit:
@@ -24685,7 +24847,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WithingsCredentialsUpdateEnvelope"
-        "400": &a59
+        "400": &a60
           description: Body is not parseable JSON.
           content:
             application/json:
@@ -24693,19 +24855,19 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
         "403": *a9
-        "413": &a60
+        "413": &a61
           description: Body exceeds 64 KiB.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "415": &a61
+        "415": &a62
           description: Content-Type is not `application/json`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": &a62
+        "422": &a63
           description: "`clientId` and `clientSecret` are both required and each must be 1–200 characters. The envelope carries a
             single fixed message, not per-field issues."
           content:
@@ -24896,12 +25058,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GoogleHealthCredentialsUpdateEnvelope"
-        "400": *a59
+        "400": *a60
         "401": *a1
         "403": *a9
-        "413": *a60
-        "415": *a61
-        "422": *a62
+        "413": *a61
+        "415": *a62
+        "422": *a63
         "429": *a5
     delete:
       tags:
@@ -25067,12 +25229,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OuraCredentialsUpdateEnvelope"
-        "400": *a59
+        "400": *a60
         "401": *a1
         "403": *a9
-        "413": *a60
-        "415": *a61
-        "422": *a62
+        "413": *a61
+        "415": *a62
+        "422": *a63
         "429": *a5
     delete:
       tags:
@@ -25152,21 +25314,21 @@ paths:
                 $ref: "#/components/schemas/OuraTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": &a63
+        "422": &a64
           description: No usable connection for this provider — nothing stored, or the stored grant could no longer be resolved
             into an access token. `meta.errorCode` = `not_configured`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": &a64
+        "429": &a65
           description: More than 5 requests in 60 s from this user. `meta.errorCode` = `rate_limited_self` — this is the local
             limiter, distinct from a `rate_limited` 502 which is the provider's.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": &a65
+        "502": &a66
           description: "The probe did not complete. `meta.errorCode` names the class: `credentials_rejected` (the provider
             answered 401/403 — the stored grant is gone), `rate_limited` (the PROVIDER answered 429, which is not this
             endpoint's own limiter), `upstream_error` (5xx), `timeout` (no answer within 5 s), `connection_failed`
@@ -25212,12 +25374,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolarCredentialsUpdateEnvelope"
-        "400": *a59
+        "400": *a60
         "401": *a1
         "403": *a9
-        "413": *a60
-        "415": *a61
-        "422": *a62
+        "413": *a61
+        "415": *a62
+        "422": *a63
         "429": *a5
     delete:
       tags:
@@ -25297,9 +25459,9 @@ paths:
                 $ref: "#/components/schemas/PolarTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a63
-        "429": *a64
-        "502": *a65
+        "422": *a64
+        "429": *a65
+        "502": *a66
   /api/strava/credentials:
     get:
       tags:
@@ -25336,12 +25498,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StravaCredentialsUpdateEnvelope"
-        "400": *a59
+        "400": *a60
         "401": *a1
         "403": *a9
-        "413": *a60
-        "415": *a61
-        "422": *a62
+        "413": *a61
+        "415": *a62
+        "422": *a63
         "429": *a5
     delete:
       tags:
@@ -25423,9 +25585,9 @@ paths:
                 $ref: "#/components/schemas/StravaTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a63
-        "429": *a64
-        "502": *a65
+        "422": *a64
+        "429": *a65
+        "502": *a66
   /api/integrations/status:
     get:
       tags:
@@ -25503,7 +25665,7 @@ paths:
         "401": *a1
         "403": *a9
         "422": *a4
-        "429": *a64
+        "429": *a65
   /api/integrations/google-health/test:
     post:
       tags:
@@ -25537,9 +25699,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a63
-        "429": *a64
-        "502": *a65
+        "422": *a64
+        "429": *a65
+        "502": *a66
   /api/integrations/whoop/resume:
     post:
       tags:
@@ -25557,7 +25719,7 @@ paths:
         "401": *a1
         "403": *a9
         "422": *a4
-        "429": *a64
+        "429": *a65
   /api/integrations/whoop/test:
     post:
       tags:
@@ -25575,9 +25737,9 @@ paths:
                 $ref: "#/components/schemas/WhoopIntegrationTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a63
-        "429": *a64
-        "502": *a65
+        "422": *a64
+        "429": *a65
+        "502": *a66
   /api/integrations/withings/resume:
     post:
       tags:
@@ -25596,7 +25758,7 @@ paths:
         "401": *a1
         "403": *a9
         "422": *a4
-        "429": *a64
+        "429": *a65
   /api/integrations/withings/test:
     post:
       tags:
@@ -25615,8 +25777,8 @@ paths:
                 $ref: "#/components/schemas/WithingsIntegrationTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a63
-        "429": *a64
+        "422": *a64
+        "429": *a65
         "502":
           description: "The probe did not complete. The shared codes apply (`credentials_rejected`, `rate_limited`,
             `upstream_error`, `timeout`, `connection_failed`) and this path adds one of its own:
@@ -26034,7 +26196,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordActivityEnvelope"
         "401": *a1
-        "403": &a66
+        "403": &a67
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: Refused. `meta.errorCode` is
             `sharing.not_permitted` when the request was made while acting on another account (grant management is never
@@ -26061,7 +26223,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AccountGrantListEnvelope"
         "401": *a1
-        "403": *a66
+        "403": *a67
         "422": *a4
         "429": *a5
     post:
@@ -26165,7 +26327,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AcceptedAccountGrantEnvelope"
         "401": *a1
-        "403": *a66
+        "403": *a67
         "404":
           description: No such invitation for this account.
           content:
@@ -26209,7 +26371,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RevokedAccountGrantEnvelope"
         "401": *a1
-        "403": *a66
+        "403": *a67
         "404":
           description: No such grant on this account's record.
           content:
@@ -26250,7 +26412,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RenouncedAccountGrantEnvelope"
         "401": *a1
-        "403": *a66
+        "403": *a67
         "404":
           description: No such grant held by this account.
           content:
@@ -26685,7 +26847,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a66
+        "403": *a67
         "409":
           description: "The record this browser session is on is not the record the request asserted. `meta.errorCode` is
             `sharing.session.changed`. It is not a refusal of access — the caller may well be entitled to both records —
@@ -27075,7 +27237,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionListEnvelope"
         "401": *a1
-        "403": &a67
+        "403": &a68
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: The operator has disabled the API
             instance-wide. Every route in this module refuses while that setting is off, for a cookie session as well as
@@ -27109,7 +27271,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionRevokeEnvelope"
         "401": *a1
-        "403": *a67
+        "403": *a68
         "404":
           description: No live connection with this id for this caller — also the answer for an already-revoked one, so a repeat
             revoke is 404 rather than an idempotent 200.
@@ -27136,7 +27298,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenListEnvelope"
         "401": *a1
-        "403": *a67
+        "403": *a68
         "422": *a4
         "429": *a5
     post:
@@ -27173,7 +27335,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a67
+        "403": *a68
         "413":
           description: Body exceeds 16 KiB.
           content:
@@ -27216,7 +27378,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenRevokeEnvelope"
         "401": *a1
-        "403": *a67
+        "403": *a68
         "404":
           description: No `health:read` token with this id for this caller. An already-revoked token is still found, so a repeat
             revoke answers 200.
@@ -27277,7 +27439,7 @@ paths:
         the record has no provider app of its own and the deployment has none, the Guardian's own app is copied onto the
         record (audited). Cookie session, while acting on a managed record the caller guards."
       parameters:
-        - &a68
+        - &a69
           name: provider
           in: path
           required: true
@@ -27324,7 +27486,7 @@ paths:
         Audited against the record with the Guardian as the actor. Cookie session or Bearer, while acting on a managed
         record the caller guards."
       parameters:
-        - *a68
+        - *a69
       responses:
         "200":
           description: The provider is disconnected.
@@ -27350,7 +27512,7 @@ paths:
       description: Returns the named family's resolved settings for the record the session is acting on. Cookie session or
         Bearer, while acting on a managed record the caller guards.
       parameters:
-        - &a69
+        - &a70
           name: family
           in: path
           required: true
@@ -27394,7 +27556,7 @@ paths:
         ride the audit row. Body capped at 64 KiB. Cookie session or Bearer, while acting on a managed record the caller
         guards.
       parameters:
-        - *a69
+        - *a70
       requestBody:
         required: true
         content:
@@ -28185,13 +28347,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupDocument"
-        "403": &a70
+        "403": &a71
           description: Caller is not an admin. `requireAdmin()` is cookie-only, so a Bearer token lands here whatever its scope.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": &a71
+        "404": &a72
           description: No stored copy with this id.
           content:
             application/json:
@@ -28265,8 +28427,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "403": *a70
-        "404": *a71
+        "403": *a71
+        "404": *a72
         "409":
           description: A restore of the same account is already queued or running (`meta.errorCode` = `backup.restore.active`,
             `meta.jobId` names it), the stored copy was replaced by a newer one while it was being checked
@@ -28310,7 +28472,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupRestoreJobListResponse"
-        "403": *a70
+        "403": *a71
   /api/admin/backups/restores/{jobId}:
     get:
       tags:
@@ -28333,7 +28495,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupRestoreJobResponse"
-        "403": *a70
+        "403": *a71
         "404":
           description: No restore job with this id.
           content:
@@ -28352,7 +28514,7 @@ paths:
         request leaves the server. Needs neither the Documents module nor the list: with the list unset, `available` is
         false and any connection still stored is listed (with `originAllowed: false`) so it can be removed. Cookie
         session only; not delegable."
-      security: &a72
+      security: &a73
         - cookieAuth: []
       responses:
         "200":
@@ -28362,7 +28524,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourcesStatusEnvelope"
         "401": *a1
-        "403": &a73
+        "403": &a74
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: Refused before any request to the
             source: `documents.sources.browserOnly` for a Bearer caller, `sharing.not_permitted` while acting on another
@@ -28387,9 +28549,9 @@ paths:
         `documents.sources.tokenRequired`), so a stored token is never sent to an address it was not saved for. A Papra
         organization id is letters, digits, `_` and `-`. The token is stored encrypted (AES-256-GCM) and never returned.
         Ten saves and tests a minute per person. Cookie session only; not delegable."
-      security: *a72
+      security: *a73
       parameters:
-        - &a74
+        - &a75
           name: system
           in: path
           required: true
@@ -28428,8 +28590,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceConnectionEnvelope"
         "401": *a1
-        "403": *a73
-        "404": &a75
+        "403": *a74
+        "404": &a76
           description: "`documents.sources.unavailable`: the operator has not listed any origin in `DOCUMENT_SOURCE_ORIGINS`, so
             the picker is off. `documents.sources.notConnected`: no connection is saved for this system.
             `documents.sources.notFound`: the source has no such document, or (Papra) no such organization, including
@@ -28448,7 +28610,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "502": &a76
+        "502": &a77
           description: "The source could not answer usefully, with the reason in `meta.errorCode` and, when the source answered at
             all, its HTTP status in `meta.upstreamStatus` (its body is never passed on): `documents.sources.unreachable`
             (no connection, timeout, or a destination refused at dial time), `documents.sources.redirected` (the source
@@ -28467,9 +28629,9 @@ paths:
       description: Deletes the caller's connection for this system, and its token with it. Works even after the operator
         removed the origin from the list, and with the Documents module switched off. `disconnected` is false when there
         was nothing to delete. Cookie session only; not delegable.
-      security: *a72
+      security: *a73
       parameters:
-        - *a74
+        - *a75
       responses:
         "200":
           description: Removed, or there was nothing to remove.
@@ -28478,7 +28640,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceDisconnectEnvelope"
         "401": *a1
-        "403": *a73
+        "403": *a74
         "422": *a4
         "429": *a5
   /api/documents/sources/{system}/test:
@@ -28489,9 +28651,9 @@ paths:
       description: One request to the source with the stored token. Answers `ok` with the round-trip time and stamps
         `lastVerifiedAt`, or the reason in `meta.errorCode`. Shares the save's allowance of ten a minute. Cookie session
         only; not delegable.
-      security: *a72
+      security: *a73
       parameters:
-        - *a74
+        - *a75
       responses:
         "200":
           description: The source answered.
@@ -28500,9 +28662,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceTestEnvelope"
         "401": *a1
-        "403": *a73
-        "404": *a75
-        "422": &a77
+        "403": *a74
+        "404": *a76
+        "422": &a78
           description: "`documents.sources.originNotAllowed`: the base address's origin is not on the operator's list (checked on
             every request, so a connection saved earlier is cut off once its origin is removed), or another validation
             failure."
@@ -28511,7 +28673,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "502": *a76
+        "502": *a77
   /api/documents/sources/{system}/tags:
     get:
       tags:
@@ -28519,9 +28681,9 @@ paths:
       summary: Tags of a connected archive
       description: The source's tags for the picker's filter, the first 250 by name, in the source's own ids. Shares the
         search allowance of sixty a minute. Cookie session only; not delegable.
-      security: *a72
+      security: *a73
       parameters:
-        - *a74
+        - *a75
       responses:
         "200":
           description: The tags.
@@ -28530,11 +28692,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceTagsEnvelope"
         "401": *a1
-        "403": *a73
-        "404": *a75
-        "422": *a77
+        "403": *a74
+        "404": *a76
+        "422": *a78
         "429": *a5
-        "502": *a76
+        "502": *a77
   /api/documents/sources/{system}/search:
     get:
       tags:
@@ -28548,9 +28710,9 @@ paths:
         under that source key: `new`, `imported` with the vault document's `documentId`, or `deleted` (deleted in
         HealthLog; importing it again stores nothing). Nothing is stored. Sixty searches a minute, shared with the tag
         read. Cookie session only; not delegable."
-      security: *a72
+      security: *a73
       parameters:
-        - *a74
+        - *a75
         - name: q
           in: query
           required: false
@@ -28591,11 +28753,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceSearchEnvelope"
         "401": *a1
-        "403": *a73
-        "404": *a75
-        "422": *a77
+        "403": *a74
+        "404": *a76
+        "422": *a78
         "429": *a5
-        "502": *a76
+        "502": *a77
   /api/documents/sources/{system}/import:
     post:
       tags:
@@ -28617,9 +28779,9 @@ paths:
         fetched), including a duplicate. `kind` sets the document type (default OTHER). Automatic AI reading follows the
         person's own setting. Counts against the person's upload allowance (60 an hour) and storage quota. 201 for a new
         document, 200 otherwise. Cookie session only; not delegable."
-      security: *a72
+      security: *a73
       parameters:
-        - *a74
+        - *a75
       requestBody:
         required: true
         content:
@@ -28680,7 +28842,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceImportEnvelope"
         "401": *a1
-        "403": *a73
+        "403": *a74
         "404":
           description: "`documents.sources.unavailable`: the operator has not listed any origin in `DOCUMENT_SOURCE_ORIGINS`, so
             the picker is off. `documents.sources.notConnected`: no connection is saved for this system.
@@ -28711,7 +28873,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a77
+        "422": *a78
         "429":
           description: "`documents.inbound.rateLimited` (the person's hourly upload allowance, with the rate-limit headers) or
             `documents.inbound.uploadBusy` (too many uploads in progress; `Retry-After: 1`)."
@@ -28719,7 +28881,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": *a76
+        "502": *a77
   /api/symptoms/definitions:
     get:
       tags:
@@ -28743,7 +28905,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomDefinitionsEnvelope"
         "401": *a1
-        "403": &a78
+        "403": &a79
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: `illness.disabled`: the record
@@ -28787,7 +28949,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a78
+        "403": *a79
         "409": *a7
         "422": *a4
         "429": *a5
@@ -28817,8 +28979,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a78
-        "404": &a79
+        "403": *a79
+        "404": &a80
           description: "`symptoms.definition.notFound`: no definition with this id on the record."
           content:
             application/json:
@@ -28855,8 +29017,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a78
-        "404": *a79
+        "403": *a79
+        "404": *a80
         "422": *a4
         "429": *a5
   /api/symptoms/events:
@@ -28905,7 +29067,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomEventsEnvelope"
         "401": *a1
-        "403": *a78
+        "403": *a79
         "422": *a4
         "429": *a5
     post:
@@ -28931,8 +29093,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSymptomEventEnvelope"
         "401": *a1
-        "403": *a78
-        "404": *a79
+        "403": *a79
+        "404": *a80
         "409": *a7
         "422": *a4
         "429": *a5
@@ -29010,8 +29172,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetSymptomEventEnvelope"
         "401": *a1
-        "403": *a78
-        "404": &a80
+        "403": *a79
+        "404": &a81
           description: "`symptoms.event.notFound`: no occurrence with this id on the record."
           content:
             application/json:
@@ -29046,8 +29208,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSymptomEventEnvelope"
         "401": *a1
-        "403": *a78
-        "404": *a80
+        "403": *a79
+        "404": *a81
         "422": *a4
         "429": *a5
     delete:
@@ -29070,8 +29232,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSymptomEventEnvelope"
         "401": *a1
-        "403": *a78
-        "404": *a80
+        "403": *a79
+        "404": *a81
         "422": *a4
         "429": *a5
   /api/day/index:
@@ -29236,7 +29398,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TimelineEnvelope"
         "401": *a1
-        "403": &a81
+        "403": &a82
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: `module.disabled` with
@@ -29275,7 +29437,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TimelineReadinessEnvelope"
         "401": *a1
-        "403": *a81
+        "403": *a82
         "422": *a4
         "429": *a5
   /api/life-events:
@@ -29293,7 +29455,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LifeEventListEnvelope"
         "401": *a1
-        "403": &a82
+        "403": &a83
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: Owner-only in v1.42: no share
@@ -29335,7 +29497,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateLifeEventEnvelope"
         "401": *a1
-        "403": *a82
+        "403": *a83
         "409": *a7
         "422": *a4
         "429": *a12
@@ -29366,8 +29528,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateLifeEventEnvelope"
         "401": *a1
-        "403": *a82
-        "404": &a83
+        "403": *a83
+        "404": &a84
           description: No such life event on this account.
           content:
             application/json:
@@ -29394,8 +29556,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteLifeEventEnvelope"
         "401": *a1
-        "403": *a82
-        "404": *a83
+        "403": *a83
+        "404": *a84
         "422": *a4
         "429": *a5
   /api/search:
@@ -29591,7 +29753,7 @@ paths:
               required:
                 - file
       responses:
-        "202": *a50
+        "202": *a51
         "401": *a1
         "403":
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
@@ -30239,7 +30401,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SeizureDiaryEnvelope"
         "401": *a1
-        "403": &a84
+        "403": &a85
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: `seizures.disabled`: the record
@@ -30284,7 +30446,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSeizureEventEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "404":
           description: "`seizures.type.notFound`: no seizure type with this id on the record."
           content:
@@ -30320,7 +30482,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSeizureEventEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "404":
           description: "`seizures.event.notFound`: no seizure with this id on the record."
           content:
@@ -30349,7 +30511,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSeizureEventEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "404":
           description: "`seizures.event.notFound`: no seizure with this id on the record."
           content:
@@ -30386,7 +30548,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSeizureRescueDoseEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "404":
           description: "`seizures.event.notFound`: no seizure with this id on the record."
           content:
@@ -30426,7 +30588,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSeizureRescueDoseEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "404":
           description: "`seizures.rescue.notFound`: no rescue dose with this id on the record."
           content:
@@ -30459,7 +30621,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSeizureRescueDoseEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "404":
           description: "`seizures.rescue.notFound`: no rescue dose with this id on the record."
           content:
@@ -30481,7 +30643,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSeizureTypesEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "422": *a4
         "429": *a5
     post:
@@ -30503,7 +30665,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSeizureTypeEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "422": *a4
         "429": *a5
   /api/seizures/types/{id}:
@@ -30531,7 +30693,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSeizureTypeEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "404":
           description: "`seizures.type.notFound`: no seizure type with this id on the record."
           content:
@@ -30559,7 +30721,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSeizureTypeEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "404":
           description: "`seizures.type.notFound`: no seizure type with this id on the record."
           content:
@@ -30587,7 +30749,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SeizureSettingsEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "422": *a4
         "429": *a5
     patch:
@@ -30609,7 +30771,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSeizureSettingsEnvelope"
         "401": *a1
-        "403": *a84
+        "403": *a85
         "422": *a4
         "429": *a5
   /api/bugreport:
@@ -39132,6 +39294,12 @@ components:
               minLength: 1
               maxLength: 40
             - type: "null"
+        seriesId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
         documentIds:
           maxItems: 100
           type: array
@@ -39218,6 +39386,12 @@ components:
                 - BOTH
             - type: "null"
         reminderId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        seriesId:
           anyOf:
             - type: string
               minLength: 1
@@ -39349,6 +39523,132 @@ components:
       additionalProperties: false
       description: Partial edit; an omitted key leaves the column untouched, an explicit null clears it, and a body naming
         nothing is a 422.
+    CreateTreatmentSeriesRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        kind:
+          default: THERAPY
+          type: string
+          enum:
+            - ROUTINE
+            - ACUTE
+            - SPECIALIST
+            - PREVENTIVE
+            - EMERGENCY
+            - HOSPITAL
+            - THERAPY
+            - OTHER
+            - PROCEDURE
+        plannedSessions:
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 500
+            - type: "null"
+        startsOn:
+          type: string
+        validUntil:
+          type:
+            - string
+            - "null"
+        prescriberId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        performerId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        episodeId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        note:
+          anyOf:
+            - type: string
+              maxLength: 4000
+            - type: "null"
+      required:
+        - title
+        - startsOn
+      additionalProperties: false
+      description: "Start a treatment series: a course of several visits such as a physiotherapy prescription. `title` and
+        `startsOn` are required; `title` and `note` are encrypted at rest. `plannedSessions` is the count the
+        prescription covers (null: open-ended), `validUntil` its last valid day. `prescriberId` and `performerId` name
+        two entries of the caller's address book (who ordered it, who gives it), `episodeId` the condition it treats. An
+        id naming nothing the caller owns is a 404. The sessions are visits filed with this series' id (`seriesId` on
+        `POST /api/encounters`)."
+    UpdateTreatmentSeriesRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        kind:
+          type: string
+          enum:
+            - ROUTINE
+            - ACUTE
+            - SPECIALIST
+            - PREVENTIVE
+            - EMERGENCY
+            - HOSPITAL
+            - THERAPY
+            - OTHER
+            - PROCEDURE
+        plannedSessions:
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 500
+            - type: "null"
+        startsOn:
+          type: string
+        validUntil:
+          type:
+            - string
+            - "null"
+        endedOn:
+          type:
+            - string
+            - "null"
+        prescriberId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        performerId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        episodeId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        note:
+          anyOf:
+            - type: string
+              maxLength: 4000
+            - type: "null"
+      additionalProperties: false
+      description: Partial edit; an omitted key is left alone, an explicit null clears it, and a body naming nothing is a 422.
+        `endedOn` ends the series on that day (completed, whatever the count says); null reopens it.
     CreateCustomVaccineRequest:
       type: object
       properties:
@@ -45222,19 +45522,20 @@ components:
                 documents.sources.permissionMissing, documents.sources.rateLimited, documents.sources.redirected,
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
-                encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found;
-                emergency-card — emergency-card.api_disabled, emergency-card.cookie_only, emergency-card.exists,
-                emergency-card.none, emergency-card.rateLimited, emergency-card.wallet.token; encryption —
-                encryption.key_mismatch; environment — environment.backfill_pending, environment.backfill_rate_limited,
-                environment.invalid, environment.no_home, environment.range_too_large, environment.travel.not_found,
-                environment.travel_suggestion.not_found; export — export.selection.empty, export.selection.unknown_leaf;
-                familyHistory — familyHistory.invalid; feedback — feedback.body.invalid; garmin — garmin.key_refused,
-                garmin.rate_limited, garmin.unreachable; glp1 — glp1.doseChange.deleted; health_score_config —
-                health_score_config.invalid, health_score_config.too_narrow; http — http.bad_gateway, http.bad_request,
-                http.client_error, http.conflict, http.forbidden, http.gateway_timeout, http.gone, http.internal,
-                http.invalid, http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited,
-                http.server_error, http.unauthenticated, http.unavailable, http.unsupported_media_type; illness —
-                illness.day-log.invalid, illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
+                encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found,
+                encounter.series-not-found; emergency-card — emergency-card.api_disabled, emergency-card.cookie_only,
+                emergency-card.exists, emergency-card.none, emergency-card.rateLimited, emergency-card.wallet.token;
+                encryption — encryption.key_mismatch; environment — environment.backfill_pending,
+                environment.backfill_rate_limited, environment.invalid, environment.no_home,
+                environment.range_too_large, environment.travel.not_found, environment.travel_suggestion.not_found;
+                export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
+                feedback — feedback.body.invalid; garmin — garmin.key_refused, garmin.rate_limited, garmin.unreachable;
+                glp1 — glp1.doseChange.deleted; health_score_config — health_score_config.invalid,
+                health_score_config.too_narrow; http — http.bad_gateway, http.bad_request, http.client_error,
+                http.conflict, http.forbidden, http.gateway_timeout, http.gone, http.internal, http.invalid,
+                http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited, http.server_error,
+                http.unauthenticated, http.unavailable, http.unsupported_media_type; illness — illness.day-log.invalid,
+                illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
                 illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
                 import.apple_health.busy, import.csv.content_type, import.csv.empty, import.csv.too_large,
                 import.file.too_large, import.health_connect.remote.https_required,
@@ -45312,8 +45613,9 @@ components:
                 sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
                 source-priority.body.invalid_shape; symptoms — symptoms.batch.invalid, symptoms.batch.too_large,
                 symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
-                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
-                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
+                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; treatment_series —
+                treatment_series.condition-not-found, treatment_series.invalid, treatment_series.practitioner-not-found;
+                tokens — tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
                 tokens.mirror.not_measurement_token, tokens.workouts.ceiling_reached; vaccination —
                 vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
                 vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
@@ -53565,6 +53867,94 @@ components:
               - createdAt
               - updatedAt
             additionalProperties: {}
+        treatmentSeries:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+              kind:
+                type: string
+                enum:
+                  - ROUTINE
+                  - ACUTE
+                  - SPECIALIST
+                  - PREVENTIVE
+                  - EMERGENCY
+                  - HOSPITAL
+                  - THERAPY
+                  - OTHER
+                  - PROCEDURE
+              plannedSessions:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+              startsOn:
+                type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+              validUntil:
+                anyOf:
+                  - type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                  - type: "null"
+              endedOn:
+                anyOf:
+                  - type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                  - type: "null"
+              prescriberId:
+                type:
+                  - string
+                  - "null"
+              performerId:
+                type:
+                  - string
+                  - "null"
+              episodeId:
+                type:
+                  - string
+                  - "null"
+              titleEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              noteEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              title:
+                type:
+                  - string
+                  - "null"
+              note:
+                type:
+                  - string
+                  - "null"
+              createdAt:
+                type: string
+                minLength: 1
+              updatedAt:
+                type: string
+                minLength: 1
+              deletedAt:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+            required:
+              - id
+              - kind
+              - startsOn
+              - createdAt
+              - updatedAt
+            additionalProperties: {}
         encounters:
           default: []
           type: array
@@ -53636,6 +54026,10 @@ components:
                       - BOTH
                   - type: "null"
               reminderId:
+                type:
+                  - string
+                  - "null"
+              seriesId:
                 type:
                   - string
                   - "null"
@@ -55342,6 +55736,7 @@ components:
         - healthScoreRecords
         - onboardingRecord
         - practitioners
+        - treatmentSeries
         - encounters
         - encounterDocumentLinks
         - encounterLabLinks
@@ -89755,6 +90150,12 @@ components:
           anyOf:
             - $ref: "#/components/schemas/EncounterPreparation"
             - type: "null"
+        series:
+          description: The treatment series this visit belongs to, null when none. Present on the list, the detail, the procedure
+            history, the series detail and every write response.
+          anyOf:
+            - $ref: "#/components/schemas/EncounterSeriesRef"
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -89985,6 +90386,38 @@ components:
       additionalProperties: false
       description: "The earlier visit the window starts at: its id, instant and kind, and the practitioner's name and
         specialty as they read now."
+    EncounterSeriesRef:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type:
+            - string
+            - "null"
+        sessionNumber:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: This visit's place in the series, 1-based in time order, counting only sessions that took place or are
+            booked. Null for a cancelled or missed one.
+        plannedSessions:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+      required:
+        - id
+        - title
+        - sessionNumber
+        - plannedSessions
+      additionalProperties: false
+      description: "The treatment series a visit is one session of (v1.50), resolved: its title (decrypted, null on a
+        key-rotation gap), the session's number and the planned count, so a client renders \"session 3 of 6\" without
+        counting."
     CreateEncounterEnvelope:
       type: object
       properties:
@@ -90570,6 +91003,266 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/Practitioner"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ListTreatmentSeriesEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            series:
+              type: array
+              items:
+                $ref: "#/components/schemas/TreatmentSeries"
+          required:
+            - series
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    TreatmentSeries:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type:
+            - string
+            - "null"
+        kind:
+          type: string
+          enum:
+            - ROUTINE
+            - ACUTE
+            - SPECIALIST
+            - PREVENTIVE
+            - EMERGENCY
+            - HOSPITAL
+            - THERAPY
+            - OTHER
+            - PROCEDURE
+        plannedSessions:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        startsOn:
+          type: string
+          description: "`YYYY-MM-DD`."
+        validUntil:
+          description: "`YYYY-MM-DD`, inclusive."
+          type:
+            - string
+            - "null"
+        endedOn:
+          description: "`YYYY-MM-DD`."
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+          enum:
+            - PLANNED
+            - ACTIVE
+            - COMPLETED
+            - EXPIRED
+          description: "Derived, first match wins: COMPLETED once ended (on or before the record's today) or once every planned
+            session took place; EXPIRED when `validUntil` has passed with sessions left; PLANNED while no session took
+            place; ACTIVE otherwise."
+        sessions:
+          $ref: "#/components/schemas/TreatmentSeriesSessions"
+        firstSessionAt:
+          type:
+            - string
+            - "null"
+        lastSessionAt:
+          type:
+            - string
+            - "null"
+        nextSessionAt:
+          type:
+            - string
+            - "null"
+        prescriber:
+          anyOf:
+            - $ref: "#/components/schemas/Practitioner"
+            - type: "null"
+        performer:
+          anyOf:
+            - $ref: "#/components/schemas/Practitioner"
+            - type: "null"
+        condition:
+          anyOf:
+            - $ref: "#/components/schemas/EncounterLinkedTarget"
+            - type: "null"
+          description: "The condition it treats. `redacted: true` with no label when the caller's grant does not cover the illness
+            section."
+        note:
+          type:
+            - string
+            - "null"
+        visits:
+          description: "The detail read only: every live session, oldest first."
+          type: array
+          items:
+            $ref: "#/components/schemas/Encounter"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - kind
+        - plannedSessions
+        - startsOn
+        - validUntil
+        - endedOn
+        - status
+        - sessions
+        - firstSessionAt
+        - lastSessionAt
+        - nextSessionAt
+        - prescriber
+        - performer
+        - condition
+        - note
+        - createdAt
+        - updatedAt
+      additionalProperties: false
+      description: "A course of several visits (v1.50): a physiotherapy prescription, a run of radiation, a dental plan.
+        Everything about progress is derived server-side from the visits that name it, so filing, moving or cancelling a
+        session corrects it. `title` and `note` are decrypted (null on a key-rotation gap)."
+    TreatmentSeriesSessions:
+      type: object
+      properties:
+        done:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        booked:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        cancelled:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        remaining:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+      required:
+        - done
+        - booked
+        - cancelled
+        - remaining
+      additionalProperties: false
+      description: "Counted from the live sessions on every read. `done`: took place. `booked`: PLANNED and still ahead.
+        `cancelled`: cancelled or missed, which used up nothing. `remaining`: planned minus done, never below zero, null
+        for an open-ended series."
+    CreateTreatmentSeriesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/TreatmentSeries"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GetTreatmentSeriesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/TreatmentSeries"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    UpdateTreatmentSeriesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/TreatmentSeries"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DeleteTreatmentSeriesEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            deleted:
+              type: boolean
+          required:
+            - deleted
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    RestoreTreatmentSeriesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/TreatmentSeries"
         error:
           type: "null"
         meta:
@@ -106471,6 +107164,7 @@ components:
             - vaccination
             - visit
             - procedure
+            - treatmentSeries
             - labDay
             - seizureDay
             - document

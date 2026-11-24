@@ -162,6 +162,8 @@ describe("soft-delete retention register", () => {
     expect(count).toBeGreaterThanOrEqual(9);
     expect(derived.get("Practitioner")?.map(refKey)).toEqual([
       "encounters.practitioner_id",
+      "treatment_series.prescriber_id",
+      "treatment_series.performer_id",
       "vaccination_records.practitioner_id",
     ]);
     const found = referrerProblems(schema, SOFT_DELETE_RETENTION);

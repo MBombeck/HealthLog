@@ -83,3 +83,11 @@ export function careVisitPath(id: string): string {
 export function visitsPath(ids: readonly string[]): string {
   return ids.length === 1 ? visitPath(ids[0]) : VISITS_PATH;
 }
+
+/**
+ * One treatment series on the wire: the visits tab, with the series
+ * opened. The page reads `series` the way it reads `visit`.
+ */
+export function treatmentSeriesPath(id: string): string {
+  return `${CARE_WIRE_PATH}?series=${encodeURIComponent(id)}`;
+}

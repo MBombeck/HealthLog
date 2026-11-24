@@ -105,6 +105,8 @@ export const encounterCreateSchema = z
     laterality: lateralityEnum.nullable().optional(),
     /** The checkup this visit closes, when it was filed from a due one. */
     reminderId: id.nullable().optional(),
+    /** The treatment series this visit is a session of. */
+    seriesId: id.nullable().optional(),
     documentIds: linkIds,
     labResultIds: linkIds,
     episodeIds: linkIds,
@@ -131,6 +133,7 @@ export const encounterUpdateSchema = z
     bodySite,
     laterality: lateralityEnum.nullable().optional(),
     reminderId: id.nullable().optional(),
+    seriesId: id.nullable().optional(),
     documentIds: linkIds,
     labResultIds: linkIds,
     episodeIds: linkIds,

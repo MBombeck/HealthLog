@@ -34,6 +34,24 @@ export interface CareVisit {
   occurredAt: Date;
   /** The practitioner's name, or null when the visit names none. */
   practitioner: string | null;
+  /**
+   * Its place in a treatment series, when it is a session of one.
+   * A number and a count only: the series' title is the person's own health
+   * text and stays out of the feed, like a visit's reason.
+   */
+  session?: { number: number; planned: number | null } | null;
+}
+
+/**
+ * The last valid day of a treatment series that still runs: the day
+ * a prescription with sessions left runs out.
+ */
+export interface CareSeriesEnd {
+  id: string;
+  /** `YYYY-MM-DD`. */
+  day: string;
+  /** Who gives it, or null. */
+  practitioner: string | null;
 }
 
 export interface CareDue {
@@ -51,6 +69,7 @@ export interface CareEventInput {
   titleMode: CareFeedTitleMode;
   visits: readonly CareVisit[];
   dues: readonly CareDue[];
+  seriesEnds?: readonly CareSeriesEnd[];
   translator: ServerTranslator;
 }
 
@@ -60,13 +79,42 @@ function visitEvent(v: CareVisit, input: CareEventInput): IcsEvent {
     uid: eventUid(input.feedId, `visit:${v.id}`),
     startAt: v.occurredAt,
     endAt: new Date(v.occurredAt.getTime() + VISIT_EVENT_MINUTES * 60_000),
+    summary: !descriptive ? DISCREET_SUMMARY : visitSummary(v, input),
+  };
+}
+
+function visitSummary(v: CareVisit, input: CareEventInput): string {
+  const t = input.translator.t;
+  if (v.session) {
+    const session =
+      v.session.planned !== null
+        ? t("careFeed.ics.sessionOf", {
+            number: v.session.number,
+            planned: v.session.planned,
+          })
+        : t("careFeed.ics.session", { number: v.session.number });
+    return v.practitioner
+      ? t("careFeed.ics.sessionWith", { session, name: v.practitioner })
+      : session;
+  }
+  return v.practitioner
+    ? t("careFeed.ics.visitWith", { name: v.practitioner })
+    : t("careFeed.ics.visit");
+}
+
+function seriesEndEvent(e: CareSeriesEnd, input: CareEventInput): IcsEvent {
+  const descriptive = input.titleMode === "DESCRIPTIVE";
+  return {
+    uid: eventUid(input.feedId, `series-end:${e.id}`),
+    start: e.day,
+    endExclusive: addDays(e.day, 1),
     summary: !descriptive
       ? DISCREET_SUMMARY
-      : v.practitioner
-        ? input.translator.t("careFeed.ics.visitWith", {
-            name: v.practitioner,
+      : e.practitioner
+        ? input.translator.t("careFeed.ics.seriesEndsWith", {
+            name: e.practitioner,
           })
-        : input.translator.t("careFeed.ics.visit"),
+        : input.translator.t("careFeed.ics.seriesEnds"),
   };
 }
 
@@ -98,6 +146,7 @@ export function buildCareCalendar(input: CareEventInput): IcsCalendar {
   const events = [
     ...input.visits.map((v) => visitEvent(v, input)),
     ...input.dues.map((d) => dueEvent(d, input)),
+    ...(input.seriesEnds ?? []).map((e) => seriesEndEvent(e, input)),
   ]
     .sort((a, b) => sortKey(a) - sortKey(b) || a.uid.localeCompare(b.uid))
     .slice(0, MAX_CARE_EVENTS);

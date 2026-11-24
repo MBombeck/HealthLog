@@ -91,6 +91,8 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.symptomBatchIngest", { name });
     case "encounter.visit.create":
       return t("recordSharing.activityVerb.encounterVisitCreate", { name });
+    case "treatment-series.create":
+      return t("recordSharing.activityVerb.treatmentSeriesCreate", { name });
     case "vaccination.record.create":
       return t("recordSharing.activityVerb.vaccinationRecordCreate", { name });
     case "vaccination.custom.create":
@@ -235,6 +237,12 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.encounterVisitDelete", { name });
     case "encounter.visit.restore":
       return t("recordSharing.activityVerb.encounterVisitRestore", { name });
+    case "treatment-series.update":
+      return t("recordSharing.activityVerb.treatmentSeriesUpdate", { name });
+    case "treatment-series.delete":
+      return t("recordSharing.activityVerb.treatmentSeriesDelete", { name });
+    case "treatment-series.restore":
+      return t("recordSharing.activityVerb.treatmentSeriesRestore", { name });
     case "vaccination.record.update":
       return t("recordSharing.activityVerb.vaccinationRecordUpdate", { name });
     case "vaccination.record.delete":

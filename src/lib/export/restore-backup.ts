@@ -458,6 +458,7 @@ function restoredCounts(summary: BackupSummary) {
     customMetricEntries: summary.customMetricEntries,
     correlationPatterns: summary.correlationPatterns,
     practitioners: summary.practitioners,
+    treatmentSeries: summary.treatmentSeries,
     encounters: summary.encounters,
     encounterLinks: summary.encounterLinks,
     vaccinations: summary.vaccinations,

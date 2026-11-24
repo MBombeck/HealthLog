@@ -228,7 +228,8 @@
       "invalid": "Controleer de gegevens van het bezoek en probeer het opnieuw.",
       "practitioner-not-found": "Deze praktijk of arts bestaat niet meer. Kies een andere of geen.",
       "reminder-not-found": "Deze controle bestaat niet meer. Kies een andere of geen.",
-      "reminder-conflict": "Een gepland bezoek kan geen controle afsluiten, want het heeft nog niet plaatsgevonden."
+      "reminder-conflict": "Een gepland bezoek kan geen controle afsluiten, want het heeft nog niet plaatsgevonden.",
+      "series-not-found": "Deze behandelreeks bestaat niet meer. Kies een andere of geen."
     },
     "vaccination": {
       "invalid": "Controleer de gegevens van de vaccinatie en probeer het opnieuw.",
@@ -289,6 +290,11 @@
         "limit": "Er zijn al 12 aanvalstypen. Archiveer er een om een nieuw type toe te voegen.",
         "notFound": "Dit aanvalstype bestaat niet meer."
       }
+    },
+    "treatment_series": {
+      "invalid": "Controleer de gegevens van de reeks en probeer het opnieuw.",
+      "practitioner-not-found": "Deze praktijk of arts bestaat niet meer. Kies een andere of geen.",
+      "condition-not-found": "Deze aandoening bestaat niet meer. Kies een andere of geen."
     }
   },
   "doctorReport": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} heeft een aanvalstype verwijderd",
       "seizureSettingsUpdate": "{name} heeft de clusterregel gewijzigd",
       "symptomBatchIngest": "{name} heeft symptomen uit Apple Health overgenomen",
-      "symptomImportDelete": "{name} heeft overgenomen symptomen verwijderd"
+      "symptomImportDelete": "{name} heeft overgenomen symptomen verwijderd",
+      "treatmentSeriesCreate": "{name} heeft een behandelreeks toegevoegd",
+      "treatmentSeriesUpdate": "{name} heeft een behandelreeks bewerkt",
+      "treatmentSeriesDelete": "{name} heeft een behandelreeks verwijderd",
+      "treatmentSeriesRestore": "{name} heeft een behandelreeks hersteld"
     },
     "section": {
       "measurements": {
@@ -16039,7 +16049,12 @@
       "visit": "Afspraak",
       "visitWith": "Afspraak: {name}",
       "checkupDue": "Aan de beurt: {label}",
-      "boosterDue": "Booster aan de beurt: {label}"
+      "boosterDue": "Booster aan de beurt: {label}",
+      "sessionOf": "Sessie {number} van {planned}",
+      "session": "Sessie {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Behandelreeks eindigt",
+      "seriesEndsWith": "Behandelreeks eindigt: {name}"
     }
   },
   "reportSchedule": {
@@ -16187,5 +16202,56 @@
     "entry": {
       "description": "Bloedgroep, allergieën, medicijnen en contactpersonen voor een noodgeval, met offline kopie, pasje en QR-link."
     }
+  },
+  "treatmentSeries": {
+    "heading": "Behandelreeksen",
+    "add": "Nieuwe reeks",
+    "createTitle": "Nieuwe behandelreeks",
+    "untitled": "Behandelreeks",
+    "progress": "{done} van {planned}",
+    "sessionsDoneCount": "{count, plural, one {# sessie} other {# sessies}}",
+    "sessionOf": "Sessie {number} van {planned}",
+    "session": "Sessie {number}",
+    "status": {
+      "planned": "Niet begonnen",
+      "active": "Loopt",
+      "completed": "Afgerond",
+      "expired": "Verlopen"
+    },
+    "next": "Volgende {date}",
+    "validUntil": "Geldig tot {date}",
+    "firstSession": "Sinds {date}",
+    "sessionsHeading": "Sessies",
+    "addSession": "Sessie toevoegen",
+    "prescriber": "Voorgeschreven door",
+    "performer": "Uitgevoerd door",
+    "condition": "Aandoening",
+    "form": {
+      "title": "Wat is het?",
+      "titlePlaceholder": "Fysiotherapie, linkerknie",
+      "plannedSessions": "Sessies",
+      "startsOn": "Begin",
+      "validUntil": "Geldig tot",
+      "note": "Notitie",
+      "series": "Behandelreeks",
+      "seriesNone": "Geen"
+    },
+    "created": "Reeks opgeslagen",
+    "updated": "Reeks bijgewerkt",
+    "saveFailed": "De reeks kon niet worden opgeslagen.",
+    "ended": "Reeks beëindigd",
+    "reopened": "Reeks heropend",
+    "end": "Reeks beëindigen",
+    "reopen": "Heropenen",
+    "deleteTitle": "Deze reeks verwijderen?",
+    "deleteDescription": "De afspraken blijven. Ze zijn alleen niet meer gegroepeerd.",
+    "deleted": "Reeks verwijderd",
+    "deleteFailed": "De reeks kon niet worden verwijderd.",
+    "reportTitle": "Behandelreeksen",
+    "reportColSeries": "Reeks",
+    "reportColSessions": "Sessies",
+    "reportColPeriod": "Periode",
+    "period": "{from} tot {to}",
+    "periodOpen": "sinds {from}"
   }
 }

@@ -121,4 +121,48 @@ test.describe("visits", () => {
       page.locator('[data-slot="document-visit-links"]').first(),
     ).toBeVisible({ timeout: 15_000 });
   });
+
+  // Treatment series (D1113): a series starts with a name and a count, and a
+  // session added from it arrives with the series picked and moves the count.
+  // Here rather than in a file of its own because the sessions are visits of
+  // this same account, and the reset above clears them.
+  test("a treatment series counts the session filed into it", async ({
+    page,
+  }) => {
+    await page.goto("/care?view=visits");
+
+    await page.locator('[data-slot="treatment-series-add"]').click();
+    const save = page.locator('[data-slot="treatment-series-save"]');
+    // Nothing typed yet: a series nobody can name is not saved.
+    await expect(save).toBeDisabled();
+    await page.getByTestId("series-title").fill("Physiotherapy, left knee");
+    await page.getByTestId("series-planned").fill("6");
+    await expect(save).toBeEnabled();
+    await save.click();
+
+    const card = page.locator('[data-slot="treatment-series-card"]');
+    await expect(card).toHaveCount(1, { timeout: 15_000 });
+    await expect(card).toHaveAttribute("data-done", "0");
+    await expect(card.locator("[data-series-status]")).toHaveAttribute(
+      "data-series-status",
+      "PLANNED",
+    );
+
+    // Open it and add the first session: the visit form arrives with the
+    // series picked.
+    await card.locator('[data-slot="treatment-series-open"]').click();
+    await page.locator('[data-slot="treatment-series-add-session"]').click();
+    await expect(page.getByTestId("encounter-series")).not.toHaveValue("");
+    await page.locator('[data-slot="encounter-save"]').click();
+
+    // Dated now, so it took place: one of six, and the series runs.
+    await expect(card).toHaveAttribute("data-done", "1", { timeout: 15_000 });
+    await expect(card.locator("[data-series-status]")).toHaveAttribute(
+      "data-series-status",
+      "ACTIVE",
+    );
+    await expect(
+      page.locator('[data-slot="visit-card-series"]').first(),
+    ).toBeVisible();
+  });
 });

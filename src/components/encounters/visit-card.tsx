@@ -29,6 +29,7 @@ import {
   encounterStatusText,
 } from "./encounter-labels";
 import { TileHeader } from "@/components/insights/tile-header";
+import { sessionText } from "./treatment-series-labels";
 
 /** The two statuses worth calling out on a row; the rest the section implies. */
 function isNoteworthy(status: EncounterStatus): boolean {
@@ -122,6 +123,26 @@ export function VisitCard({
               data-slot="visit-card-body-site"
             >
               {site}
+            </p>
+          ) : null}
+
+          {encounter.series ? (
+            <p
+              className="text-foreground line-clamp-1 text-sm"
+              data-slot="visit-card-series"
+            >
+              {[
+                encounter.series.title,
+                encounter.series.sessionNumber
+                  ? sessionText(
+                      t,
+                      encounter.series.sessionNumber,
+                      encounter.series.plannedSessions,
+                    )
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(", ")}
             </p>
           ) : null}
 

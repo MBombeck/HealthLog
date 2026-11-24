@@ -367,13 +367,21 @@ async function visitCandidates(
     },
     orderBy: [{ occurredAt: "desc" }, { id: "asc" }],
     take: probeTake(read),
-    include: { practitioner: PRACTITIONER_SELECT },
+    include: {
+      practitioner: PRACTITIONER_SELECT,
+      // A session is found by its series' title too ("physio").
+      series: { select: { titleEncrypted: true, deletedAt: true } },
+    },
   });
   return mapUntilStopped(
     withinCap(rows, read),
     read,
     (row): SearchCandidate => {
       const practitioner = visitPractitioner(row.practitioner);
+      const seriesTitle =
+        row.series && row.series.deletedAt === null
+          ? decryptText(row.series.titleEncrypted)
+          : null;
       const reason = decryptText(row.reasonEncrypted);
       const outcome = decryptText(row.outcomeEncrypted);
       const bodySite = decryptText(row.bodySiteEncrypted);
@@ -402,6 +410,7 @@ async function visitCandidates(
             title ? kindLabel : null,
             practitioner?.name,
             sitePhrase(bodySite, row.laterality, owner.display),
+            seriesTitle,
           ]),
           day,
           path: recordPath("visit", row.id),
@@ -426,6 +435,7 @@ async function visitCandidates(
             weight: WEIGHT.secondary,
           },
           { text: outcome ?? "", weight: WEIGHT.secondary, body: true },
+          { text: seriesTitle ?? "", weight: WEIGHT.secondary },
         ],
       };
     },

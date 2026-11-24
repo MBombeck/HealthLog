@@ -116,6 +116,7 @@ import {
   encounterBackupSchema,
   encounterLinkBackupSchema,
   practitionerBackupSchema,
+  treatmentSeriesBackupSchema,
 } from "@/lib/export/visits-backup-schema";
 import { workoutBackupSchema } from "@/lib/export/workouts-backup-schema";
 import {
@@ -229,6 +230,8 @@ export const backupPayloadSchema = z
     // before the tables existed carries no key, and an account that has never
     // filed a visit writes [].
     practitioners: z.array(practitionerBackupSchema).default([]),
+    // Treatment series; a file written before them has no key.
+    treatmentSeries: z.array(treatmentSeriesBackupSchema).default([]),
     encounters: z.array(encounterBackupSchema).default([]),
     encounterDocumentLinks: z.array(encounterLinkBackupSchema).default([]),
     encounterLabLinks: z.array(encounterLinkBackupSchema).default([]),

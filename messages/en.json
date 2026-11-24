@@ -228,7 +228,8 @@
       "invalid": "Check the visit details and try again.",
       "practitioner-not-found": "This practice or doctor no longer exists. Choose another or none.",
       "reminder-not-found": "This checkup no longer exists. Choose another or none.",
-      "reminder-conflict": "A planned visit cannot close a checkup, because it has not happened yet."
+      "reminder-conflict": "A planned visit cannot close a checkup, because it has not happened yet.",
+      "series-not-found": "This treatment series no longer exists. Choose another or none."
     },
     "vaccination": {
       "invalid": "Check the vaccination details and try again.",
@@ -289,6 +290,11 @@
         "limit": "There are 12 seizure types. Archive one to add another.",
         "notFound": "This seizure type no longer exists."
       }
+    },
+    "treatment_series": {
+      "invalid": "Check the series details and try again.",
+      "practitioner-not-found": "This practice or doctor no longer exists. Choose another or none.",
+      "condition-not-found": "This condition no longer exists. Choose another or none."
     }
   },
   "doctorReport": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} deleted a seizure type",
       "seizureSettingsUpdate": "{name} changed the seizure cluster rule",
       "symptomBatchIngest": "{name} imported symptoms from Apple Health",
-      "symptomImportDelete": "{name} removed imported symptom entries"
+      "symptomImportDelete": "{name} removed imported symptom entries",
+      "treatmentSeriesCreate": "{name} added a treatment series",
+      "treatmentSeriesUpdate": "{name} edited a treatment series",
+      "treatmentSeriesDelete": "{name} deleted a treatment series",
+      "treatmentSeriesRestore": "{name} restored a treatment series"
     },
     "section": {
       "measurements": {
@@ -16039,7 +16049,12 @@
       "visit": "Appointment",
       "visitWith": "Appointment: {name}",
       "checkupDue": "Due: {label}",
-      "boosterDue": "Booster due: {label}"
+      "boosterDue": "Booster due: {label}",
+      "sessionOf": "Session {number} of {planned}",
+      "session": "Session {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Treatment series ends",
+      "seriesEndsWith": "Treatment series ends: {name}"
     }
   },
   "reportSchedule": {
@@ -16187,5 +16202,56 @@
     "entry": {
       "description": "Blood group, allergies, medications and contacts for an emergency, with an offline copy, a wallet card and a QR link."
     }
+  },
+  "treatmentSeries": {
+    "heading": "Treatment series",
+    "add": "New series",
+    "createTitle": "New treatment series",
+    "untitled": "Treatment series",
+    "progress": "{done} of {planned}",
+    "sessionsDoneCount": "{count, plural, one {# session} other {# sessions}}",
+    "sessionOf": "Session {number} of {planned}",
+    "session": "Session {number}",
+    "status": {
+      "planned": "Not started",
+      "active": "Running",
+      "completed": "Completed",
+      "expired": "Expired"
+    },
+    "next": "Next {date}",
+    "validUntil": "Valid until {date}",
+    "firstSession": "Since {date}",
+    "sessionsHeading": "Sessions",
+    "addSession": "Add session",
+    "prescriber": "Ordered by",
+    "performer": "Given by",
+    "condition": "Condition",
+    "form": {
+      "title": "What is it?",
+      "titlePlaceholder": "Physiotherapy, left knee",
+      "plannedSessions": "Sessions",
+      "startsOn": "Start",
+      "validUntil": "Valid until",
+      "note": "Note",
+      "series": "Treatment series",
+      "seriesNone": "None"
+    },
+    "created": "Series saved",
+    "updated": "Series updated",
+    "saveFailed": "The series could not be saved.",
+    "ended": "Series ended",
+    "reopened": "Series reopened",
+    "end": "End series",
+    "reopen": "Reopen",
+    "deleteTitle": "Delete this series?",
+    "deleteDescription": "The visits stay. They are just no longer grouped.",
+    "deleted": "Series deleted",
+    "deleteFailed": "The series could not be deleted.",
+    "reportTitle": "Treatment series",
+    "reportColSeries": "Series",
+    "reportColSessions": "Sessions",
+    "reportColPeriod": "Period",
+    "period": "{from} to {to}",
+    "periodOpen": "since {from}"
   }
 }
