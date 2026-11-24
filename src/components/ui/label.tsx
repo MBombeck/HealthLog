@@ -9,6 +9,11 @@ import { cn } from "@/lib/utils";
  * Form label. The trailing colon is an `::after` on the label itself; pass
  * `noColon` where the label is not followed by its field.
  *
+ * The label starts on the reading edge, like the text and the controls
+ * around it (UI standards §2, §13). It carried `pl-1` from the first
+ * release, so every field name sat 4 px right of the sentence above it and
+ * of a switch's name in the same card, which `SwitchRow` had to undo.
+ *
  * A label that already ends in punctuation takes no colon: a field named by
  * a question read "What are you tracking for?:". The label knows its own
  * text, so the call site does not have to remember.
@@ -36,7 +41,7 @@ function Label({
       data-slot="label"
       data-no-colon={withoutColon}
       className={cn(
-        "inline-block pl-1 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 after:content-[':'] data-[no-colon=true]:after:content-none",
+        "inline-block text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 after:content-[':'] data-[no-colon=true]:after:content-none",
         className,
       )}
       {...props}

@@ -97,7 +97,7 @@ export function BreathingScreeningCard({
         <p className="text-muted-foreground text-xs leading-snug">
           {t("insights.breathingScreening.nights", { count: data.nights })}
           {data.recentMeanIndex != null
-            ? ` · ${t("insights.breathingScreening.indexLine", {
+            ? `, ${t("insights.breathingScreening.indexLine", {
                 value: data.recentMeanIndex,
               })}`
             : ""}

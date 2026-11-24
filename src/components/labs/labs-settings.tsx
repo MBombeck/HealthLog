@@ -82,7 +82,7 @@ export function LabsSettings() {
   const reorderItems: ReorderItem[] = ordered.map((m) => ({
     id: m.id,
     name: m.name,
-    secondary: [labUnitLabel(m.unit, t), m.panel].filter(Boolean).join(" · "),
+    secondary: [labUnitLabel(m.unit, t), m.panel].filter(Boolean).join(", "),
   }));
 
   const manual = prefs.sortDir === "manual";

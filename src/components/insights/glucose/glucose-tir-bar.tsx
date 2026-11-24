@@ -92,7 +92,7 @@ export function GlucoseTirBar({ distribution }: GlucoseTirBarProps) {
                 width: `${s.fraction * 100}%`,
                 background: BAND_COLORS[s.key],
               }}
-              title={`${s.label} · ${pct(s.fraction)}%`}
+              title={`${s.label}: ${pct(s.fraction)}%`}
             />
           ) : null,
         )}

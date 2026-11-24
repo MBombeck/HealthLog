@@ -137,7 +137,7 @@ describe("measurementUnitLabel", () => {
   });
 
   it("leads a meta line only when there is a unit to show", () => {
-    expect(measurementUnitMetaLead("WEIGHT", "kg", t)).toBe("kg · ");
+    expect(measurementUnitMetaLead("WEIGHT", "kg", t)).toBe("kg, ");
     expect(measurementUnitMetaLead("PHQ9_SCORE", "score", t)).toBeNull();
   });
 });

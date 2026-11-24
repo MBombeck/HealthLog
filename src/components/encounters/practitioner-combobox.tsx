@@ -132,7 +132,7 @@ export function PractitionerCombobox({
                         <span className="text-muted-foreground block truncate text-xs">
                           {[row.practice, row.specialty]
                             .filter(Boolean)
-                            .join(" · ")}
+                            .join(", ")}
                         </span>
                       ) : null}
                     </span>

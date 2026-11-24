@@ -88,7 +88,7 @@ export function AiQualitySection() {
               {t("admin.aiQuality.windowLabel", {
                 days: String(summary.windowDays),
               })}
-              {" · "}
+              {", "}
               {t("admin.aiQuality.generatedAtLabel")}{" "}
               {fmt.dateTime(summary.generatedAt)}
             </p>

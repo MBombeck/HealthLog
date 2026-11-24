@@ -85,7 +85,7 @@ export function CoachFeedbackSection() {
               {t("admin.coachFeedback.windowLabel", {
                 days: String(summary.windowDays),
               })}
-              {" · "}
+              {", "}
               {t("admin.coachFeedback.generatedAtLabel")}{" "}
               {fmt.dateTime(summary.generatedAt)}
             </p>
