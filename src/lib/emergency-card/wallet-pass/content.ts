@@ -4,13 +4,13 @@
  * pure function: no database, no clock, no randomness, so the same input
  * gives the same pass, byte for byte.
  *
- * The design is one strong surface and little text. The front carries a
- * large title without a label (the name, else "Emergency card"), up to three
- * short facts a helper acts on in five seconds (blood type, the first
- * allergy, a pregnancy), the date the content last changed and the QR code to
- * the full card. Everything else is in the detail sheet, in the card's
- * reading order. The header stays neutral ("Emergency card", or the date),
- * because the collapsed stack in Wallet shows it every time the owner pays.
+ * The design is one strong surface and little text (wallet-design v2). The
+ * front has three places a helper reads in five seconds: the name, one short
+ * value beside it (a pregnancy, else the blood type) and one warning as a
+ * whole sentence ("Severe allergy: Penicillin +1"). The header is the date
+ * the content last changed, the logo text says what the card is, and the
+ * collapsed stack in Wallet shows only those two. Medical detail is in the
+ * info sheet, where the pass came from and what it is not on the back.
  *
  * Every text comes from the same rows the printed card, the offline copy and
  * the link use (`emergencyCardRows`), and only items the card was asked for
@@ -36,17 +36,27 @@ import {
   type WalletPassJson,
 } from "./pass-json";
 
+/**
+ * One hue, only the lightness moves: a deep emergency red that stands apart
+ * from both the black and the light grey Wallet background, white values,
+ * pink labels (6.7:1 on the red, 12:1 on the strip) and a near-black strip.
+ */
 export const WALLET_COLOURS = {
-  backgroundColor: "rgb(122, 22, 44)",
+  backgroundColor: "rgb(138, 14, 36)",
   foregroundColor: "rgb(255, 255, 255)",
-  labelColor: "rgb(255, 214, 222)",
-  footerBackgroundColor: "rgb(40, 10, 30)",
+  labelColor: "rgb(255, 204, 211)",
+  footerBackgroundColor: "rgb(58, 6, 16)",
 } as const;
 
-/** The most characters of the name the front shows. */
-const NAME_MAX = 28;
-/** The most characters of the first allergy's substance on the front. */
-const ALLERGY_MAX = 24;
+/** The most characters of the name, beside a short value and alone. */
+const NAME_MAX_BESIDE = 22;
+const NAME_MAX_ALONE = 28;
+/** The most characters of a short front value (an allergy, a condition). */
+const FIELD_MAX = 22;
+/** The most characters of the first allergy's substance in a field. */
+const ALLERGY_MAX = 14;
+/** The poster footer: one whole sentence. */
+export const FOOTER_MAX = 38;
 
 export type WalletSignerIdentity =
   | { kind: "relay" }
@@ -85,12 +95,14 @@ export interface WalletPassContent {
 
 interface Sections {
   description: string;
+  logoText: string;
   altText: string;
   poster: {
     headerFields: PassField[];
     primaryFields: PassField[];
     footerFields: PassField[];
     additionalInfoFields: PassField[];
+    backFields: PassField[];
   };
   generic: {
     headerFields: PassField[];
@@ -101,15 +113,15 @@ interface Sections {
   };
 }
 
-function upper(locale: string, text: string): string {
-  return text.toLocaleUpperCase(locale);
+function chars(text: string): number {
+  return [...text].length;
 }
 
 function cut(text: string, max: number): string {
-  const chars = [...text.trim()];
-  return chars.length <= max
-    ? chars.join("")
-    : `${chars.slice(0, max - 1).join("")}…`;
+  const all = [...text.trim()];
+  return all.length <= max
+    ? all.join("")
+    : `${all.slice(0, max - 1).join("")}…`;
 }
 
 /** A date field: Wallet formats it in the phone's language. */
@@ -141,83 +153,171 @@ function has(
   return view.fields.includes(field);
 }
 
-/** The short facts on the front, in order: blood type, allergy, pregnancy. */
-function frontFacts(
-  input: WalletPassContentInput,
-  t: Translate,
-  locale: string,
-): PassField[] {
+/** Something a helper must know at once: a short field and a whole sentence. */
+interface Warning {
+  field: PassField;
+  sentence: string;
+}
+
+/**
+ * What the front can say, each read only when the card was asked for it:
+ * the warnings in order of urgency (the first allergy, severe ones first,
+ * then the first condition), the blood type and a pregnancy.
+ */
+interface FrontFacts {
+  warnings: Warning[];
+  blood: PassField | null;
+  /** The poster's wording, and the shorter one of the generic row. */
+  pregnancy: { poster: PassField; generic: PassField } | null;
+}
+
+function frontFacts(input: WalletPassContentInput, t: Translate): FrontFacts {
   const { view } = input;
-  const facts: PassField[] = [];
-  if (
-    has(view, "BLOOD_TYPE") &&
-    view.bloodType &&
-    view.bloodType !== "UNKNOWN"
-  ) {
-    facts.push({
-      key: "blood",
-      label: upper(locale, t("records.emergency.bloodType")),
-      // The detail sheet's wording, so the pass reads one notation.
-      value: t(`records.emergency.bloodTypeValues.${view.bloodType}`),
-    });
-  }
+  const warnings: Warning[] = [];
+
   const allergies = has(view, "ALLERGIES") ? view.allergies : null;
   if (allergies && allergies.length > 0) {
-    // Severe ones come first. A label never claims more than it counts: under
-    // "Severe allergy" the count is of further severe ones only; the milder
-    // ones are in the detail sheet.
+    // Severe ones come first. A label never claims more than it counts:
+    // under "Severe allergy" the count is of further severe ones only; the
+    // milder ones are in the detail sheet.
     const [first] = allergies;
     const severe = first.severity === "SEVERE";
     const more = allergies
       .slice(1)
       .filter((a) => !severe || a.severity === "SEVERE").length;
-    facts.push({
-      key: "allergy",
-      label: upper(
-        locale,
-        severe
+    const plus = more > 0 ? ` +${more}` : "";
+    const sentenceKey = severe
+      ? "emergencyCard.walletPass.alertSevereAllergy"
+      : "emergencyCard.walletPass.alertAllergy";
+    // The substance gets what the sentence leaves of the footer's width.
+    const room =
+      FOOTER_MAX - chars(t(sentenceKey, { substance: "" })) - chars(plus);
+    warnings.push({
+      field: {
+        key: "allergy",
+        label: severe
           ? t("emergencyCard.walletPass.severeAllergy")
           : t("emergencyCard.walletPass.allergy"),
-      ),
-      value: `${cut(first.substance, ALLERGY_MAX)}${more > 0 ? ` +${more}` : ""}`,
+        value: `${cut(first.substance, ALLERGY_MAX)}${plus}`,
+      },
+      sentence: t(sentenceKey, {
+        substance: `${cut(first.substance, Math.max(8, room))}${plus}`,
+      }),
     });
   }
-  const pregnancy = has(view, "PREGNANCY") ? view.pregnancy : null;
-  if (pregnancy) {
-    facts.push({
-      key: "pregnancy",
-      label: upper(locale, t("emergencyCard.pregnancy")),
-      value:
-        pregnancy.state === "PREGNANT"
-          ? pregnancy.gestationalWeeks !== null
-            ? t("emergencyCard.walletPass.week", {
-                weeks: pregnancy.gestationalWeeks,
-                days: pregnancy.gestationalDays ?? 0,
-              })
-            : t("emergencyCard.pregnant")
-          : t("emergencyCard.walletPass.postpartum"),
+
+  const condition = has(view, "CONDITIONS") ? view.conditions?.[0] : null;
+  if (condition && condition.trim()) {
+    warnings.push({
+      field: {
+        key: "condition",
+        label: t("doctorReport.emergency.chronicConditions"),
+        value: cut(condition, FIELD_MAX),
+      },
+      sentence: cut(condition, FOOTER_MAX),
     });
   }
-  return facts;
+
+  const blood: PassField | null =
+    has(view, "BLOOD_TYPE") && view.bloodType && view.bloodType !== "UNKNOWN"
+      ? {
+          key: "blood",
+          label: t("records.emergency.bloodType"),
+          // The detail sheet's wording, so the pass reads one notation.
+          value: t(`records.emergency.bloodTypeValues.${view.bloodType}`),
+        }
+      : null;
+
+  const p = has(view, "PREGNANCY") ? view.pregnancy : null;
+  let pregnancy: FrontFacts["pregnancy"] = null;
+  if (p) {
+    const label = t("emergencyCard.pregnancy");
+    const weeks = p.state === "PREGNANT" && p.gestationalWeeks !== null;
+    const vars = {
+      weeks: p.gestationalWeeks ?? 0,
+      days: p.gestationalDays ?? 0,
+    };
+    const value = weeks
+      ? t("emergencyCard.walletPass.week", vars)
+      : p.state === "PREGNANT"
+        ? t("emergencyCard.pregnant")
+        : t("emergencyCard.walletPass.postpartum");
+    pregnancy = {
+      poster: { key: "pregnancy", label, value },
+      generic: weeks
+        ? {
+            key: "pregnancy",
+            label: t("emergencyCard.walletPass.pregnancyShort"),
+            value: t("emergencyCard.walletPass.weekShort", vars),
+          }
+        : { key: "pregnancy", label, value },
+    };
+  }
+  return { warnings, blood, pregnancy };
 }
 
-/** The meta lines at the end of the detail sheet: issuer and signer. */
-function provenance(
+/**
+ * The front's three places, filled by urgency (wallet-design §5.3):
+ *
+ *   L (left, wide)   the name; without it the most urgent warning; without
+ *                    one the blood type, then a pregnancy;
+ *   R (right, short) a pregnancy, else the blood type, unless L shows it;
+ *   footer           the first warning L does not show, as a sentence.
+ *
+ * Wallet lays the QR code on the edge of the strip and these under it, so
+ * nothing else fits; the rest is one tap away in the detail sheet.
+ */
+function frontSlots(
   input: WalletPassContentInput,
+  facts: FrontFacts,
   t: Translate,
-  locale: string,
-): PassField[] {
+): { left: PassField; right: PassField | null; footer: string | null } {
+  const { view } = input;
+  const name = has(view, "NAME") && view.name?.trim() ? view.name : null;
+  const pregnancy = facts.pregnancy?.poster ?? null;
+  let left: PassField;
+  let warningsShown = 0;
+  if (name) {
+    left = { key: "name", label: t("emergencyCard.name"), value: name };
+  } else if (facts.warnings.length > 0) {
+    left = facts.warnings[0].field;
+    warningsShown = 1;
+  } else if (facts.blood) {
+    left = facts.blood;
+  } else if (pregnancy) {
+    left = pregnancy;
+  } else {
+    // Nothing urgent was asked for: the card says what it is.
+    left = { key: "title", value: t("emergencyCard.title") };
+  }
+  const right =
+    [pregnancy, facts.blood].find((f) => f && f.key !== left.key) ?? null;
+  if (left.key === "name") {
+    left = {
+      ...left,
+      value: cut(left.value, right ? NAME_MAX_BESIDE : NAME_MAX_ALONE),
+    };
+  }
+  return {
+    left,
+    right,
+    footer: facts.warnings[warningsShown]?.sentence ?? null,
+  };
+}
+
+/** Where the pass comes from: issuer, signer. */
+function provenance(input: WalletPassContentInput, t: Translate): PassField[] {
   const host = new URL(input.origin).host;
   return [
     {
       key: "m_issuer",
-      label: upper(locale, t("emergencyCard.walletPass.issuedBy")),
+      label: t("emergencyCard.walletPass.issuedBy"),
       value: host,
       attributedValue: `<a href="${input.origin}">${host}</a>`,
     },
     {
       key: "m_signer",
-      label: upper(locale, t("emergencyCard.walletPass.signedBy")),
+      label: t("emergencyCard.walletPass.signedBy"),
       value:
         input.signer.kind === "relay"
           ? t("emergencyCard.walletPass.signerRelay")
@@ -226,25 +326,28 @@ function provenance(
   ];
 }
 
-/** The detail sheet of a live pass. */
-function details(
+/** The detail sheet: the card's medical rows, in its reading order. */
+function medicalRows(
   input: WalletPassContentInput,
   t: Translate,
   locale: string,
 ): PassField[] {
-  const rows = emergencyCardRows(input.view, t, locale).filter(
-    (r) => r.key !== "NAME",
-  );
-  const out: PassField[] = rows.map((row) => ({
-    key: `f_${row.key.toLowerCase()}`,
-    label: upper(locale, row.label),
-    value: row.lines.join("\n"),
-    ...(row.key === "CONTACTS"
-      ? { dataDetectorTypes: ["PKDataDetectorTypePhoneNumber" as const] }
-      : {}),
-  }));
-  const validLabel = upper(locale, t("emergencyCard.walletPass.validUntil"));
-  out.push(
+  return emergencyCardRows(input.view, t, locale)
+    .filter((r) => r.key !== "NAME")
+    .map((row) => ({
+      key: `f_${row.key.toLowerCase()}`,
+      label: row.label,
+      value: row.lines.join("\n"),
+      ...(row.key === "CONTACTS"
+        ? { dataDetectorTypes: ["PKDataDetectorTypePhoneNumber" as const] }
+        : {}),
+    }));
+}
+
+/** The back: how long the pass works, who made it, what it is not. */
+function about(input: WalletPassContentInput, t: Translate): PassField[] {
+  const validLabel = t("emergencyCard.walletPass.validUntil");
+  return [
     input.expiresOnDay
       ? dateField("m_valid", validLabel, input.expiresOnDay)
       : {
@@ -252,26 +355,13 @@ function details(
           label: validLabel,
           value: t("emergencyCard.walletPass.untilRevoked"),
         },
-    {
-      key: "m_asof",
-      label: upper(locale, t("emergencyCard.walletPass.asOf")),
-      value: t("emergencyCard.walletPass.asOfValue", {
-        date: formatDay(locale, input.asOfDay),
-      }),
-    },
-    ...provenance(input, t, locale),
+    ...provenance(input, t),
     {
       key: "m_note",
-      label: upper(locale, t("emergencyCard.walletPass.noteLabel")),
+      label: t("emergencyCard.walletPass.noteLabel"),
       value: t("emergencyCard.walletPass.note"),
     },
-    {
-      key: "m_lock",
-      label: upper(locale, t("emergencyCard.walletPass.lockLabel")),
-      value: t("emergencyCard.walletPass.lock"),
-    },
-  );
-  return out;
+  ];
 }
 
 function formatDay(locale: string, day: string): string {
@@ -285,50 +375,55 @@ function formatDay(locale: string, day: string): string {
   }
 }
 
+function common(t: Translate) {
+  return {
+    description: t("emergencyCard.title"),
+    logoText: t("emergencyCard.walletPass.logoText"),
+    altText: t("emergencyCard.walletPass.scan"),
+  };
+}
+
+/**
+ * The live pass. Labels in the language's own case: Wallet sets capitals
+ * itself where a style wants them (the header, the generic rows), and
+ * capitals set here only made every label wider and the sheet shout.
+ */
 function liveSections(
   input: WalletPassContentInput,
   t: Translate,
   locale: string,
 ): Sections {
-  const { view } = input;
-  const kind: PassField = {
-    key: "kind",
-    value: upper(locale, t("emergencyCard.walletPass.kind")),
-  };
   const asOf = dateField(
     "as_of",
-    upper(locale, t("emergencyCard.walletPass.asOf")),
+    t("emergencyCard.walletPass.asOf"),
     input.asOfDay,
   );
-  const name = has(view, "NAME") && view.name ? cut(view.name, NAME_MAX) : null;
-  // Without a name the title says what the card is, so the header, which
-  // would repeat it, shows the date instead.
-  const title: PassField = {
-    key: "name",
-    value: name ?? t("emergencyCard.title"),
-  };
-  const facts = frontFacts(input, t, locale);
-  const sheet = details(input, t, locale);
-  const pregnancy = facts.filter((f) => f.key === "pregnancy");
+  const facts = frontFacts(input, t);
+  const { left, right, footer } = frontSlots(input, facts, t);
+  const medical = medicalRows(input, t, locale);
+  const back = about(input, t);
+  // The generic style has one row beside a square code: at most three
+  // fields, the ones L does not already show.
+  const row = [
+    facts.warnings.find((w) => w.field.key === "allergy")?.field ?? null,
+    facts.blood,
+    facts.pregnancy?.generic ?? null,
+  ].filter((f): f is PassField => f !== null && f.key !== left.key);
   return {
-    description: t("emergencyCard.title"),
-    altText: t("emergencyCard.walletPass.scan"),
+    ...common(t),
     poster: {
-      headerFields: [name ? kind : asOf],
-      primaryFields: [title, ...facts],
-      footerFields: name ? [asOf] : [],
-      additionalInfoFields: sheet,
+      headerFields: [asOf],
+      primaryFields: right ? [left, right] : [left],
+      footerFields: footer ? [{ key: "alert", value: footer }] : [],
+      additionalInfoFields: medical,
+      backFields: back,
     },
     generic: {
-      headerFields: [kind],
-      primaryFields: [
-        name
-          ? { ...title, label: upper(locale, t("emergencyCard.name")) }
-          : title,
-      ],
-      secondaryFields: facts.filter((f) => f.key !== "pregnancy"),
-      auxiliaryFields: [...pregnancy, asOf],
-      backFields: sheet,
+      headerFields: [asOf],
+      primaryFields: [left],
+      secondaryFields: row.slice(0, 2),
+      auxiliaryFields: row.slice(2, 3),
+      backFields: [...medical, ...back],
     },
   };
 }
@@ -339,44 +434,38 @@ function voidedSections(
   t: Translate,
   locale: string,
 ): Sections {
-  const kind: PassField = {
-    key: "kind",
-    value: upper(locale, t("emergencyCard.walletPass.kind")),
+  const withdrawn = t("emergencyCard.walletPass.withdrawn");
+  const header = dateField("as_of", withdrawn, input.voidedOnDay);
+  const status: PassField = {
+    key: "status",
+    label: t("emergencyCard.walletPass.status"),
+    value: withdrawn,
   };
-  const title: PassField = {
-    key: "name",
-    value: t("emergencyCard.walletPass.withdrawn"),
+  const note: PassField = {
+    key: "m_void",
+    label: t("emergencyCard.walletPass.status"),
+    value: t("emergencyCard.walletPass.withdrawnBody", {
+      date: formatDay(locale, input.voidedOnDay),
+    }),
   };
-  const asOf = dateField(
-    "as_of",
-    upper(locale, t("emergencyCard.walletPass.asOf")),
-    input.voidedOnDay,
-  );
-  const sheet: PassField[] = [
-    {
-      key: "m_void",
-      label: upper(locale, t("emergencyCard.walletPass.withdrawn")),
-      value: t("emergencyCard.walletPass.withdrawnBody", {
-        date: formatDay(locale, input.voidedOnDay),
-      }),
-    },
-    ...provenance(input, t, locale),
-  ];
+  const back = provenance(input, t);
   return {
-    description: t("emergencyCard.title"),
-    altText: t("emergencyCard.walletPass.scan"),
+    ...common(t),
     poster: {
-      headerFields: [kind],
-      primaryFields: [title],
-      footerFields: [asOf],
-      additionalInfoFields: sheet,
+      headerFields: [header],
+      primaryFields: [status],
+      footerFields: [
+        { key: "alert", value: t("emergencyCard.walletPass.voidFooter") },
+      ],
+      additionalInfoFields: [note],
+      backFields: back,
     },
     generic: {
-      headerFields: [kind],
-      primaryFields: [title],
+      headerFields: [header],
+      primaryFields: [status],
       secondaryFields: [],
-      auxiliaryFields: [asOf],
-      backFields: sheet,
+      auxiliaryFields: [],
+      backFields: [note, ...back],
     },
   };
 }
@@ -397,7 +486,9 @@ function w3c(date: Date): string {
 
 /** Every localisable text of a layout, in a fixed walk order. */
 function texts(s: Sections): string[] {
-  const out = [s.description, s.altText];
+  // The logo text first: where it and the description read the same in the
+  // owner's language, the first entry wins, and the visible one matters more.
+  const out = [s.logoText, s.description, s.altText];
   const areas = [
     ...Object.values(s.poster),
     ...Object.values(s.generic),
@@ -444,7 +535,7 @@ export function buildPassContent(
     webServiceURL: `${input.origin}/api/wallet/apple/`,
     organizationName: "HealthLog",
     description: owner.description,
-    logoText: "HealthLog",
+    logoText: owner.logoText,
     sharingProhibited: true,
     ...(input.expiresAt ? { expirationDate: w3c(input.expiresAt) } : {}),
     voided,

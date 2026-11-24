@@ -38,10 +38,16 @@ export type PassField = z.infer<typeof passFieldSchema>;
 
 const fields = z.array(passFieldSchema);
 
-/** Field limits per style and area (Apple, and one footer field on posters). */
+/**
+ * Field limits per style and area. Apple allows four primary fields on a
+ * poster, but Wallet shows one row of two under the QR code, so two is the
+ * limit until a device shows a clean second row; the generic style puts
+ * secondary and auxiliary fields in one row beside a square code, where a
+ * fourth is cut.
+ */
 export const FIELD_LIMITS = {
-  poster: { headerFields: 1, primaryFields: 4, footerFields: 1 },
-  generic: { headerFields: 3, primaryFields: 1, secondaryAndAuxiliary: 4 },
+  poster: { headerFields: 1, primaryFields: 2, footerFields: 1 },
+  generic: { headerFields: 3, primaryFields: 1, secondaryAndAuxiliary: 3 },
 } as const;
 
 const rgb = z.string().regex(/^rgb\(\d{1,3}, \d{1,3}, \d{1,3}\)$/);
@@ -97,6 +103,7 @@ export const walletPassJsonSchema = z
         primaryFields: fields.min(1).max(FIELD_LIMITS.poster.primaryFields),
         footerFields: fields.max(FIELD_LIMITS.poster.footerFields),
         additionalInfoFields: fields,
+        backFields: fields,
       })
       .strict(),
     generic: z
@@ -112,7 +119,7 @@ export const walletPassJsonSchema = z
         (g) =>
           g.secondaryFields.length + g.auxiliaryFields.length <=
           FIELD_LIMITS.generic.secondaryAndAuxiliary,
-        "generic: at most four secondary and auxiliary fields together",
+        "generic: at most three secondary and auxiliary fields together",
       ),
   })
   .strict();

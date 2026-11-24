@@ -82,10 +82,14 @@ stops working too, as do the cycle and care calendar feed links.
 of the card for Wallet on an iPhone, an iPad, a Mac or an Apple Watch. On
 another device the page asks you to open it on one of those.
 
-**What is on it.** The front holds your name, blood type, the first allergy
-(marked severe when it is) and a pregnancy when there is one, the date the
-pass is as of, and a QR code. Everything else you tick is on the back, behind
-the pass's details. The name is ticked by default; untick it to keep it off.
+**What is on it.** The front holds three things a helper needs in a few
+seconds: your name, one short value beside it (a pregnancy when there is one,
+otherwise your blood type) and one warning line, the first allergy (marked
+severe when it is) or else your first condition. Without the name, the most
+urgent warning takes its place. Above them are the date the pass is as of and
+the QR code. Everything else you tick is in the pass's details, and where the
+pass comes from is on its back. The name is ticked by default; untick it to
+keep it off.
 What you tick is frozen when you add the pass. To change it, withdraw the pass
 and make a new one.
 
@@ -101,7 +105,10 @@ printed card's, with the same rules: read-only, rate-limited, every opening on
 your audit log, an optional end. Revoking the printed card's link leaves the
 pass alone, and withdrawing the pass leaves the printed card's link alone.
 
-**Withdrawing.** **Withdraw pass** stops its QR code at once, and Wallet
+**On another device.** Once a device has the pass, the card page offers
+**Add to another device**: the same pass, for an iPad or a Mac as well.
+
+**Withdrawing.** **Withdraw pass**, after a confirmation, stops its QR code at once, and Wallet
 replaces the pass with one that says it is withdrawn and holds no health data.
 A password change, an administrator's reset, asking for the account to be
 deleted, the handover of a managed profile, or a guardian losing the right to
