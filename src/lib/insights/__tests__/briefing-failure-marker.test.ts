@@ -22,8 +22,10 @@ import {
   readBriefingFailure,
   recordBriefingFailure,
   classifyBriefingFailure,
+  briefingFailureFacts,
   BRIEFING_FAILURE_ACTION,
 } from "../briefing-failure-marker";
+import { AllProvidersFailedError } from "@/lib/ai/provider-runner";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -196,5 +198,87 @@ describe("classifyBriefingFailure", () => {
         httpStatus: 0,
       }),
     ).toBe("timeout");
+  });
+});
+
+/**
+ * A provider the health ledger benched for a refused key is not called, so
+ * its hop carries no status. The background warm recorded the chain error's
+ * aggregate status instead, a 503 invented for "no hop said", and the card
+ * then blamed a provider outage ("timed out or returned an error") for what
+ * was a dead key. Both paths now read the first hop.
+ */
+describe("briefingFailureFacts", () => {
+  const benched = (benchReason: "credential_expired" | "backoff") =>
+    new AllProvidersFailedError([
+      {
+        providerType: "anthropic",
+        attempt: 1,
+        failureReason: "benched-for-background-work",
+        httpStatus: null,
+        failureKind: "paused",
+        benchReason,
+      },
+    ]);
+
+  it("names a provider benched for a refused credential as the credential's failure", () => {
+    const error = benched("credential_expired");
+    // The aggregate status is the invented 503; the facts do not use it.
+    expect(error.httpStatus).toBe(503);
+    const facts = briefingFailureFacts(error);
+    expect(facts).toEqual({
+      httpStatus: null,
+      failureKind: "paused",
+      credentialExpired: true,
+    });
+    expect(
+      classifyBriefingFailure({ reason: "all-providers-failed", ...facts }),
+    ).toBe("auth");
+  });
+
+  it("keeps a provider benched after hard failures a provider failure", () => {
+    const facts = briefingFailureFacts(benched("backoff"));
+    expect(facts.credentialExpired).toBeUndefined();
+    expect(
+      classifyBriefingFailure({ reason: "all-providers-failed", ...facts }),
+    ).toBe("provider");
+  });
+
+  it("reads the first hop's status, not the aggregate", () => {
+    const error = new AllProvidersFailedError([
+      {
+        providerType: "anthropic",
+        attempt: 1,
+        failureReason: "HTTP 401",
+        httpStatus: 401,
+        failureKind: "http",
+      },
+      {
+        providerType: "openai",
+        attempt: 2,
+        failureReason: "HTTP 502",
+        httpStatus: 502,
+        failureKind: "http",
+      },
+    ]);
+    expect(error.httpStatus).toBe(503);
+    expect(briefingFailureFacts(error).httpStatus).toBe(401);
+  });
+
+  it("round-trips the benched credential through the stored marker", async () => {
+    create.mockResolvedValue({});
+    await recordBriefingFailure({
+      userId: "u1",
+      reason: "all-providers-failed",
+      ...briefingFailureFacts(benched("credential_expired")),
+    });
+    const details = (create.mock.calls[0][0] as { data: { details: string } })
+      .data.details;
+    findFirst.mockResolvedValue({
+      createdAt: new Date("2026-06-28T10:00:00Z"),
+      details,
+    });
+    const state = await readBriefingFailure({ userId: "u1", since: null });
+    expect(state?.failureClass).toBe("auth");
   });
 });

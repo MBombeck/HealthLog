@@ -3,7 +3,6 @@
  * the person waiting on it.
  */
 import { resolveInsightsMaxTokens } from "@/lib/ai/ai-budgets";
-import { providerFailureKind } from "@/lib/ai/failure-kind";
 import { buildSystemPromptWithReferences } from "@/lib/ai/prompts/insight-generator";
 import {
   AllProvidersFailedError,
@@ -14,7 +13,10 @@ import {
   BriefingBudgetExceededError,
   runBriefingCompletion,
 } from "@/lib/insights/briefing-provider";
-import { recordBriefingFailure } from "@/lib/insights/briefing-failure-marker";
+import {
+  briefingFailureFacts,
+  recordBriefingFailure,
+} from "@/lib/insights/briefing-failure-marker";
 import { annotate } from "@/lib/logging/context";
 
 import type { BriefingRefusal, GenerationContext } from "./context";
@@ -159,17 +161,9 @@ export async function runFirstCompletion(
     // A dated failure marker (no cache row is written on this path, so the
     // last good briefing stays intact). The read path pairs the preserved
     // text with a discreet "couldn't refresh" hint, or shows a retry empty
-    // state when there is no last good text. The upstream status rides
-    // along so the hint can tell an auth / rate-limit failure apart from a
-    // plain timeout: for an all-providers-failed error the first hop's
-    // status is the most representative; a single provider error exposes its
-    // own `httpStatus`.
-    const failureHttpStatus =
-      e instanceof AllProvidersFailedError
-        ? (e.attempts[0]?.httpStatus ?? null)
-        : typeof (e as { httpStatus?: number }).httpStatus === "number"
-          ? (e as { httpStatus?: number }).httpStatus
-          : null;
+    // state when there is no last good text. The failure facts ride along
+    // (first hop's status, kind, a benched refused credential) so the hint
+    // can tell an auth / rate-limit failure apart from a plain timeout.
     void recordBriefingFailure({
       userId: call.ctx.userId,
       reason:
@@ -177,11 +171,7 @@ export async function runFirstCompletion(
           ? "all-providers-failed"
           : "provider-error",
       locale: call.ctx.locale,
-      httpStatus: failureHttpStatus,
-      failureKind:
-        e instanceof AllProvidersFailedError
-          ? (e.attempts[0]?.failureKind ?? null)
-          : providerFailureKind(e).failure,
+      ...briefingFailureFacts(e),
     });
     return {
       ok: false,

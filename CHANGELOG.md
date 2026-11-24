@@ -37,6 +37,7 @@
 - The usual-range line on the blood pressure page names systolic and diastolic, each with its own range and latest reading. It printed the systolic range alone and unnamed, so a line like "Your usual range is 79–177 mmHg" read as one range over both values. Each range is still built from its own readings only, and a test holds every measurement type to that.
 - A vital on the Insights overview shows the same number as its dashboard tile: the latest reading. The overview printed the middle of the 30-day usual range, and for HRV the average of the last seven days that had a reading, so the same HRV read 55 ms on the dashboard and 57 ms on Insights. The usual range and the HRV balance now frame the latest reading instead of replacing it. The usual-range line under a metric's chart places that same reading too; with two sources for one metric it took the newest reading of either and could show a different figure from the dashboard.
 - The HRV balance judges the average of the past seven days. It took the last seven days that had a reading, however old, so after a week without a sync it placed an average from a fortnight back against the usual range.
+- The Daily Briefing says the AI key was refused when a background refresh found the provider paused over a refused key. That case was filed as a provider outage, and the card said the provider had timed out or returned an error instead of pointing at the key in the AI settings.
 
 ### Security
 

@@ -25,8 +25,10 @@ import type { SupportedLocale } from "@/lib/insights/status-shared";
 import { applyBriefingShortForm } from "@/lib/insights/briefing-short-form";
 import { annotate } from "@/lib/logging/context";
 import { AI_BUDGETS, resolveInsightsMaxTokens } from "@/lib/ai/ai-budgets";
-import { providerFailureKind } from "@/lib/ai/failure-kind";
-import { recordBriefingFailure } from "@/lib/insights/briefing-failure-marker";
+import {
+  briefingFailureFacts,
+  recordBriefingFailure,
+} from "@/lib/insights/briefing-failure-marker";
 import { cachedPayloadCarriesBriefing } from "@/lib/insights/briefing-payload";
 import { insightsCacheWrite } from "@/lib/insights/cached-text-cipher";
 import type {
@@ -277,11 +279,7 @@ export async function runFirstPass(
       userId,
       reason,
       locale,
-      httpStatus: typeof err.httpStatus === "number" ? err.httpStatus : null,
-      failureKind:
-        e instanceof AllProvidersFailedError
-          ? (e.attempts?.[0]?.failureKind ?? null)
-          : providerFailureKind(e).failure,
+      ...briefingFailureFacts(e),
     });
     return { stop: { status: "failed", reason, ...chainFailureFacts(e) } };
   }
