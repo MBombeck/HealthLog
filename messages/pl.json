@@ -9852,6 +9852,7 @@
       "channel": {
         "release": "Wydanie",
         "edge": "Edge",
+        "nightly": "Nightly",
         "development": "Kompilacja deweloperska"
       },
       "built": "Kompilacja {sha}, {time}",
