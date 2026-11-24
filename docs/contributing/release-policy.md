@@ -196,6 +196,10 @@ one minor and removed no earlier than two minors later.
   `docker-publish.yml` attach the signed manifest and its provenance to the
   release for every `v*` tag, with the shape held by
   `scripts/__tests__/release-workflows.test.ts`.
+- The `image-provenance` job in `docker-publish.yml` calls
+  `.github/workflows/image-provenance.yml`, which signs SLSA Build L3
+  provenance for the image index on every `v*` tag and verifies it. Tag
+  builds use no shared build cache. The same test file holds both.
 
 What the checks cannot do: they do not catch a feature committed as `fix`. The
 changelog rule catches part of that, review the rest.
