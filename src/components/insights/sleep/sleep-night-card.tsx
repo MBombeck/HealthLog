@@ -212,23 +212,19 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
             title={t("insights.sleep.hypnogram.empty")}
           />
         ) : track ? (
-          <div className="flex flex-col gap-3">
-            <SleepHypnogramChart
-              layout={layout}
-              fromMs={Date.parse(session.start)}
-              toMs={Date.parse(session.end)}
-              timeZone={timeZone}
-              stageLabels={stageLabels}
-              formatTime={(ms) => axisFormat.time(new Date(ms))}
-              ariaLabel={t("insights.sleep.hypnogram.ariaLabel", {
-                asleep: formatDurationMinutes(session.asleepMinutes, t),
-                awakenings: session.awakenings,
-              })}
-              overlay={overlayState.chartOverlay}
-            />
-            <SleepNightOverlayChips state={overlayState} />
-            <SleepNightOverlayFacts state={overlayState} />
-          </div>
+          <SleepHypnogramChart
+            layout={layout}
+            fromMs={Date.parse(session.start)}
+            toMs={Date.parse(session.end)}
+            timeZone={timeZone}
+            stageLabels={stageLabels}
+            formatTime={(ms) => axisFormat.time(new Date(ms))}
+            ariaLabel={t("insights.sleep.hypnogram.ariaLabel", {
+              asleep: formatDurationMinutes(session.asleepMinutes, t),
+              awakenings: session.awakenings,
+            })}
+            overlay={overlayState.chartOverlay}
+          />
         ) : (
           <p
             className="text-muted-foreground py-6 text-center text-xs"
@@ -239,6 +235,12 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
               : t("insights.sleep.hypnogram.noStages")}
           </p>
         )}
+        {track && !query.isError ? (
+          <div className="mt-3 flex flex-col gap-3 empty:hidden">
+            <SleepNightOverlayChips state={overlayState} />
+            <SleepNightOverlayFacts state={overlayState} />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
