@@ -55,12 +55,12 @@ HealthLog is designed with security as a core principle:
 - **AES-256-GCM encryption** for all stored secrets (OAuth tokens, API keys, VAPID keys)
 - **Argon2id** password hashing with zxcvbn strength validation
 - **HMAC-SHA256** hashed API tokens
-- **Server-side sessions** in PostgreSQL (HttpOnly, SameSite=Strict, 30-day sliding expiry)
+- **Server-side sessions** in PostgreSQL (HttpOnly, SameSite=Lax, 30-day sliding expiry)
 - **Rate limiting** on authentication and external-facing endpoints
 - **Security headers**: CSP with nonces, HSTS, X-Frame-Options DENY, Permissions-Policy
 - **Proxy-level route protection** via `proxy.ts` (session cookie validation on all non-public paths)
 
-For more details, see the [security documentation](https://docs.healthlog.dev/security/overview/).
+For more details, see the [security documentation](https://docs.healthlog.dev/security/overview/) and the [threat model](docs/security/threat-model.md), which also lists the risks that remain.
 
 ## Supply Chain
 
