@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { InlineAction } from "@/components/ui/inline-action";
 import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -59,23 +59,28 @@ export function relayRefusalLabel(status: {
     : undefined;
 }
 
+/** Stands in for a link inside a translated sentence until it is split. */
+const LINK = "\u2063link\u2063";
+
 /**
- * One confirmation of the enable dialog: a checkbox, its sentence, and the
- * document the sentence is about.
+ * One confirmation of the enable dialog: a checkbox and its sentence, with
+ * the document the sentence is about linked inside it.
  */
 function ConfirmationRow({
   id,
   checked,
   onCheckedChange,
-  label,
+  sentence,
   link,
 }: {
   id: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
-  label: string;
-  link: { href: string; label: string } | null;
+  /** The sentence; `LINK` marks where the link goes. */
+  sentence: string;
+  link: { href: string | null; label: string } | null;
 }) {
+  const [before, after] = sentence.split(LINK);
   return (
     <div className="flex items-start gap-2 text-sm">
       <Checkbox
@@ -85,35 +90,44 @@ function ConfirmationRow({
         onCheckedChange={(next) => onCheckedChange(next === true)}
         className="mt-0.5"
       />
-      <div className="space-y-0.5">
-        <Label htmlFor={id} noColon className="pl-0 leading-snug font-normal">
-          {label}
-        </Label>
-        {link && (
-          <a
-            className="block text-xs underline"
-            href={link.href}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {link.label}
-          </a>
-        )}
-      </div>
+      <Label htmlFor={id} noColon className="pl-0 leading-snug font-normal">
+        <span>
+          {before}
+          {link ? (
+            link.href ? (
+              <a
+                className="underline underline-offset-2"
+                href={link.href}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {link.label}
+              </a>
+            ) : (
+              link.label
+            )
+          ) : null}
+          {after}
+        </span>
+      </Label>
     </div>
   );
 }
 
 /**
- * Turning the relay on: the three confirmations, and the relay's invite code
- * for a relay that accepts new servers by invitation only. In `confirm` mode
- * the relay is on already and the admin confirms a changed text: the same
- * text and confirmations, no invite code.
+ * Turning the relay on: three confirmation lines (the relay terms, the
+ * privacy notice, the household), each linking its document, and no prose
+ * above them; what the relay does and sees is on the card and in the docs.
+ * The relay's invite code is one tap away for a relay that accepts new
+ * servers by invitation only, and shows at once when a refusal asked for
+ * it (`inviteOpen`). In `confirm` mode the relay is on already and the admin
+ * confirms changed terms: the same confirmations, no invite code.
  */
 export function PushRelayEnableDialog({
   mode,
   termsUrl,
   privacyUrl,
+  inviteOpen = false,
   open,
   onOpenChange,
   onConfirm,
@@ -121,6 +135,7 @@ export function PushRelayEnableDialog({
   mode: "enable" | "confirm";
   termsUrl: string | null;
   privacyUrl: string | null;
+  inviteOpen?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (body: PushRelaySwitchBody) => void;
@@ -132,6 +147,7 @@ export function PushRelayEnableDialog({
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [readPrivacy, setReadPrivacy] = useState(false);
   const [householdOnly, setHouseholdOnly] = useState(false);
+  const [showInvite, setShowInvite] = useState(inviteOpen);
   const [invite, setInvite] = useState("");
   const inviteTrimmed = invite.trim();
   const inviteInvalid =
@@ -139,7 +155,8 @@ export function PushRelayEnableDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      {/* No description: the three lines are the whole content. */}
+      <AlertDialogContent aria-describedby={undefined}>
         <AlertDialogHeader>
           <AlertDialogTitle>
             {t(
@@ -148,41 +165,43 @@ export function PushRelayEnableDialog({
                 : "admin.pushRelay.dialogTitle",
             )}
           </AlertDialogTitle>
-          <AlertDialogDescription>
-            {t("admin.pushRelay.dialogBody")}
-          </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-3">
           <ConfirmationRow
             id="push-relay-accept-terms"
             checked={acceptTerms}
             onCheckedChange={setAcceptTerms}
-            label={t("admin.pushRelay.acceptTerms")}
-            link={
-              termsUrl
-                ? { href: termsUrl, label: t("admin.pushRelay.terms") }
-                : null
-            }
+            sentence={t("admin.pushRelay.acceptTerms", { terms: LINK })}
+            link={{ href: termsUrl, label: t("admin.pushRelay.termsLink") }}
           />
           <ConfirmationRow
             id="push-relay-read-privacy"
             checked={readPrivacy}
             onCheckedChange={setReadPrivacy}
-            label={t("admin.pushRelay.readPrivacy")}
-            link={
-              privacyUrl
-                ? { href: privacyUrl, label: t("admin.pushRelay.privacy") }
-                : null
-            }
+            sentence={t("admin.pushRelay.readPrivacy", { privacy: LINK })}
+            link={{
+              href: privacyUrl,
+              label: t("admin.pushRelay.privacyLink"),
+            }}
           />
           <ConfirmationRow
             id="push-relay-household"
             checked={householdOnly}
             onCheckedChange={setHouseholdOnly}
-            label={t("admin.pushRelay.householdOnly")}
+            sentence={t("admin.pushRelay.householdOnly")}
             link={null}
           />
-          {mode === "enable" && (
+          {mode === "enable" && !showInvite && (
+            <InlineAction
+              tone="muted"
+              size="sm"
+              onClick={() => setShowInvite(true)}
+              data-slot="push-relay-invite-reveal"
+            >
+              {t("admin.pushRelay.invite.reveal")}
+            </InlineAction>
+          )}
+          {mode === "enable" && showInvite && (
             <div className="space-y-1">
               <Label htmlFor="push-relay-invite">
                 {t("admin.pushRelay.invite.label")}

@@ -9561,8 +9561,7 @@
     "auditActedByColumn": "Uitgevoerd door",
     "pushRelay": {
       "title": "HealthLog-pushrelay",
-      "description": "Laat de app uit de App Store meldingen van deze server ontvangen via de relay van het HealthLog-project.",
-      "whatItSees": "Elke melding wordt op deze server versleuteld voor het apparaat waarvoor hij bedoeld is, dus de relay kan hem niet lezen. Hij ziet wanneer deze server een apparaat iets stuurt.",
+      "description": "End-to-end versleutelde meldingen voor de app uit de App Store; ieder kiest zelf op het eigen apparaat.",
       "seesSummary": "Wat de relay ziet",
       "seesHeading": "De relay ziet",
       "seesWhen": "dat deze server een apparaat iets stuurt, wanneer en van welke soort: een melding, een stille synchronisatie of het einde van een live-activiteit",
@@ -9572,48 +9571,45 @@
       "notSeesHeading": "De relay ziet niet",
       "notSeesContent": "wat er in een melding staat: namen van medicijnen, doses, metingen, notities, accountnamen of iets anders erin",
       "seesTiming": "Het moment kan toch iets zeggen. Een medicatieherinnering via de relay laat de relay en Apple zien wanneer een dosis aan de beurt is, en leg je op het ene apparaat een dosis vast en krijgt een ander apparaat van je de bevestiging, dan zien ze dat er op dat moment iets gebeurde.",
-      "seesSource": "De volledige privacyverklaring van de relay",
-      "toggleLabel": "De HealthLog-pushrelay aanbieden aan de gebruikers van deze server",
-      "toggleDescription": "Uit tot je het aanzet. Daarna beslist iedereen in de eigen app.",
-      "toggleDescriptionOn": "Aan. Iedereen beslist in de eigen app of de eigen apparaten het gebruiken.",
+      "toggleLabel": "Aanbieden aan de gebruikers van deze server",
       "ownApns": {
-        "inUse": "Deze server heeft een eigen Apple-pushsleutel (APNs) ingesteld en gebruikt die. Elke pushmelding gaat rechtstreeks naar Apple, dus de relay wordt niet gebruikt zolang de sleutel is ingesteld.",
-        "useRelay": "Wil je pushmeldingen via de relay versturen, verwijder dan de APNS_*-variabelen uit de omgeving van de server en start hem opnieuw. Dan verschijnt hier de schakelaar voor de relay.",
-        "toggleDescription": "Nog aangemeld bij de relay, die niets ontvangt zolang de sleutel is ingesteld. Zet hem uit om de relay te verlaten."
+        "inUse": "Pushberichten gaan met de eigen APNs-sleutel van deze server rechtstreeks naar Apple; verwijder de APNS_*-variabelen om de relay te gebruiken.",
+        "registered": "Pushberichten gaan met de eigen APNs-sleutel van deze server rechtstreeks naar Apple, dus de relay vervoert niets."
       },
       "devices": "{count, plural, one {# apparaat gekoppeld} other {# apparaten gekoppeld}}",
       "unbindsPending": "Apparaatafmeldingen die op de relay wachten: {count}",
-      "unreachable": "Deze server is nog aangemeld bij {host}, maar kan die met de huidige instellingen niet bereiken (PUSH_RELAY_MODE of PUSH_RELAY_URL is gewijzigd). Die relay houdt de apparaatkoppelingen van deze server tot de server zich afmeldt: zet de instelling terug en zet de relay daarna hier uit.",
+      "unreachable": "Nog geregistreerd bij {host}, dat de huidige instelling van PUSH_RELAY_MODE of PUSH_RELAY_URL niet bereikt: zet die terug en schakel de relay dan hier uit.",
       "since": "sinds {time}",
       "docs": "Meer informatie",
       "privacy": "Privacyverklaring",
       "terms": "Relayvoorwaarden",
-      "dialogTitle": "HealthLog-pushrelay aanbieden",
-      "dialogBody": "De relay wordt beheerd door de maintainer van het HealthLog-project. Elke melding wordt op deze server versleuteld voor het eigen apparaat; de relay kan hem niet lezen, maar ziet dat deze server een apparaat iets stuurt, en wanneer. Ook medicatieherinneringen gaan via de relay, naar elk apparaat dat zijn herinneringen van deze server krijgt, dus de relay en Apple kunnen zien wanneer een dosis aan de beurt is. Na het aanzetten ziet iedereen op deze server één keer een aanbod in de app en beslist zelf. De relay is voor privé- en huishoudelijk gebruik en is geen medische dienst.",
-      "acceptTerms": "Ik ga akkoord met de relayvoorwaarden.",
-      "readPrivacy": "Ik heb de privacyverklaring van de relay gelezen.",
+      "dialogTitle": "De HealthLog-pushrelay aanzetten",
+      "acceptTerms": "Ik ga akkoord met de {terms}.",
+      "readPrivacy": "Ik heb de {privacy} gelezen.",
       "householdOnly": "Ik beheer deze server privé voor mezelf of mijn huishouden.",
       "enable": "Aanzetten",
       "cancel": "Annuleren",
-      "disableTitle": "Relay uitzetten?",
-      "disableBody": "Deze server meldt zich af bij de relay. Apparaten die erdoor gekoppeld zijn, krijgen geen relaymeldingen meer en de apps schakelen vanzelf terug naar lokale herinneringen.",
+      "disableTitle": "De HealthLog-pushrelay uitzetten?",
+      "disableBody": "Gekoppelde apparaten krijgen geen relaymeldingen meer en vallen terug op lokale herinneringen.",
       "disable": "Uitzetten",
-      "enabled": "De pushrelay staat aan",
-      "disabled": "De pushrelay staat uit",
+      "enabled": "De HealthLog-pushrelay staat aan",
+      "disabled": "De HealthLog-pushrelay staat uit",
       "saveFailed": "De relay-instelling kon niet worden opgeslagen",
       "reconfirm": {
-        "notice": "De tekst van de relay is veranderd sinds deze server hem aanzette. Lees hem en bevestig hem één keer. De relay blijft intussen werken.",
+        "notice": "De relayvoorwaarden zijn gewijzigd; de relay blijft werken tot je ze bevestigt.",
         "button": "Lezen en bevestigen",
-        "title": "Bijgewerkte relaytekst bevestigen",
+        "title": "Gewijzigde relayvoorwaarden bevestigen",
         "confirm": "Bevestigen",
-        "done": "De bijgewerkte relaytekst is bevestigd"
+        "done": "Gewijzigde relayvoorwaarden bevestigd"
       },
       "loadError": "De status van de pushrelay kon niet worden gelezen.",
       "state": {
         "ok": "Verbonden",
         "degraded": "Verstoord",
         "down": "Niet bereikbaar",
-        "off": "Uit"
+        "off": "Uit",
+        "ownApnsKey": "Eigen APNs-sleutel",
+        "unavailable": "Niet beschikbaar"
       },
       "unavailable": {
         "modeOff": "De relay is uitgeschakeld voor deze server (PUSH_RELAY_MODE=off).",
@@ -9621,8 +9617,8 @@
         "keysUnpinned": "Voor deze relay zijn geen sleutels vastgelegd, dus zijn antwoorden kunnen niet worden gecontroleerd. Stel PUSH_RELAY_KEYS in."
       },
       "question": {
-        "title": "Pushmeldingen via de HealthLog-relay versturen?",
-        "body": "De HealthLog-app uit de App Store krijgt meldingen van een server zonder eigen Apple-pushsleutel via de relay van het HealthLog-project. De inhoud wordt hier per apparaat versleuteld en de relay kan hem niet lezen; hij ziet wanneer deze server een apparaat iets stuurt. Je antwoord geldt voor de hele server, en iedereen beslist nog steeds in de eigen app.",
+        "title": "De HealthLog-pushrelay gebruiken?",
+        "body": "Meldingen voor de app uit de App Store, end-to-end versleuteld: de relay ziet alleen wanneer er een wordt verstuurd.",
         "yes": "Ja",
         "no": "Nee",
         "declined": "De relay blijft uit. Je kunt hem later aanzetten onder Push en kanalen."
@@ -9630,7 +9626,7 @@
       "test": {
         "button": "Testpush versturen",
         "failed": "De testpush kon niet worden verstuurd",
-        "noDevice": "Geen van je eigen apparaten is aan de relay gekoppeld. Zet de relay eerst aan in de HealthLog-app op je iPhone.",
+        "noDevice": "Geen van je apparaten gebruikt de relay al; zet hem eerst aan in de HealthLog-app op je iPhone.",
         "line": "{device}: relay antwoordde {answer}, aflevering {delivery}",
         "unsigned": "niets ondertekends (niet bereikbaar of niet geverifieerd)"
       },
@@ -9639,34 +9635,35 @@
         "done": "De relaysleutel is vernieuwd",
         "failed": "De relaysleutel kon nu niet worden vernieuwd; de relay staat één vernieuwing per dag toe",
         "confirmTitle": "Relaysleutel nu vernieuwen?",
-        "confirmBody": "Deze server vervangt de sleutel waarmee hij verzoeken aan de relay ondertekent nu meteen, in plaats van volgens zijn cyclus van 30 dagen. De relay staat één vernieuwing per dag toe."
+        "confirmBody": "Vervangt de sleutel waarmee deze server relayverzoeken ondertekent; de relay staat één rotatie per dag toe."
       },
       "invite": {
-        "label": "Uitnodigingscode (optioneel)",
-        "hint": "Alleen nodig zolang de relay nieuwe servers alleen op uitnodiging toelaat. De code heeft 24 tekens en werkt één keer.",
+        "label": "Uitnodigingscode",
+        "hint": "Alleen voor een relay op uitnodiging: 24 tekens, één keer geldig.",
         "invalid": "Een uitnodigingscode heeft precies 24 tekens: letters, cijfers, - of _.",
-        "enter": "Uitnodigingscode invoeren"
+        "enter": "Uitnodigingscode invoeren",
+        "reveal": "Ik heb een uitnodigingscode"
       },
       "reason": {
-        "inviteRequired": "Deze relay laat nieuwe servers alleen op uitnodiging toe. Voer een uitnodigingscode in.",
-        "inviteRejected": "De relay heeft deze uitnodigingscode niet geaccepteerd. Misschien is hij verlopen of al gebruikt. Vraag een nieuwe aan en voer die in.",
-        "registrationPaused": "De relay neemt op dit moment geen nieuwe servers aan. Deze server probeert het later vanzelf opnieuw."
+        "inviteRequired": "Deze relay laat nieuwe servers alleen op uitnodiging toe: voer een uitnodigingscode in.",
+        "inviteRejected": "De relay heeft deze uitnodigingscode geweigerd; misschien is hij al gebruikt of verlopen.",
+        "registrationPaused": "De relay neemt op dit moment geen nieuwe servers aan; deze server vraagt het later zelf opnieuw."
       },
       "usage": {
         "accepted": "Aangenomen",
         "pending": "Wachtend",
         "dropped": "Verworpen",
         "failed": "Mislukt",
-        "window": "Pushberichten die deze server de afgelopen {days, plural, one {# dag} other {# dagen}} aan de relay gaf.",
+        "window": "Afgelopen {days, plural, one {# dag} other {# dagen}}",
         "lastSuccess": "Laatst bezorgd {time}.",
         "lastFailure": "Laatste fout {time}: {reason}.",
         "noReason": "geen reden opgegeven"
       },
       "stateReason": {
-        "badSignature": "De relay accepteert de handtekening van deze server niet, dus er komt geen push aan. Zet de relay hier uit en weer aan om deze server opnieuw aan te melden.",
-        "relayDegraded": "De relay meldt een storing aan zijn kant. Pushes wachten en gaan de deur uit zodra hij hersteld is.",
-        "relayMaintenance": "De relay is in onderhoud. Pushes wachten en gaan de deur uit zodra hij terug is.",
-        "relayMisconfigured": "De relay meldt dat Apple zijn pushsleutel op dit moment niet accepteert. Pushes wachten tot de beheerder van de relay het heeft opgelost."
+        "badSignature": "De relay accepteert de handtekening van deze server niet: zet de relay uit en weer aan om opnieuw te registreren.",
+        "relayDegraded": "De relay meldt een storing; pushberichten wachten en gaan eruit zodra hij hersteld is.",
+        "relayMaintenance": "De relay is in onderhoud; pushberichten wachten tot hij terug is.",
+        "relayMisconfigured": "Apple accepteert de pushsleutel van de relay nu niet; pushberichten wachten tot de beheerder van de relay het oplost."
       },
       "notice": "Melding van de relay ({level}): {id}",
       "noticeLevel": {
@@ -9695,7 +9692,10 @@
         "seconds": "{value} s",
         "empty": "Geen pushberichten in de afgelopen {hours, plural, one {# uur} other {# uur}}",
         "helper": "Van het in de wachtrij zetten op deze server tot het antwoord van de relay. De relay antwoordt zodra Apple het pushbericht heeft aangenomen."
-      }
+      },
+      "termsLink": "relayvoorwaarden",
+      "privacyLink": "privacyverklaring van de relay",
+      "deliverySummary": "Bezorgdetails"
     },
     "serverSetup": {
       "stepsLabel": "Stappen van de serverinrichting",
@@ -9709,7 +9709,7 @@
       },
       "notice": {
         "title": "Deze server inrichten",
-        "body": "Vijf korte stappen voor de keuzes die alleen jij hier kunt maken: wie zich mag registreren, hoe meldingen de server verlaten, wat AI mag en wat er verder naar buiten gaat. Elke stap kun je overslaan en later wijzigen.",
+        "body": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy; elke stap kun je overslaan of later wijzigen.",
         "open": "Inrichting starten",
         "dismiss": "Niet nu"
       },
@@ -9721,7 +9721,7 @@
       },
       "notifications": {
         "title": "Hoe meldingen de server verlaten",
-        "body": "Kies welke kanalen mensen mogen gebruiken. De push-relay voor de app uit de App Store blijft uit tot je hem aanzet."
+        "body": "Kies welke kanalen gebruikt mogen worden; de HealthLog-pushrelay blijft uit tot je hem aanzet."
       },
       "ai": {
         "title": "Wat AI mag",

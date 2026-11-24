@@ -9561,8 +9561,7 @@
     "auditActedByColumn": "Realizado por",
     "pushRelay": {
       "title": "Relé push de HealthLog",
-      "description": "Permite que la app de la App Store reciba notificaciones de este servidor a través del relé del proyecto HealthLog.",
-      "whatItSees": "Cada notificación se cifra en este servidor para el dispositivo que la recibe, así que el relé no puede leerla. Ve cuándo este servidor envía algo a un dispositivo.",
+      "description": "Notificaciones cifradas de extremo a extremo para la app del App Store; cada persona decide en su propio dispositivo.",
       "seesSummary": "Qué ve el relé",
       "seesHeading": "El relé ve",
       "seesWhen": "que este servidor envía algo a un dispositivo, cuándo y de qué tipo: una alerta, una sincronización silenciosa o el final de una Actividad en vivo",
@@ -9572,48 +9571,45 @@
       "notSeesHeading": "No ve",
       "notSeesContent": "lo que dice una notificación: nombres de medicamentos, dosis, mediciones, notas, nombres de cuenta ni nada más de su contenido",
       "seesTiming": "El momento aún puede decir algo. Un recordatorio de medicación por el relé muestra al relé y a Apple cuándo es la hora de una dosis, y si registras una dosis en un dispositivo y otro de tus dispositivos recibe la confirmación, ven que algo pasó en ese momento.",
-      "seesSource": "El aviso de privacidad completo del relé",
-      "toggleLabel": "Ofrecer el relé push de HealthLog a los usuarios de este servidor",
-      "toggleDescription": "Desactivado hasta que lo actives. Después, cada persona decide en su propia app.",
-      "toggleDescriptionOn": "Activado. Cada persona decide en su propia app si sus dispositivos lo usan.",
+      "toggleLabel": "Ofrecer a los usuarios de este servidor",
       "ownApns": {
-        "inUse": "Este servidor tiene configurada su propia clave push de Apple (APNs) y la usa. Cada notificación va directamente a Apple, así que el relé no se usa mientras la clave esté configurada.",
-        "useRelay": "Para enviar las notificaciones a través del relé, elimina las variables APNS_* del entorno del servidor y reinícialo. Entonces aparecerá aquí el interruptor del relé.",
-        "toggleDescription": "Sigue registrado en el relé, que no recibe nada mientras la clave esté configurada. Desactívalo para salir del relé."
+        "inUse": "Las notificaciones push van directamente a Apple con la clave APNs propia de este servidor; elimina las variables APNS_* para usar el relé.",
+        "registered": "Las notificaciones push van directamente a Apple con la clave APNs propia de este servidor, así que el relé no transporta nada."
       },
       "devices": "{count, plural, one {# dispositivo vinculado} other {# dispositivos vinculados}}",
       "unbindsPending": "Bajas de dispositivos que esperan al relé: {count}",
-      "unreachable": "Este servidor sigue registrado en {host}, pero con su configuración actual no puede alcanzarlo (cambió PUSH_RELAY_MODE o PUSH_RELAY_URL). Ese relé conserva los vínculos de dispositivos de este servidor hasta que el servidor se dé de baja: vuelve a poner el ajuste anterior y luego desactiva el relé aquí.",
+      "unreachable": "Sigue registrado en {host}, que la configuración actual de PUSH_RELAY_MODE o PUSH_RELAY_URL no alcanza: restablécela y luego desactiva el relé aquí.",
       "since": "desde {time}",
       "docs": "Más información",
       "privacy": "Aviso de privacidad",
       "terms": "Condiciones del relé",
-      "dialogTitle": "Ofrecer el relé push de HealthLog",
-      "dialogBody": "El relé lo opera el mantenedor del proyecto HealthLog. Cada notificación se cifra en este servidor para su dispositivo; el relé no puede leerla, pero ve que este servidor envía algo a un dispositivo y cuándo. Los recordatorios de medicación también pasan por el relé, a cada dispositivo que recibe sus recordatorios de este servidor, así que el relé y Apple pueden ver cuándo es la hora de una dosis. Cuando lo actives, cada persona de este servidor verá una vez una oferta en su app y decidirá por sí misma. El relé es para uso privado y doméstico y no es un servicio médico.",
-      "acceptTerms": "Acepto las condiciones del relé.",
-      "readPrivacy": "He leído el aviso de privacidad del relé.",
+      "dialogTitle": "Activar el relé push de HealthLog",
+      "acceptTerms": "Acepto las {terms}.",
+      "readPrivacy": "He leído el {privacy}.",
       "householdOnly": "Mantengo este servidor de forma privada para mí o mi hogar.",
       "enable": "Activar",
       "cancel": "Cancelar",
-      "disableTitle": "¿Desactivar el relé?",
-      "disableBody": "Este servidor sale del relé. Los dispositivos vinculados a través de él dejan de recibir notificaciones del relé, y las apps vuelven solas a los recordatorios locales.",
+      "disableTitle": "¿Desactivar el relé push de HealthLog?",
+      "disableBody": "Los dispositivos vinculados dejan de recibir notificaciones del relé y vuelven a los recordatorios locales.",
       "disable": "Desactivar",
-      "enabled": "El relé push está activado",
-      "disabled": "El relé push está desactivado",
+      "enabled": "El relé push de HealthLog está activado",
+      "disabled": "El relé push de HealthLog está desactivado",
       "saveFailed": "No se pudo guardar el ajuste del relé",
       "reconfirm": {
-        "notice": "El texto del relé ha cambiado desde que este servidor lo activó. Léelo y confírmalo una vez. Mientras tanto, el relé sigue funcionando.",
-        "button": "Leer y confirmar",
-        "title": "Confirmar el texto actualizado del relé",
+        "notice": "Las condiciones del relé han cambiado; el relé sigue funcionando hasta que las confirmes.",
+        "button": "Revisar y confirmar",
+        "title": "Confirmar las condiciones actualizadas del relé",
         "confirm": "Confirmar",
-        "done": "El texto actualizado del relé está confirmado"
+        "done": "Condiciones actualizadas del relé confirmadas"
       },
       "loadError": "No se pudo leer el estado del relé push.",
       "state": {
         "ok": "Conectado",
         "degraded": "Con problemas",
         "down": "No disponible",
-        "off": "Desactivado"
+        "off": "Desactivado",
+        "ownApnsKey": "Clave APNs propia",
+        "unavailable": "No utilizable"
       },
       "unavailable": {
         "modeOff": "El relé está desactivado para este servidor (PUSH_RELAY_MODE=off).",
@@ -9621,8 +9617,8 @@
         "keysUnpinned": "No hay claves fijadas para este relé, así que sus respuestas no se pueden comprobar. Define PUSH_RELAY_KEYS."
       },
       "question": {
-        "title": "¿Enviar notificaciones push a través del relé de HealthLog?",
-        "body": "La app HealthLog de la App Store recibe las notificaciones de un servidor sin clave push de Apple propia a través del relé del proyecto HealthLog. El contenido se cifra aquí para cada dispositivo y el relé no puede leerlo; ve cuándo este servidor envía algo a un dispositivo. Tu respuesta vale para todo el servidor, y cada persona sigue decidiendo en su propia app.",
+        "title": "¿Usar el relé push de HealthLog?",
+        "body": "Notificaciones para la app del App Store, cifradas de extremo a extremo: el relé solo ve cuándo se envía una.",
         "yes": "Sí",
         "no": "No",
         "declined": "El relé sigue desactivado. Puedes activarlo más tarde en Push y canales."
@@ -9630,7 +9626,7 @@
       "test": {
         "button": "Enviar push de prueba",
         "failed": "No se pudo enviar el push de prueba",
-        "noDevice": "Ninguno de tus dispositivos está vinculado al relé. Activa primero el relé en la app HealthLog de tu iPhone.",
+        "noDevice": "Ninguno de tus dispositivos usa el relé todavía; actívalo primero en la app HealthLog de tu iPhone.",
         "line": "{device}: el relé respondió {answer}, entrega {delivery}",
         "unsigned": "nada firmado (no disponible o sin verificar)"
       },
@@ -9639,34 +9635,35 @@
         "done": "La clave del relé se renovó",
         "failed": "No se pudo renovar ahora la clave del relé; el relé permite una renovación al día",
         "confirmTitle": "¿Renovar ahora la clave del relé?",
-        "confirmBody": "Este servidor sustituye ahora la clave con la que firma sus solicitudes al relé, en lugar de esperar a su ciclo de 30 días. El relé permite una renovación al día."
+        "confirmBody": "Sustituye la clave con la que este servidor firma las solicitudes al relé; el relé permite una rotación al día."
       },
       "invite": {
-        "label": "Código de invitación (opcional)",
-        "hint": "Solo hace falta mientras el relé admite servidores nuevos únicamente por invitación. El código tiene 24 caracteres y sirve una vez.",
+        "label": "Código de invitación",
+        "hint": "Solo para un relé que admite servidores por invitación: 24 caracteres, válido una vez.",
         "invalid": "Un código de invitación tiene exactamente 24 caracteres: letras, cifras, - o _.",
-        "enter": "Introducir código de invitación"
+        "enter": "Introducir código de invitación",
+        "reveal": "Tengo un código de invitación"
       },
       "reason": {
-        "inviteRequired": "Este relé solo admite servidores nuevos por invitación. Introduce un código de invitación.",
-        "inviteRejected": "El relé no aceptó este código de invitación. Puede que haya caducado o que ya se haya usado. Pide uno nuevo e introdúcelo.",
-        "registrationPaused": "El relé no admite servidores nuevos en este momento. Este servidor volverá a intentarlo más tarde por sí solo."
+        "inviteRequired": "Este relé solo admite servidores nuevos por invitación: introduce un código de invitación.",
+        "inviteRejected": "El relé ha rechazado este código de invitación; puede que ya se haya usado o haya caducado.",
+        "registrationPaused": "El relé no admite servidores nuevos en este momento; este servidor volverá a intentarlo por sí solo."
       },
       "usage": {
         "accepted": "Aceptados",
         "pending": "En espera",
         "dropped": "Descartados",
         "failed": "Fallidos",
-        "window": "Notificaciones push que este servidor entregó al relé {days, plural, =1 {en el último día} other {en los últimos # días}}.",
+        "window": "{days, plural, =1 {Último día} other {Últimos # días}}",
         "lastSuccess": "Última entrega {time}.",
         "lastFailure": "Último fallo {time}: {reason}.",
         "noReason": "sin motivo indicado"
       },
       "stateReason": {
-        "badSignature": "El relé no acepta la firma de este servidor, así que no le llega ningún push. Desactiva el relé aquí y vuelve a activarlo para registrar este servidor de nuevo.",
-        "relayDegraded": "El relé informa de una incidencia por su parte. Los pushes esperan y salen en cuanto se recupere.",
-        "relayMaintenance": "El relé está en mantenimiento. Los pushes esperan y salen en cuanto vuelva.",
-        "relayMisconfigured": "El relé informa de que Apple no acepta ahora su clave de push. Los pushes esperan hasta que quien gestiona el relé lo resuelva."
+        "badSignature": "El relé no acepta la firma de este servidor: desactiva y vuelve a activar el relé para registrarlo de nuevo.",
+        "relayDegraded": "El relé informa de una incidencia; las notificaciones esperan y salen en cuanto se recupere.",
+        "relayMaintenance": "El relé está en mantenimiento; las notificaciones esperan hasta que vuelva.",
+        "relayMisconfigured": "Apple no acepta ahora la clave push del relé; las notificaciones esperan hasta que su operador lo corrija."
       },
       "notice": "Aviso del relé ({level}): {id}",
       "noticeLevel": {
@@ -9695,7 +9692,10 @@
         "seconds": "{value} s",
         "empty": "Ninguna notificación push {hours, plural, =1 {en la última hora} other {en las últimas # horas}}",
         "helper": "Desde que entra en la cola de este servidor hasta la respuesta del relé. El relé responde cuando Apple ha aceptado la notificación."
-      }
+      },
+      "termsLink": "condiciones del relé",
+      "privacyLink": "aviso de privacidad del relé",
+      "deliverySummary": "Detalles de entrega"
     },
     "serverSetup": {
       "stepsLabel": "Pasos de configuración del servidor",
@@ -9709,7 +9709,7 @@
       },
       "notice": {
         "title": "Configurar este servidor",
-        "body": "Cinco pasos cortos para las decisiones que solo tú puedes tomar aquí: quién puede registrarse, cómo salen las notificaciones del servidor, qué puede hacer la IA y qué más sale de él. Cada paso se puede saltar y cambiar más tarde.",
+        "body": "Cinco pasos cortos sobre registros, notificaciones, IA y privacidad; puedes omitir o cambiar cualquiera más tarde.",
         "open": "Empezar la configuración",
         "dismiss": "Ahora no"
       },
@@ -9721,7 +9721,7 @@
       },
       "notifications": {
         "title": "Cómo salen las notificaciones del servidor",
-        "body": "Elige qué canales puede usar la gente. El relé push para la app de la App Store sigue desactivado hasta que lo actives."
+        "body": "Elige qué canales pueden usarse; el relé push de HealthLog sigue desactivado hasta que lo actives."
       },
       "ai": {
         "title": "Qué puede hacer la IA",
