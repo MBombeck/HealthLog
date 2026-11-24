@@ -16074,7 +16074,8 @@
     "wallet": {
       "instructions": "In Originalgröße drucken, entlang des Rahmens ausschneiden, an der gestrichelten Linie falten.",
       "scan": "Für die ganze Karte scannen",
-      "cut": "Gekürzt, damit es passt. Die ganze Karte steht hinter dem QR-Code."
+      "cut": "Gekürzt, damit es passt. Die ganze Karte steht hinter dem QR-Code.",
+      "cutNoCode": "Gekürzt, damit es passt. Die ganze Karte steht in der App."
     },
     "link": {
       "validUntil": "Nur lesbar. Dieser Link gilt bis {date}.",

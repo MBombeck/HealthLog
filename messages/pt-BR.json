@@ -16074,7 +16074,8 @@
     "wallet": {
       "instructions": "Imprima em 100 por cento, recorte pelo contorno e dobre na linha tracejada.",
       "scan": "Escaneie para o cartão completo",
-      "cut": "Encurtado para caber. O cartão completo está no código QR."
+      "cut": "Encurtado para caber. O cartão completo está no código QR.",
+      "cutNoCode": "Encurtado para caber. O cartão completo está no app."
     },
     "link": {
       "validUntil": "Somente leitura. Este link funciona até {date}.",

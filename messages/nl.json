@@ -16074,7 +16074,8 @@
     "wallet": {
       "instructions": "Druk af op 100 procent, knip langs de rand en vouw op de stippellijn.",
       "scan": "Scan voor de volledige kaart",
-      "cut": "Ingekort zodat het past. De volledige kaart staat achter de QR-code."
+      "cut": "Ingekort zodat het past. De volledige kaart staat achter de QR-code.",
+      "cutNoCode": "Ingekort zodat het past. De volledige kaart staat in de app."
     },
     "link": {
       "validUntil": "Alleen lezen. Deze link werkt tot {date}.",

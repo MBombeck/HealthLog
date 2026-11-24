@@ -209,7 +209,8 @@ export async function serveCycleFeed(
       status: notModified ? 304 : 200,
       conditional,
       uaFamily: fetcherFamily(ua),
-      projection_state: built.projectionState,
+      // No projection state: "late" or "off" is reproductive health, and a
+      // calendar client fetches the feed every hour.
       events: built.calendar.events.length,
     },
   });

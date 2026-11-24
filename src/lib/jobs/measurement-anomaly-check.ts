@@ -162,11 +162,12 @@ async function notifyUser(
   // A known state that explains the shift (an open illness, a pregnancy or
   // the weeks after a birth) means no notice, and the shift is not used up:
   // once the state ends, a change that outlasts it is told.
+  // The event names that a state explained the shift, never which one: a
+  // pregnancy is reproductive health and stays out of the logs.
   const explained = await vitalShiftContext(prisma, user.id, tz, now);
   if (explained) {
     annotate({
       action: { name: "notification.measurementAnomaly.explained" },
-      meta: { context: explained },
     });
     return "quiet";
   }

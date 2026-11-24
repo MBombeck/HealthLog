@@ -16074,7 +16074,8 @@
     "wallet": {
       "instructions": "Wydrukuj w skali 100 procent, wytnij wzdłuż obrysu, złóż na linii przerywanej.",
       "scan": "Zeskanuj, by zobaczyć całą kartę",
-      "cut": "Skrócono, by się zmieściło. Pełna karta jest pod kodem QR."
+      "cut": "Skrócono, by się zmieściło. Pełna karta jest pod kodem QR.",
+      "cutNoCode": "Skrócono, aby się zmieściło. Pełna karta jest w aplikacji."
     },
     "link": {
       "validUntil": "Tylko do odczytu. Ten link działa do {date}.",

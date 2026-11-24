@@ -16074,7 +16074,8 @@
     "wallet": {
       "instructions": "Print at 100 percent, cut along the outline, fold at the dashed line.",
       "scan": "Scan for the full card",
-      "cut": "Shortened to fit. The full card is behind the QR code."
+      "cut": "Shortened to fit. The full card is behind the QR code.",
+      "cutNoCode": "Shortened to fit. The full card is in the app."
     },
     "link": {
       "validUntil": "Read-only. This link works until {date}.",
