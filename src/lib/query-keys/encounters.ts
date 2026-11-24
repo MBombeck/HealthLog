@@ -54,6 +54,14 @@ export const encounterKeys = {
     ["encounters", "picker", direction, pivot ?? "", term] as const,
   encounter: (id: string) => ["encounters", "detail", id] as const,
   /**
+   * Treatment series. Under the `["encounters"]` root on purpose: a
+   * series' counts are its sessions, so every visit write must evict them,
+   * and a series write evicts the visit cards that name it.
+   */
+  treatmentSeriesList: () => ["encounters", "series", "list"] as const,
+  treatmentSeries: (id: string) =>
+    ["encounters", "series", "detail", id] as const,
+  /**
    * The procedure history for one filter. Under the `["encounters"]` root, so
    * every visit write (switching a kind, editing a site) evicts it with the
    * list. The filter is part of the key because it is part of the question:
@@ -96,6 +104,10 @@ export const encounterKeys = {
   encounterUpdate: () => ["encounters", "update"] as const,
   encounterDelete: () => ["encounters", "delete"] as const,
   encounterRestore: () => ["encounters", "restore"] as const,
+  treatmentSeriesCreate: () => ["encounters", "series", "create"] as const,
+  treatmentSeriesUpdate: () => ["encounters", "series", "update"] as const,
+  treatmentSeriesDelete: () => ["encounters", "series", "delete"] as const,
+  treatmentSeriesRestore: () => ["encounters", "series", "restore"] as const,
   practitionerCreate: () => ["practitioners", "create"] as const,
   practitionerUpdate: () => ["practitioners", "update"] as const,
   practitionerDelete: () => ["practitioners", "delete"] as const,

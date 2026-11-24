@@ -120,6 +120,9 @@ export const WIPE_MODELS = [
   "MedicationDocumentLink",
   "MedicationConditionLink",
   "Encounter",
+  // The series after the sessions that name it (SetNull), before the
+  // practitioners and conditions it names.
+  "TreatmentSeries",
 
   // ── Vaccinations ────────────────────────────────────────────────────────
   // Same ordering argument as the visit links: the document link cascades

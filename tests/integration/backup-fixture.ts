@@ -1194,6 +1194,25 @@ export async function seedEveryTwoEndedModel(
     },
   });
 
+  // A treatment series with every column set, naming the practice
+  // twice (ordered by, given by) and the condition, so the restore has to
+  // remap all three; the encounter below is one of its sessions.
+  const series = await prisma.treatmentSeries.create({
+    data: {
+      userId: OWNER_ID,
+      titleEncrypted: encryptToBytes("Physiotherapy, left knee"),
+      kind: "THERAPY",
+      plannedSessions: 6,
+      startsOn: new Date("2026-06-20T00:00:00.000Z"),
+      validUntil: new Date("2026-08-31T00:00:00.000Z"),
+      endedOn: new Date("2026-07-30T00:00:00.000Z"),
+      prescriberId: practitioner.id,
+      performerId: practitioner.id,
+      episodeId: episode.id,
+      noteEncrypted: encryptToBytes("bring a towel"),
+    },
+  });
+
   const encounter = await prisma.encounter.create({
     data: {
       userId: OWNER_ID,
@@ -1201,6 +1220,7 @@ export async function seedEveryTwoEndedModel(
       status: "DONE",
       kind: "ROUTINE",
       practitionerId: practitioner.id,
+      seriesId: series.id,
       reasonEncrypted: encryptToBytes("annual check"),
       outcomeEncrypted: encryptToBytes(
         "ferritin back in range, recheck in a year",

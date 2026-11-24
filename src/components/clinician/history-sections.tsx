@@ -13,6 +13,10 @@
  * A pure server component: no client hooks, no session, no markdown — every
  * value renders as escaped React text.
  */
+import {
+  seriesPeriodCell,
+  seriesSessionsCell,
+} from "@/lib/treatment-series/report-lines";
 import type { EncounterKind, Laterality } from "@/generated/prisma/client";
 import {
   encounterKindLabelKey,
@@ -277,6 +281,7 @@ export function VisitsSection({
   fmtDate: (iso: string) => string;
 }) {
   const visits = report.visits ?? [];
+  const series = report.treatmentSeries ?? [];
 
   return (
     <LeafSection
@@ -284,9 +289,43 @@ export function VisitsSection({
       scope={scope}
       leaves={["VISITS"]}
       title={t("doctorReport.visitsTitle")}
-      empty={visits.length === 0}
+      empty={visits.length === 0 && series.length === 0}
     >
       <div className="space-y-4">
+        {/* The treatment series first: the visits below are mostly
+            their sessions, and the course is what a reader asks about. */}
+        {series.map((row, index) => (
+          <div
+            key={`series-${row.startsOn}-${index}`}
+            className="border-border/60 rounded-md border px-3"
+            data-slot="clinician-treatment-series"
+          >
+            <StatRow
+              label={t("treatmentSeries.reportColSeries")}
+              value={row.title ?? "—"}
+            />
+            <StatRow
+              label={t("treatmentSeries.reportColSessions")}
+              value={seriesSessionsCell(t, row)}
+            />
+            <StatRow
+              label={t("treatmentSeries.reportColPeriod")}
+              value={seriesPeriodCell(t, row, fmtDate)}
+            />
+            <StatRow
+              label={t("treatmentSeries.prescriber")}
+              value={row.prescriberName ?? "—"}
+            />
+            <StatRow
+              label={t("treatmentSeries.performer")}
+              value={row.performerName ?? "—"}
+            />
+            <StatRow
+              label={t("treatmentSeries.condition")}
+              value={row.conditionLabel ?? "—"}
+            />
+          </div>
+        ))}
         {visits.map((visit, index) => (
           <div
             key={`${visit.occurredAt}-${index}`}

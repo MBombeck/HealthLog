@@ -8,6 +8,8 @@ import { capFields, capped, cappedOutput } from "@/lib/mcp/capped";
 import { fenceUserText, scrubFenceMarkers } from "@/lib/ai/coach/data-fence";
 import { listTargetsBySource } from "@/lib/links";
 import { encounterKindEnum } from "@/lib/validations/encounters";
+import { loadEncounterSeriesRefs } from "@/lib/treatment-series/service";
+import type { EncounterSeriesRefDTO } from "@/lib/treatment-series/dto";
 import { decryptVisitText } from "./shared";
 import { READ_ONLY_ANNOTATIONS, type McpToolDefinition } from "./types";
 
@@ -41,6 +43,15 @@ const getVisitsOutput: z.ZodRawShape = {
         bodySite: z.string().nullable(),
         laterality: z.enum(["LEFT", "RIGHT", "BOTH"]).nullable(),
         conditions: z.array(z.string()),
+        // The treatment series this visit is a session of, with
+        // its place in it; null when it belongs to none.
+        series: z
+          .object({
+            title: z.string().nullable(),
+            sessionNumber: z.number().nullable(),
+            plannedSessions: z.number().nullable(),
+          })
+          .nullable(),
       }),
     )
     .optional(),
@@ -61,7 +72,7 @@ export const getVisitsTool: McpToolDefinition = {
   name: "get_visits",
   title: "Get past doctor visits",
   description:
-    "Fetch the user's own past doctor visits over a bounded window (default: the last 12 months) so a question like 'when did I last see a cardiologist' is answerable from the record. Each visit carries its id (visit:<id>, which fetch accepts and answers with the visit's linked records), its date, lifecycle status (DONE / CANCELLED / NO_SHOW — a no-show is not a visit that happened), kind, practitioner name + specialty, the visit's own free-text reason and outcome, the body site and side (set on procedures), and the labels of any conditions it was filed against. Optionally narrow to one practitioner by a name substring, or to one kind. kind PROCEDURE is the procedure and surgery history: without a months argument it reads the whole record, because a surgery years ago is still the answer to 'what surgeries have I had'. Newest first, bounded. Returns { present: false } when the user has never recorded a visit — distinct from a filtered read that simply matched none. With the illness module switched off the condition labels are withheld and conditionsReason is \"module_disabled\".",
+    "Fetch the user's own past doctor visits over a bounded window (default: the last 12 months) so a question like 'when did I last see a cardiologist' is answerable from the record. Each visit carries its id (visit:<id>, which fetch accepts and answers with the visit's linked records), its date, lifecycle status (DONE / CANCELLED / NO_SHOW — a no-show is not a visit that happened), kind, practitioner name + specialty, the visit's own free-text reason and outcome, the body site and side (set on procedures), and the labels of any conditions it was filed against, and the treatment series it is a session of (title, session number, planned count) when it belongs to one, such as a course of physiotherapy or radiation. Optionally narrow to one practitioner by a name substring, or to one kind. kind PROCEDURE is the procedure and surgery history: without a months argument it reads the whole record, because a surgery years ago is still the answer to 'what surgeries have I had'. Newest first, bounded. Returns { present: false } when the user has never recorded a visit — distinct from a filtered read that simply matched none. With the illness module switched off the condition labels are withheld and conditionsReason is \"module_disabled\".",
   inputShape: {
     months: z
       .number()
@@ -161,6 +172,7 @@ export const getVisitsTool: McpToolDefinition = {
           targetKind: "conditionEpisode",
         })
       : new Map<string, Array<{ label: string }>>();
+    const seriesRefs = await loadEncounterSeriesRefs(prisma, ctx.userId, rows);
 
     const visits = rows.map((r) => {
       const reason = decryptVisitText(r.reasonEncrypted);
@@ -189,6 +201,7 @@ export const getVisitsTool: McpToolDefinition = {
         conditions: (conditionsBySource.get(r.id) ?? []).map((c) =>
           scrubFenceMarkers(c.label),
         ),
+        series: seriesOf(seriesRefs.get(r.id)),
       };
     });
 
@@ -205,3 +218,13 @@ export const getVisitsTool: McpToolDefinition = {
     };
   },
 };
+
+/** The series reference as the tool answers it; the title is user text. */
+function seriesOf(ref: EncounterSeriesRefDTO | undefined) {
+  if (!ref) return null;
+  return {
+    title: ref.title !== null ? fenceUserText(ref.title) : null,
+    sessionNumber: ref.sessionNumber,
+    plannedSessions: ref.plannedSessions,
+  };
+}

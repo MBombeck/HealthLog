@@ -125,16 +125,36 @@ function everyKind(): TimelineResponse {
       label: "travel",
     }),
   ];
-  const visits: TimelineItem[] = ENCOUNTER_KINDS.map((kind, i) =>
+  const visits: TimelineItem[] = [
+    ...ENCOUNTER_KINDS.map((kind, i) =>
+      item({
+        id: `visit-${i}`,
+        kind: kind === "PROCEDURE" ? "procedure" : "visit",
+        start: day(),
+        // Every other visit has neither a reason nor a practitioner.
+        label: i % 2 === 0 ? "" : `Termin ${i}`,
+        sub: kind,
+      }),
+    ),
+    // A treatment series, planned and open-ended: "done/planned" and "done"
+    // are both counts and must read as words.
     item({
-      id: `visit-${i}`,
-      kind: kind === "PROCEDURE" ? "procedure" : "visit",
-      start: day(),
-      // Every other visit has neither a reason nor a practitioner.
-      label: i % 2 === 0 ? "" : `Termin ${i}`,
-      sub: kind,
+      id: "series-planned",
+      kind: "treatmentSeries",
+      start: "2026-09-03",
+      end: "2026-09-20",
+      label: "Physiotherapie",
+      sub: "3/6",
     }),
-  );
+    item({
+      id: "series-open",
+      kind: "treatmentSeries",
+      start: "2026-09-05",
+      open: true,
+      label: "",
+      sub: "4",
+    }),
+  ];
   const documents: TimelineItem[] = INBOUND_DOCUMENT_KINDS.map((kind, i) =>
     item({
       id: `doc-${i}`,

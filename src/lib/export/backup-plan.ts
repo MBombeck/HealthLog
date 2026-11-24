@@ -164,6 +164,7 @@ export const BACKED_UP_MODELS = [
 
   // ── Visits ────────────────────────────────────────────────────────────────
   "Practitioner",
+  "TreatmentSeries",
   "Encounter",
   "EncounterDocumentLink",
   "EncounterLabLink",
@@ -267,6 +268,8 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   // relation-shaped proof would be attributed to whichever one a matcher found
   // first — the `symptomLinks` confusion, avoided by construction.
   "src/lib/export/visits-backup.ts",
+  // Treatment series, the visits section's second half, same arrangement.
+  "src/lib/export/treatment-series-backup.ts",
   // The immunization log and its document link, same arrangement for the same
   // reason: `documentLinks` is a field name on three models now, so each of
   // these reads through its OWN delegate here.
@@ -404,6 +407,7 @@ export const TWO_ENDED_MODELS = [
   // pending would return visits and documents with nothing between them — the
   // same loss, one layer deeper — so the links land carried rather than owed.
   "Practitioner",
+  "TreatmentSeries",
   "Encounter",
   "EncounterDocumentLink",
   "EncounterLabLink",

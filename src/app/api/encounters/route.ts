@@ -53,6 +53,10 @@ import {
   type RestoreSkipLog,
 } from "@/lib/export/restore-skips";
 import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
+import {
+  loadEncounterSeriesRefs,
+  resolveOwnedSeries,
+} from "@/lib/treatment-series/service";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user, grantId } = await requireRecordAuth("read", "profile");
@@ -146,7 +150,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const visible = await actingDomainVisibility(prisma, grantId);
   // The window before each booked visit reads the whole history, not this
   // page of it: the visit it starts at may sit outside the caller's filter.
-  const [links, preparations] = await Promise.all([
+  const [links, preparations, seriesRefs] = await Promise.all([
     loadEncounterLinksForMany(
       prisma,
       user.id,
@@ -154,6 +158,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       visible,
     ),
     loadVisitPreparations(prisma, user.id, upcoming, now),
+    loadEncounterSeriesRefs(prisma, user.id, [...upcoming, ...past]),
   ]);
 
   annotate({
@@ -165,10 +170,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
     upcoming: upcoming.map((row) => ({
       ...toEncounterDTO(row, links.get(row.id)),
       preparation: preparations.get(row.id) ?? null,
+      series: seriesRefs.get(row.id) ?? null,
     })),
     past: past.map((row) => ({
       ...toEncounterDTO(row, links.get(row.id)),
       preparation: null,
+      series: seriesRefs.get(row.id) ?? null,
     })),
   };
   return apiListSuccess(body, combinedCap(upcomingCap, pastCap));
@@ -209,6 +216,12 @@ async function postEncounter(request: NextRequest): Promise<Response> {
       );
       if (!practitioner) return null;
     }
+    // A series the caller does not own is refused like a foreign practitioner:
+    // the person picked it and would otherwise see the visit save without it.
+    if (entry.seriesId) {
+      const series = await resolveOwnedSeries(tx, user.id, entry.seriesId);
+      if (!series) return "unknown-series" as const;
+    }
 
     // Field-by-field — never spread the parsed object whole.
     const row = await tx.encounter.create({
@@ -224,6 +237,7 @@ async function postEncounter(request: NextRequest): Promise<Response> {
           ? encryptToBytes(entry.bodySite.trim())
           : null,
         laterality: entry.laterality ?? null,
+        seriesId: entry.seriesId ?? null,
       },
       select: { id: true },
     });
@@ -299,6 +313,11 @@ async function postEncounter(request: NextRequest): Promise<Response> {
       errorCode: "encounter.practitioner-not-found",
     });
   }
+  if (created === "unknown-series") {
+    return apiError("Treatment series not found", 404, {
+      errorCode: "encounter.series-not-found",
+    });
+  }
   if (created === "unknown-reminder") {
     return apiError("Checkup not found", 404, {
       errorCode: "encounter.reminder-not-found",
@@ -315,7 +334,11 @@ async function postEncounter(request: NextRequest): Promise<Response> {
   await auditLog("encounter.visit.create", {
     userId: user.id,
     ipAddress: getClientIp(request),
-    details: { encounterId: created.id, status: created.status },
+    details: {
+      encounterId: created.id,
+      status: created.status,
+      seriesId: created.seriesId,
+    },
   });
 
   // A booked visit must reach the cached daily-digest / snapshot cells
@@ -331,8 +354,12 @@ async function postEncounter(request: NextRequest): Promise<Response> {
     meta: { status: created.status, kind: created.kind },
   });
 
+  const seriesRefs = await loadEncounterSeriesRefs(prisma, user.id, [created]);
   return apiSuccess(
-    toEncounterDTO(created, undefined, summarizeRestoreSkips(skips)),
+    {
+      ...toEncounterDTO(created, undefined, summarizeRestoreSkips(skips)),
+      series: seriesRefs.get(created.id) ?? null,
+    },
     201,
   );
 }

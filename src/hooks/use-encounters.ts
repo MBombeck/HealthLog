@@ -54,6 +54,8 @@ export interface EncounterWriteBody {
   laterality?: "LEFT" | "RIGHT" | "BOTH" | null;
   /** The checkup this visit closes, when it was filed from a due one. */
   reminderId?: string | null;
+  /** The treatment series this visit is a session of. */
+  seriesId?: string | null;
   documentIds?: string[];
   labResultIds?: string[];
   episodeIds?: string[];

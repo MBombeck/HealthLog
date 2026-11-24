@@ -110,7 +110,7 @@ const listPractitionersQuery = practitionerListQuerySchema.meta({
     "Query params for the address book: `q` (case-insensitive substring of the name OR the practice — a person looks one up by whichever of the two they remember) and `limit` (1–200, default 100). Name-ordered.",
 });
 
-const practitioner = z
+export const practitioner = z
   .object({
     id: z.string(),
     name: z.string(),
@@ -128,7 +128,7 @@ const practitioner = z
       "One entry in the caller's address book. `note` is the decrypted free text, or null on a key-rotation gap — fail-soft, never a 500.",
   });
 
-const linkedTarget = z
+export const linkedTarget = z
   .object({
     id: z.string(),
     label: z.string().nullable(),
@@ -214,7 +214,26 @@ const encounterPreparation = z
       "The window before a booked visit, resolved server-side: where the visit preparation and the doctor report offered for the appointment start, and why there. Never the last visit of any kind, which is how a dermatology appointment was offered a week of data from an internist visit. A client shows `from` with its reason and lets the person change the dates; it does not recompute the rule.",
   });
 
-const encounter = z
+const encounterSeriesRef = z
+  .object({
+    id: z.string(),
+    title: z.string().nullable(),
+    sessionNumber: z
+      .number()
+      .int()
+      .nullable()
+      .describe(
+        "This visit's place in the series, 1-based in time order, counting only sessions that took place or are booked. Null for a cancelled or missed one.",
+      ),
+    plannedSessions: z.number().int().nullable(),
+  })
+  .meta({
+    id: "EncounterSeriesRef",
+    description:
+      'The treatment series a visit is one session of (v1.50), resolved: its title (decrypted, null on a key-rotation gap), the session\'s number and the planned count, so a client renders "session 3 of 6" without counting.',
+  });
+
+export const encounter = z
   .object({
     id: z.string(),
     occurredAt: z.string(),
@@ -233,6 +252,12 @@ const encounter = z
       .optional()
       .describe(
         "On the list read only (`GET /api/encounters`): the window before this visit when it is booked (PLANNED, upcoming), null on every other row. Absent on the detail and on write responses.",
+      ),
+    series: encounterSeriesRef
+      .nullable()
+      .optional()
+      .describe(
+        "The treatment series this visit belongs to, null when none. Present on the list, the detail, the procedure history, the series detail and every write response.",
       ),
     createdAt: z.string(),
     updatedAt: z.string(),

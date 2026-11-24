@@ -228,7 +228,8 @@
       "invalid": "Controlla i dati dell'appuntamento e riprova.",
       "practitioner-not-found": "Questo studio o medico non esiste più. Scegline un altro o nessuno.",
       "reminder-not-found": "Questo controllo non esiste più. Scegline un altro o nessuno.",
-      "reminder-conflict": "Un appuntamento previsto non può chiudere un controllo, perché non è ancora avvenuto."
+      "reminder-conflict": "Un appuntamento previsto non può chiudere un controllo, perché non è ancora avvenuto.",
+      "series-not-found": "Questo ciclo di trattamento non esiste più. Scegline un altro o nessuno."
     },
     "vaccination": {
       "invalid": "Controlla i dati della vaccinazione e riprova.",
@@ -289,6 +290,11 @@
         "limit": "Ci sono già 12 tipi di crisi. Archiviane uno per aggiungerne un altro.",
         "notFound": "Questo tipo di crisi non esiste più."
       }
+    },
+    "treatment_series": {
+      "invalid": "Controlla i dati del ciclo e riprova.",
+      "practitioner-not-found": "Questo studio o questo medico non esiste più. Scegline un altro o nessuno.",
+      "condition-not-found": "Questa patologia non esiste più. Scegline un'altra o nessuna."
     }
   },
   "doctorReport": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} ha eliminato un tipo di crisi",
       "seizureSettingsUpdate": "{name} ha cambiato la regola delle crisi a grappolo",
       "symptomBatchIngest": "{name} ha importato sintomi da Apple Health",
-      "symptomImportDelete": "{name} ha rimosso sintomi importati"
+      "symptomImportDelete": "{name} ha rimosso sintomi importati",
+      "treatmentSeriesCreate": "{name} ha aggiunto un ciclo di trattamento",
+      "treatmentSeriesUpdate": "{name} ha modificato un ciclo di trattamento",
+      "treatmentSeriesDelete": "{name} ha eliminato un ciclo di trattamento",
+      "treatmentSeriesRestore": "{name} ha ripristinato un ciclo di trattamento"
     },
     "section": {
       "measurements": {
@@ -16039,7 +16049,12 @@
       "visit": "Appuntamento",
       "visitWith": "Appuntamento: {name}",
       "checkupDue": "In scadenza: {label}",
-      "boosterDue": "Richiamo in scadenza: {label}"
+      "boosterDue": "Richiamo in scadenza: {label}",
+      "sessionOf": "Seduta {number} di {planned}",
+      "session": "Seduta {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Fine del ciclo di trattamento",
+      "seriesEndsWith": "Fine del ciclo di trattamento: {name}"
     }
   },
   "reportSchedule": {
@@ -16177,5 +16192,56 @@
     "entry": {
       "description": "Gruppo sanguigno, allergie, farmaci e contatti per un’emergenza, con copia offline, tessera e link QR."
     }
+  },
+  "treatmentSeries": {
+    "heading": "Cicli di trattamento",
+    "add": "Nuovo ciclo",
+    "createTitle": "Nuovo ciclo di trattamento",
+    "untitled": "Ciclo di trattamento",
+    "progress": "{done} di {planned}",
+    "sessionsDoneCount": "{count, plural, one {# seduta} other {# sedute}}",
+    "sessionOf": "Seduta {number} di {planned}",
+    "session": "Seduta {number}",
+    "status": {
+      "planned": "Non iniziato",
+      "active": "In corso",
+      "completed": "Concluso",
+      "expired": "Scaduto"
+    },
+    "next": "Prossima {date}",
+    "validUntil": "Valido fino al {date}",
+    "firstSession": "Dal {date}",
+    "sessionsHeading": "Sedute",
+    "addSession": "Aggiungi seduta",
+    "prescriber": "Prescritto da",
+    "performer": "Eseguito da",
+    "condition": "Patologia",
+    "form": {
+      "title": "Di cosa si tratta?",
+      "titlePlaceholder": "Fisioterapia, ginocchio sinistro",
+      "plannedSessions": "Sedute",
+      "startsOn": "Inizio",
+      "validUntil": "Valido fino al",
+      "note": "Nota",
+      "series": "Ciclo di trattamento",
+      "seriesNone": "Nessuno"
+    },
+    "created": "Ciclo salvato",
+    "updated": "Ciclo aggiornato",
+    "saveFailed": "Non è stato possibile salvare il ciclo.",
+    "ended": "Ciclo concluso",
+    "reopened": "Ciclo riaperto",
+    "end": "Concludi ciclo",
+    "reopen": "Riapri",
+    "deleteTitle": "Eliminare questo ciclo?",
+    "deleteDescription": "Le visite restano. Semplicemente non sono più raggruppate.",
+    "deleted": "Ciclo eliminato",
+    "deleteFailed": "Non è stato possibile eliminare il ciclo.",
+    "reportTitle": "Cicli di trattamento",
+    "reportColSeries": "Ciclo",
+    "reportColSessions": "Sedute",
+    "reportColPeriod": "Periodo",
+    "period": "dal {from} al {to}",
+    "periodOpen": "dal {from}"
   }
 }

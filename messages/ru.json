@@ -228,7 +228,8 @@
       "invalid": "Проверьте данные визита и попробуйте снова.",
       "practitioner-not-found": "Этой клиники или врача больше нет. Выберите другую запись или «Не указано».",
       "reminder-not-found": "Этого осмотра больше нет. Выберите другой или оставьте поле пустым.",
-      "reminder-conflict": "Запланированный визит не может закрыть осмотр, потому что он ещё не состоялся."
+      "reminder-conflict": "Запланированный визит не может закрыть осмотр, потому что он ещё не состоялся.",
+      "series-not-found": "Этого курса лечения больше нет. Выберите другой или никакой."
     },
     "vaccination": {
       "invalid": "Проверьте данные вакцинации и попробуйте снова.",
@@ -289,6 +290,11 @@
         "limit": "Уже есть 12 типов приступов. Отправьте один в архив, чтобы добавить новый.",
         "notFound": "Этого типа приступа больше нет."
       }
+    },
+    "treatment_series": {
+      "invalid": "Проверьте данные курса и попробуйте снова.",
+      "practitioner-not-found": "Этой клиники или врача больше нет. Выберите другого или никого.",
+      "condition-not-found": "Этого заболевания больше нет. Выберите другое или никакое."
     }
   },
   "doctorReport": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} удалил(а) тип приступа",
       "seizureSettingsUpdate": "{name} изменил(а) правило серийных приступов",
       "symptomBatchIngest": "{name} импортировал(а) симптомы из Apple Health",
-      "symptomImportDelete": "{name} удалил(а) импортированные записи симптомов"
+      "symptomImportDelete": "{name} удалил(а) импортированные записи симптомов",
+      "treatmentSeriesCreate": "{name} добавил(а) курс лечения",
+      "treatmentSeriesUpdate": "{name} изменил(а) курс лечения",
+      "treatmentSeriesDelete": "{name} удалил(а) курс лечения",
+      "treatmentSeriesRestore": "{name} восстановил(а) курс лечения"
     },
     "section": {
       "measurements": {
@@ -16039,7 +16049,12 @@
       "visit": "Приём",
       "visitWith": "Приём: {name}",
       "checkupDue": "Срок: {label}",
-      "boosterDue": "Срок ревакцинации: {label}"
+      "boosterDue": "Срок ревакцинации: {label}",
+      "sessionOf": "Сеанс {number} из {planned}",
+      "session": "Сеанс {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Окончание курса лечения",
+      "seriesEndsWith": "Окончание курса лечения: {name}"
     }
   },
   "reportSchedule": {
@@ -16177,5 +16192,56 @@
     "entry": {
       "description": "Группа крови, аллергии, лекарства и контакты на экстренный случай, с офлайн-копией, карточкой и QR-ссылкой."
     }
+  },
+  "treatmentSeries": {
+    "heading": "Курсы лечения",
+    "add": "Новый курс",
+    "createTitle": "Новый курс лечения",
+    "untitled": "Курс лечения",
+    "progress": "{done} из {planned}",
+    "sessionsDoneCount": "{count, plural, one {# сеанс} few {# сеанса} many {# сеансов} other {# сеанса}}",
+    "sessionOf": "Сеанс {number} из {planned}",
+    "session": "Сеанс {number}",
+    "status": {
+      "planned": "Не начат",
+      "active": "Идёт",
+      "completed": "Завершён",
+      "expired": "Истёк"
+    },
+    "next": "Следующий {date}",
+    "validUntil": "Действует до {date}",
+    "firstSession": "С {date}",
+    "sessionsHeading": "Сеансы",
+    "addSession": "Добавить сеанс",
+    "prescriber": "Назначил(а)",
+    "performer": "Проводит",
+    "condition": "Заболевание",
+    "form": {
+      "title": "Что это?",
+      "titlePlaceholder": "Физиотерапия, левое колено",
+      "plannedSessions": "Сеансы",
+      "startsOn": "Начало",
+      "validUntil": "Действует до",
+      "note": "Заметка",
+      "series": "Курс лечения",
+      "seriesNone": "Нет"
+    },
+    "created": "Курс сохранён",
+    "updated": "Курс обновлён",
+    "saveFailed": "Не удалось сохранить курс.",
+    "ended": "Курс завершён",
+    "reopened": "Курс возобновлён",
+    "end": "Завершить курс",
+    "reopen": "Возобновить",
+    "deleteTitle": "Удалить этот курс?",
+    "deleteDescription": "Визиты останутся. Они просто больше не сгруппированы.",
+    "deleted": "Курс удалён",
+    "deleteFailed": "Не удалось удалить курс.",
+    "reportTitle": "Курсы лечения",
+    "reportColSeries": "Курс",
+    "reportColSessions": "Сеансы",
+    "reportColPeriod": "Период",
+    "period": "с {from} по {to}",
+    "periodOpen": "с {from}"
   }
 }

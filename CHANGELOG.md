@@ -4,6 +4,7 @@
 
 ### Added
 
+- Treatment series group visits into one course: a physiotherapy prescription for six sessions, a run of radiation, a course of injections, a dental plan. A series has a name, the number of sessions, a start and a last valid day, who ordered it, who gives it and the condition it treats, and its sessions are ordinary visits with their reminders. Care > Visits lists each series with "3 of 6" and whether it is running, completed or expired; a session added from the series arrives with the series, its kind and its practice filled in, and every session shows its number. The series is a bar in the timeline's visits lane, a table in the doctor report beside the visits, and booked sessions carry their number in the care calendar, with the last valid day as an all-day event. Search finds the sessions by the series' name. Backups, the export and the MCP `get_visits` tool carry it, and `/api/treatment-series` is in the OpenAPI document. Thanks to @Cnote43, whose radiation example set out what a series has to answer. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
 - "Today so far" for steps, active energy, floors and walking distance works for accounts whose watch or service reports the day as one total: Garmin, Withings, a Gadgetbridge import. None of them hands over the hours of the day, so the card cannot say what is usual by this hour, and for them it stayed empty or did not show at all. It now shows today's running total as the source last reported it, set against your usual full day (the median and middle half of the last 14 complete days), with the time the total last changed and the source it came from. The range shows once 7 of those days have a total. Which source a day counts from follows your order under Settings > Sources, the same pick as the "per day" chart, so an iPhone and a watch are never added together and today's curve from one is never compared with a total from the other. The Insights value of `SAME_TIME_BASELINE` carries this as `mode: "daily_total"` beside the hourly `mode: "hourly"`. ([#1459](https://github.com/MBombeck/HealthLog/issues/1459))
 
 ### Changed
@@ -31,10 +32,12 @@
 
 ### Updating
 
+- Migration 0565 adds the treatment series table and an empty `series_id` column on visits. Nothing stored changes, and it runs in a moment on any size of database.
 - Migration 0562 merges the Apple Health workout pairs already stored the same way: the app's row is kept, filled from the export row and given its track, series, insight and personal records where it has none, and the export row is deleted. Export workouts without a synced twin stay as they are. It runs in one transaction with a ten-minute statement timeout and reports the number it merged in the boot log. The query to count the pairs before updating is in the migration file.
 
 ### Thanks
 
+- @Cnote43 for the radiation example: start and end, the single sessions, who ordered and who gave it, and the condition. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
 - @Gen-X-Jim for the report with the database counts that showed what the card was missing, and for asking for a day-total form. ([#1459](https://github.com/MBombeck/HealthLog/issues/1459))
 - @camiracode for counting the pairs that stayed after the 1.48.3 cleanup. ([#1414](https://github.com/MBombeck/HealthLog/issues/1414))
 

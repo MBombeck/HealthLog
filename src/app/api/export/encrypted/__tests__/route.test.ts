@@ -37,6 +37,7 @@ vi.mock("@/lib/db", () => ({
     // and an account with no visits is the ordinary case the builder must
     // still answer for.
     practitioner: { findMany: vi.fn().mockResolvedValue([]) },
+    treatmentSeries: { findMany: vi.fn().mockResolvedValue([]) },
     encounter: { findMany: vi.fn().mockResolvedValue([]) },
     encounterDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounterLabLink: { findMany: vi.fn().mockResolvedValue([]) },

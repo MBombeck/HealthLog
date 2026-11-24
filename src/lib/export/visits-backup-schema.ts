@@ -62,6 +62,8 @@ export const encounterBackupSchema = z
     // Remapped against the restored reminders (they travel since v1.37.20);
     // dropped to NULL, with the drop named, only when the file lacks the row.
     reminderId: z.string().nullable().optional(),
+    // The series this visit is a session of; absent in older files.
+    seriesId: z.string().nullable().optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
     deletedAt: isoDateTime.nullable().optional(),
@@ -72,5 +74,35 @@ export const encounterLinkBackupSchema = z
     encounterId: z.string().min(1),
     targetId: z.string().min(1),
     createdAt: isoDateTime,
+  })
+  .passthrough();
+
+/** A course of several visits. Absent in a file written before it. */
+export const treatmentSeriesBackupSchema = z
+  .object({
+    id: z.string().min(1),
+    kind: z.enum(EncounterKind),
+    plannedSessions: z.number().int().nullable().optional(),
+    startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    validUntil: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
+    endedOn: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
+    prescriberId: z.string().nullable().optional(),
+    performerId: z.string().nullable().optional(),
+    episodeId: z.string().nullable().optional(),
+    titleEncrypted: base64BytesSchema.nullable().optional(),
+    noteEncrypted: base64BytesSchema.nullable().optional(),
+    title: z.string().nullable().optional(),
+    note: z.string().nullable().optional(),
+    createdAt: isoDateTime,
+    updatedAt: isoDateTime,
+    deletedAt: isoDateTime.nullable().optional(),
   })
   .passthrough();

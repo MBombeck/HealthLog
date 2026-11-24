@@ -23,6 +23,7 @@ import type {
 } from "@/generated/prisma/client";
 import type { EncounterPreparationDTO } from "@/lib/encounters/preparation";
 import type { RestoreSkipSummary } from "@/lib/export/restore-skips";
+import type { EncounterSeriesRefDTO } from "@/lib/treatment-series/dto";
 import {
   toPractitionerDTO,
   type PractitionerDTO,
@@ -102,6 +103,12 @@ export interface EncounterDTO {
    * On the list read. Null on every row but a booked upcoming one.
    */
   preparation?: EncounterPreparationDTO | null;
+  /**
+   * The treatment series this visit is one session of, with its place
+   * in it, resolved. Null when it belongs to none. On the list, the detail,
+   * the procedure history and every write response.
+   */
+  series?: EncounterSeriesRefDTO | null;
   createdAt: string;
   updatedAt: string;
 }

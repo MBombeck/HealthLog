@@ -29,7 +29,9 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useEncounters, type Encounter } from "@/hooks/use-encounters";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
+import type { TreatmentSeries } from "@/hooks/use-treatment-series";
 import { EncounterSheet } from "./encounter-sheet";
+import { TreatmentSeriesSection } from "./treatment-series-section";
 import { VisitCard } from "./visit-card";
 
 /** One visit by id, for a link to a visit older than the list reads. */
@@ -53,7 +55,10 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
   // `null` closed, `"new"` create, a row edits it.
   const [editing, setEditing] = useState<Encounter | "new" | null>(null);
   const [session, setSession] = useState(0);
-  const openSheet = (target: Encounter | "new") => {
+  // The series a new visit is the next session of.
+  const [sessionOf, setSessionOf] = useState<TreatmentSeries | null>(null);
+  const openSheet = (target: Encounter | "new", of?: TreatmentSeries) => {
+    setSessionOf(of ?? null);
     setEditing(target);
     setSession((n) => n + 1);
   };
@@ -113,6 +118,14 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
           }
         />
       </InHeaderSlot>
+
+      <TreatmentSeriesSection
+        enabled={enabled}
+        canAdd={canAddVisit}
+        canManage={canManageVisits}
+        onAddSession={(series) => openSheet("new", series)}
+        onOpenSession={openSheet}
+      />
 
       {list.isError ? (
         <QueryErrorCard
@@ -190,6 +203,7 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
           if (!open) setEditing(null);
         }}
         encounter={editing === "new" ? null : editing}
+        series={editing === "new" ? sessionOf : null}
       />
     </section>
   );

@@ -6,9 +6,10 @@
  * "is this carried at both ends?" answers it here, and a reader who greps only
  * the restore ROUTE gets a false negative, because the route delegates.
  *
- * Five models ride: the practitioners, the encounters, and the three link
- * tables between an encounter and a document, a lab result or a condition
- * episode. All five are carried rather than owed. A neighbour on the debt
+ * Six models ride: the practitioners, the treatment series
+ * (`treatment-series-backup.ts`), the encounters, and the three link tables
+ * between an encounter and a document, a lab result or a condition episode.
+ * All six are carried rather than owed. A neighbour on the debt
  * register already says what the alternative costs — the filing between
  * documents and conditions is lost — and a restore that returned visits and
  * documents with nothing between them would be the same loss one layer
@@ -47,6 +48,14 @@ import {
   sealBytesForRestore,
 } from "@/lib/export/sealed-text";
 import { readPractitionerContact } from "@/lib/practitioners/dto";
+import {
+  TREATMENT_SERIES_BACKUP_SELECT,
+  restoreTreatmentSeries,
+  toTreatmentSeriesBackupEntry,
+  type RestoredTreatmentSeries,
+  type TreatmentSeriesBackupEntry,
+} from "@/lib/export/treatment-series-backup";
+
 import {
   recordUnknownKeys,
   type RestoreSkipLog,
@@ -109,6 +118,8 @@ export interface EncounterBackupEntry {
    * it to NULL, with the drop named, only when the file lacks the reminder.
    */
   reminderId: string | null;
+  /** The treatment series this visit is a session of, when it travels. */
+  seriesId: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -123,6 +134,7 @@ export interface EncounterLinkBackupEntry {
 
 export interface VisitsBackupSection {
   practitioners: PractitionerBackupEntry[];
+  treatmentSeries: TreatmentSeriesBackupEntry[];
   encounters: EncounterBackupEntry[];
   encounterDocumentLinks: EncounterLinkBackupEntry[];
   encounterLabLinks: EncounterLinkBackupEntry[];
@@ -131,6 +143,7 @@ export interface VisitsBackupSection {
 
 export interface VisitsBackupCounts {
   practitioners: number;
+  treatmentSeries: number;
   encounters: number;
   encounterLinks: number;
 }
@@ -169,6 +182,7 @@ const ENCOUNTER_BACKUP_SELECT = {
   bodySiteEncrypted: true,
   laterality: true,
   reminderId: true,
+  seriesId: true,
   createdAt: true,
   updatedAt: true,
   deletedAt: true,
@@ -204,6 +218,7 @@ export async function buildVisitsBackupSection(
   prisma: Pick<
     PrismaClient,
     | "practitioner"
+    | "treatmentSeries"
     | "encounter"
     | "encounterDocumentLink"
     | "encounterLabLink"
@@ -216,6 +231,7 @@ export async function buildVisitsBackupSection(
 
   const [
     practitionerRows,
+    seriesRows,
     encounterRows,
     documentLinkRows,
     labLinkRows,
@@ -233,10 +249,17 @@ export async function buildVisitsBackupSection(
               { deletedAt: null },
               { encounters: { some: { deletedAt: null } } },
               { vaccinations: { some: { deletedAt: null } } },
+              { prescribedSeries: { some: { deletedAt: null } } },
+              { performedSeries: { some: { deletedAt: null } } },
             ],
           },
       orderBy: [{ name: "asc" }, { id: "asc" }],
       select: PRACTITIONER_BACKUP_SELECT,
+    }),
+    prisma.treatmentSeries.findMany({
+      where: disasterRecovery ? { userId } : { userId, deletedAt: null },
+      orderBy: [{ startsOn: "asc" }, { id: "asc" }],
+      select: TREATMENT_SERIES_BACKUP_SELECT,
     }),
     prisma.encounter.findMany({
       where: disasterRecovery ? { userId } : { userId, deletedAt: null },
@@ -259,6 +282,8 @@ export async function buildVisitsBackupSection(
       select: ENCOUNTER_CONDITION_LINK_BACKUP_SELECT,
     }),
   ]);
+
+  const exportedSeries = new Set(seriesRows.map((row) => row.id));
 
   return {
     practitioners: practitionerRows.map((row) => ({
@@ -308,6 +333,9 @@ export async function buildVisitsBackupSection(
         ? { deletedAt: row.deletedAt?.toISOString() ?? null }
         : {}),
     })),
+    treatmentSeries: seriesRows.map((row) =>
+      toTreatmentSeriesBackupEntry(row, disasterRecovery),
+    ),
     encounters: encounterRows.map((row) => ({
       id: row.id,
       occurredAt: row.occurredAt.toISOString(),
@@ -336,6 +364,10 @@ export async function buildVisitsBackupSection(
           }),
       laterality: row.laterality,
       reminderId: row.reminderId,
+      // Named only when the series travels too (a portable file leaves a
+      // deleted one out), so a restore never reports it as dropped.
+      seriesId:
+        row.seriesId && exportedSeries.has(row.seriesId) ? row.seriesId : null,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       ...(disasterRecovery
@@ -366,6 +398,7 @@ export function countVisitsBackupSection(
 ): VisitsBackupCounts {
   return {
     practitioners: section.practitioners.length,
+    treatmentSeries: section.treatmentSeries.length,
     encounters: section.encounters.length,
     encounterLinks:
       section.encounterDocumentLinks.length +
@@ -377,6 +410,7 @@ export function countVisitsBackupSection(
 /** Counts the visit restore wiped, for the audit trail. */
 export interface VisitsRestoreCleared {
   practitioners: number;
+  treatmentSeries: number;
   encounters: number;
   encounterLinks: number;
 }
@@ -391,6 +425,8 @@ export interface VisitsRestoreCleared {
  */
 export interface VisitsRestoreInput {
   practitioners: RestoredPractitioner[];
+  /** Absent in a file written before the series existed. */
+  treatmentSeries?: RestoredTreatmentSeries[];
   encounters: RestoredEncounter[];
   encounterDocumentLinks: EncounterLinkBackupEntry[];
   encounterLabLinks: EncounterLinkBackupEntry[];
@@ -443,6 +479,7 @@ export type RestoredEncounter = Pick<
       | "bodySite"
       | "laterality"
       | "reminderId"
+      | "seriesId"
     >
   > & { deletedAt?: string | null };
 
@@ -493,6 +530,9 @@ export async function restoreVisitsData(
     (await tx.encounterConditionLink.deleteMany({ where: { userId: ownerId } }))
       .count;
   const clearedEncounters = await tx.encounter.deleteMany({
+    where: { userId: ownerId },
+  });
+  const clearedSeries = await tx.treatmentSeries.deleteMany({
     where: { userId: ownerId },
   });
   const clearedPractitioners = await tx.practitioner.deleteMany({
@@ -560,6 +600,18 @@ export async function restoreVisitsData(
   const restoredReminders = new Set(reminderRows.map((row) => row.id));
   const droppedReminders: string[] = [];
 
+  // The treatment series, after the address book and the conditions they name
+  // and before the visits that name them.
+  const restoredSeries = await restoreTreatmentSeries(
+    tx,
+    ownerId,
+    payload.treatmentSeries ?? [],
+    restoredPractitioners,
+    skips,
+    unopened,
+  );
+  const droppedSeries: string[] = [];
+
   if (payload.encounters.length > 0) {
     await tx.encounter.createMany({
       data: payload.encounters.map((entry) => {
@@ -577,6 +629,13 @@ export async function restoreVisitsData(
             : null;
         if (entry.reminderId && reminderId === null) {
           droppedReminders.push(entry.reminderId);
+        }
+        const seriesId =
+          entry.seriesId && restoredSeries.has(entry.seriesId)
+            ? entry.seriesId
+            : null;
+        if (entry.seriesId && seriesId === null) {
+          droppedSeries.push(entry.seriesId);
         }
         return {
           id: entry.id,
@@ -607,6 +666,7 @@ export async function restoreVisitsData(
           ),
           laterality: entry.laterality ?? null,
           reminderId,
+          seriesId,
           createdAt: new Date(entry.createdAt),
           updatedAt: new Date(entry.updatedAt),
           deletedAt: entry.deletedAt ? new Date(entry.deletedAt) : null,
@@ -626,6 +686,12 @@ export async function restoreVisitsData(
     "visitReference",
     [...new Set(droppedReminders)],
     droppedReminders,
+  );
+  recordUnknownKeys(
+    skips,
+    "visitReference",
+    [...new Set(droppedSeries)],
+    droppedSeries,
   );
   recordUnknownKeys(skips, "visitCiphertext", unopened, unopened);
 
@@ -736,6 +802,7 @@ export async function restoreVisitsData(
 
   return {
     practitioners: clearedPractitioners.count,
+    treatmentSeries: clearedSeries.count,
     encounters: clearedEncounters.count,
     encounterLinks: clearedLinks,
   };

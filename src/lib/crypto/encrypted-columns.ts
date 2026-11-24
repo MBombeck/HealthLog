@@ -464,6 +464,9 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // v1.39.1 — where on the body a procedure was done. The side beside it
   // (`laterality`) stays plaintext: a side alone says nothing.
   { model: "Encounter", field: "bodySiteEncrypted", kind: "bytes" },
+  // A treatment series' title and note; its count and window stay plaintext.
+  { model: "TreatmentSeries", field: "titleEncrypted", kind: "bytes" },
+  { model: "TreatmentSeries", field: "noteEncrypted", kind: "bytes" },
   { model: "Practitioner", field: "noteEncrypted", kind: "bytes" },
   // v1.39.4 — the practice's phone number and address. The name and the
   // specialty stay plaintext: the picker searches and sorts on them.
@@ -744,6 +747,7 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "SeizureTypeProfile",
   "SymptomDefinition",
   "SymptomEvent",
+  "TreatmentSeries",
   "User",
   "UserHealthProfile",
   "VaccinationRecord",

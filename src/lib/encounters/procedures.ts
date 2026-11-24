@@ -17,6 +17,7 @@
  * The search and the facet grouping are pure functions, exported for the unit
  * test, and the route is a thin wrapper over `loadProcedureHistory`.
  */
+import { loadEncounterSeriesRefs } from "@/lib/treatment-series/service";
 import type { Laterality, Prisma } from "@/generated/prisma/client";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { defaultLocale, locales, type Locale } from "@/lib/i18n/config";
@@ -173,17 +174,25 @@ export async function loadProcedureHistory(
     matchesProcedureQuery(dto, query, terms),
   );
 
-  const links = await loadEncounterLinksForMany(
-    tx,
-    userId,
-    matching.map(({ row }) => row.id),
-    options.visible,
-  );
+  const [links, seriesRefs] = await Promise.all([
+    loadEncounterLinksForMany(
+      tx,
+      userId,
+      matching.map(({ row }) => row.id),
+      options.visible,
+    ),
+    loadEncounterSeriesRefs(
+      tx,
+      userId,
+      matching.map(({ row }) => row),
+    ),
+  ]);
 
   return {
     procedures: matching.map(({ row, dto }) => ({
       ...dto,
       links: links.get(row.id),
+      series: seriesRefs.get(row.id) ?? null,
     })),
     bodySites: groupBodySites(decrypted.map(({ dto }) => dto)),
     total: decrypted.length,

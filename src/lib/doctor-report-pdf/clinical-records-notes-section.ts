@@ -18,6 +18,7 @@ import {
   type DoctorReportPdfRenderContext,
 } from "./render-context";
 import { withLabUnit } from "@/lib/labs/dimensionless";
+import { drawTreatmentSeriesTable } from "./treatment-series-section";
 
 export function buildClinicalRecordsNotesSection(
   context: DoctorReportPdfRenderContext,
@@ -324,6 +325,10 @@ export function buildClinicalRecordsNotesSection(
       (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
         .finalY + 8;
   }
+
+  // The treatment series the window touched, under the visits they are made
+  // of and on the same leaf (`treatment-series-section.ts`).
+  y = drawTreatmentSeriesTable(context, y);
 
   // The surgical history. Reference data (not time-windowed), populated when
   // the SURGICAL_HISTORY leaf is selected AND a procedure happened. Oldest
