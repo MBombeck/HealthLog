@@ -123,8 +123,8 @@ export async function getValidToken(
 }
 
 /**
- * Incremental overlap (ms) under `lastSyncedAt`, our wall clock at the end of
- * the last good run (it advances even on a 200-with-0, F-SYNC-1). It absorbs
+ * Incremental overlap (ms) under `lastSyncedAt`, our clock when the last good
+ * run began its read, not its end (advances even on a 200-with-0). It absorbs
  * the skew to Withings' clock and a group committed while that run read.
  */
 export const WITHINGS_INCREMENTAL_OVERLAP_MS = 10 * 60 * 1000;
@@ -468,7 +468,7 @@ export async function syncUserMeasurements(
   } else {
     await prisma.withingsConnection.update({
       where: { userId },
-      data: { lastSyncedAt: new Date() },
+      data: { lastSyncedAt: now },
     });
   }
 

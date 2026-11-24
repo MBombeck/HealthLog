@@ -138,13 +138,15 @@ async function seedSpread(opts: {
   unit: string;
   /** Prefix of a per-row external id; none when omitted. */
   externalIdPrefix?: string;
+  /** The rows' source; GOOGLE_HEALTH when omitted. */
+  source?: "GOOGLE_HEALTH" | "APPLE_HEALTH";
 }): Promise<void> {
   await prisma.$executeRawUnsafe(
     `INSERT INTO measurements (
        id, user_id, type, value, unit, source, measured_at, external_id,
        created_at, updated_at, sync_version)
      SELECT $1 || g, $2, $3::measurement_type, ${opts.valueSql}, $4,
-       'GOOGLE_HEALTH'::measurement_source,
+       $9::measurement_source,
        ($5::timestamptz AT TIME ZONE 'UTC')
          + (g * ($6::double precision / $7::int)) * interval '1 millisecond',
        CASE WHEN $8::text IS NULL THEN NULL ELSE $8::text || g END,
@@ -158,6 +160,7 @@ async function seedSpread(opts: {
     opts.to.getTime() - opts.from.getTime(),
     opts.count,
     opts.externalIdPrefix ?? null,
+    opts.source ?? "GOOGLE_HEALTH",
   );
 }
 
@@ -210,10 +213,12 @@ beforeAll(async () => {
       unit: "bpm",
     });
   }
-  // Yesterday's active energy, a reading every eleven seconds.
+  // Yesterday's active energy, a reading every eleven seconds, as the phone
+  // writes per-sample energy (the cumulative day profile reads Apple samples).
   const y = localDayWindow(YESTERDAY, TZ);
   await seedSpread({
     userId: DENSE,
+    source: "APPLE_HEALTH",
     type: "ACTIVE_ENERGY_BURNED",
     idPrefix: "e-",
     from: y.dayStart,

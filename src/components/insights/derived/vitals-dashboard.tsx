@@ -1,13 +1,7 @@
 "use client";
 
-import { useMemo, type ComponentProps, type ReactNode } from "react";
-import {
-  Footprints,
-  Gauge,
-  HeartPulse,
-  Scale,
-  type LucideIcon,
-} from "lucide-react";
+import { useMemo, type ReactNode } from "react";
+import { Footprints, Gauge, HeartPulse, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,13 +13,22 @@ import {
   MEASUREMENT_TYPE_ICONS,
   MEASUREMENT_TYPE_LABEL_KEYS,
 } from "@/components/measurements/measurement-list-meta";
-import { TileHeader } from "@/components/insights/tile-header";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SparklineDeltaTile } from "./sparkline-delta-tile";
 import { LearnMoreLink } from "@/components/ui/learn-more-link";
-import { CoverageMeter } from "./coverage-meter";
-import { InfoPopover } from "@/components/ui/info-popover";
 import { METRIC_PROVENANCE } from "./standards";
+import {
+  BuildingTile,
+  MetricProvenance,
+  tileVisible,
+  type TileProps,
+} from "./tile-parts";
+import {
+  CUMULATIVE_TILE_LAYOUT_ID,
+  SameTimeBaselineTile,
+  hasRenderableSameTime,
+  sameTimeSubtitleKey,
+} from "./same-time-tile";
 import { type DerivedBatchRead } from "./use-derived-metric";
 import {
   SECTION_VITALS,
@@ -33,7 +36,6 @@ import {
   SECTION_CUMULATIVE,
   type DashboardDerived,
 } from "./use-dashboard-derived";
-import { SAME_TIME_BASELINE_MIN_HISTORY_DAYS } from "@/lib/insights/derived/registry";
 import { resolveTileLayout, type InsightsLayout } from "@/lib/insights-layout";
 // Type-only — the compute payloads never drag the server graph into the bundle.
 import type { VitalsBaselineValue } from "@/lib/insights/derived/baseline";
@@ -42,8 +44,6 @@ import type { VascularAgeDeltaValue } from "@/lib/insights/derived/vascular-age"
 import type { HrvBalanceValue } from "@/lib/insights/derived/hrv-balance";
 import type { BmiValue } from "@/lib/insights/derived/bmi";
 import type { SixMinuteWalkValue } from "@/lib/insights/derived/six-minute-walk";
-import type { SameTimeBaselineValue } from "@/lib/insights/derived/same-time-baseline";
-import type { DerivedProvenance } from "@/lib/insights/derived/types";
 import { TrendTile } from "@/components/ui/trend-tile";
 
 /**
@@ -123,31 +123,9 @@ const MOBILITY_TILE_LAYOUT_ID: Record<string, string> = {
   WRIST_TEMPERATURE: "wrist-temperature",
 };
 
-/** Same-time-baseline `MeasurementType` → layout tile id (routed slug). */
-const CUMULATIVE_TILE_LAYOUT_ID: Record<string, string> = {
-  ACTIVITY_STEPS: "steps",
-  ACTIVE_ENERGY_BURNED: "active-energy",
-  WALKING_RUNNING_DISTANCE: "walking-distance",
-  FLIGHTS_CLIMBED: "flights-climbed",
-};
-
-/**
- * v1.15.11 — `true` when the layout marks this tile id visible (or the
- * layout does not enumerate the id, in which case the tile is always-on). A
- * `null` layout (caller passed none) is treated as everything-visible so the
- * default behaviour is unchanged.
- */
 /** The reader's unit for a tile whose value has no unit preference. */
 function unitLabel(type: string, t: (key: string) => string): string {
   return measurementUnitLabel(type, getUnitForType(type), t);
-}
-
-function tileVisible(
-  layout: InsightsLayout | undefined,
-  tileId: string,
-): boolean {
-  if (!layout) return true;
-  return resolveTileLayout(layout, tileId).visible;
 }
 
 /**
@@ -158,46 +136,6 @@ function tileVisible(
 function tileOrder(layout: InsightsLayout | undefined, tileId: string): number {
   if (!layout) return 0;
   return resolveTileLayout(layout, tileId).order;
-}
-
-/**
- * The (i) info-tip trigger for one derived metric, wired from the map.
- * `provenance` (inputs / source / window / asOf) isn't rendered here — the
- * shared `InfoPopover` carries only the method/caveat + cited standard,
- * mirroring what `ProvenanceExplainer` itself renders today — but the param
- * is kept so every call site (which already reads `data.provenance` off the
- * derived batch) doesn't need touching if a future pass restores the detail.
- */
-function MetricProvenance({
-  metric,
-}: {
-  metric: keyof typeof METRIC_PROVENANCE;
-  provenance: DerivedProvenance;
-}) {
-  const { t } = useTranslations();
-  const meta = METRIC_PROVENANCE[metric];
-  const method = (
-    <>
-      {meta.caveatKey ? (
-        <span className="text-warning block font-medium">
-          {t(meta.caveatKey)}
-        </span>
-      ) : null}
-      {t(meta.methodKey)}
-    </>
-  );
-  return (
-    <InfoPopover
-      content={method}
-      link={meta.standard}
-      label={t("insights.derived.vitals.infoLabel")}
-    />
-  );
-}
-
-interface TileProps {
-  read: DerivedBatchRead;
-  isLoading: boolean;
 }
 
 /**
@@ -301,108 +239,6 @@ function BaselineTile({
           // without the repetition or the header-row squeeze that clipped the
           // cardio-fitness heading.
           <MetricProvenance metric={metric} provenance={data.provenance} />
-        }
-        footer={<LearnMoreLink concept={tileId} />}
-      />
-    </div>
-  );
-}
-
-/**
- * v1.34.0 — the same-time baseline tile for one cumulative metric.
- *
- * Every other tile in this grid frames a latest reading against a band. A
- * cumulative metric has no latest reading, so this one frames today's running
- * total against the person's own typical total at the same local hour, and the
- * sparkline carries both trajectories on one pair of axes rather than one.
- *
- * The states are the states the rest of the grid already has, with one
- * addition that matters more here than anywhere else: a baseline built from
- * three days is not a baseline, so below the floor the tile says it is still
- * learning and shows how far along it is. It never renders a number it does
- * not have the history for.
- */
-function SameTimeBaselineTile({
-  type,
-  read,
-  isLoading,
-}: TileProps & {
-  type: string;
-}) {
-  const { t } = useTranslations();
-  const fmt = useFormatters();
-  const unitDisplay = useUnitDisplay();
-  const data = read<SameTimeBaselineValue>({
-    metric: "SAME_TIME_BASELINE",
-    type,
-  });
-
-  if (isLoading || !data) return null;
-
-  const Icon = MEASUREMENT_TYPE_ICONS[type] ?? Footprints;
-  const labelKey = MEASUREMENT_TYPE_LABEL_KEYS[type];
-  const label = labelKey ? t(labelKey) : type;
-  const tileId = CUMULATIVE_TILE_LAYOUT_ID[type] ?? type;
-
-  if (data.status === "insufficient") {
-    // Absent, not gated. No sub-daily rows today (every daily-total source —
-    // Fitbit, Withings, Polar — is permanently here), an unsupported type, or
-    // a day whose first hour has not finished yet. None of these is a state
-    // the user can act on, so the tile does not render at all rather than
-    // occupying the grid with an apology.
-    if (data.reason !== "learning_usual_day") return null;
-    return (
-      <BuildingTile
-        slot="same-time-tile"
-        metric={tileId}
-        state="learning"
-        icon={Icon}
-        title={label}
-        messageSlot="same-time-tile-learning"
-        message={t("insights.derived.sameTime.learning", {
-          count: data.coverage.historyDays,
-          target: SAME_TIME_BASELINE_MIN_HISTORY_DAYS,
-        })}
-        coverage={data.coverage}
-      />
-    );
-  }
-
-  const v = data.value!;
-  const unit = unitDisplay.unitFor(type);
-  const toShown = (raw: number) => unitDisplay.toDisplay(type, raw);
-  // A transformed distance reads in kilometres and wants a decimal; a step,
-  // flight or kilocalorie count is a whole number and a decimal on it is noise.
-  const precision = unitDisplay.isTransformed(type) ? 1 : 0;
-  // The comparison is anchored to the END of `asOfHour`, which is the top of
-  // the following hour on the clock. 24-hour form, built from the number the
-  // server already resolved — deriving a locale-formatted instant on the
-  // client from a server-side local hour is how a hydration mismatch starts.
-  const byClock = `${String(v.asOfHour + 1).padStart(2, "0")}:00`;
-
-  return (
-    <div data-slot="same-time-tile" data-metric={tileId} data-state="ok">
-      <SparklineDeltaTile
-        label={label}
-        value={toShown(v.todayValue)}
-        unit={unit}
-        icon={Icon}
-        series={v.todayCurve.map(toShown)}
-        comparisonSeries={v.typicalCurve.map(toShown)}
-        comparisonLabel={t("insights.derived.sameTime.comparisonLabel")}
-        delta={unitDisplay.toDisplayDelta(type, v.delta)}
-        directionSentiment="up-good"
-        precision={precision}
-        framing={t("insights.derived.sameTime.framing", {
-          time: byClock,
-          typical: fmt.number(toShown(v.typicalValue), precision),
-          unit,
-        })}
-        provenance={
-          <MetricProvenance
-            metric="SAME_TIME_BASELINE"
-            provenance={data.provenance}
-          />
         }
         footer={<LearnMoreLink concept={tileId} />}
       />
@@ -612,46 +448,6 @@ function BmiTile({ read, isLoading }: TileProps) {
 }
 
 /**
- * A tile whose band is still being built: the header, one sentence saying how
- * far the history has come, and the coverage meter. The baseline, same-time
- * and HRV tiles each spelled this out by hand.
- */
-function BuildingTile({
-  slot,
-  metric,
-  state,
-  icon,
-  title,
-  message,
-  messageSlot,
-  coverage,
-}: {
-  slot: string;
-  metric: string;
-  state: string;
-  icon: LucideIcon;
-  title: string;
-  message: string;
-  messageSlot: string;
-  coverage: ComponentProps<typeof CoverageMeter>["coverage"];
-}) {
-  return (
-    <TrendTile
-      data-slot={slot}
-      data-metric={metric}
-      data-state={state}
-      className="gap-3"
-    >
-      <TileHeader icon={icon} title={title} titleAs="h2" reserveLines={2} />
-      <p className="text-muted-foreground text-sm" data-slot={messageSlot}>
-        {message}
-      </p>
-      <CoverageMeter coverage={coverage} />
-    </TrendTile>
-  );
-}
-
-/**
  * A loading placeholder occupying the resolved tile footprint so the grid
  * reserves its final height and the real tiles drop in without a layout
  * shift. Mirrors the SparklineDeltaTile geometry (card + label row + value
@@ -766,29 +562,6 @@ function hasRenderableMobility(
     }
   }
 
-  return false;
-}
-
-/**
- * Whether the batch holds at least one same-time tile worth painting. Mirrors
- * the tile's own gate exactly: only an `ok` value or the honest "still
- * learning" state counts, so the section heading never strands over a grid
- * that turned out to be empty (every daily-total source lands there).
- */
-function hasRenderableSameTime(
-  read: DerivedBatchRead,
-  layout: InsightsLayout | undefined,
-): boolean {
-  for (const type of SECTION_CUMULATIVE) {
-    if (!tileVisible(layout, CUMULATIVE_TILE_LAYOUT_ID[type] ?? type)) continue;
-    const data = read<SameTimeBaselineValue>({
-      metric: "SAME_TIME_BASELINE",
-      type,
-    });
-    if (!data) continue;
-    if (data.status === "ok") return true;
-    if (data.reason === "learning_usual_day") return true;
-  }
   return false;
 }
 
@@ -990,7 +763,7 @@ export function VitalsDashboard({ batch, layout, className }: DashboardProps) {
           <SectionHeading
             icon={Footprints}
             title={t("insights.derived.sameTime.sectionTitle")}
-            subtitle={t("insights.derived.sameTime.sectionSubtitle")}
+            subtitle={t(sameTimeSubtitleKey(read, layout))}
           />
           <div
             data-slot="vitals-same-time-grid"

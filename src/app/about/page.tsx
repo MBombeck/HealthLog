@@ -84,7 +84,7 @@ export default async function AboutPage() {
 
   return (
     <div className="bg-background text-foreground min-h-dvh">
-      <header className="border-border/60 bg-background/80 sticky top-0 z-10 border-b pt-[env(safe-area-inset-top)] backdrop-blur">
+      <header className="border-border/60 bg-background/80 sticky top-0 z-10 border-b pt-(--safe-area-top) backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 md:px-6">
           <Link
             href="/"

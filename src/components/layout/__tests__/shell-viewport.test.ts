@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { readSource } from "@/__tests__/helpers/source-files";
 
 import {
+  MAIN_CONTENT_WRAPPER_CLASS,
   MAIN_SCROLL_CLASS,
   RAIL_ACCOUNT_BAND,
   RAIL_WIDTH_COLLAPSED,
@@ -25,19 +26,7 @@ const shellSource = () =>
     "SHELL_ROOT_CLASS",
     'data-slot="main-content-wrapper"',
   ]);
-/** The page frame's class list: the one `mx-auto max-w-screen-xl` literal. */
-const MAIN_CONTENT_WRAPPER_CLASS =
-  /"([^"]*\bmx-auto max-w-screen-xl\b[^"]*)"/.exec(shellSource())![1];
 const classes = (value: string) => value.split(/\s+/).filter(Boolean);
-
-/** Tailwind spacing step or `[calc(env(...)+Nrem)]` offset, in rem. */
-function rem(token: string): number {
-  const calc = /\+(\d+(?:\.\d+)?)rem\)\]$/.exec(token);
-  if (calc) return Number(calc[1]);
-  const step = /-(\d+(?:\.\d+)?)$/.exec(token);
-  if (step) return Number(step[1]) / 4;
-  throw new Error(`no length in ${token}`);
-}
 
 describe("the shell takes the window's edges", () => {
   it("takes its height from the initial containing block, never from a viewport unit", () => {
@@ -56,7 +45,9 @@ describe("the shell takes the window's edges", () => {
 
   it("AuthShell renders that box and flags the document for it", () => {
     const source = shellSource();
-    expect(source).toContain("<div className={SHELL_ROOT_CLASS}>");
+    expect(source).toContain(
+      '<div data-slot="app-shell" className={SHELL_ROOT_CLASS}>',
+    );
     expect(source).not.toMatch(/shell-safe-area flex h-dvh/);
     expect(source).toMatch(
       /useDocumentScrollMode\(\s*isBodyScrolled \? "body" : rendersAppShell \? "shell" : null/,
@@ -72,73 +63,139 @@ describe("the home-indicator inset has one source", () => {
   it("is env() behind one property, which every owner of the bottom edge reads", () => {
     const css = readSource("src/app/globals.css", "--safe-area-bottom");
     expect(css).toMatch(
-      /:root\s*\{\s*--safe-area-bottom:\s*env\(safe-area-inset-bottom,\s*0px\);/,
+      /--safe-area-bottom:\s*env\(safe-area-inset-bottom,\s*0px\);/,
     );
     for (const [path, anchor] of [
       ["src/components/layout/sidebar-nav.tsx", "export function SidebarNav"],
       ["src/components/layout/bottom-nav.tsx", 'data-slot="bottom-nav"'],
-      ["src/components/insights/layout-coach-fab.tsx", 'data-slot="coach-fab"'],
     ] as const) {
       expect(readSource(path, anchor)).toContain("--safe-area-bottom");
     }
     expect(MAIN_SCROLL_CLASS).not.toContain("safe-area-inset-bottom");
-    // Where a WKWebView browser keeps the page out of the strip over the
-    // home indicator, it fills it with the root's colour: the content's.
-    expect(css).toMatch(
-      /html\[data-scroll="shell"\]\s*\{\s*background-color:\s*var\(--background\);\s*\}/,
-    );
   });
 });
 
-describe("the bottom edge is cleared in both shells", () => {
+/** The value a `:root` token is declared with, per shell. */
+function tokens(css: string) {
+  const start = css.indexOf("  :root {\n    --safe-area-top:");
+  const block = css.slice(start, css.indexOf("\n  }\n", start));
+  const desktopAt = block.indexOf("@variant shell-desktop");
+  const read = (part: string) =>
+    Object.fromEntries(
+      [...part.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [
+        m[1],
+        m[2].replace(/\s+/g, " ").trim(),
+      ]),
+    );
+  const phone = read(block.slice(0, desktopAt));
+  return { phone, desktop: { ...phone, ...read(block.slice(desktopAt)) } };
+}
+
+function rems(value: string, t: Record<string, string>): number {
+  // Lengths in rem only; the safe areas count as zero (they add to both
+  // sides of every comparison below alike).
+  let resolved = value;
+  for (let i = 0; i < 8 && resolved.includes("var("); i += 1) {
+    resolved = resolved.replace(/var\((--[\w-]+)\)/g, (_, name: string) =>
+      name.startsWith("--safe-area-") ? "0rem" : `(${t[name]})`,
+    );
+  }
+  const expr = resolved
+    .replace(/calc\(/g, "(")
+    .replace(/(\d+(?:\.\d+)?)rem/g, "$1")
+    .replace(/0px/g, "0");
+  expect(expr).toMatch(/^[\d.+\-*/()\s]+$/);
+  return Function(`return ${expr}`)() as number;
+}
+
+describe("the bottom edge is cleared in both shells, from one set of tokens", () => {
+  const css = readSource("src/app/globals.css", "--floating-action-clearance");
+  const shells = tokens(css);
   const fab = readSource(
     "src/components/insights/layout-coach-fab.tsx",
     'data-slot="coach-fab"',
   );
-  const fabSize = rem(/\bsize-(\d+)\b/.exec(fab)![0]);
-  const phoneFabBottom = rem(
-    /(?<![\w:-])bottom-\[calc\(var\(--safe-area-bottom\)\+[\d.]+rem\)\]/.exec(
-      fab,
-    )![0],
+
+  it("main clears the bottom chrome and the frame clears the floating button", () => {
+    expect(classes(MAIN_SCROLL_CLASS)).toContain("pb-(--chrome-bottom)");
+    expect(classes(MAIN_SCROLL_CLASS).filter((c) => /pb-/.test(c))).toEqual([
+      "pb-(--chrome-bottom)",
+    ]);
+    expect(MAIN_CONTENT_WRAPPER_CLASS).toBe(
+      classes(MAIN_CONTENT_WRAPPER_CLASS).join(" "),
+    );
+    expect(
+      classes(MAIN_CONTENT_WRAPPER_CLASS).filter((c) => /pb-/.test(c)),
+    ).toEqual(["pb-(--floating-action-clearance)"]);
+    expect(shellSource()).toContain(": MAIN_CONTENT_WRAPPER_CLASS");
+  });
+
+  it("the Coach button stands on the floating-action tokens", () => {
+    expect(fab).toContain("bottom-(--floating-action-bottom)");
+    expect(fab).toContain("size-(--floating-action-size)");
+  });
+
+  it.each(["phone", "desktop"] as const)(
+    "the last line scrolls clear of the Coach button in the %s shell",
+    (shell) => {
+      const t = shells[shell];
+      // Measured from the window's bottom edge: the scroller's padding plus
+      // the frame's against the top of the button.
+      const pageEnd =
+        rems(t["--chrome-bottom"], t) +
+        rems(t["--floating-action-clearance"], t);
+      const fabTop =
+        rems(t["--floating-action-bottom"], t) +
+        rems(t["--floating-action-size"], t);
+      expect(pageEnd - fabTop).toBeGreaterThanOrEqual(1);
+    },
   );
-  const desktopFabBottom = rem(
-    /shell-desktop:bottom-\[calc\(var\(--safe-area-bottom\)\+[\d.]+rem\)\]/.exec(
-      fab,
-    )![0],
-  );
-  const wrapper = classes(MAIN_CONTENT_WRAPPER_CLASS);
-  const main = classes(MAIN_SCROLL_CLASS);
 
-  it("the desktop shell's main keeps the home indicator off the last line", () => {
-    expect(main).not.toContain("shell-desktop:pb-0");
-    expect(main).toContain("shell-desktop:pb-(--safe-area-bottom)");
+  it("the phone shell has a bar, the desktop shell none", () => {
+    expect(rems(shells.phone["--bottom-bar-height"], shells.phone)).toBe(4);
+    expect(rems(shells.desktop["--bottom-bar-height"], shells.desktop)).toBe(0);
   });
 
-  it("the last line scrolls clear of the Coach button in the phone shell", () => {
-    const mainPad = Number(
-      /^pb-\[calc\((\d+(?:\.\d+)?)rem\+var\(--safe-area-bottom\)\)\]$/.exec(
-        main.find((c) => c.startsWith("pb-[calc("))!,
-      )![1],
+  it("the sub-shell floor follows the frame's padding", () => {
+    expect(SUB_SHELL_GRID_FLOOR).toBe(
+      "md:min-h-[calc(100dvh-5.5rem-var(--floating-action-clearance))]",
     );
-    const wrapperPad = rem(wrapper.find((c) => /^pb-\d+$/.test(c))!);
-    expect(mainPad + wrapperPad).toBeGreaterThan(phoneFabBottom + fabSize);
+  });
+});
+
+describe("the strip beyond the layout is painted, never covered", () => {
+  const css = readSource("src/app/globals.css", "--chrome-bottom-surface");
+  const shells = tokens(css);
+
+  it("the root paints the colour of what owns the bottom edge", () => {
+    expect(css).toMatch(
+      /html\[data-scroll="shell"\]\s*\{\s*background-color:\s*var\(--chrome-bottom-surface\);\s*\}/,
+    );
+    // The phone shell's bottom edge is the bar's; the bar is `bg-card`.
+    expect(shells.phone["--chrome-bottom-surface"]).toBe("var(--card)");
+    expect(
+      readSource(
+        "src/components/layout/bottom-nav.tsx",
+        'data-slot="bottom-nav"',
+      ),
+    ).toMatch(/data-slot="bottom-nav"[\s\S]*?className="bg-card /);
+    expect(shells.desktop["--chrome-bottom-surface"]).toBe("var(--background)");
   });
 
-  it("the last line scrolls clear of the Coach button in the desktop shell", () => {
-    const wrapperPad = rem(
-      wrapper.find((c) => /^shell-desktop:pb-\d+$/.test(c))!,
+  it("the shell box paints the page colour itself", () => {
+    const block = /\.shell-safe-area\s*\{([\s\S]*?)\n  \}/.exec(css)![1];
+    expect(block).toMatch(
+      /background:\s*linear-gradient\(var\(--card\), var\(--card\)\) top \/ 100%\s+var\(--safe-area-top\) no-repeat var\(--background\);/,
     );
-    expect(wrapperPad).toBeGreaterThan(desktopFabBottom + fabSize);
   });
 
-  it("the sub-shell floor follows the desktop shell's padding", () => {
-    // Top bar 4rem + pt-6 + the wrapper's bottom padding.
-    const desktopPad = rem(
-      wrapper.find((c) => /^shell-desktop:pb-\d+$/.test(c))!,
+  it("the shell box takes the window's edges and no correction moves it", () => {
+    // 1.48.4 extended the shell and the bar over the strip and looped on
+    // iOS 27 (#1426). Geometry stays on the initial containing block.
+    expect(SHELL_ROOT_CLASS).toBe(
+      "shell-safe-area absolute inset-0 flex flex-col",
     );
-    expect(SUB_SHELL_GRID_FLOOR).toContain(
-      `shell-desktop:min-h-[calc(100dvh-${4 + 1.5 + desktopPad}rem)]`,
-    );
+    expect(css).not.toMatch(/--viewport-bottom/);
   });
 });
 

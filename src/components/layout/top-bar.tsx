@@ -68,8 +68,12 @@ export function TopBar() {
       // Height + bottom border come from `SHELL_HEADER_BAND`, which the
       // sidebar logo band reads too, so the two borders draw one
       // continuous line. Never restate a height here.
+      // Opaque `bg-card`: nothing scrolls under the bar (it sits above
+      // `<main>`, not in it), and a translucent card over the page colour
+      // came out a shade lighter than the status-bar band above it and the
+      // rail's logo band beside it, both plain `--card`.
       className={cn(
-        "bg-card/80 border-border sticky top-0 z-40 flex items-center justify-between px-4 backdrop-blur-md md:px-6",
+        "bg-card border-border sticky top-0 z-40 flex items-center justify-between px-4 md:px-6",
         SHELL_HEADER_BAND,
       )}
       // The status-bar inset of the installed app is the shell's

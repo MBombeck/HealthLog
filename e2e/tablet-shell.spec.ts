@@ -538,8 +538,9 @@ for (const vp of INSET_VIEWPORTS) {
           column?.lastElementChild?.getBoundingClientRect().bottom ?? 0,
         barBottom: bar.getBoundingClientRect().bottom,
         barPad: parseFloat(getComputedStyle(bar).paddingBottom),
+        barColour: getComputedStyle(bar).backgroundColor,
         // What a WKWebView browser paints where it keeps the page out: the
-        // root's own background.
+        // root's own background, the colour of what owns the bottom edge.
         root: getComputedStyle(document.documentElement).backgroundColor,
         body: getComputedStyle(document.body).backgroundColor,
       };
@@ -558,7 +559,7 @@ for (const vp of INSET_VIEWPORTS) {
       expect(owners).toContain("bar");
       expect(edge.barBottom).toBe(edge.innerHeight);
       expect(edge.barPad).toBe(HOME_INDICATOR);
-      expect(edge.root).toBe(edge.body);
+      expect(edge.root).toBe(edge.barColour);
     }
 
     // At the end of the page, the last line stands clear of the inset, the

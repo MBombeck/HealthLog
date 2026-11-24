@@ -45,10 +45,19 @@ describe("width stability — auth-shell scroll container", () => {
     // Every authenticated surface shares ONE normalised content box. The
     // literal ordering `mx-auto max-w-screen-xl` is the class the shell
     // ships; a duplicate or differently-capped box would reintroduce the
-    // per-route width drift this guard exists to prevent.
-    expect(source).toContain("mx-auto max-w-screen-xl");
-    const occurrences = source.split("mx-auto max-w-screen-xl").length - 1;
-    expect(occurrences).toBe(1);
+    // per-route width drift this guard exists to prevent. The class lives
+    // in `shell-metrics.ts` beside the shell's other boxes; the shell renders
+    // it once.
+    const metrics = readFileSync(
+      join(process.cwd(), "src/components/layout/shell-metrics.ts"),
+      "utf8",
+    );
+    expect(metrics).toMatch(
+      /MAIN_CONTENT_WRAPPER_CLASS =\s*"mx-auto max-w-screen-xl /,
+    );
+    expect(metrics.split("mx-auto max-w-screen-xl").length - 1).toBe(1);
+    expect(source).not.toContain("mx-auto max-w-screen-xl");
+    expect(source.split(": MAIN_CONTENT_WRAPPER_CLASS").length - 1).toBe(1);
   });
 });
 

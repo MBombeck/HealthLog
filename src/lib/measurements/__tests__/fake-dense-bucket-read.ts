@@ -68,6 +68,7 @@ export function makeFakeDenseBucketRead(source: RowSource) {
       dateKey: string;
       timeZone: string;
       bucketMinutes: number;
+      sources?: readonly string[];
     }): Promise<LocalMinuteBucket[]> {
       const { dayStart, dayEnd } = localDayWindow(opts.dateKey, opts.timeZone);
       const rows = (
@@ -79,6 +80,13 @@ export function makeFakeDenseBucketRead(source: RowSource) {
         })
       )
         .filter(isRaw)
+        // A fixture row without a source stands for a sample.
+        .filter(
+          (r) =>
+            !opts.sources ||
+            r.source === undefined ||
+            opts.sources.includes(r.source),
+        )
         .filter(
           (r) => userDayKey(r.measuredAt, opts.timeZone) === opts.dateKey,
         );

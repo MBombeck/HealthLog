@@ -195,22 +195,22 @@ export function BottomNav() {
 
   return (
     <>
-      {/* v1.4.33 — bar height and safe-area defence so the bar can
-          never overlap the last viewport line of scrollable page content.
-          `min-h-16` floors the bar at 64px; `pb-(--safe-area-bottom)`
-          reserves the home-indicator inset on iOS / iPadOS PWA installs;
-          `bg-card` + `border-t` give the bar a clean visual edge so page
-          content that scrolls under the bar is occluded, not bleeding
-          through. */}
-      {/* Side insets: clear of the notch held sideways. Keyboard open: the
-          bar steps aside, not over the field. */}
+      {/* The bar's height is `--bottom-bar-height` and the home indicator
+          under it `--safe-area-bottom` (globals.css), the two that make up
+          `--chrome-bottom`, which `<main>`, the Coach button and the toasts
+          clear. `bg-card` + `border-t` give the bar a clean edge over page
+          content that scrolls under it. Below the bar the document's root
+          paints the same `--card` (`--chrome-bottom-surface`), so a strip an
+          installed iOS app leaves out of its layout reads as part of the
+          bar. Side insets: clear of the notch held sideways. Keyboard open:
+          the bar steps aside, not over the field. */}
       <nav
         aria-label={t("nav.mobileNavigation")}
         data-slot="bottom-nav"
         data-keyboard-hide=""
-        className="bg-card border-border shell-desktop:hidden fixed bottom-0 left-0 z-50 min-h-16 w-full border-t pr-[env(safe-area-inset-right)] pb-(--safe-area-bottom) pl-[env(safe-area-inset-left)] backdrop-blur-md"
+        className="bg-card border-border shell-desktop:hidden fixed bottom-0 left-0 z-50 w-full border-t pr-(--safe-area-right) pb-(--safe-area-bottom) pl-(--safe-area-left)"
       >
-        <div className="mx-auto flex h-16 max-w-lg items-stretch justify-around px-1">
+        <div className="mx-auto flex h-(--bottom-bar-height) max-w-lg items-stretch justify-around px-1">
           {primaryLeft.map(renderPrimary)}
 
           {/* Center capture action — a labeled button (NOT a link) that
@@ -276,7 +276,7 @@ export function BottomNav() {
           // the home-indicator on iPhone-X-class devices.
           // `gap-0`: the grip sits flush above the header, and the grid
           // takes the header's old 16 px gap as its own top padding.
-          className="shell-desktop:hidden mx-auto max-w-md gap-0 rounded-t-xl pb-[calc(env(safe-area-inset-bottom)+1rem)]"
+          className="shell-desktop:hidden mx-auto max-w-md gap-0 rounded-t-xl pb-[calc(var(--safe-area-bottom)+1rem)]"
           data-testid="bottom-nav-more-sheet"
         >
           <SheetHeader>

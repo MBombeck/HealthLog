@@ -4870,7 +4870,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Il tuo totale progressivo di oggi confrontato con la mediana della stessa ora locale nelle ultime quattro settimane, con una banda robusta mediana ± MAD attorno. Contano solo i giorni con abbastanza dettaglio registrato, e nessun confronto viene mostrato finché non ce ne sono almeno quattordici.",
-          "caveat": "Un confronto con la tua storia recente, non un obiettivo. Dice dove si colloca oggi rispetto alla tua abitudine a quest'ora, e nulla sul fatto che quell'abitudine sia quella giusta per te."
+          "caveat": "Un confronto con la tua storia recente, non un obiettivo. Dice dove si colloca oggi rispetto alla tua abitudine a quest'ora, e nulla sul fatto che quell'abitudine sia quella giusta per te.",
+          "methodDailyTotal": "La tua fonte riporta ogni giorno come un unico totale, quindi non c'è un'ora a cui confrontare. Il totale progressivo di oggi, come la fonte l'ha riportato l'ultima volta, è messo a confronto con i tuoi totali giornalieri degli ultimi 14 giorni completi: la tacca ne segna la mediana, la fascia ombreggiata la metà centrale. L'intervallo compare non appena 7 di quei giorni hanno un totale."
         }
       },
       "scores": {
@@ -4912,7 +4913,11 @@
         "sectionSubtitle": "I tuoi totali progressivi rispetto a ciò che per te è abituale a quest'ora",
         "learning": "Sto imparando la tua giornata tipo: {count} di {target, plural, one {# giorno} other {# giorni}}",
         "framing": "Abituale entro le {time}: {typical} {unit}",
-        "comparisonLabel": "La tua giornata tipo"
+        "comparisonLabel": "La tua giornata tipo",
+        "sectionSubtitleDailyTotal": "I tuoi totali progressivi rispetto alla tua giornata intera abituale",
+        "sectionSubtitleMixed": "I tuoi totali progressivi rispetto a ciò che per te è abituale",
+        "dailyFraming": "Giornata intera abituale: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {

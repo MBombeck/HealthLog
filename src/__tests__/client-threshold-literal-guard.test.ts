@@ -258,9 +258,14 @@ const RULES: Rule[] = [
     ],
     allow: {
       "src/components/insights/derived/vitals-dashboard.tsx": {
-        count: 6,
+        count: 5,
         reason:
-          "the six derived re-frame tiles (same-time steps, six-minute walk, fitness age, vascular age, HRV balance, BMI) colour a figure whose good direction is its definition (a longer walk, a younger vascular age, no judgement on BMI), not a person's target; the per-vital baseline tile reads the server's `direction`",
+          "the five derived re-frame tiles (six-minute walk, fitness age, vascular age, HRV balance, BMI) colour a figure whose good direction is its definition (a longer walk, a younger vascular age, no judgement on BMI), not a person's target; the per-vital baseline tile reads the server's `direction`",
+      },
+      "src/components/insights/derived/same-time-tile.tsx": {
+        count: 1,
+        reason:
+          "the hourly same-time tile colours today's running total against the person's own usual curve, where more movement than usual is the definition of ahead, not a target",
       },
     },
   },

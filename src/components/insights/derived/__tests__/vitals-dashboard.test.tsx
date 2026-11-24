@@ -308,4 +308,113 @@ describe("<VitalsDashboard>", () => {
     expect(requestedCoincident).toBe(false);
     expect(html).not.toContain('data-metric="COINCIDENT_DEVIATION"');
   });
+
+  describe("Today so far", () => {
+    const hourly = {
+      mode: "hourly",
+      type: "ACTIVITY_STEPS",
+      unit: "count",
+      timezone: "UTC",
+      dateKey: "2026-06-10",
+      asOfHour: 2,
+      todayValue: 300,
+      typicalValue: 200,
+      typicalLow: 100,
+      typicalHigh: 400,
+      delta: 100,
+      percentOfTypical: 150,
+      band: "within",
+      todayCurve: [0, 100, 300],
+      typicalCurve: [0, 80, 200],
+      baselineDays: 20,
+      windowDays: 28,
+    };
+    const dailyTotal = {
+      mode: "daily_total",
+      type: "FLIGHTS_CLIMBED",
+      unit: "flights",
+      timezone: "UTC",
+      dateKey: "2026-06-10",
+      todayValue: 4,
+      typicalValue: 9,
+      typicalLow: 6,
+      typicalHigh: 12,
+      percentOfTypical: 44,
+      dayRangeReached: "not_yet",
+      source: "GARMIN",
+      updatedAt: "2026-06-10T14:05:00.000Z",
+      baselineDays: 14,
+      windowDays: 14,
+    };
+    const sameTime = (values: Record<string, Resp>) =>
+      mockBatch((token) =>
+        token.metric === "SAME_TIME_BASELINE" && token.type
+          ? (values[token.type] ?? insufficient("no_intraday_today"))
+          : insufficient("no_readings_in_window"),
+      );
+
+    it("renders the day-total form with the usual full day and the update stamp", () => {
+      const html = render(
+        <VitalsDashboard
+          batch={sameTime({ FLIGHTS_CLIMBED: ok(dailyTotal) })}
+        />,
+      );
+      expect(html).toContain('data-mode="daily_total"');
+      expect(html).toContain('data-slot="usual-day-track"');
+      expect(html).toContain('data-reached="not_yet"');
+      expect(html).toContain("Usual full day: 6–12");
+      expect(html).toContain("(Garmin)");
+      expect(html).toContain("Your running totals against your usual full day");
+      // No curve and no "typical by" hour: nothing behind a day total knows it.
+      expect(html).not.toContain('data-slot="sparkline-delta-tile-spark"');
+      expect(html).not.toContain("Typical by");
+    });
+
+    it("keeps the hourly form and its subtitle when every tile compares hours", () => {
+      const html = render(
+        <VitalsDashboard batch={sameTime({ ACTIVITY_STEPS: ok(hourly) })} />,
+      );
+      expect(html).toContain('data-mode="hourly"');
+      expect(html).toContain("Typical by 03:00");
+      expect(html).toContain(
+        "Your running totals against what is usual for you at this hour",
+      );
+    });
+
+    it("names the comparison plainly when both forms sit side by side", () => {
+      const html = render(
+        <VitalsDashboard
+          batch={sameTime({
+            ACTIVITY_STEPS: ok(hourly),
+            FLIGHTS_CLIMBED: ok(dailyTotal),
+          })}
+        />,
+      );
+      expect(html).toContain(
+        "Your running totals against what is usual for you<",
+      );
+    });
+
+    it("shows the day-total learning state against its own floor", () => {
+      const html = render(
+        <VitalsDashboard
+          batch={sameTime({
+            ACTIVITY_STEPS: insufficient("learning_usual_total", 3),
+          })}
+        />,
+      );
+      expect(html).toContain("Learning your usual day: 3 of 7 days");
+    });
+
+    it("hides the section when no day-total reading arrived today", () => {
+      const html = render(
+        <VitalsDashboard
+          batch={sameTime({
+            ACTIVITY_STEPS: insufficient("no_total_today", 14),
+          })}
+        />,
+      );
+      expect(html).not.toContain('data-slot="vitals-same-time"');
+    });
+  });
 });

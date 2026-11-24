@@ -1037,8 +1037,9 @@ test("the timeline page ends where its content does, at every desktop width", as
       expect(m.docSw, where).toBeLessThanOrEqual(m.docCw + 1);
       expect(m.docSh, where).toBeLessThanOrEqual(m.docCh + 1);
       // The shell's own buffer below the last card (the desktop shell's
-      // pb-24 and the top padding), nothing more.
-      expect(m.mainSh, where).toBeLessThanOrEqual(m.contentBottom + 120 + 2);
+      // 6.5rem --floating-action-clearance and the 1.5rem top padding),
+      // nothing more.
+      expect(m.mainSh, where).toBeLessThanOrEqual(m.contentBottom + 128 + 2);
     }
   }
 });

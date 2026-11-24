@@ -20,6 +20,7 @@ import { annotate } from "@/lib/logging/context";
 import { mergeRestingWithProxy } from "@/lib/analytics/resting-pulse";
 import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
 import { readLocalDayMinuteBuckets } from "@/lib/measurements/dense-bucket-read";
+import { CUMULATIVE_SAMPLE_SOURCES } from "@/lib/measurements/intraday-cumulative-profile";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { userDayKey } from "@/lib/tz/format";
 import {
@@ -228,16 +229,16 @@ export async function loadIntradayPulse(
         externalId: true,
       },
     }),
-    // Intraday step buckets exclude the consolidated `stats:` daily totals
-    // (the helper reads raw rows only), or a single day-sum row would dump
-    // the whole day's steps into one bucket and wrongly mark an at-rest
-    // stretch as moving.
+    // Intraday step buckets read Apple samples only: a `stats:` or provider
+    // day total would dump the whole day's steps into one bucket and wrongly
+    // mark an at-rest stretch as moving.
     readLocalDayMinuteBuckets({
       userId,
       type: "ACTIVITY_STEPS",
       dateKey,
       timeZone: timezone,
       bucketMinutes: BUCKET_MINUTES,
+      sources: CUMULATIVE_SAMPLE_SOURCES,
     }),
     prisma.workout.findMany({
       where: {

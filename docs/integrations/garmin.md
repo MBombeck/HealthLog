@@ -76,6 +76,10 @@ Notes:
 - Stress and Body Battery are Garmin's own scores and keep types of their own.
   They are not mixed into HealthLog's computed stress score.
 - Days you did not wear the watch import nothing, not zeros.
+- Steps, floors, distance and active calories arrive as one total per day;
+  the Personal API has no hourly figures for them. "Today so far" on
+  Insights therefore sets today's total, as last synced, against your
+  usual full day instead of what is usual by this hour.
 - Period days are only added on days you have not logged yourself; your own
   entries are never changed. Cycles Garmin only predicts are not imported.
 - Weigh-ins are read back to the start of Garmin Connect, also from before

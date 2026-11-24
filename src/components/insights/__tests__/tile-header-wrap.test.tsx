@@ -158,7 +158,7 @@ describe("<TileHeader reserveLines>", () => {
 
   const GRID_TILES = [
     "components/insights/derived/sparkline-delta-tile.tsx",
-    "components/insights/derived/vitals-dashboard.tsx",
+    "components/insights/derived/tile-parts.tsx",
     "components/insights/device-score-tile.tsx",
     "components/insights/recovery/resilience-tile.tsx",
   ];

@@ -315,6 +315,50 @@ describe("a dose time moved during the day", () => {
     expect(await digestMedicationsLine(user.id)).toBeNull();
   });
 
+  it("keeps an earlier dose that is still open when only a later time moves", async () => {
+    const { med } = await seed();
+    const prisma = getPrismaClient();
+    const MORNING_SLOT = "2026-11-23T10:00:00.000Z"; // 11:00 Berlin
+    const TWICE = {
+      windowStart: "11:00",
+      windowEnd: "21:16",
+      timesOfDay: ["11:00", "21:16"],
+      rrule: "FREQ=DAILY",
+    };
+    await putSchedule(med.id, TWICE);
+    await prisma.medicationScheduleRevision.updateMany({
+      where: { medicationId: med.id },
+      data: { validUntil: new Date("2026-11-22T20:04:33.000Z") },
+    });
+
+    // 11:19 Berlin: the 11:00 dose is due, the 21:16 one ahead.
+    const before = await readToday();
+    expect(
+      before
+        .filter((r) => r.medicationId === med.id)
+        .map((r) => r.scheduledAt)
+        .sort(),
+    ).toEqual([MORNING_SLOT, OLD_SLOT]);
+
+    // 11:26 Berlin: the evening time moves to 22:00; 11:00 stays as it is.
+    vi.setSystemTime(new Date("2026-11-23T10:26:01.000Z"));
+    await putSchedule(med.id, {
+      ...TWICE,
+      windowEnd: "22:00",
+      timesOfDay: ["11:00", "22:00"],
+    });
+
+    const after = await readToday();
+    expect(
+      after
+        .filter((r) => r.medicationId === med.id)
+        .map((r) => r.scheduledAt)
+        .sort(),
+    ).toEqual([MORNING_SLOT, "2026-11-23T21:00:00.000Z"]);
+    expect(await resolvedSlotsToday(med.id)).toContain(MORNING_SLOT);
+    expect((await readDashboardCompliance()).scheduledToday).toBe(2);
+  });
+
   it("keeps the open row and wakes no device on a save that repeats the schedule", async () => {
     const { med } = await seed();
     const prisma = getPrismaClient();

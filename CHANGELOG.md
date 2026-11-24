@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- "Today so far" for steps, active energy, floors and walking distance works for accounts whose watch or service reports the day as one total: Garmin, Withings, a Gadgetbridge import. None of them hands over the hours of the day, so the card cannot say what is usual by this hour, and for them it stayed empty or did not show at all. It now shows today's running total as the source last reported it, set against your usual full day (the median and middle half of the last 14 complete days), with the time the total last changed and the source it came from. The range shows once 7 of those days have a total. Which source a day counts from follows your order under Settings > Sources, the same pick as the "per day" chart, so an iPhone and a watch are never added together and today's curve from one is never compared with a total from the other. The Insights value of `SAME_TIME_BASELINE` carries this as `mode: "daily_total"` beside the hourly `mode: "hourly"`. ([#1459](https://github.com/MBombeck/HealthLog/issues/1459))
+
 ### Changed
 
 - The relay card under Admin > Push and channels says when this server has its own Apple push key (APNs) configured: every push then goes directly to Apple and the relay is not used while the key is set. It explains how to use the relay instead (remove the `APNS_*` variables) and no longer shows a switch that would change nothing; a relay turned on before the key can still be turned off there. The admin relay status carries this as `ownApnsKey`.
@@ -9,12 +13,29 @@
 - Deleting or undoing a dose names exactly which one it is. The delete control in the dose history reads "Delete the 09:00 dose, taken at 08:00" to assistive technology, and the confirmation says "Removed the 09:00 dose, taken at 08:00" with its Undo; the Undo after recording a dose, after taking all due doses and after restoring a deleted one says the same, in the reader's 12- or 24-hour clock.
 - An Apple Health workout is stored once when both the iPhone app and an `export.xml` import bring it. The app keys a workout on its HealthKit id and the export carries none, so until now both rows were kept and only the reads counted them as one. Now an export workout whose session the app already synced (same sport, start and duration) fills what the app's row leaves empty, such as distance, energy, heart rate and the GPS track, and is not stored again; a workout the app syncs after an export takes over the export row's data, track and personal records, and the export row goes. The app's row keeps its HealthKit id, so a deletion on the phone still reaches it. The import summary counts these as updated workouts (`mergedIntoHealthKit`), and a restore of an older backup merges such pairs the same way. ([#1414](https://github.com/MBombeck/HealthLog/issues/1414))
 
+### Fixed
+
+- The bottom bar of the installed iPhone app reaches the bottom edge again. iOS 26 and 27 can lay out a home-screen app a status bar's height short of the screen, and the strip below the bar showed the page colour as a separate band; that strip now takes the bar's colour, in light and dark, by colour alone, so nothing is measured or moved and the loop from 1.48.4 cannot come back. The band behind the status bar and the top bar are one colour as well, and the page now ends a full 1rem above the Coach button instead of half of that. Every edge of the app reads the screen's safe areas from one place. Thanks to @2q2code for the report and the video. ([#1426](https://github.com/MBombeck/HealthLog/issues/1426))
+- A take or skip undone while its dose is still in its window brings the dose's Live Activity back over the push relay. The server's record of the first start used to hold the dose for good, so the lock screen stayed empty after a mistaken take was deleted.
+- A Live Activity the server started over the push relay ends when its dose time is edited away. It used to stay on the lock screen, showing a dose that was no longer due, until the next dose started or the system ended it after eight hours.
+- Editing a dose time no longer drops an earlier dose of the same day that is still open. Moving the evening time in the morning removed the morning dose from the today list and the dashboard count while the history and the iPhone app still showed it due.
+- The public demo no longer goes stale between seeds. Everything the demo seed writes is relative to the day it ran, so after that day medications without an automatic intake lost adherence day by day, sleep and activity slid out of their windows, and the visit booked for tomorrow moved into the past. A demo deploy (`DEMO_MODE=true`) now rewrites itself from the same seed every day at 10:00 Berlin, and after a restart that missed that hour. It runs only when the database holds the demo account and nothing else, and on any other deploy the job does not exist. Visitors stay read-only; a visitor signed in at 10:00 is signed out once.
+- "Today so far" no longer waits for ever on an account whose steps, active energy or distance arrive as day totals (Garmin, Withings, Gadgetbridge and the other connected services). Today's running total was folded from every source, so a day total counted as one big hour: the tiles said they were still learning the usual day and never got past 0 of 14 days, and with an iPhone as well, the day total was added on top of the phone's own count. The running total now reads the same Apple Health samples the usual day is built from, and the pulse chart no longer reads a day total as an hour of movement. (#1459)
+- A FHIR Bundle import no longer fails as a whole on a date the calendar does not have, such as month 13. The day is taken from the next date field that reads, and a day like 30 February counts as unreadable instead of becoming 2 March. Before, the import stopped at that resource, and the vital signs and lab results of the file were not written.
+- A FHIR Bundle whose entries are named by `urn:uuid:` (a patient summary, many portal exports) is recognised in the next export of the same record. Its resources were keyed on the Bundle's id, which such exports change every time, so each new export imported every condition, medication, vaccination, visit and vital sign a second time.
+- A Withings sync that runs long no longer skips a reading uploaded while it was writing. The next sync's window started ten minutes before the end of the previous run instead of before the start of its read.
+
+### Security
+
+- A file import upload is held to its size limit as a whole, not only in the file it carries. The other parts of the form and their headers were read into memory without a limit, so a signed-in caller could send a body that grew the server's memory until the app stopped. Every byte of the body now counts against the import's cap, and the small form fields and part headers have their own ceilings.
+
 ### Updating
 
 - Migration 0562 merges the Apple Health workout pairs already stored the same way: the app's row is kept, filled from the export row and given its track, series, insight and personal records where it has none, and the export row is deleted. Export workouts without a synced twin stay as they are. It runs in one transaction with a ten-minute statement timeout and reports the number it merged in the boot log. The query to count the pairs before updating is in the migration file.
 
 ### Thanks
 
+- @Gen-X-Jim for the report with the database counts that showed what the card was missing, and for asking for a day-total form. ([#1459](https://github.com/MBombeck/HealthLog/issues/1459))
 - @camiracode for counting the pairs that stayed after the 1.48.3 cleanup. ([#1414](https://github.com/MBombeck/HealthLog/issues/1414))
 
 ## [1.49.0] — 2026-11-23

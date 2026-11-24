@@ -4870,7 +4870,8 @@
         },
         "SAME_TIME_BASELINE": {
           "method": "Your running total for today set against the median of the same local hour across your last four weeks, with a robust median ± MAD band around it. Only days with enough recorded detail count towards it, and no comparison is shown until at least fourteen of them are in hand.",
-          "caveat": "A comparison with your own recent history, not a target. It says where today sits against your usual pattern at this hour and nothing about whether that pattern is right for you."
+          "caveat": "A comparison with your own recent history, not a target. It says where today sits against your usual pattern at this hour and nothing about whether that pattern is right for you.",
+          "methodDailyTotal": "Your source reports each day as one total, so there is no hour to compare at. Today's running total, as the source last reported it, is set against your full-day totals of the last 14 complete days: the tick marks their median, the shaded band their middle half. The range shows once 7 of those days have a total."
         }
       },
       "scores": {
@@ -4912,7 +4913,11 @@
         "sectionSubtitle": "Your running totals against what is usual for you at this hour",
         "learning": "Learning your usual day: {count} of {target, plural, one {# day} other {# days}}",
         "framing": "Typical by {time}: {typical} {unit}",
-        "comparisonLabel": "Your typical day"
+        "comparisonLabel": "Your typical day",
+        "sectionSubtitleDailyTotal": "Your running totals against your usual full day",
+        "sectionSubtitleMixed": "Your running totals against what is usual for you",
+        "dailyFraming": "Usual full day: {low}–{high} {unit}",
+        "dailyStamp": "{updated} ({source})"
       }
     },
     "cardioFitness": {

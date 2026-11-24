@@ -34,7 +34,7 @@ import {
   arr,
   conceptCode,
   conceptText,
-  fhirDateKey,
+  firstDated,
   firstInstant,
   obj,
   statusCode,
@@ -132,14 +132,12 @@ function buildImmunization(r: Json, now: Date): Built | { skip: string } {
   if (statusCode(r.status) !== "completed") return { skip: "not_completed" };
   const name = conceptText(r.vaccineCode, 120);
   if (!name) return { skip: "no_label" };
-  const at = firstInstant(r.occurrenceDateTime, r.recorded);
-  if (!at) return { skip: "no_date" };
-  if (at > now) return { skip: "future_date" };
+  const dated = firstDated(r.occurrenceDateTime, r.recorded);
+  if (!dated) return { skip: "no_date" };
+  if (dated.at > now) return { skip: "future_date" };
   // The day the record states, at UTC midnight, as the vaccination model
   // stores it.
-  const occurredAt = dayKeyAsUtcMidnight(
-    fhirDateKey(r.occurrenceDateTime) ?? fhirDateKey(r.recorded)!,
-  );
+  const occurredAt = dayKeyAsUtcMidnight(dated.dateKey);
   const dose = obj(arr(r.protocolApplied)[0])?.doseNumberPositiveInt;
   return {
     fallback: `${name}|${occurredAt.toISOString()}`,
@@ -172,20 +170,20 @@ function buildMedication(r: Json, now: Date): Built | { skip: string } {
   if (!name) return { skip: "no_label" };
   const dosage = obj(arr(r.dosage)[0]);
   const dose = str(dosage?.text, 60) ?? "";
-  const start = firstInstant(
+  const startDated = firstDated(
     obj(r.effectivePeriod)?.start,
     r.effectiveDateTime,
   );
-  const end = firstInstant(obj(r.effectivePeriod)?.end);
+  const start = startDated?.at ?? null;
+  const endDated = firstDated(obj(r.effectivePeriod)?.end);
+  const end = endDated?.at ?? null;
   const ended =
     status === "completed" ||
     status === "stopped" ||
     (end !== null && end <= now);
   // The course columns are `@db.Date`: the day the record states.
-  const startKey =
-    fhirDateKey(obj(r.effectivePeriod)?.start) ??
-    fhirDateKey(r.effectiveDateTime);
-  const endKey = fhirDateKey(obj(r.effectivePeriod)?.end);
+  const startKey = startDated?.dateKey ?? null;
+  const endKey = endDated?.dateKey ?? null;
   return {
     fallback: `${name}|${start?.toISOString() ?? ""}`,
     create: async (tx, userId) => {

@@ -142,7 +142,7 @@ export default function CommandPalette() {
           showCloseButton={false}
           data-slot="command-palette"
           data-variant="sheet"
-          className="h-dvh max-h-dvh gap-0 rounded-none p-0 pt-[env(safe-area-inset-top,0px)]"
+          className="h-dvh max-h-dvh gap-0 rounded-none p-0 pt-(--safe-area-top)"
         >
           <SheetTitle className="sr-only">{title}</SheetTitle>
           <SheetDescription className="sr-only">{description}</SheetDescription>
