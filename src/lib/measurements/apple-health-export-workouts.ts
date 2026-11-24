@@ -8,6 +8,15 @@
 import { createHash } from "node:crypto";
 
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import type { WorkoutRouteReference } from "@/lib/apple-health/route-import";
+import { workoutSessionKey } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  exportRowsOf,
+  foldExportCopiesInto,
+  healthKitRowOf,
+  readAppleHealthSessionRows,
+  type WorkoutSession,
+} from "@/lib/workouts/export-healthkit-twins";
 import {
   convertHkValue,
   hkDistanceToMetres,
@@ -331,15 +340,20 @@ export function exportWorkoutTracker() {
      */
     admit(
       workout: PreparedWorkout,
-      onRoute:
-        ((ref: { externalId: string; path: string }) => void) | undefined,
+      onRoute: ((ref: WorkoutRouteReference) => void) | undefined,
     ): boolean {
       activityDepth = 0;
       if (seen.has(workout.externalId)) return false;
       seen.add(workout.externalId);
       fillFromWorkoutStatistics(workout);
       if (workout.routePath && onRoute) {
-        onRoute({ externalId: workout.externalId, path: workout.routePath });
+        onRoute({
+          externalId: workout.externalId,
+          path: workout.routePath,
+          sportType: workout.sportType,
+          startedAt: workout.startedAt,
+          durationSec: workout.durationSec,
+        });
       }
       return true;
     },
@@ -370,5 +384,50 @@ export async function storedWorkoutTotals(
     },
   });
   for (const row of held) if (row.externalId) out.set(row.externalId, row);
+  return out;
+}
+
+/**
+ * Hand every export workout whose session the iPhone app already stored to
+ * the app's row (#1414): the export fills what that row leaves empty, any
+ * export copy of the session stored earlier folds into it too
+ * (`foldExportCopiesInto`), and nothing new is stored. Returns the workouts
+ * left to store under their export key, and how many were merged.
+ */
+export async function foldIntoHealthKitRows(
+  prisma: Pick<PrismaClient, "workout" | "$transaction">,
+  userId: string,
+  chunk: readonly PreparedWorkout[],
+): Promise<{ rest: PreparedWorkout[]; merged: number; durationMs: number }> {
+  const sessionOf = (row: PreparedWorkout): WorkoutSession => ({
+    source: "APPLE_HEALTH",
+    sportType: row.sportType,
+    startedAt: row.startedAt,
+    durationSec: row.durationSec,
+  });
+  const stored = await readAppleHealthSessionRows(
+    prisma,
+    userId,
+    chunk.map(sessionOf),
+  );
+  const out = { rest: [] as PreparedWorkout[], merged: 0, durationMs: 0 };
+  for (const row of chunk) {
+    const key = workoutSessionKey(sessionOf(row)) ?? "";
+    const group = stored.get(key);
+    const kept = healthKitRowOf(group);
+    if (!kept) {
+      out.rest.push(row);
+      continue;
+    }
+    const startedAt = Date.now();
+    await prisma.$transaction((tx) =>
+      foldExportCopiesInto(tx, userId, kept, exportRowsOf(group), [row]),
+    );
+    // The copies are gone and `kept` now holds what they gave it, so a
+    // second export workout of this session fills only what is still empty.
+    stored.set(key, [kept]);
+    out.merged += 1;
+    out.durationMs += Date.now() - startedAt;
+  }
   return out;
 }

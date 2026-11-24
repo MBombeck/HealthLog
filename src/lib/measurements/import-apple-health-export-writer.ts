@@ -33,6 +33,7 @@ import {
 } from "@/lib/export/measurement-bulk-insert";
 import {
   adoptLegacyWorkoutKeys,
+  foldIntoHealthKitRows,
   storedWorkoutTotals,
   workoutTotalsUpdate,
   type PreparedWorkout,
@@ -95,6 +96,7 @@ export class ImportTally {
     inserted: 0,
     updated: 0,
     duplicate: 0,
+    mergedIntoHealthKit: 0,
     unknownActivityType: 0,
     routesAttached: 0,
     durationMs: 0,
@@ -562,7 +564,17 @@ export class ExportImportWriter {
     const { prisma, userId, tally } = this;
     const workouts = tally.workouts;
     if (this.workoutBatch.length === 0) return;
-    const chunk = this.workoutBatch.splice(0, this.workoutBatch.length);
+    const all = this.workoutBatch.splice(0, this.workoutBatch.length);
+    // #1414: a session the iPhone app already stored under its HealthKit
+    // UUID is that row. The export fills what it leaves empty, any export
+    // copy of it stored earlier folds into it, and nothing new is stored.
+    const folded = await foldIntoHealthKitRows(prisma, userId, all);
+    workouts.updated += folded.merged;
+    workouts.mergedIntoHealthKit += folded.merged;
+    workouts.durationMs += folded.durationMs;
+    tally.rowsUpserted += folded.merged;
+    const chunk = folded.rest;
+    if (chunk.length === 0) return;
     await adoptLegacyWorkoutKeys(prisma, userId, chunk);
     const insertedArrivals: Array<{ id: string; startedAt: Date }> = [];
     const createData: Prisma.WorkoutCreateManyInput[] = chunk.map((row) => ({

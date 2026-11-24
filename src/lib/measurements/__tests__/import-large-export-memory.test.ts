@@ -318,6 +318,8 @@ function makeDiscardingPrisma(sample: () => void) {
           externalId: row.externalId,
         }));
       },
+      // The HealthKit-row probe (#1414): this account holds no workouts.
+      findMany: async () => [],
       update: async () => {
         throw new Error("unexpected workout.update in insert-only run");
       },

@@ -30,6 +30,11 @@ import {
 import { MAX_ROUTE_POINTS } from "@/lib/validations/workout";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
 import { routeClimbM } from "@/lib/workouts/route-climb";
+import {
+  healthKitRowOf,
+  readAppleHealthSessionRows,
+} from "@/lib/workouts/export-healthkit-twins";
+import { workoutSessionKey } from "@/lib/measurements/pick-canonical-workout-rows";
 
 /** A workout the XML pass wrote, and the track file it referenced. */
 export interface WorkoutRouteReference {
@@ -37,6 +42,14 @@ export interface WorkoutRouteReference {
   externalId: string;
   /** The `<FileReference path>` as Apple wrote it. */
   path: string;
+  /**
+   * The workout's session. An export workout the iPhone app had already
+   * stored is not stored under `externalId` but folded into the app's row
+   * (#1414); the track goes to that row, found by its session.
+   */
+  sportType: string;
+  startedAt: Date;
+  durationSec: number;
 }
 
 export interface WorkoutRouteImportCounts {
@@ -173,6 +186,22 @@ export function trackToRoute(track: ParsedTrack): {
   };
 }
 
+/** The iPhone app's row of a referenced workout's session, or null. */
+async function healthKitRowFor(
+  prisma: Pick<PrismaClient, "workout">,
+  userId: string,
+  ref: WorkoutRouteReference,
+) {
+  const session = {
+    source: "APPLE_HEALTH" as const,
+    sportType: ref.sportType,
+    startedAt: ref.startedAt,
+    durationSec: ref.durationSec,
+  };
+  const stored = await readAppleHealthSessionRows(prisma, userId, [session]);
+  return healthKitRowOf(stored.get(workoutSessionKey(session) ?? ""));
+}
+
 /**
  * Store the referenced tracks. `references` comes from the XML pass; each
  * names a workout the import wrote under `source = APPLE_HEALTH`.
@@ -193,10 +222,10 @@ export async function importAppleHealthWorkoutRoutes(input: {
     // A track the job did not keep is over the ceiling, never read.
     failed: input.overflow ?? 0,
   };
-  const byMember = new Map<string, string>();
+  const byMember = new Map<string, WorkoutRouteReference>();
   for (const ref of input.references) {
     const member = routeMemberNameFromReference(ref.path);
-    if (member) byMember.set(member, ref.externalId);
+    if (member) byMember.set(member, ref);
   }
   if (byMember.size === 0) return counts;
 
@@ -207,28 +236,29 @@ export async function importAppleHealthWorkoutRoutes(input: {
       wanted: (name) => byMember.has(name),
     })) {
       counts.discovered += 1;
-      const externalId = byMember.get(member.name);
-      if (!externalId) continue;
+      const ref = byMember.get(member.name);
+      if (!ref) continue;
       try {
         const route = trackToRoute(await parseGpxTrack(member.stream));
         if (!route) {
           counts.failed += 1;
           continue;
         }
-        const workout = await input.prisma.workout.findUnique({
-          where: {
-            userId_source_externalId: {
-              userId: input.userId,
-              source: "APPLE_HEALTH",
-              externalId,
+        const workout =
+          (await input.prisma.workout.findUnique({
+            where: {
+              userId_source_externalId: {
+                userId: input.userId,
+                source: "APPLE_HEALTH",
+                externalId: ref.externalId,
+              },
             },
-          },
-          select: {
-            id: true,
-            elevationM: true,
-            route: { select: { id: true } },
-          },
-        });
+            select: {
+              id: true,
+              elevationM: true,
+              route: { select: { id: true } },
+            },
+          })) ?? (await healthKitRowFor(input.prisma, input.userId, ref));
         if (!workout || workout.route) {
           counts.skipped += 1;
           continue;

@@ -62,13 +62,23 @@ export interface WorkoutPickerRow {
 }
 
 /**
- * HealthKit can resend the same session with a new external UUID. The source
- * ladder correctly chooses Apple over WHOOP, but previously kept every Apple
- * row in that winning bucket, which made the web list show the same workout
- * two or three times.
+ * The one definition of "the same workout session", for the reads and the
+ * writes alike: the same source, the same sport, the same start to the
+ * millisecond and the same duration to the second. Two rows with the same key
+ * are one session stored twice.
  *
- * The identity is `(sportType, startedAt, durationSec)`. `endedAt` was part of
- * this key when the collapse first shipped and has been dropped deliberately:
+ * The reads apply it to the winning source's rows of a duplicate cluster
+ * (`deduplicateWinningRows`): HealthKit can resend a session with a new
+ * external UUID, and an Apple Health export stores a session the phone
+ * already synced under its own key, because the export carries no UUID
+ * (#1414). The writes apply it before they store an export workout and after
+ * they store a HealthKit one, so the pair is merged into one row
+ * (`src/lib/workouts/export-healthkit-twins.ts`), and migration 0562 merged
+ * the pairs stored before that with the same rule in SQL.
+ *
+ * The identity is `(sportType, startedAt, durationSec)` within one source.
+ * `endedAt` was part of this key when the collapse first shipped and has been
+ * dropped deliberately:
  *
  *   - It is not a free extra check. On a workout with pauses, `endedAt` is the
  *     wall-clock end while `durationSec` counts only moving time, so the two
@@ -87,9 +97,14 @@ export interface WorkoutPickerRow {
  * uncollapsed. That is a fixture-only path: every production call site selects
  * the field and `workout-canonical-identity-guard.test.ts` keeps it that way.
  */
-function exactSessionKey(row: WorkoutPickerRow): string | null {
+export function workoutSessionKey(row: WorkoutPickerRow): string | null {
   if (row.durationSec == null) return null;
-  return [row.sportType, row.startedAt.getTime(), row.durationSec].join(":");
+  return [
+    row.source,
+    row.sportType,
+    row.startedAt.getTime(),
+    row.durationSec,
+  ].join(":");
 }
 
 function rowRichness(row: WorkoutPickerRow): number {
@@ -104,7 +119,7 @@ function deduplicateWinningRows<T extends WorkoutPickerRow>(rows: T[]): T[] {
   const bySession = new Map<string, T>();
   const passthrough: T[] = [];
   for (const row of rows) {
-    const key = exactSessionKey(row);
+    const key = workoutSessionKey(row);
     if (key == null) {
       passthrough.push(row);
       continue;

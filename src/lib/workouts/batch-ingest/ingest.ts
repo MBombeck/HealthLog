@@ -83,6 +83,7 @@ const NOTHING_WRITTEN: WriteOutcome = {
   duplicates: 0,
   insertedIdByIndex: new Map(),
   overwrittenIdByIndex: new Map(),
+  foldedExportIndices: new Set(),
 };
 
 export async function ingestWorkoutBatch(
@@ -198,6 +199,8 @@ export async function ingestWorkoutBatch(
       enriched: enrichedCount,
       updated: updatedCount,
       skipped: skipped.length,
+      // HealthKit workouts that took over an export row of their session.
+      export_rows_folded: written.foldedExportIndices.size,
       // Tracks the body carried but the opt-in told us not to keep.
       routes_dropped: keepRoutes
         ? 0
@@ -224,7 +227,12 @@ export async function ingestWorkoutBatch(
     void emitWorkoutArrivals(
       userId,
       prepared,
-      new Map([...written.insertedIdByIndex, ...written.overwrittenIdByIndex]),
+      new Map([
+        ...[...written.insertedIdByIndex].filter(
+          ([index]) => !written.foldedExportIndices.has(index),
+        ),
+        ...written.overwrittenIdByIndex,
+      ]),
     ).catch(() => {});
   }
 

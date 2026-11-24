@@ -16,6 +16,7 @@ import {
   parseGpxTrack,
   thinIndices,
   trackToRoute,
+  type WorkoutRouteReference,
 } from "../route-import";
 import { routeMemberNameFromReference } from "../archive-stream";
 import { MAX_ROUTE_POINTS } from "@/lib/validations/workout";
@@ -65,6 +66,9 @@ function fakePrisma(
   const fake = {
     workout: {
       findUnique: vi.fn(async () => workout),
+      // The session probe for a key that is not stored (#1414); these
+      // fixtures store their workouts under the referenced key.
+      findMany: vi.fn(async () => []),
       update: vi.fn(async () => ({})),
     },
     workoutRoute: { createMany: vi.fn(async () => ({ count: 1 })) },
@@ -162,6 +166,17 @@ describe("parseGpxTrack + trackToRoute", () => {
   });
 });
 
+/** A route reference; the session only matters when the key is not stored. */
+function ref(externalId: string, path: string): WorkoutRouteReference {
+  return {
+    externalId,
+    path,
+    sportType: "running",
+    startedAt: new Date("2026-05-14T06:00:00Z"),
+    durationSec: 1800,
+  };
+}
+
 describe("importAppleHealthWorkoutRoutes", () => {
   const files = {
     "apple_health_export/export.xml": "<HealthData/>",
@@ -178,9 +193,7 @@ describe("importAppleHealthWorkoutRoutes", () => {
     const counts = await importAppleHealthWorkoutRoutes({
       archivePath: archive(files),
       userId: "u1",
-      references: [
-        { externalId: "ext-1", path: "/workout-routes/route_1.gpx" },
-      ],
+      references: [ref("ext-1", "/workout-routes/route_1.gpx")],
       prisma: prisma.client,
     });
     expect(counts).toEqual({
@@ -209,9 +222,7 @@ describe("importAppleHealthWorkoutRoutes", () => {
     const counts = await importAppleHealthWorkoutRoutes({
       archivePath: archive(files),
       userId: "u1",
-      references: [
-        { externalId: "ext-1", path: "/workout-routes/route_1.gpx" },
-      ],
+      references: [ref("ext-1", "/workout-routes/route_1.gpx")],
       prisma: prisma.client,
     });
     expect(counts).toEqual({
@@ -228,9 +239,7 @@ describe("importAppleHealthWorkoutRoutes", () => {
     const counts = await importAppleHealthWorkoutRoutes({
       archivePath: archive(files),
       userId: "u1",
-      references: [
-        { externalId: "ext-2", path: "/workout-routes/route_2.gpx" },
-      ],
+      references: [ref("ext-2", "/workout-routes/route_2.gpx")],
       prisma: prisma.client,
     });
     expect(counts.failed).toBe(1);
@@ -242,9 +251,7 @@ describe("importAppleHealthWorkoutRoutes", () => {
     const counts = await importAppleHealthWorkoutRoutes({
       archivePath: archive(files),
       userId: "u1",
-      references: [
-        { externalId: "ext-1", path: "/workout-routes/route_1.gpx" },
-      ],
+      references: [ref("ext-1", "/workout-routes/route_1.gpx")],
       prisma: prisma.client,
       limits: {
         maxMembers: 100,
@@ -258,5 +265,36 @@ describe("importAppleHealthWorkoutRoutes", () => {
     expect(counts.attached).toBe(0);
     // The member over the cap, and the three references past the job's own.
     expect(counts.failed).toBe(4);
+  });
+
+  it("hands the track of an export workout folded into the phone's row to that row (#1414)", async () => {
+    const prisma = fakePrisma(null);
+    const reference = ref("workout:folded", "/workout-routes/route_1.gpx");
+    prisma.workout.findMany.mockResolvedValueOnce([
+      {
+        id: "w-hk",
+        source: "APPLE_HEALTH",
+        externalId: "6C1E6A0F-HK",
+        sportType: reference.sportType,
+        startedAt: reference.startedAt,
+        durationSec: reference.durationSec,
+        createdAt: new Date("2026-05-14T08:00:00Z"),
+        elevationM: null,
+        route: null,
+      },
+    ] as unknown as []);
+    const counts = await importAppleHealthWorkoutRoutes({
+      archivePath: archive(files),
+      userId: "u1",
+      references: [reference],
+      prisma: prisma.client,
+    });
+    expect(counts.attached).toBe(1);
+    const data = (
+      prisma.workoutRoute.createMany.mock.calls[0] as unknown as [
+        { data: Array<{ workoutId: string }> },
+      ]
+    )[0].data[0];
+    expect(data.workoutId).toBe("w-hk");
   });
 });

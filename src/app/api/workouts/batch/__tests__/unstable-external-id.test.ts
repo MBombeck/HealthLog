@@ -26,7 +26,9 @@ vi.mock("@/lib/db", () => ({
 }));
 
 const txClient = {
-  workout: { createManyAndReturn: vi.fn() },
+  // `findMany` is the probe for an export row of the same session (#1414);
+  // this account holds none.
+  workout: { createManyAndReturn: vi.fn(), findMany: vi.fn(async () => []) },
   workoutRoute: { createManyAndReturn: vi.fn() },
   workoutSamples: { createMany: vi.fn() },
   $queryRaw: vi.fn(async () => []),

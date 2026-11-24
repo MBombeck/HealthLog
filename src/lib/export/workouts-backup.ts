@@ -5,10 +5,20 @@
  * A file written from v1.48.2 to v1.48.x may also carry
  * `appleHealthTombstones`, the ledger 0546 removed; the restore ignores it.
  */
-import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import type {
+  MeasurementSource,
+  Prisma,
+  PrismaClient,
+} from "@/generated/prisma/client";
 import { toJson } from "@/lib/db";
 import type { RestoreContext } from "@/lib/export/restore-context";
 import { workoutExternalId } from "@/lib/measurements/apple-health-export-workouts";
+import { workoutSessionKey } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  foldedWorkoutValues,
+  isExportWorkout,
+  isHealthKitWorkout,
+} from "@/lib/workouts/export-healthkit-twins";
 
 // ── Export ───────────────────────────────────────────────────────────────────
 
@@ -169,6 +179,67 @@ function exportWorkoutKey(workout: RestorableWorkout): string | null {
   return workoutExternalId(activityType, startedAt, endedAt);
 }
 
+/**
+ * The export workouts of a file written before #1414 was finished, folded
+ * into the HealthKit workout of their session the way the importer and
+ * migration 0562 fold stored ones: an export entry whose session
+ * (`workoutSessionKey`) has a HealthKit entry is left out, and the oldest
+ * HealthKit entry of the session fills each column it leaves empty from the
+ * oldest export entry that states it (`foldedWorkoutValues`). A personal
+ * record that names a left-out entry, under any of its keys, follows the
+ * HealthKit one (`keyByLegacyKey`, updated in place).
+ */
+function foldExportEntriesIntoHealthKit(
+  workouts: readonly RestorableWorkout[],
+  keyByLegacyKey: Map<string, string>,
+): RestorableWorkout[] {
+  const sessionKey = (workout: RestorableWorkout) => {
+    const startedAt = new Date(workout.startedAt);
+    if (Number.isNaN(startedAt.getTime())) return null;
+    return workoutSessionKey({
+      source: workout.source as MeasurementSource,
+      sportType: workout.sportType,
+      startedAt,
+      durationSec: workout.durationSec,
+    });
+  };
+  const healthKit = new Map<string, RestorableWorkout>();
+  const exports = new Map<string, RestorableWorkout[]>();
+  for (const workout of [...workouts].sort(oldestFirst)) {
+    const key = sessionKey(workout);
+    if (key === null) continue;
+    if (isHealthKitWorkout(workout)) {
+      if (!healthKit.has(key)) healthKit.set(key, workout);
+    } else if (isExportWorkout(workout)) {
+      const group = exports.get(key);
+      if (group) group.push(workout);
+      else exports.set(key, [workout]);
+    }
+  }
+  const replaced = new Map<RestorableWorkout, RestorableWorkout>();
+  const dropped = new Set<RestorableWorkout>();
+  for (const [key, copies] of exports) {
+    const kept = healthKit.get(key);
+    if (!kept) continue;
+    replaced.set(kept, { ...kept, ...foldedWorkoutValues(kept, copies) });
+    const copyKeys = new Set<string>();
+    for (const copy of copies) {
+      dropped.add(copy);
+      if (copy.externalId) copyKeys.add(copy.externalId);
+    }
+    for (const [legacy, current] of keyByLegacyKey) {
+      if (copyKeys.has(current)) keyByLegacyKey.set(legacy, kept.externalId!);
+    }
+    for (const copyKey of copyKeys) {
+      keyByLegacyKey.set(copyKey, kept.externalId!);
+    }
+  }
+  if (dropped.size === 0) return [...workouts];
+  return workouts
+    .filter((workout) => !dropped.has(workout))
+    .map((workout) => replaced.get(workout) ?? workout);
+}
+
 function oldestFirst(a: RestorableWorkout, b: RestorableWorkout): number {
   const byCreated = (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
   if (byCreated !== 0) return byCreated;
@@ -178,8 +249,11 @@ function oldestFirst(a: RestorableWorkout, b: RestorableWorkout): number {
 export async function restoreWorkouts(ctx: RestoreContext): Promise<void> {
   const { tx, ownerId, payload } = ctx;
   if (payload.workouts.length === 0) return;
-  const { workouts, keyByLegacyKey } = collapseExportWorkoutCopies(
-    payload.workouts,
+  const collapsed = collapseExportWorkoutCopies(payload.workouts);
+  const { keyByLegacyKey } = collapsed;
+  const workouts = foldExportEntriesIntoHealthKit(
+    collapsed.workouts,
+    keyByLegacyKey,
   );
   for (const [legacy, key] of keyByLegacyKey) {
     ctx.links.workoutKeyByLegacyKey.set(legacy, key);
