@@ -16191,6 +16191,52 @@
     },
     "entry": {
       "description": "Grupa krwi, alergie, leki i kontakty na nagły wypadek, z kopią offline, kartą do portfela i linkiem QR."
+    },
+    "appleWallet": {
+      "title": "Apple Wallet",
+      "lead": "Twoja karta w Wallet, która sama się aktualizuje.",
+      "learnMore": "Dowiedz się więcej",
+      "add": "Dodaj do Apple Wallet",
+      "makeNew": "Utwórz nową przepustkę",
+      "withdraw": "Wycofaj przepustkę",
+      "withdrawTitle": "Wycofać przepustkę z Wallet?",
+      "withdrawBody": "Jej kod QR od razu przestaje działać, a przepustka w Wallet to pokazuje.",
+      "fieldsLabel": "Co pokazuje przepustka",
+      "expiryLabel": "Koniec przepustki",
+      "otherDevice": "Aby dodać tę kartę do Wallet, otwórz tę stronę na iPhonie lub Macu.",
+      "error": "Nie udało się zmienić przepustki. Spróbuj ponownie.",
+      "consentTitle": "Podpisane przez projekt HealthLog",
+      "consentBody": "Jego usługa podpisu widzi skróty plików i czas, nigdy treści Twojej karty.",
+      "expired": "Wygasła. Wallet ją wyszarza.",
+      "fetched": "Na urządzeniu, ostatnio zaktualizowana {when}.",
+      "notFetched": "Jeszcze na żadnym urządzeniu.",
+      "state": {
+        "live": "Aktywna",
+        "voided": "Wycofana",
+        "expired": "Wygasła"
+      },
+      "withdrawn": {
+        "owner": "Wycofano ją {when}.",
+        "credential_reset": "Wycofana {when} po zmianie hasła.",
+        "handover": "Wycofana {when} przy przekazaniu profilu.",
+        "guardian_lost": "Wycofana {when}: wygasło prawo do zarządzania tym profilem.",
+        "account_deletion": "Wycofana {when}, gdy konto miało zostać usunięte."
+      },
+      "unavailable": {
+        "signer_off": "Ten serwer nie podpisuje przepustek Wallet.",
+        "relay_not_ready": "Przepustki Wallet są teraz niedostępne na tym serwerze.",
+        "no_https_origin": "Przepustki Wallet wymagają dostępu do tego serwera przez HTTPS.",
+        "api_disabled": "Dostęp zewnętrzny jest wyłączony na tym serwerze, a z nim przepustki Wallet.",
+        "not_allowed": "Tylko osoba, której dotyczy karta, lub jej opiekun może ją dodać."
+      },
+      "more": {
+        "frozen": "Przepustka pokazuje to, co tu zaznaczysz. Aby to zmienić, wycofaj ją i utwórz nową.",
+        "updates": "Gdy Twoja karta się zmienia, przepustka aktualizuje się sama. Ma własny kod QR, oddzielny od kodu drukowanej karty.",
+        "lock": "Wallet pokazuje ją po Face ID lub kodzie. Dla ratowników przy zablokowanym iPhonie wypełnij kartę medyczną w aplikacji Zdrowie.",
+        "signerRelay": "Podpisuje ją projekt HealthLog. Jego usługa podpisu widzi skróty plików i czasy, nigdy treści.",
+        "signerLocal": "Ten serwer podpisuje ją własnym certyfikatem.",
+        "withdraw": "Wycofanie od razu zatrzymuje kod QR. Telefon bez sieci zachowa starą przepustkę, dopóki nie wróci online; jeśli przepustki nie da się zaktualizować, usuń ją w Wallet."
+      }
     }
   },
   "treatmentSeries": {

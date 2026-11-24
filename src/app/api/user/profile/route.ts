@@ -22,6 +22,7 @@ import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { resolveStoredTimezone } from "@/lib/tz/resolver";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 export const dynamic = "force-dynamic";
 
@@ -128,6 +129,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
 
   annotate({ action: { name: "user.profile.update" } });
 
+  await enqueueWalletRefresh(user.id);
   return apiSuccess({
     username: result.user.username,
     displayName: result.user.displayName,

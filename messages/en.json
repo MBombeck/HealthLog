@@ -16191,6 +16191,52 @@
     },
     "entry": {
       "description": "Blood group, allergies, medications and contacts for an emergency, with an offline copy, a wallet card and a QR link."
+    },
+    "appleWallet": {
+      "title": "Apple Wallet",
+      "lead": "Your card in Wallet, and it keeps itself up to date.",
+      "learnMore": "Learn more",
+      "add": "Add to Apple Wallet",
+      "makeNew": "Make a new pass",
+      "withdraw": "Withdraw pass",
+      "withdrawTitle": "Withdraw the Wallet pass?",
+      "withdrawBody": "Its QR code stops working at once, and the pass in Wallet says so.",
+      "fieldsLabel": "What the pass shows",
+      "expiryLabel": "Pass ends",
+      "otherDevice": "To add this card to Wallet, open this page on your iPhone or Mac.",
+      "error": "The pass could not be changed. Try again.",
+      "consentTitle": "Signed by the HealthLog project",
+      "consentBody": "Its signing service sees the file hashes and the time, never what your card says.",
+      "expired": "Expired. Wallet greys it out.",
+      "fetched": "On a device, last updated {when}.",
+      "notFetched": "Not on a device yet.",
+      "state": {
+        "live": "Live",
+        "voided": "Withdrawn",
+        "expired": "Expired"
+      },
+      "withdrawn": {
+        "owner": "You withdrew it {when}.",
+        "credential_reset": "Withdrawn {when} after a password change.",
+        "handover": "Withdrawn {when} when the profile was handed over.",
+        "guardian_lost": "Withdrawn {when}: the right to manage this profile ended.",
+        "account_deletion": "Withdrawn {when} when the account was to be deleted."
+      },
+      "unavailable": {
+        "signer_off": "This server does not sign Wallet passes.",
+        "relay_not_ready": "Wallet passes are not available on this server right now.",
+        "no_https_origin": "Wallet passes need this server reached over HTTPS.",
+        "api_disabled": "External access is off on this server, so Wallet passes are too.",
+        "not_allowed": "Only the person the card is about, or their guardian, can add it."
+      },
+      "more": {
+        "frozen": "The pass shows what you tick here. To change that, withdraw it and make a new one.",
+        "updates": "When your card changes, the pass updates itself. Its QR code is its own, apart from the printed card's.",
+        "lock": "Wallet shows it after Face ID or your code. For helpers at a locked iPhone, fill in the Medical ID in Health.",
+        "signerRelay": "The HealthLog project signs it. Its signing service sees file hashes and times, never the content.",
+        "signerLocal": "This server signs it with its own certificate.",
+        "withdraw": "Withdrawing stops the QR code at once. A phone that is offline keeps the old pass until it is back online; if a pass cannot be updated, delete it in Wallet."
+      }
     }
   },
   "treatmentSeries": {

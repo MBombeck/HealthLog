@@ -16191,6 +16191,52 @@
     },
     "entry": {
       "description": "Gruppo sanguigno, allergie, farmaci e contatti per un’emergenza, con copia offline, tessera e link QR."
+    },
+    "appleWallet": {
+      "title": "Apple Wallet",
+      "lead": "La tua tessera in Wallet, che si aggiorna da sola.",
+      "learnMore": "Scopri di più",
+      "add": "Aggiungi a Apple Wallet",
+      "makeNew": "Crea un nuovo pass",
+      "withdraw": "Ritira il pass",
+      "withdrawTitle": "Ritirare il pass di Wallet?",
+      "withdrawBody": "Il suo codice QR smette subito di funzionare e il pass in Wallet lo indica.",
+      "fieldsLabel": "Cosa mostra il pass",
+      "expiryLabel": "Il pass scade",
+      "otherDevice": "Per aggiungere questa tessera a Wallet, apri questa pagina su iPhone o Mac.",
+      "error": "Non è stato possibile modificare il pass. Riprova.",
+      "consentTitle": "Firmato dal progetto HealthLog",
+      "consentBody": "Il suo servizio di firma vede gli hash dei file e l'ora, mai il contenuto della tua tessera.",
+      "expired": "Scaduto. Wallet lo mostra in grigio.",
+      "fetched": "Su un dispositivo, aggiornato {when}.",
+      "notFetched": "Non ancora su un dispositivo.",
+      "state": {
+        "live": "Attivo",
+        "voided": "Ritirato",
+        "expired": "Scaduto"
+      },
+      "withdrawn": {
+        "owner": "L'hai ritirato {when}.",
+        "credential_reset": "Ritirato {when} dopo un cambio di password.",
+        "handover": "Ritirato {when} alla consegna del profilo.",
+        "guardian_lost": "Ritirato {when}: il diritto di gestire questo profilo è terminato.",
+        "account_deletion": "Ritirato {when} alla richiesta di eliminazione dell'account."
+      },
+      "unavailable": {
+        "signer_off": "Questo server non firma pass di Wallet.",
+        "relay_not_ready": "I pass di Wallet non sono disponibili su questo server al momento.",
+        "no_https_origin": "I pass di Wallet richiedono che questo server sia raggiunto via HTTPS.",
+        "api_disabled": "L'accesso esterno è disattivato su questo server, e con esso i pass di Wallet.",
+        "not_allowed": "Solo la persona della tessera, o il suo tutore, può aggiungerlo."
+      },
+      "more": {
+        "frozen": "Il pass mostra ciò che spunti qui. Per cambiarlo, ritiralo e creane uno nuovo.",
+        "updates": "Quando la tua tessera cambia, il pass si aggiorna da solo. Il suo codice QR è proprio, separato da quello della tessera stampata.",
+        "lock": "Wallet lo mostra dopo Face ID o il codice. Per chi soccorre davanti a un iPhone bloccato, compila la Cartella sanitaria in Salute.",
+        "signerRelay": "Lo firma il progetto HealthLog. Il suo servizio di firma vede hash dei file e orari, mai il contenuto.",
+        "signerLocal": "Questo server lo firma con il proprio certificato.",
+        "withdraw": "Il ritiro ferma subito il codice QR. Un telefono offline tiene il vecchio pass finché non torna online; se un pass non si aggiorna, eliminalo in Wallet."
+      }
     }
   },
   "treatmentSeries": {

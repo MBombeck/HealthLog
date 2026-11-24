@@ -77,6 +77,14 @@ const UNAUTHENTICATED: Readonly<Record<string, string>> = {
     "Starts the identity-provider handoff, for the browser and for the native client.",
   "/api/auth/oidc/status":
     "Says whether single sign-on is configured, so the sign-in screen can offer it.",
+  "/api/wallet/apple/v1/devices/{deviceId}/registrations/{passTypeId}/{serial}":
+    "Apple Wallet registers a device from the phone with no session; the pass's own ApplePass token is the credential, recomputed and compared in constant time after a per-address limit.",
+  "/api/wallet/apple/v1/devices/{deviceId}/registrations/{passTypeId}":
+    "Apple Wallet asks for changed passes with no credential by Apple's design; the device library id in the path is looked up by HMAC and the answer names serial numbers only.",
+  "/api/wallet/apple/v1/passes/{passTypeId}/{serial}":
+    "Apple Wallet fetches a pass from the phone with no session; the pass's own ApplePass token is the credential.",
+  "/api/wallet/apple/v1/log":
+    "Apple Wallet's error log, sent with no credential by Apple's design; counted, never stored.",
   "/api/cycle/feed/{token}":
     "A calendar provider polls it from its own servers with no session; the `hlf_` path token is the credential.",
   "/api/care/feed/{token}":

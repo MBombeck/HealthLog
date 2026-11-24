@@ -12,6 +12,7 @@ import {
   findMedicationForDelete,
 } from "@/lib/medications/delete-medication";
 import { NextRequest } from "next/server";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -82,6 +83,7 @@ export const PUT = apiHandler(
       return apiError(outcome.message, outcome.status, outcome.meta);
     }
 
+    await enqueueWalletRefresh(user.id);
     return apiSuccess(outcome.body);
   },
 );
@@ -107,6 +109,7 @@ export const DELETE = apiHandler(
       ipAddress: getClientIp(request),
     });
 
+    await enqueueWalletRefresh(user.id);
     return apiSuccess({ deleted: true });
   },
 );

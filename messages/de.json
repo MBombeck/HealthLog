@@ -16191,6 +16191,52 @@
     },
     "entry": {
       "description": "Blutgruppe, Allergien, Medikamente und Kontakte für den Notfall, mit Offline-Kopie, Portemonnaie-Karte und QR-Link."
+    },
+    "appleWallet": {
+      "title": "Apple Wallet",
+      "lead": "Deine Karte im Wallet, und sie hält sich selbst aktuell.",
+      "learnMore": "Mehr erfahren",
+      "add": "Zu Apple Wallet hinzufügen",
+      "makeNew": "Neuen Pass anlegen",
+      "withdraw": "Pass zurückziehen",
+      "withdrawTitle": "Wallet-Pass zurückziehen?",
+      "withdrawBody": "Sein QR-Code funktioniert sofort nicht mehr, und der Pass im Wallet zeigt das an.",
+      "fieldsLabel": "Was der Pass zeigt",
+      "expiryLabel": "Pass endet",
+      "otherDevice": "Um diese Karte zu Wallet hinzuzufügen, öffne diese Seite auf deinem iPhone oder Mac.",
+      "error": "Der Pass ließ sich nicht ändern. Versuch es noch einmal.",
+      "consentTitle": "Vom HealthLog-Projekt signiert",
+      "consentBody": "Sein Signierdienst sieht die Datei-Hashes und den Zeitpunkt, nie, was auf deiner Karte steht.",
+      "expired": "Abgelaufen. Wallet graut ihn aus.",
+      "fetched": "Auf einem Gerät, zuletzt aktualisiert {when}.",
+      "notFetched": "Noch auf keinem Gerät.",
+      "state": {
+        "live": "Aktiv",
+        "voided": "Zurückgezogen",
+        "expired": "Abgelaufen"
+      },
+      "withdrawn": {
+        "owner": "Du hast ihn {when} zurückgezogen.",
+        "credential_reset": "{when} nach einem Passwortwechsel zurückgezogen.",
+        "handover": "{when} bei der Übergabe des Profils zurückgezogen.",
+        "guardian_lost": "{when} zurückgezogen: Das Recht, dieses Profil zu verwalten, ist erloschen.",
+        "account_deletion": "{when} zurückgezogen, als das Konto gelöscht werden sollte."
+      },
+      "unavailable": {
+        "signer_off": "Dieser Server signiert keine Wallet-Pässe.",
+        "relay_not_ready": "Wallet-Pässe sind auf diesem Server gerade nicht verfügbar.",
+        "no_https_origin": "Wallet-Pässe brauchen diesen Server über HTTPS.",
+        "api_disabled": "Der externe Zugriff ist auf diesem Server aus, damit auch Wallet-Pässe.",
+        "not_allowed": "Nur die Person, um die es geht, oder ihr Vormund kann ihn hinzufügen."
+      },
+      "more": {
+        "frozen": "Der Pass zeigt, was du hier ankreuzt. Um das zu ändern, zieh ihn zurück und leg einen neuen an.",
+        "updates": "Wenn sich deine Karte ändert, aktualisiert sich der Pass selbst. Sein QR-Code ist ein eigener, getrennt von dem der gedruckten Karte.",
+        "lock": "Wallet zeigt ihn erst nach Face ID oder Code. Für Helfer am gesperrten iPhone füll den Notfallpass in Health aus.",
+        "signerRelay": "Das HealthLog-Projekt signiert ihn. Sein Signierdienst sieht Datei-Hashes und Zeitpunkte, nie den Inhalt.",
+        "signerLocal": "Dieser Server signiert ihn mit seinem eigenen Zertifikat.",
+        "withdraw": "Zurückziehen stoppt den QR-Code sofort. Ein Telefon ohne Verbindung behält den alten Pass, bis es wieder online ist; lässt sich ein Pass nicht aktualisieren, lösch ihn im Wallet."
+      }
     }
   },
   "treatmentSeries": {

@@ -496,6 +496,61 @@ describe("S4 — the single-sign-on claim cookie set is frozen", () => {
   });
 });
 
+describe("S5 — Apple Wallet's pass web service credentials are frozen", () => {
+  /**
+   * Two more ways in that are neither a session nor a Bearer token,
+   * so no leg above sees them:
+   *
+   *   - the header credential `Authorization: ApplePass <token>`, the pass's
+   *     `authenticationToken`, recomputed from the pass's sealed link token
+   *     and compared in constant time (`authenticateWalletPass`);
+   *   - the path credential `deviceLibraryIdentifier`, the only thing that
+   *     authenticates Apple's list of updated passes, looked up by HMAC.
+   *
+   * Both live under `/api/wallet/apple/v1/`, behind the per-address limit,
+   * and both are scrubbed from logs (`redactSecrets`).
+   */
+  const WALLET_WEB_SERVICE_ALLOWLIST: Record<string, string> = {
+    "app/api/wallet/apple/v1/devices/[deviceId]/registrations/[passTypeId]/[serial]/route.ts":
+      "registers and unregisters a device for one pass; ApplePass header, device id stored as an HMAC",
+    "app/api/wallet/apple/v1/devices/[deviceId]/registrations/[passTypeId]/route.ts":
+      "lists the serial numbers of a device's changed passes; the device id in the path is the credential, by Apple's design",
+    "app/api/wallet/apple/v1/passes/[passTypeId]/[serial]/route.ts":
+      "serves the signed current or withdrawn version of one pass; ApplePass header",
+  };
+
+  /** Leg 1: a route that resolves an `ApplePass` header. */
+  const APPLE_PASS_RESOLVER = /\bauthenticateWalletPass\s*\(/;
+  /** Leg 2: a route whose path carries a device library id. */
+  function deviceSegmentFiles(): string[] {
+    return appFiles().filter((rel) =>
+      rel.split("/").some((seg) => /^\[device[A-Za-z]*\]$/i.test(seg)),
+    );
+  }
+
+  it("the header and path credential surfaces equal the allowlist", () => {
+    const union = [
+      ...new Set([
+        ...appFilesMatching(APPLE_PASS_RESOLVER),
+        ...deviceSegmentFiles(),
+      ]),
+    ].sort();
+    expect(union.length).toBeGreaterThan(0);
+    expect(union).toEqual(Object.keys(WALLET_WEB_SERVICE_ALLOWLIST).sort());
+  });
+
+  it("nothing outside the web service reads the ApplePass scheme", () => {
+    const readers = appFilesMatching(/["'`]ApplePass\b/);
+    expect(readers).toEqual([]);
+  });
+
+  it("every allowlist entry carries a reason", () => {
+    for (const [rel, reason] of Object.entries(WALLET_WEB_SERVICE_ALLOWLIST)) {
+      expect(reason.trim().length, `${rel} has no reason`).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe("S3 — the two families stay distinct", () => {
   /**
    * A file that both resolves a session AND authenticates by a URL token is

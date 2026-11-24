@@ -128,7 +128,21 @@ const walletPassSummary = z
     ),
     expiresAt: isoDateTime().nullable(),
     voidedAt: isoDateTime().nullable(),
-    lastFetchedAt: isoDateTime().nullable(),
+    voidReason: z
+      .enum([
+        "owner",
+        "credential_reset",
+        "handover",
+        "guardian_lost",
+        "account_deletion",
+      ])
+      .nullable()
+      .describe(
+        "Why the pass was withdrawn: on the card page, after a password change or reset, at a managed profile's handover, when a guardian lost the right to it, or at a deletion request. Null while it is live. Decode unknown values leniently.",
+      ),
+    lastFetchedAt: isoDateTime()
+      .nullable()
+      .describe("The last download by a device, Wallet or the app."),
     downloadPath: z.literal(WALLET_DOWNLOAD_PATH),
   })
   .meta({

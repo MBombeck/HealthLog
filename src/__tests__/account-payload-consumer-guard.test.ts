@@ -156,11 +156,6 @@ const ACTIVE_RECORD_ONLY_FIELDS = [
  * only when the claim is true and checkable.
  */
 const NO_CLIENT_CONSUMER: Record<string, string> = {
-  emergencyCard:
-    "v1.50, the resolved Apple Wallet state of the emergency card. The native client reads " +
-    "it to offer adding, replacing and removing the pass (healthlog-ios-dev#193). The web " +
-    "card page is its other reader and lands on the same release branch as the Wallet UI; " +
-    "this entry is removed in that change.",
   features:
     "A capability probe for clients released apart from the server: the native app asks " +
     "whether this server takes the record-only medication switch before the account has a " +

@@ -23,6 +23,10 @@ had it signed; that list is readable only by the relay operator.
 
 Before the first pass the owner accepts a short notice saying exactly this.
 
+Update pushes go the same way: when a pass changes or is withdrawn, the
+server asks the relay to send an empty push to each device that registered
+it, and the relay sees each pass push token only while it forwards.
+
 ## Optional: your own Pass Type ID
 
 An operator with an Apple developer account can sign on the server instead,
@@ -79,6 +83,25 @@ values in `.env` reach the container.
    WALLET_APPLE_CERT_B64="$(base64 < pass.crt | tr -d '\n')"
    WALLET_APPLE_KEY_B64="$(base64 < pass.key | tr -d '\n')"
    ```
+
+### Update pushes
+
+With your own Pass Type ID the server also pushes the updates itself: an
+empty push to Apple's production gateway, topic your Pass Type ID,
+authenticated with the same certificate and key. Nothing goes through the
+relay, and nothing more is needed than outbound HTTPS to
+`api.push.apple.com:443`. The `APNS_*` variables of the iOS app play no part
+here.
+
+### Apple's pass web service
+
+Every pass names `https://<your host>/api/wallet/apple/` as its web service.
+Wallet registers devices there, asks which passes changed, fetches them and
+sends its error log. These routes take no session: a pass authenticates with
+its own token, which the server derives and never stores, and the list of
+changed passes is keyed by Apple's device id, stored only as a hash. Your
+reverse proxy has to let `/api/wallet/apple/v1/` through without an extra
+login in front of it, as it does for `/e/` and the calendar feeds.
 
 ### What the server checks
 

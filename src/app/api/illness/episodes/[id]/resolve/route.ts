@@ -19,6 +19,7 @@ import { parseJsonBody } from "@/lib/api/body";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import { illnessEpisodeResolveSchema } from "@/lib/validations/illness";
 import { toIllnessEpisodeDTO } from "@/lib/illness/dto";
+import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -97,6 +98,7 @@ export const PATCH = apiHandler(
       },
     });
 
+    await enqueueWalletRefresh(user.id);
     return apiSuccess(toIllnessEpisodeDTO(updated));
   },
 );
