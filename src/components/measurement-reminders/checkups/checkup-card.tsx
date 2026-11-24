@@ -178,7 +178,7 @@ function SkipSnoozeMeta({
             date: fmt.date(new Date(reminder.lastSkippedAt)),
           })}
           {reminder.skipCount > 1
-            ? ` · ${t("measurementReminders.skipCount", {
+            ? `, ${t("measurementReminders.skipCount", {
                 count: reminder.skipCount,
               })}`
             : null}
@@ -212,7 +212,7 @@ function NextLastSlot({
         (d) => fmt.date(d),
         displayTz,
       )
-    : "—";
+    : null;
   const dueIsToday = due.key === "measurementReminders.nextDue.today";
   const dueIsOverdue = isOverdueDue(due);
   return (
@@ -234,12 +234,17 @@ function NextLastSlot({
           {t(due.key, { days: due.days })}
         </span>
       </div>
-      <div className="text-muted-foreground flex items-baseline justify-between gap-3">
-        <span className="min-w-0 flex-shrink truncate font-medium">
-          {t("measurementReminders.lastDoneLabel")}
-        </span>
-        <span className="text-foreground text-right">{lastValue}</span>
-      </div>
+      {/* Never done: no row, as on the medication card's "last intake"
+          (`MedicationNextLastSlot`). A dash in the value column read as a
+          value; the reserved min height keeps the card's footprint. */}
+      {lastValue !== null && (
+        <div className="text-muted-foreground flex items-baseline justify-between gap-3">
+          <span className="min-w-0 flex-shrink truncate font-medium">
+            {t("measurementReminders.lastDoneLabel")}
+          </span>
+          <span className="text-foreground text-right">{lastValue}</span>
+        </div>
+      )}
     </div>
   );
 }
