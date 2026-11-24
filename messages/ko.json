@@ -362,7 +362,7 @@
     "bmiRow": "BMI: {bmi} kg/m², 분류: {class} (WHO)",
     "complianceTitle": "복약 순응도",
     "glp1Title": "GLP-1 치료",
-    "glp1WeightSummary": "리포트 기간 체중: {start} kg → {end} kg ({delta} kg)",
+    "glp1WeightSummary": "리포트 기간 체중: {start} kg에서 {end} kg로 ({delta} kg)",
     "glp1CurrentDose": "현재 용량: {value} {unit} ({since}부터)",
     "glp1Compliance": "순응도: {taken} / {total} ({rate}%)",
     "glp1SideEffectsTitle": "기록된 부작용",
@@ -2403,7 +2403,7 @@
         "timesTitle": "복용 시각",
         "timesNote": "복용마다 시각과 정시 범위를 조정해요. 주기(매일, 매주…)는 고급 탭의 편집기에서 바꿔요.",
         "scheduleLabel": "일정 {index}",
-        "fullEditNote": "주기, 치료 분류, 복용 기간은 고급 → 수명 주기의 편집기에서 바꿔요.",
+        "fullEditNote": "주기, 치료 분류, 복용 기간은 고급 > 수명 주기의 편집기에서 바꿔요.",
         "graceEcho": "알림 유예 시간: {minutes, plural, other {#분}}",
         "reminderTitle": "알림",
         "manageChannels": "알림 채널 관리",
@@ -2517,7 +2517,7 @@
         "error": "변경 내용을 저장하지 못했어요. 다시 시도해 주세요."
       },
       "beforeAfter": {
-        "summary": "시작 전 평균 {before} → 이후 평균 {after}, {delta} 변화.",
+        "summary": "시작 전 평균 {before}, 이후 평균 {after}, {delta} 변화.",
         "counts": "시작 전 {beforeCount, plural, other {#개}}, 이후 {afterCount}개 측정값을 기준으로 했어요.",
         "needBefore": "시작 전 측정값이 아직 부족해요. 비교하려면 전후로 약 {weeks, plural, other {#주씩}} 필요해요.",
         "needAfter": "시작 이후 측정값이 아직 부족해요. 비교하려면 전후로 약 {weeks, plural, other {#주씩}} 필요해요.",
@@ -3068,7 +3068,7 @@
       "emptyDescription": "모든 섹션을 숨겼어요. 맞춤 설정을 열어 카드를 다시 꺼내 보세요."
     },
     "bmiEmptyTitle": "BMI를 보려면 키를 입력해 주세요",
-    "bmiEmptyDescription": "BMI에는 키가 필요해요. 설정 → 계정에서 추가해 주세요.",
+    "bmiEmptyDescription": "BMI에는 키가 필요해요. 설정 > 계정에서 추가해 주세요.",
     "bmiEmptyAction": "계정 설정 열기",
     "loadError": "인사이트를 불러오지 못했어요",
     "heroPersonalBaseline": "최근 90일 기준",
@@ -5352,7 +5352,7 @@
       "steps": {
         "dashboardOverview": {
           "title": "내 대시보드",
-          "body": "대시보드는 모든 모듈을 한눈에 모아 보여줘요. 타일을 길게 누르면 순서를 바꾸거나 숨길 수 있어요(설정 → 대시보드 레이아웃). 타일은 그 뒤에 쌓인 데이터만큼만 말해 줘요. 앞으로 나올 모듈들이 그 데이터를 채워요."
+          "body": "대시보드는 모든 모듈을 한눈에 모아 보여줘요. 타일을 길게 누르면 순서를 바꾸거나 숨길 수 있어요(설정 > 대시보드 레이아웃). 타일은 그 뒤에 쌓인 데이터만큼만 말해 줘요. 앞으로 나올 모듈들이 그 데이터를 채워요."
         },
         "quickAdd": {
           "title": "몇 초면 기록 끝",
@@ -5408,7 +5408,7 @@
         },
         "wrapUp": {
           "title": "둘러보기 끝",
-          "body": "이 안내는 한 번만 나오고 저절로 다시 열리지 않아요. 살펴본 내용은 그대로 있고, 설정 → 모듈에서 언제든 기능을 켜고 끌 수 있어요."
+          "body": "이 안내는 한 번만 나오고 저절로 다시 열리지 않아요. 살펴본 내용은 그대로 있고, 설정 > 모듈에서 언제든 기능을 켜고 끌 수 있어요."
         }
       }
     },
@@ -5605,12 +5605,12 @@
           "cta": "{target} 연결",
           "checking": "연결을 확인하는 중입니다.",
           "waiting": "아직 연결되지 않았습니다.",
-          "openSettings": "설정 → 연동 열기",
+          "openSettings": "설정 > 연동 열기",
           "noDate": "알 수 없음",
           "throughGoogleHealth": "{source} 데이터는 이제 {target}를 통해 들어옵니다. 기존 {source} 연결은 종료되었습니다. {source}에 로그인한 Google 계정으로 {target}를 연결하면 측정값이 그곳에서 들어옵니다.",
           "needsCredentials": {
             "title": "이 인스턴스에는 아직 {target} 앱이 등록되어 있지 않습니다.",
-            "detail": "설정 → 연동에서 직접 발급받은 인증 정보를 입력하면 연결을 시작할 수 있습니다."
+            "detail": "설정 > 연동에서 직접 발급받은 인증 정보를 입력하면 연결을 시작할 수 있습니다."
           },
           "state": {
             "pending_first_sync": {
@@ -5627,11 +5627,11 @@
             },
             "stalled": {
               "title": "{target}은(는) 연결되어 있지만 동기화가 멈췄습니다.",
-              "detail": "마지막 시도 {when}. 설정 → 연동에서 연결을 확인하세요."
+              "detail": "마지막 시도 {when}. 설정 > 연동에서 연결을 확인하세요."
             },
             "failing": {
               "title": "{target}은(는) 연결되어 있지만 동기화가 계속 실패합니다.",
-              "detail": "{when} 이후로 아무것도 들어오지 않았습니다. 설정 → 연동에서 연결을 확인하세요."
+              "detail": "{when} 이후로 아무것도 들어오지 않았습니다. 설정 > 연동에서 연결을 확인하세요."
             },
             "reauth_required": {
               "title": "{target} 연결을 갱신해야 합니다.",
@@ -5639,7 +5639,7 @@
             },
             "parked": {
               "title": "{target} 연결이 일시 중지되었습니다.",
-              "detail": "설정 → 연동에서 연결을 확인하세요."
+              "detail": "설정 > 연동에서 연결을 확인하세요."
             }
           }
         },
@@ -6168,7 +6168,7 @@
           "charCount": "{used} / {max, plural, other {#자}}",
           "appleHealth": {
             "title": "Apple Health",
-            "description": "iPhone 건강 앱에서 만든 export.zip을 올려 주세요 (프로필 → 모든 건강 데이터 내보내기).",
+            "description": "iPhone 건강 앱에서 만든 export.zip을 올려 주세요 (프로필 > 모든 건강 데이터 내보내기).",
             "dropLabel": "여기에 export.zip을 놓으세요",
             "dropHint": "또는 눌러서 파일 선택",
             "fileInputLabel": "Apple Health export.zip 파일 선택",
@@ -6929,7 +6929,7 @@
       "deviceCodeCancel": "취소",
       "oauthNotConfigured": "이 인스턴스에는 ChatGPT OAuth가 설정돼 있지 않아요. 아래에서 직접 발급한 API 키를 쓰세요.",
       "modelLabel": "모델",
-      "modelOptionDefault": "— 기본값 —",
+      "modelOptionDefault": "기본값",
       "modelOptionCustom": "직접 입력…",
       "customModelLabel": "직접 입력한 모델 이름",
       "anthropicKeyLabel": "Anthropic API 키",
@@ -6963,7 +6963,7 @@
         "saveFailed": "순서를 저장하지 못했어요",
         "resetDefaults": "기본값으로 되돌리기",
         "resetConfirmTitle": "순서를 기본값으로 되돌릴까요?",
-        "resetConfirmBody": "순서가 Codex → OpenAI → Anthropic → 로컬 → 관리자 OpenAI로 돌아가요. 저장한 인증 정보는 그대로예요."
+        "resetConfirmBody": "순서가 Codex, OpenAI, Anthropic, 로컬, 관리자 OpenAI로 돌아가요. 저장한 인증 정보는 그대로예요."
       },
       "namedChains": {
         "title": "작업별 순서",
@@ -8106,7 +8106,7 @@
         "unavailable": "Apple Health 상태를 알 수 없어요"
       },
       "setupTitle": "실시간 동기화 켜기",
-      "permissionStep": "HealthLog iOS 앱에서 설정 → Apple Health를 열고 공유할 건강 카테고리를 허용해 주세요.",
+      "permissionStep": "HealthLog iOS 앱에서 설정 > Apple Health를 열고 공유할 건강 카테고리를 허용해 주세요.",
       "backgroundStep": "백그라운드 앱 새로고침을 켠 채로 두세요. 앱은 화면에 떠 있을 때와 iOS가 백그라운드 시간을 줄 때 새 데이터를 자동으로 동기화해요.",
       "importNote": "예전 기록이 필요하거나 iOS 앱을 쓸 수 없나요? Apple Health XML/ZIP 업로드는 한 번만 쓰는 대안이라 실시간 동기화는 켜지지 않아요.",
       "importAction": "일회성 불러오기 열기",
@@ -8659,7 +8659,7 @@
     "tokenCreated": "생성",
     "tokenNeverUsed": "없음",
     "tokensEmptyTitle": "아직 API 토큰이 없어요",
-    "tokensEmptyDescription": "네이티브 클라이언트가 로그인할 때나 설정 → 계정에서 토큰이 발급돼요.",
+    "tokensEmptyDescription": "네이티브 클라이언트가 로그인할 때나 설정 > 계정에서 토큰이 발급돼요.",
     "loginOverviewDescription": "모든 계정의 로그인·인증 이벤트예요. 필터링하고 CSV로 내보낼 수 있어요.",
     "loginOverviewFilterLabel": "이벤트 필터",
     "allAuthEvents": "전체 인증 이벤트",
@@ -10111,7 +10111,7 @@
     "eventColumn": "이벤트",
     "subtitle": "어떤 알림을 어떤 채널로 받을지 선택하세요.",
     "loadError": "알림 설정을 불러오지 못했어요.",
-    "noChannels": "설정 → 연동에서 알림 채널을 먼저 설정해 주세요.",
+    "noChannels": "설정 > 연동에서 알림 채널을 먼저 설정해 주세요.",
     "goToSettings": "채널 설정으로 이동",
     "channelDisabled": "사용 안 함",
     "admin": {
@@ -13245,7 +13245,7 @@
       "dismiss": "닫기",
       "empty": "이 문서에서 읽어낼 내용이 없었어요.",
       "unavailableBody": "AI 제공자를 설정하면 제목·종류·날짜를 추천해요.",
-      "unavailableLocalOcr": "설정 → 모듈 → 검사에서 “이 기기에서 스캔 읽기”를 켜면 이 기기에서 이미지를 읽어요.",
+      "unavailableLocalOcr": "설정 > 모듈 > 검사에서 “이 기기에서 스캔 읽기”를 켜면 이 기기에서 이미지를 읽어요.",
       "unavailableAction": "AI 설정 열기",
       "errorGeneric": "문서를 읽지 못했어요. 다시 시도해 주세요.",
       "errorOcr": "이 이미지에서 텍스트를 읽지 못했어요.",
@@ -13258,7 +13258,7 @@
       "errorFileType": "이 파일 형식은 읽을 수 없어요.",
       "errorNotIndexed": "문서를 먼저 읽은 뒤에 추출해 주세요.",
       "errorOutputLimit": "AI 제공자가 값을 하나도 돌려주기 전에 출력 한도에 도달했어요. 더 긴 답변을 허용하는 모델로 다시 시도해 주세요.",
-      "errorLocalOcrDisabled": "설정 → 모듈 → 검사에서 “이 기기에서 스캔 읽기”를 먼저 켜 주세요.",
+      "errorLocalOcrDisabled": "설정 > 모듈 > 검사에서 “이 기기에서 스캔 읽기”를 먼저 켜 주세요.",
       "errorProvider": "이 작업에 쓸 AI 제공자가 설정돼 있지 않아요.",
       "errorTextImageOnly": "로컬 OCR은 이미지만 읽어요. 이 파일은 읽을 수 없어요.",
       "errorConsent": "AI로 문서를 읽으려면 먼저 동의가 필요합니다.",
@@ -14003,7 +14003,7 @@
     "invite": {
       "title": "다른 사람 초대",
       "description": "상대가 수락하기 전에는 아무것도 공유되지 않아요.",
-      "needsAccount": "상대방에게는 이 인스턴스의 HealthLog 계정이 필요하며, 초대는 설정 → 공유 접근에서 확인할 수 있습니다.",
+      "needsAccount": "상대방에게는 이 인스턴스의 HealthLog 계정이 필요하며, 초대는 설정 > 공유 접근에서 확인할 수 있습니다.",
       "identifierLabel": "사용자 이름 또는 이메일",
       "identifierPlaceholder": "로그인에 쓰는 이름",
       "identifierHint": "이 인스턴스에 계정이 있어야 해요. 가입하지 않은 이메일 주소로는 초대를 보낼 수 없어요.",
@@ -14167,7 +14167,7 @@
       "guardianErrorNoAccount": "이 인스턴스에 그 이름이나 이메일을 쓰는 계정이 없어요.",
       "guardianErrorRateLimit": "최근 한 시간 동안 초대가 너무 많았어요. 잠시 기다렸다 다시 시도해 주세요.",
       "guardianErrorFailed": "초대를 보내지 못했어요.",
-      "errorMfaRequired": "여기에는 2단계 인증 또는 패스키가 필요한데 계정에 아직 둘 다 없어요. 설정 → 보안에서 하나를 등록한 뒤 다시 시도해 주세요.",
+      "errorMfaRequired": "여기에는 2단계 인증 또는 패스키가 필요한데 계정에 아직 둘 다 없어요. 설정 > 보안에서 하나를 등록한 뒤 다시 시도해 주세요.",
       "rosterLoadError": "이 기록을 돌보는 사람을 불러오지 못했어요.",
       "errorRateLimit": "최근 한 시간 동안 만든 프로필이 너무 많아요. 잠시 기다렸다 다시 시도해 주세요.",
       "handover": {

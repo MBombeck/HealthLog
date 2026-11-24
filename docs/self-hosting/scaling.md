@@ -256,7 +256,7 @@ tenant, starving every other dashboard query for the duration. The
 fan-out — keeps 16 slots free for the rest of the dashboard while
 still sitting well under Postgres's 100-slot stock ceiling.
 
-The implementation lives in `src/lib/db.ts → getConnectionBudget()`
+The implementation lives in `src/lib/db.ts > getConnectionBudget()`
 (split into `getPrismaPoolMax()` and `getPgBossPoolMax()`); the
 20-slot default was chosen after measuring on a 4-CPU production
 container — see the inline rationale in `src/lib/db.ts`.

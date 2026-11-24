@@ -97,7 +97,7 @@ canonical envelope:
 }
 ```
 
-The lifecycle is `queued → unpacking → parsing → upserting → done`
+The lifecycle is `queued > unpacking > parsing > upserting > done`
 with `failed` as a terminal-error branch
 (`src/app/api/import/apple-health-export/[jobId]/status/route.ts:8-9`).
 The iOS native client polls every two seconds while active and every
@@ -257,7 +257,7 @@ go. The pass is
 fail-soft like the ECG pass, and the job result carries only
 `discovered/imported/duplicate/skipped/failed` lab counts.
 
-### Cumulative HK type → daily aggregate
+### Cumulative HK type > daily aggregate
 
 Cumulative quantity types — steps, active energy, walking/running
 distance, flights climbed, time in daylight, and fall count — get
@@ -392,7 +392,7 @@ Concrete consequences:
 RMSSD HRV has its own ladder, **WHOOP ≻ OURA ≻ POLAR ≻ APPLE_HEALTH**,
 separate from the SDNN one.
 
-Override per-user via Settings → Source priority (`/settings/sources`).
+Override per-user via Settings > Source priority (`/settings/sources`).
 
 ## Failure modes
 

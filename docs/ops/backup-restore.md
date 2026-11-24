@@ -12,11 +12,11 @@ and the encryption keys. That procedure is in
 
 | Copy                    | Where                     | When                                                           | Kept                                                                          |
 | ----------------------- | ------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Weekly account rollback | this database             | Sundays 03:00, or **Backup now** in Admin → Backups            | one per account, replaced in place each week                                  |
+| Weekly account rollback | this database             | Sundays 03:00, or **Backup now** in Admin > Backups            | one per account, replaced in place each week                                  |
 | Copy before a data wipe | this database             | right before "Delete all data" deletes anything                | until `ACCOUNT_DELETION_GRACE_DAYS` has passed, then the purge job deletes it |
-| Uploaded copy           | this database             | when an admin uploads a file in Admin → Backups                | until deleted                                                                 |
+| Uploaded copy           | this database             | when an admin uploads a file in Admin > Backups                | until deleted                                                                 |
 | Off-host copy           | your S3-compatible bucket | nightly at 02:30 Europe/Berlin, one object per account per day | as long as the bucket's lifecycle rule keeps it                               |
-| Personal export         | the person's device       | Settings → Export, "Full backup"                               | wherever they keep it                                                         |
+| Personal export         | the person's device       | Settings > Export, "Full backup"                               | wherever they keep it                                                         |
 
 The weekly, pre-wipe and off-host copies carry the whole record, document
 files and ECG traces included, with the database's ciphertext inside them as
@@ -29,7 +29,7 @@ Two kinds of data are not in any account copy: workout GPS routes and sample
 series. Credentials, devices, share links and account grants are left out on
 purpose (see "What a restore does not touch").
 
-The JSON import in Settings → Export & import is not a restore. It adds
+The JSON import in Settings > Export & import is not a restore. It adds
 measurements and mood entries, up to 16 MB and 10,000 entries per list.
 
 ## The deletion grace window
@@ -42,12 +42,12 @@ erasure waits:
   share link is revoked, sign-in is refused with the date the account is
   erased, and nothing runs for the account any more: no reminders, syncs,
   copies, scores or AI work. The record, its stored copies and its off-host
-  objects stay as they are. **Admin → Users** shows the account with its
+  objects stay as they are. **Admin > Users** shows the account with its
   erasure date and an **Undo deletion** button. When the window ends, the
   hourly `account-deletion-purge` job erases the account and asks the bucket to
   delete its off-host objects.
 - **Delete all data** first stores the whole record as a copy of its own
-  (shown as "Before all data was deleted" in Admin → Backups), then empties the
+  (shown as "Before all data was deleted" in Admin > Backups), then empties the
   record. An admin can restore that copy until the window ends. The off-host
   objects from before the wipe are kept until then too.
 
@@ -60,7 +60,7 @@ and the deletion dialogs state the configured number.
 
 ## Restoring an account
 
-In **Admin → Backups**, every stored copy has **Restore**. The dialog first
+In **Admin > Backups**, every stored copy has **Restore**. The dialog first
 shows what the copy holds, then asks you to type `RESTORE`. The restore runs
 in the background and replaces the account's data tables: every row the copy
 holds comes back under its original id, and every row the account gained
@@ -81,7 +81,7 @@ BACKUP_ENCRYPTION_KEY=<the key the object was written under> \
 pnpm dlx tsx scripts/restore-backup.ts 2026-05-08/user-<id>.json.enc /tmp/restored.json
 ```
 
-Then upload `/tmp/restored.json` in Admin → Backups (up to 512 MB after
+Then upload `/tmp/restored.json` in Admin > Backups (up to 512 MB after
 compression) and restore it from its row. When the account `<id>` no longer
 exists on this server, the upload offers to put the copy into another account
 (next section).
@@ -96,19 +96,19 @@ Once an account has been erased (its deletion window ended and the hourly purge
 ran), its copies on this server and in the bucket are gone, but a file you kept
 still holds the record: a disaster-recovery download, an off-host object you
 fetched before it expired, or the person's own full backup. Uploading it in
-Admin → Backups is refused at first, because the account it names no longer
+Admin > Backups is refused at first, because the account it names no longer
 exists, and the console then asks where the records should go:
 
 - **A new account.** Type a username. The account is created without a
   password or email, as an ordinary account with the user role, and nobody
   can sign into it yet. Before handing it over, set its first password with
-  **Reset password** in Admin → Users; the person can change it, add an email
+  **Reset password** in Admin > Users; the person can change it, add an email
   and enrol a passkey from their settings. The account is made before the
   file is read, with an `admin.user.create` audit row (`outcome: "created"`),
   and removed again when the file is refused, with an `admin.user.delete` row
   (`reason: "backup_upload_refused"`). When that row says `outcome: "failed"`,
   the removal did not happen and the account is left over, holding nothing:
-  delete it in Admin → Users.
+  delete it in Admin > Users.
 - **An existing account**, for someone who has signed up again. Pick the
   account and type its username to confirm. The account must hold no records
   yet: a restore replaces an account's records and does not merge them, so an
@@ -185,15 +185,15 @@ share a bucket apart. It is the copy that rebuilds a lost server
 `DeleteObject` and `AbortMultipartUpload` (R2's Object Read & Write token covers
 them). It deletes only two things: the objects of an account that was erased or
 wiped, once the grace window has ended, and its own connection-test object. A
-deletion the bucket refuses is retried every night and shown in Admin →
-Backups → Off-host. The admin wipe of every account deletes nothing in the
+deletion the bucket refuses is retried every night and shown in Admin >
+Backups > Off-host. The admin wipe of every account deletes nothing in the
 bucket.
 
 **Retention.** The app never expires objects by age. Set a lifecycle rule on
 the bucket that covers both the account objects and `database/` (for example,
-expire all objects after 30 days); Admin → Backups says when there is none.
+expire all objects after 30 days); Admin > Backups says when there is none.
 
-**Checking it works.** Admin → Backups → Off-host shows, per account, when the
+**Checking it works.** Admin > Backups > Off-host shows, per account, when the
 last object landed: fresh, due (one night missed), stale (two missed), never,
 or no record yet. A night that uploaded nothing for anybody fails the job with
 the bucket's own error. Accounts pending deletion are not uploaded and are not
@@ -209,8 +209,8 @@ once the lifecycle rule has expired every object written under it.
 
 A copy carries the database's ciphertext as stored, so it needs the
 application keys it was written under, also after a rotation. Keep a retired
-`ENCRYPTION_KEYS` entry until no copy you may still restore needs it. **Admin →
-Encryption → Keys the backups still need** lists them, the database dumps
+`ENCRYPTION_KEYS` entry until no copy you may still restore needs it. **Admin >
+Encryption > Keys the backups still need** lists them, the database dumps
 included: a dump needs the key that was active when it was taken, for as long
 as it is kept on this server or in the bucket. Off-host objects also need
 `BACKUP_ENCRYPTION_KEY` (or the previous key that wrote them).
@@ -228,5 +228,5 @@ past it fails alone, keeps its previous copy, and is counted as
 
 Both backup passes note which account they are on. An account whose last
 attempt never finished (the process died under it) is taken last on the next
-run and named in Admin → Backups, so one record too large for the container
+run and named in Admin > Backups, so one record too large for the container
 cannot keep everyone else from a copy.

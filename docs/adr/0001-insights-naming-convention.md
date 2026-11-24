@@ -35,12 +35,12 @@ Separate the two naming axes cleanly:
 it / pl`). The user never sees a raw identifier.
 - **Internal identifiers are English.** Route slugs (`/insights/<slug>`), the
   tile-layout enum (`INSIGHTS_TILE_IDS`), query keys, and the internal
-  slug→metric / slug→target maps all use established English terms. English is
+  slug > metric / slug > target maps all use established English terms. English is
   the lingua franca of the codebase and of the public API contract.
 
 Concretely, v1.8.0 migrates the routed Insights slugs and the tile-layout enum
-from German to English (e.g. `blutdruck` → `blood-pressure`, `gewicht` →
-`weight`, `medikamente` → `medications`). The full rename table lives in
+from German to English (e.g. `blutdruck` > `blood-pressure`, `gewicht` >
+`weight`, `medikamente` > `medications`). The full rename table lives in
 `src/lib/insights/sub-page-metric.ts` (slugs) and `src/lib/insights-layout.ts`
 (tile ids).
 

@@ -5,7 +5,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 
 /**
  * Notification-matrix page contract (QoL/UX audit 2026-07-08):
- *   - H2: the "no channels" CTA points at Settings → Integrations#channels,
+ *   - H2: the "no channels" CTA points at Settings > Integrations#channels,
  *     the surface that can actually add a channel (not the reminder-types
  *     screen, which no longer configures channels since v1.25.7).
  *   - M3: a failed load renders the shared `QueryErrorCard` with a Retry,
@@ -74,13 +74,13 @@ describe("NotificationsPage", () => {
     expect(html).toContain("Notification preferences could not be loaded.");
   });
 
-  it("H2 + L4: the no-channels CTA targets Settings → Integrations#channels", () => {
+  it("H2 + L4: the no-channels CTA targets Settings > Integrations#channels", () => {
     queryState.data = { channels: [], preferences: [], eventTypes: [] };
     const html = render();
     expect(html).toContain('href="/settings/integrations#channels"');
     // The reminder-types screen no longer configures channels — never point there.
     expect(html).not.toContain('href="/settings/notifications"><');
-    expect(html).toContain("Settings → Integrations");
+    expect(html).toContain("Settings &gt; Integrations");
   });
 
   it("M7: the matrix cross-links the reminder-types + channels surfaces", () => {

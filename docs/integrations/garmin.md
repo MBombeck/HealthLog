@@ -11,14 +11,14 @@ setup.
 
 ## Create a key
 
-1. Open [Garmin Connect → Settings → Personal API](https://connect.garmin.com/app/settings/personalApiToken).
+1. Open [Garmin Connect > Settings > Personal API](https://connect.garmin.com/app/settings/personalApiToken).
 2. Create a key and choose how long it stays valid: 30, 90, 180 days or one
    year.
 3. Copy it right away. Garmin shows the key once.
 
 ## Connect
 
-Open **Settings → Integrations → Garmin**, paste the key, and pick the same
+Open **Settings > Integrations > Garmin**, paste the key, and pick the same
 validity you chose in Garmin Connect. HealthLog checks the key with Garmin
 before storing anything, so a mistyped or revoked key is refused on the spot.
 The key is stored encrypted at rest and is never shown again, logged or sent
@@ -86,7 +86,7 @@ Notes:
   when you track none, for example) is skipped, does not count as an error,
   and is listed under **Details for a bug report** on the card.
 - When the same data also arrives through Apple Health or Health Connect, the
-  source order in **Settings → Sources** decides which one a chart shows.
+  source order in **Settings > Sources** decides which one a chart shows.
   Garmin ranks with the other watches.
 
 ## Heart rate over an activity

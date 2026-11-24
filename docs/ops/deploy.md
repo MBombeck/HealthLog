@@ -832,8 +832,8 @@ green.
 
 HealthLog ships no default error-reporting target and never will: an
 operator's crash reports must not leave their host because nobody told them
-not to. Reporting starts only when someone types a DSN into **Admin →
-Integrations → GlitchTip**, and that card states plainly whether reports are
+not to. Reporting starts only when someone types a DSN into **Admin >
+Integrations > GlitchTip**, and that card states plainly whether reports are
 going anywhere and which host they go to.
 
 For a maintainer-operated instance, set the DSN there after the first deploy —
