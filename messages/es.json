@@ -16134,6 +16134,37 @@
       "preview": "Tu tarjeta"
     },
     "name": "Nombre",
+    "walletPass": {
+      "kind": "Emergencia",
+      "allergy": "Alergia",
+      "severeAllergy": "Alergia grave",
+      "asOf": "Actualizado",
+      "week": "Semana {weeks}+{days}",
+      "postpartum": "Posparto",
+      "bloodShort": {
+        "A_POS": "A+",
+        "A_NEG": "A−",
+        "B_POS": "B+",
+        "B_NEG": "B−",
+        "AB_POS": "AB+",
+        "AB_NEG": "AB−",
+        "O_POS": "O+",
+        "O_NEG": "O−"
+      },
+      "scan": "Escanea para ver la tarjeta completa",
+      "validUntil": "Válida hasta",
+      "untilRevoked": "Hasta su retirada",
+      "asOfValue": "{date}, se actualiza sola",
+      "issuedBy": "Emitida por",
+      "signedBy": "Firmada por",
+      "signerRelay": "Proyecto HealthLog, healthlog.dev",
+      "noteLabel": "Aviso",
+      "note": "Introducida por su titular, no es un documento médico. El código QR abre la tarjeta actual mientras no se retire.",
+      "lockLabel": "Pantalla bloqueada",
+      "lock": "Wallet solo muestra esta tarjeta tras Face ID o el código. Para quien ayude ante un iPhone bloqueado, rellena también la Ficha Médica en la app Salud.",
+      "withdrawn": "Retirada",
+      "withdrawnBody": "Esta tarjeta se retiró el {date}. Su código QR ya no funciona."
+    },
     "fields": {
       "NAME": "Nombre",
       "BLOOD_TYPE": "Grupo sanguíneo",

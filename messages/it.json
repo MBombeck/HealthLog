@@ -16134,6 +16134,37 @@
       "preview": "La tua tessera"
     },
     "name": "Nome",
+    "walletPass": {
+      "kind": "Emergenza",
+      "allergy": "Allergia",
+      "severeAllergy": "Allergia grave",
+      "asOf": "Aggiornata al",
+      "week": "Settimana {weeks}+{days}",
+      "postpartum": "Post partum",
+      "bloodShort": {
+        "A_POS": "A+",
+        "A_NEG": "A−",
+        "B_POS": "B+",
+        "B_NEG": "B−",
+        "AB_POS": "AB+",
+        "AB_NEG": "AB−",
+        "O_POS": "0+",
+        "O_NEG": "0−"
+      },
+      "scan": "Scansiona per la tessera completa",
+      "validUntil": "Valida fino al",
+      "untilRevoked": "Fino al ritiro",
+      "asOfValue": "{date}, si aggiorna da sola",
+      "issuedBy": "Emessa da",
+      "signedBy": "Firmata da",
+      "signerRelay": "Progetto HealthLog, healthlog.dev",
+      "noteLabel": "Nota",
+      "note": "Compilata dal titolare, non è un documento medico. Il codice QR apre la tessera attuale finché non viene ritirata.",
+      "lockLabel": "Schermata di blocco",
+      "lock": "Wallet mostra questa tessera solo dopo Face ID o il codice. Per chi soccorre davanti a un iPhone bloccato, compila anche la scheda medica nell'app Salute.",
+      "withdrawn": "Ritirata",
+      "withdrawnBody": "Questa tessera è stata ritirata il {date}. Il suo codice QR non funziona più."
+    },
     "fields": {
       "NAME": "Nome",
       "BLOOD_TYPE": "Gruppo sanguigno",

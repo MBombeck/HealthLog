@@ -16134,6 +16134,37 @@
       "preview": "Deine Karte"
     },
     "name": "Name",
+    "walletPass": {
+      "kind": "Notfallkarte",
+      "allergy": "Allergie",
+      "severeAllergy": "Schwere Allergie",
+      "asOf": "Stand",
+      "week": "SSW {weeks}+{days}",
+      "postpartum": "Wochenbett",
+      "bloodShort": {
+        "A_POS": "A Rh+",
+        "A_NEG": "A Rh−",
+        "B_POS": "B Rh+",
+        "B_NEG": "B Rh−",
+        "AB_POS": "AB Rh+",
+        "AB_NEG": "AB Rh−",
+        "O_POS": "0 Rh+",
+        "O_NEG": "0 Rh−"
+      },
+      "scan": "Scannen: vollständige Karte",
+      "validUntil": "Gültig bis",
+      "untilRevoked": "Bis zum Widerruf",
+      "asOfValue": "{date}, aktualisiert sich selbst",
+      "issuedBy": "Ausgestellt von",
+      "signedBy": "Signiert von",
+      "signerRelay": "HealthLog-Projekt, healthlog.dev",
+      "noteLabel": "Hinweis",
+      "note": "Vom Besitzer selbst eingetragen, kein ärztliches Dokument. Der QR-Code öffnet die aktuelle Karte, solange sie nicht zurückgezogen ist.",
+      "lockLabel": "Sperrbildschirm",
+      "lock": "Wallet zeigt diese Karte erst nach Face ID oder Code. Für Helfer am gesperrten iPhone zusätzlich den Notfallpass in der Health-App ausfüllen.",
+      "withdrawn": "Zurückgezogen",
+      "withdrawnBody": "Diese Karte wurde am {date} zurückgezogen. Ihr QR-Code funktioniert nicht mehr."
+    },
     "fields": {
       "NAME": "Name",
       "BLOOD_TYPE": "Blutgruppe",

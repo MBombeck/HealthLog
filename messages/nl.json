@@ -16134,6 +16134,37 @@
       "preview": "Jouw kaart"
     },
     "name": "Naam",
+    "walletPass": {
+      "kind": "Noodkaart",
+      "allergy": "Allergie",
+      "severeAllergy": "Ernstige allergie",
+      "asOf": "Bijgewerkt",
+      "week": "Week {weeks}+{days}",
+      "postpartum": "Kraambed",
+      "bloodShort": {
+        "A_POS": "A+",
+        "A_NEG": "A−",
+        "B_POS": "B+",
+        "B_NEG": "B−",
+        "AB_POS": "AB+",
+        "AB_NEG": "AB−",
+        "O_POS": "O+",
+        "O_NEG": "O−"
+      },
+      "scan": "Scan voor de volledige kaart",
+      "validUntil": "Geldig tot",
+      "untilRevoked": "Tot intrekking",
+      "asOfValue": "{date}, werkt zichzelf bij",
+      "issuedBy": "Uitgegeven door",
+      "signedBy": "Ondertekend door",
+      "signerRelay": "HealthLog-project, healthlog.dev",
+      "noteLabel": "Let op",
+      "note": "Ingevuld door de eigenaar, geen medisch document. De QR-code opent de actuele kaart zolang die niet is ingetrokken.",
+      "lockLabel": "Toegangsscherm",
+      "lock": "Wallet toont deze kaart pas na Face ID of de toegangscode. Vul voor hulpverleners bij een vergrendelde iPhone ook de Medische ID in de Gezondheid-app in.",
+      "withdrawn": "Ingetrokken",
+      "withdrawnBody": "Deze kaart is op {date} ingetrokken. De QR-code werkt niet meer."
+    },
     "fields": {
       "NAME": "Naam",
       "BLOOD_TYPE": "Bloedgroep",
