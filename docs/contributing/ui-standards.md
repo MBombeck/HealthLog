@@ -137,7 +137,7 @@ Planned (until it lands, this is a review-checklist item):
 
 1. A tile-header icon-colour check (`text-muted-foreground` / `text-primary` on a glyph inside a `CardTitle` or tile-header row).
 
-**PR checklist for any UI change:** both themes checked visually · no new `dracula-*`/hex/opacity-muted · headers via a primitive · card gap untouched by slot padding · `isError` > `QueryErrorCard` or `QueryErrorRow` by surface, with `error` · mobile modal = `ResponsiveSheet` · `pnpm format` + `pnpm lint` + `pnpm typecheck` green.
+**PR checklist for any UI change:** both themes checked visually · no new `dracula-*`/hex/opacity-muted · headers via a primitive · card gap untouched by slot padding · `isError` shows `QueryErrorCard` or `QueryErrorRow` by surface, with `error` · mobile modal = `ResponsiveSheet` · `pnpm format` + `pnpm lint` + `pnpm typecheck` green.
 
 ---
 
