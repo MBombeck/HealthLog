@@ -65,6 +65,8 @@ notes, and machine-readable specs that ship alongside the source:
   or year.
   [`using/lasting-change-notification.md`](./using/lasting-change-notification.md)
   covers the opt-in notification about a vital that settled at a new level.
+  [`using/sync-stalled-notification.md`](./using/sync-stalled-notification.md)
+  covers the notification about a daily source that has gone quiet.
   [`using/seizure-diary.md`](./using/seizure-diary.md) covers the seizure
   diary.
   [`using/treatment-series.md`](./using/treatment-series.md) covers courses

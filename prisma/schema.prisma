@@ -5591,6 +5591,11 @@ model IntegrationWatch {
   /// adopted an alert the sync ledger had already sent for the same streak.
   /// Null while an incident is open but not yet announced.
   alertedAt        DateTime? @map("alerted_at")
+  /// When the account owner got the stall notice (`SYNC_STALLED`) for the
+  /// current silence, or it was settled without one (no channel wanted it).
+  /// Null while the silence is untold; cleared with `silentSince`.
+  /// Reader and writer: `src/lib/sync-stall/notice.ts`.
+  ownerNotifiedAt  DateTime? @map("owner_notified_at")
   checkedAt        DateTime  @default(now()) @map("checked_at")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
@@ -6617,16 +6622,16 @@ model LiveActivityToken {
 }
 
 model Device {
-  id                         String              @id @default(cuid())
-  userId                     String              @map("user_id")
+  id                         String                   @id @default(cuid())
+  userId                     String                   @map("user_id")
   platform                   String // "ios"
-  token                      String              @unique
-  bundleId                   String              @map("bundle_id")
+  token                      String                   @unique
+  bundleId                   String                   @map("bundle_id")
   locale                     String?
-  appVersion                 String?             @map("app_version")
+  appVersion                 String?                  @map("app_version")
   model                      String?
-  apnsToken                  String?             @map("apns_token")
-  apnsEnvironment            String?             @map("apns_environment") // "sandbox" | "production"
+  apnsToken                  String?                  @map("apns_token")
+  apnsEnvironment            String?                  @map("apns_environment") // "sandbox" | "production"
   /// v1.7.0 — per-device medication-delivery override. NULL = inherit the
   /// user-level roaming default
   /// (`User.notificationPrefs.medication.deliveryDefault`). "server"
@@ -6634,7 +6639,7 @@ model Device {
   /// v1.48.0 (#179) the dispatcher's APNs send honours it per device for the
   /// medication reminder that announces a dose; NULL there follows the
   /// account-wide client-managed flag (`deviceDeliversLocally`).
-  medicationDelivery         String?             @map("medication_delivery")
+  medicationDelivery         String?                  @map("medication_delivery")
   /// Until when a device that delivers its own medication reminders has
   /// them planned (`POST /api/devices` `localRunwayUntil`, at most 14 days
   /// ahead; null clears it, omitted keeps it). A device delivers locally
@@ -6643,7 +6648,7 @@ model Device {
   /// sign-in token moves): a quiet phone whose plan ran dry gets the
   /// server's reminder push again until it shows up. Reader: the dispatcher's
   /// APNs branch (`client-managed-apns.ts`, `deviceDeliversLocally`).
-  localRunwayUntil           DateTime?           @map("local_runway_until")
+  localRunwayUntil           DateTime?                @map("local_runway_until")
   /// v1.17.1 (#22) — APNs push token for the iOS Live Activity update/end
   /// channel. ActivityKit issues a per-Activity push token distinct from the
   /// device APNs token; the server stores the most recent one so the worker
@@ -6651,7 +6656,7 @@ model Device {
   /// the device has no active Live Activity. The iOS client owns the
   /// ActivityKit lifecycle and registers/clears this token; no server-side
   /// behaviour hangs off it beyond addressing the update push.
-  liveActivityPushToken      String?             @map("live_activity_push_token")
+  liveActivityPushToken      String?                  @map("live_activity_push_token")
   /// The device's running medication Live Activities, one row each, with
   /// the dose it shows. Replaced as a set by `POST /api/devices`
   /// (`liveActivities`); a row goes when its end push goes out.
@@ -6660,45 +6665,45 @@ model Device {
   /// of every sealed push envelope. Set only with the device's consent, from
   /// `POST /api/devices` `pushKey`; null for a device that takes plaintext
   /// pushes. Readers: the push builders (`push-relay/route-device.ts`).
-  pushKeyPublic              String?             @map("push_key_public")
+  pushKeyPublic              String?                  @map("push_key_public")
   /// The envelope suites the device opens (`pushKey.suites`). Reader: the
   /// sealer, which refuses to seal with a suite the device cannot open.
-  pushKeySuites              Int[]               @default([]) @map("push_key_suites")
+  pushKeySuites              Int[]                    @default([]) @map("push_key_suites")
   /// When and under which consent text the person turned the relay on for
   /// this device (`relayConsent`). Readers: the relay binding (the consent
   /// record the relay stores) and `/api/auth/me` `push.device.consent`.
-  relayConsentAt             DateTime?           @map("relay_consent_at")
-  relayConsentVersion        String?             @map("relay_consent_version")
+  relayConsentAt             DateTime?                @map("relay_consent_at")
+  relayConsentVersion        String?                  @map("relay_consent_version")
   /// The device's signed relay binding, forwarded to the relay unchanged:
   /// the Ed25519 binding key, the `hl-bind-v1` statement fields and the
   /// signature. Kept so a rebind after `404 binding_unknown` can resubmit the
   /// last statement. Reader: `push-relay/binding.ts`.
-  relayBindingKey            String?             @map("relay_binding_key")
-  relayBindingStatement      Json?               @map("relay_binding_statement")
-  relayBindingSignature      String?             @map("relay_binding_signature")
+  relayBindingKey            String?                  @map("relay_binding_key")
+  relayBindingStatement      Json?                    @map("relay_binding_statement")
+  relayBindingSignature      String?                  @map("relay_binding_signature")
   /// `none` | `bound` | `rebind_needed` | `conflict`. Reader: `/api/auth/me`
   /// `push.device.relayState` and the push routing, which sends over the
   /// relay only for `bound`.
-  relayState                 String              @default("none") @map("relay_state")
+  relayState                 String                   @default("none") @map("relay_state")
   /// When the relay answered the binding with `409 binding_conflict`. A
   /// conflict still unsettled after 30 minutes reads and becomes
   /// `rebind_needed` (`push-relay/binding.ts`, `relayStateAt`).
-  relayConflictAt            DateTime?           @map("relay_conflict_at")
+  relayConflictAt            DateTime?                @map("relay_conflict_at")
   /// The person's second, separate consent to Live Activity start and
   /// update over the relay (`liveActivityConsent`), whose content the relay
   /// and Apple can see. Distinct from the relay consent, off until given.
   /// Readers: the Live Activity relay sender (`push-relay/live-activity.ts`)
   /// and `/api/auth/me` `push.device.liveActivityConsent`.
-  liveActivityConsentAt      DateTime?           @map("live_activity_consent_at")
+  liveActivityConsentAt      DateTime?                @map("live_activity_consent_at")
   /// @internal: consent evidence, the text version the person agreed to;
   /// kept as the record of that consent, never surfaced.
-  liveActivityConsentVersion String?             @map("live_activity_consent_version")
+  liveActivityConsentVersion String?                  @map("live_activity_consent_version")
   /// The ActivityKit push-to-start token and the device's `hl-la-start-v1`
   /// statement over it (`liveActivityStart`), handed to the relay only
   /// inside a start push. Reader: `push-relay/live-activity.ts`.
-  laStartToken               String?             @map("la_start_token")
-  laStartStatement           Json?               @map("la_start_statement")
-  laStartSignature           String?             @map("la_start_signature")
+  laStartToken               String?                  @map("la_start_token")
+  laStartStatement           Json?                    @map("la_start_statement")
+  laStartSignature           String?                  @map("la_start_signature")
   /// When the app last reported a relay-started Activity with its start id
   /// (`liveActivityTokens[].startId`, the `s` attribute the relay writes into
   /// `HealthLogDoseAttributes`); null before, and again once it reports one
@@ -6706,27 +6711,46 @@ model Device {
   /// may run several at once; while null it keeps the device to one
   /// relay-started Activity, the rule of builds that echo no id. Writer:
   /// `POST /api/devices`; reader: `push-relay/live-activity.ts`.
-  laStartIdsAt               DateTime?           @map("la_start_ids_at")
+  laStartIdsAt               DateTime?                @map("la_start_ids_at")
   /// When the relay last confirmed the binding. Reader: the admin diagnostic
   /// (`relayBoundAt`).
-  relayBoundAt               DateTime?           @map("relay_bound_at")
+  relayBoundAt               DateTime?                @map("relay_bound_at")
   /// The newest envelope ids this device reports it opened, per class
   /// (`GET /api/sync/state`), and when it reported them. Reader: the receipt
   /// write (`push-relay/receipts.ts`), which keeps the newer of the stored and
   /// the reported id, so a late report cannot move them back; the time is
   /// read by `intakeSync` (`capability.ts`) and the admin diagnostic.
-  envelopeOpenedAlertId      String?             @map("envelope_opened_alert_id")
-  envelopeOpenedSilentId     String?             @map("envelope_opened_silent_id")
-  envelopeReportedAt         DateTime?           @map("envelope_reported_at")
+  envelopeOpenedAlertId      String?                  @map("envelope_opened_alert_id")
+  envelopeOpenedSilentId     String?                  @map("envelope_opened_silent_id")
+  envelopeReportedAt         DateTime?                @map("envelope_reported_at")
   relayDeliveries            PushRelayDelivery[]
   /// The silent wakes this server sent the device (DATA_CHANGED,
   /// HEALTHKIT_CATCH_UP), for their rate limits (`push-relay/wakes.ts`).
   pushWakes                  PushWake[]
   /// The DATA_CHANGED wake owed to the device (`push-relay/data-changed.ts`).
   pushDataChange             PushDataChange?
-  lastSeen                   DateTime            @default(now()) @map("last_seen")
-  createdAt                  DateTime            @default(now()) @map("created_at")
-  updatedAt                  DateTime            @updatedAt @map("updated_at")
+  /// When this device last delivered Apple Health data of a type iOS hands
+  /// over in the background (`STALL_LIVENESS_TYPES`: steps, sleep, heart and
+  /// the other vitals), from the batch ingest that carried its `X-Device-Id`.
+  /// A backfill batch and a scoped bridge never move it. Null for a device
+  /// that never sent Apple Health data, which the stall detector then never
+  /// looks at. Writer: `recordDeviceHealthIngest`; reader: the stall detector
+  /// (`src/lib/sync-stall/devices.ts`).
+  healthIngestAt             DateTime?                @map("health_ingest_at")
+  /// Set while the device's Apple Health delivery has stalled against its own
+  /// cadence: the instant of its last delivery. Cleared by the next delivery.
+  /// Readers: the Apple Health card (`GET /api/integrations/healthkit`
+  /// `quietDevices`) and the stall notice.
+  healthQuietSince           DateTime?                @map("health_quiet_since")
+  /// When the stall notice for the current stall went out, or was settled
+  /// without one (no channel wanted it, another device delivers). Null while
+  /// the current stall is untold; cleared with the stall.
+  healthQuietNotifiedAt      DateTime?                @map("health_quiet_notified_at")
+  /// The hours this device delivered in, the stall detector's history.
+  healthIngestHours          DeviceHealthIngestHour[]
+  lastSeen                   DateTime                 @default(now()) @map("last_seen")
+  createdAt                  DateTime                 @default(now()) @map("created_at")
+  updatedAt                  DateTime                 @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -6737,6 +6761,23 @@ model Device {
   // SQL and intentionally omitted here. Do not re-add `@@index([apnsToken])`
   // (the non-unique sibling) — the partial unique index supersedes it.
   @@map("devices")
+}
+
+/// One hour in which a device delivered Apple Health data of a background
+/// type: the history the stall detector learns the device's cadence from
+/// (`src/lib/sync-stall/cadence.ts`). Upserted by the batch ingest, pruned
+/// after `INGEST_HOUR_RETENTION_DAYS` by the stall pass. Operational, like
+/// `HealthKitTypeSync`: what this host received, not backed up.
+model DeviceHealthIngestHour {
+  deviceId String   @map("device_id")
+  /// The start of the hour, UTC.
+  hour     DateTime @map("hour")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@id([deviceId, hour])
+  @@index([hour])
+  @@map("device_health_ingest_hours")
 }
 
 // ─── Measurement / Vorsorge reminders ────────────────────────

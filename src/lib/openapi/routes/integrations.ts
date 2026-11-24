@@ -390,6 +390,24 @@ const healthKitConfigResponse = z
       .describe(
         "The unified Apple Health connection state. Null when the phone has never delivered anything (or the read failed). Present on the GET read; omitted from the PATCH echo.",
       ),
+    quietDevices: z
+      .array(
+        z.object({
+          model: z
+            .string()
+            .nullable()
+            .describe("The model the device registered with, or null."),
+          quietSince: z
+            .string()
+            .describe(
+              "ISO instant of the device's last Apple Health delivery of a background type.",
+            ),
+        }),
+      )
+      .optional()
+      .describe(
+        "The account's iOS devices whose Apple Health upload has gone quiet against their own rhythm (the stall rule behind the `SYNC_STALLED` notification): only a device that delivers on most days qualifies, and it counts as quiet after 24 hours or twice its usual gap, whichever is longer. Empty when every device delivers. Present on the GET read; omitted from the PATCH echo.",
+      ),
     acceptedTypes: z
       .array(z.string())
       .optional()

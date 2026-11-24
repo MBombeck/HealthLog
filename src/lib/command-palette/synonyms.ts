@@ -150,6 +150,7 @@ export const PALETTE_KEYWORD_KEYS: Readonly<Record<string, string>> = {
   "settings:notifications#dose-snooze": "palette.keywords.snooze",
   "settings:notifications#security-alerts": "palette.keywords.securityAlerts",
   "settings:notifications#lasting-change": "palette.keywords.lastingChange",
+  "settings:notifications#sync-stalled": "palette.keywords.syncStalled",
   "settings:account#theme": "palette.keywords.theme",
   "settings:export#import-gadgetbridge": "palette.keywords.gadgetbridge",
   "settings:export#import-fhir-bundle": "palette.keywords.fhirBundle",

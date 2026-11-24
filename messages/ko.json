@@ -8194,7 +8194,9 @@
         "never": "아직 수신되지 않음",
         "lastBackfill": "기록 보충 {relative}",
         "lastEnteredHere": "여기에서 마지막 입력 {relative}"
-      }
+      },
+      "quietSince": "{device}: {since}부터 조용함. 이 기기에서 HealthLog를 한 번 열면 됩니다.",
+      "quietDeviceUnnamed": "iPhone"
     },
     "glucoseReference": {
       "title": "혈당 참고 구간",
@@ -10395,6 +10397,15 @@
       "title": "지속적인 변화",
       "bodyUp": "{date} 이후 {metric} 값이 더 높게 유지되고 있습니다. 인사이트에서 전후를 확인하세요.",
       "bodyDown": "{date} 이후 {metric} 값이 더 낮게 유지되고 있습니다. 인사이트에서 전후를 확인하세요."
+    },
+    "eventSyncStalled": "데이터 소스 동기화 중단",
+    "eventSyncStalledDesc": "매일 데이터를 보내던 iPhone, 링, 시계 또는 체중계가 조용해졌을 때. 중단마다 한 번, 낮 시간에만, 하루 최대 한 번.",
+    "syncStalled": {
+      "title": "{provider} 데이터가 멈췄습니다",
+      "appleYesterday": "{provider}에서 어제부터 아무것도 오지 않았습니다. HealthLog를 한 번 열면 됩니다.",
+      "appleSince": "{provider}에서 {date}부터 아무것도 오지 않았습니다. HealthLog를 한 번 열면 됩니다.",
+      "sourceYesterday": "{provider}에서 어제부터 아무것도 오지 않았습니다. 해당 앱을 열거나 HealthLog에서 다시 연결하세요.",
+      "sourceSince": "{provider}에서 {date}부터 아무것도 오지 않았습니다. 해당 앱을 열거나 HealthLog에서 다시 연결하세요."
     },
     "relayTest": {
       "title": "HealthLog 테스트 알림",
@@ -15396,6 +15407,7 @@
       "snooze": "다시 알림, 나중에, 미루기, 스누즈",
       "securityAlerts": "보안, 로그인, 새 기기, 경고",
       "lastingChange": "지속적 변화, 활력 징후, 추세, 안정 시 심박수, 혈압",
+      "syncStalled": "동기화 중단, 조용함, 데이터 없음, Apple Health, 백그라운드",
       "theme": "테마, 다크 모드, 라이트 모드, 화면, 색상",
       "gadgetbridge": "Gadgetbridge, 안드로이드, 스마트워치, 데이터베이스",
       "fhirBundle": "FHIR, 번들, 진료 기록, 가져오기",

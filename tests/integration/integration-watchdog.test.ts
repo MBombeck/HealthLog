@@ -1,7 +1,7 @@
 /**
  * The integration watchdog and the connection health read against real
  * Postgres: the 14-day history count, the one-alert-per-incident ledger, the
- * recovery note, the on-demand exemption, the adoption of a page the sync
+ * recovery note, the habitual source that never pages, the adoption of a page the sync
  * ledger already sent, and the recent-call ring the diagnostics read.
  *
  * The dispatcher is mocked: what is asserted is how many operator messages
@@ -182,7 +182,7 @@ describe("integration watchdog", () => {
     ).toBe(0);
   });
 
-  it("never alerts on silence for an on-demand source such as a scale", async () => {
+  it("flags a scale weighed on daily for its owner and never pages the operator", async () => {
     await prisma().user.update({
       where: { id: USER },
       data: { ouraAccessTokenEncrypted: null },
@@ -210,10 +210,14 @@ describe("integration watchdog", () => {
       await recordSyncSuccess(USER, "withings");
       const summary = await runIntegrationWatchdog({ mode: "daily", now: NOW });
       expect(summary.connectionsConsidered).toBe(1);
-      expect(summary.silencesFlagged).toBe(0);
+      // The owner's card says it went quiet, and the stall notice tells them
+      // once (`sync-stall/notice.ts`); the operator hears nothing.
+      expect(summary.silencesFlagged).toBe(1);
+      expect(summary.incidentsOpened).toBe(0);
       expect(dispatchNotification).not.toHaveBeenCalled();
       const health = await loadConnectionHealth(USER, ["withings"]);
-      expect(health.withings?.state).toBe("ok");
+      expect(health.withings?.state).toBe("degraded");
+      expect(health.withings?.reason).toBe("unexpected_silence");
     } finally {
       vi.useRealTimers();
     }

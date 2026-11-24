@@ -8194,7 +8194,9 @@
         "never": "Ещё не получено",
         "lastBackfill": "История догружена {relative}",
         "lastEnteredHere": "Последний ввод здесь {relative}"
-      }
+      },
+      "quietSince": "{device}: тишина с {since}. Достаточно один раз открыть на нём HealthLog.",
+      "quietDeviceUnnamed": "iPhone"
     },
     "glucoseReference": {
       "title": "Референсный диапазон глюкозы",
@@ -10395,6 +10397,15 @@
       "title": "Устойчивое изменение",
       "bodyUp": "Показатель {metric} держится выше с {date}. В Insights видно, как было до и после.",
       "bodyDown": "Показатель {metric} держится ниже с {date}. В Insights видно, как было до и после."
+    },
+    "eventSyncStalled": "Источник перестал синхронизироваться",
+    "eventSyncStalledDesc": "Когда iPhone, кольцо, часы или весы, которые передают данные каждый день, замолчали. Один раз за перерыв, днём, не чаще раза в день.",
+    "syncStalled": {
+      "title": "{provider}: нет данных",
+      "appleYesterday": "От {provider} ничего не поступало со вчерашнего дня. Достаточно один раз открыть HealthLog.",
+      "appleSince": "От {provider} ничего не поступало с {date}. Достаточно один раз открыть HealthLog.",
+      "sourceYesterday": "От {provider} ничего не поступало со вчерашнего дня. Откройте приложение {provider} или подключите его заново в HealthLog.",
+      "sourceSince": "От {provider} ничего не поступало с {date}. Откройте приложение {provider} или подключите его заново в HealthLog."
     },
     "relayTest": {
       "title": "Тестовое уведомление HealthLog",
@@ -15396,6 +15407,7 @@
       "snooze": "отложить, позже, напомнить позже, snooze",
       "securityAlerts": "безопасность, вход, новое устройство, предупреждение",
       "lastingChange": "стойкое изменение, показатель, тренд, пульс в покое, давление",
+      "syncStalled": "синхронизация остановлена, тишина, нет данных, Apple Health, фон",
       "theme": "тема, тёмный режим, светлый режим, оформление, цвета",
       "gadgetbridge": "Gadgetbridge, Android, смарт-часы, база данных",
       "fhirBundle": "FHIR, пакет, медицинская карта, импорт",

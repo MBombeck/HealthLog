@@ -8194,7 +8194,9 @@
         "never": "Non ancora ricevuto",
         "lastBackfill": "Storico recuperato {relative}",
         "lastEnteredHere": "Ultimo inserimento qui {relative}"
-      }
+      },
+      "quietSince": "{device}: in silenzio da {since}. Basta aprire HealthLog su questo dispositivo una volta.",
+      "quietDeviceUnnamed": "Un iPhone"
     },
     "glucoseReference": {
       "title": "Banda di riferimento della glicemia",
@@ -10395,6 +10397,15 @@
       "title": "Un cambiamento duraturo",
       "bodyUp": "Il tuo valore {metric} è rimasto più alto dal {date}. Insights mostra il prima e il dopo.",
       "bodyDown": "Il tuo valore {metric} è rimasto più basso dal {date}. Insights mostra il prima e il dopo."
+    },
+    "eventSyncStalled": "Una fonte ha smesso di sincronizzare",
+    "eventSyncStalledDesc": "Quando un iPhone, un anello, un orologio o una bilancia che invia dati ogni giorno tace. Una volta per pausa, di giorno, al massimo una volta al giorno.",
+    "syncStalled": {
+      "title": "{provider} non invia più dati",
+      "appleYesterday": "{provider} non ha inviato nulla da ieri. Basta aprire HealthLog una volta.",
+      "appleSince": "{provider} non ha inviato nulla dal {date}. Basta aprire HealthLog una volta.",
+      "sourceYesterday": "{provider} non ha inviato nulla da ieri. Apri la sua app o ricollegalo in HealthLog.",
+      "sourceSince": "{provider} non ha inviato nulla dal {date}. Apri la sua app o ricollegalo in HealthLog."
     },
     "relayTest": {
       "title": "Notifica di prova HealthLog",
@@ -15396,6 +15407,7 @@
       "snooze": "posticipa, più tardi, rimanda, snooze",
       "securityAlerts": "sicurezza, accesso, nuovo dispositivo, avviso",
       "lastingChange": "cambiamento duraturo, parametro vitale, tendenza, frequenza a riposo, pressione",
+      "syncStalled": "sincronizzazione ferma, silenzio, nessun dato, Apple Health, background",
       "theme": "tema, modalità scura, modalità chiara, aspetto, colori",
       "gadgetbridge": "Gadgetbridge, Android, smartwatch, banca dati",
       "fhirBundle": "FHIR, pacchetto, cartella clinica, importazione",

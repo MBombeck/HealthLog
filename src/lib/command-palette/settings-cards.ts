@@ -324,6 +324,11 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     anchor: "lasting-change",
     titleKey: "notifications.eventMeasurementAnomaly",
   },
+  {
+    section: "notifications",
+    anchor: "sync-stalled",
+    titleKey: "notifications.eventSyncStalled",
+  },
   // ── Anamnesis ──
   {
     section: "anamnesis",

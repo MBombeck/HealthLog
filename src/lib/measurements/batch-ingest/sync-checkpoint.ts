@@ -35,6 +35,12 @@
  * A `backfill` batch (ios #77) is a catch-up, not a sync. It records its
  * types under `lastBackfillAt` only and moves none of the live stamps:
  * thirty days of history must not read as thirty healthy daily syncs.
+ *
+ * The device that sent the batch (`X-Device-Id`) is stamped as delivering
+ * when the batch carried an Apple Health type iOS hands over in the
+ * background (`recordDeviceHealthIngest`), whatever else failed in it: the
+ * stall detector asks whether the phone's upload runs at all, and a batch with
+ * one failed row is proof that it does. Not for a backfill or a bridge.
  */
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
@@ -45,6 +51,10 @@ import {
   type HealthKitRequestSyncTrigger,
 } from "@/lib/integrations/healthkit-type-sync";
 import type { HourBucketWrite } from "@/lib/measurements/intraday-hour-buckets";
+import {
+  STALL_LIVENESS_TYPES,
+  recordDeviceHealthIngest,
+} from "@/lib/sync-stall/device-ingest";
 
 import type { EntryResult, PreparedEntry } from "./entries";
 
@@ -58,6 +68,8 @@ export async function stampSyncCheckpoint(args: {
   unchangedStatsRows: Set<PreparedEntry>;
   hourLanded: HourBucketWrite[];
   hourChanged: Set<HourBucketWrite>;
+  /** The caller's `X-Device-Id`, or null when it sent none. */
+  deviceToken?: string | null;
 }): Promise<void> {
   const {
     userId,
@@ -85,6 +97,29 @@ export async function stampSyncCheckpoint(args: {
       }));
 
   const backfill = syncTrigger === BACKFILL_SYNC_TRIGGER;
+  if (!scoped && !backfill && args.deviceToken) {
+    const delivered =
+      hourLanded.some((w) => STALL_LIVENESS_TYPES.has(w.type)) ||
+      prepared.some((p) => {
+        if (p.row.source !== "APPLE_HEALTH") return false;
+        if (!STALL_LIVENESS_TYPES.has(p.row.type as MeasurementType)) {
+          return false;
+        }
+        const status = results[p.index]?.status;
+        return (
+          status === "inserted" ||
+          status === "updated" ||
+          status === "duplicate"
+        );
+      });
+    if (delivered) {
+      await recordDeviceHealthIngest(prisma, {
+        userId,
+        deviceToken: args.deviceToken,
+        at: new Date(),
+      });
+    }
+  }
   if (failedCount === 0 && !scoped) {
     const syncedAt = new Date();
     const deliveredWithoutTheApp =

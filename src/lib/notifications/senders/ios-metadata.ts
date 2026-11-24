@@ -45,10 +45,16 @@ const IOS_METADATA_ALLOWLIST = new Set([
   // measurement type, e.g. `RESTING_HEART_RATE`), so the app opens its page
   // where the relay carries no url. The name only, never a reading.
   "metric",
+  // SYNC_STALLED names the source that went quiet (`apple-health`, `garmin`,
+  // `oura`, …), so the app can open its own screen for it where the relay
+  // carries no url. A connection key, never a device name or an instant.
+  "source",
 ]);
 
 /** A metric is passed only as a type name; anything else is dropped. */
 const METRIC_NAME = /^[A-Z][A-Z0-9_]{0,63}$/;
+/** A source is passed only as a connection key; anything else is dropped. */
+const SOURCE_KEY = /^[a-z][a-z-]{0,31}$/;
 
 export function pickIosMetadata(
   metadata: Record<string, unknown> | undefined,
@@ -61,6 +67,12 @@ export function pickIosMetadata(
     if (
       key === "metric" &&
       !(typeof value === "string" && METRIC_NAME.test(value))
+    ) {
+      continue;
+    }
+    if (
+      key === "source" &&
+      !(typeof value === "string" && SOURCE_KEY.test(value))
     ) {
       continue;
     }

@@ -224,7 +224,10 @@ only when no relay holds a binding of this server any more.
   changed (measurements, sleep, workouts, nutrition), never a value;
 - a silent wake asking the app to run its Apple Health upload when the
   server has received nothing from it for six hours while the app is still
-  in use.
+  in use;
+- the visible notice that Apple Health has sent nothing for a day, once per
+  quiet spell and only in the daytime, for a phone whose app was swiped away
+  and therefore takes no silent wake (`docs/using/sync-stalled-notification.md`).
 
 ### Apple Wallet passes
 
