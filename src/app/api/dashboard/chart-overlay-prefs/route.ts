@@ -23,11 +23,11 @@ import { shouldEmitAuditRow } from "@/lib/audit-dedup";
 import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
 import {
-  CHART_OVERLAY_KEYS,
   resolveDashboardLayout,
   serializeDashboardLayout,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
+import { CHART_OVERLAY_KEYS } from "@/lib/dashboard/chart-overlay-prefs";
 import { invalidateUserDashboardWidgets } from "@/lib/cache/invalidate";
 import { z } from "zod/v4";
 import {

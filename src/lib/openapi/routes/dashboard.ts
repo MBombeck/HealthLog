@@ -20,12 +20,14 @@ import type { ZodOpenApiObject } from "zod-openapi";
 
 import {
   DASHBOARD_WIDGET_CATALOGUE_IDS,
-  COMPARISON_BASELINES,
-  CHART_OVERLAY_KEYS,
   SCORE_RING_IDS,
   HERO_RING_IDS,
   HERO_PRIMARY_CONTENTS,
 } from "@/lib/dashboard-layout";
+import {
+  COMPARISON_BASELINES,
+  CHART_OVERLAY_KEYS,
+} from "@/lib/dashboard/chart-overlay-prefs";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 import {
   MAX_NIGHT_OVERLAY_LINES,

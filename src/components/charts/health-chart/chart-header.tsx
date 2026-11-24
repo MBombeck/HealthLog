@@ -7,7 +7,7 @@ import type { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import type {
   ChartRangePoints,
   ComparisonBaseline,
-} from "@/lib/dashboard-layout";
+} from "@/lib/dashboard/chart-overlay-prefs";
 import { useTranslations } from "@/lib/i18n/context";
 
 import { ChartOverlayControls } from "../chart-overlay-controls";

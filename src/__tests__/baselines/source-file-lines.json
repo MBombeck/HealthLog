@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 74,
-  "total": 80167,
+  "count": 73,
+  "total": 79168,
   "entries": {
     "components/cycle/log-day-sheet.tsx": 1640,
     "components/insights/coach-panel/chat-bubble.tsx": 821,
@@ -34,7 +34,6 @@
     "lib/daily/digest.ts": 1341,
     "lib/daily/load-digest.ts": 1012,
     "lib/daily/today-overview.ts": 838,
-    "lib/dashboard-layout.ts": 997,
     "lib/dashboard/snapshot.ts": 1479,
     "lib/day/records.ts": 1147,
     "lib/export/coach-backup.ts": 1070,
@@ -48,7 +47,7 @@
     "lib/import/health-connect/import.ts": 1686,
     "lib/import/unzip-export-xml.ts": 825,
     "lib/insights/comprehensive-aggregator.ts": 818,
-    "lib/insights/comprehensive-generate.ts": 941,
+    "lib/insights/comprehensive-generate.ts": 939,
     "lib/insights/correlation-channel-series.ts": 1301,
     "lib/insights/correlation-discovery.ts": 1240,
     "lib/insights/correlations.ts": 1026,
