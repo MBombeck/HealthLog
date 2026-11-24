@@ -123,8 +123,9 @@ function persistLocale(newLocale: Locale) {
 // for good. `getSession` reconciles the column from the locale cookie on the
 // next request instead, which is ordered by the request pipeline and needs no
 // cooperation from the client. What this call still earns its place for is
-// the server-set cookie the route emits in reply: Safari's ITP caps the
-// script-written copy at 7 days, and a Set-Cookie is exempt.
+// the column of a browser that has no cookie yet (a guess may fill an empty
+// column, never replace a stored choice), and the reply: it names the
+// language in force, so a tab rendered before a switch elsewhere follows it.
 //
 // Once per tab session, account and locale, not on every mount: every page
 // load mounts the provider, and every authenticated write is charged to the
