@@ -154,7 +154,11 @@ export function handleDocumentIndex(
         job: "documentIndex",
         documentId: payload.documentId,
       },
-      () => runDocumentIndex(payload, { deadlineAt: jobDeadline(job) }),
+      () =>
+        runDocumentIndex(payload, {
+          deadlineAt: jobDeadline(job),
+          signal: job.signal,
+        }),
     ),
   )(jobs);
 }
