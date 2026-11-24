@@ -106,6 +106,8 @@ const NOT_OPERATOR_CONFIGURABLE: Readonly<Record<string, string>> = {
   NEXT_PUBLIC_APP_BUILD_SHA:
     "Dockerfile build arg, stamped from the release commit",
   NEXT_PUBLIC_APP_BUILT_AT: "Dockerfile build arg, stamped at image build",
+  NEXT_PUBLIC_APP_CHANNEL:
+    "Dockerfile build arg, the image line the publishing workflow builds",
   BUILD_TIMESTAMP:
     "build-provenance stamp; an operator value would be a lie about the image",
   GIT_COMMIT:

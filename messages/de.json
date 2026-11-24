@@ -9833,6 +9833,7 @@
       "channel": {
         "release": "Release",
         "edge": "Edge",
+        "nightly": "Nightly",
         "development": "Entwicklungsbuild"
       },
       "built": "Build {sha} vom {time}",

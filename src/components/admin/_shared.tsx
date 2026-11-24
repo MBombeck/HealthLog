@@ -18,6 +18,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-keys";
 import { PasswordInput as SharedPasswordInput } from "@/components/ui/password-input";
+import type { UpdateChannel } from "@/lib/admin/update-channel";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
 
@@ -644,6 +645,8 @@ export interface PublicVersion {
   version: string;
   buildSha: string | null;
   builtAt: string | null;
+  /** The image line, resolved by the server (`update-channel.ts`). */
+  channel: UpdateChannel;
   offlineGeoEnabled?: boolean;
   // Host of the online geo provider the runtime falls back to when the
   // offline tier is absent (host of IP_GEO_LOOKUP_URL, default ipwho.is).
