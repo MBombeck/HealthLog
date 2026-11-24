@@ -12537,7 +12537,7 @@
     "openDetail": "자세히 보기",
     "historyLoadError": "검사 기록을 불러오지 못했어요",
     "historyLoadErrorHint": "결과가 없다는 뜻은 아니에요. 목록을 가져오지 못했을 뿐이에요. 다시 시도해 주세요.",
-    "privacyNote": "답변은 암호화되어 저장되고, AI 코치에게는 전달되지 않아요.",
+    "privacyNote": "답변은 암호화되어 저장돼요. 답변과 점수는 AI 코치, 다른 AI 기능, 연결한 AI 어시스턴트 어디에도 전달되지 않아요.",
     "trend": {
       "sincePrevious": "{date} 이전 체크인 이후: {change, plural, other {#점}}.",
       "sinceFirst": "{date} 첫 체크인 이후: {change, plural, other {#점}}.",

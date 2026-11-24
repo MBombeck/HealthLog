@@ -45,6 +45,7 @@ import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
 import { validateMeasurementRange } from "@/lib/validations/measurement";
+import { ownRecord, type OwnRecord } from "@/lib/own-key";
 
 /** The Prisma surface the import writes through. */
 export type ExportImportPrisma = Pick<
@@ -83,13 +84,13 @@ function kindOf(type: MeasurementType): string {
 }
 
 /** Count one more `key` in a reason tally. */
-export function tallyReason(map: Record<string, number>, key: string): void {
+export function tallyReason(map: OwnRecord<number>, key: string): void {
   map[key] = (map[key] ?? 0) + 1;
 }
 
 /** The counters one import run reports. */
 export class ImportTally {
-  readonly perType: Record<string, MutableTypeStat> = {};
+  readonly perType = ownRecord<MutableTypeStat>();
   readonly workouts = {
     read: 0,
     inserted: 0,
@@ -100,8 +101,8 @@ export class ImportTally {
     durationMs: 0,
   };
   readonly clinical = { skipped: 0 };
-  readonly deferred: Record<string, number> = {};
-  readonly unknown: Record<string, number> = {};
+  readonly deferred = ownRecord<number>();
+  readonly unknown = ownRecord<number>();
   readonly writtenByHealthLog = {
     byMarker: 0,
     byExternalId: 0,

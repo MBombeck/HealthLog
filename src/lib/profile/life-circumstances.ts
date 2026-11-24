@@ -529,13 +529,14 @@ export async function confirmLifeSection(
       where: { userId },
       select: { lifeConfirmedJson: true },
     });
-    const confirmedAt: Record<string, string> = {};
+    const confirmed = new Map<string, string>();
     for (const [key, at] of confirmations(row?.lifeConfirmedJson)) {
       if ((LIFE_SECTION_KEYS as readonly string[]).includes(key)) {
-        confirmedAt[key] = at.toISOString();
+        confirmed.set(key, at.toISOString());
       }
     }
-    confirmedAt[section] = stamp;
+    confirmed.set(section, stamp);
+    const confirmedAt = Object.fromEntries(confirmed);
     await tx.userHealthProfile.upsert({
       where: { userId },
       create: { userId, lifeConfirmedJson: confirmedAt },

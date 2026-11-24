@@ -32,6 +32,7 @@ import {
 } from "@/lib/account-deletion/grace";
 import { takePreWipeCopy } from "@/lib/account-deletion/pre-wipe-copy";
 import { logCaught } from "@/lib/logging/signal";
+import { ownRecord } from "@/lib/own-key";
 
 export const dynamic = "force-dynamic";
 
@@ -131,7 +132,7 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
         // The device rows go with the wipe: their relay unbinds are queued
         // first, as account deletion does (`delete-devices.ts`).
         await queueRelayUnbindsForAccount(tx, userId);
-        const perModel: Record<string, number> = {};
+        const perModel = ownRecord<number>();
         for (const model of WIPE_MODELS) {
           const { count } = await resolveWipeDelegate(tx, model).deleteMany({
             where: { userId },

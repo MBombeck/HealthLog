@@ -31,6 +31,10 @@ import {
   buildHealthConnectFixture,
   zipHealthConnectDb,
 } from "../fixtures/health-connect/build-fixture";
+import {
+  expectPrototypesUntouched,
+  snapshotPrototypes,
+} from "../property/prototype-keys";
 import { importHealthConnectExport } from "@/lib/import/health-connect/import";
 import { runDenseIntradayRetention } from "@/lib/measurements/dense-intraday-retention";
 import {
@@ -372,6 +376,36 @@ describe("Health Connect import, duplicates from other paths", () => {
     expect(counts.ACTIVITY_STEPS).toBe(2);
     expect(result.perApp["com.withings.wiscale2"].leftOut).toBe(true);
     expect(result.skipped.connected_integration).toBeGreaterThan(0);
+  });
+
+  it("counts an app named like a prototype key as an app and writes nothing onto shared prototypes", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("hc-proto-pkg");
+    const { path } = fixtureDb("proto-pkg", { days: 2, endUtc: today });
+    const db = new DatabaseSync(path);
+    db.prepare(
+      "UPDATE application_info_table SET package_name = ? WHERE row_id = ?",
+    ).run("__proto__", 2);
+    db.prepare(
+      "UPDATE application_info_table SET package_name = ? WHERE row_id = ?",
+    ).run("constructor", 3);
+    db.close();
+    const before = snapshotPrototypes();
+
+    const result = await importHealthConnectExport({
+      prisma,
+      dbPath: path,
+      userId: user.id,
+      userTimezone: "Europe/Berlin",
+      connectedIntegrations: [],
+    });
+
+    expectPrototypesUntouched(before);
+    expect(Object.hasOwn(result.perApp, "__proto__")).toBe(true);
+    expect(Object.hasOwn(result.perApp, "constructor")).toBe(true);
+    expect(result.perApp["__proto__"]!.records).toBeGreaterThan(0);
+    expect(result.perApp["constructor"]!.records).toBeGreaterThan(0);
+    expect(Object.keys(await countBy(user.id)).length).toBeGreaterThan(0);
   });
 
   it("finds the connected integrations of the account", async () => {

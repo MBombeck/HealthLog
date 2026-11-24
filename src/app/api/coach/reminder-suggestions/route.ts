@@ -34,13 +34,14 @@ import {
   DEFAULT_REMINDER_SUGGESTION_PREFS,
 } from "@/lib/validations/coach-prefs";
 import { coachReminderSuggestionActionSchema } from "@/lib/validations/coach-reminder-suggestion";
-import { CADENCE_CATALOG, isCadenceId } from "@/lib/ai/coach/suggest-reminder";
+import { CADENCE_CATALOG } from "@/lib/ai/coach/suggest-reminder";
 import {
   computeReminderNextDueAt,
   type ReminderScheduleInput,
 } from "@/lib/measurement-reminders/scheduling";
 import { toMeasurementReminderDto } from "@/lib/measurement-reminders/dto";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { ownValue } from "@/lib/own-key";
 
 async function postAction(request: NextRequest): Promise<Response> {
   const { user } = await requireAuth();
@@ -69,10 +70,10 @@ async function postAction(request: NextRequest): Promise<Response> {
   if (!parsed.ok) return parsed.error;
   const { cadenceId, action } = parsed.data;
 
-  if (!isCadenceId(cadenceId)) {
+  const cadence = ownValue(CADENCE_CATALOG, cadenceId);
+  if (!cadence) {
     return apiError("coach.suggestion.unknownCadence", 422);
   }
-  const cadence = CADENCE_CATALOG[cadenceId];
 
   const row = await prisma.user.findUnique({
     where: { id: user.id },

@@ -23,6 +23,7 @@ import {
 } from "@/lib/medication-category";
 import { dayKeyOfDate } from "@/lib/medications/course-window";
 import { readMedicationNote } from "@/lib/medications/medication-note";
+import { ownValue } from "@/lib/own-key";
 
 // Side effects ride INSIDE their medication, exactly as the schedules
 // beside them do. The alternative — a top-level array carrying
@@ -570,7 +571,7 @@ export async function buildMedicationsBackupPart(
         ...serialiseMedicationRow(
           m,
           disasterRecovery,
-          categoryByMedication[m.id] ?? "OTHER",
+          ownValue(categoryByMedication, m.id) ?? "OTHER",
         ),
         ...serialiseMedicationHistory(m, disasterRecovery),
         ...serialiseMedicationStock(

@@ -25,6 +25,7 @@ import { requireModuleEnabled } from "@/lib/modules/gate";
 import { readNutrientOverview } from "@/lib/nutrients/read";
 import { nutrientOverviewQuerySchema } from "@/lib/validations/nutrients";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { ownRecord } from "@/lib/own-key";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +68,7 @@ function parseLastIngestDetails(raw: string | null): LastIngestDetails | null {
   ) {
     return null;
   }
-  const skippedByReason: Record<string, number> = {};
+  const skippedByReason = ownRecord<number>();
   const rawByReason = obj.skippedByReason;
   if (rawByReason && typeof rawByReason === "object") {
     for (const [reason, count] of Object.entries(

@@ -8,6 +8,7 @@ import type {
 } from "@/lib/sharing/account-access-view";
 import { isRecordSurfacePagePresentable } from "@/lib/sharing/record-page-surfaces";
 import type { ShareDomain } from "@/lib/sharing/scope";
+import { ownValue } from "@/lib/own-key";
 
 export type SettingsDestinationKind =
   | "personal"
@@ -206,9 +207,10 @@ function managesRecordContentSection(
   destination: string,
   record: SettingsRecordContext,
 ): boolean {
-  const section = (
-    RECORD_CONTENT_WRITE_DOMAINS as Partial<Record<string, ShareDomain>>
-  )[destination];
+  const section = ownValue(
+    RECORD_CONTENT_WRITE_DOMAINS as Partial<Record<string, ShareDomain>>,
+    destination,
+  );
   return section !== undefined && record.manageableDomains.includes(section);
 }
 

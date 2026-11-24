@@ -60,6 +60,7 @@ import {
   moduleDelegatesTo,
   type ModuleKey,
 } from "./registry";
+import { ownRecord, type OwnRecord } from "@/lib/own-key";
 
 export {
   getOperatorModuleAvailability,
@@ -91,11 +92,11 @@ export interface ModuleGateInputs {
  * disabled-allowlist semantics read as "all on". Fail-open per key:
  * only a literal `false` disables.
  */
-export function normalisePrefs(raw: unknown): Record<string, boolean> {
+export function normalisePrefs(raw: unknown): OwnRecord<boolean> {
   if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
-    return {};
+    return ownRecord();
   }
-  const out: Record<string, boolean> = {};
+  const out = ownRecord<boolean>();
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
     if (typeof v === "boolean") {
       out[k] = v;

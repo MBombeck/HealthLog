@@ -131,14 +131,14 @@ export const PATCH = apiHandler(async (req: Request) => {
         where: { id: user.id },
         select: { modulePreferencesJson: true },
       });
-      const merged: Record<string, boolean> = normalisePrefs(
-        existing?.modulePreferencesJson,
+      const updates = Object.entries(parsed.data).filter(
+        (entry): entry is [string, boolean] => entry[1] !== undefined,
       );
-      for (const [key, value] of Object.entries(parsed.data)) {
-        if (value === undefined) continue;
-        merged[key] = value;
-        changed.push(key);
-      }
+      const merged: Record<string, boolean> = {
+        ...normalisePrefs(existing?.modulePreferencesJson),
+        ...Object.fromEntries(updates),
+      };
+      changed.push(...updates.map(([key]) => key));
       const guarded = await guardedUserDocumentUpdate({
         userId: user.id,
         document: "modulePreferences",
