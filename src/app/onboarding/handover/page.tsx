@@ -43,7 +43,7 @@ export default function HandoverDecisionPage() {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pt-6 pb-[max(env(safe-area-inset-bottom),1rem)]"
+      className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pt-6 pb-[max(var(--safe-area-bottom),1rem)]"
       data-slot="handover-decision-screen"
     >
       <header className="flex items-center">

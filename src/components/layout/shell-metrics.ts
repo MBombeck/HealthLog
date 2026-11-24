@@ -19,16 +19,17 @@
  * `min-h-[calc(100dvh-12rem)]` column reserve that this de-duplication retires.
  *
  * Budget: top bar 4rem + the AuthShell wrapper's `pt-6` (1.5rem) + its bottom
- * padding: `pb-20` (5rem) = 10.5rem in the phone shell, `pb-24` (6rem) =
- * 11.5rem in the desktop shell (the page frame in `auth-shell.tsx`). Retune here —
- * and only here — if those shell paddings change. (Latent follow-up: this constant assumes zero banners above `<main>`;
+ * padding, `--floating-action-clearance` (globals.css), which already differs
+ * between the phone and the desktop shell. It follows that token, so it
+ * retunes itself when the floating button's spacing changes. (Latent
+ * follow-up: this constant assumes zero banners above `<main>`;
  * a locale/offline/demo banner or an iOS PWA safe-area inset makes it
  * over-reserve. A fully self-accounting `min-h-full` chain would need the
  * AuthShell content wrapper to pass a definite height through, which is out of
  * scope for the shell-only over-scroll fix.)
  */
 export const SUB_SHELL_GRID_FLOOR =
-  "md:min-h-[calc(100dvh-10.5rem)] shell-desktop:min-h-[calc(100dvh-11.5rem)]";
+  "md:min-h-[calc(100dvh-5.5rem-var(--floating-action-clearance))]";
 
 /**
  * The authenticated shell's outer box. It takes the window's edges
@@ -56,13 +57,23 @@ export const SHELL_ROOT_CLASS =
   "shell-safe-area absolute inset-0 flex flex-col";
 
 /**
- * `<main>`, the shell's one vertical scroller. Phone shell: it clears the
- * bottom nav and the home indicator. Desktop shell: there is no bar, and it
- * clears the home indicator of an installed app on a tablet (zero in a
- * browser tab), so the last line never sits under it.
+ * `<main>`, the shell's one vertical scroller. It clears the bottom chrome,
+ * `--chrome-bottom` (globals.css): in the phone shell the bottom nav and the
+ * home indicator, in the desktop shell the home indicator of an installed
+ * app on a tablet alone (zero in a browser tab), so the last line never sits
+ * under either.
  */
 export const MAIN_SCROLL_CLASS =
-  "relative flex-1 overflow-y-auto pb-[calc(4rem+var(--safe-area-bottom))] shell-desktop:pb-(--safe-area-bottom)";
+  "relative flex-1 overflow-y-auto pb-(--chrome-bottom)";
+
+/**
+ * The page frame: the one centred, padded container every non-full-bleed page
+ * renders in. Its bottom padding, `--floating-action-clearance`, sits on top
+ * of `<main>`'s `--chrome-bottom` and lets the last line scroll clear of the
+ * floating Coach button in either shell.
+ */
+export const MAIN_CONTENT_WRAPPER_CLASS =
+  "mx-auto max-w-screen-xl px-4 pt-6 pb-(--floating-action-clearance) md:px-6";
 
 /**
  * The app-chrome header band: one 4rem strip whose bottom border draws the

@@ -64,26 +64,16 @@ describe("<LayoutCoachFab>", () => {
     expect(html).toContain('data-slot="coach-fab"');
     // Accessible name carries the launcher label, not the nudge copy.
     expect(html).toContain('aria-label="Open the Coach"');
-    // Fixed bottom-right, above the mobile bottom-nav band. The plain
-    // desktop offset kicks in at `md:` — the same breakpoint where the
-    // bottom-nav hides (`md:hidden`) — so the FAB never floats mid-air
-    // in the 768-1023px band. v1.18.1 (C5) — the corner inset is
-    // symmetric: right equals bottom at each breakpoint (`right-6`
-    // mobile-band / `md:right-8` desktop mirrors `md:bottom-8`). v1.42 —
-    // each offset sits on top of the matching safe-area inset (the notch
-    // of a phone held sideways, an installed iPad's home indicator).
+    // Fixed bottom-right. Size and bottom are the shell's floating-action
+    // tokens, which follow the shell rather than a width (a phone held
+    // sideways keeps the bottom nav, so the button keeps clearing it). The
+    // right inset sits on top of the side inset of a phone held sideways.
     expect(html).toContain(
-      "fixed right-[calc(env(safe-area-inset-right,0px)+1.5rem)]",
+      "fixed right-[calc(var(--safe-area-right)+1.5rem)] bottom-(--floating-action-bottom)",
     );
-    expect(html).toContain(
-      "md:right-[calc(env(safe-area-inset-right,0px)+2rem)]",
-    );
-    expect(html).toContain("bottom-[calc(var(--safe-area-bottom)+5rem)]");
-    // The bottom offset follows the shell, not a width: a phone held
-    // sideways keeps the bottom nav, so the FAB keeps clearing it there.
-    expect(html).toContain(
-      "shell-desktop:bottom-[calc(var(--safe-area-bottom)+2rem)]",
-    );
+    expect(html).toContain("size-(--floating-action-size)");
+    expect(html).toContain("md:right-[calc(var(--safe-area-right)+2rem)]");
+    expect(html).not.toMatch(/(?<![\w-])(?:md|lg|shell-desktop):bottom-/);
     expect(html).toContain('data-keyboard-hide=""');
     expect(html).not.toContain("md:bottom-6");
     expect(html).not.toContain("lg:bottom-6");
