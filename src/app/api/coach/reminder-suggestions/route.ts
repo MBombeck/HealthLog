@@ -21,6 +21,7 @@ import { NextRequest } from "next/server";
 
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
@@ -75,28 +76,36 @@ async function postAction(request: NextRequest): Promise<Response> {
 
   const row = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { coachPrefsJson: true, timezone: true },
+    select: { timezone: true },
   });
-  const coachPrefs = parseCoachPrefs(row?.coachPrefsJson);
-  const suggestionPrefs =
-    coachPrefs.reminderSuggestions ?? DEFAULT_REMINDER_SUGGESTION_PREFS;
 
   // ── dismiss / stop: prefs-only writes ────────────────────────
+  // The whole Coach preferences document is written back, so it is read and
+  // written under the row lock: merged into an earlier read, a dismissal
+  // would put back preferences saved from another tab or device in between.
   if (action === "dismiss" || action === "stop") {
-    const next = {
-      ...suggestionPrefs,
-      ...(action === "stop" ? { stopped: true } : {}),
-      dismissedCadences:
-        action === "dismiss" &&
-        !suggestionPrefs.dismissedCadences.includes(cadenceId)
-          ? [...suggestionPrefs.dismissedCadences, cadenceId].slice(0, 32)
-          : suggestionPrefs.dismissedCadences,
-    };
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        coachPrefsJson: { ...coachPrefs, reminderSuggestions: next },
-      },
+    await withUserRowLock(user.id, async (tx) => {
+      const stored = await tx.user.findUnique({
+        where: { id: user.id },
+        select: { coachPrefsJson: true },
+      });
+      const prefs = parseCoachPrefs(stored?.coachPrefsJson);
+      const current =
+        prefs.reminderSuggestions ?? DEFAULT_REMINDER_SUGGESTION_PREFS;
+      const next = {
+        ...current,
+        ...(action === "stop" ? { stopped: true } : {}),
+        dismissedCadences:
+          action === "dismiss" && !current.dismissedCadences.includes(cadenceId)
+            ? [...current.dismissedCadences, cadenceId].slice(0, 32)
+            : current.dismissedCadences,
+      };
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          coachPrefsJson: { ...prefs, reminderSuggestions: next },
+        },
+      });
     });
     annotate({
       action: { name: `coach.reminder.${action}` },

@@ -33,6 +33,7 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
   takeBaseToken,
@@ -117,31 +118,42 @@ export const PATCH = apiHandler(async (req: Request) => {
   // categories (mood, personal_records, ...). The full resolved shape
   // is persisted so the column layout stays stable across schema
   // additions.
-  const current = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { notificationPrefs: true },
-  });
-  const previous = parseNotificationPrefs(current?.notificationPrefs ?? null);
-  const merged = resolveNotificationPrefs(
-    current?.notificationPrefs ?? null,
-    parsed.data,
-  );
-
+  //
   // v1.32.22 — guard the deep-merge write on the client's base token. A
   // stale base 409s and writes NOTHING, so a concurrent web PATCH can't revert
   // a category (e.g. `medication.clientManaged`) another writer just set from a
-  // fresher read. A tokenless request keeps the prior unconditional write.
-  const guarded = await guardedUserDocumentUpdate({
-    userId: user.id,
-    document: "notificationPrefs",
-    base,
-    data: { notificationPrefs: toJson(merged) },
-    conflict: {
-      action: "user.notification_prefs.conflict",
-      errorCode: "notification_prefs_conflict",
-      message: "Notification preferences changed since they were loaded",
+  // fresher read. A tokenless request keeps the unconditional write, and the
+  // row lock keeps two overlapping tokenless merges (the phone and the iPad)
+  // from each dropping the other's category.
+  const { previous, merged, guarded } = await withUserRowLock(
+    user.id,
+    async (tx) => {
+      const current = await tx.user.findUnique({
+        where: { id: user.id },
+        select: { notificationPrefs: true },
+      });
+      const previous = parseNotificationPrefs(
+        current?.notificationPrefs ?? null,
+      );
+      const merged = resolveNotificationPrefs(
+        current?.notificationPrefs ?? null,
+        parsed.data,
+      );
+      const guarded = await guardedUserDocumentUpdate({
+        userId: user.id,
+        document: "notificationPrefs",
+        base,
+        data: { notificationPrefs: toJson(merged) },
+        conflict: {
+          action: "user.notification_prefs.conflict",
+          errorCode: "notification_prefs_conflict",
+          message: "Notification preferences changed since they were loaded",
+        },
+        client: tx,
+      });
+      return { previous, merged, guarded };
     },
-  });
+  );
   if ("conflict" in guarded) return guarded.conflict;
 
   // Capture which categories the PATCH actually touched so the audit
