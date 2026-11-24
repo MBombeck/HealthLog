@@ -40,9 +40,7 @@ export const GET = apiHandler(async () => {
     action: { name: "sleep.rhythm" },
     meta: {
       debt_state: rhythm.sleepDebt.state,
-      debt_minutes: rhythm.sleepDebt.debtMinutes,
       chronotype_state: rhythm.chronotype.state,
-      chronotype_band: rhythm.chronotype.band,
     },
   });
 
