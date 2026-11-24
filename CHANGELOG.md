@@ -34,6 +34,8 @@
 - A field's name starts on the same line as the text and the controls around it. Every form label sat a few pixels to the right of the sentence above it and of a switch's name in the same card; it now shares their left edge, in Settings, Admin and every form sheet.
 - A checkup that has never been done no longer shows "Last done" with a dash. The line is left out, as on the medication cards.
 - The Spanish, French, Italian and Polish texts write an ellipsis as one character, as the other languages do, and one Spanish loading line no longer ends in four dots.
+- The usual-range line on the blood pressure page names systolic and diastolic, each with its own range and latest reading. It printed the systolic range alone and unnamed, so a line like "Your usual range is 79–177 mmHg" read as one range over both values. Each range is still built from its own readings only, and a test holds every measurement type to that.
+- A vital on the Insights overview shows the same number as its dashboard tile: the latest reading. The overview printed the middle of the 30-day usual range, and for HRV the average of the last seven days that had a reading, so the same HRV read 55 ms on the dashboard and 57 ms on Insights. The usual range and the HRV balance now frame the latest reading instead of replacing it. The usual-range line under a metric's chart places that same reading too; with two sources for one metric it took the newest reading of either and could show a different figure from the dashboard.
 
 ### Security
 

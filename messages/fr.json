@@ -3506,6 +3506,7 @@
         "steadyLatestWithin": "Vos valeurs sont habituellement à {low} {unit} ; votre dernière mesure, du {date}, était de {value}, comme d'habitude.",
         "steadyLatestAbove": "Vos valeurs sont habituellement à {low} {unit} ; votre dernière mesure, du {date}, était de {value}, au-dessus.",
         "steadyLatestBelow": "Vos valeurs sont habituellement à {low} {unit} ; votre dernière mesure, du {date}, était de {value}, en dessous.",
+        "componentLine": "{component} : {line}",
         "insufficient": "J'apprends encore votre plage habituelle. Continuez à enregistrer quelques jours de plus.",
         "driver": "{note}",
         "loadError": "Impossible de charger votre plage habituelle."

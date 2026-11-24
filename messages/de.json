@@ -3506,6 +3506,7 @@
         "steadyLatestWithin": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} genau dort.",
         "steadyLatestAbove": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darüber.",
         "steadyLatestBelow": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darunter.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Lerne noch deinen üblichen Bereich. Protokolliere noch ein paar Tage weiter.",
         "driver": "{note}",
         "loadError": "Dein üblicher Bereich konnte nicht geladen werden."
