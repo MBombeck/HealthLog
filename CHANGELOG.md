@@ -8,6 +8,8 @@
 - A take or skip undone while its dose is still in its window brings the dose's Live Activity back over the push relay. The server's record of the first start used to hold the dose for good, so the lock screen stayed empty after a mistaken take was deleted.
 - A Live Activity the server started over the push relay ends when its dose time is edited away. It used to stay on the lock screen, showing a dose that was no longer due, until the next dose started or the system ended it after eight hours.
 - Editing a dose time no longer drops an earlier dose of the same day that is still open. Moving the evening time in the morning removed the morning dose from the today list and the dashboard count while the history and the iPhone app still showed it due.
+- A dose gets its Live Activity over the push relay without the today list being opened first. The five-minute pass only saw doses whose row a read of the list had already put in place, so on a day the app and the web stayed closed no Activity started, and a dose just after midnight waited until midnight. The server now puts those rows in place itself, the same ones the list shows, from two hours ahead.
+- A snooze stays with the dose it was set on. It was dated by the medication's last change, so a later write to the medication, such as the low-stock notice or an edit, carried a morning snooze over to the afternoon dose: the today list showed it snoozed and its reminder stayed silent. The snooze now keeps its own time.
 
 ## [1.49.0] — 2026-11-23
 

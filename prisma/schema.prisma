@@ -3344,6 +3344,8 @@ model Medication {
   /// and the rescue doses given from it.
   seizureTypes         SeizureTypeProfile[]
   seizureRescueDoses   SeizureRescueDose[]
+  /// When the running `snoozedUntil` was set (at most one row).
+  snooze               MedicationSnooze?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -3627,6 +3629,22 @@ model MedicationScheduleRevision {
 
   @@index([medicationId, validFrom])
   @@map("medication_schedule_revisions")
+}
+
+/// When a medication's snooze was set: the instant the snooze scope reads to
+/// tell the dose the snooze answers (`src/lib/medications/snooze-scope.ts`).
+/// The medication row's own `updatedAt` moves with every later write to the
+/// row (the low-stock notice, an edit), which carried a morning snooze over
+/// to the evening dose. Written with `snoozedUntil` by every snooze write,
+/// kept off the medication row so nothing else moves it and it never reaches
+/// the medication wire. Host reminder state: not in a backup; a snooze with
+/// no row reads the medication's `updatedAt` as before.
+model MedicationSnooze {
+  medicationId String     @id @map("medication_id")
+  snoozedAt    DateTime   @map("snoozed_at")
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@map("medication_snoozes")
 }
 
 /// v1.25 — durable medication pause intervals. The `Medication.pausedAt`

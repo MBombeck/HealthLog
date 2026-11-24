@@ -121,6 +121,36 @@ describe("a snooze holds the dose it answers", () => {
     expect(statusAt(after, AFTERNOON)).toEqual(["pending"]);
   });
 
+  it("a later write to the medication does not carry the snooze to the later dose", async () => {
+    const { medId } = await twiceDaily();
+    const morning = (await readToday()).find(
+      (r) =>
+        r.medicationId === medId &&
+        new Date(r.scheduledAt).getTime() === MORNING.getTime(),
+    );
+    const r = await statusPost({
+      intakeId: morning!.id,
+      status: "snoozed",
+      snoozedUntil: new Date(NOW.getTime() + 8 * 3_600_000).toISOString(),
+    });
+    expect(r.status).toBe(200);
+
+    // 16:30 in Berlin: the afternoon dose is open and the snooze still runs.
+    // The low-stock pass stamps the medication row, as any write to it does.
+    vi.setSystemTime(new Date("2026-11-21T15:30:00.000Z"));
+    await getPrismaClient().session.updateMany({
+      data: { expiresAt: new Date(Date.now() + 60_000) },
+    });
+    await getPrismaClient().medication.update({
+      where: { id: medId },
+      data: { lowStockNotifiedAt: new Date() },
+    });
+
+    const after = await readToday();
+    expect(statusAt(after, MORNING)).toEqual(["snoozed"]);
+    expect(statusAt(after, AFTERNOON)).toEqual(["pending"]);
+  });
+
   it("a snooze without an instant defers by the person's snooze length", async () => {
     const { user, medId } = await twiceDaily();
     const prisma = getPrismaClient();

@@ -966,19 +966,21 @@ describe("handleReminderCheck — a snooze holds only the slot it answered", () 
   function snoozed(at: string): Record<string, unknown> {
     return {
       ...medicationWithSchedule({ timesOfDay: ["08:00", "18:00"] }),
-      // A Telegram "skip" of the morning dose snoozes to the end of the day;
-      // the snooze write stamps the row's updatedAt.
+      // A Telegram "skip" of the morning dose snoozes to the end of the day.
+      // Without a snooze record the row's updatedAt dates it.
       snoozedUntil: new Date("2026-07-28T23:59:59.000Z"),
       updatedAt: new Date(at),
     };
+  }
+  /** The medications the tick reads, these rows. */
+  function remindable(...rows: Record<string, unknown>[]) {
+    prismaMock.medication.findMany.mockResolvedValue(rows as never);
   }
 
   it("still reminds the evening dose after the morning one was snoozed", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-28T18:40:00.000Z"));
-    prismaMock.medication.findMany.mockResolvedValue([
-      snoozed("2026-07-28T08:30:00.000Z"),
-    ] as never);
+    remindable(snoozed("2026-07-28T08:30:00.000Z"));
 
     await handleReminderCheck([]);
 
@@ -993,9 +995,7 @@ describe("handleReminderCheck — a snooze holds only the slot it answered", () 
   it("holds the slot whose reminder was open when the snooze was set", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-28T08:40:00.000Z"));
-    prismaMock.medication.findMany.mockResolvedValue([
-      snoozed("2026-07-28T08:30:00.000Z"),
-    ] as never);
+    remindable(snoozed("2026-07-28T08:30:00.000Z"));
 
     await handleReminderCheck([]);
 
@@ -1007,24 +1007,40 @@ describe("handleReminderCheck — a snooze holds only the slot it answered", () 
     // 09:30: no window was open, so the snooze answers the next one.
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-28T08:40:00.000Z"));
-    prismaMock.medication.findMany.mockResolvedValue([
-      {
-        ...snoozed("2026-07-28T06:00:00.000Z"),
-        snoozedUntil: new Date("2026-07-28T09:30:00.000Z"),
-      },
-    ] as never);
+    remindable({
+      ...snoozed("2026-07-28T06:00:00.000Z"),
+      snoozedUntil: new Date("2026-07-28T09:30:00.000Z"),
+    });
 
     await handleReminderCheck([]);
 
     expect(dispatchNotification).not.toHaveBeenCalled();
   });
 
+  it("dates the snooze by its own record, not by a later write to the medication", async () => {
+    // Snoozed at 08:30 on the morning dose; the low-stock notice wrote the
+    // row at 18:20, inside the evening window.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-28T18:40:00.000Z"));
+    remindable({
+      ...snoozed("2026-07-28T18:20:00.000Z"),
+      snooze: { snoozedAt: new Date("2026-07-28T08:30:00.000Z") },
+    });
+
+    await handleReminderCheck([]);
+
+    expect(dispatchNotification).toHaveBeenCalledTimes(1);
+    expect(dispatchNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ timeOfDay: "18:00" }),
+      }),
+    );
+  });
+
   it("holds only that next slot, not the ones after it", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-28T18:40:00.000Z"));
-    prismaMock.medication.findMany.mockResolvedValue([
-      snoozed("2026-07-28T06:00:00.000Z"),
-    ] as never);
+    remindable(snoozed("2026-07-28T06:00:00.000Z"));
 
     await handleReminderCheck([]);
 

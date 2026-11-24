@@ -10,6 +10,7 @@
  * rewrites the OWNER's badge, and the compliance rollup recomputes the
  * OWNER's day. The owner is told who marked the dose at the end.
  */
+import { snoozeData } from "@/lib/medications/snooze-scope";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -98,7 +99,7 @@ async function applySkipOrSnooze(ctx: StatusContext, data: IntakeStatusUpdate) {
     new Date(Date.now() + (await snoozeMinutesOf(user.id)) * 60_000);
   await prisma.medication.update({
     where: { id: existing.medicationId },
-    data: { snoozedUntil: until },
+    data: snoozeData(until),
   });
   return prisma.medicationIntakeEvent.findUnique({
     where: { id: intakeId },
