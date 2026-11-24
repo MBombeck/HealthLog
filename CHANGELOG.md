@@ -35,6 +35,7 @@
 - A checkup that has never been done no longer shows "Last done" with a dash. The line is left out, as on the medication cards.
 - The Spanish, French, Italian and Polish texts write an ellipsis as one character, as the other languages do, and one Spanish loading line no longer ends in four dots.
 - Signing in on a phone or browser set to another language no longer resets the language you picked. The sign-in page shows the device's language until you choose one, and that guess used to be saved as your choice, so the app, the reminders and the Telegram messages switched to it. The account's language now wins until you pick another one on that device. A tab opened before you switched language in another tab no longer puts the old language back either: it follows the new one.
+- A Coach preference changed right after the server failed to load your Coach settings no longer wipes the others. The failed load showed the built-in defaults as if they were saved, and the next switch in the Coach's sources list wrote them back over the data scope, the look-back window and the reasoning level you had chosen. The switches now wait until the settings have loaded.
 
 ### Security
 
