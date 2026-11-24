@@ -39,8 +39,8 @@ it / pl`). The user never sees a raw identifier.
   the lingua franca of the codebase and of the public API contract.
 
 Concretely, v1.8.0 migrates the routed Insights slugs and the tile-layout enum
-from German to English (e.g. `blutdruck` > `blood-pressure`, `gewicht` >
-`weight`, `medikamente` > `medications`). The full rename table lives in
+from German to English (e.g. `blutdruck` to `blood-pressure`, `gewicht` to
+`weight`, `medikamente` to `medications`). The full rename table lives in
 `src/lib/insights/sub-page-metric.ts` (slugs) and `src/lib/insights-layout.ts`
 (tile ids).
 
