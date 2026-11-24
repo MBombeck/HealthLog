@@ -433,6 +433,12 @@ describe("edge image and fix-line check", () => {
 });
 
 const NIGHTLY_HEAD = "1".repeat(40);
+const GREEN_RUNS = [
+  "2026-11-24T07:00:00Z\tSecurity & Quality\tcompleted\tsuccess",
+  "2026-11-24T07:00:01Z\tIntegration tests\tcompleted\tsuccess",
+  "2026-11-24T07:00:02Z\te2e\tcompleted\tsuccess",
+  "2026-11-24T07:00:03Z\tKnip\tcompleted\tfailure",
+];
 
 /**
  * Runs the nightly resolve step against a stubbed `gh` and `docker`. The
@@ -443,11 +449,17 @@ function runNightlyResolve(fixture: {
   tags: string[];
   lastRevision?: string;
   force?: boolean;
+  /** `created_at<TAB>name<TAB>status<TAB>conclusion`, as the --jq prints. */
+  runs?: string[];
 }): { result: SpawnSyncReturns<string>; output: Record<string, string> } {
   const directory = mkdtempSync(join(tmpdir(), "healthlog-nightly-"));
   temporaryDirectories.push(directory);
   writeFileSync(join(directory, "branches"), fixture.branches.join("\n"));
   writeFileSync(join(directory, "tags"), fixture.tags.join("\n"));
+  writeFileSync(
+    join(directory, "runs"),
+    (fixture.runs ?? GREEN_RUNS).join("\n"),
+  );
   writeFileSync(
     join(directory, "gh"),
     `#!/bin/sh
@@ -455,6 +467,7 @@ case "$*" in
   *matching-refs/heads/release/v*) cat "$FIXTURE_DIR/branches" ;;
   *matching-refs/tags/v*) cat "$FIXTURE_DIR/tags" ;;
   *contents/package.json*) printf '{"version":"1.49.0"}' ;;
+  *actions/runs?head_sha=*event=push*) cat "$FIXTURE_DIR/runs" ;;
   *) exit 1 ;;
 esac
 `,
@@ -561,6 +574,58 @@ describe("nightly image", () => {
     ).toBe("true");
   });
 
+  it.each([
+    [
+      "a failed gate",
+      GREEN_RUNS.map((r) =>
+        r.includes("\te2e\t") ? r.replace("success", "failure") : r,
+      ),
+      "e2e ended failure",
+    ],
+    [
+      "a gate still running",
+      GREEN_RUNS.map((r) =>
+        r.includes("Integration")
+          ? "2026-11-24T07:00:01Z\tIntegration tests\tin_progress\t"
+          : r,
+      ),
+      "Integration tests is still in_progress",
+    ],
+    [
+      "a missing gate",
+      GREEN_RUNS.filter((r) => !r.includes("Security")),
+      "Security & Quality has no push run",
+    ],
+    [
+      "a re-run that failed after a green one",
+      [
+        ...GREEN_RUNS,
+        "2026-11-24T09:00:00Z\tSecurity & Quality\tcompleted\tfailure",
+      ],
+      "Security & Quality ended failure",
+    ],
+  ])("keeps the last nightly on %s", (_case, runs, reason) => {
+    const { result, output } = runNightlyResolve({
+      branches,
+      tags,
+      runs,
+      force: true,
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(output).toEqual({ build: "false" });
+    expect(result.stdout).toContain(reason);
+    expect(result.stdout).toContain("The previous :nightly stays");
+  });
+
+  it("builds once a failed gate went green on a re-run", () => {
+    const { output } = runNightlyResolve({
+      branches,
+      tags,
+      runs: ["2026-11-24T06:00:00Z\te2e\tcompleted\tfailure", ...GREEN_RUNS],
+    });
+    expect(output.build).toBe("true");
+  });
+
   it("builds nothing once the branch's minor is released", () => {
     const { output } = runNightlyResolve({
       branches,
@@ -606,9 +671,29 @@ describe("nightly image", () => {
     // No `:latest`, no semver tag, no GitHub release.
     expect(text).not.toMatch(/:latest|type=semver|gh release|contents: write/);
 
+    expect(workflow.jobs.resolve?.permissions?.actions).toBe("read");
+    expect(stepScript(workflow, "merge", "Resolve published image")).toContain(
+      "GITHUB_STEP_SUMMARY",
+    );
+
     const verify = workflow.jobs.verify;
     expect(verify?.uses).toBe("./.github/workflows/post-publish-verify.yml");
     expect(verify?.with?.expected_channel).toBe("nightly");
+  });
+});
+
+describe("migration immutability", () => {
+  it("checks every push and pull request on main and release branches", () => {
+    const workflow = loadWorkflow("migration-immutability.yml");
+    expect(workflow.on?.push?.branches).toEqual(["main", "release/**"]);
+    expect(workflow.on?.pull_request?.branches).toEqual(["main", "release/**"]);
+    const script = stepScript(
+      workflow,
+      "migrations",
+      "Refuse edits to merged migrations",
+    );
+    expect(script).toContain("node scripts/release-policy.mjs migrations");
+    expect(script).toContain('base="origin/main"');
   });
 });
 

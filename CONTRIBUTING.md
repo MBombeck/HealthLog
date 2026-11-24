@@ -108,7 +108,7 @@ The rules:
 - **Hotfixes** outside the calendar are for security problems, data loss and broken installs only. They branch from `main` as `hotfix/vX.Y.Z`, carry one fix, and the publish workflow waits for the maintainer's approval.
 - Never force-push `main` or any release branch.
 
-End users: track the latest `v*` tag (or `:latest` on GHCR). `main` carries fixes that are merged but not yet released, so do not deploy `main` itself; the `:edge` image is there to check a fix before its release, and `:nightly` (built every night from the newest `release/vX.Y.0`) to try the next minor on a copy of your data.
+End users: track the latest `v*` tag (or `:latest` on GHCR). `main` carries fixes that are merged but not yet released, so do not deploy `main` itself; the `:edge` image is there to check a fix before its release, and `:nightly` (built every night from a green head of the newest `release/vX.Y.0`) to try the next minor; read [docs/self-hosting/channels.md](docs/self-hosting/channels.md) before you switch.
 
 Contributors: branch off `main` for a fix and target `main`; branch off the current `release/vX.Y.0` for a feature and target it. Not sure which one? Open the PR against `main` and the check will say.
 

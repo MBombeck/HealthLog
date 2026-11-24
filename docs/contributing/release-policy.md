@@ -54,6 +54,18 @@ The major version stays at 1. A breaking change ships in a minor and is
 announced in the notes of the minor before it. The minor number counts months,
 not size: a month that brought mostly fixes and speed is still `X.Y.0`.
 
+## Migrations
+
+A migration merged into `main` or a `release/vX.Y.0` branch is never changed
+again: not edited, not renamed, not renumbered, not deleted. Only new files
+appear under `prisma/migrations/`. An `:edge` host has applied every
+migration on `main` and a `:nightly` host every one on the release branch,
+and Prisma refuses to start when a migration it ran has a different checksum
+now. A mistake in a merged migration is corrected by a new migration.
+`.github/workflows/migration-immutability.yml` fails any push or pull request
+to `main` or `release/**` that changes an existing file there
+(`node scripts/release-policy.mjs migrations`).
+
 ## Out-of-schedule releases
 
 A release leaves the schedule for one of three reasons and no other:
@@ -163,10 +175,11 @@ the release it builds on and the commit, and from 1.50.0 on the channel
 backup before you try it: migrations do not run backwards.
 
 `:nightly` is built every night from the release branch of the next minor,
-when its head moved since the last nightly. It is multi-arch and signed like a
-release, but it is not one: no `v*` tag, no `:latest`, no GitHub release, and
-its migrations may still change before the minor ships. Run it on a copy of
-your data. `/api/version` reports it as the channel `nightly`.
+when its head moved since the last nightly and Security & Quality, the
+integration suite and the end-to-end suite all passed on a push run for that
+exact commit; otherwise the previous `:nightly` stays. It is multi-arch and
+signed like a release, but it is not one: no `v*` tag, no `:latest`, no GitHub
+release. `/api/version` reports it as the channel `nightly`.
 [`docs/self-hosting/channels.md`](../self-hosting/channels.md) has the compose
 line for each channel.
 
@@ -202,9 +215,11 @@ one minor and removed no earlier than two minors later.
   commit or adds a heading under `## [Unreleased]` that a patch cannot have.
 - `.github/workflows/edge-image.yml` publishes `:edge` on every push to
   `main`.
+- `.github/workflows/migration-immutability.yml` refuses a change to a merged
+  migration on `main` and `release/**`.
 - `.github/workflows/nightly-image.yml` publishes `:nightly` from the newest
   `release/vX.Y.0` every night, skips a night on which the branch did not
-  move, and checks the published image's `/api/version` through
+  move or is not green, and checks the published image's `/api/version` through
   `post-publish-verify.yml`.
 - The `release-manifest`, `release-provenance` and `release-assets` jobs in
   `docker-publish.yml` attach the signed manifest and its provenance to the

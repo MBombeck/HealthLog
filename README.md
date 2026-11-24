@@ -105,7 +105,7 @@ Your data lives in the `postgres-data` volume. The app takes a database dump eve
 
 ## Updating
 
-From 1.49.0 on, releases follow a calendar: a feature release on the first Saturday of every month, fixes on the other Saturdays when there are any. Only a security problem, data loss or a broken install gets a release in between. `:latest` is the newest release; `:edge` is built from every push to `main` (amd64 only) for anyone who wants a fix before its Saturday; `:nightly` is the next month's release branch, built every night, for trying new features early and never for production. [Image channels](docs/self-hosting/channels.md) has the compose line for each.
+From 1.49.0 on, releases follow a calendar: a feature release on the first Saturday of every month, fixes on the other Saturdays when there are any. Only a security problem, data loss or a broken install gets a release in between. `:latest` is the newest release; `:edge` is built from every push to `main` (amd64 only) for anyone who wants a fix before its Saturday; `:nightly` is the next month's release branch, built every night from a head whose full test run is green, for trying new features early; it has no way back to an older image without restoring a dump. [Image channels](docs/self-hosting/channels.md) has the compose line for each.
 
 To update, take a backup, run `docker compose pull && docker compose up -d`, and check `/api/version`. Migrations run on start and only go forward. Read the [release notes](https://github.com/MBombeck/HealthLog/releases) first, and see [Updates and deploy](https://docs.healthlog.dev/guides/updates-and-deploy/) for pinning a version and going back. The full rule is in [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
 

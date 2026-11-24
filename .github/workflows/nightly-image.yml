@@ -3,14 +3,19 @@ name: Nightly image
 # Every night the newest open `release/vX.Y.0` branch, the next minor, is
 # built for amd64 and arm64 and published as `:nightly` and
 # `:nightly-YYYYMMDD-<sha>`. It is not a release: never the latest tag, no
-# semver tag, no GitHub release, no promotion. It may break and is not meant for
-# production (docs/self-hosting/channels.md). The image reports the channel
+# semver tag, no GitHub release, no promotion; what a host on it needs to know
+# is in docs/self-hosting/channels.md. The image reports the channel
 # `nightly` on /api/version. Release images come from docker-publish.yml on
 # a `v*` tag, `:edge` from edge-image.yml on every push to `main`.
 #
-# A night on which the branch head has not moved since the last nightly
-# builds nothing: the `:nightly` index carries the commit it was built from
-# as an annotation, and the resolve job compares against it.
+# Only a green head is built: Security & Quality, Integration tests and e2e
+# must have passed on a push run for exactly that commit. Otherwise the
+# previous `:nightly` stays where it is and the run says why. A night on
+# which the branch head has not moved since the last nightly builds nothing
+# either: the `:nightly` index carries the commit it was built from as an
+# annotation, and the resolve job compares against it. Migrations on `main`
+# and `release/**` only ever gain files (migration-immutability.yml), so a
+# database a nightly migrated moves on to the release.
 on:
   schedule:
     # 02:37 UTC, off the hour when scheduled runs queue up.
@@ -40,6 +45,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
+      actions: read
       contents: read
       packages: read
     outputs:
@@ -64,7 +70,8 @@ jobs:
 
       # The newest `release/vX.Y.0` by version, and only when it is ahead
       # of the newest release tag: a release branch that was merged but
-      # not yet deleted is not the next minor.
+      # not yet deleted is not the next minor. `force` rebuilds an unmoved
+      # head; it never skips the green check.
       - name: Pick the branch and compare with the last nightly
         id: branch
         env:
@@ -109,6 +116,29 @@ jobs:
             exit 0
           fi
 
+          # The newest push run of each gate on exactly this commit.
+          runs="$(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${sha}&event=push&per_page=100" \
+              --jq '.workflow_runs[] | select(.head_branch == "'"$branch"'") | "\(.created_at)\t\(.name)\t\(.status)\t\(.conclusion)"'
+          )"
+          red=()
+          for gate in "Security & Quality" "Integration tests" "e2e"; do
+            latest="$(printf '%s\n' "$runs" | awk -F'\t' -v g="$gate" '$2 == g' | sort | tail -n 1)"
+            if [ -z "$latest" ]; then
+              red+=("$gate has no push run")
+            elif [ "$(cut -f3 <<< "$latest")" != "completed" ]; then
+              red+=("$gate is still $(cut -f3 <<< "$latest")")
+            elif [ "$(cut -f4 <<< "$latest")" != "success" ]; then
+              red+=("$gate ended $(cut -f4 <<< "$latest")")
+            fi
+          done
+          if [ "${#red[@]}" -gt 0 ]; then
+            reason="$(printf '%s; ' "${red[@]}")"
+            echo "::warning::$branch at ${sha::12} is not green (${reason%; }). The previous :nightly stays."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           package_version="$(
             gh api "repos/${GITHUB_REPOSITORY}/contents/package.json?ref=${sha}" \
               -H "Accept: application/vnd.github.raw+json" | jq -r .version
@@ -123,7 +153,7 @@ jobs:
             echo "version=${minor}-nightly.${date_tag}.${sha::12}"
             echo "date_tag=$date_tag"
           } >> "$GITHUB_OUTPUT"
-          echo "::notice::Building $branch at ${sha::12} (last nightly: ${previous:-none})."
+          echo "::notice::Building $branch at ${sha::12}, green on all three gates (last nightly: ${previous:-none})."
 
   # One native runner per architecture, pushed by digest and stitched in
   # `merge`, the same way docker-publish.yml builds a release.
@@ -300,6 +330,9 @@ jobs:
 
       - name: Resolve published image
         id: published
+        env:
+          SHA: ${{ needs.resolve.outputs.sha }}
+          BRANCH: ${{ needs.resolve.outputs.branch }}
         run: |
           set -euo pipefail
           image_digest="$(docker buildx imagetools inspect "${IMAGE_REF}:${DATED_TAG}" --format '{{json .Manifest.Digest}}' | tr -d '"')"
@@ -317,6 +350,17 @@ jobs:
             echo "image_tag=$DATED_TAG"
             echo "image_digest=$image_digest"
           } >> "$GITHUB_OUTPUT"
+          echo "::notice::Published ${IMAGE_REF}:nightly = ${IMAGE_REF}:${DATED_TAG} = ${IMAGE_REF}@${image_digest} (commit ${SHA})."
+          docker buildx imagetools inspect "${IMAGE_REF}@${image_digest}"
+          {
+            echo "### Nightly image"
+            echo ""
+            echo "- Tags: \`:nightly\`, \`:${DATED_TAG}\`"
+            echo "- Digest: \`${image_digest}\`"
+            echo "- Commit: \`${SHA}\` on \`${BRANCH}\`"
+            echo ""
+            echo "Pin it: \`HEALTHLOG_IMAGE_REF=@${image_digest}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install cosign
         uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
@@ -327,6 +371,14 @@ jobs:
         run: |
           cosign sign --yes "${IMAGE_REF}@${IMAGE_DIGEST}"
           echo "::notice::Nightly index signed (keyless): ${IMAGE_REF}@${IMAGE_DIGEST}"
+          {
+            echo ""
+            echo "Signed (keyless). Verify:"
+            echo ""
+            echo '```sh'
+            echo "cosign verify --certificate-identity 'https://github.com/${GITHUB_REPOSITORY}/.github/workflows/nightly-image.yml@refs/heads/main' --certificate-oidc-issuer https://token.actions.githubusercontent.com ${IMAGE_REF}@${IMAGE_DIGEST}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # Pull the exact digest, migrate a fresh database, start it, and check
   # /api/version (version, commit and channel) and /api/health.

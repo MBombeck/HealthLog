@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -13,6 +19,7 @@ import {
   evaluateRelease,
   formatDay,
   main,
+  migrationEdits,
   outOfScheduleLine,
   readTags,
   releaseWindow,
@@ -520,7 +527,33 @@ describe("release:next", () => {
   });
 });
 
-describe("command line against a real repository", () => {
+describe("merged migrations", () => {
+  it("lets new migration files through", () => {
+    expect(
+      migrationEdits(
+        "A\tprisma/migrations/0562_x/migration.sql\nM\tsrc/a.ts\nD\tdocs/b.md\n",
+      ),
+    ).toEqual([]);
+  });
+
+  it("refuses an edited, deleted or retyped migration", () => {
+    expect(
+      migrationEdits(
+        [
+          "M\tprisma/migrations/0560_a/migration.sql",
+          "D\tprisma/migrations/0561_b/migration.sql",
+          "T\tprisma/migrations/migration_lock.toml",
+        ].join("\n"),
+      ),
+    ).toEqual([
+      "prisma/migrations/0560_a/migration.sql modified",
+      "prisma/migrations/0561_b/migration.sql deleted",
+      "prisma/migrations/migration_lock.toml changed in type",
+    ]);
+  });
+});
+
+describe("command line against a real repository", { timeout: 30_000 }, () => {
   const directories: string[] = [];
   afterEach(() => {
     for (const path of directories.splice(0)) {
@@ -751,6 +784,47 @@ describe("command line against a real repository", () => {
     expect(result.code, result.err).toBe(0);
     expect(result.out).toContain("passes the release policy without approval");
     expect(readFileSync(output, "utf8")).toBe("off_schedule=false\n");
+  });
+
+  it("refuses a change to a merged migration and lets a new one through", () => {
+    const { cwd, run, commit } = repository();
+    const sql = (dir: string, text: string) => {
+      mkdirSync(join(cwd, "prisma/migrations", dir), { recursive: true });
+      writeFileSync(join(cwd, "prisma/migrations", dir, "migration.sql"), text);
+    };
+    sql("0001_init", "CREATE TABLE a (id int);\n");
+    commit("chore: base", "2026-11-24T10:00:00+01:00");
+    run(["branch", "base"]);
+
+    sql("0002_next", "CREATE TABLE b (id int);\n");
+    commit("feat(b): a table", "2026-11-24T11:00:00+01:00");
+    const added = capture(
+      ["migrations", "--base", "base", "--head", "HEAD"],
+      cwd,
+    );
+    expect(added.code, added.err).toBe(0);
+    run(["branch", "added"]);
+
+    sql("0001_init", "CREATE TABLE a (id bigint);\n");
+    commit("fix(a): wider id", "2026-11-24T12:00:00+01:00");
+    const edited = capture(
+      ["migrations", "--base", "added", "--head", "HEAD"],
+      cwd,
+    );
+    expect(edited.code).toBe(1);
+    expect(edited.err).toContain(
+      "prisma/migrations/0001_init/migration.sql modified",
+    );
+
+    run(["checkout", "-q", "-b", "renumber", "added"]);
+    run(["mv", "prisma/migrations/0002_next", "prisma/migrations/0003_next"]);
+    commit("chore: renumber", "2026-11-24T13:00:00+01:00");
+    const renamed = capture(
+      ["migrations", "--base", "added", "--head", "HEAD"],
+      cwd,
+    );
+    expect(renamed.code).toBe(1);
+    expect(renamed.err).toContain("0002_next/migration.sql deleted");
   });
 
   it("checks a pull request range", () => {
