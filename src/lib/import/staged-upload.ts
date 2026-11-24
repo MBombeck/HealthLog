@@ -42,6 +42,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import { emitSignal } from "@/lib/logging/signal";
 import {
+  MULTIPART_ENVELOPE_RESERVE_BYTES,
   MultipartTooLargeError,
   streamMultipartToDisk,
   type MultipartFileResult,
@@ -57,9 +58,6 @@ import {
 /** Five uploads a minute per acting account and kind. */
 export const STAGED_UPLOAD_RATE_LIMIT = 5;
 const RATE_LIMIT_WINDOW_MS = 60_000;
-
-/** Room for the multipart boundaries and part headers around the file. */
-const MULTIPART_ENVELOPE_RESERVE_BYTES = 64 * 1024;
 
 /** The `errorCode` of every 413 an upload answers. */
 export const IMPORT_FILE_TOO_LARGE_CODE = "import.file.too_large";
@@ -240,8 +238,9 @@ async function receiveUpload(
       errorCode: IMPORT_FILE_TOO_LARGE_CODE,
     });
 
-  // A cheap pre-flight; the stream below holds the file itself to the cap,
-  // so a missing or wrong header cannot get past it.
+  // A cheap pre-flight; the stream below counts every byte it reads against
+  // the cap plus the same envelope, so a missing or wrong header (a chunked
+  // body has none) cannot get past it.
   const declaredBytes = Number(request.headers.get("content-length") ?? 0);
   if (declaredBytes > spec.maxBytes + MULTIPART_ENVELOPE_RESERVE_BYTES) {
     await actor.denied("content_length_exceeded", {

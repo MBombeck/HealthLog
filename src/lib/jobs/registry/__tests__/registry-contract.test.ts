@@ -23,9 +23,11 @@ import { describe, expect, it } from "vitest";
 
 import { staticImportClosure } from "@/__tests__/helpers/source-metrics";
 import { JOB_GROUP_NAMES } from "../define-job";
-import { allJobDefinitions, JOB_GROUPS } from "../index";
+import { everyJobDefinition } from "@/__tests__/helpers/every-job-definition";
 
-const definitions = allJobDefinitions();
+import { JOB_GROUPS } from "../index";
+
+const definitions = everyJobDefinition();
 
 /** Modules the registry may not load: the work the definitions point at. */
 const HANDLER_GRAPH =

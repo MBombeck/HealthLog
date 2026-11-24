@@ -42,13 +42,13 @@ import {
   QUEUE_RUNTIME,
   type QueueRuntime,
 } from "./helpers/queue-runtime";
+import { everyJobDefinition } from "./helpers/every-job-definition";
 import { SCHEDULED_AND_SENT_QUEUES } from "@/lib/jobs/reminder/registrar-shared";
 import { HEAVY_QUEUES } from "@/lib/jobs/heavy-lane";
 import type { JobDefinition } from "@/lib/jobs/registry/define-job";
-import { allJobDefinitions } from "@/lib/jobs/registry/index";
 
 const SRC = join(process.cwd(), "src");
-const DEFINITIONS = allJobDefinitions();
+const DEFINITIONS = everyJobDefinition();
 /** pg-boss refuses an expiry of 24 hours or more. */
 const MAX_EXPIRE_SECONDS = 24 * 60 * 60;
 

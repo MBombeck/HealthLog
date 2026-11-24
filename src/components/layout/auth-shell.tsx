@@ -45,7 +45,11 @@ import {
 import { cn } from "@/lib/utils";
 import { isFullBleedPage } from "./full-bleed";
 import { useDocumentScrollMode } from "./document-scroll-mode";
-import { MAIN_SCROLL_CLASS, SHELL_ROOT_CLASS } from "./shell-metrics";
+import {
+  MAIN_CONTENT_WRAPPER_CLASS,
+  MAIN_SCROLL_CLASS,
+  SHELL_ROOT_CLASS,
+} from "./shell-metrics";
 import { isOnboardingPathname } from "@/lib/onboarding/wizard-steps";
 import { RecordScopeHydrationGate } from "./record-scope-hydration-gate";
 import { SidebarNav } from "./sidebar-nav";
@@ -347,7 +351,7 @@ export function AuthShell({
     // box grow and the document scroll. The safe-area band (painted behind
     // the status bar, see globals.css) and padding keep the form clear.
     return (
-      <div className="shell-safe-area flex min-h-dvh flex-col pb-[env(safe-area-inset-bottom,0px)]">
+      <div className="shell-safe-area flex min-h-dvh flex-col pb-(--safe-area-bottom)">
         {demoMode ? <DemoBanner /> : null}
         <main
           id="main-content"
@@ -503,7 +507,7 @@ export function AuthShell({
         document under it neither scrolls nor bounces: `SHELL_ROOT_CLASS` in
         `shell-metrics.ts` says why.
       */}
-      <div className={SHELL_ROOT_CLASS}>
+      <div data-slot="app-shell" className={SHELL_ROOT_CLASS}>
         {/*
           v1.4.43 — `<OfflineBanner>` paints only when
           `navigator.onLine === false`. Sits above the maintainership
@@ -576,11 +580,9 @@ export function AuthShell({
               52 px lateral wobble on every route switch. Same audit
               note in `.planning/round-v1433-audit-polish.md` §4.2.
 
-              v1.16.8 — the bottom padding clears the always-on Coach
-              FAB (48 px button + its offset above the bottom-nav band /
-              the desktop bottom-6 anchor), so the last line of content
-              can always scroll out from under the floating button; the
-              desktop shell's sits 5.5rem up, so `pb-24` there.
+              The bottom padding clears the floating Coach button in
+              either shell (`MAIN_CONTENT_WRAPPER_CLASS`,
+              `--floating-action-clearance` in globals.css).
             */}
               <div
                 data-slot="main-content-wrapper"
@@ -588,7 +590,7 @@ export function AuthShell({
                 className={
                   fullBleed
                     ? "flex min-h-0 flex-1 flex-col"
-                    : "shell-desktop:pb-24 mx-auto max-w-screen-xl px-4 pt-6 pb-20 md:px-6"
+                    : MAIN_CONTENT_WRAPPER_CLASS
                 }
               >
                 {outsideSharedRecord ? (

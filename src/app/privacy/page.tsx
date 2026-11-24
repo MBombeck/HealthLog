@@ -195,7 +195,7 @@ export default function PrivacyPage() {
       {/* Top bar — visible home-link so an App-Store reviewer can confirm
           the policy belongs to the same brand as the iOS app. Public; no
           nav menu (this page is reachable without a session). */}
-      <header className="border-border/60 bg-background/80 sticky top-0 z-10 border-b pt-[env(safe-area-inset-top)] backdrop-blur">
+      <header className="border-border/60 bg-background/80 sticky top-0 z-10 border-b pt-(--safe-area-top) backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 md:px-6">
           <Link
             href="/"

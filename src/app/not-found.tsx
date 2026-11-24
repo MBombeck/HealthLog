@@ -34,7 +34,7 @@ export default async function NotFound() {
   return (
     <main
       id="main-content"
-      className="bg-background text-foreground flex min-h-dvh flex-col items-center justify-center gap-6 px-4 py-12 pt-[calc(env(safe-area-inset-top)+3rem)]"
+      className="bg-background text-foreground flex min-h-dvh flex-col items-center justify-center gap-6 px-4 py-12 pt-[calc(var(--safe-area-top)+3rem)]"
     >
       <div className="bg-primary/10 flex h-14 w-14 items-center justify-center rounded-xl">
         <Logo className="text-primary" size={32} />

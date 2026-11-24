@@ -61,7 +61,9 @@
  *   quality and pollen for every day. The timeline module is switched on.
  *
  * Every date is relative to "now" so the demo stays fresh on every re-seed.
- * What ages is the SEEDED DATA, not the script: the pillar windows keep
+ * On a demo deploy (`DEMO_MODE=true`) the worker re-runs this seed every day
+ * at 10:00 Berlin (`src/lib/jobs/demo-refresh.ts`), so nothing below ages
+ * there. Without that refresh, what ages is the SEEDED DATA, not the script: the pillar windows keep
  * moving after a seed, so about four weeks on, activity (21 of the last
  * 28 days) and sleep (14 of 28 nights) fall out of their windows and the
  * Health Score narrows to whatever cardiometabolic data is still fresh.
@@ -114,22 +116,31 @@ import {
 } from "../src/lib/mental-health/instruments";
 import { VALUE_RANGES } from "../src/lib/validations/measurement";
 
-const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) {
-  console.error("DATABASE_URL is required");
-  process.exit(1);
-}
-
 // Every timestamp column here is `timestamp without time zone` holding UTC,
 // which is how Prisma reads it. node-postgres serialises a Date in the host's
 // local zone by default and Postgres drops the offset on the cast, so a seed
 // run from a machine on Berlin time stored every instant two hours in the
 // future (today's Coach thread stamped after "now", the CGM stream running
 // into the evening). Sending Dates as UTC makes the result independent of
-// the seed host's clock zone.
-pg.defaults.parseInputDatesAsUTC = true;
+// the seed host's clock zone. The conversion is done per query rather than
+// through `pg.defaults.parseInputDatesAsUTC`, because the seed also runs
+// inside the app's worker (the daily demo refresh), where a process-wide
+// default would reach every other `pg` user in it.
+type SeedClient = {
+  query: (text: string, params?: unknown[]) => Promise<pg.QueryResult>;
+};
 
-const pool = new pg.Pool({ connectionString: DATABASE_URL });
+function utcParam(value: unknown): unknown {
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(utcParam);
+  return value;
+}
+
+function utcClient(client: pg.PoolClient): SeedClient {
+  return {
+    query: (text, params) => client.query(text, params?.map(utcParam)),
+  };
+}
 
 // ── Helpers ──────────────────────────────────────
 
@@ -387,7 +398,7 @@ function sealDemoLocation(loc: {
  * round trip each. `rows` are positional, in `columns` order.
  */
 async function bulkInsert(
-  client: pg.PoolClient,
+  client: SeedClient,
   table: string,
   columns: string[],
   rows: unknown[][],
@@ -480,8 +491,15 @@ function daylightHours(lat: number, doy: number): number {
  * Seed the demo tenant. Exported so an integration test can run the real
  * seed and read its output back through the app's own readers.
  */
-export async function seed() {
-  const client = await pool.connect();
+/**
+ * Wipe the target database and write the demo tenant. With no pool it opens
+ * one on `DATABASE_URL` and closes it afterwards (the CLI and the tests); the
+ * daily demo refresh hands in its own and closes it itself.
+ */
+export async function seed(given?: pg.Pool) {
+  const pool = given ?? new pg.Pool({ connectionString: requireDatabaseUrl() });
+  const connection = await pool.connect();
+  const client = utcClient(connection);
 
   try {
     await client.query("BEGIN");
@@ -4074,14 +4092,33 @@ export async function seed() {
     console.error("Seed failed:", err);
     throw err;
   } finally {
-    client.release();
-    await pool.end();
+    connection.release();
+    if (!given) await pool.end();
   }
 }
 
-if (
-  process.argv[1] &&
-  resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))
-) {
+function requireDatabaseUrl(): string {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    console.error("DATABASE_URL is required");
+    process.exit(1);
+  }
+  return url;
+}
+
+// Run when invoked as a script. Bundled into the app's worker (the daily demo
+// refresh), `import.meta.url` may not be a file URL; there it is only a module.
+function invokedAsScript(): boolean {
+  try {
+    return (
+      Boolean(process.argv[1]) &&
+      resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))
+    );
+  } catch {
+    return false;
+  }
+}
+
+if (invokedAsScript()) {
   seed();
 }

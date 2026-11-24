@@ -305,6 +305,7 @@ export const CRON_FED_POLL_SECONDS = 30;
 export const SCHEDULED_AND_SENT_QUEUES: ReadonlySet<string> = new Set([
   "data-backup",
   "dawarich-sync",
+  "demo-refresh",
   "drain-per-sample-cumulative",
   "environment-aq-history",
   "environment-fetch",
