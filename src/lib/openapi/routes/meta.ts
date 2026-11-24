@@ -6,6 +6,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { UPDATE_CHANNELS } from "@/lib/admin/update-channel";
 import { SERVER_FEATURES, SERVER_FEATURE_DOCS } from "@/lib/server-features";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
@@ -226,6 +227,11 @@ const versionResponse = z
     builtAt: isoDateTime()
       .nullable()
       .describe("ISO-8601 build timestamp. Null for a local dev run."),
+    channel: z
+      .enum(UPDATE_CHANNELS)
+      .describe(
+        "The image line the build came from, resolved by the server: `release` (`:latest` and the version tags), `edge` (every push to main, `:edge`), `nightly` (the newest release branch, `:nightly`, not for production) or `development` (no commit SHA, a local run). Render it; do not derive it from `version`.",
+      ),
     license: z.string(),
     repository: z.url(),
     changelog: z.url(),

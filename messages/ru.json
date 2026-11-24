@@ -9848,6 +9848,7 @@
       "channel": {
         "release": "Релиз",
         "edge": "Edge",
+        "nightly": "Nightly",
         "development": "Сборка для разработки"
       },
       "built": "Сборка {sha}, {time}",

@@ -9848,6 +9848,7 @@
       "channel": {
         "release": "Lançamento",
         "edge": "Edge",
+        "nightly": "Nightly",
         "development": "Build de desenvolvimento"
       },
       "built": "Compilação {sha}, {time}",

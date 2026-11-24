@@ -17,6 +17,7 @@ beforeEach(() => {
   delete process.env.NEXT_PUBLIC_APP_BUILD_SHA;
   delete process.env.NEXT_PUBLIC_APP_BUILT_AT;
   delete process.env.NEXT_PUBLIC_APP_VERSION;
+  delete process.env.NEXT_PUBLIC_APP_CHANNEL;
   offlineGeoReadyMock.mockReturnValue(false);
   resolveGeoProviderHostMock.mockReturnValue("ipwho.is");
 });
@@ -26,6 +27,7 @@ interface VersionEnvelope {
     version: string;
     buildSha: string | null;
     builtAt: string | null;
+    channel: string;
     license: string;
     repository: string;
     changelog: string;
@@ -120,6 +122,7 @@ describe("GET /api/version", () => {
       "buildSha",
       "builtAt",
       "changelog",
+      "channel",
       "docs",
       "features",
       "geoProviderHost",
@@ -128,5 +131,25 @@ describe("GET /api/version", () => {
       "repository",
       "version",
     ]);
+  });
+
+  it("reports a build without a commit as development", async () => {
+    process.env.NEXT_PUBLIC_APP_CHANNEL = "nightly";
+    const response = await (GET as unknown as () => Promise<Response>)();
+    const body = (await response.json()) as VersionEnvelope;
+    expect(body.data.channel).toBe("development");
+  });
+
+  it.each([
+    ["nightly", "nightly"],
+    ["edge", "edge"],
+    ["release", "release"],
+    [undefined, "release"],
+  ])("reports the image line %s as the channel %s", async (arg, expected) => {
+    process.env.NEXT_PUBLIC_APP_BUILD_SHA = "abc123def456";
+    if (arg !== undefined) process.env.NEXT_PUBLIC_APP_CHANNEL = arg;
+    const response = await (GET as unknown as () => Promise<Response>)();
+    const body = (await response.json()) as VersionEnvelope;
+    expect(body.data.channel).toBe(expected);
   });
 });

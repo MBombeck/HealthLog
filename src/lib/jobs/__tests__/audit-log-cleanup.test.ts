@@ -23,8 +23,9 @@ function makePrismaMock(deletedCount: number) {
         .mockResolvedValue(
           Array.from({ length: deletedCount }, (_, i) => ({ id: `row-${i}` })),
         ),
-      deleteMany: vi.fn().mockResolvedValue({ count: deletedCount }),
     },
+    // The sweep deletes through the owner's `audit_logs_purge` function.
+    $queryRaw: vi.fn().mockResolvedValue([{ count: deletedCount }]),
   } as unknown as PrismaClient;
 }
 
@@ -82,11 +83,12 @@ describe("cleanupOldAuditLogs", () => {
       select: { id: true },
       take: PURGE_BATCH_SIZE,
     });
-    expect(prisma.auditLog.deleteMany).toHaveBeenCalledTimes(1);
-    expect(
-      (prisma.auditLog.deleteMany as unknown as Mock).mock.calls[0][0].where.id
-        .in,
-    ).toHaveLength(42);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const [sql, ids, cutoffIso] = (prisma.$queryRaw as unknown as Mock).mock
+      .calls[0];
+    expect((sql as string[]).join("?")).toContain('"audit_logs_purge"(');
+    expect(ids).toHaveLength(42);
+    expect(cutoffIso).toBe(cutoff.toISOString());
   });
 
   it("uses the configured retention", async () => {
