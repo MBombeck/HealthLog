@@ -4,14 +4,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    user: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
+vi.mock("@/lib/db", () => {
+  // The write reads and writes inside a row-locked transaction; the
+  // transaction client is the same mocked user model.
+  const user = { findUnique: vi.fn(), update: vi.fn() };
+  const tx = { user, $queryRaw: vi.fn(async () => []) };
+  return {
+    prisma: {
+      ...tx,
+      $transaction: vi.fn(async (fn: (client: typeof tx) => unknown) => fn(tx)),
     },
-  },
-}));
+  };
+});
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/auth/audit", () => ({
