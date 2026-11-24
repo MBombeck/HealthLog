@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       image_tag:
-        description: Exact published image tag
+        description: Exact published release tag
         required: true
         type: string
       image_digest:
@@ -19,16 +19,6 @@ on:
         description: Expected short source commit SHA
         required: true
         type: string
-      expected_version:
-        description: Version /api/version must report, when it is not the tag without its leading v (a nightly)
-        required: false
-        type: string
-        default: ""
-      expected_channel:
-        description: Channel /api/version must report (release, edge, nightly); unchecked when empty
-        required: false
-        type: string
-        default: ""
   workflow_dispatch:
     inputs:
       image_ref:
@@ -36,7 +26,7 @@ on:
         required: true
         type: string
       image_tag:
-        description: Exact published image tag
+        description: Exact published release tag
         required: true
         type: string
       image_digest:
@@ -47,16 +37,6 @@ on:
         description: Expected short source commit SHA
         required: true
         type: string
-      expected_version:
-        description: Version /api/version must report, when it is not the tag without its leading v (a nightly)
-        required: false
-        type: string
-        default: ""
-      expected_channel:
-        description: Channel /api/version must report (release, edge, nightly); unchecked when empty
-        required: false
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -72,8 +52,6 @@ jobs:
       IMAGE_TAG: ${{ inputs.image_tag }}
       IMAGE_DIGEST: ${{ inputs.image_digest }}
       BUILD_SHA: ${{ inputs.build_sha }}
-      VERSION_OVERRIDE: ${{ inputs.expected_version }}
-      EXPECTED_CHANNEL: ${{ inputs.expected_channel }}
       DATABASE_URL: postgresql://healthlog:healthlog@localhost:5432/healthlog?schema=public
 
     services:
@@ -114,6 +92,40 @@ jobs:
 
           echo "Pulling immutable image $DIGEST_REF"
           docker pull "$DIGEST_REF"
+
+      # The SBOM BuildKit attached to each platform image lists the npm
+      # packages it found on disk. Every one of them must be in the licence
+      # bundles the same build wrote (THIRD_PARTY_NOTICES.md), or the image
+      # ships code without its licence text.
+      - name: Check out the licence script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/third-party-notices.mjs
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Check the SBOM against the shipped licence bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIGEST_REF="${IMAGE_REF}@${IMAGE_DIGEST}"
+          for platform in linux/amd64 linux/arm64; do
+            dir="/tmp/licences/${platform//\//-}"
+            mkdir -p "$dir"
+            docker buildx imagetools inspect "$DIGEST_REF" \
+              --format "{{ json (index .SBOM \"$platform\").SPDX }}" > "$dir/sbom.json"
+            cid="$(docker create --platform "$platform" "$DIGEST_REF")"
+            docker cp "$cid:/app/THIRD_PARTY_LICENSES.txt" "$dir/app.txt"
+            docker cp "$cid:/opt/prisma-cli/THIRD_PARTY_LICENSES.txt" "$dir/prisma-cli.txt"
+            docker rm "$cid" > /dev/null
+            echo "== $platform"
+            node scripts/third-party-notices.mjs --sbom "$dir/sbom.json" \
+              --inventory "$dir/app.txt" --inventory "$dir/prisma-cli.txt"
+          done
 
       - name: Run migrations
         run: |
@@ -158,9 +170,6 @@ jobs:
           fi
 
           EXPECTED_VERSION="${IMAGE_TAG#v}"
-          if [ -n "$VERSION_OVERRIDE" ]; then
-            EXPECTED_VERSION="$VERSION_OVERRIDE"
-          fi
           echo "$body" | jq .
           if ! jq -e --arg expected "$EXPECTED_VERSION" '.data.version == $expected' <<< "$body" >/dev/null; then
             actual="$(jq -r '.data.version // "<missing>"' <<< "$body")"
@@ -170,11 +179,6 @@ jobs:
           if ! jq -e --arg expected "$BUILD_SHA" '.data.buildSha == $expected' <<< "$body" >/dev/null; then
             actual="$(jq -r '.data.buildSha // "<missing>"' <<< "$body")"
             echo "::error::Build SHA mismatch: exact image reports '$actual', expected '$BUILD_SHA'." >&2
-            exit 1
-          fi
-          if [ -n "$EXPECTED_CHANNEL" ] && ! jq -e --arg expected "$EXPECTED_CHANNEL" '.data.channel == $expected' <<< "$body" >/dev/null; then
-            actual="$(jq -r '.data.channel // "<missing>"' <<< "$body")"
-            echo "::error::Channel mismatch: exact image reports '$actual', expected '$EXPECTED_CHANNEL'." >&2
             exit 1
           fi
 
