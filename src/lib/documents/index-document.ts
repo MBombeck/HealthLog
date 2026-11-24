@@ -348,6 +348,25 @@ function documentStillWanted(
 }
 
 /**
+ * The account's locale, for the language a scan is read in. A failed read
+ * of it reads the scan in German and English only, which is no reason to
+ * fail the document.
+ */
+function accountLocale(userId: string): () => Promise<string | null> {
+  return async () => {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { locale: true },
+      });
+      return user?.locale ?? null;
+    } catch {
+      return null;
+    }
+  };
+}
+
+/**
  * Try the LOCAL (provider-free) path for one loaded document: the text
  * layer, and OCR on this server for a scan or a photo.
  */
@@ -372,6 +391,7 @@ async function tryLocalIndex(
   const ocrOptions: ServerOcrOptions = {
     signal: options.signal,
     stillWanted: documentStillWanted(userId, document.id),
+    locale: accountLocale(userId),
   };
   const result = await localExtractText(buffer, mime, ocrOptions);
   if (result.ok) {
