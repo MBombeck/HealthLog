@@ -52,6 +52,7 @@ import {
 } from "@/lib/mcp/oauth/config";
 import { signArtifact, verifyArtifact } from "@/lib/mcp/oauth/artifacts";
 import { verifyPkceS256 } from "@/lib/mcp/oauth/pkce";
+import { refreshFamilyHardEnd } from "@/lib/auth/session-lifetime";
 import {
   createConnection,
   rotateConnection,
@@ -120,6 +121,11 @@ type TokenPairArgs = {
   grant: "authorization_code" | "refresh_token";
   connectionId?: string;
   refreshJti?: string;
+  /**
+   * The connection's absolute end (REFRESH_TOKEN_MAX_LIFETIME_DAYS from its
+   * consent): neither the access token nor the refresh artifact outlives it.
+   */
+  endsAt?: Date;
 };
 
 /**
@@ -132,6 +138,13 @@ type TokenPairArgs = {
  * the connection seeded with it; for `refresh_token` the caller has just
  * advanced the connection to it.
  */
+/** The refresh artifact's lifetime: 30 days, or less at the connection's end. */
+function refreshArtifactTtlMs(endsAt: Date | undefined): number {
+  const ttl = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
+  if (!endsAt) return ttl;
+  return Math.max(0, Math.min(ttl, endsAt.getTime() - Date.now()));
+}
+
 async function mintTokenPair(args: TokenPairArgs): Promise<Response> {
   const access = await persistAccessToken(args);
   return finalizeTokenPair(args, access);
@@ -157,6 +170,7 @@ async function persistAccessToken(
     name: "MCP connector",
     permissions,
     expiresInMinutes: ACCESS_TOKEN_TTL_MINUTES,
+    ...(args.endsAt ? { notAfter: args.endsAt } : {}),
     ...(args.connectionId ? { mcpConnectionId: args.connectionId } : {}),
   };
   return db ? issueApiToken(options, db) : issueApiToken(options);
@@ -178,7 +192,7 @@ async function finalizeTokenPair(
             scope: args.scope,
             resource: args.resource,
           },
-          REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
+          refreshArtifactTtlMs(args.endsAt),
         )
       : undefined;
 
@@ -337,6 +351,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         grant: "authorization_code",
         connectionId,
         refreshJti,
+        endsAt: connectionId ? refreshFamilyHardEnd(new Date()) : undefined,
       });
     }
 
@@ -414,8 +429,11 @@ export async function POST(request: NextRequest): Promise<Response> {
           if (!rotation.ok) {
             return { ok: false as const, rotation };
           }
-          const access = await persistAccessToken(pairArgs, tx);
-          return { ok: true as const, access };
+          const access = await persistAccessToken(
+            { ...pairArgs, endsAt: rotation.endsAt },
+            tx,
+          );
+          return { ok: true as const, access, endsAt: rotation.endsAt };
         },
         { timeout: 10_000 },
       );
@@ -441,7 +459,10 @@ export async function POST(request: NextRequest): Promise<Response> {
 
       // The transaction has committed. Only now may the stateless successor
       // refresh artifact be signed and returned to the client.
-      return finalizeTokenPair(pairArgs, exchange.access);
+      return finalizeTokenPair(
+        { ...pairArgs, endsAt: exchange.endsAt },
+        exchange.access,
+      );
     }
 
     return oauthError(

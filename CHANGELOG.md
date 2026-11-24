@@ -32,12 +32,14 @@
 ### Security
 
 - A file import upload is held to its size limit as a whole, not only in the file it carries. The other parts of the form and their headers were read into memory without a limit, so a signed-in caller could send a body that grew the server's memory until the app stopped. Every byte of the body now counts against the import's cap, and the small form fields and part headers have their own ceilings.
+- A sign-in ends a fixed time after it began, however often it is used: 90 days in the browser, 180 days in the iPhone app and for an MCP connection. Until now each use pushed the end further out, so a browser or a phone in daily use never had to sign in again, and a stolen session cookie or refresh token stayed good for as long as somebody kept using it. The idle window still slides with use (30 days in the browser, 60 days per refresh in the app), but never past that end. The app is answered `auth.refresh.invalid` at the end and shows its sign-in; an MCP client is asked for consent again, and the consent screen now says how long a connection lasts. `SESSION_IDLE_TIMEOUT_DAYS`, `SESSION_MAX_LIFETIME_DAYS` and `REFRESH_TOKEN_MAX_LIFETIME_DAYS` change the three numbers.
 
 ### Updating
 
 - Apple Wallet passes need the server reached over HTTPS and either the push relay on or the `WALLET_APPLE_*` variables set (all six are on the compose `environment:` list). A reverse proxy in front of the server has to let `/api/wallet/apple/v1/` through without a login of its own: Wallet calls it from the phone. Migrations 0563 and 0564 add the name item and the pass tables.
 - Migration 0565 adds the treatment series table and an empty `series_id` column on visits. Nothing stored changes, and it runs in a moment on any size of database.
 - Migration 0562 merges the Apple Health workout pairs already stored the same way: the app's row is kept, filled from the export row and given its track, series, insight and personal records where it has none, and the export row is deleted. Export workouts without a synced twin stay as they are. It runs in one transaction with a ten-minute statement timeout and reports the number it merged in the boot log. The query to count the pairs before updating is in the migration file.
+- Migration 0567 records when each iPhone app sign-in began. Stored refresh tokens are dated from their last refresh, so nobody is signed out of the app by the update; a phone in use reaches the 180 days within 180 days of it. A browser session or an MCP connection that began more than 90 or 180 days ago ends at the first request after the update, and its person signs in or connects once more.
 
 ### Thanks
 
