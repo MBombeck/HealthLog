@@ -364,6 +364,28 @@ export interface DoctorReportData {
     conditionLabels: string[];
   }> | null;
   /**
+   * The treatment series the window touched: one a session of fell
+   * inside it, or one that was still running in it. Rides the VISITS leaf (a
+   * series is visits), so it is null whenever `visits` is withheld. `status`
+   * and `kind` cross as enum constants, rendered in the report's language;
+   * `title` is decrypted and null on a key-rotation gap.
+   */
+  treatmentSeries?: Array<{
+    title: string | null;
+    kind: string;
+    status: string;
+    done: number;
+    plannedSessions: number | null;
+    startsOn: string;
+    validUntil: string | null;
+    endedOn: string | null;
+    firstSessionAt: string | null;
+    lastSessionAt: string | null;
+    prescriberName: string | null;
+    performerName: string | null;
+    conditionLabel: string | null;
+  }> | null;
+  /**
    * The surgical history (v1.39.1): every visit of kind PROCEDURE that
    * happened, oldest first. Reference data, not time-windowed, like the
    * immunization record below — an operation fifteen years ago is still the

@@ -19,10 +19,20 @@ import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 import {
+  deriveSeriesStatus,
+  sessionNumbers,
+  summarizeSessions,
+} from "@/lib/treatment-series/derive";
+import { dayToDate, loadSeriesSessions } from "@/lib/treatment-series/service";
+import { dateOnlyKey } from "@/lib/tz/date-only";
+import { userDayKey } from "@/lib/tz/format";
+
+import {
   MAX_CARE_EVENTS,
   buildCareCalendar,
   type CareDue,
   type CareFeedTitleMode,
+  type CareSeriesEnd,
 } from "./events";
 
 /** How far back the feed keeps a date, so a calendar does not drop it the
@@ -82,6 +92,7 @@ export async function buildCareFeed(
           select: {
             id: true,
             occurredAt: true,
+            seriesId: true,
             practitioner: { select: { name: true } },
           },
         })
@@ -112,6 +123,10 @@ export async function buildCareFeed(
       : Promise.resolve([]),
   ]);
 
+  const { sessions, seriesEnds } = feed.includeVisits
+    ? await loadSeriesFacts(subject.id, visitRows, until, now, tz)
+    : { sessions: new Map(), seriesEnds: [] };
+
   const dues: CareDue[] = reminderRows.flatMap((r) =>
     r.nextDueAt
       ? [
@@ -131,9 +146,89 @@ export async function buildCareFeed(
       id: v.id,
       occurredAt: v.occurredAt,
       practitioner: v.practitioner?.name ?? null,
+      session: sessions.get(v.id) ?? null,
     })),
     dues,
+    seriesEnds,
     translator: getServerTranslator(feedLocale(subject.locale)),
   });
   return { calendar, contentHash: icsContentHash(calendar) };
+}
+
+/**
+ * The treatment-series facts the feed draws: each booked session's
+ * place in its series, and the last valid day of every series that still runs
+ * with sessions left. Visits are the switch for both: a series is visits.
+ */
+async function loadSeriesFacts(
+  userId: string,
+  visits: ReadonlyArray<{ id: string; seriesId: string | null }>,
+  until: Date,
+  now: Date,
+  tz: string,
+): Promise<{
+  sessions: Map<string, { number: number; planned: number | null }>;
+  seriesEnds: CareSeriesEnd[];
+}> {
+  const today = userDayKey(now, tz);
+  const series = await prisma.treatmentSeries.findMany({
+    where: {
+      userId,
+      deletedAt: null,
+      OR: [
+        { id: { in: visits.flatMap((v) => (v.seriesId ? [v.seriesId] : [])) } },
+        {
+          endedOn: null,
+          validUntil: { gte: dayToDate(today), lte: until },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      plannedSessions: true,
+      validUntil: true,
+      endedOn: true,
+      performer: { select: { name: true } },
+    },
+  });
+  const facts = await loadSeriesSessions(
+    prisma,
+    userId,
+    series.map((s) => s.id),
+  );
+  const byId = new Map(series.map((s) => [s.id, s]));
+  const numbers = new Map(
+    [...facts].map(([id, list]) => [id, sessionNumbers(list)] as const),
+  );
+  const sessions = new Map<
+    string,
+    { number: number; planned: number | null }
+  >();
+  for (const v of visits) {
+    const number = v.seriesId ? numbers.get(v.seriesId)?.get(v.id) : undefined;
+    if (!v.seriesId || number === undefined) continue;
+    sessions.set(v.id, {
+      number,
+      planned: byId.get(v.seriesId)?.plannedSessions ?? null,
+    });
+  }
+  const seriesEnds: CareSeriesEnd[] = [];
+  for (const s of series) {
+    if (!s.validUntil || s.endedOn) continue;
+    const day = dateOnlyKey(s.validUntil);
+    if (day < today) continue;
+    const done = summarizeSessions(facts.get(s.id) ?? [], now).done;
+    const status = deriveSeriesStatus(
+      { plannedSessions: s.plannedSessions, validUntil: day, endedOn: null },
+      done,
+      today,
+    );
+    if (status === "COMPLETED") continue;
+    seriesEnds.push({
+      id: s.id,
+      day,
+      practitioner: s.performer?.name ?? null,
+    });
+  }
+  return { sessions, seriesEnds };
 }

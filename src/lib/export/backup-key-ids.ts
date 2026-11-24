@@ -133,6 +133,7 @@ export const RESTORE_SELF_VERIFIED_SECTIONS: ReadonlySet<string> = new Set([
   "customMoodTags",
   "customMoodTagCategories",
   "practitioners",
+  "treatmentSeries",
   "encounters",
   "vaccinations",
 ]);

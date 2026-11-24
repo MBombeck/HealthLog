@@ -73,6 +73,7 @@ import { exportPaths } from "./export";
 import { familyHistoryPaths } from "./family-history";
 import { healthRecordPaths } from "./health-record";
 import { encounterPaths } from "./encounters";
+import { treatmentSeriesPaths } from "./treatment-series";
 import { vaccinationPaths } from "./vaccinations";
 import { illnessPaths } from "./illness";
 import { importPaths } from "./import";
@@ -155,6 +156,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...aiRunPaths,
   ...biomarkerPaths,
   ...encounterPaths,
+  ...treatmentSeriesPaths,
   ...vaccinationPaths,
   ...illnessPaths,
   ...mentalHealthPaths,

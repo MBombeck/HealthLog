@@ -15,11 +15,7 @@
  *
  * Pure data assembly — no auth, no rate limit, no audit. Idempotent.
  */
-import {
-  courseStatusOn,
-  dayKeyOfDate,
-  medicationWindow,
-} from "@/lib/medications/course-window";
+import { medicationWindow } from "@/lib/medications/course-window";
 import { prisma } from "@/lib/db";
 import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
 import {
@@ -77,6 +73,7 @@ import {
   loadIllnessEpisodes,
   loadImmunizations,
   loadVisits,
+  loadTreatmentSeriesReport,
   loadSurgicalHistory,
   loadLabResults,
 } from "./clinical-records";
@@ -90,6 +87,7 @@ import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import {
   findReportIntakeEvents,
   findReportMedications,
+  toReportMedicationRows,
 } from "./collect-medications";
 
 const DENSE_REPORT_RAW_WINDOW_DAYS = 90;
@@ -543,6 +541,7 @@ export async function collectDoctorReportData(
     illnessEpisodes,
     seizureDiary,
     visits,
+    treatmentSeries,
     surgicalHistory,
     immunizations,
     allergies,
@@ -593,6 +592,10 @@ export async function collectDoctorReportData(
       : Promise.resolve(null),
     gate.admits("VISITS")
       ? loadVisits(userId, start, end)
+      : Promise.resolve(null),
+    // A series is visits, so it rides the same leaf.
+    gate.admits("VISITS")
+      ? loadTreatmentSeriesReport(userId, start, end, reportTz)
       : Promise.resolve(null),
     // Reference data, not windowed, like the immunization history below.
     gate.admits("SURGICAL_HISTORY")
@@ -646,30 +649,7 @@ export async function collectDoctorReportData(
     bmi: gate.admits("BODY_MASS_INDEX") ? bmi : null,
     compliance: gate.admits("MEDICATION_COMPLIANCE") ? compliance : {},
     medications: gate.admits("MEDICATION_LIST")
-      ? medications.map((m) => ({
-          id: m.id,
-          name: m.name,
-          dose: m.dose,
-          atcCode: m.atcCode,
-          rxNormCode: m.rxNormCode,
-          schedules: m.schedules.map((s) => ({
-            windowStart: s.windowStart,
-            windowEnd: s.windowEnd,
-            label: s.label,
-          })),
-          // v1.40 (#1024) — the courses inside the window, one line each.
-          courses: m.courses
-            .filter(
-              (c) =>
-                c.startsOn.getTime() <= lastDay.getTime() &&
-                (c.endsOn === null || c.endsOn.getTime() >= firstDay.getTime()),
-            )
-            .map((c) => ({
-              startsOn: dayKeyOfDate(c.startsOn),
-              endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,
-              status: courseStatusOn(c, dayKeyOfDate(lastDay)),
-            })),
-        }))
+      ? toReportMedicationRows(medications, firstDay, lastDay)
       : [],
     medicationAdministrations: gate.admits("MEDICATION_ADMINISTRATIONS")
       ? ledger.administrations
@@ -688,6 +668,7 @@ export async function collectDoctorReportData(
     illnessEpisodes,
     seizureDiary,
     visits,
+    treatmentSeries,
     surgicalHistory,
     immunizations,
     allergies,

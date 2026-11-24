@@ -109,6 +109,7 @@ vi.mock("@/lib/db", () => ({
     encounterDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounter: { findMany: vi.fn().mockResolvedValue([]) },
     practitioner: { findMany: vi.fn().mockResolvedValue([]) },
+    treatmentSeries: { findMany: vi.fn().mockResolvedValue([]) },
     healthScoreRecord: { findMany: vi.fn().mockResolvedValue([]) },
     intradayCumulativeProfile: { findMany: vi.fn().mockResolvedValue([]) },
     correlationPattern: { findMany: vi.fn().mockResolvedValue([]) },

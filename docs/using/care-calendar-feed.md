@@ -36,6 +36,8 @@ Adding it works as for the cycle feed: see
   calendar too.
 - **Vaccination boosters coming due**, the same way. They follow the
   vaccinations module: with it switched off, they are left out.
+- **The last valid day of a running treatment series**, as an all-day event,
+  while sessions are left. It comes with the booked visits.
 
 The feed reaches 30 days back, so a date does not vanish the moment it
 passes, and about 13 months ahead. Each of the three kinds can be switched off
@@ -43,9 +45,10 @@ on the card.
 
 Titles are discreet by default: every event is a dot (●), and the calendar is
 called "HealthLog". Descriptive titles name the practitioner of a visit
-("Appointment: Practice Lindenhof") and the label of a check-up ("Due: Skin
-check"). Events never carry a visit's reason, outcome or body site, a
-check-up's location, a note, or anything else from your record.
+("Appointment: Practice Lindenhof"), a session's place in its treatment
+series ("Session 3 of 6: Practice Lindenhof") and the label of a check-up
+("Due: Skin check"). Events never carry a visit's reason, outcome or body site, a treatment
+series' name, a check-up's location, a note, or anything else from your record.
 
 ## Turning it off
 

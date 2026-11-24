@@ -50,6 +50,7 @@ import {
   type BackgroundReasoningJob,
 } from "@/lib/ai/reasoning/levels";
 import { resolveJobReasoning } from "@/lib/ai/reasoning/controls";
+import { plainSeparators } from "@/lib/ai/plain-separators";
 
 /**
  * Which call on the briefing path this was. Threaded onto the refusal
@@ -256,5 +257,14 @@ export async function runBriefingCompletion(
     // place and never breaks a generation that already succeeded.
   });
 
-  return outcome;
+  // The reply leaves here in the app's punctuation: no middle dot or spaced
+  // dash between clauses (`plainSeparators`). Grounding, the safety screen
+  // and the stored row all read this same text.
+  return {
+    ...outcome,
+    result: {
+      ...outcome.result,
+      content: plainSeparators(outcome.result.content),
+    },
+  };
 }

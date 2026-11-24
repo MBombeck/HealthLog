@@ -228,7 +228,8 @@
       "invalid": "진료 정보를 확인하고 다시 시도해 주세요.",
       "practitioner-not-found": "이 병원 또는 의사가 더 이상 없어요. 다른 항목을 고르거나 '지정 안 함'을 선택해 주세요.",
       "reminder-not-found": "이 건강검진이 더 이상 없어요. 다른 검진을 고르거나 선택을 비워 두세요.",
-      "reminder-conflict": "예정된 진료는 아직 이루어지지 않았기 때문에 건강검진을 완료할 수 없어요."
+      "reminder-conflict": "예정된 진료는 아직 이루어지지 않았기 때문에 건강검진을 완료할 수 없어요.",
+      "series-not-found": "이 치료 과정은 더 이상 없습니다. 다른 과정을 선택하거나 선택하지 마세요."
     },
     "vaccination": {
       "invalid": "예방접종 정보를 확인하고 다시 시도해 주세요.",
@@ -289,6 +290,11 @@
         "limit": "발작 유형이 이미 12개예요. 새로 추가하려면 하나를 보관하세요.",
         "notFound": "이 발작 유형이 더 이상 없어요."
       }
+    },
+    "treatment_series": {
+      "invalid": "과정 정보를 확인하고 다시 시도하세요.",
+      "practitioner-not-found": "이 의원 또는 의사는 더 이상 없습니다. 다른 곳을 선택하거나 선택하지 마세요.",
+      "condition-not-found": "이 질환은 더 이상 없습니다. 다른 질환을 선택하거나 선택하지 마세요."
     }
   },
   "doctorReport": {
@@ -1843,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "예: 4",
           "dosesPerUnitHint": "새 포장이나 펜 하나에 든 정제 또는 단위 수예요. 예: 정제 28개, 4회분 펜. 포장을 추가할 때 수량이 미리 채워져요. 포장마다 다르면 비워 두세요.",
           "short": "용량",
-          "unitsPerDoseLabel": "이 용량은 정제나 단위 몇 개인가요?",
+          "unitsPerDoseLabel": "1회 용량당 정제 또는 단위 수",
           "unitsPerDoseHint": "예: 4mg 용량이면 2mg 2정, 반으로 나눠 먹으면 ½정",
           "packSizeToggle": "포장 크기(선택)"
         },
@@ -10783,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "임신 준비",
       "PERIMENOPAUSE": "폐경 이행기",
       "OFF": "추적 끄기",
-      "label": "무엇을 위해 기록하나요?",
+      "label": "기록 목적",
       "description": "이 설정에 따라 문구와 보이는 예측이 달라져요. 가임기 안내는 임신을 준비할 때만 보여요."
     },
     "ring": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} 님이 발작 유형을 삭제했어요",
       "seizureSettingsUpdate": "{name} 님이 군집 발작 기준을 변경했어요",
       "symptomBatchIngest": "{name}님이 Apple Health에서 증상을 가져왔습니다",
-      "symptomImportDelete": "{name}님이 가져온 증상 기록을 삭제했습니다"
+      "symptomImportDelete": "{name}님이 가져온 증상 기록을 삭제했습니다",
+      "treatmentSeriesCreate": "{name}님이 치료 과정을 추가했습니다",
+      "treatmentSeriesUpdate": "{name}님이 치료 과정을 수정했습니다",
+      "treatmentSeriesDelete": "{name}님이 치료 과정을 삭제했습니다",
+      "treatmentSeriesRestore": "{name}님이 치료 과정을 복원했습니다"
     },
     "section": {
       "measurements": {
@@ -15238,7 +15248,7 @@
     "saved": "삶의 사건을 저장했어요",
     "deleted": "삶의 사건을 삭제했어요",
     "fields": {
-      "title": "무슨 일이 있었나요?",
+      "title": "제목",
       "category": "종류",
       "when": "언제",
       "precision": "정확도",
@@ -16039,7 +16049,12 @@
       "visit": "진료 예약",
       "visitWith": "진료 예약: {name}",
       "checkupDue": "예정: {label}",
-      "boosterDue": "추가 접종 예정: {label}"
+      "boosterDue": "추가 접종 예정: {label}",
+      "sessionOf": "{planned}회 중 {number}회차",
+      "session": "{number}회차",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "치료 과정 종료",
+      "seriesEndsWith": "치료 과정 종료: {name}"
     }
   },
   "reportSchedule": {
@@ -16223,5 +16238,58 @@
         "withdraw": "철회하면 QR 코드가 즉시 멈춥니다. 오프라인인 휴대폰은 다시 연결될 때까지 이전 패스를 유지합니다. 패스가 업데이트되지 않으면 지갑에서 삭제하세요."
       }
     }
+  },
+  "treatmentSeries": {
+    "heading": "치료 과정",
+    "add": "새 치료 과정",
+    "createTitle": "새 치료 과정",
+    "untitled": "치료 과정",
+    "progress": "{planned}회 중 {done}회",
+    "sessionsDoneCount": "{count, plural, other {#회}}",
+    "sessionOf": "{planned}회 중 {number}회차",
+    "session": "{number}회차",
+    "status": {
+      "planned": "시작 전",
+      "active": "진행 중",
+      "completed": "완료",
+      "expired": "만료"
+    },
+    "next": "다음 {date}",
+    "validUntil": "{date}까지 유효",
+    "firstSession": "{date}부터",
+    "sessionsHeading": "회차",
+    "addSession": "회차 추가",
+    "prescriber": "처방",
+    "performer": "시행",
+    "condition": "질환",
+    "form": {
+      "title": "이름",
+      "titlePlaceholder": "물리치료, 왼쪽 무릎",
+      "plannedSessions": "회차 수",
+      "startsOn": "시작",
+      "validUntil": "유효 기간",
+      "note": "메모",
+      "series": "치료 과정",
+      "seriesNone": "없음"
+    },
+    "created": "치료 과정을 저장했습니다",
+    "updated": "치료 과정을 수정했습니다",
+    "saveFailed": "치료 과정을 저장하지 못했습니다.",
+    "ended": "치료 과정을 종료했습니다",
+    "reopened": "치료 과정을 다시 열었습니다",
+    "end": "과정 종료",
+    "reopen": "다시 열기",
+    "deleteTitle": "이 치료 과정을 삭제할까요?",
+    "deleteDescription": "방문 기록은 남습니다. 묶음만 해제됩니다.",
+    "deleted": "치료 과정을 삭제했습니다",
+    "deleteFailed": "치료 과정을 삭제하지 못했습니다.",
+    "reportTitle": "치료 과정",
+    "reportColSeries": "과정",
+    "reportColSessions": "회차",
+    "reportColPeriod": "기간",
+    "period": "{from} ~ {to}",
+    "periodOpen": "{from}부터",
+    "expiryPushTitle": "치료 과정 만료 예정",
+    "expiryPushBody": "{title}: {date}까지 유효, {count, plural, other {#회}} 남음."
   }
 }

@@ -103,3 +103,53 @@ describe("buildCareCalendar", () => {
     expect(new Set(a.events.map((e) => e.uid)).size).toBe(MAX_CARE_EVENTS);
   });
 });
+
+describe("treatment series in the care calendar", () => {
+  const session = {
+    ...visit,
+    id: "s1",
+    session: { number: 3, planned: 6 },
+  };
+  const end = { id: "t1", day: "2026-12-20", practitioner: "Physio Nord" };
+
+  it("numbers a session and draws a running series' last valid day", () => {
+    const calendar = buildCareCalendar({
+      feedId: "f1",
+      titleMode: "DESCRIPTIVE",
+      visits: [
+        session,
+        {
+          ...session,
+          id: "s2",
+          occurredAt: new Date("2026-12-05T08:30:00Z"),
+          practitioner: null,
+          session: { number: 4, planned: null },
+        },
+      ],
+      dues: [],
+      seriesEnds: [
+        end,
+        { ...end, id: "t2", day: "2026-12-21", practitioner: null },
+      ],
+      translator,
+    });
+    expect(calendar.events.map((e) => e.summary)).toEqual([
+      "Session 3 of 6: Practice Lindenhof",
+      "Session 4",
+      "Treatment series ends: Physio Nord",
+      "Treatment series ends",
+    ]);
+  });
+
+  it("says nothing about either in discreet mode", () => {
+    const calendar = buildCareCalendar({
+      feedId: "f1",
+      titleMode: "DISCREET",
+      visits: [session],
+      dues: [],
+      seriesEnds: [end],
+      translator,
+    });
+    expect(calendar.events.map((e) => e.summary)).toEqual(["●", "●"]);
+  });
+});

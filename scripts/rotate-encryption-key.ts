@@ -871,6 +871,21 @@ async function main() {
   results.push(
     await rotateBytesColumn("Encounter", "bodySiteEncrypted", prisma.encounter),
   );
+  // A treatment series' title and note.
+  results.push(
+    await rotateBytesColumn(
+      "TreatmentSeries",
+      "titleEncrypted",
+      prisma.treatmentSeries,
+    ),
+  );
+  results.push(
+    await rotateBytesColumn(
+      "TreatmentSeries",
+      "noteEncrypted",
+      prisma.treatmentSeries,
+    ),
+  );
   results.push(
     await rotateBytesColumn(
       "Practitioner",

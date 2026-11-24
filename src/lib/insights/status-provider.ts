@@ -34,6 +34,7 @@ import {
   holdStatusNoteWhileBenched,
   statusNoteCoolingDown,
 } from "./status-negative-window";
+import { plainSeparators } from "@/lib/ai/plain-separators";
 
 /**
  * v1.41 — the fallback ceiling for a status-path call that reasons. Thinking
@@ -359,7 +360,7 @@ export async function runStatusCompletion(
 
   return {
     kind: "ok",
-    content,
+    content: plainSeparators(content),
     providerType: workingProvider.providerType,
     model: result.model ?? "unknown",
     tokensUsed: result.tokensUsed ?? null,

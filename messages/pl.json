@@ -228,7 +228,8 @@
       "invalid": "Sprawdź dane wizyty i spróbuj ponownie.",
       "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny wpis albo „Nie podano”.",
       "reminder-not-found": "To badanie już nie istnieje. Wybierz inne albo pozostaw pole puste.",
-      "reminder-conflict": "Zaplanowana wizyta nie może zamknąć badania, bo jeszcze się nie odbyła."
+      "reminder-conflict": "Zaplanowana wizyta nie może zamknąć badania, bo jeszcze się nie odbyła.",
+      "series-not-found": "Ta seria zabiegów już nie istnieje. Wybierz inną lub żadną."
     },
     "vaccination": {
       "invalid": "Sprawdź dane szczepienia i spróbuj ponownie.",
@@ -289,6 +290,11 @@
         "limit": "Jest już 12 rodzajów napadów. Zarchiwizuj jeden, aby dodać kolejny.",
         "notFound": "Ten rodzaj napadu już nie istnieje."
       }
+    },
+    "treatment_series": {
+      "invalid": "Sprawdź dane serii i spróbuj ponownie.",
+      "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny lub żaden.",
+      "condition-not-found": "To schorzenie już nie istnieje. Wybierz inne lub żadne."
     }
   },
   "doctorReport": {
@@ -1843,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "np. 4",
           "dosesPerUnitHint": "Ile tabletek lub jednostek zawiera nowe opakowanie lub wstrzykiwacz, np. 28 tabletek albo wstrzykiwacz na 4 dawki. Uzupełnia ilość przy dodawaniu opakowania; zostaw puste, jeśli opakowania się różnią.",
           "short": "Dawka",
-          "unitsPerDoseLabel": "Ile tabletek lub jednostek składa się na tę dawkę?",
+          "unitsPerDoseLabel": "Tabletki lub jednostki na dawkę",
           "unitsPerDoseHint": "np. 2 tabletki po 2 mg na dawkę 4 mg lub ½ tabletki przy dzielonej dawce",
           "packSizeToggle": "Wielkość opakowania (opcjonalnie)"
         },
@@ -10783,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Staranie o dziecko",
       "PERIMENOPAUSE": "Perimenopauza",
       "OFF": "Śledzenie wyłączone",
-      "label": "W jakim celu śledzisz?",
+      "label": "Cel",
       "description": "To dostosowuje język i widoczne prognozy. Wskazówki dotyczące okna płodnego pojawiają się tylko przy staraniu o dziecko."
     },
     "ring": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} usunął rodzaj napadu",
       "seizureSettingsUpdate": "{name} zmienił regułę napadów gromadnych",
       "symptomBatchIngest": "{name} zaimportował(a) objawy z Apple Health",
-      "symptomImportDelete": "{name} usunął(-ęła) zaimportowane objawy"
+      "symptomImportDelete": "{name} usunął(-ęła) zaimportowane objawy",
+      "treatmentSeriesCreate": "{name} dodał(a) serię zabiegów",
+      "treatmentSeriesUpdate": "{name} edytował(a) serię zabiegów",
+      "treatmentSeriesDelete": "{name} usunął/usunęła serię zabiegów",
+      "treatmentSeriesRestore": "{name} przywrócił(a) serię zabiegów"
     },
     "section": {
       "measurements": {
@@ -15238,7 +15248,7 @@
     "saved": "Zapisano wydarzenie życiowe",
     "deleted": "Usunięto wydarzenie życiowe",
     "fields": {
-      "title": "Co się wydarzyło?",
+      "title": "Tytuł",
       "category": "Rodzaj",
       "when": "Kiedy",
       "precision": "Dokładność",
@@ -16039,7 +16049,12 @@
       "visit": "Wizyta",
       "visitWith": "Wizyta: {name}",
       "checkupDue": "Termin: {label}",
-      "boosterDue": "Dawka przypominająca: {label}"
+      "boosterDue": "Dawka przypominająca: {label}",
+      "sessionOf": "Zabieg {number} z {planned}",
+      "session": "Zabieg {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Koniec serii zabiegów",
+      "seriesEndsWith": "Koniec serii zabiegów: {name}"
     }
   },
   "reportSchedule": {
@@ -16223,5 +16238,58 @@
         "withdraw": "Wycofanie od razu zatrzymuje kod QR. Telefon bez sieci zachowa starą przepustkę, dopóki nie wróci online; jeśli przepustki nie da się zaktualizować, usuń ją w Wallet."
       }
     }
+  },
+  "treatmentSeries": {
+    "heading": "Serie zabiegów",
+    "add": "Nowa seria",
+    "createTitle": "Nowa seria zabiegów",
+    "untitled": "Seria zabiegów",
+    "progress": "{done} z {planned}",
+    "sessionsDoneCount": "{count, plural, one {# zabieg} few {# zabiegi} many {# zabiegów} other {# zabiegu}}",
+    "sessionOf": "Zabieg {number} z {planned}",
+    "session": "Zabieg {number}",
+    "status": {
+      "planned": "Nierozpoczęta",
+      "active": "W toku",
+      "completed": "Zakończona",
+      "expired": "Wygasła"
+    },
+    "next": "Następny {date}",
+    "validUntil": "Ważna do {date}",
+    "firstSession": "Od {date}",
+    "sessionsHeading": "Zabiegi",
+    "addSession": "Dodaj zabieg",
+    "prescriber": "Zlecił(a)",
+    "performer": "Wykonuje",
+    "condition": "Schorzenie",
+    "form": {
+      "title": "Nazwa",
+      "titlePlaceholder": "Fizjoterapia, lewe kolano",
+      "plannedSessions": "Zabiegi",
+      "startsOn": "Początek",
+      "validUntil": "Ważna do",
+      "note": "Notatka",
+      "series": "Seria zabiegów",
+      "seriesNone": "Brak"
+    },
+    "created": "Seria zapisana",
+    "updated": "Seria zaktualizowana",
+    "saveFailed": "Nie udało się zapisać serii.",
+    "ended": "Seria zakończona",
+    "reopened": "Seria wznowiona",
+    "end": "Zakończ serię",
+    "reopen": "Wznów",
+    "deleteTitle": "Usunąć tę serię?",
+    "deleteDescription": "Wizyty zostają. Po prostu nie są już zgrupowane.",
+    "deleted": "Seria usunięta",
+    "deleteFailed": "Nie udało się usunąć serii.",
+    "reportTitle": "Serie zabiegów",
+    "reportColSeries": "Seria",
+    "reportColSessions": "Zabiegi",
+    "reportColPeriod": "Okres",
+    "period": "{from} do {to}",
+    "periodOpen": "od {from}",
+    "expiryPushTitle": "Seria zabiegów wygasa",
+    "expiryPushBody": "{title}: ważna do {date}, {count, plural, one {pozostał # zabieg} few {pozostały # zabiegi} many {pozostało # zabiegów} other {pozostało # zabiegu}}."
   }
 }

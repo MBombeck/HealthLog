@@ -228,7 +228,8 @@
       "invalid": "Prüfe die Angaben zum Termin und versuche es erneut.",
       "practitioner-not-found": "Diese Praxis bzw. dieser Arzt existiert nicht mehr. Wähle einen anderen Eintrag oder keinen.",
       "reminder-not-found": "Diese Vorsorge existiert nicht mehr. Wähle eine andere oder keine.",
-      "reminder-conflict": "Ein geplanter Termin kann keine Vorsorge abschließen, denn er hat noch nicht stattgefunden."
+      "reminder-conflict": "Ein geplanter Termin kann keine Vorsorge abschließen, denn er hat noch nicht stattgefunden.",
+      "series-not-found": "Diese Behandlungsserie gibt es nicht mehr. Wähle eine andere oder keine."
     },
     "vaccination": {
       "invalid": "Prüfe die Angaben zur Impfung und versuche es erneut.",
@@ -289,6 +290,11 @@
         "limit": "Es gibt bereits 12 Anfallsarten. Archiviere eine, um eine weitere anzulegen.",
         "notFound": "Diese Anfallsart gibt es nicht mehr."
       }
+    },
+    "treatment_series": {
+      "invalid": "Prüfe die Angaben zur Serie und versuche es erneut.",
+      "practitioner-not-found": "Diese Praxis oder dieser Arzt existiert nicht mehr. Wähle eine andere Angabe oder keine.",
+      "condition-not-found": "Diese Erkrankung gibt es nicht mehr. Wähle eine andere oder keine."
     }
   },
   "doctorReport": {
@@ -1843,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "z. B. 4",
           "dosesPerUnitHint": "Wie viele Tabletten oder Einheiten eine neue Packung oder ein Pen enthält, z. B. 28 Tabletten oder ein Pen mit 4 Dosen. Wird beim Erfassen einer Packung vorausgefüllt; leer lassen, wenn Packungen variieren.",
           "short": "Dosis",
-          "unitsPerDoseLabel": "Wie viele Tabletten oder Einheiten ergeben diese Dosis?",
+          "unitsPerDoseLabel": "Tabletten oder Einheiten pro Dosis",
           "unitsPerDoseHint": "z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis oder ½ Tablette bei geteilter Dosis",
           "packSizeToggle": "Packungsgröße (optional)"
         },
@@ -10783,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Kinderwunsch",
       "PERIMENOPAUSE": "Perimenopause",
       "OFF": "Tracking aus",
-      "label": "Wofür trackst du?",
+      "label": "Ziel",
       "description": "Das bestimmt die Sprache und welche Prognosen du siehst. Hinweise zum fruchtbaren Fenster erscheinen nur bei Kinderwunsch."
     },
     "ring": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} hat eine Anfallsart gelöscht",
       "seizureSettingsUpdate": "{name} hat die Regel für Anfallsserien geändert",
       "symptomBatchIngest": "{name} hat Symptome aus Apple Health übernommen",
-      "symptomImportDelete": "{name} hat übernommene Symptomeinträge entfernt"
+      "symptomImportDelete": "{name} hat übernommene Symptomeinträge entfernt",
+      "treatmentSeriesCreate": "{name} hat eine Behandlungsserie angelegt",
+      "treatmentSeriesUpdate": "{name} hat eine Behandlungsserie bearbeitet",
+      "treatmentSeriesDelete": "{name} hat eine Behandlungsserie gelöscht",
+      "treatmentSeriesRestore": "{name} hat eine Behandlungsserie wiederhergestellt"
     },
     "section": {
       "measurements": {
@@ -15238,7 +15248,7 @@
     "saved": "Lebensereignis gespeichert",
     "deleted": "Lebensereignis gelöscht",
     "fields": {
-      "title": "Was war?",
+      "title": "Titel",
       "category": "Art",
       "when": "Wann",
       "precision": "Genauigkeit",
@@ -16039,7 +16049,12 @@
       "visit": "Termin",
       "visitWith": "Termin: {name}",
       "checkupDue": "Fällig: {label}",
-      "boosterDue": "Auffrischung fällig: {label}"
+      "boosterDue": "Auffrischung fällig: {label}",
+      "sessionOf": "Sitzung {number} von {planned}",
+      "session": "Sitzung {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Behandlungsserie endet",
+      "seriesEndsWith": "Behandlungsserie endet: {name}"
     }
   },
   "reportSchedule": {
@@ -16223,5 +16238,58 @@
         "withdraw": "Zurückziehen stoppt den QR-Code sofort. Ein Telefon ohne Verbindung behält den alten Pass, bis es wieder online ist; lässt sich ein Pass nicht aktualisieren, lösch ihn im Wallet."
       }
     }
+  },
+  "treatmentSeries": {
+    "heading": "Behandlungsserien",
+    "add": "Neue Serie",
+    "createTitle": "Neue Behandlungsserie",
+    "untitled": "Behandlungsserie",
+    "progress": "{done} von {planned}",
+    "sessionsDoneCount": "{count, plural, one {# Sitzung} other {# Sitzungen}}",
+    "sessionOf": "Sitzung {number} von {planned}",
+    "session": "Sitzung {number}",
+    "status": {
+      "planned": "Nicht begonnen",
+      "active": "Läuft",
+      "completed": "Abgeschlossen",
+      "expired": "Abgelaufen"
+    },
+    "next": "Nächste {date}",
+    "validUntil": "Gültig bis {date}",
+    "firstSession": "Seit {date}",
+    "sessionsHeading": "Sitzungen",
+    "addSession": "Sitzung hinzufügen",
+    "prescriber": "Verordnet von",
+    "performer": "Durchgeführt von",
+    "condition": "Erkrankung",
+    "form": {
+      "title": "Bezeichnung",
+      "titlePlaceholder": "Physiotherapie, linkes Knie",
+      "plannedSessions": "Sitzungen",
+      "startsOn": "Beginn",
+      "validUntil": "Gültig bis",
+      "note": "Notiz",
+      "series": "Behandlungsserie",
+      "seriesNone": "Keine"
+    },
+    "created": "Serie gespeichert",
+    "updated": "Serie aktualisiert",
+    "saveFailed": "Die Serie konnte nicht gespeichert werden.",
+    "ended": "Serie beendet",
+    "reopened": "Serie wieder geöffnet",
+    "end": "Serie beenden",
+    "reopen": "Wieder öffnen",
+    "deleteTitle": "Diese Serie löschen?",
+    "deleteDescription": "Die Termine bleiben. Sie sind nur nicht mehr gruppiert.",
+    "deleted": "Serie gelöscht",
+    "deleteFailed": "Die Serie konnte nicht gelöscht werden.",
+    "reportTitle": "Behandlungsserien",
+    "reportColSeries": "Serie",
+    "reportColSessions": "Sitzungen",
+    "reportColPeriod": "Zeitraum",
+    "period": "{from} bis {to}",
+    "periodOpen": "seit {from}",
+    "expiryPushTitle": "Behandlungsserie läuft ab",
+    "expiryPushBody": "{title}: gültig bis {date}, noch {count, plural, one {# Sitzung} other {# Sitzungen}} offen."
   }
 }

@@ -302,3 +302,24 @@ describe("runBriefingCompletion — cost owner decides the ceiling", () => {
     expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
   });
 });
+
+describe("runBriefingCompletion, the reply's punctuation", () => {
+  it("hands its caller the reply without spaced dashes or dots", async () => {
+    runRawCompletionWithFallback.mockResolvedValue({
+      result: {
+        content: '{"dailyBriefing":{"paragraph":"Calm — keep it up · 3 days"}}',
+        model: "m",
+        tokensUsed: 10,
+      },
+      workingProvider: { providerType: "admin-openai" },
+      fallbackHops: [],
+      tokensSpent: 0,
+    });
+
+    const outcome = await runBriefingCompletion(completionArgs());
+
+    expect(outcome.result.content).toBe(
+      '{"dailyBriefing":{"paragraph":"Calm, keep it up, 3 days"}}',
+    );
+  });
+});

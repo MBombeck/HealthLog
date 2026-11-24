@@ -228,7 +228,8 @@
       "invalid": "Controlla i dati dell'appuntamento e riprova.",
       "practitioner-not-found": "Questo studio o medico non esiste più. Scegline un altro o nessuno.",
       "reminder-not-found": "Questo controllo non esiste più. Scegline un altro o nessuno.",
-      "reminder-conflict": "Un appuntamento previsto non può chiudere un controllo, perché non è ancora avvenuto."
+      "reminder-conflict": "Un appuntamento previsto non può chiudere un controllo, perché non è ancora avvenuto.",
+      "series-not-found": "Questo ciclo di trattamento non esiste più. Scegline un altro o nessuno."
     },
     "vaccination": {
       "invalid": "Controlla i dati della vaccinazione e riprova.",
@@ -289,6 +290,11 @@
         "limit": "Ci sono già 12 tipi di crisi. Archiviane uno per aggiungerne un altro.",
         "notFound": "Questo tipo di crisi non esiste più."
       }
+    },
+    "treatment_series": {
+      "invalid": "Controlla i dati del ciclo e riprova.",
+      "practitioner-not-found": "Questo studio o questo medico non esiste più. Scegline un altro o nessuno.",
+      "condition-not-found": "Questa patologia non esiste più. Scegline un'altra o nessuna."
     }
   },
   "doctorReport": {
@@ -1843,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "es. 4",
           "dosesPerUnitHint": "Quante compresse o unità contiene una nuova confezione o penna, ad es. 28 compresse o una penna da 4 dosi. Precompila la quantità quando aggiungi una confezione; lascia vuoto se le confezioni variano.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Quante compresse o unità formano questa dose?",
+          "unitsPerDoseLabel": "Compresse o unità per dose",
           "unitsPerDoseHint": "ad es. 2 compresse da 2 mg per una dose da 4 mg, oppure ½ compressa per una dose divisa",
           "packSizeToggle": "Dimensione confezione (facoltativa)"
         },
@@ -10783,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Cerco una gravidanza",
       "PERIMENOPAUSE": "Perimenopausa",
       "OFF": "Monitoraggio disattivato",
-      "label": "Per cosa stai monitorando?",
+      "label": "Obiettivo",
       "description": "Questo definisce il linguaggio e quali previsioni vedi. Le indicazioni sulla finestra fertile compaiono solo se cerchi una gravidanza."
     },
     "ring": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} ha eliminato un tipo di crisi",
       "seizureSettingsUpdate": "{name} ha cambiato la regola delle crisi a grappolo",
       "symptomBatchIngest": "{name} ha importato sintomi da Apple Health",
-      "symptomImportDelete": "{name} ha rimosso sintomi importati"
+      "symptomImportDelete": "{name} ha rimosso sintomi importati",
+      "treatmentSeriesCreate": "{name} ha aggiunto un ciclo di trattamento",
+      "treatmentSeriesUpdate": "{name} ha modificato un ciclo di trattamento",
+      "treatmentSeriesDelete": "{name} ha eliminato un ciclo di trattamento",
+      "treatmentSeriesRestore": "{name} ha ripristinato un ciclo di trattamento"
     },
     "section": {
       "measurements": {
@@ -15238,7 +15248,7 @@
     "saved": "Evento di vita salvato",
     "deleted": "Evento di vita eliminato",
     "fields": {
-      "title": "Cosa è successo?",
+      "title": "Titolo",
       "category": "Tipo",
       "when": "Quando",
       "precision": "Precisione",
@@ -16039,7 +16049,12 @@
       "visit": "Appuntamento",
       "visitWith": "Appuntamento: {name}",
       "checkupDue": "In scadenza: {label}",
-      "boosterDue": "Richiamo in scadenza: {label}"
+      "boosterDue": "Richiamo in scadenza: {label}",
+      "sessionOf": "Seduta {number} di {planned}",
+      "session": "Seduta {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Fine del ciclo di trattamento",
+      "seriesEndsWith": "Fine del ciclo di trattamento: {name}"
     }
   },
   "reportSchedule": {
@@ -16223,5 +16238,58 @@
         "withdraw": "Il ritiro ferma subito il codice QR. Un telefono offline tiene il vecchio pass finché non torna online; se un pass non si aggiorna, eliminalo in Wallet."
       }
     }
+  },
+  "treatmentSeries": {
+    "heading": "Cicli di trattamento",
+    "add": "Nuovo ciclo",
+    "createTitle": "Nuovo ciclo di trattamento",
+    "untitled": "Ciclo di trattamento",
+    "progress": "{done} di {planned}",
+    "sessionsDoneCount": "{count, plural, one {# seduta} other {# sedute}}",
+    "sessionOf": "Seduta {number} di {planned}",
+    "session": "Seduta {number}",
+    "status": {
+      "planned": "Non iniziato",
+      "active": "In corso",
+      "completed": "Concluso",
+      "expired": "Scaduto"
+    },
+    "next": "Prossima {date}",
+    "validUntil": "Valido fino al {date}",
+    "firstSession": "Dal {date}",
+    "sessionsHeading": "Sedute",
+    "addSession": "Aggiungi seduta",
+    "prescriber": "Prescritto da",
+    "performer": "Eseguito da",
+    "condition": "Patologia",
+    "form": {
+      "title": "Nome",
+      "titlePlaceholder": "Fisioterapia, ginocchio sinistro",
+      "plannedSessions": "Sedute",
+      "startsOn": "Inizio",
+      "validUntil": "Valido fino al",
+      "note": "Nota",
+      "series": "Ciclo di trattamento",
+      "seriesNone": "Nessuno"
+    },
+    "created": "Ciclo salvato",
+    "updated": "Ciclo aggiornato",
+    "saveFailed": "Non è stato possibile salvare il ciclo.",
+    "ended": "Ciclo concluso",
+    "reopened": "Ciclo riaperto",
+    "end": "Concludi ciclo",
+    "reopen": "Riapri",
+    "deleteTitle": "Eliminare questo ciclo?",
+    "deleteDescription": "Le visite restano. Semplicemente non sono più raggruppate.",
+    "deleted": "Ciclo eliminato",
+    "deleteFailed": "Non è stato possibile eliminare il ciclo.",
+    "reportTitle": "Cicli di trattamento",
+    "reportColSeries": "Ciclo",
+    "reportColSessions": "Sedute",
+    "reportColPeriod": "Periodo",
+    "period": "dal {from} al {to}",
+    "periodOpen": "dal {from}",
+    "expiryPushTitle": "Ciclo di trattamento in scadenza",
+    "expiryPushBody": "{title}: valido fino al {date}, {count, plural, one {resta # seduta} other {restano # sedute}}."
   }
 }

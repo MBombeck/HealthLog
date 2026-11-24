@@ -228,7 +228,8 @@
       "invalid": "Vérifiez les informations du rendez-vous et réessayez.",
       "practitioner-not-found": "Ce cabinet ou ce médecin n'existe plus. Choisissez-en un autre ou aucun.",
       "reminder-not-found": "Ce dépistage n'existe plus. Choisissez-en un autre ou aucun.",
-      "reminder-conflict": "Un rendez-vous prévu ne peut pas clore un dépistage, car il n'a pas encore eu lieu."
+      "reminder-conflict": "Un rendez-vous prévu ne peut pas clore un dépistage, car il n'a pas encore eu lieu.",
+      "series-not-found": "Cette série de soins n’existe plus. Choisissez-en une autre ou aucune."
     },
     "vaccination": {
       "invalid": "Vérifiez les informations de la vaccination et réessayez.",
@@ -289,6 +290,11 @@
         "limit": "Il y a déjà 12 types de crises. Archivez-en un pour en ajouter un autre.",
         "notFound": "Ce type de crise n'existe plus."
       }
+    },
+    "treatment_series": {
+      "invalid": "Vérifiez les données de la série et réessayez.",
+      "practitioner-not-found": "Ce cabinet ou ce médecin n’existe plus. Choisissez-en un autre ou aucun.",
+      "condition-not-found": "Cette affection n’existe plus. Choisissez-en une autre ou aucune."
     }
   },
   "doctorReport": {
@@ -1843,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "p. ex. 4",
           "dosesPerUnitHint": "Nombre de comprimés ou d'unités dans une nouvelle boîte ou un nouveau stylo, p. ex. 28 comprimés ou un stylo de 4 doses. Pré-remplit la quantité à l'ajout d'une boîte ; laisser vide si les boîtes varient.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Combien de comprimés ou d'unités font cette dose ?",
+          "unitsPerDoseLabel": "Comprimés ou unités par dose",
           "unitsPerDoseHint": "p. ex. 2 comprimés de 2 mg pour une dose de 4 mg, ou ½ comprimé pour une dose fractionnée",
           "packSizeToggle": "Taille du conditionnement (facultatif)"
         },
@@ -10783,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Désir d'enfant",
       "PERIMENOPAUSE": "Périménopause",
       "OFF": "Suivi désactivé",
-      "label": "Pourquoi faites-vous ce suivi ?",
+      "label": "Objectif",
       "description": "Cela adapte le langage et les prévisions affichées. Les conseils sur la fenêtre fertile n'apparaissent qu'en cas de désir d'enfant."
     },
     "ring": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} a supprimé un type de crise",
       "seizureSettingsUpdate": "{name} a modifié la règle des crises en salves",
       "symptomBatchIngest": "{name} a importé des symptômes depuis Apple Health",
-      "symptomImportDelete": "{name} a supprimé des symptômes importés"
+      "symptomImportDelete": "{name} a supprimé des symptômes importés",
+      "treatmentSeriesCreate": "{name} a ajouté une série de soins",
+      "treatmentSeriesUpdate": "{name} a modifié une série de soins",
+      "treatmentSeriesDelete": "{name} a supprimé une série de soins",
+      "treatmentSeriesRestore": "{name} a restauré une série de soins"
     },
     "section": {
       "measurements": {
@@ -15238,7 +15248,7 @@
     "saved": "Événement de vie enregistré",
     "deleted": "Événement de vie supprimé",
     "fields": {
-      "title": "Que s’est-il passé ?",
+      "title": "Titre",
       "category": "Type",
       "when": "Quand",
       "precision": "Précision",
@@ -16039,7 +16049,12 @@
       "visit": "Rendez-vous",
       "visitWith": "Rendez-vous : {name}",
       "checkupDue": "À faire : {label}",
-      "boosterDue": "Rappel à faire : {label}"
+      "boosterDue": "Rappel à faire : {label}",
+      "sessionOf": "Séance {number} sur {planned}",
+      "session": "Séance {number}",
+      "sessionWith": "{session} : {name}",
+      "seriesEnds": "Fin de la série de soins",
+      "seriesEndsWith": "Fin de la série de soins : {name}"
     }
   },
   "reportSchedule": {
@@ -16223,5 +16238,58 @@
         "withdraw": "Le retrait arrête aussitôt le code QR. Un téléphone hors ligne garde l'ancien pass jusqu'à son retour en ligne ; si un pass ne peut pas être mis à jour, supprimez-le dans Wallet."
       }
     }
+  },
+  "treatmentSeries": {
+    "heading": "Séries de soins",
+    "add": "Nouvelle série",
+    "createTitle": "Nouvelle série de soins",
+    "untitled": "Série de soins",
+    "progress": "{done} sur {planned}",
+    "sessionsDoneCount": "{count, plural, one {# séance} other {# séances}}",
+    "sessionOf": "Séance {number} sur {planned}",
+    "session": "Séance {number}",
+    "status": {
+      "planned": "Pas commencée",
+      "active": "En cours",
+      "completed": "Terminée",
+      "expired": "Expirée"
+    },
+    "next": "Prochaine {date}",
+    "validUntil": "Valable jusqu’au {date}",
+    "firstSession": "Depuis le {date}",
+    "sessionsHeading": "Séances",
+    "addSession": "Ajouter une séance",
+    "prescriber": "Prescrite par",
+    "performer": "Réalisée par",
+    "condition": "Affection",
+    "form": {
+      "title": "Nom",
+      "titlePlaceholder": "Kinésithérapie, genou gauche",
+      "plannedSessions": "Séances",
+      "startsOn": "Début",
+      "validUntil": "Valable jusqu’au",
+      "note": "Note",
+      "series": "Série de soins",
+      "seriesNone": "Aucune"
+    },
+    "created": "Série enregistrée",
+    "updated": "Série mise à jour",
+    "saveFailed": "La série n’a pas pu être enregistrée.",
+    "ended": "Série terminée",
+    "reopened": "Série rouverte",
+    "end": "Terminer la série",
+    "reopen": "Rouvrir",
+    "deleteTitle": "Supprimer cette série ?",
+    "deleteDescription": "Les rendez-vous restent. Ils ne sont simplement plus regroupés.",
+    "deleted": "Série supprimée",
+    "deleteFailed": "La série n’a pas pu être supprimée.",
+    "reportTitle": "Séries de soins",
+    "reportColSeries": "Série",
+    "reportColSessions": "Séances",
+    "reportColPeriod": "Période",
+    "period": "du {from} au {to}",
+    "periodOpen": "depuis le {from}",
+    "expiryPushTitle": "Série de soins bientôt expirée",
+    "expiryPushBody": "{title} : valable jusqu’au {date}, {count, plural, one {# séance restante} other {# séances restantes}}."
   }
 }

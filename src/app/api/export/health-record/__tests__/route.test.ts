@@ -41,6 +41,7 @@ vi.mock("@/lib/db", () => ({
     labResult: { findMany: vi.fn() },
     illnessEpisode: { findMany: vi.fn() },
     encounter: { findMany: vi.fn() },
+    treatmentSeries: { findMany: vi.fn().mockResolvedValue([]) },
     allergy: { findMany: vi.fn() },
     vaccinationRecord: { findMany: vi.fn() },
     seizureTypeProfile: { findMany: vi.fn(), findFirst: vi.fn() },

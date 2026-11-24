@@ -228,7 +228,8 @@
       "invalid": "Comprueba los datos de la cita e inténtalo de nuevo.",
       "practitioner-not-found": "Esta consulta o este médico ya no existe. Elige otro o ninguno.",
       "reminder-not-found": "Esta revisión ya no existe. Elige otra o ninguna.",
-      "reminder-conflict": "Una cita prevista no puede cerrar una revisión, porque todavía no ha tenido lugar."
+      "reminder-conflict": "Una cita prevista no puede cerrar una revisión, porque todavía no ha tenido lugar.",
+      "series-not-found": "Esta serie de tratamiento ya no existe. Elige otra o ninguna."
     },
     "vaccination": {
       "invalid": "Comprueba los datos de la vacuna e inténtalo de nuevo.",
@@ -289,6 +290,11 @@
         "limit": "Ya hay 12 tipos de crisis. Archiva uno para añadir otro.",
         "notFound": "Este tipo de crisis ya no existe."
       }
+    },
+    "treatment_series": {
+      "invalid": "Revisa los datos de la serie e inténtalo de nuevo.",
+      "practitioner-not-found": "Esta consulta o este médico ya no existe. Elige otro o ninguno.",
+      "condition-not-found": "Esta afección ya no existe. Elige otra o ninguna."
     }
   },
   "doctorReport": {
@@ -1843,7 +1849,7 @@
           "dosesPerUnitPlaceholder": "p. ej. 4",
           "dosesPerUnitHint": "Cuántos comprimidos o unidades trae un envase o pluma nuevo, p. ej. 28 comprimidos o una pluma de 4 dosis. Se rellena al registrar un envase; déjalo vacío si los envases varían.",
           "short": "Dosis",
-          "unitsPerDoseLabel": "¿Cuántos comprimidos o unidades forman esta dosis?",
+          "unitsPerDoseLabel": "Comprimidos o unidades por dosis",
           "unitsPerDoseHint": "p. ej., 2 comprimidos de 2 mg para una dosis de 4 mg, o ½ comprimido para una dosis partida",
           "packSizeToggle": "Tamaño del envase (opcional)"
         },
@@ -10783,7 +10789,7 @@
       "TRYING_TO_CONCEIVE": "Buscando embarazo",
       "PERIMENOPAUSE": "Perimenopausia",
       "OFF": "Seguimiento desactivado",
-      "label": "¿Para qué haces seguimiento?",
+      "label": "Objetivo",
       "description": "Esto define el lenguaje y qué predicciones ves. La guía de ventana fértil solo aparece si buscas embarazo."
     },
     "ring": {
@@ -14395,7 +14401,11 @@
       "seizureTypeDelete": "{name} eliminó un tipo de crisis",
       "seizureSettingsUpdate": "{name} cambió la regla de crisis en racimo",
       "symptomBatchIngest": "{name} importó síntomas de Apple Health",
-      "symptomImportDelete": "{name} eliminó síntomas importados"
+      "symptomImportDelete": "{name} eliminó síntomas importados",
+      "treatmentSeriesCreate": "{name} añadió una serie de tratamiento",
+      "treatmentSeriesUpdate": "{name} editó una serie de tratamiento",
+      "treatmentSeriesDelete": "{name} eliminó una serie de tratamiento",
+      "treatmentSeriesRestore": "{name} restauró una serie de tratamiento"
     },
     "section": {
       "measurements": {
@@ -15238,7 +15248,7 @@
     "saved": "Acontecimiento vital guardado",
     "deleted": "Acontecimiento vital eliminado",
     "fields": {
-      "title": "¿Qué pasó?",
+      "title": "Título",
       "category": "Tipo",
       "when": "Cuándo",
       "precision": "Precisión",
@@ -16039,7 +16049,12 @@
       "visit": "Cita",
       "visitWith": "Cita: {name}",
       "checkupDue": "Vence: {label}",
-      "boosterDue": "Refuerzo pendiente: {label}"
+      "boosterDue": "Refuerzo pendiente: {label}",
+      "sessionOf": "Sesión {number} de {planned}",
+      "session": "Sesión {number}",
+      "sessionWith": "{session}: {name}",
+      "seriesEnds": "Termina la serie de tratamiento",
+      "seriesEndsWith": "Termina la serie de tratamiento: {name}"
     }
   },
   "reportSchedule": {
@@ -16223,5 +16238,58 @@
         "withdraw": "Retirarlo detiene el código QR al instante. Un teléfono sin conexión conserva el pase antiguo hasta volver a estar en línea; si un pase no se puede actualizar, bórralo en Wallet."
       }
     }
+  },
+  "treatmentSeries": {
+    "heading": "Series de tratamiento",
+    "add": "Nueva serie",
+    "createTitle": "Nueva serie de tratamiento",
+    "untitled": "Serie de tratamiento",
+    "progress": "{done} de {planned}",
+    "sessionsDoneCount": "{count, plural, one {# sesión} other {# sesiones}}",
+    "sessionOf": "Sesión {number} de {planned}",
+    "session": "Sesión {number}",
+    "status": {
+      "planned": "Sin empezar",
+      "active": "En curso",
+      "completed": "Completada",
+      "expired": "Caducada"
+    },
+    "next": "Próxima {date}",
+    "validUntil": "Válida hasta {date}",
+    "firstSession": "Desde {date}",
+    "sessionsHeading": "Sesiones",
+    "addSession": "Añadir sesión",
+    "prescriber": "Indicada por",
+    "performer": "Realizada por",
+    "condition": "Afección",
+    "form": {
+      "title": "Nombre",
+      "titlePlaceholder": "Fisioterapia, rodilla izquierda",
+      "plannedSessions": "Sesiones",
+      "startsOn": "Inicio",
+      "validUntil": "Válida hasta",
+      "note": "Nota",
+      "series": "Serie de tratamiento",
+      "seriesNone": "Ninguna"
+    },
+    "created": "Serie guardada",
+    "updated": "Serie actualizada",
+    "saveFailed": "No se pudo guardar la serie.",
+    "ended": "Serie finalizada",
+    "reopened": "Serie reabierta",
+    "end": "Finalizar serie",
+    "reopen": "Reabrir",
+    "deleteTitle": "¿Eliminar esta serie?",
+    "deleteDescription": "Las visitas se mantienen. Solo dejan de estar agrupadas.",
+    "deleted": "Serie eliminada",
+    "deleteFailed": "No se pudo eliminar la serie.",
+    "reportTitle": "Series de tratamiento",
+    "reportColSeries": "Serie",
+    "reportColSessions": "Sesiones",
+    "reportColPeriod": "Periodo",
+    "period": "{from} a {to}",
+    "periodOpen": "desde {from}",
+    "expiryPushTitle": "La serie de tratamiento caduca",
+    "expiryPushBody": "{title}: válida hasta el {date}, {count, plural, one {queda # sesión} other {quedan # sesiones}}."
   }
 }

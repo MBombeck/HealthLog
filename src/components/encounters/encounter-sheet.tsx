@@ -53,6 +53,7 @@ import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { useEncounterMutations, type Encounter } from "@/hooks/use-encounters";
+import type { TreatmentSeries } from "@/hooks/use-treatment-series";
 import {
   EncounterForm,
   draftFromEncounter,
@@ -71,6 +72,7 @@ export function EncounterSheet({
   reminderId,
   episodeId,
   kind,
+  series,
   onSaved,
 }: {
   open: boolean;
@@ -83,6 +85,8 @@ export function EncounterSheet({
   episodeId?: string | null;
   /** The kind a new visit starts as — PROCEDURE from the procedure history. */
   kind?: EncounterDraft["kind"];
+  /** The treatment series a new visit is the next session of. */
+  series?: Pick<TreatmentSeries, "id" | "kind" | "performer"> | null;
   onSaved?: (saved: Encounter) => void;
 }) {
   const { t } = useTranslations();
@@ -99,6 +103,13 @@ export function EncounterSheet({
           occurredAt: nowLocalValue(),
           episodeIds: episodeId ? [episodeId] : [],
           ...(kind ? { kind } : {}),
+          ...(series
+            ? {
+                seriesId: series.id,
+                kind: series.kind,
+                practitioner: series.performer,
+              }
+            : {}),
         }),
   );
   const [draft, setDraft] = useState<EncounterDraft>(seed);

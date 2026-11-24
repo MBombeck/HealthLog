@@ -510,6 +510,15 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
+    file: "hooks/use-treatment-series.ts",
+    destroys:
+      "a treatment series with its title, count and window; its sessions stay as the visits they are",
+    triggers: ["components/encounters/treatment-series-sheet.tsx"],
+    // The delete toast offers the Undo that calls the restore route.
+    recovery: "restorable",
+    confirm: ["AlertDialog"],
+  },
+  {
     file: "hooks/use-practitioners.ts",
     destroys: "one address-book entry",
     triggers: ["components/practitioners/practitioner-list.tsx"],

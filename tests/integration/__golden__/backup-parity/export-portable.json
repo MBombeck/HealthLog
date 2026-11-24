@@ -354,13 +354,13 @@
             "unitsTotal": "30",
             "unitsRemaining": "21",
             "firstUseAt": "2026-07-01T08:00:00.000Z",
-            "expiresAt": "2026-05-05T15:28:00.000Z",
+            "expiresAt": "2026-05-05T17:08:00.000Z",
             "printedExpiry": "2026-06-30T12:34:56.789Z",
             "purchasedAt": "2026-06-30T12:34:56.789Z",
             "manufacturer": "Fixture Pharma",
             "doseStrength": "10 mg",
-            "createdAt": "2026-05-05T15:35:00.000Z",
-            "updatedAt": "2026-05-05T15:36:00.000Z"
+            "createdAt": "2026-05-05T17:15:00.000Z",
+            "updatedAt": "2026-05-05T17:16:00.000Z"
           },
           {
             "notes": null,
@@ -374,8 +374,8 @@
             "purchasedAt": null,
             "manufacturer": null,
             "doseStrength": null,
-            "createdAt": "2026-05-05T15:35:01.000Z",
-            "updatedAt": "2026-05-05T15:36:01.000Z"
+            "createdAt": "2026-05-05T17:15:01.000Z",
+            "updatedAt": "2026-05-05T17:16:01.000Z"
           }
         ],
         "phaseConfig": {
@@ -413,7 +413,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T16:27:00.000Z"
+            "createdAt": "2026-05-06T18:07:00.000Z"
           },
           {
             "validFrom": "2026-02-01T00:00:00.000Z",
@@ -427,7 +427,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": 2,
-            "createdAt": "2026-05-06T16:27:02.000Z"
+            "createdAt": "2026-05-06T18:07:02.000Z"
           },
           {
             "validFrom": "2026-03-01T00:00:00.000Z",
@@ -441,7 +441,7 @@
             ],
             "source": "MANUAL",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T16:27:01.000Z"
+            "createdAt": "2026-05-06T18:07:01.000Z"
           }
         ],
         "efficacyTargets": [
@@ -585,7 +585,7 @@
     "hiddenMoodTags": [
       {
         "key": "grateful",
-        "createdAt": "2026-05-05T20:22:00.000Z"
+        "createdAt": "2026-05-05T22:02:00.000Z"
       }
     ],
     "customMoodTags": [
@@ -720,7 +720,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-07T00:46:00.000Z"
+        "mergedAt": "2026-05-07T02:26:00.000Z"
       }
     ],
     "labResultImportKeys": [
@@ -1129,9 +1129,26 @@
         "updatedAt": "2026-05-04T12:51:00.000Z"
       }
     ],
-    "encounters": [
+    "treatmentSeries": [
       {
         "id": "<id:21>",
+        "kind": "ROUTINE",
+        "plannedSessions": 6,
+        "startsOn": "2026-06-20",
+        "validUntil": "2026-08-31",
+        "endedOn": "2026-07-30",
+        "prescriberId": "<id:20>",
+        "performerId": "<id:20>",
+        "episodeId": "<id:14>",
+        "title": "Physiotherapy, left knee",
+        "note": "bring a towel",
+        "createdAt": "2026-05-04T14:32:00.000Z",
+        "updatedAt": "2026-05-04T14:33:00.000Z"
+      }
+    ],
+    "encounters": [
+      {
+        "id": "<id:22>",
         "occurredAt": "2026-06-30T08:00:00.000Z",
         "status": "PLANNED",
         "kind": "ROUTINE",
@@ -1140,35 +1157,36 @@
         "outcome": "ferritin back in range, recheck in a year",
         "bodySite": "rt-Encounter-bodySiteEncrypted",
         "laterality": "LEFT",
-        "reminderId": "<id:22>",
-        "createdAt": "2026-05-04T14:31:00.000Z",
-        "updatedAt": "2026-05-04T14:32:00.000Z"
+        "reminderId": "<id:23>",
+        "seriesId": "<id:21>",
+        "createdAt": "2026-05-04T16:12:00.000Z",
+        "updatedAt": "2026-05-04T16:13:00.000Z"
       }
     ],
     "encounterDocumentLinks": [
       {
-        "encounterId": "<id:21>",
+        "encounterId": "<id:22>",
         "targetId": "<id:18>",
-        "createdAt": "2026-05-04T16:04:00.000Z"
+        "createdAt": "2026-05-04T17:44:00.000Z"
       }
     ],
     "encounterLabLinks": [
       {
-        "encounterId": "<id:21>",
+        "encounterId": "<id:22>",
         "targetId": "<id:11>",
-        "createdAt": "2026-05-04T17:44:00.000Z"
+        "createdAt": "2026-05-04T19:24:00.000Z"
       }
     ],
     "encounterConditionLinks": [
       {
-        "encounterId": "<id:21>",
+        "encounterId": "<id:22>",
         "targetId": "<id:14>",
-        "createdAt": "2026-05-04T19:24:00.000Z"
+        "createdAt": "2026-05-04T21:04:00.000Z"
       }
     ],
     "customVaccines": [
       {
-        "id": "<id:23>",
+        "id": "<id:24>",
         "name": "Round-trip travel combo",
         "components": [
           "typhoid",
@@ -1176,13 +1194,13 @@
         ],
         "typicalSeriesDoses": 2,
         "boosterIntervalMonths": 36,
-        "createdAt": "2026-05-05T00:27:00.000Z",
-        "updatedAt": "2026-05-05T00:28:00.000Z"
+        "createdAt": "2026-05-05T02:07:00.000Z",
+        "updatedAt": "2026-05-05T02:08:00.000Z"
       }
     ],
     "vaccinations": [
       {
-        "id": "<id:24>",
+        "id": "<id:25>",
         "occurredAt": "2026-05-14T00:00:00.000Z",
         "antigenSlug": "tdap",
         "vaccineName": "Tetanus, diphtheria and pertussis",
@@ -1191,24 +1209,24 @@
         "lotNumber": "RT-4471",
         "site": "LEFT_ARM",
         "practitionerId": "<id:20>",
-        "encounterId": "<id:21>",
-        "reminderId": "<id:22>",
-        "customVaccineId": "<id:23>",
+        "encounterId": "<id:22>",
+        "reminderId": "<id:23>",
+        "customVaccineId": "<id:24>",
         "note": "sore arm for a day, nothing else",
-        "createdAt": "2026-05-04T21:14:00.000Z",
-        "updatedAt": "2026-05-04T21:15:00.000Z"
+        "createdAt": "2026-05-04T22:54:00.000Z",
+        "updatedAt": "2026-05-04T22:55:00.000Z"
       }
     ],
     "vaccinationDocumentLinks": [
       {
-        "vaccinationId": "<id:24>",
+        "vaccinationId": "<id:25>",
         "targetId": "<id:18>",
-        "createdAt": "2026-05-04T22:44:00.000Z"
+        "createdAt": "2026-05-05T00:24:00.000Z"
       }
     ],
     "measurementReminders": [
       {
-        "id": "<id:22>",
+        "id": "<id:23>",
         "label": "Blutdruck messen",
         "measurementType": "BLOOD_PRESSURE_SYS",
         "intervalDays": 7,
@@ -1225,43 +1243,43 @@
         "snoozedUntil": "2026-07-08T06:00:00.000Z",
         "lastSkippedAt": "2026-06-24T06:00:00.000Z",
         "skipCount": 2,
-        "createdAt": "2026-05-05T02:19:00.000Z",
-        "updatedAt": "2026-05-05T02:20:00.000Z"
+        "createdAt": "2026-05-05T03:59:00.000Z",
+        "updatedAt": "2026-05-05T04:00:00.000Z"
       }
     ],
     "measurementReminderEvents": [
       {
-        "id": "<id:25>",
-        "reminderId": "<id:22>",
+        "id": "<id:26>",
+        "reminderId": "<id:23>",
         "kind": "SKIPPED",
         "occurredAt": "2026-06-24T06:00:00.000Z",
         "onTime": false,
         "source": "skip",
-        "createdAt": "2026-05-05T03:47:01.000Z"
+        "createdAt": "2026-05-05T05:27:01.000Z"
       },
       {
-        "id": "<id:26>",
-        "reminderId": "<id:22>",
+        "id": "<id:27>",
+        "reminderId": "<id:23>",
         "kind": "SATISFIED",
         "occurredAt": "2026-07-01T06:05:00.000Z",
         "onTime": true,
         "source": "manual",
-        "createdAt": "2026-05-05T03:47:00.000Z"
+        "createdAt": "2026-05-05T05:27:00.000Z"
       }
     ],
     "coachConversations": [
       {
-        "id": "<id:27>",
+        "id": "<id:28>",
         "title": "How is my blood pressure trending?",
         "documentScoped": false,
         "summary": "earlier turns: weight trend and evening walks",
         "summaryUpdatedAt": "2026-07-20T10:00:00.000Z",
         "summaryTurnCount": 4,
-        "createdAt": "2026-05-05T05:24:00.000Z",
-        "updatedAt": "2026-05-05T05:25:00.000Z",
+        "createdAt": "2026-05-05T07:04:00.000Z",
+        "updatedAt": "2026-05-05T07:05:00.000Z",
         "messages": [
           {
-            "id": "<id:28>",
+            "id": "<id:29>",
             "role": "user",
             "content": "my readings look higher this week, is that real?",
             "metricSourceJson": "rt-CoachMessage-metricSourceJson",
@@ -1274,7 +1292,7 @@
             "createdAt": "2026-07-20T09:58:00.000Z"
           },
           {
-            "id": "<id:29>",
+            "id": "<id:30>",
             "role": "assistant",
             "content": "the last seven mornings average 4 mmHg above the fortnight before",
             "metricSourceJson": null,
@@ -1290,17 +1308,17 @@
         "attachments": []
       },
       {
-        "id": "<id:30>",
+        "id": "<id:31>",
         "title": "About my June labs",
         "documentScoped": true,
         "summary": null,
         "summaryUpdatedAt": null,
         "summaryTurnCount": 0,
-        "createdAt": "2026-05-05T05:24:01.000Z",
-        "updatedAt": "2026-05-05T05:25:01.000Z",
+        "createdAt": "2026-05-05T07:04:01.000Z",
+        "updatedAt": "2026-05-05T07:05:01.000Z",
         "messages": [
           {
-            "id": "<id:31>",
+            "id": "<id:32>",
             "role": "user",
             "content": "What does the ferritin mean?",
             "metricSourceJson": null,
@@ -1323,21 +1341,21 @@
     ],
     "coachFacts": [
       {
-        "id": "<id:32>",
+        "id": "<id:33>",
         "fact": "does not tolerate ACE inhibitors",
         "category": "constraint",
         "confidence": 80,
-        "sourceConversationId": "<id:27>",
+        "sourceConversationId": "<id:28>",
         "source": "user",
         "lastUsedAt": "2026-07-20T10:00:00.000Z",
-        "sourceMessageId": "<id:29>",
-        "createdAt": "2026-05-05T10:26:00.000Z",
-        "updatedAt": "2026-05-05T10:27:00.000Z"
+        "sourceMessageId": "<id:30>",
+        "createdAt": "2026-05-05T12:06:00.000Z",
+        "updatedAt": "2026-05-05T12:07:00.000Z"
       }
     ],
     "coachPlans": [
       {
-        "id": "<id:33>",
+        "id": "<id:34>",
         "metric": "BLOOD_PRESSURE",
         "ifCue": "if the evening reading is over 140",
         "thenAction": "then walk twenty minutes before dinner tomorrow",
@@ -1345,27 +1363,27 @@
         "outcome": "rt-CoachPlan-outcomeEncrypted",
         "status": "active",
         "reviewDate": "2026-10-01T00:00:00.000Z",
-        "sourceConversationId": "<id:27>",
-        "createdAt": "2026-05-05T12:10:00.000Z",
-        "updatedAt": "2026-05-05T12:11:00.000Z"
+        "sourceConversationId": "<id:28>",
+        "createdAt": "2026-05-05T13:50:00.000Z",
+        "updatedAt": "2026-05-05T13:51:00.000Z"
       }
     ],
     "coachReminders": [
       {
-        "id": "<id:34>",
+        "id": "<id:35>",
         "note": "ask how the evening walks are going",
         "metric": "BLOOD_PRESSURE",
-        "relatedPlanId": "<id:33>",
+        "relatedPlanId": "<id:34>",
         "triggerKind": "rt-CoachReminder-triggerKind",
         "dueAt": "2026-09-01T07:00:00.000Z",
         "contextCue": "rt-CoachReminder-contextCue",
         "status": "rt-CoachReminder-status",
         "source": "extractor",
-        "sourceConversationId": "<id:27>",
+        "sourceConversationId": "<id:28>",
         "lastSurfacedAt": "2026-06-30T12:34:56.789Z",
         "surfaceCount": 2,
-        "createdAt": "2026-05-05T13:53:00.000Z",
-        "updatedAt": "2026-05-05T13:54:00.000Z"
+        "createdAt": "2026-05-05T15:33:00.000Z",
+        "updatedAt": "2026-05-05T15:34:00.000Z"
       }
     ],
     "mentalHealthAssessments": [],
@@ -1379,7 +1397,7 @@
     ],
     "extractedFacts": [
       {
-        "id": "<id:35>",
+        "id": "<id:36>",
         "documentId": "<id:18>",
         "factType": "OBSERVATION",
         "status": "APPROVED",
@@ -1405,8 +1423,8 @@
           "page": 2,
           "confidence": 0.94
         },
-        "createdAt": "2026-05-06T04:51:00.000Z",
-        "updatedAt": "2026-05-06T04:52:00.000Z"
+        "createdAt": "2026-05-06T06:31:00.000Z",
+        "updatedAt": "2026-05-06T06:32:00.000Z"
       }
     ],
     "documentImportKeys": [
@@ -1428,7 +1446,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-5km",
-        "createdAt": "2026-05-06T08:11:01.000Z"
+        "createdAt": "2026-05-06T09:51:01.000Z"
       },
       {
         "metricType": "WALKING_RUNNING_DISTANCE",
@@ -1440,7 +1458,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-10km",
-        "createdAt": "2026-05-06T08:11:02.000Z"
+        "createdAt": "2026-05-06T09:51:02.000Z"
       },
       {
         "metricType": "WEIGHT",
@@ -1452,19 +1470,19 @@
         "sourceMeasurementId": "<id:3>",
         "source": "MANUAL",
         "externalId": null,
-        "createdAt": "2026-05-06T08:11:00.000Z"
+        "createdAt": "2026-05-06T09:51:00.000Z"
       }
     ],
     "userAchievements": [
       {
         "achievementId": "retired-badge-from-an-older-release",
         "unlockedAt": "2025-11-05T08:00:00.000Z",
-        "createdAt": "2026-05-06T09:44:01.000Z"
+        "createdAt": "2026-05-06T11:24:01.000Z"
       },
       {
         "achievementId": "intake-total-10",
         "unlockedAt": "2026-02-21T10:15:00.000Z",
-        "createdAt": "2026-05-06T09:44:00.000Z"
+        "createdAt": "2026-05-06T11:24:00.000Z"
       }
     ],
     "environmentContexts": [
@@ -1509,8 +1527,8 @@
         "aqHours": 3,
         "aqFetchedAt": "2026-06-30T12:34:56.789Z",
         "fetchedAt": "2026-06-16T03:15:00.000Z",
-        "createdAt": "2026-05-06T12:00:00.000Z",
-        "updatedAt": "2026-05-06T12:01:00.000Z"
+        "createdAt": "2026-05-06T13:40:00.000Z",
+        "updatedAt": "2026-05-06T13:41:00.000Z"
       },
       {
         "date": "2026-07-01",
@@ -1553,8 +1571,8 @@
         "aqHours": null,
         "aqFetchedAt": null,
         "fetchedAt": "2026-07-02T03:15:00.000Z",
-        "createdAt": "2026-05-06T12:00:01.000Z",
-        "updatedAt": "2026-05-06T12:01:01.000Z"
+        "createdAt": "2026-05-06T13:40:01.000Z",
+        "updatedAt": "2026-05-06T13:41:01.000Z"
       }
     ],
     "environmentTravelLocations": [
@@ -1564,8 +1582,8 @@
         "lat": 41.4,
         "lon": 2.2,
         "label": "Barcelona",
-        "createdAt": "2026-05-06T13:05:00.000Z",
-        "updatedAt": "2026-05-06T13:06:00.000Z"
+        "createdAt": "2026-05-06T14:45:00.000Z",
+        "updatedAt": "2026-05-06T14:46:00.000Z"
       }
     ],
     "dawarichDays": [
@@ -1579,8 +1597,8 @@
         "countryCode": "ES",
         "isTravelDay": true,
         "fetchedAt": "2026-06-16T03:20:00.000Z",
-        "createdAt": "2026-05-06T14:51:00.000Z",
-        "updatedAt": "2026-05-06T14:52:00.000Z"
+        "createdAt": "2026-05-06T16:31:00.000Z",
+        "updatedAt": "2026-05-06T16:32:00.000Z"
       }
     ],
     "ecgRecordings": [
@@ -1605,8 +1623,8 @@
         "averageHeartRate": 88,
         "rhythmClassification": "IRREGULAR",
         "measurementId": "<id:4>",
-        "createdAt": "2026-05-06T19:53:00.000Z",
-        "updatedAt": "2026-05-06T19:54:00.000Z"
+        "createdAt": "2026-05-06T21:33:00.000Z",
+        "updatedAt": "2026-05-06T21:34:00.000Z"
       }
     ],
     "symptomDefinitions": [
@@ -1668,7 +1686,7 @@
     ],
     "seizureTypes": [
       {
-        "ref": "<id:36>",
+        "ref": "<id:37>",
         "label": "The big one",
         "rescuePlan": "Midazolam after 5 minutes",
         "ilaeType": "FOCAL_TO_BILATERAL_TC",
@@ -1685,7 +1703,7 @@
     ],
     "seizureEvents": [
       {
-        "typeProfileId": "<id:36>",
+        "typeProfileId": "<id:37>",
         "ilaeType": null,
         "ilaeTypeAtLog": "FOCAL_PRESERVED",
         "onsetAt": "2026-06-22T07:00:00.000Z",
@@ -1810,35 +1828,35 @@
       {
         "labResultId": "<id:11>",
         "documentId": "<id:18>",
-        "createdAt": "2026-05-07T02:24:00.000Z"
+        "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "encounterMedicationLinks": [
       {
-        "encounterId": "<id:21>",
+        "encounterId": "<id:22>",
         "medicationId": "<id:5>",
-        "createdAt": "2026-05-07T04:04:00.000Z"
+        "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
-        "encounterId": "<id:21>",
-        "vaccinationId": "<id:24>",
-        "createdAt": "2026-05-07T05:44:00.000Z"
+        "encounterId": "<id:22>",
+        "vaccinationId": "<id:25>",
+        "createdAt": "2026-05-07T07:24:00.000Z"
       }
     ],
     "medicationDocumentLinks": [
       {
         "medicationId": "<id:5>",
         "documentId": "<id:18>",
-        "createdAt": "2026-05-07T07:24:00.000Z"
+        "createdAt": "2026-05-07T09:04:00.000Z"
       }
     ],
     "medicationConditionLinks": [
       {
         "medicationId": "<id:5>",
         "episodeId": "<id:14>",
-        "createdAt": "2026-05-07T09:04:00.000Z"
+        "createdAt": "2026-05-07T10:44:00.000Z"
       }
     ],
     "nutrientDays": [
@@ -1890,6 +1908,7 @@
     "healthScoreRecords": 1,
     "onboardingRecords": 1,
     "practitioners": 1,
+    "treatmentSeries": 1,
     "encounters": 1,
     "encounterLinks": 3,
     "customVaccines": 1,
@@ -1959,6 +1978,7 @@
     "healthScoreRecords": 1,
     "onboardingRecords": 1,
     "practitioners": 1,
+    "treatmentSeries": 1,
     "encounters": 1,
     "encounterLinks": 3,
     "customVaccines": 1,
@@ -2320,14 +2340,14 @@
             "unitsTotal": "30",
             "unitsRemaining": "21",
             "firstUseAt": "2026-07-01T08:00:00.000Z",
-            "expiresAt": "2026-05-05T15:28:00.000Z",
+            "expiresAt": "2026-05-05T17:08:00.000Z",
             "printedExpiry": "2026-06-30T12:34:56.789Z",
             "purchasedAt": "2026-06-30T12:34:56.789Z",
             "manufacturer": "Fixture Pharma",
             "doseStrength": "10 mg",
             "notes": "second pack, kept in the kitchen drawer",
-            "createdAt": "2026-05-05T15:35:00.000Z",
-            "updatedAt": "2026-05-05T15:36:00.000Z"
+            "createdAt": "2026-05-05T17:15:00.000Z",
+            "updatedAt": "2026-05-05T17:16:00.000Z"
           },
           {
             "state": "USED_UP",
@@ -2341,8 +2361,8 @@
             "manufacturer": null,
             "doseStrength": null,
             "notes": null,
-            "createdAt": "2026-05-05T15:35:01.000Z",
-            "updatedAt": "2026-05-05T15:36:01.000Z"
+            "createdAt": "2026-05-05T17:15:01.000Z",
+            "updatedAt": "2026-05-05T17:16:01.000Z"
           }
         ],
         "inventoryEvents": [
@@ -2387,7 +2407,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T16:27:00.000Z"
+            "createdAt": "2026-05-06T18:07:00.000Z"
           },
           {
             "validFrom": "2026-02-01T00:00:00.000Z",
@@ -2401,7 +2421,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": 2,
-            "createdAt": "2026-05-06T16:27:02.000Z"
+            "createdAt": "2026-05-06T18:07:02.000Z"
           },
           {
             "validFrom": "2026-03-01T00:00:00.000Z",
@@ -2415,7 +2435,7 @@
             ],
             "source": "MANUAL",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T16:27:01.000Z"
+            "createdAt": "2026-05-06T18:07:01.000Z"
           }
         ],
         "courses": [
@@ -2648,7 +2668,7 @@
     "hiddenMoodTags": [
       {
         "key": "grateful",
-        "createdAt": "2026-05-05T20:22:00.000Z"
+        "createdAt": "2026-05-05T22:02:00.000Z"
       }
     ],
     "customMoodTags": [
@@ -2712,7 +2732,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-07T00:46:00.000Z"
+        "mergedAt": "2026-05-07T02:26:00.000Z"
       }
     ],
     "labResultImportKeys": [
@@ -2875,7 +2895,7 @@
     ],
     "seizureTypes": [
       {
-        "ref": "<id:36>",
+        "ref": "<id:37>",
         "label": "The big one",
         "ilaeType": "FOCAL_TO_BILATERAL_TC",
         "usualDurationSec": 120,
@@ -2892,7 +2912,7 @@
     ],
     "seizureEvents": [
       {
-        "typeProfileId": "<id:36>",
+        "typeProfileId": "<id:37>",
         "ilaeType": null,
         "ilaeTypeAtLog": "FOCAL_PRESERVED",
         "onsetAt": "2026-06-22T07:00:00.000Z",
@@ -3062,7 +3082,7 @@
     ],
     "extractedFacts": [
       {
-        "id": "<id:35>",
+        "id": "<id:36>",
         "documentId": "<id:18>",
         "factType": "OBSERVATION",
         "status": "APPROVED",
@@ -3088,8 +3108,8 @@
           "page": 2,
           "confidence": 0.94
         },
-        "createdAt": "2026-05-06T04:51:00.000Z",
-        "updatedAt": "2026-05-06T04:52:00.000Z"
+        "createdAt": "2026-05-06T06:31:00.000Z",
+        "updatedAt": "2026-05-06T06:32:00.000Z"
       }
     ],
     "documentImportKeys": [
@@ -3357,9 +3377,26 @@
         "updatedAt": "2026-05-04T12:51:00.000Z"
       }
     ],
-    "encounters": [
+    "treatmentSeries": [
       {
         "id": "<id:21>",
+        "kind": "ROUTINE",
+        "plannedSessions": 6,
+        "startsOn": "2026-06-20",
+        "validUntil": "2026-08-31",
+        "endedOn": "2026-07-30",
+        "prescriberId": "<id:20>",
+        "performerId": "<id:20>",
+        "episodeId": "<id:14>",
+        "title": "Physiotherapy, left knee",
+        "note": "bring a towel",
+        "createdAt": "2026-05-04T14:32:00.000Z",
+        "updatedAt": "2026-05-04T14:33:00.000Z"
+      }
+    ],
+    "encounters": [
+      {
+        "id": "<id:22>",
         "occurredAt": "2026-06-30T08:00:00.000Z",
         "status": "PLANNED",
         "kind": "ROUTINE",
@@ -3368,35 +3405,36 @@
         "outcome": "ferritin back in range, recheck in a year",
         "bodySite": "rt-Encounter-bodySiteEncrypted",
         "laterality": "LEFT",
-        "reminderId": "<id:22>",
-        "createdAt": "2026-05-04T14:31:00.000Z",
-        "updatedAt": "2026-05-04T14:32:00.000Z"
+        "reminderId": "<id:23>",
+        "seriesId": "<id:21>",
+        "createdAt": "2026-05-04T16:12:00.000Z",
+        "updatedAt": "2026-05-04T16:13:00.000Z"
       }
     ],
     "encounterDocumentLinks": [
       {
-        "encounterId": "<id:21>",
+        "encounterId": "<id:22>",
         "targetId": "<id:18>",
-        "createdAt": "2026-05-04T16:04:00.000Z"
+        "createdAt": "2026-05-04T17:44:00.000Z"
       }
     ],
     "encounterLabLinks": [
       {
-        "encounterId": "<id:21>",
+        "encounterId": "<id:22>",
         "targetId": "<id:11>",
-        "createdAt": "2026-05-04T17:44:00.000Z"
+        "createdAt": "2026-05-04T19:24:00.000Z"
       }
     ],
     "encounterConditionLinks": [
       {
-        "encounterId": "<id:21>",
+        "encounterId": "<id:22>",
         "targetId": "<id:14>",
-        "createdAt": "2026-05-04T19:24:00.000Z"
+        "createdAt": "2026-05-04T21:04:00.000Z"
       }
     ],
     "customVaccines": [
       {
-        "id": "<id:23>",
+        "id": "<id:24>",
         "name": "Round-trip travel combo",
         "components": [
           "typhoid",
@@ -3404,13 +3442,13 @@
         ],
         "typicalSeriesDoses": 2,
         "boosterIntervalMonths": 36,
-        "createdAt": "2026-05-05T00:27:00.000Z",
-        "updatedAt": "2026-05-05T00:28:00.000Z"
+        "createdAt": "2026-05-05T02:07:00.000Z",
+        "updatedAt": "2026-05-05T02:08:00.000Z"
       }
     ],
     "vaccinations": [
       {
-        "id": "<id:24>",
+        "id": "<id:25>",
         "occurredAt": "2026-05-14T00:00:00.000Z",
         "antigenSlug": "tdap",
         "vaccineName": "Tetanus, diphtheria and pertussis",
@@ -3419,69 +3457,69 @@
         "lotNumber": "RT-4471",
         "site": "LEFT_ARM",
         "practitionerId": "<id:20>",
-        "encounterId": "<id:21>",
-        "reminderId": "<id:22>",
-        "customVaccineId": "<id:23>",
+        "encounterId": "<id:22>",
+        "reminderId": "<id:23>",
+        "customVaccineId": "<id:24>",
         "note": "sore arm for a day, nothing else",
-        "createdAt": "2026-05-04T21:14:00.000Z",
-        "updatedAt": "2026-05-04T21:15:00.000Z"
+        "createdAt": "2026-05-04T22:54:00.000Z",
+        "updatedAt": "2026-05-04T22:55:00.000Z"
       }
     ],
     "vaccinationDocumentLinks": [
       {
-        "vaccinationId": "<id:24>",
+        "vaccinationId": "<id:25>",
         "targetId": "<id:18>",
-        "createdAt": "2026-05-04T22:44:00.000Z"
+        "createdAt": "2026-05-05T00:24:00.000Z"
       }
     ],
     "labResultDocumentLinks": [
       {
         "labResultId": "<id:11>",
         "documentId": "<id:18>",
-        "createdAt": "2026-05-07T02:24:00.000Z"
+        "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "encounterMedicationLinks": [
       {
-        "encounterId": "<id:21>",
+        "encounterId": "<id:22>",
         "medicationId": "<id:5>",
-        "createdAt": "2026-05-07T04:04:00.000Z"
+        "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
-        "encounterId": "<id:21>",
-        "vaccinationId": "<id:24>",
-        "createdAt": "2026-05-07T05:44:00.000Z"
+        "encounterId": "<id:22>",
+        "vaccinationId": "<id:25>",
+        "createdAt": "2026-05-07T07:24:00.000Z"
       }
     ],
     "medicationDocumentLinks": [
       {
         "medicationId": "<id:5>",
         "documentId": "<id:18>",
-        "createdAt": "2026-05-07T07:24:00.000Z"
+        "createdAt": "2026-05-07T09:04:00.000Z"
       }
     ],
     "medicationConditionLinks": [
       {
         "medicationId": "<id:5>",
         "episodeId": "<id:14>",
-        "createdAt": "2026-05-07T09:04:00.000Z"
+        "createdAt": "2026-05-07T10:44:00.000Z"
       }
     ],
     "coachConversations": [
       {
-        "id": "<id:27>",
+        "id": "<id:28>",
         "title": "How is my blood pressure trending?",
         "documentScoped": false,
         "summary": "earlier turns: weight trend and evening walks",
         "summaryUpdatedAt": "2026-07-20T10:00:00.000Z",
         "summaryTurnCount": 4,
-        "createdAt": "2026-05-05T05:24:00.000Z",
-        "updatedAt": "2026-05-05T05:25:00.000Z",
+        "createdAt": "2026-05-05T07:04:00.000Z",
+        "updatedAt": "2026-05-05T07:05:00.000Z",
         "messages": [
           {
-            "id": "<id:28>",
+            "id": "<id:29>",
             "role": "user",
             "content": "my readings look higher this week, is that real?",
             "metricSourceJson": "rt-CoachMessage-metricSourceJson",
@@ -3494,7 +3532,7 @@
             "createdAt": "2026-07-20T09:58:00.000Z"
           },
           {
-            "id": "<id:29>",
+            "id": "<id:30>",
             "role": "assistant",
             "content": "the last seven mornings average 4 mmHg above the fortnight before",
             "metricSourceJson": null,
@@ -3510,17 +3548,17 @@
         "attachments": []
       },
       {
-        "id": "<id:30>",
+        "id": "<id:31>",
         "title": "About my June labs",
         "documentScoped": true,
         "summary": null,
         "summaryUpdatedAt": null,
         "summaryTurnCount": 0,
-        "createdAt": "2026-05-05T05:24:01.000Z",
-        "updatedAt": "2026-05-05T05:25:01.000Z",
+        "createdAt": "2026-05-05T07:04:01.000Z",
+        "updatedAt": "2026-05-05T07:05:01.000Z",
         "messages": [
           {
-            "id": "<id:31>",
+            "id": "<id:32>",
             "role": "user",
             "content": "What does the ferritin mean?",
             "metricSourceJson": null,
@@ -3545,21 +3583,21 @@
     "consentReceipts": [],
     "coachFacts": [
       {
-        "id": "<id:32>",
+        "id": "<id:33>",
         "fact": "does not tolerate ACE inhibitors",
         "category": "constraint",
         "confidence": 80,
-        "sourceConversationId": "<id:27>",
+        "sourceConversationId": "<id:28>",
         "source": "user",
         "lastUsedAt": "2026-07-20T10:00:00.000Z",
-        "sourceMessageId": "<id:29>",
-        "createdAt": "2026-05-05T10:26:00.000Z",
-        "updatedAt": "2026-05-05T10:27:00.000Z"
+        "sourceMessageId": "<id:30>",
+        "createdAt": "2026-05-05T12:06:00.000Z",
+        "updatedAt": "2026-05-05T12:07:00.000Z"
       }
     ],
     "coachPlans": [
       {
-        "id": "<id:33>",
+        "id": "<id:34>",
         "metric": "BLOOD_PRESSURE",
         "ifCue": "if the evening reading is over 140",
         "thenAction": "then walk twenty minutes before dinner tomorrow",
@@ -3567,32 +3605,32 @@
         "outcome": "rt-CoachPlan-outcomeEncrypted",
         "status": "active",
         "reviewDate": "2026-10-01T00:00:00.000Z",
-        "sourceConversationId": "<id:27>",
-        "createdAt": "2026-05-05T12:10:00.000Z",
-        "updatedAt": "2026-05-05T12:11:00.000Z"
+        "sourceConversationId": "<id:28>",
+        "createdAt": "2026-05-05T13:50:00.000Z",
+        "updatedAt": "2026-05-05T13:51:00.000Z"
       }
     ],
     "coachReminders": [
       {
-        "id": "<id:34>",
+        "id": "<id:35>",
         "note": "ask how the evening walks are going",
         "metric": "BLOOD_PRESSURE",
-        "relatedPlanId": "<id:33>",
+        "relatedPlanId": "<id:34>",
         "triggerKind": "rt-CoachReminder-triggerKind",
         "dueAt": "2026-09-01T07:00:00.000Z",
         "contextCue": "rt-CoachReminder-contextCue",
         "status": "rt-CoachReminder-status",
         "source": "extractor",
-        "sourceConversationId": "<id:27>",
+        "sourceConversationId": "<id:28>",
         "lastSurfacedAt": "2026-06-30T12:34:56.789Z",
         "surfaceCount": 2,
-        "createdAt": "2026-05-05T13:53:00.000Z",
-        "updatedAt": "2026-05-05T13:54:00.000Z"
+        "createdAt": "2026-05-05T15:33:00.000Z",
+        "updatedAt": "2026-05-05T15:34:00.000Z"
       }
     ],
     "measurementReminders": [
       {
-        "id": "<id:22>",
+        "id": "<id:23>",
         "label": "Blutdruck messen",
         "measurementType": "BLOOD_PRESSURE_SYS",
         "intervalDays": 7,
@@ -3609,28 +3647,28 @@
         "snoozedUntil": "2026-07-08T06:00:00.000Z",
         "lastSkippedAt": "2026-06-24T06:00:00.000Z",
         "skipCount": 2,
-        "createdAt": "2026-05-05T02:19:00.000Z",
-        "updatedAt": "2026-05-05T02:20:00.000Z"
+        "createdAt": "2026-05-05T03:59:00.000Z",
+        "updatedAt": "2026-05-05T04:00:00.000Z"
       }
     ],
     "measurementReminderEvents": [
       {
-        "id": "<id:25>",
-        "reminderId": "<id:22>",
+        "id": "<id:26>",
+        "reminderId": "<id:23>",
         "kind": "SKIPPED",
         "occurredAt": "2026-06-24T06:00:00.000Z",
         "onTime": false,
         "source": "skip",
-        "createdAt": "2026-05-05T03:47:01.000Z"
+        "createdAt": "2026-05-05T05:27:01.000Z"
       },
       {
-        "id": "<id:26>",
-        "reminderId": "<id:22>",
+        "id": "<id:27>",
+        "reminderId": "<id:23>",
         "kind": "SATISFIED",
         "occurredAt": "2026-07-01T06:05:00.000Z",
         "onTime": true,
         "source": "manual",
-        "createdAt": "2026-05-05T03:47:00.000Z"
+        "createdAt": "2026-05-05T05:27:00.000Z"
       }
     ],
     "personalRecords": [
@@ -3644,7 +3682,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-5km",
-        "createdAt": "2026-05-06T08:11:01.000Z"
+        "createdAt": "2026-05-06T09:51:01.000Z"
       },
       {
         "metricType": "WALKING_RUNNING_DISTANCE",
@@ -3656,7 +3694,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-10km",
-        "createdAt": "2026-05-06T08:11:02.000Z"
+        "createdAt": "2026-05-06T09:51:02.000Z"
       },
       {
         "metricType": "WEIGHT",
@@ -3668,19 +3706,19 @@
         "sourceMeasurementId": "<id:3>",
         "source": "MANUAL",
         "externalId": null,
-        "createdAt": "2026-05-06T08:11:00.000Z"
+        "createdAt": "2026-05-06T09:51:00.000Z"
       }
     ],
     "userAchievements": [
       {
         "achievementId": "retired-badge-from-an-older-release",
         "unlockedAt": "2025-11-05T08:00:00.000Z",
-        "createdAt": "2026-05-06T09:44:01.000Z"
+        "createdAt": "2026-05-06T11:24:01.000Z"
       },
       {
         "achievementId": "intake-total-10",
         "unlockedAt": "2026-02-21T10:15:00.000Z",
-        "createdAt": "2026-05-06T09:44:00.000Z"
+        "createdAt": "2026-05-06T11:24:00.000Z"
       }
     ],
     "environmentContexts": [
@@ -3725,8 +3763,8 @@
         "aqHours": 3,
         "aqFetchedAt": "2026-06-30T12:34:56.789Z",
         "fetchedAt": "2026-06-16T03:15:00.000Z",
-        "createdAt": "2026-05-06T12:00:00.000Z",
-        "updatedAt": "2026-05-06T12:01:00.000Z"
+        "createdAt": "2026-05-06T13:40:00.000Z",
+        "updatedAt": "2026-05-06T13:41:00.000Z"
       },
       {
         "date": "2026-07-01",
@@ -3769,8 +3807,8 @@
         "aqHours": null,
         "aqFetchedAt": null,
         "fetchedAt": "2026-07-02T03:15:00.000Z",
-        "createdAt": "2026-05-06T12:00:01.000Z",
-        "updatedAt": "2026-05-06T12:01:01.000Z"
+        "createdAt": "2026-05-06T13:40:01.000Z",
+        "updatedAt": "2026-05-06T13:41:01.000Z"
       }
     ],
     "environmentTravelLocations": [
@@ -3780,8 +3818,8 @@
         "lat": 41.4,
         "lon": 2.2,
         "label": "Barcelona",
-        "createdAt": "2026-05-06T13:05:00.000Z",
-        "updatedAt": "2026-05-06T13:06:00.000Z"
+        "createdAt": "2026-05-06T14:45:00.000Z",
+        "updatedAt": "2026-05-06T14:46:00.000Z"
       }
     ],
     "dawarichDays": [
@@ -3795,8 +3833,8 @@
         "countryCode": "ES",
         "isTravelDay": true,
         "fetchedAt": "2026-06-16T03:20:00.000Z",
-        "createdAt": "2026-05-06T14:51:00.000Z",
-        "updatedAt": "2026-05-06T14:52:00.000Z"
+        "createdAt": "2026-05-06T16:31:00.000Z",
+        "updatedAt": "2026-05-06T16:32:00.000Z"
       }
     ],
     "ecgRecordings": [
@@ -3821,8 +3859,8 @@
         "averageHeartRate": 88,
         "rhythmClassification": "IRREGULAR",
         "measurementId": "<id:4>",
-        "createdAt": "2026-05-06T19:53:00.000Z",
-        "updatedAt": "2026-05-06T19:54:00.000Z"
+        "createdAt": "2026-05-06T21:33:00.000Z",
+        "updatedAt": "2026-05-06T21:34:00.000Z"
       }
     ],
     "manifest": {
@@ -3881,6 +3919,7 @@
     "healthScoreRecords": 1,
     "onboardingRecords": 1,
     "practitioners": 1,
+    "treatmentSeries": 1,
     "encounters": 1,
     "encounterLinks": 3,
     "vaccinations": 1,
@@ -3940,6 +3979,7 @@
       "healthScoreRecords": 1,
       "onboardingRecords": 1,
       "practitioners": 1,
+      "treatmentSeries": 1,
       "encounters": 1,
       "encounterLinks": 3,
       "vaccinations": 1,
