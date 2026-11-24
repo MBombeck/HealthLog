@@ -29,7 +29,19 @@ export interface ClassifiedRestoreFailure {
   code: string | null;
 }
 
-function field(value: unknown, key: string): unknown {
+/** The error and driver fields this reads; never a name taken from input. */
+type ErrorField =
+  | "meta"
+  | "driverAdapterError"
+  | "cause"
+  | "code"
+  | "originalCode"
+  | "constraint"
+  | "index"
+  | "originalMessage"
+  | "message";
+
+function field(value: unknown, key: ErrorField): unknown {
   return typeof value === "object" && value !== null
     ? (value as Record<string, unknown>)[key]
     : undefined;

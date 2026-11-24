@@ -22,6 +22,7 @@ import {
   type AnalyteConversion,
 } from "./registry";
 import { scaleUnitOf, shiftPowerOfTen } from "./scale";
+import { ownValue } from "@/lib/own-key";
 
 export type ConversionRefusal =
   "unknown_analyte" | "unknown_unit" | "not_finite";
@@ -44,7 +45,7 @@ function intoEntryUnit(
   unit: string,
 ): { entryUnit: string; affine: Affine; shift: number } | null {
   const norm = normaliseLabUnit(unit);
-  const direct = entry.units[norm];
+  const direct = ownValue(entry.units, norm);
   if (direct) return { entryUnit: norm, affine: direct, shift: 0 };
   const own = scaleUnitOf(norm);
   if (!own) return null;

@@ -9,6 +9,8 @@
  * `getUnitForType`, so server callers keep their import.
  */
 
+import { ownValue } from "@/lib/own-key";
+
 const unitMap: Record<string, string> = {
   WEIGHT: "kg",
   BLOOD_PRESSURE_SYS: "mmHg",
@@ -205,5 +207,5 @@ const unitMap: Record<string, string> = {
 };
 
 export function getUnitForType(type: string): string {
-  return unitMap[type] ?? "unknown";
+  return ownValue(unitMap, type) ?? "unknown";
 }

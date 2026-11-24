@@ -38,6 +38,7 @@ import { workoutSportTypeEnum } from "@/lib/validations/workout";
 import type { WorkoutHrSeries } from "./hr-series";
 import type { WorkoutZones } from "./zones";
 import { median, roundTo } from "@/lib/stats/central";
+import { ownValue } from "@/lib/own-key";
 
 /** Lookback for the own-history comparison, in days. */
 export const OWN_HISTORY_LOOKBACK_DAYS = 90;
@@ -350,7 +351,7 @@ export function assertNumericLeaves(value: unknown, path = "evidence"): void {
     for (const [key, leaf] of Object.entries(
       value as Record<string, unknown>,
     )) {
-      const allowed = ALLOWED_STRING_LEAVES[key];
+      const allowed = ownValue(ALLOWED_STRING_LEAVES, key);
       if (allowed) {
         if (typeof leaf !== "string" || !allowed.test(leaf)) {
           throw new Error(

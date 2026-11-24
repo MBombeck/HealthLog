@@ -23,6 +23,7 @@ import {
   patientRef,
   reportingPeriod,
 } from "@/lib/fhir/resources/common";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * The time-in-range band, stated in the unit the reader uses. The band itself
@@ -48,7 +49,7 @@ export function glucoseContextObservations(
   const glucoseUnit = resolveGlucoseUnit(data.glucoseUnit ?? null);
   const observations: FhirObservation[] = [];
   for (const [ctx, stat] of Object.entries(data.glucoseStats)) {
-    const map = GLUCOSE_LOINC[ctx];
+    const map = ownValue(GLUCOSE_LOINC, ctx);
     if (!map) continue;
     observations.push({
       resourceType: "Observation",

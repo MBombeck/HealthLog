@@ -73,12 +73,8 @@ async function registerTelegramWebhook(botToken: string) {
     );
   }
 
-  const localHosts: Record<string, true> = {
-    localhost: true,
-    "127.0.0.1": true,
-    "::1": true,
-  };
-  if (localHosts[appBaseUrl.hostname.toLowerCase()]) {
+  const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+  if (localHosts.has(appBaseUrl.hostname.toLowerCase())) {
     return apiError(
       "Telegram webhook requires a publicly reachable domain (localhost is not allowed).",
       422,

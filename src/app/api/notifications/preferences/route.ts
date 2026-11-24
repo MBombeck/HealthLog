@@ -16,6 +16,7 @@ import {
 import type { ChannelType } from "@/lib/notifications/types";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { resolveEventDefaults } from "@/lib/notifications/event-defaults";
+import { ownValue } from "@/lib/own-key";
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
@@ -81,7 +82,7 @@ export const GET = apiHandler(async () => {
     type: ch.type,
     label: CHANNEL_TYPE_LABELS[ch.type as ChannelType] ?? ch.type,
     enabled: ch.enabled,
-    globallyEnabled: globalToggles[ch.type] ?? true,
+    globallyEnabled: ownValue(globalToggles, ch.type) ?? true,
   }));
 
   // Admin-only events (backup health) are listed for admins only, and an

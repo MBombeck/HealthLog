@@ -70,6 +70,7 @@ import {
   glucoseUnitPatchSchema,
   unitPreferencePatchSchema,
 } from "@/lib/validations/user-prefs";
+import { ownValue } from "@/lib/own-key";
 
 export interface AccountSettingsBackupOptions {
   purpose?: "portable-export" | "disaster-recovery";
@@ -118,14 +119,14 @@ class PartlyRefused {
 }
 
 function has(entry: AccountSettingsBackupEntry, key: string): boolean {
-  return Object.hasOwn(entry, key) && entry[key] !== undefined;
+  return Object.hasOwn(entry, key) && ownValue(entry, key) !== undefined;
 }
 
 /** Carried as it is: a string, number, boolean or list, or null. */
 function plain(column: string): SettingCodec {
   return {
-    write: (row) => ({ [column]: row[column] }),
-    read: (entry) => (has(entry, column) ? entry[column] : undefined),
+    write: (row) => ({ [column]: ownValue(row, column) }),
+    read: (entry) => (has(entry, column) ? ownValue(entry, column) : undefined),
   };
 }
 
@@ -134,13 +135,13 @@ function instant(column: string): SettingCodec {
   return {
     write: (row) => ({
       [column]:
-        row[column] instanceof Date
-          ? (row[column] as Date).toISOString()
+        ownValue(row, column) instanceof Date
+          ? (ownValue(row, column) as Date).toISOString()
           : null,
     }),
     read: (entry) => {
       if (!has(entry, column)) return undefined;
-      const value = entry[column];
+      const value = ownValue(entry, column);
       return value === null ? null : new Date(value as string);
     },
   };
@@ -154,10 +155,10 @@ function instant(column: string): SettingCodec {
  */
 function json(column: string): SettingCodec {
   return {
-    write: (row) => ({ [column]: row[column] ?? null }),
+    write: (row) => ({ [column]: ownValue(row, column) ?? null }),
     read: (entry) => {
       if (!has(entry, column)) return undefined;
-      const value = entry[column];
+      const value = ownValue(entry, column);
       return value === null ? Prisma.DbNull : value;
     },
   };
@@ -170,10 +171,10 @@ function oneOf(
   nullable: boolean,
 ): SettingCodec {
   return {
-    write: (row) => ({ [column]: row[column] }),
+    write: (row) => ({ [column]: ownValue(row, column) }),
     read: (entry) => {
       if (!has(entry, column)) return undefined;
-      const value = entry[column];
+      const value = ownValue(entry, column);
       if (value === null && nullable) return null;
       if (typeof value === "string" && values.includes(value)) return value;
       return new Refused(column);
@@ -197,10 +198,10 @@ function isTimeZone(value: unknown): value is string {
 /** An IANA zone this runtime knows, the check the settings routes apply. */
 function timeZone(column: string, nullable: boolean): SettingCodec {
   return {
-    write: (row) => ({ [column]: row[column] }),
+    write: (row) => ({ [column]: ownValue(row, column) }),
     read: (entry) => {
       if (!has(entry, column)) return undefined;
-      const value = entry[column];
+      const value = ownValue(entry, column);
       if (value === null && nullable) return null;
       return isTimeZone(value) ? value : new Refused(column);
     },
@@ -218,10 +219,10 @@ function aiEndpoint(
   key: "aiBaseUrl" | "aiCompatBaseUrl",
 ): SettingCodec {
   return {
-    write: (row) => ({ [key]: row[column] }),
+    write: (row) => ({ [key]: ownValue(row, column) }),
     read: (entry, ctx) => {
       if (!has(entry, key)) return undefined;
-      const value = entry[key];
+      const value = ownValue(entry, key);
       if (value === null) return null;
       if (typeof value !== "string") return new Refused(key);
       const trimmed = value.trim();
@@ -278,17 +279,17 @@ const thresholds: SettingCodec = {
     if (typeof value !== "object" || Array.isArray(value)) {
       return new Refused("thresholdsJson");
     }
-    const kept: Record<string, unknown> = {};
+    const kept: [string, unknown][] = [];
     const refused: string[] = [];
     for (const [metric, band] of Object.entries(value)) {
       if (thresholdsUpdateSchema.safeParse({ [metric]: band }).success) {
-        kept[metric] = band;
+        kept.push([metric, band]);
       } else {
         refused.push(`thresholdsJson.${metric}`);
       }
     }
     return new PartlyRefused(
-      Object.keys(kept).length === 0 ? Prisma.DbNull : kept,
+      kept.length === 0 ? Prisma.DbNull : Object.fromEntries(kept),
       refused,
     );
   },
@@ -308,18 +309,18 @@ const activityGoals: SettingCodec = {
     if (typeof value !== "object" || Array.isArray(value)) {
       return new Refused("activityGoalsJson");
     }
-    const kept: Record<string, number> = {};
+    const kept: [string, number][] = [];
     const refused: string[] = [];
     for (const [key, goal] of Object.entries(value)) {
       const parsed = activityGoalsSchema.safeParse({ [key]: goal });
       if (!parsed.success) {
         refused.push(`activityGoalsJson.${key}`);
       } else if (typeof goal === "number") {
-        kept[key] = goal;
+        kept.push([key, goal]);
       }
     }
     return new PartlyRefused(
-      Object.keys(kept).length === 0 ? Prisma.DbNull : kept,
+      kept.length === 0 ? Prisma.DbNull : Object.fromEntries(kept),
       refused,
     );
   },
@@ -339,20 +340,20 @@ const nutrientTargets: SettingCodec = {
     if (typeof value !== "object" || Array.isArray(value)) {
       return new Refused("nutrientTargetsJson");
     }
-    const kept: Record<string, { value: number; direction: string }> = {};
+    const kept: [string, { value: number; direction: string }][] = [];
     const refused: string[] = [];
     for (const [code, raw] of Object.entries(value)) {
       const target = isNutrientCode(code)
         ? parseNutrientTarget(code, raw)
         : null;
       if (target) {
-        kept[code] = { value: target.value, direction: target.direction };
+        kept.push([code, { value: target.value, direction: target.direction }]);
       } else {
         refused.push(`nutrientTargetsJson.${code}`);
       }
     }
     return new PartlyRefused(
-      Object.keys(kept).length === 0 ? Prisma.DbNull : kept,
+      kept.length === 0 ? Prisma.DbNull : Object.fromEntries(kept),
       refused,
     );
   },

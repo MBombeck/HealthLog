@@ -108,6 +108,7 @@ import {
   mapHealthConnectSleepStage,
 } from "./sleep-stage-map";
 import { packagesToSkip, type DirectIntegration } from "./skip-packages";
+import { ownRecord } from "@/lib/own-key";
 
 const SOURCE = "HEALTH_CONNECT" as const;
 const HOUR_MS = 3_600_000;
@@ -234,9 +235,9 @@ class ImportRun {
   private readonly leftOutApps = new Set<number>();
   private readonly devices = new Map<number, string | null>();
   private ranking = new AppRanking([]);
-  private readonly perType: Record<string, HealthConnectTypeStat> = {};
-  private readonly perApp: HealthConnectImportResult["perApp"] = {};
-  private readonly skipped: Record<string, number> = {};
+  private readonly perType = ownRecord<HealthConnectTypeStat>();
+  private readonly perApp = ownRecord<{ records: number; leftOut: boolean }>();
+  private readonly skipped = ownRecord<number>();
   private readonly workouts = {
     read: 0,
     inserted: 0,

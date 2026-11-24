@@ -38,6 +38,7 @@ import {
   measurementSourceEnum,
   measurementTypeEnum,
 } from "@/lib/validations/measurement";
+import { ownValue } from "@/lib/own-key";
 
 // v1.4.25 — `annotate` from `@/lib/logging/context` was the
 // canonical breadcrumb for a parse failure, but the helper pulls
@@ -735,7 +736,7 @@ export function getDeviceTypeLadder(
   resolved: ResolvedSourcePriority,
   metricType: z.infer<typeof measurementTypeEnum> | string,
 ): readonly DeviceType[] {
-  const override = resolved.deviceTypePriority[metricType];
+  const override = ownValue(resolved.deviceTypePriority, metricType);
   if (override && override.length > 0) return override;
   const fallback = resolved.deviceTypePriority.default;
   if (fallback && fallback.length > 0) return fallback;

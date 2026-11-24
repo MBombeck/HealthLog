@@ -29,6 +29,7 @@
  */
 import { ENVIRONMENT_FIELDS } from "@/lib/environment/fields";
 import type { ModuleKey } from "@/lib/modules/registry";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * The surface families. The part of an id before the first `:`.
@@ -345,9 +346,7 @@ export type SurfaceModuleMap = Partial<Record<ModuleKey, boolean>>;
 
 /** The module that owns a surface, or `undefined` for an unowned one. */
 export function surfaceModule(surfaceId: string): ModuleKey | undefined {
-  return Object.prototype.hasOwnProperty.call(SURFACE_MODULE, surfaceId)
-    ? SURFACE_MODULE[surfaceId]
-    : undefined;
+  return ownValue(SURFACE_MODULE, surfaceId);
 }
 
 /**
@@ -376,11 +375,11 @@ export function surfaceModulesOfKind(
   kind: SurfaceKind,
 ): Partial<Record<string, ModuleKey>> {
   const prefix = `${kind}:`;
-  const out: Partial<Record<string, ModuleKey>> = {};
-  for (const [id, owner] of Object.entries(SURFACE_MODULE)) {
-    if (id.startsWith(prefix)) out[id.slice(prefix.length)] = owner;
-  }
-  return out;
+  return Object.fromEntries(
+    Object.entries(SURFACE_MODULE)
+      .filter(([id]) => id.startsWith(prefix))
+      .map(([id, owner]) => [id.slice(prefix.length), owner]),
+  );
 }
 
 /**
