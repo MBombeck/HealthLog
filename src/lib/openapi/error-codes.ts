@@ -350,6 +350,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "ingest.rate_limited",
     ],
     insights: [
+      "insights.context.invalid",
       "insights.generate.budgetExceeded",
       "insights.generate.outboundScreened",
       "insights.generate.profileScopeChanged",

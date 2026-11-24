@@ -16361,5 +16361,20 @@
     "periodOpen": "desde {from}",
     "expiryPushTitle": "La serie de tratamiento caduca",
     "expiryPushBody": "{title}: válida hasta el {date}, {count, plural, one {queda # sesión} other {quedan # sesiones}}."
+  },
+  "chartContext": {
+    "listLabel": "Medicación y enfermedades en este periodo",
+    "start": "{name}: inicio",
+    "startDose": "{name}: inicio con {dose}",
+    "startEstimated": "{name}: primera toma registrada",
+    "stop": "{name}: suspendido",
+    "doseChange": "{name}: dosis cambiada a {dose}",
+    "doseChangeBare": "{name}: dosis cambiada",
+    "pause": "{name}: en pausa",
+    "resume": "{name}: reanudado",
+    "illness": "{label}, hasta {end}",
+    "illnessOpen": "{label}, en curso",
+    "open": "Abrir",
+    "cyclePhases": "Fases del ciclo"
   }
 }

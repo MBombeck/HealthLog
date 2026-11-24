@@ -121,6 +121,7 @@ export default function InsightsBlutdruckPage() {
       title={t("insights.bloodPressureSectionTitle")}
       description={t("insights.subPage.blutdruckDescription")}
       explainerMetric="bloodPressure"
+      chartContext
       coachLaunch
       coachReadStrip={
         <CoachReadStrip

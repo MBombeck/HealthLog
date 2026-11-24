@@ -88,7 +88,7 @@ export interface LaneRead {
   standing: StandingItem[];
 }
 
-interface LaneFrame {
+export interface LaneFrame {
   userId: string;
   tz: string;
   access: TimelineAccess;
@@ -668,7 +668,13 @@ async function cycleLane(frame: LaneFrame): Promise<LaneRead> {
   };
 }
 
-async function cycleRows(frame: LaneFrame) {
+/**
+ * The observed cycles the lane draws. Exported for the charts' cycle phases
+ * (`src/lib/charts/context-markers.ts`), which read the same rows with the
+ * two fields a phase needs, so the lane and the phases never count a
+ * different set of cycles.
+ */
+export async function cycleRows(frame: LaneFrame) {
   return prisma.menstrualCycle.findMany({
     where: {
       userId: frame.userId,
@@ -676,7 +682,13 @@ async function cycleRows(frame: LaneFrame) {
       isPredicted: false,
       absorbedIntoId: null,
     },
-    select: { id: true, startDate: true, endDate: true },
+    select: {
+      id: true,
+      startDate: true,
+      endDate: true,
+      periodEndDate: true,
+      ovulationDate: true,
+    },
     orderBy: { startDate: "asc" },
   });
 }

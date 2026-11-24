@@ -220,6 +220,11 @@ export interface HealthKitMetricPageProps {
    * the empty / loading / error branches skip it and no void card appears.
    */
   afterAssessment?: ReactNode;
+  /**
+   * Draw medication changes, illness episodes and (behind a switch) cycle
+   * phases on the chart (`SubPageShell chartContext`).
+   */
+  chartContext?: boolean;
 }
 
 /**
@@ -234,6 +239,7 @@ function sharedCoachPrefill(
 }
 
 export function HealthKitMetricPage({
+  chartContext,
   measurementType,
   fallbackMeasurementType,
   fallbackMeasureLabel,
@@ -478,6 +484,7 @@ export function HealthKitMetricPage({
         />
       }
       coachLaunch
+      chartContext={chartContext}
       captureType={
         (captureType === undefined ? emptyStateCtaType : captureType) ??
         undefined

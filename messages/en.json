@@ -16361,5 +16361,20 @@
     "periodOpen": "since {from}",
     "expiryPushTitle": "Treatment series expiring",
     "expiryPushBody": "{title}: valid until {date}, {count, plural, one {# session} other {# sessions}} left."
+  },
+  "chartContext": {
+    "listLabel": "Medication and illness in this range",
+    "start": "{name} started",
+    "startDose": "{name} started at {dose}",
+    "startEstimated": "{name}: first logged dose",
+    "stop": "{name} stopped",
+    "doseChange": "{name}: dose changed to {dose}",
+    "doseChangeBare": "{name}: dose changed",
+    "pause": "{name} paused",
+    "resume": "{name} resumed",
+    "illness": "{label}, until {end}",
+    "illnessOpen": "{label}, ongoing",
+    "open": "Open",
+    "cyclePhases": "Cycle phases"
   }
 }

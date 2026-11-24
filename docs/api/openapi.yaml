@@ -28065,6 +28065,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
+  /api/insights/context:
+    get:
+      tags:
+        - Insights
+      summary: What happened around a metric
+      description: "The marks a metric chart draws over its line: medication starts, stops, dose changes, pauses and
+        resumptions, acute illness episodes, and the phases of the observed cycles. Read from the same rows as the
+        `medications`, `illness` and `cycle` lanes of `GET /api/timeline`, so a mark sits on the day the timeline shows.
+        Every date is a local day in the record's zone. A part whose module is off or whose section is not shared
+        answers an empty list; the timeline module is not required. `from` and `to` cut the window (a span is sent when
+        it touches it); without them the whole record is sent. Delegable at read level over the whole record. Cookie or
+        `[\"*\"]` Bearer auth; a narrow token is refused."
+      parameters:
+        - in: query
+          name: from
+          schema:
+            description: "First day of the window. Omitted: the whole record."
+            type: string
+          description: "First day of the window. Omitted: the whole record."
+        - in: query
+          name: to
+          schema:
+            description: "Last day of the window. Omitted: today."
+            type: string
+          description: "Last day of the window. Omitted: today."
+      responses:
+        "200":
+          description: The context marks, oldest first in each list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChartContextEnvelope"
+        "401": *a1
+        "403": *a18
+        "422": *a4
+        "429": *a5
   /api/health:
     get:
       security: []
@@ -46097,7 +46133,7 @@ components:
                 import.health_connect.remote.origin_config_invalid, import.health_connect.remote.password_required,
                 import.health_connect.remote.private_origin_not_approved, import.rate_limited, import.write_failed;
                 ingest — ingest.idempotencyKey.reused, ingest.medication.notFound, ingest.rate_limited; insights —
-                insights.generate.budgetExceeded, insights.generate.outboundScreened,
+                insights.context.invalid, insights.generate.budgetExceeded, insights.generate.outboundScreened,
                 insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
                 labs.biomarker.alias.taken, labs.biomarker.create.invalid, labs.biomarker.duplicate,
                 labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch, labs.biomarker.notFound,
@@ -105088,6 +105124,141 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    ChartContextEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ChartContext"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ChartContext:
+      type: object
+      properties:
+        today:
+          type: string
+          description: Today in the record's zone.
+        medications:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartContextMedicationMark"
+          description: Starts, stops, dose changes, pauses and resumptions, oldest first. Empty without the medications module or
+            section.
+        illnesses:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartContextIllnessSpan"
+          description: Acute illness episodes, oldest first. A chronic condition is not a span on a chart and is left out. Empty
+            without the illness module or section.
+        cyclePhases:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartContextCyclePhase"
+          description: Phases of the observed cycles, oldest first, the open cycle up to today. Empty without the cycle module or
+            section.
+      required:
+        - today
+        - medications
+        - illnesses
+        - cyclePhases
+      additionalProperties: false
+    ChartContextMedicationMark:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique within the answer.
+        medicationId:
+          type: string
+        kind:
+          type: string
+          enum:
+            - start
+            - stop
+            - doseChange
+            - pause
+            - resume
+        date:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        estimated:
+          type: boolean
+          description: "A start with no stated start date: the day of the first logged dose stands in."
+        name:
+          type: string
+        dose:
+          description: The dose from this day, on a dose change or a start.
+          type:
+            - string
+            - "null"
+        href:
+          type: string
+          description: The in-app page of the record.
+      required:
+        - id
+        - medicationId
+        - kind
+        - date
+        - estimated
+        - name
+        - dose
+        - href
+      additionalProperties: false
+    ChartContextIllnessSpan:
+      type: object
+      properties:
+        id:
+          type: string
+        start:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        end:
+          anyOf:
+            - type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            - type: "null"
+          description: Null while the episode is still open.
+        label:
+          type: string
+        href:
+          type: string
+      required:
+        - id
+        - start
+        - end
+        - label
+        - href
+      additionalProperties: false
+    ChartContextCyclePhase:
+      type: object
+      properties:
+        phase:
+          type: string
+          enum:
+            - MENSTRUAL
+            - FOLLICULAR
+            - OVULATORY
+            - LUTEAL
+        start:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        end:
+          type: string
+          description: Inclusive.
+      required:
+        - phase
+        - start
+        - end
       additionalProperties: false
     HealthAdminResponse:
       type: object

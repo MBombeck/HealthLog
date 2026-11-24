@@ -40,12 +40,22 @@ import { HealthChartHeader } from "./health-chart/chart-header";
 import {
   annotationLayers,
   baselineLayers,
+  contextLayers,
   openDayLayers,
   seriesLayers,
   targetZoneLayers,
   verticalMarkerLayers,
 } from "./health-chart/chart-layers";
 import { makeTooltipContent } from "./health-chart/chart-tooltip-content";
+import { resolveContextMarks } from "./health-chart/context-marks";
+import {
+  ChartContextRail,
+  ChartCycleSwitch,
+} from "./health-chart/context-rail";
+import {
+  useChartContext,
+  useCyclePhaseChoice,
+} from "./health-chart/context-scope";
 import {
   axisValueFormatters,
   dayFocusFor,
@@ -250,6 +260,22 @@ export function HealthChart({
     chartData,
   );
 
+  // What happened around the metric, on a page that asks for it
+  // (`SubPageShell chartContext`). Null on every other chart and whenever
+  // nothing falls in the window, and then nothing below draws.
+  const context = useChartContext(!mini && isAuthenticated);
+  const [showCycle, setShowCycle] = useCyclePhaseChoice();
+  // The plot's x range: the margin (8) + the y axis + the axis padding (10)
+  // on the left, margin + padding on the right, as the day footer has it.
+  const plotInsetLeft = 8 + yAxisWidth + 10;
+  const plotInsetRight = 8 + overlays.rightRoom + 10;
+  const contextMarks = resolveContextMarks(context, chartData, {
+    bucket: activeBucket,
+    showCycle,
+    plotWidth:
+      (containerWidth ?? viewportWidth) - plotInsetLeft - plotInsetRight,
+  });
+
   // The days as doors: daily points only (a week or month point averages
   // many days and has no one day to open).
   const dayLinksActive = dayLinks && !mini && activeBucket === "day";
@@ -434,6 +460,7 @@ export function HealthChart({
                         : undefined
                     }
                   />
+                  {contextLayers(contextMarks, yDomain)}
                   {targetZoneLayers(visibleTargetZones, maxPointIndex)}
                   {annotationLayers(annotationPositions, viewportWidth)}
                   {verticalMarkerLayers(verticalMarkerPositions, yDomain)}
@@ -505,14 +532,27 @@ export function HealthChart({
               </p>
             ) : null}
           </div>
+          {contextMarks ? (
+            <ChartContextRail
+              marks={contextMarks}
+              maxIndex={maxPointIndex}
+              insetLeft={plotInsetLeft}
+              insetRight={plotInsetRight}
+              formatDate={tzFmt.date}
+            />
+          ) : null}
           {chartData ? (
             <ChartDayFooter
               links={chartDays}
               points={chartData}
-              // The plot's margin (8) + the y axis + the x axis padding (10)
-              // on the left, margin + padding on the right.
-              insetLeft={8 + yAxisWidth + 10}
-              insetRight={8 + overlays.rightRoom + 10}
+              insetLeft={plotInsetLeft}
+              insetRight={plotInsetRight}
+            />
+          ) : null}
+          {contextMarks?.hasCycle ? (
+            <ChartCycleSwitch
+              checked={showCycle}
+              onCheckedChange={setShowCycle}
             />
           ) : null}
           {/* The points the chart just drew, as a table, read from the same

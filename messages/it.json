@@ -16361,5 +16361,20 @@
     "periodOpen": "dal {from}",
     "expiryPushTitle": "Ciclo di trattamento in scadenza",
     "expiryPushBody": "{title}: valido fino al {date}, {count, plural, one {resta # seduta} other {restano # sedute}}."
+  },
+  "chartContext": {
+    "listLabel": "Farmaci e malattie in questo periodo",
+    "start": "{name}: inizio",
+    "startDose": "{name}: inizio con {dose}",
+    "startEstimated": "{name}: prima assunzione registrata",
+    "stop": "{name}: sospeso",
+    "doseChange": "{name}: dose cambiata a {dose}",
+    "doseChangeBare": "{name}: dose cambiata",
+    "pause": "{name}: in pausa",
+    "resume": "{name}: ripreso",
+    "illness": "{label}, fino al {end}",
+    "illnessOpen": "{label}, in corso",
+    "open": "Apri",
+    "cyclePhases": "Fasi del ciclo"
   }
 }
