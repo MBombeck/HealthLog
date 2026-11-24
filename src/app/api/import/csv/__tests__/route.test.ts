@@ -188,6 +188,13 @@ describe("POST /api/import/csv — fatal header error", () => {
     expect(res.status).toBe(422);
     expect(mMeasurement().createManyAndReturn).not.toHaveBeenCalled();
   });
+
+  it("returns 422 for a file with more rows than one import reads", async () => {
+    const res = await POST(csvRequest(`${HEADER}\n${"x\n".repeat(100_001)}`));
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toMatch(/more than 100000 data rows/);
+    expect(mMeasurement().createManyAndReturn).not.toHaveBeenCalled();
+  });
 });
 
 describe("POST /api/import/csv — batched write + per-row envelope", () => {
