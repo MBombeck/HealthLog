@@ -67,7 +67,10 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { getSession } from "@/lib/auth/session";
-import { MultipartTooLargeError } from "@/lib/multipart/stream-to-disk";
+import {
+  MultipartMalformedError,
+  MultipartTooLargeError,
+} from "@/lib/multipart/stream-to-disk";
 import { POST as appleHealth } from "@/app/api/import/apple-health-export/route";
 import { POST as healthConnect } from "@/app/api/import/health-connect-export/route";
 import { POST as fit } from "@/app/api/import/fit/route";
@@ -196,11 +199,22 @@ describe.each(ROUTES)("POST /api/import/$name", (route) => {
     });
   });
 
-  it("answers a body that cannot be read with 422", async () => {
+  it("answers a body that cannot be read with 422 and the parser's reason", async () => {
     mocks.streamToDisk.mockRejectedValue(
-      new Error("Multipart body missing boundary parameter"),
+      new MultipartMalformedError("Multipart body missing boundary parameter"),
     );
-    expect((await route.post(upload(route.name))).status).toBe(422);
+    const res = await route.post(upload(route.name));
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toContain("missing boundary");
+  });
+
+  it("answers any other failure with 422 and without its text", async () => {
+    mocks.streamToDisk.mockRejectedValue(
+      new Error("ENOSPC: no space left, write '/tmp/healthlog-upload-x.bin'"),
+    );
+    const res = await route.post(upload(route.name));
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toBe("Multipart upload failed");
   });
 
   it("queues a fresh upload on its own queue and answers 202", async () => {
