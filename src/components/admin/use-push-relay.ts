@@ -68,6 +68,13 @@ export interface AdminPushRelayStatus {
    * Apple and the relay is not used while it is set.
    */
   ownApnsKey: boolean;
+  /**
+   * The one state the card's status pill shows, resolved on the server
+   * (`relaySummaryState`): the own APNs key first, then a relay this server
+   * cannot use, then the relay's health.
+   */
+  summaryState:
+    "own_apns_key" | "unavailable" | "ok" | "degraded" | "down" | "off";
   /** The operator's one answer to the relay question (`operator-decision.ts`). */
   operatorDecision: "undecided" | "on" | "off";
 }

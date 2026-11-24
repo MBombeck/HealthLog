@@ -9561,8 +9561,7 @@
     "auditActedByColumn": "Eseguito da",
     "pushRelay": {
       "title": "Relay push di HealthLog",
-      "description": "Permette all'app dell'App Store di ricevere le notifiche di questo server tramite il relay del progetto HealthLog.",
-      "whatItSees": "Ogni notifica viene cifrata su questo server per il dispositivo a cui è destinata, quindi il relay non può leggerla. Vede quando questo server invia qualcosa a un dispositivo.",
+      "description": "Notifiche crittografate end-to-end per l'app dell'App Store; ogni persona decide sul proprio dispositivo.",
       "seesSummary": "Cosa vede il relay",
       "seesHeading": "Il relay vede",
       "seesWhen": "che questo server invia qualcosa a un dispositivo, quando e di che tipo: un avviso, una sincronizzazione silenziosa o la fine di un’Attività Live",
@@ -9572,48 +9571,45 @@
       "notSeesHeading": "Non vede",
       "notSeesContent": "cosa dice una notifica: nomi di farmaci, dosi, misurazioni, note, nomi di account o qualsiasi altra cosa contenga",
       "seesTiming": "Il momento può comunque dire qualcosa. Un promemoria del farmaco tramite il relay mostra al relay e ad Apple quando una dose è da assumere, e se registri una dose su un dispositivo e un altro tuo dispositivo riceve la conferma, vedono che in quel momento è successo qualcosa.",
-      "seesSource": "L’informativa sulla privacy completa del relay",
-      "toggleLabel": "Offrire il relay push di HealthLog agli utenti di questo server",
-      "toggleDescription": "Disattivato finché non lo attivi. Poi ogni persona decide nella propria app.",
-      "toggleDescriptionOn": "Attivo. Ogni persona decide nella propria app se i suoi dispositivi lo usano.",
+      "toggleLabel": "Offrire agli utenti di questo server",
       "ownApns": {
-        "inUse": "Questo server ha configurato una propria chiave push di Apple (APNs) e la usa. Ogni notifica va direttamente ad Apple, quindi il relay non viene usato finché la chiave è impostata.",
-        "useRelay": "Per inviare le notifiche tramite il relay, rimuovi le variabili APNS_* dall’ambiente del server e riavvialo. Qui comparirà allora l’interruttore del relay.",
-        "toggleDescription": "Ancora registrato presso il relay, che non riceve nulla finché la chiave è impostata. Disattivalo per lasciare il relay."
+        "inUse": "Le notifiche push vanno direttamente ad Apple con la chiave APNs propria di questo server; rimuovi le variabili APNS_* per usare il relay.",
+        "registered": "Le notifiche push vanno direttamente ad Apple con la chiave APNs propria di questo server, quindi il relay non trasporta nulla."
       },
       "devices": "{count, plural, one {# dispositivo collegato} other {# dispositivi collegati}}",
       "unbindsPending": "Scollegamenti di dispositivi in attesa del relay: {count}",
-      "unreachable": "Questo server è ancora registrato presso {host}, ma con le impostazioni attuali non riesce a raggiungerlo (è cambiato PUSH_RELAY_MODE o PUSH_RELAY_URL). Quel relay conserva i collegamenti dei dispositivi di questo server finché il server non lo lascia: ripristina l'impostazione, poi disattiva il relay qui.",
+      "unreachable": "Ancora registrato presso {host}, che l'impostazione attuale di PUSH_RELAY_MODE o PUSH_RELAY_URL non raggiunge: ripristinala, poi disattiva qui il relay.",
       "since": "dal {time}",
       "docs": "Scopri di più",
       "privacy": "Informativa sulla privacy",
       "terms": "Condizioni del relay",
-      "dialogTitle": "Offrire il relay push di HealthLog",
-      "dialogBody": "Il relay è gestito dal maintainer del progetto HealthLog. Ogni notifica viene cifrata su questo server per il suo dispositivo; il relay non può leggerla, ma vede che questo server invia qualcosa a un dispositivo, e quando. Anche i promemoria dei farmaci passano dal relay, verso ogni dispositivo che riceve i promemoria da questo server, quindi il relay e Apple possono vedere quando una dose è da assumere. Dopo l'attivazione, ogni persona su questo server vede una volta un'offerta nella propria app e decide da sé. Il relay è per uso privato e familiare e non è un servizio medico.",
-      "acceptTerms": "Accetto le condizioni del relay.",
-      "readPrivacy": "Ho letto l’informativa sulla privacy del relay.",
+      "dialogTitle": "Attivare il relay push di HealthLog",
+      "acceptTerms": "Accetto le {terms}.",
+      "readPrivacy": "Ho letto l’{privacy}.",
       "householdOnly": "Gestisco questo server privatamente per me o la mia famiglia.",
       "enable": "Attiva",
       "cancel": "Annulla",
-      "disableTitle": "Disattivare il relay?",
-      "disableBody": "Questo server esce dal relay. I dispositivi collegati tramite esso non ricevono più notifiche dal relay e le app tornano da sole ai promemoria locali.",
+      "disableTitle": "Disattivare il relay push di HealthLog?",
+      "disableBody": "I dispositivi collegati non ricevono più notifiche dal relay e tornano ai promemoria locali.",
       "disable": "Disattiva",
-      "enabled": "Il relay push è attivo",
-      "disabled": "Il relay push è disattivato",
+      "enabled": "Il relay push di HealthLog è attivo",
+      "disabled": "Il relay push di HealthLog è disattivato",
       "saveFailed": "Non è stato possibile salvare l'impostazione del relay",
       "reconfirm": {
-        "notice": "Il testo del relay è cambiato da quando questo server lo ha attivato. Leggilo e confermalo una volta. Nel frattempo il relay continua a funzionare.",
+        "notice": "Le condizioni del relay sono cambiate; il relay continua a funzionare finché non le confermi.",
         "button": "Leggi e conferma",
-        "title": "Conferma il testo aggiornato del relay",
+        "title": "Conferma le condizioni aggiornate del relay",
         "confirm": "Conferma",
-        "done": "Il testo aggiornato del relay è confermato"
+        "done": "Condizioni aggiornate del relay confermate"
       },
       "loadError": "Impossibile leggere lo stato del relay push.",
       "state": {
         "ok": "Connesso",
         "degraded": "Disturbato",
         "down": "Non raggiungibile",
-        "off": "Disattivato"
+        "off": "Disattivato",
+        "ownApnsKey": "Chiave APNs propria",
+        "unavailable": "Non disponibile"
       },
       "unavailable": {
         "modeOff": "Il relay è disattivato per questo server (PUSH_RELAY_MODE=off).",
@@ -9621,8 +9617,8 @@
         "keysUnpinned": "Nessuna chiave è fissata per questo relay, quindi le sue risposte non possono essere verificate. Imposta PUSH_RELAY_KEYS."
       },
       "question": {
-        "title": "Inviare le notifiche push tramite il relay di HealthLog?",
-        "body": "L'app HealthLog dell'App Store riceve le notifiche di un server senza una propria chiave push Apple tramite il relay del progetto HealthLog. Il contenuto viene cifrato qui per ogni dispositivo e il relay non può leggerlo; vede quando questo server invia qualcosa a un dispositivo. La tua risposta vale per tutto il server, e ogni persona decide comunque nella propria app.",
+        "title": "Usare il relay push di HealthLog?",
+        "body": "Notifiche per l'app dell'App Store, crittografate end-to-end: il relay vede solo quando ne viene inviata una.",
         "yes": "Sì",
         "no": "No",
         "declined": "Il relay resta disattivato. Puoi attivarlo più tardi in Push e canali."
@@ -9630,7 +9626,7 @@
       "test": {
         "button": "Invia push di prova",
         "failed": "Non è stato possibile inviare il push di prova",
-        "noDevice": "Nessuno dei tuoi dispositivi è collegato al relay. Attiva prima il relay nell'app HealthLog sul tuo iPhone.",
+        "noDevice": "Nessuno dei tuoi dispositivi usa ancora il relay; attivalo prima nell'app HealthLog sul tuo iPhone.",
         "line": "{device}: il relay ha risposto {answer}, consegna {delivery}",
         "unsigned": "niente di firmato (non raggiungibile o non verificato)"
       },
@@ -9639,34 +9635,35 @@
         "done": "La chiave del relay è stata rinnovata",
         "failed": "Non è stato possibile rinnovare ora la chiave del relay; il relay consente un rinnovo al giorno",
         "confirmTitle": "Rinnovare ora la chiave del relay?",
-        "confirmBody": "Questo server sostituisce subito la chiave con cui firma le richieste al relay, invece di attendere il ciclo di 30 giorni. Il relay consente un rinnovo al giorno."
+        "confirmBody": "Sostituisce la chiave con cui questo server firma le richieste al relay; il relay consente una rotazione al giorno."
       },
       "invite": {
-        "label": "Codice di invito (facoltativo)",
-        "hint": "Serve solo finché il relay accetta nuovi server soltanto su invito. Il codice ha 24 caratteri e vale una volta.",
+        "label": "Codice di invito",
+        "hint": "Solo per un relay su invito: 24 caratteri, valido una volta.",
         "invalid": "Un codice di invito ha esattamente 24 caratteri: lettere, cifre, - o _.",
-        "enter": "Inserisci codice di invito"
+        "enter": "Inserisci codice di invito",
+        "reveal": "Ho un codice di invito"
       },
       "reason": {
-        "inviteRequired": "Questo relay accetta nuovi server solo su invito. Inserisci un codice di invito.",
-        "inviteRejected": "Il relay non ha accettato questo codice di invito. Potrebbe essere scaduto o già usato. Chiedine uno nuovo e inseriscilo.",
-        "registrationPaused": "Il relay al momento non accetta nuovi server. Questo server riproverà più tardi da solo."
+        "inviteRequired": "Questo relay accetta nuovi server solo su invito: inserisci un codice di invito.",
+        "inviteRejected": "Il relay ha rifiutato questo codice di invito; forse è già stato usato o è scaduto.",
+        "registrationPaused": "Il relay al momento non accetta nuovi server; questo server riprova da solo."
       },
       "usage": {
         "accepted": "Accettati",
         "pending": "In attesa",
         "dropped": "Scartati",
         "failed": "Non riusciti",
-        "window": "Notifiche push che questo server ha passato al relay {days, plural, =1 {nell'ultimo giorno} other {negli ultimi # giorni}}.",
+        "window": "{days, plural, =1 {Ultimo giorno} other {Ultimi # giorni}}",
         "lastSuccess": "Ultimo recapito {time}.",
         "lastFailure": "Ultimo errore {time}: {reason}.",
         "noReason": "motivo non indicato"
       },
       "stateReason": {
-        "badSignature": "Il relay non accetta la firma di questo server, quindi non gli arriva nessun push. Disattiva e riattiva il relay qui per registrare di nuovo questo server.",
-        "relayDegraded": "Il relay segnala un disservizio da parte sua. I push restano in attesa e partono appena si è ripreso.",
-        "relayMaintenance": "Il relay è in manutenzione. I push restano in attesa e partono appena torna disponibile.",
-        "relayMisconfigured": "Il relay segnala che Apple al momento non accetta la sua chiave push. I push restano in attesa finché chi gestisce il relay non risolve."
+        "badSignature": "Il relay non accetta la firma di questo server: disattiva e riattiva il relay per registrarlo di nuovo.",
+        "relayDegraded": "Il relay segnala un disservizio; le notifiche attendono e partono appena si riprende.",
+        "relayMaintenance": "Il relay è in manutenzione; le notifiche attendono il suo ritorno.",
+        "relayMisconfigured": "Apple al momento non accetta la chiave push del relay; le notifiche attendono che il suo gestore risolva il problema."
       },
       "notice": "Avviso del relay ({level}): {id}",
       "noticeLevel": {
@@ -9695,7 +9692,10 @@
         "seconds": "{value} s",
         "empty": "Nessuna notifica push {hours, plural, =1 {nell'ultima ora} other {nelle ultime # ore}}",
         "helper": "Dall'inserimento in coda su questo server alla risposta del relay. Il relay risponde quando Apple ha accettato la notifica."
-      }
+      },
+      "termsLink": "condizioni del relay",
+      "privacyLink": "informativa sulla privacy del relay",
+      "deliverySummary": "Dettagli di consegna"
     },
     "serverSetup": {
       "stepsLabel": "Passaggi della configurazione del server",
@@ -9709,7 +9709,7 @@
       },
       "notice": {
         "title": "Configura questo server",
-        "body": "Cinque brevi passaggi per le decisioni che solo tu puoi prendere qui: chi può registrarsi, come le notifiche lasciano il server, cosa può fare l'IA e cos'altro esce. Ogni passaggio si può saltare e cambiare in seguito.",
+        "body": "Cinque brevi passaggi su registrazioni, notifiche, IA e privacy; puoi saltarli o cambiarli più tardi.",
         "open": "Inizia la configurazione",
         "dismiss": "Non ora"
       },
@@ -9721,7 +9721,7 @@
       },
       "notifications": {
         "title": "Come le notifiche lasciano il server",
-        "body": "Scegli quali canali possono usare le persone. Il relay push per l'app dell'App Store resta spento finché non lo attivi."
+        "body": "Scegli quali canali si possono usare; il relay push di HealthLog resta spento finché non lo attivi."
       },
       "ai": {
         "title": "Cosa può fare l'IA",

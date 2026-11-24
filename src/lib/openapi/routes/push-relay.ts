@@ -106,7 +106,7 @@ export const relayCapabilityBlock = z
         "The consent text version the card shows; sent back as `relayConsent.textVersion`.",
       ),
     operatorDecision: operatorDecisionSchema.describe(
-      'The operator\'s one answer, for the whole server, to "Send push notifications through the HealthLog relay?". `on` once the registration at the relay succeeded; `off` when an admin said no or switched the relay off, and also when there is nothing to decide (`available: false`, or the server has an APNs key of its own, which the relay would never be used beside); `undecided` otherwise. Ask each person about the relay only while it is `on`.',
+      'The operator\'s one answer, for the whole server, to "Use the HealthLog push relay?". `on` once the registration at the relay succeeded; `off` when an admin said no or switched the relay off, and also when there is nothing to decide (`available: false`, or the server has an APNs key of its own, which the relay would never be used beside); `undecided` otherwise. Ask each person about the relay only while it is `on`.',
     ),
     canDecide: z
       .boolean()
@@ -350,6 +350,11 @@ const adminRelayStatus = z
       .describe(
         "This server has an APNs key of its own (`APNS_*`) and uses it: every push goes directly to Apple, and the relay is not used while the key is set, whatever the switch says. Removing the `APNS_*` variables is what lets pushes go over the relay.",
       ),
+    summaryState: z
+      .enum(["own_apns_key", "unavailable", "ok", "degraded", "down", "off"])
+      .describe(
+        "The one state the admin card shows, resolved on the server: `own_apns_key` while an APNs key of this server's own is in use, `unavailable` when the relay cannot be used here and this server never joined it, otherwise `state`.",
+      ),
     operatorDecision: operatorDecisionSchema.describe(
       "As `push.relay.operatorDecision` of `/api/auth/me`: the relay question is open while it is `undecided`.",
     ),
@@ -424,7 +429,7 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Admin"],
       summary: "Answer the relay question for the whole server",
       description:
-        "The admin's answer to \"Send push notifications through the HealthLog relay?\", only while `operatorDecision` is `undecided` (409 `admin.pushRelay.decisionNotOpen` otherwise; the switch under `PUT /api/admin/push-relay` changes it later). `enabled: false` sets `off`, and nobody is asked again; an unfinished registration goes with it. `enabled: true` takes the switch's confirmations and invite code and turns the relay on through the same path; `operatorDecision` becomes `on` only once the registration succeeded, and a refusal leaves the question open with its `reason`. Admin-only and cookie-only: a Bearer token never reaches it, so a native client opens the web admin page (`/admin`) instead. Audit-logged (`admin.push_relay.declined`, `admin.push_relay.enabled`), rate limited with the switch (10 per 15 minutes, 429 `admin.pushRelay.rateLimited`).",
+        "The admin's answer to \"Use the HealthLog push relay?\", only while `operatorDecision` is `undecided` (409 `admin.pushRelay.decisionNotOpen` otherwise; the switch under `PUT /api/admin/push-relay` changes it later). `enabled: false` sets `off`, and nobody is asked again; an unfinished registration goes with it. `enabled: true` takes the switch's confirmations and invite code and turns the relay on through the same path; `operatorDecision` becomes `on` only once the registration succeeded, and a refusal leaves the question open with its `reason`. Admin-only and cookie-only: a Bearer token never reaches it, so a native client opens the web admin page (`/admin`) instead. Audit-logged (`admin.push_relay.declined`, `admin.push_relay.enabled`), rate limited with the switch (10 per 15 minutes, 429 `admin.pushRelay.rateLimited`).",
       requestBody: {
         required: true,
         content: { "application/json": { schema: adminRelaySwitchBody } },

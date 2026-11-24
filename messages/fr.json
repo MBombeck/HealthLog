@@ -9561,8 +9561,7 @@
     "auditActedByColumn": "Effectué par",
     "pushRelay": {
       "title": "Relais push HealthLog",
-      "description": "Permet à l'app de l'App Store de recevoir les notifications de ce serveur via le relais du projet HealthLog.",
-      "whatItSees": "Chaque notification est chiffrée sur ce serveur pour l'appareil destinataire, le relais ne peut donc pas la lire. Il voit quand ce serveur envoie quelque chose à un appareil.",
+      "description": "Des notifications chiffrées de bout en bout pour l'app de l'App Store ; chaque personne décide sur son propre appareil.",
       "seesSummary": "Ce que voit le relais",
       "seesHeading": "Le relais voit",
       "seesWhen": "que ce serveur envoie quelque chose à un appareil, quand, et de quel type : une alerte, une synchronisation silencieuse ou la fin d’une activité en direct",
@@ -9572,48 +9571,45 @@
       "notSeesHeading": "Il ne voit pas",
       "notSeesContent": "ce que dit une notification : noms de médicaments, doses, mesures, notes, noms de compte ou quoi que ce soit d’autre qu’elle contient",
       "seesTiming": "Le moment peut tout de même révéler quelque chose. Un rappel de médicament via le relais montre au relais et à Apple quand une dose est à prendre, et si vous enregistrez une dose sur un appareil et qu’un autre de vos appareils reçoit la confirmation, ils voient que quelque chose s’est passé à cet instant.",
-      "seesSource": "L’avis de confidentialité complet du relais",
-      "toggleLabel": "Proposer le relais push HealthLog aux utilisateurs de ce serveur",
-      "toggleDescription": "Désactivé tant que vous ne l'activez pas. Ensuite, chaque personne décide dans sa propre app.",
-      "toggleDescriptionOn": "Activé. Chaque personne décide dans sa propre app si ses appareils l’utilisent.",
+      "toggleLabel": "Proposer aux utilisateurs de ce serveur",
       "ownApns": {
-        "inUse": "Ce serveur dispose de sa propre clé push Apple (APNs) et l’utilise. Chaque notification part directement chez Apple : le relais n’est pas utilisé tant que la clé est définie.",
-        "useRelay": "Pour passer par le relais, supprimez les variables APNS_* de l’environnement du serveur et redémarrez-le. L’interrupteur du relais apparaît alors ici.",
-        "toggleDescription": "Toujours inscrit auprès du relais, qui ne reçoit rien tant que la clé est définie. Désactivez-le pour quitter le relais."
+        "inUse": "Les notifications push partent directement chez Apple avec la clé APNs propre à ce serveur ; supprimez les variables APNS_* pour utiliser le relais.",
+        "registered": "Les notifications push partent directement chez Apple avec la clé APNs propre à ce serveur ; le relais ne transporte donc rien."
       },
       "devices": "{count, plural, one {# appareil lié} other {# appareils liés}}",
       "unbindsPending": "Désinscriptions d’appareils en attente du relais : {count}",
-      "unreachable": "Ce serveur est encore inscrit auprès de {host}, mais ses réglages actuels ne lui permettent plus de l’atteindre (PUSH_RELAY_MODE ou PUSH_RELAY_URL a changé). Ce relais garde les liaisons d’appareils de ce serveur jusqu’à ce que le serveur le quitte : remettez le réglage d’avant, puis désactivez le relais ici.",
+      "unreachable": "Toujours inscrit auprès de {host}, que le réglage actuel de PUSH_RELAY_MODE ou PUSH_RELAY_URL n'atteint pas : rétablissez-le, puis désactivez le relais ici.",
       "since": "depuis {time}",
       "docs": "En savoir plus",
       "privacy": "Avis de confidentialité",
       "terms": "Conditions du relais",
-      "dialogTitle": "Proposer le relais push HealthLog",
-      "dialogBody": "Le relais est exploité par le mainteneur du projet HealthLog. Chaque notification est chiffrée sur ce serveur pour son appareil ; le relais ne peut pas la lire, mais il voit que ce serveur envoie quelque chose à un appareil, et quand. Les rappels de médicament passent aussi par le relais, vers chaque appareil qui reçoit ses rappels de ce serveur : le relais et Apple peuvent donc voir quand une dose est à prendre. Une fois activé, chaque personne de ce serveur voit une fois une proposition dans son app et décide elle-même. Le relais est destiné à un usage privé et familial et n'est pas un service médical.",
-      "acceptTerms": "J’accepte les conditions du relais.",
-      "readPrivacy": "J’ai lu l’avis de confidentialité du relais.",
+      "dialogTitle": "Activer le relais push HealthLog",
+      "acceptTerms": "J’accepte les {terms}.",
+      "readPrivacy": "J’ai lu l’{privacy}.",
       "householdOnly": "J'exploite ce serveur à titre privé, pour moi ou mon foyer.",
       "enable": "Activer",
       "cancel": "Annuler",
-      "disableTitle": "Désactiver le relais ?",
-      "disableBody": "Ce serveur quitte le relais. Les appareils liés par son intermédiaire ne reçoivent plus de notifications du relais, et les apps repassent d'elles-mêmes aux rappels locaux.",
+      "disableTitle": "Désactiver le relais push HealthLog ?",
+      "disableBody": "Les appareils liés ne reçoivent plus de notifications du relais et repassent aux rappels locaux.",
       "disable": "Désactiver",
-      "enabled": "Le relais push est activé",
-      "disabled": "Le relais push est désactivé",
+      "enabled": "Le relais push HealthLog est activé",
+      "disabled": "Le relais push HealthLog est désactivé",
       "saveFailed": "Le réglage du relais n'a pas pu être enregistré",
       "reconfirm": {
-        "notice": "Le texte du relais a changé depuis que ce serveur l’a activé. Lisez-le et confirmez-le une fois. En attendant, le relais continue de fonctionner.",
+        "notice": "Les conditions du relais ont changé ; le relais continue de fonctionner jusqu'à votre confirmation.",
         "button": "Lire et confirmer",
-        "title": "Confirmer le texte mis à jour du relais",
+        "title": "Confirmer les conditions mises à jour du relais",
         "confirm": "Confirmer",
-        "done": "Le texte mis à jour du relais est confirmé"
+        "done": "Conditions mises à jour du relais confirmées"
       },
       "loadError": "Impossible de lire l'état du relais push.",
       "state": {
         "ok": "Connecté",
         "degraded": "Perturbé",
         "down": "Injoignable",
-        "off": "Désactivé"
+        "off": "Désactivé",
+        "ownApnsKey": "Clé APNs propre",
+        "unavailable": "Indisponible"
       },
       "unavailable": {
         "modeOff": "Le relais est désactivé pour ce serveur (PUSH_RELAY_MODE=off).",
@@ -9621,8 +9617,8 @@
         "keysUnpinned": "Aucune clé n'est épinglée pour ce relais, ses réponses ne peuvent donc pas être vérifiées. Définissez PUSH_RELAY_KEYS."
       },
       "question": {
-        "title": "Envoyer les notifications push via le relais HealthLog ?",
-        "body": "L'app HealthLog de l'App Store reçoit les notifications d'un serveur sans clé push Apple propre via le relais du projet HealthLog. Le contenu est chiffré ici pour chaque appareil et le relais ne peut pas le lire ; il voit quand ce serveur envoie quelque chose à un appareil. Votre réponse vaut pour tout le serveur, et chaque personne décide toujours dans sa propre app.",
+        "title": "Utiliser le relais push HealthLog ?",
+        "body": "Des notifications pour l'app de l'App Store, chiffrées de bout en bout : le relais voit seulement quand l'une d'elles est envoyée.",
         "yes": "Oui",
         "no": "Non",
         "declined": "Le relais reste désactivé. Vous pourrez l'activer plus tard dans Push et canaux."
@@ -9630,7 +9626,7 @@
       "test": {
         "button": "Envoyer un push de test",
         "failed": "Le push de test n'a pas pu être envoyé",
-        "noDevice": "Aucun de vos appareils n'est lié au relais. Activez d'abord le relais dans l'app HealthLog sur votre iPhone.",
+        "noDevice": "Aucun de vos appareils n'utilise encore le relais ; activez-le d'abord dans l'app HealthLog de votre iPhone.",
         "line": "{device} : le relais a répondu {answer}, livraison {delivery}",
         "unsigned": "rien de signé (injoignable ou non vérifié)"
       },
@@ -9639,34 +9635,35 @@
         "done": "La clé du relais a été renouvelée",
         "failed": "La clé du relais n'a pas pu être renouvelée maintenant ; le relais permet un renouvellement par jour",
         "confirmTitle": "Renouveler la clé du relais maintenant ?",
-        "confirmBody": "Ce serveur remplace dès maintenant la clé avec laquelle il signe ses requêtes au relais, sans attendre son cycle de 30 jours. Le relais permet un renouvellement par jour."
+        "confirmBody": "Remplace la clé avec laquelle ce serveur signe ses requêtes au relais ; le relais autorise une rotation par jour."
       },
       "invite": {
-        "label": "Code d'invitation (facultatif)",
-        "hint": "Nécessaire uniquement tant que le relais n'accepte de nouveaux serveurs que sur invitation. Le code compte 24 caractères et ne sert qu'une fois.",
+        "label": "Code d'invitation",
+        "hint": "Uniquement pour un relais sur invitation : 24 caractères, valable une fois.",
         "invalid": "Un code d'invitation compte exactement 24 caractères : lettres, chiffres, - ou _.",
-        "enter": "Saisir un code d'invitation"
+        "enter": "Saisir un code d'invitation",
+        "reveal": "J'ai un code d'invitation"
       },
       "reason": {
-        "inviteRequired": "Ce relais n'accepte de nouveaux serveurs que sur invitation. Saisissez un code d'invitation.",
-        "inviteRejected": "Le relais n'a pas accepté ce code d'invitation. Il a peut-être expiré ou déjà été utilisé. Demandez-en un nouveau et saisissez-le.",
-        "registrationPaused": "Le relais n'accepte pas de nouveaux serveurs pour le moment. Ce serveur réessaiera plus tard de lui-même."
+        "inviteRequired": "Ce relais n'accepte de nouveaux serveurs que sur invitation : saisissez un code d'invitation.",
+        "inviteRejected": "Le relais a refusé ce code d'invitation ; il est peut-être déjà utilisé ou expiré.",
+        "registrationPaused": "Le relais n'accepte pas de nouveaux serveurs pour le moment ; ce serveur redemandera de lui-même."
       },
       "usage": {
         "accepted": "Acceptés",
         "pending": "En attente",
         "dropped": "Abandonnés",
         "failed": "Échoués",
-        "window": "Notifications push que ce serveur a confiées au relais {days, plural, =1 {au cours du dernier jour} other {ces # derniers jours}}.",
+        "window": "{days, plural, =1 {Dernier jour} other {# derniers jours}}",
         "lastSuccess": "Dernière livraison {time}.",
         "lastFailure": "Dernier échec {time} : {reason}.",
         "noReason": "sans motif"
       },
       "stateReason": {
-        "badSignature": "Le relais n'accepte pas la signature de ce serveur, aucun push ne lui parvient donc. Désactive puis réactive le relais ici pour réinscrire ce serveur.",
-        "relayDegraded": "Le relais signale une perturbation de son côté. Les pushes attendent et partent dès qu'il est rétabli.",
-        "relayMaintenance": "Le relais est en maintenance. Les pushes attendent et partent dès son retour.",
-        "relayMisconfigured": "Le relais signale qu'Apple n'accepte pas sa clé de push en ce moment. Les pushes attendent que l'exploitant du relais ait corrigé le problème."
+        "badSignature": "Le relais n'accepte pas la signature de ce serveur : désactivez puis réactivez le relais pour le réinscrire.",
+        "relayDegraded": "Le relais signale une perturbation ; les notifications attendent et partent dès son rétablissement.",
+        "relayMaintenance": "Le relais est en maintenance ; les notifications attendent son retour.",
+        "relayMisconfigured": "Apple refuse pour l'instant la clé push du relais ; les notifications attendent que son exploitant corrige le problème."
       },
       "notice": "Avis du relais ({level}) : {id}",
       "noticeLevel": {
@@ -9695,7 +9692,10 @@
         "seconds": "{value} s",
         "empty": "Aucune notification push {hours, plural, =1 {au cours de la dernière heure} other {au cours des # dernières heures}}",
         "helper": "De la mise en file d'attente sur ce serveur à la réponse du relais. Le relais répond une fois qu'Apple a accepté la notification."
-      }
+      },
+      "termsLink": "conditions du relais",
+      "privacyLink": "avis de confidentialité du relais",
+      "deliverySummary": "Détails de distribution"
     },
     "serverSetup": {
       "stepsLabel": "Étapes de configuration du serveur",
@@ -9709,7 +9709,7 @@
       },
       "notice": {
         "title": "Configurer ce serveur",
-        "body": "Cinq courtes étapes pour les décisions que vous seul pouvez prendre ici : qui peut s'inscrire, comment les notifications quittent le serveur, ce que l'IA peut faire et ce qui sort encore. Chaque étape peut être passée et modifiée plus tard.",
+        "body": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité ; chacune peut être ignorée ou modifiée plus tard.",
         "open": "Commencer la configuration",
         "dismiss": "Pas maintenant"
       },
@@ -9721,7 +9721,7 @@
       },
       "notifications": {
         "title": "Comment les notifications quittent le serveur",
-        "body": "Choisissez les canaux que les gens peuvent utiliser. Le relais push pour l'app de l'App Store reste désactivé tant que vous ne l'activez pas."
+        "body": "Choisissez les canaux autorisés ; le relais push HealthLog reste désactivé tant que vous ne l'activez pas."
       },
       "ai": {
         "title": "Ce que l'IA peut faire",

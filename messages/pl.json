@@ -9561,8 +9561,7 @@
     "auditActedByColumn": "Wykonane przez",
     "pushRelay": {
       "title": "Przekaźnik push HealthLog",
-      "description": "Pozwala aplikacji z App Store odbierać powiadomienia z tego serwera przez przekaźnik projektu HealthLog.",
-      "whatItSees": "Każde powiadomienie jest szyfrowane na tym serwerze dla urządzenia docelowego, więc przekaźnik nie może go odczytać. Widzi, kiedy ten serwer coś wysyła do urządzenia.",
+      "description": "Szyfrowane end-to-end powiadomienia dla aplikacji z App Store; każda osoba decyduje na własnym urządzeniu.",
       "seesSummary": "Co widzi przekaźnik",
       "seesHeading": "Przekaźnik widzi",
       "seesWhen": "że ten serwer coś wysyła do urządzenia, kiedy i jakiego rodzaju: alert, cichą synchronizację albo koniec aktywności na żywo",
@@ -9572,48 +9571,45 @@
       "notSeesHeading": "Nie widzi",
       "notSeesContent": "treści powiadomienia: nazw leków, dawek, pomiarów, notatek, nazw kont ani niczego innego, co zawiera",
       "seesTiming": "Sam moment może jednak coś zdradzić. Przypomnienie o leku przez przekaźnik pokazuje przekaźnikowi i Apple, kiedy dawka jest do przyjęcia, a gdy zapiszesz dawkę na jednym urządzeniu i inne Twoje urządzenie dostanie potwierdzenie, widzą, że w tej chwili coś się stało.",
-      "seesSource": "Pełna informacja o prywatności przekaźnika",
-      "toggleLabel": "Udostępnij przekaźnik push HealthLog użytkownikom tego serwera",
-      "toggleDescription": "Wyłączone, dopóki go nie włączysz. Potem każda osoba decyduje we własnej aplikacji.",
-      "toggleDescriptionOn": "Włączone. Każda osoba decyduje we własnej aplikacji, czy jej urządzenia z niego korzystają.",
+      "toggleLabel": "Udostępnij użytkownikom tego serwera",
       "ownApns": {
-        "inUse": "Ten serwer ma skonfigurowany własny klucz push Apple (APNs) i go używa. Każde powiadomienie trafia bezpośrednio do Apple, więc przekaźnik nie jest używany, dopóki klucz jest ustawiony.",
-        "useRelay": "Aby zamiast tego wysyłać powiadomienia przez przekaźnik, usuń zmienne APNS_* ze środowiska serwera i uruchom go ponownie. Wtedy pojawi się tu przełącznik przekaźnika.",
-        "toggleDescription": "Nadal zarejestrowany w przekaźniku, który nic nie dostaje, dopóki klucz jest ustawiony. Wyłącz, aby opuścić przekaźnik."
+        "inUse": "Powiadomienia push trafiają bezpośrednio do Apple z własnym kluczem APNs tego serwera; usuń zmienne APNS_*, aby korzystać z przekaźnika.",
+        "registered": "Powiadomienia push trafiają bezpośrednio do Apple z własnym kluczem APNs tego serwera, więc przekaźnik niczego nie przenosi."
       },
       "devices": "{count, plural, one {# powiązane urządzenie} few {# powiązane urządzenia} many {# powiązanych urządzeń} other {# powiązanego urządzenia}}",
       "unbindsPending": "Odłączenia urządzeń czekające na przekaźnik: {count}",
-      "unreachable": "Ten serwer jest nadal zarejestrowany w {host}, ale przy obecnych ustawieniach nie może się z nim połączyć (zmieniono PUSH_RELAY_MODE lub PUSH_RELAY_URL). Ten przekaźnik przechowuje powiązania urządzeń tego serwera, dopóki serwer się z niego nie wypisze: przywróć ustawienie, a potem wyłącz przekaźnik tutaj.",
+      "unreachable": "Nadal zarejestrowany w {host}, którego obecne ustawienie PUSH_RELAY_MODE lub PUSH_RELAY_URL nie osiąga: przywróć je, a potem wyłącz tutaj przekaźnik.",
       "since": "od {time}",
       "docs": "Dowiedz się więcej",
       "privacy": "Informacja o prywatności",
       "terms": "Warunki przekaźnika",
-      "dialogTitle": "Udostępnij przekaźnik push HealthLog",
-      "dialogBody": "Przekaźnik prowadzi opiekun projektu HealthLog. Każde powiadomienie jest szyfrowane na tym serwerze dla swojego urządzenia; przekaźnik nie może go odczytać, ale widzi, że ten serwer coś wysyła do urządzenia, i kiedy. Przez przekaźnik idą też przypomnienia o lekach, do każdego urządzenia, które dostaje przypomnienia z tego serwera, więc przekaźnik i Apple widzą, kiedy dawka jest do przyjęcia. Po włączeniu każda osoba na tym serwerze raz zobaczy propozycję w swojej aplikacji i sama zdecyduje. Przekaźnik służy do użytku prywatnego i domowego i nie jest usługą medyczną.",
-      "acceptTerms": "Akceptuję warunki przekaźnika.",
-      "readPrivacy": "Zapoznałem(-am) się z informacją o prywatności przekaźnika.",
+      "dialogTitle": "Włącz przekaźnik push HealthLog",
+      "acceptTerms": "Akceptuję {terms}.",
+      "readPrivacy": "Zapoznałem(-am) się z {privacy}.",
       "householdOnly": "Prowadzę ten serwer prywatnie dla siebie lub mojego gospodarstwa domowego.",
       "enable": "Włącz",
       "cancel": "Anuluj",
-      "disableTitle": "Wyłączyć przekaźnik?",
-      "disableBody": "Ten serwer wyrejestruje się z przekaźnika. Powiązane przez niego urządzenia przestaną dostawać powiadomienia z przekaźnika, a aplikacje same wrócą do lokalnych przypomnień.",
+      "disableTitle": "Wyłączyć przekaźnik push HealthLog?",
+      "disableBody": "Powiązane urządzenia przestają dostawać powiadomienia z przekaźnika i wracają do lokalnych przypomnień.",
       "disable": "Wyłącz",
-      "enabled": "Przekaźnik push jest włączony",
-      "disabled": "Przekaźnik push jest wyłączony",
+      "enabled": "Przekaźnik push HealthLog jest włączony",
+      "disabled": "Przekaźnik push HealthLog jest wyłączony",
       "saveFailed": "Nie udało się zapisać ustawienia przekaźnika",
       "reconfirm": {
-        "notice": "Tekst przekaźnika zmienił się od czasu, gdy ten serwer go włączył. Przeczytaj go i potwierdź jeden raz. Do tego czasu przekaźnik działa dalej.",
+        "notice": "Warunki przekaźnika się zmieniły; przekaźnik działa dalej, dopóki ich nie potwierdzisz.",
         "button": "Przeczytaj i potwierdź",
-        "title": "Potwierdź zaktualizowany tekst przekaźnika",
+        "title": "Potwierdź zmienione warunki przekaźnika",
         "confirm": "Potwierdź",
-        "done": "Zaktualizowany tekst przekaźnika jest potwierdzony"
+        "done": "Zmienione warunki przekaźnika potwierdzone"
       },
       "loadError": "Nie udało się odczytać stanu przekaźnika push.",
       "state": {
         "ok": "Połączono",
         "degraded": "Zakłócony",
         "down": "Niedostępny",
-        "off": "Wyłączony"
+        "off": "Wyłączony",
+        "ownApnsKey": "Własny klucz APNs",
+        "unavailable": "Nie do użycia"
       },
       "unavailable": {
         "modeOff": "Przekaźnik jest wyłączony dla tego serwera (PUSH_RELAY_MODE=off).",
@@ -9621,8 +9617,8 @@
         "keysUnpinned": "Dla tego przekaźnika nie przypięto kluczy, więc nie można sprawdzić jego odpowiedzi. Ustaw PUSH_RELAY_KEYS."
       },
       "question": {
-        "title": "Wysyłać powiadomienia push przez przekaźnik HealthLog?",
-        "body": "Aplikacja HealthLog z App Store dostaje powiadomienia z serwera bez własnego klucza push Apple przez przekaźnik projektu HealthLog. Treść jest tu szyfrowana dla każdego urządzenia i przekaźnik nie może jej odczytać; widzi, kiedy ten serwer coś wysyła do urządzenia. Twoja odpowiedź obowiązuje dla całego serwera, a każda osoba i tak decyduje we własnej aplikacji.",
+        "title": "Korzystać z przekaźnika push HealthLog?",
+        "body": "Powiadomienia dla aplikacji z App Store, szyfrowane end-to-end: przekaźnik widzi tylko, kiedy jakieś zostaje wysłane.",
         "yes": "Tak",
         "no": "Nie",
         "declined": "Przekaźnik pozostaje wyłączony. Możesz go włączyć później w sekcji Push i kanały."
@@ -9630,7 +9626,7 @@
       "test": {
         "button": "Wyślij testowy push",
         "failed": "Nie udało się wysłać testowego pusha",
-        "noDevice": "Żadne z twoich urządzeń nie jest powiązane z przekaźnikiem. Najpierw włącz przekaźnik w aplikacji HealthLog na iPhonie.",
+        "noDevice": "Żadne z twoich urządzeń nie korzysta jeszcze z przekaźnika; najpierw włącz go w aplikacji HealthLog na iPhonie.",
         "line": "{device}: przekaźnik odpowiedział {answer}, dostarczenie {delivery}",
         "unsigned": "nic podpisanego (niedostępny lub niezweryfikowany)"
       },
@@ -9639,34 +9635,35 @@
         "done": "Klucz przekaźnika został odnowiony",
         "failed": "Nie udało się teraz odnowić klucza przekaźnika; przekaźnik pozwala na jedno odnowienie dziennie",
         "confirmTitle": "Odnowić teraz klucz przekaźnika?",
-        "confirmBody": "Ten serwer od razu wymieni klucz, którym podpisuje żądania do przekaźnika, zamiast czekać na swój 30-dniowy cykl. Przekaźnik pozwala na jedno odnowienie dziennie."
+        "confirmBody": "Zastępuje klucz, którym ten serwer podpisuje żądania do przekaźnika; przekaźnik pozwala na jedną rotację dziennie."
       },
       "invite": {
-        "label": "Kod zaproszenia (opcjonalnie)",
-        "hint": "Potrzebny tylko wtedy, gdy przekaźnik przyjmuje nowe serwery wyłącznie na zaproszenie. Kod ma 24 znaki i działa jeden raz.",
+        "label": "Kod zaproszenia",
+        "hint": "Tylko dla przekaźnika na zaproszenie: 24 znaki, ważny raz.",
         "invalid": "Kod zaproszenia ma dokładnie 24 znaki: litery, cyfry, - lub _.",
-        "enter": "Wpisz kod zaproszenia"
+        "enter": "Wpisz kod zaproszenia",
+        "reveal": "Mam kod zaproszenia"
       },
       "reason": {
-        "inviteRequired": "Ten przekaźnik przyjmuje nowe serwery tylko na zaproszenie. Wpisz kod zaproszenia.",
-        "inviteRejected": "Przekaźnik nie przyjął tego kodu zaproszenia. Mógł wygasnąć albo został już użyty. Poproś o nowy i wpisz go.",
-        "registrationPaused": "Przekaźnik nie przyjmuje teraz nowych serwerów. Ten serwer sam spróbuje ponownie później."
+        "inviteRequired": "Ten przekaźnik przyjmuje nowe serwery tylko na zaproszenie: wpisz kod zaproszenia.",
+        "inviteRejected": "Przekaźnik odrzucił ten kod zaproszenia; mógł już zostać użyty lub wygasnąć.",
+        "registrationPaused": "Przekaźnik nie przyjmuje teraz nowych serwerów; ten serwer sam zapyta ponownie."
       },
       "usage": {
         "accepted": "Przyjęte",
         "pending": "Oczekujące",
         "dropped": "Odrzucone",
         "failed": "Nieudane",
-        "window": "Powiadomienia push przekazane przez ten serwer do przekaźnika w ciągu {days, plural, one {ostatniego # dnia} few {ostatnich # dni} many {ostatnich # dni} other {ostatnich # dnia}}.",
+        "window": "{days, plural, one {Ostatni dzień} few {Ostatnie # dni} many {Ostatnie # dni} other {Ostatnie # dnia}}",
         "lastSuccess": "Ostatnio dostarczono {time}.",
         "lastFailure": "Ostatni błąd {time}: {reason}.",
         "noReason": "bez podanej przyczyny"
       },
       "stateReason": {
-        "badSignature": "Przekaźnik nie przyjmuje podpisu tego serwera, więc nie dociera do niego żaden push. Wyłącz tutaj przekaźnik i włącz go ponownie, aby zarejestrować ten serwer od nowa.",
-        "relayDegraded": "Przekaźnik zgłasza zakłócenie po swojej stronie. Pushe czekają i wyjdą, gdy wróci do normy.",
-        "relayMaintenance": "Przekaźnik jest w trakcie konserwacji. Pushe czekają i wyjdą, gdy wróci.",
-        "relayMisconfigured": "Przekaźnik zgłasza, że Apple nie przyjmuje teraz jego klucza push. Pushe czekają, aż operator przekaźnika to naprawi."
+        "badSignature": "Przekaźnik nie przyjmuje podpisu tego serwera: wyłącz i ponownie włącz przekaźnik, aby zarejestrować serwer od nowa.",
+        "relayDegraded": "Przekaźnik zgłasza zakłócenie; powiadomienia czekają i wyjdą, gdy wróci do normy.",
+        "relayMaintenance": "Przekaźnik jest w trakcie konserwacji; powiadomienia czekają na jego powrót.",
+        "relayMisconfigured": "Apple nie przyjmuje teraz klucza push przekaźnika; powiadomienia czekają, aż operator przekaźnika to naprawi."
       },
       "notice": "Komunikat przekaźnika ({level}): {id}",
       "noticeLevel": {
@@ -9695,7 +9692,10 @@
         "seconds": "{value} s",
         "empty": "Brak powiadomień push w ciągu {hours, plural, one {ostatniej # godziny} few {ostatnich # godzin} many {ostatnich # godzin} other {ostatnich # godziny}}",
         "helper": "Od dodania do kolejki na tym serwerze do odpowiedzi przekaźnika. Przekaźnik odpowiada, gdy Apple przyjmie powiadomienie."
-      }
+      },
+      "termsLink": "warunki przekaźnika",
+      "privacyLink": "informacją o prywatności przekaźnika",
+      "deliverySummary": "Szczegóły dostarczania"
     },
     "serverSetup": {
       "stepsLabel": "Kroki konfiguracji serwera",
@@ -9709,7 +9709,7 @@
       },
       "notice": {
         "title": "Skonfiguruj ten serwer",
-        "body": "Pięć krótkich kroków dla decyzji, które tylko ty możesz tu podjąć: kto może się rejestrować, jak powiadomienia opuszczają serwer, co wolno AI i co jeszcze wychodzi na zewnątrz. Każdy krok można pominąć i zmienić później.",
+        "body": "Pięć krótkich kroków o rejestracji, powiadomieniach, AI i prywatności; każdy możesz pominąć lub zmienić później.",
         "open": "Rozpocznij konfigurację",
         "dismiss": "Nie teraz"
       },
@@ -9721,7 +9721,7 @@
       },
       "notifications": {
         "title": "Jak powiadomienia opuszczają serwer",
-        "body": "Wybierz, z których kanałów mogą korzystać ludzie. Przekaźnik push dla aplikacji z App Store pozostaje wyłączony, dopóki go nie włączysz."
+        "body": "Wybierz, z których kanałów można korzystać; przekaźnik push HealthLog pozostaje wyłączony, dopóki go nie włączysz."
       },
       "ai": {
         "title": "Co wolno AI",

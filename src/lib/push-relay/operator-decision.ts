@@ -1,6 +1,6 @@
 /**
- * The operator's one answer to "Send push notifications through the HealthLog
- * relay?", for the whole server (`AppSettings.pushRelayDecision`).
+ * The operator's one answer to "Use the HealthLog push relay?", for the whole
+ * server (`AppSettings.pushRelayDecision`).
  *
  * The answer is not a second switch beside the relay's: it is written by the
  * same code that turns the relay on and off (`registration.ts`). `on` is

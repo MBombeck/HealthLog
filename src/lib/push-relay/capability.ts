@@ -16,7 +16,7 @@
  *   `liveActivityConsentTextVersion`, `termsUrl`, `privacyUrl`,
  *   `consentTextVersion`.
  * - `operatorDecision` (`undecided` | `on` | `off`): the operator's one answer
- *   to "Send push notifications through the HealthLog relay?"
+ *   to "Use the HealthLog push relay?"
  *   (`operator-decision.ts`); `canDecide`: the caller is an admin of a server
  *   whose relay is available, not a demo deploy. The answer is given on the web admin page
  *   (`/admin`): the routes that give it are cookie-only (`requireAdmin()`), so

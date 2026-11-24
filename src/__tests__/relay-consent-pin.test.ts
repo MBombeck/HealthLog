@@ -106,6 +106,13 @@ const PINS: ReadonlyArray<{
     covered:
       "A Live Activity start's outbox row keeps the dose it was for (`dose` on the item in `relay-send.ts`), stored on this server and never sent. No new kind, no new occasion, nothing more on the wire: the start the texts already name (`seesWhen`, a Live Activity start or update) now goes at most once per dose, where a start for another dose could make an earlier dose start twice.",
   },
+  {
+    version: "2026-11-22",
+    fingerprint:
+      "70ccb2966630eb10b7bf7399b7e0e7b56e9af39e6f34f32573b743b40d0edf80",
+    covered:
+      "The consent text got shorter, not different, and what the relay carries did not change. The paragraph above the dialog's checkboxes (`dialogBody`) and the card's second sentence (`whatItSees`) are gone; their facts stay where an admin reads them before saying yes: the question and the card say the content is end-to-end encrypted and the relay sees when something is sent (`question.body`, `description`), `seesWhen` and `seesTiming` (when a dose is due) stay word for word under What the relay sees on the card, and the dialog's three lines link the relay terms (household use, not a medical service) and the privacy notice the admin confirms having read. The fingerprint now holds the texts that remain.",
+  },
 ];
 
 /**
@@ -205,11 +212,17 @@ function fingerprint(): string {
     },
     outcomes: RECORDED_OUTCOMES,
     occasions: occasions(),
+    // What an admin reads before and while consenting: the card's sentence,
+    // the question, what the relay sees (with the timing), the three
+    // confirmations and what turning it off does.
     text: [
-      relay.whatItSees,
+      relay.description,
+      relay.question.body,
       relay.seesWhen,
       relay.seesTiming,
-      relay.dialogBody,
+      relay.acceptTerms,
+      relay.readPrivacy,
+      relay.householdOnly,
       relay.disableBody,
     ],
   };

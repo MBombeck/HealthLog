@@ -1,6 +1,6 @@
 /**
  * The relay question renders only for an admin of a server where it is open,
- * and offers its two answers with the same weight.
+ * as the shared decision card: yes is the primary answer, no the secondary.
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -43,19 +43,25 @@ function render(role: "ADMIN" | "USER", relay: Relay | null) {
 const OPEN: Relay = { operatorDecision: "undecided", canDecide: true };
 
 describe("<PushRelayQuestion>", () => {
-  it("asks an admin while the question is open, with two equal answers", () => {
+  it("asks an admin while the question is open: yes primary, no secondary", () => {
     const html = render("ADMIN", OPEN);
+    expect(html).toContain("Use the HealthLog push relay?");
+    expect(html).toContain('data-slot="push-relay-question"');
+    // One sentence, and the details behind one link to the docs.
+    expect(html).toContain("the relay only sees when one is sent.");
     expect(html).toContain(
-      "Send push notifications through the HealthLog relay?",
+      'href="https://docs.healthlog.dev/guides/push-relay/"',
     );
     const buttons = [
       ...html.matchAll(
         /<button[^>]*data-slot="push-relay-question-(yes|no)"[^>]*>/g,
       ),
     ];
-    expect(buttons.map((m) => m[1]).sort()).toEqual(["no", "yes"]);
-    const classOf = (tag: string) => /class="([^"]*)"/.exec(tag)?.[1];
-    expect(classOf(buttons[0][0])).toBe(classOf(buttons[1][0]));
+    // No first, yes last: the primary action stands on the right.
+    expect(buttons.map((m) => m[1])).toEqual(["no", "yes"]);
+    const variantOf = (tag: string) => /data-variant="([^"]*)"/.exec(tag)?.[1];
+    expect(variantOf(buttons[0][0])).toBe("outline");
+    expect(variantOf(buttons[1][0])).toBe("default");
     // No way to put it away without answering.
     expect(html).not.toMatch(/dismiss|Got it|Not now/i);
   });

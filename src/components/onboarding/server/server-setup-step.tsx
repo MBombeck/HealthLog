@@ -188,7 +188,7 @@ function StepBody({
           {facts ? <FactsCard step="notifications" facts={facts} /> : null}
           <ServicesSection />
           <PushRelayQuestion />
-          <PushRelaySection />
+          <PushRelaySection besideQuestion />
         </>
       );
     case "ai":

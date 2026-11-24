@@ -66,28 +66,32 @@ a sender key it pinned from your server.
 
 The relay is off until an admin turns it on, and the server asks once.
 
-1. After the update an admin is asked, once for the whole server: **Send push
-   notifications through the HealthLog relay?** The question sits where an
+1. After the update an admin is asked, once for the whole server: **Use the
+   HealthLog push relay?** The question sits where an
    admin lands: on the dashboard after signing in, on the admin start page,
    and in the server setup's notifications step. It goes away only by an
    answer. **No** keeps the relay off, and nobody on this server is asked
    again. **Yes** opens the dialog of step 2.
-2. The dialog asks for three confirmations, each with its own checkbox: that
-   you accept the relay terms, that you have read its privacy notice, and that
-   you run this server privately for yourself or your household. The hosted
-   relay is for private and household use only and is not a medical service.
-   A relay that takes new servers by invitation only also needs its code
-   (below). The same dialog opens from the switch **Offer the HealthLog push
-   relay to this server's users** in **Admin > Push and channels**, which is
-   also where you change your answer later; the card there lists what the
-   relay sees and what it does not under **What the relay sees**, with a link
-   to the full privacy notice.
+2. The dialog asks for three confirmations, each with its own checkbox and
+   each linking its document: that you accept the relay terms, that you have
+   read its privacy notice, and that you run this server privately for
+   yourself or your household. The hosted relay is for private and household
+   use only and is not a medical service. A relay that takes new servers by
+   invitation only also needs its code (below). The same dialog opens from
+   the switch **Offer to this server's users** on the **HealthLog push relay**
+   card in **Admin > Push and channels**, which is also where you change your
+   answer later; the card lists what the relay sees and what it does not
+   under **What the relay sees**, with links to the full privacy notice and
+   the terms.
 3. Your server creates its instance key, stores it encrypted, and registers
    with the relay. The answer counts as yes only once that registration
    succeeded: a refused one (a missing or used invite code, a relay that
    is not taking new servers) leaves the question open with the reason, and
-   you can answer yes again. The card then shows the relay's state and how
-   many devices are bound.
+   you can answer yes again. The card then shows the relay's state as a pill
+   (Connected, Disrupted, Not reachable, Off, Own APNs key or Unavailable)
+   and how many devices are bound; what this server handed the relay lately,
+   the hand-off time and the relay's last status check sit under **Delivery
+   details**.
 4. Each person sees a card in the iOS app once and decides for themselves.
    This needs the iOS app 1.7 or later; an older build keeps its local
    reminders.
@@ -97,7 +101,7 @@ The relay is off until an admin turns it on, and the server asks once.
 
 When the relay's text changes in an update, as it did in 1.49.0 when
 medication reminders began to go over the relay, the card asks every admin to
-read the new text and confirm it once (**Read and confirm**). The relay keeps
+read the new text and confirm it once (**Review and confirm**). The relay keeps
 running until then, and confirming changes nothing at the relay. The version
 of the consent text people see in the app (`push.relay.consentTextVersion` on
 `/api/auth/me`) moves with it, so the app can show its card again; the server
@@ -130,18 +134,18 @@ run your own relay, `healthlog-push admin invite` prints one. A code has 24
 characters (letters, digits, `-` and `_`), is valid for 7 days and registers
 exactly one server.
 
-Enter the code in the **Invite code (optional)** field of the dialog when you switch the
-relay on. Without a code the field stays empty and nothing changes for a relay
+Enter the code in the dialog when you switch the relay on: **I have an invite
+code** opens the field, and after an invite refusal it is open already. Without a code the field stays empty and nothing changes for a relay
 that accepts everyone. The code is sent with that one registration and is
 never stored or logged on your server; the relay spends it only when the
 registration succeeds.
 
 If the relay refuses, the card says why within the same click:
 
-- **This relay accepts new servers by invitation only.** No code was entered.
-  Use **Enter invite code** on the card and try again.
-- **The relay did not accept this invite code.** The code is unknown, expired
-  or already used. Ask for a new one.
+- **This relay is invite-only.** No code was entered. Use **Enter invite
+  code** on the card and try again.
+- **The relay refused this invite code.** The code is unknown, expired or
+  already used. Ask for a new one.
 - **The relay is not taking new servers right now.** Registration is paused at
   the relay. Your server asks again on its own once the relay's pause is over.
 

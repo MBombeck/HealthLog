@@ -1,14 +1,15 @@
 /**
  * What the relay itself says, on the relay card: the reason of a state the
- * admin can read, the relay's notice, and the hourly status check with this
- * instance's bindings at the relay.
+ * admin can read and the relay's notice in view (`PushRelayAlerts`), and the
+ * hourly status check with this instance's bindings at the relay among the
+ * delivery details (`PushRelayCheckLine`).
  */
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import deMessages from "../../../../messages/de.json";
 import { I18nProvider } from "@/lib/i18n/context";
-import { PushRelayCheck } from "../push-relay-check";
+import { PushRelayAlerts, PushRelayCheckLine } from "../push-relay-check";
 import type { AdminPushRelayStatus } from "../use-push-relay";
 
 const BASE = {
@@ -29,12 +30,13 @@ function render(
       initialLocale={locale}
       initialMessages={locale === "de" ? deMessages : undefined}
     >
-      <PushRelayCheck status={{ ...BASE, ...status }} />
+      <PushRelayAlerts status={{ ...BASE, ...status }} />
+      <PushRelayCheckLine status={{ ...BASE, ...status }} />
     </I18nProvider>,
   );
 }
 
-describe("<PushRelayCheck>", () => {
+describe("<PushRelayAlerts> and <PushRelayCheckLine>", () => {
   it("says the relay refuses this server's signature", () => {
     const html = render({ state: "degraded", reason: "bad_signature" });
     expect(html).toContain("does not accept this server&#x27;s signature");
@@ -46,7 +48,7 @@ describe("<PushRelayCheck>", () => {
   it("names what the relay reports about itself", () => {
     expect(
       render({ state: "degraded", reason: "relay_maintenance" }),
-    ).toContain("The relay is in maintenance.");
+    ).toContain("The relay is in maintenance;");
     // A reason without words of its own stays with the state badge.
     expect(render({ state: "degraded", reason: "paused" })).toBe("");
     // An ok state shows no reason line.

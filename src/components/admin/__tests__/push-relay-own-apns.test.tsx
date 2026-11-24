@@ -56,12 +56,14 @@ const BASE = {
   privacyUrl: null,
   docsUrl: "https://docs.healthlog.dev/guides/push-relay/",
   ownApnsKey: false,
+  summaryState: "off",
   operatorDecision: "undecided",
 } satisfies AdminPushRelayStatus;
 
 function render(
   status: Partial<AdminPushRelayStatus>,
   locale: "en" | "de" = "en",
+  besideQuestion = false,
 ) {
   relay.status = { ...BASE, ...status };
   return renderToStaticMarkup(
@@ -69,44 +71,64 @@ function render(
       initialLocale={locale}
       initialMessages={locale === "de" ? deMessages : undefined}
     >
-      <PushRelaySection />
+      <PushRelaySection besideQuestion={besideQuestion} />
     </I18nProvider>,
   );
 }
 
 describe("<PushRelaySection> with the server's own APNs key", () => {
   it("says pushes go directly to Apple and offers no switch", () => {
-    const html = render({ ownApnsKey: true, operatorDecision: "off" });
+    const html = render({
+      ownApnsKey: true,
+      summaryState: "own_apns_key",
+      operatorDecision: "off",
+    });
     expect(html).toContain('data-slot="push-relay-own-apns"');
     expect(html).toContain(
-      "This server has its own Apple push key (APNs) configured and uses it. Every push goes directly to Apple, so the relay is not used while the key is set.",
+      "Pushes go straight to Apple with this server&#x27;s own APNs key; remove the APNS_* variables to use the relay.",
     );
-    expect(html).toContain("remove the APNS_* variables");
+    // The state is the pill, as the server resolved it.
+    expect(html).toMatch(
+      /<span data-slot="push-relay-status"[^>]*data-state="own_apns_key"[^>]*>.*?Own APNs key<\/span>/,
+    );
     expect(html).not.toContain('role="switch"');
-    expect(html).not.toContain("Offer the HealthLog push relay");
+    expect(html).not.toContain("Offer to this server");
   });
 
   it("says it in German too", () => {
-    const html = render({ ownApnsKey: true }, "de");
-    expect(html).toContain("Jede Push-Nachricht geht direkt an Apple");
+    const html = render(
+      { ownApnsKey: true, summaryState: "own_apns_key" },
+      "de",
+    );
+    expect(html).toContain("direkt an Apple");
     expect(html).toContain("APNS_*-Variablen");
+    expect(html).toContain("Eigener APNs-Schlüssel");
   });
 
   it("keeps the switch to leave a relay that was turned on before the key", () => {
     const html = render({
       ownApnsKey: true,
+      summaryState: "own_apns_key",
       offered: true,
       state: "ok",
       instanceId: "6f1c2a4e-1b9d-4c3e-8a7f-000000000001",
     });
     expect(html).toContain('data-slot="push-relay-own-apns"');
     expect(html).toContain('role="switch"');
-    expect(html).toContain("Turn it off to leave the relay.");
+    expect(html).toContain("so the relay carries nothing.");
   });
 
   it("offers the switch without a key of the server's own", () => {
     const html = render({});
     expect(html).not.toContain('data-slot="push-relay-own-apns"');
     expect(html).toContain('role="switch"');
+    expect(html).toMatch(/data-slot="push-relay-status"[^>]*data-state="off"/);
+  });
+
+  it("stays away beside the open relay question, and returns once answered", () => {
+    expect(render({}, "en", true)).toBe("");
+    expect(render({ operatorDecision: "off" }, "en", true)).toContain(
+      'role="switch"',
+    );
   });
 });

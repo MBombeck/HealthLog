@@ -1,7 +1,7 @@
 /**
  * `POST /api/admin/push-relay/decision` `{ enabled, acceptTerms?, householdOnly?, invite? }`:
- * the admin's answer to "Send push notifications through the HealthLog
- * relay?", asked once for the whole server.
+ * the admin's answer to "Use the HealthLog push relay?", asked once for the
+ * whole server.
  *
  * - `enabled: false` is no: the decision becomes `off` and nobody is asked
  *   again. A registration the switch left unfinished (an invite code that was
