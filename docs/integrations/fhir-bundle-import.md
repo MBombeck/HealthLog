@@ -38,11 +38,18 @@ record (FHIR)** card. The endpoint is `POST /api/import/fhir-bundle`
 Everything else (`Patient`, `Practitioner`, `DiagnosticReport`,
 `Procedure` and so on) is counted under **Not imported** by type.
 
+A time that the export writes without a zone offset is read on the clock of
+the time zone set in your HealthLog profile.
+
 ## 4. Running it again
 
 Every resource is matched by the server it came from (the base of the
-entry's `fullUrl`) and its own `id`. Importing the same Bundle again, or a
-newer export from the same portal, writes nothing twice. A record you
+entry's `fullUrl`) and its own `id`. An entry named by `urn:uuid:` or
+`urn:oid:` names no server; its `id` is unique on its own and is matched
+alone. Importing the same Bundle again, or a newer export from the same
+portal, writes nothing twice. In 1.49.0 a `urn:uuid:` entry was matched by
+the Bundle's own `id`; a record imported that way is still recognised in
+its next export and adopted under the new match. A record you
 deleted in HealthLog is not brought back by a later import.
 
 The list of what was already imported travels in both kinds of backup

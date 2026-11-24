@@ -163,7 +163,7 @@ export function makeTooltipContent({
             : null,
         ]
           .filter(Boolean)
-          .join(" · ")}
+          .join(", ")}
         rows={rows}
         action={tooltipAction(
           hoverPoint ? dayLinkSource?.indexOf(hoverPoint) : undefined,

@@ -8,8 +8,8 @@ import { settleBeforeMeasure } from "./utils/settle";
  * v1.25.11 settings fix): the scroll viewport must never extend far past
  * the last content element. The rule the guard pins is structural — only
  * the AuthShell owns the scroll height and the bottom padding
- * (`pt-6 pb-20` on the wrapper, `pb-24` in the desktop shell, plus the `<md` bottom-nav clearance on
- * `<main>`); a page/section must never add its own viewport-height
+ * (`pt-6` and `--floating-action-clearance` on the wrapper, plus
+ * `--chrome-bottom` on `<main>`; globals.css); a page/section must never add its own viewport-height
  * reserve or bottom gutter, because every such nested reserve stacks on
  * the shell's own budget and reopens the dark-band-below-the-last-card
  * bug.
@@ -45,8 +45,11 @@ const ROUTES = [
 ] as const;
 
 const VIEWPORTS = [
-  { name: "desktop", width: 1440, height: 900, expectedPad: 96 }, // wrapper shell-desktop:pb-24
-  { name: "phone", width: 390, height: 844, expectedPad: 144 }, // pb-20 + main pb-16
+  // The wrapper's --floating-action-clearance (2rem + 3.5rem + 1rem on the
+  // desktop shell, 1rem + 3.5rem + 1rem on the phone shell), plus main's
+  // --chrome-bottom on the phone (the 4rem bar; no inset in a browser).
+  { name: "desktop", width: 1440, height: 900, expectedPad: 104 },
+  { name: "phone", width: 390, height: 844, expectedPad: 152 },
 ] as const;
 
 test.describe("settings + admin vertical over-scroll guard", () => {

@@ -71,7 +71,7 @@ const recordFileImportJob = z
       .string()
       .nullable()
       .describe(
-        "On `failed`, a reason led by a closed code and a colon: `not_gadgetbridge`, `unsafe_schema`, `not_fhir_bundle`, `too_many_entries`, `too_large`, `time_budget`, `staging_missing`.",
+        "On `failed`, a reason led by a closed code and a colon: `not_gadgetbridge`, `unsafe_schema`, `not_fhir_bundle`, `too_many_entries`, `too_large`, `time_budget`, `staging_missing`, and `import_failed` for an unexpected error.",
       ),
   })
   .meta({ id: "RecordFileImportJob" });

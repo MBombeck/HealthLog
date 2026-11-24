@@ -141,6 +141,44 @@ export async function doseStartHeld(
   return row !== null;
 }
 
+/**
+ * Let the doses that were answered and are open again start anew on the
+ * owner's devices: a take or skip ended their Activity (the app ends its
+ * own, the intake flush the others'), and an undo, a delete or a move put
+ * the dose back in its window. Without this the start row of the ended
+ * Activity held the dose for good ({@link doseStartHeld}), and the device's
+ * last start kept every other start back while the dose was due
+ * (`unreportedRelayStart`), so a dose undone within its window never showed
+ * on the lock screen again. An Activity of the dose that is still
+ * registered keeps the pass from starting a second one beside it.
+ */
+export async function releaseReopenedDoseStarts(
+  userId: string,
+  doses: ReadonlyArray<{ medicationId: string; slotInstant: Date }>,
+): Promise<void> {
+  for (const dose of doses) {
+    const slotInstant = activitySlotWindow(dose.slotInstant);
+    await prisma.pushRelayDelivery.updateMany({
+      where: {
+        device: { userId },
+        eventType: LA_START_EVENT,
+        medicationId: dose.medicationId,
+        slotInstant,
+      },
+      data: { medicationId: null, slotInstant: null },
+    });
+    await prisma.device.updateMany({
+      where: {
+        userId,
+        laStartRef: { not: null },
+        laStartedMedicationId: dose.medicationId,
+        laStartedSlot: slotInstant,
+      },
+      data: { laStartRef: null },
+    });
+  }
+}
+
 /** The Activity tokens an update is still in flight for, lower case. */
 export async function updatesInFlight(deviceId: string): Promise<Set<string>> {
   const rows = await prisma.pushRelayDelivery.findMany({

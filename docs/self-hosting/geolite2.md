@@ -28,7 +28,7 @@ rebuild, no mount, no `geoipupdate` on the host.
 
 1. Create a free MaxMind account at
    <https://www.maxmind.com/en/geolite2/signup>, then a licence key under
-   **My Account → Manage License Keys**. GeoLite2 is free; the account and
+   **My Account > Manage License Keys**. GeoLite2 is free; the account and
    key exist because MaxMind requires them for the download.
 
 2. Put the key in your `.env`:
@@ -51,7 +51,7 @@ rebuild, no mount, no `geoipupdate` on the host.
 The fetch is fail-soft: if the key is wrong or MaxMind is unreachable, the
 previous state stands (the online provider keeps answering) and the worker
 log carries the reason. It never writes a partial database. Confirm it
-landed under **Admin → System status** (`Geo data: Offline (GeoLite2)`) or
+landed under **Admin > System status** (`Geo data: Offline (GeoLite2)`) or
 from the host: `docker compose exec app ls -l /opt/geolite2`.
 
 If you would rather not have the app reach MaxMind on its own schedule —
@@ -66,7 +66,7 @@ fails soft.
 
 - A free MaxMind account. Sign up at
   <https://www.maxmind.com/en/geolite2/signup>, then create a licence key
-  under **My Account → Manage License Keys**. GeoLite2 is free; the
+  under **My Account > Manage License Keys**. GeoLite2 is free; the
   account and key exist because MaxMind requires them for the download.
 - `geoipupdate` (MaxMind's own downloader) or any other way to fetch the
   two `.mmdb` files onto the host. Most distributions package
@@ -114,7 +114,7 @@ fails soft.
    whitelist never do, even when compose substitutes them elsewhere in
    the file.
 
-4. `docker compose up -d` and sign in once. **Admin → System status**
+4. `docker compose up -d` and sign in once. **Admin > System status**
    shows `Geo data: Offline (GeoLite2)` when the databases are being
    read, and names the online provider when they are not.
 

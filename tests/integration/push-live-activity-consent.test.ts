@@ -808,6 +808,62 @@ describe("the dose a start picks", () => {
     expect(startsOnWire()).toHaveLength(1);
   });
 
+  it("ends a server-started Activity once its dose is gone from the schedule", async () => {
+    const t = await setUp();
+    await t.reg({ liveActivityConsent: t.consent() });
+    const { medication, slot } = await dueDose(t.session.userId, 10);
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({
+          relayStart: true,
+          medicationId: medication.id,
+          slotInstant: slot.toISOString(),
+        }),
+      ],
+    });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ updated: 1 });
+    const events = (from: number) =>
+      laPushes()
+        .slice(from)
+        .map((p) => (p.payload.aps as { event: string }).event);
+
+    // A slot whose row is gone but which the schedule still has keeps its
+    // Activity: the next today read mints the row again.
+    await getPrismaClient().medicationIntakeEvent.updateMany({
+      where: { medicationId: medication.id, scheduledFor: slot },
+      data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
+    });
+    let before = laPushes().length;
+    await runLiveActivityRelayPass();
+    expect(events(before)).toEqual([]);
+
+    // The dose time is edited away, to one five hours on: nothing is due
+    // at the slot any more.
+    const later = hhmm(new Date(slot.getTime() + 5 * 3600_000), noonZone());
+    const { PUT } = await import("@/app/api/medications/[id]/route");
+    const edited = await callRoute(PUT, {
+      method: "PUT",
+      route: "/api/medications/{id}",
+      params: { id: medication.id },
+      auth: t.session,
+      body: {
+        schedules: [
+          {
+            windowStart: later,
+            windowEnd: later,
+            timesOfDay: [later],
+            rrule: "FREQ=DAILY",
+          },
+        ],
+      },
+    });
+    expect(edited.status).toBe(200);
+    before = laPushes().length;
+    await runLiveActivityRelayPass();
+    expect(events(before)).toEqual(["end"]);
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
+  });
+
   it("ends a server-started Activity once its opt-in is turned off", async () => {
     const t = await setUp();
     await t.reg({ liveActivityConsent: t.consent() });
@@ -1181,6 +1237,62 @@ describe("once per dose, from the server's own start record", () => {
     }
     expect(startsOnWire()).toHaveLength(2);
     expect(first.slot.getTime()).toBeGreaterThan(earlier.slot.getTime());
+  });
+
+  it("starts a dose again once its take is undone while it is still in its window", async () => {
+    const t = await consented();
+    const dose = await dueDose(t.session.userId, 20);
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    await t.reg({
+      liveActivityTokens: [t.activityEntry({ relayStart: true })],
+    });
+    const prisma = getPrismaClient();
+    const row = await prisma.medicationIntakeEvent.findFirstOrThrow({
+      where: { medicationId: dose.medication.id, deletedAt: null },
+    });
+
+    // Taken on the web: the Activity of the dose ends.
+    const { POST } = await import("@/app/api/medications/intake/route");
+    const taken = await callRoute(POST, {
+      method: "POST",
+      route: "/api/medications/intake",
+      auth: t.session,
+      body: { intakeId: row.id, status: "taken" },
+    });
+    expect(taken.status).toBe(200);
+    await vi.waitFor(
+      async () => expect(await prisma.liveActivityToken.count()).toBe(0),
+      { timeout: 10_000 },
+    );
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+
+    // The take was a mistake and is deleted: the dose is open and in its
+    // window again, so its Activity comes back.
+    const { DELETE } =
+      await import("@/app/api/medications/[id]/intake/[eventId]/route");
+    const undone = await callRoute(DELETE, {
+      method: "DELETE",
+      route: "/api/medications/{id}/intake/{eventId}",
+      params: { id: dose.medication.id, eventId: row.id },
+      auth: t.session,
+    });
+    expect(undone.status).toBe(200);
+    // The web reads its today list again, which brings the slot back as
+    // pending beside the tombstone.
+    const { GET } = await import("@/app/api/medications/intake/route");
+    const today = await callRoute(GET, {
+      method: "GET",
+      route: "/api/medications/intake",
+      query: { scope: "today" },
+      auth: t.session,
+    });
+    expect(today.status).toBe(200);
+    await vi.waitFor(
+      async () =>
+        expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 }),
+      { timeout: 10_000 },
+    );
+    expect(startsOnWire()).toHaveLength(2);
   });
 
   it("holds the dose across a restart, and starts a different dose", async () => {

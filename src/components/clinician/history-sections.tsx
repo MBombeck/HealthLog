@@ -32,7 +32,7 @@ import { withLabUnit } from "@/lib/labs/dimensionless";
 /** Join the parts of a composed value, dropping the ones with nothing in. */
 function compose(parts: Array<string | null | undefined>): string {
   const kept = parts.filter((part): part is string => Boolean(part));
-  return kept.length > 0 ? kept.join(" · ") : "—";
+  return kept.length > 0 ? kept.join(", ") : "—";
 }
 
 /**

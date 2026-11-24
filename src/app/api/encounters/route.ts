@@ -328,7 +328,7 @@ async function postEncounter(request: NextRequest): Promise<Response> {
       entity_type: "encounter",
       entity_id: created.id,
     },
-    meta: { status: created.status, kind: created.kind },
+    meta: { status: created.status },
   });
 
   return apiSuccess(

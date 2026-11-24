@@ -119,8 +119,9 @@ export default defineConfig({
       testIgnore: [
         "v137-record-session-fence-offline.spec.ts",
         "pwa-offline.spec.ts",
-        // Runs only in the WebKit phone project.
+        // Run only in the WebKit phone project.
         "bottom-sheet.spec.ts",
+        "pwa-bottom-edge.spec.ts",
         // Runs only in the two tablet projects.
         "tablet-shell.spec.ts",
       ],
@@ -242,8 +243,9 @@ export default defineConfig({
         // Runs only in the service-worker project.
         "v137-record-session-fence-offline.spec.ts",
         "pwa-offline.spec.ts",
-        // Runs only in the WebKit phone project.
+        // Run only in the WebKit phone project.
         "bottom-sheet.spec.ts",
+        "pwa-bottom-edge.spec.ts",
         // Runs only in the two tablet projects.
         "tablet-shell.spec.ts",
         // The Apple Health import journey uploads an archive into the one
@@ -331,7 +333,7 @@ export default defineConfig({
       : [
           {
             name: "webkit-iphone",
-            testMatch: ["bottom-sheet.spec.ts"],
+            testMatch: ["bottom-sheet.spec.ts", "pwa-bottom-edge.spec.ts"],
             use: {
               ...devices["iPhone 13"],
               colorScheme: "dark" as const,

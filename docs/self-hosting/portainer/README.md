@@ -5,7 +5,7 @@ PostgreSQL 18 database as one stack from the project `docker-compose.yml`.
 
 ## Add the template
 
-1. In Portainer, go to **Settings → App Templates**.
+1. In Portainer, go to **Settings > App Templates**.
 2. Set the URL to the raw template file:
 
    ```
@@ -16,7 +16,7 @@ PostgreSQL 18 database as one stack from the project `docker-compose.yml`.
 
 ## Deploy
 
-1. Open **App Templates → HealthLog**.
+1. Open **App Templates > HealthLog**.
 2. Fill in the variables. Generate each secret with `openssl rand -hex 32` (a
    64-character hex string):
    - `POSTGRES_PASSWORD`

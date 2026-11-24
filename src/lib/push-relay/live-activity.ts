@@ -84,6 +84,7 @@ import {
   doseAt,
   DOSE_ROW_SELECT,
   resolveRows,
+  slotStillScheduled,
 } from "@/lib/push-relay/live-activity-dose";
 import {
   relayActivityKind,
@@ -478,6 +479,17 @@ async function updateItems(
       continue;
     }
     const dose = await doseAt(device.userId, medicationId, slotInstant, now);
+    // A server-started Activity whose slot the schedule no longer has (its
+    // time edited away, the open row tombstoned with it) shows a dose that
+    // is not due: it ends. A slot whose row is only not minted yet keeps it.
+    if (
+      !dose &&
+      relayOwned(activity) &&
+      !(await slotStillScheduled(device.userId, medicationId, slotInstant, now))
+    ) {
+      ending.push(activity);
+      continue;
+    }
     // Taken and skipped end the Activity on their own paths: the intake
     // flush at once, and this job's retry of an end the relay did not take
     // (`notifications/live-activity-answered.ts`).

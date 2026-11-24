@@ -25,7 +25,7 @@ import type {
   EncounterStatus,
   Prisma,
 } from "@/generated/prisma/client";
-import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { prisma } from "@/lib/db";
 import { setMedicationCategory } from "@/lib/medication-category";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
@@ -34,7 +34,7 @@ import {
   arr,
   conceptCode,
   conceptText,
-  fhirDateKey,
+  firstDated,
   firstInstant,
   obj,
   statusCode,
@@ -83,9 +83,17 @@ interface Built {
   /** What identifies the resource when it carries no id. */
   fallback: string;
   create(tx: Tx, userId: string): Promise<string>;
+  /** The rows, deleted ones included, that say what this resource says. */
+  same(userId: string): Promise<string[]>;
 }
 
-function buildCondition(r: Json, now: Date): Built | { skip: string } {
+const ids = (rows: Array<{ id: string }>) => rows.map((r) => r.id);
+
+function buildCondition(
+  r: Json,
+  now: Date,
+  tz: string,
+): Built | { skip: string } {
   const verification = statusCode(r.verificationStatus);
   if (verification === "refuted" || verification === "entered-in-error") {
     return { skip: "not_confirmed" };
@@ -93,6 +101,7 @@ function buildCondition(r: Json, now: Date): Built | { skip: string } {
   const label = conceptText(r.code, 120);
   if (!label) return { skip: "no_label" };
   const onsetAt = firstInstant(
+    tz,
     r.onsetDateTime,
     obj(r.onsetPeriod)?.start,
     r.recordedDate,
@@ -100,6 +109,7 @@ function buildCondition(r: Json, now: Date): Built | { skip: string } {
   if (!onsetAt) return { skip: "no_date" };
   if (onsetAt > now) return { skip: "future_date" };
   const resolvedAt = firstInstant(
+    tz,
     r.abatementDateTime,
     obj(r.abatementPeriod)?.end,
   );
@@ -108,6 +118,13 @@ function buildCondition(r: Json, now: Date): Built | { skip: string } {
     !resolvedAt && (clinical === "active" || clinical === "recurrence");
   return {
     fallback: `${label}|${onsetAt.toISOString()}`,
+    same: async (userId) =>
+      ids(
+        await prisma.illnessEpisode.findMany({
+          where: { userId, label, onsetAt },
+          select: { id: true },
+        }),
+      ),
     create: async (tx, userId) =>
       (
         await tx.illnessEpisode.create({
@@ -128,21 +145,30 @@ function buildCondition(r: Json, now: Date): Built | { skip: string } {
   };
 }
 
-function buildImmunization(r: Json, now: Date): Built | { skip: string } {
+function buildImmunization(
+  r: Json,
+  now: Date,
+  tz: string,
+): Built | { skip: string } {
   if (statusCode(r.status) !== "completed") return { skip: "not_completed" };
   const name = conceptText(r.vaccineCode, 120);
   if (!name) return { skip: "no_label" };
-  const at = firstInstant(r.occurrenceDateTime, r.recorded);
-  if (!at) return { skip: "no_date" };
-  if (at > now) return { skip: "future_date" };
+  const dated = firstDated(tz, r.occurrenceDateTime, r.recorded);
+  if (!dated) return { skip: "no_date" };
+  if (dated.at > now) return { skip: "future_date" };
   // The day the record states, at UTC midnight, as the vaccination model
   // stores it.
-  const occurredAt = dayKeyAsUtcMidnight(
-    fhirDateKey(r.occurrenceDateTime) ?? fhirDateKey(r.recorded)!,
-  );
+  const occurredAt = dayKeyAsUtcMidnight(dated.dateKey);
   const dose = obj(arr(r.protocolApplied)[0])?.doseNumberPositiveInt;
   return {
     fallback: `${name}|${occurredAt.toISOString()}`,
+    same: async (userId) =>
+      ids(
+        await prisma.vaccinationRecord.findMany({
+          where: { userId, vaccineName: name, occurredAt },
+          select: { id: true },
+        }),
+      ),
     create: async (tx, userId) =>
       (
         await tx.vaccinationRecord.create({
@@ -162,7 +188,11 @@ function buildImmunization(r: Json, now: Date): Built | { skip: string } {
   };
 }
 
-function buildMedication(r: Json, now: Date): Built | { skip: string } {
+function buildMedication(
+  r: Json,
+  now: Date,
+  tz: string,
+): Built | { skip: string } {
   const status = statusCode(r.status);
   if (status === "entered-in-error" || status === "not-taken") {
     return { skip: "not_taken" };
@@ -172,22 +202,38 @@ function buildMedication(r: Json, now: Date): Built | { skip: string } {
   if (!name) return { skip: "no_label" };
   const dosage = obj(arr(r.dosage)[0]);
   const dose = str(dosage?.text, 60) ?? "";
-  const start = firstInstant(
+  const startDated = firstDated(
+    tz,
     obj(r.effectivePeriod)?.start,
     r.effectiveDateTime,
   );
-  const end = firstInstant(obj(r.effectivePeriod)?.end);
+  const start = startDated?.at ?? null;
+  const endDated = firstDated(tz, obj(r.effectivePeriod)?.end);
+  const end = endDated?.at ?? null;
   const ended =
     status === "completed" ||
     status === "stopped" ||
     (end !== null && end <= now);
   // The course columns are `@db.Date`: the day the record states.
-  const startKey =
-    fhirDateKey(obj(r.effectivePeriod)?.start) ??
-    fhirDateKey(r.effectiveDateTime);
-  const endKey = fhirDateKey(obj(r.effectivePeriod)?.end);
+  const startKey = startDated?.dateKey ?? null;
+  const endKey = endDated?.dateKey ?? null;
   return {
     fallback: `${name}|${start?.toISOString() ?? ""}`,
+    same: async (userId) =>
+      ids(
+        await prisma.medication.findMany({
+          where: {
+            userId,
+            name,
+            dose,
+            startsOn:
+              start && startKey && start <= now
+                ? dayKeyAsUtcMidnight(startKey)
+                : null,
+          },
+          select: { id: true },
+        }),
+      ),
     create: async (tx, userId) => {
       const course =
         start && startKey && start <= now
@@ -251,16 +297,30 @@ const ENCOUNTER_CLASS: Record<string, EncounterKind> = {
   PRENC: "PREVENTIVE",
 };
 
-function buildEncounter(r: Json): Built | { skip: string } {
+function buildEncounter(r: Json, tz: string): Built | { skip: string } {
   const status = ENCOUNTER_STATUS[statusCode(r.status) ?? ""];
   if (!status) return { skip: "not_a_visit" };
-  const occurredAt = firstInstant(obj(r.period)?.start, obj(r.period)?.end);
+  const occurredAt = firstInstant(tz, obj(r.period)?.start, obj(r.period)?.end);
   if (!occurredAt) return { skip: "no_date" };
   const classCode = str(obj(r.class)?.code, 16)?.toUpperCase() ?? "";
   const reason =
     conceptText(arr(r.reasonCode)[0], 500) ?? conceptText(arr(r.type)[0], 500);
+  const kind = ENCOUNTER_CLASS[classCode] ?? "OTHER";
   return {
     fallback: `${occurredAt.toISOString()}|${reason ?? ""}`,
+    same: async (userId) =>
+      ids(
+        (
+          await prisma.encounter.findMany({
+            where: { userId, occurredAt, status, kind },
+            select: { id: true, reasonEncrypted: true },
+          })
+        ).filter(
+          (e) =>
+            (e.reasonEncrypted ? decryptFromBytes(e.reasonEncrypted) : null) ===
+            (reason ?? null),
+        ),
+      ),
     create: async (tx, userId) =>
       (
         await tx.encounter.create({
@@ -268,7 +328,7 @@ function buildEncounter(r: Json): Built | { skip: string } {
             userId,
             occurredAt,
             status,
-            kind: ENCOUNTER_CLASS[classCode] ?? "OTHER",
+            kind,
             reasonEncrypted: reason ? encryptToBytes(reason) : null,
           },
           select: { id: true },
@@ -281,28 +341,75 @@ function build(
   type: RecordResourceType,
   resource: Json,
   now: Date,
+  tz: string,
 ): Built | { skip: string } {
   switch (type) {
     case "Condition":
-      return buildCondition(resource, now);
+      return buildCondition(resource, now, tz);
     case "Immunization":
-      return buildImmunization(resource, now);
+      return buildImmunization(resource, now, tz);
     case "MedicationStatement":
-      return buildMedication(resource, now);
+      return buildMedication(resource, now, tz);
     case "Encounter":
-      return buildEncounter(resource);
+      return buildEncounter(resource, tz);
   }
 }
 
-/** Write one record resource unless the ledger already holds it. */
+async function heldUnder(
+  userId: string,
+  resourceType: RecordResourceType,
+  resourceKey: string,
+): Promise<{ recordId: string } | null> {
+  return prisma.fhirImportedResource.findUnique({
+    where: {
+      userId_resourceType_resourceKey: { userId, resourceType, resourceKey },
+    },
+    select: { recordId: true },
+  });
+}
+
+/**
+ * The record an earlier import wrote for this resource under the key its
+ * issuer had then (`legacyIssuer`): the key itself when the same Bundle comes
+ * again, else an imported row with the same content that no second resource
+ * has claimed (one ledger row). Its id, or null.
+ */
+async function legacyRecord(
+  input: { userId: string; type: RecordResourceType; resource: Json },
+  built: Built,
+  legacyIssuer: string,
+): Promise<string | null> {
+  const { userId, type } = input;
+  const old = resourceKey(legacyIssuer, type, input.resource, built.fallback);
+  const exact = await heldUnder(userId, type, old);
+  if (exact) return exact.recordId;
+  const candidates = await built.same(userId);
+  if (candidates.length === 0) return null;
+  const claims = await prisma.fhirImportedResource.groupBy({
+    by: ["recordId"],
+    where: { userId, resourceType: type, recordId: { in: candidates } },
+    _count: { _all: true },
+  });
+  return claims.find((c) => c._count._all === 1)?.recordId ?? null;
+}
+
+/**
+ * Write one record resource unless the ledger already holds it. A resource
+ * whose issuer changed (`legacyIssuer`, the key an earlier version derived)
+ * and that an earlier import already wrote is re-keyed onto that record: a
+ * second ledger row under the current key, nothing written twice.
+ */
 export async function importRecordResource(input: {
   userId: string;
   issuer: string;
+  legacyIssuer?: string;
   type: RecordResourceType;
   resource: Json;
   now: Date;
+  /** The person's zone, for a time the record gives without an offset. */
+  tz: string;
 }): Promise<RecordOutcome> {
-  const built = build(input.type, input.resource, input.now);
+  const built = build(input.type, input.resource, input.now, input.tz);
   if ("skip" in built) return { status: "skipped", reason: built.skip };
   const key = resourceKey(
     input.issuer,
@@ -310,18 +417,24 @@ export async function importRecordResource(input: {
     input.resource,
     built.fallback,
   );
-  const held = await prisma.fhirImportedResource.findUnique({
-    where: {
-      userId_resourceType_resourceKey: {
-        userId: input.userId,
-        resourceType: input.type,
-        resourceKey: key,
-      },
-    },
-    select: { id: true },
-  });
-  if (held) return { status: "duplicate" };
+  if (await heldUnder(input.userId, input.type, key)) {
+    return { status: "duplicate" };
+  }
+  const earlier = input.legacyIssuer
+    ? await legacyRecord(input, built, input.legacyIssuer)
+    : null;
   try {
+    if (earlier) {
+      await prisma.fhirImportedResource.create({
+        data: {
+          userId: input.userId,
+          resourceType: input.type,
+          resourceKey: key,
+          recordId: earlier,
+        },
+      });
+      return { status: "duplicate" };
+    }
     await prisma.$transaction(async (tx) => {
       const recordId = await built.create(tx, input.userId);
       await tx.fhirImportedResource.create({

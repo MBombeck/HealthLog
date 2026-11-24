@@ -66,7 +66,7 @@ describe("<AiUnavailableHint>", () => {
     const html = render(<AiUnavailableHint reason="enable-local-ocr" />);
     // The switch lives on the Labs module page, under its own label.
     expect(html).toContain("Read scans on this device");
-    expect(html).toContain("Settings → Modules → Labs");
+    expect(html).toContain("Settings &gt; Modules &gt; Labs");
     expect(html).toContain('href="/settings/modules/labs#labs-local-ocr"');
     expect(html).toContain("Open lab settings");
     expect(html).not.toContain('href="/settings/ai"');

@@ -72,7 +72,10 @@ export default function GlobalError({
           // iOS Safari (URL-bar collapse) so the wrapper still
           // anchors centred when the browser chrome animates in or
           // out. `safe-area-inset-top` keeps the headline out from
-          // under the notch / Dynamic Island.
+          // under the notch / Dynamic Island. The one direct
+          // `env(safe-area-*)` outside globals.css: this boundary replaces
+          // the root layout, so the stylesheet that defines
+          // `--safe-area-top` is not on the page.
           minHeight: "100dvh",
           display: "flex",
           alignItems: "center",

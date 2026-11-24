@@ -19,7 +19,7 @@ export default async function ClinicianShareNotFound() {
     <main
       id="main-content"
       data-slot="clinician-share-unavailable"
-      className="bg-background text-foreground flex min-h-dvh flex-col items-center justify-center gap-6 px-4 py-12 pt-[calc(env(safe-area-inset-top)+3rem)]"
+      className="bg-background text-foreground flex min-h-dvh flex-col items-center justify-center gap-6 px-4 py-12 pt-[calc(var(--safe-area-top)+3rem)]"
     >
       <div
         aria-hidden="true"

@@ -77,9 +77,9 @@ export function RescueDoses({
               <p className="text-foreground text-sm">
                 {d.medicationName}
                 {d.doseAmount !== null
-                  ? ` · ${d.doseAmount}${d.doseUnit ? ` ${d.doseUnit}` : ""}`
+                  ? `, ${d.doseAmount}${d.doseUnit ? ` ${d.doseUnit}` : ""}`
                   : ""}
-                {d.route ? ` · ${t(`seizures.route.${d.route}`)}` : ""}
+                {d.route ? `, ${t(`seizures.route.${d.route}`)}` : ""}
               </p>
               <p className="text-muted-foreground text-xs">
                 {fmt.dateTime(d.givenAt)}

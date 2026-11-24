@@ -30,7 +30,7 @@ export function SetupFrame({
         "mx-auto flex min-h-[100svh] w-full max-w-xl flex-col",
         // Safe-area-respecting bottom padding for the iOS PWA — the home
         // bar overlaps the primary action otherwise.
-        "px-4 pt-6 pb-[max(env(safe-area-inset-bottom),1rem)]",
+        "px-4 pt-6 pb-[max(var(--safe-area-bottom),1rem)]",
       )}
       data-slot="onboarding-shell"
       data-flow={flow}

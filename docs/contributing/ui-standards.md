@@ -6,7 +6,7 @@ The binding reference for building or touching any surface of the web app. The r
 
 ## 1. Card anatomy
 
-**The Card is gap-based, not padding-based** (`src/components/ui/card.tsx:24`): `flex flex-col gap-4 rounded-xl border py-4 md:gap-6 md:py-6`; header/content/footer carry `px-4 md:px-6`. The header→body distance comes from the **parent flex gap**, never from slot padding.
+**The Card is gap-based, not padding-based** (`src/components/ui/card.tsx:24`): `flex flex-col gap-4 rounded-xl border py-4 md:gap-6 md:py-6`; header/content/footer carry `px-4 md:px-6`. The header > body distance comes from the **parent flex gap**, never from slot padding.
 
 - FORBIDDEN: `pb-*` on `CardHeader`, `pt-*` on `CardContent`. Under the gap model these add on top of the gap (or are no-ops) and invert their intent. Want a tighter card? Override the gap on the Card itself: `<Card className="gap-2">`.
 - Two densities, nothing else:
@@ -32,10 +32,10 @@ The gaps this section used to list are closed: `TileHeader` carries a `size="sm"
 
 ## 2. Spacing scale
 
-> **Scroll height is shell-owned.** Only `AuthShell` owns the scroll container's height and bottom padding (`pb-20` wrapper, `pb-24` in the desktop shell, + the phone shell's bottom-nav clearance on `<main>`). The shell itself takes the window's edges (`absolute inset-0`), never `h-dvh`, and `<main>` is the one vertical scroller: the document neither scrolls nor bounces under it. Pages/sections never add viewport-height reserves (`min-h-dvh`, `min-h-[calc(100dvh-…)]`), `h-full` chains, or bottom gutters inside the scrolling `<main>`; nested reserves stack on the shell budget and scroll past the last card. One sanctioned exception: the settings-shell grid floor (budget-derived, documented; retune it when shell paddings change). Lists that need their own scrolling use `max-h-* overflow-y-auto overscroll-contain`. Guard: `e2e/settings-overscroll.spec.ts`.
+> **Scroll height is shell-owned.** Only `AuthShell` owns the scroll container's height and bottom padding (`--chrome-bottom` on `<main>`, `--floating-action-clearance` on the page frame; §9). The shell itself takes the window's edges (`absolute inset-0`), never `h-dvh`, and `<main>` is the one vertical scroller: the document neither scrolls nor bounces under it. Pages/sections never add viewport-height reserves (`min-h-dvh`, `min-h-[calc(100dvh-…)]`), `h-full` chains, or bottom gutters inside the scrolling `<main>`; nested reserves stack on the shell budget and scroll past the last card. One sanctioned exception: the settings-shell grid floor (budget-derived, documented; retune it when shell paddings change). Lists that need their own scrolling use `max-h-* overflow-y-auto overscroll-contain`. Guard: `e2e/settings-overscroll.spec.ts`.
 
 - **Allowed steps:** `1 / 1.5 / 2 / 2.5 / 3 / 3.5 / 4 / 6 / 8 / 10`. `2.5` and `3.5` are allowed: the medication card's rhythm is built on them, and the in-between steps earn their keep in dense card interiors. `5` (20 px), as in `py-5` or `p-5`, is not allowed; replace it when you touch a file that still has it. `7` (28 px) is not allowed either: it was the old Settings and Admin `pl-7` body gutter, which is gone (§13).
-- **Page frame:** exactly one authenticated container, owned by `AuthShell` (`MAIN_CONTENT_WRAPPER_CLASS` in `layout/shell-metrics.ts`): `mx-auto max-w-screen-xl px-4 pt-6 pb-20 md:px-6 shell-desktop:pb-24`. Never re-implement it in a page; full-bleed pages opt out via a shell flag, not negative margins. Prose pages (about/privacy/legal): `mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12`.
+- **Page frame:** exactly one authenticated container, owned by `AuthShell` (`MAIN_CONTENT_WRAPPER_CLASS` in `layout/shell-metrics.ts`): `mx-auto max-w-screen-xl px-4 pt-6 pb-(--floating-action-clearance) md:px-6`. Never re-implement it in a page; full-bleed pages opt out via a shell flag, not negative margins. Prose pages (about/privacy/legal): `mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12`.
 - **Page rhythm:** root of every page is `space-y-6`. Grouped card sections: `space-y-10` between groups, `space-y-4` inside a group (notifications/integrations pattern). Insights sub-pages join `space-y-6`.
 - **Left reading edge:** page-level text (H1, explainer, section headings) sits at the container edge. Only surfaces that paint a visible border/background may inset their content (`px-4 md:px-6`). A block without a border must not carry horizontal padding.
 - **Grids:** grids **of** cards/tiles = `gap-4`; value read-outs **inside** one card = `gap-x-3 gap-y-2`; form field grids = `gap-4`.
@@ -57,7 +57,7 @@ The base tokens are AA-tuned in both themes (`--muted-foreground`: 5.0–6.4:1, 
 ## 4. Colour token rules
 
 - **Semantic tokens only** in components: `--foreground/--muted-foreground/--primary/--success/--warning/--info/--destructive/--chart-1..5/--border/--card`. The light theme remaps them wholesale; anything outside the token layer is invisible to a retune.
-- **No raw `dracula-*` utilities in new code.** Only `--dracula-yellow` has a light override; `text-dracula-green` on a light card is 1.4:1. Status meaning → semantic token; brand identity (Coach gradient) → a named `--brand-*` token with per-theme values.
+- **No raw `dracula-*` utilities in new code.** Only `--dracula-yellow` has a light override; `text-dracula-green` on a light card is 1.4:1. Status meaning > semantic token; brand identity (Coach gradient) > a named `--brand-*` token with per-theme values.
 - **No hex in JS props.** Chart colours are passed as `var(--token)` strings, never `color="#22c55e"`. Data series use the `--chart-1..5` tokens (`color="var(--chart-2)"`); status tokens (`--success`, `--warning`, `--destructive`, `--info`) only where the colour carries meaning, such as a target band, time in range or a mood scale (v1.42). Recharts `stroke`/`fill` likewise. This is the known lint blind spot; review for it explicitly until the rule covers it.
 - **No arbitrary-value colours** (`bg-[#…]`, `text-[oklch(…)]`).
 - Exemptions (documented at the definition site): `global-error.tsx` (renders without the stylesheet), the `themeColor` meta, the QR quiet-zone `bg-white`.
@@ -120,10 +120,10 @@ No `text-[9px]`. No off-scale sizes (`text-[28px]`); round to the neighbouring s
 
 **What a failed read offers is decided by the primitive, never the call site.** `QueryErrorCard`, `QueryErrorRow` and `ChartErrorState` take the query's `error` (required) and branch on `readFailureKind` (`src/lib/api/read-failure.ts`). It reads `meta.errorCode` first and the status second, because every error envelope carries a code (`http.*` when the route names none): a step-up or re-proof code on a 401 is a failure with retry, not an ended session; an unknown code falls back to the status.
 
-- **Session ended** (a session code, or a 401 without a more specific one) → one sentence and a Sign in button (back to the current page). Never a silent blank.
-- **403, refused** → the surface's `refused` state if it has one, otherwise nothing. A refusal is an answer, not a failure; no retry.
-- **429, throttled** → one sentence that the read budget is spent, no retry (an immediate retry would only be refused again).
-- **anything else** → the surface's message with Retry.
+- **Session ended** (a session code, or a 401 without a more specific one) > one sentence and a Sign in button (back to the current page). Never a silent blank.
+- **403, refused** > the surface's `refused` state if it has one, otherwise nothing. A refusal is an answer, not a failure; no retry.
+- **429, throttled** > one sentence that the read budget is spent, no retry (an immediate retry would only be refused again).
+- **anything else** > the surface's message with Retry.
 
 The `queryFn` hands the `ApiError` through untouched: no `try { … } catch { throw new Error(t(…)) }` around the fetch, the surface's sentence goes in through `message`. A call site does not inspect `error.status` around a read-failure primitive, and does not pass `error={null}`. `query-error-error-prop-guard.test.ts` enforces the prop and the untouched error at every site, `read-failure-markup-guard.test.ts` refuses hand-rolled failure markup next to a read hook. Error codes become sentences through `src/lib/i18n/translate-code.ts`, never through a `t(key) === key` probe at the call site (`translate-probe-guard.test.ts`).
 
@@ -137,7 +137,7 @@ Planned (until it lands, this is a review-checklist item):
 
 1. A tile-header icon-colour check (`text-muted-foreground` / `text-primary` on a glyph inside a `CardTitle` or tile-header row).
 
-**PR checklist for any UI change:** both themes checked visually · no new `dracula-*`/hex/opacity-muted · headers via a primitive · card gap untouched by slot padding · `isError` → `QueryErrorCard` or `QueryErrorRow` by surface, with `error` · mobile modal = `ResponsiveSheet` · `pnpm format` + `pnpm lint` + `pnpm typecheck` green.
+**PR checklist for any UI change:** both themes checked visually · no new `dracula-*`/hex/opacity-muted · headers via a primitive · card gap untouched by slot padding · `isError` shows `QueryErrorCard` or `QueryErrorRow` by surface, with `error` · mobile modal = `ResponsiveSheet` · `pnpm format` + `pnpm lint` + `pnpm typecheck` green.
 
 ---
 
@@ -153,7 +153,16 @@ Forbidden on any Insights card: a hand-rolled icon+title row, a card title centr
 
 ## 9. One scroll floor; sub-shells never re-declare bottom-space
 
-Reinforces §2's "scroll height is shell-owned". Only `AuthShell` owns the scroll container's bottom padding and any viewport-height reserve: the `<main>` clears the mobile bottom-nav (`pb-[calc(4rem+safe-area)]`), or the home indicator in the desktop shell, and its wrapper clears the Coach FAB (`pb-20`, `pb-24` in the desktop shell). **No page, section, or sub-shell** adds a `min-h-[calc(100dvh-…)]` / `min-h-dvh` reserve or a `pb-*` bottom gutter inside the scrolling `<main>`; a nested reserve stacks on the shell budget and scrolls past the last card.
+Reinforces §2's "scroll height is shell-owned". Only `AuthShell` owns the scroll container's bottom padding and any viewport-height reserve: the `<main>` clears the bottom chrome (`pb-(--chrome-bottom)`) and its wrapper clears the Coach FAB (`pb-(--floating-action-clearance)`). **No page, section, or sub-shell** adds a `min-h-[calc(100dvh-…)]` / `min-h-dvh` reserve or a `pb-*` bottom gutter inside the scrolling `<main>`; a nested reserve stacks on the shell budget and scrolls past the last card.
+
+**The window's edges come from one token block** in `src/app/globals.css` (`:root`, "The shell's edge tokens"):
+
+- `--safe-area-top|right|bottom|left` are the only reads of `env(safe-area-inset-*)`. Everything else uses the properties (`pt-(--safe-area-top)`, `pb-[calc(var(--safe-area-bottom)+1rem)]`), so a test can set an inset and every surface sees it.
+- `--bottom-bar-height` and `--chrome-bottom` (bar + home indicator; the home indicator alone in the desktop shell) are what anything above the bar starts from. Never spell `calc(4rem + inset)` or `inset + 5rem`.
+- A floating action (the Coach button, a bulk-selection bar) stands on `bottom-(--floating-action-bottom)` and is `size-(--floating-action-size)`; the page frame's `--floating-action-clearance` keeps the last line clear of it.
+- The strip an installed iOS app can leave below its layout is painted, never covered: the root takes `--chrome-bottom-surface` (the bar's `--card` in the phone shell). No script measures the viewport and no box is stretched over the strip; 1.48.4 did that and looped on iOS 27.
+
+Guards: `shell-edge-tokens-guard.test.ts` (no `env(safe-area` outside the block, no hand-spelled offset above the bar), `shell-viewport.test.ts` (the clearance arithmetic in both shells), `e2e/pwa-bottom-edge.spec.ts` (WebKit, simulated short viewport: the strip is the bar's colour, the status-bar band matches the top bar, the last line clears the Coach button).
 
 A two-column sub-shell that needs a "don't jump while loading" floor derives it from **one shared source**: `SUB_SHELL_GRID_FLOOR` (`src/components/layout/shell-metrics.ts`); applied to the **grid** (not a column), so the `1fr` content row stretches to fill without over-shooting. It never re-declares the floor per-shell (`AdminShell` drifting to a stale 12rem column reserve is exactly how this recurred). Guard: `e2e/settings-overscroll.spec.ts` covers Settings **and** Admin and measures against each element's content-box bottom, so a redundant sub-shell `pb-*` fails instead of inflating the allowed budget.
 
@@ -187,7 +196,7 @@ A card's actions live in **one** row, and that row is the **last thing in the ca
 
 ## 13. Settings + Admin card rhythm; owned by the container
 
-- **`SettingsCard` is gap-based**, like `Card`: `flex flex-col gap-4 p-4 md:p-6`. The header→body distance comes from the container's gap. A call site never adds `mt-4` to its first body child, never `mb-4` to the header, never `space-y-4` to the card. A denser card overrides the gap on the card itself (`className="gap-2"`), exactly as `Card` does.
+- **`SettingsCard` is gap-based**, like `Card`: `flex flex-col gap-4 p-4 md:p-6`. The header > body distance comes from the container's gap. A call site never adds `mt-4` to its first body child, never `mb-4` to the header, never `space-y-4` to the card. A denser card overrides the gap on the card itself (`className="gap-2"`), exactly as `Card` does.
 - **The body starts at the card edge.** The old `pl-7` gutter (icon box + `gap-2`) is abolished: it is off the scale in §2, it broke the moment two neighbouring cards disagreed, and it silently mis-aligned action rows against their own forms. Header text is offset from the card edge by the icon gutter; body content is not. This is the deliberate difference from §8's Insights gutter, where the tiles carry no body form.
 - **Group headings above a group of cards use `SectionHeading`** (`ui/section-heading.tsx`, the heading of the Insights overview, shared by every area), not a bare `SettingsCardHeader`. `text-base` on the group, `text-lg` on the card title: that step is what says which one labels which.
 - **Admin uses the Settings anatomy verbatim.** No admin-only card shell, no admin-only header, no admin-only mini tile; `SettingsCard`, `SettingsCardHeader`, `SettingsCardActions`, `StatTile` (`admin/_stat-tile.tsx`) are the whole vocabulary.
