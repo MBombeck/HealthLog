@@ -104,8 +104,8 @@ import { ENVIRONMENT_LOCATION_AAD } from "../src/lib/crypto/encrypted-columns";
 import { withBriefingGeneratedAt } from "../src/lib/insights/briefing-generated-at";
 import { dailyStatsExternalId } from "../src/lib/measurements/apple-health-mapping";
 import { sealInsightsCachedText } from "../src/lib/insights/cached-text-cipher";
+import { DEFAULT_CHART_OVERLAY_PREFS } from "../src/lib/dashboard/chart-overlay-prefs";
 import {
-  DEFAULT_CHART_OVERLAY_PREFS,
   DEFAULT_DASHBOARD_LAYOUT,
   serializeDashboardLayout,
 } from "../src/lib/dashboard-layout";

@@ -6,7 +6,7 @@ import { Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { useChartDomainStats } from "@/hooks/use-chart-domain-stats";
-import type { ChartOverlayKey } from "@/lib/dashboard-layout";
+import type { ChartOverlayKey } from "@/lib/dashboard/chart-overlay-prefs";
 import type { MetricStatusMetricId } from "@/lib/insights/metric-status-registry";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";

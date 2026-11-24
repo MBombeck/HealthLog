@@ -22,6 +22,7 @@ import {
 import {
   buildOverlayRows,
   rawKey,
+  soloKey,
   type OverlayLineInput,
   type OverlayRow,
 } from "@/lib/sleep/overlay-lines";
@@ -92,22 +93,37 @@ interface ReadingDotProps {
 /**
  * A dot on a reading, and nothing on a row the line only passes through: a
  * bridged gap is drawn as a line, never marked as if it had been measured.
+ * A sparse line marks every reading (`dotted`); any line marks a reading no
+ * line reaches, larger and on a halo, since that point is all of it there is.
  */
 function ReadingDot({
   cx,
   cy,
   payload,
-  rawKey: key,
+  lineKey,
+  dotted,
   color,
-}: ReadingDotProps & { rawKey: string; color: string }) {
+}: ReadingDotProps & { lineKey: string; dotted: boolean; color: string }) {
   if (
     cx === undefined ||
     cy === undefined ||
-    typeof payload?.[key] !== "number"
+    typeof payload?.[rawKey(lineKey)] !== "number"
   ) {
     return <g />;
   }
-  return <circle cx={cx} cy={cy} r={2.25} fill={color} />;
+  if (payload[soloKey(lineKey)] === 1) {
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={3}
+        fill={color}
+        stroke="var(--card)"
+        strokeWidth={1.5}
+      />
+    );
+  }
+  return dotted ? <circle cx={cx} cy={cy} r={2.25} fill={color} /> : <g />;
 }
 
 export function SleepHypnogramChart({
@@ -227,18 +243,15 @@ export function SleepHypnogramChart({
                     type="linear"
                     stroke={line.color}
                     strokeWidth={1.75}
-                    dot={
-                      dotted
-                        ? (props: ReadingDotProps) => (
-                            <ReadingDot
-                              key={`dot-${line.key}-${props.index}`}
-                              {...props}
-                              rawKey={rawKey(line.key)}
-                              color={line.color}
-                            />
-                          )
-                        : false
-                    }
+                    dot={(props: ReadingDotProps) => (
+                      <ReadingDot
+                        key={`dot-${line.key}-${props.index}`}
+                        {...props}
+                        lineKey={line.key}
+                        dotted={dotted}
+                        color={line.color}
+                      />
+                    )}
                     activeDot={{ r: 3, fill: line.color, strokeWidth: 0 }}
                     connectNulls={false}
                     isAnimationActive={false}

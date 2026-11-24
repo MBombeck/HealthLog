@@ -11,13 +11,13 @@
  */
 import { prisma } from "@/lib/db";
 import {
-  CHART_OVERLAY_KEYS,
   layoutNeedsPreserveRead,
   mergePreservedLayoutFields,
   resolveDashboardLayout,
   serializeDashboardLayout,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
+import { CHART_OVERLAY_KEYS } from "@/lib/dashboard/chart-overlay-prefs";
 
 /**
  * The per-chart fields a client may leave out of a chart's slot without
