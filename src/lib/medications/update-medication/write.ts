@@ -74,9 +74,18 @@ export interface MedicationEditWrite {
 type RevisionSourceRow = Parameters<typeof toRevisionPayloadEntry>[0];
 
 /**
- * Tombstone today's and future open pending rows of this medication. Runs on
- * a schedule replace that changes the cadence (the old anchors are stale) and
- * when intake tracking is switched off (nothing is due any more).
+ * Tombstone the open pending rows of this medication that the edit leaves
+ * without a dose. Runs on a schedule replace that changes the cadence (the
+ * old anchors are stale) and when intake tracking is switched off (nothing is
+ * due any more).
+ *
+ * A replace that keeps the medication tracked only tombstones the slots still
+ * ahead. A slot that began before the edit belongs to the era that ends with
+ * it, and that era expected it: the ledger, resolved-slots and dose-history
+ * keep naming it, and the live rows never mint it again (`live-era.ts`). So
+ * its open row stays, or the today list and the dashboard count dropped a
+ * dose that was still due, and could not be taken from the list, while
+ * every other surface showed it open.
  */
 async function tombstoneOpenSlots(
   db: Prisma.TransactionClient,
@@ -86,14 +95,15 @@ async function tombstoneOpenSlots(
   // A schedule replace invalidates the open slot anchors the projector /
   // reminder worker minted for the OLD times: a pending 08:00 row for a
   // medication that now doses at 20:00 would linger as a phantom slot,
-  // auto-miss later, and depress compliance. Tombstone today's and
-  // future open pending rows (never an actioned row — `takenAt`,
-  // `skipped`, and `autoMissed` are user-visible history) and bump
-  // `syncVersion` so delta-sync clients drop them. The projector and
+  // auto-miss later, and depress compliance. Tombstone the open pending
+  // rows still ahead, all of today's when tracking goes off (never an
+  // actioned row — `takenAt`, `skipped`, and `autoMissed` are user-visible
+  // history) and bump `syncVersion` so delta-sync clients drop them. The projector and
   // the reminder worker re-mint the anchors for the new times on their
   // next pass — the route does not pre-create them.
   const userTz = user.timezone || DEFAULT_TIMEZONE;
-  const { start: todayStart } = getUserTodayBounds(new Date(), userTz);
+  const now = new Date();
+  const { start: todayStart } = getUserTodayBounds(now, userTz);
   const tombstoneWhere = {
     userId: user.id,
     medicationId: id,
@@ -101,7 +111,7 @@ async function tombstoneOpenSlots(
     takenAt: null,
     skipped: false,
     autoMissed: false,
-    scheduledFor: { gte: todayStart },
+    scheduledFor: { gte: edit.willTrack ? now : todayStart },
   } as const;
   // Capture the affected slots BEFORE the tombstone so the compliance
   // rollups for those days can be recomputed after the commit —
