@@ -19,8 +19,6 @@ import { pathToFileURL } from "node:url";
 
 /** The last release before the calendar applies. Tags up to it are exempt. */
 export const SCHEDULE_STARTS_AFTER = "1.49.0";
-/** A minor's month starts at least this many days after the previous minor. */
-export const MINOR_GAP_DAYS = 21;
 export const TIME_ZONE = "Europe/Berlin";
 /** Releases ship on Saturday, when self-hosters have time to update. */
 export const RELEASE_WEEKDAY = 6;
@@ -138,17 +136,14 @@ export function firstSaturdayOf(year, month) {
 }
 
 /**
- * The first Saturday of the first month that starts at least MINOR_GAP_DAYS
- * after the previous minor. For a minor on a first Saturday that is always the
- * next month; after the transition release it can be the month after.
+ * The first Saturday of the calendar month after the previous minor's month.
+ * For a minor on a first Saturday that is the next month's first Saturday;
+ * after the transition release (1.49.0, on 2026-11-23) it is 2026-12-05.
  */
 export function earliestMinorDay(previousMinorDate) {
-  const threshold = addDays(berlinDay(previousMinorDate), MINOR_GAP_DAYS);
-  const monthStart =
-    threshold.day === 1
-      ? threshold
-      : day(threshold.year, threshold.month + 1, 1);
-  return firstSaturdayOf(monthStart.year, monthStart.month);
+  const shipped = berlinDay(previousMinorDate);
+  const nextMonth = day(shipped.year, shipped.month + 1, 1);
+  return firstSaturdayOf(nextMonth.year, nextMonth.month);
 }
 
 export function nextSaturday(fromDay) {
@@ -398,7 +393,7 @@ export function describeNext({ now, tags, changelog }) {
       `Next release: v${SCHEDULE_STARTS_AFTER}, the last one before the calendar. It ships when its planned work is done and green, on any day.`,
     );
     lines.push(
-      `After it, the first minor is on the first Saturday of the first month that starts at least ${MINOR_GAP_DAYS} days later.`,
+      "After it, the first minor is on the first Saturday of the next calendar month.",
       tagCommand(`v${SCHEDULE_STARTS_AFTER}`),
     );
     return lines;

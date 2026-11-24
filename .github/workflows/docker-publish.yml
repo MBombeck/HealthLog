@@ -326,6 +326,7 @@ jobs:
             NEXT_PUBLIC_APP_VERSION=${{ github.ref_name }}
             NEXT_PUBLIC_APP_BUILD_SHA=${{ steps.provenance.outputs.build_sha }}
             NEXT_PUBLIC_APP_BUILT_AT=${{ steps.provenance.outputs.built_at }}
+            NEXT_PUBLIC_APP_CHANNEL=release
             OS_PACKAGES_REFRESH=${{ github.run_id }}-${{ github.run_attempt }}
           outputs: |
             type=image,name=${{ env.IMAGE_REF }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}

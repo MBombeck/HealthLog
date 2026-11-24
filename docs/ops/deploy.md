@@ -7,7 +7,10 @@ install. `:latest` therefore moves at most once a week, except for those.
 Between releases, `main` collects merged fixes and every push to it publishes
 `:edge` (amd64). A host that tracks `:edge` gets fixes before their release
 and no promise beyond that; take a backup first, migrations do not run
-backwards. Production installs track a release tag or `:latest`.
+backwards. Every night the next minor's release branch is published as
+`:nightly` (multi-arch), which may break and is not for production
+(`docs/self-hosting/channels.md`). Production installs track a release tag
+or `:latest`.
 
 Coolify handles the standard deploy ordering automatically: the
 container image is pulled, `docker-entrypoint.sh` runs

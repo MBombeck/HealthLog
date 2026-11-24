@@ -19,17 +19,17 @@ the notes and update.
 A Saturday runs from 00:00 on Saturday to 06:00 on Sunday, Europe/Berlin, so
 an evening release may run past midnight.
 
-A minor's month starts at least three weeks after the previous minor shipped.
-For a minor on a first Saturday that is always the next month. The rule matters
-once: after 1.49.0, which ships on no fixed day.
+A minor is due on the first Saturday of the calendar month after the month
+of the previous minor. For a minor on a first Saturday that is simply the next
+month.
 
 ### Starting point
 
-1.49.0 is the last release before the calendar. It ships when the work planned
-for it is done and green, on whatever day that is. The calendar applies to
-every tag after it: the first scheduled minor, 1.50.0, is on the first Saturday
-of the first month that starts at least three weeks after 1.49.0 ships, and the
-Saturdays in between are patch Saturdays.
+1.49.0 is the last release before the calendar. It shipped on 2026-11-23, when
+the work planned for it was done and green. The calendar applies to every tag
+after it: the first scheduled minor, 1.50.0, is on the first Saturday of
+December, 2026-12-05, and 1.51.0 follows on 2027-01-02. The Saturday in
+between, 2026-11-28, is a patch Saturday.
 
 ## What goes where
 
@@ -151,14 +151,24 @@ creating a second one: `docs/ops/deploy.md`, "The GitHub release".
 
 ## Images
 
-| Tag                       | Built from              | For                            |
-| ------------------------- | ----------------------- | ------------------------------ |
-| `:latest`, `:X.Y.Z`       | a release tag on `main` | everyone                       |
-| `:edge`, `:edge-<commit>` | every push to `main`    | checking a fix before Saturday |
+| Tag                                      | Built from                           | For                                   |
+| ---------------------------------------- | ------------------------------------ | ------------------------------------- |
+| `:latest`, `:X.Y.Z`                      | a release tag on `main`              | everyone                              |
+| `:edge`, `:edge-<commit>`                | every push to `main`                 | checking a fix before Saturday        |
+| `:nightly`, `:nightly-YYYYMMDD-<commit>` | the newest `release/vX.Y.0`, nightly | trying the next minor, not production |
 
-`:edge` is amd64 only, unsigned, and reports its version as the release line
-plus `-edge.<commit>`. It carries fixes only, but it is not a release. Take a
+`:edge` is amd64 only and unsigned. Its `/api/version` reports the version of
+the release it builds on and the commit, and from 1.50.0 on the channel
+`edge`. It carries fixes only, but it is not a release. Take a
 backup before you try it: migrations do not run backwards.
+
+`:nightly` is built every night from the release branch of the next minor,
+when its head moved since the last nightly. It is multi-arch and signed like a
+release, but it is not one: no `v*` tag, no `:latest`, no GitHub release, and
+its migrations may still change before the minor ships. Run it on a copy of
+your data. `/api/version` reports it as the channel `nightly`.
+[`docs/self-hosting/channels.md`](../self-hosting/channels.md) has the compose
+line for each channel.
 
 ## The iOS app
 
@@ -192,6 +202,10 @@ one minor and removed no earlier than two minors later.
   commit or adds a heading under `## [Unreleased]` that a patch cannot have.
 - `.github/workflows/edge-image.yml` publishes `:edge` on every push to
   `main`.
+- `.github/workflows/nightly-image.yml` publishes `:nightly` from the newest
+  `release/vX.Y.0` every night, skips a night on which the branch did not
+  move, and checks the published image's `/api/version` through
+  `post-publish-verify.yml`.
 - The `release-manifest`, `release-provenance` and `release-assets` jobs in
   `docker-publish.yml` attach the signed manifest and its provenance to the
   release for every `v*` tag, with the shape held by
