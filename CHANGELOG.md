@@ -20,6 +20,12 @@
 - A Health Connect export fetched from a WebDAV folder is fetched again when its import failed on the server's side, for example after a restart. The folder's file counted as imported once it was queued, so a failed run waited for the next export file. A file the importer refused still waits for the next export.
 - A Gadgetbridge or FHIR Bundle import that stops on an unexpected error keeps a fixed reason on its job, as the import card and the API promise, instead of the error's own text.
 - A Withings sync that runs long no longer skips a reading uploaded while it was writing. The next sync's window started ten minutes before the end of the previous run instead of before the start of its read.
+- A metric tile without a trend shows nothing beside its value. The dashboard and Insights tiles printed a faint dash in the arrow's place, and it read as a second value.
+- The dashboard's metric tiles name their reading the way the Insights tiles do: icon first, then the name, in the same type and colour. They carried an uppercase grey label with the icon on the right, so the same weight looked different on the two pages.
+- Lines that join a few facts use a comma instead of a middle dot or a dash, across the app and in the doctor report: a lab's unit and panel, a session's device and place, a dose and its time. The translated texts already did; the lines put together in code now match them.
+- A field's name starts on the same line as the text and the controls around it. Every form label sat a few pixels to the right of the sentence above it and of a switch's name in the same card; it now shares their left edge, in Settings, Admin and every form sheet.
+- A checkup that has never been done no longer shows "Last done" with a dash. The line is left out, as on the medication cards.
+- The Spanish, French, Italian and Polish texts write an ellipsis as one character, as the other languages do, and one Spanish loading line no longer ends in four dots.
 
 ### Security
 
