@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { migrationStatusOf } from "@/lib/admin/migration-status";
-import { updateChannelOf } from "@/lib/admin/update-channel";
+import {
+  UPDATE_CHANNEL_TAG,
+  UPDATE_CHANNELS,
+  resolveUpdateChannel,
+} from "@/lib/admin/update-channel";
 
 const at = (iso: string) => new Date(iso);
 
@@ -74,12 +78,29 @@ describe("migrationStatusOf", () => {
   });
 });
 
-describe("updateChannelOf", () => {
-  it("reads the image line off the version /api/version reports", () => {
-    expect(updateChannelOf("v1.49.0", "abc123def456")).toBe("release");
-    expect(updateChannelOf("v1.49.0-edge.abc123def456", "abc123def456")).toBe(
-      "edge",
+describe("resolveUpdateChannel", () => {
+  it("takes the image line the build was given", () => {
+    expect(resolveUpdateChannel("abc123def456", "release")).toBe("release");
+    expect(resolveUpdateChannel("abc123def456", "edge")).toBe("edge");
+    expect(resolveUpdateChannel("abc123def456", "nightly")).toBe("nightly");
+  });
+
+  it("calls an image with a commit and no known line a release", () => {
+    expect(resolveUpdateChannel("abc123def456", undefined)).toBe("release");
+    expect(resolveUpdateChannel("abc123def456", "")).toBe("release");
+    expect(resolveUpdateChannel("abc123def456", "beta")).toBe("release");
+  });
+
+  it("calls a build without a commit a development build, whatever it was told", () => {
+    expect(resolveUpdateChannel(null, undefined)).toBe("development");
+    expect(resolveUpdateChannel(null, "nightly")).toBe("development");
+  });
+
+  it("names a tag for every line but development", () => {
+    expect(Object.keys(UPDATE_CHANNEL_TAG).sort()).toEqual(
+      [...UPDATE_CHANNELS].sort(),
     );
-    expect(updateChannelOf("1.49.0", null)).toBe("development");
+    expect(UPDATE_CHANNEL_TAG.nightly).toBe(":nightly");
+    expect(UPDATE_CHANNEL_TAG.development).toBeNull();
   });
 });

@@ -2,6 +2,7 @@ import { apiHandler } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { offlineGeoReady, resolveGeoProviderHost } from "@/lib/geo";
 import packageJson from "../../../../package.json";
+import { resolveUpdateChannel } from "@/lib/admin/update-channel";
 import { SERVER_FEATURES } from "@/lib/server-features";
 
 // v1.4.27 — `offlineGeoEnabled` reads from the same source the geo
@@ -55,6 +56,12 @@ export const GET = apiHandler(async () => {
     process.env.NEXT_PUBLIC_APP_VERSION?.trim() || packageJson.version;
   const buildSha = process.env.NEXT_PUBLIC_APP_BUILD_SHA?.trim() || null;
   const builtAt = process.env.NEXT_PUBLIC_APP_BUILT_AT?.trim() || null;
+  // release, edge, nightly or development: the image line the build came
+  // from, resolved here so no client reads it off the version string.
+  const channel = resolveUpdateChannel(
+    buildSha,
+    process.env.NEXT_PUBLIC_APP_CHANNEL?.trim(),
+  );
   const offlineGeoEnabled = offlineGeoReady();
   const geoProviderHost = resolveGeoProviderHost();
 
@@ -62,6 +69,7 @@ export const GET = apiHandler(async () => {
     version,
     buildSha,
     builtAt,
+    channel,
     license: "PolyForm-Noncommercial-1.0.0",
     repository: "https://github.com/MBombeck/HealthLog",
     changelog: "https://github.com/MBombeck/HealthLog/releases",

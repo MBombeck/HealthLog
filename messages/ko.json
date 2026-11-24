@@ -9833,6 +9833,7 @@
       "channel": {
         "release": "정식 릴리스",
         "edge": "Edge",
+        "nightly": "Nightly",
         "development": "개발 빌드"
       },
       "built": "빌드 {sha}, {time}",
