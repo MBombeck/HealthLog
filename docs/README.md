@@ -87,7 +87,10 @@ notes, and machine-readable specs that ship alongside the source:
   Assistant with its blueprint. Oura and Polar are covered on the docs site
   only.
 - [`adr/`](./adr/) — architecture decision records.
-- [`security/`](./security/) — threat-model notes.
+- [`security/`](./security/) — the security model: authentication and
+  sessions, authorization, keys and the cryptographic inventory, data
+  classification, logging, network egress, limits, file handling, and the
+  cycle-data threat model. Index: [`security/README.md`](./security/README.md).
 - [`diagrams/`](./diagrams/) — architecture diagrams rendered through
   docs.healthlog.dev.
 - [`releases/`](./releases/) — release imagery.
