@@ -413,6 +413,25 @@ export const E2E_REPORT_OWNER = {
   role: "USER",
 } as const;
 
+/**
+ * The Apple Wallet journey's account (`emergency-card-wallet.spec.ts`).
+ *
+ * Making a pass writes a link and a pass row, and only one live pass per
+ * record may exist, so the journey cannot share an account with anything that
+ * reads the emergency card. The full name is a placeholder the spec finds
+ * again inside the signed `pass.json`. Global setup removes the account's
+ * Wallet links (the pass rows go with them) and its mint bucket, so every run
+ * starts at the form.
+ */
+export const E2E_WALLET = {
+  email: "e2e-wallet@healthlog.test",
+  username: "e2e-wallet",
+  password: "e2e-wallet-pass-2026",
+  role: "USER",
+} as const;
+
+export const E2E_WALLET_FULL_NAME = "Alex Example";
+
 /** One non-personal target record per closed sharing domain. */
 export const E2E_SCOPE_RECORDS = [
   {
@@ -614,6 +633,12 @@ export const REPORT_DELEGATE_STORAGE_STATE_PATH = resolve(
 export const REPORT_OWNER_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateReportOwner.json",
+);
+
+/** The Apple Wallet journey's jar — see `E2E_WALLET`. */
+export const WALLET_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateWallet.json",
 );
 
 /**
@@ -1205,6 +1230,44 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
         now,
         dob,
       ],
+    );
+
+    // The Wallet journey's account, back at the form on every run: its
+    // Wallet links go (the pass rows cascade with them) and so does its
+    // hourly mint bucket, which a few local reruns would otherwise spend.
+    await pool.query(
+      `INSERT INTO users
+        (id, username, email, password_hash, role, created_at, updated_at,
+         onboarding_completed_at, onboarding_tour_completed, full_name)
+       VALUES ($1, $2, $3, $4, 'USER', $5, $5, $5, true, $6)
+       ON CONFLICT (username) DO UPDATE SET
+         email = EXCLUDED.email,
+         password_hash = EXCLUDED.password_hash,
+         updated_at = EXCLUDED.updated_at,
+         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+         full_name = EXCLUDED.full_name`,
+      [
+        cuid(),
+        E2E_WALLET.username,
+        E2E_WALLET.email,
+        await hashPassword(E2E_WALLET.password),
+        now,
+        E2E_WALLET_FULL_NAME,
+      ],
+    );
+    await pool.query(
+      `DELETE FROM emergency_card_links
+       WHERE purpose = 'WALLET'
+         AND user_id = (SELECT id FROM users WHERE username = $1)`,
+      [E2E_WALLET.username],
+    );
+    await pool.query(
+      `DELETE FROM rate_limits
+       WHERE key = 'emergency-card:wallet-mint:' || (
+         SELECT id::text FROM users WHERE username = $1
+       )`,
+      [E2E_WALLET.username],
     );
 
     // The scoped-record journey uses a dedicated delegate so its preseeded
@@ -1848,6 +1911,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // The doctor-report journey's own account, for the reason written on
     // E2E_REPORT_OWNER: generating a report writes to the account row.
     await capture(E2E_REPORT_OWNER, REPORT_OWNER_STORAGE_STATE_PATH);
+
+    // The Wallet journey's own account — see `E2E_WALLET`.
+    await capture(E2E_WALLET, WALLET_STORAGE_STATE_PATH);
 
     // The delegated-writes journey's pair.
     await capture(E2E_WRITE_OWNER, WRITE_OWNER_STORAGE_STATE_PATH);
