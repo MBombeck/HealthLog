@@ -16,7 +16,7 @@ import { sessionCookieName } from "@/lib/auth/session-cookie";
 import { LOCALE_COOKIE } from "@/lib/i18n/locale-cookie";
 
 import { callRoute } from "../kit/call-route";
-import { makeSession, makeUser } from "../kit/factories";
+import { makeSession, makeToken, makeUser } from "../kit/factories";
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
@@ -45,7 +45,11 @@ async function putLocale(locale: string, demo: boolean) {
   if (demo) process.env.DEMO_MODE = "true";
   else delete process.env.DEMO_MODE;
   const user = await makeUser({ locale: "en" });
-  const auth = await makeSession(user);
+  // The native client's write: a stated choice, not a tab's rendered
+  // language, so it is stored as sent on an ordinary instance. (A browser
+  // tab's write is held to its locale cookie; locale-write-precondition
+  // covers that.)
+  const auth = await makeToken(user);
   const res = await callRoute(PUT, {
     method: "PUT",
     route: "/api/auth/me/locale",

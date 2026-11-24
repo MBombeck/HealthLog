@@ -26,7 +26,7 @@ import { apiHandler, requireActorAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, safeJson } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { locales, type Locale } from "@/lib/i18n/config";
-import { setLocaleCookie } from "@/lib/i18n/locale-cookie";
+import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +52,8 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // naming, because the mode carries no method escalation: the row it updates
   // is the caller's own, resolved from their own session, and no grant is
   // consulted or needed.
-  const { user } = await requireActorAuth();
+  const auth = await requireActorAuth();
+  const { user } = auth;
   annotate({ action: { name: "user.locale.update" } });
 
   const { data: body, error: jsonError } = await safeJson(request, {
@@ -65,27 +66,61 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     return apiError("Not a supported locale.", 422);
   }
 
-  // Idempotent: skip the write (and the annotation noise) when the column
-  // already matches — the mount-time backfill fires on every page load. A
-  // demo is one account every visitor shares, so there the choice stays in
-  // this visitor's cookie and never reaches the row the next visitor reads.
-  if (user.locale !== locale && process.env.DEMO_MODE !== "true") {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { locale },
-    });
-    annotate({ meta: { locale_next: locale } });
+  // A browser's statement of its language is the locale cookie: every switch
+  // writes it (client `persistLocale`) before this request is sent, and the
+  // session read has already copied it onto the column. The body is the
+  // language the sending tab happened to render, which is only a choice when
+  // it agrees with that cookie. Two ways it does not:
+  //
+  //   - The cookie says something else. Another tab switched after this one
+  //     rendered, or the session read re-emitted the stored choice into a
+  //     browser that had none. The body is stale; writing it would put an
+  //     older language back over a newer one.
+  //   - There is no cookie. Nothing was chosen in this browser, so the page
+  //     rendered the Accept-Language guess. A guess may fill an empty column,
+  //     never replace a stored choice — or a sign-in on a new device would
+  //     reset the account to that device's system language.
+  //
+  // Either way the reply names the language in force, and the client adopts
+  // it. A Bearer caller (the native app) has no cookie and states its choice
+  // in the body, so its write stands as before.
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(LOCALE_COOKIE)?.value;
+  const cookieLocale = isLocale(raw) ? raw : null;
+  const storedLocale = isLocale(user.locale) ? user.locale : null;
+
+  let inForce: Locale = locale;
+  if (auth.authMethod === "cookie") {
+    if (cookieLocale && cookieLocale !== locale) inForce = cookieLocale;
+    else if (!cookieLocale && storedLocale) inForce = storedLocale;
+  }
+  if (inForce !== locale) {
+    annotate({ meta: { locale_stale: true } });
   }
 
-  // Mirror the accepted locale into the `healthlog-locale` cookie via
-  // Set-Cookie. The client's own `document.cookie` write is capped at 7
-  // days by Safari ITP; the server-set copy is not, so an explicit choice
-  // survives on every device. Runs on the idempotent path too — the
-  // mount-time backfill hitting this route is exactly the weekly refresh
-  // that keeps the cookie alive. Harmless no-op payload for Bearer
-  // callers (native clients ignore cookies).
-  const cookieStore = await cookies();
-  setLocaleCookie(cookieStore, locale);
+  // Idempotent: skip the write (and the annotation noise) when the column
+  // already matches. A demo is one account every visitor shares, so there the
+  // choice stays in this visitor's cookie and never reaches the row the next
+  // visitor reads.
+  if (user.locale !== inForce && process.env.DEMO_MODE !== "true") {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { locale: inForce },
+    });
+    annotate({ meta: { locale_next: inForce } });
+  }
 
-  return apiSuccess({ locale });
+  // Set the cookie only where this reply changes it. A reply that repeats
+  // the cookie the request carried has nothing to add, and it is not
+  // harmless: the request is sent with `keepalive` and can land after the
+  // user picked another language in another tab, putting the older one back
+  // for the whole browser. Safari's seven-day cap on the script-written
+  // cookie does not need this refresh: once the cookie is gone, the session
+  // read re-emits the stored choice with a server `Set-Cookie`. Bearer
+  // callers ignore cookies, so they get none.
+  if (auth.authMethod === "cookie" && cookieLocale !== inForce) {
+    setLocaleCookie(cookieStore, inForce);
+  }
+
+  return apiSuccess({ locale: inForce });
 });

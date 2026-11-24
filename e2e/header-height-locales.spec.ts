@@ -8,10 +8,12 @@
  * on a 390 px phone and on a desktop window, against the height English gives
  * them on the same viewport.
  *
- * The language is switched the way the app switches it, through
- * `PUT /api/auth/me/locale`, which writes the account's language and the
- * locale cookie; `<html lang>` is then asserted before anything is measured,
- * so a switch that silently did not happen cannot pass as "same height".
+ * The language is switched the way the app switches it: the locale cookie is
+ * written first, then `PUT /api/auth/me/locale` writes the account's
+ * language. The route holds a cookie session to the cookie it carries (a body
+ * that disagrees with it is a stale tab), so the PUT alone would not switch.
+ * `<html lang>` is then asserted before anything is measured, so a switch that
+ * silently did not happen cannot pass as "same height".
  *
  * The locale list is the app's own (`src/lib/i18n/config.ts`), so a language
  * added there is swept without touching this file.
@@ -102,13 +104,20 @@ test.describe("header height in every locale", () => {
   for (const locale of ORDER) {
     test(`top bar and dashboard header keep the English height in ${locale}`, async ({
       page,
+      baseURL,
     }) => {
       test.setTimeout(60_000);
 
+      await page
+        .context()
+        .addCookies([
+          { name: "healthlog-locale", value: locale, url: baseURL },
+        ]);
       const switched = await page.request.put("/api/auth/me/locale", {
         data: { locale },
       });
       expect(switched.status(), await switched.text()).toBe(200);
+      expect((await switched.json()).data.locale).toBe(locale);
 
       for (const viewport of VIEWPORTS) {
         await page.setViewportSize({
