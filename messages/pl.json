@@ -3970,7 +3970,22 @@
         "empty": "Brak zapisanej nocy dla tego dnia.",
         "estimateNote": "To źródło podaje sumy faz bez godzin, więc dla tej nocy nie ma przebiegu.",
         "noStages": "Ta noc nie ma godzin faz.",
-        "ariaLabel": "Fazy snu w ciągu nocy: {asleep} snu, {awakenings, plural, one {# wybudzenie} few {# wybudzenia} many {# wybudzeń} other {# wybudzenia}}"
+        "ariaLabel": "Fazy snu w ciągu nocy: {asleep} snu, {awakenings, plural, one {# wybudzenie} few {# wybudzenia} many {# wybudzeń} other {# wybudzenia}}",
+        "overlay": {
+          "group": "Linie na tle nocy",
+          "kinds": {
+            "pulse": "Tętno",
+            "hrv": "HRV",
+            "respiration": "Oddech",
+            "spo2": "SpO₂",
+            "skinTemperature": "Temp. skóry",
+            "roomTemperature": "Temp. pokoju"
+          },
+          "range": "{min} do {max}",
+          "nightValues": "Za noc",
+          "srSeries": "{metric} w nocy: najniższe {min}, najwyższe {max}, średnio {avg}",
+          "srNight": "{metric} za noc: {value}"
+        }
       },
       "empty": {
         "title": "Brak danych o śnie",

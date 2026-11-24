@@ -35,6 +35,10 @@ import { reportLayoutValidationFailure } from "@/lib/dashboard/widgets/validatio
 import { layoutToStore } from "@/lib/dashboard/widgets/merge-stored";
 import { resetDashboardLayout } from "@/lib/dashboard/widgets/reset-layout";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import {
+  MAX_NIGHT_OVERLAY_LINES,
+  NIGHT_OVERLAY_KINDS,
+} from "@/lib/sleep/night-overlay-kinds";
 import { z } from "zod/v4";
 import { invalidateUserDashboardWidgets } from "@/lib/cache/invalidate";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
@@ -129,6 +133,10 @@ const layoutSchema = z.object({
           .optional(),
         rangePoints: z
           .union([z.literal(0), z.literal(7), z.literal(30), z.literal(90)])
+          .optional(),
+        overlayLines: z
+          .array(z.enum(NIGHT_OVERLAY_KINDS))
+          .max(MAX_NIGHT_OVERLAY_LINES)
           .optional(),
       }),
     )

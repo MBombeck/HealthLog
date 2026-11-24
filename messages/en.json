@@ -3970,7 +3970,22 @@
         "empty": "No night recorded for this day.",
         "estimateNote": "This source reports stage totals without times, so there is no timeline for this night.",
         "noStages": "This night has no stage times.",
-        "ariaLabel": "Sleep stages over the night: {asleep} asleep, {awakenings, plural, one {# awakening} other {# awakenings}}"
+        "ariaLabel": "Sleep stages over the night: {asleep} asleep, {awakenings, plural, one {# awakening} other {# awakenings}}",
+        "overlay": {
+          "group": "Lines over the night",
+          "kinds": {
+            "pulse": "Pulse",
+            "hrv": "HRV",
+            "respiration": "Breathing",
+            "spo2": "SpO₂",
+            "skinTemperature": "Skin temp.",
+            "roomTemperature": "Room temp."
+          },
+          "range": "{min} to {max}",
+          "nightValues": "For the night",
+          "srSeries": "{metric} over the night: lowest {min}, highest {max}, average {avg}",
+          "srNight": "{metric} for the night: {value}"
+        }
       },
       "empty": {
         "title": "No sleep data yet",

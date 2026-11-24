@@ -17,6 +17,11 @@ import {
 } from "@/components/insights/sleep-source-discrepancy-marker";
 import { useSleepNight } from "@/hooks/use-sleep-night";
 import {
+  SleepNightOverlayChips,
+  SleepNightOverlayFacts,
+  useNightOverlays,
+} from "@/components/insights/sleep/sleep-night-overlays";
+import {
   useDateFormatPreference,
   useDisplayTimezone,
   useFormatters,
@@ -68,6 +73,10 @@ function SleepHypnogramChart(
  *
  * The axis reads in the night's own zone when the readings carry one and in
  * the profile zone otherwise.
+ *
+ * Under a drawn timeline, toggles lay the night's pulse, HRV, breathing,
+ * SpO2 or temperature over the stages as lines, from the series the server
+ * resolved for that night (`sleep-night-overlays.tsx`).
  */
 export function SleepNightCard({ enabled }: { enabled: boolean }) {
   const { t, locale } = useTranslations();
@@ -107,6 +116,8 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
     CORE: t("insights.sleep.stages.core"),
     DEEP: t("insights.sleep.stages.deep"),
   };
+
+  const overlayState = useNightOverlays(track ? data?.overlays : null, enabled);
 
   const canStepForward =
     shownNight !== null && latest !== null && shownNight < latest;
@@ -213,6 +224,7 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
               asleep: formatDurationMinutes(session.asleepMinutes, t),
               awakenings: session.awakenings,
             })}
+            overlay={overlayState.chartOverlay}
           />
         ) : (
           <p
@@ -224,6 +236,12 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
               : t("insights.sleep.hypnogram.noStages")}
           </p>
         )}
+        {track && !query.isError ? (
+          <div className="mt-3 flex flex-col gap-3 empty:hidden">
+            <SleepNightOverlayChips state={overlayState} />
+            <SleepNightOverlayFacts state={overlayState} />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

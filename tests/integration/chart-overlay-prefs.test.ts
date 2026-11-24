@@ -151,6 +151,44 @@ describe("PUT /api/dashboard/chart-overlay-prefs — integration", () => {
     expect(stored.dashboardWidgetsJson).toBeTruthy();
   });
 
+  it("persists the night timeline's chosen lines (#1419)", async () => {
+    await seedUser();
+    const { PUT } =
+      await import("@/app/api/dashboard/chart-overlay-prefs/route");
+    const { GET: getWidgets } =
+      await import("@/app/api/dashboard/widgets/route");
+
+    const putRes = await (PUT as (req: Request) => Promise<Response>)(
+      new Request("http://localhost/api/dashboard/chart-overlay-prefs", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          chartKey: "sleepNight",
+          prefs: {
+            showTrendIndicator: false,
+            showTrendArrow: false,
+            showTargetRange: false,
+            overlayLines: ["pulse", "hrv"],
+          },
+        }),
+      }),
+    );
+    expect(putRes.status).toBe(200);
+
+    const getRes = await (getWidgets as (req: Request) => Promise<Response>)(
+      new Request("http://localhost/api/dashboard/widgets"),
+    );
+    const body = (await getRes.json()) as {
+      data: {
+        chartOverlayPrefs?: Record<string, { overlayLines?: string[] }>;
+      };
+    };
+    expect(body.data.chartOverlayPrefs?.sleepNight?.overlayLines).toEqual([
+      "pulse",
+      "hrv",
+    ]);
+  });
+
   it("rejects an unknown chart key with 422", async () => {
     await seedUser();
     const { PUT } =

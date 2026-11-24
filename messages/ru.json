@@ -3970,7 +3970,22 @@
         "empty": "Для этого дня ночь не записана.",
         "estimateNote": "Этот источник передаёт итоги по фазам без времени, поэтому хода этой ночи нет.",
         "noStages": "У этой ночи нет времени фаз.",
-        "ariaLabel": "Фазы сна за ночь: сон {asleep}, {awakenings, plural, one {# пробуждение} few {# пробуждения} many {# пробуждений} other {# пробуждения}}"
+        "ariaLabel": "Фазы сна за ночь: сон {asleep}, {awakenings, plural, one {# пробуждение} few {# пробуждения} many {# пробуждений} other {# пробуждения}}",
+        "overlay": {
+          "group": "Линии поверх ночи",
+          "kinds": {
+            "pulse": "Пульс",
+            "hrv": "ВСР",
+            "respiration": "Дыхание",
+            "spo2": "SpO₂",
+            "skinTemperature": "Темп. кожи",
+            "roomTemperature": "Темп. в комнате"
+          },
+          "range": "от {min} до {max}",
+          "nightValues": "За ночь",
+          "srSeries": "{metric} за ночь: минимум {min}, максимум {max}, среднее {avg}",
+          "srNight": "{metric} за ночь: {value}"
+        }
       },
       "empty": {
         "title": "Пока нет данных о сне",

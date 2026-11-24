@@ -27,6 +27,10 @@ import {
   HERO_PRIMARY_CONTENTS,
 } from "@/lib/dashboard-layout";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import {
+  MAX_NIGHT_OVERLAY_LINES,
+  NIGHT_OVERLAY_KINDS,
+} from "@/lib/sleep/night-overlay-kinds";
 import { sleepRhythmResponse } from "./measurements";
 import {
   baseUpdatedAtField,
@@ -53,6 +57,13 @@ const dashboardChartOverlayPrefs = z.object({
   rangePoints: z
     .union([z.literal(0), z.literal(7), z.literal(30), z.literal(90)])
     .optional(),
+  overlayLines: z
+    .array(z.enum(NIGHT_OVERLAY_KINDS))
+    .max(MAX_NIGHT_OVERLAY_LINES)
+    .optional()
+    .describe(
+      "The night metrics the sleep timeline (`sleepNight`) draws over its stages, at most two. Absent means none chosen. Preserved when a PUT omits it.",
+    ),
 });
 
 // The layout shape shared by GET/PUT/DELETE. Every field except `version` is
@@ -340,6 +351,13 @@ const chartOverlayPrefsPutBody = z
           .optional()
           .describe(
             "Persisted range-tab selection. Optional so a client on an older bundle that never sends it does not 422; omitting it stores the slot WITHOUT the field rather than storing a default.",
+          ),
+        overlayLines: z
+          .array(z.enum(NIGHT_OVERLAY_KINDS))
+          .max(MAX_NIGHT_OVERLAY_LINES)
+          .optional()
+          .describe(
+            "The night metrics the sleep timeline (`chartKey: sleepNight`) draws over its stages, at most two. Omitting it stores the slot without the field, which draws none.",
           ),
       })
       .describe(

@@ -136,6 +136,13 @@ const BUDGET = {
   // ledgers' anchor and window reads in one batch, and the due check-ups.
   // Fixed, whatever the number of medications.
   navCounts: 9,
+  // The sleep page's night timeline (1.50.0, #1419): the session and the
+  // user, the instance settings and module reads (cycle included), the
+  // source order, the latest-night probe, the night's stage rows (two
+  // reads), and the lines over it. The lines are one statement for every
+  // metric, folded per bucket in Postgres, whatever the density of the
+  // streams; the module check for HRV shares the sleep gate's read.
+  sleepNight: 10,
 } as const;
 
 type Handler = (
@@ -531,6 +538,21 @@ describe("statement budgets on the hot routes (real Postgres)", () => {
       m,
       BUDGET.integrationsHealthkit,
     );
+  });
+
+  it("GET /api/sleep/night", async () => {
+    const { GET } = await import("@/app/api/sleep/night/route");
+    const url = "http://localhost/api/sleep/night";
+    const m = await measureRead(GET as unknown as Handler, url);
+    expectWithin("/api/sleep/night", m, BUDGET.sleepNight);
+    // The count is the one with the lines in it.
+    const res = await (GET as unknown as Handler)(new NextRequest(url), {
+      params: Promise.resolve({}),
+    });
+    const body = (await res.json()) as {
+      data: { overlays: { metrics: Array<{ kind: string }> } | null };
+    };
+    expect(body.data.overlays?.metrics.map((x) => x.kind)).toContain("pulse");
   });
 
   it("POST /api/measurements/batch, 500 fresh rows", async () => {

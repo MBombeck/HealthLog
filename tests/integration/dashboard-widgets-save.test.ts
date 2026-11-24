@@ -269,6 +269,61 @@ describe("PUT /api/dashboard/widgets — Save persists full layouts", () => {
     expect(getBody.data.chartOverlayPrefs?.bp?.rangePoints).toBe(90);
   });
 
+  it("preserves the night timeline's stored lines when the full-layout payload omits them (#1419)", async () => {
+    const { userId } = await seedUser();
+    const { PUT, GET } = await import("@/app/api/dashboard/widgets/route");
+
+    await getPrismaClient().user.update({
+      where: { id: userId },
+      data: {
+        dashboardWidgetsJson: {
+          ...DEFAULT_DASHBOARD_LAYOUT,
+          chartOverlayPrefs: {
+            sleepNight: {
+              showTrendIndicator: false,
+              showTrendArrow: false,
+              showTargetRange: false,
+              comparisonBaseline: "none",
+              overlayLines: ["pulse", "spo2"],
+            },
+          },
+        } as never,
+      },
+    });
+
+    const putRes = await (PUT as (req: Request) => Promise<Response>)(
+      new Request("http://localhost/api/dashboard/widgets", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(
+          buildClientPayload({
+            chartOverlayPrefs: {
+              sleepNight: {
+                showTrendIndicator: false,
+                showTrendArrow: false,
+                showTargetRange: false,
+              },
+            },
+          }),
+        ),
+      }),
+    );
+    expect(putRes.status).toBe(200);
+
+    const getRes = await (GET as (req: Request) => Promise<Response>)(
+      new Request("http://localhost/api/dashboard/widgets"),
+    );
+    const getBody = (await getRes.json()) as {
+      data: {
+        chartOverlayPrefs?: Record<string, { overlayLines?: string[] }>;
+      };
+    };
+    expect(getBody.data.chartOverlayPrefs?.sleepNight?.overlayLines).toEqual([
+      "pulse",
+      "spo2",
+    ]);
+  });
+
   it("honors an explicit valid per-chart rangePoints override", async () => {
     const { userId } = await seedUser();
     const { PUT, GET } = await import("@/app/api/dashboard/widgets/route");

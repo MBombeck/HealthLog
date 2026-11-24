@@ -9,6 +9,10 @@ import {
   isPriorityItemKind,
   type PriorityItemKind,
 } from "@/lib/daily/priority-item";
+import {
+  coerceNightOverlayKinds,
+  type NightOverlayKind,
+} from "@/lib/sleep/night-overlay-kinds";
 
 /**
  * Every widget the dashboard layout knows about. The order of
@@ -343,6 +347,9 @@ export const CHART_OVERLAY_KEYS = [
   "scoreStress",
   "scoreStrain",
   "bloodKetones", // #1367 — the chart on the ketones page.
+  // #1419 — the sleep page's night timeline. It remembers only which night
+  // metrics it draws over the stages (`overlayLines`).
+  "sleepNight",
 ] as const;
 export type ChartOverlayKey = (typeof CHART_OVERLAY_KEYS)[number];
 
@@ -364,6 +371,12 @@ export interface ChartOverlayPrefs {
   // for this chart yet, so the chart falls back to its own 30 d
   // default rather than forcing every unopened chart to look "saved".
   rangePoints?: ChartRangePoints;
+  /**
+   * #1419 — the metric lines a chart draws over its own series, at most
+   * `MAX_NIGHT_OVERLAY_LINES`. Only the night timeline (`sleepNight`) reads
+   * it. Undefined = never chosen, which draws none.
+   */
+  overlayLines?: NightOverlayKind[];
 }
 
 export const DEFAULT_CHART_OVERLAY_PREFS: ChartOverlayPrefs = {
@@ -400,6 +413,9 @@ function coerceChartOverlayPrefs(value: unknown): ChartOverlayPrefs {
       : "none",
     rangePoints: isChartRangePoints(candidate.rangePoints)
       ? candidate.rangePoints
+      : undefined,
+    overlayLines: Array.isArray(candidate.overlayLines)
+      ? coerceNightOverlayKinds(candidate.overlayLines)
       : undefined,
   };
 }

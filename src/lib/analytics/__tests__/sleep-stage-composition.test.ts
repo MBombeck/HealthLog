@@ -8,6 +8,8 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: vi.fn() },
     auditLog: { create: vi.fn() },
+    // The night's metric lines (#1419); none in this input.
+    $queryRaw: vi.fn(async () => []),
   },
 }));
 
@@ -26,6 +28,7 @@ vi.mock("@/lib/rollups/measurement-read", () => ({
 
 vi.mock("@/lib/modules/gate", () => ({
   requireModuleEnabled: vi.fn(async () => ({ enabled: true })),
+  isModuleEnabled: vi.fn(async () => true),
 }));
 
 vi.mock("@/lib/logging/context", async (importOriginal) => {

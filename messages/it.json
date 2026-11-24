@@ -3970,7 +3970,22 @@
         "empty": "Nessuna notte registrata per questo giorno.",
         "estimateNote": "Questa fonte riporta i totali per fase senza orari, quindi per questa notte non c'è un andamento.",
         "noStages": "Questa notte non ha orari delle fasi.",
-        "ariaLabel": "Fasi del sonno nella notte: {asleep} di sonno, {awakenings, plural, one {# risveglio} other {# risvegli}}"
+        "ariaLabel": "Fasi del sonno nella notte: {asleep} di sonno, {awakenings, plural, one {# risveglio} other {# risvegli}}",
+        "overlay": {
+          "group": "Linee sulla notte",
+          "kinds": {
+            "pulse": "Polso",
+            "hrv": "HRV",
+            "respiration": "Respirazione",
+            "spo2": "SpO₂",
+            "skinTemperature": "Temp. pelle",
+            "roomTemperature": "Temp. ambiente"
+          },
+          "range": "da {min} a {max}",
+          "nightValues": "Per la notte",
+          "srSeries": "{metric} durante la notte: minimo {min}, massimo {max}, media {avg}",
+          "srNight": "{metric} per la notte: {value}"
+        }
       },
       "empty": {
         "title": "Ancora nessun dato sul sonno",

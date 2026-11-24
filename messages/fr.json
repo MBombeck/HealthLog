@@ -3970,7 +3970,22 @@
         "empty": "Aucune nuit enregistrée pour ce jour.",
         "estimateNote": "Cette source fournit des totaux par phase sans horaires, il n'y a donc pas de déroulé pour cette nuit.",
         "noStages": "Cette nuit n'a pas d'horaires de phases.",
-        "ariaLabel": "Phases de sommeil sur la nuit : {asleep} de sommeil, {awakenings, plural, one {# réveil} other {# réveils}}"
+        "ariaLabel": "Phases de sommeil sur la nuit : {asleep} de sommeil, {awakenings, plural, one {# réveil} other {# réveils}}",
+        "overlay": {
+          "group": "Courbes sur la nuit",
+          "kinds": {
+            "pulse": "Pouls",
+            "hrv": "VFC",
+            "respiration": "Respiration",
+            "spo2": "SpO₂",
+            "skinTemperature": "Temp. cutanée",
+            "roomTemperature": "Temp. ambiante"
+          },
+          "range": "{min} à {max}",
+          "nightValues": "Pour la nuit",
+          "srSeries": "{metric} pendant la nuit : minimum {min}, maximum {max}, moyenne {avg}",
+          "srNight": "{metric} pour la nuit : {value}"
+        }
       },
       "empty": {
         "title": "Pas encore de données de sommeil",

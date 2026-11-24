@@ -9,7 +9,10 @@ import type { SleepNightPayload } from "@/hooks/use-sleep-night";
  * renders client-side only; these pin what the card decides around it: a
  * measured night gets the chart, a synthesised one (stage totals without
  * onsets) gets a note instead of an invented order, a day without a night
- * says so, and a failed read is never shown as an absent night.
+ * says so, and a failed read is never shown as an absent night. The night
+ * metrics over the timeline: a toggle per series, the chosen ones handed to
+ * the chart, single night values as numbers, and every metric in words for
+ * a screen reader.
  */
 
 const reads: Record<string, { data?: SleepNightPayload; isError?: boolean }> =
@@ -28,9 +31,46 @@ vi.mock("@/hooks/use-sleep-night", () => ({
 }));
 vi.mock("next/dynamic", () => ({
   default: () =>
-    function Chart(props: { ariaLabel: string }) {
-      return <div data-slot="hypnogram-chart" aria-label={props.ariaLabel} />;
+    function Chart(props: {
+      ariaLabel: string;
+      overlay?: { lines: Array<{ key: string; color: string }> };
+    }) {
+      return (
+        <div
+          data-slot="hypnogram-chart"
+          aria-label={props.ariaLabel}
+          data-lines={
+            props.overlay?.lines.map((l) => `${l.key}:${l.color}`).join(" ") ??
+            ""
+          }
+        />
+      );
     },
+}));
+
+const overlayPrefs: { overlayLines?: string[] } = {};
+vi.mock("@/hooks/use-chart-overlay-prefs", () => ({
+  useChartOverlayPrefs: () => ({
+    prefs: {
+      showTrendIndicator: false,
+      showTrendArrow: false,
+      showTargetRange: false,
+      comparisonBaseline: "none",
+      ...overlayPrefs,
+    },
+    setPrefs: () => {},
+    isSaving: false,
+  }),
+}));
+
+vi.mock("@/hooks/use-unit-display", () => ({
+  useUnitDisplay: () => ({
+    toDisplay: (_type: string, v: number) => v,
+    decimalsFor: () => 1,
+    unitFor: (type: string) =>
+      ({ PULSE: "bpm", HRV_RMSSD: "ms", RESPIRATORY_RATE: "br/min" })[type] ??
+      "",
+  }),
 }));
 
 import { SleepNightCard } from "../sleep-night-card";
@@ -73,6 +113,47 @@ function render() {
   );
 }
 
+const OVERLAYS = {
+  from: "2026-06-01T20:55:00.000Z",
+  to: "2026-06-02T04:55:00.000Z",
+  bucketMinutes: 5,
+  metrics: [
+    {
+      kind: "pulse" as const,
+      type: "PULSE",
+      unit: "bpm",
+      source: "APPLE_HEALTH",
+      points: [
+        { at: "2026-06-01T21:10:00.000Z", value: 61, min: 58, max: 64 },
+        { at: "2026-06-01T21:15:00.000Z", value: 55, min: 52, max: 57 },
+      ],
+      nightValue: null,
+      summary: { min: 52, max: 64, avg: 58 },
+    },
+    {
+      kind: "respiration" as const,
+      type: "RESPIRATORY_RATE",
+      unit: "breaths/min",
+      source: "APPLE_HEALTH",
+      points: [
+        { at: "2026-06-01T22:00:00.000Z", value: 14.2, min: 14.2, max: 14.2 },
+        { at: "2026-06-02T01:00:00.000Z", value: 13.1, min: 13.1, max: 13.1 },
+      ],
+      nightValue: null,
+      summary: { min: 13.1, max: 14.2, avg: 13.6 },
+    },
+    {
+      kind: "hrv" as const,
+      type: "HRV_RMSSD",
+      unit: "ms",
+      source: "GARMIN",
+      points: [],
+      nightValue: 42,
+      summary: null,
+    },
+  ],
+};
+
 describe("<SleepNightCard>", () => {
   it("draws the timeline of a measured night", () => {
     reads.latest = {
@@ -112,5 +193,93 @@ describe("<SleepNightCard>", () => {
     };
     const html = render();
     expect(html).toMatch(/data-slot="sleep-hypnogram-next"[^>]*disabled/);
+  });
+
+  it("offers a toggle per series and lists a single night value as a number", () => {
+    delete overlayPrefs.overlayLines;
+    reads.latest = {
+      data: {
+        night: "2026-06-02",
+        main: session(false),
+        naps: [],
+        overlays: OVERLAYS,
+      },
+    };
+    const html = render();
+    expect(html).toContain('data-slot="sleep-hypnogram-overlay-chips"');
+    expect(html).toMatch(/aria-pressed="false"[^>]*data-kind="pulse"/);
+    expect(html).toMatch(/aria-pressed="false"[^>]*data-kind="respiration"/);
+    // A nightly average is a number under the chart, never a toggle.
+    expect(html).not.toMatch(/aria-pressed="[a-z]+"[^>]*data-kind="hrv"/);
+    expect(html).toContain('data-slot="sleep-hypnogram-night-values"');
+    expect(html).toContain("42 ms");
+    // No line until one is chosen.
+    expect(html).toContain('data-lines=""');
+  });
+
+  it("draws the chosen lines in their slot colours, with the range on the toggle", () => {
+    overlayPrefs.overlayLines = ["respiration", "pulse"];
+    reads.latest = {
+      data: {
+        night: "2026-06-02",
+        main: session(false),
+        naps: [],
+        overlays: OVERLAYS,
+      },
+    };
+    const html = render();
+    expect(html).toContain(
+      'data-lines="respiration:var(--foreground) pulse:var(--chart-5)"',
+    );
+    expect(html).toMatch(/aria-pressed="true"[^>]*data-kind="pulse"/);
+    expect(html).toContain("52 to 64 bpm");
+  });
+
+  it("skips a chosen metric the night does not hold", () => {
+    overlayPrefs.overlayLines = ["spo2", "pulse"];
+    reads.latest = {
+      data: {
+        night: "2026-06-02",
+        main: session(false),
+        naps: [],
+        overlays: OVERLAYS,
+      },
+    };
+    expect(render()).toContain('data-lines="pulse:var(--foreground)"');
+  });
+
+  it("reads every metric of the night to a screen reader", () => {
+    delete overlayPrefs.overlayLines;
+    reads.latest = {
+      data: {
+        night: "2026-06-02",
+        main: session(false),
+        naps: [],
+        overlays: OVERLAYS,
+      },
+    };
+    const html = render();
+    const summary = html.slice(
+      html.indexOf('data-slot="sleep-hypnogram-overlay-summary"'),
+    );
+    expect(summary).toContain(
+      "Pulse over the night: lowest 52 bpm, highest 64 bpm, average 58 bpm",
+    );
+    expect(summary).toContain("HRV for the night: 42 ms");
+  });
+
+  it("shows no overlay on a night of stage totals", () => {
+    overlayPrefs.overlayLines = ["pulse"];
+    reads.latest = {
+      data: {
+        night: "2026-06-02",
+        main: session(true),
+        naps: [],
+        overlays: OVERLAYS,
+      },
+    };
+    const html = render();
+    expect(html).not.toContain('data-slot="sleep-hypnogram-overlay-chips"');
+    expect(html).not.toContain('data-slot="sleep-hypnogram-night-values"');
   });
 });

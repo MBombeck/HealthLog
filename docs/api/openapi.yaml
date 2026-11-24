@@ -43072,6 +43072,7 @@ components:
             - scoreStress
             - scoreStrain
             - bloodKetones
+            - sleepNight
           description: Which chart's overlays are being written. Closed enum.
         prefs:
           type: object
@@ -43101,6 +43102,20 @@ components:
                   const: 30
                 - type: number
                   const: 90
+            overlayLines:
+              description: "The night metrics the sleep timeline (`chartKey: sleepNight`) draws over its stages, at most two. Omitting
+                it stores the slot without the field, which draws none."
+              maxItems: 2
+              type: array
+              items:
+                type: string
+                enum:
+                  - pulse
+                  - hrv
+                  - respiration
+                  - spo2
+                  - skinTemperature
+                  - roomTemperature
           required:
             - showTrendIndicator
             - showTrendArrow
@@ -43263,6 +43278,7 @@ components:
               - scoreStress
               - scoreStrain
               - bloodKetones
+              - sleepNight
           additionalProperties:
             type: object
             properties:
@@ -43288,6 +43304,20 @@ components:
                     const: 30
                   - type: number
                     const: 90
+              overlayLines:
+                description: The night metrics the sleep timeline (`sleepNight`) draws over its stages, at most two. Absent means none
+                  chosen. Preserved when a PUT omits it.
+                maxItems: 2
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - pulse
+                    - hrv
+                    - respiration
+                    - spo2
+                    - skinTemperature
+                    - roomTemperature
             required:
               - showTrendIndicator
               - showTrendArrow
@@ -60913,15 +60943,131 @@ components:
               - segments
               - sourceDiscrepancy
             additionalProperties: false
+        overlays:
+          anyOf:
+            - $ref: "#/components/schemas/SleepNightOverlays"
+            - type: "null"
+          description: Night metrics to draw as lines over the main night's timeline (#1419), resolved and bucketed server-side;
+            draw them as given. Null when there is no main night, or when the main night is `reconstructed` (stage
+            totals have no timeline to lay a line on).
       required:
         - night
         - main
         - naps
+        - overlays
       additionalProperties: false
       description: "One reconstructed sleep night: the main session's hypnogram segments + breakdown, plus same-wake-day naps
         surfaced separately. A session is a nap when it holds under three hours asleep centred between 10:00 and 20:00
         local time; the main session is the longest session that is not a nap. A day whose only sleep is naps has `main:
         null` and its naps."
+    SleepNightOverlays:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: "Grid origin: the session start less 15 minutes."
+        to:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: "Grid end: the session end plus 15 minutes."
+        bucketMinutes:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/SleepNightOverlayMetric"
+          description: "One entry per metric the night holds, in a fixed order; a metric without readings that night is absent.
+            One source per metric: the source that recorded the night when it holds the metric, else the user's source
+            ladder for the type."
+      required:
+        - from
+        - to
+        - bucketMinutes
+        - metrics
+      additionalProperties: false
+    SleepNightOverlayMetric:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - pulse
+            - hrv
+            - respiration
+            - spo2
+            - skinTemperature
+            - roomTemperature
+          description: The metric. `hrv` is SDNN or RMSSD and `skinTemperature` an absolute wrist reading or a deviation from
+            baseline; `type` says which.
+        type:
+          $ref: "#/components/schemas/MeasurementType"
+        unit:
+          type: string
+          description: Canonical unit token of `type`.
+        source:
+          $ref: "#/components/schemas/MeasurementSource"
+        points:
+          type: array
+          items:
+            type: object
+            properties:
+              at:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                description: Bucket start. Every metric of the night shares the grid that starts at `from`.
+              value:
+                type: number
+                description: Mean of the bucket's readings.
+              min:
+                type: number
+              max:
+                type: number
+            required:
+              - at
+              - value
+              - min
+              - max
+            additionalProperties: false
+          description: The series, ascending, one point per bucket that holds a reading; a missing bucket is a gap, not a zero.
+            Empty when the night holds one value only.
+        nightValue:
+          description: The night's one value (a nightly average from Garmin, Oura or WHOOP, or a single sample) when there is no
+            series. Show it as a number, never as a line.
+          type:
+            - number
+            - "null"
+        summary:
+          anyOf:
+            - type: object
+              properties:
+                min:
+                  type: number
+                max:
+                  type: number
+                avg:
+                  type: number
+              required:
+                - min
+                - max
+                - avg
+              additionalProperties: false
+            - type: "null"
+          description: Over the readings inside the session. Null without a series.
+      required:
+        - kind
+        - type
+        - unit
+        - source
+        - points
+        - nightValue
+        - summary
+      additionalProperties: false
     SleepRhythmResponse:
       type: object
       properties:
@@ -101106,6 +101252,7 @@ components:
               - scoreStress
               - scoreStrain
               - bloodKetones
+              - sleepNight
           additionalProperties:
             type: object
             properties:
@@ -101131,6 +101278,20 @@ components:
                     const: 30
                   - type: number
                     const: 90
+              overlayLines:
+                description: The night metrics the sleep timeline (`sleepNight`) draws over its stages, at most two. Absent means none
+                  chosen. Preserved when a PUT omits it.
+                maxItems: 2
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - pulse
+                    - hrv
+                    - respiration
+                    - spo2
+                    - skinTemperature
+                    - roomTemperature
             required:
               - showTrendIndicator
               - showTrendArrow
@@ -101375,6 +101536,7 @@ components:
               - scoreStress
               - scoreStrain
               - bloodKetones
+              - sleepNight
           additionalProperties:
             type: object
             properties:
@@ -101400,6 +101562,20 @@ components:
                     const: 30
                   - type: number
                     const: 90
+              overlayLines:
+                description: The night metrics the sleep timeline (`sleepNight`) draws over its stages, at most two. Absent means none
+                  chosen. Preserved when a PUT omits it.
+                maxItems: 2
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - pulse
+                    - hrv
+                    - respiration
+                    - spo2
+                    - skinTemperature
+                    - roomTemperature
             required:
               - showTrendIndicator
               - showTrendArrow
