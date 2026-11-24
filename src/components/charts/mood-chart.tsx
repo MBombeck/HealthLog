@@ -36,7 +36,7 @@ import type {
   ChartOverlayKey,
   ChartRangePoints,
   ComparisonBaseline,
-} from "@/lib/dashboard-layout";
+} from "@/lib/dashboard/chart-overlay-prefs";
 import { ChartOverlayControls } from "./chart-overlay-controls";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import { useViewportWidth } from "@/hooks/use-viewport-width";

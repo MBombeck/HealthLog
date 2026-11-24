@@ -3,7 +3,7 @@
  */
 import type { Locale } from "@/lib/i18n/config";
 import { instructionLocale } from "./output-language";
-import type { ComparisonBaseline } from "@/lib/dashboard-layout";
+import type { ComparisonBaseline } from "@/lib/dashboard/chart-overlay-prefs";
 
 /**
  * v1.4.16 — comparison snapshot the prompt narrates against

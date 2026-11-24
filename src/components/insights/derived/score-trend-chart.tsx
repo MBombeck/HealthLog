@@ -39,7 +39,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import { apiGet } from "@/lib/api/api-fetch";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
-import type { ChartOverlayKey, ChartRangePoints } from "@/lib/dashboard-layout";
+import type {
+  ChartOverlayKey,
+  ChartRangePoints,
+} from "@/lib/dashboard/chart-overlay-prefs";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { ScoreHistoryId } from "@/lib/insights/score-history-ids";
 import { queryKeys } from "@/lib/query-keys";
