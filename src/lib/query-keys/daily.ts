@@ -11,4 +11,11 @@
  */
 export const dailyKeys = {
   dailyDigest: () => ["daily", "digest"] as const,
+  /**
+   * The morning read (`GET /api/daily/morning`). Flat like the digest: the
+   * server keys its own cell by the reader's local day, and the client must
+   * build the same key in the server render and in the browser, which a
+   * date computed on either side would not guarantee.
+   */
+  dailyMorning: () => ["daily", "morning"] as const,
 };

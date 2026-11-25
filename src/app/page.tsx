@@ -14,6 +14,7 @@ import {
 import { resolveDashboardLayout } from "@/lib/dashboard-layout";
 import { settleWithin } from "@/lib/async/settle-within";
 import { loadDailyDigest } from "@/lib/daily/load-digest";
+import { loadDailyMorning, settleTodayPair } from "@/lib/daily/morning-load";
 import { readSeriesBatch } from "@/lib/measurements/series-batch-read";
 import { readRecoveryKit } from "@/lib/recovery/kit";
 import { queryKeys } from "@/lib/query-keys";
@@ -22,7 +23,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import DashboardPageClient from "./page-client";
 
 /**
- * Soft budget on the cold-day digest prefetch. `loadDailyDigest`'s only
+ * Soft budget on the cold-day digest and morning prefetch, shared by both. `loadDailyDigest`'s only
  * heavy input is the `daily-digest-extras` SWR cell: on the FIRST digest read
  * of a user's local day it rebuilds the streak scan + intraday-pulse read cold
  * (low hundreds of ms). Racing it against this budget bounds the worst-case
@@ -43,7 +44,11 @@ const DIGEST_SOFT_BUDGET_MS = 400;
  * warm instead of skeleton-first:
  *
  *  - the dashboard snapshot (`/api/dashboard/snapshot`) — every tile;
- *  - the Today digest (`/api/daily/digest` → `loadDailyDigest`) — the hero;
+ *  - the Today digest (`/api/daily/digest` → `loadDailyDigest`) and the
+ *    morning read (`/api/daily/morning` → `loadDailyMorning`), together under
+ *    one budget and seeded both or neither: the morning block renders from
+ *    the two, and a page that seeded one would paint the fallback hero and
+ *    then swap in the morning sentence after hydration;
  *  - the batched chart series (`/api/measurements/series-batch` →
  *    `readSeriesBatch`) — the chart row;
  *  - for an admin, the recovery-kit status (`/api/admin/recovery-kit`) — the
@@ -131,9 +136,13 @@ export default async function DashboardPage() {
         )?.summaries,
       );
 
-      // Digest carries a soft budget (cold-day extras rebuild); series is a
-      // warm rollup read (< 100 ms) with none. Both fail soft to `undefined`.
-      const digestWork = loadDailyDigest(user).catch(() => undefined);
+      // Digest and morning carry a soft budget (cold-day cells rebuild);
+      // series is a warm rollup read (< 100 ms) with none. All fail soft to
+      // `undefined`. The two Today reads run side by side, not one after the
+      // other, so the budget covers both at once.
+      const now = new Date();
+      const digestWork = loadDailyDigest(user, now).catch(() => undefined);
+      const morningWork = loadDailyMorning(user, now).catch(() => undefined);
       const seriesWork =
         batchWindow && seriesTypes.length > 0
           ? readSeriesBatch(
@@ -156,8 +165,9 @@ export default async function DashboardPage() {
           ? readRecoveryKit().catch(() => undefined)
           : Promise.resolve(undefined);
 
-      const [digest, series, recoveryKit] = await Promise.all([
+      const [digest, morning, series, recoveryKit] = await Promise.all([
         settleWithin(digestWork, DIGEST_SOFT_BUDGET_MS, undefined),
+        settleWithin(morningWork, DIGEST_SOFT_BUDGET_MS, undefined),
         seriesWork,
         recoveryKitWork,
       ]);
@@ -168,11 +178,18 @@ export default async function DashboardPage() {
         );
       }
 
-      // JSON-round-trip both to the client wire shape before seeding.
-      if (digest !== undefined) {
+      // Both or neither (see above), JSON-round-tripped to the client wire
+      // shape before seeding. Over the budget the block is a skeleton in the
+      // server render and in the first client pass alike, and fills at once.
+      const today = settleTodayPair(digest, morning);
+      if (today !== null) {
         queryClient.setQueryData(
           queryKeys.dailyDigest(),
-          JSON.parse(JSON.stringify(digest)),
+          JSON.parse(JSON.stringify(today.digest)),
+        );
+        queryClient.setQueryData(
+          queryKeys.dailyMorning(),
+          JSON.parse(JSON.stringify(today.morning)),
         );
       }
       // `series` is only ever set when `batchWindow` was (snapshot mode) — the

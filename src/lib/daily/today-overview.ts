@@ -505,7 +505,9 @@ function buildSignalLine(
  * nine in the evening a pulse from the previous morning would be narrated as
  * the day's, on a day with no reading at all.
  */
-function currentVitals(input: TodayOverviewInput): TodayVital[] {
+export function currentVitals(
+  input: Pick<TodayOverviewInput, "vitals" | "modules">,
+): TodayVital[] {
   return input.vitals.filter(
     (v) =>
       isFromToday(v.daysAgo) &&
@@ -521,7 +523,14 @@ function outsideBy(v: TodayVital): number {
   return 0;
 }
 
-function vitalLabel(t: Translate, type: string): string {
+/** Today's vitals outside their range, the furthest out first. */
+export function outsideVitals(vitals: readonly TodayVital[]): TodayVital[] {
+  return vitals
+    .filter((v) => v.direction !== "in")
+    .sort((a, b) => outsideBy(b) - outsideBy(a));
+}
+
+export function vitalLabel(t: Translate, type: string): string {
   const key = `daily.today.vital.${type}`;
   return translateOrNull(t, key) ?? t("daily.today.vital.generic");
 }
@@ -541,6 +550,85 @@ interface SignalLead {
 }
 
 /**
+ * The sentence for vitals outside their range: the furthest out by name,
+ * with its compared value and range, and how many more are outside. Expects
+ * `outside` from {@link outsideVitals}, non-empty.
+ */
+export function vitalsOutsideSentence(
+  outside: readonly TodayVital[],
+  locale: Locale,
+  t: Translate,
+): string {
+  const v = outside[0];
+  const params = {
+    metric: vitalLabel(t, v.type),
+    value: v.valueLabel,
+    range: v.rangeLabel,
+  };
+  return outside.length === 1
+    ? t(`daily.lead.vitalOutside.${v.direction}`, params)
+    : t(
+        pluralKey(
+          `daily.lead.vitalsOutside.${v.direction}`,
+          outside.length - 1,
+          locale,
+        ),
+        { ...params, count: outside.length - 1 },
+      );
+}
+
+/** The sentence for a night at least an hour off the usual, or null. */
+export function notableNightSentence(
+  sleep: TodaySleep | null,
+  t: Translate,
+): string | null {
+  const diff = sleep ? sleepDiff(sleep) : null;
+  if (!sleep || diff === null || Math.abs(diff) < SLEEP_NOTABLE_DIFF_MINUTES) {
+    return null;
+  }
+  return t(`daily.lead.sleep.${diff > 0 ? "more" : "less"}`, {
+    duration: duration(sleep.minutes, t),
+    diff: duration(Math.abs(diff), t),
+  });
+}
+
+/**
+ * The counting sentence for today's vitals, all inside their range: the
+ * number of them, or the one by name. Null when there is none.
+ */
+export function vitalsInRangeSentence(
+  vitals: readonly TodayVital[],
+  locale: Locale,
+  t: Translate,
+): string | null {
+  if (vitals.length >= 2) {
+    return t(pluralKey("daily.lead.vitalsInRange", vitals.length, locale), {
+      count: vitals.length,
+    });
+  }
+  if (vitals.length === 1) {
+    const v = vitals[0];
+    return t("daily.lead.vitalInRange", {
+      metric: vitalLabel(t, v.type),
+      value: v.valueLabel,
+      range: v.rangeLabel,
+    });
+  }
+  return null;
+}
+
+/** The sentence for an ordinary night that is in, or null. */
+export function ordinaryNightSentence(
+  sleep: TodaySleep | null,
+  t: Translate,
+): string | null {
+  if (!sleep) return null;
+  return sleepDiff(sleep) !== null
+    ? t("daily.lead.sleep.usual", { duration: duration(sleep.minutes, t) })
+    : t("daily.lead.sleep.plain", { duration: duration(sleep.minutes, t) });
+}
+
+/**
  * The deterministic lead: one sentence about the day's strongest signal,
  * built from numbers the server already holds. In order:
  *
@@ -550,7 +638,8 @@ interface SignalLead {
  *   4. an ordinary night.
  *
  * Null when none of them holds; the overview then carries the facts alone,
- * and never a filler sentence.
+ * and never a filler sentence. The morning lead (`morning.ts`) ranks the same
+ * sentences among its own.
  */
 function signalLead(
   input: TodayOverviewInput,
@@ -558,77 +647,19 @@ function signalLead(
   t: Translate,
 ): SignalLead | null {
   const vitals = currentVitals(input);
-  const outside = vitals
-    .filter((v) => v.direction !== "in")
-    .sort((a, b) => outsideBy(b) - outsideBy(a));
-
+  const outside = outsideVitals(vitals);
   if (outside.length > 0) {
-    const v = outside[0];
-    const params = {
-      metric: vitalLabel(t, v.type),
-      value: v.valueLabel,
-      range: v.rangeLabel,
-    };
-    const text =
-      outside.length === 1
-        ? t(`daily.lead.vitalOutside.${v.direction}`, params)
-        : t(
-            pluralKey(
-              `daily.lead.vitalsOutside.${v.direction}`,
-              outside.length - 1,
-              input.locale,
-            ),
-            { ...params, count: outside.length - 1 },
-          );
-    return { text, consumes: "vitals" };
-  }
-
-  const diff = sleep ? sleepDiff(sleep) : null;
-  if (sleep && diff !== null && Math.abs(diff) >= SLEEP_NOTABLE_DIFF_MINUTES) {
     return {
-      text: t(`daily.lead.sleep.${diff > 0 ? "more" : "less"}`, {
-        duration: duration(sleep.minutes, t),
-        diff: duration(Math.abs(diff), t),
-      }),
-      consumes: "sleep",
-    };
-  }
-
-  if (vitals.length >= 2) {
-    return {
-      text: t(
-        pluralKey("daily.lead.vitalsInRange", vitals.length, input.locale),
-        { count: vitals.length },
-      ),
+      text: vitalsOutsideSentence(outside, input.locale, t),
       consumes: "vitals",
     };
   }
-  if (vitals.length === 1) {
-    const v = vitals[0];
-    return {
-      text: t("daily.lead.vitalInRange", {
-        metric: vitalLabel(t, v.type),
-        value: v.valueLabel,
-        range: v.rangeLabel,
-      }),
-      consumes: "vitals",
-    };
-  }
-
-  if (sleep) {
-    return {
-      text:
-        diff !== null
-          ? t("daily.lead.sleep.usual", {
-              duration: duration(sleep.minutes, t),
-            })
-          : t("daily.lead.sleep.plain", {
-              duration: duration(sleep.minutes, t),
-            }),
-      consumes: "sleep",
-    };
-  }
-  return null;
+  const notable = notableNightSentence(sleep, t);
+  if (notable) return { text: notable, consumes: "sleep" };
+  const inRange = vitalsInRangeSentence(vitals, input.locale, t);
+  if (inRange) return { text: inRange, consumes: "vitals" };
+  const night = ordinaryNightSentence(sleep, t);
+  return night ? { text: night, consumes: "sleep" } : null;
 }
 
 function restModeFact(

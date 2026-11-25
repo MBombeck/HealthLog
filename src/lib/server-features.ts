@@ -44,6 +44,7 @@ export const SERVER_FEATURES = [
   "insights.same-time-daily-total",
   "push.live-activity-token-state",
   "insights.chart-context",
+  "daily.morning",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -124,4 +125,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "push.device on /api/auth/me and in the POST /api/devices answer carries liveActivityStartToken (the server holds a push-to-start token the relay still takes) and liveActivityPushToken (it holds the legacy Live Activity push token of the direct path), booleans only, so the app re-sends a token only when the server lacks it.",
   "insights.chart-context":
     "GET /api/insights/context returns the marks a metric chart draws: medications[] (start, stop, doseChange, pause, resume with date, name, dose, estimated, href), illnesses[] (acute episodes, start, end, label, href) and cyclePhases[] (phase, start, end inclusive), read from the timeline lanes, each empty when its module is off or its section not shared; optional from/to cut the window.",
+  "daily.morning":
+    "GET /api/daily/morning returns the morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own readings, and cards night and today_different with ring (score and band null unless fresh, asOfDay), up to three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is DailyDigest.worthALook as before.",
 };

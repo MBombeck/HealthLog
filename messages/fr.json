@@ -13944,16 +13944,16 @@
     },
     "lead": {
       "vitalOutside": {
-        "above": "{metric} est à {value}, au-dessus de votre plage habituelle de {range}.",
-        "below": "{metric} est à {value}, en dessous de votre plage habituelle de {range}."
+        "above": "{metric} : aujourd'hui {value} en moyenne, plus haut que d'habitude ({range}).",
+        "below": "{metric} : aujourd'hui {value} en moyenne, plus bas que d'habitude ({range})."
       },
       "vitalsOutside": {
-        "aboveOne": "{metric} est à {value}, au-dessus de votre plage habituelle de {range}, et {count} autre signe vital sort aussi de sa plage.",
-        "aboveFew": "{metric} est à {value}, au-dessus de votre plage habituelle de {range}, et {count} autres signes vitaux sortent aussi de leur plage.",
-        "aboveOther": "{metric} est à {value}, au-dessus de votre plage habituelle de {range}, et {count} autres signes vitaux sortent aussi de leur plage.",
-        "belowOne": "{metric} est à {value}, en dessous de votre plage habituelle de {range}, et {count} autre signe vital sort aussi de sa plage.",
-        "belowFew": "{metric} est à {value}, en dessous de votre plage habituelle de {range}, et {count} autres signes vitaux sortent aussi de leur plage.",
-        "belowOther": "{metric} est à {value}, en dessous de votre plage habituelle de {range}, et {count} autres signes vitaux sortent aussi de leur plage."
+        "aboveOne": "{metric} : aujourd'hui {value} en moyenne, plus haut que d'habitude ({range}), plus {count} autre valeur.",
+        "aboveFew": "{metric} : aujourd'hui {value} en moyenne, plus haut que d'habitude ({range}), plus {count} autres valeurs.",
+        "aboveOther": "{metric} : aujourd'hui {value} en moyenne, plus haut que d'habitude ({range}), plus {count} autres valeurs.",
+        "belowOne": "{metric} : aujourd'hui {value} en moyenne, plus bas que d'habitude ({range}), plus {count} autre valeur.",
+        "belowFew": "{metric} : aujourd'hui {value} en moyenne, plus bas que d'habitude ({range}), plus {count} autres valeurs.",
+        "belowOther": "{metric} : aujourd'hui {value} en moyenne, plus bas que d'habitude ({range}), plus {count} autres valeurs."
       },
       "sleep": {
         "more": "La nuit dernière, vous avez dormi {duration}, {diff} de plus que d'habitude.",
@@ -13961,10 +13961,52 @@
         "usual": "La nuit dernière, vous avez dormi {duration}, proche de votre habitude.",
         "plain": "La nuit dernière, vous avez dormi {duration}."
       },
-      "vitalsInRangeOne": "Votre dernier signe vital est dans sa plage habituelle.",
-      "vitalsInRangeFew": "Vos {count} derniers signes vitaux sont tous dans leur plage habituelle.",
-      "vitalsInRangeOther": "Vos {count} derniers signes vitaux sont tous dans leur plage habituelle.",
-      "vitalInRange": "{metric} est à {value}, dans votre plage habituelle de {range}."
+      "vitalsInRangeOne": "Les {count} valeurs du jour sont dans leur plage habituelle.",
+      "vitalsInRangeFew": "Les {count} valeurs du jour sont dans leur plage habituelle.",
+      "vitalsInRangeOther": "Les {count} valeurs du jour sont dans leur plage habituelle.",
+      "vitalInRange": "{metric} : aujourd'hui {value} en moyenne, dans votre plage habituelle ({range}).",
+      "floor": {
+        "bpHigh": "La tension artérielle a atteint {value} au cours des dernières 24 heures.",
+        "bpLow": "La tension artérielle est descendue à {value} au cours des dernières 24 heures.",
+        "glucoseLow": "La glycémie est descendue à {value} au cours des dernières 24 heures.",
+        "glucoseHigh": "La glycémie a atteint {value} au cours des dernières 24 heures."
+      },
+      "restModeToday": "Mode repos depuis aujourd'hui, les valeurs servent seulement de contexte.",
+      "restModeOne": "Mode repos depuis {count} jour, les valeurs du jour servent seulement de contexte.",
+      "restModeFew": "Mode repos depuis {count} jours, les valeurs du jour servent seulement de contexte.",
+      "restModeOther": "Mode repos depuis {count} jours, les valeurs du jour servent seulement de contexte.",
+      "coincident": "{signals} sont en dehors de votre plage habituelle aujourd'hui.",
+      "coincidentIllness": "Pendant la maladie, {signals} sont en dehors de votre plage habituelle.",
+      "coincidentManyOne": "{count} valeur est en dehors de votre plage habituelle aujourd'hui.",
+      "coincidentManyFew": "{count} valeurs sont en dehors de votre plage habituelle aujourd'hui.",
+      "coincidentManyOther": "{count} valeurs sont en dehors de votre plage habituelle aujourd'hui.",
+      "coincidentIllnessManyOne": "Pendant la maladie, {count} valeur est en dehors de votre plage habituelle.",
+      "coincidentIllnessManyFew": "Pendant la maladie, {count} valeurs sont en dehors de votre plage habituelle.",
+      "coincidentIllnessManyOther": "Pendant la maladie, {count} valeurs sont en dehors de votre plage habituelle.",
+      "family": {
+        "bloodPressure": "la tension artérielle",
+        "heartRate": "la fréquence cardiaque",
+        "hrv": "la VFC",
+        "respiratoryRate": "la fréquence respiratoire",
+        "oxygenSaturation": "la saturation en oxygène",
+        "temperature": "la température"
+      },
+      "sleepPending": "La nuit dernière n'est pas encore arrivée.",
+      "sourceQuietHoursOne": "{source} n'a rien envoyé depuis {count} heure.",
+      "sourceQuietHoursFew": "{source} n'a rien envoyé depuis {count} heures.",
+      "sourceQuietHoursOther": "{source} n'a rien envoyé depuis {count} heures.",
+      "sourceQuietDaysOne": "{source} n'a rien envoyé depuis {count} jour.",
+      "sourceQuietDaysFew": "{source} n'a rien envoyé depuis {count} jours.",
+      "sourceQuietDaysOther": "{source} n'a rien envoyé depuis {count} jours.",
+      "readiness": "Disponibilité {score}, freinée surtout par {contributor}.",
+      "plannedDosesOne": "Aujourd'hui : {count} dose prévue.",
+      "plannedDosesFew": "Aujourd'hui : {count} doses prévues.",
+      "plannedDosesOther": "Aujourd'hui : {count} doses prévues.",
+      "plannedBothOne": "Aujourd'hui : {count} dose et un rendez-vous à {time}.",
+      "plannedBothFew": "Aujourd'hui : {count} doses et un rendez-vous à {time}.",
+      "plannedBothOther": "Aujourd'hui : {count} doses et un rendez-vous à {time}.",
+      "plannedVisit": "Aujourd'hui : un rendez-vous à {time}.",
+      "nothingYet": "Pas encore de valeurs aujourd'hui."
     },
     "todayFact": {
       "restMode": {
@@ -14003,6 +14045,23 @@
         "label": "Cycle",
         "value": "{phase}, jour {day}",
         "dayOnly": "Jour {day}"
+      }
+    },
+    "morningCard": {
+      "nightPending": "Pas encore arrivée",
+      "latestNight": "Dernière nuit : {date}",
+      "vitalOutside": "{metric} : {value} en moyenne aujourd'hui, habituellement {range}",
+      "contributor": "{name} : {value} sur 100",
+      "readinessLast": "Dernière valeur {score} le {date}",
+      "source": {
+        "recovery": {
+          "WHOOP": "WHOOP Recovery",
+          "OURA": "Oura Readiness",
+          "POLAR": "Polar Nightly Recharge"
+        },
+        "recoveryGeneric": "Récupération {source}",
+        "sleepScore": "Score de sommeil {source}",
+        "sleepPerformance": "WHOOP Sleep Performance"
       }
     }
   },

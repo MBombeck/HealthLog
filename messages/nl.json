@@ -13888,7 +13888,7 @@
       "steadyWeeksOther": "Al {count} weken stabiel",
       "valueWithUnit": "{value} {unit}",
       "rangeWithUnit": "{low} tot {high} {unit}",
-      "rangeAtThisTime": "{range} voor dit tijdstip van de dag",
+      "rangeAtThisTime": "{range} voor dit tijdstip",
       "vital": {
         "RESTING_HEART_RATE": "Rusthartslag",
         "HEART_RATE_VARIABILITY": "Hartslagvariabiliteit",
@@ -13944,16 +13944,16 @@
     },
     "lead": {
       "vitalOutside": {
-        "above": "{metric} staat op {value}, boven je gebruikelijke bereik van {range}.",
-        "below": "{metric} staat op {value}, onder je gebruikelijke bereik van {range}."
+        "above": "{metric}: vandaag gemiddeld {value}, boven je gebruikelijke bereik ({range}).",
+        "below": "{metric}: vandaag gemiddeld {value}, onder je gebruikelijke bereik ({range})."
       },
       "vitalsOutside": {
-        "aboveOne": "{metric} staat op {value}, boven je gebruikelijke bereik van {range}, en nog {count} vitale waarde valt ook buiten het bereik.",
-        "aboveFew": "{metric} staat op {value}, boven je gebruikelijke bereik van {range}, en nog {count} vitale waarden vallen ook buiten hun bereik.",
-        "aboveOther": "{metric} staat op {value}, boven je gebruikelijke bereik van {range}, en nog {count} vitale waarden vallen ook buiten hun bereik.",
-        "belowOne": "{metric} staat op {value}, onder je gebruikelijke bereik van {range}, en nog {count} vitale waarde valt ook buiten het bereik.",
-        "belowFew": "{metric} staat op {value}, onder je gebruikelijke bereik van {range}, en nog {count} vitale waarden vallen ook buiten hun bereik.",
-        "belowOther": "{metric} staat op {value}, onder je gebruikelijke bereik van {range}, en nog {count} vitale waarden vallen ook buiten hun bereik."
+        "aboveOne": "{metric}: vandaag gemiddeld {value}, boven je gebruikelijke bereik ({range}), plus nog {count} waarde erbuiten.",
+        "aboveFew": "{metric}: vandaag gemiddeld {value}, boven je gebruikelijke bereik ({range}), plus nog {count} waarden erbuiten.",
+        "aboveOther": "{metric}: vandaag gemiddeld {value}, boven je gebruikelijke bereik ({range}), plus nog {count} waarden erbuiten.",
+        "belowOne": "{metric}: vandaag gemiddeld {value}, onder je gebruikelijke bereik ({range}), plus nog {count} waarde erbuiten.",
+        "belowFew": "{metric}: vandaag gemiddeld {value}, onder je gebruikelijke bereik ({range}), plus nog {count} waarden erbuiten.",
+        "belowOther": "{metric}: vandaag gemiddeld {value}, onder je gebruikelijke bereik ({range}), plus nog {count} waarden erbuiten."
       },
       "sleep": {
         "more": "Afgelopen nacht sliep je {duration}, {diff} langer dan gebruikelijk.",
@@ -13961,10 +13961,52 @@
         "usual": "Afgelopen nacht sliep je {duration}, ongeveer zoals gebruikelijk.",
         "plain": "Afgelopen nacht sliep je {duration}."
       },
-      "vitalsInRangeOne": "Je laatste vitale waarde ligt binnen het gebruikelijke bereik.",
-      "vitalsInRangeFew": "Alle {count} laatste vitale waarden liggen binnen hun gebruikelijke bereik.",
-      "vitalsInRangeOther": "Alle {count} laatste vitale waarden liggen binnen hun gebruikelijke bereik.",
-      "vitalInRange": "{metric} staat op {value}, binnen je gebruikelijke bereik van {range}."
+      "vitalsInRangeOne": "Alle {count} waarden van vandaag liggen binnen hun gebruikelijke bereik.",
+      "vitalsInRangeFew": "Alle {count} waarden van vandaag liggen binnen hun gebruikelijke bereik.",
+      "vitalsInRangeOther": "Alle {count} waarden van vandaag liggen binnen hun gebruikelijke bereik.",
+      "vitalInRange": "{metric}: vandaag gemiddeld {value}, binnen je gebruikelijke bereik ({range}).",
+      "floor": {
+        "bpHigh": "De bloeddruk bereikte {value} in de afgelopen 24 uur.",
+        "bpLow": "De bloeddruk daalde tot {value} in de afgelopen 24 uur.",
+        "glucoseLow": "De bloedglucose daalde tot {value} in de afgelopen 24 uur.",
+        "glucoseHigh": "De bloedglucose bereikte {value} in de afgelopen 24 uur."
+      },
+      "restModeToday": "Rustmodus sinds vandaag, waarden dienen alleen als context.",
+      "restModeOne": "Rustmodus sinds {count} dag, waarden dienen vandaag alleen als context.",
+      "restModeFew": "Rustmodus sinds {count} dagen, waarden dienen vandaag alleen als context.",
+      "restModeOther": "Rustmodus sinds {count} dagen, waarden dienen vandaag alleen als context.",
+      "coincident": "{signals} liggen vandaag buiten je gebruikelijke bereik.",
+      "coincidentIllness": "Tijdens de huidige ziekte liggen {signals} buiten je gebruikelijke bereik.",
+      "coincidentManyOne": "{count} waarde ligt vandaag buiten je gebruikelijke bereik.",
+      "coincidentManyFew": "{count} waarden liggen vandaag buiten je gebruikelijke bereik.",
+      "coincidentManyOther": "{count} waarden liggen vandaag buiten je gebruikelijke bereik.",
+      "coincidentIllnessManyOne": "Tijdens de huidige ziekte ligt {count} waarde buiten je gebruikelijke bereik.",
+      "coincidentIllnessManyFew": "Tijdens de huidige ziekte liggen {count} waarden buiten je gebruikelijke bereik.",
+      "coincidentIllnessManyOther": "Tijdens de huidige ziekte liggen {count} waarden buiten je gebruikelijke bereik.",
+      "family": {
+        "bloodPressure": "bloeddruk",
+        "heartRate": "hartslag",
+        "hrv": "HRV",
+        "respiratoryRate": "ademhalingsfrequentie",
+        "oxygenSaturation": "zuurstofsaturatie",
+        "temperature": "temperatuur"
+      },
+      "sleepPending": "De afgelopen nacht is nog niet binnen.",
+      "sourceQuietHoursOne": "{source} heeft al {count} uur niets gestuurd.",
+      "sourceQuietHoursFew": "{source} heeft al {count} uur niets gestuurd.",
+      "sourceQuietHoursOther": "{source} heeft al {count} uur niets gestuurd.",
+      "sourceQuietDaysOne": "{source} heeft al {count} dag niets gestuurd.",
+      "sourceQuietDaysFew": "{source} heeft al {count} dagen niets gestuurd.",
+      "sourceQuietDaysOther": "{source} heeft al {count} dagen niets gestuurd.",
+      "readiness": "Paraatheid {score}, het meest gedrukt door {contributor}.",
+      "plannedDosesOne": "Vandaag: {count} dosis gepland.",
+      "plannedDosesFew": "Vandaag: {count} doses gepland.",
+      "plannedDosesOther": "Vandaag: {count} doses gepland.",
+      "plannedBothOne": "Vandaag: {count} dosis en een bezoek om {time}.",
+      "plannedBothFew": "Vandaag: {count} doses en een bezoek om {time}.",
+      "plannedBothOther": "Vandaag: {count} doses en een bezoek om {time}.",
+      "plannedVisit": "Vandaag: een bezoek om {time}.",
+      "nothingYet": "Vandaag nog geen waarden."
     },
     "todayFact": {
       "restMode": {
@@ -14003,6 +14045,23 @@
         "label": "Cyclus",
         "value": "{phase}, dag {day}",
         "dayOnly": "Dag {day}"
+      }
+    },
+    "morningCard": {
+      "nightPending": "Nog niet binnen",
+      "latestNight": "Laatste nacht: {date}",
+      "vitalOutside": "{metric}: vandaag gemiddeld {value}, gebruikelijk {range}",
+      "contributor": "{name}: {value} van 100",
+      "readinessLast": "Laatst {score} op {date}",
+      "source": {
+        "recovery": {
+          "WHOOP": "WHOOP Recovery",
+          "OURA": "Oura Readiness",
+          "POLAR": "Polar Nightly Recharge"
+        },
+        "recoveryGeneric": "{source}-herstel",
+        "sleepScore": "{source}-slaapscore",
+        "sleepPerformance": "WHOOP Sleep Performance"
       }
     }
   },

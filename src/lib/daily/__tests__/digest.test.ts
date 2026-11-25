@@ -1670,7 +1670,7 @@ describe("buildDailyDigest — Today overview", () => {
       t,
     );
     expect(d.lead).toEqual({
-      text: "Resting heart rate is at 61 bpm, above your usual range of 50 to 58 bpm.",
+      text: "Resting heart rate averages 61 bpm today, above your usual range (50 to 58 bpm).",
       source: "signal",
       language: "en",
     });

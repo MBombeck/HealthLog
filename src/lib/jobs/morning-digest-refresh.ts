@@ -22,6 +22,10 @@
  * 45-minute bounded retry the nightly cron uses (`enqueuePregenerateFailureRetry`)
  * — no parallel freshness machinery is invented here.
  *
+ * The morning read on `/` (`daily/morning-load.ts`) is warmed here and only
+ * here, once the day is final: the night that just arrived is in its rules,
+ * so the first visit of the morning finds it built. No other job computes it.
+ *
  * Idempotency: a second run for the same local morning no-ops on the marker
  * re-check. The enqueue-side `singletonKey` collapses the concurrent burst; the
  * marker is the durable "already done" guard the singleton cannot provide once
@@ -39,6 +43,7 @@ import { comprehensiveWarmBudgetMs } from "@/lib/jobs/model-time";
 import { withTimeout } from "@/lib/insights/with-timeout";
 import type { SupportedLocale } from "@/lib/insights/status-shared";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
+import { warmDailyMorning } from "@/lib/daily/morning-load";
 import {
   MORNING_DIGEST_REFRESH_QUEUE,
   type MorningDigestRefreshPayload,
@@ -75,10 +80,12 @@ export async function runMorningDigestRefresh(
       userId: string;
       locale: SupportedLocale;
     }) => Promise<void>;
+    warmMorning?: (userId: string, localDate: string) => Promise<boolean>;
   } = {},
 ): Promise<MorningDigestRefreshResult> {
   const generate: GenerateFn = deps.generate ?? generateComprehensiveInsight;
   const enqueueRetry = deps.enqueueRetry ?? enqueuePregenerateFailureRetry;
+  const warmMorning = deps.warmMorning ?? warmDailyMorning;
   const { userId, localDate } = payload;
 
   const user = await prisma.user.findUnique({
@@ -152,9 +159,15 @@ export async function runMorningDigestRefresh(
     where: { id: userId },
     data: { morningDigestRefreshedOn: localDate },
   });
+  // Fail-soft: a warm that fails leaves the first visit to build it.
+  const morningWarmed = await warmMorning(userId, localDate);
   annotate({
     action: { name: "daily.morning_refresh.finalised" },
-    meta: { local_date: localDate, comprehensive: outcome.status },
+    meta: {
+      local_date: localDate,
+      comprehensive: outcome.status,
+      morning_warmed: morningWarmed,
+    },
   });
   return { status: "finalised", comprehensive: outcome.status };
 }

@@ -13944,16 +13944,16 @@
     },
     "lead": {
       "vitalOutside": {
-        "above": "{metric} is at {value}, above your usual range of {range}.",
-        "below": "{metric} is at {value}, below your usual range of {range}."
+        "above": "{metric} averages {value} today, above your usual range ({range}).",
+        "below": "{metric} averages {value} today, below your usual range ({range})."
       },
       "vitalsOutside": {
-        "aboveOne": "{metric} is at {value}, above your usual range of {range}, and {count} more vital is outside its range too.",
-        "aboveFew": "{metric} is at {value}, above your usual range of {range}, and {count} more vitals are outside their range too.",
-        "aboveOther": "{metric} is at {value}, above your usual range of {range}, and {count} more vitals are outside their range too.",
-        "belowOne": "{metric} is at {value}, below your usual range of {range}, and {count} more vital is outside its range too.",
-        "belowFew": "{metric} is at {value}, below your usual range of {range}, and {count} more vitals are outside their range too.",
-        "belowOther": "{metric} is at {value}, below your usual range of {range}, and {count} more vitals are outside their range too."
+        "aboveOne": "{metric} averages {value} today, above your usual range ({range}), plus {count} more value outside.",
+        "aboveFew": "{metric} averages {value} today, above your usual range ({range}), plus {count} more values outside.",
+        "aboveOther": "{metric} averages {value} today, above your usual range ({range}), plus {count} more values outside.",
+        "belowOne": "{metric} averages {value} today, below your usual range ({range}), plus {count} more value outside.",
+        "belowFew": "{metric} averages {value} today, below your usual range ({range}), plus {count} more values outside.",
+        "belowOther": "{metric} averages {value} today, below your usual range ({range}), plus {count} more values outside."
       },
       "sleep": {
         "more": "Last night you slept {duration}, {diff} more than usual.",
@@ -13961,10 +13961,52 @@
         "usual": "Last night you slept {duration}, close to your usual.",
         "plain": "Last night you slept {duration}."
       },
-      "vitalsInRangeOne": "Your latest vital sits inside its usual range.",
-      "vitalsInRangeFew": "All {count} of your latest vitals sit inside their usual range.",
-      "vitalsInRangeOther": "All {count} of your latest vitals sit inside their usual range.",
-      "vitalInRange": "{metric} is at {value}, inside your usual range of {range}."
+      "vitalsInRangeOne": "All {count} of today's values sit inside their usual range.",
+      "vitalsInRangeFew": "All {count} of today's values sit inside their usual range.",
+      "vitalsInRangeOther": "All {count} of today's values sit inside their usual range.",
+      "vitalInRange": "{metric} averages {value} today, inside your usual range ({range}).",
+      "floor": {
+        "bpHigh": "Blood pressure reached {value} in the last 24 hours.",
+        "bpLow": "Blood pressure fell to {value} in the last 24 hours.",
+        "glucoseLow": "Blood glucose fell to {value} in the last 24 hours.",
+        "glucoseHigh": "Blood glucose reached {value} in the last 24 hours."
+      },
+      "restModeToday": "Rest mode since today, so readings serve only as context.",
+      "restModeOne": "Rest mode for {count} day, so today's readings serve only as context.",
+      "restModeFew": "Rest mode for {count} days, so today's readings serve only as context.",
+      "restModeOther": "Rest mode for {count} days, so today's readings serve only as context.",
+      "coincident": "{signals} are outside your usual range today.",
+      "coincidentIllness": "During the current illness, {signals} are outside your usual range.",
+      "coincidentManyOne": "{count} signal is outside your usual range today.",
+      "coincidentManyFew": "{count} signals are outside your usual range today.",
+      "coincidentManyOther": "{count} signals are outside your usual range today.",
+      "coincidentIllnessManyOne": "During the current illness, {count} signal is outside your usual range.",
+      "coincidentIllnessManyFew": "During the current illness, {count} signals are outside your usual range.",
+      "coincidentIllnessManyOther": "During the current illness, {count} signals are outside your usual range.",
+      "family": {
+        "bloodPressure": "blood pressure",
+        "heartRate": "heart rate",
+        "hrv": "HRV",
+        "respiratoryRate": "respiratory rate",
+        "oxygenSaturation": "oxygen saturation",
+        "temperature": "temperature"
+      },
+      "sleepPending": "Last night's sleep is not in yet.",
+      "sourceQuietHoursOne": "{source} has sent nothing for {count} hour.",
+      "sourceQuietHoursFew": "{source} has sent nothing for {count} hours.",
+      "sourceQuietHoursOther": "{source} has sent nothing for {count} hours.",
+      "sourceQuietDaysOne": "{source} has sent nothing for {count} day.",
+      "sourceQuietDaysFew": "{source} has sent nothing for {count} days.",
+      "sourceQuietDaysOther": "{source} has sent nothing for {count} days.",
+      "readiness": "Readiness {score}, held back most by {contributor}.",
+      "plannedDosesOne": "Today: {count} dose planned.",
+      "plannedDosesFew": "Today: {count} doses planned.",
+      "plannedDosesOther": "Today: {count} doses planned.",
+      "plannedBothOne": "Today: {count} dose and a visit at {time}.",
+      "plannedBothFew": "Today: {count} doses and a visit at {time}.",
+      "plannedBothOther": "Today: {count} doses and a visit at {time}.",
+      "plannedVisit": "Today: a visit at {time}.",
+      "nothingYet": "No readings yet today."
     },
     "todayFact": {
       "restMode": {
@@ -14003,6 +14045,23 @@
         "label": "Cycle",
         "value": "{phase}, day {day}",
         "dayOnly": "Day {day}"
+      }
+    },
+    "morningCard": {
+      "nightPending": "Not in yet",
+      "latestNight": "Latest night: {date}",
+      "vitalOutside": "{metric}: {value} on average today, usual {range}",
+      "contributor": "{name}: {value} of 100",
+      "readinessLast": "Last {score} on {date}",
+      "source": {
+        "recovery": {
+          "WHOOP": "WHOOP Recovery",
+          "OURA": "Oura Readiness",
+          "POLAR": "Polar Nightly Recharge"
+        },
+        "recoveryGeneric": "{source} recovery",
+        "sleepScore": "{source} sleep score",
+        "sleepPerformance": "WHOOP Sleep Performance"
       }
     }
   },

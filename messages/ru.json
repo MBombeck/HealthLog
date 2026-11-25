@@ -13944,16 +13944,16 @@
     },
     "lead": {
       "vitalOutside": {
-        "above": "{metric}: {value}, выше вашего обычного диапазона {range}.",
-        "below": "{metric}: {value}, ниже вашего обычного диапазона {range}."
+        "above": "{metric}: сегодня в среднем {value}, выше вашего обычного диапазона ({range}).",
+        "below": "{metric}: сегодня в среднем {value}, ниже вашего обычного диапазона ({range})."
       },
       "vitalsOutside": {
-        "aboveOne": "{metric}: {value}, выше вашего обычного диапазона {range}, и ещё {count} показатель тоже вне своего диапазона.",
-        "aboveFew": "{metric}: {value}, выше вашего обычного диапазона {range}, и ещё {count} показателя тоже вне своего диапазона.",
-        "aboveOther": "{metric}: {value}, выше вашего обычного диапазона {range}, и ещё {count} показателей тоже вне своего диапазона.",
-        "belowOne": "{metric}: {value}, ниже вашего обычного диапазона {range}, и ещё {count} показатель тоже вне своего диапазона.",
-        "belowFew": "{metric}: {value}, ниже вашего обычного диапазона {range}, и ещё {count} показателя тоже вне своего диапазона.",
-        "belowOther": "{metric}: {value}, ниже вашего обычного диапазона {range}, и ещё {count} показателей тоже вне своего диапазона."
+        "aboveOne": "{metric}: сегодня в среднем {value}, выше вашего обычного диапазона ({range}), и ещё {count} значение вне его.",
+        "aboveFew": "{metric}: сегодня в среднем {value}, выше вашего обычного диапазона ({range}), и ещё {count} значения вне его.",
+        "aboveOther": "{metric}: сегодня в среднем {value}, выше вашего обычного диапазона ({range}), и ещё {count} значений вне его.",
+        "belowOne": "{metric}: сегодня в среднем {value}, ниже вашего обычного диапазона ({range}), и ещё {count} значение вне его.",
+        "belowFew": "{metric}: сегодня в среднем {value}, ниже вашего обычного диапазона ({range}), и ещё {count} значения вне его.",
+        "belowOther": "{metric}: сегодня в среднем {value}, ниже вашего обычного диапазона ({range}), и ещё {count} значений вне его."
       },
       "sleep": {
         "more": "Прошлой ночью вы спали {duration}, на {diff} больше обычного.",
@@ -13961,10 +13961,52 @@
         "usual": "Прошлой ночью вы спали {duration}, близко к вашему обычному.",
         "plain": "Прошлой ночью вы спали {duration}."
       },
-      "vitalsInRangeOne": "Ваш последний показатель в пределах обычного диапазона.",
-      "vitalsInRangeFew": "Все {count} ваших последних показателя в пределах обычного диапазона.",
-      "vitalsInRangeOther": "Все {count} ваших последних показателей в пределах обычного диапазона.",
-      "vitalInRange": "{metric}: {value}, в пределах вашего обычного диапазона {range}."
+      "vitalsInRangeOne": "Все {count} сегодняшнее значение в обычном диапазоне.",
+      "vitalsInRangeFew": "Все {count} сегодняшних значения в обычном диапазоне.",
+      "vitalsInRangeOther": "Все {count} сегодняшних значений в обычном диапазоне.",
+      "vitalInRange": "{metric}: сегодня в среднем {value}, в вашем обычном диапазоне ({range}).",
+      "floor": {
+        "bpHigh": "Давление за последние 24 часа достигало {value}.",
+        "bpLow": "Давление за последние 24 часа снижалось до {value}.",
+        "glucoseLow": "Глюкоза крови за последние 24 часа снижалась до {value}.",
+        "glucoseHigh": "Глюкоза крови за последние 24 часа достигала {value}."
+      },
+      "restModeToday": "Режим отдыха с сегодняшнего дня, значения служат только для контекста.",
+      "restModeOne": "Режим отдыха уже {count} день, сегодня значения служат только для контекста.",
+      "restModeFew": "Режим отдыха уже {count} дня, сегодня значения служат только для контекста.",
+      "restModeOther": "Режим отдыха уже {count} дней, сегодня значения служат только для контекста.",
+      "coincident": "{signals} сегодня вне вашего обычного диапазона.",
+      "coincidentIllness": "Во время текущей болезни {signals} вне вашего обычного диапазона.",
+      "coincidentManyOne": "{count} значение сегодня вне вашего обычного диапазона.",
+      "coincidentManyFew": "{count} значения сегодня вне вашего обычного диапазона.",
+      "coincidentManyOther": "{count} значений сегодня вне вашего обычного диапазона.",
+      "coincidentIllnessManyOne": "Во время текущей болезни {count} значение вне вашего обычного диапазона.",
+      "coincidentIllnessManyFew": "Во время текущей болезни {count} значения вне вашего обычного диапазона.",
+      "coincidentIllnessManyOther": "Во время текущей болезни {count} значений вне вашего обычного диапазона.",
+      "family": {
+        "bloodPressure": "давление",
+        "heartRate": "пульс",
+        "hrv": "ВСР",
+        "respiratoryRate": "частота дыхания",
+        "oxygenSaturation": "насыщение кислородом",
+        "temperature": "температура"
+      },
+      "sleepPending": "Прошлая ночь ещё не поступила.",
+      "sourceQuietHoursOne": "{source} ничего не присылает уже {count} час.",
+      "sourceQuietHoursFew": "{source} ничего не присылает уже {count} часа.",
+      "sourceQuietHoursOther": "{source} ничего не присылает уже {count} часов.",
+      "sourceQuietDaysOne": "{source} ничего не присылает уже {count} день.",
+      "sourceQuietDaysFew": "{source} ничего не присылает уже {count} дня.",
+      "sourceQuietDaysOther": "{source} ничего не присылает уже {count} дней.",
+      "readiness": "Готовность {score}, сильнее всего её снижает {contributor}.",
+      "plannedDosesOne": "Сегодня: запланирована {count} доза.",
+      "plannedDosesFew": "Сегодня: запланировано {count} дозы.",
+      "plannedDosesOther": "Сегодня: запланировано {count} доз.",
+      "plannedBothOne": "Сегодня: {count} доза и визит в {time}.",
+      "plannedBothFew": "Сегодня: {count} дозы и визит в {time}.",
+      "plannedBothOther": "Сегодня: {count} доз и визит в {time}.",
+      "plannedVisit": "Сегодня: визит в {time}.",
+      "nothingYet": "Сегодня ещё нет значений."
     },
     "todayFact": {
       "restMode": {
@@ -14003,6 +14045,23 @@
         "label": "Цикл",
         "value": "{phase}, день {day}",
         "dayOnly": "День {day}"
+      }
+    },
+    "morningCard": {
+      "nightPending": "Ещё не поступила",
+      "latestNight": "Последняя ночь: {date}",
+      "vitalOutside": "{metric}: сегодня в среднем {value}, обычно {range}",
+      "contributor": "{name}: {value} из 100",
+      "readinessLast": "Последнее значение {score}, {date}",
+      "source": {
+        "recovery": {
+          "WHOOP": "WHOOP Recovery",
+          "OURA": "Oura Readiness",
+          "POLAR": "Polar Nightly Recharge"
+        },
+        "recoveryGeneric": "Восстановление {source}",
+        "sleepScore": "Балл сна {source}",
+        "sleepPerformance": "WHOOP Sleep Performance"
       }
     }
   },

@@ -4,8 +4,10 @@
  * "2 of your vitals are outside their usual range this morning — possible
  * factors: illness, alcohol, altitude, a hard workout." For each vital
  * with an established personal band (#1 `VITALS_BASELINE`), check whether
- * the latest reading falls outside the band; **≥ 2 outside on the same day
- * → fire** a flag listing the contributing vitals. No black-box score — it
+ * the latest reading falls outside the band; **≥ 2 independent signals
+ * outside on the same day → fire** a flag listing the contributing vitals
+ * (blood pressure is one signal, heart rate is one, weight and glucose are
+ * none; see `SIGNAL_FAMILIES`). No black-box score — it
  * is a transparent COUNT of deviations, mirroring Apple Vitals' ≥2-metric
  * next-morning notification.
  *
@@ -50,14 +52,60 @@ import {
   dayKeyAgeInDays,
   isFromToday,
 } from "@/lib/insights/measurement-freshness";
+import { BLOOD_PRESSURE_PAIR } from "@/lib/measurements/paired-metrics";
 import { MS_PER_DAY } from "@/lib/time-constants";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 const DEFAULT_WINDOW_DAYS = 30;
-/** ≥ this many out-of-band vitals on a day fires the flag. */
+/** ≥ this many independent out-of-band signals on a day fires the flag. */
 export const COINCIDENT_FIRE_THRESHOLD = 2;
 /** Need ≥ this many banded vitals before the flag can even coincide. */
 export const COINCIDENT_MIN_BANDS = 2;
+
+/**
+ * The independent signals the flag counts. Types that one physiology moves
+ * together are one signal: a blood-pressure reading writes a systolic and a
+ * diastolic row (`BLOOD_PRESSURE_PAIR`), and resting heart rate and pulse
+ * rise together for the same reason. Counting them apart let a single cuff
+ * reading, or one fast heartbeat, read as two signals "at the same time".
+ *
+ * Weight and glucose are in no family. They still get their own standing
+ * (and a surface may name one alone), but they never make a coincidence: a
+ * heavier morning and a sweet breakfast are not two signals of one thing.
+ */
+export const SIGNAL_FAMILIES = {
+  bloodPressure: BLOOD_PRESSURE_PAIR.components,
+  heartRate: ["RESTING_HEART_RATE", "PULSE"],
+  hrv: ["HEART_RATE_VARIABILITY", "HRV_RMSSD"],
+  respiratoryRate: ["RESPIRATORY_RATE"],
+  oxygenSaturation: ["OXYGEN_SATURATION"],
+  temperature: ["BODY_TEMPERATURE", "SKIN_TEMPERATURE"],
+} as const satisfies Record<string, readonly string[]>;
+
+export type SignalFamily = keyof typeof SIGNAL_FAMILIES;
+
+const FAMILY_ORDER = Object.keys(SIGNAL_FAMILIES) as SignalFamily[];
+
+/** The signal a type counts toward, or null for weight, glucose and the rest. */
+export function signalFamilyOf(type: string): SignalFamily | null {
+  return (
+    FAMILY_ORDER.find((family) =>
+      (SIGNAL_FAMILIES[family] as readonly string[]).includes(type),
+    ) ?? null
+  );
+}
+
+/** The distinct signals among out-of-range vitals, in family order. Pure. */
+export function coincidentFamilies(
+  contributing: readonly { type: string }[],
+): SignalFamily[] {
+  const present = new Set(
+    contributing
+      .map((v) => signalFamilyOf(v.type))
+      .filter((f): f is SignalFamily => f !== null),
+  );
+  return FAMILY_ORDER.filter((family) => present.has(family));
+}
 
 /**
  * Vitals whose day mean depends on how much of the day has passed.
@@ -434,7 +482,9 @@ export async function computeCoincidentDeviation(
   const contributing = vitals.filter(
     (v) => v.outside && isFromToday(v.daysAgo),
   );
-  const fired = contributing.length >= COINCIDENT_FIRE_THRESHOLD;
+  // The threshold counts independent signals, not types (`SIGNAL_FAMILIES`).
+  const fired =
+    coincidentFamilies(contributing).length >= COINCIDENT_FIRE_THRESHOLD;
 
   // v1.18.1 — when the flag fired, reframe it as illness-explained if an
   // episode is active. Only resolved when the flag fired (no read on the

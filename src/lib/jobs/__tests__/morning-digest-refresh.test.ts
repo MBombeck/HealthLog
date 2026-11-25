@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+const warmMock = vi.hoisted(() => ({
+  warmDailyMorning: vi.fn(async () => true),
+}));
+vi.mock("@/lib/daily/morning-load", () => warmMock);
+
 import { runMorningDigestRefresh } from "../morning-digest-refresh";
 import { MORNING_DIGEST_REFRESH_EXPIRE_SECONDS } from "../morning-digest-refresh-shared";
 import {
@@ -48,6 +53,35 @@ describe("runMorningDigestRefresh", () => {
 
   beforeEach(() => {
     retryMock.mockReset();
+    warmMock.warmDailyMorning.mockClear();
+  });
+
+  it("warms the morning read once the day is final, and only then", async () => {
+    const { prisma } = makePrisma({
+      locale: "en",
+      morningDigestRefreshedOn: null,
+    });
+    const ok = vi.fn(async (): Promise<GenerateOutcome> => ({
+      status: "unchanged",
+    }));
+    await refresh(
+      prisma,
+      { userId: "u1", localDate: LOCAL_DATE },
+      { generate: ok, enqueueRetry: retryMock },
+    );
+    expect(warmMock.warmDailyMorning).toHaveBeenCalledWith("u1", LOCAL_DATE);
+
+    warmMock.warmDailyMorning.mockClear();
+    const failed = vi.fn(async (): Promise<GenerateOutcome> => ({
+      status: "failed",
+      reason: "provider-timeout",
+    }));
+    await refresh(
+      makePrisma({ locale: "en", morningDigestRefreshedOn: null }).prisma,
+      { userId: "u1", localDate: LOCAL_DATE },
+      { generate: failed, enqueueRetry: retryMock },
+    );
+    expect(warmMock.warmDailyMorning).not.toHaveBeenCalled();
   });
 
   it("regenerates and stamps the marker → finalises the day", async () => {

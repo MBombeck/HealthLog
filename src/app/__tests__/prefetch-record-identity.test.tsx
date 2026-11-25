@@ -46,6 +46,7 @@ const getSession = vi.fn();
 const resolveModuleMap = vi.fn();
 const readDashboardSnapshotCached = vi.fn();
 const loadDailyDigest = vi.fn();
+const loadDailyMorning = vi.fn();
 const readSeriesBatch = vi.fn();
 const readMedicationsListCached = vi.fn();
 const readRecoveryKit = vi.fn();
@@ -77,6 +78,12 @@ vi.mock("@/lib/dashboard-layout", () => ({
 }));
 vi.mock("@/lib/daily/load-digest", () => ({
   loadDailyDigest: (u: unknown) => loadDailyDigest(u),
+}));
+vi.mock("@/lib/daily/morning-load", async (importOriginal) => ({
+  settleTodayPair: (
+    await importOriginal<typeof import("@/lib/daily/morning-load")>()
+  ).settleTodayPair,
+  loadDailyMorning: (u: unknown) => loadDailyMorning(u),
 }));
 vi.mock("@/lib/measurements/series-batch-read", () => ({
   readSeriesBatch: (...args: unknown[]) => readSeriesBatch(...args),
@@ -120,6 +127,7 @@ const SNAPSHOT = {
   locale: "en",
 };
 const DIGEST = { marker: DELEGATE_MARKER, headline: "3 kg down" };
+const MORNING = { marker: DELEGATE_MARKER, lead: { rank: 8 } };
 const SERIES = { WEIGHT: [{ marker: DELEGATE_MARKER, value: 81.4 }] };
 const MEDICATIONS = [{ id: "m1", name: DELEGATE_MARKER }];
 
@@ -143,6 +151,7 @@ function primeDashboard() {
   resolveModuleMap.mockResolvedValue({ insights: true });
   readDashboardSnapshotCached.mockResolvedValue(SNAPSHOT);
   loadDailyDigest.mockResolvedValue(DIGEST);
+  loadDailyMorning.mockResolvedValue(MORNING);
   readSeriesBatch.mockResolvedValue({ series: SERIES });
 }
 
@@ -160,6 +169,9 @@ describe("the dashboard prefetch and the record on screen", () => {
       marker: DELEGATE_MARKER,
     });
     expect(cache[hashKey(queryKeys.dailyDigest())]).toMatchObject({
+      marker: DELEGATE_MARKER,
+    });
+    expect(cache[hashKey(queryKeys.dailyMorning())]).toMatchObject({
       marker: DELEGATE_MARKER,
     });
     expect(
@@ -217,7 +229,27 @@ describe("the dashboard prefetch and the record on screen", () => {
     expect(el.type).not.toBe(HydrationBoundary);
     expect(readDashboardSnapshotCached).not.toHaveBeenCalled();
     expect(loadDailyDigest).not.toHaveBeenCalled();
+    expect(loadDailyMorning).not.toHaveBeenCalled();
     expect(readSeriesBatch).not.toHaveBeenCalled();
+  });
+
+  it("seeds the digest and the morning both or neither", async () => {
+    // The morning block renders from the two. One without the other would
+    // paint the fallback hero on the server and swap the sentence after
+    // hydration; over the budget both stay out and the block is a skeleton on
+    // both sides.
+    getSession.mockResolvedValue(OWN_SESSION);
+    primeDashboard();
+    loadDailyMorning.mockReturnValue(new Promise(() => {}));
+    const slowMorning = seededCache((await DashboardPage()) as ReactElement);
+    expect(slowMorning[hashKey(queryKeys.dailyMorning())]).toBeUndefined();
+    expect(slowMorning[hashKey(queryKeys.dailyDigest())]).toBeUndefined();
+
+    primeDashboard();
+    loadDailyDigest.mockRejectedValue(new Error("pool"));
+    const failedDigest = seededCache((await DashboardPage()) as ReactElement);
+    expect(failedDigest[hashKey(queryKeys.dailyMorning())]).toBeUndefined();
+    expect(failedDigest[hashKey(queryKeys.dailyDigest())]).toBeUndefined();
   });
 });
 

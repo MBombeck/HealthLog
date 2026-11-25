@@ -13944,27 +13944,69 @@
     },
     "lead": {
       "vitalOutside": {
-        "above": "{metric}이(가) {value}로 평소 범위({range})보다 높아요.",
-        "below": "{metric}이(가) {value}로 평소 범위({range})보다 낮아요."
+        "above": "{metric}이(가) 오늘 평균 {value}로 평소 범위({range})보다 높아요.",
+        "below": "{metric}이(가) 오늘 평균 {value}로 평소 범위({range})보다 낮아요."
       },
       "vitalsOutside": {
-        "aboveOne": "{metric}이(가) {value}로 평소 범위({range})보다 높고, 다른 지표 {count}개도 범위를 벗어났어요.",
-        "aboveFew": "{metric}이(가) {value}로 평소 범위({range})보다 높고, 다른 지표 {count}개도 범위를 벗어났어요.",
-        "aboveOther": "{metric}이(가) {value}로 평소 범위({range})보다 높고, 다른 지표 {count}개도 범위를 벗어났어요.",
-        "belowOne": "{metric}이(가) {value}로 평소 범위({range})보다 낮고, 다른 지표 {count}개도 범위를 벗어났어요.",
-        "belowFew": "{metric}이(가) {value}로 평소 범위({range})보다 낮고, 다른 지표 {count}개도 범위를 벗어났어요.",
-        "belowOther": "{metric}이(가) {value}로 평소 범위({range})보다 낮고, 다른 지표 {count}개도 범위를 벗어났어요."
+        "aboveOne": "{metric}이(가) 오늘 평균 {value}로 평소 범위({range})보다 높고, 다른 값 {count}개도 벗어났어요.",
+        "aboveFew": "{metric}이(가) 오늘 평균 {value}로 평소 범위({range})보다 높고, 다른 값 {count}개도 벗어났어요.",
+        "aboveOther": "{metric}이(가) 오늘 평균 {value}로 평소 범위({range})보다 높고, 다른 값 {count}개도 벗어났어요.",
+        "belowOne": "{metric}이(가) 오늘 평균 {value}로 평소 범위({range})보다 낮고, 다른 값 {count}개도 벗어났어요.",
+        "belowFew": "{metric}이(가) 오늘 평균 {value}로 평소 범위({range})보다 낮고, 다른 값 {count}개도 벗어났어요.",
+        "belowOther": "{metric}이(가) 오늘 평균 {value}로 평소 범위({range})보다 낮고, 다른 값 {count}개도 벗어났어요."
       },
       "sleep": {
-        "more": "어젯밤 {duration} 잤어요. 평소보다 {diff} 더 잤어요.",
-        "less": "어젯밤 {duration} 잤어요. 평소보다 {diff} 덜 잤어요.",
-        "usual": "어젯밤 {duration} 잤어요. 평소와 비슷해요.",
+        "more": "어젯밤 {duration} 자서 평소보다 {diff} 더 잤어요.",
+        "less": "어젯밤 {duration} 자서 평소보다 {diff} 덜 잤어요.",
+        "usual": "어젯밤 {duration} 자서 평소와 비슷해요.",
         "plain": "어젯밤 {duration} 잤어요."
       },
-      "vitalsInRangeOne": "최근 생체 지표가 평소 범위 안에 있어요.",
-      "vitalsInRangeFew": "최근 생체 지표 {count}개가 모두 평소 범위 안에 있어요.",
-      "vitalsInRangeOther": "최근 생체 지표 {count}개가 모두 평소 범위 안에 있어요.",
-      "vitalInRange": "{metric}이(가) {value}로 평소 범위({range}) 안에 있어요."
+      "vitalsInRangeOne": "오늘 값 {count}개가 모두 평소 범위 안에 있어요.",
+      "vitalsInRangeFew": "오늘 값 {count}개가 모두 평소 범위 안에 있어요.",
+      "vitalsInRangeOther": "오늘 값 {count}개가 모두 평소 범위 안에 있어요.",
+      "vitalInRange": "{metric}이(가) 오늘 평균 {value}로 평소 범위({range}) 안에 있어요.",
+      "floor": {
+        "bpHigh": "지난 24시간 동안 혈압이 {value}까지 올랐어요.",
+        "bpLow": "지난 24시간 동안 혈압이 {value}까지 내려갔어요.",
+        "glucoseLow": "지난 24시간 동안 혈당이 {value}까지 내려갔어요.",
+        "glucoseHigh": "지난 24시간 동안 혈당이 {value}까지 올랐어요."
+      },
+      "restModeToday": "오늘부터 휴식 모드라서 값은 참고용이에요.",
+      "restModeOne": "{count}일 전부터 휴식 모드라서 오늘 값은 참고용이에요.",
+      "restModeFew": "{count}일 전부터 휴식 모드라서 오늘 값은 참고용이에요.",
+      "restModeOther": "{count}일 전부터 휴식 모드라서 오늘 값은 참고용이에요.",
+      "coincident": "오늘 {signals}이(가) 평소 범위를 벗어났어요.",
+      "coincidentIllness": "현재 아픈 기간 중 {signals}이(가) 평소 범위를 벗어났어요.",
+      "coincidentManyOne": "오늘 값 {count}개가 평소 범위를 벗어났어요.",
+      "coincidentManyFew": "오늘 값 {count}개가 평소 범위를 벗어났어요.",
+      "coincidentManyOther": "오늘 값 {count}개가 평소 범위를 벗어났어요.",
+      "coincidentIllnessManyOne": "현재 아픈 기간 중 값 {count}개가 평소 범위를 벗어났어요.",
+      "coincidentIllnessManyFew": "현재 아픈 기간 중 값 {count}개가 평소 범위를 벗어났어요.",
+      "coincidentIllnessManyOther": "현재 아픈 기간 중 값 {count}개가 평소 범위를 벗어났어요.",
+      "family": {
+        "bloodPressure": "혈압",
+        "heartRate": "심박수",
+        "hrv": "HRV",
+        "respiratoryRate": "호흡수",
+        "oxygenSaturation": "산소포화도",
+        "temperature": "체온"
+      },
+      "sleepPending": "어젯밤 수면이 아직 들어오지 않았어요.",
+      "sourceQuietHoursOne": "{source}에서 {count}시간째 아무것도 오지 않았어요.",
+      "sourceQuietHoursFew": "{source}에서 {count}시간째 아무것도 오지 않았어요.",
+      "sourceQuietHoursOther": "{source}에서 {count}시간째 아무것도 오지 않았어요.",
+      "sourceQuietDaysOne": "{source}에서 {count}일째 아무것도 오지 않았어요.",
+      "sourceQuietDaysFew": "{source}에서 {count}일째 아무것도 오지 않았어요.",
+      "sourceQuietDaysOther": "{source}에서 {count}일째 아무것도 오지 않았어요.",
+      "readiness": "준비도 {score}, {contributor}의 영향이 가장 커요.",
+      "plannedDosesOne": "오늘: {count}회 복용 예정이에요.",
+      "plannedDosesFew": "오늘: {count}회 복용 예정이에요.",
+      "plannedDosesOther": "오늘: {count}회 복용 예정이에요.",
+      "plannedBothOne": "오늘: {count}회 복용과 {time} 진료가 있어요.",
+      "plannedBothFew": "오늘: {count}회 복용과 {time} 진료가 있어요.",
+      "plannedBothOther": "오늘: {count}회 복용과 {time} 진료가 있어요.",
+      "plannedVisit": "오늘: {time} 진료가 있어요.",
+      "nothingYet": "오늘은 아직 값이 없어요."
     },
     "todayFact": {
       "restMode": {
@@ -14003,6 +14045,23 @@
         "label": "주기",
         "value": "{phase}, {day}일째",
         "dayOnly": "{day}일째"
+      }
+    },
+    "morningCard": {
+      "nightPending": "아직 안 들어왔어요",
+      "latestNight": "가장 최근 밤: {date}",
+      "vitalOutside": "{metric}: 오늘 평균 {value}, 평소 {range}",
+      "contributor": "{name}: {value}/100",
+      "readinessLast": "최근 {score} ({date})",
+      "source": {
+        "recovery": {
+          "WHOOP": "WHOOP Recovery",
+          "OURA": "Oura Readiness",
+          "POLAR": "Polar Nightly Recharge"
+        },
+        "recoveryGeneric": "{source} 회복",
+        "sleepScore": "{source} 수면 점수",
+        "sleepPerformance": "WHOOP Sleep Performance"
       }
     }
   },
