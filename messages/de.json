@@ -9841,7 +9841,8 @@
           "off": "Cookies tragen das Secure-Flag nicht.",
           "secure_over_https": "Sichere Cookies über HTTPS, so wie es sein soll.",
           "plain_http": "Einfaches HTTP ohne Secure-Flag: in Ordnung für einen Server, der nur im eigenen Netz erreichbar ist.",
-          "secure_over_http": "Diese Seite kam über einfaches HTTP, aber die Cookies tragen das Secure-Flag, deshalb verwerfen Browser die Anmeldung. Stelle HTTPS bereit oder setze SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Diese Seite kam als einfaches HTTP bei der App an. Hinter einem HTTPS-Proxy lass ihn X-Forwarded-Proto: https senden; bei reinem HTTP setze SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "HTTPS funktioniert, aber dein Reverse Proxy meldet es nicht. Lass ihn X-Forwarded-Proto: https senden.",
           "insecure_over_https": "Diese Seite kam über HTTPS, aber den Cookies fehlt das Secure-Flag. Entferne SESSION_COOKIE_SECURE=false."
         },
         "app_url": {

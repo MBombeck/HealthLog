@@ -12713,8 +12713,15 @@ paths:
         mount-time backfill on every page load.
 
 
-        Idempotent: when the column already matches, the write is skipped and only the cookie is refreshed. Body capped
-        at 4 KB.
+        A browser tab's write is held to the locale cookie it carries, which every switch writes before sending: a body
+        that disagrees with that cookie is stale (another tab switched since it rendered) and a body sent with no cookie
+        is the browser-language guess, which fills an empty column but never replaces a stored choice. In both cases
+        nothing is written and the reply names the language in force, which the tab then adopts. The cookie is set only
+        where the reply changes it, so a late reply cannot put an older language back. A Bearer caller states its choice
+        in the body and it is stored as sent.
+
+
+        Idempotent: when the column already matches, the write is skipped. Body capped at 4 KB.
       requestBody:
         required: true
         content:
@@ -12723,7 +12730,8 @@ paths:
               $ref: "#/components/schemas/LocalePutRequest"
       responses:
         "200":
-          description: The accepted locale.
+          description: "The locale in force: the body's, or for a stale or guessed browser write the one the browser and account
+            already hold."
           content:
             application/json:
               schema:

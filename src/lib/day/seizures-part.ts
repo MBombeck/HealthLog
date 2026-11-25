@@ -3,6 +3,7 @@
  * the other record sections of `./records.ts`.
  */
 import { prisma } from "@/lib/db";
+import { recordHref } from "@/lib/links/hrefs";
 import { decryptSeizureText } from "@/lib/seizures/server";
 
 import type { DayEvent } from "./contract";
@@ -46,7 +47,7 @@ export async function seizuresPart(frame: DayFrame): Promise<SectionPart> {
         ? (decryptSeizureText(row.typeProfile.labelEncrypted, "label") ?? "")
         : "",
       meta: `${row.certainty} ${row.count}`,
-      href: "/seizures",
+      href: recordHref("seizure", row.id),
     })),
   };
 }

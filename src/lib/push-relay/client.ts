@@ -14,7 +14,9 @@
  * and retries exactly once with a corrected time and a fresh nonce.
  *
  * Egress goes through `safeFetch` with `requirePublicHost`, no redirects and
- * a 10 s deadline.
+ * a 10 s deadline, on the long-lived pinned dispatcher (`keepAlive`), so a
+ * push that follows another within 55 s reuses the open connection instead
+ * of paying DNS, TCP and TLS again.
  */
 import { randomBytes } from "node:crypto";
 
@@ -148,7 +150,11 @@ async function exchange(
         },
         ...(body ? { body } : {}),
       },
-      { requirePublicHost: true, timeoutMs: RELAY_REQUEST_TIMEOUT_MS },
+      {
+        requirePublicHost: true,
+        keepAlive: true,
+        timeoutMs: RELAY_REQUEST_TIMEOUT_MS,
+      },
     );
   } catch (err) {
     const kind = (err as { kind?: string }).kind;

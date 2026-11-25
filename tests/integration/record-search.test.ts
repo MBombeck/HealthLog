@@ -23,6 +23,7 @@ import { NextRequest } from "next/server";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import type { SearchHit, SearchResponse } from "@/lib/search/contract";
+import { moodDayHref } from "@/lib/links/hrefs";
 import { MAX_SCAN_ROWS_PER_SOURCE } from "@/lib/search/search-records";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
@@ -204,7 +205,7 @@ describe("the record search", () => {
       `/documents?doc=${mine.document.id}`,
     );
     expect(byId.get(`moodNote:${mine.mood.id}`)?.path).toBe(
-      "/mood?day=2026-03-05",
+      moodDayHref("2026-03-05"),
     );
     expect(byId.get(`measurementNote:${mine.reading.id}`)?.path).toBe(
       "/measurements?day=2026-03-06",

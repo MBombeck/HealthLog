@@ -31,6 +31,7 @@ import {
 } from "@/lib/i18n/context";
 import { formatUpdatedLabel } from "@/lib/i18n/relative-time";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
+import { metricHref } from "@/lib/links/hrefs";
 import { cn } from "@/lib/utils";
 import type {
   DailyBriefing as DailyBriefingPayload,
@@ -39,46 +40,6 @@ import type {
 } from "@/lib/ai/schema";
 import type { BriefingFailureClass } from "@/lib/insights/briefing-failure-marker";
 import { InsightSectionCard } from "./insight-section-card";
-
-/**
- * v1.4.27 — per-metric routing target for the briefing
- * key findings. Maps the schema's `sourceMetric` discriminator to the
- * sub-page slug that owns the deeper view. Metrics that don't have a
- * dedicated routed sub-page yet (hrv, resting_hr, steps, …) fall
- * through to `null` and render as a plain row (no link wrap).
- */
-export const METRIC_HREF: Record<
-  DailyBriefingKeyFinding["sourceMetric"],
-  string | null
-> = {
-  bp: "/insights/blood-pressure",
-  weight: "/insights/weight",
-  pulse: "/insights/pulse",
-  mood: "/insights/mood",
-  compliance: "/insights/medications",
-  // Apple Health / GLP-1 additive metrics — each now routes to its
-  // dedicated sub-page that shipped since the original map was written.
-  hrv: "/insights/hrv",
-  sleep: "/insights/sleep",
-  resting_hr: "/insights/resting-pulse",
-  // v1.12.4 — steps has no dedicated metric sub-page, so it routes to the
-  // generic readings view keyed to its `MeasurementType` (the same target
-  // the category pages use to drill into a single type). Every other
-  // briefing finding with a real destination is already tappable; steps
-  // was the lone static row.
-  steps: "/insights/steps",
-  active_energy: "/insights/active-energy",
-  flights: "/insights/flights-climbed",
-  distance: "/insights/walking-distance",
-  vo2_max: "/insights/pulse",
-  body_temp: "/insights/body-temperature",
-  glp1_plateau: "/insights/medications",
-  // ── v1.10.0 derived-wellness additive ──
-  // Readiness has a score-anatomy detail page; recovery has its own
-  // read-only sub-page.
-  readiness: "/insights/scores/readiness",
-  recovery: "/insights/recovery",
-};
 
 /**
  * v1.4.20 — full-width Daily Briefing card.
@@ -226,7 +187,8 @@ function BriefingRow({
   dataSlot: "daily-briefing-finding" | "daily-briefing-signal";
 }) {
   const Icon = METRIC_ICON[sourceMetric];
-  const href = METRIC_HREF[sourceMetric];
+  // The metric's page, from the one table of metric pages.
+  const href = metricHref(sourceMetric);
   const rowContent = (
     <>
       <span
