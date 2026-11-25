@@ -50,6 +50,12 @@ export interface DerivedComputeArgs {
   /** Trailing window override (days). */
   windowDays?: number;
   now?: Date;
+  /**
+   * The account's IANA zone, when the caller already holds it. Readiness and
+   * the sleep score key "today" and "last night" on it; omitted, each
+   * resolves the stored zone itself, never the server's.
+   */
+  tz?: string;
 }
 
 /** A `not_implemented` insufficient — the stub guard for W2/W3 metrics. */
@@ -140,11 +146,13 @@ export async function computeDerivedMetric(
       return computeSleepScore(args.userId, args.profile, {
         windowDays: args.windowDays,
         now,
+        tz: args.tz,
       }) as Promise<Derived<unknown>>;
     case "READINESS": {
       const readiness = await computeReadiness(args.userId, args.profile, {
         windowDays: args.windowDays,
         now,
+        tz: args.tz,
       });
       // The blend's course rides beside today's score for the surfaces that
       // draw it; the nightly job's own compute never pays for the read.

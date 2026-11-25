@@ -57,7 +57,13 @@ const NOW = new Date("2026-06-02T08:30:00Z");
 function okReadiness(score: number): Derived<ReadinessValue> {
   return {
     status: "ok",
-    value: { score, band: "green", components: [] },
+    value: {
+      score,
+      band: "green",
+      components: [],
+      asOfDay: "2026-06-02",
+      fresh: true,
+    },
     coverage: {
       requiredInputs: 5,
       presentInputs: 4,

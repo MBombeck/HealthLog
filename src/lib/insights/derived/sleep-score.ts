@@ -47,6 +47,7 @@ import {
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
+import { bandForScoreKind } from "@/lib/analytics/score/shared";
 import {
   buildInsufficient,
   buildOk,
@@ -296,12 +297,6 @@ export function scoreTiming(
 function clamp100(v: number): number {
   if (!Number.isFinite(v)) return 0;
   return Math.max(0, Math.min(100, Math.round(v)));
-}
-
-function bandForScore(score: number): "green" | "yellow" | "red" {
-  if (score >= 70) return "green";
-  if (score >= 40) return "yellow";
-  return "red";
 }
 
 /**
@@ -634,7 +629,7 @@ export async function computeSleepScore(
   return buildOk<SleepScoreValue>({
     value: {
       score,
-      band: bandForScore(score),
+      band: bandForScoreKind("sleep", score),
       night: latest.night,
       // Emit whole minutes (iOS #18) — the canonical totals sum second-
       // precision segments and can otherwise serialise as e.g. 433.4999.

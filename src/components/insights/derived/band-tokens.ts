@@ -20,6 +20,8 @@
  * whole v1.10 score language extends.
  */
 
+import { scoreBand } from "@/lib/analytics/score/shared";
+
 export type ScoreBand = "green" | "yellow" | "red";
 
 /** Tailwind text-colour class per band (the headline number colour). */
@@ -44,15 +46,14 @@ export const BAND_BORDER_CLASS: Record<ScoreBand, string> = {
 };
 
 /**
- * Map a 0..100 score to its band. Mirrors the thresholds the existing
- * health-score blend uses (≥ 70 green, ≥ 40 yellow, else red) so a
- * derived score and the composite health score never disagree on colour
- * for the same number.
+ * Map a higher-is-better 0..100 score to its band, for a ring or row the
+ * server sent no band for. It IS the server's rule (`scoreBand`, green from
+ * 70, yellow from 50), so a pillar row and the score the server computed
+ * never disagree on colour for the same number. A lower-is-better score
+ * (stress, strain) must pass the server's band, never fall back to this.
  */
 export function bandForScore(score: number): ScoreBand {
-  if (score >= 70) return "green";
-  if (score >= 40) return "yellow";
-  return "red";
+  return scoreBand(score);
 }
 
 /** Clamp a score into the 0..100 rendering range, defending bad input. */
