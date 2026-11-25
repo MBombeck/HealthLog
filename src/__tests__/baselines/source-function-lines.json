@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 315,
-  "total": 98380,
+  "total": 98374,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -103,7 +103,7 @@
     "components/insights/coach-panel/sources-rail.tsx :: SourcesRail": 203,
     "components/insights/coach-panel/use-coach.ts :: useSendCoachMessage": 436,
     "components/insights/coach-panel/use-coach.ts :: useSendCoachMessage > useCallback(arg) #2": 340,
-    "components/insights/daily-briefing.tsx :: DailyBriefing": 220,
+    "components/insights/daily-briefing.tsx :: DailyBriefing": 214,
     "components/insights/derived/composite-score-anatomy.tsx :: CompositeScoreAnatomy": 251,
     "components/insights/derived/score-trend-chart.tsx :: ScoreTrendChart": 255,
     "components/insights/derived/vitals-dashboard.tsx :: VitalsDashboard": 242,
