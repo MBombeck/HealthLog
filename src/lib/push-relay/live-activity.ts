@@ -122,6 +122,28 @@ import {
 export const ACTIVITY_LEAD_MS = 2 * 3600_000;
 /** Statement windows the relay applies, less five minutes of margin. */
 const START_STATEMENT_MAX_AGE_S = 30 * 24 * 3600 - 300;
+
+/**
+ * Whether the device holds a push-to-start token the relay still takes: the
+ * token, its signature, and a statement young enough. The start reads it, and
+ * so does the admin diagnostic's Live Activity line, so the two never differ.
+ */
+export function laStartTokenUsable(
+  device: {
+    laStartToken: string | null;
+    laStartSignature: string | null;
+    laStartStatement: unknown;
+  },
+  now: Date,
+): boolean {
+  const iat = statementIat(device.laStartStatement);
+  return (
+    !!device.laStartToken &&
+    !!device.laStartSignature &&
+    iat !== null &&
+    Math.floor(now.getTime() / 1000) - iat <= START_STATEMENT_MAX_AGE_S
+  );
+}
 const ACTIVITY_STATEMENT_MAX_AGE_S = 12 * 3600 - 300;
 /** A start or update is worth nothing late. */
 const PUSH_LIFETIME_S = 15 * 60;
@@ -286,16 +308,7 @@ async function startItem(
   now: Date,
   exact: boolean,
 ): Promise<{ item: RelayItemInput; dose: ActivityDose } | null> {
-  const nowS = Math.floor(now.getTime() / 1000);
-  const iat = statementIat(device.laStartStatement);
-  if (
-    !device.laStartToken ||
-    !device.laStartSignature ||
-    iat === null ||
-    nowS - iat > START_STATEMENT_MAX_AGE_S
-  ) {
-    return null;
-  }
+  if (!laStartTokenUsable(device, now)) return null;
   if (await refusedRecently(device.id, LA_START_EVENT, now)) return null;
   const candidates = startCandidates(
     await openActivityDoses(device.userId, now),

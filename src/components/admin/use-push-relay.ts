@@ -97,6 +97,28 @@ export function usePushRelayStatus({
   });
 }
 
+/** The devices of `GET /api/admin/notifications/diagnostic`, as far as read here. */
+export interface AdminDiagnosticDevices {
+  devices: Array<{
+    /** Absent on a response from a build before the field. */
+    liveActivityStart?:
+      "ready" | "switch_off" | "no_consent" | "no_start_token" | null;
+  }>;
+}
+
+/** The calling admin's own devices from the notification diagnostic. */
+export function useAdminDiagnosticDevices({ enabled }: { enabled: boolean }) {
+  return useQuery({
+    queryKey: queryKeys.adminNotificationDiagnostic(),
+    queryFn: () =>
+      apiGet<AdminDiagnosticDevices>("/api/admin/notifications/diagnostic", {
+        credentials: "include",
+      }),
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
 /** The body the switch and the relay question's answer both take. */
 export interface PushRelaySwitchBody {
   enabled: boolean;

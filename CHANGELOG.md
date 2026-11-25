@@ -18,6 +18,12 @@
 
 - `GET /api/version` names the new capabilities of this release in `features`, so the iOS app can offer each one only on a server that has it: `documents.lab-values-extract`, `documents.server-ocr`, `care.treatment-series`, `sleep.night-overlays`, `profile.emergency-card-apple-wallet`, `notifications.sync-stalled` and `insights.same-time-daily-total`, beside `push.live-activity-start-id`. Until now the app kept reading lab values without AI hidden on every server. A test now refuses a new path in the published contract that neither names its key nor says why no client gates on it.
 
+- The published contract carries a worked answer for two new reads: the `daily_total` form of `SAME_TIME_BASELINE` on `GET /api/insights/derived` (example `sameTimeBaselineDailyTotal`) and the lab values read without AI (`POST /api/documents/inbound/{id}/lab-values`, example `scannedLabReport`). A test rebuilds each from the server's own code, so a client can decode the same bytes in its tests.
+
+- The "source stopped syncing" notification has one deep link per source, `/settings/integrations#<source>`, the source's card on the integrations page. A notification sent straight to the iPhone carries it; one sent over the push relay names only the source, and the app builds the same link. A test holds every source that can go quiet to a card on that page.
+
+- The admin's push relay card says in one line why a medication's Live Activity cannot start on the admin's own iPhone: the operator switch `PUSH_RELAY_LIVE_ACTIVITY` is off, the iPhone has not allowed Live Activities over the relay, or it has sent no start token yet. `GET /api/admin/notifications/diagnostic` carries the same state per device as `liveActivityStart`.
+
 ### Changed
 
 - Withings counts as a source that can go quiet when it delivered on most of the last 14 days, as a scale used every morning does. Its card then says since when nothing arrived and its owner is told once; the operator is never paged for it, since a person who stops weighing in is nothing an operator can fix. A Withings connection used now and then is watched for errors only, as before.

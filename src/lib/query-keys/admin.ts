@@ -67,6 +67,9 @@ export const adminKeys = {
   adminRecoveryReadiness: () => ["admin", "recovery-readiness"] as const,
   /** The push relay switch, its state and the one-time notice. */
   adminPushRelay: () => ["admin", "push-relay"] as const,
+  /** The calling admin's own notification diagnostic (devices, channels). */
+  adminNotificationDiagnostic: () =>
+    ["admin", "notifications", "diagnostic"] as const,
   /** Database migrations applied, pending and failed. */
   adminMigrations: () => ["admin", "migrations"] as const,
   /** 1.49 — the first-admin server setup's steps, stamp, notice and facts. */

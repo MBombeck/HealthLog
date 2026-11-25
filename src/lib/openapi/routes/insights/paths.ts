@@ -75,6 +75,7 @@ import {
 } from "./schemas";
 import { recommendationFeedbackRequestSchema } from "@/lib/validations/recommendation-feedback";
 import { isoDateTime } from "@/lib/validations/datetime";
+import { sameTimeBaselineDailyTotalExample } from "@/lib/openapi/examples";
 
 const insightsFeedbackRequest = recommendationFeedbackRequestSchema.meta({
   id: "InsightsFeedbackRequest",
@@ -886,6 +887,13 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 derivedMetricResponse,
                 "DerivedMetricResponseEnvelope",
               ),
+              examples: {
+                sameTimeBaselineDailyTotal: {
+                  summary:
+                    "SAME_TIME_BASELINE in its daily_total form: today's steps from a once-a-day source against the usual full day",
+                  value: sameTimeBaselineDailyTotalExample,
+                },
+              },
             },
           },
         },

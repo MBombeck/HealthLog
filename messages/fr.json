@@ -16359,5 +16359,10 @@
     "periodOpen": "depuis le {from}",
     "expiryPushTitle": "Série de soins bientôt expirée",
     "expiryPushBody": "{title} : valable jusqu’au {date}, {count, plural, one {# séance restante} other {# séances restantes}}."
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "Un médicament a une Activité en direct, mais PUSH_RELAY_LIVE_ACTIVITY est désactivé : aucune ne démarre.",
+    "noConsent": "Un médicament a une Activité en direct, mais votre iPhone ne l'a pas autorisée via le relais.",
+    "noStartToken": "Un médicament a une Activité en direct, mais votre iPhone n'a pas encore envoyé de jeton de démarrage."
   }
 }

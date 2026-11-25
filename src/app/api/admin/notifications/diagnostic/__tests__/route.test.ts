@@ -31,6 +31,10 @@ vi.mock("@/lib/db", () => ({
     pushAttempt: {
       findMany: vi.fn(),
     },
+    // Whether any medication wants a Live Activity (`liveActivityStart`).
+    medication: {
+      count: vi.fn(),
+    },
   },
 }));
 
@@ -113,6 +117,7 @@ beforeEach(() => {
   vi.mocked(prisma.device.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.notificationChannel.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.pushAttempt.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.medication.count).mockResolvedValue(0 as never);
 });
 
 describe("GET /api/admin/notifications/diagnostic — auth gates", () => {
@@ -416,5 +421,51 @@ describe("GET /api/admin/notifications/diagnostic — recentPushAttempts", () =>
       where: { recipientUserId?: string };
     };
     expect(args.where).toEqual({ recipientUserId: ADMIN_USER_ID });
+  });
+});
+
+describe("GET /api/admin/notifications/diagnostic — Live Activity start", () => {
+  const boundIphone = {
+    id: "dev-la",
+    platform: "ios",
+    apnsToken: null,
+    apnsEnvironment: "production",
+    lastSeen: new Date("2026-11-25T09:00:00.000Z"),
+    relayState: "bound",
+    relayConflictAt: null,
+    relayBoundAt: new Date("2026-11-20T09:00:00.000Z"),
+    envelopeReportedAt: null,
+    liveActivityConsentAt: null,
+    laStartToken: null,
+    laStartSignature: null,
+    laStartStatement: null,
+    relayDeliveries: [],
+  };
+
+  it("names what keeps a wanted Live Activity from starting", async () => {
+    vi.mocked(requireAdmin).mockResolvedValue(ADMIN_CTX);
+    vi.mocked(prisma.device.findMany).mockResolvedValue([boundIphone] as never);
+    vi.mocked(prisma.medication.count).mockResolvedValue(1 as never);
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "on");
+    try {
+      const res = await GET();
+      const body = (await res.json()) as {
+        data: { devices: Array<{ liveActivityStart: string | null }> };
+      };
+      expect(res.status).toBe(200);
+      expect(body.data.devices[0].liveActivityStart).toBe("no_consent");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("stays null when no medication wants one", async () => {
+    vi.mocked(requireAdmin).mockResolvedValue(ADMIN_CTX);
+    vi.mocked(prisma.device.findMany).mockResolvedValue([boundIphone] as never);
+    const res = await GET();
+    const body = (await res.json()) as {
+      data: { devices: Array<{ liveActivityStart: string | null }> };
+    };
+    expect(body.data.devices[0].liveActivityStart).toBeNull();
   });
 });

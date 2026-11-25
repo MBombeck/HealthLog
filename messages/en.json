@@ -16359,5 +16359,10 @@
     "periodOpen": "since {from}",
     "expiryPushTitle": "Treatment series expiring",
     "expiryPushBody": "{title}: valid until {date}, {count, plural, one {# session} other {# sessions}} left."
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "A medication has a Live Activity, but PUSH_RELAY_LIVE_ACTIVITY is off, so none starts.",
+    "noConsent": "A medication has a Live Activity, but your iPhone has not allowed it over the relay.",
+    "noStartToken": "A medication has a Live Activity, but your iPhone has sent no start token yet."
   }
 }

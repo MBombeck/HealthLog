@@ -29,6 +29,7 @@ vi.mock("../use-push-relay", () => ({
   useSetPushRelay: () => ({ mutate: vi.fn(), isPending: false }),
   useSendPushRelayTest: () => ({ mutate: vi.fn(), isPending: false }),
   useRotatePushRelayKey: () => ({ mutate: vi.fn(), isPending: false }),
+  useAdminDiagnosticDevices: () => ({ data: undefined }),
 }));
 
 import { PushRelaySection } from "../push-relay-section";
