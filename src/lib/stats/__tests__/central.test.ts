@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { mean, median, medianAbsoluteDeviation, roundTo } from "../central";
+import {
+  mean,
+  median,
+  medianAbsoluteDeviation,
+  roundStableTo,
+  roundTo,
+} from "../central";
 
 describe("mean", () => {
   it("answers null for no values, never zero or NaN", () => {
@@ -44,5 +50,30 @@ describe("roundTo", () => {
     expect(roundTo(1.234, 2)).toBe(1.23);
     expect(roundTo(7.5, 0)).toBe(8);
     expect(roundTo(-1.25, 1)).toBe(-1.2);
+  });
+});
+
+describe("roundStableTo", () => {
+  it("serves one figure for two summation orders of a mean on a half", () => {
+    // The 7-day pulse mean of the canonical-window parity fixture at 10:19
+    // UTC: exactly 74.425, summed by the two statements to either side.
+    expect(roundTo(74.42499999999964, 2)).toBe(74.42);
+    expect(roundTo(74.42500000000861, 2)).toBe(74.43);
+    expect(roundStableTo(74.42499999999964, 2)).toBe(74.43);
+    expect(roundStableTo(74.42500000000861, 2)).toBe(74.43);
+  });
+
+  it("rounds like roundTo away from a half", () => {
+    for (const [v, d] of [
+      [1.234, 2],
+      [1.236, 2],
+      [7.5, 0],
+      [-1.25, 1],
+      [0, 2],
+      [12345.674, 2],
+      [83.09, 2],
+    ] as const) {
+      expect(roundStableTo(v, d)).toBe(roundTo(v, d));
+    }
   });
 });
