@@ -853,12 +853,10 @@
     "compliance7d": "Приверженность (7 дней)",
     "mood": "Настроение",
     "customizeTitle": "Раскладка сводки",
-    "heroItemsTitle": "Главное на сегодня",
     "heroItemsDescription": "Выберите, какие типы пунктов могут появляться в «Главное на сегодня».",
     "heroItemsNotificationNote": "Настройки уведомлений управляются отдельно.",
     "heroContentTitle": "Верхняя карточка показывает",
     "heroContentScore": "Балл здоровья и сводка дня",
-    "heroContentReminders": "Главное на сегодня",
     "heroItems": {
       "coach_checkin": "Проверки коуча",
       "dose_window": "Дозы лекарств",
@@ -946,7 +944,12 @@
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Добро пожаловать.",
     "welcomeNewWithName": "Добро пожаловать, {name}.",
-    "quickAddSeizure": "Записать приступ"
+    "quickAddSeizure": "Записать приступ",
+    "morning": {
+      "heroItemsTitle": "На сегодня",
+      "heroItemsDescription": "Выберите, какие типы элементов могут появляться в разделе «На сегодня».",
+      "heroContentReminders": "Сначала «На сегодня»"
+    }
   },
   "measurements": {
     "title": "Измерения",
@@ -14068,6 +14071,14 @@
         "todayDifferent": "Сегодня иначе",
         "toDo": "На сегодня"
       }
+    },
+    "morning": {
+      "sourceValue": "{label}: {value} из {max}",
+      "moreOne": "Ещё {count} элемент",
+      "moreFew": "Ещё {count} элемента",
+      "moreOther": "Ещё {count} элементов",
+      "addValue": "Записать значение",
+      "connectSource": "Подключить источник"
     }
   },
   "reportSelection": {

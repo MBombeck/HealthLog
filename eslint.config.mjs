@@ -142,7 +142,6 @@ const eslintConfig = defineConfig([
             "src/components/medications/medication-detail-section.tsx",
             // The sanctioned identity surface of the dashboard (§1).
             "src/components/daily/today-hero.tsx",
-            "src/components/daily/today-hero-skeleton.tsx",
             // Floating surfaces: a chart tooltip, the tour popovers, the
             // wizard's icon tile.
             "src/components/charts/chart-tooltip.tsx",

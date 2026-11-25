@@ -82,6 +82,16 @@ test.describe("v1.34.1 deterministic UI evidence", () => {
     // snapshot's legacy briefing field. Keep a mutable, deterministic reader
     // so this evidence covers both the narrative composition captured below
     // and the compact score-only fallback through the exact production seam.
+    // This spec pins the Today hero, which stands in when the morning read
+    // is missing (a server without it, a failed read); the morning block
+    // has its own spec (`morning-block.spec.ts`).
+    await page.route(/\/api\/daily\/morning(\?|$)/, (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        body: "{}",
+      }),
+    );
     await page.route(/\/api\/daily\/digest(\?|$)/, (route) =>
       route.fulfill({
         status: 200,

@@ -21,8 +21,13 @@ import { DashboardTiles } from "@/components/dashboard/tiles/dashboard-tiles";
 import { buildStripEntries } from "@/components/dashboard/tiles/strip-tiles";
 import { useDashboardTileContext } from "@/components/dashboard/tiles/tile-context";
 import { useDashboardData } from "@/components/dashboard/tiles/use-dashboard-data";
+import {
+  MorningBlock,
+  morningSlot,
+  useDailyMorning,
+} from "@/components/daily/morning-block";
+import { MorningSkeleton } from "@/components/daily/morning-skeleton";
 import { TodayHero } from "@/components/daily/today-hero";
-import { TodayHeroSkeleton } from "@/components/daily/today-hero-skeleton";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -34,7 +39,8 @@ import type { BatchWindow } from "@/lib/dashboard/batch-chart-types";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 
 /**
- * The dashboard: the header, the Today hero, and the tiles and charts the
+ * The dashboard: the header, the morning block (the Today hero as its
+ * fallback), and the tiles and charts the
  * layout switches on. Which tiles exist, what each reads, when each shows and
  * where it sits is the registry under `components/dashboard/tiles/`; this
  * component only composes.
@@ -88,6 +94,18 @@ export default function DashboardPageClient({
     batchWindowProp: batchWindow,
   });
   const { digestQuery, layout, primaryLoading } = dashboard;
+  const morningQuery = useDailyMorning(isAuthenticated);
+  const todaySlot = morningSlot({
+    // Only an explicit `false` in the layout settings hides the block.
+    visible: layout.todayCardVisible !== false,
+    hasDigest: digestQuery.data != null,
+    // `null` is a morning-less answer (an older cache): the hero stands in.
+    hasMorning: morningQuery.data != null,
+    mounted,
+    digestLoading: digestQuery.isLoading,
+    morningLoading: morningQuery.isLoading,
+    digestError: digestQuery.isError,
+  });
   const tileContext = useDashboardTileContext({ dashboard, user });
 
   const renderFilteredHeroAllClear =
@@ -127,30 +145,46 @@ export default function DashboardPageClient({
           dashboard is this account's own day. */}
 
       {
-        // The Today hero above the tile strip: the day's read, the score and
-        // freshness face, and the worth-a-look rail. DATA-FIRST, so the SSR
-        // pass paints the populated hero (the LCP element). That is
-        // hydration-safe ONLY because the digest is server-dehydrated
-        // (`page.tsx` prefetch), so `digestQuery.data` is present on both the
-        // SSR pass and the first hydration render, and because `["daily", …]`
-        // is NOT in the persist allowlist (`PERSIST_ALLOWLIST_HEADS` in
-        // `@/lib/pwa/query-persister`), so it never rehydrates from disk. Do
-        // not add it there, or render the hero from any client-only source,
-        // without revisiting this gate. A failed read is an error card with
-        // retry, distinct from the honest empty degrade (the hero returns
-        // null). The card can be switched off in the layout settings; only an
-        // explicit `false` hides it, its skeleton and its error card.
-        layout.todayCardVisible === false ? null : digestQuery.data ? (
+        // The morning block above the tile strip: the day's sentence, the
+        // health score beside it, and the cards (last night, different
+        // today, to do today). DATA-FIRST, so the SSR pass paints it (the
+        // LCP element). That is hydration-safe ONLY because `page.tsx` seeds
+        // the digest and the morning together or not at all, so both are
+        // present on the SSR pass and the first hydration render or both are
+        // absent, and because `["daily", …]` is NOT in the persist allowlist
+        // (`PERSIST_ALLOWLIST_HEADS` in `@/lib/pwa/query-persister`), so
+        // neither rehydrates from disk. Without both, the server and the
+        // first client pass paint the same skeleton and the block fills in
+        // one step; a sentence never changes after hydration.
+        //
+        // The digest alone, with the morning failed (or a response cached
+        // by an older service worker that has none), falls back to the Today
+        // hero. A failed digest is an error card with retry. The block can
+        // be switched off in the layout settings; only an explicit `false`
+        // hides it, its skeleton and its error card.
+        todaySlot === "block" && digestQuery.data && morningQuery.data ? (
+          <MorningBlock
+            digest={digestQuery.data}
+            morning={morningQuery.data}
+            // The server-persisted hero choice rides the same resolved
+            // layout as the widget visibility, so SSR and hydration agree.
+            primaryContent={layout.hero ?? "score"}
+            onLogDose={() => setQuickEntryDialog("medicationIntake")}
+            onAddMeasurement={
+              canAddMeasurement
+                ? () => setQuickEntryDialog("measurement")
+                : undefined
+            }
+          />
+        ) : todaySlot === "skeleton" ? (
+          <MorningSkeleton />
+        ) : todaySlot === "hero" && digestQuery.data ? (
           <TodayHero
             digest={digestQuery.data}
             renderFilteredAllClear={renderFilteredHeroAllClear}
-            // The server-persisted hero choice rides the same resolved layout
-            // as the widget visibility, so SSR and hydration agree.
             primaryContent={layout.hero ?? "score"}
           />
-        ) : !mounted || digestQuery.isLoading ? (
-          <TodayHeroSkeleton />
-        ) : digestQuery.isError ? (
+        ) : todaySlot === "error" ? (
           <QueryErrorCard
             error={digestQuery.error}
             onRetry={() => digestQuery.refetch()}

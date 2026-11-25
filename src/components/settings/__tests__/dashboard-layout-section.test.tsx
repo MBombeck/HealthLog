@@ -598,7 +598,8 @@ describe("<DashboardLayoutSection> — hero content", () => {
       expect(html).toContain(`id="${descriptionId}"`);
     }
     expect(html).toContain("<legend");
-    expect(html).toContain("Today highlights");
+    // The rows the switches choose now sit in the morning's "To do today".
+    expect(html).toContain("To do today");
   });
 
   it("keeps every kind visible when unrelated modules are disabled", () => {
@@ -612,9 +613,9 @@ describe("<DashboardLayoutSection> — hero content", () => {
     expect(switches).toHaveLength(PRIORITY_ITEM_KINDS.length);
   });
 
-  it("renders localized Today-highlight labels", () => {
+  it("renders localized To-do-today labels", () => {
     const html = render(<DashboardLayoutSection id="dashboard-layout" />, "de");
-    expect(html).toContain("Highlights für heute");
+    expect(html).toContain("Heute zu tun");
     expect(html).toContain("Medikamentendosen");
     expect(html).toContain("Neue EKG-Aufzeichnungen");
   });

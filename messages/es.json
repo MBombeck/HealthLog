@@ -853,12 +853,10 @@
     "compliance7d": "Cumplimiento (7 días)",
     "mood": "Estado de ánimo",
     "customizeTitle": "Diseño del panel",
-    "heroItemsTitle": "Destacados de hoy",
     "heroItemsDescription": "Elige qué tipos de elementos pueden aparecer en los destacados de hoy.",
     "heroItemsNotificationNote": "Los ajustes de notificaciones se gestionan por separado.",
     "heroContentTitle": "La tarjeta superior muestra",
     "heroContentScore": "Puntuación de salud y resumen del día",
-    "heroContentReminders": "Destacados de hoy",
     "heroItems": {
       "coach_checkin": "Seguimiento con Coach",
       "dose_window": "Dosis de medicamentos",
@@ -946,7 +944,12 @@
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Te damos la bienvenida.",
     "welcomeNewWithName": "Te damos la bienvenida, {name}.",
-    "quickAddSeizure": "Registrar crisis"
+    "quickAddSeizure": "Registrar crisis",
+    "morning": {
+      "heroItemsTitle": "Para hoy",
+      "heroItemsDescription": "Elige qué tipos de elementos pueden aparecer en “Para hoy”.",
+      "heroContentReminders": "Para hoy primero"
+    }
   },
   "measurements": {
     "title": "Mediciones",
@@ -14068,6 +14071,14 @@
         "todayDifferent": "Distinto hoy",
         "toDo": "Para hoy"
       }
+    },
+    "morning": {
+      "sourceValue": "{label}: {value} de {max}",
+      "moreOne": "{count} elemento más",
+      "moreFew": "{count} elementos más",
+      "moreOther": "{count} elementos más",
+      "addValue": "Registrar valor",
+      "connectSource": "Conectar una fuente"
     }
   },
   "reportSelection": {

@@ -853,12 +853,10 @@
     "compliance7d": "Adherence (7 days)",
     "mood": "Mood",
     "customizeTitle": "Dashboard layout",
-    "heroItemsTitle": "Today highlights",
     "heroItemsDescription": "Choose which item types can appear in Today highlights.",
     "heroItemsNotificationNote": "Notification settings are managed separately.",
     "heroContentTitle": "Top card shows",
     "heroContentScore": "Health score and daily summary",
-    "heroContentReminders": "Today highlights",
     "heroItems": {
       "coach_checkin": "Coach check-ins",
       "dose_window": "Medication doses",
@@ -946,7 +944,12 @@
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Welcome.",
     "welcomeNewWithName": "Welcome, {name}.",
-    "quickAddSeizure": "Log seizure"
+    "quickAddSeizure": "Log seizure",
+    "morning": {
+      "heroItemsTitle": "To do today",
+      "heroItemsDescription": "Choose which item types can appear in “To do today”.",
+      "heroContentReminders": "To do today first"
+    }
   },
   "measurements": {
     "title": "Measurements",
@@ -14068,6 +14071,14 @@
         "todayDifferent": "Different today",
         "toDo": "To do today"
       }
+    },
+    "morning": {
+      "sourceValue": "{label}: {value} of {max}",
+      "moreOne": "{count} more item",
+      "moreFew": "{count} more items",
+      "moreOther": "{count} more items",
+      "addValue": "Log value",
+      "connectSource": "Connect a source"
     }
   },
   "reportSelection": {

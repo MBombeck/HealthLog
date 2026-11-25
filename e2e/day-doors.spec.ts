@@ -238,7 +238,7 @@ test.describe("the dashboard and the list of all values", () => {
     await page.goto("/");
     await expect(
       page.locator(
-        '[data-slot^="today-hero"] [data-slot="day-link"], [data-slot^="today-hero"] [data-day-links="true"]',
+        '[data-slot="morning-block"] [data-slot="day-link"], [data-slot="morning-block"] [data-day-links="true"], [data-slot^="today-hero"] [data-slot="day-link"], [data-slot^="today-hero"] [data-day-links="true"]',
       ),
     ).toHaveCount(0);
     const plot = page
