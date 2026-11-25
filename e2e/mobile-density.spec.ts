@@ -57,7 +57,7 @@ interface TileEscape {
 function collectTileEscapes(): TileEscape[] {
   const escapes: TileEscape[] = [];
   const tiles = document.querySelectorAll(
-    '[data-slot="card"], [data-slot="today-hero"], [data-slot="list-row"]',
+    '[data-slot="card"], [data-slot="today-hero"], [data-slot="morning-block"], [data-slot="list-row"]',
   );
   const TOLERANCE = 1;
   for (const tile of tiles) {
@@ -175,11 +175,13 @@ test.describe("phone-width density guard", () => {
         }
 
         if (route === "/") {
-          // The guard must not pass vacuously — the Today hero and its
-          // score face have to actually render.
-          await expect(page.locator('[data-slot="today-hero"]')).toBeVisible();
+          // The guard must not pass vacuously — the morning block and its
+          // health score have to actually render.
           await expect(
-            page.locator('[data-slot="today-hero-score"]'),
+            page.locator('[data-slot="morning-block"]'),
+          ).toBeVisible();
+          await expect(
+            page.locator('[data-slot="morning-score"]'),
           ).toBeVisible();
         }
 

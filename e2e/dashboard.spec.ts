@@ -274,16 +274,15 @@ test.describe("authenticated dashboard render", () => {
     const tileCount = Number(await strip.getAttribute("data-tile-count"));
     expect(tileCount).toBeGreaterThan(0);
 
-    // The Today hero paints above the tile strip from the mocked
-    // digest: its score ring and its worth-a-look rail render.
-    const todayHero = page.locator('[data-slot="today-hero"]');
-    await expect(todayHero).toBeVisible({ timeout: 10_000 });
+    // The morning block paints above the tile strip: the health score
+    // beside the sentence, and the mocked digest's rows in "To do today".
+    const morning = page.locator('[data-slot="morning-block"]');
+    await expect(morning).toBeVisible({ timeout: 10_000 });
+    await expect(morning.locator('[data-slot="morning-score"]')).toBeVisible();
     await expect(
-      todayHero.locator('[data-slot="today-hero-score"]'),
+      morning.locator('[data-slot="morning-card"][data-kind="to_do"]'),
     ).toBeVisible();
-    await expect(
-      todayHero.locator('[data-slot="today-hero-rail"]'),
-    ).toBeVisible();
+    await expect(page.locator('[data-slot="today-hero"]')).toHaveCount(0);
 
     // At least one chart must render. Recharts mounts a `<svg>` with
     // `class="recharts-surface"` (or a `<div class="recharts-wrapper">`

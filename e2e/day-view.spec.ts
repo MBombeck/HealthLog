@@ -491,11 +491,13 @@ test.describe("the day view", () => {
     // The hero is today: nothing in it opens another day. (The charts
     // further down do; `day-doors.spec.ts` walks one.)
     await expect(
-      page.locator('[data-slot^="today-hero"]').first(),
+      page
+        .locator('[data-slot="morning-block"], [data-slot^="today-hero"]')
+        .first(),
     ).toBeVisible();
     await expect(
       page.locator(
-        '[data-slot^="today-hero"] [data-slot="day-link"], [data-slot^="today-hero"] [data-day-links="true"]',
+        '[data-slot="morning-block"] [data-slot="day-link"], [data-slot="morning-block"] [data-day-links="true"], [data-slot^="today-hero"] [data-slot="day-link"], [data-slot^="today-hero"] [data-day-links="true"]',
       ),
     ).toHaveCount(0);
   });

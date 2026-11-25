@@ -853,12 +853,10 @@
     "compliance7d": "Therapietrouw (7 dagen)",
     "mood": "Stemming",
     "customizeTitle": "Dashboardindeling",
-    "heroItemsTitle": "Hoogtepunten van vandaag",
     "heroItemsDescription": "Kies welke soorten items in Hoogtepunten van vandaag kunnen verschijnen.",
     "heroItemsNotificationNote": "Meldingsinstellingen worden apart beheerd.",
     "heroContentTitle": "Bovenste kaart toont",
     "heroContentScore": "Gezondheidsscore en dagoverzicht",
-    "heroContentReminders": "Hoogtepunten van vandaag",
     "heroItems": {
       "coach_checkin": "Check-ins van de Coach",
       "dose_window": "Medicatiedoses",
@@ -946,7 +944,12 @@
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Welkom.",
     "welcomeNewWithName": "Welkom, {name}.",
-    "quickAddSeizure": "Aanval vastleggen"
+    "quickAddSeizure": "Aanval vastleggen",
+    "morning": {
+      "heroItemsTitle": "Vandaag te doen",
+      "heroItemsDescription": "Kies welke soorten items in “Vandaag te doen” kunnen verschijnen.",
+      "heroContentReminders": "Eerst “Vandaag te doen”"
+    }
   },
   "measurements": {
     "title": "Metingen",
@@ -14068,6 +14071,14 @@
         "todayDifferent": "Anders vandaag",
         "toDo": "Vandaag te doen"
       }
+    },
+    "morning": {
+      "sourceValue": "{label}: {value} van {max}",
+      "moreOne": "Nog {count} item",
+      "moreFew": "Nog {count} items",
+      "moreOther": "Nog {count} items",
+      "addValue": "Waarde vastleggen",
+      "connectSource": "Bron koppelen"
     }
   },
   "reportSelection": {

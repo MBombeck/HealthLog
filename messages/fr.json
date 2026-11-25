@@ -853,12 +853,10 @@
     "compliance7d": "Observance (7 jours)",
     "mood": "Humeur",
     "customizeTitle": "Mise en page du tableau",
-    "heroItemsTitle": "Temps forts du jour",
     "heroItemsDescription": "Choisissez les types d’éléments qui peuvent apparaître dans les temps forts du jour.",
     "heroItemsNotificationNote": "Les réglages des notifications sont gérés séparément.",
     "heroContentTitle": "La carte du haut affiche",
     "heroContentScore": "Score de santé et résumé du jour",
-    "heroContentReminders": "Temps forts du jour",
     "heroItems": {
       "coach_checkin": "Bilan avec Coach",
       "dose_window": "Doses de médicaments",
@@ -946,7 +944,12 @@
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Bienvenue.",
     "welcomeNewWithName": "Bienvenue, {name}.",
-    "quickAddSeizure": "Enregistrer une crise"
+    "quickAddSeizure": "Enregistrer une crise",
+    "morning": {
+      "heroItemsTitle": "À faire aujourd'hui",
+      "heroItemsDescription": "Choisissez les types d’éléments qui peuvent apparaître dans « À faire aujourd'hui ».",
+      "heroContentReminders": "À faire aujourd'hui en premier"
+    }
   },
   "measurements": {
     "title": "Mesures",
@@ -14068,6 +14071,14 @@
         "todayDifferent": "Différent aujourd'hui",
         "toDo": "À faire aujourd'hui"
       }
+    },
+    "morning": {
+      "sourceValue": "{label} : {value} sur {max}",
+      "moreOne": "{count} autre élément",
+      "moreFew": "{count} autres éléments",
+      "moreOther": "{count} autres éléments",
+      "addValue": "Enregistrer la valeur",
+      "connectSource": "Connecter une source"
     }
   },
   "reportSelection": {

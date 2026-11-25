@@ -853,12 +853,10 @@
     "compliance7d": "Therapietreue (7 Tage)",
     "mood": "Stimmung",
     "customizeTitle": "Dashboard-Layout",
-    "heroItemsTitle": "Highlights für heute",
     "heroItemsDescription": "Wähle aus, welche Eintragstypen in den Highlights für heute erscheinen.",
     "heroItemsNotificationNote": "Benachrichtigungseinstellungen werden separat verwaltet.",
     "heroContentTitle": "Obere Karte zeigt",
     "heroContentScore": "Gesundheitsscore und Tagesüberblick",
-    "heroContentReminders": "Highlights für heute",
     "heroItems": {
       "coach_checkin": "Coach-Check-ins",
       "dose_window": "Medikamentendosen",
@@ -946,7 +944,12 @@
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Willkommen.",
     "welcomeNewWithName": "Willkommen, {name}.",
-    "quickAddSeizure": "Anfall eintragen"
+    "quickAddSeizure": "Anfall eintragen",
+    "morning": {
+      "heroItemsTitle": "Heute zu tun",
+      "heroItemsDescription": "Wähle aus, welche Eintragstypen unter „Heute zu tun“ erscheinen.",
+      "heroContentReminders": "Zuerst „Heute zu tun“"
+    }
   },
   "measurements": {
     "title": "Messungen",
@@ -14068,6 +14071,14 @@
         "todayDifferent": "Heute anders",
         "toDo": "Heute zu tun"
       }
+    },
+    "morning": {
+      "sourceValue": "{label}: {value} von {max}",
+      "moreOne": "{count} weiterer Eintrag",
+      "moreFew": "{count} weitere Einträge",
+      "moreOther": "{count} weitere Einträge",
+      "addValue": "Wert erfassen",
+      "connectSource": "Quelle verbinden"
     }
   },
   "reportSelection": {

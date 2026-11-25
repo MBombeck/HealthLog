@@ -853,12 +853,10 @@
     "compliance7d": "Przestrzeganie (7 dni)",
     "mood": "Nastrój",
     "customizeTitle": "Układ panelu",
-    "heroItemsTitle": "Dzisiejsze wyróżnienia",
     "heroItemsDescription": "Wybierz typy elementów, które mogą pojawiać się w dzisiejszych wyróżnieniach.",
     "heroItemsNotificationNote": "Ustawieniami powiadomień zarządzasz osobno.",
     "heroContentTitle": "Górna karta pokazuje",
     "heroContentScore": "Wynik zdrowia i podsumowanie dnia",
-    "heroContentReminders": "Dzisiejsze wyróżnienia",
     "heroItems": {
       "coach_checkin": "Podsumowania z Coachem",
       "dose_window": "Dawki leków",
@@ -946,7 +944,12 @@
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Witaj.",
     "welcomeNewWithName": "Witaj, {name}.",
-    "quickAddSeizure": "Zapisz napad"
+    "quickAddSeizure": "Zapisz napad",
+    "morning": {
+      "heroItemsTitle": "Do zrobienia dziś",
+      "heroItemsDescription": "Wybierz, jakie typy elementów mogą się pojawiać w sekcji „Do zrobienia dziś”.",
+      "heroContentReminders": "Najpierw „Do zrobienia dziś”"
+    }
   },
   "measurements": {
     "title": "Pomiary",
@@ -14068,6 +14071,14 @@
         "todayDifferent": "Inaczej dziś",
         "toDo": "Do zrobienia dziś"
       }
+    },
+    "morning": {
+      "sourceValue": "{label}: {value} na {max}",
+      "moreOne": "{count} kolejny element",
+      "moreFew": "{count} kolejne elementy",
+      "moreOther": "{count} kolejnych elementów",
+      "addValue": "Zapisz wartość",
+      "connectSource": "Połącz źródło"
     }
   },
   "reportSelection": {

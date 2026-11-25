@@ -853,12 +853,10 @@
     "compliance7d": "Aderenza (7 giorni)",
     "mood": "Umore",
     "customizeTitle": "Layout della dashboard",
-    "heroItemsTitle": "In evidenza oggi",
     "heroItemsDescription": "Scegli quali tipi di elementi possono apparire nella sezione In evidenza oggi.",
     "heroItemsNotificationNote": "Le impostazioni delle notifiche vengono gestite separatamente.",
     "heroContentTitle": "La scheda in alto mostra",
     "heroContentScore": "Punteggio di salute e riepilogo del giorno",
-    "heroContentReminders": "In evidenza oggi",
     "heroItems": {
       "coach_checkin": "Verifiche con Coach",
       "dose_window": "Dosi dei farmaci",
@@ -946,7 +944,12 @@
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Ti diamo il benvenuto.",
     "welcomeNewWithName": "Ti diamo il benvenuto, {name}.",
-    "quickAddSeizure": "Registra crisi"
+    "quickAddSeizure": "Registra crisi",
+    "morning": {
+      "heroItemsTitle": "Da fare oggi",
+      "heroItemsDescription": "Scegli quali tipi di elementi possono comparire in “Da fare oggi”.",
+      "heroContentReminders": "Da fare oggi per primo"
+    }
   },
   "measurements": {
     "title": "Misurazioni",
@@ -14068,6 +14071,14 @@
         "todayDifferent": "Diverso oggi",
         "toDo": "Da fare oggi"
       }
+    },
+    "morning": {
+      "sourceValue": "{label}: {value} su {max}",
+      "moreOne": "Altro {count} elemento",
+      "moreFew": "Altri {count} elementi",
+      "moreOther": "Altri {count} elementi",
+      "addValue": "Registra valore",
+      "connectSource": "Collega una fonte"
     }
   },
   "reportSelection": {

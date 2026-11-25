@@ -214,6 +214,12 @@ const STATES: Record<string, DailyDigest> = {
 
 async function openDashboard(page: Page, digest: DailyDigest) {
   await mockDashboardSnapshot(page, { summaries: POPULATED_SUMMARIES });
+  // This spec pins the Today hero, which stands in when the morning read
+  // is missing (a server without it, a failed read); the morning block
+  // has its own spec (`morning-block.spec.ts`).
+  await page.route(/\/api\/daily\/morning(\?|$)/, (route) =>
+    route.fulfill({ status: 404, contentType: "application/json", body: "{}" }),
+  );
   await page.route(/\/api\/daily\/digest(\?|$)/, (route) =>
     route.fulfill({
       status: 200,
@@ -405,6 +411,16 @@ test.describe("Today overview geometry", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     let calls = 0;
     await mockDashboardSnapshot(page, { summaries: POPULATED_SUMMARIES });
+    // This spec pins the Today hero, which stands in when the morning read
+    // is missing (a server without it, a failed read); the morning block
+    // has its own spec (`morning-block.spec.ts`).
+    await page.route(/\/api\/daily\/morning(\?|$)/, (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        body: "{}",
+      }),
+    );
     await page.route(/\/api\/daily\/digest(\?|$)/, async (route) => {
       calls += 1;
       // First paint: a quiet digest. Every later read carries the overview.

@@ -356,14 +356,14 @@ test.describe("the dashboard's top card", () => {
     await page.goto("/");
     await expect(dashboard).toHaveAttribute("data-today-card", "off");
     await expect(hero).toHaveCount(0);
-    await expect(page.locator('[data-slot="today-hero-skeleton"]')).toHaveCount(
-      0,
-    );
+    await expect(page.locator('[data-slot="morning-block"]')).toHaveCount(0);
+    await expect(page.locator('[data-slot="morning-skeleton"]')).toHaveCount(0);
 
     // A phone width shows no card either.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
     await expect(hero).toHaveCount(0);
+    await expect(page.locator('[data-slot="morning-block"]')).toHaveCount(0);
     await page.setViewportSize({ width: 1280, height: 720 });
 
     await flip("checked");

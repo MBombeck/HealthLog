@@ -37,10 +37,10 @@ export function HeroSettingsFieldset({
       className="border-border bg-background/30 space-y-3 rounded-lg border px-3 py-3"
     >
       <legend className="text-foreground text-sm font-medium">
-        {t("dashboard.heroItemsTitle")}
+        {t("dashboard.morning.heroItemsTitle")}
       </legend>
       <p id={heroDescriptionId} className="text-muted-foreground text-xs">
-        {t("dashboard.heroItemsDescription")}
+        {t("dashboard.morning.heroItemsDescription")}
       </p>
       {/* The top card itself can be switched off. Shown is the
           default; the choices below shape the card while it is shown. */}
@@ -53,8 +53,9 @@ export function HeroSettingsFieldset({
         data-slot="today-card-switch"
       />
       {/* Hero primary content — a single labelled select beside the
-          highlight toggles. "score" keeps the health-score read;
-          "reminders" promotes the highlight rail into the hero slot. */}
+          highlight toggles. "score" keeps the morning's order (last night,
+          different today, to do today); "reminders" puts "To do today"
+          first. The kinds below decide which rows that card can carry. */}
       <div className="space-y-1.5">
         <Label htmlFor={heroContentSelectId} className="text-sm font-medium">
           {t("dashboard.heroContentTitle")}
@@ -69,7 +70,7 @@ export function HeroSettingsFieldset({
         >
           <option value="score">{t("dashboard.heroContentScore")}</option>
           <option value="reminders">
-            {t("dashboard.heroContentReminders")}
+            {t("dashboard.morning.heroContentReminders")}
           </option>
         </NativeSelect>
       </div>
