@@ -46,6 +46,13 @@ import {
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { CARE_WIRE_PATH, visitPath } from "@/lib/encounters/visit-links";
 import {
+  dayHref,
+  labHref,
+  moodDayHref,
+  pageHref,
+  recordHref,
+} from "@/lib/links/hrefs";
+import {
   canonicalWorkoutsInRange,
   readWorkoutsAroundRange,
   WORKOUT_PICK_SELECT,
@@ -260,7 +267,7 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
       dateKeyOrNull(med.endsOn) ??
       (med.active ? null : userDayKey(med.updatedAt, frame.tz));
     if (shownFrom > day || (until !== null && until < day)) continue;
-    const href = `/medications/${med.id}`;
+    const href = recordHref("medication", med.id);
     takeRunning(
       med.id,
       running(frame, {
@@ -304,7 +311,7 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
   for (const course of courses) {
     const since = dateOnlyKey(course.startsOn);
     const until = dateKeyOrNull(course.endsOn);
-    const href = `/medications/${course.medicationId}`;
+    const href = recordHref("medication", course.medicationId);
     takeRunning(
       course.medicationId,
       running(frame, {
@@ -348,7 +355,7 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
     const until = pause.resumedAt
       ? userDayKey(pause.resumedAt, frame.tz)
       : null;
-    const href = `/medications/${pause.medicationId}`;
+    const href = recordHref("medication", pause.medicationId);
     takeRunning(
       pause.medicationId,
       running(frame, {
@@ -408,7 +415,7 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
         title: change.medication.name,
         meta: `${change.doseValue} ${change.doseUnit}`,
         note,
-        href: `/medications/${change.medicationId}/history`,
+        href: recordHref("medicationHistory", change.medicationId),
       }),
     );
   }
@@ -451,7 +458,7 @@ async function illnessPart(frame: DayFrame): Promise<SectionPart> {
   ]);
   const out: SectionPart = { running: [], events: [] };
   for (const episode of episodes) {
-    const href = `/illness/${episode.id}`;
+    const href = recordHref("illness", episode.id);
     out.running.push(
       running(frame, {
         kind: "illness",
@@ -502,7 +509,7 @@ async function illnessPart(frame: DayFrame): Promise<SectionPart> {
         meta:
           log.functionalImpact === null ? null : String(log.functionalImpact),
         note: openText(log.noteEncrypted, "illness day log note"),
-        href: `/illness/${log.episodeId}`,
+        href: recordHref("illness", log.episodeId),
       }),
     );
   }
@@ -542,8 +549,8 @@ async function symptomsPart(frame: DayFrame): Promise<SectionPart> {
         note: openText(row.noteEncrypted, "symptom note"),
         href:
           row.episodeId && row.episode && row.episode.deletedAt === null
-            ? `/illness/${row.episodeId}`
-            : "/illness",
+            ? recordHref("illness", row.episodeId)
+            : pageHref("illness"),
       }),
     ),
   };
@@ -570,7 +577,7 @@ async function allergiesPart(frame: DayFrame): Promise<SectionPart> {
         id: row.id,
         title: row.substance,
         meta: row.severity,
-        href: "/profile",
+        href: pageHref("profile"),
       }),
     ),
   };
@@ -656,7 +663,7 @@ async function vaccinationsPart(frame: DayFrame): Promise<SectionPart> {
         meta: row.doseNumber === null ? null : String(row.doseNumber),
         note: openText(row.noteEncrypted, "vaccination note"),
         docs: docs.get(row.id) ?? [],
-        href: `/vaccinations?dose=${row.id}`,
+        href: recordHref("vaccination", row.id),
       }),
     ),
   };
@@ -700,7 +707,7 @@ async function labsPart(frame: DayFrame): Promise<SectionPart> {
               `${formatRecordedNumber(row.value, (v, digits) => v.toFixed(digits), row.sourceValue)} ${labUnitText(row.unit)}`.trim()
             : (row.valueText ?? null),
         note: openText(row.noteEncrypted, "lab note"),
-        href: row.biomarkerId ? `/labs/${row.biomarkerId}` : "/labs",
+        href: labHref(row),
       }),
     ),
   };
@@ -770,7 +777,7 @@ async function documentsPart(frame: DayFrame): Promise<SectionPart> {
           id: row.id,
           title: row.title ?? row.filename ?? "",
           meta: row.kind,
-          href: `/documents?doc=${row.id}`,
+          href: recordHref("document", row.id),
         }),
       ),
   };
@@ -830,7 +837,7 @@ async function moodPart(frame: DayFrame): Promise<SectionPart> {
           row.noteEncrypted && row.noteEncrypted.byteLength > 0
             ? openText(row.noteEncrypted, "mood note")
             : row.note,
-        href: `/mood?from=${frame.day}&to=${frame.day}`,
+        href: moodDayHref(frame.day),
       }),
     ),
   };
@@ -872,7 +879,7 @@ async function assessmentsPart(frame: DayFrame): Promise<SectionPart> {
           id: row.id,
           title: row.instrument,
           meta: `${row.totalScore} ${row.severityBand}`,
-          href: "/mental-wellbeing",
+          href: recordHref("assessment", row.id),
         }),
       ),
   };
@@ -912,7 +919,7 @@ async function workoutsPart(frame: DayFrame): Promise<SectionPart> {
         id: row.id,
         title: row.sportType,
         meta: `${Math.round(row.durationSec / 60)} min`,
-        href: `/insights/workouts/${row.id}`,
+        href: recordHref("workout", row.id),
       }),
     ),
   };
@@ -1008,7 +1015,7 @@ async function cyclePart(frame: DayFrame): Promise<SectionPart> {
           until === null
             ? null
             : daysBetweenDateKeys(current.startDate, until) + 1,
-        href: "/cycle",
+        href: pageHref("cycle"),
       });
     }
   }
@@ -1023,7 +1030,7 @@ async function cyclePart(frame: DayFrame): Promise<SectionPart> {
         id: log.id,
         title: "cycle",
         meta: log.flow,
-        href: "/cycle",
+        href: pageHref("cycle"),
       }),
     ),
   };
@@ -1089,7 +1096,7 @@ async function lifeEventsPart(frame: DayFrame): Promise<SectionPart> {
   const out: SectionPart = { running: [], events: [] };
   for (const row of rows) {
     const title = openText(row.titleEncrypted, "life event title") ?? "";
-    const href = `/timeline?day=${frame.day}`;
+    const href = dayHref("timeline", frame.day);
     const end =
       row.endDate === null ? null : lastDayCovered(row.endDate, row.precision);
     if (end !== null && end >= frame.day) {

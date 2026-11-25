@@ -45,6 +45,7 @@ import {
   decryptVerbatimText,
 } from "@/lib/documents/content-index";
 import { normalizeSearchText } from "@/lib/encounters/procedures";
+import { dayHref, labHref, moodDayHref, recordHref } from "@/lib/links/hrefs";
 import type { Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { loadRecordCandidates, type RecordKind } from "@/lib/mcp/record-search";
@@ -296,7 +297,7 @@ async function labAnalyteCandidates(
   ctx.budget.rows += rows.length;
   return rows.flatMap((row) => {
     const latest = row._max.takenAt;
-    const path = `/labs?analyte=${encodeURIComponent(row.analyte)}`;
+    const path = recordHref("analyte", row.analyte);
     const candidate = keepIfHit(ctx, {
       id: `labAnalyte:${row.analyte}`,
       title: row.analyte,
@@ -328,7 +329,13 @@ function labNoteCandidates(ctx: SearchContext): Promise<SearchCandidate[]> {
           deletedAt: null,
           noteEncrypted: { not: null },
         },
-        select: { id: true, analyte: true, takenAt: true, noteEncrypted: true },
+        select: {
+          id: true,
+          analyte: true,
+          biomarkerId: true,
+          takenAt: true,
+          noteEncrypted: true,
+        },
         orderBy: [{ takenAt: "desc" }, { id: "desc" }],
         take,
         ...after(cursor),
@@ -346,7 +353,7 @@ function labNoteCandidates(ctx: SearchContext): Promise<SearchCandidate[]> {
           note,
           date: row.takenAt,
           day: userDayKey(row.takenAt, ctx.timezone),
-          path: `/labs?analyte=${encodeURIComponent(row.analyte)}`,
+          path: labHref(row),
         }),
       );
     },
@@ -364,7 +371,7 @@ async function medicationCandidates(
   });
   ctx.budget.rows += rows.length;
   return rows.flatMap((row) => {
-    const path = `/medications/${encodeURIComponent(row.id)}`;
+    const path = recordHref("medication", row.id);
     const candidate = keepIfHit(ctx, {
       id: `medication:${row.id}`,
       title: row.name,
@@ -418,7 +425,7 @@ async function symptomCandidates(
   const byId = await labels();
   return [...byId].flatMap(([id, label]) => {
     if (!label) return [];
-    const path = `/illness?symptom=${encodeURIComponent(id)}`;
+    const path = recordHref("symptom", id);
     const candidate = keepIfHit(ctx, {
       id: `symptom:${id}`,
       title: label,
@@ -478,7 +485,7 @@ async function symptomNoteCandidates(
           note,
           date: row.occurredAt,
           day,
-          path: `/illness?day=${day}`,
+          path: dayHref("illness", day),
         }),
       );
     },
@@ -540,7 +547,7 @@ async function workoutCandidates(
   });
   ctx.budget.rows += rows.length;
   return rows.map((row) => {
-    const path = `/insights/workouts/${encodeURIComponent(row.id)}`;
+    const path = recordHref("workout", row.id);
     const label = sportLabel(row.sportType, ctx.display);
     return {
       id: `workout:${row.id}`,
@@ -605,7 +612,7 @@ function moodNoteCandidates(ctx: SearchContext): Promise<SearchCandidate[]> {
           note,
           date: row.moodLoggedAt,
           day: row.date,
-          path: `/mood?day=${row.date}`,
+          path: moodDayHref(row.date),
           noteSource: "mood",
         }),
       );
@@ -649,7 +656,7 @@ function illnessNoteCandidates(ctx: SearchContext): Promise<SearchCandidate[]> {
           // The day log's own calendar date; noon keeps the sort stable.
           date: new Date(`${row.date}T12:00:00Z`),
           day: row.date,
-          path: `/illness/${encodeURIComponent(row.episode.id)}`,
+          path: recordHref("illness", row.episode.id),
           noteSource: "illness",
         }),
       );
@@ -704,7 +711,7 @@ function measurementNoteCandidates(
           note,
           date: row.measuredAt,
           day,
-          path: `/measurements?day=${day}`,
+          path: dayHref("measurements", day),
           noteSource: "measurement",
         }),
       );

@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2835,
-  "total": 8813,
+  "total": 8808,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -934,7 +934,7 @@
     "components/insights/coach-panel/use-resettable-value.ts": 3,
     "components/insights/coincident-deviation-card.tsx": 1,
     "components/insights/correlation-card.tsx": 4,
-    "components/insights/daily-briefing.tsx": 15,
+    "components/insights/daily-briefing.tsx": 13,
     "components/insights/derived/__tests__/composite-score-anatomy-coach.test.tsx": 1,
     "components/insights/derived/__tests__/health-score-provenance-claim.test.ts": 1,
     "components/insights/derived/__tests__/score-anatomy-view.test.tsx": 1,
