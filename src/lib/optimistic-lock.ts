@@ -211,6 +211,11 @@ function revisionOf(
  * `guardedRowUpdate` on one settings document of the `User` row, guarded on
  * that document's revision. The `data` object is always built by the caller
  * and must write only that document's columns.
+ *
+ * A caller that merges a partial body into the stored document passes the
+ * transaction it read the document in, under `withUserRowLock`: the tokenless
+ * arm writes unconditionally, so a merge read outside the lock lets two
+ * overlapping tokenless writes each drop the other's change.
  */
 export function guardedUserDocumentUpdate(opts: {
   userId: string;
@@ -218,8 +223,10 @@ export function guardedUserDocumentUpdate(opts: {
   base: Date | undefined;
   data: Prisma.UserUpdateInput;
   conflict: ConflictSpec;
+  client?: Prisma.TransactionClient;
 }): Promise<GuardedUpdateResult> {
   const { userId, document, base, data, conflict } = opts;
+  const db = opts.client ?? prisma;
   const revision = USER_DOCUMENT_REVISION[document];
   const select = userDocumentRevisionSelect(document);
   return guardedRowUpdate({
@@ -227,7 +234,7 @@ export function guardedUserDocumentUpdate(opts: {
     conflict,
     run: {
       unconditional: async () => {
-        const updated = await prisma.user.update({
+        const updated = await db.user.update({
           where: { id: userId },
           data,
           select,
@@ -235,14 +242,14 @@ export function guardedUserDocumentUpdate(opts: {
         return { updatedAt: revisionOf(updated, document) ?? new Date() };
       },
       conditional: async (b) => {
-        const res = await prisma.user.updateMany({
+        const res = await db.user.updateMany({
           where: { id: userId, [revision]: b },
           data,
         });
         return res.count;
       },
       freshToken: async () => {
-        const fresh = await prisma.user.findUnique({
+        const fresh = await db.user.findUnique({
           where: { id: userId },
           select,
         });

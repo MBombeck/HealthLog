@@ -244,7 +244,23 @@ demand (`.github/workflows/mutation.yml`), not on pull requests. Each module's
 score is checked against a floor in `stryker.floors.json` by
 `node scripts/mutation-floors.mjs`. A floor sits just below the last measured
 score; raise it when a change raises the score, never lower it to make a run
-pass. The Vitest runner is patched for Vitest 5's test names
+pass. The check also fails when the report names a mutated file that no
+module claims, so a file added to `mutate` cannot be measured and ignored.
+
+The tests that run against each mutant are the unit tests next to the mutated
+files (`vitest.mutation.config.mts`). `src/__tests__/mutation-instrument-guard.test.ts`
+holds the configs to each other on every pull request: every mutated file
+belongs to exactly one module, every module path and include pattern matches
+something, and every test in a mutated file's neighbouring `__tests__` folder
+that imports it is in the mutation set. When you add a module, add its files to
+`stryker.config.mjs`, its tests to `vitest.mutation.config.mts`, and a floor
+measured from a run.
+
+The nightly run measures `main`. To measure a release branch before it
+merges, dispatch the workflow on it:
+`gh workflow run mutation.yml --ref release/vX.Y.0`. A red nightly needs an
+owner the same day; a floor that stays red only measures how long nobody
+looked. The Vitest runner is patched for Vitest 5's test names
 (`patches/@stryker-mutator__vitest-runner@10.0.0.patch`); without it every
 test inside a `describe` block is filtered out of the mutant runs and almost
 every mutant survives. Locally:

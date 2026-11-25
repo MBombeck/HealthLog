@@ -9841,7 +9841,8 @@
           "off": "Cookies do not carry the Secure flag.",
           "secure_over_https": "Secure cookies over HTTPS, as it should be.",
           "plain_http": "Plain HTTP without the Secure flag: fine for a server only reachable on your own network.",
-          "secure_over_http": "This page came over plain HTTP, but cookies carry the Secure flag, so browsers drop the sign-in. Serve HTTPS or set SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "This page reached the app as plain HTTP. Behind an HTTPS proxy, have it send X-Forwarded-Proto: https; on plain HTTP, set SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "HTTPS works, but your reverse proxy does not say so. Have it send X-Forwarded-Proto: https.",
           "insecure_over_https": "This page came over HTTPS, but cookies lack the Secure flag. Remove SESSION_COOKIE_SECURE=false."
         },
         "app_url": {
