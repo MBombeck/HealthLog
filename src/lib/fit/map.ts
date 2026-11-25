@@ -39,6 +39,7 @@ import {
   plausibleFigure,
   type WorkoutPerformanceKey,
 } from "@/lib/workouts/performance-metrics";
+import { ownValue } from "@/lib/own-key";
 
 /** Sessions one file may describe (a multisport race has a handful). */
 export const FIT_MAX_SESSIONS = 16;
@@ -67,9 +68,7 @@ type Range = { min: number; max: number };
 /** An own property of a decoded object; never an inherited one. */
 function own(obj: unknown, key: string): unknown {
   if (obj === null || typeof obj !== "object") return undefined;
-  return Object.prototype.hasOwnProperty.call(obj, key)
-    ? (obj as Record<string, unknown>)[key]
-    : undefined;
+  return ownValue(obj as Record<string, unknown>, key);
 }
 
 function list(obj: unknown, key: string): unknown[] {

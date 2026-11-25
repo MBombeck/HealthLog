@@ -36,6 +36,7 @@ import { servingClassFor } from "@/lib/documents/upload-policy";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { ownValue } from "@/lib/own-key";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -96,7 +97,7 @@ function safeDownloadName(
   id: string,
   mimeType: string,
 ): string {
-  const ext = MIME_EXTENSION[mimeType] ?? "bin";
+  const ext = ownValue(MIME_EXTENSION, mimeType) ?? "bin";
   const cleaned = (filename ?? "")
     // Strip control chars (incl. CR/LF — header injection), quotes, and path
     // separators (path traversal) before the value reaches the header.

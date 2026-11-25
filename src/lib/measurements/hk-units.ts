@@ -30,6 +30,7 @@
  */
 
 import { MGDL_PER_MMOL } from "@/lib/glucose";
+import { ownValue } from "@/lib/own-key";
 
 interface HkUnitSpec {
   /** Units convert only within one family. */
@@ -139,7 +140,7 @@ function lookup(unit: string | null | undefined): HkUnitSpec | null {
   if (typeof unit !== "string") return null;
   const normalised = normaliseUnitString(unit);
   if (!normalised) return null;
-  return HK_UNITS[normalised] ?? null;
+  return ownValue(HK_UNITS, normalised) ?? null;
 }
 
 /**

@@ -16,6 +16,8 @@
  * those starts above zero.
  */
 
+import { ownValue } from "@/lib/own-key";
+
 /** A figure's metadata key, its Garmin fallback key, and its range. */
 const FIGURES = {
   aerobicTrainingEffect: {
@@ -54,9 +56,7 @@ function own(obj: unknown, key: string): unknown {
   if (obj === null || typeof obj !== "object" || Array.isArray(obj)) {
     return undefined;
   }
-  return Object.prototype.hasOwnProperty.call(obj, key)
-    ? (obj as Record<string, unknown>)[key]
-    : undefined;
+  return ownValue(obj as Record<string, unknown>, key);
 }
 
 /** The figure when it is a finite number inside its range, else null. */

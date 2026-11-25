@@ -35,6 +35,7 @@ import type { ShareDomain } from "@/lib/sharing/scope";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
 import { treatmentSeriesPath, visitPath } from "@/lib/encounters/visit-links";
+import { dayHref, labDayHref, pageHref, recordHref } from "@/lib/links/hrefs";
 import { decryptSeizureText } from "@/lib/seizures/server";
 import { pregnancySpans } from "@/lib/cycle/pregnancy";
 import { loadPregnancyFields } from "@/lib/cycle/pregnancy-store";
@@ -188,7 +189,7 @@ async function illnessLane(frame: LaneFrame): Promise<LaneRead> {
         end: r.resolvedAt ? userDayKey(r.resolvedAt, frame.tz) : null,
         open: r.resolvedAt === null,
         label: r.label,
-        href: `/illness/${r.id}`,
+        href: recordHref("illness", r.id),
       }),
     ),
     standing: [],
@@ -212,7 +213,7 @@ async function allergiesLane(frame: LaneFrame): Promise<LaneRead> {
           end: null,
           open: r.status === "ACTIVE",
           label: r.substance,
-          href: "/profile",
+          href: pageHref("profile"),
         }),
       );
     } else if (r.status === "ACTIVE") {
@@ -221,7 +222,7 @@ async function allergiesLane(frame: LaneFrame): Promise<LaneRead> {
         id: r.id,
         label: r.substance,
         since: null,
-        href: "/profile",
+        href: pageHref("profile"),
       });
     }
   }
@@ -293,7 +294,7 @@ async function medicationsLane(frame: LaneFrame): Promise<LaneRead> {
   }
   const out: LaneRead = { items: [], standing: [] };
   for (const med of meds) {
-    const href = `/medications/${med.id}`;
+    const href = recordHref("medication", med.id);
     const stated = med.startsOn ? dateOnlyKey(med.startsOn) : null;
     const standIn = firstIntake.get(med.id);
     const start = stated ?? (standIn ? userDayKey(standIn, frame.tz) : null);
@@ -337,7 +338,7 @@ async function medicationsLane(frame: LaneFrame): Promise<LaneRead> {
         end,
         open: end === null,
         label: c.medication.name,
-        href: `/medications/${c.medicationId}`,
+        href: recordHref("medication", c.medicationId),
         group: c.medicationId,
       }),
     );
@@ -352,7 +353,7 @@ async function medicationsLane(frame: LaneFrame): Promise<LaneRead> {
         open: false,
         label: d.medication.name,
         sub: `${d.doseValue} ${d.doseUnit}`,
-        href: `/medications/${d.medicationId}/history`,
+        href: recordHref("medicationHistory", d.medicationId),
         group: d.medicationId,
       }),
     );
@@ -367,7 +368,7 @@ async function medicationsLane(frame: LaneFrame): Promise<LaneRead> {
         end,
         open: end === null,
         label: p.medication.name,
-        href: `/medications/${p.medicationId}`,
+        href: recordHref("medication", p.medicationId),
         group: p.medicationId,
       }),
     );
@@ -396,7 +397,7 @@ async function vaccinationsLane(frame: LaneFrame): Promise<LaneRead> {
         end: null,
         open: false,
         label: r.vaccineName ?? r.customVaccine?.name ?? r.antigenSlug ?? "",
-        href: `/vaccinations?dose=${r.id}`,
+        href: recordHref("vaccination", r.id),
       }),
     ),
     standing: [],
@@ -515,18 +516,22 @@ const LAB_DAY_NAMES = 3;
 async function labsLane(frame: LaneFrame): Promise<LaneRead> {
   const rows = await prisma.labResult.findMany({
     where: { userId: frame.userId, deletedAt: null },
-    select: { analyte: true, takenAt: true },
+    select: { analyte: true, takenAt: true, biomarkerId: true },
     orderBy: { takenAt: "asc" },
   });
-  const days = new Map<string, string[]>();
+  const days = new Map<
+    string,
+    { names: string[]; markers: (string | null)[] }
+  >();
   for (const r of rows) {
     const day = userDayKey(r.takenAt, frame.tz);
-    const names = days.get(day) ?? [];
-    if (!names.includes(r.analyte)) names.push(r.analyte);
-    days.set(day, names);
+    const entry = days.get(day) ?? { names: [], markers: [] };
+    if (!entry.names.includes(r.analyte)) entry.names.push(r.analyte);
+    entry.markers.push(r.biomarkerId);
+    days.set(day, entry);
   }
   return {
-    items: [...days].map(([day, names]) =>
+    items: [...days].map(([day, { names, markers }]) =>
       item({
         id: `lab-day:${day}`,
         kind: "labDay",
@@ -535,7 +540,7 @@ async function labsLane(frame: LaneFrame): Promise<LaneRead> {
         open: false,
         label: names.slice(0, LAB_DAY_NAMES).join(", "),
         sub: String(names.length),
-        href: "/labs",
+        href: labDayHref(day, markers),
       }),
     ),
     standing: [],
@@ -587,7 +592,7 @@ async function seizuresLane(frame: LaneFrame): Promise<LaneRead> {
         open: false,
         label: names.slice(0, SEIZURE_DAY_NAMES).join(", "),
         sub: String(count),
-        href: "/seizures",
+        href: dayHref("seizures", day),
       }),
     ),
     standing: [],
@@ -623,7 +628,7 @@ async function documentsLane(frame: LaneFrame): Promise<LaneRead> {
           open: false,
           label: r.title ?? r.filename ?? "",
           sub: r.kind,
-          href: `/documents?doc=${r.id}`,
+          href: recordHref("document", r.id),
         }),
       ];
     }),
@@ -649,7 +654,7 @@ async function cycleLane(frame: LaneFrame): Promise<LaneRead> {
           end: r.endDate,
           open: r.endDate === null,
           label: "cycle",
-          href: "/cycle",
+          href: pageHref("cycle"),
         }),
       ),
       ...stretches.map((span) =>
@@ -660,7 +665,7 @@ async function cycleLane(frame: LaneFrame): Promise<LaneRead> {
           end: span.end,
           open: span.end === null,
           label: span.kind,
-          href: "/cycle",
+          href: pageHref("cycle"),
         }),
       ),
     ],

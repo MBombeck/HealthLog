@@ -38,6 +38,7 @@ import { scrollToAnchorWhenReady } from "@/lib/dom/scroll-to-anchor";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { useTranslations } from "@/lib/i18n/context";
 import type { SearchHit } from "@/lib/search/contract";
+import { webHref } from "@/lib/links/hrefs";
 import { cn } from "@/lib/utils";
 
 import { setCommandPaletteOpen, useCommandPaletteOpen } from "./palette-store";
@@ -252,7 +253,7 @@ export function PaletteBody({ isMobile }: { isMobile: boolean }) {
 
   function openRecord(path: string) {
     setCommandPaletteOpen(false);
-    router.push(path);
+    router.push(webHref(path));
   }
 
   function runAt(index: number) {

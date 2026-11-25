@@ -30,6 +30,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { useDeepLinkedRecord } from "@/hooks/use-deep-linked-record";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiGetList } from "@/lib/api/api-fetch";
 import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
@@ -120,6 +121,15 @@ export function MentalWellbeing() {
       }>("/api/mental-health/assessments"),
   });
   const history = historyPage?.data;
+
+  // `?assessment=<id>`, where the day view links a screening: open the
+  // detail of its instrument, which lists it with the rest of its history.
+  useDeepLinkedRecord({
+    param: "assessment",
+    records: history?.assessments,
+    anchorAttribute: "data-assessment-id",
+    open: (row) => setDetailInstrument(row.instrument),
+  });
 
   const mutation = useSubmitAssessment((data) => {
     setResult(data);

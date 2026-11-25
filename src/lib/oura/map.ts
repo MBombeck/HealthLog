@@ -18,6 +18,7 @@ import type {
   OuraDailyActivity,
   OuraHeartRateSample,
 } from "./wire-types";
+import { ownValue } from "@/lib/own-key";
 
 const SEC_TO_MIN = 1 / 60;
 
@@ -143,7 +144,7 @@ function mapSleepTimeline(s: OuraSleep): MappedMeasurement[] | null {
   let i = 0;
   while (i < hyp.length) {
     const digit = hyp[i];
-    const stage = HYPNOGRAM_STAGE[digit];
+    const stage = ownValue(HYPNOGRAM_STAGE, digit);
     // Walk the run of identical digits.
     let run = 1;
     while (i + run < hyp.length && hyp[i + run] === digit) run += 1;
@@ -440,7 +441,7 @@ export function mapResilience(
 ): MappedMeasurement[] {
   const level = typeof r.level === "string" ? r.level.toLowerCase() : null;
   if (!level) return [];
-  const ordinal = RESILIENCE_LEVELS[level];
+  const ordinal = ownValue(RESILIENCE_LEVELS, level);
   if (typeof ordinal !== "number") return [];
   const measuredAt = dayAnchor(r.day, tz);
   if (!measuredAt) return [];

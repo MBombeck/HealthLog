@@ -13,6 +13,11 @@ import {
 } from "../stream-to-disk";
 import { extractExportXml } from "@/lib/import/unzip-export-xml";
 
+import {
+  expectPrototypesUntouched,
+  snapshotPrototypes,
+} from "../../../../tests/property/prototype-keys";
+
 const BOUNDARY = "----HealthLogTestBoundary";
 
 /**
@@ -140,6 +145,33 @@ describe("streamMultipartToDisk", () => {
       ),
     ).rejects.toThrow(/size cap/);
     expect(readdirSync(dir)).toEqual([]);
+  });
+
+  it("keeps text fields named like prototype members as ordinary fields", async () => {
+    const before = snapshotPrototypes();
+    const body = buildMultipartBody(
+      "export.zip",
+      Buffer.from("x"),
+      JSON.parse(
+        '{"__proto__": "a", "constructor": "b", "toString": "c", "userId": "u-1"}',
+      ) as Record<string, string>,
+    );
+    const result = await streamMultipartToDisk(
+      toWebStream(body),
+      `multipart/form-data; boundary=${BOUNDARY}`,
+      { maxBytes: 1024, fieldName: "file" },
+    );
+    try {
+      expect(Object.getPrototypeOf(result.textFields)).toBeNull();
+      expect({ ...result.textFields }).toEqual(
+        JSON.parse(
+          '{"__proto__": "a", "constructor": "b", "toString": "c", "userId": "u-1"}',
+        ),
+      );
+      expectPrototypesUntouched(before);
+    } finally {
+      unlinkSync(result.filePath);
+    }
   });
 
   it("throws when the named field is missing", async () => {

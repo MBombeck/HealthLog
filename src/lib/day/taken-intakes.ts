@@ -6,6 +6,7 @@
  */
 import { prisma } from "@/lib/db";
 import type { DayEvent } from "@/lib/day/contract";
+import { recordHref } from "@/lib/links/hrefs";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
 /**
@@ -45,6 +46,6 @@ export async function readTakenIntakeEvents(
     meta: intake.doseTaken ?? intake.medication.dose,
     note: null,
     docs: [],
-    href: `/medications/${intake.medicationId}/history`,
+    href: recordHref("medicationHistory", intake.medicationId),
   }));
 }

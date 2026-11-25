@@ -24,6 +24,8 @@
  * | Grip strength                      | 30 %                         |
  */
 
+import { ownValue } from "@/lib/own-key";
+
 type Threshold = { relative: number } | { absolute: number };
 
 export const LAST_VALUE_DEVIATION: Readonly<Record<string, Threshold>> = {
@@ -51,7 +53,7 @@ export function deviatesFromLast(
   value: number,
   last: number | null | undefined,
 ): boolean {
-  const threshold = LAST_VALUE_DEVIATION[type];
+  const threshold = ownValue(LAST_VALUE_DEVIATION, type);
   if (!threshold || last == null) return false;
   if (!Number.isFinite(value) || !Number.isFinite(last)) return false;
   const delta = Math.abs(value - last);
