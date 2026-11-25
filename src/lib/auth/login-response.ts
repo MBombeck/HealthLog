@@ -27,7 +27,7 @@ import {
 } from "@/lib/auth/native-client";
 import { issueAccessAndRefresh } from "@/lib/auth/refresh-token";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
-import { detectInsecureCookieTransport } from "@/lib/auth/secure-cookie";
+import { detectInsecureCookieTransport } from "@/lib/auth/cookie-transport-warning";
 import { annotate } from "@/lib/logging/context";
 import { completePendingOidcLink } from "@/lib/auth/oidc-pending-link";
 import type { User } from "@/generated/prisma/client";
