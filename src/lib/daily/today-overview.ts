@@ -41,11 +41,6 @@ import {
   vitalsOutsideSentence,
 } from "@/lib/daily/lead-sentences";
 
-export {
-  SLEEP_CLOSE_DIFF_MINUTES,
-  SLEEP_NOTABLE_DIFF_MINUTES,
-} from "@/lib/daily/lead-sentences";
-
 type Translate = (
   key: string,
   params?: Record<string, string | number>,
