@@ -47,6 +47,12 @@ const adminDiagnosticDevice = z
       .describe(
         "v1.49.0 — when the device last reported which sealed pushes it opened (`GET /api/sync/state`).",
       ),
+    liveActivityStart: z
+      .enum(["ready", "switch_off", "no_consent", "no_start_token"])
+      .nullable()
+      .describe(
+        "v1.50.0 — whether the server can start a medication Live Activity on this device over the relay. Null when the question does not arise: no medication of the account has Live Activity on, or the device is no iPhone bound to the relay. Otherwise the first thing in the way: `switch_off` (the operator's `PUSH_RELAY_LIVE_ACTIVITY` is off), `no_consent` (the device has not given its Live Activity consent), `no_start_token` (no push-to-start token the relay still takes); `ready` when none is.",
+      ),
   })
   .meta({
     id: "AdminDiagnosticDevice",

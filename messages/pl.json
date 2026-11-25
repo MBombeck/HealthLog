@@ -16360,5 +16360,10 @@
     "periodOpen": "od {from}",
     "expiryPushTitle": "Seria zabiegów wygasa",
     "expiryPushBody": "{title}: ważna do {date}, {count, plural, one {pozostał # zabieg} few {pozostały # zabiegi} many {pozostało # zabiegów} other {pozostało # zabiegu}}."
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "Lek ma Aktywność na żywo, ale PUSH_RELAY_LIVE_ACTIVITY jest wyłączone, więc żadna się nie uruchamia.",
+    "noConsent": "Lek ma Aktywność na żywo, ale Twój iPhone nie zezwolił na nią przez przekaźnik.",
+    "noStartToken": "Lek ma Aktywność na żywo, ale Twój iPhone nie wysłał jeszcze tokenu startowego."
   }
 }

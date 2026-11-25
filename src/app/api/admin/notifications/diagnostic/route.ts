@@ -4,6 +4,7 @@ import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { decrypt } from "@/lib/crypto";
 import type { ChannelType } from "@/lib/notifications/types";
+import { STARTABLE_MEDICATION_WHERE } from "@/lib/push-relay/activity-slot";
 import {
   DIAGNOSTIC_DEVICE_SELECT,
   diagnosticDevice,
@@ -125,39 +126,49 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAdmin();
   annotate({ action: { name: "admin.notifications.diagnostic" } });
 
-  const [devices, channels, pushAttempts] = await Promise.all([
-    prisma.device.findMany({
-      where: { userId: user.id },
-      select: DIAGNOSTIC_DEVICE_SELECT,
-      orderBy: { lastSeen: "desc" },
-    }),
-    prisma.notificationChannel.findMany({
-      where: { userId: user.id },
-      select: { type: true, enabled: true, config: true },
-    }),
-    // Trailing delivery attempts for the calling account as recipient. The
-    // recipient index keeps the bounded diagnostic read independent of the
-    // account's lifetime notification volume.
-    prisma.pushAttempt.findMany({
-      where: {
-        recipientUserId: user.id,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: {
-        userId: true,
-        recordUserId: true,
-        recipientUserId: true,
-        eventType: true,
-        channel: true,
-        result: true,
-        reason: true,
-        createdAt: true,
-      },
-    }),
-  ]);
+  const [devices, channels, pushAttempts, liveActivityMeds] = await Promise.all(
+    [
+      prisma.device.findMany({
+        where: { userId: user.id },
+        select: DIAGNOSTIC_DEVICE_SELECT,
+        orderBy: { lastSeen: "desc" },
+      }),
+      prisma.notificationChannel.findMany({
+        where: { userId: user.id },
+        select: { type: true, enabled: true, config: true },
+      }),
+      // Trailing delivery attempts for the calling account as recipient. The
+      // recipient index keeps the bounded diagnostic read independent of the
+      // account's lifetime notification volume.
+      prisma.pushAttempt.findMany({
+        where: {
+          recipientUserId: user.id,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          userId: true,
+          recordUserId: true,
+          recipientUserId: true,
+          eventType: true,
+          channel: true,
+          result: true,
+          reason: true,
+          createdAt: true,
+        },
+      }),
+      // Whether any medication wants a Live Activity, the question behind each
+      // device's `liveActivityStart`.
+      prisma.medication.count({
+        where: { userId: user.id, ...STARTABLE_MEDICATION_WHERE },
+      }),
+    ],
+  );
 
-  const diagnosticDevices: DiagnosticDevice[] = devices.map(diagnosticDevice);
+  const now = new Date();
+  const diagnosticDevices: DiagnosticDevice[] = devices.map((d) =>
+    diagnosticDevice(d, { liveActivityWanted: liveActivityMeds > 0, now }),
+  );
 
   const diagnosticChannels: DiagnosticChannel[] = channels.map((c) => ({
     type: c.type,

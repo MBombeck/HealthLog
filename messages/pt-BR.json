@@ -16360,5 +16360,10 @@
     "periodOpen": "desde {from}",
     "expiryPushTitle": "Série de tratamento vencendo",
     "expiryPushBody": "{title}: válida até {date}, {count, plural, one {resta # sessão} other {restam # sessões}}."
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "Um medicamento tem uma Atividade ao Vivo, mas PUSH_RELAY_LIVE_ACTIVITY está desligado, então nenhuma começa.",
+    "noConsent": "Um medicamento tem uma Atividade ao Vivo, mas seu iPhone não a permitiu pelo relay.",
+    "noStartToken": "Um medicamento tem uma Atividade ao Vivo, mas seu iPhone ainda não enviou um token de início."
   }
 }

@@ -31,6 +31,10 @@ vi.mock("@/lib/db", () => ({
     pushAttempt: {
       findMany: vi.fn(),
     },
+    // Whether any medication wants a Live Activity (`liveActivityStart`).
+    medication: {
+      count: vi.fn(),
+    },
   },
 }));
 
@@ -113,6 +117,7 @@ beforeEach(() => {
   vi.mocked(prisma.device.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.notificationChannel.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.pushAttempt.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.medication.count).mockResolvedValue(0);
 });
 
 describe("GET /api/admin/notifications/diagnostic — auth gates", () => {
@@ -416,5 +421,25 @@ describe("GET /api/admin/notifications/diagnostic — recentPushAttempts", () =>
       where: { recipientUserId?: string };
     };
     expect(args.where).toEqual({ recipientUserId: ADMIN_USER_ID });
+  });
+});
+
+describe("GET /api/admin/notifications/diagnostic — Live Activity start", () => {
+  // What each device's `liveActivityStart` says is pinned on
+  // `liveActivityStartState` (diagnostics-units.test.ts); here, that the
+  // route asks the question for the caller's own startable medications.
+  it("counts the caller's medications that want a Live Activity", async () => {
+    vi.mocked(requireAdmin).mockResolvedValue(ADMIN_CTX);
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(prisma.medication.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        userId: ADMIN_USER_ID,
+        liveActivityEnabled: true,
+        active: true,
+        pausedAt: null,
+        endedAt: null,
+      }),
+    });
   });
 });

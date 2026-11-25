@@ -84,7 +84,23 @@ export function quietSinceWording(
   return userDayKey(since, tz) >= yesterday ? "yesterday" : "date";
 }
 
-/** The deep link of a source: its card on the integrations page. */
+/**
+ * The sources that can go quiet: every connection that delivers on its own.
+ * One delivered on demand (Strava, Dawarich, a Health Connect folder) is
+ * watched for errors only and never told about.
+ */
+export const STALL_SOURCES: readonly ConnectionKey[] = CONNECTION_KEYS.filter(
+  (key) => SOURCE_PROFILES[key].kind !== "on_demand",
+);
+
+/**
+ * The deep link of a source: its card on the integrations page, the same
+ * path for every source and every client. A push straight to the device
+ * carries it as `url`; a push over the relay carries only `source`, and a
+ * client builds this path from it. Published in the `notifications.sync-stalled`
+ * feature doc; the anchors on the page are held to it by
+ * `sync-stall-deeplink-guard.test.ts`.
+ */
 export function stallTapUrl(source: ConnectionKey): string {
   return `/settings/integrations#${source}`;
 }
@@ -203,8 +219,7 @@ async function untoldStalls(prisma: PrismaClient): Promise<Stall[]> {
   }
   for (const w of watches) {
     const key = w.integration as ConnectionKey;
-    if (!(CONNECTION_KEYS as readonly string[]).includes(key)) continue;
-    if (SOURCE_PROFILES[key].kind === "on_demand") continue;
+    if (!STALL_SOURCES.includes(key)) continue;
     stalls.push({
       kind: "integration",
       id: w.id,

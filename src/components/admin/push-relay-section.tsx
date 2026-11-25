@@ -29,7 +29,11 @@ import {
   useSetPushRelay,
   type AdminPushRelayStatus,
 } from "./use-push-relay";
-import { PushRelayAlerts, PushRelayCheckLine } from "./push-relay-check";
+import {
+  LiveActivityStartLine,
+  PushRelayAlerts,
+  PushRelayCheckLine,
+} from "./push-relay-check";
 import { PushRelayHandoff } from "./push-relay-handoff";
 import { PushRelayTools } from "./push-relay-tools";
 import {
@@ -253,6 +257,7 @@ export function PushRelaySection({
         />
       )}
       <PushRelayAlerts status={status} />
+      <LiveActivityStartLine status={status} />
       <RelayLeftovers status={status} />
       {reasonKey && (
         <div className="space-y-2" data-slot="push-relay-refusal">

@@ -16360,5 +16360,10 @@
     "periodOpen": "sinds {from}",
     "expiryPushTitle": "Behandelreeks verloopt",
     "expiryPushBody": "{title}: geldig tot {date}, nog {count, plural, one {# sessie} other {# sessies}} over."
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "Een medicijn heeft een Live Activity, maar PUSH_RELAY_LIVE_ACTIVITY staat uit, dus er start er geen.",
+    "noConsent": "Een medicijn heeft een Live Activity, maar je iPhone heeft die niet via de relay toegestaan.",
+    "noStartToken": "Een medicijn heeft een Live Activity, maar je iPhone heeft nog geen starttoken gestuurd."
   }
 }
