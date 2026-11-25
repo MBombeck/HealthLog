@@ -257,7 +257,7 @@ describe("resolveRichMetric — localised metric names", () => {
     ["fr", "Glycémie", "BLOOD_GLUCOSE"],
     ["de", "Blutzucker", "BLOOD_GLUCOSE"],
     ["fr", "Fréquence cardiaque au repos", "RESTING_HEART_RATE"],
-    ["de", "Ruheherzfrequenz", "RESTING_HEART_RATE"],
+    ["de", "Ruhepuls", "RESTING_HEART_RATE"],
     ["fr", "Indice de masse corporelle", "BODY_MASS_INDEX"],
     ["pl", "Tętno", "PULSE"],
   ] as const)("resolves the %s name %s", (_locale, name, type) => {

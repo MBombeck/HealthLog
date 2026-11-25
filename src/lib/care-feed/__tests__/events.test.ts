@@ -55,8 +55,8 @@ describe("buildCareCalendar", () => {
     });
     expect(calendar.events.map((e) => e.summary)).toEqual([
       "Due: Skin check",
-      "Appointment: Practice Lindenhof",
-      "Appointment",
+      "Visit: Practice Lindenhof",
+      "Visit",
       "Booster due: Tetanus",
     ]);
   });

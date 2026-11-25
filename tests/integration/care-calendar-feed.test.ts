@@ -203,7 +203,7 @@ describe("the care calendar feed", () => {
     let res = await manage("PATCH", { titleMode: "DESCRIPTIVE" });
     expect(res.status).toBe(200);
     let body = await (await fetchFeed(segmentOf(minted.url))).text();
-    expect(body).toContain("SUMMARY:Appointment: Practice Lindenhof");
+    expect(body).toContain("SUMMARY:Visit: Practice Lindenhof");
     expect(body).toContain("SUMMARY:Due: Skin check");
     expect(body).toContain("SUMMARY:Booster due: Tetanus booster");
     // A visit's reason and a check-up's location never travel.

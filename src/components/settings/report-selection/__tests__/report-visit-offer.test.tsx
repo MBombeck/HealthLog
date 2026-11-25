@@ -77,7 +77,7 @@ describe("<ReportVisitOffer>", () => {
   it("offers an appointment five days out, naming its own source", () => {
     const html = render([visit({ id: "soon" })]);
     expect(html).toContain('data-slot="report-visit-offer"');
-    expect(html).toContain("An appointment is coming up");
+    expect(html).toContain("A visit is coming up");
     expect(html).toContain('data-slot="report-visit-offer-apply"');
   });
 

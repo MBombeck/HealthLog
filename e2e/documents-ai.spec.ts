@@ -228,7 +228,7 @@ test.describe("document vault — AI assist + content search", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
 
-    await sheet.getByRole("button", { name: "Summarise" }).click();
+    await sheet.getByRole("button", { name: "Summarize" }).click();
     const panel = sheet.locator('[data-slot="document-summary-panel"]');
     await expect(panel).toBeVisible();
     await expect(panel.getByText(summaryText)).toBeVisible();

@@ -359,9 +359,9 @@ test.describe("clinician document sharing", () => {
     await expect(
       clinician.getByRole("heading", { name: "Vital signs" }),
     ).toHaveCount(0);
-    await expect(
-      clinician.getByRole("heading", { name: "Lab values" }),
-    ).toHaveCount(0);
+    await expect(clinician.locator('[data-leaf~="LAB_RESULTS"]')).toHaveCount(
+      0,
+    );
     await expect(
       clinician.getByRole("heading", { name: "Medications & adherence" }),
     ).toHaveCount(0);

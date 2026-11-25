@@ -151,7 +151,7 @@ describe("<SourcesRail>", () => {
     // `allTime` is the default: the sentence carries the numbers the
     // readers use (`history-reach.ts`).
     expect(html).toContain(
-      "Without a limit, the Coach reads 12 months of readings in daily detail and older readings as monthly values up to 10 years back. For lab results it reads the latest value of the most recently measured markers and, for a marker you ask about, its 5 previous results, with older ones summarised per year up to 10 years back; earlier years are only counted.",
+      "Without a limit, the Coach reads 12 months of readings in daily detail and older readings as monthly values up to 10 years back. For lab results it reads the latest value of the most recently measured markers and, for a marker you ask about, its 5 previous results, with older ones summarized per year up to 10 years back; earlier years are only counted.",
     );
     expect(html).not.toContain("stay visible");
   });
