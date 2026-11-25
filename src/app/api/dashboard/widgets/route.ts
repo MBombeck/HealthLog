@@ -9,6 +9,7 @@ import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess, safeJson, returnAllZodIssues } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { toJson } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import {
   takeBaseToken,
   guardedUserDocumentUpdate,
@@ -272,27 +273,34 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // requires it; `coerceChartOverlayPrefsMap` inside the serializer fills
   // that gap, so the assertion is safe. The concurrency token was split off
   // pre-Zod, so `parsed.data` can never leak it into the stored blob.
-  const normalized = await layoutToStore(
-    user.id,
-    parsed.data as Partial<DashboardLayout>,
-  );
+  // Read, merge and write under the row lock: a tokenless write is
+  // unconditional, and two that overlap would each carry forward a stored
+  // copy without the other's change.
+  const { normalized, guarded } = await withUserRowLock(user.id, async (tx) => {
+    const normalized = await layoutToStore(
+      user.id,
+      parsed.data as Partial<DashboardLayout>,
+    );
 
-  // Optimistic concurrency through the shared `guardedUserDocumentUpdate`
-  // helper. When a client sends the `baseUpdatedAt` token it read with the
-  // layout, the write succeeds only while the stored layout still carries that
-  // revision. A stale
-  // base returns 409 without writing. Clients that omit the token keep the
-  // legacy unconditional write.
-  const guarded = await guardedUserDocumentUpdate({
-    userId: user.id,
-    document: "dashboardWidgets",
-    base,
-    data: { dashboardWidgetsJson: toJson(normalized) },
-    conflict: {
-      action: "dashboard.widgets.conflict",
-      errorCode: "dashboard_layout_conflict",
-      message: "Dashboard layout changed since it was loaded",
-    },
+    // Optimistic concurrency through the shared `guardedUserDocumentUpdate`
+    // helper. When a client sends the `baseUpdatedAt` token it read with the
+    // layout, the write succeeds only while the stored layout still carries that
+    // revision. A stale
+    // base returns 409 without writing. Clients that omit the token keep the
+    // legacy unconditional write.
+    const guarded = await guardedUserDocumentUpdate({
+      userId: user.id,
+      document: "dashboardWidgets",
+      base,
+      data: { dashboardWidgetsJson: toJson(normalized) },
+      conflict: {
+        action: "dashboard.widgets.conflict",
+        errorCode: "dashboard_layout_conflict",
+        message: "Dashboard layout changed since it was loaded",
+      },
+      client: tx,
+    });
+    return { normalized, guarded };
   });
   if ("conflict" in guarded) return guarded.conflict;
   const freshUpdatedAt = guarded.updatedAt;

@@ -317,6 +317,37 @@ upload at 1.5 GB and Nginx will reject the body before the app sees
 it otherwise. `proxy_buffering off` keeps streamed insight events
 flowing without buffer pauses. Pair with `TRUST_PROXY_HOPS=1`.
 
+## Apache
+
+Apache's `mod_proxy` sends `X-Forwarded-For` and `X-Forwarded-Host` on its
+own, but not `X-Forwarded-Proto`. Without it HealthLog takes the scheme from
+`NEXT_PUBLIC_APP_URL` when that names the same host, and from the plain-HTTP
+connection otherwise, and the setup check asks you to add the header.
+Needs `mod_ssl`, `mod_proxy`, `mod_proxy_http` and `mod_headers`:
+
+```apache
+<VirtualHost *:443>
+    ServerName your-instance.example.com
+
+    SSLEngine on
+    SSLCertificateFile    /etc/letsencrypt/live/your-instance.example.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/your-instance.example.com/privkey.pem
+
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "https"
+    ProxyTimeout 300
+    # The Apple Health export.zip cap is 1.5 GB.
+    LimitRequestBody 1677721600
+
+    ProxyPass        / http://127.0.0.1:3000/
+    ProxyPassReverse / http://127.0.0.1:3000/
+</VirtualHost>
+```
+
+Pair with `TRUST_PROXY_HOPS=1`, and name Apache's address in
+`TRUSTED_PROXY_CIDRS` when it does not reach the container from a private
+address.
+
 ## TLS versions and ciphers
 
 HealthLog does not terminate TLS; the proxy does, and its settings are the

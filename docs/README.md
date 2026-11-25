@@ -19,7 +19,9 @@ notes, and machine-readable specs that ship alongside the source:
   for during an incident.
 - [`self-hosting/`](./self-hosting/) — operator notes next to the code:
   [`getting-started.md`](./self-hosting/getting-started.md) (install and
-  updates, the page the boot log points at), the TrueNAS, Unraid and
+  updates, the page the boot log points at),
+  [`channels.md`](./self-hosting/channels.md) (the release, edge and
+  nightly images and the compose line for each), the TrueNAS, Unraid and
   Portainer installs with their catalog templates, Tailscale, the reverse
   proxy, horizontal scaling (`HEALTHLOG_PROCESS_TYPE=web|worker|all`),
   notification channels, the environment module, document sources and

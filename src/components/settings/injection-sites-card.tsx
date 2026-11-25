@@ -14,7 +14,11 @@ import {
   describeInjectionSite,
   type InjectionSiteKey,
 } from "@/lib/medications/injection-sites";
-import { apiFetchRaw, apiPatch } from "@/lib/api/api-fetch";
+import { apiPatch } from "@/lib/api/api-fetch";
+import {
+  fetchGlobalExcludedInjectionSites,
+  injectionSitePrefsQuery,
+} from "@/lib/medications/use-injection-site-prefs";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 /**
@@ -35,26 +39,32 @@ export function InjectionSitesCard({
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
-    queryKey: queryKeys.injectionSitePrefs(),
-    queryFn: async () => {
-      const res = await apiFetchRaw("/api/auth/me/injection-site-prefs");
-      if (!res.ok) return [] as InjectionSiteKey[];
-      const json = await res.json();
-      return (json.data?.globalExcludedInjectionSites ??
-        []) as InjectionSiteKey[];
-    },
+    ...injectionSitePrefsQuery,
     enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000,
   });
   const excluded: InjectionSiteKey[] = data ?? [];
 
+  // A toggle is applied to the list as stored now, not to this tab's copy:
+  // the PATCH replaces the whole list, and the cached copy can be minutes or
+  // hours old (another device, another tab). Toggles run one at a time
+  // (`scope`), so a quick second click builds on the first.
   const mutation = useMutation({
-    mutationFn: async (next: InjectionSiteKey[]) => {
+    scope: { id: "injection-site-prefs" },
+    mutationFn: async (change: {
+      site: InjectionSiteKey;
+      checked: boolean;
+    }) => {
+      const set = new Set(await fetchGlobalExcludedInjectionSites());
+      if (change.checked) set.add(change.site);
+      else set.delete(change.site);
+      const next = INJECTION_SITE_KEYS.filter((s) => set.has(s));
       await apiPatch("/api/auth/me/injection-site-prefs", {
         globalExcludedInjectionSites: next,
       });
+      return next;
     },
-    onSuccess: () => {
+    onSuccess: (next) => {
+      queryClient.setQueryData(queryKeys.injectionSitePrefs(), next);
       void queryClient.invalidateQueries({
         queryKey: queryKeys.injectionSitePrefs(),
       });
@@ -65,10 +75,7 @@ export function InjectionSitesCard({
   });
 
   function toggle(site: InjectionSiteKey, checked: boolean) {
-    const set = new Set(excluded);
-    if (checked) set.add(site);
-    else set.delete(site);
-    mutation.mutate(INJECTION_SITE_KEYS.filter((s) => set.has(s)));
+    mutation.mutate({ site, checked });
   }
 
   return (
@@ -84,7 +91,9 @@ export function InjectionSitesCard({
           <label key={site} className="flex items-center gap-2 text-sm">
             <Checkbox
               checked={excluded.includes(site)}
-              disabled={mutation.isPending}
+              // Nothing to toggle until the stored list is known: a failed
+              // read is not "no exclusions".
+              disabled={data === undefined || mutation.isPending}
               onCheckedChange={(c) => toggle(site, c === true)}
             />
             {t(describeInjectionSite(site))}

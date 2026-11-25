@@ -16,7 +16,7 @@ import {
 } from "@/lib/database-backup/dump-core.mjs";
 import { prisma } from "@/lib/db";
 import { serverOcrStatus } from "@/lib/documents/server-ocr";
-import { resolveOrigin } from "@/lib/http/origin";
+import { resolveRequestOrigin } from "@/lib/http/origin";
 
 import {
   evaluateSetupHealth,
@@ -61,12 +61,7 @@ export async function readSetupHealthInputs(
   env: Record<string, string | undefined> = process.env,
   now: Date = new Date(),
 ): Promise<SetupHealthInputs> {
-  const requestOrigin = safely(() => resolveOrigin(request), null);
-  const protocol = requestOrigin?.startsWith("https:")
-    ? "https"
-    : requestOrigin?.startsWith("http:")
-      ? "http"
-      : null;
+  const resolved = safely(() => resolveRequestOrigin(request, env), null);
   const appUrl =
     (env.NEXT_PUBLIC_APP_URL ?? "").trim() || (env.APP_URL ?? "").trim();
   const enabled = databaseBackupEnabled(env);
@@ -76,9 +71,10 @@ export async function readSetupHealthInputs(
       activeKeyId: safely(() => getActiveKeyId(), null),
     },
     secureCookie: shouldEmitSecureCookie(),
-    requestProtocol: protocol,
+    requestProtocol: resolved?.protocol ?? null,
+    requestProtocolFrom: resolved?.protocolFrom ?? null,
     appUrl: appUrl || null,
-    requestOrigin,
+    requestOrigin: resolved?.origin ?? null,
     backups: {
       enabled,
       persistent: enabled

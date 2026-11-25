@@ -35,6 +35,7 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
@@ -118,32 +119,41 @@ export const PATCH = apiHandler(async (req: Request) => {
   // row so a previously-corrupted blob can't poison the merge, and the
   // strict schema guarantees `parsed.data` carries only toggleable keys
   // (core domains were rejected at the 422 above).
-  const existing = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { modulePreferencesJson: true },
-  });
-  const updates = Object.entries(parsed.data).filter(
-    (entry): entry is [string, boolean] => entry[1] !== undefined,
-  );
-  const merged: Record<string, boolean> = {
-    ...normalisePrefs(existing?.modulePreferencesJson),
-    ...Object.fromEntries(updates),
-  };
-  const changed = updates.map(([key]) => key);
-
+  //
   // v1.32.22 — guard the write on the client's base token; a stale base
-  // 409s and writes nothing. Tokenless requests keep the unconditional write.
-  const guarded = await guardedUserDocumentUpdate({
-    userId: user.id,
-    document: "modulePreferences",
-    base,
-    data: { modulePreferencesJson: merged },
-    conflict: {
-      action: "auth.me.modules.conflict",
-      errorCode: "modules_conflict",
-      message: "Module preferences changed since they were loaded",
+  // 409s and writes nothing. Tokenless requests keep the unconditional write,
+  // read and merged under the row lock so two that overlap keep both keys.
+  const changed: string[] = [];
+  const { existing, merged, guarded } = await withUserRowLock(
+    user.id,
+    async (tx) => {
+      const existing = await tx.user.findUnique({
+        where: { id: user.id },
+        select: { modulePreferencesJson: true },
+      });
+      const updates = Object.entries(parsed.data).filter(
+        (entry): entry is [string, boolean] => entry[1] !== undefined,
+      );
+      const merged: Record<string, boolean> = {
+        ...normalisePrefs(existing?.modulePreferencesJson),
+        ...Object.fromEntries(updates),
+      };
+      changed.push(...updates.map(([key]) => key));
+      const guarded = await guardedUserDocumentUpdate({
+        userId: user.id,
+        document: "modulePreferences",
+        base,
+        data: { modulePreferencesJson: merged },
+        conflict: {
+          action: "auth.me.modules.conflict",
+          errorCode: "modules_conflict",
+          message: "Module preferences changed since they were loaded",
+        },
+        client: tx,
+      });
+      return { existing, merged, guarded };
     },
-  });
+  );
   if ("conflict" in guarded) return guarded.conflict;
 
   await recomputeSupplementsIfNutrientsTurnedOn(
