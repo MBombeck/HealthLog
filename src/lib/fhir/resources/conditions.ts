@@ -16,6 +16,7 @@ import type {
   FhirEncounter,
 } from "@/lib/fhir/types";
 import { SNOMED_SYSTEM, patientRef } from "@/lib/fhir/resources/common";
+import { ownValue } from "@/lib/own-key";
 
 /** SNOMED CT "Disease (disorder)" — the generic, non-diagnostic root concept. */
 const DISEASE_SNOMED = { code: "64572001", display: "Disease" } as const;
@@ -76,7 +77,7 @@ function bodySiteOf(
 ): Pick<FhirCondition, "bodySite" | "contained"> {
   const site = bodySite?.trim();
   if (!site) return {};
-  const side = laterality ? LATERALITY_SNOMED[laterality] : undefined;
+  const side = laterality ? ownValue(LATERALITY_SNOMED, laterality) : undefined;
   if (!side) return { bodySite: [{ text: site }] };
   const structure: FhirBodyStructure = {
     resourceType: "BodyStructure",
@@ -179,8 +180,10 @@ export function conditionsFromReportData(data: DoctorReportData): {
         coding: [
           {
             system: SNOMED_SYSTEM,
-            code: (ILLNESS_TYPE_SNOMED[ep.type] ?? DISEASE_SNOMED).code,
-            display: (ILLNESS_TYPE_SNOMED[ep.type] ?? DISEASE_SNOMED).display,
+            code: (ownValue(ILLNESS_TYPE_SNOMED, ep.type) ?? DISEASE_SNOMED)
+              .code,
+            display: (ownValue(ILLNESS_TYPE_SNOMED, ep.type) ?? DISEASE_SNOMED)
+              .display,
           },
         ],
         text: ep.label,

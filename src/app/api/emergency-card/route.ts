@@ -3,7 +3,8 @@
  * item, read the way the card's link reads its ticked ones
  * (`loadEmergencyCard`). The owner's card page renders it, builds the offline
  * copy and the wallet PDF from it, and the iOS app can read it for a
- * lock-screen surface.
+ * lock-screen surface. `targets` says where the owner edits each line: the
+ * surface that owns it. The read-only link never carries them.
  *
  * Auth: through `requireGuardianAuth()`: the record's owner on their own
  * record, or the guardian of a managed profile (a MANAGE grant on a record
@@ -16,8 +17,9 @@ import { apiHandler, requireGuardianAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import {
   emergencyCardHasContent,
-  loadEmergencyCard,
+  loadOwnerEmergencyCard,
 } from "@/lib/emergency-card/card-data";
+import { resolveModuleMap } from "@/lib/modules/gate";
 import { annotate } from "@/lib/logging/context";
 import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -27,10 +29,14 @@ export const dynamic = "force-dynamic";
 export const GET = apiHandler(async () => {
   const { user } = await requireGuardianAuth();
   const today = moodDateKey(new Date(), user.timezone ?? DEFAULT_TIMEZONE);
-  const card = await loadEmergencyCard(user.id, today);
+  const { card, targets } = await loadOwnerEmergencyCard(
+    user.id,
+    today,
+    await resolveModuleMap(user.id),
+  );
   annotate({
     action: { name: "emergency-card.read" },
     meta: { has_content: emergencyCardHasContent(card) },
   });
-  return apiSuccess({ card });
+  return apiSuccess({ card, targets });
 });

@@ -8,8 +8,16 @@
  * No hooks: the caller hands in its translator and locale, which keeps it a
  * server component on the public view (no app bundle, nothing to cache) and a
  * plain child on the owner's page. Every string renders as escaped React text.
+ *
+ * On the owner's page (`targets`) every line opens the surface that owns it:
+ * an allergy the medical history, a condition its illness page, a medication
+ * its own page. The public view gets no targets and no links.
  */
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+
 import type { EmergencyCardView } from "@/lib/emergency-card/card-data";
+import type { EmergencyCardTargets } from "@/lib/emergency-card/edit-targets";
 import {
   emergencyCardRows,
   splitCardTitle,
@@ -20,13 +28,18 @@ export function EmergencyCardSheet({
   view,
   t,
   locale,
+  targets,
 }: {
   view: EmergencyCardView;
   t: Translate;
   locale: string;
+  /** The owner's view: where each line is edited. */
+  targets?: EmergencyCardTargets;
 }) {
   // The name, when recorded, is the card's title line above the items.
-  const { title, rows } = splitCardTitle(emergencyCardRows(view, t, locale));
+  const { title, rows } = splitCardTitle(
+    emergencyCardRows(view, t, locale, targets),
+  );
   return (
     <div data-slot="emergency-card-sheet">
       {title ? (
@@ -43,18 +56,35 @@ export function EmergencyCardSheet({
             <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               {row.label}
             </dt>
-            {row.lines.map((line, i) => (
-              <dd
-                key={i}
-                className={
-                  row.emphasise
-                    ? "text-foreground mt-1 text-base font-semibold break-words"
-                    : "text-foreground mt-1 text-sm break-words whitespace-pre-line"
-                }
-              >
-                {line}
-              </dd>
-            ))}
+            {row.lines.map((line, i) => {
+              const href = row.hrefs?.[i] ?? null;
+              return (
+                <dd
+                  key={i}
+                  className={
+                    row.emphasise
+                      ? "text-foreground mt-1 text-base font-semibold break-words"
+                      : "text-foreground mt-1 text-sm break-words whitespace-pre-line"
+                  }
+                >
+                  {href ? (
+                    <Link
+                      href={href}
+                      data-slot="emergency-card-line-link"
+                      className="focus-visible:ring-ring/50 flex items-center justify-between gap-2 rounded-sm underline-offset-4 hover:underline focus-visible:ring-[3px] focus-visible:outline-none pointer-coarse:min-h-11"
+                    >
+                      <span className="min-w-0">{line}</span>
+                      <ChevronRight
+                        className="text-muted-foreground size-4 shrink-0"
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  ) : (
+                    line
+                  )}
+                </dd>
+              );
+            })}
           </div>
         ))}
       </dl>

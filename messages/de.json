@@ -12620,7 +12620,7 @@
     "openDetail": "Details anzeigen",
     "historyLoadError": "Dein Testverlauf konnte nicht geladen werden",
     "historyLoadErrorHint": "Das heißt nicht, dass keine Ergebnisse vorliegen. Die Liste konnte nicht abgerufen werden. Versuche es erneut.",
-    "privacyNote": "Deine Antworten sind verschlüsselt gespeichert und erreichen den KI-Coach nicht.",
+    "privacyNote": "Deine Antworten sind verschlüsselt gespeichert. Antworten und Ergebnisse erreichen weder den KI-Coach noch eine andere KI-Funktion oder einen verbundenen KI-Assistenten.",
     "trend": {
       "sincePrevious": "Seit deinem vorigen Check-in am {date}: {change, plural, one {# Punkt} other {# Punkte}}.",
       "sinceFirst": "Seit deinem ersten Check-in am {date}: {change, plural, one {# Punkt} other {# Punkte}}.",
@@ -16210,8 +16210,6 @@
       "title": "Notfallkarte",
       "description": "Deine Notfalldaten für unterwegs.",
       "loadError": "Die Notfallkarte konnte nicht geladen werden.",
-      "editHint": "Blutgruppe, Kontakte, Implantate und Verfügungen stammen aus deinen Notfalldaten.",
-      "editLink": "Bearbeiten",
       "offlineHint": "Die App funktioniert absichtlich nicht offline. Speichere eine Kopie auf dem Handy, um die Karte ohne Verbindung dabeizuhaben; sie zeigt den Stand vom Tag des Speicherns.",
       "downloadError": "Der Download hat nicht geklappt. Versuch es noch einmal.",
       "saveOffline": "Offline-Kopie speichern",

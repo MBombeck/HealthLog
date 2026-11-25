@@ -22,6 +22,7 @@ import { gateSummariesByModules } from "@/lib/dashboard/widget-modules";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import { ownRecord } from "@/lib/own-key";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,7 @@ export const GET = apiHandler(async () => {
     slice.lastSeenByType,
     modules,
   );
-  const metrics: Record<string, { count: number }> = {};
+  const metrics = ownRecord<{ count: number }>();
   for (const [type, summary] of Object.entries(summaries)) {
     if (summary.count > 0) metrics[type] = { count: summary.count };
   }

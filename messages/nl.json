@@ -12620,7 +12620,7 @@
     "openDetail": "Details tonen",
     "historyLoadError": "Je testgeschiedenis kon niet worden geladen",
     "historyLoadErrorHint": "Dit betekent niet dat je geen resultaten hebt; de lijst kon niet worden opgehaald. Probeer het opnieuw.",
-    "privacyNote": "Je antwoorden worden versleuteld opgeslagen en komen nooit bij de AI-coach terecht.",
+    "privacyNote": "Je antwoorden worden versleuteld opgeslagen. Antwoorden en scores komen nooit bij de AI-coach, een andere AI-functie of een AI-assistent die je hebt gekoppeld.",
     "trend": {
       "sincePrevious": "Sinds je vorige check-in op {date}: {change, plural, one {# punt} other {# punten}}.",
       "sinceFirst": "Sinds je eerste check-in op {date}: {change, plural, one {# punt} other {# punten}}.",
@@ -16210,8 +16210,6 @@
       "title": "Noodkaart",
       "description": "Je noodgegevens voor onderweg.",
       "loadError": "De noodkaart kon niet worden geladen.",
-      "editHint": "Bloedgroep, contacten, implantaten en verklaringen komen uit je noodgegevens.",
-      "editLink": "Bewerken",
       "offlineHint": "De app werkt bewust niet offline. Sla een kopie op je telefoon op om de kaart zonder verbinding bij je te hebben; die toont de stand van de dag van opslaan.",
       "downloadError": "Downloaden is mislukt. Probeer het opnieuw.",
       "saveOffline": "Offline kopie opslaan",

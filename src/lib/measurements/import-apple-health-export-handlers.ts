@@ -41,6 +41,7 @@ import type {
   ExportCycleWriter,
   MarkedCycleSample,
 } from "@/lib/measurements/import-apple-health-export-cycle";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * Reverse-lookup for the symbolic `HKCategoryValueSleepAnalysis*`
@@ -211,7 +212,7 @@ export function parseRecordValue(
     return rawValue === STAND_HOUR_STOOD ? { value: 1 } : null;
   }
   if (hkIdentifier === "HKCategoryTypeIdentifierSleepAnalysis") {
-    const stage = SLEEP_STAGE_NAME_TO_CODEPOINT[rawValue];
+    const stage = ownValue(SLEEP_STAGE_NAME_TO_CODEPOINT, rawValue);
     if (stage === undefined) return null;
     // For sleep, our `mapAppleHealthEntry` expects the value to be the
     // duration in minutes; derive it from start/end so the row carries
@@ -360,7 +361,7 @@ function openRecord(ctx: ExportTagContext, attrs: TagAttributes): void {
     tallyReason(deferred, hkType);
     return;
   }
-  const mapping = APPLE_HEALTH_TYPE_MAP[hkType];
+  const mapping = ownValue(APPLE_HEALTH_TYPE_MAP, hkType);
   if (!mapping) {
     tallyReason(unknown, hkType);
     return;

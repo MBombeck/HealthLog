@@ -41,6 +41,7 @@ import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { instructionLocale } from "@/lib/ai/prompts/output-language";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { DERIVED_MODULE } from "../route";
+import { ownRecord } from "@/lib/own-key";
 
 export const dynamic = "force-dynamic";
 
@@ -322,7 +323,7 @@ async function buildDerivedBatch(input: {
     ),
   );
 
-  const map: Record<string, (typeof results)[number]["payload"]> = {};
+  const map = ownRecord<(typeof results)[number]["payload"]>();
   for (const r of results) map[r.key] = r.payload;
   return map;
 }

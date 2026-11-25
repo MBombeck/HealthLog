@@ -56,11 +56,11 @@ export interface ProfileBackupOptions {
  */
 function lifeConfirmed(value: unknown): Record<string, string> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const out: Record<string, string> = {};
-  for (const [key, stamp] of Object.entries(value)) {
-    if (typeof stamp === "string") out[key] = stamp;
-  }
-  return out;
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (pair): pair is [string, string] => typeof pair[1] === "string",
+    ),
+  );
 }
 
 export interface HealthProfileBackupEntry {

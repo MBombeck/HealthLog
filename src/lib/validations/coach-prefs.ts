@@ -19,6 +19,7 @@ import {
   COACH_DATA_CLUSTERS,
   DEFAULT_COACH_PREFS,
 } from "@/lib/ai/coach/prefs-constants";
+import { hasOwnKey, ownValue } from "@/lib/own-key";
 
 // The values a client component needs live in a zod-free module, so the
 // Coach and the settings pages do not pull the schema library in with them.
@@ -219,14 +220,14 @@ export function parseCoachPrefs(raw: unknown): CoachPrefs {
     return DEFAULT_COACH_PREFS;
   }
   const source = raw as Record<string, unknown>;
-  const salvaged: Record<string, unknown> = {};
+  const salvaged: [string, unknown][] = [];
   for (const [key, field] of Object.entries(coachPrefsSchema.shape)) {
-    if (!(key in source)) continue;
-    const value = knownItemsOnly(key, source[key]);
-    if (field.safeParse(value).success) salvaged[key] = value;
+    if (!hasOwnKey(source, key)) continue;
+    const value = knownItemsOnly(key, ownValue(source, key));
+    if (field.safeParse(value).success) salvaged.push([key, value]);
   }
-  if (Object.keys(salvaged).length === 0) return DEFAULT_COACH_PREFS;
-  return coachPrefsSchema.parse(salvaged);
+  if (salvaged.length === 0) return DEFAULT_COACH_PREFS;
+  return coachPrefsSchema.parse(Object.fromEntries(salvaged));
 }
 
 /** The entries of a list preference this version knows; other values as is. */

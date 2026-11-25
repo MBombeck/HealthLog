@@ -48,6 +48,7 @@ import { summariseForVisit } from "./doctor-visit-summary";
 import type { McpAuthContext } from "./auth";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 import { readMedicationNote } from "@/lib/medications/medication-note";
+import { ownValue } from "@/lib/own-key";
 
 export interface McpResourceDefinition {
   name: string;
@@ -209,8 +210,10 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
           // v1.40 (#1041) — the clinical category: a built-in value or
           // `custom:<uuid>`, with the person's own label (their text, fenced)
           // for a custom one.
-          category: categories[med.id]?.category ?? "OTHER",
-          categoryLabel: fenceOptional(categories[med.id]?.categoryLabel),
+          category: ownValue(categories, med.id)?.category ?? "OTHER",
+          categoryLabel: fenceOptional(
+            ownValue(categories, med.id)?.categoryLabel,
+          ),
           // #1371 — the person's own note (directions), fenced as their text.
           note: fenceOptional(readMedicationNote(med.noteEncrypted)),
           asNeeded: med.asNeeded,
@@ -335,7 +338,7 @@ async function readDoctorVisit(
     );
   }
 
-  const days = WINDOW_DAYS[window] ?? 90;
+  const days = ownValue(WINDOW_DAYS, window) ?? 90;
   const end = new Date();
   const start = new Date(end.getTime() - days * MS_PER_DAY);
   // The assistant cannot ask a human, so this replays the owner's SAVED

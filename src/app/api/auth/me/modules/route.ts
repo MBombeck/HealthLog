@@ -122,15 +122,14 @@ export const PATCH = apiHandler(async (req: Request) => {
     where: { id: user.id },
     select: { modulePreferencesJson: true },
   });
-  const merged: Record<string, boolean> = normalisePrefs(
-    existing?.modulePreferencesJson,
+  const updates = Object.entries(parsed.data).filter(
+    (entry): entry is [string, boolean] => entry[1] !== undefined,
   );
-  const changed: string[] = [];
-  for (const [key, value] of Object.entries(parsed.data)) {
-    if (value === undefined) continue;
-    merged[key] = value;
-    changed.push(key);
-  }
+  const merged: Record<string, boolean> = {
+    ...normalisePrefs(existing?.modulePreferencesJson),
+    ...Object.fromEntries(updates),
+  };
+  const changed = updates.map(([key]) => key);
 
   // v1.32.22 — guard the write on the client's base token; a stale base
   // 409s and writes nothing. Tokenless requests keep the unconditional write.

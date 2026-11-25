@@ -33,6 +33,7 @@ import {
   CUMULATIVE_PROFILE_RETENTION_DAYS,
   PROFILE_HOURS,
 } from "./intraday-cumulative-profile";
+import { ownValue } from "@/lib/own-key";
 
 /** The HealthKit identifiers the hour form is defined for, and their types. */
 export const HOUR_BUCKET_TYPES: Readonly<Record<string, MeasurementType>> = {
@@ -131,7 +132,7 @@ export function classifyHourBucket(
   timezone: string,
   now: Date,
 ): HourBucketVerdict {
-  const type = HOUR_BUCKET_TYPES[id.hkIdentifier];
+  const type = ownValue(HOUR_BUCKET_TYPES, id.hkIdentifier);
   if (!type)
     return { ok: false, reason: HOUR_BUCKET_SKIP_REASONS.unsupportedType };
   const oldest = shiftDateKey(
