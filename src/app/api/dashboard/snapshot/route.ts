@@ -34,11 +34,12 @@ import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { readDashboardSnapshotCached } from "@/lib/dashboard/snapshot-read";
+import { nativeRequestLocale } from "@/lib/i18n/server-locale";
 import { ownRecord } from "@/lib/own-key";
 
 export const dynamic = "force-dynamic";
 
-export const GET = apiHandler(async () => {
+export const GET = apiHandler(async (request: Request) => {
   // The record's tile strip, and the reason `/` is a shared destination at
   // all. A delegate who cannot read this reads an empty dashboard under a
   // banner naming the person whose record they just opened.
@@ -55,8 +56,11 @@ export const GET = apiHandler(async () => {
   //
   // The cache cell keys on the resolved id, so the owner's snapshot lands in
   // the owner's cell and a delegated read neither reads nor poisons their own.
-  const { user } = await requireRecordAuth("read", "record");
+  const { user, authMethod } = await requireRecordAuth("read", "record");
   annotate({ action: { name: "dashboard.snapshot" } });
+  // The app's own language words the snapshot's prose (the score pillars'
+  // reasons, the briefing recall); a browser's cookie does that.
+  const locale = nativeRequestLocale(authMethod, request);
 
   const timings = ownRecord<number>();
   const time = async <T>(
@@ -72,7 +76,11 @@ export const GET = apiHandler(async () => {
   // The cached read (user-row mapping, locale resolution, SWR cell) is
   // shared with the dashboard RSC prefetch — see
   // `src/lib/dashboard/snapshot-read.ts` for the cache-key/TTL contract.
-  const { body } = await readDashboardSnapshotCached(user, time);
+  const { body } = await readDashboardSnapshotCached(
+    user,
+    time,
+    locale ? { locale } : {},
+  );
 
   // Only surface timings on the cache-miss path (the hit path skips the
   // whole builder and leaves `timings` empty).

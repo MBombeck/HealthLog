@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { dashboardScorePillarsExample } from "@/lib/openapi/examples";
 import { recoveryEmptySchema } from "../recovery-empty";
 import { trendSentiment, trendVerdict } from "../trend-verdict";
 import { z } from "zod/v4";
@@ -378,6 +379,43 @@ export const readinessValue = z
       ),
   })
   .meta({ id: "ReadinessValue" });
+
+/** One health-score pillar on the dashboard snapshot (1.50). */
+export const dashboardScorePillar = z
+  .object({
+    id: z.enum([
+      "BLOOD_PRESSURE",
+      "GLYCAEMIA",
+      "ACTIVITY",
+      "SLEEP",
+      "ADIPOSITY",
+      "WELLBEING",
+      "LIPIDS",
+    ]),
+    label: z.string().describe("The pillar's name in the response language."),
+    value: z
+      .number()
+      .int()
+      .min(0)
+      .max(100)
+      .nullable()
+      .describe(
+        "The pillar's own 0–100 score when it counted toward the health score; null when it did not.",
+      ),
+    reason: z
+      .string()
+      .nullable()
+      .describe(
+        'Why the pillar did not count, worded as the web panel words it ("Not tracked", "Not enough recent eligible data"). Null when it counted. A WELLBEING pillar held back for safety signposting says so ("Safety guidance is shown instead of a score"); the guidance itself is on the Insights health-score card.',
+      ),
+    reasonCode: z
+      .string()
+      .nullable()
+      .describe(
+        "The machine reason behind `reason` (`not_tracked`, `stale`, `crisis_signposting`, ...); null when it counted. For branching only, never for display.",
+      ),
+  })
+  .meta({ id: "DashboardScorePillar" });
 
 export const derivedCoverage = z
   .object({
@@ -1552,6 +1590,13 @@ export const dashboardSnapshotResponse = z
           })
           .nullable()
           .optional(),
+        pillars: z
+          .array(dashboardScorePillar)
+          .meta({ example: dashboardScorePillarsExample })
+          .optional()
+          .describe(
+            "1.50 — one slim row per pillar the score considered, in registry order: its own 0–100 score when it counted, else `value` null with the reason worded as the web panel words it. Worded in the response language (`Accept-Language` on a Bearer request when it names a shipped language, else the account's). Observed values and references stay on `/api/analytics`. Optional so older cached snapshots without the field stay valid; the live builder always sets it when a score exists.",
+          ),
         // v1.21.2 — the Tension Verdict, locale-agnostic. Fires only
         // when the readiness composite's contributors disagree (>=1
         // strongly favourable AND >=1 strongly unfavourable); suppressed

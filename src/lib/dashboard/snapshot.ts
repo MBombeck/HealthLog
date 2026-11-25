@@ -99,8 +99,12 @@ import type {
   ScoreDeltaReason,
   ScorePillarId,
 } from "@/lib/analytics/score/types";
+import {
+  restModeAnnotation,
+  snapshotScorePillars,
+  type DashboardSnapshotScorePillar,
+} from "@/lib/dashboard/snapshot-health-score";
 import type { DerivedConfidence } from "@/lib/insights/derived/types";
-import { resolveRestMode } from "@/lib/illness/rest-mode";
 import { resolveModuleMap, type ModuleKey } from "@/lib/modules/gate";
 import {
   buildScoreNarrativeBlock,
@@ -380,6 +384,8 @@ export interface DashboardSnapshotHealthScore {
    * builder always sets it (null when not in Rest Mode).
    */
   restMode?: RestModeAnnotation | null;
+  /** 1.50 — one row per pillar, worded (`snapshotScorePillars`). Additive. */
+  pillars?: DashboardSnapshotScorePillar[];
   /**
    * v1.21.2 — Tension Verdict, locale-agnostic. Fires only when the
    * readiness composite's contributors DISAGREE (≥1 strongly favourable AND ≥1
@@ -627,6 +633,7 @@ async function buildExtras(
   now: Date,
   time: <T>(label: string, fn: () => Promise<T>) => Promise<T>,
   modules: Record<ModuleKey, boolean>,
+  locale: Locale,
 ): Promise<{
   extras: DashboardSnapshotExtras;
   healthScore: DashboardSnapshotHealthScore | null;
@@ -772,22 +779,10 @@ async function buildExtras(
       bpEnvelopePriorTwoWeeks,
     }),
   );
-  // v1.18.1 — resolve the value-free Rest Mode annotation alongside the score
-  // so the dashboard hero can frame (never penalise) the number, matching the
-  // `/api/analytics` payload + iOS. Fail-soft inside `resolveRestMode`, and
-  // only resolved when a score actually rendered.
-  const restMode: RestModeAnnotation | null =
+  // Rest Mode frames (never penalises) the number; only when a score rendered.
+  const restMode =
     scoreResult.composite.status === "ok"
-      ? await (async () => {
-          const ctx = await resolveRestMode(user.id, now);
-          return ctx.active
-            ? {
-                active: true,
-                since: ctx.since,
-                episodeCount: ctx.episodeCount,
-              }
-            : null;
-        })()
+      ? await restModeAnnotation(user.id, now)
       : null;
   const healthScore: DashboardSnapshotHealthScore | null =
     scoreResult.composite.status === "ok"
@@ -803,6 +798,7 @@ async function buildExtras(
           scoreVersion: scoreResult.scoreVersion,
           bandSetter: scoreResult.composite.value.bandSetter,
           restMode,
+          pillars: snapshotScorePillars(scoreResult.pillars, locale),
         }
       : null;
 
@@ -1284,10 +1280,9 @@ export async function buildDashboardSnapshot(
     // doesn't re-run the identical `probeRollupCoverage` query.
     time("summaries", () => readSummariesSlice(user.id, { coverage })),
     time("mood", () => buildMoodBlock(prisma, user.id)),
-    // v1.34 — the thick slice awaits the shared `modulesPromise` (the same
-    // pattern the score-ring task uses) so the hero ring's health score can
-    // gate its mood pillar on the resolved module map without a second
-    // resolver call or a serialised phase.
+    // v1.34 — the thick slice awaits the shared `modulesPromise` (as the
+    // score-ring task does) so the health score gates its mood pillar on the
+    // resolved module map; the locale words its pillar rows (1.50).
     warm
       ? time("extras", async () =>
           buildExtras(
@@ -1298,6 +1293,7 @@ export async function buildDashboardSnapshot(
             now,
             time,
             await modulesPromise,
+            options.locale ?? "en",
           ),
         )
       : Promise.resolve(null),

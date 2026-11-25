@@ -39,7 +39,10 @@ import type {
   ScorePillarResult,
 } from "@/lib/analytics/score/types";
 import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
-import { SCORE_PILLAR_LABEL_KEYS } from "@/lib/score-config/labels";
+import {
+  SCORE_PILLAR_LABEL_KEYS,
+  scorePillarReasonKey,
+} from "@/lib/score-config/labels";
 import { cn } from "@/lib/utils";
 import { InlineAction } from "@/components/ui/inline-action";
 import { ScorePill } from "@/components/ui/score-pill";
@@ -80,22 +83,6 @@ import { ScorePill } from "@/components/ui/score-pill";
  * same way. Aliased here because every reference below reads this name.
  */
 const PILLAR_LABEL_KEY = SCORE_PILLAR_LABEL_KEYS;
-
-const REASON_KEY: Record<string, string> = {
-  read_failed: "readFailed",
-  not_tracked: "notTracked",
-  missing_reference_profile: "missingProfile",
-  missing_height: "missingHeight",
-  incomplete_or_stale_panel: "incompletePanel",
-  crisis_signposting: "crisis",
-  below_day_floor_or_stale: "insufficientHistory",
-  below_reading_floor: "insufficientHistory",
-  stale_or_untracked: "insufficientHistory",
-  unverified_or_stale: "insufficientHistory",
-  below_reading_floor_or_stale: "insufficientHistory",
-  below_night_floor_or_stale: "insufficientHistory",
-  stale: "insufficientHistory",
-};
 
 /**
  * The column geometry, shared by the panel and by its loading reserve so the
@@ -234,7 +221,7 @@ function gateReason(pillar: ScorePillarResult): string | null {
  * and the anatomy list can never say two different things about one pillar.
  * A pillar with NO row is not an error: turning its module off closes the
  * data path deliberately and the scorer stops emitting the pillar
- * altogether. The empty string falls through `REASON_KEY` to the generic
+ * altogether. The empty string falls through `scorePillarReasonKey` to the generic
  * "not currently eligible", which is exactly what is true of it.
  */
 function reasonOf(report: HealthScoreReport, id: string): string {
@@ -286,8 +273,7 @@ export function HealthScoreCard({
   };
 
   function reasonText(reason: string): string {
-    const key = REASON_KEY[reason] ?? "unavailable";
-    return t(`insights.healthScore.reason.${key}`);
+    return t(scorePillarReasonKey(reason));
   }
 
   function labelsOf(pillars: ScorePillarResult[]): string {

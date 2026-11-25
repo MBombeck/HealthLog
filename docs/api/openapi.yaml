@@ -79389,6 +79389,36 @@ components:
                         - episodeCount
                       additionalProperties: false
                     - type: "null"
+                pillars:
+                  description: "1.50 — one slim row per pillar the score considered, in registry order: its own 0–100 score when it
+                    counted, else `value` null with the reason worded as the web panel words it. Worded in the response
+                    language (`Accept-Language` on a Bearer request when it names a shipped language, else the
+                    account's). Observed values and references stay on `/api/analytics`. Optional so older cached
+                    snapshots without the field stay valid; the live builder always sets it when a score exists."
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/DashboardScorePillar"
+                  example:
+                    - id: BLOOD_PRESSURE
+                      label: Blood pressure
+                      value: 82
+                      reason: null
+                      reasonCode: null
+                    - id: ACTIVITY
+                      label: Activity
+                      value: 64
+                      reason: null
+                      reasonCode: null
+                    - id: SLEEP
+                      label: Sleep
+                      value: null
+                      reason: Not tracked
+                      reasonCode: not_tracked
+                    - id: WELLBEING
+                      label: Wellbeing
+                      value: null
+                      reason: Safety guidance is shown instead of a score
+                      reasonCode: crisis_signposting
                 tension:
                   description: "Locale-agnostic tension verdict: present only when the readiness composite's contributors disagree.
                     `positive`/`negative` carry readiness contributor keys the client maps to localised labels. Null on
@@ -79796,6 +79826,49 @@ components:
       additionalProperties: false
       description: What the Health Score rests on, resolved server-side. Present on every score computed from at least one
         usable pillar; optional on every shape that carries it, so payloads cached before v1.38 stay valid.
+    DashboardScorePillar:
+      type: object
+      properties:
+        id:
+          type: string
+          enum:
+            - BLOOD_PRESSURE
+            - GLYCAEMIA
+            - ACTIVITY
+            - SLEEP
+            - ADIPOSITY
+            - WELLBEING
+            - LIPIDS
+        label:
+          type: string
+          description: The pillar's name in the response language.
+        value:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 100
+            - type: "null"
+          description: The pillar's own 0–100 score when it counted toward the health score; null when it did not.
+        reason:
+          description: Why the pillar did not count, worded as the web panel words it ("Not tracked", "Not enough recent eligible
+            data"). Null when it counted. A WELLBEING pillar held back for safety signposting says so ("Safety guidance
+            is shown instead of a score"); the guidance itself is on the Insights health-score card.
+          type:
+            - string
+            - "null"
+        reasonCode:
+          description: The machine reason behind `reason` (`not_tracked`, `stale`, `crisis_signposting`, ...); null when it
+            counted. For branching only, never for display.
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - label
+        - value
+        - reason
+        - reasonCode
+      additionalProperties: false
     InsightsComprehensiveResponseEnvelope:
       type: object
       properties:

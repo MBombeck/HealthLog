@@ -78,7 +78,7 @@ interface Bands {
 
 async function readBands(): Promise<Bands> {
   const { GET } = await import("@/app/api/dashboard/snapshot/route");
-  const res = await GET();
+  const res = await GET(new Request("http://localhost/api/dashboard/snapshot"));
   expect(res.status).toBe(200);
   const body = (await res.json()) as { data: { targetBands: Bands } };
   return body.data.targetBands;

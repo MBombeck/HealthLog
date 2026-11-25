@@ -165,7 +165,7 @@ async function readSnapshot() {
     briefingState: string;
     briefingUpdatedAt: string | null;
     briefingAi: { available: boolean; reason: string | null };
-  }>(await GET());
+  }>(await GET(new Request("http://localhost/api/dashboard/snapshot")));
 }
 
 async function readDigest() {

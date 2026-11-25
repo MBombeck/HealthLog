@@ -458,6 +458,8 @@ describe("buildDashboardSnapshot — per-type thick-phase gate", () => {
       deltaReason: null,
       scoreVersion: SCORE_VERSION,
       bandSetter: "BLOOD_PRESSURE",
+      // 1.50 — the slim pillar rows (the mocked report carries none).
+      pillars: [],
       // v1.21.2 — additive narrative fields, null absent a
       // disagreeing readiness set / a returned metric (the fake derived
       // engines resolve nothing here).
@@ -591,8 +593,9 @@ describe("buildDashboardSnapshot — healthScore (warm phase only)", () => {
 
     const snap = await buildDashboardSnapshot(fakePrisma, baseUser());
 
-    // Score + band + delta (+ the v1.18.1 value-free restMode annotation)
-    // only — components never reach the wire. `restMode` is null with no
+    // Score + band + delta (+ the v1.18.1 value-free restMode annotation and
+    // the 1.50 slim pillar rows) — observed values and references never
+    // reach this wire. `restMode` is null with no
     // active illness episode.
     expect(snap.healthScore).toEqual({
       score: 72,
@@ -604,6 +607,8 @@ describe("buildDashboardSnapshot — healthScore (warm phase only)", () => {
       deltaReason: null,
       scoreVersion: SCORE_VERSION,
       bandSetter: "BLOOD_PRESSURE",
+      // 1.50 — the slim pillar rows (the mocked report carries none).
+      pillars: [],
       // v1.21.2 — additive narrative fields, null here.
       tension: null,
       returnToBand: null,
