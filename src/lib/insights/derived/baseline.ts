@@ -36,7 +36,7 @@ import {
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 import { isSourceRankedType } from "@/lib/analytics/source-rank-sql";
-import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
+import { loadDaySourcePriority } from "@/lib/measurements/day-source-priority";
 import { ageInYears } from "@/lib/tz/date-only";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { toProfileSex } from "@/lib/profile/sex";
@@ -321,7 +321,7 @@ export async function readDayMeanSeries(
     timeZone: timeZone ?? "UTC",
     valueRange: plausibleMetricRange(type),
     sourcePriority: isSourceRankedType(type)
-      ? await loadUserSourcePriority(userId)
+      ? await loadDaySourcePriority(userId)
       : undefined,
   });
   // A pulse day is the mean of its local hours' means (`dayMean`, see
