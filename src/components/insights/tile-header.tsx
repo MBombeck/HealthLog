@@ -1,6 +1,8 @@
 import type { ComponentType, ReactNode } from "react";
 
 import { CardTitle } from "@/components/ui/card";
+import { ShortName } from "@/components/ui/short-name";
+import type { MetricName } from "@/lib/measurements/type-label-keys";
 import { cn } from "@/lib/utils";
 
 /**
@@ -35,8 +37,13 @@ interface TileHeaderProps {
    * gets the canonical row + `CardTitle` treatment.
    */
   icon?: ComponentType<{ className?: string }>;
-  /** Heading text (or node). Rendered inside a `CardTitle` at `text-base`. */
-  title: ReactNode;
+  /**
+   * Heading text (or node). Rendered inside a `CardTitle` at `text-base`. A
+   * metric's `MetricName` shows its short form, with the full name as the
+   * tooltip and as what a screen reader reads, so shortening a heading never
+   * shortens what it tells someone who cannot see it.
+   */
+  title: ReactNode | MetricName;
   /** Optional trailing affordance pinned to the right edge of the row. */
   right?: ReactNode;
   /**
@@ -101,7 +108,16 @@ export function TileHeader({
     size === "sm" ? "text-sm" : "text-base",
     reserve && "line-clamp-2",
   );
-  const fullTitle = reserve && typeof title === "string" ? title : undefined;
+  const text = isMetricName(title) ? (
+    <ShortName short={title.short} full={title.full} />
+  ) : (
+    title
+  );
+  const fullTitle = isMetricName(title)
+    ? title.full
+    : reserve && typeof title === "string"
+      ? title
+      : undefined;
   return (
     <div
       data-slot="tile-header"
@@ -137,14 +153,23 @@ export function TileHeader({
           title={fullTitle}
           className={cn("font-semibold", titleClassNames)}
         >
-          {title}
+          {text}
         </Heading>
       ) : (
         <CardTitle id={id} title={fullTitle} className={titleClassNames}>
-          {title}
+          {text}
         </CardTitle>
       )}
       {right ? <div className="ml-auto flex items-center">{right}</div> : null}
     </div>
+  );
+}
+
+function isMetricName(title: ReactNode | MetricName): title is MetricName {
+  return (
+    typeof title === "object" &&
+    title !== null &&
+    "short" in title &&
+    "full" in title
   );
 }
