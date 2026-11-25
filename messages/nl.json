@@ -13282,7 +13282,7 @@
       "close": "Verbergen"
     },
     "ai": {
-      "readDone": "De AI heeft je document gelezen.",
+      "readDone": "De AI heeft je document gelezen. Zoeken vindt het nu ook op de inhoud.",
       "readStagedOne": "De AI heeft je document gelezen. 1 labwaarde staat klaar om te controleren.",
       "readStagedFew": "De AI heeft je document gelezen. {count} labwaarden staan klaar om te controleren.",
       "readStagedOther": "De AI heeft je document gelezen. {count} labwaarden staan klaar om te controleren.",
