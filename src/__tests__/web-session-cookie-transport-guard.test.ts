@@ -27,6 +27,7 @@ import { describe, expect, it } from "vitest";
 import { join } from "node:path";
 
 import {
+  readSource,
   readSourceText,
   stripComments,
   walkSourceFiles,
@@ -84,6 +85,12 @@ function functionBody(src: string, name: string): string {
   return src.slice(bodyStart, i + 1);
 }
 
+/** The body of function `name` in `src/<rel>`, anchored on its declaration. */
+function bodyOf(rel: string, name: string): string {
+  const decl = new RegExp(`function\\s+${name}\\s*\\(`);
+  return functionBody(stripComments(readSource(`src/${rel}`, decl)), name);
+}
+
 /** Whether `first` appears in `body`, and before `second` when that is given. */
 function precedes(body: string, first: RegExp, second: RegExp): boolean {
   const a = first.exec(body);
@@ -99,7 +106,7 @@ describe("W1 — the session cookie has one minter, and it refuses the token tra
   });
 
   it("createSession refuses the token transport before it writes a row or a cookie", () => {
-    const body = functionBody(code("lib/auth/session.ts"), "createSession");
+    const body = bodyOf("lib/auth/session.ts", "createSession");
     expect(
       precedes(
         body,
@@ -117,7 +124,7 @@ describe("W1 — the session cookie has one minter, and it refuses the token tra
   });
 
   it("getSession does not read a cookie beside a Bearer", () => {
-    const body = functionBody(code("lib/auth/session.ts"), "getSession");
+    const body = bodyOf("lib/auth/session.ts", "getSession");
     expect(
       precedes(body, /requestCarriesBearer\s*\(/, /readSessionCookie\s*\(/),
     ).toBe(true);
@@ -127,17 +134,11 @@ describe("W1 — the session cookie has one minter, and it refuses the token tra
   });
 
   it("the caller resolver tries the Bearer before the cookie", () => {
-    const body = functionBody(
-      code("lib/auth/guards/caller.ts"),
-      "authenticateCaller",
-    );
+    const body = bodyOf("lib/auth/guards/caller.ts", "authenticateCaller");
     expect(precedes(body, /authenticateBearer\s*\(/, /getSession\s*\(/)).toBe(
       true,
     );
-    const bearer = functionBody(
-      code("lib/auth/guards/caller.ts"),
-      "authenticateBearer",
-    );
+    const bearer = bodyOf("lib/auth/guards/caller.ts", "authenticateBearer");
     expect(bearer).toMatch(/refuseCookieIdentityConflict\s*\(/);
   });
 });
@@ -218,7 +219,7 @@ describe("W3 — the hint cookies have one setter each, and both refuse the toke
 
   it("each setter refuses the token transport before it touches the cookie", () => {
     for (const [file, fn, cookieName] of SETTERS) {
-      const body = functionBody(code(file), fn);
+      const body = bodyOf(file, fn);
       expect(
         precedes(body, /requestUsesTokenTransport\s*\(/, /cookies\s*\(/),
         `${fn} must refuse first`,

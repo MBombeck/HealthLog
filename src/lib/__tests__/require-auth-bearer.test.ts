@@ -65,6 +65,18 @@ function setBearerHeader(value: string | null): void {
   );
 }
 
+/** Arm the mocked token lookup with one token row, owned by FAKE_USER. */
+function armTokenRow(row: {
+  id: string;
+  userId: string;
+  permissions: string[];
+  revoked: boolean;
+  expiresAt: Date | null;
+}): void {
+  vi.mocked(prisma.apiToken.findUnique).mockResolvedValue(row as never);
+  vi.mocked(prisma.user.findUnique).mockResolvedValue(FAKE_USER as never);
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(hashToken).mockReturnValue(FAKE_HASH);
@@ -78,14 +90,13 @@ describe("requireAuth — Bearer token path", () => {
     setBearerHeader(`Bearer ${RAW_TOKEN}`);
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+    armTokenRow({
       id: "token-1",
       userId: "user-1",
       permissions: ["*"],
       revoked: false,
       expiresAt,
-    } as never);
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(FAKE_USER as never);
+    });
 
     const ctx = await requireAuth();
 
@@ -397,21 +408,19 @@ describe("requireAuth — cookie path remains intact", () => {
   });
 
   it("lets a Bearer header decide over a cookie session", async () => {
-    // A session the cookie path would resolve, which must not be consulted:
-    // the Bearer is the credential the caller chose.
-    vi.mocked(getSession).mockResolvedValue({
-      session: { id: "sess-1", expiresAt: new Date(Date.now() + 3600_000) },
-      user: { ...FAKE_USER, id: "someone-else", role: "ADMIN" as const },
-    } as never);
+    // The cookie path must not be consulted at all: the Bearer is the
+    // credential the caller chose.
+    vi.mocked(getSession).mockImplementation(async () => {
+      throw new Error("the cookie session was consulted beside a Bearer");
+    });
     setBearerHeader(`Bearer ${RAW_TOKEN}`);
-    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+    armTokenRow({
       id: "token-1",
       userId: "user-1",
       permissions: ["*"],
       revoked: false,
       expiresAt: null,
-    } as never);
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(FAKE_USER as never);
+    });
 
     const ctx = await requireAuth();
 
