@@ -489,14 +489,9 @@ export function SubPageShell({
         {/* v1.12.6 — the canonical spine body: intro (header) → stat strip
           (above) → chart → target card → assessment. The page renders
           chart → target → assessment as `children`. */}
-        {chartContext ? (
-          <ChartContextProvider>{children}</ChartContextProvider>
-        ) : (
-          children
-        )}
-        {/* v1.16.8 — the foot-of-page "show all readings" button moved
-          into the header cluster as an icon button (left of the
-          target-adjust gear), so the page body ends on its content. */}
+        <ChartContextProvider enabled={chartContext}>
+          {children}
+        </ChartContextProvider>
       </div>
     </TargetAdjustProvider>
   );

@@ -12,7 +12,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { SwitchRow } from "@/components/ui/switch-row";
-import { CHART_CONTEXT_CYCLE_PHASES } from "@/lib/charts/context-markers-contract";
+import {
+  CHART_CONTEXT_CYCLE_PHASES,
+  type ChartContextMedicationKind,
+} from "@/lib/charts/context-markers-contract";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +27,17 @@ type Translate = (key: string, params?: Record<string, string>) => string;
 function dayLabel(key: string, formatDate: (date: Date) => string): string {
   return formatDate(new Date(`${key}T12:00:00Z`));
 }
+
+/** The line of each medication mark, spelled out so every key has a call site. */
+const MEDICATION_LINE_KEYS: Readonly<
+  Record<ChartContextMedicationKind, string>
+> = {
+  start: "chartContext.start",
+  stop: "chartContext.stop",
+  doseChange: "chartContext.doseChange",
+  pause: "chartContext.pause",
+  resume: "chartContext.resume",
+};
 
 /** One line per mark: what happened, in the record's own words. */
 export function contextEntryLine(
@@ -51,16 +65,16 @@ export function contextEntryLine(
   const key =
     mark.kind === "start"
       ? mark.estimated
-        ? "startEstimated"
+        ? "chartContext.startEstimated"
         : mark.dose
-          ? "startDose"
-          : "start"
+          ? "chartContext.startDose"
+          : "chartContext.start"
       : mark.kind === "doseChange" && !mark.dose
-        ? "doseChangeBare"
-        : mark.kind;
+        ? "chartContext.doseChangeBare"
+        : MEDICATION_LINE_KEYS[mark.kind];
   return {
     date: dayLabel(mark.date, formatDate),
-    text: t(`chartContext.${key}`, { name, dose }),
+    text: t(key, { name, dose }),
     href: mark.href,
   };
 }
@@ -124,7 +138,9 @@ function ContextMarkButton({
             pinned.current = true;
           }}
           className={cn(
-            "flex size-6 items-center justify-center rounded-full",
+            "relative flex size-6 items-center justify-center rounded-full",
+            // A finger gets 44 px around the 24 px mark, taking no room.
+            "pointer-coarse:before:absolute pointer-coarse:before:-inset-2.5 pointer-coarse:before:content-['']",
             "hover:bg-muted focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none",
             onlyIllness ? "text-warning" : "text-muted-foreground",
           )}
@@ -167,7 +183,7 @@ function ContextMarkButton({
  * The marks a reader can open, in a row under the plot at their days.
  * Rendered only when there is at least one (see `resolveContextMarks`).
  */
-export function ChartContextRail({
+function ChartContextRail({
   marks,
   maxIndex,
   insetLeft,
@@ -212,7 +228,7 @@ export function ChartContextRail({
  * The cycle-phase switch under a chart whose window holds observed cycles,
  * and, while on, what each colour of the ribbon means.
  */
-export function ChartCycleSwitch({
+function ChartCycleSwitch({
   checked,
   onCheckedChange,
 }: {
@@ -246,5 +262,36 @@ export function ChartCycleSwitch({
         </ul>
       ) : null}
     </SwitchRow>
+  );
+}
+
+/**
+ * What a chart shows under its plot about the context: the row of marks,
+ * then the cycle switch when the window holds cycles.
+ */
+export function ChartContextParts({
+  marks,
+  showCycle,
+  onShowCycleChange,
+  ...rail
+}: {
+  marks: ResolvedContextMarks;
+  maxIndex: number;
+  insetLeft: number;
+  insetRight: number;
+  formatDate: (date: Date) => string;
+  showCycle: boolean;
+  onShowCycleChange: (next: boolean) => void;
+}) {
+  return (
+    <>
+      <ChartContextRail marks={marks} {...rail} />
+      {marks.hasCycle ? (
+        <ChartCycleSwitch
+          checked={showCycle}
+          onCheckedChange={onShowCycleChange}
+        />
+      ) : null}
+    </>
   );
 }

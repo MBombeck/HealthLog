@@ -230,6 +230,34 @@ export function resolveAnnotationPositions(
 }
 
 /**
+ * The value axis's props, beside `pointIndexXAxis` for the other one. The
+ * unit stays on the tag, where the axis-unit check reads it.
+ */
+export function valueYAxis({
+  yAxisWidth,
+  yDomain,
+  yTicks,
+  format,
+}: {
+  yAxisWidth: number;
+  yDomain: [number, number] | undefined;
+  yTicks: number[] | undefined;
+  format: (value: number) => string;
+}) {
+  return {
+    tick: { fontSize: 11, fill: "var(--muted-foreground)" },
+    tickLine: false,
+    axisLine: false,
+    width: yAxisWidth,
+    tickMargin: 10,
+    domain: yDomain,
+    ticks: yTicks,
+    tickFormatter: (value: unknown) =>
+      typeof value === "number" ? format(value) : String(value),
+  };
+}
+
+/**
  * The value axis's and the tooltip's number formats. The axis shows as many
  * decimals as its tick step needs: none for a step of 1 or more (57, 58, 59
  * bpm rather than 57.0, 58.0, 59.0), one for 0.5 or 0.2, two for 0.05. Without

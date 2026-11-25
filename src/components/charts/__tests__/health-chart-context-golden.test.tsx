@@ -64,7 +64,7 @@ async function renderChart(options: {
   const html = renderToStaticMarkup(
     <I18nProvider initialLocale="en" initialMessages={enMessages}>
       {options.provider ? (
-        <ChartContextProvider>{chart}</ChartContextProvider>
+        <ChartContextProvider enabled>{chart}</ChartContextProvider>
       ) : (
         chart
       )}

@@ -16,7 +16,6 @@ import {
   ChartDayFooter,
   useChartDayLinks,
 } from "@/components/day/chart-day-links";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import { useViewportWidth } from "@/hooks/use-viewport-width";
@@ -31,11 +30,9 @@ import {
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 import { ChartDataTable } from "./chart-data-table";
-import { ChartEmptyState } from "./chart-empty-state";
-import { ChartErrorState } from "./chart-error-state";
 import { DEFAULT_CHART_RANGE } from "./chart-range-tabs";
-import { ChartFooterReserve } from "./chart-skeleton";
 import { ChartBandOverlay } from "./health-chart/band-overlay";
+import { HealthChartFallback } from "./health-chart/chart-fallback";
 import { HealthChartHeader } from "./health-chart/chart-header";
 import {
   annotationLayers,
@@ -47,21 +44,15 @@ import {
   verticalMarkerLayers,
 } from "./health-chart/chart-layers";
 import { makeTooltipContent } from "./health-chart/chart-tooltip-content";
-import { resolveContextMarks } from "./health-chart/context-marks";
-import {
-  ChartContextRail,
-  ChartCycleSwitch,
-} from "./health-chart/context-rail";
-import {
-  useChartContext,
-  useCyclePhaseChoice,
-} from "./health-chart/context-scope";
+import { ChartContextParts } from "./health-chart/context-rail";
+import { useChartContextMarks } from "./health-chart/context-scope";
 import {
   axisValueFormatters,
   dayFocusFor,
   getTypeLabel,
   makeDayKeyFormatter,
   pointIndexXAxis,
+  valueYAxis,
   resolveAnnotationPositions,
   resolveVerticalMarkerPositions,
 } from "./health-chart/series-math";
@@ -260,18 +251,15 @@ export function HealthChart({
     chartData,
   );
 
-  // What happened around the metric, on a page that asks for it
-  // (`SubPageShell chartContext`). Null on every other chart and whenever
-  // nothing falls in the window, and then nothing below draws.
-  const context = useChartContext(!mini && isAuthenticated);
-  const [showCycle, setShowCycle] = useCyclePhaseChoice();
   // The plot's x range: the margin (8) + the y axis + the axis padding (10)
-  // on the left, margin + padding on the right, as the day footer has it.
+  // on the left, margin + padding on the right.
   const plotInsetLeft = 8 + yAxisWidth + 10;
   const plotInsetRight = 8 + overlays.rightRoom + 10;
-  const contextMarks = resolveContextMarks(context, chartData, {
+  // The page's context marks (`SubPageShell chartContext`); null draws none.
+  const context = useChartContextMarks({
+    enabled: !mini,
+    points: chartData,
     bucket: activeBucket,
-    showCycle,
     plotWidth:
       (containerWidth ?? viewportWidth) - plotInsetLeft - plotInsetRight,
   });
@@ -354,34 +342,16 @@ export function HealthChart({
         </div>
       ) : null}
 
-      {isLoading ? (
-        // A skeleton in the exact box the painted chart takes, so the card
-        // height never jumps when the data lands.
-        <>
-          <Skeleton className={`w-full ${chartHeightClass}`} />
-          {mini ? null : (
-            <ChartFooterReserve
-              dayLinks={dayLinksActive}
-              dataTable={showDataTable}
-            />
-          )}
-        </>
-      ) : isError ? (
-        // A failed read is an error with retry, never "no data in this
-        // range": an outage must not read as "you have no measurements".
-        <ChartErrorState
+      {isLoading || isError || !chartData?.length ? (
+        <HealthChartFallback
+          state={isLoading ? "loading" : isError ? "error" : "empty"}
+          mini={mini}
+          heightClass={chartHeightClass}
+          dayLinks={dayLinksActive}
+          dataTable={showDataTable}
           error={error}
-          title={t("charts.errorTitle")}
-          actionLabel={t("common.retry")}
-          actionContext={title}
-          onAction={() => void refetch()}
-        />
-      ) : !chartData?.length ? (
-        // Only a window with no daily point at all withholds the plot; any
-        // real data, even one day, is drawn (with the sparse caption below).
-        <ChartEmptyState
-          title={t("charts.noDataInRangeTitle")}
-          description={t("charts.noDataInRangeDescription")}
+          title={title}
+          onRetry={() => void refetch()}
         />
       ) : (
         <>
@@ -440,27 +410,22 @@ export function HealthChart({
                     })}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={yAxisWidth}
-                    tickMargin={10}
-                    domain={yDomain}
-                    ticks={yTicks}
-                    tickFormatter={(value) =>
-                      typeof value === "number"
-                        ? formatAxisValue(
-                            useDecimalAxis ? value : Math.round(value),
-                          )
-                        : String(value)
-                    }
+                    {...valueYAxis({
+                      yAxisWidth,
+                      yDomain,
+                      yTicks,
+                      format: (value) =>
+                        formatAxisValue(
+                          useDecimalAxis ? value : Math.round(value),
+                        ),
+                    })}
                     unit={
                       showYAxisUnit
                         ? axisTickUnitSuffix(yAxisUnit ?? unit)
                         : undefined
                     }
                   />
-                  {contextLayers(contextMarks, yDomain)}
+                  {contextLayers(context.marks, yDomain)}
                   {targetZoneLayers(visibleTargetZones, maxPointIndex)}
                   {annotationLayers(annotationPositions, viewportWidth)}
                   {verticalMarkerLayers(verticalMarkerPositions, yDomain)}
@@ -532,15 +497,6 @@ export function HealthChart({
               </p>
             ) : null}
           </div>
-          {contextMarks ? (
-            <ChartContextRail
-              marks={contextMarks}
-              maxIndex={maxPointIndex}
-              insetLeft={plotInsetLeft}
-              insetRight={plotInsetRight}
-              formatDate={tzFmt.date}
-            />
-          ) : null}
           {chartData ? (
             <ChartDayFooter
               links={chartDays}
@@ -549,10 +505,15 @@ export function HealthChart({
               insetRight={plotInsetRight}
             />
           ) : null}
-          {contextMarks?.hasCycle ? (
-            <ChartCycleSwitch
-              checked={showCycle}
-              onCheckedChange={setShowCycle}
+          {context.marks ? (
+            <ChartContextParts
+              marks={context.marks}
+              maxIndex={maxPointIndex}
+              insetLeft={plotInsetLeft}
+              insetRight={plotInsetRight}
+              formatDate={tzFmt.date}
+              showCycle={context.showCycle}
+              onShowCycleChange={context.setShowCycle}
             />
           ) : null}
           {/* The points the chart just drew, as a table, read from the same

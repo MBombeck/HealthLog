@@ -350,11 +350,8 @@ export function HealthKitMetricPage({
   // min / max / median / mean so the numbers and the unit agree. All four are
   // ABSOLUTE values, so they take the offset; an untransformed metric keeps
   // scale 1 / offset 0 → byte-identical.
-  // v1.32.39 — a transformed type converts through `toDisplay`, which rounds
-  // to the transform's own decimals. Hand-rolling `value * scale + offset`
-  // here is what let a converted stat reach the strip unrounded; the raw
-  // scale below is now only ever handed to the chart, which folds it into its
-  // own series and formats at its own precision.
+  // A transformed type converts through `toDisplay` (rounded to the
+  // transform's decimals); the raw scale below only ever goes to the chart.
   const toStripValue = (value: number) =>
     transform
       ? unitDisplay.toDisplay(effectiveType, value)
