@@ -15,6 +15,15 @@ import type { AuthContext } from "./context";
  * that row. Switching into an ADMIN's record therefore confers nothing, and
  * making it confer something would take a deliberate edit here rather than an
  * oversight elsewhere.
+ *
+ * A request that carries a Bearer is refused here even when it also carries
+ * an admin's session cookie, because `getSession()` does not read the cookie
+ * beside a Bearer. That is the decision, not a side effect: the header says
+ * which credential the caller chose, a browser never sends one, and a cookie
+ * beside it is one the native client's shared store kept from an earlier
+ * sign-in. Admitting it would let whatever session that store happens to hold
+ * reach the admin surface under a token client, which is the cross-account
+ * confusion the Bearer-first rule exists to close.
  */
 export async function requireAdmin(): Promise<AuthContext> {
   const sessionData = await getSession();
@@ -41,8 +50,9 @@ export async function requireAdmin(): Promise<AuthContext> {
  * Require a cookie-backed session, refusing Bearer tokens.
  *
  * Cookie-only by the same structural argument as `requireAdmin`: it resolves
- * the session via `getSession()` (which reads only the session cookie) and
- * never falls through to the Bearer branch. The second-factor management
+ * the session via `getSession()` (which reads only the session cookie, and
+ * not even that when a Bearer is present) and never falls through to the
+ * Bearer branch. The second-factor management
  * surfaces (TOTP enroll / confirm / disable / recovery-code regenerate) use
  * this so an API token — even a wildcard one — can never enrol or tear down
  * MFA on the account it belongs to. MFA management is a browser-only action.

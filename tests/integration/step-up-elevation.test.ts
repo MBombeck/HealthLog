@@ -565,7 +565,11 @@ describe("E7 — the cookie flow is unchanged", () => {
       (await mintElevation(PASSWORD)).body.data as { elevation: string }
     ).elevation;
 
+    // A browser request: the cookie and the stray header, no Bearer. (A
+    // request that also carried the token would be the token's request, and
+    // the cookie beside it would not be read at all.)
     await useCookieSession();
+    headerJar.delete("authorization");
     useElevation(elevation);
     expect((await callMfaSetup()).status).toBe(200);
 

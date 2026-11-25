@@ -24,6 +24,7 @@ import {
   resolveServerDefaultTimezone,
 } from "@/lib/tz/resolver";
 import { isOidcOnly } from "@/lib/auth/oidc";
+import { usesTokenTransport } from "@/lib/auth/token-transport";
 
 // One code for a taken username and a taken address, like the one message.
 const TAKEN = { errorCode: "auth.register.taken" };
@@ -253,12 +254,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Username or email already taken", 409, TAKEN);
   }
 
-  // Create session immediately. v1.4.22 W5 reconcile (Sr-H1) —
-  // `createSession` anchors the `hl_onboarding` cookie itself; fresh
-  // users are always pending so the proxy redirects on first
-  // navigation instead of waiting for hydration.
+  // A browser gets its session now (`createSession` anchors `hl_onboarding`;
+  // a fresh user is always pending). The native app signs in afterwards.
   const ua = request.headers.get("user-agent");
-  await createSession(user.id, true, ip, ua);
+  if (!usesTokenTransport(request.headers)) {
+    await createSession(user.id, true, ip, ua);
+  }
 
   // v1.23 — record the registering device silently so the account's first
   // login from this same device does not immediately fire a "new device"
