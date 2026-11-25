@@ -37,6 +37,7 @@ import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
+import { withAppSettingsRowLock } from "@/lib/app-settings-row-lock";
 import { annotate } from "@/lib/logging/context";
 import { getAssistantFlags } from "@/lib/feature-flags";
 import {
@@ -106,21 +107,24 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   }
 
   // Merge onto the existing blob so a partial PATCH leaves untouched keys
-  // intact; the merge drops any non-module key defensively.
-  const existing = await prisma.appSettings.findUnique({
-    where: { id: "singleton" },
-    select: { moduleAvailabilityJson: true },
-  });
-  const merged = mergeAvailabilityPatch(
-    existing?.moduleAvailabilityJson,
-    patch,
-  );
-
-  const settings = await prisma.appSettings.upsert({
-    where: { id: "singleton" },
-    update: { moduleAvailabilityJson: merged },
-    create: { id: "singleton", moduleAvailabilityJson: merged },
-    select: { moduleAvailabilityJson: true },
+  // intact; the merge drops any non-module key defensively. The read and the
+  // write run under the settings row's lock, so a second admin's switch saved
+  // at the same moment is read here instead of written over.
+  const settings = await withAppSettingsRowLock(async (tx) => {
+    const existing = await tx.appSettings.findUnique({
+      where: { id: "singleton" },
+      select: { moduleAvailabilityJson: true },
+    });
+    const merged = mergeAvailabilityPatch(
+      existing?.moduleAvailabilityJson,
+      patch,
+    );
+    return tx.appSettings.upsert({
+      where: { id: "singleton" },
+      update: { moduleAvailabilityJson: merged },
+      create: { id: "singleton", moduleAvailabilityJson: merged },
+      select: { moduleAvailabilityJson: true },
+    });
   });
 
   await auditLog("admin.settings.module-availability.update", {

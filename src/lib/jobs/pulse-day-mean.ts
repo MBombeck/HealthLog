@@ -23,6 +23,8 @@ import type { Job } from "pg-boss";
 
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
+import { withAppSettingsRowLock } from "@/lib/app-settings-row-lock";
 import { withJobLock } from "@/lib/jobs/job-lock";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
@@ -143,16 +145,21 @@ export async function readPulseDayMeanStatus(): Promise<PulseDayMeanStatus> {
   };
 }
 
-async function readStoredRuns(): Promise<PulseDayMeanStoredRuns | null> {
-  const row = await prisma.appSettings.findUnique({
+async function readStoredRuns(
+  db: Pick<Prisma.TransactionClient, "appSettings">,
+): Promise<PulseDayMeanStoredRuns | null> {
+  const row = await db.appSettings.findUnique({
     where: { id: "singleton" },
     select: { pulseDayMeanDryRunJson: true },
   });
   return parseStoredRuns(row?.pulseDayMeanDryRunJson ?? null);
 }
 
-async function writeStoredRuns(runs: PulseDayMeanStoredRuns): Promise<void> {
-  await prisma.appSettings.upsert({
+async function writeStoredRuns(
+  db: Pick<Prisma.TransactionClient, "appSettings">,
+  runs: PulseDayMeanStoredRuns,
+): Promise<void> {
+  await db.appSettings.upsert({
     where: { id: "singleton" },
     create: { id: "singleton", pulseDayMeanDryRunJson: runs },
     update: { pulseDayMeanDryRunJson: runs },
@@ -161,8 +168,12 @@ async function writeStoredRuns(runs: PulseDayMeanStoredRuns): Promise<void> {
 
 /** The only write a dry run makes. The last rebuild stays as it was. */
 export async function writeDryRun(run: PulseDayMeanDryRun): Promise<void> {
-  const stored = await readStoredRuns();
-  await writeStoredRuns({ ...run, rebuild: stored?.rebuild ?? null });
+  // The dry run and the rebuild share one document; each write keeps the
+  // other's half, so the read and the write hold the settings row's lock.
+  await withAppSettingsRowLock(async (tx) => {
+    const stored = await readStoredRuns(tx);
+    await writeStoredRuns(tx, { ...run, rebuild: stored?.rebuild ?? null });
+  });
 }
 
 /**
@@ -173,9 +184,11 @@ export async function writeDryRun(run: PulseDayMeanDryRun): Promise<void> {
 export async function writeRebuild(
   rebuild: PulseDayMeanRebuild | null,
 ): Promise<void> {
-  const stored = await readStoredRuns();
-  if (!stored) return;
-  await writeStoredRuns({ ...stored, rebuild });
+  await withAppSettingsRowLock(async (tx) => {
+    const stored = await readStoredRuns(tx);
+    if (!stored) return;
+    await writeStoredRuns(tx, { ...stored, rebuild });
+  });
 }
 
 // ─── Accounts ─────────────────────────────────────────────

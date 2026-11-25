@@ -6,6 +6,8 @@
  * reads or writes it.
  */
 import { prisma, toJson } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
+import { withAppSettingsRowLock } from "@/lib/app-settings-row-lock";
 import { isOidcConfigured, isOidcOnly } from "@/lib/auth/oidc";
 import { isEmailConfigured } from "@/lib/notifications/senders/email-config";
 
@@ -43,8 +45,10 @@ export function readServerSetupFacts(
   };
 }
 
-async function readRow() {
-  return prisma.appSettings.findUnique({
+async function readRow(
+  db: Pick<Prisma.TransactionClient, "appSettings"> = prisma,
+) {
+  return db.appSettings.findUnique({
     where: { id: SINGLETON },
     select: { serverSetupCompletedAt: true, serverSetupStepsJson: true },
   });
@@ -83,26 +87,30 @@ export async function writeServerSetupStep(
   status: "done" | "skipped",
   now: Date = new Date(),
 ): Promise<void> {
-  const row = await readRow();
-  const steps = applyServerSetupStep(
-    parseServerSetupSteps(row?.serverSetupStepsJson ?? null),
-    id,
-    status,
-  );
-  const completedAt =
-    row?.serverSetupCompletedAt ??
-    (everyServerSetupStepSettled(steps) ? now : null);
-  await prisma.appSettings.upsert({
-    where: { id: SINGLETON },
-    create: {
-      id: SINGLETON,
-      serverSetupStepsJson: toJson(steps),
-      serverSetupCompletedAt: completedAt,
-    },
-    update: {
-      serverSetupStepsJson: toJson(steps),
-      serverSetupCompletedAt: completedAt,
-    },
+  // The steps are one document, read and written back whole, so two steps
+  // settled at the same moment are written under the settings row's lock.
+  await withAppSettingsRowLock(async (tx) => {
+    const row = await readRow(tx);
+    const steps = applyServerSetupStep(
+      parseServerSetupSteps(row?.serverSetupStepsJson ?? null),
+      id,
+      status,
+    );
+    const completedAt =
+      row?.serverSetupCompletedAt ??
+      (everyServerSetupStepSettled(steps) ? now : null);
+    await tx.appSettings.upsert({
+      where: { id: SINGLETON },
+      create: {
+        id: SINGLETON,
+        serverSetupStepsJson: toJson(steps),
+        serverSetupCompletedAt: completedAt,
+      },
+      update: {
+        serverSetupStepsJson: toJson(steps),
+        serverSetupCompletedAt: completedAt,
+      },
+    });
   });
 }
 
