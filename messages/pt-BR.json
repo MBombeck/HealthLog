@@ -3507,6 +3507,7 @@
         "steadyLatestWithin": "Suas leituras costumam ficar em {low} {unit}; sua última leitura, {date}, foi {value} e corresponde.",
         "steadyLatestAbove": "Suas leituras costumam ficar em {low} {unit}; sua última leitura, {date}, foi {value}, acima disso.",
         "steadyLatestBelow": "Suas leituras costumam ficar em {low} {unit}; sua última leitura, {date}, foi {value}, abaixo disso.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Ainda aprendendo sua faixa habitual. Continue registrando por mais alguns dias.",
         "driver": "{note}",
         "loadError": "Não foi possível carregar a sua faixa habitual."
