@@ -13812,6 +13812,10 @@
         "title": "동기화 확인이 필요해요",
         "body": "{integration} 동기화가 멈췄어요. 데이터를 최신으로 유지하려면 다시 연결해 주세요."
       },
+      "sourceQuiet": {
+        "since": "{source}이(가) {date}부터 조용합니다",
+        "sinceYesterday": "{source}이(가) 어제부터 조용합니다"
+      },
       "coachCheckin": {
         "title": "계획을 점검할 때예요",
         "body": "이 계획을 세운 지 일주일쯤 됐어요. 계속할지, 조정할지, 놓아줄지 정해 보세요. 어느 쪽이든 부담 갖지 않아도 돼요.",
@@ -13867,7 +13871,8 @@
       "viewMilestone": "보기",
       "viewPulse": "맥박 보기",
       "viewEcg": "기록 보기",
-      "viewSteps": "걸음 수 보기"
+      "viewSteps": "걸음 수 보기",
+      "openSource": "열기"
     },
     "today": {
       "scoreLabel": "건강 점수",

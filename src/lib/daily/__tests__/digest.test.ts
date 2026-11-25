@@ -670,6 +670,64 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
     expect(sync[0].actions[0].href).toBe("/settings/integrations");
   });
 
+  it("names a quiet source in one line and opens its own card", () => {
+    const d = buildDailyDigest(
+      input({
+        quietSources: [
+          {
+            source: "apple-health",
+            provider: "Apple Health",
+            sinceYesterday: true,
+            date: "15 Jul",
+            href: "/settings/integrations#apple-health",
+          },
+          {
+            source: "oura",
+            provider: "Oura",
+            sinceYesterday: false,
+            date: "12 Jul",
+            href: "/settings/integrations#oura",
+          },
+        ],
+      }),
+      t,
+    );
+    const quiet = d.worthALook.filter((i) => i.kind === "sync_issue");
+    expect(quiet.map((i) => i.title)).toEqual([
+      "Apple Health has been quiet since yesterday",
+      "Oura has been quiet since 12 Jul",
+    ]);
+    expect(quiet.every((i) => i.body === undefined)).toBe(true);
+    expect(quiet[1].actions).toEqual([
+      {
+        labelKey: "daily.action.openSource",
+        intent: "sync.open",
+        href: "/settings/integrations#oura",
+      },
+    ]);
+  });
+
+  it("does not name a quiet source twice when it already needs a reconnect", () => {
+    const d = buildDailyDigest(
+      input({
+        syncIssues: [{ integration: "oura", state: "error_reauth" }],
+        quietSources: [
+          {
+            source: "oura",
+            provider: "Oura",
+            sinceYesterday: true,
+            date: "15 Jul",
+            href: "/settings/integrations#oura",
+          },
+        ],
+      }),
+      t,
+    );
+    const sync = d.worthALook.filter((i) => i.kind === "sync_issue");
+    expect(sync).toHaveLength(1);
+    expect(sync[0].actions[0].intent).toBe("sync.reconnect");
+  });
+
   it("summarises a single preventive-care item with the label", () => {
     const d = buildDailyDigest(
       input({ preventiveDue: [{ label: "Blood panel" }] }),

@@ -52,6 +52,7 @@ import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { runIntegrationWatchdog } from "@/lib/integrations/watchdog";
 import { recordSyncSuccess } from "@/lib/integrations/status";
 import { runSyncStallPass } from "@/lib/sync-stall/notice";
+import { loadQuietSources } from "@/lib/sync-stall/quiet-load";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -371,6 +372,11 @@ describe("an integration the watchdog flagged", () => {
 
     // The longest quiet first; the iPhone waits for tomorrow.
     await runSyncStallPass(T0, prisma());
+    // The Today rail reads the same rule: both sources, before either is told.
+    expect(await loadQuietSources(userId, T0)).toEqual([
+      { source: "oura", since: ouraLast },
+      { source: "apple-health", since: at(T0, -30 * HOUR) },
+    ]);
     expect(stallCalls().map((c) => c.metadata.source)).toEqual(["oura"]);
     expect(stallCalls()[0]!.message).toMatch(/^Oura has sent nothing since/);
     await runSyncStallPass(at(T0, HOUR), prisma());
@@ -403,6 +409,10 @@ describe("an integration the watchdog flagged", () => {
       select: { silentSince: true, ownerNotifiedAt: true },
     });
     expect(row).toEqual({ silentSince: null, ownerNotifiedAt: null });
+    // And the rail lets it go with the flag.
+    expect(
+      (await loadQuietSources(userId, tomorrow)).map((q) => q.source),
+    ).toEqual(["apple-health"]);
   });
 
   it("hands its claims back when every channel failed, and settles when none wanted it", async () => {

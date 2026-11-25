@@ -103,6 +103,10 @@ import type {
 } from "@/lib/daily/today-overview";
 import { nextDoseOpensAt } from "@/lib/daily/today-medications-fact";
 import { translateOrNull } from "@/lib/i18n/translate-code";
+import {
+  loadQuietSources,
+  wordQuietSources,
+} from "@/lib/sync-stall/quiet-load";
 
 /** Integration states that mean "your action is needed to keep data flowing". */
 const SYNC_ISSUE_STATES = ["error_reauth", "parked"] as const;
@@ -595,6 +599,7 @@ export async function loadDailyDigest(
     { milestone, tensionWindow, sameTime, vitals, scoreDays, cycle: cycleRead },
     reactionLanguage,
     syncRows,
+    quietRows,
     dueReminders,
     planRows,
     ecgRow,
@@ -616,6 +621,7 @@ export async function loadDailyDigest(
       select: { integration: true, state: true },
       orderBy: { integration: "asc" },
     }),
+    loadQuietSources(user.id, now).catch(() => []),
     prisma.measurementReminder.findMany({
       // A booked visit's one-shot reminder rides this same engine with
       // `origin: ENCOUNTER`. It is not a checkup and must not appear on a
@@ -955,6 +961,7 @@ export async function loadDailyDigest(
       sleepLastSeenDaysAgo,
       morningRefreshedToday,
       syncIssues,
+      quietSources: wordQuietSources(quietRows, now, user.timezone, locale),
       preventiveDue,
       upcomingVisits,
       coachPlans,

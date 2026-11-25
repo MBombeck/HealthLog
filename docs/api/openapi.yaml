@@ -101094,7 +101094,10 @@ components:
             - tension_window
             - same_time_baseline
             - upcoming_visit
-          description: Closed rail-item kind.
+          description: Closed rail-item kind. `sync_issue` covers a connection that needs a reconnect or a resume (action intent
+            `sync.reconnect`) and, since 1.50, a source that has gone quiet by the SYNC_STALLED rule (one line in
+            `title`, no `body`, action intent `sync.open` with labelKey `daily.action.openSource` and href
+            `/settings/integrations#<source>`).
         itemKey:
           description: Stable dismiss identity, namespaced `<kind>:...`. Present only on the observational kinds (milestone /
             ecg_new_recording / tension_window) — absent on the actionable kinds, which are never dismissible.

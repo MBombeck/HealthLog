@@ -3505,7 +3505,7 @@
     {
       "id": "quietSource",
       "description": "A source that usually delivers daily and has stopped.",
-      "wire": "digest reasons no_new_data, sync_stalled",
+      "wire": "the SYNC_STALLED rule (src/lib/sync-stall/quiet.ts): push, card reason unexpected_silence, rail item sync_issue",
       "terms": {
         "de": {
           "name": "verstummt"
@@ -3546,6 +3546,16 @@
         },
         {
           "key": "notifications.syncStalled.title",
+          "form": "name",
+          "match": "contains"
+        },
+        {
+          "key": "daily.item.sourceQuiet.since",
+          "form": "name",
+          "match": "contains"
+        },
+        {
+          "key": "daily.item.sourceQuiet.sinceYesterday",
           "form": "name",
           "match": "contains"
         }

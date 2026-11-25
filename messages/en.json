@@ -13812,6 +13812,10 @@
         "title": "Sync needs attention",
         "body": "{integration} isn't syncing. Reconnect to keep your data current."
       },
+      "sourceQuiet": {
+        "since": "{source} has been quiet since {date}",
+        "sinceYesterday": "{source} has been quiet since yesterday"
+      },
       "coachCheckin": {
         "title": "Time to check in on a plan",
         "body": "It's been about a week since you set this plan. Keep it, adjust it, or let it go. No pressure either way.",
@@ -13867,7 +13871,8 @@
       "viewMilestone": "View",
       "viewPulse": "View pulse",
       "viewEcg": "View recording",
-      "viewSteps": "View steps"
+      "viewSteps": "View steps",
+      "openSource": "Open"
     },
     "today": {
       "scoreLabel": "Health score",

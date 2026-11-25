@@ -109,7 +109,12 @@ const BUDGET = {
   // and their two score readers sent two to four probes on the same fixture,
   // and a run that sent four failed at 134. The readers of the user's source
   // order now meet in one batched read instead of two.
-  dailyDigest: 131,
+  // 131 → 132 (1.50.0): the rail names a source that has gone quiet, so it
+  // reads the stall stamps (`loadQuietSources`). Both stamp tables, the
+  // integration watches and the iPhones, come back in one statement; a
+  // connection's health is read only when one is stamped, never on this
+  // fixture.
+  dailyDigest: 132,
   // The target cards; their seven-day means come from the slice when a
   // fresh one is cached, here (evicted) from the slice's window aggregate.
   // 22 → 23, health status 59 → 60 (1.49.0): both grade weight and BMI, and

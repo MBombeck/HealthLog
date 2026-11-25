@@ -13812,6 +13812,10 @@
         "title": "Synchronisatie vraagt aandacht",
         "body": "{integration} synchroniseert niet. Maak opnieuw verbinding om je gegevens actueel te houden."
       },
+      "sourceQuiet": {
+        "since": "{source} is stil sinds {date}",
+        "sinceYesterday": "{source} is stil sinds gisteren"
+      },
       "coachCheckin": {
         "title": "Tijd om een plan te evalueren",
         "body": "Het is ongeveer een week geleden dat je dit plan hebt opgesteld. Houd het aan, pas het aan of laat het los. Geen druk, wat je ook kiest.",
@@ -13867,7 +13871,8 @@
       "viewMilestone": "Bekijken",
       "viewPulse": "Hartslag bekijken",
       "viewEcg": "Opname bekijken",
-      "viewSteps": "Stappen bekijken"
+      "viewSteps": "Stappen bekijken",
+      "openSource": "Openen"
     },
     "today": {
       "scoreLabel": "Gezondheidsscore",

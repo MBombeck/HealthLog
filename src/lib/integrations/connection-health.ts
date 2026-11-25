@@ -24,12 +24,14 @@
  * into a bug report: endpoint (leg) names, outcomes, instants and short error
  * codes. Never a message, a token, a value or a user id.
  *
- * Pure: no Prisma, no I/O, type imports only, so the resolver is unit-testable
- * and the types are importable from client code. The loader that gathers the
+ * Pure: no Prisma, no I/O; its one runtime import is the pure stall rule
+ * (`@/lib/sync-stall/cadence`), so the resolver is unit-testable and the
+ * module is importable from client code. The loader that gathers the
  * inputs lives in `./connection-health-load`.
  */
 import type { IntegrationKey } from "./status";
 import type { SyncHealth } from "./sync-verdict";
+import { silenceStands } from "@/lib/sync-stall/cadence";
 
 /** Every connection the health read covers: the polled providers + Apple Health. */
 export type ConnectionKey = IntegrationKey | "apple-health";
@@ -47,6 +49,21 @@ export const CONNECTION_KEYS: readonly ConnectionKey[] = [
   "health-connect-remote",
   "apple-health",
 ];
+
+/** Provider names, the same in every language. */
+export const CONNECTION_LABELS: Record<ConnectionKey, string> = {
+  withings: "Withings",
+  whoop: "WHOOP",
+  "google-health": "Google Health",
+  polar: "Polar",
+  oura: "Oura",
+  strava: "Strava",
+  nightscout: "Nightscout",
+  dawarich: "Dawarich",
+  garmin: "Garmin",
+  "health-connect-remote": "Health Connect folder",
+  "apple-health": "Apple Health",
+};
 
 export const CONNECTION_HEALTH_STATES = [
   "ok",
@@ -313,20 +330,22 @@ export function resolveConnectionHealth(
 
 /**
  * The watchdog flag stands only while no data newer than the silence window
- * has arrived. The watchdog clears it on its next pass; this keeps the read
- * honest in the hour between.
+ * has arrived. The watchdog clears it on its next pass; the stall rule's own
+ * `silenceStands` keeps the read honest in the hour between, the same answer
+ * the Today rail gets.
  */
 function isSilenceStillTrue(
   input: ConnectionHealthInput,
   now: number,
 ): boolean {
-  if (!input.silentSince) return false;
-  const window = input.silenceWindowMs;
+  const silentSince = toMs(input.silentSince);
   const lastData = toMs(input.lastDataAt);
-  if (window != null && lastData != null && now - lastData <= window) {
-    return false;
-  }
-  return true;
+  return silenceStands({
+    silentSince: silentSince === null ? null : new Date(silentSince),
+    lastDataAt: lastData === null ? null : new Date(lastData),
+    floorMs: input.silenceWindowMs ?? null,
+    now: new Date(now),
+  });
 }
 
 function dedupe(values: readonly string[] | undefined): string[] {
