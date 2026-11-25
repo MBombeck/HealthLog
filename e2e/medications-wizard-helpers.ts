@@ -1,5 +1,7 @@
 import { expect, type Page, type Route } from "@playwright/test";
 
+import { settleLocaleSync } from "./setup/locale-sync";
+
 /**
  * v1.5.4 — shared helpers for the modal medication-wizard specs.
  *
@@ -153,6 +155,11 @@ export async function openCreateWizard(page: Page): Promise<void> {
   // navigation makes the dialog render German on first paint. Scoped here
   // rather than in the shared auth state so English-asserting specs keep
   // the default locale.
+  //
+  // A caller that already has a page open (the compliance journey seeds from
+  // /profile first) has an English locale write in flight whose reply would
+  // put the cookie back to "en"; let it land before pinning "de".
+  await settleLocaleSync(page);
   await page.context().addCookies([
     {
       name: "healthlog-locale",

@@ -50,6 +50,7 @@ import { applyOrder, useModuleListPrefs } from "@/lib/module-list-prefs";
 import { LogDaySheet, useLastLoggableDay } from "./log-day-sheet";
 import { NewEpisodeSheet } from "./new-episode-sheet";
 import { EpisodeMenu } from "./episode-menu";
+import { ConditionsNoteCard } from "./conditions-note-card";
 import { IllnessInsightsCard } from "./illness-insights-card";
 import { SymptomsSection } from "@/components/symptoms/symptoms-section";
 import { groupEpisodes } from "./group-episodes";
@@ -474,6 +475,10 @@ export function IllnessView() {
               defined. */}
           <SymptomsSection />
 
+          {/* The chronic conditions written in the medical history, beside
+              the episodes that record them. */}
+          <ConditionsNoteCard />
+
           <EpisodeGroup
             title={t("illness.section.active")}
             parents={grouped.activeParents}
@@ -499,6 +504,7 @@ export function IllnessView() {
       ) : (
         <>
           <SymptomsSection />
+          <ConditionsNoteCard />
           <EmptyState
             icon={<Stethoscope className="size-6" />}
             title={t("illness.empty.title")}

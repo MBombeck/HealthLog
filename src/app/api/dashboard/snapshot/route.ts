@@ -34,6 +34,7 @@ import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { readDashboardSnapshotCached } from "@/lib/dashboard/snapshot-read";
+import { ownRecord } from "@/lib/own-key";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,7 @@ export const GET = apiHandler(async () => {
   const { user } = await requireRecordAuth("read", "record");
   annotate({ action: { name: "dashboard.snapshot" } });
 
-  const timings: Record<string, number> = {};
+  const timings = ownRecord<number>();
   const time = async <T>(
     label: string,
     builder: () => Promise<T>,

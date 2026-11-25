@@ -20,6 +20,7 @@ import type { DoctorReportData } from "@/lib/doctor-report-data";
 import { getMetricStatusMeta } from "@/lib/insights/metric-status-registry";
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import { labUnitText } from "@/lib/labs/dimensionless";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * Fallback units for the headline specialised metric types the generic
@@ -48,7 +49,7 @@ function unitAndBandFor(type: string): {
         : null,
     };
   }
-  return { unit: FALLBACK_UNITS[type] ?? "", referenceBand: null };
+  return { unit: ownValue(FALLBACK_UNITS, type) ?? "", referenceBand: null };
 }
 
 const round = (n: number): number => Math.round(n * 100) / 100;

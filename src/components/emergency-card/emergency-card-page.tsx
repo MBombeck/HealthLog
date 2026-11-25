@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HeartPulse, Loader2, QrCode } from "lucide-react";
 
@@ -11,7 +10,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { FieldGroup } from "@/components/ui/field-group";
-import { InlineAction } from "@/components/ui/inline-action";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { PageHeader } from "@/components/ui/page-header";
@@ -23,6 +21,7 @@ import {
 } from "@/components/settings/security-section/use-recent-proof";
 import { apiDelete, apiFetchRaw, apiGet, apiPost } from "@/lib/api/api-fetch";
 import type { EmergencyCardView } from "@/lib/emergency-card/card-data";
+import type { EmergencyCardTargets } from "@/lib/emergency-card/edit-targets";
 import {
   DEFAULT_LINK_FIELDS,
   EMERGENCY_CARD_FIELDS,
@@ -37,9 +36,9 @@ import { AppleWalletCard } from "./apple-wallet-card";
 import { EmergencyCardSheet } from "./emergency-card-sheet";
 
 /**
- * The owner's emergency card: the card as it reads, the ways to carry
- * it (an offline copy, a wallet card), and the QR link a first responder can
- * scan.
+ * The owner's emergency card: the card as it reads, each line opening the
+ * surface that owns it, the ways to carry it (an offline copy, a wallet
+ * card), and the QR link a first responder can scan.
  *
  * The link shows only the items ticked here, is frozen when it is made, can
  * be given an end, is revoked with one confirm, and every opening lands on
@@ -78,7 +77,10 @@ export function EmergencyCardPage() {
   const { t, locale } = useTranslations();
   const card = useQuery({
     queryKey: queryKeys.emergencyCard(),
-    queryFn: () => apiGet<{ card: EmergencyCardView }>("/api/emergency-card"),
+    queryFn: () =>
+      apiGet<{ card: EmergencyCardView; targets: EmergencyCardTargets }>(
+        "/api/emergency-card",
+      ),
   });
   const [busy, setBusy] = useState<"offline" | "wallet" | null>(null);
   const [downloadError, setDownloadError] = useState(false);
@@ -146,16 +148,13 @@ export function EmergencyCardPage() {
                 <Loader2 className="text-muted-foreground size-5 animate-spin motion-reduce:animate-none" />
               </div>
             ) : (
-              <EmergencyCardSheet view={card.data.card} t={t} locale={locale} />
+              <EmergencyCardSheet
+                view={card.data.card}
+                targets={card.data.targets}
+                t={t}
+                locale={locale}
+              />
             )}
-            <p className="text-sm">
-              {t("emergencyCard.page.editHint")}{" "}
-              <InlineAction size="sm" asChild>
-                <Link href="/settings/anamnesis#emergency">
-                  {t("emergencyCard.page.editLink")}
-                </Link>
-              </InlineAction>
-            </p>
             <p className="text-muted-foreground text-sm">
               {t("emergencyCard.page.offlineHint")}
             </p>

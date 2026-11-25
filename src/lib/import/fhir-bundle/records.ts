@@ -41,6 +41,7 @@ import {
   str,
   type Json,
 } from "./fields";
+import { ownValue } from "@/lib/own-key";
 
 export const RECORD_RESOURCE_TYPES = [
   "Condition",
@@ -298,14 +299,14 @@ const ENCOUNTER_CLASS: Record<string, EncounterKind> = {
 };
 
 function buildEncounter(r: Json, tz: string): Built | { skip: string } {
-  const status = ENCOUNTER_STATUS[statusCode(r.status) ?? ""];
+  const status = ownValue(ENCOUNTER_STATUS, statusCode(r.status) ?? "");
   if (!status) return { skip: "not_a_visit" };
   const occurredAt = firstInstant(tz, obj(r.period)?.start, obj(r.period)?.end);
   if (!occurredAt) return { skip: "no_date" };
   const classCode = str(obj(r.class)?.code, 16)?.toUpperCase() ?? "";
   const reason =
     conceptText(arr(r.reasonCode)[0], 500) ?? conceptText(arr(r.type)[0], 500);
-  const kind = ENCOUNTER_CLASS[classCode] ?? "OTHER";
+  const kind = ownValue(ENCOUNTER_CLASS, classCode) ?? "OTHER";
   return {
     fallback: `${occurredAt.toISOString()}|${reason ?? ""}`,
     same: async (userId) =>

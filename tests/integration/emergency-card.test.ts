@@ -140,10 +140,18 @@ describe("emergency card", () => {
 
     const own = await call("", "GET");
     expect(own.status).toBe(200);
-    const card = (await own.json()).data.card;
+    const { card, targets } = (await own.json()).data;
     expect(card.bloodType).toBe("O_NEG");
     expect(card.allergies[0]).toMatchObject({ substance: "Penicillin" });
     expect(card.medications[0]).toMatchObject({ name: "Levothyroxine" });
+    // The owner's read says where each line is edited: the medication on
+    // its own page, the allergy and the emergency details in the history.
+    const medication = await db().medication.findFirstOrThrow({
+      where: { userId: owner.id },
+    });
+    expect(targets.medications).toEqual([`/medications/${medication.id}`]);
+    expect(targets.fields.ALLERGIES).toBe("/settings/anamnesis#allergies");
+    expect(targets.fields.BLOOD_TYPE).toBe("/settings/anamnesis#emergency");
 
     const minted = await call("link", "POST", {
       fields: ["BLOOD_TYPE", "ALLERGIES"],
@@ -162,6 +170,9 @@ describe("emergency card", () => {
     expect(read.view.contacts).toBeNull();
     expect(read.view.note).toBeNull();
     expect(read.view.medications).toBeNull();
+    // The link's read carries no record ids and no edit targets.
+    expect(JSON.stringify(read)).not.toContain(medication.id);
+    expect(read).not.toHaveProperty("targets");
 
     const row = await db().emergencyCardLink.findFirstOrThrow({
       where: { userId: owner.id },

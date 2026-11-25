@@ -23,6 +23,7 @@ import {
 } from "./analytics/sleep-night";
 import { convertGlucose, type GlucoseUnit } from "./glucose";
 import type { SleepStage } from "@/generated/prisma/client";
+import { ownValue } from "@/lib/own-key";
 
 export interface ExportableRecord {
   [key: string]: unknown;
@@ -63,7 +64,9 @@ export function toCSV(
   const headerLine = headerLabels
     ? headers
         .map((h) =>
-          escapeCsvCell(neutraliseFormulaPrefix(headerLabels[h] ?? h)),
+          escapeCsvCell(
+            neutraliseFormulaPrefix(ownValue(headerLabels, h) ?? h),
+          ),
         )
         .join(",")
     : headers.map(escapeCsvCell).join(",");
@@ -71,7 +74,7 @@ export function toCSV(
 
   for (const record of records) {
     const values = headers.map((h) => {
-      const val = record[h];
+      const val = ownValue(record, h);
       if (val === null || val === undefined) return "";
       if (val instanceof Date) return escapeCsvCell(val.toISOString());
       // Only genuine TEXT cells get the formula-prefix guard; numbers /

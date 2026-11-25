@@ -59,6 +59,7 @@ import {
   patientRef,
 } from "@/lib/fhir/resources/common";
 import type { ReportGate } from "@/lib/doctor-report/selection-gate";
+import { ownValue } from "@/lib/own-key";
 
 // ── date parameter ──────────────────────────────────────────────────────
 
@@ -215,8 +216,10 @@ export function parseCodeParams(
         for (const [ctx, map] of Object.entries(GLUCOSE_LOINC)) {
           if (map.loinc !== code) continue;
           filter.types.add("BLOOD_GLUCOSE");
+          const context = ownValue(GLUCOSE_CONTEXT_OF, ctx);
+          if (!context) continue;
           glucoseContexts ??= new Set();
-          glucoseContexts.add(GLUCOSE_CONTEXT_OF[ctx]);
+          glucoseContexts.add(context);
         }
       }
       for (const [type, mapping] of Object.entries(MEASUREMENT_LOINC)) {

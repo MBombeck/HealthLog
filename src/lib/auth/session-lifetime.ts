@@ -24,6 +24,7 @@
  * and the boot log says so once, so a typo can never quietly turn the limit
  * off.
  */
+import { ownValue } from "@/lib/own-key";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -62,7 +63,7 @@ export function readDays(
   setting: DaysSetting,
   env: Record<string, string | undefined> = process.env,
 ): number {
-  const raw = env[setting.name]?.trim();
+  const raw = ownValue(env, setting.name)?.trim();
   if (!raw) return setting.fallback;
   const days = /^\d+$/.test(raw) ? Number(raw) : Number.NaN;
   if (Number.isSafeInteger(days) && days >= setting.min && days <= setting.max)

@@ -29,6 +29,8 @@ import { MCP_PROMPTS } from "./prompts";
 import { resolveBaseOrigin } from "./oauth/config";
 import { advertiseToolSchemasAs2020 } from "./schema-dialect";
 import { toolFailure } from "./tool-failure";
+import { annotate } from "@/lib/logging/context";
+import { withoutModelBoundExclusions } from "@/lib/ai/model-bound-data";
 
 export const MCP_SERVER_NAME = "healthlog";
 export const MCP_SERVER_VERSION = "1.0.0";
@@ -50,6 +52,75 @@ export const MCP_SERVER_INSTRUCTIONS = [
   "Resource templates give per-item addresses: healthlog://metric/{type}, healthlog://lab/{analyte}, healthlog://medication/{id}, healthlog://nutrient/{code}, healthlog://report/doctor-visit/{window}; argument completion lists only what this user actually has.",
   "Present data and context only — never a diagnosis, clinical verdict, risk score, or treatment change. Any write requires an explicit confirm step and is append-only.",
 ].join(" ");
+
+/** What an exit answers when the whole payload was an excluded kind. */
+const EXCLUDED_MISS = { present: false, reason: "not_available" } as const;
+
+/**
+ * The last step before a read leaves for the client: the data kinds no model
+ * or external tool receives (`model-bound-data.ts`) are taken out here, on
+ * every read tool, resource and template, whatever the reader did. The
+ * readers leave them out already; a drop here is a reader that did not, and
+ * the wide event names the surface.
+ */
+function forExternalTool(
+  surface: string,
+  payload: unknown,
+): { value: unknown; whole: boolean } {
+  const { value, dropped } = withoutModelBoundExclusions(payload);
+  if (dropped > 0) {
+    annotate({
+      action: { name: "mcp.excluded_data.dropped" },
+      meta: { surface, dropped },
+    });
+  }
+  return value === undefined
+    ? { value: EXCLUDED_MISS, whole: true }
+    : { value, whole: false };
+}
+
+/**
+ * One tool call on the wire: run it, put a read's answer through the exit
+ * filter, and wrap the result the way the SDK expects.
+ */
+async function runTool(
+  ctx: McpAuthContext,
+  tool: McpToolDefinition,
+  reads: boolean,
+  args: Record<string, unknown>,
+) {
+  let result: unknown;
+  try {
+    result = await tool.run(ctx, args ?? {});
+  } catch (error) {
+    return toolFailure(tool.name, error);
+  }
+  // A write tool answers with what the client itself sent; a read tool's
+  // answer passes the exit filter.
+  if (reads) {
+    const filtered = forExternalTool(tool.name, result);
+    if (filtered.whole) {
+      return {
+        isError: true,
+        content: [
+          { type: "text" as const, text: JSON.stringify(filtered.value) },
+        ],
+      };
+    }
+    result = filtered.value;
+  }
+  const content = [{ type: "text" as const, text: JSON.stringify(result) }];
+  // When the tool declares an outputSchema (search / fetch), also return the
+  // object as `structuredContent` so ChatGPT + the model can read the typed
+  // shape; the JSON-in-`content` keeps backwards compatibility.
+  if (tool.outputShape) {
+    return {
+      content,
+      structuredContent: result as Record<string, unknown>,
+    };
+  }
+  return { content };
+}
 
 /** Server icons (SEP-973) — origin-relative app assets the host fetches. */
 function serverIcons(): Array<{
@@ -88,7 +159,10 @@ export function createMcpServer(ctx: McpAuthContext): McpServer {
   // Register one tool definition. Shared by the read registry and the
   // write-scoped registry so the wire shape can never fork between them.
   const registeredTools = new Map<string, McpToolDefinition>();
-  const registerTool = (tool: McpToolDefinition) => {
+  const registerTool = (
+    tool: McpToolDefinition,
+    { reads }: { reads: boolean },
+  ) => {
     registeredTools.set(tool.name, tool);
     server.registerTool(
       tool.name,
@@ -103,32 +177,12 @@ export function createMcpServer(ctx: McpAuthContext): McpServer {
         annotations: tool.annotations,
         ...(tool.outputShape ? { outputSchema: tool.outputShape } : {}),
       },
-      async (args: Record<string, unknown>) => {
-        let result: unknown;
-        try {
-          result = await tool.run(ctx, args ?? {});
-        } catch (error) {
-          return toolFailure(tool.name, error);
-        }
-        const content = [
-          { type: "text" as const, text: JSON.stringify(result) },
-        ];
-        // When the tool declares an outputSchema (search / fetch), also return
-        // the object as `structuredContent` so ChatGPT + the model can read the
-        // typed shape; the JSON-in-`content` keeps backwards compatibility.
-        if (tool.outputShape) {
-          return {
-            content,
-            structuredContent: result as Record<string, unknown>,
-          };
-        }
-        return { content };
-      },
+      (args: Record<string, unknown>) => runTool(ctx, tool, reads, args),
     );
   };
 
   for (const tool of MCP_TOOLS) {
-    registerTool(tool);
+    registerTool(tool, { reads: true });
   }
 
   // Write tools are advertised ONLY to a write-scoped session. A read-only
@@ -136,7 +190,7 @@ export function createMcpServer(ctx: McpAuthContext): McpServer {
   // read-only posture is structural, not a runtime flag a tool could flip.
   if (ctx.canWrite) {
     for (const tool of MCP_WRITE_TOOLS) {
-      registerTool(tool);
+      registerTool(tool, { reads: false });
     }
   }
 
@@ -181,7 +235,10 @@ export function createMcpServer(ctx: McpAuthContext): McpServer {
         icons: resourceIcons,
       },
       async (uri: URL) => {
-        const data = await resource.read(ctx);
+        const data = forExternalTool(
+          resource.name,
+          await resource.read(ctx),
+        ).value;
         return {
           contents: [
             {
@@ -236,7 +293,10 @@ export function createMcpServer(ctx: McpAuthContext): McpServer {
         icons: resourceIcons,
       },
       async (uri: URL, variables) => {
-        const data = await template.read(ctx, variables);
+        const data = forExternalTool(
+          template.name,
+          await template.read(ctx, variables),
+        ).value;
         return {
           contents: [
             {

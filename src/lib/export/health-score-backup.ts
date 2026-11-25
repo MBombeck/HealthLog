@@ -75,11 +75,11 @@ function readPillarScores(value: Prisma.JsonValue): Record<string, number> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return {};
   }
-  const out: Record<string, number> = {};
-  for (const [key, entry] of Object.entries(value)) {
-    if (typeof entry === "number") out[key] = entry;
-  }
-  return out;
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (pair): pair is [string, number] => typeof pair[1] === "number",
+    ),
+  );
 }
 
 /**

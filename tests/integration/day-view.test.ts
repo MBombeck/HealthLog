@@ -1627,6 +1627,90 @@ describe("scores", () => {
     ]);
   });
 
+  it("gives the model a health score without the questionnaire pillar", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("scores-wellbeing");
+    // Ten days scored on sleep and wellbeing, then one on wellbeing alone.
+    for (let i = 10; i >= 1; i -= 1) {
+      await db.healthScoreRecord.create({
+        data: {
+          userId: owner.id,
+          dayKey: shift(DAY, -i),
+          timezone: "Europe/Berlin",
+          composite: 55,
+          band: "yellow",
+          scoreVersion: 1,
+          composition: ["SLEEP", "WELLBEING"],
+          pillarScores: { SLEEP: 80, WELLBEING: 30 },
+          inputFingerprint: "b".repeat(64),
+        },
+      });
+    }
+    await db.healthScoreRecord.create({
+      data: {
+        userId: owner.id,
+        dayKey: DAY,
+        timezone: "Europe/Berlin",
+        composite: 57,
+        band: "yellow",
+        scoreVersion: 1,
+        composition: ["SLEEP", "WELLBEING"],
+        pillarScores: { SLEEP: 83, WELLBEING: 31 },
+        inputFingerprint: "c".repeat(64),
+      },
+    });
+    const onlyWellbeing = shift(DAY, 1);
+    await db.healthScoreRecord.create({
+      data: {
+        userId: owner.id,
+        dayKey: onlyWellbeing,
+        timezone: "Europe/Berlin",
+        composite: 31,
+        band: "red",
+        scoreVersion: 1,
+        composition: ["WELLBEING"],
+        pillarScores: { WELLBEING: 31 },
+        inputFingerprint: "d".repeat(64),
+      },
+    });
+
+    // The person sees the score as it was shown.
+    await signIn(owner.id);
+    const day = await json<Day>(await getDay(DAY));
+    expect(day.scores.find((s) => s.key === "healthScore")).toMatchObject({
+      value: 57,
+    });
+
+    // The model reads it, and its usual range, from the other pillars.
+    const { readDayForTool } = await import("@/lib/ai/coach/tools/day-read");
+    const { UNBOUNDED_REACH } = await import("@/lib/ai/coach/history-reach");
+    const now = new Date(`${shift(DAY, 2)}T12:00:00.000Z`);
+    const result = await readDayForTool({
+      userId: owner.id,
+      date: DAY,
+      reach: UNBOUNDED_REACH,
+      now,
+    });
+    expect(result.present).toBe(true);
+    if (!result.present) return;
+    expect(result.data.scores).toEqual([
+      { score: "healthScore", value: 83, max: 100, band: expect.anything() },
+    ]);
+    // The range comes from the recomposed days (80), not the shown ones (55).
+    const band = result.data.scores[0]!.band!;
+    expect(band.n).toBe(10);
+    expect(band.lo).toBeGreaterThanOrEqual(75);
+
+    // A day scored on the questionnaires alone has no score for a model.
+    const alone = await readDayForTool({
+      userId: owner.id,
+      date: onlyWellbeing,
+      reach: UNBOUNDED_REACH,
+      now,
+    });
+    expect(alone).toEqual({ present: false, reason: "no_data" });
+  });
+
   it("measures what the scores add to the day", async () => {
     const owner = await makeUser("scores-cost");
     await seedScores(owner.id);
