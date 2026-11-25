@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 
-import { getEvent } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { stampDeviceLastSeen } from "@/lib/auth/device-last-seen";
 import {
@@ -14,6 +14,7 @@ import {
   type WriteMeterOptions,
 } from "@/lib/auth/write-meter";
 import { getSession } from "@/lib/auth/session";
+import { refuseCookieIdentityConflict } from "@/lib/auth/cookie-identity-conflict";
 import { AUTH_ERROR_CODES, HttpError } from "@/lib/api-errors";
 
 import { readActingCarrier, refuseUndeclaredMode } from "./acting";
@@ -26,9 +27,11 @@ import {
 /**
  * Require an authenticated request. Throws HttpError(401) / HttpError(403) on failure.
  *
- * Auth precedence (cookie-first, never both):
- *   1. Valid session cookie → cookie path (existing behaviour, requiredPermission ignored).
- *   2. No cookie + `Authorization: Bearer hlk_<...>` → API token path.
+ * Auth precedence (the Bearer decides, never both):
+ *   1. `Authorization: Bearer hlk_<...>` → API token path, with the token's
+ *      scope. A session cookie on the same request is ignored when it names
+ *      the same account, and refused (401) when it names another one.
+ *   2. No Bearer + valid session cookie → cookie path (requiredPermission ignored).
  *   3. Neither → 401.
  *
  * And it REFUSES to run while the request is acting on another
@@ -81,7 +84,29 @@ export async function requireAuth(
 export async function authenticateCaller(
   requiredPermission?: string,
 ): Promise<AuthContext> {
-  // 1. Session cookie path — unchanged.
+  // 1. Bearer-token path. It comes first because a cookie can arrive beside a
+  // Bearer without the caller meaning it to: the native client keeps every
+  // cookie it is ever sent in a shared store, so a session from an earlier
+  // sign-in, even another account's, rides along with the current token. The
+  // credential the client chose to present is the header; it decides.
+  //
+  // `headers()` is only valid inside a Next.js request scope. Outside one
+  // (e.g. during direct unit tests of legacy routes that pre-date Bearer auth)
+  // we treat the absence of a header context as "no Bearer present" and fall
+  // through to the cookie path.
+  let authHeader: string | null = null;
+  try {
+    const headerList = await headers();
+    authHeader = headerList.get("authorization");
+  } catch {
+    authHeader = null;
+  }
+  if (authHeader?.startsWith("Bearer ")) {
+    return await authenticateBearer(authHeader.slice(7), requiredPermission);
+  }
+
+  // 2. Session cookie path. `getSession()` itself answers null whenever a
+  // Bearer is present, so the two branches cannot both be taken.
   const sessionData = await getSession();
   if (sessionData) {
     const evt = getEvent();
@@ -93,22 +118,6 @@ export async function authenticateCaller(
       });
     }
     return { ...sessionData, authMethod: "cookie" };
-  }
-
-  // 2. Bearer-token path.
-  // `headers()` is only valid inside a Next.js request scope. Outside one
-  // (e.g. during direct unit tests of legacy routes that pre-date Bearer auth)
-  // we treat the absence of a header context as "no Bearer present" and fall
-  // through to the unauthenticated case below.
-  let authHeader: string | null = null;
-  try {
-    const headerList = await headers();
-    authHeader = headerList.get("authorization");
-  } catch {
-    authHeader = null;
-  }
-  if (authHeader?.startsWith("Bearer ")) {
-    return await authenticateBearer(authHeader.slice(7), requiredPermission);
   }
 
   // 3. No credentials.
@@ -170,6 +179,24 @@ export async function authenticateBearer(
   }
 
   const { user, tokenId, expiresAt, permissions } = resolution;
+
+  // Two identities on one request: the token names one account and a session
+  // cookie beside it names another. Neither is chosen. The cookie's session
+  // is ended and expired on this response, so the client's next attempt
+  // carries the token alone, and this one answers 401. Checked before the
+  // wide event learns a user, so the refusal carries no account on it.
+  //
+  // `auth.token.invalid` rather than a code of its own: every client already
+  // answers it by discarding the credential and signing in again, which is
+  // the recovery wanted, and a build that predates this check knows it.
+  if (await refuseCookieIdentityConflict(user.id)) {
+    annotate({ action: { name: "auth.identity.conflict" } });
+    throw new HttpError(
+      401,
+      "Conflicting credentials",
+      AUTH_ERROR_CODES.invalid,
+    );
+  }
 
   // H1 — audience binding at the resource server. An MCP-audience token
   // (`health:read`, or `health:read health:write`) is bound to the `/mcp`

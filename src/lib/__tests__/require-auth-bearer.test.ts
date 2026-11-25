@@ -65,6 +65,18 @@ function setBearerHeader(value: string | null): void {
   );
 }
 
+/** Arm the mocked token lookup with one token row, owned by FAKE_USER. */
+function armTokenRow(row: {
+  id: string;
+  userId: string;
+  permissions: string[];
+  revoked: boolean;
+  expiresAt: Date | null;
+}): void {
+  vi.mocked(prisma.apiToken.findUnique).mockResolvedValue(row as never);
+  vi.mocked(prisma.user.findUnique).mockResolvedValue(FAKE_USER as never);
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(hashToken).mockReturnValue(FAKE_HASH);
@@ -78,14 +90,13 @@ describe("requireAuth — Bearer token path", () => {
     setBearerHeader(`Bearer ${RAW_TOKEN}`);
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+    armTokenRow({
       id: "token-1",
       userId: "user-1",
       permissions: ["*"],
       revoked: false,
       expiresAt,
-    } as never);
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(FAKE_USER as never);
+    });
 
     const ctx = await requireAuth();
 
@@ -379,22 +390,42 @@ describe("requireAuth — MCP-audience tokens have no REST reach", () => {
 });
 
 describe("requireAuth — cookie path remains intact", () => {
-  it("returns the session payload without consulting the Bearer header", async () => {
+  it("returns the session payload when no Bearer header is present", async () => {
     const cookieSession = {
       session: { id: "sess-1", expiresAt: new Date(Date.now() + 3600_000) },
       user: { ...FAKE_USER, role: "USER" as const },
     };
     vi.mocked(getSession).mockResolvedValue(cookieSession as never);
-    // Even if a Bearer header is present, the cookie wins (existing behaviour).
-    setBearerHeader(`Bearer ${RAW_TOKEN}`);
+    setBearerHeader(null);
 
     const ctx = await requireAuth("medication:ingest");
 
     // The cookie path carries the session payload plus the derived transport.
     expect(ctx).toEqual({ ...cookieSession, authMethod: "cookie" });
-    // Cookie short-circuits before any token logic runs.
     expect(prisma.apiToken.findUnique).not.toHaveBeenCalled();
     expect(hashToken).not.toHaveBeenCalled();
     expect(auditLog).not.toHaveBeenCalled();
+  });
+
+  it("lets a Bearer header decide over a cookie session", async () => {
+    // The cookie path must not be consulted at all: the Bearer is the
+    // credential the caller chose.
+    vi.mocked(getSession).mockImplementation(async () => {
+      throw new Error("the cookie session was consulted beside a Bearer");
+    });
+    setBearerHeader(`Bearer ${RAW_TOKEN}`);
+    armTokenRow({
+      id: "token-1",
+      userId: "user-1",
+      permissions: ["*"],
+      revoked: false,
+      expiresAt: null,
+    });
+
+    const ctx = await requireAuth();
+
+    expect(ctx.authMethod).toBe("bearer");
+    expect(ctx.user.id).toBe("user-1");
+    expect(getSession).not.toHaveBeenCalled();
   });
 });
