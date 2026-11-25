@@ -249,6 +249,8 @@ export const DATA_ROUTES: Readonly<Record<string, string>> = {
     "Baseline drift, computed over core vitals.",
   "src/app/api/insights/presence/route.ts":
     "Which Insights pages have data: counts and flags, no model text.",
+  "src/app/api/insights/context/route.ts":
+    "Medication changes, illness episodes and cycle phases for chart marks, read from the timeline lanes; no model text.",
   "src/app/api/insights/pulse/intraday/route.ts":
     "The day's pulse shape, a core vital.",
   "src/app/api/insights/patterns/route.ts": "Stored correlation statistics.",

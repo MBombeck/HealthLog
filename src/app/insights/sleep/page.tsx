@@ -84,6 +84,7 @@ export default function InsightsSchlafPage() {
       title={t("insights.sleep.title")}
       description={t("insights.sleep.description")}
       explainerMetric="sleep"
+      chartContext
       coachLaunch
       diversityNudge={
         <MeasurementDiversityNudge

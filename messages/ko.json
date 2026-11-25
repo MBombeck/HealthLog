@@ -16363,6 +16363,21 @@
     "expiryPushTitle": "치료 과정 만료 예정",
     "expiryPushBody": "{title}: {date}까지 유효, {count, plural, other {#회}} 남음."
   },
+  "chartContext": {
+    "listLabel": "이 기간의 약물과 질병",
+    "start": "{name} 복용 시작",
+    "startDose": "{name} 복용 시작({dose})",
+    "startEstimated": "{name}: 첫 기록된 복용",
+    "stop": "{name} 복용 중단",
+    "doseChange": "{name}: 용량 {dose}(으)로 변경",
+    "doseChangeBare": "{name}: 용량 변경",
+    "pause": "{name} 일시 중지",
+    "resume": "{name} 복용 재개",
+    "illness": "{label}, {end}까지",
+    "illnessOpen": "{label}, 진행 중",
+    "open": "열기",
+    "cyclePhases": "주기 단계"
+  },
   "adminLiveActivityStart": {
     "switchOff": "약에 실시간 현황이 켜져 있지만 PUSH_RELAY_LIVE_ACTIVITY가 꺼져 있어 시작되지 않습니다.",
     "noConsent": "약에 실시간 현황이 켜져 있지만 iPhone이 릴레이를 통한 허용을 하지 않았습니다.",

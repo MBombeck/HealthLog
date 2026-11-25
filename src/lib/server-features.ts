@@ -43,6 +43,7 @@ export const SERVER_FEATURES = [
   "notifications.sync-stalled",
   "insights.same-time-daily-total",
   "push.live-activity-token-state",
+  "insights.chart-context",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -121,4 +122,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "SAME_TIME_BASELINE on GET /api/insights/derived carries mode: hourly is the hour-by-hour comparison, daily_total compares today's running total from a once-a-day source with the usual full day (dayRangeReached not_yet, within or above; gated reasons learning_usual_total and no_total_today).",
   "push.live-activity-token-state":
     "push.device on /api/auth/me and in the POST /api/devices answer carries liveActivityStartToken (the server holds a push-to-start token the relay still takes) and liveActivityPushToken (it holds the legacy Live Activity push token of the direct path), booleans only, so the app re-sends a token only when the server lacks it.",
+  "insights.chart-context":
+    "GET /api/insights/context returns the marks a metric chart draws: medications[] (start, stop, doseChange, pause, resume with date, name, dose, estimated, href), illnesses[] (acute episodes, start, end, label, href) and cyclePhases[] (phase, start, end inclusive), read from the timeline lanes, each empty when its module is off or its section not shared; optional from/to cut the window.",
 };

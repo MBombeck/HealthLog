@@ -23,6 +23,7 @@ export default function InsightsRestingHrPage() {
       statusMetric="RESTING_HEART_RATE"
       insightMetric="RESTING_HEART_RATE"
       chartKey="restingHr"
+      chartContext
       i18nPrefix="insights.restingHr"
       explainerMetric="restingHr"
       color="var(--chart-3)"

@@ -21,6 +21,7 @@ import { authKeys } from "./auth";
 import { coachKeys } from "./coach";
 import { familyHistoryKeys } from "./family-history";
 import { customMetrics } from "./custom-metrics";
+import { chartContextKeys } from "./chart-context";
 import { cycleKeys } from "./cycle";
 import { dailyKeys } from "./daily";
 import { dashboardKeys } from "./dashboard";
@@ -67,6 +68,7 @@ export const queryKeys = {
   ...provenanceKeys,
   ...settingsKeys,
   ...cycleKeys,
+  ...chartContextKeys,
   ...measurementReminderKeys,
   ...labKeys,
   ...illnessKeys,

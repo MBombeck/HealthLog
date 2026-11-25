@@ -1210,6 +1210,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "record",
     why: "The record over the years: spans and points from every section plus value series. Read-only, scoped to the resolved user, module-gated on the record's own `timeline` switch.",
   },
+  "app/api/insights/context/route.ts": {
+    domain: "record",
+    why: "The marks a metric chart draws: medication changes, illness episodes and cycle phases, read through the timeline's lane readers, each lane only when its module is on and its section is visible to the grant. Read-only, scoped to the resolved user, no AI-written text.",
+  },
   "app/api/timeline/readiness/route.ts": {
     domain: "record",
     why: "Counts per timeline lane with an in-app link per gap. Counts only, no record content; scoped to the resolved user and module-gated like the timeline.",
@@ -2647,8 +2651,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * Reading a lab report's values by rule, with no model (`lab-values`), joins
  * the record list and the guardian list. 352 -> 354.
+ *
+ * The context marks on metric charts (`insights/context`) join the record
+ * list. 354 -> 355.
  */
-const FROZEN_ENTRY_COUNT = 354;
+const FROZEN_ENTRY_COUNT = 355;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

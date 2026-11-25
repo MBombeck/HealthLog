@@ -16363,6 +16363,21 @@
     "expiryPushTitle": "Série de soins bientôt expirée",
     "expiryPushBody": "{title} : valable jusqu’au {date}, {count, plural, one {# séance restante} other {# séances restantes}}."
   },
+  "chartContext": {
+    "listLabel": "Médicaments et maladies sur cette période",
+    "start": "{name} : début",
+    "startDose": "{name} : début à {dose}",
+    "startEstimated": "{name} : première prise enregistrée",
+    "stop": "{name} : arrêt",
+    "doseChange": "{name} : dose passée à {dose}",
+    "doseChangeBare": "{name} : dose modifiée",
+    "pause": "{name} : en pause",
+    "resume": "{name} : reprise",
+    "illness": "{label}, jusqu’au {end}",
+    "illnessOpen": "{label}, en cours",
+    "open": "Ouvrir",
+    "cyclePhases": "Phases du cycle"
+  },
   "adminLiveActivityStart": {
     "switchOff": "Un médicament a une Activité en direct, mais PUSH_RELAY_LIVE_ACTIVITY est désactivé : aucune ne démarre.",
     "noConsent": "Un médicament a une Activité en direct, mais votre iPhone ne l'a pas autorisée via le relais.",

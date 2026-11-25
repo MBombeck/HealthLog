@@ -61,6 +61,7 @@ import { emergencyCardPaths } from "./emergency-card";
 import { walletWebServicePaths } from "./wallet-web-service";
 import { reportSchedulePaths } from "./report-schedule";
 import { dashboardWidgetPaths } from "./dashboard";
+import { chartContextPaths } from "./chart-context";
 import { dayPaths } from "./day";
 import { searchPaths } from "./search";
 import { biomarkerPaths } from "./biomarkers";
@@ -196,6 +197,9 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // therefore has to be the shared refusal sentence rather than the neighbouring
   // module's local wording (appended, spread order is load-bearing).
   ...recordSettingsPaths,
+  // The marks a metric chart draws over its line (appended, spread order is
+  // load-bearing).
+  ...chartContextPaths,
   // Routes that existed for releases without ever reaching the registry, so
   // `openapi:check` saw no drift and reported nothing: it compares the
   // registry against the committed YAML and has never compared the routes on
