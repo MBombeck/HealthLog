@@ -6,12 +6,13 @@ import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import type { SleepStage } from "@/generated/prisma/client";
 
-import type { SeriesRead } from "./kinds";
+import type { SeriesRead, SeriesShared } from "./kinds";
 
 export async function readSleepSeries(
   userId: string,
   since: Date,
   days: number,
+  shared?: SeriesShared,
 ): Promise<SeriesRead> {
   // SLEEP_DURATION is stored one row per STAGE per night (minutes).
   // Collapse the stage rows into ONE point per night carrying the
@@ -27,10 +28,12 @@ export async function readSleepSeries(
   // tier, so the nights are named in Postgres and reconstructed a chunk at
   // a time (`readSleepNights`): "All" reaches as far back as the history
   // does, and the stage rows in the heap stay a chunk's worth.
-  const [tz, priorityJson] = await Promise.all([
-    resolveUserTimezone(userId),
-    loadUserSourcePriority(userId),
-  ]);
+  const [tz, priorityJson] = shared
+    ? [shared.tz, shared.priorityJson]
+    : await Promise.all([
+        resolveUserTimezone(userId),
+        loadUserSourcePriority(userId),
+      ]);
   const nights = await readSleepNights(userId, tz, priorityJson, {
     from: since,
     // A window of `days` days holds at most one night more than that.

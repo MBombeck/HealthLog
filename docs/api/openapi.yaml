@@ -5576,6 +5576,7 @@ paths:
         - in: query
           name: kind
           schema:
+            description: One series. Send either `kind` or `kinds`.
             type: string
             enum:
               - weight
@@ -5593,7 +5594,18 @@ paths:
               - vo2Max
               - ketones
               - glucoseKetoneIndex
-          required: true
+          description: One series. Send either `kind` or `kinds`.
+        - in: query
+          name: kinds
+          schema:
+            description: "Several series over the same window, comma-separated, at most 8, each once, e.g.
+              `bloodPressure,pulse,weight`. The answer is `{ series: [...] }` in the order asked. Send either `kind` or
+              `kinds`; feature key `measurements.series-kinds`."
+            example: bloodPressure,pulse,weight
+            type: string
+          description: "Several series over the same window, comma-separated, at most 8, each once, e.g.
+            `bloodPressure,pulse,weight`. The answer is `{ series: [...] }` in the order asked. Send either `kind` or
+            `kinds`; feature key `measurements.series-kinds`."
         - in: query
           name: days
           schema:
@@ -5607,7 +5619,7 @@ paths:
             requested range.
       responses:
         "200":
-          description: Resolved series.
+          description: "Resolved series: the single shape for `kind`, `{ series: [...] }` for `kinds`."
           content:
             application/json:
               schema:
@@ -49601,6 +49613,7 @@ components:
               - push.live-activity-token-state
               - insights.chart-context
               - daily.morning
+              - measurements.series-kinds
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -49709,7 +49722,9 @@ components:
             morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own
             readings, and cards night and today_different with ring (score and band null unless fresh, asOfDay), up to
             three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is
-            DailyDigest.worthALook as before."
+            DailyDigest.worthALook as before. `measurements.series-kinds`: GET /api/measurements/series takes
+            kinds=a,b,c (at most 8, each once, the same days) in place of kind and answers { series: [...] }, one
+            single-kind answer per kind in the order asked; kind alone keeps the single answer."
       required:
         - version
         - buildSha
@@ -59957,7 +59972,9 @@ components:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/MeasurementsSeriesResponse"
+          anyOf:
+            - $ref: "#/components/schemas/MeasurementsSeriesResponse"
+            - $ref: "#/components/schemas/MeasurementsSeriesKindsResponse"
         error:
           type: "null"
         meta:
@@ -60228,6 +60245,49 @@ components:
       additionalProperties: false
       description: A horizontal line to draw on the chart. A personal line replaces the clinical one for the same edge. Empty
         list when there is nothing to draw.
+    MeasurementsSeriesKindsResponse:
+      type: object
+      properties:
+        series:
+          type: array
+          items:
+            $ref: "#/components/schemas/MeasurementsSeriesResponse"
+          description: One answer per requested kind, in the order asked, each the shape of the single-kind answer.
+      required:
+        - series
+      additionalProperties: false
+      description: "`?kinds=` answer: several series over one window from one request. The account lookups and the
+        dense-window count are read once for all kinds."
+      example:
+        series:
+          - kind: weight
+            unit: kg
+            points:
+              - id: cm0example0000000000000001
+                at: 2026-11-20T06:45:00.000Z
+                value: 80.4
+                secondary: null
+            stats:
+              mean: 80.4
+              min: 80.4
+              max: 80.4
+              stdDev: 0
+              count: 1
+            direction: null
+            change: null
+            referenceLines: []
+          - kind: vo2Max
+            unit: mL/(kg·min)
+            points: []
+            stats:
+              mean: 0
+              min: 0
+              max: 0
+              stdDev: 0
+              count: 0
+            direction: null
+            change: null
+            referenceLines: []
     ListMeasurementsResponse:
       type: object
       properties:

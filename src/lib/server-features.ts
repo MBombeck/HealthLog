@@ -45,6 +45,7 @@ export const SERVER_FEATURES = [
   "push.live-activity-token-state",
   "insights.chart-context",
   "daily.morning",
+  "measurements.series-kinds",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -127,4 +128,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/insights/context returns the marks a metric chart draws: medications[] (start, stop, doseChange, pause, resume with date, name, dose, estimated, href), illnesses[] (acute episodes, start, end, label, href) and cyclePhases[] (phase, start, end inclusive), read from the timeline lanes, each empty when its module is off or its section not shared; optional from/to cut the window.",
   "daily.morning":
     "GET /api/daily/morning returns the morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own readings, and cards night and today_different with ring (score and band null unless fresh, asOfDay), up to three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is DailyDigest.worthALook as before.",
+  "measurements.series-kinds":
+    "GET /api/measurements/series takes kinds=a,b,c (at most 8, each once, the same days) in place of kind and answers { series: [...] }, one single-kind answer per kind in the order asked; kind alone keeps the single answer.",
 };

@@ -132,9 +132,16 @@ const BUDGET = {
   // keeps the summary and the snapshot, with several such readers, at their
   // old counts. The series reads it only for a weight chart.
   insightsTargets: 23,
-  series30: 6,
-  series365: 5,
-  series3650: 5,
+  // 6/5/5 → 5/4/4 (1.50.0): the source ladder comes with the record's
+  // profile read instead of a read of its own.
+  series30: 5,
+  series365: 4,
+  series3650: 4,
+  // `?kinds=` (1.50.0): eight series in one request. The account lookups,
+  // the dense-window count and the pregnancy state are read once for all
+  // kinds; what grows with the kinds is the one read each kind needs.
+  // Eight single requests send far more (asserted below against their sum).
+  seriesKinds8: 14,
   dayView: 47,
   // 60 → 59: one coverage probe per GET request (see the digest).
   healthStatus: 59,
@@ -511,6 +518,79 @@ describe("statement budgets on the hot routes (real Postgres)", () => {
       `http://localhost/api/measurements/series?kind=pulse&days=${days}`,
     );
     expectWithin(`/api/measurements/series ${days} d`, m, budget);
+  });
+
+  it("GET /api/measurements/series?kinds=, eight kinds", async () => {
+    const { GET } = await import("@/app/api/measurements/series/route");
+    const kinds = [
+      "weight",
+      "bloodPressure",
+      "pulse",
+      "restingHeartRate",
+      "oxygenSaturation",
+      "glucose",
+      "sleep",
+      "vo2Max",
+    ];
+    const batch = await measureRead(
+      GET as unknown as Handler,
+      `http://localhost/api/measurements/series?kinds=${kinds.join(",")}&days=30`,
+    );
+    expectWithin(
+      "/api/measurements/series kinds=8",
+      batch,
+      BUDGET.seriesKinds8,
+    );
+
+    let singles = 0;
+    for (const kind of kinds) {
+      singles += (
+        await measureRead(
+          GET as unknown as Handler,
+          `http://localhost/api/measurements/series?kind=${kind}&days=30`,
+        )
+      ).count;
+    }
+    // Sharing has to show: the batch costs less than its kinds one by one.
+    expect(
+      batch.count,
+      `kinds=8 sent ${batch.count}, eight singles ${singles}`,
+    ).toBeLessThan(singles);
+  });
+
+  it("GET /api/measurements/series?kinds= answers in the order asked, like the singles", async () => {
+    const { GET } = await import("@/app/api/measurements/series/route");
+    const call = (query: string) =>
+      (GET as unknown as Handler)(
+        new NextRequest(`http://localhost/api/measurements/series?${query}`),
+        { params: Promise.resolve({}) },
+      );
+    const res = await call("kinds=pulse,weight,bloodPressure&days=30");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { series: Array<{ kind: string }> };
+    };
+    expect(body.data.series.map((s) => s.kind)).toEqual([
+      "pulse",
+      "weight",
+      "bloodPressure",
+    ]);
+    for (const one of body.data.series) {
+      const single = (await (
+        await call(`kind=${one.kind}&days=30`)
+      ).json()) as { data: unknown };
+      expect(single.data).toEqual(one);
+    }
+
+    for (const bad of [
+      "kind=weight&kinds=pulse",
+      "days=30",
+      "kinds=pulse,pulse",
+      "kinds=pulse,garbage",
+      "kinds=weight,bloodPressure,pulse,bodyFat,glucose,sleep,steps,boneMass,vo2Max",
+    ]) {
+      expect((await call(bad)).status, bad).toBe(422);
+    }
   });
 
   it("GET /api/day/[date]", async () => {

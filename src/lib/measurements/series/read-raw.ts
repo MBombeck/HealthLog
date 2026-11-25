@@ -17,6 +17,7 @@ import {
   type SeriesKind,
   type SeriesPoint,
   type SeriesRead,
+  type SeriesShared,
   type SeriesStats,
 } from "./kinds";
 
@@ -25,6 +26,7 @@ export async function readRawSeries(
   kind: SeriesKind,
   days: number,
   since: Date,
+  shared?: SeriesShared,
 ): Promise<SeriesRead> {
   let points: SeriesPoint[] = [];
   let unit: string | undefined;
@@ -39,7 +41,9 @@ export async function readRawSeries(
   // provider neither blends into nor duplicates the series. Bounded as before:
   // every dense kind reaches this read only inside 90 days and under 10 000
   // rows (counted first), and the sparse kinds are a few readings a day.
-  const sourcePriority = await loadUserSourcePriority(userId);
+  const sourcePriority = shared
+    ? shared.priorityJson
+    : await loadUserSourcePriority(userId);
   const rawRows = await prisma.$queryRawUnsafe<
     Array<{
       id: string;
@@ -71,11 +75,16 @@ export async function readRawSeries(
     // top-level `unit` token follows. mg/dL-preference users are unchanged
     // (convertGlucose rounds the integer); mmol/L users see 1-decimal
     // values (100 → 5.5) and `unit: "mmol/L"`.
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { glucoseUnit: true },
-    });
-    const glucoseUnit = resolveGlucoseUnit(profile?.glucoseUnit ?? null);
+    const glucoseUnit = resolveGlucoseUnit(
+      shared
+        ? shared.glucoseUnit
+        : ((
+            await prisma.user.findUnique({
+              where: { id: userId },
+              select: { glucoseUnit: true },
+            })
+          )?.glucoseUnit ?? null),
+    );
     unit = glucoseUnit;
     points = rows.map((r) => ({
       id: r.id,
@@ -139,7 +148,7 @@ export async function readRawSeries(
     // workout hour does not outweigh the rest of the window. Count, min,
     // max and the spread stay over every reading.
     if (usesHourlyMeanDay(type) && rows.length > 0) {
-      const userTz = await resolveUserTimezone(userId);
+      const userTz = shared?.tz ?? (await resolveUserTimezone(userId));
       const values = rows.map((r) => r.value);
       const rawSummary = summarize(
         rows.map((r) => ({ date: r.measuredAt, value: r.value })),
