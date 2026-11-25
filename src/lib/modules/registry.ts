@@ -28,6 +28,8 @@
  * disabled. Default-on, no backfill.
  */
 
+import { ownRecord, type OwnRecord } from "@/lib/own-key";
+
 /**
  * Where a module's enabled-state is resolved when it is NOT owned by
  * `modulePreferencesJson` directly. Keeps a single source of truth:
@@ -644,8 +646,8 @@ export function mergeDerivedModulePreferences(
   existing: Readonly<Record<string, boolean>>,
   derived: Readonly<Record<OwnedModuleKey, boolean>>,
   holdsData: ReadonlySet<string>,
-): Record<string, boolean> {
-  const merged: Record<string, boolean> = {};
+): OwnRecord<boolean> {
+  const merged = ownRecord<boolean>();
   for (const [key, value] of Object.entries(existing)) {
     if (isModuleKey(key)) merged[key] = value;
   }

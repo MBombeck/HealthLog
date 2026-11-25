@@ -19,6 +19,9 @@
  *   - name: the record's full name, else its display name (a managed
  *     profile's own, never the guardian's), never the username;
  *   - birth date: the profile's.
+ *
+ * The owner's own view also says where each line is edited
+ * (`loadOwnerEmergencyCard`, `edit-targets.ts`).
  */
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { resolvePregnancyState } from "@/lib/cycle/pregnancy";
@@ -34,6 +37,12 @@ import type {
   OrganDonorStatusValue,
 } from "@/lib/validations/emergency-profile";
 
+import type { ModuleKey } from "@/lib/modules/registry";
+
+import {
+  emergencyCardTargets,
+  type EmergencyCardTargets,
+} from "./edit-targets";
 import {
   EMERGENCY_CARD_FIELDS,
   normaliseFields,
@@ -113,7 +122,13 @@ async function readAllergies(userId: string): Promise<EmergencyCardAllergy[]> {
     );
 }
 
-async function readConditions(userId: string): Promise<string[]> {
+/** A condition line and the episode it comes from (null: the written note). */
+interface ConditionLine {
+  label: string;
+  episodeId: string | null;
+}
+
+async function readConditions(userId: string): Promise<ConditionLine[]> {
   const [episodes, profile] = await Promise.all([
     prisma.illnessEpisode.findMany({
       where: {
@@ -124,18 +139,21 @@ async function readConditions(userId: string): Promise<string[]> {
       },
       orderBy: { onsetAt: "asc" },
       take: LIST_CAP,
-      select: { label: true },
+      select: { id: true, label: true },
     }),
     prisma.userHealthProfile.findUnique({
       where: { userId },
       select: { conditionsEncrypted: true },
     }),
   ]);
-  const out = episodes.map((e) => e.label);
+  const out: ConditionLine[] = episodes.map((e) => ({
+    label: e.label,
+    episodeId: e.id,
+  }));
   if (profile?.conditionsEncrypted && profile.conditionsEncrypted.byteLength) {
     try {
       const text = decryptFromBytes(profile.conditionsEncrypted).trim();
-      if (text) out.push(text);
+      if (text) out.push({ label: text, episodeId: null });
     } catch {
       getEvent()?.addWarning(
         `emergency card: conditions decrypt failed for ${userId}`,
@@ -148,7 +166,7 @@ async function readConditions(userId: string): Promise<string[]> {
 async function readMedications(
   userId: string,
   today: string,
-): Promise<EmergencyCardMedication[]> {
+): Promise<Array<EmergencyCardMedication & { id: string }>> {
   const day = dayKeyAsUtcMidnight(today);
   const rows = await prisma.medication.findMany({
     where: {
@@ -179,9 +197,13 @@ async function readMedications(
     },
     orderBy: [{ name: "asc" }, { id: "asc" }],
     take: LIST_CAP,
-    select: { name: true, dose: true },
+    select: { id: true, name: true, dose: true },
   });
-  return rows.map((m) => ({ name: m.name, dose: m.dose.trim() || null }));
+  return rows.map((m) => ({
+    id: m.id,
+    name: m.name,
+    dose: m.dose.trim() || null,
+  }));
 }
 
 async function readPregnancy(
@@ -202,6 +224,14 @@ async function readPregnancy(
   };
 }
 
+/** The records behind the card's listed lines, for the owner's own view. */
+interface CardSources {
+  /** One per condition line: its episode, or null for the written note. */
+  conditionEpisodeIds: Array<string | null>;
+  /** One per medication line. */
+  medicationIds: string[];
+}
+
 /**
  * Read the card for `userId` on the owner's calendar day `today`, limited to
  * `fields` (every item when omitted, the owner's own view).
@@ -211,6 +241,35 @@ export async function loadEmergencyCard(
   today: string,
   fields: readonly EmergencyCardField[] = EMERGENCY_CARD_FIELDS,
 ): Promise<EmergencyCardView> {
+  return (await readCard(userId, today, fields)).view;
+}
+
+/**
+ * The owner's card with where each line is edited (`emergencyCardTargets`).
+ * Only the owner's own route reads it: the ids behind the lines never reach
+ * the read-only link, its offline copy or the wallet card.
+ */
+export async function loadOwnerEmergencyCard(
+  userId: string,
+  today: string,
+  modules: Readonly<Partial<Record<ModuleKey, boolean>>>,
+): Promise<{ card: EmergencyCardView; targets: EmergencyCardTargets }> {
+  const { view, sources } = await readCard(
+    userId,
+    today,
+    EMERGENCY_CARD_FIELDS,
+  );
+  return {
+    card: view,
+    targets: emergencyCardTargets({ ...sources, modules }),
+  };
+}
+
+async function readCard(
+  userId: string,
+  today: string,
+  fields: readonly EmergencyCardField[],
+): Promise<{ view: EmergencyCardView; sources: CardSources }> {
   const asked = normaliseFields(fields);
   const has = (f: EmergencyCardField) => asked.includes(f);
   const needsProfile =
@@ -243,15 +302,21 @@ export async function loadEmergencyCard(
 
   const text = (value: string | null | undefined) => value ?? null;
   const named = (value: string | null | undefined) => value?.trim() || null;
-  return {
+  const view: EmergencyCardView = {
     fields: asked,
     name: has("NAME")
       ? (named(user?.fullName) ?? named(user?.displayName))
       : null,
     bloodType: has("BLOOD_TYPE") ? (profile?.bloodType ?? null) : null,
     allergies: allergies && allergies.length > 0 ? allergies : null,
-    conditions: conditions && conditions.length > 0 ? conditions : null,
-    medications: medications && medications.length > 0 ? medications : null,
+    conditions:
+      conditions && conditions.length > 0
+        ? conditions.map((c) => c.label)
+        : null,
+    medications:
+      medications && medications.length > 0
+        ? medications.map((m) => ({ name: m.name, dose: m.dose }))
+        : null,
     pregnancy,
     implants: has("IMPLANTS") ? text(profile?.implants) : null,
     contacts: has("CONTACTS") ? text(profile?.contacts) : null,
@@ -265,6 +330,13 @@ export async function loadEmergencyCard(
         ? dateOfBirthKey(user.dateOfBirth, user.timezone)
         : null,
     asOf: today,
+  };
+  return {
+    view,
+    sources: {
+      conditionEpisodeIds: (conditions ?? []).map((c) => c.episodeId),
+      medicationIds: (medications ?? []).map((m) => m.id),
+    },
   };
 }
 

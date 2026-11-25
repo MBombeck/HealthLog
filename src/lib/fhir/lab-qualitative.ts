@@ -49,6 +49,7 @@
 import type { FhirCodeableConcept } from "@/lib/fhir/types";
 import { foldForMatch } from "@/lib/i18n/fold-for-match";
 import { localisedValues } from "@/lib/i18n/shared-resolve";
+import { ownRecord, ownValue, type OwnRecord } from "@/lib/own-key";
 
 /**
  * SNOMED CT system URI. Inlined (rather than imported from `resources.ts`) to
@@ -91,8 +92,8 @@ const HAND_WRITTEN_SNOMED: Record<string, QualitativeConcept> = {
  * exactly what a reading recorded in that language holds. `qualBorderline` is
  * deliberately absent — see the module comment.
  */
-function buildLocalisedIndex(): Record<string, QualitativeConcept> {
-  const index: Record<string, QualitativeConcept> = {};
+function buildLocalisedIndex(): OwnRecord<QualitativeConcept> {
+  const index = ownRecord<QualitativeConcept>();
   const arms: [string, QualitativeConcept][] = [
     ["labs.form.qualNegative", NEGATIVE],
     ["labs.form.qualPositive", POSITIVE],
@@ -151,7 +152,8 @@ export function qualitativeValueConcept(
   valueText: string,
 ): FhirCodeableConcept {
   const key = normaliseQualitativeKey(valueText);
-  const concept = HAND_WRITTEN_SNOMED[key] ?? localisedSnomed()[key];
+  const concept =
+    ownValue(HAND_WRITTEN_SNOMED, key) ?? ownValue(localisedSnomed(), key);
   if (!concept) {
     return { text: valueText };
   }

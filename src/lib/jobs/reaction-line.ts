@@ -65,6 +65,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { openerArchetypeHint } from "@/lib/ai/prompts/opener-archetype";
 import { loadDailyDigest } from "@/lib/daily/load-digest";
+import { buildEvidence } from "@/lib/jobs/reaction-line-evidence";
 import type { DailyDigest } from "@/lib/daily/digest";
 import {
   pickMainNightAndNaps,
@@ -270,42 +271,6 @@ export async function loadArrivalEvidence(
   }
 
   return "- The arrival marker was written, but its exact value is unavailable.";
-}
-
-/**
- * The deterministic evidence block. The first section is the exact new datum;
- * the remaining context comes from the already-computed digest the line will
- * sit inside.
- */
-function buildEvidence(
-  arrived: string,
-  digest: {
-    score: { value: number; band: string; delta: number | null } | null;
-    topSignal: { headline: string; delta: string | null } | null;
-    briefingLead: string | null;
-  },
-): string {
-  const parts: string[] = [arrived];
-  if (digest.score) {
-    const delta =
-      digest.score.delta === null
-        ? "no baseline comparison available"
-        : `${digest.score.delta > 0 ? "+" : ""}${Math.round(digest.score.delta)} vs their baseline`;
-    parts.push(
-      `- Health score: ${Math.round(digest.score.value)} (${digest.score.band}), ${delta}.`,
-    );
-  }
-  if (digest.topSignal) {
-    parts.push(
-      `- Today's leading signal: ${digest.topSignal.headline}${
-        digest.topSignal.delta ? ` (${digest.topSignal.delta})` : ""
-      }.`,
-    );
-  }
-  if (digest.briefingLead) {
-    parts.push(`- The day's standing read: ${digest.briefingLead}`);
-  }
-  return parts.join("\n");
 }
 
 type ReactionReservation = {

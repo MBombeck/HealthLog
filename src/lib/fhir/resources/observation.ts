@@ -38,6 +38,7 @@ import {
   glucoseContextObservations,
 } from "@/lib/fhir/resources/glucose";
 import { labObservations } from "@/lib/fhir/resources/labs";
+import { ownValue } from "@/lib/own-key";
 
 /** v1.10.0 — English display per persisted wellness-score type (FHIR
  *  text-only concept; the score has no published LOINC term). */
@@ -259,7 +260,9 @@ function wellnessObservations(
       id: nextId(),
       status: "final",
       category: [categoryConcept("survey")],
-      code: { text: WELLNESS_SCORE_DISPLAY[s.type] ?? "Wellness score" },
+      code: {
+        text: ownValue(WELLNESS_SCORE_DISPLAY, s.type) ?? "Wellness score",
+      },
       subject: patientRef,
       effectiveDateTime: s.latestAt,
       valueQuantity: ucumQuantity(s.latest, "{score}"),

@@ -4,6 +4,7 @@
  * client bundle can import it.
  */
 import type { WithingsApiPlanState } from "./api-plan";
+import { ownValue } from "@/lib/own-key";
 
 /** The Withings plans page, linked from the settings card and the docs. */
 export const WITHINGS_API_PLANS_URL =
@@ -84,7 +85,7 @@ export function withingsPlanUnavailableFeatures(
     if (f) found.add(f);
   }
   for (const field of state.sleepSummary?.unavailable ?? []) {
-    const f = SLEEP_FIELD_FEATURE[field];
+    const f = ownValue(SLEEP_FIELD_FEATURE, field);
     if (f) found.add(f);
   }
   if ((state.ecg?.unavailable.length ?? 0) > 0) found.add("ecg");

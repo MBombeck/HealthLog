@@ -8,6 +8,7 @@
  * a question the owner chose not to share.
  */
 import type { EmergencyCardAllergy, EmergencyCardView } from "./card-data";
+import type { EmergencyCardTargets } from "./edit-targets";
 
 export type Translate = (
   key: string,
@@ -72,6 +73,11 @@ export type EmergencyCardRow = {
   label: string;
   lines: string[];
   emphasise: boolean;
+  /**
+   * The owner's view only: where each line is edited, one per line, null
+   * where the owning surface is off. Absent on every other rendering.
+   */
+  hrefs?: Array<string | null>;
 };
 
 /**
@@ -94,23 +100,41 @@ export function emergencyCardRows(
   view: EmergencyCardView,
   t: Translate,
   locale: string,
+  targets?: EmergencyCardTargets,
 ): EmergencyCardRow[] {
   const none = t("records.emergency.notRecorded");
   const rows: EmergencyCardRow[] = [];
+  /** A listed line's own record, else the item's surface. */
+  const perLine: Partial<Record<string, ReadonlyArray<string | null>>> = {
+    CONDITIONS: targets?.conditions,
+    MEDICATIONS: targets?.medications,
+  };
   const push = (
     key: string,
     label: string,
     lines: string[] | null,
     emphasise = false,
   ) => {
-    if (!view.fields.includes(key as EmergencyCardView["fields"][number])) {
+    const field = key as EmergencyCardView["fields"][number];
+    if (!view.fields.includes(field)) {
       return;
     }
+    const filled = lines !== null && lines.length > 0;
+    const shown = filled ? lines : [none];
     rows.push({
       key,
       label,
-      lines: lines && lines.length > 0 ? lines : [none],
-      emphasise: emphasise && lines !== null && lines.length > 0,
+      lines: shown,
+      emphasise: emphasise && filled,
+      ...(targets
+        ? {
+            hrefs: shown.map((_, i) =>
+              filled && perLine[key]
+                ? (perLine[key]![i] ?? null)
+                : targets.fields[field],
+            ),
+          }
+        : {}),
     });
   };
   push("NAME", t("emergencyCard.name"), view.name ? [view.name] : null, true);

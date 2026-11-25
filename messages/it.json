@@ -12620,7 +12620,7 @@
     "openDetail": "Mostra dettagli",
     "historyLoadError": "Non è stato possibile caricare la cronologia dei test",
     "historyLoadErrorHint": "Questo non significa che non ci siano risultati: non è stato possibile recuperare l'elenco. Riprova.",
-    "privacyNote": "Le tue risposte sono salvate cifrate e non raggiungono mai il Coach IA.",
+    "privacyNote": "Le tue risposte sono salvate cifrate. Risposte e punteggi non raggiungono mai il Coach IA, un'altra funzione IA o un assistente IA che hai collegato.",
     "trend": {
       "sincePrevious": "Dal tuo check-in precedente del {date}: {change, plural, one {# punto} other {# punti}}.",
       "sinceFirst": "Dal tuo primo check-in del {date}: {change, plural, one {# punto} other {# punti}}.",
@@ -16210,8 +16210,6 @@
       "title": "Tessera di emergenza",
       "description": "I tuoi dati di emergenza per quando sei fuori casa.",
       "loadError": "Impossibile caricare la tessera di emergenza.",
-      "editHint": "Gruppo sanguigno, contatti, impianti e dichiarazioni provengono dai tuoi dati di emergenza.",
-      "editLink": "Modificali",
       "offlineHint": "L'app non funziona offline di proposito. Salva una copia sul telefono per avere la tessera senza connessione; mostra il contenuto del giorno in cui l'hai salvata.",
       "downloadError": "Il download non è riuscito. Riprova.",
       "saveOffline": "Salva copia offline",
