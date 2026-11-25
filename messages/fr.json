@@ -6990,6 +6990,7 @@
         "deleteConfirmBodyUsed": "Les tâches qui utilisent cette chaîne ({count}) repassent sur Par défaut à l'enregistrement. Si c'est la chaîne par défaut, la chaîne de secours reprend la main. Vos fournisseurs et clés restent inchangés.",
         "bindingHint": "Avec un seul fournisseur, la chaîne est une liaison stricte : s'il ne peut pas répondre, la tâche s'arrête au lieu d'essayer un autre fournisseur.",
         "bindingShort": "Liée à ce fournisseur, sans repli.",
+        "taskNoProvider": "Aucun fournisseur de cette chaîne n'est configuré, cette tâche ne s'exécute donc pas : son action n'est pas proposée tant que vous n'en configurez pas un ou ne choisissez pas une autre chaîne.",
         "egressLocal": "Reste sur cette machine",
         "egressExternal": "Quitte cette machine",
         "notSetUp": "Pas encore configuré",

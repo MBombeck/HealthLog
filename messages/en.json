@@ -6990,6 +6990,7 @@
         "deleteConfirmBodyUsed": "Tasks using this chain ({count}) go back to Default when you save. If it is the default chain, the fallback chain takes over again. Your providers and keys stay as they are.",
         "bindingHint": "One provider makes this a binding: if it can't answer, the task stops instead of trying another provider.",
         "bindingShort": "Bound to this provider, no fallback.",
+        "taskNoProvider": "No provider in this chain is set up, so this task does not run: its action is not offered until you set one up or pick another chain.",
         "egressLocal": "Stays on this machine",
         "egressExternal": "Leaves this machine",
         "notSetUp": "Not set up yet",

@@ -6990,6 +6990,7 @@
         "deleteConfirmBodyUsed": "Las tareas que usan esta cadena ({count}) vuelven a Predeterminada al guardar. Si es la cadena predeterminada, vuelve a mandar la cadena de respaldo. Tus proveedores y claves no cambian.",
         "bindingHint": "Con un solo proveedor, la cadena es un vínculo fijo: si no puede responder, la tarea se detiene en lugar de probar otro proveedor.",
         "bindingShort": "Vinculada a este proveedor, sin respaldo.",
+        "taskNoProvider": "Ningún proveedor de esta cadena está configurado, así que esta tarea no se ejecuta: su acción no se ofrece hasta que configures uno o elijas otra cadena.",
         "egressLocal": "Se queda en este equipo",
         "egressExternal": "Sale de este equipo",
         "notSetUp": "Aún no configurado",
