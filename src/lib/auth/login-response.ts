@@ -92,56 +92,16 @@ export async function finishLogin(
       source,
     );
     if (enrolmentRefusal) return enrolmentRefusal;
-    const policy = resolveTokenPolicy(request.headers);
-    const deviceId = request.headers.get("x-device-id");
-
-    // A 60-day refresh token is only ever delivered to a genuinely
-    // cookie-less native caller — a browser spoofing `X-Client-Type: native`
-    // falls through to the plain access-token path below.
-    if (
-      policy.refreshTokenDays !== null &&
-      isCookielessNativeCaller(request.headers)
-    ) {
-      const bundle = await issueAccessAndRefresh({
-        userId: user.id,
-        policy,
-        deviceId,
-        userAgent,
-        ipAddress: ip,
-        source,
-      });
-      await auditLog("auth.token.autoissue.native", {
-        userId: user.id,
-        ipAddress: ip,
-        details: { source, policy: "native" },
-      });
-      return apiSuccess({
-        user: { id: user.id, username: user.username },
-        token: bundle.accessToken,
-        tokenExpiresAt: bundle.accessTokenExpiresAt.toISOString(),
-        refreshToken: bundle.refreshToken,
-        refreshTokenExpiresAt: bundle.refreshTokenExpiresAt.toISOString(),
-      });
-    }
-
-    // Web policy with explicit X-Client-Type:native (legacy iOS auto-login).
-    const issued = await issueApiToken({
+    const credentials = await issueTokenTransportCredentials({
       userId: user.id,
-      name: `web auto-login ${new Date().toISOString()}`,
-      permissions: ["*"],
-      expiresInDays: policy.accessTokenDays,
-      // A Bearer stand-in for a web session ends when one would.
-      notAfter: webSessionHardEnd(new Date()),
-    });
-    await auditLog("auth.token.autoissue.native", {
-      userId: user.id,
-      ipAddress: ip,
-      details: { tokenId: issued.tokenId, source, policy: "web" },
+      request,
+      ip,
+      userAgent,
+      source,
     });
     return apiSuccess({
       user: { id: user.id, username: user.username },
-      token: issued.token,
-      tokenExpiresAt: issued.expiresAt.toISOString(),
+      ...credentials,
     });
   }
 
@@ -177,4 +137,79 @@ export async function finishLogin(
   return apiSuccess({
     user: { id: user.id, username: user.username },
   });
+}
+
+/** The token pair (or the single access token) a token-transport caller gets. */
+export interface TokenTransportCredentials {
+  token: string;
+  tokenExpiresAt: string;
+  refreshToken?: string;
+  refreshTokenExpiresAt?: string;
+}
+
+/**
+ * Issue the credentials a token-transport caller is answered with, and write
+ * the `auth.token.autoissue.native` audit row.
+ *
+ * A 60-day refresh token is only ever delivered to a genuinely cookie-less
+ * native caller; anything else (a browser spoofing `X-Client-Type: native`,
+ * the legacy auto-login) gets a plain access token on the resolved policy.
+ * Shared by the sign-in tail above and by the password change, which ends
+ * every sign-in on the account and answers a Bearer caller with a fresh pair
+ * instead of a session cookie.
+ */
+export async function issueTokenTransportCredentials(params: {
+  userId: string;
+  request: NextRequest;
+  ip: string | null;
+  userAgent: string | null;
+  source: string;
+}): Promise<TokenTransportCredentials> {
+  const { userId, request, ip, userAgent, source } = params;
+  const policy = resolveTokenPolicy(request.headers);
+  const deviceId = request.headers.get("x-device-id");
+
+  if (
+    policy.refreshTokenDays !== null &&
+    isCookielessNativeCaller(request.headers)
+  ) {
+    const bundle = await issueAccessAndRefresh({
+      userId,
+      policy,
+      deviceId,
+      userAgent,
+      ipAddress: ip,
+      source,
+    });
+    await auditLog("auth.token.autoissue.native", {
+      userId,
+      ipAddress: ip,
+      details: { source, policy: "native" },
+    });
+    return {
+      token: bundle.accessToken,
+      tokenExpiresAt: bundle.accessTokenExpiresAt.toISOString(),
+      refreshToken: bundle.refreshToken,
+      refreshTokenExpiresAt: bundle.refreshTokenExpiresAt.toISOString(),
+    };
+  }
+
+  // Web policy with explicit X-Client-Type:native (legacy iOS auto-login).
+  const issued = await issueApiToken({
+    userId,
+    name: `web auto-login ${new Date().toISOString()}`,
+    permissions: ["*"],
+    expiresInDays: policy.accessTokenDays,
+    // A Bearer stand-in for a web session ends when one would.
+    notAfter: webSessionHardEnd(new Date()),
+  });
+  await auditLog("auth.token.autoissue.native", {
+    userId,
+    ipAddress: ip,
+    details: { tokenId: issued.tokenId, source, policy: "web" },
+  });
+  return {
+    token: issued.token,
+    tokenExpiresAt: issued.expiresAt.toISOString(),
+  };
 }

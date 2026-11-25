@@ -30,8 +30,8 @@ export type FreshMfaContext = AuthContext & { mfaVerifiedAt: Date };
  * (401, `errorCode: "auth.stepup.required"`) otherwise.
  *
  * Bearer tokens can NEVER satisfy this — exactly like `requireAdmin`, the
- * resolution path is `getSession()` (cookie-only) and there is no Bearer
- * fall-through. A token transport carries no `mfaVerifiedAt` and cannot
+ * resolution path is `getSession()` (cookie-only, and blind to a cookie that
+ * rides beside a Bearer) and there is no Bearer fall-through. A token transport carries no `mfaVerifiedAt` and cannot
  * acquire one, so the boundary is structural, not a softenable runtime check.
  *
  * Consumed in Phase M by MFA disable + recovery-code regeneration; later

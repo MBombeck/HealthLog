@@ -24,6 +24,8 @@ import { destroyAllSessions, createSession } from "@/lib/auth/session";
 import { revokeStepUpElevations } from "@/lib/auth/step-up";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { checkPasswordBreachIfEnabled } from "@/lib/password-breach-check";
+import { issueTokenTransportCredentials } from "@/lib/auth/login-response";
+import { refuseNativeSignInWithoutFactor } from "@/lib/auth/mfa-native-refusal";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 export const POST = apiHandler(async (request: NextRequest) => {
@@ -32,7 +34,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // to the current-password re-proof below, so a hijacked live session cannot
   // rotate the credential. Accounts without MFA keep the current-password-only
   // contract. Mirrors the step-up on MFA-disable + recovery-code regen.
-  const { user } = await requireFreshMfaIfEnrolled(MFA_STEP_UP_MAX_AGE_SECONDS);
+  const auth = await requireFreshMfaIfEnrolled(MFA_STEP_UP_MAX_AGE_SECONDS);
+  const { user } = auth;
 
   // The current-password check below is a guessing oracle, so it draws on the
   // account's shared re-proof budget: a guess spent here is one the step-up
@@ -117,16 +120,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // an elevation minted moments before the rotation cannot outlive it.
   await revokeStepUpElevations(user.id);
 
-  // Invalidate all existing sessions and create a fresh one.
-  // v1.4.22 — `createSession` re-anchors the
-  // `hl_onboarding` cookie itself.
+  // End every sign-in on the account — web sessions, device logins, tokens —
+  // then sign the caller back in on the transport it came on.
   await destroyAllSessions(user.id);
-  await createSession(
-    user.id,
-    user.onboardingCompletedAt == null,
-    getClientIp(request),
-    request.headers.get("user-agent"),
-  );
 
   await auditLog("auth.password.change", {
     userId: user.id,
@@ -134,6 +130,47 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
 
   annotate({ action: { name: "auth.password.change" } });
+
+  // A Bearer caller is answered with a fresh token pair in the body: its own
+  // token and refresh family were just revoked with the rest, and a web
+  // session cookie is never the way back in for a token client (the native
+  // client would keep it beside its token, past its own sign-out). The pair is
+  // a new family for the calling device, minted after the revocation so it is
+  // the only live sign-in the account has.
+  //
+  // Not for an account past its second-factor due date: a sign-in on the
+  // token transport is refused for it (`refuseNativeSignInWithoutFactor`), so
+  // the change ends this sign-in like every other one and the next attempt
+  // answers `auth.mfa.enrollment_required`.
+  if (auth.authMethod === "bearer") {
+    const ip = getClientIp(request);
+    if (
+      await refuseNativeSignInWithoutFactor(
+        user.id,
+        ip ?? "unknown",
+        "password.change",
+      )
+    ) {
+      return apiSuccess({ changed: true });
+    }
+    const credentials = await issueTokenTransportCredentials({
+      userId: user.id,
+      request,
+      ip,
+      userAgent: request.headers.get("user-agent"),
+      source: "password.change",
+    });
+    return apiSuccess({ changed: true, ...credentials });
+  }
+
+  // A cookie caller gets a fresh session. v1.4.22 — `createSession`
+  // re-anchors the `hl_onboarding` cookie itself.
+  await createSession(
+    user.id,
+    user.onboardingCompletedAt == null,
+    getClientIp(request),
+    request.headers.get("user-agent"),
+  );
 
   return apiSuccess({ changed: true });
 });

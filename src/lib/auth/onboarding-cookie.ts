@@ -6,6 +6,7 @@
 import { cookies } from "next/headers";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { sessionIdleTimeoutMs } from "@/lib/auth/session-lifetime";
+import { requestUsesTokenTransport } from "@/lib/auth/token-transport";
 
 /**
  * Flag cookie mirroring the user's `onboardingCompletedAt`
@@ -24,6 +25,8 @@ export const ONBOARDING_COOKIE = "hl_onboarding";
 export async function setOnboardingPendingCookie(
   pending: boolean,
 ): Promise<void> {
+  // A browser hint: never on the token transport (`token-transport.ts`).
+  if (await requestUsesTokenTransport()) return;
   const cookieStore = await cookies();
   if (pending) {
     cookieStore.set(ONBOARDING_COOKIE, "pending", {
