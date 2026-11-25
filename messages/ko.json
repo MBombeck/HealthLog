@@ -3198,6 +3198,7 @@
       "failedDescriptionTimeout": "브리핑이 준비되기 전에 AI 요청 시간이 다 됐어요. 느린 로컬 모델이라면 설정에서 AI 응답 제한 시간을 늘린 뒤 다시 시도해 주세요.",
       "failedDescriptionProvider": "AI 제공자가 요청을 거절했어요. AI 설정에서 제공자와 API 키를 다시 확인한 뒤 시도해 주세요.",
       "failedDescriptionRateLimit": "AI 제공자가 지금 요청 수를 제한하고 있어요. 잠시 뒤에 다시 시도해 주세요.",
+      "failedDescriptionFormat": "AI가 응답했지만 브리핑에 표시할 수 있는 형식이 아니었어요. 다시 시도해 주세요. 계속 그렇다면 AI 설정에서 다른 모델을 써 보세요.",
       "omittedTitle": "브리핑을 보류했어요",
       "omittedUngroundedDescription": "만들어진 브리핑에 내 데이터로 확인할 수 없는 수치가 있어서 보여 주지 않았어요. 다시 시도해 주세요."
     },

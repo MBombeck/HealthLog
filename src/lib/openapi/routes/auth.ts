@@ -661,12 +661,32 @@ const registeredUserResponse = z
   .meta({
     id: "RegisteredUserResponse",
     description:
-      "The account that was created. No credential rides this response — the session arrives as a cookie, and a native client signs in afterwards through /api/auth/login.",
+      "The account that was created. No credential rides this response — a browser receives its session as a cookie; a native client receives no cookie and signs in afterwards through /api/auth/login.",
   });
 
 const passwordChangedResponse = z
-  .object({ changed: z.literal(true) })
-  .meta({ id: "PasswordChangedResponse" });
+  .object({
+    changed: z.literal(true),
+    token: z
+      .string()
+      .optional()
+      .describe(
+        "Fresh access token (`hlk_<64hex>`); present only when the caller authenticated with a Bearer token. The token it called with is revoked by the change.",
+      ),
+    tokenExpiresAt: isoDateTime().optional(),
+    refreshToken: z
+      .string()
+      .optional()
+      .describe(
+        "Fresh refresh token (`hlr_<64hex>`), the start of a new family for the calling device; present only for a cookie-less native Bearer caller. Its previous refresh token is revoked.",
+      ),
+    refreshTokenExpiresAt: isoDateTime().optional(),
+  })
+  .meta({
+    id: "PasswordChangedResponse",
+    description:
+      "A cookie caller sees only `changed` and receives a fresh session cookie. A Bearer caller receives no cookie; it gets the credentials to continue with in the body.",
+  });
 
 const authProfileUpdateResponse = z
   .object({
@@ -2334,7 +2354,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       description:
         "A change, not a reset: it is authenticated, and it re-proves the CURRENT password in the body. There is no anonymous forgot-password flow on this surface.\n\n" +
         "For an account with a second factor enrolled it additionally requires a fresh factor proof, which is cookie-only by construction — a Bearer transport carries no `mfaVerifiedAt` and cannot satisfy it at any scope. Accounts with no second factor keep the current-password-only contract on either transport.\n\n" +
-        "On success the blast radius is deliberate and wide: every step-up elevation the account holds is revoked, every session is destroyed, and a fresh session is issued to THIS caller. Other browsers and other devices are signed out. The new password is strength-checked and screened against a breach corpus (fail-open on an unreachable corpus). Rate-limited 5 per 15 minutes per user.",
+        "On success the blast radius is deliberate and wide: every step-up elevation the account holds is revoked, every sign-in is ended (web sessions, device logins and tokens, the caller's own included), and THIS caller is signed back in on the transport it came on: a cookie caller gets a fresh session cookie, a Bearer caller gets a fresh access token (and, for a cookie-less native caller, a fresh refresh token) in the body and no cookie. Other browsers and other devices are signed out. The new password is strength-checked and screened against a breach corpus (fail-open on an unreachable corpus). Rate-limited 5 per 15 minutes per user.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: changePasswordRequest } },
@@ -2342,7 +2362,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       responses: {
         "200": {
           description:
-            "Password rotated. Every other session is gone and this caller holds a new one.",
+            "Password rotated. Every other sign-in is gone and this caller holds a new one: a session cookie, or the token fields in the body for a Bearer caller.",
           content: {
             "application/json": {
               schema: dataEnvelope(

@@ -806,14 +806,23 @@ describe("managed profile lifecycle (real Postgres)", () => {
       await import("@/app/api/managed-profiles/[id]/route");
     queuedSessionIds.push(secondGuardian.sessionId, creator.sessionId);
 
-    const [renounced, deleted] = await Promise.all([
-      renounce(
-        new NextRequest(
-          `http://localhost/api/account/grants/${secondGrant.id}/renounce`,
-          { method: "POST" },
-        ),
-        { params: Promise.resolve({ id: secondGrant.id }) },
+    // The queue hands sessions out in the order the requests first open the
+    // cookie store, and the two routes reach it after different numbers of
+    // awaits. So the deletion starts only once the renunciation has taken
+    // its session: who acts is fixed, and the two still race in the database.
+    const renouncing = renounce(
+      new NextRequest(
+        `http://localhost/api/account/grants/${secondGrant.id}/renounce`,
+        { method: "POST" },
       ),
+      { params: Promise.resolve({ id: secondGrant.id }) },
+    );
+    for (let i = 0; queuedSessionIds.length > 1; i++) {
+      if (i > 10_000) throw new Error("the renunciation never read a session");
+      await Promise.resolve();
+    }
+    const [renounced, deleted] = await Promise.all([
+      renouncing,
       deleteProfile(
         new NextRequest(`http://localhost/api/managed-profiles/${profile.id}`, {
           method: "DELETE",

@@ -9,7 +9,8 @@
  * a signal can rest on here, in one grouped query, and only when the payload
  * actually carries such a signal.
  */
-import { dailyBriefingSchema, type DailyBriefing } from "@/lib/ai/schema";
+import type { DailyBriefing } from "@/lib/ai/schema";
+import { readDailyBriefing } from "@/lib/ai/briefing-blocks";
 import { prisma } from "@/lib/db";
 import { readLatestEver } from "@/lib/dashboard/summary-reads";
 import type { Locale } from "@/lib/i18n/config";
@@ -75,10 +76,9 @@ export async function insightsPayloadForToday(
 ): Promise<unknown> {
   if (payload === null || typeof payload !== "object") return payload;
   const record = payload as Record<string, unknown>;
-  if (record.dailyBriefing == null) return payload;
-  const parsed = dailyBriefingSchema.safeParse(record.dailyBriefing);
-  if (!parsed.success) return payload;
-  const briefing: DailyBriefing = parsed.data;
+  const read = readDailyBriefing(record.dailyBriefing);
+  if (read.state !== "valid") return payload;
+  const briefing: DailyBriefing = read.briefing;
   const now = ctx.now ?? new Date();
   const needsReadings = (briefing.signalsOfDay ?? []).some(
     (s) => SIGNAL_READING_TYPE[s.sourceMetric] !== undefined,

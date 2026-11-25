@@ -54,8 +54,9 @@ export interface InsightAdvisorPayload {
    * strip + briefing card. Lives on the cached payload alongside the
    * legacy `insights` shape (see `aiInsightResponseSchema` — the
    * `.passthrough()` lets the field round-trip through any provider).
-   * Validated client-side via the schema's `safeParse` to keep a
-   * malformed payload from poisoning the briefing card.
+   * Read client-side through `readDailyBriefing`, the reader the server
+   * gates every generation with, to keep a malformed payload from
+   * poisoning the briefing card.
    */
   dailyBriefing?: DailyBriefingPayload | null;
   /**
@@ -396,41 +397,26 @@ export async function fetchAdvisor(
   }
   const json = await res.json();
   const payload = json.data as InsightAdvisorPayload;
-  // Lazy schema load — see the type-only import note at the top. The
-  // module is cached after the first call, so this await is free from
-  // the second fetch on.
-  const { dailyBriefingSchema, trendAnnotationsSchema } =
-    await import("@/lib/ai/schema");
+  // Lazy load — see the type-only import note at the top. The module is
+  // cached after the first call, so this await is free from the second
+  // fetch on. It is the same reader the server gates every generation with
+  // before it stores one, so a briefing stored as a success renders here.
+  const { readDailyBriefing, readTrendAnnotations } =
+    await import("@/lib/ai/briefing-blocks");
   // The cached `insights` blob may carry a `dailyBriefing` from a fresh
   // PROMPT_VERSION 4.20.x generation. Lift it onto the payload so
   // consumers don't have to know the legacy shape.
-  const briefingCandidate = (payload?.insights as Record<string, unknown>)
-    ?.dailyBriefing;
-  if (briefingCandidate != null) {
-    const parsed = dailyBriefingSchema.safeParse(briefingCandidate);
-    if (parsed.success) {
-      payload.dailyBriefing = parsed.data;
-    } else {
-      // Malformed cached briefing — keep null so the UI shows the
-      // empty-state CTA instead of a half-rendered card.
-      payload.dailyBriefing = null;
-    }
-  } else {
-    payload.dailyBriefing = null;
-  }
+  const blocks = payload?.insights as Record<string, unknown> | undefined;
+  const briefing = readDailyBriefing(blocks?.dailyBriefing);
+  // A block that still cannot be read (one stored before the server gate)
+  // stays null so the UI shows the empty-state CTA instead of a
+  // half-rendered card.
+  payload.dailyBriefing = briefing.state === "valid" ? briefing.briefing : null;
 
-  // v1.4.20 — same lift for `trendAnnotations`. Cached payloads
-  // from the 4.20.0 line predate the field, so null is the expected
-  // default. A malformed candidate also resolves to null so the UI
-  // surfaces the per-metric empty hint instead of a half-rendered card.
-  const annotationsCandidate = (payload?.insights as Record<string, unknown>)
-    ?.trendAnnotations;
-  if (annotationsCandidate != null) {
-    const parsed = trendAnnotationsSchema.safeParse(annotationsCandidate);
-    payload.trendAnnotations = parsed.success ? parsed.data : null;
-  } else {
-    payload.trendAnnotations = null;
-  }
+  // v1.4.20 — same lift for `trendAnnotations`. Cached payloads from the
+  // 4.20.0 line predate the field, so null is the expected default; an
+  // annotation that fails its rule is dropped on its own.
+  payload.trendAnnotations = readTrendAnnotations(blocks?.trendAnnotations);
   return { payload, outcome: "fresh" };
 }
 

@@ -42,6 +42,12 @@ beforeEach(async () => {
   cookieJar.clear();
 });
 
+/** The id `createSession` returns for a browser, which these cases are. */
+function sessionIdOf(id: string | null): string {
+  if (id === null) throw new Error("createSession withheld a browser session");
+  return id;
+}
+
 describe("session lifecycle (real Postgres)", () => {
   it("createSession writes a row and getSession reads it back", async () => {
     const { createSession, getSession } = await import("@/lib/auth/session");
@@ -50,11 +56,8 @@ describe("session lifecycle (real Postgres)", () => {
       data: { username: "session-test", email: "session@example.test" },
     });
 
-    const sessionId = await createSession(
-      user.id,
-      true,
-      "127.0.0.1",
-      "vitest/1.0",
+    const sessionId = sessionIdOf(
+      await createSession(user.id, true, "127.0.0.1", "vitest/1.0"),
     );
 
     const row = await getPrismaClient().session.findUnique({
@@ -78,7 +81,7 @@ describe("session lifecycle (real Postgres)", () => {
       data: { username: "expired-session", email: "expired@example.test" },
     });
 
-    const sessionId = await createSession(user.id, false);
+    const sessionId = sessionIdOf(await createSession(user.id, false));
 
     // Force the row past its expiry — getSession must purge it.
     await getPrismaClient().session.update({
@@ -140,7 +143,7 @@ describe("session lifecycle (real Postgres)", () => {
       const user = await getPrismaClient().user.create({
         data: { username: "secret-cookie", email: "secret@example.test" },
       });
-      const sessionId = await createSession(user.id, false);
+      const sessionId = sessionIdOf(await createSession(user.id, false));
 
       const cookie = cookieJar.get("healthlog_session")!;
       expect(cookie).toMatch(/^hls_[0-9a-f]{64}$/);
@@ -160,7 +163,7 @@ describe("session lifecycle (real Postgres)", () => {
       const user = await getPrismaClient().user.create({
         data: { username: "id-retired", email: "retired@example.test" },
       });
-      const sessionId = await createSession(user.id, false);
+      const sessionId = sessionIdOf(await createSession(user.id, false));
 
       // The secret works.
       expect((await getSession())?.session.id).toBe(sessionId);
@@ -245,7 +248,7 @@ describe("session lifecycle (real Postgres)", () => {
       const user = await getPrismaClient().user.create({
         data: { username: "secret-logout", email: "logout@example.test" },
       });
-      const sessionId = await createSession(user.id, false);
+      const sessionId = sessionIdOf(await createSession(user.id, false));
 
       await destroySession();
 
