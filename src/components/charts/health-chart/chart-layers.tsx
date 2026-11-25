@@ -17,7 +17,7 @@ import {
 } from "recharts";
 
 import { OPEN_DAY_LINE } from "@/components/day/chart-day-links";
-import type { ComparisonBaseline } from "@/lib/dashboard-layout";
+import type { ComparisonBaseline } from "@/lib/dashboard/chart-overlay-prefs";
 
 import type { ResolvedAnnotation, ResolvedVerticalMarker } from "./series-math";
 import type { ChartDataPoint, VisibleTargetZone } from "./types";

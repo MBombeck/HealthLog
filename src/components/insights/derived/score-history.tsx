@@ -6,7 +6,7 @@ import { History } from "lucide-react";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { useAuth } from "@/hooks/use-auth";
-import type { ChartOverlayKey } from "@/lib/dashboard-layout";
+import type { ChartOverlayKey } from "@/lib/dashboard/chart-overlay-prefs";
 import { useTranslations } from "@/lib/i18n/context";
 import { importWithRetry } from "@/lib/retry-import";
 import { RING_GRADIENT, type RingHue } from "./ring-hues";

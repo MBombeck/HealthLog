@@ -12,7 +12,7 @@ import {
   localDayKeyFor,
   openEndedFetchWindow,
 } from "@/lib/charts/fetch-window";
-import type { ComparisonBaseline } from "@/lib/dashboard-layout";
+import type { ComparisonBaseline } from "@/lib/dashboard/chart-overlay-prefs";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { queryKeys } from "@/lib/query-keys";
 

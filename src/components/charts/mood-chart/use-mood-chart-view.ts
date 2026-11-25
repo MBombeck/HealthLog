@@ -19,7 +19,7 @@ import { userDayKey } from "@/lib/tz/format";
 import type {
   ChartRangePoints,
   ComparisonBaseline,
-} from "@/lib/dashboard-layout";
+} from "@/lib/dashboard/chart-overlay-prefs";
 import { trendLineByTime } from "@/lib/stats/linear-fit";
 
 import {

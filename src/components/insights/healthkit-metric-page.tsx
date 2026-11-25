@@ -14,7 +14,7 @@ import { useChartDomainStats } from "@/hooks/use-chart-domain-stats";
 import { useTranslations } from "@/lib/i18n/context";
 import type { InsightMetric } from "@/lib/insights/metric-availability";
 import type { MetricStatusMetricId } from "@/lib/insights/metric-status-registry";
-import type { ChartOverlayKey } from "@/lib/dashboard-layout";
+import type { ChartOverlayKey } from "@/lib/dashboard/chart-overlay-prefs";
 import { metricFractionDigits } from "@/lib/measurements/value-domain";
 import { Button } from "@/components/ui/button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";

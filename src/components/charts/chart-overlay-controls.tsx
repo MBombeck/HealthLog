@@ -19,7 +19,7 @@ import {
   COMPARISON_BASELINES,
   type ChartOverlayPrefs,
   type ComparisonBaseline,
-} from "@/lib/dashboard-layout";
+} from "@/lib/dashboard/chart-overlay-prefs";
 
 /**
  * v1.4.18 — per-chart overlay-controls popover.
@@ -53,15 +53,15 @@ import {
  */
 
 /**
- * Re-export the canonical type+default from `@/lib/dashboard-layout`
- * so chart-side callers can keep importing them from this module.
- * Single source of truth lives in dashboard-layout (the persistence
- * layer); this module is just the UI.
+ * Re-export the canonical type+default from
+ * `@/lib/dashboard/chart-overlay-prefs` so chart-side callers can keep
+ * importing them from this module. Single source of truth lives there (the
+ * persistence layer); this module is just the UI.
  */
 export {
   DEFAULT_CHART_OVERLAY_PREFS,
   type ChartOverlayPrefs,
-} from "@/lib/dashboard-layout";
+} from "@/lib/dashboard/chart-overlay-prefs";
 
 export interface ChartOverlayControlsProps {
   prefs: ChartOverlayPrefs;

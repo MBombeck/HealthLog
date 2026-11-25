@@ -10,7 +10,11 @@
  * ten minutes leaves single empty buckets all night, and a line broken at
  * each of them would read as missing data; a watch taken off for an hour
  * leaves a real gap. So a line bridges a gap up to three times its own
- * usual spacing (at least three buckets) and breaks at anything longer. The
+ * usual spacing (at least three buckets), and never one longer than its
+ * metric's `maxBridgeMinutes`: a series measured about once an hour has an
+ * hour as its usual spacing, and a line across those hours would draw
+ * values that were never measured. Past either limit the line breaks, and a
+ * reading with no line to either side is marked as a point (`soloKey`). The
  * bridged rows carry the straight line between the two readings for drawing
  * only; the value shown on hover is always a reading (`raw`).
  *
@@ -22,6 +26,8 @@
 export interface OverlayLineInput {
   key: string;
   points: ReadonlyArray<{ at: string; value: number }>;
+  /** The longest gap between two readings a line is drawn across. */
+  maxBridgeMinutes: number;
 }
 
 /** One row: `t` (epoch ms), then per line its drawn value and its reading. */
@@ -36,6 +42,11 @@ export interface OverlayRows {
 /** The column holding a line's reading (as opposed to its drawn value). */
 export function rawKey(key: string): string {
   return `${key}:raw`;
+}
+
+/** The column that is 1 on a reading no drawn line reaches. */
+export function soloKey(key: string): string {
+  return `${key}:solo`;
 }
 
 function median(values: number[]): number {
@@ -70,7 +81,11 @@ export function buildOverlayRows(opts: {
     const values = new Map(readings);
     if (idxs.length >= 2) {
       const steps = idxs.slice(1).map((idx, i) => idx - idxs[i]!);
-      const maxGap = Math.max(3, 3 * median(steps));
+      const ceiling = Math.max(
+        1,
+        Math.floor((line.maxBridgeMinutes * 60_000) / bucketMs),
+      );
+      const maxGap = Math.min(Math.max(3, 3 * median(steps)), ceiling);
       for (let i = 1; i < idxs.length; i++) {
         const a = idxs[i - 1]!;
         const b = idxs[i]!;
@@ -99,8 +114,13 @@ export function buildOverlayRows(opts: {
     for (const line of opts.lines) {
       const values = drawn.get(line.key)!;
       if (idx !== null) {
+        const reading = raw.get(line.key)!.get(idx);
         row[line.key] = values.get(idx) ?? null;
-        row[rawKey(line.key)] = raw.get(line.key)!.get(idx) ?? null;
+        row[rawKey(line.key)] = reading ?? null;
+        row[soloKey(line.key)] =
+          reading !== undefined && !values.has(idx - 1) && !values.has(idx + 1)
+            ? 1
+            : null;
         continue;
       }
       // An edge between two buckets: the straight line between them, when
@@ -113,6 +133,7 @@ export function buildOverlayRows(opts: {
           ? a + (b - a) * (pos - Math.floor(pos))
           : null;
       row[rawKey(line.key)] = null;
+      row[soloKey(line.key)] = null;
     }
     return row;
   };

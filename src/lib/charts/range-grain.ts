@@ -14,7 +14,7 @@
  * Every chart with the range tabs reads this one function, and the points,
  * the caption chip, the tooltip and the data table read its answer.
  */
-import type { ChartRangePoints } from "@/lib/dashboard-layout";
+import type { ChartRangePoints } from "@/lib/dashboard/chart-overlay-prefs";
 
 import { MS_PER_DAY } from "@/lib/time-constants";
 

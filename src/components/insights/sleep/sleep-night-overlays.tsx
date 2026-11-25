@@ -12,6 +12,7 @@ import type {
 } from "@/hooks/use-sleep-night";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
+  NIGHT_OVERLAY_MAX_BRIDGE_MINUTES,
   nextOverlaySelection,
   type NightOverlayKind,
 } from "@/lib/sleep/night-overlay-kinds";
@@ -131,6 +132,7 @@ export function useNightOverlays(
         label: labelOf(metric),
         color: colorOf(kind)!,
         points: metric.points.map((p) => ({ at: p.at, value: p.value })),
+        maxBridgeMinutes: NIGHT_OVERLAY_MAX_BRIDGE_MINUTES[kind],
         format: (value) => format(metric, value),
       };
     });

@@ -2,7 +2,7 @@
 
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { useTranslations } from "@/lib/i18n/context";
-import type { ComparisonBaseline } from "@/lib/dashboard-layout";
+import type { ComparisonBaseline } from "@/lib/dashboard/chart-overlay-prefs";
 
 /**
  * v1.4.25 — nightly TIME-ASLEEP over time.
