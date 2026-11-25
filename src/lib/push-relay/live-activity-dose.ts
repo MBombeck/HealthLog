@@ -12,7 +12,11 @@ import {
   loadDoseLedger,
 } from "@/lib/medications/dose-state/ledger";
 import { resolveDosesByRow } from "@/lib/medications/dose-state/today";
-import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
+import {
+  SNOOZE_ANCHOR_INCLUDE,
+  slotsHeldBySnooze,
+  snoozeAnchor,
+} from "@/lib/medications/snooze-scope";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { activitySlotWindow } from "@/lib/push-relay/activity-slot";
 import type { ActivityDose } from "@/lib/push-relay/live-activity-content";
@@ -33,6 +37,7 @@ export const DOSE_ROW_SELECT = {
     select: {
       snoozedUntil: true,
       updatedAt: true,
+      ...SNOOZE_ANCHOR_INCLUDE,
       liveActivityEnabled: true,
       schedules: { select: SNOOZE_SCHEDULE_SELECT },
     },
@@ -72,7 +77,7 @@ export async function resolveRows(
       row.medicationId,
       slotsHeldBySnooze({
         snoozedUntil: row.medication.snoozedUntil,
-        snoozedAt: row.medication.updatedAt,
+        snoozedAt: snoozeAnchor(row.medication),
         schedules: row.medication.schedules,
         slotInstants: rows
           .filter((r) => r.medicationId === row.medicationId)
