@@ -107,7 +107,6 @@ export const chartContextResponseSchema = z
   })
   .meta({ id: "ChartContext" });
 
-export type ChartContextQuery = z.infer<typeof chartContextQuerySchema>;
 export type ChartContextResponse = z.infer<typeof chartContextResponseSchema>;
 export type ChartContextMedicationMark =
   ChartContextResponse["medications"][number];
