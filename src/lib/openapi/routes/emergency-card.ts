@@ -89,6 +89,33 @@ const emergencyCardView = z
       "The emergency card. An item is null when the card was not read for it (see `fields`) or it holds nothing. Render these values; do not recompute them.",
   });
 
+const editTarget = z
+  .string()
+  .nullable()
+  .describe(
+    "An in-app path, or null when the surface that owns the line is switched off.",
+  );
+
+const emergencyCardTargets = z
+  .object({
+    fields: z
+      .record(emergencyCardFieldSchema, editTarget)
+      .describe("Where each item is edited."),
+    conditions: z
+      .array(editTarget)
+      .describe(
+        "One per `card.conditions` line, in order: the illness episode, or the medical history for the written note.",
+      ),
+    medications: z
+      .array(editTarget)
+      .describe("One per `card.medications` line, in order: the medication."),
+  })
+  .meta({
+    id: "EmergencyCardTargets",
+    description:
+      "Where the owner edits each line of the card: the surface that owns it. Added in v1.50. Only the owner's read carries it; the read-only link never does.",
+  });
+
 const cardLinkSummary = z
   .object({
     tokenPrefix: z
@@ -219,7 +246,10 @@ export const emergencyCardPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                z.object({ card: emergencyCardView }),
+                z.object({
+                  card: emergencyCardView,
+                  targets: emergencyCardTargets,
+                }),
                 "EmergencyCardRead",
               ),
             },

@@ -16211,8 +16211,6 @@
       "title": "Notfallkarte",
       "description": "Deine Notfalldaten für unterwegs.",
       "loadError": "Die Notfallkarte konnte nicht geladen werden.",
-      "editHint": "Blutgruppe, Kontakte, Implantate und Verfügungen stammen aus deinen Notfalldaten.",
-      "editLink": "Bearbeiten",
       "offlineHint": "Die App funktioniert absichtlich nicht offline. Speichere eine Kopie auf dem Handy, um die Karte ohne Verbindung dabeizuhaben; sie zeigt den Stand vom Tag des Speicherns.",
       "downloadError": "Der Download hat nicht geklappt. Versuch es noch einmal.",
       "saveOffline": "Offline-Kopie speichern",

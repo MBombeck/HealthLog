@@ -8,6 +8,9 @@
  * taken out of the access set before the loader runs, so their rows are
  * neither read nor decrypted for a model's request.
  *
+ * The health score is read in its model-bound form, without the wellbeing
+ * pillar the questionnaires make up (`modelBound`).
+ *
  * Read on the person's own record only: both callers act for the owner.
  *
  * The Coach also hands in the person's Coach exclusions (`loadExcluded`, the
@@ -199,6 +202,7 @@ export async function readDayForTool(args: {
     access: { ...access, readable },
     tz,
     floor,
+    modelBound: true,
   });
   const data = projectDayForModel(
     day,

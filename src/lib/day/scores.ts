@@ -5,7 +5,9 @@
  * exists.
  *
  *   - Health score: the `HealthScoreRecord` row of that local day, the score
- *     as it was shown that day. Nothing recomputes it.
+ *     as it was shown that day. Nothing recomputes it, except for a model:
+ *     there the questionnaire pillar is taken out of every day
+ *     (`modelBound`).
  *   - Readiness: the `COMPUTED` `RECOVERY_SCORE` row the nightly job wrote
  *     for the night that ended on this morning, the history the readiness
  *     page draws (`readReadinessHistory`). The row is stamped on the day that
@@ -35,6 +37,7 @@ import {
   type DayScoreKey,
 } from "@/lib/day/contract";
 import { MIN_BAND_DAYS, BAND_WINDOW_DAYS } from "@/lib/day/values";
+import { modelBoundComposite } from "@/lib/analytics/score/model-bound";
 import { prisma } from "@/lib/db";
 import { buildBaselineBand } from "@/lib/insights/derived/baseline";
 import {
@@ -148,6 +151,13 @@ export interface DayScoresArgs {
   priorityJson: unknown;
   /** The earliest instant a comparison may read (a lookback limit). */
   floor?: Date | null;
+  /**
+   * The day leaves for a model: the health score, its usual range included,
+   * is read in its model-bound form, without the questionnaire pillar
+   * (`modelBoundComposite`). A day whose only counted pillar is that one
+   * has no health score for a model.
+   */
+  modelBound?: boolean;
 }
 
 /** The recovery-module scores: readiness, a device's recovery, strain. */
@@ -303,9 +313,18 @@ async function healthScoreOf(
 ): Promise<DayScore | null> {
   const rows = await prisma.healthScoreRecord.findMany({
     where: { userId: args.userId, dayKey: { gte: windowFrom, lte: args.day } },
-    select: { dayKey: true, composite: true },
+    select: {
+      dayKey: true,
+      composite: true,
+      composition: true,
+      pillarScores: true,
+    },
   });
-  const byDay = new Map(rows.map((row) => [row.dayKey, row.composite]));
+  const byDay = new Map<string, number>();
+  for (const row of rows) {
+    const value = args.modelBound ? modelBoundComposite(row) : row.composite;
+    if (value !== null) byDay.set(row.dayKey, value);
+  }
   const value = byDay.get(args.day);
   if (value === undefined) return null;
   return score(

@@ -48163,8 +48163,11 @@ components:
           properties:
             card:
               $ref: "#/components/schemas/EmergencyCardView"
+            targets:
+              $ref: "#/components/schemas/EmergencyCardTargets"
           required:
             - card
+            - targets
           additionalProperties: false
         error:
           type: "null"
@@ -48368,6 +48371,68 @@ components:
       additionalProperties: false
       description: The emergency card. An item is null when the card was not read for it (see `fields`) or it holds nothing.
         Render these values; do not recompute them.
+    EmergencyCardTargets:
+      type: object
+      properties:
+        fields:
+          type: object
+          propertyNames:
+            type: string
+            enum:
+              - NAME
+              - BLOOD_TYPE
+              - ALLERGIES
+              - CONDITIONS
+              - MEDICATIONS
+              - PREGNANCY
+              - IMPLANTS
+              - CONTACTS
+              - ADVANCE_DIRECTIVE
+              - ORGAN_DONOR
+              - NOTE
+              - DATE_OF_BIRTH
+          additionalProperties:
+            description: An in-app path, or null when the surface that owns the line is switched off.
+            type:
+              - string
+              - "null"
+          required:
+            - NAME
+            - BLOOD_TYPE
+            - ALLERGIES
+            - CONDITIONS
+            - MEDICATIONS
+            - PREGNANCY
+            - IMPLANTS
+            - CONTACTS
+            - ADVANCE_DIRECTIVE
+            - ORGAN_DONOR
+            - NOTE
+            - DATE_OF_BIRTH
+          description: Where each item is edited.
+        conditions:
+          type: array
+          items:
+            description: An in-app path, or null when the surface that owns the line is switched off.
+            type:
+              - string
+              - "null"
+          description: "One per `card.conditions` line, in order: the illness episode, or the medical history for the written note."
+        medications:
+          type: array
+          items:
+            description: An in-app path, or null when the surface that owns the line is switched off.
+            type:
+              - string
+              - "null"
+          description: "One per `card.medications` line, in order: the medication."
+      required:
+        - fields
+        - conditions
+        - medications
+      additionalProperties: false
+      description: "Where the owner edits each line of the card: the surface that owns it. Added in v1.50. Only the owner's
+        read carries it; the read-only link never does."
     EmergencyCardLinkStatus:
       type: object
       properties:
