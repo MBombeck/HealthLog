@@ -15,10 +15,8 @@
  * A link never points at a page the account cannot see: the destination
  * passes the same `insights-page:<slug>` surface gate the tab strip uses.
  */
-import {
-  INSIGHTS_OVERVIEW_PATH,
-  type SubPageSlug,
-} from "@/lib/insights/sub-page-metric";
+import type { SubPageSlug } from "@/lib/insights/sub-page-metric";
+import { insightsPageHref } from "@/lib/links/hrefs";
 import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
 
 import {
@@ -78,5 +76,5 @@ export function dashboardTileHref(
   const slug = TILE_DESTINATION[widget];
   if (slug === null) return null;
   if (!isSurfaceVisible(`insights-page:${slug}`, modules)) return null;
-  return `${INSIGHTS_OVERVIEW_PATH}/${slug}`;
+  return insightsPageHref(slug);
 }

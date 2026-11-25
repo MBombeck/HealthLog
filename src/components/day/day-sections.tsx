@@ -43,7 +43,7 @@ import {
 } from "@/components/timeline/label-keys";
 import { resolveIntlLocale } from "@/lib/format-locale";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import { metricPageHref } from "@/lib/insights/metric-page";
+import { metricHref, webHref } from "@/lib/links/hrefs";
 import { MOOD_LABEL_KEYS } from "@/lib/mood/labels";
 import { cn } from "@/lib/utils";
 
@@ -411,7 +411,7 @@ export function DayRunning({
             <li key={`${item.kind}-${item.id}`}>
               {item.href ? (
                 <Link
-                  href={item.href}
+                  href={webHref(item.href)}
                   data-slot="day-running-item"
                   className="hover:bg-muted/60 focus-visible:ring-ring/50 -mx-2 flex min-h-11 items-center gap-3 rounded-md px-2 py-1.5 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
                 >
@@ -479,7 +479,7 @@ function ValueTile({
   const lead = tile.values[0];
   // Like a score tile, a value tile leads to its metric's page; a kind
   // without a page of its own stays a plain tile.
-  const href = metricPageHref(tile.key);
+  const href = metricHref(tile.key);
   const body = (
     <>
       <span className="text-muted-foreground truncate text-xs">
@@ -682,7 +682,7 @@ export function DayEvents({ events }: { events: readonly DayEvent[] }) {
                   // The whole row is the target; the title carries the link
                   // so the document chips below stay their own targets.
                   <Link
-                    href={event.href}
+                    href={webHref(event.href)}
                     data-slot="day-event-link"
                     className="focus-visible:ring-ring/50 block text-sm leading-5 font-medium after:absolute after:inset-0 after:rounded-md after:content-[''] focus-visible:outline-none focus-visible:after:ring-[3px] focus-visible:after:ring-inherit"
                   >

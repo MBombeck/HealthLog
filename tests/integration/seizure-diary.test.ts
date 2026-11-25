@@ -817,7 +817,8 @@ describe("the timeline carries a seizure lane", () => {
       expect.objectContaining({
         kind: "seizureDay",
         sub: "3",
-        href: "/seizures",
+        // The day over the diary, where the day layer lists its seizures.
+        href: expect.stringMatching(/^\/seizures\?day=\d{4}-\d{2}-\d{2}$/),
       }),
     ]);
 
