@@ -76,6 +76,8 @@ const SCOPE = [
 const ALLOWED: Record<string, string> = {
   "lib/export/restore-target.ts::(db as Record<string, OwnedDelegate | undefined>)[key]":
     "A Prisma model delegate, looked up by a model name from the closed restore plan; the client serves delegates through its own accessors, so an own-key read would find none.",
+  "lib/auth/session-lifetime.ts::env[setting.name]":
+    "An environment read whose name comes from the three DaysSetting constants in the same file, never from input.",
 };
 
 function inScope(rel: string): boolean {
