@@ -79,7 +79,12 @@ import { vaccinationPaths } from "./vaccinations";
 import { illnessPaths } from "./illness";
 import { importPaths } from "./import";
 import { healthConnectRemotePaths, importFilePaths } from "./import-files";
-import { insightsPaths, sleepScoreValue, wellnessScoreValue } from "./insights";
+import {
+  insightsPaths,
+  readinessValue,
+  sleepScoreValue,
+  wellnessScoreValue,
+} from "./insights";
 import { integrationPaths } from "./integrations";
 import { insightsSignalPaths } from "./insights-signals";
 import { labsPaths } from "./labs";
@@ -289,7 +294,8 @@ export const openApiComponents: NonNullable<ZodOpenApiObject["components"]> = {
   // the DTO and reported two fields as missing that were already on the wire.
   // Publishing the shape a `$ref` cannot reach is exactly what this slot is
   // for; the `value` description names it as the shape the three score ids
-  // return. `SleepScoreValue` rides the same slot for `SLEEP_SCORE`.
+  // return. `SleepScoreValue` rides the same slot for `SLEEP_SCORE`, and
+  // `ReadinessValue` for `READINESS`.
   schemas: {
     Medication: medicationResource,
     MedicationDoseHistoryImportFatalReason:
@@ -298,6 +304,7 @@ export const openApiComponents: NonNullable<ZodOpenApiObject["components"]> = {
     MoodTagLayout: moodTagLayout,
     WellnessScoreValue: wellnessScoreValue,
     SleepScoreValue: sleepScoreValue,
+    ReadinessValue: readinessValue,
   },
   // v1.36.0 — the per-request account selector, defined in the sharing route
   // module so that `src/__tests__/acting-account-boundary-guard.test.ts` keeps

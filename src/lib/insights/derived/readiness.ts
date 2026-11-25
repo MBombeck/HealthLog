@@ -41,7 +41,9 @@ import {
 } from "@/lib/rollups/measurement-coverage";
 import { computeMoodStability } from "@/lib/insights/mood-aggregates";
 import { MS_PER_DAY } from "@/lib/time-constants";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { userDayKey } from "@/lib/tz/format";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { bandForScoreKind } from "@/lib/analytics/score/shared";
 import {
   buildInsufficient,
   buildOk,
@@ -92,6 +94,21 @@ export interface ReadinessValue {
    * that show it, absent on the job's own compute. Additive.
    */
   series?: number[];
+  /**
+   * 1.50 — the oldest local calendar day (`YYYY-MM-DD`, in the account's
+   * zone) a counted input rests on: a vital's latest day mean, or the wake
+   * day of the night the sleep score describes. Mood carries no day and is
+   * not counted. On a fresh blend it is today. Additive.
+   */
+  asOfDay: string;
+  /**
+   * 1.50 — true only when every counted vital (resting pulse, HRV,
+   * respiratory rate) is from the reader's own today AND the sleep score
+   * describes the night that ended this morning. A blend that is not fresh
+   * is not a statement about today: a surface shows no number, no band and
+   * no sentence for it, only "last <score> on <asOfDay>". Additive.
+   */
+  fresh: boolean;
 }
 
 /**
@@ -131,12 +148,6 @@ export async function readReadinessHistory(
 function clamp100(v: number): number {
   if (!Number.isFinite(v)) return 0;
   return Math.max(0, Math.min(100, Math.round(v)));
-}
-
-function bandForScore(score: number): "green" | "yellow" | "red" {
-  if (score >= 70) return "green";
-  if (score >= 40) return "yellow";
-  return "red";
 }
 
 /**
@@ -227,6 +238,8 @@ async function scoreVitalDeviation(
   source: DerivedProvenanceSource;
   /** Distinct history days backing this component's baseline (0 when gated). */
   historyDays: number;
+  /** Local day of the day mean that was scored; null when nothing scored. */
+  day: string | null;
 }> {
   const baseline = await computeVitalsBaseline(userId, profile, {
     type,
@@ -239,14 +252,13 @@ async function scoreVitalDeviation(
       value: null,
       source: baseline.provenance.source,
       historyDays: baseline.coverage.historyDays,
+      day: null,
     };
   }
-  const today =
-    (
-      await readLatestDayMean(userId, type, windowDays, now, tz, {
-        plausibleOnly: false,
-      })
-    )?.value ?? null;
+  const latest = await readLatestDayMean(userId, type, windowDays, now, tz, {
+    plausibleOnly: false,
+  });
+  const today = latest?.value ?? null;
   // No recent reading, or a non-finite baseline center / today value: there
   // is no scorable deviation. Return null (hidden) rather than letting a NaN
   // fall through `scoreDeviation` → `clamp100`, which would surface a
@@ -260,6 +272,7 @@ async function scoreVitalDeviation(
       value: null,
       source: baseline.provenance.source,
       historyDays: baseline.coverage.historyDays,
+      day: null,
     };
   }
   const value = scoreDeviation(
@@ -272,6 +285,7 @@ async function scoreVitalDeviation(
     value,
     source: baseline.provenance.source,
     historyDays: baseline.coverage.historyDays,
+    day: latest?.day ?? null,
   };
 }
 
@@ -284,9 +298,9 @@ export interface ReadinessOpts {
   coverage?: RollupCoverageMap;
   /**
    * IANA timezone the "same day" grouping is keyed in, so a 23:30-local
-   * reading lands on the correct readiness day. Defaults to `Europe/Berlin`
-   * (the canonical tenant zone) when the caller has not resolved the user's
-   * zone.
+   * reading lands on the correct readiness day, and the reader's "today"
+   * that `fresh` is measured against. Omitted, the account's stored zone is
+   * resolved (the production path); the sleep score reads the same zone.
    */
   tz?: string;
 }
@@ -302,7 +316,7 @@ export async function computeReadiness(
 ): Promise<Derived<ReadinessValue>> {
   const windowDays = opts.windowDays ?? DEFAULT_WINDOW_DAYS;
   const now = opts.now ?? new Date();
-  const tz = opts.tz ?? DEFAULT_TIMEZONE;
+  const tz = opts.tz ?? (await resolveUserTimezone(userId));
   const computedAt = nowProvenanceTimestamp(now);
   const coverage = opts.coverage ?? (await probeRollupCoverage(userId));
 
@@ -350,7 +364,11 @@ export async function computeReadiness(
 
   // Sleep adequacy — folds the Sleep Score in (stubbed behind coverage:
   // null when there is no scorable night, dropping the component).
-  const sleep = await computeSleepScore(userId, profile, { windowDays, now });
+  const sleep = await computeSleepScore(userId, profile, {
+    windowDays,
+    now,
+    tz,
+  });
   const sleepValue = sleep.status === "ok" ? sleep.value.score : null;
   const sleepHistoryDays =
     sleep.status === "ok" ? sleep.coverage.historyDays : 0;
@@ -438,8 +456,22 @@ export async function computeReadiness(
     return raw[key] !== null;
   });
 
+  const { asOfDay, fresh } = readinessFreshness({
+    vitalDays: [rhr, hrv, resp]
+      .filter((v) => v.value !== null)
+      .map((v) => v.day),
+    sleepNight: sleep.status === "ok" ? sleep.value.night : null,
+    todayKey: userDayKey(now, tz),
+  });
+
   return buildOk<ReadinessValue>({
-    value: { score, band: bandForScore(score), components },
+    value: {
+      score,
+      band: bandForScoreKind("readiness", score),
+      components,
+      asOfDay,
+      fresh,
+    },
     coverage: cov,
     confidence,
     provenance: {
@@ -449,6 +481,29 @@ export async function computeReadiness(
       computedAt,
     },
   });
+}
+
+/**
+ * Which day a blend rests on, and whether that day is today. Every counted
+ * vital's scored day and the sleep score's night (its wake day) are dated;
+ * `asOfDay` is the oldest of them, so a blend is fresh exactly when that
+ * oldest day is the reader's today. A counted vital without a day cannot
+ * vouch for today and makes the blend stale. Pure; exported for tests.
+ */
+export function readinessFreshness(args: {
+  vitalDays: readonly (string | null)[];
+  sleepNight: string | null;
+  todayKey: string;
+}): { asOfDay: string; fresh: boolean } {
+  const days = [...args.vitalDays];
+  if (args.sleepNight !== null) days.push(args.sleepNight);
+  const dated = days.filter((d): d is string => d !== null);
+  if (dated.length === 0) return { asOfDay: args.todayKey, fresh: false };
+  const asOfDay = dated.reduce((a, b) => (b < a ? b : a));
+  return {
+    asOfDay,
+    fresh: dated.length === days.length && asOfDay === args.todayKey,
+  };
 }
 
 /**

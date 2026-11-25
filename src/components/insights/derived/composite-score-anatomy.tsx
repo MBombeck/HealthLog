@@ -18,6 +18,7 @@ import {
   type AnatomyContributor,
 } from "./score-anatomy-view";
 import { RING_GRADIENT, type RingHue } from "./ring-hues";
+import type { ScoreBand } from "./band-tokens";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import { METRIC_PROVENANCE } from "./standards";
 import { ScoreHistoryChart, ScoreTrendChartDynamic } from "./score-history";
@@ -304,11 +305,10 @@ export function CompositeScoreAnatomy({
   // the card always renders its prose rather than the no-provider fallback.
   const assessment = data.assessment;
 
-  // v1.42 — the score's course, right under its card, with the range tabs
-  // every chart offers. A stored nightly score charts its readings; readiness
-  // and the sleep score chart the daily history the score-history route
-  // serves. Only beside a score: an account without one gets the honest
-  // insufficient card, not an empty chart under it.
+  // v1.42 — the score's course under its card, with the range tabs. A stored
+  // nightly score charts its readings; readiness and the sleep score chart
+  // the score-history route's daily history. Only beside a score: an account
+  // without one gets the insufficient card, not an empty chart.
   const history =
     data.status !== "ok" ? null : metric === "RECOVERY_SCORE" ||
       metric === "STRESS_SCORE" ||
@@ -332,6 +332,7 @@ export function CompositeScoreAnatomy({
       <ScoreAnatomyView
         title={title}
         score={score}
+        band={serverBand(data)}
         hue={METRIC_HUE[metric]}
         caption={caption}
         contributors={contributors}
@@ -390,4 +391,14 @@ function rankByImpact(a: AnatomyContributor, b: AnatomyContributor): number {
   const bPresent = b.value != null ? 1 : 0;
   if (aPresent !== bPresent) return bPresent - aPresent;
   return b.weight - a.weight;
+}
+
+/**
+ * The server's band for the score, always passed to the ring: stress and
+ * strain read the other way round, so a ring left to colour itself from the
+ * number would paint a stress of 80 green.
+ */
+function serverBand(data: { status: string; value?: unknown }) {
+  if (data.status !== "ok" || !data.value) return undefined;
+  return (data.value as { band?: ScoreBand }).band;
 }

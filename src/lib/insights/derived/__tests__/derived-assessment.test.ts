@@ -52,6 +52,8 @@ const insufficient: Derived<unknown> = {
 const readiness: ReadinessValue = {
   score: 64,
   band: "yellow",
+  asOfDay: "2026-06-02",
+  fresh: true,
   components: [
     { key: "rhr", value: 40, weight: 0.3 },
     { key: "hrv", value: 80, weight: 0.3 },
@@ -167,6 +169,8 @@ describe("resolveDeterministicAssessment", () => {
     const sleepWeak: ReadinessValue = {
       score: 58,
       band: "yellow",
+      asOfDay: "2026-06-02",
+      fresh: true,
       components: [
         { key: "rhr", value: 80, weight: 0.3 },
         { key: "hrv", value: 75, weight: 0.3 },
@@ -194,6 +198,37 @@ describe("resolveDeterministicAssessment", () => {
     );
     expect(a!.text).not.toContain("An earlier night");
     expect(a!.text).not.toContain("most effective lever");
+  });
+
+  it("says nothing about a readiness that does not rest on today", () => {
+    expect(
+      resolveDeterministicAssessment(
+        "READINESS",
+        okDerived({ ...readiness, fresh: false, asOfDay: "2026-06-01" }),
+        "de",
+        NOW,
+      ),
+    ).toBeNull();
+  });
+
+  it("calls a heavy stress day high, never low", () => {
+    const heavy: WellnessScoreValue = { ...recovery, score: 80, band: "red" };
+    const de = resolveDeterministicAssessment(
+      "STRESS_SCORE",
+      okDerived(heavy),
+      "de",
+      NOW,
+    );
+    expect(de!.text).toMatch(/80 von 100( heute)? — hoch/);
+    expect(de!.text).not.toContain("niedrigen Bereich");
+    const en = resolveDeterministicAssessment(
+      "STRAIN_SCORE",
+      okDerived(heavy),
+      "en",
+      NOW,
+    );
+    expect(en!.text).toContain("80 out of 100 today — high");
+    expect(en!.text).not.toContain("low side");
   });
 
   it("uses the trend for a contributor-less recovery score (en)", () => {

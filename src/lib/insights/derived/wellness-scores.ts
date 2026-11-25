@@ -26,9 +26,15 @@ import { SPARKLINE_MAX_POINTS, type Derived } from "./types";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 import { userDayKey } from "@/lib/tz/format";
+import {
+  bandForScoreKind,
+  legacyVendorWireBand,
+  type HealthLogScoreKind,
+} from "@/lib/analytics/score/shared";
 
-/** A 0–100 wellness score band. Higher is better for recovery; for stress a
- *  higher score is worse, so the band direction flips (see `WELLNESS_DIR`). */
+/** A 0–100 wellness score band. Higher is better for recovery; for stress and
+ *  strain a higher score is heavier, so the band direction flips (see
+ *  `bandWellnessScore`). */
 export type WellnessScoreBand = "green" | "yellow" | "red";
 
 export interface WellnessScoreValue {
@@ -97,26 +103,23 @@ export const WELLNESS_SCORE_TYPES = {
 
 export type WellnessScoreType = keyof typeof WELLNESS_SCORE_TYPES;
 
-/** `true` when a higher score is the healthier direction. Stress + strain
- *  invert (more = worse / harder), so the band flips for them. */
-const HIGHER_IS_BETTER: Record<WellnessScoreType, boolean> = {
-  RECOVERY_SCORE: true,
-  STRESS_SCORE: false,
-  STRAIN_SCORE: false,
+/** Which HealthLog score each persisted type is, for the one band rule. */
+const SCORE_KIND: Record<WellnessScoreType, HealthLogScoreKind> = {
+  RECOVERY_SCORE: "recovery",
+  STRESS_SCORE: "stress",
+  STRAIN_SCORE: "strain",
 };
 
-/** Band a 0–100 score honouring the metric's direction. */
+/**
+ * Band a 0–100 score honouring the metric's direction: the shared rule
+ * (`bandForScoreKind`), so recovery bands like readiness and a stress or
+ * strain of 80 is red, never green.
+ */
 export function bandWellnessScore(
   type: WellnessScoreType,
   score: number,
 ): WellnessScoreBand {
-  const good = HIGHER_IS_BETTER[type]
-    ? score
-    : // Invert for stress/strain so 80 stress reads red, not green.
-      100 - score;
-  if (good >= 70) return "green";
-  if (good >= 40) return "yellow";
-  return "red";
+  return bandForScoreKind(SCORE_KIND[type], score);
 }
 
 export interface WellnessScoreOpts {
@@ -289,7 +292,12 @@ export async function computeWellnessScore(
   return buildOk<WellnessScoreValue>({
     value: {
       score,
-      band: bandWellnessScore(type, score),
+      // A vendor's recovery keeps the ring colour it has always had until
+      // the ring is rebuilt on the vendor's thresholds (1.51).
+      band:
+        latest.source === "COMPUTED"
+          ? bandWellnessScore(type, score)
+          : legacyVendorWireBand(score, "higher-better"),
       trendDelta,
       daysInWindow: rows.length,
       asOf: latest.measuredAt.toISOString(),
@@ -378,7 +386,7 @@ function buildDeviceStrain(
   return buildOk<WellnessScoreValue>({
     value: {
       score,
-      band: bandWellnessScore("STRAIN_SCORE", score),
+      band: legacyVendorWireBand(score, "lower-better"),
       trendDelta,
       daysInWindow: rows.length,
       asOf: latest.measuredAt.toISOString(),
