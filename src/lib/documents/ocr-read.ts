@@ -170,6 +170,38 @@ export function salvageTruncatedJson(raw: string): unknown {
 }
 
 /**
+ * Whether a reply stops inside the JSON object it opened: an object or array
+ * still open (or a string unterminated) at the last character. A provider
+ * says so with a `length` finish reason, but a local model whose context
+ * window filled stops at the same place and reports `stop`; read either way,
+ * the reply is cut, and asking again would stop at the same place.
+ */
+function endsInsideJson(raw: string): boolean {
+  const start = raw.indexOf("{");
+  if (start < 0) return false;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < raw.length; i += 1) {
+    const c = raw[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (c === "\\") escaped = true;
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') inString = true;
+    else if (c === "{" || c === "[") depth += 1;
+    else if (c === "}" || c === "]") {
+      depth -= 1;
+      // The opening object closed: whatever follows is not a cut.
+      if (depth <= 0) return false;
+    }
+  }
+  return depth > 0 || inString;
+}
+
+/**
  * What the reads of one scan have cost so far, counted as each call returns,
  * so a scan that fails after several calls is still charged for them.
  */
@@ -232,7 +264,8 @@ async function callOnce<E>(
   }
   meter.spent += raw.tokensUsed ?? ceiling;
   meter.cached += raw.cachedInputTokens ?? 0;
-  const truncated = raw.finishReason === "length";
+  const truncated =
+    raw.finishReason === "length" || endsInsideJson(raw.content);
   return { envelope: parseReply(raw.content, truncated, parse), truncated };
 }
 
