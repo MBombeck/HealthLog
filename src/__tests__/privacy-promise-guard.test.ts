@@ -114,15 +114,15 @@ const PROMISES: Record<string, () => void> = {
   },
   "insights.coach.lookback.detailDays": () => {
     const now = new Date("2026-06-01T00:00:00Z");
-    expect(reachFloor({ window: "90d", days: 90 }, now)?.toISOString()).toBe(
-      "2026-03-03T00:00:00.000Z",
-    );
+    expect(
+      reachFloor({ window: "last90days", days: 90 }, now)?.toISOString(),
+    ).toBe("2026-03-03T00:00:00.000Z");
   },
   "insights.coach.lookback.detailMonths": () => {
     const now = new Date("2026-06-01T00:00:00Z");
-    expect(reachFloor({ window: "1y", days: 365 }, now)?.toISOString()).toBe(
-      "2025-06-01T00:00:00.000Z",
-    );
+    expect(
+      reachFloor({ window: "lastYear", days: 365 }, now)?.toISOString(),
+    ).toBe("2025-06-01T00:00:00.000Z");
   },
   // No model path reads a stored route.
   "settings.privacy.workoutRoutes.detail": () => {
