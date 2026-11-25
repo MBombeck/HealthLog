@@ -306,6 +306,19 @@ function BriefingSkeleton() {
   );
 }
 
+/** The empty-state hint for a failed generation, by its failure class. */
+function failedDescriptionKeyFor(failureClass: BriefingFailureClass | null) {
+  return failureClass === "timeout"
+    ? "insights.dailyBriefing.failedDescriptionTimeout"
+    : failureClass === "auth"
+      ? "insights.dailyBriefing.failedDescriptionProvider"
+      : failureClass === "rate-limit"
+        ? "insights.dailyBriefing.failedDescriptionRateLimit"
+        : failureClass === "format"
+          ? "insights.dailyBriefing.failedDescriptionFormat"
+          : "insights.dailyBriefing.failedDescription";
+}
+
 export function DailyBriefing({
   briefing,
   updatedAt,
@@ -326,16 +339,12 @@ export function DailyBriefing({
   // v1.25.3 — when there is no last good text and the last attempt failed,
   // point the hint at the lever that matches the failure class. A timeout (the
   // dominant failure on a slow self-hosted model) → raise the AI response
-  // timeout; an auth / config rejection → re-check the provider in Settings.
-  // Anything else keeps the calmer generic line. Non-alarming by design.
-  const failedDescriptionKey =
-    generationFailureClass === "timeout"
-      ? "insights.dailyBriefing.failedDescriptionTimeout"
-      : generationFailureClass === "auth"
-        ? "insights.dailyBriefing.failedDescriptionProvider"
-        : generationFailureClass === "rate-limit"
-          ? "insights.dailyBriefing.failedDescriptionRateLimit"
-          : "insights.dailyBriefing.failedDescription";
+  // timeout; an auth / config rejection → re-check the provider in Settings;
+  // a reply the briefing could not show (invalid JSON, a briefing that fails
+  // the shared reader) says the model answered in the wrong form, not that
+  // the provider failed. Anything else keeps the calmer generic line.
+  // Non-alarming by design.
+  const failedDescriptionKey = failedDescriptionKeyFor(generationFailureClass);
 
   return (
     // v1.13.1 — heading-above-card pattern. The "Tagesbriefing" title

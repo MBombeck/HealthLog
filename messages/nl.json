@@ -3231,6 +3231,7 @@
       "failedDescriptionTimeout": "Het AI-verzoek duurde te lang en de briefing was niet op tijd klaar. Verhoog bij een traag lokaal model de time-out voor AI-antwoorden in Instellingen en probeer het daarna opnieuw.",
       "failedDescriptionProvider": "De AI-provider heeft het verzoek geweigerd. Controleer de provider en de API-sleutel in de AI-instellingen en probeer het daarna opnieuw.",
       "failedDescriptionRateLimit": "De AI-provider beperkt op dit moment het aantal verzoeken. Probeer het over een tijdje opnieuw.",
+      "failedDescriptionFormat": "De AI antwoordde, maar niet in een vorm die de briefing kan tonen. Probeer het opnieuw; gebeurt het vaker, dan helpt misschien een ander model in de AI-instellingen.",
       "omittedTitle": "Briefing achtergehouden",
       "omittedUngroundedDescription": "De gegenereerde briefing noemde een cijfer dat niet aan de hand van je gegevens kon worden gecontroleerd, dus is hij niet getoond. Probeer het opnieuw."
     },

@@ -3231,6 +3231,7 @@
       "failedDescriptionTimeout": "A solicitação de IA esgotou o tempo antes de o resumo ficar pronto. Para um modelo local lento, aumente o tempo limite de resposta de IA em Configurações e tente novamente.",
       "failedDescriptionProvider": "O provedor de IA rejeitou a solicitação. Verifique novamente o provedor e a chave de API nas configurações de IA e tente novamente.",
       "failedDescriptionRateLimit": "O provedor de IA está limitando as solicitações agora. Tente novamente em instantes.",
+      "failedDescriptionFormat": "A IA respondeu, mas não em um formato que o briefing consiga mostrar. Tente novamente; se continuar acontecendo, outro modelo nas configurações de IA pode ajudar.",
       "omittedTitle": "Resumo retido",
       "omittedUngroundedDescription": "O resumo gerado referenciou um número que não pôde ser verificado contra seus dados, então não foi exibido. Tente novamente."
     },

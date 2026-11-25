@@ -3231,6 +3231,7 @@
       "failedDescriptionTimeout": "Die KI-Anfrage hat das Zeitlimit überschritten, bevor das Briefing fertig war. Erhöhe für ein langsames lokales Modell in den Einstellungen das Antwort-Zeitlimit und versuche es dann erneut.",
       "failedDescriptionProvider": "Der KI-Anbieter hat die Anfrage abgelehnt. Prüfe Anbieter und API-Schlüssel in den KI-Einstellungen und versuche es erneut.",
       "failedDescriptionRateLimit": "Der KI-Anbieter drosselt derzeit die Anfragen. Versuche es in Kürze erneut.",
+      "failedDescriptionFormat": "Die KI hat geantwortet, aber nicht in einer Form, die das Briefing anzeigen kann. Versuche es erneut; passiert das öfter, hilft vielleicht ein anderes Modell in den KI-Einstellungen.",
       "omittedTitle": "Briefing zurückgehalten",
       "omittedUngroundedDescription": "Das erstellte Briefing nannte eine Zahl, die sich nicht anhand deiner Daten überprüfen ließ, deshalb wurde es nicht angezeigt. Versuche es erneut."
     },

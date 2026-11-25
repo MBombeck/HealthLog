@@ -33,7 +33,8 @@ export const BRIEFING_FAILURE_ACTION = "insights.briefing-failure";
  *                     Lever: re-check the provider / API key in Settings.
  *   - `rate-limit`  — the provider returned 429.
  *   - `provider`    — a 5xx / generic upstream failure.
- *   - `format`      — the model returned unparseable output (invalid JSON).
+ *   - `format`      — the model returned unparseable output (invalid JSON),
+ *                     or a briefing the card cannot render.
  *   - `unknown`     — anything that does not classify.
  */
 export type BriefingFailureClass =
@@ -64,6 +65,10 @@ export function classifyBriefingFailure(args: {
     if (status >= 400 && status < 500) return "auth";
     if (status >= 500) return "provider";
   }
+  // The model answered, but its briefing could not be rendered: the
+  // model's output, like `invalid-json` above. Such a marker never carries a
+  // status, so the check sits here.
+  if (args.reason === "invalid-briefing") return "format";
   // No / sentinel-zero upstream status. Only a deadline is a timeout: a reply
   // that came back without an answer is the model's output, and a refused or
   // dropped connection is the provider, and neither is helped by a longer

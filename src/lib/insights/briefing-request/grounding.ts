@@ -1,5 +1,6 @@
 /**
- * The reply's parse and the daily-briefing number-grounding gate.
+ * The daily-briefing number-grounding gate. The reply's parse and its
+ * commit gate live in `insight-reply.ts`, shared with the background path.
  *
  * The schema only checks the briefing's SHAPE; the gate asserts every
  * number the briefing prose restates traces to a `features.signalsOfDay`
@@ -12,22 +13,21 @@ import {
   findUngroundedBriefingNumbers,
   readBriefingBlock,
 } from "@/lib/ai/briefing-grounding";
+import {
+  briefingRequiredFor,
+  previousRenderableBriefing,
+} from "@/lib/ai/briefing-blocks";
 import type { RunRawWithFallbackResult } from "@/lib/ai/provider-runner";
-import { insightResultSchema, type InsightResult } from "@/lib/ai/types";
+import {
+  parseInsightReply,
+  type ParsedInsight,
+} from "@/lib/insights/insight-reply";
 import { annotate } from "@/lib/logging/context";
 
 import { runBriefingCall, type BriefingCall } from "./completion";
 import type { PreparedFeatures } from "./features";
 
-export type BriefingInsights = InsightResult | Record<string, unknown>;
-
-/** The parsed reply: the strict shape when it validates, the raw object if not. */
-export function parseBriefingReply(content: string): BriefingInsights {
-  const parsed = JSON.parse(content);
-  // Try the strict schema first, fall back to the raw parsed object.
-  const validated = insightResultSchema.safeParse(parsed);
-  return validated.success ? validated.data : parsed;
-}
+export type BriefingInsights = ParsedInsight;
 
 export interface GroundedReply {
   insights: BriefingInsights;
@@ -39,18 +39,6 @@ export interface GroundedReply {
    * of reading "no briefing yet" (#470).
    */
   briefingOmittedReason: "ungrounded" | null;
-}
-
-/** The previous cached briefing, when the payload parses and carries one. */
-function previousBriefing(cachedText: string | null): unknown {
-  if (!cachedText) return null;
-  try {
-    const prev = JSON.parse(cachedText) as Record<string, unknown>;
-    return prev.dailyBriefing ?? null;
-  } catch {
-    // Unparseable previous payload — nothing safe to stand in.
-    return null;
-  }
 }
 
 export async function groundBriefing(
@@ -80,22 +68,28 @@ export async function groundBriefing(
         stage: "grounding-retry",
         reasoning: false,
       });
-      const retryInsights = parseBriefingReply(retry.result.content);
-      ungrounded = findUngroundedBriefingNumbers(
-        readBriefingBlock(retryInsights),
-        signals,
-        features,
-        comparisonSnapshot,
-      );
-      if (ungrounded.length === 0) {
-        insights = retryInsights;
+      // The corrected reply passes the same commit gate as the first one; a
+      // reply the card could not render keeps the briefing withheld.
+      const retryParsed = parseInsightReply(retry.result.content, {
+        briefingRequired: briefingRequiredFor(signals),
+      });
+      if (retryParsed.ok) {
+        ungrounded = findUngroundedBriefingNumbers(
+          readBriefingBlock(retryParsed.insights),
+          signals,
+          features,
+          comparisonSnapshot,
+        );
+      }
+      if (retryParsed.ok && ungrounded.length === 0) {
+        insights = retryParsed.insights;
         result = retry.result;
         workingProviderType = retry.workingProvider.providerType;
       }
     } catch {
-      // Retry failed to produce parseable JSON, or the day's ceiling refused
-      // the correction pass — either way fall through to the strip. An
-      // ungrounded figure is never persisted.
+      // The day's ceiling refused the correction pass, or the provider
+      // failed it; either way fall through to the strip. An ungrounded
+      // figure is never persisted.
     }
   }
   // Still ungrounded after the retry: the freshly generated briefing is
@@ -111,7 +105,8 @@ export async function groundBriefing(
   // stand in, so the card's honest "a figure couldn't be verified" state
   // still fires exactly when the user really has no briefing.
   if (ungrounded.length > 0 && insights && typeof insights === "object") {
-    const fallbackBriefing = previousBriefing(call.ctx.cachedText);
+    // Only a previous briefing that renders may stand in.
+    const fallbackBriefing = previousRenderableBriefing(call.ctx.cachedText);
     (insights as Record<string, unknown>).dailyBriefing = fallbackBriefing;
     briefingOmittedReason = fallbackBriefing == null ? "ungrounded" : null;
     annotate({

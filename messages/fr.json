@@ -3231,6 +3231,7 @@
       "failedDescriptionTimeout": "La requête IA a dépassé le délai avant que le briefing soit prêt. Pour un modèle local lent, augmentez le délai de réponse dans les Paramètres, puis réessayez.",
       "failedDescriptionProvider": "Le fournisseur d'IA a rejeté la requête. Vérifiez le fournisseur et la clé API dans les paramètres d'IA, puis réessayez.",
       "failedDescriptionRateLimit": "Le fournisseur d'IA limite les requêtes pour le moment. Réessayez dans un instant.",
+      "failedDescriptionFormat": "L'IA a répondu, mais pas sous une forme que le briefing peut afficher. Réessayez ; si cela se répète, un autre modèle dans les paramètres d'IA peut aider.",
       "omittedTitle": "Briefing non affiché",
       "omittedUngroundedDescription": "Le briefing généré mentionnait un chiffre qui n'a pas pu être vérifié avec vos données, il n'a donc pas été affiché. Réessayez."
     },

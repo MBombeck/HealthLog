@@ -3231,6 +3231,7 @@
       "failedDescriptionTimeout": "La richiesta IA ha superato il tempo limite prima che il briefing fosse pronto. Per un modello locale lento, aumenta il timeout di risposta nelle Impostazioni e riprova.",
       "failedDescriptionProvider": "Il provider IA ha rifiutato la richiesta. Controlla il provider e la chiave API nelle impostazioni IA e riprova.",
       "failedDescriptionRateLimit": "Il provider IA sta limitando le richieste in questo momento. Riprova tra poco.",
+      "failedDescriptionFormat": "L'IA ha risposto, ma non in una forma che il briefing può mostrare. Riprova; se succede ancora, un altro modello nelle impostazioni IA può aiutare.",
       "omittedTitle": "Briefing non mostrato",
       "omittedUngroundedDescription": "Il briefing generato citava un valore che non è stato possibile verificare con i tuoi dati, quindi non è stato mostrato. Riprova."
     },
