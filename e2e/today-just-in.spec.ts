@@ -212,6 +212,16 @@ test("a fresh arrival flips the day in place", async ({ page }) => {
     // assertions that matter here are the ones that make the AFTER block
     // mean something: a note that was never rendered is also absent at the
     // end, and a day that was already final also reads final at the end.
+    // This spec pins the Today hero, which stands in when the morning read
+    // is missing (a server without it, a failed read); the morning block
+    // has its own spec (`morning-block.spec.ts`).
+    await page.route(/\/api\/daily\/morning(\?|$)/, (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        body: "{}",
+      }),
+    );
     await page.goto("/");
     // No wait on the skeleton being gone: it is also gone while the protected
     // shell holds the whole page behind its hydration gate, so it resolves

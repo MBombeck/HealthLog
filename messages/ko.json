@@ -853,12 +853,10 @@
     "compliance7d": "복약 순응도 (7일)",
     "mood": "기분",
     "customizeTitle": "대시보드 레이아웃",
-    "heroItemsTitle": "오늘의 하이라이트",
     "heroItemsDescription": "오늘의 하이라이트에 표시할 항목 유형을 고르세요.",
     "heroItemsNotificationNote": "알림 설정은 따로 관리해요.",
     "heroContentTitle": "상단 카드 표시 내용",
     "heroContentScore": "건강 점수와 하루 요약",
-    "heroContentReminders": "오늘의 하이라이트",
     "heroItems": {
       "coach_checkin": "코치 체크인",
       "dose_window": "복용 일정",
@@ -946,7 +944,12 @@
     "greetingOnly": "{greeting}.",
     "welcomeNew": "환영합니다.",
     "welcomeNewWithName": "{name}님, 환영합니다.",
-    "quickAddSeizure": "발작 기록"
+    "quickAddSeizure": "발작 기록",
+    "morning": {
+      "heroItemsTitle": "오늘 할 일",
+      "heroItemsDescription": "오늘 할 일에 표시할 항목 유형을 선택하세요.",
+      "heroContentReminders": "오늘 할 일 먼저"
+    }
   },
   "measurements": {
     "title": "측정",
@@ -14068,6 +14071,14 @@
         "todayDifferent": "오늘 달라진 점",
         "toDo": "오늘 할 일"
       }
+    },
+    "morning": {
+      "sourceValue": "{label}: {value}/{max}",
+      "moreOne": "{count}개 더 보기",
+      "moreFew": "{count}개 더 보기",
+      "moreOther": "{count}개 더 보기",
+      "addValue": "값 기록",
+      "connectSource": "데이터 소스 연결"
     }
   },
   "reportSelection": {

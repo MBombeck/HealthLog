@@ -7,11 +7,13 @@ import { join } from "node:path";
  * Dashboard hero — page + header wiring pins.
  *
  * The legacy opt-in `DashboardHero` (gated on a layout `heroVisible`
- * flag) was retired: the digest-driven `TodayHero` is the single,
- * unambiguous hero, mounted above the tile strip. Pinned here:
+ * flag) was retired. Since 1.50 the morning block leads the dashboard and
+ * the digest-driven `TodayHero` stands in when the morning read is
+ * missing. Pinned here:
  *
- *   - the page mounts `TodayHero` and no longer references the legacy
- *     hero, its skeleton, or the `heroVisible` gate;
+ *   - the page mounts `MorningBlock`, then `TodayHero` as its fallback, and
+ *     no longer references the legacy hero, its skeleton, or the
+ *     `heroVisible` gate;
  *   - the greeting paragraph lives in the header on every mount (the
  *     header owns it unconditionally now that the legacy hero — which
  *     once carried it — is gone), while the page itself derives no
@@ -25,10 +27,12 @@ const HEADER_PATH = join(
 describe("dashboard hero — page wiring", () => {
   const src = dashboardSource();
 
-  it("mounts the TodayHero above the tile strip", () => {
+  it("mounts the morning block above the tile strip, the TodayHero as its fallback", () => {
+    const blockIdx = src.indexOf("<MorningBlock");
     const heroIdx = src.indexOf("<TodayHero");
     const stripIdx = src.indexOf("dashboard-tile-strip");
-    expect(heroIdx).toBeGreaterThan(-1);
+    expect(blockIdx).toBeGreaterThan(-1);
+    expect(heroIdx).toBeGreaterThan(blockIdx);
     expect(stripIdx).toBeGreaterThan(heroIdx);
   });
 
@@ -43,14 +47,22 @@ describe("dashboard hero — page wiring", () => {
   });
 
   it("hides the top card, its skeleton and its error card only on an explicit false", () => {
-    // One gate in front of the whole three-way branch, so switching the card
-    // off leaves no reserve and no retry card where it stood.
-    const gate = src.indexOf("layout.todayCardVisible === false ? null :");
-    expect(gate).toBeGreaterThan(-1);
-    const hero = src.indexOf("<TodayHero", gate);
-    const skeleton = src.indexOf("<TodayHeroSkeleton", gate);
-    expect(hero).toBeGreaterThan(gate);
-    expect(skeleton).toBeGreaterThan(hero);
+    // One decision in front of the whole branch (`morningSlot`), so
+    // switching the card off leaves no reserve and no retry card where it
+    // stood; the cases of that decision are pinned in
+    // `morning-block.test.tsx`.
+    expect(src).toContain("visible: layout.todayCardVisible !== false");
+    const block = src.indexOf('todaySlot === "block"');
+    const skeleton = src.indexOf("<MorningSkeleton", block);
+    const hero = src.indexOf("<TodayHero", skeleton);
+    const error = src.indexOf("<QueryErrorCard", hero);
+    expect(block).toBeGreaterThan(-1);
+    expect(skeleton).toBeGreaterThan(block);
+    expect(hero).toBeGreaterThan(skeleton);
+    expect(error).toBeGreaterThan(hero);
+    // The old hero skeleton would paint a different footprint than the
+    // block it stands for.
+    expect(src).not.toContain("<TodayHeroSkeleton");
   });
 
   it("no longer references the retired legacy hero", () => {
