@@ -79,7 +79,10 @@ const DELEGATES: Record<string, string[]> = {
   "src/app/api/auth/me/notification-prefs/route.ts": [
     "src/lib/validations/notification-prefs.ts",
   ],
-  "src/app/api/encounters/[id]/route.ts": ["src/lib/encounters/service.ts"],
+  "src/app/api/encounters/[id]/route.ts": [
+    "src/lib/encounters/service.ts",
+    "src/lib/encounters/field-update.ts",
+  ],
   "src/app/api/managed-profiles/[id]/route.ts": [
     "src/lib/managed-profiles/lifecycle.ts",
   ],
