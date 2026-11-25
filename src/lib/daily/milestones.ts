@@ -29,6 +29,7 @@
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 import type { ServerTranslator } from "@/lib/i18n/server-translator";
+import { metricHref, pageHref } from "@/lib/links/hrefs";
 import { MIN_IN_RUN, type StreakResult } from "@/lib/insights/streak-detector";
 import { shiftDateKey } from "@/lib/tz/format";
 
@@ -83,16 +84,9 @@ const METRIC_NAME_KEY: Partial<Record<MeasurementType, string>> = {
   WEIGHT: "daily.milestone.metric.weight",
 };
 
-const METRIC_HREF: Partial<Record<MeasurementType, string>> = {
-  RESTING_HEART_RATE: "/insights/resting-pulse",
-  HEART_RATE_VARIABILITY: "/insights/hrv",
-  RESPIRATORY_RATE: "/insights/respiratory-rate",
-  WEIGHT: "/insights/weight",
-};
-
-/** The insight surface a milestone's action deep-links to. */
+/** The insight surface a milestone's action deep-links to: its metric's page. */
 export function milestoneHref(milestone: Milestone): string {
-  return METRIC_HREF[milestone.metricType] ?? "/insights";
+  return metricHref(milestone.metricType) ?? pageHref("insights");
 }
 
 /**
