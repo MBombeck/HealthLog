@@ -135,3 +135,21 @@ export function judgeStall(input: {
 export function hourBucket(at: Date): Date {
   return new Date(Math.floor(at.getTime() / HOUR_MS) * HOUR_MS);
 }
+
+/**
+ * Whether a stall flag still stands. The flag is set by an hourly pass, so a
+ * source that delivered since has a flag that is no longer true; it stands
+ * only while nothing newer than the source's floor has arrived. Every reader
+ * of a flag (the integration card, the Today rail) asks this, so none of them
+ * shows a source as quiet in the hour after it came back.
+ */
+export function silenceStands(input: {
+  silentSince: Date | null;
+  lastDataAt: Date | null;
+  floorMs: number | null;
+  now: Date;
+}): boolean {
+  if (input.silentSince === null) return false;
+  if (input.floorMs === null || input.lastDataAt === null) return true;
+  return input.now.getTime() - input.lastDataAt.getTime() > input.floorMs;
+}

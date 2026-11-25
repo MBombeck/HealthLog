@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 
 import { pickIosMetadata } from "@/lib/notifications/senders/ios-metadata";
 import { SERVER_FEATURE_DOCS } from "@/lib/server-features";
-import { STALL_SOURCES, stallTapUrl } from "@/lib/sync-stall/notice";
+import { STALL_SOURCES, stallTapUrl } from "@/lib/sync-stall/quiet";
 
 import { readSource } from "./helpers/source-files";
 

@@ -13810,6 +13810,10 @@
         "title": "La sincronización necesita atención",
         "body": "{integration} no se está sincronizando: vuelve a conectarlo para mantener tus datos al día."
       },
+      "sourceQuiet": {
+        "since": "{source} está en silencio desde el {date}",
+        "sinceYesterday": "{source} está en silencio desde ayer"
+      },
       "coachCheckin": {
         "title": "Es buen momento para revisar un plan",
         "body": "Ha pasado alrededor de una semana desde que definiste este plan: consérvalo, ajústalo o déjalo ir. Sin presión.",
@@ -13865,7 +13869,8 @@
       "viewMilestone": "Ver",
       "viewPulse": "Ver pulso",
       "viewEcg": "Ver registro",
-      "viewSteps": "Ver pasos"
+      "viewSteps": "Ver pasos",
+      "openSource": "Abrir"
     },
     "today": {
       "scoreLabel": "Puntuación de salud",

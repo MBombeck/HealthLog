@@ -59,6 +59,10 @@ import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-d
 import type { Locale } from "@/lib/i18n/config";
 import type { SteadyRun } from "@/lib/daily/score-steady";
 import {
+  quietSourceItems,
+  type DailyDigestQuietSource,
+} from "@/lib/daily/quiet-source-items";
+import {
   reactionLineForLead,
   withLanguages,
   type DigestTextLanguages,
@@ -359,6 +363,8 @@ export interface DailyDigestInput {
    */
   morningRefreshedToday: boolean;
   syncIssues: DailyDigestSyncIssue[];
+  /** Sources that have gone quiet (`quiet-source-items.ts`); missing means none. */
+  quietSources?: readonly DailyDigestQuietSource[];
   preventiveDue: DailyDigestPreventiveDue[];
   /**
    * Every booked visit on the local today and within the next two days,
@@ -1192,6 +1198,7 @@ export function buildDailyDigest(
   const milestone = buildMilestoneItem(input.milestone, input.modules, t);
   if (milestone) worthALook.push(milestone);
   worthALook.push(...buildSyncIssueItems(input.syncIssues, t));
+  worthALook.push(...quietSourceItems(input, t));
   const checkin = buildCoachCheckinItem(
     input.coachPlans,
     input.ai.coach,

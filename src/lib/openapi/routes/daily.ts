@@ -26,7 +26,11 @@ import { aiCapabilityState } from "./profile";
 
 const priorityItemSchema = z
   .object({
-    kind: z.enum([...PRIORITY_ITEM_KINDS]).describe("Closed rail-item kind."),
+    kind: z
+      .enum([...PRIORITY_ITEM_KINDS])
+      .describe(
+        "Closed rail-item kind. `sync_issue` covers a connection that needs a reconnect or a resume (action intent `sync.reconnect`) and, since 1.50, a source that has gone quiet by the SYNC_STALLED rule (one line in `title`, no `body`, action intent `sync.open` with labelKey `daily.action.openSource` and href `/settings/integrations#<source>`).",
+      ),
     itemKey: z
       .string()
       .optional()

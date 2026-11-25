@@ -28,7 +28,11 @@ import { prisma } from "@/lib/db";
 import type { MeasurementSource } from "@/generated/prisma/client";
 import { getEvent } from "@/lib/logging/context";
 import { dispatchAdminSystemAlert } from "./status";
-import { CONNECTION_KEYS, type ConnectionKey } from "./connection-health";
+import {
+  CONNECTION_KEYS,
+  CONNECTION_LABELS,
+  type ConnectionKey,
+} from "./connection-health";
 import {
   loadConnectionFacts,
   type ConnectionFacts,
@@ -67,21 +71,6 @@ export interface WatchdogSummary {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Provider names, the same in every language. */
-export const CONNECTION_LABELS: Record<ConnectionKey, string> = {
-  withings: "Withings",
-  whoop: "WHOOP",
-  "google-health": "Google Health",
-  polar: "Polar",
-  oura: "Oura",
-  strava: "Strava",
-  nightscout: "Nightscout",
-  dawarich: "Dawarich",
-  garmin: "Garmin",
-  "health-connect-remote": "Health Connect folder",
-  "apple-health": "Apple Health",
-};
 
 function measurementSourceFor(key: ConnectionKey): MeasurementSource | null {
   if (key === "apple-health") return "APPLE_HEALTH";
