@@ -38,6 +38,7 @@ import { prisma } from "@/lib/db";
 import {
   computeCoincidentDeviation,
   classifyDeviation,
+  coincidentFamilies,
   COINCIDENT_FIRE_THRESHOLD,
   sameHoursStanding,
 } from "../coincident-deviation";
@@ -233,6 +234,93 @@ describe("computeCoincidentDeviation", () => {
     expect(result.status).toBe("ok");
     if (result.status === "ok") {
       expect(result.value.day).toBe("2026-06-03");
+      expect(result.value.fired).toBe(true);
+    }
+  });
+
+  /** Flat bands for the given types, then one outlier reading today each. */
+  function outliersToday(outliers: Record<string, [number, number]>) {
+    return async (args: { where: { type: string } }) => {
+      const pair = outliers[args.where.type];
+      if (!pair) return [];
+      const [base, outlier] = pair;
+      return [
+        ...Array.from({ length: 9 }, (_, i) => ({
+          value: base,
+          measuredAt: new Date(
+            `2026-05-${String(15 + i).padStart(2, "0")}T07:00:00Z`,
+          ),
+        })),
+        { value: outlier, measuredAt: new Date("2026-06-02T07:00:00Z") },
+      ];
+    };
+  }
+
+  it("counts systolic and diastolic as one signal: blood pressure alone does not fire", async () => {
+    findMany.mockImplementation(
+      outliersToday({
+        BLOOD_PRESSURE_SYS: [120, 165],
+        BLOOD_PRESSURE_DIA: [80, 105],
+      }),
+    );
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: NOW,
+    });
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      // Both components are outside and both stay listed ...
+      expect(result.value.contributing.map((v) => v.type).sort()).toEqual([
+        "BLOOD_PRESSURE_DIA",
+        "BLOOD_PRESSURE_SYS",
+      ]);
+      // ... but one reading is one signal.
+      expect(coincidentFamilies(result.value.contributing)).toEqual([
+        "bloodPressure",
+      ]);
+      expect(result.value.fired).toBe(false);
+    }
+  });
+
+  it("counts resting heart rate and pulse as one signal", async () => {
+    findMany.mockImplementation(
+      outliersToday({ RESTING_HEART_RATE: [58, 95], PULSE: [70, 110] }),
+    );
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: NOW,
+    });
+    expect(result.status === "ok" && result.value.fired).toBe(false);
+  });
+
+  it("does not let weight and glucose coincide", async () => {
+    findMany.mockImplementation(
+      outliersToday({ WEIGHT: [80, 90], BLOOD_GLUCOSE: [95, 180] }),
+    );
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: NOW,
+    });
+    if (result.status === "ok") {
+      expect(coincidentFamilies(result.value.contributing)).toEqual([]);
+      expect(result.value.fired).toBe(false);
+    }
+  });
+
+  it("fires on blood pressure plus heart rate, two independent signals", async () => {
+    findMany.mockImplementation(
+      outliersToday({
+        BLOOD_PRESSURE_SYS: [120, 165],
+        BLOOD_PRESSURE_DIA: [80, 105],
+        RESTING_HEART_RATE: [58, 95],
+      }),
+    );
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: NOW,
+    });
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(coincidentFamilies(result.value.contributing)).toEqual([
+        "bloodPressure",
+        "heartRate",
+      ]);
       expect(result.value.fired).toBe(true);
     }
   });

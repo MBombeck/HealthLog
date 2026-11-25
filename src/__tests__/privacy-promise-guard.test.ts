@@ -228,6 +228,20 @@ describe("the health score that reaches a model", () => {
     ).toMatch(/from "@\/lib\/jobs\/reaction-line-evidence"/);
   });
 
+  it("shows the morning's score from the digest and hands the morning to no model", () => {
+    // The ring beside the morning sentence on `/` is the digest's score, the
+    // wellbeing pillar included, so it belongs to the person's own view only.
+    // The morning read carries no score of its own and reaches no model.
+    provenBy(
+      "src/__tests__/morning-model-free-guard.test.ts",
+      "carries no health score of its own",
+    );
+    provenBy(
+      "src/__tests__/morning-model-free-guard.test.ts",
+      "never reaches the reaction-line evidence or the daily push",
+    );
+  });
+
   it("leaves the arrival line without a score the questionnaires count in", () => {
     const evidence = (composition?: string[]) =>
       buildEvidence("- A weight of 80 kg arrived.", {

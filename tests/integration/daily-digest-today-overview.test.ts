@@ -147,7 +147,7 @@ describe("the Today overview on a real record", () => {
     expect(digest.briefingLead).toBeNull();
     expect(digest.lead?.source).toBe("signal");
     expect(digest.lead?.text).toMatch(
-      /^Resting heart rate is at 66 bpm, above your usual range of \d+ to \d+ bpm\.$/,
+      /^Resting heart rate averages 66 bpm today, above your usual range \(\d+ to \d+ bpm\)\.$/,
     );
 
     // Rest Mode passes through, counted on the Berlin calendar.

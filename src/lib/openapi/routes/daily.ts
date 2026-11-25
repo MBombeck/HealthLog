@@ -19,6 +19,12 @@ import {
   TODAY_FACT_KINDS,
   TODAY_LEAD_SOURCES,
 } from "@/lib/daily/today-overview";
+import {
+  MAX_CARD_LINES,
+  MORNING_CARD_KINDS,
+  MORNING_CARD_TITLE_KEYS,
+  MORNING_LEAD_KEYS,
+} from "@/lib/daily/morning";
 import { dismissPriorityItemSchema } from "@/lib/validations/daily";
 import { dataEnvelope, recordRefusal, stdResponses } from "./shared";
 import { healthScoreBasis } from "./insights/schemas";
@@ -296,6 +302,141 @@ export const dailyDigestResponse = z
       "The one data spine of the daily-value system — composed from already-cached data, never a fresh AI call. Consumed by the Today surface, the daily push, and a future iOS widget.",
   });
 
+/** A device's own score, under its vendor's name and on its vendor's scale. */
+export const deviceSourceValueSchema = z
+  .object({
+    source: z
+      .string()
+      .describe("The row's `MeasurementSource` (WHOOP, OURA, POLAR, ...)."),
+    label: z
+      .string()
+      .describe(
+        'The vendor\'s own name for the score, resolved server-side ("WHOOP Recovery", "Polar Nightly Recharge", "Oura sleep score").',
+      ),
+    value: z.number().describe("The value on the vendor's own scale."),
+    scaleMax: z
+      .number()
+      .describe(
+        "The top of that scale: 100, or 6 for Polar Nightly Recharge, which is stored rescaled and shown back on its own 1 to 6 scale.",
+      ),
+    measuredAt: z.string().describe("ISO-8601 instant of the row."),
+  })
+  .meta({
+    id: "DeviceSourceValue",
+    description:
+      "A score a device computed, shown under its own name. It carries no HealthLog band: the vendor's thresholds are not ours to colour.",
+  });
+
+const morningRingSchema = z
+  .object({
+    score: z
+      .number()
+      .int()
+      .nullable()
+      .describe("0 to 100; null when the value is not fresh."),
+    band: z
+      .enum(["green", "yellow", "red"])
+      .nullable()
+      .describe("Null when not fresh, and in Rest mode."),
+    fresh: z
+      .boolean()
+      .describe(
+        "Every counted input is from the reader's local today and the night is last night. Not fresh means no number, no band and no sentence about the score.",
+      ),
+    asOfDay: z
+      .string()
+      .nullable()
+      .describe("The local day (YYYY-MM-DD) the value rests on."),
+  })
+  .meta({ id: "DailyMorningRing" });
+
+const morningCardTitleKey = z
+  .enum(Object.values(MORNING_CARD_TITLE_KEYS))
+  .describe(
+    "Closed set of title message keys: `daily.morningCard.title.night` (Last night), `daily.morningCard.title.todayDifferent` (Different today), `daily.morningCard.title.toDo` (To do today). Glossary terms.",
+  );
+
+const morningCardSchema = z
+  .object({
+    kind: z
+      .enum([...MORNING_CARD_KINDS])
+      .describe(
+        "`night`: last night (sleep score ring only for last night, duration against the usual, the device's own sleep score). `today_different`: readiness, or the values outside their usual range today when there are any.",
+      ),
+    titleKey: morningCardTitleKey,
+    title: z
+      .string()
+      .describe("The title worded in the response language (`lead.language`)."),
+    ring: morningRingSchema
+      .nullable()
+      .describe(
+        "The card's score ring; null when the card shows values instead.",
+      ),
+    lines: z
+      .array(
+        z.object({
+          text: z.string().describe("Localised, resolved server-side."),
+          href: z
+            .string()
+            .nullable()
+            .describe(
+              "Null where the card's own `href` is the target, which is the usual case.",
+            ),
+        }),
+      )
+      .max(MAX_CARD_LINES)
+      .describe(`Up to ${MAX_CARD_LINES} short lines, never padded.`),
+    sourceValues: z
+      .array(deviceSourceValueSchema)
+      .describe("Device scores of the local today, newest per source."),
+    href: z.string().describe("Where the card leads."),
+  })
+  .meta({ id: "DailyMorningCard" });
+
+export const dailyMorningResponse = z
+  .object({
+    lead: z
+      .object({
+        rank: z
+          .number()
+          .int()
+          .min(0)
+          .max(MORNING_LEAD_KEYS.length - 1)
+          .describe(
+            "The rule that chose the sentence; 0 wins over 1 and so on.",
+          ),
+        key: z
+          .enum([...MORNING_LEAD_KEYS])
+          .describe(
+            "The rule by name: floor (a confirmed safety floor in the last 24 hours), rest_mode, coincident (two or more independent signals outside their usual range: blood pressure counts once, resting heart rate and pulse once, weight and glucose never), vital_outside, sleep_pending, source_quiet (first and second quiet day only), readiness (fresh, yellow or red), night_notable, in_range, planned, nothing.",
+          ),
+        text: z
+          .string()
+          .describe(
+            "One sentence, a finding and never advice, worded on the server from the day's own readings. No model text.",
+          ),
+        language: z.string().describe("The language `text` is in."),
+      })
+      .describe("The morning sentence."),
+    cards: z
+      .array(morningCardSchema)
+      .max(MORNING_CARD_KINDS.length)
+      .describe(
+        "Night first, then what is different today; a card without content is absent. The third card of the morning ('to do today') is `DailyDigest.worthALook` as delivered, with the digest's medications and cycle facts from `today`.",
+      ),
+    toDo: z
+      .object({ titleKey: morningCardTitleKey, title: z.string() })
+      .describe(
+        "The title of the third card, which the morning does not carry: clients build it from the digest's rows.",
+      ),
+    generatedAt: z.string().describe("ISO-8601 instant the morning was read."),
+  })
+  .meta({
+    id: "DailyMorning",
+    description:
+      "The morning read on the start page: one true sentence chosen by fixed rules and up to two cards. Data, never model text; no module or AI gate. The third card, 'To do today', is built by the client from `GET /api/daily/digest`: the medications fact and the cycle day from `today`, and the rows of `worthALook`. It replaces the separate 'Worth a look' list wherever the morning is shown, so those rows are never rendered twice. Every text is worded on the server in one language: on a Bearer request the `Accept-Language` when it names a shipped language, otherwise the account's language; in a browser, the locale cookie or the account's language. `lead.language` names it.",
+  });
+
 export const dailyPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/daily/digest": {
     get: {
@@ -309,6 +450,29 @@ export const dailyPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(dailyDigestResponse, "DailyDigestEnvelope"),
+            },
+          },
+        },
+        ...recordRefusal(),
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/daily/morning": {
+    get: {
+      tags: ["Insights"],
+      summary: "The morning read",
+      description:
+        "One sentence about the day, chosen by fixed rules from the day's own readings, and up to two cards (last night, what is different today). Readiness and the sleep score appear only when fresh: a value resting on older readings carries no number, no band and no sentence. Device scores carry their vendor's name and scale and no band. No provider call, no module gate, no AI gate. Same scope as `/api/daily/digest`. Cookie or Bearer auth; a Bearer request's `Accept-Language` words the texts.",
+      responses: {
+        "200": {
+          description: "The morning read.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                dailyMorningResponse,
+                "DailyMorningEnvelope",
+              ),
             },
           },
         },

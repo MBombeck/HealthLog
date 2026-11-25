@@ -259,6 +259,8 @@ export const DATA_ROUTES: Readonly<Record<string, string>> = {
   "src/app/api/daily/digest/route.ts":
     "The Today digest is data; its AI parts are masked by the loader through the capability resolver, never refused.",
   "src/app/api/daily/digest/dismiss/route.ts": "Dismissing a Today rail item.",
+  "src/app/api/daily/morning/route.ts":
+    "The morning read: one sentence by fixed rules and two cards, from the day's own readings; no model text.",
   "src/app/api/dashboard/snapshot/route.ts":
     "The dashboard is data; the briefing inside it is masked per read by the snapshot loader, never refused.",
   // Configuration and other non-AI routes in the insights tree.

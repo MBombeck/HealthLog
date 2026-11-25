@@ -30,7 +30,7 @@
       "topSignal": null,
       "briefingLead": null,
       "lead": {
-        "text": "All 8 of your latest vitals sit inside their usual range.",
+        "text": "All 8 of today's values sit inside their usual range.",
         "source": "signal",
         "language": "en"
       },

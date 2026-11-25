@@ -13944,16 +13944,16 @@
     },
     "lead": {
       "vitalOutside": {
-        "above": "{metric} está em {value}, acima da sua faixa usual de {range}.",
-        "below": "{metric} está em {value}, abaixo da sua faixa usual de {range}."
+        "above": "{metric} está hoje em média em {value}, acima da sua faixa usual ({range}).",
+        "below": "{metric} está hoje em média em {value}, abaixo da sua faixa usual ({range})."
       },
       "vitalsOutside": {
-        "aboveOne": "{metric} está em {value}, acima da sua faixa usual de {range}, e mais {count} sinal vital está fora da sua faixa também.",
-        "aboveFew": "{metric} está em {value}, acima da sua faixa usual de {range}, e mais {count} sinais vitais estão fora da sua faixa também.",
-        "aboveOther": "{metric} está em {value}, acima da sua faixa usual de {range}, e mais {count} sinais vitais estão fora da sua faixa também.",
-        "belowOne": "{metric} está em {value}, abaixo da sua faixa usual de {range}, e mais {count} sinal vital está fora da sua faixa também.",
-        "belowFew": "{metric} está em {value}, abaixo da sua faixa usual de {range}, e mais {count} sinais vitais estão fora da sua faixa também.",
-        "belowOther": "{metric} está em {value}, abaixo da sua faixa usual de {range}, e mais {count} sinais vitais estão fora da sua faixa também."
+        "aboveOne": "{metric} está hoje em média em {value}, acima da sua faixa usual ({range}), e mais {count} valor fora.",
+        "aboveFew": "{metric} está hoje em média em {value}, acima da sua faixa usual ({range}), e mais {count} valores fora.",
+        "aboveOther": "{metric} está hoje em média em {value}, acima da sua faixa usual ({range}), e mais {count} valores fora.",
+        "belowOne": "{metric} está hoje em média em {value}, abaixo da sua faixa usual ({range}), e mais {count} valor fora.",
+        "belowFew": "{metric} está hoje em média em {value}, abaixo da sua faixa usual ({range}), e mais {count} valores fora.",
+        "belowOther": "{metric} está hoje em média em {value}, abaixo da sua faixa usual ({range}), e mais {count} valores fora."
       },
       "sleep": {
         "more": "Ontem à noite você dormiu {duration}, {diff} a mais que o usual.",
@@ -13961,10 +13961,52 @@
         "usual": "Ontem à noite você dormiu {duration}, próximo ao seu usual.",
         "plain": "Ontem à noite você dormiu {duration}."
       },
-      "vitalsInRangeOne": "Seu sinal vital mais recente está dentro da sua faixa usual.",
-      "vitalsInRangeFew": "Todos os {count} seus sinais vitais mais recentes estão dentro da sua faixa usual.",
-      "vitalsInRangeOther": "Todos os {count} seus sinais vitais mais recentes estão dentro da sua faixa usual.",
-      "vitalInRange": "{metric} está em {value}, dentro da sua faixa usual de {range}."
+      "vitalsInRangeOne": "Os {count} valores de hoje estão dentro da faixa usual.",
+      "vitalsInRangeFew": "Os {count} valores de hoje estão dentro da faixa usual.",
+      "vitalsInRangeOther": "Os {count} valores de hoje estão dentro da faixa usual.",
+      "vitalInRange": "{metric} está hoje em média em {value}, dentro da sua faixa usual ({range}).",
+      "floor": {
+        "bpHigh": "A pressão arterial chegou a {value} nas últimas 24 horas.",
+        "bpLow": "A pressão arterial caiu para {value} nas últimas 24 horas.",
+        "glucoseLow": "A glicemia caiu para {value} nas últimas 24 horas.",
+        "glucoseHigh": "A glicemia chegou a {value} nas últimas 24 horas."
+      },
+      "restModeToday": "Modo de repouso desde hoje, os valores servem só como contexto.",
+      "restModeOne": "Modo de repouso há {count} dia, hoje os valores servem só como contexto.",
+      "restModeFew": "Modo de repouso há {count} dias, hoje os valores servem só como contexto.",
+      "restModeOther": "Modo de repouso há {count} dias, hoje os valores servem só como contexto.",
+      "coincident": "{signals} estão fora da sua faixa usual hoje.",
+      "coincidentIllness": "Durante a doença atual, {signals} estão fora da sua faixa usual.",
+      "coincidentManyOne": "{count} valor está fora da sua faixa usual hoje.",
+      "coincidentManyFew": "{count} valores estão fora da sua faixa usual hoje.",
+      "coincidentManyOther": "{count} valores estão fora da sua faixa usual hoje.",
+      "coincidentIllnessManyOne": "Durante a doença atual, {count} valor está fora da sua faixa usual.",
+      "coincidentIllnessManyFew": "Durante a doença atual, {count} valores estão fora da sua faixa usual.",
+      "coincidentIllnessManyOther": "Durante a doença atual, {count} valores estão fora da sua faixa usual.",
+      "family": {
+        "bloodPressure": "a pressão arterial",
+        "heartRate": "a frequência cardíaca",
+        "hrv": "a VFC",
+        "respiratoryRate": "a frequência respiratória",
+        "oxygenSaturation": "a saturação de oxigênio",
+        "temperature": "a temperatura"
+      },
+      "sleepPending": "A noite passada ainda não chegou.",
+      "sourceQuietHoursOne": "{source} não envia nada há {count} hora.",
+      "sourceQuietHoursFew": "{source} não envia nada há {count} horas.",
+      "sourceQuietHoursOther": "{source} não envia nada há {count} horas.",
+      "sourceQuietDaysOne": "{source} não envia nada há {count} dia.",
+      "sourceQuietDaysFew": "{source} não envia nada há {count} dias.",
+      "sourceQuietDaysOther": "{source} não envia nada há {count} dias.",
+      "readiness": "Prontidão {score}, reduzida principalmente por {contributor}.",
+      "plannedDosesOne": "Hoje: {count} dose prevista.",
+      "plannedDosesFew": "Hoje: {count} doses previstas.",
+      "plannedDosesOther": "Hoje: {count} doses previstas.",
+      "plannedBothOne": "Hoje: {count} dose e uma consulta às {time}.",
+      "plannedBothFew": "Hoje: {count} doses e uma consulta às {time}.",
+      "plannedBothOther": "Hoje: {count} doses e uma consulta às {time}.",
+      "plannedVisit": "Hoje: uma consulta às {time}.",
+      "nothingYet": "Ainda não há valores hoje."
     },
     "todayFact": {
       "restMode": {
@@ -14003,6 +14045,28 @@
         "label": "Ciclo",
         "value": "{phase}, dia {day}",
         "dayOnly": "Dia {day}"
+      }
+    },
+    "morningCard": {
+      "nightPending": "Ainda não chegou",
+      "latestNight": "Última noite: {date}",
+      "vitalOutside": "{metric}: média de {value} hoje, usual {range}",
+      "contributor": "{name}: {value} de 100",
+      "readinessLast": "Último {score} em {date}",
+      "source": {
+        "recovery": {
+          "WHOOP": "WHOOP Recovery",
+          "OURA": "Oura Readiness",
+          "POLAR": "Polar Nightly Recharge"
+        },
+        "recoveryGeneric": "Recuperação {source}",
+        "sleepScore": "Pontuação de sono {source}",
+        "sleepPerformance": "WHOOP Sleep Performance"
+      },
+      "title": {
+        "night": "Última noite",
+        "todayDifferent": "Diferente hoje",
+        "toDo": "Para hoje"
       }
     }
   },

@@ -23,14 +23,23 @@ import type { CyclePhase } from "@/lib/cycle/types";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { Locale } from "@/lib/i18n/config";
 import { pluralKey } from "@/lib/i18n/plural";
-import { formatDurationMinutes } from "@/lib/i18n/duration";
 import { isFromToday } from "@/lib/insights/measurement-freshness";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { PriorityItem } from "@/lib/daily/priority-item";
-import { translateOrNull } from "@/lib/i18n/translate-code";
 import { visitsPath } from "@/lib/encounters/visit-links";
 import { withoutLeadingName } from "@/lib/daily/today-lead-name";
 import { medicationsFact } from "@/lib/daily/today-medications-fact";
+import {
+  duration,
+  notableNightSentence,
+  ordinaryNightSentence,
+  outsideVitals,
+  sleepDiff,
+  SLEEP_CLOSE_DIFF_MINUTES,
+  vitalLabel,
+  vitalsInRangeSentence,
+  vitalsOutsideSentence,
+} from "@/lib/daily/lead-sentences";
 
 type Translate = (
   key: string,
@@ -187,16 +196,6 @@ export interface TodayOverview {
 
 /** Trim a lead sentence to a lock-screen-friendly length. */
 const MAX_LEAD_LENGTH = 160;
-
-/**
- * How far last night may sit from the person's usual before the night itself
- * becomes the day's strongest signal. An hour is a difference anyone notices
- * the next day; less than that is ordinary variation and stays a fact.
- */
-export const SLEEP_NOTABLE_DIFF_MINUTES = 60;
-
-/** Within this many minutes of the usual, the night reads as "close to". */
-export const SLEEP_CLOSE_DIFF_MINUTES = 20;
 
 function moduleOn(
   modules: Partial<Record<ModuleKey, boolean>>,
@@ -505,34 +504,14 @@ function buildSignalLine(
  * nine in the evening a pulse from the previous morning would be narrated as
  * the day's, on a day with no reading at all.
  */
-function currentVitals(input: TodayOverviewInput): TodayVital[] {
+export function currentVitals(
+  input: Pick<TodayOverviewInput, "vitals" | "modules">,
+): TodayVital[] {
   return input.vitals.filter(
     (v) =>
       isFromToday(v.daysAgo) &&
       (v.moduleKey === null || moduleOn(input.modules, v.moduleKey)),
   );
-}
-
-/** How far outside its band a vital sits, in band widths. */
-function outsideBy(v: TodayVital): number {
-  const width = Math.max(v.high - v.low, Number.EPSILON);
-  if (v.direction === "above") return (v.value - v.high) / width;
-  if (v.direction === "below") return (v.low - v.value) / width;
-  return 0;
-}
-
-function vitalLabel(t: Translate, type: string): string {
-  const key = `daily.today.vital.${type}`;
-  return translateOrNull(t, key) ?? t("daily.today.vital.generic");
-}
-
-function sleepDiff(sleep: TodaySleep): number | null {
-  if (sleep.usualMinutes === null) return null;
-  return Math.round(sleep.minutes - sleep.usualMinutes);
-}
-
-function duration(minutes: number, t: Translate): string {
-  return formatDurationMinutes(Math.round(minutes), t);
 }
 
 interface SignalLead {
@@ -550,7 +529,8 @@ interface SignalLead {
  *   4. an ordinary night.
  *
  * Null when none of them holds; the overview then carries the facts alone,
- * and never a filler sentence.
+ * and never a filler sentence. The morning lead (`morning.ts`) ranks the same
+ * sentences among its own.
  */
 function signalLead(
   input: TodayOverviewInput,
@@ -558,77 +538,19 @@ function signalLead(
   t: Translate,
 ): SignalLead | null {
   const vitals = currentVitals(input);
-  const outside = vitals
-    .filter((v) => v.direction !== "in")
-    .sort((a, b) => outsideBy(b) - outsideBy(a));
-
+  const outside = outsideVitals(vitals);
   if (outside.length > 0) {
-    const v = outside[0];
-    const params = {
-      metric: vitalLabel(t, v.type),
-      value: v.valueLabel,
-      range: v.rangeLabel,
-    };
-    const text =
-      outside.length === 1
-        ? t(`daily.lead.vitalOutside.${v.direction}`, params)
-        : t(
-            pluralKey(
-              `daily.lead.vitalsOutside.${v.direction}`,
-              outside.length - 1,
-              input.locale,
-            ),
-            { ...params, count: outside.length - 1 },
-          );
-    return { text, consumes: "vitals" };
-  }
-
-  const diff = sleep ? sleepDiff(sleep) : null;
-  if (sleep && diff !== null && Math.abs(diff) >= SLEEP_NOTABLE_DIFF_MINUTES) {
     return {
-      text: t(`daily.lead.sleep.${diff > 0 ? "more" : "less"}`, {
-        duration: duration(sleep.minutes, t),
-        diff: duration(Math.abs(diff), t),
-      }),
-      consumes: "sleep",
-    };
-  }
-
-  if (vitals.length >= 2) {
-    return {
-      text: t(
-        pluralKey("daily.lead.vitalsInRange", vitals.length, input.locale),
-        { count: vitals.length },
-      ),
+      text: vitalsOutsideSentence(outside, input.locale, t),
       consumes: "vitals",
     };
   }
-  if (vitals.length === 1) {
-    const v = vitals[0];
-    return {
-      text: t("daily.lead.vitalInRange", {
-        metric: vitalLabel(t, v.type),
-        value: v.valueLabel,
-        range: v.rangeLabel,
-      }),
-      consumes: "vitals",
-    };
-  }
-
-  if (sleep) {
-    return {
-      text:
-        diff !== null
-          ? t("daily.lead.sleep.usual", {
-              duration: duration(sleep.minutes, t),
-            })
-          : t("daily.lead.sleep.plain", {
-              duration: duration(sleep.minutes, t),
-            }),
-      consumes: "sleep",
-    };
-  }
-  return null;
+  const notable = notableNightSentence(sleep, t);
+  if (notable) return { text: notable, consumes: "sleep" };
+  const inRange = vitalsInRangeSentence(vitals, input.locale, t);
+  if (inRange) return { text: inRange, consumes: "vitals" };
+  const night = ordinaryNightSentence(sleep, t);
+  return night ? { text: night, consumes: "sleep" } : null;
 }
 
 function restModeFact(
@@ -704,9 +626,7 @@ function sleepFact(sleep: TodaySleep | null, t: Translate): TodayFact | null {
 function vitalsFact(input: TodayOverviewInput, t: Translate): TodayFact | null {
   const vitals = currentVitals(input);
   if (vitals.length === 0) return null;
-  const outside = vitals
-    .filter((v) => v.direction !== "in")
-    .sort((a, b) => outsideBy(b) - outsideBy(a));
+  const outside = outsideVitals(vitals);
   let value: string;
   if (outside.length === 0) {
     value = t(

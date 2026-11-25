@@ -26450,6 +26450,27 @@ paths:
         "403": *a18
         "422": *a4
         "429": *a5
+  /api/daily/morning:
+    get:
+      tags:
+        - Insights
+      summary: The morning read
+      description: "One sentence about the day, chosen by fixed rules from the day's own readings, and up to two cards (last
+        night, what is different today). Readiness and the sleep score appear only when fresh: a value resting on older
+        readings carries no number, no band and no sentence. Device scores carry their vendor's name and scale and no
+        band. No provider call, no module gate, no AI gate. Same scope as `/api/daily/digest`. Cookie or Bearer auth; a
+        Bearer request's `Accept-Language` words the texts."
+      responses:
+        "200":
+          description: The morning read.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyMorningEnvelope"
+        "401": *a1
+        "403": *a18
+        "422": *a4
+        "429": *a5
   /api/daily/digest/dismiss:
     post:
       tags:
@@ -49579,6 +49600,7 @@ components:
               - insights.same-time-daily-total
               - push.live-activity-token-state
               - insights.chart-context
+              - daily.morning
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -49683,7 +49705,11 @@ components:
             returns the marks a metric chart draws: medications[] (start, stop, doseChange, pause, resume with date,
             name, dose, estimated, href), illnesses[] (acute episodes, start, end, label, href) and cyclePhases[]
             (phase, start, end inclusive), read from the timeline lanes, each empty when its module is off or its
-            section not shared; optional from/to cut the window."
+            section not shared; optional from/to cut the window. `daily.morning`: GET /api/daily/morning returns the
+            morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own
+            readings, and cards night and today_different with ring (score and band null unless fresh, asOfDay), up to
+            three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is
+            DailyDigest.worthALook as before."
       required:
         - version
         - buildSha
@@ -101146,6 +101172,235 @@ components:
         - actions
       additionalProperties: false
       description: One 'worth a look' rail item. The single model every daily-value consumer renders through PriorityCard.
+    DailyMorningEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DailyMorning"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DailyMorning:
+      type: object
+      properties:
+        lead:
+          type: object
+          properties:
+            rank:
+              type: integer
+              minimum: 0
+              maximum: 10
+              description: The rule that chose the sentence; 0 wins over 1 and so on.
+            key:
+              type: string
+              enum:
+                - floor
+                - rest_mode
+                - coincident
+                - vital_outside
+                - sleep_pending
+                - source_quiet
+                - readiness
+                - night_notable
+                - in_range
+                - planned
+                - nothing
+              description: "The rule by name: floor (a confirmed safety floor in the last 24 hours), rest_mode, coincident (two or
+                more independent signals outside their usual range: blood pressure counts once, resting heart rate and
+                pulse once, weight and glucose never), vital_outside, sleep_pending, source_quiet (first and second
+                quiet day only), readiness (fresh, yellow or red), night_notable, in_range, planned, nothing."
+            text:
+              type: string
+              description: One sentence, a finding and never advice, worded on the server from the day's own readings. No model text.
+            language:
+              type: string
+              description: The language `text` is in.
+          required:
+            - rank
+            - key
+            - text
+            - language
+          additionalProperties: false
+          description: The morning sentence.
+        cards:
+          maxItems: 2
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyMorningCard"
+          description: Night first, then what is different today; a card without content is absent. The third card of the morning
+            ('to do today') is `DailyDigest.worthALook` as delivered, with the digest's medications and cycle facts from
+            `today`.
+        toDo:
+          type: object
+          properties:
+            titleKey:
+              type: string
+              enum:
+                - daily.morningCard.title.night
+                - daily.morningCard.title.todayDifferent
+                - daily.morningCard.title.toDo
+              description: "Closed set of title message keys: `daily.morningCard.title.night` (Last night),
+                `daily.morningCard.title.todayDifferent` (Different today), `daily.morningCard.title.toDo` (To do
+                today). Glossary terms."
+            title:
+              type: string
+          required:
+            - titleKey
+            - title
+          additionalProperties: false
+          description: "The title of the third card, which the morning does not carry: clients build it from the digest's rows."
+        generatedAt:
+          type: string
+          description: ISO-8601 instant the morning was read.
+      required:
+        - lead
+        - cards
+        - toDo
+        - generatedAt
+      additionalProperties: false
+      description: "The morning read on the start page: one true sentence chosen by fixed rules and up to two cards. Data,
+        never model text; no module or AI gate. The third card, 'To do today', is built by the client from `GET
+        /api/daily/digest`: the medications fact and the cycle day from `today`, and the rows of `worthALook`. It
+        replaces the separate 'Worth a look' list wherever the morning is shown, so those rows are never rendered twice.
+        Every text is worded on the server in one language: on a Bearer request the `Accept-Language` when it names a
+        shipped language, otherwise the account's language; in a browser, the locale cookie or the account's language.
+        `lead.language` names it."
+    DailyMorningCard:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - night
+            - today_different
+          description: "`night`: last night (sleep score ring only for last night, duration against the usual, the device's own
+            sleep score). `today_different`: readiness, or the values outside their usual range today when there are
+            any."
+        titleKey:
+          type: string
+          enum:
+            - daily.morningCard.title.night
+            - daily.morningCard.title.todayDifferent
+            - daily.morningCard.title.toDo
+          description: "Closed set of title message keys: `daily.morningCard.title.night` (Last night),
+            `daily.morningCard.title.todayDifferent` (Different today), `daily.morningCard.title.toDo` (To do today).
+            Glossary terms."
+        title:
+          type: string
+          description: The title worded in the response language (`lead.language`).
+        ring:
+          anyOf:
+            - $ref: "#/components/schemas/DailyMorningRing"
+            - type: "null"
+          description: The card's score ring; null when the card shows values instead.
+        lines:
+          maxItems: 3
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+                description: Localised, resolved server-side.
+              href:
+                description: Null where the card's own `href` is the target, which is the usual case.
+                type:
+                  - string
+                  - "null"
+            required:
+              - text
+              - href
+            additionalProperties: false
+          description: Up to 3 short lines, never padded.
+        sourceValues:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeviceSourceValue"
+          description: Device scores of the local today, newest per source.
+        href:
+          type: string
+          description: Where the card leads.
+      required:
+        - kind
+        - titleKey
+        - title
+        - ring
+        - lines
+        - sourceValues
+        - href
+      additionalProperties: false
+    DailyMorningRing:
+      type: object
+      properties:
+        score:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: 0 to 100; null when the value is not fresh.
+        band:
+          anyOf:
+            - type: string
+              enum:
+                - green
+                - yellow
+                - red
+            - type: "null"
+          description: Null when not fresh, and in Rest mode.
+        fresh:
+          type: boolean
+          description: Every counted input is from the reader's local today and the night is last night. Not fresh means no
+            number, no band and no sentence about the score.
+        asOfDay:
+          description: The local day (YYYY-MM-DD) the value rests on.
+          type:
+            - string
+            - "null"
+      required:
+        - score
+        - band
+        - fresh
+        - asOfDay
+      additionalProperties: false
+    DeviceSourceValue:
+      type: object
+      properties:
+        source:
+          type: string
+          description: The row's `MeasurementSource` (WHOOP, OURA, POLAR, ...).
+        label:
+          type: string
+          description: The vendor's own name for the score, resolved server-side ("WHOOP Recovery", "Polar Nightly Recharge",
+            "Oura sleep score").
+        value:
+          type: number
+          description: The value on the vendor's own scale.
+        scaleMax:
+          type: number
+          description: "The top of that scale: 100, or 6 for Polar Nightly Recharge, which is stored rescaled and shown back on
+            its own 1 to 6 scale."
+        measuredAt:
+          type: string
+          description: ISO-8601 instant of the row.
+      required:
+        - source
+        - label
+        - value
+        - scaleMax
+        - measuredAt
+      additionalProperties: false
+      description: "A score a device computed, shown under its own name. It carries no HealthLog band: the vendor's thresholds
+        are not ours to colour."
     DismissPriorityItemEnvelope:
       type: object
       properties:

@@ -408,6 +408,10 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // loader through the capability resolver.
   "src/app/api/daily/digest/route.ts",
   "src/app/api/daily/digest/dismiss/route.ts",
+  // The morning read: data from several modules at once, each one filtered
+  // by the loader through the resolved module map (sleep, recovery, illness,
+  // medications), so a switched-off module's facts never reach the sentence.
+  "src/app/api/daily/morning/route.ts",
   // ── INFRA / CONFIG (insights) ─────────────────────────────────────
   // The insights tree's configuration routes carry no narrative payload,
   // so gating them would only break configuration / settings reads while

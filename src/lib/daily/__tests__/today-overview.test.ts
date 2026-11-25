@@ -256,7 +256,7 @@ describe("lead precedence", () => {
       t,
     );
     expect(o.lead).toEqual({
-      text: "All 2 of your latest vitals sit inside their usual range.",
+      text: "All 2 of today's values sit inside their usual range.",
       source: "signal",
     });
   });
@@ -289,7 +289,7 @@ describe("deterministic lead — strongest signal", () => {
     );
     // HRV is a full band width below; resting HR a quarter above.
     expect(o.lead?.text).toBe(
-      "Heart-rate variability is at 20 ms, below your usual range of 40 to 60 ms, and 1 more vital is outside its range too.",
+      "Heart-rate variability averages 20 ms today, below your usual range (40 to 60 ms), plus 1 more value outside.",
     );
     expect(o.lead?.source).toBe("signal");
   });
@@ -304,7 +304,7 @@ describe("deterministic lead — strongest signal", () => {
       t,
     );
     expect(o.lead?.text).toBe(
-      "Resting heart rate is at 61 bpm, above your usual range of 50 to 58 bpm.",
+      "Resting heart rate averages 61 bpm today, above your usual range (50 to 58 bpm).",
     );
   });
 
@@ -664,7 +664,7 @@ describe("locales", () => {
       tl,
     );
     expect(o.lead?.text).toBe(
-      "Wszystkie 3 ostatnie parametry życiowe mieszczą się w zwykłym zakresie.",
+      "Wszystkie 3 dzisiejsze wartości są w zwykłym zakresie.",
     );
   });
 });
