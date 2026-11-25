@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 315,
-  "total": 98520,
+  "total": 98519,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -110,7 +110,7 @@
     "components/insights/derived/wellness-scores.tsx :: WellnessScores": 273,
     "components/insights/glucose/glucose-clinical-panel.tsx :: GlucoseClinicalPanel": 213,
     "components/insights/health-score-card.tsx :: HealthScoreCard": 561,
-    "components/insights/healthkit-metric-page.tsx :: HealthKitMetricPage": 322,
+    "components/insights/healthkit-metric-page.tsx :: HealthKitMetricPage": 321,
     "components/insights/insight-status-card.tsx :: InsightStatusCard": 205,
     "components/insights/insights-edit-mode.tsx :: InsightsEditMode": 268,
     "components/insights/insights-tab-strip.tsx :: InsightsTabStripImpl": 393,
