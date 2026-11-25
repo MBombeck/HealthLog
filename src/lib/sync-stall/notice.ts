@@ -34,24 +34,28 @@ import {
   activeAccount,
 } from "@/lib/account-deletion/active-account";
 import { prisma as defaultPrisma } from "@/lib/db";
-import { resolveIntlLocale } from "@/lib/format-locale";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import {
-  CONNECTION_KEYS,
+  CONNECTION_LABELS,
   type ConnectionKey,
 } from "@/lib/integrations/connection-health";
-import { CONNECTION_LABELS } from "@/lib/integrations/watchdog";
-import { SOURCE_PROFILES } from "@/lib/integrations/watchdog-classify";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { claimNotificationEvent } from "@/lib/notifications/reminder-dedup";
-import { DEFAULT_TIMEZONE, shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 
-import { DEVICE_STALL_FLOOR_MS, runDeviceStallPass } from "./devices";
+import { runDeviceStallPass } from "./devices";
+import {
+  STALL_SOURCES,
+  iphoneDelivers,
+  quietSinceDate,
+  quietSinceWording,
+  stallTapUrl,
+} from "./quiet";
 
 export const SYNC_STALLED_EVENT = "SYNC_STALLED";
 /** The first local hour a notice may go out in. */
@@ -68,41 +72,6 @@ export const NOTICE_SPACING_MS = 22 * 60 * 60 * 1000;
 export function inNoticeWindow(now: Date, tz: string): boolean {
   const { hour } = wallClockInTz(now, tz);
   return hour >= NOTICE_EARLIEST_HOUR && hour < NOTICE_LATEST_HOUR;
-}
-
-/**
- * How the notice names the start of the quiet: "yesterday" when the last
- * delivery was on the person's previous local day (or later), its date
- * otherwise. Local days, so a DST change shifts nothing.
- */
-export function quietSinceWording(
-  since: Date,
-  now: Date,
-  tz: string,
-): "yesterday" | "date" {
-  const yesterday = shiftDateKey(userDayKey(now, tz), -1);
-  return userDayKey(since, tz) >= yesterday ? "yesterday" : "date";
-}
-
-/**
- * The sources that can go quiet: every connection that delivers on its own.
- * One delivered on demand (Strava, Dawarich, a Health Connect folder) is
- * watched for errors only and never told about.
- */
-export const STALL_SOURCES: readonly ConnectionKey[] = CONNECTION_KEYS.filter(
-  (key) => SOURCE_PROFILES[key].kind !== "on_demand",
-);
-
-/**
- * The deep link of a source: its card on the integrations page, the same
- * path for every source and every client. A push straight to the device
- * carries it as `url`; a push over the relay carries only `source`, and a
- * client builds this path from it. Published in the `notifications.sync-stalled`
- * feature doc; the anchors on the page are held to it by
- * `sync-stall-deeplink-guard.test.ts`.
- */
-export function stallTapUrl(source: ConnectionKey): string {
-  return `/settings/integrations#${source}`;
 }
 
 /** One untold stall. */
@@ -124,11 +93,7 @@ export function renderStallNotice(
 ): { title: string; message: string } {
   const { t } = getServerTranslator(locale);
   const provider = CONNECTION_LABELS[stall.source];
-  const date = new Intl.DateTimeFormat(resolveIntlLocale(locale), {
-    day: "numeric",
-    month: "short",
-    timeZone: tz,
-  }).format(stall.since);
+  const date = quietSinceDate(stall.since, tz, locale);
   const params = { provider, date };
   const yesterday = quietSinceWording(stall.since, now, tz) === "yesterday";
   // An iPhone resumes once the app runs; a ring, a watch or a cloud may need
@@ -259,22 +224,22 @@ async function stampStall(
   return count > 0;
 }
 
-/** Whether another iPhone of the account delivered Apple Health data lately. */
+/** Whether another iPhone of the account still delivers Apple Health data. */
 async function siblingDelivers(
   prisma: PrismaClient,
   stall: Stall,
   now: Date,
 ): Promise<boolean> {
-  const sibling = await prisma.device.findFirst({
+  const siblings = await prisma.device.findMany({
     where: {
       userId: stall.userId,
       platform: "ios",
       id: { not: stall.id },
-      healthIngestAt: { gte: new Date(now.getTime() - DEVICE_STALL_FLOOR_MS) },
+      healthIngestAt: { not: null },
     },
-    select: { id: true },
+    select: { healthIngestAt: true },
   });
-  return sibling !== null;
+  return siblings.some((d) => iphoneDelivers(d.healthIngestAt, now));
 }
 
 export async function runSyncStallNotices(

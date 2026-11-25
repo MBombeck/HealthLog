@@ -6,10 +6,9 @@ import {
   NOTICE_EARLIEST_HOUR,
   NOTICE_LATEST_HOUR,
   inNoticeWindow,
-  quietSinceWording,
   renderStallNotice,
-  stallTapUrl,
 } from "../notice";
+import { quietSinceWording, stallTapUrl } from "../quiet";
 
 const BERLIN = "Europe/Berlin";
 
