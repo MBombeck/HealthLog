@@ -99,6 +99,7 @@ import {
   LA_UPDATE_EVENT,
   refusedRecently,
   doseStartHeld,
+  releaseDoseStarts,
   updatesInFlight,
 } from "@/lib/push-relay/live-activity-settle";
 
@@ -670,6 +671,18 @@ export async function runDeviceLiveActivities(
         where: { id: { in: [...spent] } },
       });
     }
+  }
+  // An Activity ended to make room for another dose's start was not ended
+  // because its dose was done: give the dose back, so it starts again once
+  // the other one is over. Its start row would hold it for good otherwise.
+  for (const made of making) {
+    if (!spent.has(made.id) || !made.medicationId || !made.slotInstant) {
+      continue;
+    }
+    await releaseDoseStarts(
+      { deviceId: device.id },
+      { medicationId: made.medicationId, slotInstant: made.slotInstant },
+    );
   }
   if (making.some((a) => !spent.has(a.id))) start = null;
   const updates = proposed.filter((u) => !spent.has(u.rowId));

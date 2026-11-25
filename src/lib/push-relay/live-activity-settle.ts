@@ -158,15 +158,7 @@ export async function releaseReopenedDoseStarts(
 ): Promise<void> {
   for (const dose of doses) {
     const slotInstant = activitySlotWindow(dose.slotInstant);
-    await prisma.pushRelayDelivery.updateMany({
-      where: {
-        device: { userId },
-        eventType: LA_START_EVENT,
-        medicationId: dose.medicationId,
-        slotInstant,
-      },
-      data: { medicationId: null, slotInstant: null },
-    });
+    await releaseDoseStarts({ device: { userId } }, dose);
     await prisma.device.updateMany({
       where: {
         userId,
@@ -177,6 +169,26 @@ export async function releaseReopenedDoseStarts(
       data: { laStartRef: null },
     });
   }
+}
+
+/**
+ * Let the starts of one dose go: their rows no longer hold it
+ * ({@link doseStartHeld}), so a later pass may start it again. `where`
+ * scopes the rows (one device, or the owner's devices).
+ */
+export async function releaseDoseStarts(
+  where: Prisma.PushRelayDeliveryWhereInput,
+  dose: { medicationId: string; slotInstant: Date },
+): Promise<void> {
+  await prisma.pushRelayDelivery.updateMany({
+    where: {
+      ...where,
+      eventType: LA_START_EVENT,
+      medicationId: dose.medicationId,
+      slotInstant: activitySlotWindow(dose.slotInstant),
+    },
+    data: { medicationId: null, slotInstant: null },
+  });
 }
 
 /** The Activity tokens an update is still in flight for, lower case. */

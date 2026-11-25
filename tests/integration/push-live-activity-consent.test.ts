@@ -1321,7 +1321,7 @@ describe("once per dose, from the server's own start record", () => {
     expect(startsOnWire()).toHaveLength(1);
   });
 
-  it("keeps a dose started once when a start for another dose replaced the device's record", async () => {
+  it("gives a dose back when a start for an earlier dose ended its Activity, and starts it again once that one is done", async () => {
     const t = await consented();
     // The first dose starts at its lead time.
     const first = await dueDose(t.session.userId, 30, { start: -30, end: 90 });
@@ -1342,14 +1342,24 @@ describe("once per dose, from the server's own start record", () => {
         where: { apnsToken: TOKEN },
       }),
     ).toMatchObject({ laStartedMedicationId: earlier.medication.id });
-    // Once that one is overdue, the first is the earliest startable again.
-    // It already runs: no second start, at the turn or later.
-    for (const minutes of [61, 66, 81]) {
+    // The first dose's Activity was ended to make room, not because there
+    // was nothing left to show: its start gave the dose back. Once the
+    // earlier one is overdue, the first is the earliest startable again and
+    // starts anew, once.
+    expect(await runLiveActivityRelayPass(earlier.at(61))).toMatchObject({
+      started: 1,
+    });
+    expect(
+      await getPrismaClient().device.findFirstOrThrow({
+        where: { apnsToken: TOKEN },
+      }),
+    ).toMatchObject({ laStartedMedicationId: first.medication.id });
+    for (const minutes of [66, 81]) {
       expect(await runLiveActivityRelayPass(earlier.at(minutes))).toMatchObject(
         { started: 0 },
       );
     }
-    expect(startsOnWire()).toHaveLength(2);
+    expect(startsOnWire()).toHaveLength(3);
     expect(first.slot.getTime()).toBeGreaterThan(earlier.slot.getTime());
   });
 
