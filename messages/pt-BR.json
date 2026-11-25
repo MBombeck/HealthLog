@@ -3396,7 +3396,7 @@
         "anthropometrics": "Perfil (altura, idade, gênero)",
         "walking_hr": "Frequência cardíaca ao caminhar",
         "respiratory_rate": "Frequência respiratória",
-        "spo2": "Oxigenação do sangue",
+        "spo2": "Saturação de oxigênio",
         "pulse_wave_velocity": "Velocidade de onda de pulso",
         "vascular_age": "Idade vascular",
         "body_fat": "Gordura corporal",
@@ -3879,7 +3879,7 @@
         "headphoneAudioBody": "Os níveis de áudio de fone acompanham quão alto você escuta por fones de ouvido, em decibéis. Manter o volume baixo e fazer pausas protege sua audição a longo prazo.",
         "audioEventsBody": "Os eventos de som alto sinalizam momentos em que o ruído ao seu redor atingiu um nível que pode prejudicar a audição com exposição suficiente. Eventos frequentes são um lembrete para buscar ambientes mais silenciosos ou proteção auditiva.",
         "daylightBody": "O tempo sob luz do dia é quanto tempo você passa sob luz externa por dia. A luz do dia regular apoia um ritmo sono-vigília saudável e o humor (CDC 2024), e o tempo ao ar livre está ligado à saúde dos olhos.",
-        "bloodGlucoseBody": "A glicose no sangue é a quantidade de açúcar no seu sangue, a principal fonte de energia do corpo. Ela sobe depois de comer e se estabiliza entre as refeições. Como orientação geral para adultos sem diabetes, uma leitura em jejum abaixo de {prediabetesFrom} {unit} é normal, {prediabetesFrom}–{prediabetesTo} é pré-diabetes, e {diabetesFrom} ou acima cai na faixa de diabetes (ADA 2024). Uma única leitura alta não diagnostica; um clínico confirma com um teste repetido, e pessoas que gerenciam diabetes usam metas diferentes, definidas pelo clínico.",
+        "bloodGlucoseBody": "A glicemia é a quantidade de açúcar no seu sangue, a principal fonte de energia do corpo. Ela sobe depois de comer e se estabiliza entre as refeições. Como orientação geral para adultos sem diabetes, uma leitura em jejum abaixo de {prediabetesFrom} {unit} é normal, {prediabetesFrom}–{prediabetesTo} é pré-diabetes, e {diabetesFrom} ou acima cai na faixa de diabetes (ADA 2024). Uma única leitura alta não diagnostica; um clínico confirma com um teste repetido, e pessoas que gerenciam diabetes usam metas diferentes, definidas pelo clínico.",
         "skinTemperatureBody": "A temperatura da pele aqui é a pequena mudança noturna na temperatura do seu pulso a partir da sua própria base, não uma leitura absoluta de febre. Mudanças podem acompanhar sono, ambiente, doença ou fase do ciclo menstrual.",
         "cardioFitnessBody": "O VO₂ máx é quanto oxigênio seu corpo consegue usar no esforço máximo, o melhor índice laboratorial de aptidão aeróbica, que wearables estimam indiretamente. Uma tendência mais alta ou crescente é um forte sinal de saúde cardiovascular.",
         "cardioRecoveryBody": "A recuperação cardíaca é quantos batimentos por minuto sua frequência cardíaca cai no primeiro minuto depois que você para de se exercitar intensamente. Uma queda maior significa que seu coração se acalma mais rápido, o que é um sinal de boa aptidão.",
@@ -4237,13 +4237,13 @@
       }
     },
     "bloodGlucose": {
-      "title": "Glicose no Sangue",
-      "description": "Suas leituras de glicose no sangue ao longo do tempo, em {unit}.",
-      "chartTitle": "Glicose no sangue",
+      "title": "Glicemia",
+      "description": "Suas leituras de glicemia ao longo do tempo, em {unit}.",
+      "chartTitle": "Glicemia",
       "medianLabel": "Glicose mediana",
       "emptyState": {
         "title": "Ainda não há dados de glicose",
-        "description": "As leituras de glicose no sangue aparecem aqui assim que você registra uma ou um dispositivo conectado sincroniza."
+        "description": "As leituras de glicemia aparecem aqui assim que você registra uma ou um dispositivo conectado sincroniza."
       },
       "clinical": {
         "title": "Visão geral da glicose",
@@ -10745,7 +10745,7 @@
         "description": "Como cada medição se compara entre suas fases lútea e folicular, nos seus próprios dados.",
         "pairLabel": "{metric}: lútea vs folicular",
         "detail": "Lútea {lutealAvg} ({lutealDays, plural, one {# dia} other {# dias}}) vs folicular {follicularAvg} ({follicularDays, plural, one {# dia} other {# dias}}).",
-        "metricRestingHeartRate": "Pulso em repouso",
+        "metricRestingHeartRate": "Frequência cardíaca em repouso",
         "metricHrv": "Variabilidade da frequência cardíaca",
         "metricSleepDuration": "Duração do sono",
         "metricSteps": "Passos",
@@ -12159,7 +12159,7 @@
       "empty": "Nenhum dia registrado ainda."
     },
     "loadError": "Não foi possível carregar este episódio.",
-    "backToList": "Voltar ao diário",
+    "backToList": "Voltar à lista",
     "detail": {
       "note": "Nota"
     },

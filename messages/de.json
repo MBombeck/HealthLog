@@ -625,13 +625,13 @@
     "capture": {
       "title": "Erfassen",
       "description": "Was möchtest du erfassen?",
-      "measurement": "Messung",
+      "measurement": "Messwert",
       "measurementDescription": "Gewicht, Blutdruck, Puls und mehr",
       "medication": "Medikament",
       "medicationDescription": "Eine Dosis erfassen, genommen oder übersprungen",
       "mood": "Stimmung",
       "moodDescription": "Stimmung und Tags erfassen",
-      "workout": "Workout",
+      "workout": "Training",
       "workoutDescription": "Eine Einheit, die kein Gerät aufgezeichnet hat",
       "symptom": "Symptom",
       "symptomDescription": "Eines deiner eigenen Symptome, mit Stärke",
@@ -829,10 +829,10 @@
     "bpInTargetWindowDynamic": "BD-Ziel ({days} T)",
     "bpInTargetCollecting": "sammelt noch Daten",
     "medications": "Medikamente",
-    "quickAddMeasurement": "Messung erfassen",
+    "quickAddMeasurement": "Messwert erfassen",
     "quickAddMood": "Stimmung erfassen",
     "quickAddMedicationIntake": "Einnahme erfassen",
-    "quickAddWorkout": "Workout erfassen",
+    "quickAddWorkout": "Training erfassen",
     "quickAddLifeEvent": "Lebensereignis erfassen",
     "customizeDashboard": "Dashboard anpassen",
     "medicationIntakeQuickAdd": {
@@ -899,11 +899,11 @@
     "staleHintMonthsOther": "Letzter Wert vor {count} Monaten",
     "staleHintMonthsFew": "Letzter Wert vor {count} Monaten",
     "recentWorkouts": {
-      "title": "Letzte Workouts",
+      "title": "Letzte Trainings",
       "viewAll": "Alle anzeigen",
       "empty": {
-        "title": "Noch keine Workouts",
-        "cta": "Verbinde eine Datenquelle in den Einstellungen, damit Workouts hier erscheinen."
+        "title": "Noch keine Trainings",
+        "cta": "Verbinde eine Datenquelle in den Einstellungen, damit Trainings hier erscheinen."
       }
     },
     "metric": {
@@ -974,7 +974,7 @@
     "typeBoneMass": "Knochenmasse",
     "typeOxygenSaturation": "Sauerstoffsättigung",
     "typeHeartRateVariability": "Herzfrequenzvariabilität",
-    "typeRestingHeartRate": "Ruheherzfrequenz",
+    "typeRestingHeartRate": "Ruhepuls",
     "typeActiveEnergyBurned": "Aktive Energie",
     "typeBasalEnergyBurned": "Ruheenergie",
     "typeWorkoutEffortScore": "Trainingsaufwand",
@@ -988,7 +988,7 @@
     "typeRunningGroundContactTime": "Bodenkontaktzeit",
     "typeRunningVerticalOscillation": "Vertikale Bewegung",
     "typeRunningStrideLength": "Schrittlänge beim Laufen",
-    "typeFlightsClimbed": "Treppen",
+    "typeFlightsClimbed": "Stockwerke",
     "typeWalkingRunningDistance": "Geh- und Laufstrecke",
     "typeVo2Max": "VO₂max",
     "typeBodyTemperature": "Körpertemperatur",
@@ -998,7 +998,7 @@
     "typeSkinTemperature": "Hauttemperatur",
     "typePulseWaveVelocity": "Pulswellengeschwindigkeit",
     "typeVascularAge": "Gefäßalter",
-    "typeVisceralFat": "Viszerales Fett",
+    "typeVisceralFat": "Viszeralfett",
     "typeAudioExposureEnv": "Lärmbelastung (Umgebung)",
     "typeAudioExposureHeadphone": "Lärmbelastung (Kopfhörer)",
     "typeTimeInDaylight": "Zeit im Tageslicht",
@@ -2825,7 +2825,7 @@
     "hrv": "HRV",
     "restingHeartRate": "Ruhepuls",
     "activeEnergy": "Aktive Energie",
-    "flights": "Treppen",
+    "flights": "Stockwerke",
     "distance": "Geh- + Laufstrecke",
     "vo2Max": "VO₂max",
     "bodyTemperature": "Körpertemperatur",
@@ -3007,7 +3007,7 @@
         "ACTIVITY_STEPS": "die tägliche Schrittzahl",
         "SLEEP_DURATION": "die Schlafdauer",
         "HEART_RATE_VARIABILITY": "die Herzratenvariabilität",
-        "RESTING_HEART_RATE": "die Ruheherzfrequenz",
+        "RESTING_HEART_RATE": "der Ruhepuls",
         "TIME_IN_DAYLIGHT": "die Zeit im Tageslicht",
         "MOOD": "die Stimmung",
         "PULSE": "der Ruhepuls",
@@ -3028,7 +3028,7 @@
         "CAFFEINE": "die Koffeinmenge",
         "ENERGY_BALANCE": "die tägliche Energiebilanz",
         "ALCOHOL": "der Alkoholkonsum",
-        "WORKOUT_MINUTES": "die Workout-Dauer",
+        "WORKOUT_MINUTES": "die Trainingsdauer",
         "TRAINING_LOAD": "die Trainingslast",
         "EXERCISE_MINUTES": "die Trainingsminuten der Aktivitätsringe",
         "STAND_MINUTES": "die Stehminuten",
@@ -3245,7 +3245,7 @@
         "sleep": "Nächtliche Schlafdauer der letzten 30 Tage.",
         "steps": "Tägliche Schrittzahl der letzten 30 Tage.",
         "hrv": "Herzratenvariabilität der letzten 30 Tage.",
-        "resting_hr": "Ruheherzfrequenz der letzten 30 Tage.",
+        "resting_hr": "Ruhepuls der letzten 30 Tage.",
         "active_energy": "Aktiv verbrauchte Energie der letzten 30 Tage.",
         "flights": "Erklommene Stockwerke der letzten 30 Tage.",
         "distance": "Geh- und Laufstrecke der letzten 30 Tage.",
@@ -3419,7 +3419,7 @@
         "audio_event": "Lärm-Ereignisse",
         "daylight": "Zeit im Tageslicht",
         "skin_temp": "Hauttemperatur",
-        "workouts": "Workouts"
+        "workouts": "Trainings"
       },
       "settingsAriaLabel": "Coach-Einstellungen",
       "settingsTitle": "Coach-Einstellungen",
@@ -3465,7 +3465,7 @@
           "hint": "Schritte, Energie, Distanz und VO₂max"
         },
         "workouts": {
-          "label": "Workouts",
+          "label": "Trainings",
           "hint": "Läufe, Radtouren und Einheiten"
         },
         "sleep": {
@@ -3569,7 +3569,7 @@
         "bloodGlucose": "Geh mit mir meine letzten Glukosewerte durch. Liegen sie in einem gesunden Bereich?",
         "oxygenSaturation": "Was sagt mir mein Sauerstoffsättigungs-Verlauf (SpO₂)?",
         "respiratoryRate": "Was sagt mein Atemfrequenz-Verlauf über meine Gesundheit?",
-        "workouts": "Geh mit mir meine letzten Workouts durch: Belastung, Häufigkeit und wie ich mich dazwischen erhole.",
+        "workouts": "Geh mit mir meine letzten Trainings durch: Belastung, Häufigkeit und wie ich mich dazwischen erhole.",
         "recoveryPage": "Warum steht meine Erholung gerade dort, wo sie steht, und was treibt das?",
         "briefing": "Geh mit mir das heutige Briefing durch. Worauf sollte ich mich konzentrieren, und gibt es etwas, das einen Schritt wert ist?",
         "healthScore": "Warum liegt mein Gesundheitsscore bei {score} von 100, und was würde ihn am stärksten bewegen?",
@@ -3855,7 +3855,7 @@
         "oxygenSaturationBody": "Die SpO₂ ist der Prozentsatz der roten Blutkörperchen, die Sauerstoff transportieren. Werte von 95–100 % sind in Ruhe normal; Werte dauerhaft unter 90 % verdienen Aufmerksamkeit, kurze nächtliche Abfälle sind jedoch häufig.",
         "bodyTemperatureBody": "Die Körpertemperatur spiegelt deinen Kernwärmezustand wider, normalerweise um 37 °C mit kleinen Tagesschwankungen. Ein anhaltender Anstieg kann auf eine Infektion hindeuten; nächtliche Messungen am Handgelenk erfassen vor allem relative Änderungen, keinen klinischen Wert.",
         "activeEnergyBody": "Die aktive Energie sind die Kalorien, die du durch Bewegung verbrennst, zusätzlich zum Grundumsatz in Ruhe. Sie ist ein direktes Maß dafür, wie körperlich aktiv dein Tag war.",
-        "workoutsBody": "Workouts sind die strukturierten Trainingseinheiten, die deine Geräte mit Art, Dauer und Energie aufzeichnen. Ihre Erfassung zeigt, wie sich regelmäßiges Training über Wochen summiert und wie es mit deinen anderen Gesundheitssignalen zusammenhängt.",
+        "workoutsBody": "Trainings sind die strukturierten Einheiten, die deine Geräte mit Art, Dauer und Energie aufzeichnen. Ihre Erfassung zeigt, wie sich regelmäßiges Training über Wochen summiert und wie es mit deinen anderen Gesundheitssignalen zusammenhängt.",
         "respiratoryRateBody": "Die Atemfrequenz ist die Anzahl der Atemzüge pro Minute. In Ruhe atmen die meisten Erwachsenen etwa zwölf- bis zwanzigmal pro Minute; ein anhaltender Anstieg kann mit Krankheit, Anstrengung oder Stress einhergehen.",
         "bodyWaterBody": "Das Gesamtkörperwasser ist der Anteil deines Körpergewichts, der aus Flüssigkeit in und um die Zellen besteht. Es schwankt mit Flüssigkeitshaushalt, Ernährung und Aktivität, daher sagt der Trend über Wochen mehr aus als ein einzelner Wert.",
         "boneMassBody": "Die Knochenmasse ist das geschätzte Gewicht der Mineralien in deinem Skelett. Waagengestützte Schätzungen sind ungefähr, doch ein gleichbleibender oder steigender Trend unterstützt die langfristige Knochenstärke.",
@@ -3893,7 +3893,7 @@
         "readinessBody": "Die Bereitschaft ist ein einzelner Tageswert dafür, wie bereit dein Körper für den Tag ist. Er verbindet Ruhepuls, Herzfrequenzvariabilität und Schlaf. Es ist ein Geräte-Näherungswert an deinem eigenen Ausgangswert, keine klinische Messung: ein höherer Wert heißt erholt, ein niedrigerer ist ein sanfter Hinweis, einen Gang zurückzuschalten.",
         "sleepScoreBody": "Dein Schlafscore fasst eine ganze Nacht in einer Zahl zusammen, aus Dauer, Effizienz, Regelmäßigkeit und der Verteilung von Leicht-, Tief- und REM-Schlaf. Achte eher auf das Muster über Wochen als auf einen perfekten Wert in einer einzelnen Nacht.",
         "recoveryBody": "Die Erholung zeigt, wie gut sich dein Körper regeneriert hat, gestützt auf nächtliche Signale wie Herzfrequenzvariabilität und Ruhepuls. Es ist ein geräteabgeleiteter Näherungswert an deinem eigenen Ausgangswert, keine klinische Messung, und zwischen Geräten nicht vergleichbar. Ein hoher Wert ist grünes Licht, mehr zu geben; ein niedrigerer deutet an, dass dein System noch aufbaut.",
-        "strainBody": "Die Belastung erfasst, wie viel kardiovaskuläre und körperliche Last du deinem Körper zugemutet hast, von Workouts bis zu einem aktiven Tag auf den Beinen. Es ist ein geräteabgeleiteter Index, gemessen an deinem eigenen üblichen Aufwand, keine klinische Messung, und der Kennwert ist zwischen Geräten nicht vergleichbar.",
+        "strainBody": "Die Belastung erfasst, wie viel kardiovaskuläre und körperliche Last du deinem Körper zugemutet hast, von Trainings bis zu einem aktiven Tag auf den Beinen. Es ist ein geräteabgeleiteter Index, gemessen an deinem eigenen üblichen Aufwand, keine klinische Messung, und der Kennwert ist zwischen Geräten nicht vergleichbar.",
         "stressBody": "Stress ist hier eine Geräte-Heuristik aus Mustern der Herzfrequenzvariabilität. Sie ist keine Cortisol-Messung und nicht, wie du dich bewusst fühlst, und auch kein klinischer Stress-Score. Lies ihn an deinem eigenen Ausgangswert; zwischen Geräten ist er nicht vergleichbar. Ein niedrigerer Wert deutet auf einen ruhigen, gut regulierten Zustand hin; ein höherer ist eine Einladung, Erholung einzuplanen.",
         "recoveryPageBody": "Die Erholung fasst die nächtlichen Signale deines Wearables zusammen (Recharge, Belastung, Load sowie deine Herzfrequenz- und Energiewerte des Tages) und zeigt, wie gut sich dein Körper erholt hat. Achte eher auf das Muster über mehrere Tage als auf einen einzelnen Wert; ein schwächerer Wert ist eine Einladung, kürzerzutreten, kein Alarm.",
         "pulsePressureBody": "Der Pulsdruck ist die Differenz zwischen deinem systolischen und diastolischen Wert (systolisch minus diastolisch). Als allgemeine Orientierung sind etwa 40 mmHg in Ruhe typisch; eine große Differenz über rund 60 mmHg im mittleren Alter kann auf versteifte Arterien hinweisen, eine kleine Differenz unter etwa 25 mmHg kann mit niedrigem Schlagvolumen einhergehen (StatPearls/NIH 2023). Ein Gesprächsanlass, keine Diagnose.",
@@ -4094,18 +4094,18 @@
         "coachPrefill": "Ich habe noch keine Schlafdaten. Warum lohnt es sich, Schlaf zu erfassen, und was sollte ich wissen, bevor ich eine Quelle verbinde?"
       }
     },
-    "navWorkouts": "Workouts",
+    "navWorkouts": "Trainings",
     "navRecovery": "Erholung",
     "workouts": {
-      "title": "Workouts",
+      "title": "Trainings",
       "description": "Letzte Läufe, Touren, Spaziergänge und Krafteinheiten, quellenübergreifend entdoppelt zwischen Apple Watch und Withings.",
       "emptyState": {
-        "title": "Noch keine Workouts",
-        "description": "Workouts kommen per Apple Health vom iPhone und von Withings. Du kannst eins auch von Hand erfassen.",
-        "coachPrefill": "Ich habe noch keine Workouts erfasst. Warum lohnt es sich, sie zu erfassen, und worauf sollte ich mich zuerst konzentrieren?"
+        "title": "Noch keine Trainings",
+        "description": "Trainings kommen per Apple Health vom iPhone und von Withings. Du kannst eins auch von Hand erfassen.",
+        "coachPrefill": "Ich habe noch keine Trainings erfasst. Warum lohnt es sich, sie zu erfassen, und worauf sollte ich mich zuerst konzentrieren?"
       },
       "detail": {
-        "backToList": "Zurück zu Workouts",
+        "backToList": "Zurück zu Trainings",
         "statsTitle": "Werte",
         "statsDuration": "Dauer",
         "statsDistance": "Distanz",
@@ -4128,7 +4128,7 @@
         "statsGroundContactBalanceValue": "{left} % L, {right} % R",
         "routeTitle": "Strecke",
         "hrChartTitle": "Herzfrequenz",
-        "notFound": "Workout nicht gefunden.",
+        "notFound": "Training nicht gefunden.",
         "hrFromPulse": "Aus deinen Herzfrequenzdaten rund um diese Einheit",
         "hrAxisMinutes": "Min.",
         "hrAvgMarker": "Ø {bpm}",
@@ -4182,19 +4182,19 @@
         "mixedCardio": "Mixed Cardio",
         "other": "Sonstiges"
       },
-      "loadError": "Deine Workouts konnten nicht geladen werden",
-      "loadMore": "Weitere Workouts laden",
-      "loadingMore": "Weitere Workouts werden geladen",
-      "loadMoreError": "Weitere Workouts konnten nicht geladen werden",
-      "countOne": "{count} Workout",
-      "countOther": "{count} Workouts",
-      "countFew": "{count} Workouts",
+      "loadError": "Deine Trainings konnten nicht geladen werden",
+      "loadMore": "Weitere Trainings laden",
+      "loadingMore": "Weitere Trainings werden geladen",
+      "loadMoreError": "Weitere Trainings konnten nicht geladen werden",
+      "countOne": "{count} Training",
+      "countOther": "{count} Trainings",
+      "countFew": "{count} Trainings",
       "filterLabel": "Nach Sportart filtern",
       "filterAll": "Alle Sportarten",
       "filterEmpty": "Keine Einheiten dieser Sportart in deinem Verlauf.",
       "manual": {
-        "logWorkout": "Workout erfassen",
-        "sheetTitle": "Workout erfassen",
+        "logWorkout": "Training erfassen",
+        "sheetTitle": "Training erfassen",
         "sheetDescription": "Trag eine Einheit von Hand ein: was, wann und wie lange.",
         "sportLabel": "Aktivität",
         "sportPlaceholder": "Aktivität wählen",
@@ -4203,21 +4203,21 @@
         "durationLabel": "Dauer",
         "distanceLabel": "Distanz ({unit})",
         "energyLabel": "Aktive Energie (kcal)",
-        "alreadySaved": "Dieses Workout ist schon gespeichert",
-        "saveError": "Das Workout konnte nicht gespeichert werden",
-        "deleteLabel": "Workout löschen",
-        "deleteConfirmTitle": "Dieses Workout löschen?",
-        "deleteConfirmDescription": "Dieses von Hand eingetragene Workout wird endgültig entfernt.",
-        "deleted": "Workout gelöscht",
-        "deleteError": "Das Workout konnte nicht gelöscht werden",
+        "alreadySaved": "Dieses Training ist schon gespeichert",
+        "saveError": "Das Training konnte nicht gespeichert werden",
+        "deleteLabel": "Training löschen",
+        "deleteConfirmTitle": "Dieses Training löschen?",
+        "deleteConfirmDescription": "Dieses von Hand eingetragene Training wird endgültig entfernt.",
+        "deleted": "Training gelöscht",
+        "deleteError": "Das Training konnte nicht gelöscht werden",
         "errors": {
           "sportRequired": "Wähle eine Aktivität.",
           "startRequired": "Gib Datum und Uhrzeit ein.",
           "startInFuture": "Der Beginn darf nicht in der Zukunft liegen.",
-          "durationRequired": "Gib an, wie lange das Workout gedauert hat.",
+          "durationRequired": "Gib an, wie lange das Training gedauert hat.",
           "durationInvalid": "Gib ganze Stunden und Minuten von 0 bis 59 ein.",
-          "durationTooLong": "Ein Workout dauert höchstens 24 Stunden.",
-          "endInFuture": "Das Workout würde in der Zukunft enden. Stell den Beginn auf die Uhrzeit, zu der es angefangen hat.",
+          "durationTooLong": "Ein Training dauert höchstens 24 Stunden.",
+          "endInFuture": "Das Training würde in der Zukunft enden. Stell den Beginn auf die Uhrzeit, zu der es angefangen hat.",
           "distanceInvalid": "Gib die Distanz als Zahl in einem realistischen Bereich ein.",
           "energyInvalid": "Gib die aktive Energie als Zahl bis 20.000 kcal ein."
         },
@@ -4352,15 +4352,15 @@
     },
     "navBoneMass": "Knochenmasse",
     "flightsClimbed": {
-      "title": "Treppen",
+      "title": "Stockwerke",
       "description": "Stockwerke, die du jeden Tag erklommen hast.",
-      "chartTitle": "Treppen pro Tag",
+      "chartTitle": "Stockwerke pro Tag",
       "emptyState": {
-        "title": "Noch keine Treppendaten",
-        "description": "Treppenwerte erscheinen hier, sobald Apple Health einen Tag synchronisiert."
+        "title": "Noch keine Daten zu Stockwerken",
+        "description": "Werte zu Stockwerken erscheinen hier, sobald Apple Health einen Tag synchronisiert."
       }
     },
-    "navFlightsClimbed": "Treppen",
+    "navFlightsClimbed": "Stockwerke",
     "walkingRunningDistance": {
       "title": "Geh- + Laufstrecke",
       "description": "Geh- und Laufstrecke pro Tag, in Kilometern.",
@@ -4695,7 +4695,7 @@
         "explainerLabel": "Wie das berechnet wurde",
         "channel": {
           "ALCOHOL": "Alkoholkonsum",
-          "WORKOUT_MINUTES": "Workout-Dauer",
+          "WORKOUT_MINUTES": "Trainingsdauer",
           "TRAINING_LOAD": "Trainingslast"
         }
       },
@@ -4967,7 +4967,7 @@
       "chartTitle": "VO₂max (mL/(kg·min))",
       "emptyState": {
         "title": "Noch keine Fitnessdaten",
-        "description": "VO₂max-Werte erscheinen hier, sobald Apple Health sie aus deinen Workouts synchronisiert."
+        "description": "VO₂max-Werte erscheinen hier, sobald Apple Health sie aus deinen Trainings synchronisiert."
       }
     },
     "navCardioFitness": "Fitness",
@@ -4977,7 +4977,7 @@
       "chartTitle": "Erholungspuls (bpm)",
       "emptyState": {
         "title": "Noch keine Erholungspuls-Daten",
-        "description": "Erholungspuls-Werte erscheinen hier, sobald Apple Health sie aus einem Workout synchronisiert."
+        "description": "Erholungspuls-Werte erscheinen hier, sobald Apple Health sie aus einem Training synchronisiert."
       }
     },
     "navCardioRecovery": "Erholungspuls",
@@ -6053,7 +6053,7 @@
           "description": "Listenansicht und manuelle Reihenfolge."
         },
         "labs": {
-          "title": "Labor",
+          "title": "Laborwerte",
           "description": "Ansicht, Sortierung und manuelle Reihenfolge."
         },
         "illness": {
@@ -6207,13 +6207,13 @@
           "fullBackup": {
             "title": "Voll-Backup",
             "description": "Deine gesamte Akte in einer JSON-Datei.",
-            "scopeNote": "Dokumentmetadaten und die KI-Zusammenfassung, falls vorhanden, sind als Klartext enthalten; die Originaldateien der Dokumente sowie GPS-Routen und Einzelmesswerte von Workouts sind es nicht. Lade diese separat aus dem Dokumententresor bzw. dem Workout-Export herunter.",
+            "scopeNote": "Dokumentmetadaten und die KI-Zusammenfassung, falls vorhanden, sind als Klartext enthalten; die Originaldateien der Dokumente sowie GPS-Routen und Einzelmesswerte von Trainings sind es nicht. Lade diese separat aus dem Dokumententresor bzw. dem Trainings-Export herunter.",
             "encryptToggle": "Mit einer Passphrase verschlüsseln",
             "passphrasePlaceholder": "Passphrase (mind. 12 Zeichen)",
             "passphraseHelp": "Leitet den Archivschlüssel per Argon2id ab und versiegelt ihn mit AES-256-GCM. Speichere die Datei mit der Endung .hlx.",
             "noRecoveryWarning": "Es gibt keine Wiederherstellung. Geht diese Passphrase verloren, lässt sich das Archiv nicht mehr öffnen. Bewahre sie sicher auf.",
             "detail": "Eine portable Kopie deiner Akte zum Aufbewahren und Lesen: Werte als einfaches JSON, Dokumente nur mit ihren Metadaten. Sie ist nicht die wöchentliche Kontokopie, mit der dieser Server ein Konto zurücksetzt, und sie kann kein Konto auf einem anderen Server neu anlegen. Einige Datenarten fehlen noch; das Manifest der Datei nennt, was enthalten ist.",
-            "contents": "Deine Messwerte, Medikamente, Stimmung, Zyklus, Laborwerte, Krankheitsepisoden, Allergien, Familienanamnese, Nährstoffe, Workouts, dein Gesundheitsprofil und deine eigenen Messgrößen in einer JSON-Datei."
+            "contents": "Deine Messwerte, Medikamente, Stimmung, Zyklus, Laborwerte, Krankheitsepisoden, Allergien, Familienanamnese, Nährstoffe, Trainings, dein Gesundheitsprofil und deine eigenen Messgrößen in einer JSON-Datei."
           }
         },
         "import": {
@@ -6650,7 +6650,7 @@
             "description": "Gruppen, eigene Tags und archivierte Tags."
           },
           "labs": {
-            "title": "Labor",
+            "title": "Laborwerte",
             "description": "Biomarker und Texterkennung auf dem Gerät für Laborberichte."
           },
           "arrangementTitle": "Reihenfolge und Ansicht",
@@ -7379,7 +7379,7 @@
     "withingsConnect": "Mit Withings verbinden",
     "withingsNoCredentials": "Bitte zuerst die API-Zugangsdaten oben eingeben, um Withings zu verbinden.",
     "whoop": "WHOOP",
-    "whoopDescription": "Verbinde dein WHOOP-Band, um Erholung, Schlaf, Belastung und Workouts direkt in HealthLog zu synchronisieren.",
+    "whoopDescription": "Verbinde dein WHOOP-Band, um Erholung, Schlaf, Belastung und Trainings direkt in HealthLog zu synchronisieren.",
     "whoopCredentials": "API-Zugangsdaten",
     "whoopClientId": "Client-ID",
     "whoopClientSecret": "Client-Secret",
@@ -7442,7 +7442,7 @@
     "googleHealthSyncInProgress": "Synchronisierung läuft: {count, plural, one {# Messwert} other {# Messwerte}} gespeichert, {completed} von {total, plural, one {# Bereich} other {# Bereichen}} verarbeitet.",
     "googleHealthResourceFailuresTitle": "Diese Bereiche benötigen noch Aufmerksamkeit:",
     "googleHealthResource": {
-      "workout": "Workouts",
+      "workout": "Trainings",
       "sleep": "Schlaf",
       "boundedMetrics": "Gesundheitsmesswerte",
       "activity": "Aktivität",
@@ -7530,7 +7530,7 @@
       "title": "Empfangene Daten",
       "summary": "{count, plural, one {# Datentyp} other {# Datentypen}}, neuestes {relative}",
       "quiet": "{count} still",
-      "workouts": "Workouts",
+      "workouts": "Trainings",
       "medicationDoses": "Medikamenteneinnahmen",
       "cycleDays": "Zyklustage",
       "cycleDaysCount": "Zyklustage ({count})"
@@ -9028,7 +9028,7 @@
         "previewMood": "Stimmungseinträge",
         "previewLabs": "Laborwerte",
         "previewDocuments": "Dokumente",
-        "previewWorkouts": "Workouts",
+        "previewWorkouts": "Trainings",
         "previewCycles": "Zyklusdaten",
         "previewVisits": "Termine",
         "previewVaccinations": "Impfungen",
@@ -9067,7 +9067,7 @@
         "restoreMissingDescription": "Das Manifest der Datei sagt, sie enthalte den folgenden Abschnitt, und sie enthält ihn nicht. Es wurde nichts geändert: Eine Wiederherstellung ersetzt eine ganze Datenklasse, ein fehlender Abschnitt hätte sie also geleert.",
         "restoreMissingRemedy": "Nutze eine der Kontokopien dieses Servers oder eine Kopie außerhalb des Servers, oder exportiere das Konto erneut und lade die neue Datei hoch. Ein Abschnitt, den das Manifest als ausgelassen angibt, ist etwas anderes und wird normal wiederhergestellt.",
         "restoreMissingDocuments": "Dokumente",
-        "restoreMissingWorkouts": "Workouts",
+        "restoreMissingWorkouts": "Trainings",
         "restoreMissingMentalHealth": "Psychische Fragebögen",
         "restoreMissingConsent": "Einwilligungsnachweise",
         "offhost": {
@@ -11776,7 +11776,7 @@
       "description": "Blutzuckerwerte und Verläufe."
     },
     "workouts": {
-      "label": "Workouts",
+      "label": "Trainings",
       "description": "Trainingseinheiten und Aktivität."
     },
     "recovery": {
@@ -12032,8 +12032,8 @@
     "newEpisode": "Neue Episode",
     "logDay": "Tag erfassen",
     "markRecovered": "Als genesen markieren",
-    "deletedToast": "Eintrag gelöscht",
-    "restoreError": "Eintrag konnte nicht wiederhergestellt werden",
+    "deletedToast": "Episode gelöscht",
+    "restoreError": "Episode konnte nicht wiederhergestellt werden",
     "onsetOn": "Begonnen am {date}",
     "recoveredOn": "genesen {date}",
     "status": {
@@ -12159,7 +12159,7 @@
       "empty": "Noch keine Tage erfasst."
     },
     "loadError": "Diese Episode konnte nicht geladen werden.",
-    "backToList": "Zurück zum Journal",
+    "backToList": "Zurück zur Liste",
     "detail": {
       "note": "Notiz"
     },
@@ -12175,7 +12175,7 @@
       "body": "„{label}“ und alle zugehörigen Tageseinträge werden entfernt. Direkt danach kannst du das kurz rückgängig machen."
     },
     "vital": {
-      "RESTING_HEART_RATE": "Ruheherzfrequenz",
+      "RESTING_HEART_RATE": "Ruhepuls",
       "HEART_RATE_VARIABILITY": "Herzfrequenzvariabilität",
       "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Erholung",
@@ -12194,7 +12194,7 @@
     "reminderSuggestion": {
       "title": "Erinnerung einrichten?",
       "accept": "Erinnerung setzen",
-      "dismiss": "Jetzt nicht",
+      "dismiss": "Nicht jetzt",
       "stop": "Ich messe genug",
       "accepted": "Erinnerung gesetzt",
       "dismissed": "Okay, das schlage ich nicht noch einmal vor",
@@ -12208,7 +12208,7 @@
     },
     "suggestedAction": {
       "apply": "Hinzufügen",
-      "dismiss": "Jetzt nicht",
+      "dismiss": "Nicht jetzt",
       "applied": "Hinzugefügt",
       "dismissed": "Verworfen",
       "failed": "Konnte das nicht hinzufügen. Bitte erneut versuchen",
@@ -15068,7 +15068,7 @@
       "medications": "Medikamente",
       "vaccinations": "Impfungen",
       "visits": "Arzt und Eingriffe",
-      "labs": "Labor",
+      "labs": "Laborwerte",
       "documents": "Dokumente",
       "cycle": "Zyklus",
       "seizures": "Anfälle"

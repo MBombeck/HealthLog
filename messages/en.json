@@ -245,7 +245,7 @@
       "not-found": "This vaccination is no longer available.",
       "identity-required": "A dose needs a name: pick a vaccine from the list or type the name on your vaccination card.",
       "booster-invalid": "Check the booster details and try again.",
-      "booster-no-antigen": "This dose names no vaccine from the catalogue, so no booster can be planned for it.",
+      "booster-no-antigen": "This dose names no vaccine from the catalog, so no booster can be planned for it.",
       "booster-out-of-scope": "Your access to this record does not cover planning a booster."
     },
     "allergy": {
@@ -559,8 +559,8 @@
       "days": "{before, plural, one {# day} other {# days}} before, {after, plural, one {# day} other {# days}} after the start, {excluded, plural, one {# day} other {# days}} left out",
       "method": "Segmented regression on daily values from 90 days before to at most 180 days after the start, with Newey-West intervals. Days after the start on which fewer than 80 % of the doses of the preceding 14 days were taken are left out. Describes an association over time, not a proven effect of the medication.",
       "autocorrelation": "strong day-to-day carry-over, so the ranges may still be too narrow",
-      "window": "analysed {from} to {to}, which can reach beyond the report period",
-      "windowLine": "Analysed {from} to {to}. This window can reach beyond the report period."
+      "window": "analyzed {from} to {to}, which can reach beyond the report period",
+      "windowLine": "Analyzed {from} to {to}. This window can reach beyond the report period."
     },
     "screenerUnvalidated": "{label}: {count} of {total, plural, one {# result was} other {# results were}} answered in a translation that has not been scientifically validated; treat them as orientation.",
     "pregnancy": {
@@ -690,7 +690,7 @@
     "passwordBreached": "This password has appeared in known data breaches. Please choose a different one.",
     "oidc": {
       "signInDefault": "Sign in with SSO",
-      "errorDenied": "Sign-in was cancelled.",
+      "errorDenied": "Sign-in was canceled.",
       "errorNoEmail": "Your identity provider did not share a verified email address.",
       "errorEmailUnverified": "Your identity provider did not mark your email address as verified.",
       "errorIdentityConflict": "That email address belongs to an account that is already linked to a different SSO identity.",
@@ -862,7 +862,7 @@
     "heroItems": {
       "coach_checkin": "Coach check-ins",
       "dose_window": "Medication doses",
-      "preventive_care": "Preventive care",
+      "preventive_care": "Care",
       "sync_issue": "Sync issues",
       "milestone": "Milestones",
       "ecg_new_recording": "New ECG recordings",
@@ -1672,7 +1672,7 @@
       "entries": {
         "nausea": "Nausea",
         "vomiting": "Vomiting",
-        "diarrhea": "Diarrhoea",
+        "diarrhea": "Diarrhea",
         "constipation": "Constipation",
         "abdominalPain": "Abdominal pain",
         "hypoglycemiaSymptoms": "Low-glucose symptoms",
@@ -3149,10 +3149,10 @@
         "no_previous_window": "No comparable earlier window is available.",
         "no_current_score": "No comparison because the current window is not eligible."
       },
-      "restMode": "Rest Mode active since {since}. The score is shown for context and is not penalised.",
+      "restMode": "Rest Mode active since {since}. The score is shown for context and is not penalized.",
       "pillar": {
         "bloodPressure": "Blood pressure",
-        "glycaemia": "Glycaemia",
+        "glycaemia": "Glycemia",
         "activity": "Activity",
         "sleep": "Sleep",
         "adiposity": "Adiposity",
@@ -3174,7 +3174,7 @@
       "observedSleep": "{value, plural, one {# minute} other {# minutes}} per night",
       "observedAdiposity": "Waist-to-height ratio {value}",
       "referenceActivity": "Benefit plateaus by {high, plural, one {# step} other {# steps}} per day",
-      "referenceSleep": "At least {low, plural, one {# minute} other {# minutes}} per night; longer sleep is not penalised",
+      "referenceSleep": "At least {low, plural, one {# minute} other {# minutes}} per night; longer sleep is not penalized",
       "referenceAdiposity": "Waist-to-height ratio below {high}",
       "referenceHba1c": "HbA1c {low} to {high}%",
       "referenceDetail": "{label}: {low} to {high} ({kind}, {source})",
@@ -3223,7 +3223,7 @@
       "emptyTitle": "No briefing yet",
       "emptyDescription": "Generate today's briefing to get a narrative read of your trends.",
       "emptyAction": "Generate briefing",
-      "loadingLabel": "Synthesising today's briefing",
+      "loadingLabel": "Synthesizing today's briefing",
       "refreshFailedHint": "Couldn't refresh the briefing. Showing the last one.",
       "retryAction": "Retry",
       "failedTitle": "Couldn't generate the briefing",
@@ -3287,7 +3287,7 @@
     },
     "coach": {
       "refusalOutOfScope": "I can only help with the health metrics in your log: measurements, medications, mood, trends. I cannot answer questions outside that scope.",
-      "refusalInjection": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data. Please rephrase your question in those terms.",
+      "refusalInjection": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarize your own health data. Please rephrase your question in those terms.",
       "errorBudget": "You've reached today's Coach usage limit. The budget refreshes at midnight in your time zone.",
       "errorProvider": "The Coach could not reach an Insights provider just now. Please try again in a moment.",
       "errorReasoningOnly": "The model only reasoned and never wrote an answer. Try again, or choose a different model in your AI settings.",
@@ -3396,7 +3396,7 @@
         "anthropometrics": "Profile (height, age, gender)",
         "walking_hr": "Walking heart rate",
         "respiratory_rate": "Respiratory rate",
-        "spo2": "Blood oxygen",
+        "spo2": "Oxygen saturation",
         "pulse_wave_velocity": "Pulse-wave velocity",
         "vascular_age": "Vascular age",
         "body_fat": "Body fat",
@@ -3510,7 +3510,7 @@
         },
         "detailDays": "The Coach reads nothing older than {days, plural, one {# day} other {# days}}, in any answer.",
         "detailMonths": "The Coach reads nothing older than {months, plural, one {# month} other {# months}}, in any answer.",
-        "detailAll": "Without a limit, the Coach reads {dailyMonths, plural, one {# month} other {# months}} of readings in daily detail and older readings as monthly values up to {years, plural, one {# year} other {# years}} back. For lab results it reads the latest value of the most recently measured markers and, for a marker you ask about, its {labRecent, plural, one {# previous result} other {# previous results}}, with older ones summarised per year up to {labYears, plural, one {# year} other {# years}} back; earlier years are only counted.",
+        "detailAll": "Without a limit, the Coach reads {dailyMonths, plural, one {# month} other {# months}} of readings in daily detail and older readings as monthly values up to {years, plural, one {# year} other {# years}} back. For lab results it reads the latest value of the most recently measured markers and, for a marker you ask about, its {labRecent, plural, one {# previous result} other {# previous results}}, with older ones summarized per year up to {labYears, plural, one {# year} other {# years}} back; earlier years are only counted.",
         "note": "Your profile, current medications, an ongoing illness and upcoming visits stay visible; summaries that need more history are shortened or left out. Answers the Coach gave earlier in older conversations may still quote older values."
       },
       "showConversations": "Show conversations",
@@ -3644,9 +3644,9 @@
       "activity": {
         "thinking": "Thinking…",
         "fetching": "Fetching {domain}, {window}…",
-        "digestOne": "Summarising {count} reading…",
-        "digestFew": "Summarising {count} readings…",
-        "digestOther": "Summarising {count} readings…",
+        "digestOne": "Summarizing {count} reading…",
+        "digestFew": "Summarizing {count} readings…",
+        "digestOther": "Summarizing {count} readings…",
         "digestDoneOne": "{count} reading from {areas}",
         "digestDoneFew": "{count} readings from {areas}",
         "digestDoneOther": "{count} readings from {areas}",
@@ -3833,7 +3833,7 @@
     },
     "subPage": {
       "loadError": "Could not load this metric right now.",
-      "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written assessment.",
+      "blutdruckDescription": "Your systolic / diastolic trend with age-personalized target zones and a written assessment.",
       "gewichtDescription": "Weight trend mapped against your height-derived healthy band, plus a written assessment.",
       "pulsDescription": "Resting pulse against an age- and sex-based reference band from CDC/NCHS population percentiles, plus a written assessment.",
       "stimmungDescription": "Daily mood scores over time with a written assessment.",
@@ -4249,7 +4249,7 @@
         "title": "Glucose overview",
         "subtitle": "A read on your last {days, plural, one {# day} other {# days}}, from {count, plural, one {# reading} other {# readings}}.",
         "spotCaveat": "These are spot-reading estimates from individual measurements, not a continuous-monitor profile. Read them as a direction of travel rather than a clinical verdict.",
-        "labsLink": "Lab results? Log a blood-draw HbA1c or fasting glucose under Labs.",
+        "labsLink": "Lab results? Log a blood-draw HbA1c or fasting glucose under Lab results.",
         "learningTitle": "Still learning your glucose",
         "learningBody": "So far that's {count} over {days}. A little more history and a fuller picture comes into focus. Keep logging, or let a connected device fill it in.",
         "learningBodyEmpty": "Once a handful of readings come in (logged by you or synced from a device), your time-in-range, average, and variability take shape here.",
@@ -4363,7 +4363,7 @@
     "navFlightsClimbed": "Flights",
     "walkingRunningDistance": {
       "title": "Walking + Running Distance",
-      "description": "Walking and running distance you covered each day, in kilometres.",
+      "description": "Walking and running distance you covered each day, in kilometers.",
       "chartTitle": "Distance per day",
       "emptyState": {
         "title": "No distance data yet",
@@ -4554,7 +4554,7 @@
     "navWalkingDoubleSupport": "Double support",
     "walkingStepLength": {
       "title": "Walking Step Length",
-      "description": "Your average walking step length over time, in metres.",
+      "description": "Your average walking step length over time, in meters.",
       "chartTitle": "Step length",
       "emptyState": {
         "title": "No step-length data yet",
@@ -4843,7 +4843,7 @@
         "READINESS": {
           "title": "Readiness",
           "description": "A daily wellness proxy from how your signals sit against your own baseline.",
-          "method": "A 0–100 blend of resting-HR deviation, HRV (SDNN) deviation, sleep adequacy, respiratory-rate stability and mood stability, each measured against your personal baseline. Weights renormalise over the components your data supports. A wellness proxy, not a recovery or clinical score.",
+          "method": "A 0–100 blend of resting-HR deviation, HRV (SDNN) deviation, sleep adequacy, respiratory-rate stability and mood stability, each measured against your personal baseline. Weights renormalize over the components your data supports. A wellness proxy, not a recovery or clinical score.",
           "component": {
             "rhr": "Resting heart rate",
             "hrv": "HRV (SDNN)",
@@ -5224,7 +5224,7 @@
     },
     "waist": {
       "title": "Waist circumference",
-      "description": "Waist girth in centimetres, a marker of central fat. The WHO increased-risk threshold is sex-specific (men 94 cm, women 80 cm); your own trend leads the read.",
+      "description": "Waist girth in centimeters, a marker of central fat. The WHO increased-risk threshold is sex-specific (men 94 cm, women 80 cm); your own trend leads the read.",
       "chartTitle": "Waist circumference",
       "emptyState": {
         "title": "No waist measurements yet",
@@ -5414,7 +5414,7 @@
         },
         "measurements": {
           "title": "Readings & target ranges",
-          "body": "Measurements shows the history and target range for each metric. Hidden gem: set a target range per value so deviations stand out in colour. These series are the basis for the Coach’s correlations and the doctor report."
+          "body": "Measurements shows the history and target range for each metric. Hidden gem: set a target range per value so deviations stand out in color. These series are the basis for the Coach’s correlations and the doctor report."
         },
         "medications": {
           "title": "Medications & intakes",
@@ -5758,7 +5758,7 @@
     "dismissTooltip": "Hide this item",
     "items": {
       "profileTitle": "Set your profile",
-      "profileDescription": "Height, date of birth and gender unlock personalised targets.",
+      "profileDescription": "Height, date of birth and gender unlock personalized targets.",
       "profileCta": "Open profile",
       "measurementTitle": "Log your first measurement",
       "measurementDescription": "One reading unlocks the tile; the trend itself draws from your 5th reading.",
@@ -6053,7 +6053,7 @@
           "description": "List view and manual order."
         },
         "labs": {
-          "title": "Labs",
+          "title": "Lab results",
           "description": "View, sort, and manual order."
         },
         "illness": {
@@ -6092,7 +6092,7 @@
         "saveError": "Saving the source priority failed.",
         "resetSuccess": "Source priority reset to defaults",
         "perMetricToggle": "Per-metric overrides ({count})",
-        "perMetricHelp": "Metrics you have customised away from the default ladder. Use this list to roll any single metric back to its constant default without touching the rest.",
+        "perMetricHelp": "Metrics you have customized away from the default ladder. Use this list to roll any single metric back to its constant default without touching the rest.",
         "perMetricEmpty": "No per-metric overrides set. Every metric uses the global ladder above.",
         "resetMetric": "Reset",
         "deviceTypeToggle": "Device-type priority ({count})",
@@ -6272,10 +6272,10 @@
               "archive_unreadable": "archive could not be read",
               "missing_member": "file missing from the archive"
             },
-            "labsMarkersCreatedOne": "{count} new marker was added to Labs.",
-            "labsMarkersCreatedOther": "{count} new markers were added to Labs.",
-            "labsMarkersCreatedFew": "{count} new markers were added to Labs.",
-            "viewInLabs": "View in Labs",
+            "labsMarkersCreatedOne": "{count} new marker was added to Lab results.",
+            "labsMarkersCreatedOther": "{count} new markers were added to Lab results.",
+            "labsMarkersCreatedFew": "{count} new markers were added to Lab results.",
+            "viewInLabs": "View in Lab results",
             "estimateWarning": "Cumulative totals for {count, plural, one {# day} other {# days}} were estimated from the largest export source. Native Apple Health statistics remain authoritative.",
             "phase": {
               "queued": "Queued…",
@@ -6346,7 +6346,7 @@
             "reasonUnknownType": "unknown measurement type",
             "reasonInvalidValue": "value is not a number",
             "reasonValueOutOfRange": "value outside the plausible range",
-            "reasonUnknownUnit": "unit not recognised for this type",
+            "reasonUnknownUnit": "unit not recognized for this type",
             "reasonMissingTimezoneOffset": "timestamp has no timezone offset",
             "reasonInvalidTimestamp": "timestamp could not be read",
             "reasonImplausibleTimestamp": "timestamp is in the future or before 1900",
@@ -6650,7 +6650,7 @@
             "description": "Groups, your own tags and archived tags."
           },
           "labs": {
-            "title": "Labs",
+            "title": "Lab results",
             "description": "Biomarkers and on-device text recognition for lab reports."
           },
           "arrangementTitle": "Order and view",
@@ -6740,10 +6740,10 @@
           "pollenEuropeOnly": "Pollen data covers Europe only.",
           "historyProgress": "Backfilling air quality: {done} of {total, plural, one {# day} other {# days}}",
           "historyComplete": "Air quality is filled in for every earlier day with entries that the source covers ({total, plural, one {# day} other {# days}}). Older days stay empty.",
-          "attribution": "Data sources and licences",
+          "attribution": "Data sources and licenses",
           "saveError": "The setting could not be saved.",
           "latest": "Newest day ({date})",
-          "modelNote": "Modelled outdoor values for your area, not your personal exposure."
+          "modelNote": "Modeled outdoor values for your area, not your personal exposure."
         }
       },
       "score": {
@@ -6902,7 +6902,7 @@
     "noPasskeys": "No passkeys registered.",
     "addPasskey": "Add passkey",
     "passkeyRegistrationFailed": "Passkey registration failed",
-    "passkeyRegistrationCancelled": "Passkey registration cancelled",
+    "passkeyRegistrationCancelled": "Passkey registration canceled",
     "passkeyNotSupported": "Your browser or device doesn't support passkeys yet. Try a different browser or device.",
     "passkeyAlreadyRegistered": "This device is already registered as a passkey for your account.",
     "passkeySecurityBlocked": "Your browser blocked the passkey request for security reasons. Make sure you're on a trusted HTTPS origin and try again.",
@@ -8202,7 +8202,7 @@
       "title": "Glucose reference band",
       "description": "Which band your blood-glucose readings are judged against.",
       "enable": "Use the diabetes goal band",
-      "explainer": "Off, readings are judged against the general non-diabetic reference band. On, they are judged against the tighter glycaemic goal band from the ADA Standards of Care, and the Coach grounds its glucose remarks on that band instead. Your own target overrides below still take precedence.",
+      "explainer": "Off, readings are judged against the general non-diabetic reference band. On, they are judged against the tighter glycemic goal band from the ADA Standards of Care, and the Coach grounds its glucose remarks on that band instead. Your own target overrides below still take precedence.",
       "disclaimer": "This selects a reference band. It is not a diagnosis, it is never inferred from a reading, and the app takes no clinical action on it. Which targets apply to you is a question for your clinician.",
       "error": "Could not save the setting."
     },
@@ -9032,7 +9032,7 @@
         "previewCycles": "Cycle data",
         "previewVisits": "Doctor visits",
         "previewVaccinations": "Vaccinations",
-        "previewReminders": "Preventive-care reminders",
+        "previewReminders": "Check-up reminders",
         "previewCustomMetrics": "Custom metrics",
         "previewHealthScores": "Score history",
         "restoreConfirm": "Restore now",
@@ -10547,7 +10547,7 @@
     "recordedAsTaken": "{name} recorded as taken.",
     "confirmed": "{name} confirmed.",
     "genericConfirmed": "Confirmed.",
-    "cancelled": "Cancelled.",
+    "cancelled": "Canceled.",
     "moodLogged": "Logged: {score}/5",
     "moodNotePrompt": "Add a short note (optional).",
     "moodNoteSaved": "Note saved.",
@@ -10765,14 +10765,14 @@
       "title": "What's happening now",
       "whatsHappening": {
         "MENSTRUAL": "Your period is the start of a new cycle, as the uterine lining sheds. Energy and mood often feel lower in these first days.",
-        "FOLLICULAR": "After your period, oestrogen gradually rises as the body prepares an egg. Many people notice steadier energy through this stretch.",
+        "FOLLICULAR": "After your period, estrogen gradually rises as the body prepares an egg. Many people notice steadier energy through this stretch.",
         "OVULATORY": "Around mid-cycle an egg is released and fertility peaks for a short window. This phase is the briefest of the four.",
         "LUTEAL": "After ovulation, progesterone rises and the body settles in. In the days before your next period some people notice premenstrual changes."
       },
       "context": {
         "MENSTRUAL": "Hormone levels are at their lowest, which is why these days can feel like a quiet reset. Some people notice cramps, lighter sleep or a wish to slow down; others sail through with little change. All of that sits within the normal range, and how it feels can shift from one cycle to the next.",
-        "FOLLICULAR": "With oestrogen on the rise, many people describe these days as bright and open: sleep often comes more easily and the mind feels clearer. Basal body temperature usually stays in its lower band until just before ovulation. The length of this phase varies most from person to person, and from cycle to cycle.",
-        "OVULATORY": "Oestrogen peaks just before the egg is released, often alongside a brief lift in mood and a small rise in basal body temperature in the day or two that follow. Cervical fluid tends to become clearer and more stretchy around this window. A short twinge on one side is something some people notice; many feel nothing at all, and both are perfectly normal.",
+        "FOLLICULAR": "With estrogen on the rise, many people describe these days as bright and open: sleep often comes more easily and the mind feels clearer. Basal body temperature usually stays in its lower band until just before ovulation. The length of this phase varies most from person to person, and from cycle to cycle.",
+        "OVULATORY": "Estrogen peaks just before the egg is released, often alongside a brief lift in mood and a small rise in basal body temperature in the day or two that follow. Cervical fluid tends to become clearer and more stretchy around this window. A short twinge on one side is something some people notice; many feel nothing at all, and both are perfectly normal.",
         "LUTEAL": "Progesterone leads the second half and basal body temperature usually settles a little higher than earlier in the cycle. Some people notice shifts in sleep, appetite, mood or energy as the days go on, while others feel steady throughout. The pattern is personal, and it often looks different from one month to the next."
       },
       "commonHere": "You often notice this here",
@@ -11455,7 +11455,7 @@
         "unitLockedHint": "Once this marker holds numeric readings, its unit stays as it is. The stored values would otherwise be shown in a new unit without being converted.",
         "panel": "Panel",
         "panelPlaceholder": "e.g. Lipids",
-        "panelHint": "Pick a suggestion or type your own. Catalog panels are recognised in every language.",
+        "panelHint": "Pick a suggestion or type your own. Catalog panels are recognized in every language.",
         "lowerBound": "Reference low",
         "upperBound": "Reference high",
         "lowerPlaceholder": "Lower bound",
@@ -11501,8 +11501,8 @@
       "ggt": "GGT",
       "sodium": "Sodium",
       "potassium": "Potassium",
-      "hemoglobin": "Haemoglobin",
-      "hematocrit": "Haematocrit",
+      "hemoglobin": "Hemoglobin",
+      "hematocrit": "Hematocrit",
       "wbc": "White blood cells",
       "platelets": "Platelets",
       "panel": {
@@ -11523,15 +11523,15 @@
         "hdl": "HDL cholesterol is the cholesterol carried by high-density lipoprotein particles, which collect surplus cholesterol from tissues and return it to the liver for recycling or removal. Because of this transport role it is often described as the protective fraction. Very low levels tend to accompany higher cardiovascular risk, though raising it artificially has not reliably reduced risk, so it is read as a marker rather than a target. It is usually interpreted together with LDL and triglycerides.",
         "triglycerides": "Triglycerides are the main form of fat circulating in the blood, supplied both by the diet and produced by the liver, and they serve as a key energy store. Levels rise after meals, so the sample is usually taken fasting for comparability. Persistently high triglycerides are associated with metabolic and cardiovascular risk and often travel with insulin resistance and low HDL. They are read as one component of the overall lipid picture.",
         "fasting-glucose": "Fasting glucose is the concentration of sugar in the blood measured after an overnight fast, reflecting how the body holds its baseline blood-sugar level without recent food. Glucose is the body's primary immediate fuel, and insulin normally keeps it within a narrow range. A fasting measurement removes the effect of recent meals, making it a standard screen for how glucose regulation is functioning. It is one of the markers used to assess metabolic health over time.",
-        "hba1c": "HbA1c is the share of haemoglobin in red blood cells that has become bound to glucose, which accumulates in proportion to average blood-sugar exposure. Because red cells live for about three months, it reflects average glucose over the preceding two to three months rather than a single moment. This makes it a stable, meal-independent view of glucose control. Its accuracy can be affected by conditions that change red-cell lifespan.",
+        "hba1c": "HbA1c is the share of hemoglobin in red blood cells that has become bound to glucose, which accumulates in proportion to average blood-sugar exposure. Because red cells live for about three months, it reflects average glucose over the preceding two to three months rather than a single moment. This makes it a stable, meal-independent view of glucose control. Its accuracy can be affected by conditions that change red-cell lifespan.",
         "tsh": "TSH (thyroid-stimulating hormone) is released by the pituitary gland to signal the thyroid to produce its hormones, and it adjusts up or down to keep them in balance. Because of this feedback loop, TSH is the most sensitive first-line screen of thyroid function: it tends to move before the thyroid hormones themselves drift. A raised or lowered TSH points toward an under- or over-active thyroid and usually prompts measurement of the thyroid hormones directly. Pregnancy and age shift the expected range.",
-        "ft3": "Free T3 (triiodothyronine) is the unbound, biologically active form of the more potent thyroid hormone, the fraction available to act on tissues. Most circulating T3 is bound to carrier proteins and inactive, so the free portion is what reflects true hormone availability. It is measured to characterise thyroid function, especially alongside TSH and free T4 when results are unclear. Levels are strongly assay-dependent and read in clinical context.",
+        "ft3": "Free T3 (triiodothyronine) is the unbound, biologically active form of the more potent thyroid hormone, the fraction available to act on tissues. Most circulating T3 is bound to carrier proteins and inactive, so the free portion is what reflects true hormone availability. It is measured to characterize thyroid function, especially alongside TSH and free T4 when results are unclear. Levels are strongly assay-dependent and read in clinical context.",
         "ft4": "Free T4 (thyroxine) is the unbound form of the main hormone the thyroid releases into the blood, serving as a reservoir that tissues convert to the more active T3 as needed. The free fraction reflects what is actually available to the body, independent of carrier-protein levels. It is usually measured together with TSH to separate thyroid-gland problems from pituitary signalling. Pregnancy and certain medications can shift it.",
         "ferritin": "Ferritin is the body's main iron-storage protein, and its blood level broadly mirrors total iron reserves. A low value points toward depleted stores, while a high value can reflect iron overload, or simply inflammation, because ferritin also rises as an acute-phase reactant. For that reason it is often interpreted alongside other iron markers and signs of inflammation. It is one of the core measures used to assess iron status.",
         "transferrin-saturation": "Transferrin saturation is the percentage of transferrin (the protein that ferries iron through the blood) that is currently loaded with iron. It links the amount of iron in transit to the body's iron-carrying capacity, giving a snapshot of iron availability that complements ferritin's view of storage. A low saturation suggests iron is in short supply, while a high value can indicate overload. It is read together with ferritin and the full iron panel.",
         "vitamin-d": "Vitamin D is measured as 25-hydroxyvitamin D, the circulating storage form and the standard marker of overall vitamin D status. The body makes it in skin exposed to sunlight and absorbs some from food, and it supports calcium balance, bone health, and immune function. Levels vary with season, latitude, skin tone, and supplementation. It is tracked to gauge whether stores are adequate over time.",
-        "vitamin-b12": "Vitamin B12 (cobalamin) is an essential vitamin obtained mainly from animal-source foods and stored largely in the liver. It is required for red-blood-cell formation, DNA synthesis, and the health of the nervous system. Prolonged shortfall, from low intake or impaired absorption, can lead to anaemia and nerve-related symptoms. It is measured to assess nutritional status, particularly where intake or absorption may be limited.",
-        "folate": "Folate (vitamin B9) is a B-vitamin found in leafy greens, legumes, and fortified foods, central to red-blood-cell formation and DNA synthesis. It works closely with vitamin B12, and a shortfall in either can produce a similar type of anaemia. Adequate folate is especially important around early pregnancy for healthy fetal development. It is measured to assess nutritional status and the cause of certain anaemias.",
+        "vitamin-b12": "Vitamin B12 (cobalamin) is an essential vitamin obtained mainly from animal-source foods and stored largely in the liver. It is required for red-blood-cell formation, DNA synthesis, and the health of the nervous system. Prolonged shortfall, from low intake or impaired absorption, can lead to anemia and nerve-related symptoms. It is measured to assess nutritional status, particularly where intake or absorption may be limited.",
+        "folate": "Folate (vitamin B9) is a B-vitamin found in leafy greens, legumes, and fortified foods, central to red-blood-cell formation and DNA synthesis. It works closely with vitamin B12, and a shortfall in either can produce a similar type of anemia. Adequate folate is especially important around early pregnancy for healthy fetal development. It is measured to assess nutritional status and the cause of certain anemias.",
         "hs-crp": "High-sensitivity CRP measures C-reactive protein, a marker the liver releases in response to inflammation, using an assay refined to detect the low concentrations relevant to cardiovascular risk. Unlike standard CRP used for acute infection, the high-sensitivity version captures the subtle, chronic inflammation linked to vascular disease. Because any recent infection or injury can raise it, it is interpreted away from acute illness and often confirmed with a repeat sample. It is read as one contributor to overall cardiovascular risk.",
         "creatinine": "Creatinine is a waste product of normal muscle metabolism that the kidneys filter out of the blood at a fairly steady rate. Because production is relatively constant, its blood level serves as a practical gauge of how well the kidneys are clearing waste. Values are also influenced by muscle mass, hydration, and diet, so it is usually interpreted alongside the estimated filtration rate. It is a core marker of kidney function.",
         "egfr": "eGFR (estimated glomerular filtration rate) estimates how much blood the kidneys filter each minute, calculated from creatinine together with age and sex. It translates a raw creatinine value into a more directly interpretable measure of kidney function. A declining eGFR over time is the main way chronic kidney changes are staged and tracked. As an estimate it is read as a trend rather than a single exact figure.",
@@ -11540,16 +11540,16 @@
         "ggt": "GGT (gamma-glutamyl transferase) is an enzyme found in the liver and the bile ducts that rises particularly when bile flow is obstructed or with alcohol exposure. It is often used to clarify why another liver marker is elevated, for example, to distinguish a liver or bile-duct source. It is sensitive but not very specific, so it is read in context with the rest of the liver panel. It is one of several markers used to assess liver and biliary health.",
         "sodium": "Sodium is the principal electrolyte in the fluid outside the body's cells and the main driver of fluid balance and blood volume. The body regulates it tightly through thirst, hormones, and the kidneys, so its blood level reflects the balance between water and salt more than dietary intake alone. Abnormal values usually signal a disturbance of water balance rather than of sodium itself. It is a core part of the basic metabolic and electrolyte panel.",
         "potassium": "Potassium is the main electrolyte inside the body's cells and is essential for nerve signalling and the steady rhythm of the heart muscle. Its blood level is held within a narrow range by the kidneys and hormonal signals, because both high and low values can disturb the heart's electrical activity. Levels can be affected by kidney function, hydration, and several common medications. It is a core measure in the electrolyte panel.",
-        "hemoglobin": "Haemoglobin is the iron-containing protein in red blood cells that binds oxygen in the lungs and carries it to the tissues. Its concentration is the main measure of the blood's oxygen-carrying capacity and the central marker for detecting anaemia. Low values can reflect blood loss, iron or vitamin shortfalls, or reduced production, while high values can follow dehydration or low-oxygen conditions. It is a cornerstone of the complete blood count.",
-        "hematocrit": "Haematocrit is the proportion of blood volume made up of red blood cells, expressed as a percentage. It moves closely with haemoglobin and gives a complementary view of red-cell mass and the blood's oxygen-carrying capacity. Hydration affects it, since plasma-volume changes shift the proportion even when red-cell numbers are stable. It is read alongside haemoglobin and the rest of the blood count.",
-        "wbc": "The white blood cell count is the total number of immune cells circulating in the blood, the body's mobile defence against infection. It rises in response to infection, inflammation, or stress and can fall when the bone marrow is suppressed or in some immune conditions. Because it sums several distinct cell types, a notable change is often followed up with a differential that breaks it down. It is a core component of the complete blood count.",
+        "hemoglobin": "Hemoglobin is the iron-containing protein in red blood cells that binds oxygen in the lungs and carries it to the tissues. Its concentration is the main measure of the blood's oxygen-carrying capacity and the central marker for detecting anemia. Low values can reflect blood loss, iron or vitamin shortfalls, or reduced production, while high values can follow dehydration or low-oxygen conditions. It is a cornerstone of the complete blood count.",
+        "hematocrit": "Hematocrit is the proportion of blood volume made up of red blood cells, expressed as a percentage. It moves closely with hemoglobin and gives a complementary view of red-cell mass and the blood's oxygen-carrying capacity. Hydration affects it, since plasma-volume changes shift the proportion even when red-cell numbers are stable. It is read alongside hemoglobin and the rest of the blood count.",
+        "wbc": "The white blood cell count is the total number of immune cells circulating in the blood, the body's mobile defense against infection. It rises in response to infection, inflammation, or stress and can fall when the bone marrow is suppressed or in some immune conditions. Because it sums several distinct cell types, a notable change is often followed up with a differential that breaks it down. It is a core component of the complete blood count.",
         "platelets": "Platelets are small cell fragments in the blood that clump together and form the initial plug that stops bleeding from a damaged vessel. Their count reflects the balance between production in the bone marrow and consumption or breakdown. A low count can raise bleeding tendency, while a high count can follow inflammation or other stimuli. It is part of the complete blood count and a basic gauge of clotting capacity.",
         "apob": "Apolipoprotein B is the structural protein carried by each of the atherogenic lipoprotein particles, so measuring it counts those particles directly rather than the cholesterol they carry. Because one ApoB molecule sits on each LDL, VLDL, and related particle, it can capture cardiovascular risk that an LDL-cholesterol value misses, particularly when particle number and cholesterol content diverge. For this reason it is increasingly used to refine lipid-based risk assessment. It is interpreted alongside the standard lipid panel.",
         "lp-a": "Lipoprotein(a) is an LDL-like particle with an extra attached protein, and its level is largely set by genetics and stays fairly stable through life. Elevated Lp(a) is an independent, inherited risk factor for cardiovascular disease and aortic-valve narrowing. Because it changes little, it is usually measured once to establish a person's lifelong risk rather than tracked repeatedly. It is reported in molar units and read as part of overall cardiovascular risk.",
         "fasting-insulin": "Fasting insulin is the level of insulin (the hormone that moves glucose from the blood into cells) measured after an overnight fast. Paired with fasting glucose, it helps estimate insulin resistance, the state in which the body needs more insulin to keep glucose in range. A high fasting insulin alongside normal glucose can be an early sign that this compensation is under way. It is read as part of a metabolic-health picture rather than in isolation.",
         "omega-3-index": "The omega-3 index is the share of EPA and DHA (the two long-chain marine omega-3 fatty acids) among the fatty acids in red-blood-cell membranes. Because red cells turn over slowly, it reflects long-term omega-3 intake rather than a recent meal. A higher index has been associated in observational studies with lower cardiovascular risk. It is tracked as a stable marker of omega-3 status that responds to diet over months.",
         "alkaline-phosphatase": "Alkaline phosphatase (ALP) is an enzyme found mainly in the liver, the bile ducts and bone. It rises when bile flow is blocked and during phases of active bone building, such as growth in children and adolescents or bone healing. Because both organs release it, a raised value is usually read together with GGT and the other liver markers to tell a liver source from a bone source. It is one of the standard liver-panel markers.",
-        "bilirubin-total": "Total bilirubin is the yellow breakdown product of haemoglobin from worn-out red blood cells, measured as the sum of its unconjugated and conjugated forms. The liver takes it up, conjugates it and excretes it in bile, so the level reflects how well this pathway is working. It can rise with liver disease, blocked bile ducts or increased breakdown of red cells, and harmlessly in Gilbert's syndrome. It is read alongside the other liver markers."
+        "bilirubin-total": "Total bilirubin is the yellow breakdown product of hemoglobin from worn-out red blood cells, measured as the sum of its unconjugated and conjugated forms. The liver takes it up, conjugates it and excretes it in bile, so the level reflects how well this pathway is working. It can rise with liver disease, blocked bile ducts or increased breakdown of red cells, and harmlessly in Gilbert's syndrome. It is read alongside the other liver markers."
       },
       "apob": "Apolipoprotein B (ApoB)",
       "lp-a": "Lipoprotein(a)",
@@ -11665,7 +11665,7 @@
     },
     "match": {
       "viaAlias": "by a name you chose before",
-      "viaCatalog": "recognised as a common abbreviation",
+      "viaCatalog": "recognized as a common abbreviation",
       "chooseLabel": "Belongs to",
       "suggestionOption": "{name} ({unit})",
       "newMarkerOption": "A new biomarker",
@@ -11877,7 +11877,7 @@
       "identityHint": "Pick a vaccine from the list or type it in below. Either is enough.",
       "catalogNone": "Choose a vaccine",
       "catalogSearch": "Search vaccines",
-      "catalogNoMatch": "No catalogue entry found",
+      "catalogNoMatch": "No catalog entry found",
       "catalogClear": "Clear selection",
       "freeTextLabel": "Free text",
       "freeTextPlaceholder": "as written on the record",
@@ -12010,13 +12010,13 @@
       "saveFailed": "The vaccine could not be saved.",
       "nameTaken": "You already have a vaccine with this name.",
       "editTitle": "Edit own vaccine",
-      "description": "A vaccine the catalogue does not list, counted like any catalogue entry.",
+      "description": "A vaccine the catalog does not list, counted like any catalog entry.",
       "componentsHint": "Choose every disease it protects against.",
       "boosterHint": "Leave empty if there is no booster.",
       "protectsAgainst": "Protects against {list}.",
       "deleteTitle": "Remove own vaccine?",
-      "sectionDescription": "Vaccines you added yourself because the catalogue does not list them.",
-      "catalogGroup": "Catalogue"
+      "sectionDescription": "Vaccines you added yourself because the catalog does not list them.",
+      "catalogGroup": "Catalog"
     },
     "deleted": "Vaccination deleted",
     "restoreFailed": "The vaccination could not be restored."
@@ -12139,7 +12139,7 @@
       "typicalGapWithDriver": "Typical recovery gap: {days, plural, one {# day} other {# days}}; you tend to feel better before your {vital} settles.",
       "typicalGapLearning": "A few more resolved episodes and a typical recovery gap will appear here.",
       "none": "No episodes logged in this period.",
-      "analyze": "Analyse the recovery gap"
+      "analyze": "Analyze the recovery gap"
     },
     "section": {
       "active": "Active",
@@ -12159,7 +12159,7 @@
       "empty": "No days logged yet."
     },
     "loadError": "Could not load this episode.",
-    "backToList": "Back to journal",
+    "backToList": "Back to the list",
     "detail": {
       "note": "Note"
     },
@@ -12262,7 +12262,7 @@
     },
     "refusal": {
       "outOfScope": "I can only help with the health metrics in your log: measurements, medications, mood, trends. I cannot answer questions outside that scope.",
-      "promptInjection": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data. Please rephrase your question in those terms.",
+      "promptInjection": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarize your own health data. Please rephrase your question in those terms.",
       "conversationPoisoned": "An earlier message in this conversation contains wording that overrides my instructions. Please start a new conversation."
     },
     "noRecordedData": "I don't have any recorded readings for what you asked about, so there is nothing I can give you a figure from. Once you log some, ask me again and I'll work from your own numbers.",
@@ -12480,7 +12480,7 @@
     "pageTitle": "Mental wellbeing",
     "pageDescription": "Four validated, voluntary self-checks. The trend over time says more than any single score.",
     "attributionLabel": "Attribution",
-    "attributionShow": "Source and licence for {instrument}",
+    "attributionShow": "Source and license for {instrument}",
     "choosePrompt": "Choose a check-in",
     "start": "Start",
     "back": "Back",
@@ -13144,7 +13144,7 @@
     },
     "movement": {
       "awayFromHome": "Time away from home",
-      "distance": "Distance travelled"
+      "distance": "Distance traveled"
     }
   },
   "documents": {
@@ -13330,7 +13330,7 @@
       "dismiss": "Dismiss",
       "empty": "Nothing could be read from this document.",
       "unavailableBody": "Set up an AI provider to suggest a title, type, and date.",
-      "unavailableLocalOcr": "Turn on “Read scans on this device” under Settings > Modules > Labs to read images on this device.",
+      "unavailableLocalOcr": "Turn on “Read scans on this device” under Settings > Modules > Lab results to read images on this device.",
       "unavailableAction": "Open AI settings",
       "errorGeneric": "Couldn't read the document. Try again.",
       "errorOcr": "Couldn't read text from this image.",
@@ -13343,7 +13343,7 @@
       "errorFileType": "This file type can't be read.",
       "errorNotIndexed": "Read the document first, then extract.",
       "errorOutputLimit": "The AI provider reached its output limit before it returned a single value. Try a model that allows longer answers.",
-      "errorLocalOcrDisabled": "Turn on “Read scans on this device” under Settings > Modules > Labs first.",
+      "errorLocalOcrDisabled": "Turn on “Read scans on this device” under Settings > Modules > Lab results first.",
       "errorProvider": "No AI provider is set up for this.",
       "errorTextImageOnly": "Local OCR reads images only, not this file.",
       "errorConsent": "Reading documents with AI needs your consent first.",
@@ -13351,7 +13351,7 @@
       "unavailableLocalOcrAction": "Open lab settings"
     },
     "summary": {
-      "summarise": "Summarise",
+      "summarise": "Summarize",
       "showText": "Show extracted text",
       "summaryTitle": "Summary",
       "textTitle": "Extracted text",
@@ -13590,7 +13590,7 @@
       "descriptionPlaceholder": "What this measures (optional)",
       "targetHint": "The target range is optional and is drawn as a band on the chart.",
       "correlationEnabled": "Use in correlation discovery",
-      "correlationEnabledHint": "Adds this metric as a bounded daily behaviour channel. It remains off by default.",
+      "correlationEnabledHint": "Adds this metric as a bounded daily behavior channel. It remains off by default.",
       "requiredError": "Name and unit are required",
       "rangeOrderError": "Target low must not exceed target high",
       "save": "Save",
@@ -14197,7 +14197,7 @@
       "description": "Health records with no login of their own.",
       "explainer": "A managed profile is a health record for somebody who does not sign in themselves, such as a child or a person you care for. It has no login and no e-mail address, and you become its first guardian. You can add more guardians later, and any of you can switch into the record to keep it up to date.",
       "nameLabel": "Name",
-      "namePlaceholder": "The name you will recognise this record by",
+      "namePlaceholder": "The name you will recognize this record by",
       "nameHint": "Up to 80 characters. Shown wherever this record appears.",
       "nameRequired": "Give the record a name.",
       "nameTooLong": "That name is longer than 80 characters.",
@@ -14427,7 +14427,7 @@
       "documentIndex": "{name} made a document searchable",
       "documentReindex": "{name} made the documents searchable",
       "documentSuggest": "{name} asked for a document's details",
-      "documentSummary": "{name} summarised a document",
+      "documentSummary": "{name} summarized a document",
       "documentChat": "{name} asked about a document",
       "documentFactEdit": "{name} corrected a value from a document",
       "medicationIntakeImportFinished": "The dose import {name} started has finished",
@@ -14580,7 +14580,7 @@
     "status": {
       "planned": "Planned",
       "done": "Attended",
-      "cancelled": "Cancelled",
+      "cancelled": "Canceled",
       "noShow": "Missed"
     },
     "card": {
@@ -15068,7 +15068,7 @@
       "medications": "Medications",
       "vaccinations": "Vaccinations",
       "visits": "Doctor and procedures",
-      "labs": "Labs",
+      "labs": "Lab results",
       "documents": "Documents",
       "cycle": "Cycle",
       "seizures": "Seizures"
@@ -15408,7 +15408,7 @@
       "securityAlerts": "security, sign-in, login, new device, alert",
       "lastingChange": "lasting change, vital, trend, resting heart rate, blood pressure",
       "syncStalled": "sync stopped, quiet, no data, stalled, Apple Health, background",
-      "theme": "theme, dark mode, light mode, appearance, colours",
+      "theme": "theme, dark mode, light mode, appearance, colors",
       "gadgetbridge": "Gadgetbridge, Android, smartwatch, database",
       "fhirBundle": "FHIR, bundle, medical record, import",
       "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, folder, Android",
@@ -15462,7 +15462,7 @@
     "weekRange": "{start} to {end}",
     "previous": "Previous period",
     "next": "Next period",
-    "metricLabel": "Colour the days by",
+    "metricLabel": "Color the days by",
     "metric": {
       "steps": "Steps",
       "activeMinutes": "Active minutes",
@@ -16275,7 +16275,7 @@
       "error": "The pass could not be changed. Try again.",
       "consentTitle": "Signed by the HealthLog project",
       "consentBody": "Its signing service sees the file hashes and the time, never what your card says.",
-      "expired": "Expired. Wallet greys it out.",
+      "expired": "Expired. Wallet grays it out.",
       "fetched": "On a device, last updated {when}.",
       "notFetched": "Not on a device yet.",
       "state": {

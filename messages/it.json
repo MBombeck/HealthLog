@@ -3388,7 +3388,7 @@
         "resting_hr": "Pulsazioni a riposo",
         "steps": "Passi",
         "active_energy": "Energia attiva",
-        "flights": "Piani",
+        "flights": "Piani saliti",
         "distance": "Distanza",
         "vo2_max": "VO₂ max",
         "body_temp": "Temperatura corporea",
@@ -3396,7 +3396,7 @@
         "anthropometrics": "Profilo (altezza, età, sesso)",
         "walking_hr": "Frequenza cardiaca camminando",
         "respiratory_rate": "Frequenza respiratoria",
-        "spo2": "Ossigeno nel sangue",
+        "spo2": "Saturazione di ossigeno",
         "pulse_wave_velocity": "Velocità dell'onda di polso",
         "vascular_age": "Età vascolare",
         "body_fat": "Grasso corporeo",
@@ -12159,7 +12159,7 @@
       "empty": "Nessun giorno registrato finora."
     },
     "loadError": "Impossibile caricare questo episodio.",
-    "backToList": "Torna a Malattia",
+    "backToList": "Torna all'elenco",
     "detail": {
       "note": "Nota"
     },

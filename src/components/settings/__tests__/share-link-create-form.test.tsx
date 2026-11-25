@@ -108,7 +108,7 @@ describe("<ShareLinkCreateForm> — shared create flow", () => {
     // ticked. The template is reachable in one click and applied in none.
     expect(html).toContain("Nothing selected yet");
     expect(html).toContain('data-testid="report-apply-standard-share"');
-    expect(html).toContain("Apply Standard doctor&#x27;s report");
+    expect(html).toContain("Apply Standard doctor report");
   });
 
   it("refuses to mint a record link with an empty scope, label or not", () => {

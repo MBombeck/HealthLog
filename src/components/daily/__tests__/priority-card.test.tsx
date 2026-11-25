@@ -178,7 +178,7 @@ describe("<PriorityCard>", () => {
         })}
       />,
     );
-    expect(one).toContain("View appointment");
+    expect(one).toContain("View visit");
     expect(one).not.toContain("Open Care");
     expect(one).toContain('href="/checkups?visit=v1"');
     const several = render(
@@ -189,7 +189,7 @@ describe("<PriorityCard>", () => {
         })}
       />,
     );
-    expect(several).toContain("View appointments");
+    expect(several).toContain("View visits");
   });
 
   describe("dismiss affordance — observational kinds only", () => {

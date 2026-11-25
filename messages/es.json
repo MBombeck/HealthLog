@@ -988,7 +988,7 @@
     "typeRunningGroundContactTime": "Tiempo de contacto con el suelo",
     "typeRunningVerticalOscillation": "Oscilación vertical",
     "typeRunningStrideLength": "Longitud de zancada al correr",
-    "typeFlightsClimbed": "Escaleras",
+    "typeFlightsClimbed": "Pisos subidos",
     "typeWalkingRunningDistance": "Distancia a pie y corriendo",
     "typeVo2Max": "VO₂ máx",
     "typeBodyTemperature": "Temperatura corporal",
@@ -1026,7 +1026,7 @@
     "sourceAppleHealth": "Apple Health",
     "systolicLabel": "Sistólica (mmHg)",
     "diastolicLabel": "Diastólica (mmHg)",
-    "pulseLabel": "Pulso (lpm)",
+    "pulseLabel": "Pulso (bpm)",
     "valueWithUnit": "Valor ({unit})",
     "timestamp": "Hora",
     "timestampBackdateHint": "Ajusta la fecha y la hora para registrar una lectura pasada.",
@@ -1511,7 +1511,7 @@
       "linkedInBed": "En la cama",
       "linkedSteps": "Pasos",
       "linkedActiveEnergy": "Energía activa",
-      "linkedRestingHeartRate": "Pulso en reposo",
+      "linkedRestingHeartRate": "Frecuencia cardíaca en reposo",
       "linkedHrv": "Variabilidad cardiaca",
       "bodyLogged": "Registrado en Enfermedad: {count, plural, one {# síntoma} other {# síntomas}}",
       "bodyNotLogged": "No hay nada registrado en Enfermedad para este día",
@@ -3001,7 +3001,7 @@
       "channelFactor": "la valoración de {factor}",
       "channel": {
         "WEIGHT": "el peso",
-        "BLOOD_GLUCOSE": "la glucosa en sangre",
+        "BLOOD_GLUCOSE": "la glucemia",
         "BLOOD_PRESSURE_SYS": "la presión sistólica",
         "BLOOD_PRESSURE_DIA": "la presión diastólica",
         "ACTIVITY_STEPS": "los pasos diarios",
@@ -3388,7 +3388,7 @@
         "resting_hr": "Pulso en reposo",
         "steps": "Pasos",
         "active_energy": "Energía activa",
-        "flights": "Pisos",
+        "flights": "Pisos subidos",
         "distance": "Distancia",
         "vo2_max": "VO₂ máx",
         "body_temp": "Temperatura corporal",
@@ -3396,7 +3396,7 @@
         "anthropometrics": "Perfil (altura, edad, sexo)",
         "walking_hr": "Frecuencia cardiaca al caminar",
         "respiratory_rate": "Frecuencia respiratoria",
-        "spo2": "Oxígeno en sangre",
+        "spo2": "Saturación de oxígeno",
         "pulse_wave_velocity": "Velocidad de onda de pulso",
         "vascular_age": "Edad vascular",
         "body_fat": "Grasa corporal",
@@ -3879,7 +3879,7 @@
         "headphoneAudioBody": "Los niveles de audio con auriculares registran en decibelios el volumen al que escuchas con auriculares. Bajar el volumen y hacer pausas protege tu audición a largo plazo.",
         "audioEventsBody": "Los eventos de sonido fuerte señalan momentos en que el ruido a tu alrededor alcanzó un nivel que puede dañar la audición con suficiente exposición. Los eventos frecuentes son una señal para buscar un entorno más silencioso o protección auditiva.",
         "daylightBody": "El tiempo a la luz del día es cuánto pasas bajo luz exterior cada día. La luz diurna regular favorece un ritmo sueño-vigilia y un estado de ánimo saludables (CDC 2024), y el tiempo al aire libre se asocia con la salud ocular.",
-        "bloodGlucoseBody": "La glucosa en sangre es la cantidad de azúcar en tu sangre, la principal fuente de energía del cuerpo. Sube tras comer y se estabiliza entre comidas. Como orientación general para adultos sin diabetes, una glucosa en ayunas por debajo de {prediabetesFrom} {unit} es normal, entre {prediabetesFrom} y {prediabetesTo} es prediabetes, y a partir de {diabetesFrom} está en el rango de la diabetes (ADA 2024). Una sola lectura alta no es un diagnóstico; un profesional sanitario lo confirma con una prueba repetida, y quienes controlan una diabetes usan otros objetivos, fijados por su profesional sanitario.",
+        "bloodGlucoseBody": "La glucemia es la cantidad de azúcar en tu sangre, la principal fuente de energía del cuerpo. Sube tras comer y se estabiliza entre comidas. Como orientación general para adultos sin diabetes, una glucosa en ayunas por debajo de {prediabetesFrom} {unit} es normal, entre {prediabetesFrom} y {prediabetesTo} es prediabetes, y a partir de {diabetesFrom} está en el rango de la diabetes (ADA 2024). Una sola lectura alta no es un diagnóstico; un profesional sanitario lo confirma con una prueba repetida, y quienes controlan una diabetes usan otros objetivos, fijados por su profesional sanitario.",
         "skinTemperatureBody": "La temperatura de la piel aquí es el pequeño cambio nocturno de la temperatura de tu muñeca respecto a tu propio valor de referencia, no una medición absoluta de fiebre. Las variaciones pueden seguir el sueño, el entorno, una enfermedad o la fase del ciclo menstrual.",
         "cardioFitnessBody": "El VO₂ máx es la cantidad de oxígeno que tu cuerpo puede usar al máximo esfuerzo: el mejor índice de laboratorio de la forma aeróbica, que los wearables estiman de forma indirecta. Una tendencia más alta o en aumento es una fuerte señal de salud cardiovascular.",
         "cardioRecoveryBody": "La recuperación cardiaca es cuántas pulsaciones por minuto baja tu frecuencia cardiaca en el primer minuto tras parar un ejercicio intenso. Una caída mayor significa que tu corazón se calma más rápido, señal de buena forma física.",
@@ -4237,9 +4237,9 @@
       }
     },
     "bloodGlucose": {
-      "title": "Glucosa en sangre",
+      "title": "Glucemia",
       "description": "Tus lecturas de glucosa en el tiempo, en {unit}.",
-      "chartTitle": "Glucosa en sangre",
+      "chartTitle": "Glucemia",
       "medianLabel": "Glucosa mediana",
       "emptyState": {
         "title": "Aún no hay datos de glucosa",
@@ -4524,7 +4524,7 @@
     "navLeanBodyMass": "Masa corporal magra",
     "walkingHeartRateAverage": {
       "title": "Pulso al caminar",
-      "description": "Tu frecuencia cardíaca media al caminar, en lpm.",
+      "description": "Tu frecuencia cardíaca media al caminar, en bpm.",
       "chartTitle": "Pulso medio al caminar",
       "emptyState": {
         "title": "Aún no hay datos",
@@ -4595,7 +4595,7 @@
         "pulseTitle": "Ánimo vs. pulso",
         "sleepAxis": "Sueño (min)",
         "stepsAxis": "Pasos",
-        "pulseAxis": "Pulso (lpm)",
+        "pulseAxis": "Pulso (bpm)",
         "strengthStrong": "Fuerte",
         "strengthModerate": "Moderada",
         "strengthWeak": "Débil",
@@ -4974,7 +4974,7 @@
     "cardioRecovery": {
       "title": "Recuperación cardiaca",
       "description": "Cuánto baja tu frecuencia cardiaca un minuto después del esfuerzo máximo.",
-      "chartTitle": "Recuperación cardiaca (lpm)",
+      "chartTitle": "Recuperación cardiaca (bpm)",
       "emptyState": {
         "title": "Aún no hay datos de recuperación cardiaca",
         "description": "Los valores de recuperación cardiaca aparecen aquí cuando Apple Health los sincroniza desde un entrenamiento."
@@ -5102,7 +5102,7 @@
       "average": "Media de 30 días {value}",
       "unitScore": "puntos",
       "unitMinutes": "min",
-      "unitBpm": "ppm",
+      "unitBpm": "bpm",
       "unitKj": "kJ",
       "unitLoad": "carga"
     },
@@ -5337,7 +5337,7 @@
       "readingsFew": "{count} mediciones",
       "readingsOther": "{count} mediciones",
       "notEnough": "Muy pocas mediciones",
-      "pulse": "Pulso {value} lpm",
+      "pulse": "Pulso {value} bpm",
       "difference": "Mañana menos noche: {systolic}/{diastolic} mmHg.",
       "differencePending": "La mañana y la noche se comparan cuando cada una tiene al menos {min, plural, one {# medición} other {# mediciones}}.",
       "hours": "Mañana {morning}, mediodía {midday}, noche {evening}, en tu zona horaria.",
@@ -5568,7 +5568,7 @@
         "options": {
           "blood-pressure": "Presión arterial",
           "weight-body": "Peso y cuerpo",
-          "glucose": "Glucosa en sangre",
+          "glucose": "Glucemia",
           "sleep": "Sueño y recuperación",
           "mood": "Ánimo y bienestar mental",
           "cycle": "Ciclo",
@@ -5620,7 +5620,7 @@
       "units": {
         "title": "Tu región y tus unidades",
         "body": "Tu día y la hora de tus recordatorios siguen la zona horaria. Los valores se guardan una vez y se muestran en la unidad que elijas. Puedes cambiarlo todo más tarde en Ajustes.",
-        "glucoseLegend": "Glucosa en sangre",
+        "glucoseLegend": "Glucemia",
         "weightLegend": "Peso y altura",
         "options": {
           "metric": "kg y cm",
@@ -5639,7 +5639,7 @@
         "everythingElse": "Todo lo demás queda a un clic en",
         "modulesLink": "Ajustes, Módulos",
         "switchesOff": "Fuera de la navegación: {modules}. Puedes volver a activarlos cuando quieras en Ajustes, Módulos.",
-        "glucoseUnit": "Glucosa en sangre",
+        "glucoseUnit": "Glucemia",
         "unitPreference": "Unidades",
         "language": "Idioma",
         "timezone": "Zona horaria",
@@ -6053,7 +6053,7 @@
           "description": "Vista de lista y orden manual."
         },
         "labs": {
-          "title": "Laboratorio",
+          "title": "Resultados de laboratorio",
           "description": "Vista, orden y orden manual."
         },
         "illness": {
@@ -6350,7 +6350,7 @@
             "reasonMissingTimezoneOffset": "marca de tiempo sin desfase de zona horaria",
             "reasonInvalidTimestamp": "no se pudo leer la marca de tiempo",
             "reasonImplausibleTimestamp": "la marca de tiempo está en el futuro o es anterior a 1900",
-            "reasonUnexpectedGlucoseContext": "contexto de glucosa en una fila que no es de glucosa en sangre",
+            "reasonUnexpectedGlucoseContext": "contexto de glucosa en una fila que no es de glucemia",
             "reasonInvalidGlucoseContext": "el contexto de glucosa no es un valor permitido",
             "reasonNotesTooLong": "la nota es demasiado larga",
             "reasonExternalIdTooLong": "el ID externo es demasiado largo",
@@ -6650,7 +6650,7 @@
             "description": "Grupos, tus propias etiquetas y las archivadas."
           },
           "labs": {
-            "title": "Laboratorio",
+            "title": "Resultados de laboratorio",
             "description": "Biomarcadores y reconocimiento de texto en el dispositivo para informes de laboratorio."
           },
           "arrangementTitle": "Orden y vista",
@@ -7330,7 +7330,7 @@
         "saveError": "No se pudo guardar tu preferencia de unidades."
       },
       "glucoseUnit": {
-        "title": "Glucosa en sangre",
+        "title": "Glucemia",
         "description": "La unidad en la que se muestran las lecturas de glucosa. Se guardan igual en ambos casos.",
         "saved": "Unidad de glucosa guardada",
         "saveError": "No se pudo guardar la unidad de glucosa."
@@ -8200,7 +8200,7 @@
     },
     "glucoseReference": {
       "title": "Banda de referencia de glucosa",
-      "description": "Con qué banda se evalúan tus valores de glucosa en sangre.",
+      "description": "Con qué banda se evalúan tus valores de glucemia.",
       "enable": "Usar la banda objetivo para diabetes",
       "explainer": "Desactivado, los valores se evalúan con la banda de referencia general no diabética. Activado, se evalúan con la banda objetivo glucémica más estrecha de los ADA Standards of Care, y el Coach fundamenta sus comentarios sobre glucosa en esa banda. Tus propios valores objetivo personalizados de abajo siguen teniendo prioridad.",
       "disclaimer": "Esto selecciona una banda de referencia. No es un diagnóstico, nunca se deduce de una medición y la aplicación no actúa clínicamente en consecuencia. Qué objetivos se aplican a ti es una pregunta para tu profesional sanitario.",
@@ -10753,7 +10753,7 @@
         "metricBasalBodyTemp": "Temperatura basal",
         "metricWristTemperature": "Temperatura de la muñeca nocturna",
         "metricSkinTemperature": "Temperatura de la piel",
-        "metricBloodGlucose": "Glucosa en sangre",
+        "metricBloodGlucose": "Glucemia",
         "metricMood": "Estado de ánimo"
       },
       "title": "Análisis del ciclo",
@@ -11229,7 +11229,7 @@
       "WEIGHT": "Peso",
       "BLOOD_PRESSURE_SYS": "Presión arterial",
       "PULSE": "Pulso",
-      "BLOOD_GLUCOSE": "Glucosa en sangre",
+      "BLOOD_GLUCOSE": "Glucemia",
       "BLOOD_KETONES": "Cetonas en sangre",
       "OXYGEN_SATURATION": "Saturación de oxígeno",
       "BODY_FAT": "Grasa corporal",
@@ -12159,7 +12159,7 @@
       "empty": "Todavía no hay días registrados."
     },
     "loadError": "No se pudo cargar este episodio.",
-    "backToList": "Volver al diario",
+    "backToList": "Volver a la lista",
     "detail": {
       "note": "Nota"
     },
@@ -13890,7 +13890,7 @@
         "SKIN_TEMPERATURE": "Temperatura de la piel",
         "BLOOD_PRESSURE_SYS": "Presión arterial sistólica",
         "BLOOD_PRESSURE_DIA": "Presión arterial diastólica",
-        "BLOOD_GLUCOSE": "Glucosa en sangre",
+        "BLOOD_GLUCOSE": "Glucemia",
         "PULSE": "Pulso",
         "WEIGHT": "Peso",
         "generic": "Un signo vital"
@@ -14008,7 +14008,7 @@
     "groupActivity": "Actividad",
     "groupMobility": "Movilidad y marcha",
     "groupEnvironment": "Entorno",
-    "groupGlucose": "Glucosa en sangre",
+    "groupGlucose": "Glucemia",
     "groupLabs": "Resultados de laboratorio",
     "groupMedications": "Medicamentos",
     "groupHistory": "Antecedentes y alergias",
@@ -15068,7 +15068,7 @@
       "medications": "Medicamentos",
       "vaccinations": "Vacunas",
       "visits": "Médico e intervenciones",
-      "labs": "Laboratorio",
+      "labs": "Resultados de laboratorio",
       "documents": "Documentos",
       "cycle": "Ciclo",
       "seizures": "Crisis"

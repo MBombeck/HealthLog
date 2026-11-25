@@ -513,7 +513,7 @@ describe("<HealthScoreCard> pillars", () => {
       "LIPIDS",
       "GLYCAEMIA",
     ]);
-    expect(atRest(html)).toContain("Lipids, Glycaemia: Data could not be");
+    expect(atRest(html)).toContain("Lipids, Glycemia: Data could not be");
   });
 
   it("names safety signposting at rest instead of counting it", () => {
@@ -819,7 +819,7 @@ describe("<HealthScoreCard> footer", () => {
     // The caption sits on the type scale, never the bespoke 11 px it carried
     // while the goal was a standalone card.
     expect(region).toContain(
-      '<p class="text-muted-foreground mt-2 text-xs">Weight-goal progress is personal context and does not affect the Health Score.</p>',
+      '<p class="text-muted-foreground mt-2 text-xs">Weight-goal progress is personal context and does not affect the Health score.</p>',
     );
   });
 

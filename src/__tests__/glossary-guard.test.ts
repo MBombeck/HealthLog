@@ -18,9 +18,13 @@
  * 3. no message value uses a retired synonym, except the few the glossary's
  *    `allow` list names with a reason (and an allow entry that no longer
  *    matches anything fails, so the list cannot outlive its cause);
- * 4. a page's title is its rail entry's label, in every locale.
+ * 4. a page's title is its rail entry's label, in every locale;
+ * 5. no message uses a spelling the glossary's `spelling` block retires.
+ *
+ * A forbidden entry with `keys` holds only under that key prefix: "Eintrag"
+ * is the right word for a mood entry and the wrong one for an illness
+ * episode.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -33,8 +37,16 @@ import {
 import { locales } from "@/lib/i18n/config";
 import glossary from "@/lib/i18n/glossary.json";
 
+import { readSource, readSourceText } from "./helpers/source-files";
+
 type Forbidden =
-  string | { text: string; caseSensitive?: boolean; wholeWord?: boolean };
+  | string
+  | {
+      text: string;
+      caseSensitive?: boolean;
+      wholeWord?: boolean;
+      keys?: string;
+    };
 
 interface Concept {
   id: string;
@@ -56,6 +68,10 @@ interface Allow {
 
 const CONCEPTS = glossary.concepts as unknown as Concept[];
 const ALLOW = glossary.allow as unknown as Allow[];
+const SPELLING = glossary.spelling as unknown as Record<
+  string,
+  { decision: string; forbidden: Forbidden[] }
+>;
 
 const ROOT = join(__dirname, "../..");
 
@@ -77,9 +93,7 @@ const bundles = new Map(
   locales.map((locale) => [
     locale as string,
     flatten(
-      JSON.parse(
-        readFileSync(join(ROOT, "messages", `${locale}.json`), "utf8"),
-      ),
+      JSON.parse(readSourceText(join(ROOT, "messages", `${locale}.json`))),
       "",
       new Map(),
     ),
@@ -113,6 +127,10 @@ function forbiddenPattern(entry: Forbidden): RegExp {
 
 const forbiddenText = (entry: Forbidden) =>
   typeof entry === "string" ? entry : entry.text;
+
+/** Whether a forbidden entry applies to this message key at all. */
+const inScope = (entry: Forbidden, key: string) =>
+  typeof entry === "string" || !entry.keys || key.startsWith(entry.keys);
 
 /** First letter folded: a label may open a sentence or sit inside one. */
 const sameTerm = (a: string, b: string) =>
@@ -192,7 +210,7 @@ describe("glossary", () => {
         const re = forbiddenPattern(entry);
         const text = forbiddenText(entry);
         for (const [key, message] of entries) {
-          if (!re.test(message)) continue;
+          if (!inScope(entry, key) || !re.test(message)) continue;
           const allowed = ALLOW.some(
             (a) => a.locale === locale && a.key === key && a.text === text,
           );
@@ -216,12 +234,37 @@ describe("glossary", () => {
       if (
         !entry ||
         message === undefined ||
+        !inScope(entry, a.key) ||
         !forbiddenPattern(entry).test(message)
       ) {
         stale.push(`${a.locale} ${a.key} "${a.text}"`);
       }
     }
     expect(stale).toEqual([]);
+  });
+});
+
+describe("spelling", () => {
+  it("states why for every locale it settles", () => {
+    for (const [locale, rule] of Object.entries(SPELLING)) {
+      expect(locales as readonly string[]).toContain(locale);
+      expect(rule.decision.length, locale).toBeGreaterThan(20);
+      expect(rule.forbidden.length, locale).toBeGreaterThan(0);
+    }
+  });
+
+  it.each(Object.keys(SPELLING))("%s: no retired spelling", (locale) => {
+    const offenders: string[] = [];
+    for (const [key, message] of bundles.get(locale)!) {
+      // A placeholder name is code, not copy.
+      const copy = message.replace(/\{[^{}\s,]+/g, "{");
+      for (const entry of SPELLING[locale].forbidden) {
+        if (inScope(entry, key) && forbiddenPattern(entry).test(copy)) {
+          offenders.push(`${key}: "${forbiddenText(entry)}" in "${message}"`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 });
 
@@ -305,15 +348,10 @@ describe("a page is titled what its rail entry says", () => {
   });
 
   it("finds each title key where the page renders it", () => {
-    const missing: string[] = [];
-    for (const [href, page] of Object.entries(PAGE_TITLES)) {
-      if (!page) continue;
-      const source = readFileSync(join(ROOT, page.file), "utf8");
-      if (!source.includes(`t("${page.key}")`)) {
-        missing.push(`${href}: ${page.file} does not render t("${page.key}")`);
-      }
+    for (const page of Object.values(PAGE_TITLES)) {
+      // Throws, naming the file, when the page no longer renders the key.
+      if (page) readSource(page.file, `t("${page.key}")`);
     }
-    expect(missing).toEqual([]);
   });
 
   it.each(locales)("%s: nav label equals page title", (locale) => {

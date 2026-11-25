@@ -508,7 +508,7 @@ describe("<SettingsShell>", () => {
     expect(html).toContain("API &amp; tokens");
     // v1.18.0 — the health record is its own top-level entry.
     expect(html).toContain('href="/settings/health-record"');
-    expect(html).toContain("Health record");
+    expect(html).toContain("Doctor report and export");
     // v1.4.16: the consolidated Export section is a top-level
     // entry in the sidebar; the link must be present in both locales.
     expect(html).toContain('href="/settings/export"');

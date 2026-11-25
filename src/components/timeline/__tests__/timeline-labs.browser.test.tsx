@@ -211,7 +211,10 @@ describe("lab lines on the timeline page", () => {
     const trigger = screen.getByRole("button", { name: /Values \(1\)/ });
     await expect.element(trigger).toBeVisible();
     await trigger.click();
-    await expect.element(screen.getByText("Lab results")).toBeVisible();
+    // The menu's group heading, not the lane of the same name.
+    await expect
+      .element(screen.getByRole("menu").getByText("Lab results"))
+      .toBeVisible();
     await expect.element(screen.getByText("Glucose")).toBeVisible();
     await expect.element(screen.getByText("Iron")).toBeVisible();
     const ferritin = screen.getByRole("menuitemcheckbox", { name: "Ferritin" });

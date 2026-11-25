@@ -3388,7 +3388,7 @@
         "resting_hr": "Tętno spoczynkowe",
         "steps": "Kroki",
         "active_energy": "Aktywna energia",
-        "flights": "Piętra",
+        "flights": "Pokonane piętra",
         "distance": "Dystans",
         "vo2_max": "VO₂ max",
         "body_temp": "Temperatura ciała",
@@ -3396,7 +3396,7 @@
         "anthropometrics": "Profil (wzrost, wiek, płeć)",
         "walking_hr": "Tętno podczas chodzenia",
         "respiratory_rate": "Częstość oddechów",
-        "spo2": "Saturacja krwi",
+        "spo2": "Saturacja tlenem",
         "pulse_wave_velocity": "Prędkość fali tętna",
         "vascular_age": "Wiek naczyniowy",
         "body_fat": "Tkanka tłuszczowa",
@@ -3791,9 +3791,9 @@
       "coachPrefill": "Nie zarejestrowałem jeszcze tętna spoczynkowego. Dlaczego dzienna wartość spoczynkowa różni się od pojedynczego pomiaru tętna i jak ją poprawić?"
     },
     "oxygenSaturation": {
-      "title": "Saturacja tlenu",
+      "title": "Saturacja tlenem",
       "description": "Tlen we krwi (SpO₂): kliniczny zakres normy 95–100 %, ze strefami docelowymi zacienionymi na wykresie.",
-      "chartTitle": "Saturacja tlenu",
+      "chartTitle": "Saturacja tlenem",
       "emptyState": {
         "title": "Brak próbek SpO₂",
         "description": "Próbki SpO₂ trafią tutaj, gdy zgodne wearable (Apple Watch, Withings ScanWatch) wykona pomiar."
@@ -3879,7 +3879,7 @@
         "headphoneAudioBody": "Poziom dźwięku w słuchawkach śledzi w decybelach, jak głośno słuchasz przez słuchawki. Ściszanie głośności i robienie przerw chroni słuch w dłuższej perspektywie.",
         "audioEventsBody": "Zdarzenia głośnego dźwięku oznaczają momenty, gdy hałas wokół ciebie osiągnął poziom mogący przy wystarczającej ekspozycji uszkodzić słuch. Częste zdarzenia to sygnał, by poszukać cichszego otoczenia lub ochrony słuchu.",
         "daylightBody": "Czas w świetle dziennym to ilość czasu spędzanego w świetle na zewnątrz każdego dnia. Regularne światło dzienne wspiera zdrowy rytm snu i czuwania oraz nastrój (CDC 2024), a czas na świeżym powietrzu wiąże się ze zdrowiem oczu.",
-        "bloodGlucoseBody": "Poziom glukozy we krwi to ilość cukru we krwi, głównego źródła energii organizmu. Rośnie po jedzeniu i ustala się między posiłkami. Jako ogólna wskazówka dla dorosłych bez cukrzycy: wynik na czczo poniżej {prediabetesFrom} {unit} jest prawidłowy, {prediabetesFrom}–{prediabetesTo} oznacza stan przedcukrzycowy, a {diabetesFrom} lub więcej mieści się w zakresie cukrzycy (ADA 2024). Pojedynczy wysoki wynik nie jest diagnozą; lekarz potwierdza ją powtórnym badaniem, a osoby leczące cukrzycę mają inne cele, ustalone przez lekarza.",
+        "bloodGlucoseBody": "Glikemia to ilość cukru we krwi, głównego źródła energii organizmu. Rośnie po jedzeniu i ustala się między posiłkami. Jako ogólna wskazówka dla dorosłych bez cukrzycy: wynik na czczo poniżej {prediabetesFrom} {unit} jest prawidłowy, {prediabetesFrom}–{prediabetesTo} oznacza stan przedcukrzycowy, a {diabetesFrom} lub więcej mieści się w zakresie cukrzycy (ADA 2024). Pojedynczy wysoki wynik nie jest diagnozą; lekarz potwierdza ją powtórnym badaniem, a osoby leczące cukrzycę mają inne cele, ustalone przez lekarza.",
         "skinTemperatureBody": "Temperatura skóry to tutaj niewielka nocna zmiana temperatury nadgarstka względem twojej własnej wartości bazowej, a nie bezwzględny pomiar gorączki. Zmiany mogą odzwierciedlać sen, otoczenie, chorobę lub fazę cyklu menstruacyjnego.",
         "cardioFitnessBody": "VO₂ max to ilość tlenu, jaką organizm potrafi wykorzystać przy maksymalnym wysiłku. To najlepszy laboratoryjny wskaźnik wydolności tlenowej, który urządzenia noszone szacują pośrednio. Wyższy lub rosnący trend to mocny sygnał dobrego zdrowia układu krążenia.",
         "cardioRecoveryBody": "Regeneracja serca to liczba uderzeń na minutę, o jaką spada tętno w pierwszej minucie po zakończeniu intensywnego wysiłku. Większy spadek oznacza, że serce szybciej się uspokaja, co świadczy o dobrej kondycji.",
@@ -4237,9 +4237,9 @@
       }
     },
     "bloodGlucose": {
-      "title": "Poziom glukozy",
+      "title": "Glikemia",
       "description": "Twoje odczyty glukozy w czasie, w {unit}.",
-      "chartTitle": "Poziom glukozy",
+      "chartTitle": "Glikemia",
       "medianLabel": "Mediana glukozy",
       "emptyState": {
         "title": "Brak danych o glukozie",
@@ -4524,7 +4524,7 @@
     "navLeanBodyMass": "Beztłuszczowa masa ciała",
     "walkingHeartRateAverage": {
       "title": "Tętno podczas chodu",
-      "description": "Twoje średnie tętno podczas chodzenia, w ud./min.",
+      "description": "Twoje średnie tętno podczas chodzenia, w bpm.",
       "chartTitle": "Średnie tętno podczas chodu",
       "emptyState": {
         "title": "Brak danych",
@@ -5102,7 +5102,7 @@
       "average": "Średnia z 30 dni {value}",
       "unitScore": "pkt",
       "unitMinutes": "min",
-      "unitBpm": "ud./min",
+      "unitBpm": "bpm",
       "unitKj": "kJ",
       "unitLoad": "obciążenie"
     },
@@ -5568,7 +5568,7 @@
         "options": {
           "blood-pressure": "Ciśnienie krwi",
           "weight-body": "Waga i ciało",
-          "glucose": "Glukoza we krwi",
+          "glucose": "Glikemia",
           "sleep": "Sen i regeneracja",
           "mood": "Nastrój i dobrostan psychiczny",
           "cycle": "Cykl",
@@ -5620,7 +5620,7 @@
       "units": {
         "title": "Twój region i jednostki",
         "body": "Twój dzień i godziny przypomnień zależą od strefy czasowej. Pomiary są zapisywane raz i wyświetlane w wybranej jednostce. Wszystko możesz później zmienić w Ustawieniach.",
-        "glucoseLegend": "Glukoza we krwi",
+        "glucoseLegend": "Glikemia",
         "weightLegend": "Waga i wzrost",
         "options": {
           "metric": "kg i cm",
@@ -5639,7 +5639,7 @@
         "everythingElse": "Cała reszta jest o jedno kliknięcie w",
         "modulesLink": "Ustawienia, Moduły",
         "switchesOff": "Znika z nawigacji: {modules}. W każdej chwili możesz je włączyć w Ustawienia, Moduły.",
-        "glucoseUnit": "Glukoza we krwi",
+        "glucoseUnit": "Glikemia",
         "unitPreference": "Jednostki",
         "language": "Język",
         "timezone": "Strefa czasowa",
@@ -7330,7 +7330,7 @@
         "saveError": "Nie udało się zapisać preferencji jednostek."
       },
       "glucoseUnit": {
-        "title": "Glukoza we krwi",
+        "title": "Glikemia",
         "description": "Jednostka, w której pokazywane są pomiary glukozy. Zapis pozostaje taki sam w obu przypadkach.",
         "saved": "Zapisano jednostkę glukozy",
         "saveError": "Nie udało się zapisać jednostki glukozy."
@@ -8200,7 +8200,7 @@
     },
     "glucoseReference": {
       "title": "Zakres referencyjny glukozy",
-      "description": "Do jakiego zakresu porównywane są twoje wyniki glukozy we krwi.",
+      "description": "Do jakiego zakresu porównywane są twoje wyniki glikemii.",
       "enable": "Użyj zakresu docelowego dla cukrzycy",
       "explainer": "Wyłączone: wyniki są oceniane względem ogólnego zakresu referencyjnego dla osób bez cukrzycy. Włączone: są oceniane względem węższego zakresu docelowego glikemii z ADA Standards of Care, a Coach opiera na nim swoje uwagi o glukozie. Twoje własne wartości docelowe poniżej nadal mają pierwszeństwo.",
       "disclaimer": "To wybiera zakres referencyjny. Nie jest to diagnoza, nigdy nie jest wywnioskowane z pomiaru, a aplikacja nie podejmuje na tej podstawie działań klinicznych. O to, jakie cele dotyczą ciebie, zapytaj swojego lekarza.",
@@ -10753,7 +10753,7 @@
         "metricBasalBodyTemp": "Temperatura podstawowa",
         "metricWristTemperature": "Nocna temperatura nadgarstka",
         "metricSkinTemperature": "Temperatura skóry",
-        "metricBloodGlucose": "Glukoza we krwi",
+        "metricBloodGlucose": "Glikemia",
         "metricMood": "Nastrój"
       },
       "title": "Analizy cyklu",
@@ -11229,7 +11229,7 @@
       "WEIGHT": "Waga",
       "BLOOD_PRESSURE_SYS": "Ciśnienie krwi",
       "PULSE": "Tętno",
-      "BLOOD_GLUCOSE": "Glukoza we krwi",
+      "BLOOD_GLUCOSE": "Glikemia",
       "BLOOD_KETONES": "Ketony we krwi",
       "OXYGEN_SATURATION": "Saturacja tlenem",
       "BODY_FAT": "Tkanka tłuszczowa",
@@ -12032,8 +12032,8 @@
     "newEpisode": "Nowy epizod",
     "logDay": "Zapisz dzień",
     "markRecovered": "Oznacz jako wyleczone",
-    "deletedToast": "Wpis usunięty",
-    "restoreError": "Nie udało się przywrócić wpisu",
+    "deletedToast": "Epizod usunięty",
+    "restoreError": "Nie udało się przywrócić epizodu",
     "onsetOn": "Początek {date}",
     "recoveredOn": "wyleczono {date}",
     "status": {
@@ -12159,7 +12159,7 @@
       "empty": "Nie zapisano jeszcze żadnych dni."
     },
     "loadError": "Nie udało się wczytać tego epizodu.",
-    "backToList": "Powrót do dziennika",
+    "backToList": "Powrót do listy",
     "detail": {
       "note": "Notatka"
     },
@@ -12175,7 +12175,7 @@
       "body": "„{label}” oraz wszystkie powiązane wpisy dzienne zostaną usunięte. Zaraz po usunięciu możesz to przez chwilę cofnąć."
     },
     "vital": {
-      "RESTING_HEART_RATE": "Spoczynkowe tętno",
+      "RESTING_HEART_RATE": "Tętno spoczynkowe",
       "HEART_RATE_VARIABILITY": "Zmienność rytmu serca",
       "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Regeneracja",
@@ -13885,12 +13885,12 @@
         "RESTING_HEART_RATE": "Tętno spoczynkowe",
         "HEART_RATE_VARIABILITY": "Zmienność rytmu serca",
         "RESPIRATORY_RATE": "Częstość oddechów",
-        "OXYGEN_SATURATION": "Saturacja",
+        "OXYGEN_SATURATION": "Saturacja tlenem",
         "BODY_TEMPERATURE": "Temperatura ciała",
         "SKIN_TEMPERATURE": "Temperatura skóry",
         "BLOOD_PRESSURE_SYS": "Ciśnienie skurczowe",
         "BLOOD_PRESSURE_DIA": "Ciśnienie rozkurczowe",
-        "BLOOD_GLUCOSE": "Glukoza we krwi",
+        "BLOOD_GLUCOSE": "Glikemia",
         "PULSE": "Tętno",
         "WEIGHT": "Waga",
         "generic": "Parametr życiowy"
@@ -14008,7 +14008,7 @@
     "groupActivity": "Aktywność",
     "groupMobility": "Mobilność i chód",
     "groupEnvironment": "Otoczenie",
-    "groupGlucose": "Poziom glukozy",
+    "groupGlucose": "Glikemia",
     "groupLabs": "Wyniki badań",
     "groupMedications": "Leki",
     "groupHistory": "Choroby i alergie",

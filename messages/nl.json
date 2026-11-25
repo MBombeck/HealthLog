@@ -862,7 +862,7 @@
     "heroItems": {
       "coach_checkin": "Check-ins van de Coach",
       "dose_window": "Medicatiedoses",
-      "preventive_care": "Preventieve zorg",
+      "preventive_care": "Controles",
       "sync_issue": "Synchronisatieproblemen",
       "milestone": "Mijlpalen",
       "ecg_new_recording": "Nieuwe ECG-opnames",
@@ -2825,7 +2825,7 @@
     "hrv": "HRV",
     "restingHeartRate": "Rusthartslag",
     "activeEnergy": "Actieve energie",
-    "flights": "Trappen gelopen",
+    "flights": "Beklommen verdiepingen",
     "distance": "Afstand wandelen + hardlopen",
     "vo2Max": "VO₂max",
     "bodyTemperature": "Lichaamstemperatuur",
@@ -3247,7 +3247,7 @@
         "hrv": "Hartslagvariabiliteit over de afgelopen 30 dagen.",
         "resting_hr": "Rusthartslag over de afgelopen 30 dagen.",
         "active_energy": "Verbruikte actieve energie over de afgelopen 30 dagen.",
-        "flights": "Gelopen trappen over de afgelopen 30 dagen.",
+        "flights": "Beklommen verdiepingen over de afgelopen 30 dagen.",
         "distance": "Afstand wandelen en hardlopen over de afgelopen 30 dagen.",
         "vo2_max": "VO₂max over de afgelopen 30 dagen.",
         "body_temp": "Lichaamstemperatuur over de afgelopen 30 dagen."
@@ -3396,7 +3396,7 @@
         "anthropometrics": "Profiel (lengte, leeftijd, geslacht)",
         "walking_hr": "Hartslag tijdens wandelen",
         "respiratory_rate": "Ademhalingsfrequentie",
-        "spo2": "Bloedzuurstof",
+        "spo2": "Zuurstofsaturatie",
         "pulse_wave_velocity": "Polsgolfsnelheid",
         "vascular_age": "Vaatleeftijd",
         "body_fat": "Vetpercentage",
@@ -3567,7 +3567,7 @@
         "activeEnergy": "Wat zegt mijn trend in actieve energie over mijn activiteitsniveau de laatste tijd?",
         "cardioFitness": "Wat betekent de trend van mijn cardiofitheid (VO₂ max), en hoe krijg ik die de goede kant op?",
         "bloodGlucose": "Neem mijn recente glucosemetingen met me door. Liggen ze binnen een gezond bereik?",
-        "oxygenSaturation": "Wat zegt mijn trend in bloedzuurstof (SpO₂)?",
+        "oxygenSaturation": "Wat zegt mijn trend in zuurstofsaturatie (SpO₂)?",
         "respiratoryRate": "Wat zegt mijn trend in ademhalingsfrequentie over mijn gezondheid?",
         "workouts": "Neem mijn recente trainingen met me door: belasting, frequentie en hoe ik ertussen herstel.",
         "recoveryPage": "Waarom staat mijn herstel nu waar het staat, en wat bepaalt dat?",
@@ -3791,14 +3791,14 @@
       "coachPrefill": "Ik heb nog geen rusthartslag vastgelegd. Waarom verschilt de dagelijkse rustwaarde van een losse hartslagmeting, en hoe kan ik die verbeteren?"
     },
     "oxygenSaturation": {
-      "title": "Zuurstofverzadiging",
-      "description": "Bloedzuurstof (SpO₂): klinisch normaal is 95–100 %, met de streefzones gearceerd in de grafiek.",
-      "chartTitle": "Zuurstofverzadiging",
+      "title": "Zuurstofsaturatie",
+      "description": "Zuurstofsaturatie (SpO₂): klinisch normaal is 95–100 %, met de streefzones gearceerd in de grafiek.",
+      "chartTitle": "Zuurstofsaturatie",
       "emptyState": {
         "title": "Nog geen SpO₂-metingen",
         "description": "SpO₂-metingen verschijnen hier zodra een compatibele wearable (Apple Watch, Withings ScanWatch) een meting vastlegt."
       },
-      "coachPrefill": "Ik heb nog geen zuurstofverzadiging vastgelegd. Wat zegt SpO₂ me, en naar welk bereik moet ik streven?"
+      "coachPrefill": "Ik heb nog geen zuurstofsaturatie vastgelegd. Wat zegt SpO₂ me, en naar welk bereik moet ik streven?"
     },
     "bodyTemperature": {
       "title": "Lichaamstemperatuur",
@@ -4094,18 +4094,18 @@
         "coachPrefill": "Ik heb nog geen slaapgegevens. Waarom is slaap bijhouden belangrijk, en wat moet ik weten voordat ik een bron koppel?"
       }
     },
-    "navWorkouts": "Workouts",
+    "navWorkouts": "Trainingen",
     "navRecovery": "Herstel",
     "workouts": {
-      "title": "Workouts",
+      "title": "Trainingen",
       "description": "Recente hardloop-, fiets-, wandel- en krachttrainingen, ontdubbeld over bronnen van Apple Watch en Withings.",
       "emptyState": {
-        "title": "Nog geen workouts",
-        "description": "Workouts worden gesynchroniseerd vanuit Apple Health op je iPhone en vanuit Withings. Je kunt er ook zelf een vastleggen.",
-        "coachPrefill": "Ik heb nog geen workouts vastgelegd. Waarom is bijhouden belangrijk, en waar moet ik me eerst op richten?"
+        "title": "Nog geen trainingen",
+        "description": "Trainingen worden gesynchroniseerd vanuit Apple Health op je iPhone en vanuit Withings. Je kunt er ook zelf een vastleggen.",
+        "coachPrefill": "Ik heb nog geen trainingen vastgelegd. Waarom is bijhouden belangrijk, en waar moet ik me eerst op richten?"
       },
       "detail": {
-        "backToList": "Terug naar workouts",
+        "backToList": "Terug naar trainingen",
         "statsTitle": "Statistieken",
         "statsDuration": "Duur",
         "statsDistance": "Afstand",
@@ -4128,7 +4128,7 @@
         "statsGroundContactBalanceValue": "{left} % L, {right} % R",
         "routeTitle": "Route",
         "hrChartTitle": "Hartslag",
-        "notFound": "Workout niet gevonden.",
+        "notFound": "Training niet gevonden.",
         "hrFromPulse": "Uit je hartslaggegevens rond deze sessie",
         "hrAxisMinutes": "min",
         "hrAvgMarker": "Gem. {bpm}",
@@ -4182,19 +4182,19 @@
         "mixedCardio": "Gemengde cardio",
         "other": "Overig"
       },
-      "loadError": "Je workouts konden niet worden geladen",
-      "loadMore": "Meer workouts laden",
-      "loadingMore": "Meer workouts worden geladen",
-      "loadMoreError": "Meer workouts konden niet worden geladen",
-      "countOne": "{count} workout",
-      "countOther": "{count} workouts",
-      "countFew": "{count} workouts",
+      "loadError": "Je trainingen konden niet worden geladen",
+      "loadMore": "Meer trainingen laden",
+      "loadingMore": "Meer trainingen worden geladen",
+      "loadMoreError": "Meer trainingen konden niet worden geladen",
+      "countOne": "{count} training",
+      "countOther": "{count} trainingen",
+      "countFew": "{count} trainingen",
       "filterLabel": "Filteren op sport",
       "filterAll": "Alle sporten",
       "filterEmpty": "Geen sessies van deze sport in je geschiedenis.",
       "manual": {
-        "logWorkout": "Workout vastleggen",
-        "sheetTitle": "Workout vastleggen",
+        "logWorkout": "Training vastleggen",
+        "sheetTitle": "Training vastleggen",
         "sheetDescription": "Voer een sessie handmatig in: wat je hebt gedaan, wanneer en hoelang.",
         "sportLabel": "Activiteit",
         "sportPlaceholder": "Kies een activiteit",
@@ -4203,27 +4203,27 @@
         "durationLabel": "Duur",
         "distanceLabel": "Afstand ({unit})",
         "energyLabel": "Actieve energie (kcal)",
-        "alreadySaved": "Deze workout is al opgeslagen",
-        "saveError": "De workout kon niet worden opgeslagen",
-        "deleteLabel": "Workout verwijderen",
-        "deleteConfirmTitle": "Deze workout verwijderen?",
-        "deleteConfirmDescription": "Deze workout die je handmatig hebt ingevoerd, wordt definitief verwijderd.",
-        "deleted": "Workout verwijderd",
-        "deleteError": "De workout kon niet worden verwijderd",
+        "alreadySaved": "Deze training is al opgeslagen",
+        "saveError": "De training kon niet worden opgeslagen",
+        "deleteLabel": "Training verwijderen",
+        "deleteConfirmTitle": "Deze training verwijderen?",
+        "deleteConfirmDescription": "Deze training die je handmatig hebt ingevoerd, wordt definitief verwijderd.",
+        "deleted": "Training verwijderd",
+        "deleteError": "De training kon niet worden verwijderd",
         "errors": {
           "sportRequired": "Kies een activiteit.",
           "startRequired": "Voer een datum en tijd in.",
           "startInFuture": "Het begin kan niet in de toekomst liggen.",
-          "durationRequired": "Voer in hoelang de workout duurde.",
+          "durationRequired": "Voer in hoelang de training duurde.",
           "durationInvalid": "Voer hele uren in, en minuten van 0 tot 59.",
-          "durationTooLong": "Een workout kan maximaal 24 uur duren.",
-          "endInFuture": "Dan zou de workout in de toekomst eindigen. Stel het begin in op het moment dat de workout begon.",
+          "durationTooLong": "Een training kan maximaal 24 uur duren.",
+          "endInFuture": "Dan zou de training in de toekomst eindigen. Stel het begin in op het moment dat de training begon.",
           "distanceInvalid": "Voer de afstand in als getal binnen een realistisch bereik.",
           "energyInvalid": "Voer de actieve energie in als getal van maximaal 20.000 kcal."
         },
-        "editTitle": "Workout bewerken",
+        "editTitle": "Training bewerken",
         "editAction": "Bewerken",
-        "updated": "Workout bijgewerkt"
+        "updated": "Training bijgewerkt"
       },
       "load": {
         "title": "Trainingsbelasting",
@@ -4352,15 +4352,15 @@
     },
     "navBoneMass": "Botmassa",
     "flightsClimbed": {
-      "title": "Gelopen trappen",
+      "title": "Beklommen verdiepingen",
       "description": "Het aantal trappen dat je per dag hebt beklommen.",
-      "chartTitle": "Gelopen trappen per dag",
+      "chartTitle": "Beklommen verdiepingen per dag",
       "emptyState": {
         "title": "Nog geen gegevens over trappen",
-        "description": "Dagtotalen van gelopen trappen verschijnen hier zodra Apple Health de beweging van een dag synchroniseert."
+        "description": "Dagtotalen van beklommen verdiepingen verschijnen hier zodra Apple Health de beweging van een dag synchroniseert."
       }
     },
-    "navFlightsClimbed": "Trappen",
+    "navFlightsClimbed": "Verdiepingen",
     "walkingRunningDistance": {
       "title": "Afstand wandelen + hardlopen",
       "description": "De afstand die je per dag wandelend en hardlopend hebt afgelegd, in kilometer.",
@@ -4508,7 +4508,7 @@
       "chartTitle": "Ademhalingsfrequentie",
       "emptyState": {
         "title": "Nog geen gegevens over ademhalingsfrequentie",
-        "description": "Metingen van de ademhalingsfrequentie verschijnen hier zodra Apple Health de ademhaling tijdens slaap of workouts synchroniseert."
+        "description": "Metingen van de ademhalingsfrequentie verschijnen hier zodra Apple Health de ademhaling tijdens slaap of trainingen synchroniseert."
       }
     },
     "navRespiratoryRate": "Ademhalingsfrequentie",
@@ -5391,7 +5391,7 @@
     "metricGlucoseBedtime": "Glucose (voor het slapengaan)",
     "metricBodyWater": "Lichaamsvocht",
     "metricBoneMass": "Botmassa",
-    "metricOxygenSaturation": "Zuurstofverzadiging (SpO₂)",
+    "metricOxygenSaturation": "Zuurstofsaturatie (SpO₂)",
     "unsetExplanation": "Niet aangepast, de berekende standaardwaarde wordt gebruikt.",
     "cardTitle": "Bereiken per meetwaarde"
   },
@@ -6103,7 +6103,7 @@
           "steps": "Stappen",
           "activeEnergy": "Actieve energie",
           "walkingRunningDistance": "Afstand wandelen + hardlopen",
-          "flightsClimbed": "Trappen beklommen",
+          "flightsClimbed": "Beklommen verdiepingen",
           "sleep": "Slaap",
           "weight": "Gewicht",
           "bloodPressure": "Bloeddruk",
@@ -9032,7 +9032,7 @@
         "previewCycles": "Cyclusgegevens",
         "previewVisits": "Doktersbezoeken",
         "previewVaccinations": "Vaccinaties",
-        "previewReminders": "Herinneringen voor preventieve zorg",
+        "previewReminders": "Controleherinneringen",
         "previewCustomMetrics": "Eigen meetwaarden",
         "previewHealthScores": "Scoregeschiedenis",
         "restoreConfirm": "Nu terugzetten",
@@ -11522,8 +11522,8 @@
         "ldl": "LDL-cholesterol is het cholesterol dat wordt vervoerd door lipoproteïnedeeltjes met een lage dichtheid: de fractie die cholesterol naar de weefsels brengt, maar het ook in de vaatwanden kan afzetten. Over de jaren draagt deze afzetting bij aan atherosclerotische plaque, en daarom is LDL een van de nauwst gevolgde lipidenmarkers. Een lagere blootstelling op lange termijn gaat over het algemeen samen met een lager cardiovasculair risico. Het wordt beoordeeld per risicocategorie in plaats van aan de hand van één vaste normaalwaarde.",
         "hdl": "HDL-cholesterol is het cholesterol dat wordt vervoerd door lipoproteïnedeeltjes met een hoge dichtheid, die overtollig cholesterol uit de weefsels opnemen en terugbrengen naar de lever voor hergebruik of afvoer. Vanwege deze transportrol wordt het vaak de beschermende fractie genoemd. Zeer lage waarden gaan vaak samen met een hoger cardiovasculair risico, maar het kunstmatig verhogen ervan heeft het risico niet betrouwbaar verlaagd; daarom wordt het gezien als marker en niet als streefwaarde. Het wordt meestal samen met LDL en triglyceriden beoordeeld.",
         "triglycerides": "Triglyceriden zijn de belangrijkste vorm van vet die in het bloed circuleert. Ze komen zowel uit de voeding als uit de lever en dienen als belangrijke energievoorraad. De waarden stijgen na maaltijden, daarom wordt het bloed voor de vergelijkbaarheid meestal nuchter afgenomen. Aanhoudend hoge triglyceriden hangen samen met metabool en cardiovasculair risico en gaan vaak samen met insulineresistentie en een laag HDL. Ze worden beoordeeld als één onderdeel van het totale lipidenbeeld.",
-        "fasting-glucose": "Nuchtere glucose is de suikerconcentratie in het bloed, gemeten na een nacht vasten. De waarde laat zien hoe het lichaam zijn basisbloedsuikerspiegel vasthoudt zonder recente voeding. Glucose is de belangrijkste directe brandstof van het lichaam, en insuline houdt het normaal gesproken binnen een smal bereik. Een nuchtere meting sluit het effect van recente maaltijden uit en is daardoor een standaardscreening voor hoe de glucoseregulatie werkt. Het is een van de markers waarmee de metabole gezondheid in de tijd wordt beoordeeld.",
-        "hba1c": "HbA1c is het aandeel hemoglobine in de rode bloedcellen dat aan glucose is gebonden; dit stapelt zich op in verhouding tot de gemiddelde blootstelling aan bloedsuiker. Omdat rode bloedcellen ongeveer drie maanden leven, weerspiegelt het de gemiddelde glucose over de voorgaande twee tot drie maanden in plaats van één moment. Daardoor geeft het een stabiel, maaltijdonafhankelijk beeld van de glucoseregulatie. De nauwkeurigheid kan worden beïnvloed door aandoeningen die de levensduur van rode bloedcellen veranderen.",
+        "fasting-glucose": "Nuchtere glucose is de suikerconcentratie in het bloed, gemeten na een nacht vasten. De waarde laat zien hoe het lichaam zijn basisbloedglucosespiegel vasthoudt zonder recente voeding. Glucose is de belangrijkste directe brandstof van het lichaam, en insuline houdt het normaal gesproken binnen een smal bereik. Een nuchtere meting sluit het effect van recente maaltijden uit en is daardoor een standaardscreening voor hoe de glucoseregulatie werkt. Het is een van de markers waarmee de metabole gezondheid in de tijd wordt beoordeeld.",
+        "hba1c": "HbA1c is het aandeel hemoglobine in de rode bloedcellen dat aan glucose is gebonden; dit stapelt zich op in verhouding tot de gemiddelde blootstelling aan bloedglucose. Omdat rode bloedcellen ongeveer drie maanden leven, weerspiegelt het de gemiddelde glucose over de voorgaande twee tot drie maanden in plaats van één moment. Daardoor geeft het een stabiel, maaltijdonafhankelijk beeld van de glucoseregulatie. De nauwkeurigheid kan worden beïnvloed door aandoeningen die de levensduur van rode bloedcellen veranderen.",
         "tsh": "TSH (thyroïdstimulerend hormoon) wordt door de hypofyse afgegeven om de schildklier aan te zetten tot de aanmaak van haar hormonen, en het past zich naar boven of beneden aan om die in balans te houden. Door deze terugkoppeling is TSH de gevoeligste eerste screening van de schildklierfunctie: het verandert meestal al voordat de schildklierhormonen zelf afwijken. Een verhoogd of verlaagd TSH wijst op een te traag of te snel werkende schildklier en is meestal aanleiding om de schildklierhormonen zelf te meten. Zwangerschap en leeftijd verschuiven het verwachte bereik.",
         "ft3": "Vrij T3 (trijodothyronine) is de ongebonden, biologisch actieve vorm van het krachtigere schildklierhormoon: de fractie die beschikbaar is om op weefsels in te werken. Het meeste circulerende T3 is gebonden aan transporteiwitten en inactief, dus het vrije deel weerspiegelt de werkelijke beschikbaarheid van het hormoon. Het wordt gemeten om de schildklierfunctie te karakteriseren, vooral samen met TSH en vrij T4 als de uitslagen onduidelijk zijn. De waarden zijn sterk afhankelijk van de gebruikte bepaling en worden in klinische context beoordeeld.",
         "ft4": "Vrij T4 (thyroxine) is de ongebonden vorm van het belangrijkste hormoon dat de schildklier aan het bloed afgeeft. Het dient als voorraad die weefsels naar behoefte omzetten in het actievere T3. De vrije fractie weerspiegelt wat het lichaam werkelijk beschikbaar heeft, ongeacht de hoeveelheid transporteiwitten. Het wordt meestal samen met TSH gemeten om problemen van de schildklier zelf te onderscheiden van de aansturing door de hypofyse. Zwangerschap en bepaalde medicijnen kunnen het verschuiven.",
@@ -12123,7 +12123,7 @@
       "sleepContextMore": "Tijdens deze episode sliep je merkbaar meer dan normaal (ongeveer {hours} u per nacht).",
       "sleepContextLess": "Tijdens deze episode sliep je merkbaar minder dan normaal (ongeveer {hours} u per nacht).",
       "redFlagTitle": "Verdient nadere aandacht",
-      "redFlagSpo2": "Je zuurstofverzadiging bleef meerdere dagen laag. Zoek medische hulp als dit opnieuw gebeurt.",
+      "redFlagSpo2": "Je zuurstofsaturatie bleef meerdere dagen laag. Zoek medische hulp als dit opnieuw gebeurt.",
       "redFlagFever": "Je had aanhoudende koorts. Zoek medische hulp als dit opnieuw gebeurt.",
       "direction": {
         "above": "boven je gebruikelijke waarde",
@@ -12179,7 +12179,7 @@
       "HEART_RATE_VARIABILITY": "Hartslagvariabiliteit",
       "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Herstel",
-      "OXYGEN_SATURATION": "Zuurstofverzadiging",
+      "OXYGEN_SATURATION": "Zuurstofsaturatie",
       "BODY_TEMPERATURE": "Lichaamstemperatuur",
       "RESPIRATORY_RATE": "Ademhalingsfrequentie",
       "BLOOD_PRESSURE_SYS": "Systolische bloeddruk",
@@ -12458,13 +12458,13 @@
       "bpLowTitle": "Lage bloeddruk",
       "bpLowDoctor": "Twee recente metingen hadden een systolische waarde onder {systolic} mmHg. Als je duizelig bent of je flauw voelt, ga dan zitten of liggen, en neem contact op met je arts als het aanhoudt.",
       "bpLowEmergency": "Twee recente metingen hadden een systolische waarde onder {systolic} mmHg en je hebt klachten genoteerd. Als je je flauw voelt, verward bent of een koude, klamme huid hebt, bel dan nu het alarmnummer.",
-      "glucoseLowTitle": "Lage bloedsuiker",
+      "glucoseLowTitle": "Lage bloedglucose",
       "glucoseLowDoctor": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}). Neem snelwerkende koolhydraten, meet na 15 minuten opnieuw en neem contact op met je arts als lage waarden aanhouden.",
       "glucoseLowEmergency": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}) en je hebt klachten genoteerd. Behandel nu met snelwerkende suiker; als dat niet lukt of als je je erg onwel voelt, bel dan het alarmnummer.",
-      "glucoseLowSevereTitle": "Zeer lage bloedsuiker",
+      "glucoseLowSevereTitle": "Zeer lage bloedglucose",
       "glucoseLowSevereDoctor": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}). Behandel direct met snelwerkende koolhydraten, meet na 15 minuten opnieuw en neem contact op met je arts.",
       "glucoseLowSevereEmergency": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}) en je hebt klachten genoteerd. Behandel nu; als je geen eten binnen kunt houden of je erg onwel voelt, bel dan het alarmnummer.",
-      "glucoseHighTitle": "Zeer hoge bloedsuiker",
+      "glucoseHighTitle": "Zeer hoge bloedglucose",
       "glucoseHighDoctor": "Twee recente metingen waren {value} {unit} of hoger. Meet opnieuw, drink voldoende en neem zo snel mogelijk contact op met je arts als de waarde zo hoog blijft.",
       "glucoseHighEmergency": "Twee recente metingen waren {value} {unit} of hoger en je hebt klachten genoteerd. Als je moet overgeven, snel ademt of verward bent, bel dan nu het alarmnummer."
     }
@@ -13003,7 +13003,7 @@
         "goals": {
           "weight": "Gewicht",
           "blood_pressure": "Bloeddruk",
-          "blood_sugar": "Bloedsuiker",
+          "blood_sugar": "Bloedglucose",
           "sleep": "Slaap",
           "fitness": "Conditie",
           "stress_recovery": "Stress en herstel",
@@ -15068,7 +15068,7 @@
       "medications": "Medicatie",
       "vaccinations": "Vaccinaties",
       "visits": "Arts en ingrepen",
-      "labs": "Lab",
+      "labs": "Labuitslagen",
       "documents": "Documenten",
       "cycle": "Cyclus",
       "seizures": "Aanvallen"

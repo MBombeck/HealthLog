@@ -988,7 +988,7 @@
     "typeRunningGroundContactTime": "Temps de contact au sol",
     "typeRunningVerticalOscillation": "Oscillation verticale",
     "typeRunningStrideLength": "Longueur de foulée en course",
-    "typeFlightsClimbed": "Étages",
+    "typeFlightsClimbed": "Étages gravis",
     "typeWalkingRunningDistance": "Distance à pied et en course",
     "typeVo2Max": "VO₂ max",
     "typeBodyTemperature": "Température corporelle",
@@ -3388,7 +3388,7 @@
         "resting_hr": "Pouls au repos",
         "steps": "Pas",
         "active_energy": "Énergie active",
-        "flights": "Étages",
+        "flights": "Étages gravis",
         "distance": "Distance",
         "vo2_max": "VO₂ max",
         "body_temp": "Température corporelle",
@@ -3396,7 +3396,7 @@
         "anthropometrics": "Profil (taille, âge, sexe)",
         "walking_hr": "Fréquence cardiaque à la marche",
         "respiratory_rate": "Fréquence respiratoire",
-        "spo2": "Oxygène sanguin",
+        "spo2": "Saturation en oxygène",
         "pulse_wave_velocity": "Vitesse de l'onde de pouls",
         "vascular_age": "Âge vasculaire",
         "body_fat": "Masse grasse",
@@ -4187,7 +4187,7 @@
       "loadingMore": "Chargement de séances supplémentaires",
       "loadMoreError": "Les séances supplémentaires n'ont pas pu être chargées",
       "countOne": "{count} séance",
-      "countOther": "{count} séances",
+      "countOther": "{count} entraînements",
       "countFew": "{count} séances",
       "filterLabel": "Filtrer par sport",
       "filterAll": "Tous les sports",
@@ -6650,7 +6650,7 @@
             "description": "Groupes, vos propres étiquettes et les étiquettes archivées."
           },
           "labs": {
-            "title": "Analyses",
+            "title": "Résultats de laboratoire",
             "description": "Biomarqueurs et reconnaissance de texte sur l’appareil pour les comptes rendus d’analyses."
           },
           "arrangementTitle": "Ordre et affichage",
@@ -7530,7 +7530,7 @@
       "title": "Données reçues",
       "summary": "{count, plural, one {# type de données} other {# types de données}}, plus récent {relative}",
       "quiet": "{count} silencieux",
-      "workouts": "Séances",
+      "workouts": "Entraînements",
       "medicationDoses": "Prises de médicaments",
       "cycleDays": "Jours du cycle",
       "cycleDaysCount": "Jours du cycle ({count})"
@@ -12159,7 +12159,7 @@
       "empty": "Aucun jour enregistré pour l’instant."
     },
     "loadError": "Impossible de charger cet épisode.",
-    "backToList": "Retour au journal",
+    "backToList": "Retour à la liste",
     "detail": {
       "note": "Note"
     },
@@ -15068,7 +15068,7 @@
       "medications": "Médicaments",
       "vaccinations": "Vaccinations",
       "visits": "Médecin et interventions",
-      "labs": "Analyses",
+      "labs": "Résultats de laboratoire",
       "documents": "Documents",
       "cycle": "Cycle",
       "seizures": "Crises"

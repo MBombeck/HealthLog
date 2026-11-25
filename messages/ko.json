@@ -6053,7 +6053,7 @@
           "description": "목록 보기와 수동 순서."
         },
         "labs": {
-          "title": "검사",
+          "title": "검사 결과",
           "description": "보기, 정렬, 수동 순서."
         },
         "illness": {
@@ -6650,7 +6650,7 @@
             "description": "그룹, 직접 만든 태그, 보관된 태그입니다."
           },
           "labs": {
-            "title": "검사",
+            "title": "검사 결과",
             "description": "바이오마커와 검사 보고서용 기기 내 텍스트 인식입니다."
           },
           "arrangementTitle": "순서와 보기",
@@ -12159,7 +12159,7 @@
       "empty": "아직 기록한 날이 없어요."
     },
     "loadError": "이 에피소드를 불러오지 못했어요.",
-    "backToList": "일지로 돌아가기",
+    "backToList": "목록으로 돌아가기",
     "detail": {
       "note": "메모"
     },
@@ -15068,7 +15068,7 @@
       "medications": "약",
       "vaccinations": "예방접종",
       "visits": "진료와 시술",
-      "labs": "검사",
+      "labs": "검사 결과",
       "documents": "문서",
       "cycle": "생리 주기",
       "seizures": "발작"

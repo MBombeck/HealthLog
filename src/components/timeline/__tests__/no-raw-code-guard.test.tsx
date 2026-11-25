@@ -391,7 +391,7 @@ describe.each<Locale>(["de", "en"])("the timeline in %s", (locale) => {
         locale,
       ),
     );
-    expect(text).toContain(locale === "de" ? "5 Laborwerte" : "5 lab values");
+    expect(text).toContain(locale === "de" ? "5 Laborwerte" : "5 lab results");
     expect(text).toContain(
       locale === "de" ? "über dem Referenzbereich" : "above range",
     );

@@ -1,5 +1,5 @@
 {
-  "about": "Canonical product vocabulary: one term per concept per locale. `name` is the label form (nav entry, page title, section heading); `item` is the countable noun used in running text. Anchors are message keys that must carry the term (exact, or containing it). Forbidden lists the retired synonyms per locale; `allow` names the few message values that keep one for a stated reason. Display strings only: wire values, routes and enum ids never change with this file. Guarded by src/__tests__/glossary-guard.test.ts.",
+  "about": "Canonical product vocabulary: one term per concept per locale. `name` is the label form (nav entry, page title, section heading); `item` is the countable noun used in running text. Anchors are message keys that must carry the term (exact, or containing it). Forbidden lists the retired synonyms per locale; `allow` names the few message values that keep one for a stated reason. Display strings only: wire values, routes and enum ids never change with this file. A forbidden entry with `keys` applies only to message keys under that prefix. `decision` records why a concept carries the term it does. `spelling` lists retired spellings per locale. Guarded by src/__tests__/glossary-guard.test.ts.",
   "locales": ["de", "en", "fr", "es", "it", "pl", "ko", "nl", "pt-BR", "ru"],
   "concepts": [
     {
@@ -60,10 +60,11 @@
     {
       "id": "measurements",
       "description": "Readings of any metric (weight, blood pressure, pulse ...) and their page.",
+      "decision": "The area is Messungen; one value is a Messwert, so capturing one is \"Messwert erfassen\". Messung stays for the act of measuring (one cuff reading yields several values). Other locales use one word for both.",
       "terms": {
         "de": {
           "name": "Messungen",
-          "item": "Messung"
+          "item": "Messwert"
         },
         "en": {
           "name": "Measurements",
@@ -117,10 +118,15 @@
           "key": "nav.capture.measurement",
           "form": "item",
           "match": "exact"
+        },
+        {
+          "key": "dashboard.quickAddMeasurement",
+          "form": "item",
+          "match": "contains"
         }
       ],
       "forbidden": {
-        "de": [],
+        "de": ["Messung erfassen"],
         "en": [],
         "fr": [],
         "es": [],
@@ -344,6 +350,7 @@
     {
       "id": "take",
       "description": "Action: mark a dose as taken. Enforced in detail by i18n-dose-vocabulary.test.ts.",
+      "decision": "The daily briefing row for an open dose is the Take action: it opens that dose, highlighted, where Take books it. A client that can book in place may do so on this action; \"Einnahme erfassen\" / \"Log intake\" is the name of the form for an unscheduled or backdated intake, not of this action.",
       "wire": "dose state `taken`",
       "terms": {
         "de": {
@@ -380,6 +387,11 @@
       "anchors": [
         {
           "key": "medications.dose.action.take",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.action.logDose",
           "form": "name",
           "match": "exact"
         }
@@ -701,6 +713,7 @@
     {
       "id": "care",
       "description": "The preventive-care area at /care: check-ups, visits, procedures, body sites.",
+      "decision": "Vorsorge in German; the other locales use the everyday word for a check-up (Controles, Revisiones), which the rail already used, rather than a translation of \"preventive care\".",
       "wire": "route /care, API /api/measurement-reminders",
       "terms": {
         "de": {
@@ -754,6 +767,11 @@
           "key": "checkups.tabVorsorge",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "dashboard.heroItems.preventive_care",
+          "form": "name",
+          "match": "exact"
         }
       ],
       "forbidden": {
@@ -783,7 +801,7 @@
         ],
         "pl": [],
         "ko": ["예방 관리"],
-        "nl": [],
+        "nl": ["preventieve zorg"],
         "pt-BR": [
           "cuidados preventivos",
           {
@@ -890,6 +908,7 @@
     {
       "id": "visit",
       "description": "A doctor's visit, booked or done (encounter).",
+      "decision": "A booked visit is a Termin / cita / appointment-type entry in the rail and the list; \"Besuch\" and \"visita\" were only used by the calendar feed and are retired there too.",
       "wire": "model Encounter",
       "terms": {
         "de": {
@@ -1065,6 +1084,7 @@
     {
       "id": "labs",
       "description": "Lab results and their page.",
+      "decision": "One name for the area in the rail, the page, the settings pages and the timeline lane: what a layperson gets back from the lab is a result, not a lab.",
       "terms": {
         "de": {
           "name": "Laborwerte",
@@ -1122,6 +1142,21 @@
           "key": "labs.title",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "settings.sections.layout.labs.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.modules.pages.labs.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "timeline.lanes.labs",
+          "form": "name",
+          "match": "exact"
         }
       ],
       "forbidden": {
@@ -1133,7 +1168,14 @@
             "caseSensitive": true
           }
         ],
-        "en": ["lab value"],
+        "en": [
+          "lab value",
+          {
+            "text": "Labs",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ],
         "fr": [
           "valeur de laboratoire",
           "valeurs de laboratoire",
@@ -1184,6 +1226,7 @@
     {
       "id": "illness",
       "description": "The illness area: illness episodes with symptoms, flares and recovery.",
+      "decision": "The area is named for what it holds (Krankheit, Illness), not for a diary format; one record is an episode in every locale, the word the list, the form and the insights already use.",
       "wire": "module illness, model ConditionEpisode",
       "terms": {
         "de": {
@@ -1270,10 +1313,45 @@
         }
       ],
       "forbidden": {
-        "de": ["Krankheitstagebuch", "Krankheits-Journal"],
-        "en": ["illness journal", "illness diary"],
-        "fr": ["journal de maladie", "journal des maladies"],
-        "es": ["diario de enfermedad"],
+        "de": [
+          "Krankheitstagebuch",
+          "Krankheits-Journal",
+          {
+            "text": "Eintrag",
+            "keys": "illness."
+          },
+          {
+            "text": "Journal",
+            "keys": "illness."
+          }
+        ],
+        "en": [
+          "illness journal",
+          "illness diary",
+          {
+            "text": "journal",
+            "keys": "illness."
+          },
+          {
+            "text": "diary",
+            "keys": "illness."
+          }
+        ],
+        "fr": [
+          "journal de maladie",
+          "journal des maladies",
+          {
+            "text": "journal",
+            "keys": "illness."
+          }
+        ],
+        "es": [
+          "diario de enfermedad",
+          {
+            "text": "Volver al diario",
+            "keys": "illness."
+          }
+        ],
         "it": [
           "diario delle malattie",
           "diario di malattia",
@@ -1283,18 +1361,58 @@
           "dziennik chor",
           "dziennika chor",
           "dzienniku chor",
-          "dziennikiem chor"
+          "dziennikiem chor",
+          {
+            "text": "dziennik",
+            "keys": "illness."
+          },
+          {
+            "text": "wpis",
+            "wholeWord": true,
+            "keys": "illness."
+          },
+          {
+            "text": "wpisu",
+            "wholeWord": true,
+            "keys": "illness."
+          }
         ],
-        "ko": ["아픈 날 일지", "아픈 날 다이어리", "질병 일지"],
-        "nl": ["ziektedagboek", "ziektelogboek"],
-        "pt-BR": ["diário de doenças", "diário de doença"],
+        "ko": [
+          "아픈 날 일지",
+          "아픈 날 다이어리",
+          "질병 일지",
+          {
+            "text": "일지",
+            "keys": "illness."
+          }
+        ],
+        "nl": [
+          "ziektedagboek",
+          "ziektelogboek",
+          {
+            "text": "dagboek",
+            "keys": "illness."
+          }
+        ],
+        "pt-BR": [
+          "diário de doenças",
+          "diário de doença",
+          {
+            "text": "Voltar ao diário",
+            "keys": "illness."
+          }
+        ],
         "ru": [
           "дневник болезн",
           "дневника болезн",
           "дневнике болезн",
           "дневник заболеван",
           "дневника заболеван",
-          "дневнике заболеван"
+          "дневнике заболеван",
+          {
+            "text": "дневник",
+            "keys": "illness."
+          }
         ]
       }
     },
@@ -2407,7 +2525,7 @@
           "name": "Blutzucker"
         },
         "en": {
-          "name": "Glycaemia"
+          "name": "Glycemia"
         },
         "fr": {
           "name": "Glycémie"
@@ -3444,6 +3562,695 @@
         "pt-BR": [],
         "ru": []
       }
+    },
+    {
+      "id": "restingHeartRate",
+      "description": "The resting heart rate metric.",
+      "decision": "Ruhepuls is the everyday and clinical German word and was already used 43 times against 4; the other locales keep their standard resting-heart-rate term.",
+      "terms": {
+        "de": {
+          "name": "Ruhepuls"
+        },
+        "en": {
+          "name": "Resting heart rate"
+        },
+        "fr": {
+          "name": "Fréquence cardiaque au repos"
+        },
+        "es": {
+          "name": "Frecuencia cardíaca en reposo"
+        },
+        "it": {
+          "name": "Frequenza cardiaca a riposo"
+        },
+        "pl": {
+          "name": "Tętno spoczynkowe"
+        },
+        "ko": {
+          "name": "안정 시 심박수"
+        },
+        "nl": {
+          "name": "Rusthartslag"
+        },
+        "pt-BR": {
+          "name": "Frequência cardíaca em repouso"
+        },
+        "ru": {
+          "name": "ЧСС в покое"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRestingHeartRate",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "mood.dayContext.linkedRestingHeartRate",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.mood.factorCrosstab.metricRestingHeartRate",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.sources.metrics.restingHeartRate",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "cycle.insights.crosstab.metricRestingHeartRate",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "illness.vital.RESTING_HEART_RATE",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.today.vital.RESTING_HEART_RATE",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.milestone.metric.restingHeartRate",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Ruheherzfrequenz"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "visceralFat",
+      "description": "The visceral fat metric.",
+      "decision": "Viszeralfett, the compound every other surface already used.",
+      "terms": {
+        "de": {
+          "name": "Viszeralfett"
+        },
+        "en": {
+          "name": "Visceral fat"
+        },
+        "fr": {
+          "name": "Graisse viscérale"
+        },
+        "es": {
+          "name": "Grasa visceral"
+        },
+        "it": {
+          "name": "Grasso viscerale"
+        },
+        "pl": {
+          "name": "Tłuszcz trzewny"
+        },
+        "ko": {
+          "name": "내장지방"
+        },
+        "nl": {
+          "name": "Visceraal vet"
+        },
+        "pt-BR": {
+          "name": "Gordura visceral"
+        },
+        "ru": {
+          "name": "Висцеральный жир"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeVisceralFat",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.coach.metric.visceral_fat",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.visceralFat.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.visceralFat.chartTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.navVisceralFat",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurementReminders.types.VISCERAL_FAT",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["viszerales Fett", "viszeralen Fett"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "bloodGlucose",
+      "description": "The blood glucose metric.",
+      "decision": "Spanish and Polish use the one-word everyday term (Glucemia, Glikemia) as French, Italian and Portuguese do, already on the dashboard tile, the type name and every threshold; Dutch keeps Bloedglucose, the dominant and clinical form.",
+      "terms": {
+        "de": {
+          "name": "Blutzucker"
+        },
+        "en": {
+          "name": "Blood glucose"
+        },
+        "fr": {
+          "name": "Glycémie"
+        },
+        "es": {
+          "name": "Glucemia"
+        },
+        "it": {
+          "name": "Glicemia"
+        },
+        "pl": {
+          "name": "Glikemia"
+        },
+        "ko": {
+          "name": "혈당"
+        },
+        "nl": {
+          "name": "Bloedglucose"
+        },
+        "pt-BR": {
+          "name": "Glicemia"
+        },
+        "ru": {
+          "name": "Глюкоза крови"
+        }
+      },
+      "anchors": [
+        {
+          "key": "dashboard.metric.title.glucose",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurements.typeBloodGlucose",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.bloodGlucose.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "onboarding.flow.areas.options.glucose",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "cycle.insights.crosstab.metricBloodGlucose",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurementReminders.types.BLOOD_GLUCOSE",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.today.vital.BLOOD_GLUCOSE",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "reportSelection.groupGlucose",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": ["glucosa en sangre"],
+        "it": [],
+        "pl": ["glukoza we krwi", "glukozy we krwi", "poziom glukozy"],
+        "ko": [],
+        "nl": ["bloedsuiker"],
+        "pt-BR": ["glicose no sangue"],
+        "ru": []
+      }
+    },
+    {
+      "id": "oxygenSaturation",
+      "description": "The SpO2 metric.",
+      "decision": "The full metric name everywhere it is named, the Coach chip included; Dutch Zuurstofsaturatie, the clinical term the type name and the dashboard already used.",
+      "terms": {
+        "de": {
+          "name": "Sauerstoffsättigung"
+        },
+        "en": {
+          "name": "Oxygen saturation"
+        },
+        "fr": {
+          "name": "Saturation en oxygène"
+        },
+        "es": {
+          "name": "Saturación de oxígeno"
+        },
+        "it": {
+          "name": "Saturazione di ossigeno"
+        },
+        "pl": {
+          "name": "Saturacja tlenem"
+        },
+        "ko": {
+          "name": "산소포화도"
+        },
+        "nl": {
+          "name": "Zuurstofsaturatie"
+        },
+        "pt-BR": {
+          "name": "Saturação de oxigênio"
+        },
+        "ru": {
+          "name": "Насыщение кислородом"
+        }
+      },
+      "anchors": [
+        {
+          "key": "dashboard.metric.title.oxygenSaturation",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurements.typeOxygenSaturation",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.coach.metric.spo2",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.oxygenSaturation.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.oxygenSaturation.chartTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.sources.metrics.spo2",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurementReminders.types.OXYGEN_SATURATION",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "illness.vital.OXYGEN_SATURATION",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.today.vital.OXYGEN_SATURATION",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": ["zuurstofverzadiging", "bloedzuurstof"],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pulseUnit",
+      "description": "The unit after a pulse or heart-rate value.",
+      "decision": "bpm, the international symbol every chart already renders from code in every locale; Russian keeps уд/мин, which its whole bundle uses.",
+      "terms": {
+        "de": {
+          "name": "bpm"
+        },
+        "en": {
+          "name": "bpm"
+        },
+        "fr": {
+          "name": "bpm"
+        },
+        "es": {
+          "name": "bpm"
+        },
+        "it": {
+          "name": "bpm"
+        },
+        "pl": {
+          "name": "bpm"
+        },
+        "ko": {
+          "name": "bpm"
+        },
+        "nl": {
+          "name": "bpm"
+        },
+        "pt-BR": {
+          "name": "bpm"
+        },
+        "ru": {
+          "name": "уд/мин"
+        }
+      },
+      "anchors": [
+        {
+          "key": "dashboard.metric.unit.pulse",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.deviceScore.unitBpm",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [
+          {
+            "text": "lpm",
+            "caseSensitive": true,
+            "wholeWord": true
+          },
+          {
+            "text": "ppm",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ],
+        "it": [],
+        "pl": ["ud./min"],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "workout",
+      "description": "A recorded training session and the page that lists them.",
+      "decision": "German Training/Trainings, the native word the bundle already used 79 times and the one every other locale's equivalent matches; Dutch the same (Trainingen). English keeps Workouts.",
+      "terms": {
+        "de": {
+          "name": "Trainings",
+          "item": "Training"
+        },
+        "en": {
+          "name": "Workouts",
+          "item": "workout"
+        },
+        "fr": {
+          "name": "Entraînements",
+          "item": "entraînement"
+        },
+        "es": {
+          "name": "Entrenamientos",
+          "item": "entrenamiento"
+        },
+        "it": {
+          "name": "Allenamenti",
+          "item": "allenamento"
+        },
+        "pl": {
+          "name": "Treningi",
+          "item": "trening"
+        },
+        "ko": {
+          "name": "운동",
+          "item": "운동"
+        },
+        "nl": {
+          "name": "Trainingen",
+          "item": "training"
+        },
+        "pt-BR": {
+          "name": "Treinos",
+          "item": "treino"
+        },
+        "ru": {
+          "name": "Тренировки",
+          "item": "тренировка"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.workouts.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "modules.workouts.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "doctorReport.workouts.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.coach.metric.workouts",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.integrationFreshness.workouts",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.capture.workout",
+          "form": "item",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Workout"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": ["workout"],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "notNow",
+      "description": "The button that puts a suggestion off without declining it for good.",
+      "decision": "Nicht jetzt, the order five of seven German buttons used.",
+      "terms": {
+        "de": {
+          "name": "Nicht jetzt"
+        },
+        "en": {
+          "name": "Not now"
+        },
+        "fr": {
+          "name": "Pas maintenant"
+        },
+        "es": {
+          "name": "Ahora no"
+        },
+        "it": {
+          "name": "Non ora"
+        },
+        "pl": {
+          "name": "Nie teraz"
+        },
+        "ko": {
+          "name": "나중에"
+        },
+        "nl": {
+          "name": "Niet nu"
+        },
+        "pt-BR": {
+          "name": "Agora não"
+        },
+        "ru": {
+          "name": "Не сейчас"
+        }
+      },
+      "anchors": [
+        {
+          "key": "coach.reminderSuggestion.dismiss",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "coach.suggestedAction.dismiss",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.coach.plan.decline",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.aiSetupHint.dismiss",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.ai.consent.request.dismiss",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "admin.serverSetup.notice.dismiss",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "vaccinations.booster.decline",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          {
+            "text": "Jetzt nicht",
+            "caseSensitive": true
+          }
+        ],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "flightsClimbed",
+      "description": "The flights-climbed metric: floors gone up per day.",
+      "decision": "The value counts floors, so it is named for floors as every other locale already did (Stockwerke, Pisos subidos, Beklommen verdiepingen); Treppe stays for stair speed, which does measure stairs.",
+      "terms": {
+        "de": {
+          "name": "Stockwerke"
+        },
+        "en": {
+          "name": "Flights climbed"
+        },
+        "fr": {
+          "name": "Étages gravis"
+        },
+        "es": {
+          "name": "Pisos subidos"
+        },
+        "it": {
+          "name": "Piani saliti"
+        },
+        "pl": {
+          "name": "Pokonane piętra"
+        },
+        "ko": {
+          "name": "오른 층수"
+        },
+        "nl": {
+          "name": "Beklommen verdiepingen"
+        },
+        "pt-BR": {
+          "name": "Andares subidos"
+        },
+        "ru": {
+          "name": "Этажи"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeFlightsClimbed",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "charts.flights",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.coach.metric.flights",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.flightsClimbed.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.sources.metrics.flightsClimbed",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Treppendaten", "Treppenwerte"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": ["trappen gelopen", "gelopen trappen", "trappen beklommen"],
+        "pt-BR": [],
+        "ru": []
+      }
     }
   ],
   "allow": [
@@ -3573,5 +4380,94 @@
       "text": "afspraak",
       "reason": "A calendar entry in the person's own calendar app, not a doctor's visit."
     }
-  ]
+  ],
+  "spelling": {
+    "en": {
+      "decision": "American spelling, which the bundle already used for every -ize verb; British medical spellings (haemoglobin, glycaemia, oestrogen) and -ise forms are retired.",
+      "forbidden": [
+        "behaviour",
+        "catalogue",
+        "haemoglobin",
+        "haematocrit",
+        "haemat",
+        "haemorrh",
+        "anaem",
+        "oestr",
+        "oesoph",
+        "oedem",
+        "diarrhoea",
+        "dyspnoea",
+        "paediatr",
+        "glycaem",
+        "ischaem",
+        "colour",
+        "licence",
+        "defence",
+        "kilometre",
+        "centimetre",
+        "millimetre",
+        {
+          "text": "metre",
+          "wholeWord": true
+        },
+        {
+          "text": "metres",
+          "wholeWord": true
+        },
+        "cancelled",
+        "modelled",
+        "travelled",
+        "labelled",
+        "greys",
+        "summaris",
+        "recognis",
+        "penalis",
+        "personalis",
+        "customis",
+        "renormalis",
+        "normalis",
+        "synchronis",
+        "generalis",
+        "authoris",
+        "prioritis",
+        "categoris",
+        {
+          "text": "synthesise",
+          "wholeWord": true
+        },
+        {
+          "text": "synthesising",
+          "wholeWord": true
+        },
+        {
+          "text": "characterise",
+          "wholeWord": true
+        },
+        {
+          "text": "characterised",
+          "wholeWord": true
+        },
+        {
+          "text": "organise",
+          "wholeWord": true
+        },
+        {
+          "text": "organised",
+          "wholeWord": true
+        },
+        {
+          "text": "analyse",
+          "wholeWord": true
+        },
+        {
+          "text": "analysed",
+          "wholeWord": true
+        },
+        {
+          "text": "analysing",
+          "wholeWord": true
+        }
+      ]
+    }
+  }
 }
