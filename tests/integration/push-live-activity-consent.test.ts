@@ -395,6 +395,34 @@ describe("the start fields on the device block", () => {
   });
 });
 
+describe("the token flags on the device block", () => {
+  type Flags = {
+    liveActivityStartToken: boolean;
+    liveActivityPushToken: boolean;
+  };
+
+  it("say whether the server holds each token, never the token", async () => {
+    const t = await setUp();
+    const bare = await t.reg({});
+    expect(bare.data.push as unknown as Flags).toMatchObject({
+      liveActivityStartToken: false,
+      liveActivityPushToken: false,
+    });
+    const held = await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(),
+      liveActivityPushToken: LA_TOKEN,
+    });
+    expect(held.data.push as unknown as Flags).toMatchObject({
+      liveActivityStartToken: true,
+      liveActivityPushToken: true,
+    });
+    const wire = JSON.stringify(held.data);
+    expect(wire).not.toContain(START_TOKEN);
+    expect(wire).not.toContain(LA_TOKEN);
+  });
+});
+
 describe("start and update", () => {
   it("are held back while the operator's switch is off", async () => {
     vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "");

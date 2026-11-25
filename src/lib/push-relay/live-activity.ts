@@ -70,6 +70,10 @@ import {
   STARTABLE_MEDICATION_WHERE,
 } from "@/lib/push-relay/activity-slot";
 import { liveActivityRelayEnabled } from "@/lib/push-relay/config";
+import {
+  laStartTokenUsable,
+  statementIat,
+} from "@/lib/push-relay/live-activity-start-token";
 import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
 import { fromBase64Url } from "@/lib/push-relay/encoding";
 import { newUlid } from "@/lib/push-relay/plaintext";
@@ -122,8 +126,7 @@ import {
  * state comes from the resolver.
  */
 export const ACTIVITY_LEAD_MS = 2 * 3600_000;
-/** Statement windows the relay applies, less five minutes of margin. */
-const START_STATEMENT_MAX_AGE_S = 30 * 24 * 3600 - 300;
+/** The relay's window for an Activity statement, less five minutes of margin. */
 const ACTIVITY_STATEMENT_MAX_AGE_S = 12 * 3600 - 300;
 /** A start or update is worth nothing late. */
 const PUSH_LIFETIME_S = 15 * 60;
@@ -160,11 +163,6 @@ const DEVICE_SELECT = {
 } as const;
 
 type LaDevice = Prisma.DeviceGetPayload<{ select: typeof DEVICE_SELECT }>;
-
-function statementIat(statement: unknown): number | null {
-  const iat = (statement as { iat?: unknown } | null)?.iat;
-  return typeof iat === "number" ? iat : null;
-}
 
 /** Whether `device` may get a relay start or update now. */
 export function laRelayEligible(
@@ -308,16 +306,7 @@ async function startItem(
   now: Date,
   exact: boolean,
 ): Promise<{ item: RelayItemInput; dose: ActivityDose } | null> {
-  const nowS = Math.floor(now.getTime() / 1000);
-  const iat = statementIat(device.laStartStatement);
-  if (
-    !device.laStartToken ||
-    !device.laStartSignature ||
-    iat === null ||
-    nowS - iat > START_STATEMENT_MAX_AGE_S
-  ) {
-    return null;
-  }
+  if (!laStartTokenUsable(device, now)) return null;
   if (await refusedRecently(device.id, LA_START_EVENT, now)) return null;
   const candidates = startCandidates(
     await openActivityDoses(device.userId, now),

@@ -16362,5 +16362,10 @@
     "periodOpen": "desde {from}",
     "expiryPushTitle": "La serie de tratamiento caduca",
     "expiryPushBody": "{title}: válida hasta el {date}, {count, plural, one {queda # sesión} other {quedan # sesiones}}."
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "Un medicamento tiene una Actividad en directo, pero PUSH_RELAY_LIVE_ACTIVITY está desactivado, así que no se inicia ninguna.",
+    "noConsent": "Un medicamento tiene una Actividad en directo, pero tu iPhone no la ha permitido a través del relay.",
+    "noStartToken": "Un medicamento tiene una Actividad en directo, pero tu iPhone aún no ha enviado un token de inicio."
   }
 }

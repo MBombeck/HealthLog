@@ -16362,5 +16362,10 @@
     "periodOpen": "с {from}",
     "expiryPushTitle": "Курс лечения истекает",
     "expiryPushBody": "{title}: действует до {date}, {count, plural, one {остался # сеанс} few {осталось # сеанса} many {осталось # сеансов} other {осталось # сеанса}}."
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "У лекарства включена Live Activity, но PUSH_RELAY_LIVE_ACTIVITY выключен, поэтому она не запускается.",
+    "noConsent": "У лекарства включена Live Activity, но ваш iPhone не разрешил её через ретранслятор.",
+    "noStartToken": "У лекарства включена Live Activity, но ваш iPhone ещё не отправил токен запуска."
   }
 }

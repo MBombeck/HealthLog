@@ -16362,5 +16362,10 @@
     "periodOpen": "dal {from}",
     "expiryPushTitle": "Ciclo di trattamento in scadenza",
     "expiryPushBody": "{title}: valido fino al {date}, {count, plural, one {resta # seduta} other {restano # sedute}}."
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "Un farmaco ha un'Attività Live, ma PUSH_RELAY_LIVE_ACTIVITY è disattivato, quindi non ne parte nessuna.",
+    "noConsent": "Un farmaco ha un'Attività Live, ma il tuo iPhone non l'ha consentita tramite il relay.",
+    "noStartToken": "Un farmaco ha un'Attività Live, ma il tuo iPhone non ha ancora inviato un token di avvio."
   }
 }

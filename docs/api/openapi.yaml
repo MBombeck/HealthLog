@@ -16193,6 +16193,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DerivedMetricResponseEnvelope"
+              examples:
+                sameTimeBaselineDailyTotal:
+                  summary: "SAME_TIME_BASELINE in its daily_total form: today's steps from a once-a-day source against the usual full day"
+                  value:
+                    data:
+                      metric: SAME_TIME_BASELINE
+                      status: ok
+                      value:
+                        mode: daily_total
+                        type: ACTIVITY_STEPS
+                        unit: steps
+                        timezone: Europe/Vienna
+                        dateKey: 2026-11-24
+                        todayValue: 6420
+                        typicalValue: 9450
+                        typicalLow: 8325
+                        typicalHigh: 10362.5
+                        percentOfTypical: 68
+                        dayRangeReached: not_yet
+                        source: GARMIN
+                        updatedAt: 2026-11-24T13:12:00.000Z
+                        baselineDays: 14
+                        windowDays: 14
+                      coverage:
+                        requiredInputs: 1
+                        presentInputs: 1
+                        historyDays: 14
+                        missing: []
+                      confidence:
+                        score: 100
+                        band: high
+                      provenance:
+                        inputs:
+                          - ACTIVITY_STEPS
+                        source: live
+                        windowDays: 14
+                        computedAt: 2026-11-24T13:20:05.000Z
+                      reason: null
+                      assessment: null
+                      ai:
+                        available: true
+                        reason: null
+                        onDeviceAllowed: true
+                    error: null
         "401": *a1
         "403": *a18
         "422": *a4
@@ -23243,6 +23287,126 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InboundLabValuesEnvelope"
+              examples:
+                scannedLabReport:
+                  summary: "A scanned report read by OCR: two rows matched a marker, one with a repaired OCR unit waits for review"
+                  value:
+                    data:
+                      id: cmdoc0example0000000000001
+                      kind: LAB_RESULT
+                      title: null
+                      filename: lab-2026-11-03.pdf
+                      mimeType: application/pdf
+                      byteSize: 184320
+                      status: EXTRACTED
+                      providerType: local-parser
+                      reportDate: 2026-11-03
+                      documentDate: null
+                      errorReason: null
+                      factCount: 3
+                      pendingCount: 3
+                      conditionLinks: []
+                      encounterLinks: []
+                      servingClass: inline
+                      hasContentIndex: false
+                      contentIndexSource: null
+                      lastIndexAttemptAt: 2026-11-24T09:15:02.000Z
+                      lastIndexOutcome: null
+                      hasThumbnail: false
+                      sourceSystem: null
+                      sourceId: null
+                      sourceUrl: null
+                      createdAt: 2026-11-24T09:14:51.000Z
+                      updatedAt: 2026-11-24T09:16:30.000Z
+                      facts:
+                        - id: cmfact0example000000000001
+                          factType: OBSERVATION
+                          status: PENDING
+                          confidence: 0.85
+                          needsReview: false
+                          data:
+                            label: Natrium
+                            code: null
+                            codeSystem: null
+                            value: 141
+                            valueText: null
+                            unit: mmol/l
+                            referenceLow: 135
+                            referenceHigh: 145
+                            referenceText: 135 - 145
+                            effectiveDate: null
+                          provenance:
+                            sourceText: Natrium   141   mmol/l   135 - 145
+                            anchored: true
+                            sourceOffset: 26
+                            page: null
+                            confidence: 0.85
+                          committedRecordId: null
+                          committedRecordType: null
+                          biomarkerId: cmmarker0example00000000001
+                          matchKind: name
+                          suggestions: []
+                        - id: cmfact0example000000000002
+                          factType: OBSERVATION
+                          status: PENDING
+                          confidence: 0.85
+                          needsReview: false
+                          data:
+                            label: Kreatinin
+                            code: null
+                            codeSystem: null
+                            value: 1.08
+                            valueText: null
+                            unit: mg/dl
+                            referenceLow: 0.7
+                            referenceHigh: 1.2
+                            referenceText: 0,70 - 1,20
+                            effectiveDate: null
+                          provenance:
+                            sourceText: Kreatinin   1,08   mg/dl   0,70 - 1,20
+                            anchored: true
+                            sourceOffset: 61
+                            page: null
+                            confidence: 0.85
+                          committedRecordId: null
+                          committedRecordType: null
+                          biomarkerId: cmmarker0example00000000002
+                          matchKind: catalog
+                          suggestions: []
+                        - id: cmfact0example000000000003
+                          factType: OBSERVATION
+                          status: PENDING
+                          confidence: 0.7
+                          needsReview: true
+                          data:
+                            label: Thrombozyten
+                            code: null
+                            codeSystem: null
+                            value: 245
+                            valueText: null
+                            unit: Tsd/µl
+                            referenceLow: 150
+                            referenceHigh: 400
+                            referenceText: 150 - 400
+                            effectiveDate: null
+                          provenance:
+                            sourceText: Thrombozyten   245   Tsd/pl   150 - 400
+                            anchored: true
+                            sourceOffset: 100
+                            page: null
+                            confidence: 0.7
+                          committedRecordId: null
+                          committedRecordType: null
+                          biomarkerId: null
+                          matchKind: null
+                          suggestions: []
+                      vaccinationLinks: []
+                      summary: null
+                      summaryGeneratedAt: null
+                      summaryState: NONE
+                      extractionIncomplete: false
+                      aiFailures: []
+                    error: null
         "401": *a1
         "403": *a27
         "409":
@@ -49370,6 +49534,14 @@ components:
               - push.relay-operator-decision
               - measurement.stats-computed-at
               - push.live-activity-start-id
+              - documents.lab-values-extract
+              - documents.server-ocr
+              - care.treatment-series
+              - sleep.night-overlays
+              - profile.emergency-card-apple-wallet
+              - notifications.sync-stalled
+              - insights.same-time-daily-total
+              - push.live-activity-token-state
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -49440,7 +49612,37 @@ components:
             by id with startedAt and state (pending from the moment the server records it, accepted once the relay took
             it; a refused or dropped start leaves it), and liveActivityStarted, when not null, is one of its entries;
             once a device reports one, it may run one relay-started Activity per dose (at most four Activities in all),
-            and a new start ends no other."
+            and a new start ends no other. `documents.lab-values-extract`: POST /api/documents/inbound/{id}/lab-values
+            reads a stored lab report's values by rule, with no model and no AI capability, and stages them as PENDING
+            OBSERVATION facts for the same review the AI extraction fills; a row the reader is unsure about carries
+            needsReview. `documents.server-ocr`: The server reads a scanned PDF or a photo by OCR when it indexes the
+            document, in every app language, so its text is searchable and the model-free lab reader can read it;
+            contentIndexSource is local-ocr, and a failed OCR run sets lastIndexOutcome ocr-failed.
+            `care.treatment-series`: GET/POST /api/treatment-series, GET/PATCH/DELETE /api/treatment-series/{id} and
+            POST /api/treatment-series/{id}/restore group visits into treatment series (plannedSessions, validUntil,
+            prescriber, performer, episode; a visit joins one through seriesId on POST /api/encounters), and the owner
+            is reminded once before a series with sessions left runs out. `sleep.night-overlays`: GET /api/sleep/night
+            carries overlays (SleepNightOverlays: night metrics resolved and bucketed on the server, drawn as given over
+            the main night's timeline; null without a main night or for a reconstructed one), and the sleepNight chart
+            slot of the dashboard preferences stores overlayLines (at most two). `profile.emergency-card-apple-wallet`:
+            GET /api/emergency-card/wallet/apple (also emergencyCard.wallet.apple on /api/auth/me) says whether an Apple
+            Wallet pass of the emergency card can be made, who signs it and the pass it has; GET
+            /api/emergency-card/wallet/apple/pass serves the signed .pkpass to a cookie or a full-access token, and an
+            installed pass is kept current. Making and withdrawing the pass are cookie-only.
+            `notifications.sync-stalled`: SYNC_STALLED is a notification category (default on, toggled per channel in
+            the notification preferences): once per stall and in daytime, the owner is told that a daily source went
+            quiet, among them an iPhone whose Apple Health upload stopped; GET /api/integrations/healthkit carries
+            quietDevices (model, quietSince). The push names the source as a connection key (apple-health, garmin,
+            google-health, nightscout, oura, polar, whoop, withings), and its deep link is always
+            /settings/integrations#<source>, the source's card on the integrations page: a direct push carries it as
+            url, a relay push carries only d.source and the client builds the same path.
+            `insights.same-time-daily-total`: SAME_TIME_BASELINE on GET /api/insights/derived carries mode: hourly is
+            the hour-by-hour comparison, daily_total compares today's running total from a once-a-day source with the
+            usual full day (dayRangeReached not_yet, within or above; gated reasons learning_usual_total and
+            no_total_today). `push.live-activity-token-state`: push.device on /api/auth/me and in the POST /api/devices
+            answer carries liveActivityStartToken (the server holds a push-to-start token the relay still takes) and
+            liveActivityPushToken (it holds the legacy Live Activity push token of the direct path), booleans only, so
+            the app re-sends a token only when the server lacks it."
       required:
         - version
         - buildSha
@@ -63498,6 +63700,17 @@ components:
           type: boolean
           description: "The relay holds the device's Live Activity consent: start and update over the relay. Withdrawn with the
             relay consent."
+        liveActivityStartToken:
+          type: boolean
+          description: "v1.50.0. The server holds a push-to-start token for this device (`liveActivityStart`) that the relay still
+            takes: the token, its `hl-la-start-v1` signature and a statement younger than the relay's 30-day window.
+            False means a relay start cannot happen until the app sends `liveActivityStart` again. Never the token
+            itself."
+        liveActivityPushToken:
+          type: boolean
+          description: v1.50.0. The server holds the device's legacy Live Activity push token (`liveActivityPushToken` on `POST
+            /api/devices`), the one the direct path updates and ends. Per-Activity tokens (`liveActivityTokens`) are not
+            counted here. Never the token itself.
         liveActivityStarted:
           anyOf:
             - type: object
@@ -63589,6 +63802,8 @@ components:
         - senderKeys
         - relayInstanceId
         - liveActivityConsent
+        - liveActivityStartToken
+        - liveActivityPushToken
         - liveActivityStarted
         - liveActivityStarts
       additionalProperties: false
@@ -78248,6 +78463,20 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.49.0 — when the device last reported which sealed pushes it opened (`GET /api/sync/state`).
+        liveActivityStart:
+          anyOf:
+            - type: string
+              enum:
+                - ready
+                - switch_off
+                - no_consent
+                - no_start_token
+            - type: "null"
+          description: "v1.50.0 — whether the server can start a medication Live Activity on this device over the relay. Null when
+            the question does not arise: no medication of the account has Live Activity on, or the device is no iPhone
+            bound to the relay. Otherwise the first thing in the way: `switch_off` (the operator's
+            `PUSH_RELAY_LIVE_ACTIVITY` is off), `no_consent` (the device has not given its Live Activity consent),
+            `no_start_token` (no push-to-start token the relay still takes); `ready` when none is."
       required:
         - id
         - platform
@@ -78260,6 +78489,7 @@ components:
         - relayBoundAt
         - liveActivityStartedAt
         - envelopesReportedAt
+        - liveActivityStart
       additionalProperties: false
       description: Per-device APNs registration snapshot. The APNs token is masked to its 8-char hex prefix + 8-char suffix so
         an operator can correlate with iOS-side logs without disclosing the delivery target.

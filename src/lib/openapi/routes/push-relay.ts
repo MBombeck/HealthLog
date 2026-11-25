@@ -171,6 +171,16 @@ export const devicePushBlockSchema = z
       .describe(
         "The relay holds the device's Live Activity consent: start and update over the relay. Withdrawn with the relay consent.",
       ),
+    liveActivityStartToken: z
+      .boolean()
+      .describe(
+        "v1.50.0. The server holds a push-to-start token for this device (`liveActivityStart`) that the relay still takes: the token, its `hl-la-start-v1` signature and a statement younger than the relay's 30-day window. False means a relay start cannot happen until the app sends `liveActivityStart` again. Never the token itself.",
+      ),
+    liveActivityPushToken: z
+      .boolean()
+      .describe(
+        "v1.50.0. The server holds the device's legacy Live Activity push token (`liveActivityPushToken` on `POST /api/devices`), the one the direct path updates and ends. Per-Activity tokens (`liveActivityTokens`) are not counted here. Never the token itself.",
+      ),
     liveActivityStarted: startedActivitySchema
       .nullable()
       .describe(

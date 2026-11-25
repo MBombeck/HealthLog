@@ -63,6 +63,7 @@ import {
   loadRegistration,
   type RegistrationRow,
 } from "@/lib/push-relay/registration";
+import { laStartTokenUsable } from "@/lib/push-relay/live-activity-start-token";
 import {
   ROUTABLE_DEVICE_SELECT,
   routeFor,
@@ -104,6 +105,13 @@ export interface DevicePushBlock {
   senderKeys: PublishedSenderKey[];
   relayInstanceId: string | null;
   liveActivityConsent: boolean;
+  /**
+   * The server holds a push-to-start token for this device that the relay
+   * still takes (`laStartTokenUsable`). Never the token itself.
+   */
+  liveActivityStartToken: boolean;
+  /** The server holds the device's legacy Live Activity push token (direct path). */
+  liveActivityPushToken: boolean;
   /** The dose of the device's last server start (`live-activity-started.ts`). */
   liveActivityStarted: LiveActivityStarted | null;
   /** Every server start that may still run, by start id. */
@@ -381,6 +389,11 @@ const DEVICE_BLOCK_SELECT = {
   liveActivityConsentAt: true,
   userId: true,
   relayConflictAt: true,
+  // Read only to say whether they are held; no value leaves this module.
+  laStartToken: true,
+  laStartSignature: true,
+  laStartStatement: true,
+  liveActivityPushToken: true,
 } as const;
 
 type DeviceBlockRow = Prisma.DeviceGetPayload<{
@@ -427,6 +440,10 @@ async function devicePushBlockOf(
     liveActivityConsent: Boolean(
       device?.relayConsentAt && device.liveActivityConsentAt,
     ),
+    liveActivityStartToken: device
+      ? laStartTokenUsable(device, new Date())
+      : false,
+    liveActivityPushToken: Boolean(device?.liveActivityPushToken),
     liveActivityStarted: starts.liveActivityStarted,
     liveActivityStarts: starts.liveActivityStarts,
   };
