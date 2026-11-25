@@ -1152,7 +1152,7 @@
     "sourceHealthConnect": "Health Connect",
     "typeBodyBattery": "Body Battery",
     "typeStressLevel": "Nivel de estrés",
-    "typeTrainingReadiness": "Preparación para entrenar",
+    "typeTrainingReadiness": "Disposición para entrenar",
     "typeAcuteTrainingLoad": "Carga de entrenamiento aguda",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Introduce un valor entre {min} y {max} {unit}.",
@@ -3198,7 +3198,7 @@
         "insufficientHistory": "No hay suficientes datos recientes aptos",
         "unavailable": "Este pilar no reúne los requisitos actualmente"
       },
-      "tension": "Las señales de preparación difieren. Favorables: {positive}. Con tensión: {negative}.",
+      "tension": "Las señales de disposición difieren. Favorables: {positive}. Con tensión: {negative}.",
       "returnToBand": "{metric} lleva {days, plural, one {# día} other {# días}} de nuevo dentro de tu intervalo habitual.",
       "weightGoal": {
         "title": "Objetivo personal de peso",
@@ -6147,7 +6147,7 @@
           "hrvRmssd": "VFC (RMSSD)",
           "bodyBattery": "Body Battery",
           "stressLevel": "Nivel de estrés",
-          "trainingReadiness": "Preparación para entrenar",
+          "trainingReadiness": "Disposición para entrenar",
           "acuteTrainingLoad": "Carga de entrenamiento aguda"
         },
         "sourceLabels": {
