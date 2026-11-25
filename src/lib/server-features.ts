@@ -35,6 +35,13 @@ export const SERVER_FEATURES = [
   "push.relay-operator-decision",
   "measurement.stats-computed-at",
   "push.live-activity-start-id",
+  "documents.lab-values-extract",
+  "documents.server-ocr",
+  "care.treatment-series",
+  "sleep.night-overlays",
+  "profile.emergency-card-apple-wallet",
+  "notifications.sync-stalled",
+  "insights.same-time-daily-total",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -97,4 +104,18 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "POST /api/measurements/batch accepts an optional computedAt (ISO 8601) on stats: rows; a write older than the stored one answers skipped with reason stale, and without computedAt the last write wins.",
   "push.live-activity-start-id":
     "POST /api/devices takes liveActivityTokens[].startId, the s attribute of a relay-started HealthLogDoseAttributes Activity, and names its dose from that start; push.device.liveActivityStarts, always present (empty when none runs), lists every start that may still run by id with startedAt and state (pending from the moment the server records it, accepted once the relay took it; a refused or dropped start leaves it), and liveActivityStarted, when not null, is one of its entries; once a device reports one, it may run one relay-started Activity per dose (at most four Activities in all), and a new start ends no other.",
+  "documents.lab-values-extract":
+    "POST /api/documents/inbound/{id}/lab-values reads a stored lab report's values by rule, with no model and no AI capability, and stages them as PENDING OBSERVATION facts for the same review the AI extraction fills; a row the reader is unsure about carries needsReview.",
+  "documents.server-ocr":
+    "The server reads a scanned PDF or a photo by OCR when it indexes the document, in every app language, so its text is searchable and the model-free lab reader can read it; contentIndexSource is local-ocr, and a failed OCR run sets lastIndexOutcome ocr-failed.",
+  "care.treatment-series":
+    "GET/POST /api/treatment-series, GET/PATCH/DELETE /api/treatment-series/{id} and POST /api/treatment-series/{id}/restore group visits into treatment series (plannedSessions, validUntil, prescriber, performer, episode; a visit joins one through seriesId on POST /api/encounters), and the owner is reminded once before a series with sessions left runs out.",
+  "sleep.night-overlays":
+    "GET /api/sleep/night carries overlays (SleepNightOverlays: night metrics resolved and bucketed on the server, drawn as given over the main night's timeline; null without a main night or for a reconstructed one), and the sleepNight chart slot of the dashboard preferences stores overlayLines (at most two).",
+  "profile.emergency-card-apple-wallet":
+    "GET /api/emergency-card/wallet/apple (also emergencyCard.wallet.apple on /api/auth/me) says whether an Apple Wallet pass of the emergency card can be made, who signs it and the pass it has; GET /api/emergency-card/wallet/apple/pass serves the signed .pkpass to a cookie or a full-access token, and an installed pass is kept current. Making and withdrawing the pass are cookie-only.",
+  "notifications.sync-stalled":
+    "SYNC_STALLED is a notification category (default on, toggled per channel in the notification preferences): once per stall and in daytime, the owner is told that a daily source went quiet, among them an iPhone whose Apple Health upload stopped; GET /api/integrations/healthkit carries quietDevices (model, quietSince).",
+  "insights.same-time-daily-total":
+    "SAME_TIME_BASELINE on GET /api/insights/derived carries mode: hourly is the hour-by-hour comparison, daily_total compares today's running total from a once-a-day source with the usual full day (dayRangeReached not_yet, within or above; gated reasons learning_usual_total and no_total_today).",
 };
