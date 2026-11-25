@@ -1,0 +1,88 @@
+name: Migration immutability
+
+# A migration that is merged into `main` or a `release/vX.Y.0` branch is
+# never changed again: only new files may appear under prisma/migrations/.
+# An `:edge` host has applied every migration on `main`, a `:nightly` host
+# every one on the release branch, and Prisma refuses to start against a
+# migration whose checksum changed since it ran
+# (docs/contributing/release-policy.md, "Migrations").
+#
+# The same holds for whole files a pull request deletes: a branch rebuilt
+# from a stale copy deletes whatever landed on its base after it was cut,
+# and no test notices a workflow or a test file that is gone. A deletion
+# under .github/workflows/, scripts/, prisma/migrations/ or docs/ of a file
+# the base still has fails unless the pull request body names it on a
+# `Removes:` line. `edited` re-runs the check when the body changes.
+on:
+  pull_request:
+    branches: [main, "release/**"]
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main, "release/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-immutability-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrations:
+    name: Merged migrations stay unchanged
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # A pull request is checked against its base. A push is checked against
+      # the commit the branch stood at before; a new branch, or a `before`
+      # the clone does not have, falls back to main.
+      - name: Refuse edits to merged migrations
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "pull_request" ]; then
+            base="$PR_BASE"
+            head="$PR_HEAD"
+          else
+            head="$GITHUB_SHA"
+            base="$BEFORE"
+            if [ -z "$base" ] || [[ "$base" =~ ^0+$ ]] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+              base="origin/main"
+            fi
+          fi
+          echo "Checking ${base}...${head}"
+          node scripts/release-policy.mjs migrations --base "$base" --head "$head"
+
+  deletions:
+    name: Deleted files are named
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Refuse unnamed deletions of base files
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          body_file="$RUNNER_TEMP/pull-request-body.md"
+          printf '%s\n' "$PR_BODY" > "$body_file"
+          echo "Checking ${PR_BASE}...${PR_HEAD}"
+          node scripts/release-policy.mjs deletions --base "$PR_BASE" --head "$PR_HEAD" --body-file "$body_file"
