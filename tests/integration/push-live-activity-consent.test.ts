@@ -211,8 +211,9 @@ function hhmm(at: Date, tz: string): string {
 
 /**
  * A daily medication with a dose `minutesFromNow` away, its open row on that
- * slot unless `row` is false (no read has put the day on the list yet), and, when given, a stored dose window around it (minutes relative to
- * the slot). Without one the band is the daily default. The medication has
+ * slot unless `row` is false (no read has put the day on the list yet),
+ * and, when given, a stored dose window around it (minutes relative to the
+ * slot) and the legacy weekday cadence (`daysOfWeek`, 0 = Sunday). Without one the band is the daily default. The medication has
  * the Live Activity opt-in unless `liveActivityEnabled` says otherwise.
  */
 async function dueDose(
@@ -223,7 +224,13 @@ async function dueDose(
     liveActivityEnabled = true,
     tz = noonZone(),
     row = true,
-  }: { liveActivityEnabled?: boolean; tz?: string; row?: boolean } = {},
+    daysOfWeek,
+  }: {
+    liveActivityEnabled?: boolean;
+    tz?: string;
+    row?: boolean;
+    daysOfWeek?: string;
+  } = {},
 ) {
   await getPrismaClient().user.update({
     where: { id: userId },
@@ -244,6 +251,7 @@ async function dueDose(
         windowStart: time,
         windowEnd: time,
         timesOfDay: [time],
+        ...(daysOfWeek !== undefined && { daysOfWeek }),
         ...(window && {
           doseWindows: [
             {
@@ -1219,6 +1227,43 @@ describe("a dose no read has put on the list", () => {
     });
     expect(rows.map((r) => r.scheduledFor.getTime())).toEqual([slot.getTime()]);
     // Idempotent: the next pass mints nothing more and starts nothing again.
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    expect(
+      await getPrismaClient().medicationIntakeEvent.count({
+        where: { medicationId: medication.id },
+      }),
+    ).toBe(1);
+  });
+
+  it("mints and starts nothing on a day the schedule skips", async () => {
+    const t = await arm();
+    const tz = noonZone();
+    const slot = new Date(Date.now() + 30 * 60_000);
+    const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
+      new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" })
+        .format(slot)
+        .slice(0, 3),
+    );
+    const { medication } = await dueDose(t.session.userId, 30, undefined, {
+      tz,
+      row: false,
+      daysOfWeek: `${(weekday + 2) % 7},${(weekday + 4) % 7}`,
+    });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    expect(
+      await getPrismaClient().medicationIntakeEvent.count({
+        where: { medicationId: medication.id },
+      }),
+    ).toBe(0);
+  });
+
+  it("mints no second row beside a dose already taken, and starts nothing", async () => {
+    const t = await arm();
+    const { medication } = await dueDose(t.session.userId, 30);
+    await getPrismaClient().medicationIntakeEvent.updateMany({
+      where: { medicationId: medication.id },
+      data: { takenAt: new Date() },
+    });
     expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
     expect(
       await getPrismaClient().medicationIntakeEvent.count({
