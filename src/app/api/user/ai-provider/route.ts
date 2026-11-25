@@ -32,6 +32,10 @@ import {
   parseCoachBudgets,
 } from "@/lib/ai/coach/coach-budgets";
 import { Prisma } from "@/generated/prisma/client";
+import { withUserRowLock } from "@/lib/user-row-lock";
+
+/** The client a settings read or write goes through: the row lock's. */
+type Db = Pick<Prisma.TransactionClient, "user">;
 
 export const dynamic = "force-dynamic";
 
@@ -44,16 +48,12 @@ const USER_SETTINGS_PROVIDERS: readonly ProviderChainType[] = [
 ];
 
 /**
- * Write the changed provider settings. #1279 — and start background work
- * afresh: it skips a provider the health ledger benched, and a status note
- * waits out its negative window, so without this a fixed setup would sit out
- * a pause the old one earned.
+ * #1279 — after the changed provider settings are written, start background
+ * work afresh: it skips a provider the health ledger benched, and a status
+ * note waits out its negative window, so without this a fixed setup would sit
+ * out a pause the old one earned.
  */
-async function saveProviderSettings(
-  userId: string,
-  updates: Record<string, unknown>,
-): Promise<void> {
-  await prisma.user.update({ where: { id: userId }, data: updates });
+async function startProviderWorkAfresh(userId: string): Promise<void> {
   await Promise.all([
     ...USER_SETTINGS_PROVIDERS.map((providerType) =>
       forgetProviderHealth({ userId, providerType }),
@@ -74,6 +74,7 @@ function isLocal(provider: string | null | undefined): boolean {
  * body names none.
  */
 async function modelColumn(
+  db: Db,
   userId: string,
   requested: string | null | undefined,
 ): Promise<"aiLocalModel" | "aiModel"> {
@@ -81,7 +82,7 @@ async function modelColumn(
     requested !== undefined
       ? requested
       : (
-          await prisma.user.findUnique({
+          await db.user.findUnique({
             where: { id: userId },
             select: { aiProvider: true },
           })
@@ -245,6 +246,7 @@ export const GET = apiHandler(async () => {
  * provider absent from the chain, holds the value.
  */
 async function chainAfterReasoningSave(
+  db: Db,
   userId: string,
   body: Pick<
     z.infer<typeof aiProviderPatchSchema>,
@@ -252,7 +254,7 @@ async function chainAfterReasoningSave(
   >,
   pickedNow: unknown,
 ): Promise<unknown> {
-  const current = await prisma.user.findUnique({
+  const current = await db.user.findUnique({
     where: { id: userId },
     select: { aiProviderChain: true, aiProvider: true },
   });
@@ -298,6 +300,7 @@ function keySlotsOf(body: z.infer<typeof aiProviderPatchSchema>) {
  * merges into what is stored, and an empty result clears it.
  */
 async function coachBudgetsAfterPatch(
+  db: Db,
   userId: string,
   body: Pick<
     z.infer<typeof aiProviderPatchSchema>,
@@ -310,7 +313,7 @@ async function coachBudgetsAfterPatch(
   ) {
     return undefined;
   }
-  const stored = await prisma.user.findUnique({
+  const stored = await db.user.findUnique({
     where: { id: userId },
     select: { aiCoachBudgets: true },
   });
@@ -326,6 +329,85 @@ async function coachBudgetsAfterPatch(
     );
   }
   return next === null ? Prisma.DbNull : next;
+}
+
+/** A key slot value that removes the stored key. */
+function isKeyRemoval(value: string | null | undefined): boolean {
+  return value === null || value === "";
+}
+
+/**
+ * Merge the read-dependent fields into `updates` and write them.
+ *
+ * The model column, the Coach budgets and the reasoning settings are read
+ * from the row and merged before the write, and the budgets and the reasoning
+ * settings are documents another field of which a second save may be writing
+ * at the same moment (the Local form and the gateway form, or the chain
+ * editor). The reads and the write run under the account's row lock, so each
+ * save reads what the one before it committed. Returns null when the body
+ * carried nothing to save, otherwise the stored keys a removal names (read
+ * before the write, for the audit) and whether a write happened.
+ */
+async function saveUnderRowLock(
+  userId: string,
+  body: z.infer<typeof aiProviderPatchSchema>,
+  updates: Record<string, unknown>,
+) {
+  const reasoningTouched =
+    body.localReasoningEffort !== undefined ||
+    body.compatReasoningEffort !== undefined;
+  return withUserRowLock(userId, async (tx) => {
+    if (body.model !== undefined) {
+      updates[await modelColumn(tx, userId, body.provider)] =
+        body.model === null ? null : body.model.trim() || null;
+    }
+
+    const coachBudgets = await coachBudgetsAfterPatch(tx, userId, body);
+    if (coachBudgets !== undefined) updates.aiCoachBudgets = coachBudgets;
+
+    if (reasoningTouched) {
+      const chain = await chainAfterReasoningSave(
+        tx,
+        userId,
+        body,
+        updates.aiProvider,
+      );
+      if (chain !== undefined) updates.aiProviderChain = chain;
+    }
+
+    if (Object.keys(updates).length === 0 && !reasoningTouched) return null;
+
+    // #1417 — Local's base URL and model are NOT cleared when another
+    // provider is selected. They used to be, because the URL column read as
+    // shared; that wiped a working Local setup whenever the gateway was saved,
+    // and a Local entry in a chain lost its address with it. A cloud key
+    // cannot reach the address: only the Local resolution reads
+    // `aiLocalBaseUrl` (`src/lib/ai/provider.ts`, frozen by
+    // `local-endpoint-isolation.test.ts`).
+
+    // A stored provider key is a credential: setting or removing one is
+    // audited like every other credential change, with the slot it went into
+    // and never the value. A removal used to leave no trace at all. Clearing a
+    // slot that held no key removes nothing and is not audited, so the slots a
+    // removal names are read before the write.
+    const storedKeys = keySlotsOf(body).some(([, value]) => isKeyRemoval(value))
+      ? await tx.user.findUnique({
+          where: { id: userId },
+          select: {
+            aiAnthropicKeyEncrypted: true,
+            aiOpenaiKeyEncrypted: true,
+            aiLocalKeyEncrypted: true,
+            aiCompatKeyEncrypted: true,
+          },
+        })
+      : null;
+
+    const wrote = Object.keys(updates).length > 0;
+    if (wrote) {
+      await tx.user.update({ where: { id: userId }, data: updates });
+    }
+    return { storedKeys, wrote };
+  });
 }
 
 export const PATCH = apiHandler(async (request: NextRequest) => {
@@ -379,11 +461,6 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   if (body.provider !== undefined) {
     updates.aiProvider =
       body.provider === null || body.provider === "" ? null : body.provider;
-  }
-
-  if (body.model !== undefined) {
-    updates[await modelColumn(user.id, body.provider)] =
-      body.model === null ? null : body.model.trim() || null;
   }
 
   if (body.baseUrl !== undefined) {
@@ -453,63 +530,21 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     updates.aiResponseTimeoutSeconds = body.responseTimeoutSeconds;
   }
 
-  const coachBudgets = await coachBudgetsAfterPatch(user.id, body);
-  if (coachBudgets !== undefined) updates.aiCoachBudgets = coachBudgets;
-
-  const reasoningTouched =
-    body.localReasoningEffort !== undefined ||
-    body.compatReasoningEffort !== undefined;
-  if (reasoningTouched) {
-    const chain = await chainAfterReasoningSave(
-      user.id,
-      body,
-      updates.aiProvider,
-    );
-    if (chain !== undefined) updates.aiProviderChain = chain;
-  }
-
-  if (Object.keys(updates).length === 0 && !reasoningTouched) {
+  const keySlots = keySlotsOf(body);
+  const saved = await saveUnderRowLock(user.id, body, updates);
+  if (saved === null) {
     return apiError("No valid fields", 422, {
       errorCode: "ai_provider.no_fields",
     });
   }
-
-  // #1417 — Local's base URL and model are NOT cleared when another
-  // provider is selected. They used to be, because the URL column read as
-  // shared; that wiped a working Local setup whenever the gateway was saved,
-  // and a Local entry in a chain lost its address with it. A cloud key cannot
-  // reach the address: only the Local resolution reads `aiLocalBaseUrl`
-  // (`src/lib/ai/provider.ts`, frozen by `local-endpoint-isolation.test.ts`).
-
-  // A stored provider key is a credential: setting or removing one is
-  // audited like every other credential change, with the slot it went into
-  // and never the value. A removal used to leave no trace at all. Clearing a
-  // slot that held no key removes nothing and is not audited, so the slots a
-  // removal names are read before the write.
-  const keySlots = keySlotsOf(body);
-  const isRemoval = (value: string | null | undefined) =>
-    value === null || value === "";
-  const storedKeys = keySlots.some(([, value]) => isRemoval(value))
-    ? await prisma.user.findUnique({
-        where: { id: user.id },
-        select: {
-          aiAnthropicKeyEncrypted: true,
-          aiOpenaiKeyEncrypted: true,
-          aiLocalKeyEncrypted: true,
-          aiCompatKeyEncrypted: true,
-        },
-      })
-    : null;
-
-  if (Object.keys(updates).length > 0) {
-    await saveProviderSettings(user.id, updates);
-  }
+  const { storedKeys } = saved;
+  if (saved.wrote) await startProviderWorkAfresh(user.id);
 
   for (const [slot, value, column] of keySlots) {
     if (value === undefined) continue;
-    if (isRemoval(value) && storedKeys?.[column] == null) continue;
+    if (isKeyRemoval(value) && storedKeys?.[column] == null) continue;
     await auditLog(
-      isRemoval(value)
+      isKeyRemoval(value)
         ? "user.ai-provider.key.remove"
         : "user.ai-provider.key.set",
       {

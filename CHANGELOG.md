@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Two settings saved at the same moment no longer lose one of them. The Coach budgets and the reasoning settings of the Local provider and the gateway, the provider order next to a reasoning setting, the pregnancy dates in the cycle settings, the modules the setup flow picks next to a module switched on another device, and the provider apps a guardian lends a profile were each read, changed and written back whole, so the later of two overlapping saves wrote over the earlier one. They now wait for each other, as the other settings already did.
 - A mean that lies exactly on a half cent, such as a 7-day pulse of 74.425, is shown as the same figure wherever it is read. The dashboard's summary is computed on two paths that add the same readings in a different order, and one rounded such a mean down while the other rounded it up, so the same data could read 74.42 on one load and 74.43 on the next.
 - An upload that ends before its closing multipart boundary is refused. The last bytes of the file were dropped and the rest was imported as if complete. A body with two file parts is refused with a clear reason, and a failure on the server's side (a full disk, a dropped connection) answers with a generic message instead of the error text, which could name the temp file.
 - A damaged Gadgetbridge or Health Connect database is refused as a broken file, also when the damage sits behind a sound header and only shows once a table is read. The import used to fail with SQLite's own message as an internal error.

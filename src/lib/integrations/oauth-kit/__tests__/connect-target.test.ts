@@ -7,6 +7,17 @@ const { findUnique, update, findActiveGrant, auditLog } = vi.hoisted(() => ({
   auditLog: vi.fn(async () => undefined),
 }));
 
+// The read-merge-write runs under the account's row lock; here the
+// transaction client is the mocked one.
+vi.mock("@/lib/user-row-lock", async () => {
+  const { prisma } = await import("@/lib/db");
+  return {
+    withUserRowLock: (_userId: string, fn: (tx: unknown) => unknown) =>
+      fn(prisma),
+    lockUserRow: async () => {},
+  };
+});
+
 vi.mock("@/lib/db", () => ({ prisma: { user: { findUnique, update } } }));
 vi.mock("@/lib/auth/audit", () => ({ auditLog }));
 vi.mock("@/lib/sharing/grant-access", () => ({
