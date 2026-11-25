@@ -69,6 +69,9 @@ export function pageHref(page: AppPage): string {
   return PAGES[page];
 }
 
+/** The cycle page on its settings tab (`?tab=` is read by the cycle page). */
+export const CYCLE_SETTINGS_HREF = `${PAGES.cycle}?tab=settings`;
+
 /** A page with the day layer open on `day` over it. */
 export function dayHref(page: AppPage, day: DateKey): string {
   return `${PAGES[page]}?${DAY_QUERY_PARAM}=${day}`;
