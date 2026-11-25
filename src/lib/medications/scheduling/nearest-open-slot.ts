@@ -113,6 +113,7 @@ export async function findSlotsForTake(input: {
   const byInstant = new Map<number, MedicationIntakeEvent[]>();
   for (const row of rows) {
     const key = row.scheduledFor.getTime();
+    if (key > t + TAKE_AHEAD_REACH_MS) continue;
     byInstant.set(key, [...(byInstant.get(key) ?? []), row]);
   }
   const keys = [...byInstant.keys()];
