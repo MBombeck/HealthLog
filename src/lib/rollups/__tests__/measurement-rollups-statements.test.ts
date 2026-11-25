@@ -410,8 +410,9 @@ describe("runRollupAggregate — the statement it sends", () => {
 describe("statement budget", () => {
   it("rounds up to whole milliseconds and never goes below one", async () => {
     const tx = { $executeRaw: vi.fn().mockResolvedValue(0) };
-    await applyStatementBudget(tx as never, 1500.2);
-    await applyStatementBudget(tx as never, 0);
+    const client = tx as unknown as Parameters<typeof applyStatementBudget>[0];
+    await applyStatementBudget(client, 1500.2);
+    await applyStatementBudget(client, 0);
     expect(tx.$executeRaw.mock.calls[0].slice(1)).toEqual(["1501", "1501"]);
     expect(tx.$executeRaw.mock.calls[1].slice(1)).toEqual(["1", "1"]);
     const text = (tx.$executeRaw.mock.calls[0][0] as string[]).join("?");
