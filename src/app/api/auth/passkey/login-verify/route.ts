@@ -22,6 +22,7 @@ import {
 } from "@/lib/auth/native-client";
 import { issueAccessAndRefresh } from "@/lib/auth/refresh-token";
 import { webSessionHardEnd } from "@/lib/auth/session-lifetime";
+import { usesTokenTransport } from "@/lib/auth/token-transport";
 import { isOidcOnly } from "@/lib/auth/oidc";
 import { completePendingOidcLink } from "@/lib/auth/oidc-pending-link";
 
@@ -159,16 +160,21 @@ export const POST = apiHandler(async (request: NextRequest) => {
   await completePendingOidcLink(user.id, ip ?? null);
 
   const ua = request.headers.get("user-agent");
-  await createSession(
-    user.id,
-    user.onboardingCompletedAt == null,
-    ip,
-    ua,
-    new Date(),
-  );
+  // A browser gets the session cookie; a token-transport caller gets tokens
+  // below and no cookie at all, so nothing outlives the token pair in the
+  // native client's shared cookie store.
+  if (!usesTokenTransport(request.headers)) {
+    await createSession(
+      user.id,
+      user.onboardingCompletedAt == null,
+      ip,
+      ua,
+      new Date(),
+    );
 
-  // v1.23 — sync the admin-enforced-MFA forced-enrollment hint cookie.
-  await syncMfaEnrollCookie(user.id, user);
+    // v1.23 — sync the admin-enforced-MFA forced-enrollment hint cookie.
+    await syncMfaEnrollCookie(user.id, user);
+  }
 
   await auditLog("auth.login.passkey", {
     userId: user.id,

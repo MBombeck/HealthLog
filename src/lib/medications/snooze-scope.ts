@@ -9,9 +9,13 @@
  * read as snoozed on the phone while the worker reminded it. Both now read the
  * rule from here.
  *
- * `snoozedAt` is the medication row's @updatedAt of the snooze write. A later
- * edit to the row moves it forward, which can only widen the hold, never lose
- * a snooze.
+ * `snoozedAt` is the instant the snooze was set, kept in its own row
+ * (`MedicationSnooze`) that every snooze write stamps with `snoozedUntil`
+ * ({@link snoozeData}). It used to be the medication row's @updatedAt, which
+ * every later write to the row moved: a low-stock notice in the afternoon
+ * carried a morning snooze over to the afternoon dose. A snooze without a
+ * row (one restored from a backup, or running when the row was introduced)
+ * reads @updatedAt as before ({@link snoozeAnchor}).
  */
 import {
   normaliseDoseWindows,
@@ -19,6 +23,7 @@ import {
   type SlotPhaseWindow,
   type WorkerScheduleRow,
 } from "@/lib/medications/scheduling/worker-helpers";
+import { prisma } from "@/lib/db";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 
 /**
@@ -128,4 +133,60 @@ export function slotsHeldBySnooze(input: {
     }
   }
   return held;
+}
+
+/**
+ * The medication `data` of a snooze write: `snoozedUntil`, and the instant
+ * the snooze was set in its own row, which no other write to the medication
+ * moves.
+ */
+export function snoozeData(until: Date, now: Date = new Date()) {
+  return {
+    snoozedUntil: until,
+    snooze: {
+      upsert: { create: { snoozedAt: now }, update: { snoozedAt: now } },
+    },
+  };
+}
+
+/** What a medication read includes for {@link snoozeAnchor}. */
+export const SNOOZE_ANCHOR_INCLUDE = {
+  snooze: { select: { snoozedAt: true } },
+} as const;
+
+/**
+ * When the medication's snooze was set. A snooze with no recorded instant
+ * reads the medication's `updatedAt`, the reading from before the instant was
+ * kept.
+ */
+export function snoozeAnchor(medication: {
+  updatedAt: Date;
+  snooze?: { snoozedAt: Date } | null;
+}): Date {
+  return medication.snooze?.snoozedAt ?? medication.updatedAt;
+}
+
+/**
+ * `medications` with the snooze record {@link snoozeAnchor} reads, for a
+ * read that does not include it: one statement, and none while no snooze
+ * runs (the navigation count, read on every page).
+ */
+export async function withSnoozeRecords<
+  T extends { id: string; snoozedUntil: Date | null },
+>(
+  medications: readonly T[],
+  now: Date,
+): Promise<Array<T & { snooze: { snoozedAt: Date } | null }>> {
+  const running = medications
+    .filter((m) => m.snoozedUntil !== null && now < m.snoozedUntil)
+    .map((m) => m.id);
+  const rows =
+    running.length === 0
+      ? []
+      : await prisma.medicationSnooze.findMany({
+          where: { medicationId: { in: running } },
+          select: { medicationId: true, snoozedAt: true },
+        });
+  const byId = new Map(rows.map((r) => [r.medicationId, r]));
+  return medications.map((m) => ({ ...m, snooze: byId.get(m.id) ?? null }));
 }

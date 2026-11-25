@@ -12,7 +12,14 @@ export interface LatestCanonicalRow {
  * The latest canonical reading per measurement type: the latest UTC day
  * first, then the source ladder (the canonical source wins), then the latest
  * reading of that source, so a tile's headline matches its chart. `since`
- * drops a type whose latest reading is older than it.
+ * drops a type whose latest reading is older than it; `types` narrows the read
+ * to the types a caller needs (every type by default).
+ *
+ * This is the one definition of a metric's headline value: the dashboard
+ * tiles read it through the summaries slice, and the "Usual range" strip on a
+ * metric page reads it for its own type. While the strip took the newest row
+ * of any source, an account with two sources for one metric saw one figure on
+ * the dashboard and another under the chart.
  *
  * Driven from the type list rather than a `DISTINCT ON (type)` over the
  * account: Postgres 16 has no skip scan, so that shape sorted every live row
@@ -41,6 +48,7 @@ export function readLatestCanonical(
   userId: string,
   priorityJson: unknown,
   since: Date | null = null,
+  types: readonly string[] = measurementTypeEnum.options,
 ): Promise<LatestCanonicalRow[]> {
   const rank = buildSourceRankCase(
     priorityJson,
@@ -88,6 +96,6 @@ export function readLatestCanonical(
     ) l
     ORDER BY mt."type"
   `,
-    ...[userId, measurementTypeEnum.options, ...(since ? [since] : [])],
+    ...[userId, types, ...(since ? [since] : [])],
   );
 }

@@ -3231,6 +3231,7 @@
       "failedDescriptionTimeout": "La solicitud de IA agotó el tiempo de espera antes de que el resumen estuviera listo. Para un modelo local lento, aumenta el tiempo de espera de respuesta en Ajustes y vuelve a intentarlo.",
       "failedDescriptionProvider": "El proveedor de IA rechazó la solicitud. Revisa el proveedor y la clave de API en los ajustes de IA y vuelve a intentarlo.",
       "failedDescriptionRateLimit": "El proveedor de IA está limitando las solicitudes en este momento. Vuelve a intentarlo en un rato.",
+      "failedDescriptionFormat": "La IA respondió, pero no en un formato que el resumen pueda mostrar. Inténtalo de nuevo; si se repite, quizá ayude otro modelo en los ajustes de IA.",
       "omittedTitle": "Resumen retenido",
       "omittedUngroundedDescription": "El resumen generado mencionaba una cifra que no se pudo verificar con tus datos, así que no se mostró. Inténtalo de nuevo."
     },
@@ -3539,6 +3540,7 @@
         "steadyLatestWithin": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value} y coincide.",
         "steadyLatestAbove": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por encima.",
         "steadyLatestBelow": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por debajo.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Todavía estoy aprendiendo tu rango habitual. Sigue registrando unos días más.",
         "driver": "{note}",
         "loadError": "No se pudo cargar tu rango habitual."

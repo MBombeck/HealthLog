@@ -5,6 +5,7 @@
  * here ends like a web write does (caches, the rollup of the day, the
  * cross-device intake sync).
  */
+import { snoozeData } from "@/lib/medications/snooze-scope";
 import { prisma } from "@/lib/db";
 import { createAdHocIntake } from "@/lib/medications/ad-hoc-intake";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -384,7 +385,7 @@ export async function markMedicationSkipped(input: {
       if (!canonicalSlot) {
         await tx.medication.update({
           where: { id: medicationId },
-          data: { snoozedUntil: endOfDay },
+          data: snoozeData(endOfDay),
         });
       }
       return { slotScheduledFor, eventId, alreadyTaken };

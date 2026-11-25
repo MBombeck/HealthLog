@@ -3231,6 +3231,7 @@
       "failedDescriptionTimeout": "The AI request ran out of time before the briefing was ready. For a slow local model, raise the AI response timeout in Settings, then try again.",
       "failedDescriptionProvider": "The AI provider rejected the request. Re-check the provider and API key in AI settings, then try again.",
       "failedDescriptionRateLimit": "The AI provider is rate-limiting requests right now. Try again in a little while.",
+      "failedDescriptionFormat": "The AI answered, but not in a form the briefing can show. Try again; a different model in AI settings may help if it keeps happening.",
       "omittedTitle": "Briefing withheld",
       "omittedUngroundedDescription": "The generated briefing referenced a figure that couldn't be verified against your data, so it wasn't shown. Try again."
     },
@@ -3539,6 +3540,7 @@
         "steadyLatestWithin": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value} and matches.",
         "steadyLatestAbove": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, above that.",
         "steadyLatestBelow": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, below that.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Still learning your usual range. Keep logging for a few more days.",
         "driver": "{note}",
         "loadError": "Could not load your usual range."

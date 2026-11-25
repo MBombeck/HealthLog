@@ -34,6 +34,9 @@ import type {
 import type { DashboardDerived } from "../use-dashboard-derived";
 
 import { VitalsDashboard } from "../vitals-dashboard";
+import { SECTION_VITALS } from "../use-dashboard-derived";
+import { headlineValue } from "@/lib/dashboard/headline-value";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 function render(node: React.ReactNode) {
   return renderToStaticMarkup(
@@ -96,6 +99,9 @@ function mockBatch(
   } as unknown as DashboardDerived;
 }
 
+/** No snapshot summaries: the headline-free renders the layout tests need. */
+const NO_SNAPSHOT = { data: { tiles: { summaries: {} } }, isLoading: false };
+
 beforeEach(() => vi.clearAllMocks());
 
 describe("<VitalsDashboard>", () => {
@@ -117,7 +123,9 @@ describe("<VitalsDashboard>", () => {
       }
       return insufficient("no_readings_in_window");
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     expect(html).toContain('data-slot="vitals-dashboard"');
     expect(html).toContain('data-metric="RESTING_HEART_RATE"');
     expect(html).toContain('data-state="ok"');
@@ -127,7 +135,9 @@ describe("<VitalsDashboard>", () => {
 
   it("hides the whole section (heading + grid) when no vital has content", () => {
     const batch = mockBatch(() => insufficient("no_readings_in_window"));
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     // No content under the heading → the heading must not strand over blank
     // space. The whole section un-mounts.
     expect(html).not.toContain('data-slot="vitals-dashboard"');
@@ -140,7 +150,9 @@ describe("<VitalsDashboard>", () => {
     const batch = mockBatch(() => insufficient("no_readings_in_window"), {
       isLoading: true,
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     // Heading + grid present so the section reserves its final height, with a
     // busy/live region and skeleton placeholders — but no real tiles yet.
     expect(html).toContain('data-slot="vitals-dashboard"');
@@ -154,7 +166,9 @@ describe("<VitalsDashboard>", () => {
     const batch = mockBatch(() => insufficient("no_readings_in_window"), {
       isError: true,
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     // The surface must not silently vanish — a compact error + a Retry button.
     expect(html).toContain('data-slot="vitals-dashboard-error"');
     expect(html).toContain('role="alert"');
@@ -170,7 +184,9 @@ describe("<VitalsDashboard>", () => {
       }
       return insufficient("no_readings_in_window");
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     expect(html).toContain('data-metric="WEIGHT"');
     expect(html).toContain('data-state="provisional"');
     expect(html).toContain('data-slot="coverage-meter"');
@@ -191,7 +207,9 @@ describe("<VitalsDashboard>", () => {
       }
       return insufficient("no_readings_in_window");
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     expect(html).toContain('data-metric="FITNESS_AGE"');
     expect(html).toContain("yr younger");
   });
@@ -209,7 +227,9 @@ describe("<VitalsDashboard>", () => {
       }
       return insufficient("no_readings_in_window");
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     expect(html).toContain('data-metric="BMI"');
     expect(html).toContain("Normal range (WHO)");
   });
@@ -219,7 +239,9 @@ describe("<VitalsDashboard>", () => {
       if (token.metric === "BMI") return insufficient("no_height_on_profile");
       return insufficient("no_readings_in_window");
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     expect(html).not.toContain('data-metric="BMI"');
   });
 
@@ -238,7 +260,9 @@ describe("<VitalsDashboard>", () => {
       }
       return insufficient("no_readings_in_window");
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     expect(html).toContain('data-slot="vitals-mobility"');
     expect(html).toContain('data-metric="SIX_MINUTE_WALK_BAND"');
     expect(html).toContain("90% of predicted");
@@ -259,7 +283,9 @@ describe("<VitalsDashboard>", () => {
       }
       return insufficient("no_readings_in_window");
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     expect(html).toContain('data-metric="SIX_MINUTE_WALK_BAND"');
     // Honest prompt, never a fabricated placement.
     expect(html).toContain("Add your age, height, weight and sex");
@@ -281,7 +307,9 @@ describe("<VitalsDashboard>", () => {
       }
       return insufficient("no_readings_in_window");
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     expect(html).toContain('data-slot="vitals-mobility"');
     expect(html).toContain('data-metric="STAIR_ASCENT_SPEED_BASELINE"');
     expect(html).toContain("Mobility &amp; body");
@@ -289,7 +317,9 @@ describe("<VitalsDashboard>", () => {
 
   it("hides the whole Mobility & body section when no mobility metric has content", () => {
     const batch = mockBatch(() => insufficient("no_readings_in_window"));
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     expect(html).not.toContain('data-slot="vitals-mobility"');
     expect(html).not.toContain("Mobility &amp; body");
     expect(html).not.toContain('data-metric="SIX_MINUTE_WALK_BAND"');
@@ -304,7 +334,9 @@ describe("<VitalsDashboard>", () => {
       if (token.metric === "COINCIDENT_DEVIATION") requestedCoincident = true;
       return insufficient("no_readings_in_window");
     });
-    const html = render(<VitalsDashboard batch={batch} />);
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={NO_SNAPSHOT} />,
+    );
     expect(requestedCoincident).toBe(false);
     expect(html).not.toContain('data-metric="COINCIDENT_DEVIATION"');
   });
@@ -356,6 +388,7 @@ describe("<VitalsDashboard>", () => {
     it("renders the day-total form with the usual full day and the update stamp", () => {
       const html = render(
         <VitalsDashboard
+          snapshot={NO_SNAPSHOT}
           batch={sameTime({ FLIGHTS_CLIMBED: ok(dailyTotal) })}
         />,
       );
@@ -372,7 +405,10 @@ describe("<VitalsDashboard>", () => {
 
     it("keeps the hourly form and its subtitle when every tile compares hours", () => {
       const html = render(
-        <VitalsDashboard batch={sameTime({ ACTIVITY_STEPS: ok(hourly) })} />,
+        <VitalsDashboard
+          snapshot={NO_SNAPSHOT}
+          batch={sameTime({ ACTIVITY_STEPS: ok(hourly) })}
+        />,
       );
       expect(html).toContain('data-mode="hourly"');
       expect(html).toContain("Typical by 03:00");
@@ -384,6 +420,7 @@ describe("<VitalsDashboard>", () => {
     it("names the comparison plainly when both forms sit side by side", () => {
       const html = render(
         <VitalsDashboard
+          snapshot={NO_SNAPSHOT}
           batch={sameTime({
             ACTIVITY_STEPS: ok(hourly),
             FLIGHTS_CLIMBED: ok(dailyTotal),
@@ -398,6 +435,7 @@ describe("<VitalsDashboard>", () => {
     it("shows the day-total learning state against its own floor", () => {
       const html = render(
         <VitalsDashboard
+          snapshot={NO_SNAPSHOT}
           batch={sameTime({
             ACTIVITY_STEPS: insufficient("learning_usual_total", 3),
           })}
@@ -409,6 +447,7 @@ describe("<VitalsDashboard>", () => {
     it("hides the section when no day-total reading arrived today", () => {
       const html = render(
         <VitalsDashboard
+          snapshot={NO_SNAPSHOT}
           batch={sameTime({
             ACTIVITY_STEPS: insufficient("no_total_today", 14),
           })}
@@ -416,5 +455,110 @@ describe("<VitalsDashboard>", () => {
       );
       expect(html).not.toContain('data-slot="vitals-same-time"');
     });
+  });
+});
+
+/**
+ * The vitals grid and the dashboard print one number per metric. Both read the
+ * snapshot summary's latest reading through `headlineValue`; the grid's band
+ * and balance only frame it. The grid used to print the band's 30-day median,
+ * and the HRV tile a seven-day mean, so HRV read 55 ms on the dashboard and
+ * 57 ms on the overview for the same moment.
+ */
+describe("<VitalsDashboard> headline", () => {
+  const BASELINE_TYPES = SECTION_VITALS.filter(
+    (type) => type !== "HEART_RATE_VARIABILITY",
+  );
+
+  function headlineOf(html: string, metric: string): string | null {
+    const start = html.indexOf(`data-metric="${metric}"`);
+    if (start === -1) return null;
+    const m = /data-slot="sparkline-delta-tile-value"[^>]*>([^<]*)</.exec(
+      html.slice(start),
+    );
+    return m ? m[1] : null;
+  }
+
+  it.each(BASELINE_TYPES)(
+    "%s prints the dashboard's latest reading, not the band centre",
+    (type) => {
+      const batch = mockBatch((token) =>
+        token.metric === "VITALS_BASELINE" && token.type === type
+          ? ok({
+              type,
+              center: 40,
+              low: 30,
+              high: 50,
+              spread: 5,
+              sampleDays: 30,
+              k: 3,
+              series: [39, 40, 41],
+            })
+          : insufficient("no_readings_in_window"),
+      );
+      const summaries = { [type]: { latest: 47 } };
+      const html = render(
+        <VitalsDashboard
+          batch={batch}
+          snapshot={{ data: { tiles: { summaries } }, isLoading: false }}
+        />,
+      );
+      const shown = headlineOf(html, type);
+      expect(shown).not.toBeNull();
+      // The dashboard tile prints `headlineValue(summary)`; so does the grid.
+      expect(headlineValue(summaries[type])).toBe(47);
+      expect(shown).toMatch(/^47(\.0)?$/);
+    },
+  );
+
+  it("HRV prints the dashboard's latest reading, not the trailing-week mean", () => {
+    const batch = mockBatch((token) =>
+      token.metric === "HRV_BALANCE"
+        ? ok({
+            recentAvg: 57,
+            baselineCenter: 55.5,
+            baselineLow: 44.4,
+            baselineHigh: 66.6,
+            band: "balanced",
+            sampleDays: 24,
+            series: [56, 59, 55],
+          })
+        : insufficient("no_readings_in_window"),
+    );
+    const html = render(
+      <VitalsDashboard
+        batch={batch}
+        snapshot={{
+          data: {
+            tiles: { summaries: { HEART_RATE_VARIABILITY: { latest: 55 } } },
+          },
+          isLoading: false,
+        }}
+      />,
+    );
+    expect(headlineOf(html, "HRV_BALANCE")).toBe("55");
+  });
+
+  it("the dashboard's metric tiles print their headline through the same helper", () => {
+    const src = readSource(
+      "src/components/dashboard/tiles/strip-tiles.tsx",
+      "headlineValue(",
+    );
+    // Every `latest=` prop the dashboard strip passes reads `headlineValue`.
+    const latestProps = src.match(/\blatest=\{[^\n]*/g) ?? [];
+    const summaryReads = latestProps.filter(
+      (p) => !p.includes("bpInTargetPct"),
+    );
+    expect(summaryReads.length).toBeGreaterThan(0);
+    for (const prop of summaryReads) expect(prop).toContain("headlineValue(");
+  });
+
+  it("holds the grid on its skeleton while the snapshot is on its way", () => {
+    const batch = mockBatch(() => insufficient("no_readings_in_window"));
+    const html = render(
+      <VitalsDashboard batch={batch} snapshot={{ isLoading: true }} />,
+    );
+    expect(html).toContain('data-slot="vitals-tile-skeleton"');
+    expect(html).not.toContain('data-slot="vitals-tile"');
   });
 });

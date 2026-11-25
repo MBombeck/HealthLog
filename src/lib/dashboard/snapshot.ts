@@ -78,7 +78,8 @@ import {
   type DashboardLayout,
   type DashboardWidgetCatalogueId,
 } from "@/lib/dashboard-layout";
-import { dailyBriefingSchema, type DailyBriefing } from "@/lib/ai/schema";
+import type { DailyBriefing } from "@/lib/ai/schema";
+import { readDailyBriefing } from "@/lib/ai/briefing-blocks";
 import { hasAnyConfiguredProvider } from "@/lib/ai/provider";
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
@@ -861,9 +862,8 @@ function parseCachedBriefing(cachedText: string | null): DailyBriefing | null {
   try {
     const parsed = JSON.parse(cachedText) as Record<string, unknown>;
     const candidate = parsed?.dailyBriefing;
-    if (candidate == null) return null;
-    const validated = dailyBriefingSchema.safeParse(candidate);
-    return validated.success ? validated.data : null;
+    const read = readDailyBriefing(candidate);
+    return read.state === "valid" ? read.briefing : null;
   } catch {
     return null;
   }

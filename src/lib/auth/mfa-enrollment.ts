@@ -31,6 +31,7 @@ import { readOperatorRow } from "@/lib/settings/operator-row";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
+import { requestUsesTokenTransport } from "@/lib/auth/token-transport";
 
 /** UX-hint cookie the proxy reads to redirect into the enrollment surface. */
 export const MFA_ENROLL_COOKIE = "hl_mfa_enroll";
@@ -159,6 +160,10 @@ export function sessionMfaDueAt(enrollment: MfaEnrollment): Date | null {
 
 /** Set or clear the forced-enrollment UX-hint cookie. */
 export async function setMfaEnrollCookie(required: boolean): Promise<void> {
+  // A browser hint, never sent on the token transport: the proxy that reads
+  // it guards pages, and the native client reads `mfaEnrollment` from
+  // `/api/auth/me` instead (see `token-transport.ts`).
+  if (await requestUsesTokenTransport()) return;
   const cookieStore = await cookies();
   if (required) {
     cookieStore.set(MFA_ENROLL_COOKIE, MFA_ENROLL_PENDING, {

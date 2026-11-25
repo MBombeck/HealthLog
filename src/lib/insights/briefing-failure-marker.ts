@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/db";
 import {
   isTimeoutFailure,
+  providerFailureKind,
   type ProviderFailureKind,
 } from "@/lib/ai/failure-kind";
+import { AllProvidersFailedError } from "@/lib/ai/provider-runner";
 
 /**
  * Dated failure marker for the daily-briefing generation.
@@ -33,7 +35,8 @@ export const BRIEFING_FAILURE_ACTION = "insights.briefing-failure";
  *                     Lever: re-check the provider / API key in Settings.
  *   - `rate-limit`  — the provider returned 429.
  *   - `provider`    — a 5xx / generic upstream failure.
- *   - `format`      — the model returned unparseable output (invalid JSON).
+ *   - `format`      — the model returned unparseable output (invalid JSON),
+ *                     or a briefing the card cannot render.
  *   - `unknown`     — anything that does not classify.
  */
 export type BriefingFailureClass =
@@ -56,14 +59,25 @@ export function classifyBriefingFailure(args: {
    * the field existed has none and keeps the old reading.
    */
   failureKind?: string | null;
+  /**
+   * The first provider was not called because the health ledger benched it
+   * for a credential it refused. The failure is the credential's, whatever
+   * the hop itself recorded.
+   */
+  credentialExpired?: boolean | null;
 }): BriefingFailureClass {
   if (args.reason === "invalid-json") return "format";
+  if (args.credentialExpired === true) return "auth";
   const status = args.httpStatus;
   if (typeof status === "number" && status > 0) {
     if (status === 429) return "rate-limit";
     if (status >= 400 && status < 500) return "auth";
     if (status >= 500) return "provider";
   }
+  // The model answered, but its briefing could not be rendered: the
+  // model's output, like `invalid-json` above. Such a marker never carries a
+  // status, so the check sits here.
+  if (args.reason === "invalid-briefing") return "format";
   // No / sentinel-zero upstream status. Only a deadline is a timeout: a reply
   // that came back without an answer is the model's output, and a refused or
   // dropped connection is the provider, and neither is helped by a longer
@@ -80,6 +94,38 @@ export function classifyBriefingFailure(args: {
     return "format";
   }
   return "provider";
+}
+
+/**
+ * What a thrown provider failure tells the marker: the upstream status, the
+ * failure kind and whether a refused credential was behind it, all read off
+ * the chain's FIRST hop, the provider the account prefers. The background
+ * warm and the interactive regenerate both record through this. The warm
+ * used to record the chain error's aggregate status instead, which is 503
+ * whenever no hop carried a status of its own, so a provider benched for a
+ * refused key was filed as an upstream outage and the card told the reader
+ * the provider had "timed out or returned an error".
+ */
+export function briefingFailureFacts(error: unknown): {
+  httpStatus: number | null;
+  failureKind: ProviderFailureKind | null;
+  credentialExpired?: true;
+} {
+  if (error instanceof AllProvidersFailedError) {
+    const first = error.attempts?.[0];
+    return {
+      httpStatus: first?.httpStatus ?? null,
+      failureKind: first?.failureKind ?? null,
+      ...(first?.benchReason === "credential_expired"
+        ? { credentialExpired: true as const }
+        : {}),
+    };
+  }
+  const status = (error as { httpStatus?: unknown } | null)?.httpStatus;
+  return {
+    httpStatus: typeof status === "number" ? status : null,
+    failureKind: providerFailureKind(error).failure,
+  };
 }
 
 /** UTC YYYY-MM-DD calendar-day key for the marker payload. */
@@ -104,6 +150,8 @@ export async function recordBriefingFailure(args: {
   httpStatus?: number | null;
   /** #1267 — the first hop's `FallbackHop.failureKind`, when known. */
   failureKind?: ProviderFailureKind | null;
+  /** The first hop was benched for a refused credential. */
+  credentialExpired?: boolean;
 }): Promise<void> {
   try {
     await prisma.auditLog.create({
@@ -115,6 +163,10 @@ export async function recordBriefingFailure(args: {
           reason: args.reason,
           httpStatus: args.httpStatus ?? null,
           failureKind: args.failureKind ?? null,
+          // Written only when set, so every other marker keeps its shape.
+          ...(args.credentialExpired === true
+            ? { credentialExpired: true }
+            : {}),
           locale: args.locale ?? null,
           triedAt: new Date().toISOString(),
         }),
@@ -155,13 +207,16 @@ export async function readBriefingFailure(args: {
   let reason = "unknown";
   let httpStatus: number | null = null;
   let failureKind: string | null = null;
+  let credentialExpired = false;
   if (latest.details) {
     try {
       const parsed = JSON.parse(latest.details) as {
         reason?: unknown;
         httpStatus?: unknown;
         failureKind?: unknown;
+        credentialExpired?: unknown;
       };
+      credentialExpired = parsed.credentialExpired === true;
       if (typeof parsed.reason === "string") reason = parsed.reason;
       if (typeof parsed.httpStatus === "number") httpStatus = parsed.httpStatus;
       if (typeof parsed.failureKind === "string") {
@@ -174,6 +229,11 @@ export async function readBriefingFailure(args: {
   return {
     triedAt: latest.createdAt.toISOString(),
     reason,
-    failureClass: classifyBriefingFailure({ reason, httpStatus, failureKind }),
+    failureClass: classifyBriefingFailure({
+      reason,
+      httpStatus,
+      failureKind,
+      credentialExpired,
+    }),
   };
 }

@@ -63,6 +63,8 @@ import { prisma } from "@/lib/db";
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { getEvent } from "@/lib/logging/context";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
+import { projectUpcomingIntakes } from "@/lib/medications/scheduling/project-today-intakes";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   activityShowsDose,
   STARTABLE_MEDICATION_WHERE,
@@ -177,7 +179,8 @@ export function laRelayEligible(
 }
 
 /**
- * The open tracked doses an Activity may show at `now`, soonest first: the
+ * The open tracked doses an Activity may show at `now`, soonest first, once
+ * their rows are in place ({@link projectUpcomingIntakes}): the
  * resolver calls them pending, due or overdue (never missed), and their slot
  * lies no more than {@link ACTIVITY_LEAD_MS} ahead. Of the past, only what
  * the relay could still count from is read (`COUNTDOWN_PAST_S`); how long a
@@ -188,6 +191,15 @@ export async function openActivityDoses(
   now: Date,
   medicationId?: string,
 ): Promise<ActivityDose[]> {
+  // The rows come from the server's own projection, not from a read of the
+  // today list: a person who does not open the app that day still gets the
+  // Activity of a dose ahead, and one just past midnight from the evening.
+  await projectUpcomingIntakes({
+    userId,
+    userTz: await resolveUserTimezone(userId),
+    now,
+    aheadMs: ACTIVITY_LEAD_MS,
+  });
   const rows = await prisma.medicationIntakeEvent.findMany({
     where: {
       userId,
@@ -261,6 +273,16 @@ export function startCandidates<
     );
 }
 
+/**
+ * A Live Activity start's ref, which the relay writes into the Activity's
+ * attributes (`"s"`) where it and Apple read it in the clear: 16 random
+ * bytes, base64url, and nothing else in it. A ULID would carry the instant
+ * of the start.
+ */
+export function newLaStartRef(): string {
+  return `las-${randomBytes(16).toString("base64url")}`;
+}
+
 export interface LaPassFacts {
   devices: number;
   started: number;
@@ -328,9 +350,7 @@ async function doseStartItem(
   }
   return {
     deviceId: device.id,
-    // The start id the relay writes into the Activity's attributes, which
-    // it and Apple see in the clear: random, and nothing else in it.
-    ref: `las-${randomBytes(16).toString("base64url")}`,
+    ref: newLaStartRef(),
     pushClass: "liveactivity",
     eventType: LA_START_EVENT,
     activity: {
@@ -686,6 +706,9 @@ export async function runDeviceLiveActivities(
       });
     }
   }
+  // An Activity ended to make room for another dose's start was not ended
+  // because its dose was done: give the dose back, so it starts again once
+  // the other one is over. Its start row would hold it for good otherwise.
   for (const made of making) {
     if (!spent.has(made.id) || !made.medicationId || !made.slotInstant) {
       continue;

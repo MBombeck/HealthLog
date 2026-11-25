@@ -25,8 +25,10 @@ import type { SupportedLocale } from "@/lib/insights/status-shared";
 import { applyBriefingShortForm } from "@/lib/insights/briefing-short-form";
 import { annotate } from "@/lib/logging/context";
 import { AI_BUDGETS, resolveInsightsMaxTokens } from "@/lib/ai/ai-budgets";
-import { providerFailureKind } from "@/lib/ai/failure-kind";
-import { recordBriefingFailure } from "@/lib/insights/briefing-failure-marker";
+import {
+  briefingFailureFacts,
+  recordBriefingFailure,
+} from "@/lib/insights/briefing-failure-marker";
 import { cachedPayloadCarriesBriefing } from "@/lib/insights/briefing-payload";
 import { insightsCacheWrite } from "@/lib/insights/cached-text-cipher";
 import type {
@@ -38,15 +40,23 @@ import {
   buildRerollDateKey,
   commitInsightUnderScope,
   failBeforeProvider,
-  parseComprehensiveResult,
   rerollBriefingParagraph,
   scopeChangedSkip,
   type BriefingReply,
   type GroundedRun,
   type ModelRun,
-  type ParsedInsight,
   type StepResult,
 } from "@/lib/insights/comprehensive-support";
+import {
+  parseInsightReply,
+  type ParsedInsight,
+  type ParsedReply,
+} from "@/lib/insights/insight-reply";
+import {
+  briefingRequiredFor,
+  previousRenderableBriefing,
+} from "@/lib/ai/briefing-blocks";
+import { noteAiJobFailure } from "@/lib/ai/job-failure/witness";
 
 /**
  * Try cached: on an unchanged snapshot whose cache carries a briefing, re-roll
@@ -277,18 +287,60 @@ export async function runFirstPass(
       userId,
       reason,
       locale,
-      httpStatus: typeof err.httpStatus === "number" ? err.httpStatus : null,
-      failureKind:
-        e instanceof AllProvidersFailedError
-          ? (e.attempts?.[0]?.failureKind ?? null)
-          : providerFailureKind(e).failure,
+      ...briefingFailureFacts(e),
     });
     return { stop: { status: "failed", reason, ...chainFailureFacts(e) } };
   }
   return { next: { result, workingProviderType } };
 }
 
-/** Parse the reply, with one corrective retry when it is not JSON. */
+/** The correction the one repair pass is sent with, by what the reply missed. */
+function replyCorrection(miss: Extract<ParsedReply, { ok: false }>): string {
+  return miss.reason === "invalid-json"
+    ? buildRetryCorrectionMessage(
+        "Response was not valid JSON",
+        "The previous reply could not be parsed as a JSON object.",
+      )
+    : buildRetryCorrectionMessage(
+        "The dailyBriefing block did not match its schema",
+        `${miss.issues.join("; ")}. dailyBriefing needs a non-empty "paragraph", "keyFindings" (0-5 rows) and optional "signalsOfDay" (0-3 rows); every row carries "delta" (a string or null) and a "sourceMetric" from the listed enum.`,
+      );
+}
+
+/**
+ * Annotate and mark a reply that may not be stored, and stop the run. The
+ * provider answered, so the job's witness saw it served and would clear the
+ * briefing's entry on the AI settings card; noting the failure keeps the
+ * entry, with its "Try again", until a generation is stored.
+ */
+function failReply(
+  ctx: GenerationContext,
+  miss: Extract<ParsedReply, { ok: false }>,
+  providerMessage: string,
+  providerType: string,
+): StepResult<ModelRun> {
+  const { userId, locale } = ctx;
+  noteAiJobFailure("provider_error", providerType);
+  annotate({
+    action: { name: "insights.generate.comprehensive_failed" },
+    meta: {
+      locale,
+      reason: miss.reason,
+      provider_status: null,
+      provider_message: providerMessage,
+      issueCount: miss.issues.length,
+    },
+  });
+  void recordBriefingFailure({ userId, reason: miss.reason, locale });
+  return { stop: { status: "failed", reason: miss.reason } };
+}
+
+/**
+ * Parse the reply and run the commit gate on it, with one corrective retry
+ * when it is not JSON or its briefing cannot be rendered. A reply that still
+ * misses is a failed generation: nothing is written, the marker is recorded,
+ * and the nightly pass queues its retry.
+ */
 export async function parseOrRepairReply(
   ctx: GenerationContext,
   first: { result: BriefingReply; workingProviderType: string },
@@ -302,31 +354,35 @@ export async function parseOrRepairReply(
     userPrompt,
     systemPrompt,
   } = ctx;
+  const gate = {
+    briefingRequired: briefingRequiredFor(ctx.features.signalsOfDay),
+  };
   let { result, workingProviderType } = first;
   // Anthropic + local have no native JSON mode, so a ```json-fenced or
   // sentence-prefixed reply would otherwise fail the whole generation.
   // Strip the fence before parsing; clean JSON passes through unchanged.
-  let insights = parseComprehensiveResult(result.content);
-  if (insights === null) {
-    // One corrective retry before declaring failure,
-    // reusing the same `buildRetryCorrectionMessage` the strict insight
-    // wrapper uses next door. The comprehensive path previously failed cold
-    // to `invalid-json` on a first-pass miss even though the recovery helper
-    // sat right there. The retry appends the correction to the user prompt
-    // and re-runs the chain once.
+  let parsed = parseInsightReply(result.content, gate);
+  if (!parsed.ok) {
+    // One corrective retry before declaring failure, reusing the same
+    // `buildRetryCorrectionMessage` the strict insight wrapper uses next
+    // door. A briefing the card could not render gets the same one pass as
+    // a reply that is not JSON: it is the model's output that missed, and
+    // the correction names what it missed.
     annotate({
-      action: { name: "insights.generate.json_retry" },
-      meta: { locale },
+      action: {
+        name:
+          parsed.reason === "invalid-json"
+            ? "insights.generate.json_retry"
+            : "insights.generate.briefing_schema_retry",
+      },
+      meta: { locale, issueCount: parsed.issues.length },
     });
     try {
       const retry = await runBriefingCompletion({
         userId,
         chain,
         systemPrompt,
-        userPrompt: `${userPrompt}\n\n${buildRetryCorrectionMessage(
-          "Response was not valid JSON",
-          "The previous reply could not be parsed as a JSON object.",
-        )}`,
+        userPrompt: `${userPrompt}\n\n${replyCorrection(parsed)}`,
         temperature: AI_BUDGETS.comprehensive.temperature,
         maxTokens: resolveInsightsMaxTokens(),
         // Wider upstream budget; see the first generation call.
@@ -352,45 +408,40 @@ export async function parseOrRepairReply(
         });
         return { stop: { status: "skipped", reason: "budget" } };
       }
-      // Annotate alongside the marker so an invalid-JSON night
-      // is greppable under the same action as every other failure class.
-      annotate({
-        action: { name: "insights.generate.comprehensive_failed" },
-        meta: {
-          locale,
-          reason: "invalid-json",
-          provider_status: null,
-          provider_message:
-            retryErr instanceof Error
-              ? retryErr.message.slice(0, 240)
-              : "retry-transport-failed",
-        },
-      });
-      void recordBriefingFailure({ userId, reason: "invalid-json", locale });
-      return { stop: { status: "failed", reason: "invalid-json" } };
+      // Annotate alongside the marker so the night is greppable under the
+      // same action as every other failure class.
+      return failReply(
+        ctx,
+        parsed,
+        retryErr instanceof Error
+          ? retryErr.message.slice(0, 240)
+          : "retry-transport-failed",
+        workingProviderType,
+      );
     }
-    insights = parseComprehensiveResult(result.content);
-    if (insights === null) {
-      annotate({
-        action: { name: "insights.generate.comprehensive_failed" },
-        meta: {
-          locale,
-          reason: "invalid-json",
-          provider_status: null,
-          // Truncation-aware: a `length` finish means the token
-          // ceiling cut the JSON mid-string — a budget problem, not a
-          // model-quality one.
-          provider_message:
-            result.finishReason === "length"
-              ? "response-truncated-at-token-ceiling"
-              : "unparseable-after-retry",
-        },
-      });
-      void recordBriefingFailure({ userId, reason: "invalid-json", locale });
-      return { stop: { status: "failed", reason: "invalid-json" } };
+    parsed = parseInsightReply(result.content, gate);
+    if (!parsed.ok) {
+      // Truncation-aware: a `length` finish means the token ceiling cut the
+      // reply mid-string, a budget problem, not a model-quality one.
+      return failReply(
+        ctx,
+        parsed,
+        result.finishReason === "length"
+          ? "response-truncated-at-token-ceiling"
+          : parsed.reason === "invalid-json"
+            ? "retry-also-invalid-json"
+            : "retry-also-invalid-briefing",
+        workingProviderType,
+      );
     }
   }
-  return { next: { insights, result, workingProviderType } };
+  if (parsed.repairs.length > 0) {
+    annotate({
+      action: { name: "insights.generate.briefing_repaired" },
+      meta: { locale, repairs: parsed.repairs.join(",") },
+    });
+  }
+  return { next: { insights: parsed.insights, result, workingProviderType } };
 }
 
 /**
@@ -452,15 +503,21 @@ export async function applyBriefingGroundingGate(
           signal,
           stage: "grounding-retry",
         });
-        const retryInsights = parseComprehensiveResult(retry.result.content);
-        const retryUngrounded = findUngroundedBriefingNumbers(
-          readBriefingBlock(retryInsights),
-          signals,
-          features,
-          groundingExtra,
-        );
-        if (retryInsights !== null && retryUngrounded.length === 0) {
-          insights = retryInsights;
+        // The corrected reply passes the same commit gate as a first pass:
+        // one the card could not render is no better than an ungrounded one.
+        const retryParsed = parseInsightReply(retry.result.content, {
+          briefingRequired: briefingRequiredFor(signals),
+        });
+        const retryUngrounded = retryParsed.ok
+          ? findUngroundedBriefingNumbers(
+              readBriefingBlock(retryParsed.insights),
+              signals,
+              features,
+              groundingExtra,
+            )
+          : ungrounded;
+        if (retryParsed.ok && retryUngrounded.length === 0) {
+          insights = retryParsed.insights;
           result = retry.result;
           workingProviderType = retry.workingProvider.providerType;
           ungrounded = [];
@@ -490,15 +547,8 @@ export async function applyBriefingGroundingGate(
       // "briefing withheld" notice told them something had gone wrong without
       // giving them anything usable. A day-old grounded briefing beats a
       // vanished one on both paths, and the next successful run replaces it.
-      let fallbackBriefing: unknown = null;
-      if (cachedText) {
-        try {
-          const prev = JSON.parse(cachedText) as Record<string, unknown>;
-          fallbackBriefing = prev.dailyBriefing ?? null;
-        } catch {
-          // Unparseable previous payload — nothing safe to stand in.
-        }
-      }
+      // Only a previous briefing that renders may stand in.
+      const fallbackBriefing = previousRenderableBriefing(cachedText);
       (insights as Record<string, unknown>).dailyBriefing = fallbackBriefing;
       briefingStrippedHard = fallbackBriefing == null;
       annotate({
@@ -609,22 +659,24 @@ export async function screenAndRepairOutbound(
         signal,
         stage: "screen-retry",
       });
-      const retryInsights = parseComprehensiveResult(retry.result.content);
-      const retryUngrounded =
-        retryInsights === null
-          ? []
-          : findUngroundedBriefingNumbers(
-              readBriefingBlock(retryInsights),
-              features.signalsOfDay ?? null,
-              features,
-              groundingExtra,
-            );
+      // The repaired payload passes the same commit gate as a first pass.
+      const retryParsed = parseInsightReply(retry.result.content, {
+        briefingRequired: briefingRequiredFor(features.signalsOfDay),
+      });
+      const retryUngrounded = retryParsed.ok
+        ? findUngroundedBriefingNumbers(
+            readBriefingBlock(retryParsed.insights),
+            features.signalsOfDay ?? null,
+            features,
+            groundingExtra,
+          )
+        : [];
       if (
-        retryInsights !== null &&
+        retryParsed.ok &&
         retryUngrounded.length === 0 &&
-        screenInsightPayloadProse(retryInsights, locale) === null
+        screenInsightPayloadProse(retryParsed.insights, locale) === null
       ) {
-        insights = retryInsights;
+        insights = retryParsed.insights;
         result = retry.result;
         workingProviderType = retry.workingProvider.providerType;
         briefingStrippedHard = false;

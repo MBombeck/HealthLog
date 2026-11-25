@@ -91,6 +91,7 @@ vi.mock("@/lib/ai/coach/about-me", () => ({
 
 import { generateComprehensiveInsight } from "../comprehensive-generate";
 import { hashInsightSnapshot } from "../snapshot-hash";
+import { buildRerollDateKey } from "../comprehensive-support";
 import { compactSections } from "@/lib/ai/prompts/compact-sections";
 import { featuresInReaderUnits } from "../features-units";
 import { DEFAULT_UNIT_PREFERENCES } from "@/lib/measurements/display-transform";
@@ -251,10 +252,12 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "old" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "old" } }),
       ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,
+      // Today's phrasing re-roll already ran, so nothing reaches a provider.
+      insightsBriefingRerollDate: buildRerollDateKey(),
     });
 
     const outcome = await generateComprehensiveInsight("u1", {
@@ -282,7 +285,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "old" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "old" } }),
       ),
       insightsExcludeMetrics: [],
       // Stored fingerprint from an older data state.
@@ -290,7 +293,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     });
     runRawCompletionWithFallback.mockResolvedValue({
       result: {
-        content: JSON.stringify({ dailyBriefing: { p: "new" } }),
+        content: JSON.stringify({ dailyBriefing: { paragraph: "new" } }),
         tokensUsed: 10,
         providerType: "openai",
         model: "m",
@@ -334,7 +337,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "old" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "old" } }),
       ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,
@@ -343,7 +346,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     });
     runRawCompletionWithFallback.mockResolvedValue({
       result: {
-        content: JSON.stringify({ dailyBriefing: { p: "new" } }),
+        content: JSON.stringify({ dailyBriefing: { paragraph: "new" } }),
         tokensUsed: 10,
         providerType: "openai",
         model: "m",
@@ -391,7 +394,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "english" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "english" } }),
       ),
       insightsCachedLocale: "en",
       insightsExcludeMetrics: [],
@@ -413,14 +416,14 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "old" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "old" } }),
       ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: null,
     });
     runRawCompletionWithFallback.mockResolvedValue({
       result: {
-        content: JSON.stringify({ dailyBriefing: { p: "new" } }),
+        content: JSON.stringify({ dailyBriefing: { paragraph: "new" } }),
         tokensUsed: 10,
         providerType: "openai",
         model: "m",
@@ -459,7 +462,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     });
     runRawCompletionWithFallback.mockResolvedValue({
       result: {
-        content: JSON.stringify({ dailyBriefing: { p: "recovered" } }),
+        content: JSON.stringify({ dailyBriefing: { paragraph: "recovered" } }),
         tokensUsed: 10,
         providerType: "openai",
         model: "m",
@@ -496,7 +499,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     });
     runRawCompletionWithFallback.mockResolvedValue({
       result: {
-        content: JSON.stringify({ dailyBriefing: { p: "new" } }),
+        content: JSON.stringify({ dailyBriefing: { paragraph: "new" } }),
         tokensUsed: 10,
         providerType: "openai",
         model: "m",
@@ -539,7 +542,7 @@ describe("generateComprehensiveInsight — usage level", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "old" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "old" } }),
       ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,

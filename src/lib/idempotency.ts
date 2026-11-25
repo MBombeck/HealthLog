@@ -526,21 +526,16 @@ export function isCachableStatus(status: number): boolean {
 }
 
 /**
- * Default resolver: cookie session first, then Bearer token, without which
- * a Bearer retry (iOS, n8n) ran the handler again and duplicated readings
- * (audit C-4). A pending account's token resolves nobody, as in `bearer.ts`.
+ * Default resolver: the Bearer when the request presents one, else the cookie
+ * session, as `requireAuth()` decides (a Bearer retry used to run twice, audit
+ * C-4). A pending or unresolvable token resolves nobody, never the cookie.
  *
- * It resolves the CALLER and only the caller — which record they are aiming at
- * is a separate question, answered by `readClaimedRecordContext()` above and
- * folded into the key. Neither answer authorises anything: the handler runs
- * its own `requireAuth()` / `requireRecordAuth()` either way.
- *
+ * It resolves the CALLER only; the record aimed at comes from
+ * `readClaimedRecordContext()` above. Neither answer authorises anything: the
+ * handler runs its own `requireAuth()` / `requireRecordAuth()` either way.
  * Exported for unit testing; `withIdempotency()` uses it by default.
  */
 export async function defaultUserIdResolver(): Promise<string | null> {
-  const session = await getSession().catch(() => null);
-  if (session) return session.user.id;
-
   let authHeader: string | null = null;
   try {
     const headerList = await headers();
@@ -548,7 +543,10 @@ export async function defaultUserIdResolver(): Promise<string | null> {
   } catch {
     authHeader = null;
   }
-  if (!authHeader?.startsWith("Bearer ")) return null;
+  if (!authHeader?.startsWith("Bearer ")) {
+    const session = await getSession().catch(() => null);
+    return session ? session.user.id : null;
+  }
 
   const tokenHashValue = hashToken(authHeader.slice(7));
   const apiToken = await prisma.apiToken
