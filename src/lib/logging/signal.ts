@@ -1,6 +1,7 @@
 import { WideEventBuilder } from "./event-builder";
 import { getEvent } from "./context";
 import { emitIfSampled } from "./transports";
+import type { WideEvent } from "./types";
 
 /**
  * A failure that deserves its own log line, under its own action name.
@@ -37,6 +38,13 @@ export interface SignalInput {
   meta?: Record<string, unknown>;
   /** The caught value, when there is one. Only its type and message leave. */
   error?: unknown;
+  /**
+   * How long the work the line reports took, when the caller measured it.
+   * The line's own builder lives for no time at all, so its `duration_ms`
+   * read 0 on every signal, a ten-minute job included (#1404). Given, it is
+   * the line's `duration_ms`; not given, the line carries none.
+   */
+  durationMs?: number;
 }
 
 /** Longest error message a signal carries. */
@@ -84,7 +92,13 @@ function emitLine(
     }
     if (input.level !== "info") event.elevateLevel(input.level);
     event.finish();
-    emitIfSampled(event.toJSON());
+    const line: Partial<WideEvent> = event.toJSON();
+    if (input.durationMs !== undefined && Number.isFinite(input.durationMs)) {
+      line.duration_ms = Math.round(input.durationMs);
+    } else {
+      delete line.duration_ms;
+    }
+    emitIfSampled(line as WideEvent);
   } catch {
     // A log line must never break the work it describes.
   }
