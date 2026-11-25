@@ -49,7 +49,7 @@ describe("medicationMarks", () => {
         start: "2026-02-01",
         sub: "10 mg",
         group: "m1",
-        href: "/medications/m1/history",
+        href: "/medications/m1?tab=history",
       }),
       item({
         id: "p1",
@@ -74,7 +74,7 @@ describe("medicationMarks", () => {
       ["start", "2026-04-01", null],
       ["stop", "2026-04-10", null],
     ]);
-    expect(marks[1].href).toBe("/medications/m1/history");
+    expect(marks[1].href).toBe("/medications/m1?tab=history");
     // A lane item without a link falls back to the medication.
     expect(marks[2].href).toBe("/medications/m1");
     expect(new Set(marks.map((m) => m.id)).size).toBe(marks.length);

@@ -273,7 +273,7 @@ describe("GET /api/insights/context", () => {
       ["Amoxicillin", "stop", "2026-10-27", null],
     ]);
     expect(context.medications[1].href).toBe(
-      `/medications/${ramipril.id}/history`,
+      `/medications/${ramipril.id}?tab=history`,
     );
     expect(context.medications[4].href).toBe(`/medications/${amoxicillin.id}`);
     expect(context.illnesses).toEqual([

@@ -19,6 +19,7 @@ import { addDays, dayDiff } from "@/lib/cycle/day-math";
 import { phaseForDay } from "@/lib/cycle/phase";
 import { LUTEAL_DEFAULT } from "@/lib/cycle/types";
 import { prisma } from "@/lib/db";
+import { recordHref } from "@/lib/links/hrefs";
 import {
   cycleRows,
   LANE_READERS,
@@ -74,7 +75,7 @@ export function medicationMarks(
       dose: extra.dose ?? null,
       // A dose change opens the medication's history, everything else the
       // medication itself: the lane's own links.
-      href: it.href ?? `/medications/${medicationId}`,
+      href: it.href ?? recordHref("medication", medicationId),
     });
   };
   for (const it of items) {
@@ -121,7 +122,7 @@ export function illnessSpans(
       start: it.start,
       end: it.end,
       label: it.label,
-      href: it.href ?? `/illness/${it.id}`,
+      href: it.href ?? recordHref("illness", it.id),
     }));
 }
 
