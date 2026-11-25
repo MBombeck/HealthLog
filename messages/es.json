@@ -14070,6 +14070,11 @@
         "night": "Anoche",
         "todayDifferent": "Distinto hoy",
         "toDo": "Para hoy"
+      },
+      "readinessBand": {
+        "green": "Disposición en un rango bueno",
+        "yellow": "Disposición en un rango medio",
+        "red": "Disposición en un rango bajo"
       }
     },
     "morning": {

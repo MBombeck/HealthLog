@@ -14070,6 +14070,11 @@
         "night": "Stanotte",
         "todayDifferent": "Diverso oggi",
         "toDo": "Da fare oggi"
+      },
+      "readinessBand": {
+        "green": "Prontezza in un intervallo buono",
+        "yellow": "Prontezza in un intervallo medio",
+        "red": "Prontezza in un intervallo basso"
       }
     },
     "morning": {

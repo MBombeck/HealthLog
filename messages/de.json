@@ -14070,6 +14070,11 @@
         "night": "Letzte Nacht",
         "todayDifferent": "Heute anders",
         "toDo": "Heute zu tun"
+      },
+      "readinessBand": {
+        "green": "Bereitschaft im guten Bereich",
+        "yellow": "Bereitschaft im mittleren Bereich",
+        "red": "Bereitschaft im niedrigen Bereich"
       }
     },
     "morning": {

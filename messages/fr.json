@@ -14070,6 +14070,11 @@
         "night": "La nuit dernière",
         "todayDifferent": "Différent aujourd'hui",
         "toDo": "À faire aujourd'hui"
+      },
+      "readinessBand": {
+        "green": "Disponibilité dans une bonne plage",
+        "yellow": "Disponibilité dans une plage moyenne",
+        "red": "Disponibilité dans une plage basse"
       }
     },
     "morning": {
