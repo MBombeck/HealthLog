@@ -28,6 +28,8 @@
  * edge rather than a record.
  */
 
+import { ownValue } from "@/lib/own-key";
+
 /**
  * Which lookup a key failed to resolve against.
  *
@@ -361,7 +363,7 @@ export function findMissingBackupSections(
     const entry = manifest[manifestKey];
     if (!isRecord(entry)) continue;
     if (entry.included === "omitted") continue;
-    if (raw[payloadKey] === undefined) missing.push(manifestKey);
+    if (ownValue(raw, payloadKey) === undefined) missing.push(manifestKey);
   }
   return missing;
 }

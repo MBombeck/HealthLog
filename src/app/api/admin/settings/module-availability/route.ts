@@ -95,12 +95,11 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   });
   if (!parsed.ok) return parsed.error;
 
-  const patch: Record<string, boolean> = {};
-  for (const [key, value] of Object.entries(parsed.data)) {
-    if (typeof value === "boolean") {
-      patch[key] = value;
-    }
-  }
+  const patch: Record<string, boolean> = Object.fromEntries(
+    Object.entries(parsed.data).filter(
+      (entry): entry is [string, boolean] => typeof entry[1] === "boolean",
+    ),
+  );
 
   if (Object.keys(patch).length === 0) {
     return apiError("No valid fields", 422);

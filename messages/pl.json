@@ -9841,7 +9841,8 @@
           "off": "Ciasteczka nie mają flagi Secure.",
           "secure_over_https": "Bezpieczne ciasteczka przez HTTPS, tak jak trzeba.",
           "plain_http": "Zwykły HTTP bez flagi Secure: w porządku dla serwera dostępnego tylko we własnej sieci.",
-          "secure_over_http": "Ta strona przyszła przez zwykły HTTP, ale ciasteczka mają flagę Secure, więc przeglądarki odrzucają logowanie. Udostępnij HTTPS albo ustaw SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Ta strona dotarła do aplikacji przez zwykły HTTP. Za proxy HTTPS ustaw wysyłanie X-Forwarded-Proto: https; przy zwykłym HTTP ustaw SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "HTTPS działa, ale reverse proxy tego nie zgłasza. Ustaw w nim wysyłanie X-Forwarded-Proto: https.",
           "insecure_over_https": "Ta strona przyszła przez HTTPS, ale ciasteczkom brakuje flagi Secure. Usuń SESSION_COOKIE_SECURE=false."
         },
         "app_url": {
@@ -12620,7 +12621,7 @@
     "openDetail": "Pokaż szczegóły",
     "historyLoadError": "Nie udało się wczytać historii testów",
     "historyLoadErrorHint": "To nie znaczy, że nie masz wyników; nie udało się pobrać listy. Spróbuj ponownie.",
-    "privacyNote": "Twoje odpowiedzi są przechowywane w postaci zaszyfrowanej i nigdy nie trafiają do Coacha AI.",
+    "privacyNote": "Twoje odpowiedzi są przechowywane w postaci zaszyfrowanej. Odpowiedzi i wyniki nigdy nie trafiają do Coacha AI, innej funkcji AI ani do podłączonego asystenta AI.",
     "trend": {
       "sincePrevious": "Od poprzedniego sprawdzenia {date}: {change, plural, one {# punkt} few {# punkty} many {# punktów} other {# punktu}}.",
       "sinceFirst": "Od pierwszego sprawdzenia {date}: {change, plural, one {# punkt} few {# punkty} many {# punktów} other {# punktu}}.",

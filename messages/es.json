@@ -9841,7 +9841,8 @@
           "off": "Las cookies no llevan el atributo Secure.",
           "secure_over_https": "Cookies seguras por HTTPS, como debe ser.",
           "plain_http": "HTTP simple sin atributo Secure: correcto para un servidor al que solo se accede desde tu propia red.",
-          "secure_over_http": "Esta página llegó por HTTP simple, pero las cookies llevan el atributo Secure, así que los navegadores descartan el inicio de sesión. Sirve HTTPS o define SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Esta página llegó a la aplicación por HTTP simple. Detrás de un proxy HTTPS, haz que envíe X-Forwarded-Proto: https; con HTTP simple, define SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "HTTPS funciona, pero tu proxy inverso no lo indica. Haz que envíe X-Forwarded-Proto: https.",
           "insecure_over_https": "Esta página llegó por HTTPS, pero a las cookies les falta el atributo Secure. Quita SESSION_COOKIE_SECURE=false."
         },
         "app_url": {
@@ -12620,7 +12621,7 @@
     "openDetail": "Ver detalles",
     "historyLoadError": "No se pudo cargar tu historial de evaluaciones",
     "historyLoadErrorHint": "Esto no significa que no tengas resultados: no se pudo obtener la lista. Vuelve a intentarlo.",
-    "privacyNote": "Tus respuestas se guardan cifradas y nunca llegan al Coach de IA.",
+    "privacyNote": "Tus respuestas se guardan cifradas. Ni las respuestas ni las puntuaciones llegan nunca al Coach de IA, a otra función de IA ni a un asistente de IA que hayas conectado.",
     "trend": {
       "sincePrevious": "Desde tu revisión anterior del {date}: {change, plural, one {# punto} other {# puntos}}.",
       "sinceFirst": "Desde tu primera revisión del {date}: {change, plural, one {# punto} other {# puntos}}.",

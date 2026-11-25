@@ -10,6 +10,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+// The read-merge-write runs under the account's row lock; here the
+// transaction client is the mocked one.
+vi.mock("@/lib/user-row-lock", async () => {
+  const { prisma } = await import("@/lib/db");
+  return {
+    withUserRowLock: (_userId: string, fn: (tx: unknown) => unknown) =>
+      fn(prisma),
+    lockUserRow: async () => {},
+  };
+});
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: {

@@ -9841,7 +9841,8 @@
           "off": "I cookie non hanno l'attributo Secure.",
           "secure_over_https": "Cookie sicuri via HTTPS, come deve essere.",
           "plain_http": "HTTP semplice senza attributo Secure: va bene per un server raggiungibile solo dalla tua rete.",
-          "secure_over_http": "Questa pagina è arrivata in HTTP semplice, ma i cookie hanno l'attributo Secure, quindi i browser scartano l'accesso. Usa HTTPS o imposta SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Questa pagina è arrivata all'app in HTTP semplice. Dietro un proxy HTTPS, fagli inviare X-Forwarded-Proto: https; in HTTP semplice, imposta SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "HTTPS funziona, ma il tuo reverse proxy non lo segnala. Fagli inviare X-Forwarded-Proto: https.",
           "insecure_over_https": "Questa pagina è arrivata in HTTPS, ma ai cookie manca l'attributo Secure. Rimuovi SESSION_COOKIE_SECURE=false."
         },
         "app_url": {
@@ -12620,7 +12621,7 @@
     "openDetail": "Mostra dettagli",
     "historyLoadError": "Non è stato possibile caricare la cronologia dei test",
     "historyLoadErrorHint": "Questo non significa che non ci siano risultati: non è stato possibile recuperare l'elenco. Riprova.",
-    "privacyNote": "Le tue risposte sono salvate cifrate e non raggiungono mai il Coach IA.",
+    "privacyNote": "Le tue risposte sono salvate cifrate. Risposte e punteggi non raggiungono mai il Coach IA, un'altra funzione IA o un assistente IA che hai collegato.",
     "trend": {
       "sincePrevious": "Dal tuo check-in precedente del {date}: {change, plural, one {# punto} other {# punti}}.",
       "sinceFirst": "Dal tuo primo check-in del {date}: {change, plural, one {# punto} other {# punti}}.",

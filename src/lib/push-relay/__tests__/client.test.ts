@@ -93,6 +93,13 @@ describe("relay client", () => {
       items: [],
     });
     expect(result.kind).toBe("response");
+    // The pinned public host, the 10 s deadline and the long-lived
+    // connection that saves a reconnect per push.
+    expect(fetchMock.mock.calls[0][2]).toEqual({
+      requirePublicHost: true,
+      keepAlive: true,
+      timeoutMs: 10_000,
+    });
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     const h = new Headers(init.headers);
     const text = requestText({

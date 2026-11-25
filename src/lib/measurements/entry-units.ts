@@ -27,6 +27,7 @@
  */
 
 import type { DurationFieldUnit } from "./parse-duration";
+import { ownValue } from "@/lib/own-key";
 
 export const MINUTES_PER_HOUR = 60;
 
@@ -40,7 +41,7 @@ const DURATION_ENTRY_UNIT: Readonly<Record<string, DurationFieldUnit>> = {
 
 /** The duration unit a type's entry field asks in, or null for a plain number. */
 export function durationEntryUnit(type: string): DurationFieldUnit | null {
-  return DURATION_ENTRY_UNIT[type] ?? null;
+  return ownValue(DURATION_ENTRY_UNIT, type) ?? null;
 }
 
 /**
@@ -60,7 +61,7 @@ const ENTRY_TO_CANONICAL_FACTOR: Readonly<Record<string, number>> = {
  * untouched, so no existing metric changes shape.
  */
 export function entryValueToCanonical(type: string, entered: number): number {
-  const factor = ENTRY_TO_CANONICAL_FACTOR[type];
+  const factor = ownValue(ENTRY_TO_CANONICAL_FACTOR, type);
   if (factor === undefined || !Number.isFinite(entered)) return entered;
   return Math.round(entered * factor);
 }

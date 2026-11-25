@@ -3,8 +3,10 @@
  * circumstances (screening hints, AUDIT-C cut-offs): a rule always says whose
  * rule it is, in the language of the account reading it.
  *
- * Client-safe, no imports.
+ * Client-safe; its only import is the own-key lookup.
  */
+import { ownValue } from "@/lib/own-key";
+
 export type SourceCountry = "DE" | "KR" | "US";
 
 const NAMES: Readonly<Record<string, Readonly<Record<SourceCountry, string>>>> =
@@ -25,5 +27,5 @@ export function countryLabel(
   country: SourceCountry,
   locale: string | null | undefined,
 ): string {
-  return (NAMES[locale ?? "en"] ?? NAMES.en)[country];
+  return (ownValue(NAMES, locale ?? "en") ?? NAMES.en)[country];
 }

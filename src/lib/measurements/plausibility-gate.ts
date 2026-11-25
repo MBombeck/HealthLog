@@ -47,6 +47,7 @@
 import { annotate, getEvent } from "@/lib/logging/context";
 import { isPlausibleMetricValue } from "@/lib/measurements/value-domain";
 import { VALUE_RANGES } from "@/lib/measurements/value-ranges";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * Stable meta key the tally lands under. Pinned so dashboards can count it
@@ -92,7 +93,7 @@ export function classifyRangeRejection(
 ): MeasurementRangeRejection | null {
   if (isPlausibleMetricValue(type, value)) return null;
   if (!Number.isFinite(value)) return { type, direction: "not_finite" };
-  const range = VALUE_RANGES[type];
+  const range = ownValue(VALUE_RANGES, type);
   // `isPlausibleMetricValue` only answers false for a finite value when the
   // type HAS a range, so the lookup cannot miss here.
   return {

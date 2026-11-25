@@ -78,6 +78,12 @@ export interface SetupHealthInputs {
   secureCookie: boolean;
   /** How this request reached the server: `https`, `http`, or unknown. */
   requestProtocol: "https" | "http" | null;
+  /**
+   * Where that scheme came from (`resolveRequestOrigin`): a trusted proxy's
+   * report, the configured public URL because the proxy did not say, or the
+   * request URL. Null when the protocol is unknown.
+   */
+  requestProtocolFrom: "proxy" | "public_url" | "request" | null;
   /** The configured public URL (`NEXT_PUBLIC_APP_URL`, else `APP_URL`). */
   appUrl: string | null;
   /** The origin this request was made to, as the server saw it. */
@@ -122,26 +128,39 @@ export function evaluateEncryptionKeys(
 }
 
 /**
- * The `Secure` flag against how the request arrived. Secure over plain HTTP
- * is failing (the browser drops the session cookie, so sign-in cannot hold);
- * no flag over HTTPS is attention (it works, but the cookie could travel in
- * clear on a downgrade); no flag over plain HTTP is the documented LAN choice.
+ * The `Secure` flag against how the request arrived.
+ *
+ * - Secure over HTTPS, or no flag over plain HTTP (the documented LAN
+ *   choice): fine.
+ * - Secure over HTTPS that only the configured public URL vouches for: the
+ *   cookie works, but the proxy in front does not report the scheme, so
+ *   anything else that reads the request sees plain HTTP. Attention, with
+ *   the one header to set.
+ * - Secure over plain HTTP: attention, not failing. This card is read over
+ *   an admin's cookie session, so the Secure cookie evidently stuck; plain
+ *   HTTP here means a proxy that does not report HTTPS, or a loopback host.
+ * - No flag over HTTPS: attention (it works, but the cookie could travel in
+ *   clear on a downgrade).
  */
 export function evaluateSecureCookie(
   secureCookie: boolean,
   protocol: SetupHealthInputs["requestProtocol"],
+  protocolFrom: SetupHealthInputs["requestProtocolFrom"],
 ): SetupHealthSignal {
   if (protocol === null) {
     return signal("secure_cookie", "ok", secureCookie ? "on" : "off");
   }
   if (secureCookie && protocol === "https") {
-    return signal("secure_cookie", "ok", "secure_over_https");
+    return protocolFrom === "public_url"
+      ? signal("secure_cookie", "attention", "proxy_scheme_unreported")
+      : signal("secure_cookie", "ok", "secure_over_https");
   }
   if (!secureCookie && protocol === "http") {
     return signal("secure_cookie", "ok", "plain_http");
   }
-  if (secureCookie)
-    return signal("secure_cookie", "failing", "secure_over_http");
+  if (secureCookie) {
+    return signal("secure_cookie", "attention", "secure_over_http");
+  }
   return signal("secure_cookie", "attention", "insecure_over_https");
 }
 
@@ -232,7 +251,11 @@ const RANK: Record<SetupHealthState, number> = {
 export function evaluateSetupHealth(input: SetupHealthInputs): SetupHealth {
   const signals = [
     evaluateEncryptionKeys(input.encryption),
-    evaluateSecureCookie(input.secureCookie, input.requestProtocol),
+    evaluateSecureCookie(
+      input.secureCookie,
+      input.requestProtocol,
+      input.requestProtocolFrom,
+    ),
     evaluateAppUrl(input.appUrl, input.requestOrigin),
     evaluateDatabaseDump(input.backups),
     evaluateLocalOcr(input.localOcr),

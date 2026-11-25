@@ -39,6 +39,7 @@
 
 import { localisedValues } from "@/lib/i18n/shared-resolve";
 import { stripDiacritics } from "@/lib/i18n/fold-for-match";
+import { ownRecord, ownValue, type OwnRecord } from "@/lib/own-key";
 
 /** A curated biomarker → LOINC + canonical-UCUM entry. */
 export interface LabLoincMapping {
@@ -341,13 +342,14 @@ export const CATALOG_SLUG_TO_LOINC_KEY: Record<string, string> = {
  * `labs.catalog.<slug>` string orphans the biomarkers minted under the old
  * wording; the fix for that is a legacy row in `LAB_ALIASES`, not a migration.
  */
-function buildLocalisedAliases(): Record<string, string> {
-  const index: Record<string, string> = {};
+function buildLocalisedAliases(): OwnRecord<string> {
+  const index = ownRecord<string>();
   for (const [slug, loincKey] of Object.entries(CATALOG_SLUG_TO_LOINC_KEY)) {
     for (const name of localisedValues(`labs.catalog.${slug}`)) {
       const key = normaliseLabKey(name);
       if (!key) continue;
-      if (LAB_LOINC_BY_KEY[key] || LAB_ALIASES[key]) continue;
+      if (ownValue(LAB_LOINC_BY_KEY, key) || ownValue(LAB_ALIASES, key))
+        continue;
       if (index[key] && index[key] !== loincKey) continue;
       index[key] = loincKey;
     }
@@ -431,9 +433,10 @@ function normaliseUnit(unit: string): string {
   // punctuation-stripped form (covers "mg dl" / "mgdl"). Both routes resolve
   // through the same table so equivalent spellings collapse.
   const lower = trimmed.toLowerCase();
-  if (UNIT_NORMALISATION[lower]) return UNIT_NORMALISATION[lower];
+  const direct = ownValue(UNIT_NORMALISATION, lower);
+  if (direct) return direct;
   const stripped = normaliseLabKey(trimmed);
-  return UNIT_NORMALISATION[stripped] ?? trimmed;
+  return ownValue(UNIT_NORMALISATION, stripped) ?? trimmed;
 }
 
 /** The resolved coding for one lab result, or null when the analyte is unmapped. */
@@ -470,11 +473,11 @@ export function resolveLabCoding(
   // Canonical key first, then the hand-verified aliases, then the names the
   // shipped bundles carry. The order is the confidence order, and it keeps
   // every resolution that worked before working the same way.
-  const resolvedKey = LAB_LOINC_BY_KEY[key]
+  const resolvedKey = ownValue(LAB_LOINC_BY_KEY, key)
     ? key
-    : (LAB_ALIASES[key] ?? memoLocalisedLabAliases()[key]);
+    : (ownValue(LAB_ALIASES, key) ?? ownValue(memoLocalisedLabAliases(), key));
   if (!resolvedKey) return null;
-  const mapping = LAB_LOINC_BY_KEY[resolvedKey];
+  const mapping = ownValue(LAB_LOINC_BY_KEY, resolvedKey);
   if (!mapping) return null;
   const ucum = normaliseUnit(unit) === mapping.ucum ? mapping.ucum : null;
   return { loinc: mapping.loinc, display: mapping.display, ucum };
@@ -515,7 +518,7 @@ export function catalogSlugForLoinc(code: string): string | null {
   if (!loincToSlug) {
     const map = new Map<string, string>();
     for (const [slug, key] of Object.entries(CATALOG_SLUG_TO_LOINC_KEY)) {
-      const mapping = LAB_LOINC_BY_KEY[key];
+      const mapping = ownValue(LAB_LOINC_BY_KEY, key);
       if (mapping) map.set(mapping.loinc, slug);
     }
     for (const [loinc, slug] of Object.entries(IMPORT_ONLY_LOINC_TO_SLUG)) {

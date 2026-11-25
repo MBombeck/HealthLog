@@ -9841,7 +9841,8 @@
           "off": "쿠키에 Secure 플래그가 없습니다.",
           "secure_over_https": "HTTPS로 보안 쿠키를 사용 중입니다. 정상입니다.",
           "plain_http": "Secure 플래그 없는 일반 HTTP: 내 네트워크에서만 접속하는 서버라면 괜찮습니다.",
-          "secure_over_http": "이 페이지는 일반 HTTP로 열렸지만 쿠키에 Secure 플래그가 있어 브라우저가 로그인을 버립니다. HTTPS를 제공하거나 SESSION_COOKIE_SECURE=false로 설정하세요.",
+          "secure_over_http": "이 페이지는 일반 HTTP로 앱에 도착했습니다. HTTPS 프록시 뒤에 있다면 X-Forwarded-Proto: https를 보내도록 설정하고, 일반 HTTP라면 SESSION_COOKIE_SECURE=false로 설정하세요.",
+          "proxy_scheme_unreported": "HTTPS는 작동하지만 리버스 프록시가 이를 알려 주지 않습니다. X-Forwarded-Proto: https를 보내도록 설정하세요.",
           "insecure_over_https": "이 페이지는 HTTPS로 열렸지만 쿠키에 Secure 플래그가 없습니다. SESSION_COOKIE_SECURE=false를 제거하세요."
         },
         "app_url": {
@@ -12620,7 +12621,7 @@
     "openDetail": "자세히 보기",
     "historyLoadError": "검사 기록을 불러오지 못했어요",
     "historyLoadErrorHint": "결과가 없다는 뜻은 아니에요. 목록을 가져오지 못했을 뿐이에요. 다시 시도해 주세요.",
-    "privacyNote": "답변은 암호화되어 저장되고, AI 코치에게는 전달되지 않아요.",
+    "privacyNote": "답변은 암호화되어 저장돼요. 답변과 점수는 AI 코치, 다른 AI 기능, 연결한 AI 어시스턴트 어디에도 전달되지 않아요.",
     "trend": {
       "sincePrevious": "{date} 이전 체크인 이후: {change, plural, other {#점}}.",
       "sinceFirst": "{date} 첫 체크인 이후: {change, plural, other {#점}}.",

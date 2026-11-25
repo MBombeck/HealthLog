@@ -10,6 +10,7 @@ import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
 import type { RhythmClassification } from "@/generated/prisma/client";
 import { foldForMatch } from "@/lib/i18n/fold-for-match";
+import { ownValue } from "@/lib/own-key";
 
 export interface NormalizedAppleHealthEcg {
   recordedAt: Date;
@@ -142,7 +143,7 @@ const CLASSIFICATION_ALIASES: Readonly<Record<string, string>> = {
 
 /** Resolve a metadata key to the English one this parser indexes on. */
 function canonicalMetadataKey(raw: string): string {
-  return METADATA_KEY_ALIASES[foldForMatch(raw)] ?? raw;
+  return ownValue(METADATA_KEY_ALIASES, foldForMatch(raw)) ?? raw;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -259,7 +260,8 @@ function mapClassification(
   // `classifyEcgRhythm` remains the single place that decides what a verdict
   // MEANS. A per-language verdict table would drift from this one the first
   // time Apple adds a case, and only one of them would get updated.
-  const value = CLASSIFICATION_ALIASES[foldForMatch(raw ?? "")] ?? raw;
+  const value =
+    ownValue(CLASSIFICATION_ALIASES, foldForMatch(raw ?? "")) ?? raw;
   const outcome = classifyEcgRhythm(value);
   return outcome.kind === "mapped" ? outcome.value : null;
 }

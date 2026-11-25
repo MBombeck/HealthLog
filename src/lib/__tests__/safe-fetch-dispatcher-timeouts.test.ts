@@ -13,6 +13,7 @@ import type { Agent } from "undici";
 import {
   getPinnedOperatorApprovedDispatcher,
   getPinnedPublicDispatcher,
+  getPinnedPublicKeepAliveDispatcher,
   _resetPinnedDispatcherForTests,
 } from "../safe-fetch-dispatcher";
 
@@ -34,6 +35,7 @@ afterEach(() => {
 describe("pinned dispatcher timers", () => {
   it.each([
     ["public", getPinnedPublicDispatcher],
+    ["public keep-alive", getPinnedPublicKeepAliveDispatcher],
     ["operator-approved", getPinnedOperatorApprovedDispatcher],
   ])("the %s dispatcher arms no header or body timer of its own", (_, get) => {
     const options = agentOptions(get());

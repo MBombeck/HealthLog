@@ -44,6 +44,7 @@ import {
   isStreamedField,
   type StreamedField,
 } from "@/lib/export/streamed-field";
+import { ownRecord, ownValue } from "@/lib/own-key";
 
 /**
  * Write a row whose one large field arrives in pieces, exactly as
@@ -155,7 +156,7 @@ export async function streamFullBackupJson(
     await flush(false);
   };
 
-  const bulkCounts: Record<string, number> = {};
+  const bulkCounts = ownRecord<number>();
 
   await write("{");
   let first = true;
@@ -163,7 +164,7 @@ export async function streamFullBackupJson(
   // as its JSON is in the sink, which is what keeps the peak at one section
   // rather than at all of them. Nothing else reads this object.
   for (const key of Object.keys(payload)) {
-    const value = payload[key];
+    const value = ownValue(payload, key);
     // `JSON.stringify` omits an undefined-valued key; so does this.
     if (value === undefined) continue;
     if (!first) await write(",");
@@ -206,7 +207,7 @@ export async function streamFullBackupJson(
       observe?.(key, value);
       await write(JSON.stringify(value));
     }
-    delete payload[key];
+    Reflect.deleteProperty(payload, key);
   }
   await write("}");
   await flush(true);

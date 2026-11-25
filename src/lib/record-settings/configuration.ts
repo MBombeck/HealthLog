@@ -259,18 +259,16 @@ export const MANAGED_RECORD_SETTINGS_MODULE_DEFAULTS = Object.freeze(
 export function managedModulePreferencesFrom(
   raw: unknown,
 ): ManagedRecordSettingsPatch["modules"]["modulePreferences"] {
-  const allowed: Record<string, boolean> = {
-    ...MANAGED_RECORD_SETTINGS_MODULE_DEFAULTS,
-  };
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
-    return allowed;
+    return { ...MANAGED_RECORD_SETTINGS_MODULE_DEFAULTS };
   }
-
-  for (const [key, value] of Object.entries(raw)) {
-    const parsed = modulePrefsPatchSchema.safeParse({ [key]: value });
-    if (parsed.success && value !== undefined) {
-      allowed[key] = value as boolean;
-    }
-  }
-  return allowed;
+  const stored = Object.entries(raw).filter(
+    (entry): entry is [string, boolean] =>
+      entry[1] !== undefined &&
+      modulePrefsPatchSchema.safeParse({ [entry[0]]: entry[1] }).success,
+  );
+  return {
+    ...MANAGED_RECORD_SETTINGS_MODULE_DEFAULTS,
+    ...Object.fromEntries(stored),
+  };
 }

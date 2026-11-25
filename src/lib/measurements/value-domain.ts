@@ -31,6 +31,7 @@
  * count and rendered as one.
  */
 import { VALUE_RANGES } from "@/lib/measurements/value-ranges";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * Decimal places used for a metric with no discreteness constraint — the
@@ -84,7 +85,7 @@ export const INTEGER_VALUED_MEASUREMENT_TYPES: ReadonlySet<string> = new Set([
  */
 export function isNonNegativeMetric(type: string | null | undefined): boolean {
   if (!type) return false;
-  const range = VALUE_RANGES[type];
+  const range = ownValue(VALUE_RANGES, type);
   return range !== undefined && range.min >= 0;
 }
 
@@ -125,7 +126,7 @@ export function isPlausibleMetricValue(
 export function plausibleMetricRange(
   type: string | null | undefined,
 ): { min: number; max: number } | undefined {
-  return type ? VALUE_RANGES[type] : undefined;
+  return type ? ownValue(VALUE_RANGES, type) : undefined;
 }
 
 /**
@@ -190,5 +191,7 @@ const MIN_BAND_HALF_WIDTH: Readonly<Record<string, number>> = {
 
 export function minimumBandHalfWidth(type: string | null | undefined): number {
   if (!type) return 0;
-  return MIN_BAND_HALF_WIDTH[type] ?? 10 ** -metricFractionDigits(type);
+  return (
+    ownValue(MIN_BAND_HALF_WIDTH, type) ?? 10 ** -metricFractionDigits(type)
+  );
 }
