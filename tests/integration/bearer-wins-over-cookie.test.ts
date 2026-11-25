@@ -421,6 +421,8 @@ describe("no web session cookie for a token client", () => {
   });
 
   it("a native registration writes no session and sets no cookie", async () => {
+    // Not the first account: that one needs the operator's setup token.
+    await seedUser("existing-account");
     const res = await call(
       "@/app/api/auth/register/route",
       "POST",
@@ -438,6 +440,8 @@ describe("no web session cookie for a token client", () => {
   });
 
   it("a browser registration still gets its session cookie", async () => {
+    // Not the first account: that one needs the operator's setup token.
+    await seedUser("existing-account");
     const res = await call(
       "@/app/api/auth/register/route",
       "POST",
