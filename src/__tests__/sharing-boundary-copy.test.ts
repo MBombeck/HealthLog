@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import glossary from "@/lib/i18n/glossary.json";
 import { inviteGrantSchema } from "@/lib/validations/account-sharing";
 import {
   SETTINGS_DESTINATION_INVENTORY,
@@ -49,6 +50,15 @@ const LOCALES = [
   "nl",
   "pt-BR",
 ] as const;
+
+/** The settled name of the medical-history section in one locale. */
+function medicalHistory(locale: string): string {
+  const concept = glossary.concepts.find((c) => c.id === "medicalHistory");
+  const terms = concept?.terms as Record<string, { name: string }> | undefined;
+  const name = terms?.[locale]?.name;
+  if (!name) throw new Error(`no medical-history term for ${locale}`);
+  return name.toLocaleLowerCase(locale);
+}
 
 /** The published description of the level, off the Zod schema itself. */
 function accessDescription(): string {
@@ -114,14 +124,13 @@ describe("the published boundary matches the one the code draws", () => {
       const text = description(locale);
       expect(text.length, locale).toBeGreaterThan(40);
       // Every locale has to acknowledge the health background, because that
-      // is the part the old sentence implicitly denied. Matched on the stem
-      // rather than the English spelling, and short enough to survive the
-      // accent: the section is "Anamnèse" in French and "Anamneza" in Polish,
-      // so anything past "anamn" is already language-specific and a matcher
-      // tuned to one of them reports the others as broken.
-      // Korean shares no Latin stem for either concept, so it is matched on
-      // its own words: "문진" is the anamnesis section, "계정" the account.
-      if (!/anamn|문진/i.test(text)) missing.push(locale);
+      // is the part the old sentence implicitly denied. It does so by naming
+      // the section the way the rail and the page name it, which the glossary
+      // holds per locale; a stem matcher here once kept the paragraph on a
+      // second name for the section after the page had settled on another.
+      if (!text.toLocaleLowerCase(locale).includes(medicalHistory(locale))) {
+        missing.push(locale);
+      }
       // And it must still say the account itself stays with its owner —
       // dropping that would fix one over-claim by removing the boundary.
       expect(text, locale).toMatch(

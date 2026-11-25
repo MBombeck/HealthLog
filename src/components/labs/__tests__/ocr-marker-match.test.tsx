@@ -103,7 +103,7 @@ describe("the scan review's marker choice (D1223)", () => {
     );
     const html = render(row);
     expect(html).toContain("Links to existing Alkaline Phosphatase");
-    expect(html).toContain("recognised as a common abbreviation");
+    expect(html).toContain("recognized as a common abbreviation");
     expect(html).not.toContain('data-slot="ocr-row-marker-choice"');
     expect(render(row, "de")).toContain("als übliche Abkürzung erkannt");
   });

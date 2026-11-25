@@ -122,7 +122,7 @@ describe("<SharingSection> — owner share-link surface (C7)", () => {
 
   it("renders localized section copy", () => {
     const html = render("de");
-    expect(html).toContain("Neuer Freigabe-Link");
+    expect(html).toContain("Neuer Freigabelink");
   });
 
   it("offers the document picker trigger and surfaces the ≤50 cap", () => {

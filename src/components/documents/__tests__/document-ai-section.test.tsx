@@ -73,7 +73,7 @@ describe("<DocumentAiSection>", () => {
     expect(html).toContain("Read with AI");
     expect(html).toContain('data-slot="assist-suggest"');
     expect(html).toContain("Suggest details");
-    expect(html).toContain("Summarise");
+    expect(html).toContain("Summarize");
     expect(html).toContain("Show extracted text");
     // No unavailable pointer when the actions are offered.
     expect(html).not.toContain('data-slot="assist-unavailable"');
@@ -193,7 +193,7 @@ describe("<DocumentAiSection>", () => {
     expect(html).toContain("This document has not been read yet.");
     // The auto-read promise still covers the extras: no suggest / summarise.
     expect(html).not.toContain('data-slot="assist-suggest"');
-    expect(html).not.toContain("Summarise");
+    expect(html).not.toContain("Summarize");
     expect(html).not.toContain("Show extracted text");
   });
 
@@ -215,7 +215,7 @@ describe("<DocumentAiSection>", () => {
     const html = render(base({ aiEnabled: true, autoReadEnabled: false }));
     expect(html).toContain('data-slot="document-read-ai"');
     expect(html).toContain('data-slot="assist-suggest"');
-    expect(html).toContain("Summarise");
+    expect(html).toContain("Summarize");
   });
 });
 

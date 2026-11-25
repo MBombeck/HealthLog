@@ -1,7 +1,7 @@
 /**
  * A lab day's chip in the selection bar names its analytes and sets the
  * count apart as a chip of its own, as a life event's category is. Run on
- * after the names, "Hemoglobin, Total Cholesterol, LDL 5 lab values" read
+ * after the names, "Hemoglobin, Total Cholesterol, LDL 5 lab results" read
  * as one more analyte.
  */
 import { describe, expect, it } from "vitest";
@@ -92,16 +92,16 @@ describe("lab day in the selection bar", () => {
     const tag = chip!.match(
       /<span[^>]*data-slot="timeline-selection-tag"[^>]*>(.*?)<\/span>/,
     );
-    expect(tag?.[1]).toBe("5 lab values");
+    expect(tag?.[1]).toBe("5 lab results");
     expect(textOf(chip!.replace(tag![0], ""))).toBe(
       "Hemoglobin, Total Cholesterol, LDL, Jun 26",
     );
-    expect(textOf(chip!)).not.toContain("LDL 5 lab values");
+    expect(textOf(chip!)).not.toContain("LDL 5 lab results");
   });
 
   it("brackets the count in the screen-reader line", () => {
     expect(itemLine(LAB_DAY, wordsIn("en"), "")).toBe(
-      "Hemoglobin, Total Cholesterol, LDL (5 lab values)",
+      "Hemoglobin, Total Cholesterol, LDL (5 lab results)",
     );
   });
 });

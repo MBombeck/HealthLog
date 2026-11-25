@@ -543,7 +543,7 @@ describe("Telegram webhook — callback dispatch", () => {
     expect(ids).toContain(555);
     expect(ids).toContain(1234);
     const ackText = vi.mocked(answerTelegramCallbackQuery).mock.calls[0][2];
-    expect(ackText).toMatch(/cancelled/i);
+    expect(ackText).toMatch(/canceled/i);
   });
 });
 

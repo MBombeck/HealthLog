@@ -88,7 +88,7 @@ describe("<LayoutSection> hub", () => {
   it("resolves its row titles via i18n (no raw keys leak)", () => {
     const html = render();
     expect(html).toContain("Medications");
-    expect(html).toContain("Labs");
+    expect(html).toContain("Lab results");
     expect(html).not.toContain("settings.sections.layout.");
   });
 

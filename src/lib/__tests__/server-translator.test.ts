@@ -9,7 +9,7 @@ describe("getServerTranslator", () => {
 
   it("returns the English string for a known key when locale=en", () => {
     const { t } = getServerTranslator("en");
-    expect(t("telegram.cancelled")).toBe("Cancelled.");
+    expect(t("telegram.cancelled")).toBe("Canceled.");
   });
 
   it("interpolates {param} placeholders", () => {

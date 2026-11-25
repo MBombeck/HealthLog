@@ -304,7 +304,7 @@
     }
   },
   "doctorReport": {
-    "title": "Gezondheidsrapport",
+    "title": "Artsenrapport",
     "anamnesisTitle": "Gezondheidsprofiel",
     "anamnesisNotRecorded": "Niet vastgelegd",
     "anamnesisUnreadable": "Opgeslagen waarde kon niet worden gelezen",
@@ -314,7 +314,7 @@
     "anamnesisShiftSchedule": "Werkrooster",
     "anamnesisColFact": "Profielonderdeel",
     "anamnesisColValue": "Vastgelegde waarde",
-    "subtitle": "HealthLog: persoonlijk gezondheidsrapport",
+    "subtitle": "Gemaakt met HealthLog",
     "patient": "Patiënt",
     "dateOfBirth": "Geboortedatum",
     "gender": "Geslacht",
@@ -432,7 +432,7 @@
     "summaryTrend": "{label}: laatste {latest} {arrow}",
     "summaryAdherence": "Therapietrouw medicatie: {rate}% (gewogen gemiddelde).",
     "chartsTitle": "Trendgrafieken",
-    "packageReadme": "HealthLog-gezondheidsdossier\n\nDit pakket bevat:\n- report.pdf: het gezondheidsrapport voor je arts.\n- bundle.json: dezelfde gegevens als HL7 FHIR R4-documentbundel (Bundle), compatibel met de ePA.\n\nGegenereerd met HealthLog.",
+    "packageReadme": "HealthLog-artsenrapport\n\nDit pakket bevat:\n- report.pdf: het artsenrapport als PDF.\n- bundle.json: dezelfde gegevens als HL7 FHIR R4-documentbundel (Bundle), compatibel met de ePA.\n\nGegenereerd met HealthLog.",
     "wellnessTitle": "Overzicht welzijn",
     "wellnessDisclaimer": "Dit zijn beschrijvende welzijnsscores, berekend uit je bijgehouden signalen (0–100). Het zijn geen klinische beoordelingen of diagnoses.",
     "wellnessRecovery": "Herstel",
@@ -642,15 +642,15 @@
       "recentMeasurementDescription": "Onlangs vastgelegde meting"
     },
     "cycle": "Cyclus",
-    "labs": "Labwaarden",
-    "profile": "Profiel",
+    "labs": "Labuitslagen",
+    "profile": "Medische voorgeschiedenis",
     "vorsorge": "Controles",
     "illness": "Ziekte",
     "documents": "Documenten",
     "vaccinations": "Vaccinaties",
     "mentalWellbeing": "Mentaal welzijn",
     "timeline": "Tijdlijn",
-    "seizures": "Aanvallen",
+    "seizures": "Aanvalsdagboek",
     "emergencyCard": "Noodkaart",
     "groups": {
       "tracking": "Bijhouden",
@@ -862,13 +862,13 @@
     "heroItems": {
       "coach_checkin": "Check-ins van de Coach",
       "dose_window": "Medicatiedoses",
-      "preventive_care": "Preventieve zorg",
+      "preventive_care": "Controles",
       "sync_issue": "Synchronisatieproblemen",
       "milestone": "Mijlpalen",
       "ecg_new_recording": "Nieuwe ECG-opnames",
       "tension_window": "Momenten van spanning",
       "same_time_baseline": "Activiteit op hetzelfde tijdstip",
-      "upcoming_visit": "Afspraken"
+      "upcoming_visit": "Bezoeken"
     },
     "layoutReset": "Standaardwaarden herstellen",
     "layoutResetTitle": "Dashboardindeling herstellen?",
@@ -1513,8 +1513,8 @@
       "linkedActiveEnergy": "Actieve energie",
       "linkedRestingHeartRate": "Rusthartslag",
       "linkedHrv": "Hartslagvariabiliteit",
-      "bodyLogged": "Vastgelegd in het ziektedagboek: {count, plural, one {# symptoom} other {# symptomen}}",
-      "bodyNotLogged": "Voor deze dag is niets vastgelegd in het ziektedagboek",
+      "bodyLogged": "Vastgelegd onder Ziekte: {count, plural, one {# symptoom} other {# symptomen}}",
+      "bodyNotLogged": "Voor deze dag is niets vastgelegd onder Ziekte",
       "openIllness": "Openen"
     },
     "sourceNotification": "Melding",
@@ -2825,7 +2825,7 @@
     "hrv": "HRV",
     "restingHeartRate": "Rusthartslag",
     "activeEnergy": "Actieve energie",
-    "flights": "Trappen gelopen",
+    "flights": "Beklommen verdiepingen",
     "distance": "Afstand wandelen + hardlopen",
     "vo2Max": "VO₂max",
     "bodyTemperature": "Lichaamstemperatuur",
@@ -3248,7 +3248,7 @@
         "hrv": "Hartslagvariabiliteit over de afgelopen 30 dagen.",
         "resting_hr": "Rusthartslag over de afgelopen 30 dagen.",
         "active_energy": "Verbruikte actieve energie over de afgelopen 30 dagen.",
-        "flights": "Gelopen trappen over de afgelopen 30 dagen.",
+        "flights": "Beklommen verdiepingen over de afgelopen 30 dagen.",
         "distance": "Afstand wandelen en hardlopen over de afgelopen 30 dagen.",
         "vo2_max": "VO₂max over de afgelopen 30 dagen.",
         "body_temp": "Lichaamstemperatuur over de afgelopen 30 dagen."
@@ -3397,7 +3397,7 @@
         "anthropometrics": "Profiel (lengte, leeftijd, geslacht)",
         "walking_hr": "Hartslag tijdens wandelen",
         "respiratory_rate": "Ademhalingsfrequentie",
-        "spo2": "Bloedzuurstof",
+        "spo2": "Zuurstofsaturatie",
         "pulse_wave_velocity": "Polsgolfsnelheid",
         "vascular_age": "Vaatleeftijd",
         "body_fat": "Vetpercentage",
@@ -3512,7 +3512,7 @@
         "detailDays": "De Coach leest in geen enkel antwoord iets dat ouder is dan {days, plural, one {# dag} other {# dagen}}.",
         "detailMonths": "De Coach leest in geen enkel antwoord iets dat ouder is dan {months, plural, one {# maand} other {# maanden}}.",
         "detailAll": "Zonder grens leest de Coach {dailyMonths, plural, one {# maand} other {# maanden}} aan metingen per dag en oudere metingen als maandwaarden tot {years, plural, one {# jaar} other {# jaar}} terug. Van labuitslagen leest hij de laatste waarde van de meest recent gemeten markers en, voor een marker waar je naar vraagt, ook de {labRecent, plural, one {# vorige uitslag} other {# vorige uitslagen}}; oudere worden per jaar samengevat tot {labYears, plural, one {# jaar} other {# jaar}} terug, nog oudere jaren alleen geteld.",
-        "note": "Je profiel, je huidige medicatie, een lopende ziekte en komende afspraken blijven zichtbaar; samenvattingen die meer geschiedenis nodig hebben, worden ingekort of weggelaten. Antwoorden die de Coach eerder in oudere gesprekken gaf, kunnen nog oudere waarden noemen."
+        "note": "Je profiel, je huidige medicatie, een lopende ziekte en komende bezoeken blijven zichtbaar; samenvattingen die meer geschiedenis nodig hebben, worden ingekort of weggelaten. Antwoorden die de Coach eerder in oudere gesprekken gaf, kunnen nog oudere waarden noemen."
       },
       "showConversations": "Gesprekken tonen",
       "hideConversations": "Gesprekken verbergen",
@@ -3569,7 +3569,7 @@
         "activeEnergy": "Wat zegt mijn trend in actieve energie over mijn activiteitsniveau de laatste tijd?",
         "cardioFitness": "Wat betekent de trend van mijn cardiofitheid (VO₂ max), en hoe krijg ik die de goede kant op?",
         "bloodGlucose": "Neem mijn recente glucosemetingen met me door. Liggen ze binnen een gezond bereik?",
-        "oxygenSaturation": "Wat zegt mijn trend in bloedzuurstof (SpO₂)?",
+        "oxygenSaturation": "Wat zegt mijn trend in zuurstofsaturatie (SpO₂)?",
         "respiratoryRate": "Wat zegt mijn trend in ademhalingsfrequentie over mijn gezondheid?",
         "workouts": "Neem mijn recente trainingen met me door: belasting, frequentie en hoe ik ertussen herstel.",
         "recoveryPage": "Waarom staat mijn herstel nu waar het staat, en wat bepaalt dat?",
@@ -3793,14 +3793,14 @@
       "coachPrefill": "Ik heb nog geen rusthartslag vastgelegd. Waarom verschilt de dagelijkse rustwaarde van een losse hartslagmeting, en hoe kan ik die verbeteren?"
     },
     "oxygenSaturation": {
-      "title": "Zuurstofverzadiging",
-      "description": "Bloedzuurstof (SpO₂): klinisch normaal is 95–100 %, met de streefzones gearceerd in de grafiek.",
-      "chartTitle": "Zuurstofverzadiging",
+      "title": "Zuurstofsaturatie",
+      "description": "Zuurstofsaturatie (SpO₂): klinisch normaal is 95–100 %, met de streefzones gearceerd in de grafiek.",
+      "chartTitle": "Zuurstofsaturatie",
       "emptyState": {
         "title": "Nog geen SpO₂-metingen",
         "description": "SpO₂-metingen verschijnen hier zodra een compatibele wearable (Apple Watch, Withings ScanWatch) een meting vastlegt."
       },
-      "coachPrefill": "Ik heb nog geen zuurstofverzadiging vastgelegd. Wat zegt SpO₂ me, en naar welk bereik moet ik streven?"
+      "coachPrefill": "Ik heb nog geen zuurstofsaturatie vastgelegd. Wat zegt SpO₂ me, en naar welk bereik moet ik streven?"
     },
     "bodyTemperature": {
       "title": "Lichaamstemperatuur",
@@ -4096,18 +4096,18 @@
         "coachPrefill": "Ik heb nog geen slaapgegevens. Waarom is slaap bijhouden belangrijk, en wat moet ik weten voordat ik een bron koppel?"
       }
     },
-    "navWorkouts": "Workouts",
+    "navWorkouts": "Trainingen",
     "navRecovery": "Herstel",
     "workouts": {
-      "title": "Workouts",
+      "title": "Trainingen",
       "description": "Recente hardloop-, fiets-, wandel- en krachttrainingen, ontdubbeld over bronnen van Apple Watch en Withings.",
       "emptyState": {
-        "title": "Nog geen workouts",
-        "description": "Workouts worden gesynchroniseerd vanuit Apple Health op je iPhone en vanuit Withings. Je kunt er ook zelf een vastleggen.",
-        "coachPrefill": "Ik heb nog geen workouts vastgelegd. Waarom is bijhouden belangrijk, en waar moet ik me eerst op richten?"
+        "title": "Nog geen trainingen",
+        "description": "Trainingen worden gesynchroniseerd vanuit Apple Health op je iPhone en vanuit Withings. Je kunt er ook zelf een vastleggen.",
+        "coachPrefill": "Ik heb nog geen trainingen vastgelegd. Waarom is bijhouden belangrijk, en waar moet ik me eerst op richten?"
       },
       "detail": {
-        "backToList": "Terug naar workouts",
+        "backToList": "Terug naar trainingen",
         "statsTitle": "Statistieken",
         "statsDuration": "Duur",
         "statsDistance": "Afstand",
@@ -4130,7 +4130,7 @@
         "statsGroundContactBalanceValue": "{left} % L, {right} % R",
         "routeTitle": "Route",
         "hrChartTitle": "Hartslag",
-        "notFound": "Workout niet gevonden.",
+        "notFound": "Training niet gevonden.",
         "hrFromPulse": "Uit je hartslaggegevens rond deze sessie",
         "hrAxisMinutes": "min",
         "hrAvgMarker": "Gem. {bpm}",
@@ -4184,19 +4184,19 @@
         "mixedCardio": "Gemengde cardio",
         "other": "Overig"
       },
-      "loadError": "Je workouts konden niet worden geladen",
-      "loadMore": "Meer workouts laden",
-      "loadingMore": "Meer workouts worden geladen",
-      "loadMoreError": "Meer workouts konden niet worden geladen",
-      "countOne": "{count} workout",
-      "countOther": "{count} workouts",
-      "countFew": "{count} workouts",
+      "loadError": "Je trainingen konden niet worden geladen",
+      "loadMore": "Meer trainingen laden",
+      "loadingMore": "Meer trainingen worden geladen",
+      "loadMoreError": "Meer trainingen konden niet worden geladen",
+      "countOne": "{count} training",
+      "countOther": "{count} trainingen",
+      "countFew": "{count} trainingen",
       "filterLabel": "Filteren op sport",
       "filterAll": "Alle sporten",
       "filterEmpty": "Geen sessies van deze sport in je geschiedenis.",
       "manual": {
-        "logWorkout": "Workout vastleggen",
-        "sheetTitle": "Workout vastleggen",
+        "logWorkout": "Training vastleggen",
+        "sheetTitle": "Training vastleggen",
         "sheetDescription": "Voer een sessie handmatig in: wat je hebt gedaan, wanneer en hoelang.",
         "sportLabel": "Activiteit",
         "sportPlaceholder": "Kies een activiteit",
@@ -4205,27 +4205,27 @@
         "durationLabel": "Duur",
         "distanceLabel": "Afstand ({unit})",
         "energyLabel": "Actieve energie (kcal)",
-        "alreadySaved": "Deze workout is al opgeslagen",
-        "saveError": "De workout kon niet worden opgeslagen",
-        "deleteLabel": "Workout verwijderen",
-        "deleteConfirmTitle": "Deze workout verwijderen?",
-        "deleteConfirmDescription": "Deze workout die je handmatig hebt ingevoerd, wordt definitief verwijderd.",
-        "deleted": "Workout verwijderd",
-        "deleteError": "De workout kon niet worden verwijderd",
+        "alreadySaved": "Deze training is al opgeslagen",
+        "saveError": "De training kon niet worden opgeslagen",
+        "deleteLabel": "Training verwijderen",
+        "deleteConfirmTitle": "Deze training verwijderen?",
+        "deleteConfirmDescription": "Deze training die je handmatig hebt ingevoerd, wordt definitief verwijderd.",
+        "deleted": "Training verwijderd",
+        "deleteError": "De training kon niet worden verwijderd",
         "errors": {
           "sportRequired": "Kies een activiteit.",
           "startRequired": "Voer een datum en tijd in.",
           "startInFuture": "Het begin kan niet in de toekomst liggen.",
-          "durationRequired": "Voer in hoelang de workout duurde.",
+          "durationRequired": "Voer in hoelang de training duurde.",
           "durationInvalid": "Voer hele uren in, en minuten van 0 tot 59.",
-          "durationTooLong": "Een workout kan maximaal 24 uur duren.",
-          "endInFuture": "Dan zou de workout in de toekomst eindigen. Stel het begin in op het moment dat de workout begon.",
+          "durationTooLong": "Een training kan maximaal 24 uur duren.",
+          "endInFuture": "Dan zou de training in de toekomst eindigen. Stel het begin in op het moment dat de training begon.",
           "distanceInvalid": "Voer de afstand in als getal binnen een realistisch bereik.",
           "energyInvalid": "Voer de actieve energie in als getal van maximaal 20.000 kcal."
         },
-        "editTitle": "Workout bewerken",
+        "editTitle": "Training bewerken",
         "editAction": "Bewerken",
-        "updated": "Workout bijgewerkt"
+        "updated": "Training bijgewerkt"
       },
       "load": {
         "title": "Trainingsbelasting",
@@ -4251,7 +4251,7 @@
         "title": "Glucoseoverzicht",
         "subtitle": "Een beeld van je afgelopen {days, plural, one {# dag} other {# dagen}}, op basis van {count, plural, one {# meting} other {# metingen}}.",
         "spotCaveat": "Dit zijn schattingen op basis van losse metingen, geen profiel van een continue glucosemeter. Zie ze als een richting en niet als een klinisch oordeel.",
-        "labsLink": "Labuitslagen? Leg een HbA1c of nuchtere glucose uit een bloedafname vast onder Labuitslagen.",
+        "labsLink": "Bloedwaarden uit het lab? Leg een HbA1c of nuchtere glucose uit een bloedafname vast onder Labuitslagen.",
         "learningTitle": "Je glucose wordt nog in kaart gebracht",
         "learningBody": "Tot nu toe zijn dat {count} in {days}. Met wat meer geschiedenis wordt het beeld vollediger. Blijf vastleggen, of laat een gekoppeld apparaat het aanvullen.",
         "learningBodyEmpty": "Zodra er een handvol metingen binnenkomt (door jou vastgelegd of gesynchroniseerd vanaf een apparaat), krijgen je tijd binnen bereik, gemiddelde en variabiliteit hier vorm.",
@@ -4354,15 +4354,15 @@
     },
     "navBoneMass": "Botmassa",
     "flightsClimbed": {
-      "title": "Gelopen trappen",
+      "title": "Beklommen verdiepingen",
       "description": "Het aantal trappen dat je per dag hebt beklommen.",
-      "chartTitle": "Gelopen trappen per dag",
+      "chartTitle": "Beklommen verdiepingen per dag",
       "emptyState": {
         "title": "Nog geen gegevens over trappen",
-        "description": "Dagtotalen van gelopen trappen verschijnen hier zodra Apple Health de beweging van een dag synchroniseert."
+        "description": "Dagtotalen van beklommen verdiepingen verschijnen hier zodra Apple Health de beweging van een dag synchroniseert."
       }
     },
-    "navFlightsClimbed": "Trappen",
+    "navFlightsClimbed": "Verdiepingen",
     "walkingRunningDistance": {
       "title": "Afstand wandelen + hardlopen",
       "description": "De afstand die je per dag wandelend en hardlopend hebt afgelegd, in kilometer.",
@@ -4510,7 +4510,7 @@
       "chartTitle": "Ademhalingsfrequentie",
       "emptyState": {
         "title": "Nog geen gegevens over ademhalingsfrequentie",
-        "description": "Metingen van de ademhalingsfrequentie verschijnen hier zodra Apple Health de ademhaling tijdens slaap of workouts synchroniseert."
+        "description": "Metingen van de ademhalingsfrequentie verschijnen hier zodra Apple Health de ademhaling tijdens slaap of trainingen synchroniseert."
       }
     },
     "navRespiratoryRate": "Ademhalingsfrequentie",
@@ -5393,7 +5393,7 @@
     "metricGlucoseBedtime": "Glucose (voor het slapengaan)",
     "metricBodyWater": "Lichaamsvocht",
     "metricBoneMass": "Botmassa",
-    "metricOxygenSaturation": "Zuurstofverzadiging (SpO₂)",
+    "metricOxygenSaturation": "Zuurstofsaturatie (SpO₂)",
     "unsetExplanation": "Niet aangepast, de berekende standaardwaarde wordt gebruikt.",
     "cardTitle": "Bereiken per meetwaarde"
   },
@@ -5423,12 +5423,12 @@
           "body": "Medicatie beheert schema's, innames, voorraad en titratie. Verborgen: terugkerende plannen (RRULE/doorlopend) en waarschuwingen bij lage voorraad. Je innamepercentage voedt de pijler therapietrouw op het dashboard en de context van de AI."
         },
         "labs": {
-          "title": "Labwaarden",
-          "body": "Labuitslagen legt biomarkers vast met referentiebereiken: bloedbeeld, cholesterol, HbA1c. Kracht: importeren en FHIR-export. Labwaarden buiten het bereik komen terug als onderbouwing in de inzichten en het artsenrapport."
+          "title": "Labuitslagen",
+          "body": "Labuitslagen legt biomarkers vast met referentiebereiken: bloedbeeld, cholesterol, HbA1c. Kracht: importeren en FHIR-export. Labuitslagen buiten het bereik komen terug als onderbouwing in de inzichten en het artsenrapport."
         },
         "illness": {
-          "title": "Ziektedagboek",
-          "body": "Het ziektedagboek legt acute episodes en chronische diagnoses vast, met hun opflakkeringen. Verborgen: koppel een episode aan je metingen, en de rustmodus die herinneringen pauzeert. Zo begrijpt de Coach waarom waarden een tijdje afwijken."
+          "title": "Ziekte",
+          "body": "Ziekte legt acute episodes en chronische diagnoses vast, met hun opflakkeringen. Verborgen: koppel een episode aan je metingen, en de rustmodus die herinneringen pauzeert. Zo begrijpt de Coach waarom waarden een tijdje afwijken."
         },
         "vorsorge": {
           "title": "Controles",
@@ -5448,7 +5448,7 @@
         },
         "coach": {
           "title": "Coach",
-          "body": "De Coach beantwoordt in een gesprek vragen over je gegevens, met je geschiedenis, medicatie en labwaarden als context. Je kiest zelf je AI-provider (je eigen sleutel of lokaal). De Coach berekent niets opnieuw; hij leest dezelfde cijfers als het dashboard."
+          "body": "De Coach beantwoordt in een gesprek vragen over je gegevens, met je geschiedenis, medicatie en labuitslagen als context. Je kiest zelf je AI-provider (je eigen sleutel of lokaal). De Coach berekent niets opnieuw; hij leest dezelfde cijfers als het dashboard."
         },
         "integrations": {
           "title": "Koppelingen",
@@ -5456,7 +5456,7 @@
         },
         "export": {
           "title": "Artsenrapport",
-          "body": "Het artsenrapport bundelt metingen, medicatie, labwaarden en controles als PDF of FHIR voor de afspraak. Hier komen alle modules samen: een volledig rapport ontstaat alleen uit goed bijgehouden gegevens."
+          "body": "Het artsenrapport bundelt metingen, medicatie, labuitslagen en controles als PDF of FHIR voor het bezoek. Hier komen alle modules samen: een volledig rapport ontstaat alleen uit goed bijgehouden gegevens."
         },
         "achievements": {
           "title": "Prestaties",
@@ -5778,7 +5778,7 @@
       "insightsDescription": "Voeg een lokaal model of je eigen AI-sleutel toe om de dagelijkse briefing en Coach te gebruiken.",
       "insightsCta": "Inzichten aanzetten",
       "visitTitle": "Het bezoek voorbereiden",
-      "visitDescription": "Zet de afspraak in de agenda; het artsenrapport bundelt wat je moet meenemen.",
+      "visitDescription": "Zet het bezoek in de agenda; het artsenrapport bundelt wat je moet meenemen.",
       "visitCta": "Bezoeken openen",
       "dataSourceNamedTitle": "{source} koppelen",
       "managedProfileTitle": "Het profiel aanmaken voor wie je zorgt",
@@ -5796,8 +5796,8 @@
           "cta": "Openen"
         },
         "careFeed": {
-          "title": "Agenda-abonnement voor afspraken",
-          "description": "Afspraken en controles in de agenda-app die je al gebruikt.",
+          "title": "Agenda-abonnement voor bezoeken",
+          "description": "Bezoeken en controles in de agenda-app die je al gebruikt.",
           "cta": "Abonneren"
         },
         "sharing": {
@@ -5811,13 +5811,13 @@
           "cta": "Importeren"
         },
         "reportSchedule": {
-          "title": "Vast artsrapport",
+          "title": "Vast artsenrapport",
           "description": "Een rapport dat elke maand, elk kwartaal of elk jaar in je documenten komt.",
           "cta": "Plannen"
         },
         "iosApp": {
           "title": "De iPhone-app",
-          "description": "Synchronisatie met Apple Gezondheid, en herinneringen via de push-relay als deze server die aanbiedt.",
+          "description": "Synchronisatie met Apple Gezondheid, en herinneringen via de pushrelay als deze server die aanbiedt.",
           "cta": "Meer informatie"
         }
       }
@@ -5970,10 +5970,10 @@
           "none": "Geen AI-aanbieder",
           "yourDefault": "Je standaardketen",
           "yourChain": "Je keten “{name}”",
-          "otherGuardian": "Een keten van een andere voogd",
+          "otherGuardian": "Een keten van een andere verzorger",
           "noInstanceKey": "Deze server heeft geen AI-sleutel, dus met deze keuze blijft het profiel zonder AI.",
           "yourCredentials": "Je eigen sleutels en aanmeldingen bedienen dit profiel, in de volgorde van die keten en verder niets. Wat het profiel verstuurt, telt mee op je eigen aanbiedersaccounts.",
-          "unusable": "De gekozen keten kan nu niet bedienen: de voogd die hem koos beheert dit profiel niet meer, of de keten is verwijderd. Het profiel heeft geen AI tot iemand opnieuw kiest."
+          "unusable": "De gekozen keten kan nu niet bedienen: de verzorger die hem koos beheert dit profiel niet meer, of de keten is verwijderd. Het profiel heeft geen AI tot iemand opnieuw kiest."
         }
       },
       "unavailableTitle": "Niet beschikbaar in dit gedeelde dossier",
@@ -6059,11 +6059,11 @@
           "description": "Weergave, sortering en handmatige volgorde."
         },
         "illness": {
-          "title": "Ziektedagboek",
+          "title": "Ziekte",
           "description": "Lijstweergave en volgorde van episodes."
         },
         "checkups": {
-          "title": "Preventieve controles",
+          "title": "Controles",
           "description": "Lijstweergave en volgorde van herinneringen."
         },
         "documents": {
@@ -6105,7 +6105,7 @@
           "steps": "Stappen",
           "activeEnergy": "Actieve energie",
           "walkingRunningDistance": "Afstand wandelen + hardlopen",
-          "flightsClimbed": "Trappen beklommen",
+          "flightsClimbed": "Beklommen verdiepingen",
           "sleep": "Slaap",
           "weight": "Gewicht",
           "bloodPressure": "Bloeddruk",
@@ -6274,10 +6274,10 @@
               "archive_unreadable": "archief kon niet worden gelezen",
               "missing_member": "bestand ontbreekt in het archief"
             },
-            "labsMarkersCreatedOne": "{count} nieuwe marker toegevoegd aan Labwaarden.",
-            "labsMarkersCreatedOther": "{count} nieuwe markers toegevoegd aan Labwaarden.",
-            "labsMarkersCreatedFew": "{count} nieuwe markers toegevoegd aan Labwaarden.",
-            "viewInLabs": "Bekijken in Labwaarden",
+            "labsMarkersCreatedOne": "{count} nieuwe marker toegevoegd aan Labuitslagen.",
+            "labsMarkersCreatedOther": "{count} nieuwe markers toegevoegd aan Labuitslagen.",
+            "labsMarkersCreatedFew": "{count} nieuwe markers toegevoegd aan Labuitslagen.",
+            "viewInLabs": "Bekijken in Labuitslagen",
             "estimateWarning": "{count, plural, one {Cumulatieve totalen voor # dag zijn geschat} other {Cumulatieve totalen voor # dagen zijn geschat}} op basis van de grootste bron in de export. De eigen statistieken van Apple Health blijven leidend.",
             "phase": {
               "queued": "In de wachtrij…",
@@ -6652,7 +6652,7 @@
             "description": "Groepen, je eigen tags en gearchiveerde tags."
           },
           "labs": {
-            "title": "Labwaarden",
+            "title": "Labuitslagen",
             "description": "Biomarkers en tekstherkenning op het apparaat voor labuitslagen."
           },
           "arrangementTitle": "Volgorde en weergave",
@@ -6663,8 +6663,8 @@
         }
       },
       "health-record": {
-        "title": "Gezondheidsdossier",
-        "subtitle": "Exporteer een volledig gezondheidsdossier dat klaar is voor je zorgverlener."
+        "title": "Artsenrapport en export",
+        "subtitle": "Stel het artsenrapport samen en exporteer je volledige gezondheidsdossier."
       },
       "coach": {
         "title": "Coach",
@@ -7236,7 +7236,7 @@
         "request": {
           "title": "Je toestemming voordat AI start",
           "body": "AI draait op deze server via een dienst die de beheerder aanbiedt: {providers}. Er gaat niets uit je gegevens naartoe totdat je akkoord gaat.",
-          "data": "Zodra je akkoord gaat, stuurt HealthLog die dienst wat de AI-functies nodig hebben: metingen zoals gewicht, bloeddruk, hartslag, slaap en activiteit, je medicatie, stemming, labwaarden en cyclusregistraties als je die bijhoudt, wat je in je profiel en aan de Coach schrijft, en documenten die je laat uitlezen. De dienst gebruikt dit om je dagelijkse briefing, de toelichtingen bij je metingen en de antwoorden van de Coach te schrijven.",
+          "data": "Zodra je akkoord gaat, stuurt HealthLog die dienst wat de AI-functies nodig hebben: metingen zoals gewicht, bloeddruk, hartslag, slaap en activiteit, je medicatie, stemming, labuitslagen en cyclusregistraties als je die bijhoudt, wat je in je profiel en aan de Coach schrijft, en documenten die je laat uitlezen. De dienst gebruikt dit om je dagelijkse briefing, de toelichtingen bij je metingen en de antwoorden van de Coach te schrijven.",
           "withdrawHint": "Je kunt je toestemming op elk moment intrekken via Instellingen, AI. Vanaf dat moment wordt er niets meer verstuurd.",
           "agree": "Akkoord",
           "dismiss": "Niet nu"
@@ -7416,7 +7416,7 @@
     },
     "fitbitRemoval": {
       "title": "Fitbit synchroniseert niet meer",
-      "body": "Google heeft de Fitbit Web API op 30 oktober 2026 uitgeschakeld. HealthLog kan daardoor geen verbinding meer maken met Fitbit en de Fitbit-koppeling is verwijderd. Alles wat al is geïmporteerd blijft: je grafieken, exports, back-ups en artsrapporten bevatten het nog steeds, gemarkeerd als Fitbit.",
+      "body": "Google heeft de Fitbit Web API op 30 oktober 2026 uitgeschakeld. HealthLog kan daardoor geen verbinding meer maken met Fitbit en de Fitbit-koppeling is verwijderd. Alles wat al is geïmporteerd blijft: je grafieken, exports, back-ups en artsenrapporten bevatten het nog steeds, gemarkeerd als Fitbit.",
       "ways": "Koppel hieronder Google Health om gegevens van een Fitbit of Pixel Watch te blijven ontvangen. Het leest dezelfde apparaten en vraagt één keer om je toestemming bij Google. Op Android kun je ook een Health Connect-export importeren.",
       "toGoogleHealth": "Naar Google Health",
       "toHealthConnect": "Health Connect-import",
@@ -7725,7 +7725,7 @@
       "errorGeneric": "De export kon niet worden gegenereerd. Probeer het opnieuw.",
       "errorRateLimit": "Je hebt de exportlimiet voor dit uur bereikt.",
       "errorModuleDisabled": "De export van het gezondheidsdossier is uitgeschakeld voor dit account.",
-      "visitOffer": "Er staat een afspraak gepland op {when}: {what}.",
+      "visitOffer": "Er staat een bezoek gepland op {when}: {what}.",
       "visitOfferApplyWindow": "Deze periode gebruiken"
     },
     "globalExcludedInjectionSitesLabel": "Overal uitgesloten injectieplaatsen",
@@ -8001,7 +8001,7 @@
       "revokeSessionConfirmBody": "{device} moet opnieuw inloggen. Niets wat erop is vastgelegd, wordt aangetast.",
       "signOutEverywhereConfirmTitle": "Alle andere apparaten uitloggen?",
       "signOutEverywhereConfirmBody": "Elk ander apparaat, elke gekoppelde AI-assistent en elk API-token moet opnieuw inloggen of opnieuw worden ingesteld. Dit apparaat blijft ingelogd. Niets wat je hebt vastgelegd, wordt aangetast.",
-      "signOutEverywhereShareLinks": "Ook de deellinks voor artsen beëindigen",
+      "signOutEverywhereShareLinks": "Ook de deellinks beëindigen",
       "signOutEverywhereInvites": "Uitnodigingen voor je dossier die nog niemand heeft geaccepteerd, worden ingetrokken. Mensen die al hebben geaccepteerd, houden hun toegang; die kun je hierna beëindigen.",
       "signOutEverywhereInvitesDone": "{count, plural, one {# uitnodiging} other {# uitnodigingen}} ingetrokken die niemand had geaccepteerd.",
       "grantsKeptTitle": "Deze mensen kunnen je dossier nog steeds zien",
@@ -8060,12 +8060,12 @@
         "doors": {
           "accounts": {
             "title": "Andere accounts",
-            "description": "Mensen op deze server met wie je je dossier deelt, en de voogden van profielen die je beheert.",
+            "description": "Mensen op deze server met wie je je dossier deelt, en de verzorgers van profielen die je beheert.",
             "link": "Gedeelde toegang openen"
           },
           "shareLinks": {
-            "title": "Links voor zorgverleners",
-            "description": "Alleen-lezen-links naar je artsrapport die vervallen op een dag die jij kiest.",
+            "title": "Deellinks",
+            "description": "Alleen-lezen-links naar je artsenrapport die vervallen op een dag die jij kiest.",
             "link": "Links openen"
           },
           "emergencyCard": {
@@ -8075,7 +8075,7 @@
           },
           "careCalendar": {
             "title": "Zorgagenda",
-            "description": "Een agenda-abonnement met je geboekte afspraken en de zorgdata die eraan komen.",
+            "description": "Een agenda-abonnement met je geboekte bezoeken en de zorgdata die eraan komen.",
             "link": "Zorgagenda openen"
           },
           "cycleCalendar": {
@@ -8852,7 +8852,7 @@
       },
       "services": {
         "title": "Push en kanalen",
-        "subtitle": "Meldingskanalen, Web Push-sleutels, de push-relay en de bezorgstatus voor de hele server."
+        "subtitle": "Meldingskanalen, Web Push-sleutels, de pushrelay en de bezorgstatus voor de hele server."
       },
       "integrations": {
         "title": "Bewaking",
@@ -9034,7 +9034,7 @@
         "previewCycles": "Cyclusgegevens",
         "previewVisits": "Doktersbezoeken",
         "previewVaccinations": "Vaccinaties",
-        "previewReminders": "Herinneringen voor preventieve zorg",
+        "previewReminders": "Controleherinneringen",
         "previewCustomMetrics": "Eigen meetwaarden",
         "previewHealthScores": "Scoregeschiedenis",
         "restoreConfirm": "Nu terugzetten",
@@ -10287,7 +10287,7 @@
     "eventMedicationLowStockDesc": "Als een bijgehouden medicatievoorraad voor minder dagen voldoende is dan je drempelwaarde voor lage voorraad",
     "eventCoachNudge": "Seintje van de Coach",
     "eventCoachNudgeDesc": "Af en toe een seintje van je Coach als je recente trends aanleiding geven tot een check-in.",
-    "eventMeasurementReminder": "Meetherinnering",
+    "eventMeasurementReminder": "Controleherinnering",
     "eventMeasurementReminderDesc": "Wordt verstuurd als een bijgehouden meting gepland staat.",
     "eventMedicationIntakeSync": "Synchronisatie van medicatie-inname",
     "eventMedicationIntakeSyncDesc": "Update op al je apparaten als een dosis wordt geregistreerd, ingenomen of overgeslagen.",
@@ -10392,14 +10392,14 @@
     "eventSeizureClusterDesc": "Als een aanval die iemand anders vastlegt volgens de regel in het dagboek een cluster vormt. Eén keer per cluster.",
     "seizureCluster": {
       "title": "Clusteraanvallen",
-      "body": "{count, plural, one {# aanval} other {# aanvallen}} binnen {hours} u, vastgelegd door {name}. Het noodplan staat in het aanvallendagboek."
+      "body": "{count, plural, one {# aanval} other {# aanvallen}} binnen {hours} u, vastgelegd door {name}. Het noodplan staat in het aanvalsdagboek."
     },
     "eventMeasurementAnomaly": "Blijvende verandering in een vitale waarde",
     "eventMeasurementAnomalyDesc": "Wanneer een vitale waarde zoals rusthartslag of bloeddruk al minstens tien dagen op een nieuw niveau blijft. Hooguit één keer per week, 's ochtends, nooit tijdens een lopende ziekte.",
     "measurementAnomaly": {
       "title": "Een blijvende verandering",
-      "bodyUp": "Je {metric} is sinds {date} hoger gebleven. Insights toont het voor en na.",
-      "bodyDown": "Je {metric} is sinds {date} lager gebleven. Insights toont het voor en na."
+      "bodyUp": "Je {metric} is sinds {date} hoger gebleven. Inzichten toont het voor en na.",
+      "bodyDown": "Je {metric} is sinds {date} lager gebleven. Inzichten toont het voor en na."
     },
     "eventSyncStalled": "Een bron synchroniseert niet meer",
     "eventSyncStalledDesc": "Wanneer een iPhone, ring, horloge of weegschaal die elke dag levert stil valt. Eén keer per onderbreking, overdag, hooguit één keer per dag.",
@@ -10629,7 +10629,7 @@
     "period": "Rapportageperiode: {start}–{end}",
     "expires": "Deze link verloopt op {date}.",
     "provenance": "Dit is een alleen-lezen samenvatting, gedeeld door de persoon op wie deze betrekking heeft en geëxporteerd uit diens zelf bijgehouden HealthLog-gegevens. Waarden zijn zelf vastgelegd en kunnen via apparaten gesynchroniseerde metingen bevatten; beschouw ze als door de patiënt gerapporteerd, niet als klinisch onderzoek.",
-    "labs": "Labwaarden",
+    "labs": "Labuitslagen",
     "medications": "Medicatie en therapietrouw",
     "bmi": "Body-mass-index (BMI)",
     "statSummary": "laatste {latest} (gem. {avg}, bereik {min}–{max})",
@@ -10792,7 +10792,7 @@
       "loadError": "Je cyclus kon niet worden geladen."
     },
     "disclaimer": "Deze voorspellingen zijn beschrijvende schattingen op basis van je geregistreerde gegevens, geen anticonceptiemethode en geen medisch advies. Ze geven nooit aan dat onbeschermde seks veilig is. Raadpleeg voor anticonceptie of een medische beslissing een zorgverlener.",
-    "title": "Je cyclus",
+    "title": "Cyclus",
     "subtitle": "Registreer je menstruatie en symptomen en zie wat er komt.",
     "tabs": {
       "calendar": "Kalender",
@@ -11525,8 +11525,8 @@
         "ldl": "LDL-cholesterol is het cholesterol dat wordt vervoerd door lipoproteïnedeeltjes met een lage dichtheid: de fractie die cholesterol naar de weefsels brengt, maar het ook in de vaatwanden kan afzetten. Over de jaren draagt deze afzetting bij aan atherosclerotische plaque, en daarom is LDL een van de nauwst gevolgde lipidenmarkers. Een lagere blootstelling op lange termijn gaat over het algemeen samen met een lager cardiovasculair risico. Het wordt beoordeeld per risicocategorie in plaats van aan de hand van één vaste normaalwaarde.",
         "hdl": "HDL-cholesterol is het cholesterol dat wordt vervoerd door lipoproteïnedeeltjes met een hoge dichtheid, die overtollig cholesterol uit de weefsels opnemen en terugbrengen naar de lever voor hergebruik of afvoer. Vanwege deze transportrol wordt het vaak de beschermende fractie genoemd. Zeer lage waarden gaan vaak samen met een hoger cardiovasculair risico, maar het kunstmatig verhogen ervan heeft het risico niet betrouwbaar verlaagd; daarom wordt het gezien als marker en niet als streefwaarde. Het wordt meestal samen met LDL en triglyceriden beoordeeld.",
         "triglycerides": "Triglyceriden zijn de belangrijkste vorm van vet die in het bloed circuleert. Ze komen zowel uit de voeding als uit de lever en dienen als belangrijke energievoorraad. De waarden stijgen na maaltijden, daarom wordt het bloed voor de vergelijkbaarheid meestal nuchter afgenomen. Aanhoudend hoge triglyceriden hangen samen met metabool en cardiovasculair risico en gaan vaak samen met insulineresistentie en een laag HDL. Ze worden beoordeeld als één onderdeel van het totale lipidenbeeld.",
-        "fasting-glucose": "Nuchtere glucose is de suikerconcentratie in het bloed, gemeten na een nacht vasten. De waarde laat zien hoe het lichaam zijn basisbloedsuikerspiegel vasthoudt zonder recente voeding. Glucose is de belangrijkste directe brandstof van het lichaam, en insuline houdt het normaal gesproken binnen een smal bereik. Een nuchtere meting sluit het effect van recente maaltijden uit en is daardoor een standaardscreening voor hoe de glucoseregulatie werkt. Het is een van de markers waarmee de metabole gezondheid in de tijd wordt beoordeeld.",
-        "hba1c": "HbA1c is het aandeel hemoglobine in de rode bloedcellen dat aan glucose is gebonden; dit stapelt zich op in verhouding tot de gemiddelde blootstelling aan bloedsuiker. Omdat rode bloedcellen ongeveer drie maanden leven, weerspiegelt het de gemiddelde glucose over de voorgaande twee tot drie maanden in plaats van één moment. Daardoor geeft het een stabiel, maaltijdonafhankelijk beeld van de glucoseregulatie. De nauwkeurigheid kan worden beïnvloed door aandoeningen die de levensduur van rode bloedcellen veranderen.",
+        "fasting-glucose": "Nuchtere glucose is de suikerconcentratie in het bloed, gemeten na een nacht vasten. De waarde laat zien hoe het lichaam zijn basisbloedglucosespiegel vasthoudt zonder recente voeding. Glucose is de belangrijkste directe brandstof van het lichaam, en insuline houdt het normaal gesproken binnen een smal bereik. Een nuchtere meting sluit het effect van recente maaltijden uit en is daardoor een standaardscreening voor hoe de glucoseregulatie werkt. Het is een van de markers waarmee de metabole gezondheid in de tijd wordt beoordeeld.",
+        "hba1c": "HbA1c is het aandeel hemoglobine in de rode bloedcellen dat aan glucose is gebonden; dit stapelt zich op in verhouding tot de gemiddelde blootstelling aan bloedglucose. Omdat rode bloedcellen ongeveer drie maanden leven, weerspiegelt het de gemiddelde glucose over de voorgaande twee tot drie maanden in plaats van één moment. Daardoor geeft het een stabiel, maaltijdonafhankelijk beeld van de glucoseregulatie. De nauwkeurigheid kan worden beïnvloed door aandoeningen die de levensduur van rode bloedcellen veranderen.",
         "tsh": "TSH (thyroïdstimulerend hormoon) wordt door de hypofyse afgegeven om de schildklier aan te zetten tot de aanmaak van haar hormonen, en het past zich naar boven of beneden aan om die in balans te houden. Door deze terugkoppeling is TSH de gevoeligste eerste screening van de schildklierfunctie: het verandert meestal al voordat de schildklierhormonen zelf afwijken. Een verhoogd of verlaagd TSH wijst op een te traag of te snel werkende schildklier en is meestal aanleiding om de schildklierhormonen zelf te meten. Zwangerschap en leeftijd verschuiven het verwachte bereik.",
         "ft3": "Vrij T3 (trijodothyronine) is de ongebonden, biologisch actieve vorm van het krachtigere schildklierhormoon: de fractie die beschikbaar is om op weefsels in te werken. Het meeste circulerende T3 is gebonden aan transporteiwitten en inactief, dus het vrije deel weerspiegelt de werkelijke beschikbaarheid van het hormoon. Het wordt gemeten om de schildklierfunctie te karakteriseren, vooral samen met TSH en vrij T4 als de uitslagen onduidelijk zijn. De waarden zijn sterk afhankelijk van de gebruikte bepaling en worden in klinische context beoordeeld.",
         "ft4": "Vrij T4 (thyroxine) is de ongebonden vorm van het belangrijkste hormoon dat de schildklier aan het bloed afgeeft. Het dient als voorraad die weefsels naar behoefte omzetten in het actievere T3. De vrije fractie weerspiegelt wat het lichaam werkelijk beschikbaar heeft, ongeacht de hoeveelheid transporteiwitten. Het wordt meestal samen met TSH gemeten om problemen van de schildklier zelf te onderscheiden van de aansturing door de hypofyse. Zwangerschap en bepaalde medicijnen kunnen het verschuiven.",
@@ -11811,7 +11811,7 @@
       "description": "Schema's, innames en therapietrouw."
     },
     "illness": {
-      "label": "Ziektedagboek",
+      "label": "Ziekte",
       "description": "Houd episodes van ziekten en aandoeningen bij met een dagelijkse symptoomtijdlijn."
     },
     "mcp": {
@@ -12031,7 +12031,7 @@
       "viewDescription": "Kies of episodes als kaarten of als compacte lijst worden getoond.",
       "orderDescription": "Sleep je episodes in de volgorde waarin je ze wilt zien."
     },
-    "customize": "Ziektedagboek aanpassen",
+    "customize": "Ziekte aanpassen",
     "newEpisode": "Nieuwe episode",
     "logDay": "Dag vastleggen",
     "markRecovered": "Markeren als hersteld",
@@ -12126,7 +12126,7 @@
       "sleepContextMore": "Tijdens deze episode sliep je merkbaar meer dan normaal (ongeveer {hours} u per nacht).",
       "sleepContextLess": "Tijdens deze episode sliep je merkbaar minder dan normaal (ongeveer {hours} u per nacht).",
       "redFlagTitle": "Verdient nadere aandacht",
-      "redFlagSpo2": "Je zuurstofverzadiging bleef meerdere dagen laag. Zoek medische hulp als dit opnieuw gebeurt.",
+      "redFlagSpo2": "Je zuurstofsaturatie bleef meerdere dagen laag. Zoek medische hulp als dit opnieuw gebeurt.",
       "redFlagFever": "Je had aanhoudende koorts. Zoek medische hulp als dit opnieuw gebeurt.",
       "direction": {
         "above": "boven je gebruikelijke waarde",
@@ -12162,7 +12162,7 @@
       "empty": "Nog geen dagen vastgelegd."
     },
     "loadError": "Deze episode kon niet worden geladen.",
-    "backToList": "Terug naar dagboek",
+    "backToList": "Terug naar de lijst",
     "detail": {
       "note": "Notitie"
     },
@@ -12182,7 +12182,7 @@
       "HEART_RATE_VARIABILITY": "Hartslagvariabiliteit",
       "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Herstel",
-      "OXYGEN_SATURATION": "Zuurstofverzadiging",
+      "OXYGEN_SATURATION": "Zuurstofsaturatie",
       "BODY_TEMPERATURE": "Lichaamstemperatuur",
       "RESPIRATORY_RATE": "Ademhalingsfrequentie",
       "BLOOD_PRESSURE_SYS": "Systolische bloeddruk",
@@ -12461,13 +12461,13 @@
       "bpLowTitle": "Lage bloeddruk",
       "bpLowDoctor": "Twee recente metingen hadden een systolische waarde onder {systolic} mmHg. Als je duizelig bent of je flauw voelt, ga dan zitten of liggen, en neem contact op met je arts als het aanhoudt.",
       "bpLowEmergency": "Twee recente metingen hadden een systolische waarde onder {systolic} mmHg en je hebt klachten genoteerd. Als je je flauw voelt, verward bent of een koude, klamme huid hebt, bel dan nu het alarmnummer.",
-      "glucoseLowTitle": "Lage bloedsuiker",
+      "glucoseLowTitle": "Lage bloedglucose",
       "glucoseLowDoctor": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}). Neem snelwerkende koolhydraten, meet na 15 minuten opnieuw en neem contact op met je arts als lage waarden aanhouden.",
       "glucoseLowEmergency": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}) en je hebt klachten genoteerd. Behandel nu met snelwerkende suiker; als dat niet lukt of als je je erg onwel voelt, bel dan het alarmnummer.",
-      "glucoseLowSevereTitle": "Zeer lage bloedsuiker",
+      "glucoseLowSevereTitle": "Zeer lage bloedglucose",
       "glucoseLowSevereDoctor": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}). Behandel direct met snelwerkende koolhydraten, meet na 15 minuten opnieuw en neem contact op met je arts.",
       "glucoseLowSevereEmergency": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}) en je hebt klachten genoteerd. Behandel nu; als je geen eten binnen kunt houden of je erg onwel voelt, bel dan het alarmnummer.",
-      "glucoseHighTitle": "Zeer hoge bloedsuiker",
+      "glucoseHighTitle": "Zeer hoge bloedglucose",
       "glucoseHighDoctor": "Twee recente metingen waren {value} {unit} of hoger. Meet opnieuw, drink voldoende en neem zo snel mogelijk contact op met je arts als de waarde zo hoog blijft.",
       "glucoseHighEmergency": "Twee recente metingen waren {value} {unit} of hoger en je hebt klachten genoteerd. Als je moet overgeven, snel ademt of verward bent, bel dan nu het alarmnummer."
     }
@@ -13006,7 +13006,7 @@
         "goals": {
           "weight": "Gewicht",
           "blood_pressure": "Bloeddruk",
-          "blood_sugar": "Bloedsuiker",
+          "blood_sugar": "Bloedglucose",
           "sleep": "Slaap",
           "fitness": "Conditie",
           "stress_recovery": "Stress en herstel",
@@ -13280,7 +13280,7 @@
       "sourceOther": "een ander systeem",
       "sourceReportSchedule": "het rapportschema",
       "share": "Delen",
-      "labValuesLink": "{count, plural, one {# labwaarde} other {# labwaarden}} bekijken",
+      "labValuesLink": "{count, plural, one {# labuitslag} other {# labuitslagen}} bekijken",
       "visitsLabel": "Hoort bij bezoek",
       "vaccinationsLabel": "Vaccinaties",
       "noVisitsToLink": "Nog geen bezoeken vastgelegd.",
@@ -13333,7 +13333,7 @@
       "dismiss": "Negeren",
       "empty": "Er kon niets uit dit document worden gelezen.",
       "unavailableBody": "Stel een AI-provider in om een titel, soort en datum voor te stellen.",
-      "unavailableLocalOcr": "Zet “Scans op dit apparaat lezen” aan onder Instellingen > Modules > Labwaarden om afbeeldingen op dit apparaat te lezen.",
+      "unavailableLocalOcr": "Zet “Scans op dit apparaat lezen” aan onder Instellingen > Modules > Labuitslagen om afbeeldingen op dit apparaat te lezen.",
       "unavailableAction": "AI-instellingen openen",
       "errorGeneric": "Het document kon niet worden gelezen. Probeer het opnieuw.",
       "errorOcr": "Er kon geen tekst uit deze afbeelding worden gelezen.",
@@ -13346,12 +13346,12 @@
       "errorFileType": "Dit bestandstype kan niet worden gelezen.",
       "errorNotIndexed": "Laat het document eerst lezen en extraheer daarna.",
       "errorOutputLimit": "De AI-provider bereikte zijn uitvoerlimiet voordat hij één waarde teruggaf. Probeer een model dat langere antwoorden toestaat.",
-      "errorLocalOcrDisabled": "Zet eerst “Scans op dit apparaat lezen” aan onder Instellingen > Modules > Labwaarden.",
+      "errorLocalOcrDisabled": "Zet eerst “Scans op dit apparaat lezen” aan onder Instellingen > Modules > Labuitslagen.",
       "errorProvider": "Hiervoor is geen AI-provider ingesteld.",
       "errorTextImageOnly": "Lokale OCR leest alleen afbeeldingen, niet dit bestand.",
       "errorConsent": "Voor het lezen van documenten met AI is eerst je toestemming nodig.",
       "errorUnavailable": "Documenten lezen met AI is hier op dit moment niet beschikbaar.",
-      "unavailableLocalOcrAction": "Instellingen voor labwaarden openen"
+      "unavailableLocalOcrAction": "Instellingen voor labuitslagen openen"
     },
     "summary": {
       "summarise": "Samenvatten",
@@ -13362,9 +13362,9 @@
     },
     "ai": {
       "readDone": "De AI heeft je document gelezen.",
-      "readStagedOne": "De AI heeft je document gelezen. 1 labwaarde staat klaar om te controleren.",
-      "readStagedFew": "De AI heeft je document gelezen. {count} labwaarden staan klaar om te controleren.",
-      "readStagedOther": "De AI heeft je document gelezen. {count} labwaarden staan klaar om te controleren.",
+      "readStagedOne": "De AI heeft je document gelezen. 1 labuitslag staat klaar om te controleren.",
+      "readStagedFew": "De AI heeft je document gelezen. {count} labuitslagen staan klaar om te controleren.",
+      "readStagedOther": "De AI heeft je document gelezen. {count} labuitslagen staan klaar om te controleren.",
       "read": "Lezen met AI",
       "reread": "Opnieuw lezen",
       "reading": "Lezen…",
@@ -13378,7 +13378,7 @@
       "openOther": "Geëxtraheerde waarden controleren ({count})",
       "includeAria": "{value} opnemen",
       "type": {
-        "OBSERVATION": "Labwaarde",
+        "OBSERVATION": "Labuitslag",
         "CONDITION": "Aandoening",
         "MEDICATION_STATEMENT": "Medicatie"
       },
@@ -13403,7 +13403,7 @@
       "savedToastFew": "{count} waarden opgeslagen",
       "savedToastOther": "{count} waarden opgeslagen",
       "nothingSavedToast": "Controle opgeslagen. Er zijn geen waarden toegevoegd.",
-      "extract": "Labwaarden extraheren",
+      "extract": "Labuitslagen extraheren",
       "extracting": "Extraheren…",
       "extractHint": "Gebruikt de tekst die al uit dit document is gelezen. Geëxtraheerde waarden wachten op jouw controle; er wordt niets automatisch opgeslagen.",
       "extractEmpty": "Er konden geen waarden uit dit document worden geëxtraheerd.",
@@ -13555,7 +13555,7 @@
     }
   },
   "selfDescription": {
-    "dataPosture": "HealthLog is zelf gehost: je gezondheidsgegevens staan in de database van je eigen instantie. Notities en andere vrije tekst, documenten, antwoorden op vragenlijsten, door AI geschreven tekst en toegangstokens worden versleuteld opgeslagen; meetwaarden, labwaarden, medicijnnamen en stemmingsscores worden onversleuteld opgeslagen en zijn afhankelijk van de beveiliging van je server. AI-functies sturen alleen gegevens naar de AI-provider die voor je account is ingesteld, en er is geen analyse door derden van je gezondheidsgegevens."
+    "dataPosture": "HealthLog is zelf gehost: je gezondheidsgegevens staan in de database van je eigen instantie. Notities en andere vrije tekst, documenten, antwoorden op vragenlijsten, door AI geschreven tekst en toegangstokens worden versleuteld opgeslagen; meetwaarden, labuitslagen, medicijnnamen en stemmingsscores worden onversleuteld opgeslagen en zijn afhankelijk van de beveiliging van je server. AI-functies sturen alleen gegevens naar de AI-provider die voor je account is ingesteld, en er is geen analyse door derden van je gezondheidsgegevens."
   },
   "customMetrics": {
     "sectionTitle": "Eigen metingen",
@@ -13849,7 +13849,7 @@
         }
       },
       "upcomingVisit": {
-        "title": "Afspraak binnenkort",
+        "title": "Bezoek binnenkort",
         "bodyToday": "{what} vandaag",
         "bodyTomorrow": "{what} morgen",
         "bodyDayAfterTomorrow": "{what} overmorgen"
@@ -13859,8 +13859,8 @@
       "logDose": "Innemen",
       "reconnect": "Opnieuw verbinden",
       "viewCheckups": "Controles bekijken",
-      "viewAppointment": "Afspraak bekijken",
-      "viewAppointments": "Afspraken bekijken",
+      "viewAppointment": "Bezoek bekijken",
+      "viewAppointments": "Bezoeken bekijken",
       "checkinKeep": "Aanhouden",
       "checkinAdjust": "Aanpassen",
       "checkinLetGo": "Loslaten",
@@ -13972,7 +13972,7 @@
         "next": "Volgende inname om {time}"
       },
       "appointment": {
-        "label": "Afspraak",
+        "label": "Bezoek",
         "today": "Vandaag {time}, {what}",
         "tomorrow": "Morgen {time}, {what}"
       },
@@ -14065,7 +14065,7 @@
     },
     "unavailable": {
       "title": "Valt buiten gedeelde toegang",
-      "description": "Delen betreft het gezondheidsdossier zelf, inclusief de gezondheidsachtergrond onder Anamnese. Accountinstellingen, gekoppelde diensten, meldingen en de AI-functies blijven bij de persoon die eigenaar is van het account.",
+      "description": "Delen betreft het gezondheidsdossier zelf, inclusief de gezondheidsachtergrond onder Medische voorgeschiedenis. Accountinstellingen, gekoppelde diensten, meldingen en de AI-functies blijven bij de persoon die eigenaar is van het account.",
       "leave": "Terug naar mijn dossier"
     },
     "state": {
@@ -14103,7 +14103,7 @@
       "accessReadCapability": "De ander kan alles lezen wat dit dossier deelt, maar niets toevoegen of wijzigen.",
       "accessWriteLabel": "Mag bekijken en toevoegen",
       "accessWriteCapability": "De ander kan iets aan het dossier toevoegen, maar niets bewerken of verwijderen, ook niet de eigen toevoegingen.",
-      "accessWriteDetail": "De ander kan meetwaarden, labuitslagen, een nieuwe te volgen labwaarde, een ziekteregistratie, een bijwerking bij een geneesmiddel en een nieuw medicijn toevoegen, en een dosis als ingenomen of overgeslagen markeren. Bewerken of verwijderen kan niet, ook niet bij de eigen toevoegingen, en een van je herinneringen uitstellen kan ook niet. Dat kun alleen jij.",
+      "accessWriteDetail": "De ander kan meetwaarden, labuitslagen, een nieuwe te volgen biomarker, een ziekteregistratie, een bijwerking bij een geneesmiddel en een nieuw medicijn toevoegen, en een dosis als ingenomen of overgeslagen markeren. Bewerken of verwijderen kan niet, ook niet bij de eigen toevoegingen, en een van je herinneringen uitstellen kan ook niet. Dat kun alleen jij.",
       "accessManageLabel": "Mag beheren",
       "accessManageCapability": "De ander kan registraties toevoegen, wijzigen en verwijderen, ook die je zelf hebt ingevoerd.",
       "accessManageDetail": "De ander kan ook de inzichten lezen die uit je dossier worden gegenereerd. Je login, je beveiligingsinstellingen, je koppelingen en wie er verder toegang heeft, kan de ander niet wijzigen. Je kunt dit op elk moment beëindigen.",
@@ -14179,10 +14179,10 @@
     },
     "managedActivity": {
       "title": "Activiteit in het profiel van {name}",
-      "hint": "Wie wat deed in dit profiel: de wijzigingen van elke voogd, die van jou inbegrepen.",
+      "hint": "Wie wat deed in dit profiel: de wijzigingen van elke verzorger, die van jou inbegrepen.",
       "action": "Activiteit tonen",
       "emptyTitle": "Nog niets vastgelegd",
-      "emptyDescription": "Wijzigingen die een voogd in dit profiel maakt verschijnen hier, en openingen als één regel per voogd per dag.",
+      "emptyDescription": "Wijzigingen die een verzorger in dit profiel maakt verschijnen hier, en openingen als één regel per verzorger per dag.",
       "you": "Jij",
       "opened": "{name} opende het profiel {count}×",
       "acted": "{name} heeft iets gewijzigd in het profiel",
@@ -14324,13 +14324,13 @@
       "measurementDelete": "{name} heeft een meting verwijderd",
       "measurementDeleteBulk": "{name} heeft meerdere metingen tegelijk verwijderd",
       "measurementRestore": "{name} heeft een meting hersteld",
-      "measurementReminderCreate": "{name} heeft een meetherinnering toegevoegd",
-      "measurementReminderUpdate": "{name} heeft een meetherinnering gewijzigd",
-      "measurementReminderDelete": "{name} heeft een meetherinnering verwijderd",
-      "measurementReminderComplete": "{name} heeft een meetherinnering voltooid",
-      "measurementReminderSatisfy": "{name} heeft een meetherinnering afgevinkt",
-      "measurementReminderSkip": "{name} heeft een meetherinnering overgeslagen",
-      "measurementReminderSnooze": "{name} heeft een meetherinnering uitgesteld",
+      "measurementReminderCreate": "{name} heeft een controleherinnering toegevoegd",
+      "measurementReminderUpdate": "{name} heeft een controleherinnering gewijzigd",
+      "measurementReminderDelete": "{name} heeft een controleherinnering verwijderd",
+      "measurementReminderComplete": "{name} heeft een controleherinnering voltooid",
+      "measurementReminderSatisfy": "{name} heeft een controleherinnering afgevinkt",
+      "measurementReminderSkip": "{name} heeft een controleherinnering overgeslagen",
+      "measurementReminderSnooze": "{name} heeft een controleherinnering uitgesteld",
       "labResultUpdate": "{name} heeft een labuitslag gewijzigd",
       "labResultDelete": "{name} heeft een labuitslag verwijderd",
       "labResultRestore": "{name} heeft een labuitslag hersteld",
@@ -14404,8 +14404,8 @@
       "rejectedLabUpdate": "{name} probeerde een labuitslag te wijzigen, maar dat werd geweigerd",
       "rejectedBiomarkerCreate": "{name} probeerde een biomarker toe te voegen, maar dat werd geweigerd",
       "rejectedBiomarkerUpdate": "{name} probeerde een biomarker te wijzigen, maar dat werd geweigerd",
-      "rejectedReminderCreate": "{name} probeerde een meetherinnering toe te voegen, maar dat werd geweigerd",
-      "rejectedReminderUpdate": "{name} probeerde een meetherinnering te wijzigen, maar dat werd geweigerd",
+      "rejectedReminderCreate": "{name} probeerde een controleherinnering toe te voegen, maar dat werd geweigerd",
+      "rejectedReminderUpdate": "{name} probeerde een controleherinnering te wijzigen, maar dat werd geweigerd",
       "rejectedMoodCreate": "{name} probeerde een stemmingsregistratie toe te voegen, maar dat werd geweigerd",
       "rejectedMoodUpdate": "{name} probeerde een stemmingsregistratie te wijzigen, maar dat werd geweigerd",
       "rejectedDoseCreate": "{name} probeerde een dosis vast te leggen, maar dat werd geweigerd",
@@ -14485,7 +14485,7 @@
       },
       "labs": {
         "label": "Labuitslagen",
-        "detail": "Labuitslagen en de lijst met labwaarden waarop ze gebaseerd zijn."
+        "detail": "Labuitslagen en de lijst met biomarkers waarop ze gebaseerd zijn."
       },
       "profile": {
         "label": "Gezondheidsachtergrond",
@@ -14555,7 +14555,7 @@
       "emergency": "Spoedgeval",
       "hospital": "Ziekenhuis",
       "therapy": "Therapiesessie",
-      "other": "Afspraak",
+      "other": "Ander bezoek",
       "procedure": "Ingreep of operatie"
     },
     "laterality": {
@@ -14566,7 +14566,7 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Bezoeken",
-    "sectionDescription": "Doktersbezoeken en geplande afspraken op één plek.",
+    "sectionDescription": "Doktersbezoeken, gedaan en gepland, op één plek.",
     "add": "Bezoek",
     "loadError": "Bezoeken konden niet worden geladen.",
     "emptyTitle": "Nog geen bezoek vastgelegd",
@@ -14593,7 +14593,7 @@
     },
     "form": {
       "date": "Datum en tijd",
-      "dateDerivesStatusHint": "Een datum in de toekomst is een geplande afspraak.",
+      "dateDerivesStatusHint": "Een datum in de toekomst is een gepland bezoek.",
       "status": "Status",
       "practitioner": "Praktijk of arts",
       "practitionerHint": "Optioneel: je kunt de naam later toevoegen.",
@@ -14627,7 +14627,7 @@
       "add": "Bezoek toevoegen"
     },
     "dashboard": {
-      "nextVisit": "Volgende afspraak: {what} op {when}"
+      "nextVisit": "Volgend bezoek: {what} op {when}"
     },
     "procedures": {
       "title": "Ingrepen en operaties",
@@ -15066,12 +15066,12 @@
     },
     "lanes": {
       "life": "Leven",
-      "illness": "Aandoeningen",
+      "illness": "Ziekte",
       "allergies": "Allergieën",
       "medications": "Medicatie",
       "vaccinations": "Vaccinaties",
       "visits": "Arts en ingrepen",
-      "labs": "Lab",
+      "labs": "Labuitslagen",
       "documents": "Documenten",
       "cycle": "Cyclus",
       "seizures": "Aanvallen"
@@ -15222,7 +15222,7 @@
       "end": "Einde",
       "seriesCaption": "Gemiddelde waarden per periode",
       "period": "Periode",
-      "labsCaption": "Labwaarden per dag",
+      "labsCaption": "Labuitslagen per dag",
       "marker": "Marker",
       "date": "Datum",
       "value": "Waarde"
@@ -15267,9 +15267,9 @@
       "apply": "Toepassen"
     },
     "item": {
-      "labValuesOne": "1 labwaarde",
-      "labValuesFew": "{count} labwaarden",
-      "labValuesOther": "{count} labwaarden",
+      "labValuesOne": "1 labuitslag",
+      "labValuesFew": "{count} labuitslagen",
+      "labValuesOther": "{count} labuitslagen",
       "seizuresOne": "1 aanval",
       "seizuresFew": "{count} aanvallen",
       "seizuresOther": "{count} aanvallen",
@@ -15277,9 +15277,9 @@
       "postpartum": "Na de bevalling"
     },
     "labs": {
-      "menuTitle": "Labwaarden",
+      "menuTitle": "Labuitslagen",
       "otherPanel": "Overig",
-      "full": "Maximaal {max, plural, one {# labwaarde} other {# labwaarden}} tegelijk. Verwijder er een om een andere toe te voegen.",
+      "full": "Maximaal {max, plural, one {# labuitslag} other {# labuitslagen}} tegelijk. Verwijder er een om een andere toe te voegen.",
       "above": "boven het bereik",
       "below": "onder het bereik",
       "reference": "referentie {range}",
@@ -15289,7 +15289,7 @@
       "excludedFew": "{name}: {count} waarden in een andere eenheid worden niet getoond",
       "excludedOther": "{name}: {count} waarden in een andere eenheid worden niet getoond"
     },
-    "legendLabValue": "Labwaarde, zoals gemeten",
+    "legendLabValue": "Labuitslag, zoals gemeten",
     "legendLabOutside": "Buiten het referentiebereik",
     "legendLabRange": "Referentiebereik",
     "legendSymptom": "Symptoomlijn: de hoogste intensiteit van elke vastgelegde dag (0 tot 10), gemiddeld over de vastgelegde dagen",
@@ -15400,7 +15400,7 @@
       "source": {
         "mood": "Stemmingsnotitie",
         "measurement": "Notitie bij een meting",
-        "illness": "Ziektedagboek"
+        "illness": "Ziekte"
       }
     },
     "keywords": {
@@ -15415,8 +15415,8 @@
       "gadgetbridge": "Gadgetbridge, Android, smartwatch, databank",
       "fhirBundle": "FHIR, bundel, medisch dossier, importeren",
       "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, map, Android",
-      "reportSchedule": "planning, maandelijks, per kwartaal, artsrapport, automatisch",
-      "careCalendar": "agenda, kalender, ICS, abonnement, afspraken, vaccinaties",
+      "reportSchedule": "planning, maandelijks, per kwartaal, artsenrapport, automatisch",
+      "careCalendar": "agenda, kalender, ICS, abonnement, bezoeken, afspraken, vaccinaties",
       "whoHasAccess": "toegang, wie ziet, delen, links, tokens, sessies",
       "adminPush": "push, relay, Web Push, VAPID, APNs, bezorging",
       "adminSystemStatus": "migraties, versie, update, kanaal, edge, database"
@@ -16103,7 +16103,7 @@
   },
   "careFeed": {
     "sectionTitle": "Agenda",
-    "sectionSubtitle": "Je afspraken en wat eraan komt, in de agenda-app die je al gebruikt.",
+    "sectionSubtitle": "Je bezoeken en wat eraan komt, in de agenda-app die je al gebruikt.",
     "title": "Zorgagenda",
     "description": "Geboekte bezoeken op hun tijd, controles en boosters op de dag dat ze aan de beurt zijn.",
     "loadError": "Het agenda-abonnement kon niet worden geladen.",
@@ -16113,9 +16113,9 @@
     "checkups": "Controles die eraan komen",
     "vaccinations": "Boosters die eraan komen",
     "ics": {
-      "calendarName": "Afspraken en vervaldata (HealthLog)",
-      "visit": "Afspraak",
-      "visitWith": "Afspraak: {name}",
+      "calendarName": "Bezoeken en vervaldata (HealthLog)",
+      "visit": "Bezoek",
+      "visitWith": "Bezoek: {name}",
       "checkupDue": "Aan de beurt: {label}",
       "boosterDue": "Booster aan de beurt: {label}",
       "sessionOf": "Sessie {number} van {planned}",
@@ -16126,8 +16126,8 @@
     }
   },
   "reportSchedule": {
-    "title": "Gepland artsrapport",
-    "description": "Slaat het artsrapport vanzelf op in je documenten zodra een maand, kwartaal of jaar voorbij is.",
+    "title": "Gepland artsenrapport",
+    "description": "Slaat het artsenrapport vanzelf op in je documenten zodra een maand, kwartaal of jaar voorbij is.",
     "loadError": "Het rapportschema kon niet worden geladen.",
     "saveError": "Het rapportschema kon niet worden opgeslagen. Probeer het opnieuw.",
     "cadenceLabel": "Hoe vaak",
@@ -16149,7 +16149,7 @@
     "turnOffBody": "Er worden geen nieuwe rapporten opgeslagen. Rapporten die al in je documenten staan, blijven daar.",
     "due": "Volgend rapport: {period}, opgeslagen binnen een uur nadat het aan de beurt is.",
     "upToDate": "Bijgewerkt. Het volgende rapport volgt wanneer de huidige periode eindigt.",
-    "documentTitle": "Artsrapport {period}",
+    "documentTitle": "Artsenrapport {period}",
     "outcome": {
       "stored": "Het rapport over {period} staat in je documenten.",
       "alreadyFiled": "Het rapport over {period} stond al in je documenten.",
@@ -16298,7 +16298,7 @@
         "relay_not_ready": "Wallet-passen zijn op deze server nu niet beschikbaar.",
         "no_https_origin": "Wallet-passen vereisen dat deze server via HTTPS bereikt wordt.",
         "api_disabled": "Externe toegang staat op deze server uit, en daarmee ook Wallet-passen.",
-        "not_allowed": "Alleen de persoon om wie het gaat, of diens voogd, kan hem toevoegen."
+        "not_allowed": "Alleen de persoon om wie het gaat, of diens verzorger, kan hem toevoegen."
       },
       "more": {
         "frozen": "De pas toont wat je hier aanvinkt. Trek hem in en maak een nieuwe om dat te wijzigen.",
@@ -16351,7 +16351,7 @@
     "end": "Reeks beëindigen",
     "reopen": "Heropenen",
     "deleteTitle": "Deze reeks verwijderen?",
-    "deleteDescription": "De afspraken blijven. Ze zijn alleen niet meer gegroepeerd.",
+    "deleteDescription": "De bezoeken blijven. Ze zijn alleen niet meer gegroepeerd.",
     "deleted": "Reeks verwijderd",
     "deleteFailed": "De reeks kon niet worden verwijderd.",
     "reportTitle": "Behandelreeksen",

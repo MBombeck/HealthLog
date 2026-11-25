@@ -304,7 +304,7 @@
     }
   },
   "doctorReport": {
-    "title": "Gesundheitsbericht",
+    "title": "Arztbericht",
     "anamnesisTitle": "Gesundheitsprofil",
     "anamnesisNotRecorded": "Nicht erfasst",
     "anamnesisUnreadable": "Gespeicherter Wert konnte nicht gelesen werden",
@@ -314,7 +314,7 @@
     "anamnesisShiftSchedule": "Arbeitszeitmodell",
     "anamnesisColFact": "Profilangabe",
     "anamnesisColValue": "Erfasster Wert",
-    "subtitle": "HealthLog: Persönlicher Gesundheitsbericht",
+    "subtitle": "Erstellt mit HealthLog",
     "patient": "Patient",
     "dateOfBirth": "Geburtsdatum",
     "gender": "Geschlecht",
@@ -396,7 +396,7 @@
     "summaryTrend": "{label}: zuletzt {latest} {arrow}",
     "summaryAdherence": "Medikamenten-Therapietreue: {rate}% (gewichteter Mittelwert).",
     "chartsTitle": "Trend-Diagramme",
-    "packageReadme": "HealthLog Gesundheitsakte\n\nDieses Paket enthält:\n- report.pdf: den Gesundheitsbericht für die ärztliche Vorlage.\n- bundle.json: dieselben Daten als HL7-FHIR-R4-Dokument (Bundle), ePA-kompatibel.\n\nErstellt mit HealthLog.",
+    "packageReadme": "HealthLog Arztbericht\n\nDieses Paket enthält:\n- report.pdf: den Arztbericht als PDF.\n- bundle.json: dieselben Daten als HL7-FHIR-R4-Dokument (Bundle), ePA-kompatibel.\n\nErstellt mit HealthLog.",
     "wellnessTitle": "Wellness-Zusammenfassung",
     "wellnessDisclaimer": "Dies sind beschreibende Wellness-Werte, die aus den erfassten Signalen berechnet werden (0–100). Sie sind keine klinischen Beurteilungen oder Diagnosen.",
     "wellnessRecovery": "Erholung",
@@ -438,7 +438,7 @@
       "cv": "Variabilität (VK%)",
       "spotCaveat": "Dies sind Schätzwerte aus Einzelmessungen, kein Profil eines kontinuierlichen Messgeräts. Sie sind als Tendenz und nicht als klinisches Urteil zu lesen."
     },
-    "illnessTitle": "Erkrankungen",
+    "illnessTitle": "Krankheitsepisoden",
     "illnessOngoing": "Andauernd",
     "illnessColCondition": "Erkrankung",
     "illnessColBodySite": "Körperstelle",
@@ -460,7 +460,7 @@
     "familyHistoryColAgeAtOnset": "Alter bei Beginn",
     "labsSourceRangeNote": "* Der Referenzbereich stammt aus dem Befund und weicht vom gespeicherten Bereich ab:",
     "labsCatalogRangeLabel": "gespeicherter Bereich",
-    "visitsTitle": "Arztbesuche",
+    "visitsTitle": "Termine",
     "visitsColDate": "Datum",
     "visitsColPractice": "Praxis",
     "visitsColKind": "Art",
@@ -625,13 +625,13 @@
     "capture": {
       "title": "Erfassen",
       "description": "Was möchtest du erfassen?",
-      "measurement": "Messung",
+      "measurement": "Messwert",
       "measurementDescription": "Gewicht, Blutdruck, Puls und mehr",
       "medication": "Medikament",
       "medicationDescription": "Eine Dosis erfassen, genommen oder übersprungen",
       "mood": "Stimmung",
       "moodDescription": "Stimmung und Tags erfassen",
-      "workout": "Workout",
+      "workout": "Training",
       "workoutDescription": "Eine Einheit, die kein Gerät aufgezeichnet hat",
       "symptom": "Symptom",
       "symptomDescription": "Eines deiner eigenen Symptome, mit Stärke",
@@ -643,14 +643,14 @@
     },
     "cycle": "Zyklus",
     "labs": "Laborwerte",
-    "profile": "Profil",
+    "profile": "Anamnese",
     "vorsorge": "Vorsorge",
     "illness": "Krankheit",
     "documents": "Dokumente",
     "vaccinations": "Impfungen",
     "mentalWellbeing": "Seelisches Wohlbefinden",
     "timeline": "Zeitleiste",
-    "seizures": "Anfälle",
+    "seizures": "Anfallskalender",
     "emergencyCard": "Notfallkarte",
     "groups": {
       "tracking": "Erfassung",
@@ -829,10 +829,10 @@
     "bpInTargetWindowDynamic": "BD-Ziel ({days} T)",
     "bpInTargetCollecting": "sammelt noch Daten",
     "medications": "Medikamente",
-    "quickAddMeasurement": "Messung erfassen",
+    "quickAddMeasurement": "Messwert erfassen",
     "quickAddMood": "Stimmung erfassen",
     "quickAddMedicationIntake": "Einnahme erfassen",
-    "quickAddWorkout": "Workout erfassen",
+    "quickAddWorkout": "Training erfassen",
     "quickAddLifeEvent": "Lebensereignis erfassen",
     "customizeDashboard": "Dashboard anpassen",
     "medicationIntakeQuickAdd": {
@@ -899,11 +899,11 @@
     "staleHintMonthsOther": "Letzter Wert vor {count} Monaten",
     "staleHintMonthsFew": "Letzter Wert vor {count} Monaten",
     "recentWorkouts": {
-      "title": "Letzte Workouts",
+      "title": "Letzte Trainings",
       "viewAll": "Alle anzeigen",
       "empty": {
-        "title": "Noch keine Workouts",
-        "cta": "Verbinde eine Datenquelle in den Einstellungen, damit Workouts hier erscheinen."
+        "title": "Noch keine Trainings",
+        "cta": "Verbinde eine Datenquelle in den Einstellungen, damit Trainings hier erscheinen."
       }
     },
     "metric": {
@@ -974,7 +974,7 @@
     "typeBoneMass": "Knochenmasse",
     "typeOxygenSaturation": "Sauerstoffsättigung",
     "typeHeartRateVariability": "Herzfrequenzvariabilität",
-    "typeRestingHeartRate": "Ruheherzfrequenz",
+    "typeRestingHeartRate": "Ruhepuls",
     "typeActiveEnergyBurned": "Aktive Energie",
     "typeBasalEnergyBurned": "Ruheenergie",
     "typeWorkoutEffortScore": "Trainingsaufwand",
@@ -988,7 +988,7 @@
     "typeRunningGroundContactTime": "Bodenkontaktzeit",
     "typeRunningVerticalOscillation": "Vertikale Bewegung",
     "typeRunningStrideLength": "Schrittlänge beim Laufen",
-    "typeFlightsClimbed": "Treppen",
+    "typeFlightsClimbed": "Stockwerke",
     "typeWalkingRunningDistance": "Geh- und Laufstrecke",
     "typeVo2Max": "VO₂max",
     "typeBodyTemperature": "Körpertemperatur",
@@ -998,7 +998,7 @@
     "typeSkinTemperature": "Hauttemperatur",
     "typePulseWaveVelocity": "Pulswellengeschwindigkeit",
     "typeVascularAge": "Gefäßalter",
-    "typeVisceralFat": "Viszerales Fett",
+    "typeVisceralFat": "Viszeralfett",
     "typeAudioExposureEnv": "Lärmbelastung (Umgebung)",
     "typeAudioExposureHeadphone": "Lärmbelastung (Kopfhörer)",
     "typeTimeInDaylight": "Zeit im Tageslicht",
@@ -1086,7 +1086,7 @@
     "typePeakExpiratoryFlow": "Peak-Flow",
     "typeWalkingSteadinessEvent": "Hinweis zur Gehstabilität",
     "typeBreathingDisturbanceEvent": "Atemstörung",
-    "typeRecoveryScore": "Erholungs-Score",
+    "typeRecoveryScore": "Erholungsscore",
     "typeStressScore": "Stress-Score",
     "typeStrainScore": "Belastungs-Score",
     "typeHrvRmssd": "HRV (RMSSD)",
@@ -1513,8 +1513,8 @@
       "linkedActiveEnergy": "Aktive Energie",
       "linkedRestingHeartRate": "Ruhepuls",
       "linkedHrv": "Herzratenvariabilität",
-      "bodyLogged": "Im Krankheitstagebuch erfasst: {count, plural, one {# Symptom} other {# Symptome}}",
-      "bodyNotLogged": "Für diesen Tag ist im Krankheitstagebuch nichts erfasst",
+      "bodyLogged": "Unter Krankheit erfasst: {count, plural, one {# Symptom} other {# Symptome}}",
+      "bodyNotLogged": "Für diesen Tag ist unter Krankheit nichts erfasst",
       "openIllness": "Öffnen"
     },
     "sourceNotification": "Benachrichtigung",
@@ -2825,7 +2825,7 @@
     "hrv": "HRV",
     "restingHeartRate": "Ruhepuls",
     "activeEnergy": "Aktive Energie",
-    "flights": "Treppen",
+    "flights": "Stockwerke",
     "distance": "Geh- + Laufstrecke",
     "vo2Max": "VO₂max",
     "bodyTemperature": "Körpertemperatur",
@@ -3007,7 +3007,7 @@
         "ACTIVITY_STEPS": "die tägliche Schrittzahl",
         "SLEEP_DURATION": "die Schlafdauer",
         "HEART_RATE_VARIABILITY": "die Herzratenvariabilität",
-        "RESTING_HEART_RATE": "die Ruheherzfrequenz",
+        "RESTING_HEART_RATE": "der Ruhepuls",
         "TIME_IN_DAYLIGHT": "die Zeit im Tageslicht",
         "MOOD": "die Stimmung",
         "PULSE": "der Ruhepuls",
@@ -3028,7 +3028,7 @@
         "CAFFEINE": "die Koffeinmenge",
         "ENERGY_BALANCE": "die tägliche Energiebilanz",
         "ALCOHOL": "der Alkoholkonsum",
-        "WORKOUT_MINUTES": "die Workout-Dauer",
+        "WORKOUT_MINUTES": "die Trainingsdauer",
         "TRAINING_LOAD": "die Trainingslast",
         "EXERCISE_MINUTES": "die Trainingsminuten der Aktivitätsringe",
         "STAND_MINUTES": "die Stehminuten",
@@ -3246,7 +3246,7 @@
         "sleep": "Nächtliche Schlafdauer der letzten 30 Tage.",
         "steps": "Tägliche Schrittzahl der letzten 30 Tage.",
         "hrv": "Herzratenvariabilität der letzten 30 Tage.",
-        "resting_hr": "Ruheherzfrequenz der letzten 30 Tage.",
+        "resting_hr": "Ruhepuls der letzten 30 Tage.",
         "active_energy": "Aktiv verbrauchte Energie der letzten 30 Tage.",
         "flights": "Erklommene Stockwerke der letzten 30 Tage.",
         "distance": "Geh- und Laufstrecke der letzten 30 Tage.",
@@ -3420,7 +3420,7 @@
         "audio_event": "Lärm-Ereignisse",
         "daylight": "Zeit im Tageslicht",
         "skin_temp": "Hauttemperatur",
-        "workouts": "Workouts"
+        "workouts": "Trainings"
       },
       "settingsAriaLabel": "Coach-Einstellungen",
       "settingsTitle": "Coach-Einstellungen",
@@ -3466,7 +3466,7 @@
           "hint": "Schritte, Energie, Distanz und VO₂max"
         },
         "workouts": {
-          "label": "Workouts",
+          "label": "Trainings",
           "hint": "Läufe, Radtouren und Einheiten"
         },
         "sleep": {
@@ -3571,7 +3571,7 @@
         "bloodGlucose": "Geh mit mir meine letzten Glukosewerte durch. Liegen sie in einem gesunden Bereich?",
         "oxygenSaturation": "Was sagt mir mein Sauerstoffsättigungs-Verlauf (SpO₂)?",
         "respiratoryRate": "Was sagt mein Atemfrequenz-Verlauf über meine Gesundheit?",
-        "workouts": "Geh mit mir meine letzten Workouts durch: Belastung, Häufigkeit und wie ich mich dazwischen erhole.",
+        "workouts": "Geh mit mir meine letzten Trainings durch: Belastung, Häufigkeit und wie ich mich dazwischen erhole.",
         "recoveryPage": "Warum steht meine Erholung gerade dort, wo sie steht, und was treibt das?",
         "briefing": "Geh mit mir das heutige Briefing durch. Worauf sollte ich mich konzentrieren, und gibt es etwas, das einen Schritt wert ist?",
         "healthScore": "Warum liegt mein Gesundheitsscore bei {score} von 100, und was würde ihn am stärksten bewegen?",
@@ -3857,7 +3857,7 @@
         "oxygenSaturationBody": "Die SpO₂ ist der Prozentsatz der roten Blutkörperchen, die Sauerstoff transportieren. Werte von 95–100 % sind in Ruhe normal; Werte dauerhaft unter 90 % verdienen Aufmerksamkeit, kurze nächtliche Abfälle sind jedoch häufig.",
         "bodyTemperatureBody": "Die Körpertemperatur spiegelt deinen Kernwärmezustand wider, normalerweise um 37 °C mit kleinen Tagesschwankungen. Ein anhaltender Anstieg kann auf eine Infektion hindeuten; nächtliche Messungen am Handgelenk erfassen vor allem relative Änderungen, keinen klinischen Wert.",
         "activeEnergyBody": "Die aktive Energie sind die Kalorien, die du durch Bewegung verbrennst, zusätzlich zum Grundumsatz in Ruhe. Sie ist ein direktes Maß dafür, wie körperlich aktiv dein Tag war.",
-        "workoutsBody": "Workouts sind die strukturierten Trainingseinheiten, die deine Geräte mit Art, Dauer und Energie aufzeichnen. Ihre Erfassung zeigt, wie sich regelmäßiges Training über Wochen summiert und wie es mit deinen anderen Gesundheitssignalen zusammenhängt.",
+        "workoutsBody": "Trainings sind die strukturierten Einheiten, die deine Geräte mit Art, Dauer und Energie aufzeichnen. Ihre Erfassung zeigt, wie sich regelmäßiges Training über Wochen summiert und wie es mit deinen anderen Gesundheitssignalen zusammenhängt.",
         "respiratoryRateBody": "Die Atemfrequenz ist die Anzahl der Atemzüge pro Minute. In Ruhe atmen die meisten Erwachsenen etwa zwölf- bis zwanzigmal pro Minute; ein anhaltender Anstieg kann mit Krankheit, Anstrengung oder Stress einhergehen.",
         "bodyWaterBody": "Das Gesamtkörperwasser ist der Anteil deines Körpergewichts, der aus Flüssigkeit in und um die Zellen besteht. Es schwankt mit Flüssigkeitshaushalt, Ernährung und Aktivität, daher sagt der Trend über Wochen mehr aus als ein einzelner Wert.",
         "boneMassBody": "Die Knochenmasse ist das geschätzte Gewicht der Mineralien in deinem Skelett. Waagengestützte Schätzungen sind ungefähr, doch ein gleichbleibender oder steigender Trend unterstützt die langfristige Knochenstärke.",
@@ -3895,7 +3895,7 @@
         "readinessBody": "Die Bereitschaft ist ein einzelner Tageswert dafür, wie bereit dein Körper für den Tag ist. Er verbindet Ruhepuls, Herzfrequenzvariabilität und Schlaf. Es ist ein Geräte-Näherungswert an deinem eigenen Ausgangswert, keine klinische Messung: ein höherer Wert heißt erholt, ein niedrigerer ist ein sanfter Hinweis, einen Gang zurückzuschalten.",
         "sleepScoreBody": "Dein Schlafscore fasst eine ganze Nacht in einer Zahl zusammen, aus Dauer, Effizienz, Regelmäßigkeit und der Verteilung von Leicht-, Tief- und REM-Schlaf. Achte eher auf das Muster über Wochen als auf einen perfekten Wert in einer einzelnen Nacht.",
         "recoveryBody": "Die Erholung zeigt, wie gut sich dein Körper regeneriert hat, gestützt auf nächtliche Signale wie Herzfrequenzvariabilität und Ruhepuls. Es ist ein geräteabgeleiteter Näherungswert an deinem eigenen Ausgangswert, keine klinische Messung, und zwischen Geräten nicht vergleichbar. Ein hoher Wert ist grünes Licht, mehr zu geben; ein niedrigerer deutet an, dass dein System noch aufbaut.",
-        "strainBody": "Die Belastung erfasst, wie viel kardiovaskuläre und körperliche Last du deinem Körper zugemutet hast, von Workouts bis zu einem aktiven Tag auf den Beinen. Es ist ein geräteabgeleiteter Index, gemessen an deinem eigenen üblichen Aufwand, keine klinische Messung, und der Kennwert ist zwischen Geräten nicht vergleichbar.",
+        "strainBody": "Die Belastung erfasst, wie viel kardiovaskuläre und körperliche Last du deinem Körper zugemutet hast, von Trainings bis zu einem aktiven Tag auf den Beinen. Es ist ein geräteabgeleiteter Index, gemessen an deinem eigenen üblichen Aufwand, keine klinische Messung, und der Kennwert ist zwischen Geräten nicht vergleichbar.",
         "stressBody": "Stress ist hier eine Geräte-Heuristik aus Mustern der Herzfrequenzvariabilität. Sie ist keine Cortisol-Messung und nicht, wie du dich bewusst fühlst, und auch kein klinischer Stress-Score. Lies ihn an deinem eigenen Ausgangswert; zwischen Geräten ist er nicht vergleichbar. Ein niedrigerer Wert deutet auf einen ruhigen, gut regulierten Zustand hin; ein höherer ist eine Einladung, Erholung einzuplanen.",
         "recoveryPageBody": "Die Erholung fasst die nächtlichen Signale deines Wearables zusammen (Recharge, Belastung, Load sowie deine Herzfrequenz- und Energiewerte des Tages) und zeigt, wie gut sich dein Körper erholt hat. Achte eher auf das Muster über mehrere Tage als auf einen einzelnen Wert; ein schwächerer Wert ist eine Einladung, kürzerzutreten, kein Alarm.",
         "pulsePressureBody": "Der Pulsdruck ist die Differenz zwischen deinem systolischen und diastolischen Wert (systolisch minus diastolisch). Als allgemeine Orientierung sind etwa 40 mmHg in Ruhe typisch; eine große Differenz über rund 60 mmHg im mittleren Alter kann auf versteifte Arterien hinweisen, eine kleine Differenz unter etwa 25 mmHg kann mit niedrigem Schlagvolumen einhergehen (StatPearls/NIH 2023). Ein Gesprächsanlass, keine Diagnose.",
@@ -4096,18 +4096,18 @@
         "coachPrefill": "Ich habe noch keine Schlafdaten. Warum lohnt es sich, Schlaf zu erfassen, und was sollte ich wissen, bevor ich eine Quelle verbinde?"
       }
     },
-    "navWorkouts": "Workouts",
+    "navWorkouts": "Trainings",
     "navRecovery": "Erholung",
     "workouts": {
-      "title": "Workouts",
+      "title": "Trainings",
       "description": "Letzte Läufe, Touren, Spaziergänge und Krafteinheiten, quellenübergreifend entdoppelt zwischen Apple Watch und Withings.",
       "emptyState": {
-        "title": "Noch keine Workouts",
-        "description": "Workouts kommen per Apple Health vom iPhone und von Withings. Du kannst eins auch von Hand erfassen.",
-        "coachPrefill": "Ich habe noch keine Workouts erfasst. Warum lohnt es sich, sie zu erfassen, und worauf sollte ich mich zuerst konzentrieren?"
+        "title": "Noch keine Trainings",
+        "description": "Trainings kommen per Apple Health vom iPhone und von Withings. Du kannst eins auch von Hand erfassen.",
+        "coachPrefill": "Ich habe noch keine Trainings erfasst. Warum lohnt es sich, sie zu erfassen, und worauf sollte ich mich zuerst konzentrieren?"
       },
       "detail": {
-        "backToList": "Zurück zu Workouts",
+        "backToList": "Zurück zu Trainings",
         "statsTitle": "Werte",
         "statsDuration": "Dauer",
         "statsDistance": "Distanz",
@@ -4130,7 +4130,7 @@
         "statsGroundContactBalanceValue": "{left} % L, {right} % R",
         "routeTitle": "Strecke",
         "hrChartTitle": "Herzfrequenz",
-        "notFound": "Workout nicht gefunden.",
+        "notFound": "Training nicht gefunden.",
         "hrFromPulse": "Aus deinen Herzfrequenzdaten rund um diese Einheit",
         "hrAxisMinutes": "Min.",
         "hrAvgMarker": "Ø {bpm}",
@@ -4184,19 +4184,19 @@
         "mixedCardio": "Mixed Cardio",
         "other": "Sonstiges"
       },
-      "loadError": "Deine Workouts konnten nicht geladen werden",
-      "loadMore": "Weitere Workouts laden",
-      "loadingMore": "Weitere Workouts werden geladen",
-      "loadMoreError": "Weitere Workouts konnten nicht geladen werden",
-      "countOne": "{count} Workout",
-      "countOther": "{count} Workouts",
-      "countFew": "{count} Workouts",
+      "loadError": "Deine Trainings konnten nicht geladen werden",
+      "loadMore": "Weitere Trainings laden",
+      "loadingMore": "Weitere Trainings werden geladen",
+      "loadMoreError": "Weitere Trainings konnten nicht geladen werden",
+      "countOne": "{count} Training",
+      "countOther": "{count} Trainings",
+      "countFew": "{count} Trainings",
       "filterLabel": "Nach Sportart filtern",
       "filterAll": "Alle Sportarten",
       "filterEmpty": "Keine Einheiten dieser Sportart in deinem Verlauf.",
       "manual": {
-        "logWorkout": "Workout erfassen",
-        "sheetTitle": "Workout erfassen",
+        "logWorkout": "Training erfassen",
+        "sheetTitle": "Training erfassen",
         "sheetDescription": "Trag eine Einheit von Hand ein: was, wann und wie lange.",
         "sportLabel": "Aktivität",
         "sportPlaceholder": "Aktivität wählen",
@@ -4205,21 +4205,21 @@
         "durationLabel": "Dauer",
         "distanceLabel": "Distanz ({unit})",
         "energyLabel": "Aktive Energie (kcal)",
-        "alreadySaved": "Dieses Workout ist schon gespeichert",
-        "saveError": "Das Workout konnte nicht gespeichert werden",
-        "deleteLabel": "Workout löschen",
-        "deleteConfirmTitle": "Dieses Workout löschen?",
-        "deleteConfirmDescription": "Dieses von Hand eingetragene Workout wird endgültig entfernt.",
-        "deleted": "Workout gelöscht",
-        "deleteError": "Das Workout konnte nicht gelöscht werden",
+        "alreadySaved": "Dieses Training ist schon gespeichert",
+        "saveError": "Das Training konnte nicht gespeichert werden",
+        "deleteLabel": "Training löschen",
+        "deleteConfirmTitle": "Dieses Training löschen?",
+        "deleteConfirmDescription": "Dieses von Hand eingetragene Training wird endgültig entfernt.",
+        "deleted": "Training gelöscht",
+        "deleteError": "Das Training konnte nicht gelöscht werden",
         "errors": {
           "sportRequired": "Wähle eine Aktivität.",
           "startRequired": "Gib Datum und Uhrzeit ein.",
           "startInFuture": "Der Beginn darf nicht in der Zukunft liegen.",
-          "durationRequired": "Gib an, wie lange das Workout gedauert hat.",
+          "durationRequired": "Gib an, wie lange das Training gedauert hat.",
           "durationInvalid": "Gib ganze Stunden und Minuten von 0 bis 59 ein.",
-          "durationTooLong": "Ein Workout dauert höchstens 24 Stunden.",
-          "endInFuture": "Das Workout würde in der Zukunft enden. Stell den Beginn auf die Uhrzeit, zu der es angefangen hat.",
+          "durationTooLong": "Ein Training dauert höchstens 24 Stunden.",
+          "endInFuture": "Das Training würde in der Zukunft enden. Stell den Beginn auf die Uhrzeit, zu der es angefangen hat.",
           "distanceInvalid": "Gib die Distanz als Zahl in einem realistischen Bereich ein.",
           "energyInvalid": "Gib die aktive Energie als Zahl bis 20.000 kcal ein."
         },
@@ -4251,7 +4251,7 @@
         "title": "Glukose-Überblick",
         "subtitle": "Ein Blick auf {days, plural, =1 {deinen letzten Tag} other {deine letzten # Tage}}, aus {count, plural, one {# Messung} other {# Messungen}}.",
         "spotCaveat": "Das sind Schätzungen aus einzelnen Stichproben-Messungen, kein Profil eines kontinuierlichen Sensors. Lies sie als Richtung, nicht als klinisches Urteil.",
-        "labsLink": "Laborergebnisse? HbA1c und Nüchternglukose aus einer Blutabnahme trägst du unter Labor ein.",
+        "labsLink": "Laborwerte? HbA1c und Nüchternglukose aus einer Blutabnahme trägst du unter Laborwerte ein.",
         "learningTitle": "Lerne deine Glukose noch kennen",
         "learningBody": "Bisher sind das {count} über {days}. Mit etwas mehr Verlauf wird das Bild klarer. Mess weiter oder lass es ein verbundenes Gerät ergänzen.",
         "learningBodyEmpty": "Sobald ein paar Messungen vorliegen (von dir erfasst oder von einem Gerät synchronisiert), nehmen Zeit-im-Zielbereich, Durchschnitt und Schwankung hier Gestalt an.",
@@ -4354,15 +4354,15 @@
     },
     "navBoneMass": "Knochenmasse",
     "flightsClimbed": {
-      "title": "Treppen",
+      "title": "Stockwerke",
       "description": "Stockwerke, die du jeden Tag erklommen hast.",
-      "chartTitle": "Treppen pro Tag",
+      "chartTitle": "Stockwerke pro Tag",
       "emptyState": {
-        "title": "Noch keine Treppendaten",
-        "description": "Treppenwerte erscheinen hier, sobald Apple Health einen Tag synchronisiert."
+        "title": "Noch keine Daten zu Stockwerken",
+        "description": "Werte zu Stockwerken erscheinen hier, sobald Apple Health einen Tag synchronisiert."
       }
     },
-    "navFlightsClimbed": "Treppen",
+    "navFlightsClimbed": "Stockwerke",
     "walkingRunningDistance": {
       "title": "Geh- + Laufstrecke",
       "description": "Geh- und Laufstrecke pro Tag, in Kilometern.",
@@ -4697,7 +4697,7 @@
         "explainerLabel": "Wie das berechnet wurde",
         "channel": {
           "ALCOHOL": "Alkoholkonsum",
-          "WORKOUT_MINUTES": "Workout-Dauer",
+          "WORKOUT_MINUTES": "Trainingsdauer",
           "TRAINING_LOAD": "Trainingslast"
         }
       },
@@ -4827,7 +4827,7 @@
       },
       "composite": {
         "SLEEP_SCORE": {
-          "title": "Schlaf-Score",
+          "title": "Schlafscore",
           "description": "Ein transparenter Schlafqualitäts-Score mit allen Teilwerten.",
           "method": "Eine 0–100-Mischung aus Schlafmenge (Schlaf vs. altersbasierter Bedarf), Effizienz (Schlaf ÷ Bettzeit), Konstanz (wie stabil deine Schlafmitte ist), Timing (vs. deine gewohnte Schlafmitte) und Zusammensetzung (REM- + Tiefschlafanteil). Teilwerte werden umgewichtet, wenn deine Daten einen nicht stützen; nichts wird erfunden.",
           "sub": {
@@ -4922,7 +4922,7 @@
         "sectionSubtitle": "Zusammengesetzte Werte für Erholung, Stress und Belastung aus deinen verbundenen Geräten",
         "loadError": "Deine Wellness-Werte konnten gerade nicht geladen werden.",
         "loadingLabel": "Deine Gesundheitswerte werden geladen",
-        "recovery": "Erholungs-Score",
+        "recovery": "Erholungsscore",
         "recoveryCrossLink": "Erholungs- und Belastungsdaten deines Wearables ansehen",
         "stress": "Stress",
         "strain": "Belastung",
@@ -4969,7 +4969,7 @@
       "chartTitle": "VO₂max (mL/(kg·min))",
       "emptyState": {
         "title": "Noch keine Fitnessdaten",
-        "description": "VO₂max-Werte erscheinen hier, sobald Apple Health sie aus deinen Workouts synchronisiert."
+        "description": "VO₂max-Werte erscheinen hier, sobald Apple Health sie aus deinen Trainings synchronisiert."
       }
     },
     "navCardioFitness": "Fitness",
@@ -4979,7 +4979,7 @@
       "chartTitle": "Erholungspuls (bpm)",
       "emptyState": {
         "title": "Noch keine Erholungspuls-Daten",
-        "description": "Erholungspuls-Werte erscheinen hier, sobald Apple Health sie aus einem Workout synchronisiert."
+        "description": "Erholungspuls-Werte erscheinen hier, sobald Apple Health sie aus einem Training synchronisiert."
       }
     },
     "navCardioRecovery": "Erholungspuls",
@@ -5416,7 +5416,7 @@
         },
         "measurements": {
           "title": "Messwerte & Zielbereiche",
-          "body": "Messwerte zeigt Verlauf und Zielbereiche pro Metrik. Hidden Gem: Zielbereiche pro Wert definieren, damit Abweichungen farblich auffallen. Diese Reihen sind die Grundlage für Korrelationen im Coach und den Arztbericht."
+          "body": "Messungen zeigt Verlauf und Zielbereiche pro Metrik. Hidden Gem: Zielbereiche pro Wert definieren, damit Abweichungen farblich auffallen. Diese Reihen sind die Grundlage für Korrelationen im Coach und den Arztbericht."
         },
         "medications": {
           "title": "Medikamente & Einnahmen",
@@ -5424,15 +5424,15 @@
         },
         "labs": {
           "title": "Laborwerte",
-          "body": "Labore erfasst Biomarker mit Referenzbereichen: Blutbild, Cholesterin, HbA1c. Stärke: Import und FHIR-Export. Auffällige Laborwerte tauchen als Belege in den Insights und im Arztbericht wieder auf."
+          "body": "Laborwerte erfasst Biomarker mit Referenzbereichen: Blutbild, Cholesterin, HbA1c. Stärke: Import und FHIR-Export. Auffällige Laborwerte tauchen als Belege in den Insights und im Arztbericht wieder auf."
         },
         "illness": {
-          "title": "Krankheits-Journal",
-          "body": "Das Krankheits-Journal dokumentiert akute Episoden und chronische Diagnosen samt Schüben. Versteckt: die Korrelation einer Episode mit deinen Messwerten und der Ruhemodus, der Reminder pausiert. So versteht der Coach, warum Werte zeitweise abweichen."
+          "title": "Krankheit",
+          "body": "Unter Krankheit hältst du akute Episoden und chronische Diagnosen samt Schüben fest. Versteckt: die Korrelation einer Episode mit deinen Messwerten und der Ruhemodus, der Erinnerungen pausiert. So versteht der Coach, warum Werte zeitweise abweichen."
         },
         "vorsorge": {
           "title": "Vorsorge",
-          "body": "Vorsorge erinnert an Untersuchungen und Impfungen mit eigenem Intervall. Tipp: „Erledigt“ kann direkt eine Messung oder ein Laborergebnis hinzufügen. Fällige Vorsorgen erscheinen als Reminder und im Arztbericht."
+          "body": "Vorsorge erinnert an Untersuchungen und Impfungen mit eigenem Intervall. Tipp: „Erledigt“ kann direkt eine Messung oder einen Laborwert hinzufügen. Fällige Vorsorgen erscheinen als Erinnerung und im Arztbericht."
         },
         "cycle": {
           "title": "Zyklus",
@@ -5531,7 +5531,7 @@
       "areas": "Worauf du achten willst",
       "medication": "Medikamente",
       "sources": "Woher die Werte kommen",
-      "visit": "Arztbesuch",
+      "visit": "Termin",
       "units": "Region & Einheiten",
       "confirm": "Bestätigen",
       "first-result": "Erstes Ergebnis",
@@ -5611,8 +5611,8 @@
         }
       },
       "visit": {
-        "title": "Steht ein Arztbesuch an?",
-        "body": "Ein Besuch schaltet den Arztbericht ein und setzt die Vorbereitung auf deine Checkliste.",
+        "title": "Steht ein Termin an?",
+        "body": "Ein Termin schaltet den Arztbericht ein und setzt die Vorbereitung auf deine Checkliste.",
         "options": {
           "within-a-month": "Ja, innerhalb eines Monats",
           "later": "Später",
@@ -5777,9 +5777,9 @@
       "insightsTitle": "Insights aktivieren (optional)",
       "insightsDescription": "Füge ein lokales Modell oder deinen eigenen KI-Schlüssel hinzu, um das tägliche Briefing und Coach freizuschalten.",
       "insightsCta": "Insights aktivieren",
-      "visitTitle": "Auf den Arztbesuch vorbereiten",
+      "visitTitle": "Auf den Termin vorbereiten",
       "visitDescription": "Trag den Termin in den Kalender ein; der Arztbericht bündelt, was du mitbringst.",
-      "visitCta": "Besuche öffnen",
+      "visitCta": "Termine öffnen",
       "dataSourceNamedTitle": "{source} verbinden",
       "managedProfileTitle": "Profil der betreuten Person anlegen",
       "managedProfileDescription": "Deine Antworten galten der Akte einer anderen Person; sie wird unter Geteilter Zugriff angelegt.",
@@ -5970,10 +5970,10 @@
           "none": "Kein KI-Anbieter",
           "yourDefault": "Deine Standardkette",
           "yourChain": "Deine Kette „{name}“",
-          "otherGuardian": "Eine Kette eines anderen Vormunds",
+          "otherGuardian": "Eine Kette einer anderen betreuenden Person",
           "noInstanceKey": "Dieser Server hat keinen KI-Schlüssel, mit dieser Wahl bleibt das Profil ohne KI.",
           "yourCredentials": "Deine eigenen Schlüssel und Anmeldungen bedienen dieses Profil, in der Reihenfolge dieser Kette und mit nichts sonst. Was das Profil schickt, zählt gegen deine Anbieterkonten.",
-          "unusable": "Die gewählte Kette kann gerade nicht bedienen: Der Vormund, der sie gewählt hat, verwaltet das Profil nicht mehr, oder die Kette wurde gelöscht. Bis jemand neu wählt, hat das Profil keine KI."
+          "unusable": "Die gewählte Kette kann gerade nicht bedienen: Die betreuende Person, die sie gewählt hat, verwaltet das Profil nicht mehr, oder die Kette wurde gelöscht. Bis jemand neu wählt, hat das Profil keine KI."
         }
       },
       "unavailableTitle": "In diesem geteilten Datensatz nicht verfügbar",
@@ -6055,11 +6055,11 @@
           "description": "Listenansicht und manuelle Reihenfolge."
         },
         "labs": {
-          "title": "Labor",
+          "title": "Laborwerte",
           "description": "Ansicht, Sortierung und manuelle Reihenfolge."
         },
         "illness": {
-          "title": "Krankheitstagebuch",
+          "title": "Krankheit",
           "description": "Listenansicht und Reihenfolge der Episoden."
         },
         "checkups": {
@@ -6209,13 +6209,13 @@
           "fullBackup": {
             "title": "Voll-Backup",
             "description": "Deine gesamte Akte in einer JSON-Datei.",
-            "scopeNote": "Dokumentmetadaten und die KI-Zusammenfassung, falls vorhanden, sind als Klartext enthalten; die Originaldateien der Dokumente sowie GPS-Routen und Einzelmesswerte von Workouts sind es nicht. Lade diese separat aus dem Dokumententresor bzw. dem Workout-Export herunter.",
+            "scopeNote": "Dokumentmetadaten und die KI-Zusammenfassung, falls vorhanden, sind als Klartext enthalten; die Originaldateien der Dokumente sowie GPS-Routen und Einzelmesswerte von Trainings sind es nicht. Lade diese separat aus dem Dokumententresor bzw. dem Trainings-Export herunter.",
             "encryptToggle": "Mit einer Passphrase verschlüsseln",
             "passphrasePlaceholder": "Passphrase (mind. 12 Zeichen)",
             "passphraseHelp": "Leitet den Archivschlüssel per Argon2id ab und versiegelt ihn mit AES-256-GCM. Speichere die Datei mit der Endung .hlx.",
             "noRecoveryWarning": "Es gibt keine Wiederherstellung. Geht diese Passphrase verloren, lässt sich das Archiv nicht mehr öffnen. Bewahre sie sicher auf.",
             "detail": "Eine portable Kopie deiner Akte zum Aufbewahren und Lesen: Werte als einfaches JSON, Dokumente nur mit ihren Metadaten. Sie ist nicht die wöchentliche Kontokopie, mit der dieser Server ein Konto zurücksetzt, und sie kann kein Konto auf einem anderen Server neu anlegen. Einige Datenarten fehlen noch; das Manifest der Datei nennt, was enthalten ist.",
-            "contents": "Deine Messwerte, Medikamente, Stimmung, Zyklus, Laborwerte, Krankheitsepisoden, Allergien, Familienanamnese, Nährstoffe, Workouts, dein Gesundheitsprofil und deine eigenen Messgrößen in einer JSON-Datei."
+            "contents": "Deine Messwerte, Medikamente, Stimmung, Zyklus, Laborwerte, Krankheitsepisoden, Allergien, Familienanamnese, Nährstoffe, Trainings, dein Gesundheitsprofil und deine eigenen Messgrößen in einer JSON-Datei."
           }
         },
         "import": {
@@ -6518,7 +6518,7 @@
             },
             "fhirBundle": {
               "title": "Patientenakte (FHIR)",
-              "description": "Laborwerte, Vitalwerte, Erkrankungen, Impfungen, Medikamente und Arztbesuche aus einem FHIR-R4-Bundle übernehmen, das ein Patientenportal exportiert.",
+              "description": "Laborwerte, Vitalwerte, Erkrankungen, Impfungen, Medikamente und Termine aus einem FHIR-R4-Bundle übernehmen, das ein Patientenportal exportiert.",
               "steps": {
                 "export": "Im Patientenportal die Akte als FHIR R4 (JSON) exportieren. C-CDA-Dateien werden nicht gelesen.",
                 "upload": "Die .json-Datei hier hochladen. Bis 32 MB."
@@ -6652,7 +6652,7 @@
             "description": "Gruppen, eigene Tags und archivierte Tags."
           },
           "labs": {
-            "title": "Labor",
+            "title": "Laborwerte",
             "description": "Biomarker und Texterkennung auf dem Gerät für Laborberichte."
           },
           "arrangementTitle": "Reihenfolge und Ansicht",
@@ -6663,8 +6663,8 @@
         }
       },
       "health-record": {
-        "title": "Gesundheitsakte",
-        "subtitle": "Exportiere eine vollständige, arzttaugliche Gesundheitsakte."
+        "title": "Arztbericht und Export",
+        "subtitle": "Erstelle den Arztbericht und exportiere eine vollständige, arzttaugliche Gesundheitsakte."
       },
       "coach": {
         "title": "Coach",
@@ -7381,7 +7381,7 @@
     "withingsConnect": "Mit Withings verbinden",
     "withingsNoCredentials": "Bitte zuerst die API-Zugangsdaten oben eingeben, um Withings zu verbinden.",
     "whoop": "WHOOP",
-    "whoopDescription": "Verbinde dein WHOOP-Band, um Erholung, Schlaf, Belastung und Workouts direkt in HealthLog zu synchronisieren.",
+    "whoopDescription": "Verbinde dein WHOOP-Band, um Erholung, Schlaf, Belastung und Trainings direkt in HealthLog zu synchronisieren.",
     "whoopCredentials": "API-Zugangsdaten",
     "whoopClientId": "Client-ID",
     "whoopClientSecret": "Client-Secret",
@@ -7444,7 +7444,7 @@
     "googleHealthSyncInProgress": "Synchronisierung läuft: {count, plural, one {# Messwert} other {# Messwerte}} gespeichert, {completed} von {total, plural, one {# Bereich} other {# Bereichen}} verarbeitet.",
     "googleHealthResourceFailuresTitle": "Diese Bereiche benötigen noch Aufmerksamkeit:",
     "googleHealthResource": {
-      "workout": "Workouts",
+      "workout": "Trainings",
       "sleep": "Schlaf",
       "boundedMetrics": "Gesundheitsmesswerte",
       "activity": "Aktivität",
@@ -7532,7 +7532,7 @@
       "title": "Empfangene Daten",
       "summary": "{count, plural, one {# Datentyp} other {# Datentypen}}, neuestes {relative}",
       "quiet": "{count} still",
-      "workouts": "Workouts",
+      "workouts": "Trainings",
       "medicationDoses": "Medikamenteneinnahmen",
       "cycleDays": "Zyklustage",
       "cycleDaysCount": "Zyklustage ({count})"
@@ -7613,7 +7613,7 @@
     "dangerZone": "Alle Daten löschen",
     "dangerZoneDescription": "Löscht deine gesamte Gesundheitsakte und jede Integrationsverbindung.",
     "dangerZoneConfirm": "Alle Daten löschen?",
-    "dangerZoneConfirmDescription": "Dieser Vorgang löscht unwiderruflich alles in deiner Akte: Messwerte, Medikamente, Stimmungseinträge, Laborwerte, Zykluseinträge, Dokumente, KI-Gespräche und jede Integrationsverbindung, dazu alles daraus Abgeleitete und alles, was du früher gelöscht hast. Freigabe-Links, die du an eine Praxis gegeben hast, funktionieren sofort nicht mehr. Dein Konto bleibt bestehen, ebenso deine Anmeldedaten und Anzeigeeinstellungen wie Sprache, Zeitzone und Einheiten. Das lässt sich nicht rückgängig machen.",
+    "dangerZoneConfirmDescription": "Dieser Vorgang löscht unwiderruflich alles in deiner Akte: Messwerte, Medikamente, Stimmungseinträge, Laborwerte, Zykluseinträge, Dokumente, KI-Gespräche und jede Integrationsverbindung, dazu alles daraus Abgeleitete und alles, was du früher gelöscht hast. Freigabelinks, die du an eine Praxis gegeben hast, funktionieren sofort nicht mehr. Dein Konto bleibt bestehen, ebenso deine Anmeldedaten und Anzeigeeinstellungen wie Sprache, Zeitzone und Einheiten. Das lässt sich nicht rückgängig machen.",
     "dangerZoneSuccess": "Deine Gesundheitsakte wurde gelöscht. Dein Konto und deine Anmeldung bleiben unverändert.",
     "dangerZoneDeleteFailed": "Löschen fehlgeschlagen",
     "finalDelete": "Endgültig löschen",
@@ -7731,20 +7731,20 @@
     "globalExcludedInjectionSitesLabel": "Global ausgeschlossene Injektionsstellen",
     "globalExcludedInjectionSitesHint": "Nie angeboten und beim Erfassen abgelehnt, auch wenn eine Medikation sie bevorzugt.",
     "sharing": {
-      "createTitle": "Neuer Freigabe-Link",
+      "createTitle": "Neuer Freigabelink",
       "createDescription": "Der Link ist schreibgeschützt und zeitlich begrenzt.",
       "label": "Bezeichnung",
-      "labelPlaceholder": "z. B. Dr. Schmidt, Jahres-Check-up",
+      "labelPlaceholder": "z. B. Dr. Schmidt, Jahresvorsorge",
       "range": "Tage Verlauf",
       "rangeHint": "Wie weit das geteilte Zeitfenster zurückreicht.",
       "expiry": "Läuft ab in (Tagen)",
       "expiryHint": "Höchstens {max, plural, one {# Tag} other {# Tage}}.",
       "expiryInvalid": "Die Gültigkeit muss zwischen 1 und {max, plural, one {# Tag} other {# Tagen}} liegen.",
       "create": "Link erstellen",
-      "tokenCreated": "Freigabe-Link erstellt",
+      "tokenCreated": "Freigabelink erstellt",
       "copied": "In die Zwischenablage kopiert",
       "activeTitle": "Aktive Links",
-      "noActive": "Keine aktiven Freigabe-Links.",
+      "noActive": "Keine aktiven Freigabelinks.",
       "created": "Erstellt",
       "expires": "Läuft ab",
       "accessCount": "Aufrufe",
@@ -8197,7 +8197,7 @@
         "lastBackfill": "Verlauf nachgeladen {relative}",
         "lastEnteredHere": "Zuletzt hier eingetragen {relative}"
       },
-      "quietSince": "{device}: still seit {since}. Einmal HealthLog darauf öffnen genügt.",
+      "quietSince": "{device}: verstummt seit {since}. Einmal HealthLog darauf öffnen genügt.",
       "quietDeviceUnnamed": "Ein iPhone"
     },
     "glucoseReference": {
@@ -8222,7 +8222,7 @@
     "documentSources": {
       "title": "Dokumentarchive",
       "description": "Paperless-ngx oder Papra aus HealthLog durchsuchen und ausgewählte Dokumente importieren.",
-      "explainer": "Ein Import-Knopf erscheint überall, wo du Dokumente verknüpfst: bei Arztbesuchen, Impfungen und Erkrankungen sowie unter Dokumente. HealthLog speichert von jedem importierten Dokument eine eigene verschlüsselte Kopie und fragt dein Archiv nur, wenn du suchst oder importierst.",
+      "explainer": "Ein Import-Knopf erscheint überall, wo du Dokumente verknüpfst: bei Terminen, Impfungen und Erkrankungen sowie unter Dokumente. HealthLog speichert von jedem importierten Dokument eine eigene verschlüsselte Kopie und fragt dein Archiv nur, wenn du suchst oder importierst.",
       "systemLabel": "Archiv",
       "statusConnected": "Verbunden",
       "statusNotConnected": "Nicht verbunden",
@@ -8388,12 +8388,12 @@
       "change": "Unter Module ändern"
     },
     "timezoneUseDevice": "Zeitzone dieses Geräts übernehmen ({zone})",
-    "dangerZoneConfirmDescriptionGrace": "Dieser Vorgang löscht alles in deiner Akte: Messwerte, Medikamente, Stimmungseinträge, Laborwerte, Zykluseinträge, Dokumente, KI-Gespräche und jede Integrationsverbindung, dazu alles daraus Abgeleitete und alles, was du früher gelöscht hast. Freigabe-Links, die du an eine Praxis gegeben hast, funktionieren sofort nicht mehr. Dein Konto bleibt bestehen, ebenso deine Anmeldedaten und Anzeigeeinstellungen wie Sprache, Zeitzone und Einheiten. Eine Kopie deiner Akte wird {days, plural, one {# Tag} other {# Tage}} aufbewahrt, sodass ein Admin dieses Servers sie bis dahin wiederherstellen kann. Danach ist die Löschung endgültig.",
+    "dangerZoneConfirmDescriptionGrace": "Dieser Vorgang löscht alles in deiner Akte: Messwerte, Medikamente, Stimmungseinträge, Laborwerte, Zykluseinträge, Dokumente, KI-Gespräche und jede Integrationsverbindung, dazu alles daraus Abgeleitete und alles, was du früher gelöscht hast. Freigabelinks, die du an eine Praxis gegeben hast, funktionieren sofort nicht mehr. Dein Konto bleibt bestehen, ebenso deine Anmeldedaten und Anzeigeeinstellungen wie Sprache, Zeitzone und Einheiten. Eine Kopie deiner Akte wird {days, plural, one {# Tag} other {# Tage}} aufbewahrt, sodass ein Admin dieses Servers sie bis dahin wiederherstellen kann. Danach ist die Löschung endgültig.",
     "deleteAccountCardDetailGrace": "Dein Konto wird sofort gesperrt und nach {days, plural, one {# Tag} other {# Tagen}} endgültig gelöscht. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen.",
     "deleteAccountConfirmDescriptionGrace": "Du wirst abgemeldet und dein Konto wird sofort gesperrt. Nach {days, plural, one {# Tag} other {# Tagen}} wird es endgültig gelöscht, mit allen Gesundheitsdaten, Passkeys, Sessions und Audit-Einträgen. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist.",
     "deleteAccountScheduled": "Dein Konto ist gesperrt und wird am {date} endgültig gelöscht. Du wirst abgemeldet.",
     "dangerZoneSuccessGrace": "Deine Gesundheitsakte wurde gelöscht. Ein Admin dieses Servers kann sie bis zum {date} wiederherstellen.",
-    "dangerZoneRestoreLimits": "Auch Zugriffe enden: was du mit anderen teilst, was andere mit dir teilen, und jede Rolle als betreuende Person. Eine Wiederherstellung bringt die Akte so zurück, wie sie jetzt ist. Was nach dem Löschen hinzukommt, wird dabei ersetzt, und Integrationsverbindungen, Freigaben, Betreuungsrollen und Freigabe-Links kommen nicht zurück; sie müssen neu eingerichtet werden.",
+    "dangerZoneRestoreLimits": "Auch Zugriffe enden: was du mit anderen teilst, was andere mit dir teilen, und jede Rolle als betreuende Person. Eine Wiederherstellung bringt die Akte so zurück, wie sie jetzt ist. Was nach dem Löschen hinzukommt, wird dabei ersetzt, und Integrationsverbindungen, Freigaben, Betreuungsrollen und Freigabelinks kommen nicht zurück; sie müssen neu eingerichtet werden.",
     "garmin": "Garmin",
     "garminTag": "Personal API",
     "garminDescription": "Füge einen Garmin-Personal-API-Schlüssel ein, um Schlaf, HRV, Body Battery, Stress, Schritte, Gewicht und Aktivitäten aus Garmin Connect zu synchronisieren.",
@@ -8888,11 +8888,11 @@
         "deletionPendingNoDate": "Löschung vorgemerkt",
         "undoDeletion": "Löschung rückgängig machen",
         "undoDeletionTitle": "Löschung von {name} rückgängig machen?",
-        "undoDeletionBody": "{name} hat die Löschung dieses Kontos verlangt; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Konto und alles darin so, wie es war. {name} kann sich wieder anmelden, aber API-Tokens, Freigabe-Links und vertrauenswürdige Geräte bleiben widerrufen und müssen neu eingerichtet werden.",
-        "undoDeletionBodyGuardian": "Eine betreuende Person hat das verwaltete Profil {name} gelöscht; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Profil und alles darin so, wie es war, und die betreuenden Personen erreichen es wieder. Seine Freigabe-Links und Tokens bleiben widerrufen und müssen neu eingerichtet werden.",
+        "undoDeletionBody": "{name} hat die Löschung dieses Kontos verlangt; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Konto und alles darin so, wie es war. {name} kann sich wieder anmelden, aber API-Tokens, Freigabelinks und vertrauenswürdige Geräte bleiben widerrufen und müssen neu eingerichtet werden.",
+        "undoDeletionBodyGuardian": "Eine betreuende Person hat das verwaltete Profil {name} gelöscht; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Profil und alles darin so, wie es war, und die betreuenden Personen erreichen es wieder. Seine Freigabelinks und Tokens bleiben widerrufen und müssen neu eingerichtet werden.",
         "undoDeletionDone": "Löschung von {name} rückgängig gemacht",
         "undoDeletionFailed": "Löschung konnte nicht rückgängig gemacht werden",
-        "undoDeletionBodyAdmin": "Ein Admin hat das Konto {name} gelöscht; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Konto und alles darin so, wie es war. {name} kann sich wieder anmelden, aber API-Tokens, Freigabe-Links und vertrauenswürdige Geräte bleiben widerrufen und müssen neu eingerichtet werden.",
+        "undoDeletionBodyAdmin": "Ein Admin hat das Konto {name} gelöscht; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Konto und alles darin so, wie es war. {name} kann sich wieder anmelden, aber API-Tokens, Freigabelinks und vertrauenswürdige Geräte bleiben widerrufen und müssen neu eingerichtet werden.",
         "deleteUser": "Konto löschen",
         "deleteUserTitle": "Das Konto {name} löschen?",
         "deleteUserBodyGrace": "{name} wird sofort überall abgemeldet und kann sich nicht mehr anmelden. Das Konto und alles darin wird am {date} gelöscht. Bis dahin kannst du die Löschung hier rückgängig machen.",
@@ -9030,9 +9030,9 @@
         "previewMood": "Stimmungseinträge",
         "previewLabs": "Laborwerte",
         "previewDocuments": "Dokumente",
-        "previewWorkouts": "Workouts",
+        "previewWorkouts": "Trainings",
         "previewCycles": "Zyklusdaten",
-        "previewVisits": "Arztbesuche",
+        "previewVisits": "Termine",
         "previewVaccinations": "Impfungen",
         "previewReminders": "Vorsorge-Erinnerungen",
         "previewCustomMetrics": "Eigene Messgrößen",
@@ -9049,7 +9049,7 @@
         "restoreSkippedIllnessSymptom": "Krankheitssymptom",
         "restoreSkippedMoodFactor": "Stimmungsfaktor",
         "restoreSkippedMoodTag": "Stimmungs-Tag",
-        "restoreSkippedVisitReference": "Besuchsverknüpfung",
+        "restoreSkippedVisitReference": "Terminverknüpfung",
         "restoreSkippedVaccinationReference": "Impfverknüpfung",
         "restoreSkippedCheckupClosure": "Vorsorge-Abschluss",
         "restoreSkippedReminderReference": "Erinnerungsverknüpfung",
@@ -9069,7 +9069,7 @@
         "restoreMissingDescription": "Das Manifest der Datei sagt, sie enthalte den folgenden Abschnitt, und sie enthält ihn nicht. Es wurde nichts geändert: Eine Wiederherstellung ersetzt eine ganze Datenklasse, ein fehlender Abschnitt hätte sie also geleert.",
         "restoreMissingRemedy": "Nutze eine der Kontokopien dieses Servers oder eine Kopie außerhalb des Servers, oder exportiere das Konto erneut und lade die neue Datei hoch. Ein Abschnitt, den das Manifest als ausgelassen angibt, ist etwas anderes und wird normal wiederhergestellt.",
         "restoreMissingDocuments": "Dokumente",
-        "restoreMissingWorkouts": "Workouts",
+        "restoreMissingWorkouts": "Trainings",
         "restoreMissingMentalHealth": "Psychische Fragebögen",
         "restoreMissingConsent": "Einwilligungsnachweise",
         "offhost": {
@@ -9141,7 +9141,7 @@
         "restoreSkippedSymptomDuplicate": "Symptom-Code oder Apple-Health-Eintrag, den die Datei doppelt enthält (der erste behalten, ein doppeltes Symptom ohne Code behalten)",
         "restoreSkippedCycleCiphertext": "Zyklus-Notiz oder -Bezeichnung mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Tag oder Symptom ohne sie behalten)",
         "restoreSkippedMoodLabelCiphertext": "Name eines Stimmungs-Tags oder einer Gruppe mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne Namen behalten)",
-        "restoreSkippedVisitCiphertext": "Text zu Arztbesuch oder Praxis mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne ihn behalten)",
+        "restoreSkippedVisitCiphertext": "Text zu Termin oder Praxis mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne ihn behalten)",
         "restoreSkippedVaccinationCiphertext": "Impf-Notiz mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Impfung ohne sie behalten)",
         "restoreSkippedEnvironmentLocationCiphertext": "Ort eines Umweltzeitraums oder -tags mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (verschlüsselt behalten, diese Tage werden nicht neu abgerufen)",
         "typePreWipe": "Vor dem Löschen aller Daten",
@@ -9168,7 +9168,7 @@
           "offhostLastUpload": "Der neueste Dump im Bucket stammt vom {when}.",
           "offhostNeverUploaded": "Bisher ist kein Datenbank-Dump im Bucket angekommen."
         },
-        "restorePreWipeLimits": "Diese Kopie wurde vor dem Löschen der Daten des Kontos angelegt, und ihre Wiederherstellung macht das Löschen rückgängig, soweit eine Kopie das kann: Was das Konto seitdem hinzugefügt hat, wird ersetzt, und Integrationsverbindungen, Freigaben, Betreuungszugriffe und Freigabe-Links kommen nicht zurück.",
+        "restorePreWipeLimits": "Diese Kopie wurde vor dem Löschen der Daten des Kontos angelegt, und ihre Wiederherstellung macht das Löschen rückgängig, soweit eine Kopie das kann: Was das Konto seitdem hinzugefügt hat, wird ersetzt, und Integrationsverbindungen, Freigaben, Betreuungszugriffe und Freigabelinks kommen nicht zurück.",
         "target": {
           "title": "In ein anderes Konto wiederherstellen",
           "description": "{file} gehört zu einem Konto, das es auf diesem Server nicht mehr gibt. Wähle das Konto, in das die Datensätze gehen. Eine Wiederherstellung ersetzt die Datensätze eines Kontos, deshalb kann sie nur ein Konto ohne Datensätze aufnehmen. Die Datei wird dafür noch einmal hochgeladen.",
@@ -10240,7 +10240,7 @@
       "groupVitals": "Vitalwerte",
       "groupVitalsDesc": "Blutdruck, Erholung, Gewichtstrend, Schlaf.",
       "groupRoutine": "Routine",
-      "groupRoutineDesc": "Abrupte Mess-Pausen und Selbstauskunft-Check-ups.",
+      "groupRoutineDesc": "Abrupte Mess-Pausen und Fragen zu dir selbst.",
       "frequencyLabel": "Häufigkeit",
       "frequencyWeekly": "Höchstens einmal pro Woche",
       "frequencyBiweekly": "Höchstens alle zwei Wochen",
@@ -10287,7 +10287,7 @@
     "eventMedicationLowStockDesc": "Wenn ein erfasster Vorrat weniger Tage abdeckt als deine Vorratsschwelle",
     "eventCoachNudge": "Coach-Hinweis",
     "eventCoachNudgeDesc": "Gelegentlicher Hinweis deines Coaches, wenn deine jüngsten Verläufe einen Check-in nahelegen.",
-    "eventMeasurementReminder": "Mess-Erinnerung",
+    "eventMeasurementReminder": "Vorsorge-Erinnerung",
     "eventMeasurementReminderDesc": "Wird gesendet, wenn eine erfasste Messung fällig ist.",
     "eventMedicationIntakeSync": "Einnahme-Synchronisierung",
     "eventMedicationIntakeSyncDesc": "Geräteübergreifende Aktualisierung, wenn eine Dosis protokolliert, eingenommen oder übersprungen wird.",
@@ -10392,7 +10392,7 @@
     "eventSeizureClusterDesc": "Wenn ein von jemand anderem eingetragener Anfall nach der Regel im Tagebuch eine Serie bildet. Einmal je Serie.",
     "seizureCluster": {
       "title": "Anfallsserie",
-      "body": "{count, plural, one {# Anfall} other {# Anfälle}} innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallstagebuch."
+      "body": "{count, plural, one {# Anfall} other {# Anfälle}} innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallskalender."
     },
     "eventMeasurementAnomaly": "Anhaltende Veränderung eines Vitalwerts",
     "eventMeasurementAnomalyDesc": "Wenn ein Vitalwert wie Ruhepuls oder Blutdruck seit mindestens zehn Tagen auf einem neuen Niveau bleibt. Höchstens einmal pro Woche, morgens, nie während einer offenen Erkrankung.",
@@ -10645,7 +10645,7 @@
     "wellness": {
       "title": "Wellness-Werte",
       "disclaimer": "Beschreibende Werte (0–100), berechnet aus erfassten Signalen. Dies ist keine klinische Beurteilung und keine Diagnose.",
-      "recovery": "Erholungswert",
+      "recovery": "Erholungsscore",
       "stress": "Stresswert",
       "strain": "Belastungswert",
       "score": "Wellness-Wert"
@@ -10792,7 +10792,7 @@
       "loadError": "Dein Zyklus konnte nicht geladen werden."
     },
     "disclaimer": "Diese Vorhersagen sind beschreibende Schätzungen aus deinen erfassten Daten, keine Verhütungsmethode und keine medizinische Beratung. Sie zeigen nie an, dass ungeschützter Geschlechtsverkehr sicher ist. Wende dich für Verhütung oder medizinische Entscheidungen an eine medizinische Fachperson.",
-    "title": "Dein Zyklus",
+    "title": "Zyklus",
     "subtitle": "Erfasse deine Periode und Symptome und sieh, was als Nächstes kommt.",
     "tabs": {
       "calendar": "Kalender",
@@ -11779,7 +11779,7 @@
       "description": "Blutzuckerwerte und Verläufe."
     },
     "workouts": {
-      "label": "Workouts",
+      "label": "Trainings",
       "description": "Trainingseinheiten und Aktivität."
     },
     "recovery": {
@@ -11788,7 +11788,7 @@
     },
     "labs": {
       "label": "Laborwerte",
-      "description": "Laborergebnisse erfassen und im Verlauf ablegen."
+      "description": "Laborwerte erfassen und im Verlauf ablegen."
     },
     "achievements": {
       "label": "Erfolge",
@@ -11811,7 +11811,7 @@
       "description": "Pläne, Einnahmen und Therapietreue."
     },
     "illness": {
-      "label": "Krankheitstagebuch",
+      "label": "Krankheit",
       "description": "Krankheits- und Beschwerde-Episoden mit täglichem Symptomverlauf festhalten."
     },
     "mcp": {
@@ -11840,7 +11840,7 @@
     },
     "timeline": {
       "label": "Zeitleiste",
-      "description": "Jahre auf einen Blick: Erkrankungen, Medikamente und Arztbesuche neben deinen Werten, dazu deine Lebensereignisse."
+      "description": "Jahre auf einen Blick: Erkrankungen, Medikamente und Termine neben deinen Werten, dazu deine Lebensereignisse."
     },
     "seizures": {
       "label": "Anfallskalender",
@@ -12031,12 +12031,12 @@
       "viewDescription": "Wähle, ob Episoden als Karten oder als kompakte Liste erscheinen.",
       "orderDescription": "Ziehe deine Episoden in die gewünschte Reihenfolge."
     },
-    "customize": "Krankheitstagebuch anpassen",
+    "customize": "Krankheit anpassen",
     "newEpisode": "Neue Episode",
     "logDay": "Tag erfassen",
     "markRecovered": "Als genesen markieren",
-    "deletedToast": "Eintrag gelöscht",
-    "restoreError": "Eintrag konnte nicht wiederhergestellt werden",
+    "deletedToast": "Episode gelöscht",
+    "restoreError": "Episode konnte nicht wiederhergestellt werden",
     "onsetOn": "Begonnen am {date}",
     "recoveredOn": "genesen {date}",
     "status": {
@@ -12162,7 +12162,7 @@
       "empty": "Noch keine Tage erfasst."
     },
     "loadError": "Diese Episode konnte nicht geladen werden.",
-    "backToList": "Zurück zum Journal",
+    "backToList": "Zurück zur Liste",
     "detail": {
       "note": "Notiz"
     },
@@ -12178,7 +12178,7 @@
       "body": "„{label}“ und alle zugehörigen Tageseinträge werden entfernt. Direkt danach kannst du das kurz rückgängig machen."
     },
     "vital": {
-      "RESTING_HEART_RATE": "Ruheherzfrequenz",
+      "RESTING_HEART_RATE": "Ruhepuls",
       "HEART_RATE_VARIABILITY": "Herzfrequenzvariabilität",
       "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Erholung",
@@ -12197,7 +12197,7 @@
     "reminderSuggestion": {
       "title": "Erinnerung einrichten?",
       "accept": "Erinnerung setzen",
-      "dismiss": "Jetzt nicht",
+      "dismiss": "Nicht jetzt",
       "stop": "Ich messe genug",
       "accepted": "Erinnerung gesetzt",
       "dismissed": "Okay, das schlage ich nicht noch einmal vor",
@@ -12211,7 +12211,7 @@
     },
     "suggestedAction": {
       "apply": "Hinzufügen",
-      "dismiss": "Jetzt nicht",
+      "dismiss": "Nicht jetzt",
       "applied": "Hinzugefügt",
       "dismissed": "Verworfen",
       "failed": "Konnte das nicht hinzufügen. Bitte erneut versuchen",
@@ -14031,14 +14031,14 @@
     "leafCycle": "Menstruationszyklus",
     "templateStandard": "Standard-Arztbericht",
     "applyStandard": "{template} übernehmen",
-    "standardHint": "Ein Klick füllt aus, was ein normaler Arztbesuch meist braucht. Jeder Eintrag bleibt änderbar.",
+    "standardHint": "Ein Klick füllt aus, was ein normaler Termin meist braucht. Jeder Eintrag bleibt änderbar.",
     "groupCount": "{on}/{total}",
     "groupDisclosure": "Einträge in {group} anzeigen",
     "sensitiveHint": "Hier ist nie etwas vorausgewählt. Wähle jeden Eintrag selbst.",
     "scopeNone": "Noch nichts ausgewählt. Wähle aus, was enthalten sein soll, oder übernimm den Standardbericht.",
     "scopeCount": "{count, plural, one {# Eintrag} other {# Einträge}} aus {groups, plural, one {# Bereich} other {# Bereichen}}",
     "scopeSensitive": "inkl. {names}",
-    "leafVisits": "Arztbesuche",
+    "leafVisits": "Termine",
     "leafSurgicalHistory": "Operationen und Eingriffe",
     "leafImmunizations": "Impfungen",
     "leafEmergency": "Notfalldaten (Blutgruppe, Kontakte, Verfügungen)",
@@ -14103,7 +14103,7 @@
       "accessReadCapability": "Sie kann alles lesen, was von dieser Akte geteilt wird. Hinzufügen oder ändern kann sie nichts.",
       "accessWriteLabel": "Darf lesen und hinzufügen",
       "accessWriteCapability": "Sie kann Einträge hinzufügen, aber nichts ändern oder löschen, auch nicht das, was sie selbst eingetragen hat.",
-      "accessWriteDetail": "Sie kann Messwerte, Laborergebnisse, einen neuen Laborwert, einen Krankheitseintrag, eine Nebenwirkung zu einem Medikament und ein neues Medikament hinzufügen sowie eine Dosis als genommen oder übersprungen markieren. Ändern oder löschen kann sie nichts, auch nicht das Eigene, und eine deiner Erinnerungen verschieben kann sie nicht. Das kannst nur du.",
+      "accessWriteDetail": "Sie kann Messwerte, Laborwerte, einen neuen Kennwert zum Verfolgen, einen Krankheitseintrag, eine Nebenwirkung zu einem Medikament und ein neues Medikament hinzufügen sowie eine Dosis als genommen oder übersprungen markieren. Ändern oder löschen kann sie nichts, auch nicht das Eigene, und eine deiner Erinnerungen verschieben kann sie nicht. Das kannst nur du.",
       "accessManageLabel": "Darf verwalten",
       "accessManageCapability": "Sie kann Einträge anlegen, ändern und löschen, auch solche, die du selbst erfasst hast.",
       "accessManageDetail": "Sie kann außerdem die daraus erzeugten Insights lesen. Deine Anmeldung, deine Sicherheitseinstellungen, deine Verbindungen und den Zugriff anderer Personen kann sie nicht ändern. Du kannst das jederzeit beenden.",
@@ -14179,10 +14179,10 @@
     },
     "managedActivity": {
       "title": "Aktivität im Profil von {name}",
-      "hint": "Wer in diesem Profil was getan hat: die Änderungen jedes Vormunds, deine eingeschlossen.",
+      "hint": "Wer in diesem Profil was getan hat: die Änderungen jeder betreuenden Person, deine eingeschlossen.",
       "action": "Aktivität zeigen",
       "emptyTitle": "Noch nichts festgehalten",
-      "emptyDescription": "Änderungen eines Vormunds in diesem Profil erscheinen hier, Öffnungen als eine Zeile je Vormund und Tag.",
+      "emptyDescription": "Änderungen einer betreuenden Person in diesem Profil erscheinen hier, Öffnungen als eine Zeile je betreuender Person und Tag.",
       "you": "Du",
       "opened": "{name} hat das Profil {count}× geöffnet",
       "acted": "{name} hat im Profil etwas geändert",
@@ -14324,13 +14324,13 @@
       "measurementDelete": "{name} hat einen Messwert gelöscht",
       "measurementDeleteBulk": "{name} hat mehrere Messwerte auf einmal gelöscht",
       "measurementRestore": "{name} hat einen Messwert wiederhergestellt",
-      "measurementReminderCreate": "{name} hat eine Messerinnerung angelegt",
-      "measurementReminderUpdate": "{name} hat eine Messerinnerung geändert",
-      "measurementReminderDelete": "{name} hat eine Messerinnerung gelöscht",
-      "measurementReminderComplete": "{name} hat eine Messerinnerung erledigt",
-      "measurementReminderSatisfy": "{name} hat eine Messerinnerung abgehakt",
-      "measurementReminderSkip": "{name} hat eine Messerinnerung übersprungen",
-      "measurementReminderSnooze": "{name} hat eine Messerinnerung verschoben",
+      "measurementReminderCreate": "{name} hat eine Vorsorge-Erinnerung angelegt",
+      "measurementReminderUpdate": "{name} hat eine Vorsorge-Erinnerung geändert",
+      "measurementReminderDelete": "{name} hat eine Vorsorge-Erinnerung gelöscht",
+      "measurementReminderComplete": "{name} hat eine Vorsorge-Erinnerung erledigt",
+      "measurementReminderSatisfy": "{name} hat eine Vorsorge-Erinnerung abgehakt",
+      "measurementReminderSkip": "{name} hat eine Vorsorge-Erinnerung übersprungen",
+      "measurementReminderSnooze": "{name} hat eine Vorsorge-Erinnerung verschoben",
       "labResultUpdate": "{name} hat einen Laborwert geändert",
       "labResultDelete": "{name} hat einen Laborwert gelöscht",
       "labResultRestore": "{name} hat einen Laborwert wiederhergestellt",
@@ -14344,10 +14344,10 @@
       "illnessEpisodeDelete": "{name} hat einen Krankheitseintrag gelöscht",
       "illnessEpisodeResolve": "{name} hat eine Erkrankung als beendet markiert",
       "illnessEpisodeRestore": "{name} hat einen Krankheitseintrag wiederhergestellt",
-      "encounterVisitCreate": "{name} hat einen Arztbesuch angelegt",
-      "encounterVisitUpdate": "{name} hat einen Arztbesuch bearbeitet",
-      "encounterVisitDelete": "{name} hat einen Arztbesuch gelöscht",
-      "encounterVisitRestore": "{name} hat einen Arztbesuch wiederhergestellt",
+      "encounterVisitCreate": "{name} hat einen Termin angelegt",
+      "encounterVisitUpdate": "{name} hat einen Termin bearbeitet",
+      "encounterVisitDelete": "{name} hat einen Termin gelöscht",
+      "encounterVisitRestore": "{name} hat einen Termin wiederhergestellt",
       "vaccinationRecordCreate": "{name} hat eine Impfung eingetragen",
       "vaccinationRecordUpdate": "{name} hat eine Impfung bearbeitet",
       "vaccinationRecordDelete": "{name} hat eine Impfung gelöscht",
@@ -14404,8 +14404,8 @@
       "rejectedLabUpdate": "{name} wollte einen Laborwert ändern und wurde abgewiesen",
       "rejectedBiomarkerCreate": "{name} wollte einen Biomarker anlegen und wurde abgewiesen",
       "rejectedBiomarkerUpdate": "{name} wollte einen Biomarker ändern und wurde abgewiesen",
-      "rejectedReminderCreate": "{name} wollte eine Messerinnerung anlegen und wurde abgewiesen",
-      "rejectedReminderUpdate": "{name} wollte eine Messerinnerung ändern und wurde abgewiesen",
+      "rejectedReminderCreate": "{name} wollte eine Vorsorge-Erinnerung anlegen und wurde abgewiesen",
+      "rejectedReminderUpdate": "{name} wollte eine Vorsorge-Erinnerung ändern und wurde abgewiesen",
       "rejectedMoodCreate": "{name} wollte einen Stimmungseintrag anlegen und wurde abgewiesen",
       "rejectedMoodUpdate": "{name} wollte einen Stimmungseintrag ändern und wurde abgewiesen",
       "rejectedDoseCreate": "{name} wollte eine Einnahme eintragen und wurde abgewiesen",
@@ -14485,14 +14485,14 @@
       },
       "labs": {
         "label": "Laborwerte",
-        "detail": "Laborergebnisse und die Liste der Kennwerte dahinter."
+        "detail": "Laborwerte und die Liste der Kennwerte dahinter."
       },
       "profile": {
         "label": "Gesundheitliche Vorgeschichte",
-        "detail": "Allergien, Familienanamnese, die Angaben in deinem Gesundheitsprofil, Arztbesuche und Praxen sowie deine Impfungen."
+        "detail": "Allergien, Familienanamnese, die Angaben in deinem Gesundheitsprofil, Termine und Praxen sowie deine Impfungen."
       },
       "illness": {
-        "label": "Krankheiten",
+        "label": "Krankheit",
         "detail": "Krankheitsverläufe und die Tageseinträge darunter, die eigenen Symptome und der Anfallskalender. Eine im Anfallskalender eingetragene Notfalldosis wird auch beim zugehörigen Medikament erfasst."
       },
       "mind": {
@@ -14566,7 +14566,7 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Termine",
-    "sectionDescription": "Arztbesuche und gebuchte Termine an einem Ort.",
+    "sectionDescription": "Erledigte und gebuchte Termine an einem Ort.",
     "add": "Termin",
     "loadError": "Termine konnten nicht geladen werden.",
     "emptyTitle": "Noch kein Termin erfasst",
@@ -14713,20 +14713,20 @@
       "title": "Verwandt",
       "kind": {
         "labResult": "Laborwert",
-        "encounter": "Besuch",
+        "encounter": "Termin",
         "document": "Dokument",
         "conditionEpisode": "Erkrankung",
         "medication": "Medikament",
         "vaccination": "Impfung"
       },
       "via": {
-        "encounter": "über einen Besuch",
+        "encounter": "über einen Termin",
         "efficacyTarget": "über das Wirkziel"
       },
       "pick": {
         "conditionEpisode": "Erkrankungen",
         "document": "Dokumente",
-        "encounter": "Besuche",
+        "encounter": "Termine",
         "medication": "Medikamente",
         "vaccination": "Impfungen"
       },
@@ -15013,7 +15013,7 @@
       "fewer": "Weniger anzeigen",
       "note": "Zusammengestellt aus deinen Einträgen, ohne Bewertung. Jedes Datum öffnet den ganzen Tag.",
       "report": "Arztbericht {date} bis heute",
-      "loadError": "Was seit dem letzten Besuch war, konnte nicht geladen werden."
+      "loadError": "Was seit dem letzten Termin war, konnte nicht geladen werden."
     },
     "travel": "Unterwegs",
     "event": {
@@ -15066,12 +15066,12 @@
     },
     "lanes": {
       "life": "Leben",
-      "illness": "Erkrankungen",
+      "illness": "Krankheit",
       "allergies": "Allergien",
       "medications": "Medikamente",
       "vaccinations": "Impfungen",
       "visits": "Arzt und Eingriffe",
-      "labs": "Labor",
+      "labs": "Laborwerte",
       "documents": "Dokumente",
       "cycle": "Zyklus",
       "seizures": "Anfälle"
@@ -15125,12 +15125,12 @@
         "vaccinationsOne": "{count} Impfung",
         "vaccinationsFew": "{count} Impfungen",
         "vaccinationsOther": "{count} Impfungen",
-        "visitsOne": "{count} Besuch, {procedures} mit Eingriff",
-        "visitsFew": "{count} Besuche, {procedures} mit Eingriff",
-        "visitsOther": "{count} Besuche, {procedures} mit Eingriff",
-        "visitsPlannedOne": "{count} Besuch, nur geplant",
-        "visitsPlannedFew": "{count} Besuche, nur geplant",
-        "visitsPlannedOther": "{count} Besuche, nur geplant",
+        "visitsOne": "{count} Termin, {procedures} mit Eingriff",
+        "visitsFew": "{count} Termine, {procedures} mit Eingriff",
+        "visitsOther": "{count} Termine, {procedures} mit Eingriff",
+        "visitsPlannedOne": "{count} Termin, nur geplant",
+        "visitsPlannedFew": "{count} Termine, nur geplant",
+        "visitsPlannedOther": "{count} Termine, nur geplant",
         "labsOne": "{count} Befundtag",
         "labsFew": "{count} Befundtage",
         "labsOther": "{count} Befundtage",
@@ -15158,7 +15158,7 @@
         "valuesEmpty": "Quellen verbinden",
         "illnessEmpty": "Episode anlegen",
         "medicationsWithoutStart": "Ergänzen",
-        "visitsEmpty": "Besuch nachtragen",
+        "visitsEmpty": "Termin nachtragen",
         "documentsUndated": "Ansehen",
         "labsEmpty": "Befund erfassen",
         "vaccinationsEmpty": "Impfpass erfassen",
@@ -15174,7 +15174,7 @@
         "documentsUndatedOther": "{count} Dokumente ohne Datum",
         "valuesEmpty": "Noch keine Werte über längere Zeit",
         "illnessEmpty": "Noch keine Erkrankungen mit Beginn",
-        "visitsEmpty": "Noch keine erledigten Arztbesuche",
+        "visitsEmpty": "Noch keine erledigten Termine",
         "labsEmpty": "Noch keine Laborbefunde",
         "vaccinationsEmpty": "Noch keine Impfungen",
         "lifeEventsEmpty": "Noch keine Lebensereignisse",
@@ -15387,7 +15387,7 @@
       "error": "Deine Einträge konnten nicht durchsucht werden. Versuch es gleich noch einmal.",
       "truncated": "Nur die neuesten Einträge wurden durchsucht.",
       "kind": {
-        "visit": "Arztbesuch",
+        "visit": "Termin",
         "condition": "Erkrankung",
         "document": "Dokument",
         "vaccination": "Impfung",
@@ -15400,7 +15400,7 @@
       "source": {
         "mood": "Stimmungsnotiz",
         "measurement": "Notiz zu einem Messwert",
-        "illness": "Krankheitstagebuch"
+        "illness": "Krankheit"
       }
     },
     "keywords": {
@@ -16105,11 +16105,11 @@
     "sectionTitle": "Kalender",
     "sectionSubtitle": "Deine Termine und was fällig wird, in der Kalender-App, die du schon nutzt.",
     "title": "Gesundheitskalender",
-    "description": "Gebuchte Besuche zu ihrer Uhrzeit, Vorsorge und Impfauffrischungen am Tag ihrer Fälligkeit.",
+    "description": "Gebuchte Termine zu ihrer Uhrzeit, Vorsorge und Impfauffrischungen am Tag ihrer Fälligkeit.",
     "loadError": "Das Kalender-Abo konnte nicht geladen werden.",
     "linkHidden": "Ein Link, der mit {prefix} beginnt, ist aktiv. Er wird nur einmal gezeigt, beim Erstellen; schalte das Abo aus und wieder ein, um einen neuen zu bekommen.",
     "linkOnce": "Nur jetzt sichtbar. Füge ihn in deine Kalender-App ein.",
-    "visits": "Gebuchte Besuche",
+    "visits": "Gebuchte Termine",
     "checkups": "Fällige Vorsorge",
     "vaccinations": "Fällige Impfauffrischungen",
     "ics": {
@@ -16298,7 +16298,7 @@
         "relay_not_ready": "Wallet-Pässe sind auf diesem Server gerade nicht verfügbar.",
         "no_https_origin": "Wallet-Pässe brauchen diesen Server über HTTPS.",
         "api_disabled": "Der externe Zugriff ist auf diesem Server aus, damit auch Wallet-Pässe.",
-        "not_allowed": "Nur die Person, um die es geht, oder ihr Vormund kann ihn hinzufügen."
+        "not_allowed": "Nur die Person, um die es geht, oder eine betreuende Person kann ihn hinzufügen."
       },
       "more": {
         "frozen": "Der Pass zeigt, was du hier ankreuzt. Um das zu ändern, zieh ihn zurück und leg einen neuen an.",

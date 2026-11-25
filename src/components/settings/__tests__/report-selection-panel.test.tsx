@@ -168,7 +168,7 @@ describe("<HealthRecordExportPanel> — the first run", () => {
     // The template is offered by name on a button, not applied behind the
     // user's back. One click is still one click; it just has to happen.
     expect(html).toContain('data-testid="report-apply-standard-export"');
-    expect(html).toContain("Apply Standard doctor&#x27;s report");
+    expect(html).toContain("Apply Standard doctor report");
   });
 
   it("selects nothing at all — no template, no default", () => {

@@ -773,7 +773,7 @@ describe("doctor-report illness section", () => {
       now: FIXED_NOW,
     });
     const text = await extractText(bytes);
-    expect(text).toContain("Conditions & illnesses");
+    expect(text).toContain("Illness episodes");
     expect(text).toContain("Erkältung");
   });
 
@@ -810,7 +810,7 @@ describe("doctor-report illness section", () => {
       now: FIXED_NOW,
     });
     const text = await extractText(bytes);
-    expect(text).not.toContain("Conditions & illnesses");
+    expect(text).not.toContain("Illness episodes");
   });
 });
 

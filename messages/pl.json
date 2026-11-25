@@ -304,7 +304,7 @@
     }
   },
   "doctorReport": {
-    "title": "Raport zdrowotny",
+    "title": "Raport dla lekarza",
     "anamnesisTitle": "Profil zdrowotny",
     "anamnesisNotRecorded": "Brak danych",
     "anamnesisUnreadable": "Nie udało się odczytać zapisanej wartości",
@@ -314,7 +314,7 @@
     "anamnesisShiftSchedule": "Harmonogram pracy",
     "anamnesisColFact": "Pozycja profilu",
     "anamnesisColValue": "Zapisana wartość",
-    "subtitle": "HealthLog: osobisty raport zdrowotny",
+    "subtitle": "Utworzono w HealthLog",
     "patient": "Pacjent",
     "dateOfBirth": "Data urodzenia",
     "gender": "Płeć",
@@ -396,7 +396,7 @@
     "summaryTrend": "{label}: ostatnio {latest} {arrow}",
     "summaryAdherence": "Przestrzeganie zaleceń lekowych: {rate}% (średnia ważona).",
     "chartsTitle": "Wykresy trendów",
-    "packageReadme": "Dokumentacja zdrowotna HealthLog\n\nTen pakiet zawiera:\n- report.pdf: raport zdrowotny dla lekarza.\n- bundle.json: te same dane jako dokument HL7 FHIR R4 (Bundle), zgodny z ePA.\n\nWygenerowano w HealthLog.",
+    "packageReadme": "Raport dla lekarza z HealthLog\n\nTen pakiet zawiera:\n- report.pdf: raport dla lekarza w formacie PDF.\n- bundle.json: te same dane jako dokument HL7 FHIR R4 (Bundle), zgodny z ePA.\n\nWygenerowano w HealthLog.",
     "wellnessTitle": "Podsumowanie dobrostanu",
     "wellnessDisclaimer": "To opisowe wyniki dobrostanu obliczone na podstawie śledzonych sygnałów (0–100). Nie są to oceny kliniczne ani diagnozy.",
     "wellnessRecovery": "Regeneracja",
@@ -594,7 +594,7 @@
     "dashboard": "Panel",
     "measurements": "Pomiary",
     "medications": "Leki",
-    "insights": "Insights",
+    "insights": "Analizy",
     "achievements": "Osiągnięcia",
     "settings": "Ustawienia",
     "admin": "Konsola administratora",
@@ -643,14 +643,14 @@
     },
     "cycle": "Cykl",
     "labs": "Wyniki badań",
-    "profile": "Profil",
-    "vorsorge": "Badania",
-    "illness": "Choroba",
+    "profile": "Wywiad medyczny",
+    "vorsorge": "Profilaktyka",
+    "illness": "Choroby",
     "documents": "Dokumenty",
     "vaccinations": "Szczepienia",
     "mentalWellbeing": "Dobrostan psychiczny",
     "timeline": "Oś czasu",
-    "seizures": "Napady",
+    "seizures": "Dzienniczek napadów",
     "emergencyCard": "Karta ratunkowa",
     "groups": {
       "tracking": "Śledzenie",
@@ -1513,8 +1513,8 @@
       "linkedActiveEnergy": "Energia aktywna",
       "linkedRestingHeartRate": "Tętno spoczynkowe",
       "linkedHrv": "Zmienność rytmu serca",
-      "bodyLogged": "Zapisano w dzienniku choroby: {count, plural, one {# objaw} few {# objawy} many {# objawów} other {# objawu}}",
-      "bodyNotLogged": "Na ten dzień nic nie zapisano w dzienniku choroby",
+      "bodyLogged": "Zapisano w module Choroby: {count, plural, one {# objaw} few {# objawy} many {# objawów} other {# objawu}}",
+      "bodyNotLogged": "Na ten dzień nic nie zapisano w module Choroby",
       "openIllness": "Otwórz"
     },
     "sourceNotification": "Powiadomienie",
@@ -3075,7 +3075,7 @@
     "noAnalysisYet": "Brak oceny.",
     "assessmentPreparing": "Przygotowywanie oceny…",
     "emptyTitle": "Jeszcze za mało danych",
-    "emptyDescription": "Insights pojawią się, gdy zarejestrujesz kilka pomiarów. Zacznij od wagi lub ciśnienia.",
+    "emptyDescription": "Analizy pojawią się, gdy zarejestrujesz kilka pomiarów. Zacznij od wagi lub ciśnienia.",
     "emptyAddMeasurement": "Zarejestruj pomiar",
     "editMode": {
       "done": "Gotowe",
@@ -3389,7 +3389,7 @@
         "resting_hr": "Tętno spoczynkowe",
         "steps": "Kroki",
         "active_energy": "Aktywna energia",
-        "flights": "Piętra",
+        "flights": "Pokonane piętra",
         "distance": "Dystans",
         "vo2_max": "VO₂ max",
         "body_temp": "Temperatura ciała",
@@ -3397,7 +3397,7 @@
         "anthropometrics": "Profil (wzrost, wiek, płeć)",
         "walking_hr": "Tętno podczas chodzenia",
         "respiratory_rate": "Częstość oddechów",
-        "spo2": "Saturacja krwi",
+        "spo2": "Saturacja tlenem",
         "pulse_wave_velocity": "Prędkość fali tętna",
         "vascular_age": "Wiek naczyniowy",
         "body_fat": "Tkanka tłuszczowa",
@@ -3793,9 +3793,9 @@
       "coachPrefill": "Nie zarejestrowałem jeszcze tętna spoczynkowego. Dlaczego dzienna wartość spoczynkowa różni się od pojedynczego pomiaru tętna i jak ją poprawić?"
     },
     "oxygenSaturation": {
-      "title": "Saturacja tlenu",
+      "title": "Saturacja tlenem",
       "description": "Tlen we krwi (SpO₂): kliniczny zakres normy 95–100 %, ze strefami docelowymi zacienionymi na wykresie.",
-      "chartTitle": "Saturacja tlenu",
+      "chartTitle": "Saturacja tlenem",
       "emptyState": {
         "title": "Brak próbek SpO₂",
         "description": "Próbki SpO₂ trafią tutaj, gdy zgodne wearable (Apple Watch, Withings ScanWatch) wykona pomiar."
@@ -3881,7 +3881,7 @@
         "headphoneAudioBody": "Poziom dźwięku w słuchawkach śledzi w decybelach, jak głośno słuchasz przez słuchawki. Ściszanie głośności i robienie przerw chroni słuch w dłuższej perspektywie.",
         "audioEventsBody": "Zdarzenia głośnego dźwięku oznaczają momenty, gdy hałas wokół ciebie osiągnął poziom mogący przy wystarczającej ekspozycji uszkodzić słuch. Częste zdarzenia to sygnał, by poszukać cichszego otoczenia lub ochrony słuchu.",
         "daylightBody": "Czas w świetle dziennym to ilość czasu spędzanego w świetle na zewnątrz każdego dnia. Regularne światło dzienne wspiera zdrowy rytm snu i czuwania oraz nastrój (CDC 2024), a czas na świeżym powietrzu wiąże się ze zdrowiem oczu.",
-        "bloodGlucoseBody": "Poziom glukozy we krwi to ilość cukru we krwi, głównego źródła energii organizmu. Rośnie po jedzeniu i ustala się między posiłkami. Jako ogólna wskazówka dla dorosłych bez cukrzycy: wynik na czczo poniżej {prediabetesFrom} {unit} jest prawidłowy, {prediabetesFrom}–{prediabetesTo} oznacza stan przedcukrzycowy, a {diabetesFrom} lub więcej mieści się w zakresie cukrzycy (ADA 2024). Pojedynczy wysoki wynik nie jest diagnozą; lekarz potwierdza ją powtórnym badaniem, a osoby leczące cukrzycę mają inne cele, ustalone przez lekarza.",
+        "bloodGlucoseBody": "Glikemia to ilość cukru we krwi, głównego źródła energii organizmu. Rośnie po jedzeniu i ustala się między posiłkami. Jako ogólna wskazówka dla dorosłych bez cukrzycy: wynik na czczo poniżej {prediabetesFrom} {unit} jest prawidłowy, {prediabetesFrom}–{prediabetesTo} oznacza stan przedcukrzycowy, a {diabetesFrom} lub więcej mieści się w zakresie cukrzycy (ADA 2024). Pojedynczy wysoki wynik nie jest diagnozą; lekarz potwierdza ją powtórnym badaniem, a osoby leczące cukrzycę mają inne cele, ustalone przez lekarza.",
         "skinTemperatureBody": "Temperatura skóry to tutaj niewielka nocna zmiana temperatury nadgarstka względem twojej własnej wartości bazowej, a nie bezwzględny pomiar gorączki. Zmiany mogą odzwierciedlać sen, otoczenie, chorobę lub fazę cyklu menstruacyjnego.",
         "cardioFitnessBody": "VO₂ max to ilość tlenu, jaką organizm potrafi wykorzystać przy maksymalnym wysiłku. To najlepszy laboratoryjny wskaźnik wydolności tlenowej, który urządzenia noszone szacują pośrednio. Wyższy lub rosnący trend to mocny sygnał dobrego zdrowia układu krążenia.",
         "cardioRecoveryBody": "Regeneracja serca to liczba uderzeń na minutę, o jaką spada tętno w pierwszej minucie po zakończeniu intensywnego wysiłku. Większy spadek oznacza, że serce szybciej się uspokaja, co świadczy o dobrej kondycji.",
@@ -3923,9 +3923,9 @@
         "weekday": "Większość Twoich pomiarów {metric} przypada na jeden dzień tygodnia. Pomiary w inne dni dają pełniejszy obraz.",
         "timeOfDay": "Większość Twoich pomiarów {metric} przypada o podobnej porze dnia. Różne pory dają pełniejszy obraz."
       },
-      "valuesBack": "Powrót do Insights",
+      "valuesBack": "Powrót do Analiz",
       "valuesBackToMetric": "Powrót do {metric}",
-      "scoresBack": "Powrót do Insights",
+      "scoresBack": "Powrót do Analiz",
       "ecgDescription": "Zapisy EKG jednoodprowadzeniowe z Twojego urządzenia, każdy z wynikiem samego urządzenia.",
       "emptyCoachPrefill": "{metric}: nie mam tu jeszcze żadnych wpisów. Co ten wskaźnik mówi o moim zdrowiu i jak mogę go poprawić?"
     },
@@ -4239,9 +4239,9 @@
       }
     },
     "bloodGlucose": {
-      "title": "Poziom glukozy",
+      "title": "Glikemia",
       "description": "Twoje odczyty glukozy w czasie, w {unit}.",
-      "chartTitle": "Poziom glukozy",
+      "chartTitle": "Glikemia",
       "medianLabel": "Mediana glukozy",
       "emptyState": {
         "title": "Brak danych o glukozie",
@@ -4251,7 +4251,7 @@
         "title": "Przegląd glukozy",
         "subtitle": "Spojrzenie na {days, plural, one {ostatni # dzień} few {ostatnie # dni} many {ostatnie # dni} other {ostatnie # dnia}}, na podstawie {count, plural, one {# pomiaru} few {# pomiarów} many {# pomiarów} other {# pomiaru}}.",
         "spotCaveat": "To szacunki z pojedynczych pomiarów punktowych, a nie profil z czujnika ciągłego. Traktuj je jako kierunek, nie jako diagnozę.",
-        "labsLink": "Wyniki laboratoryjne? HbA1c lub glukozę na czczo z pobrania krwi zapisz w sekcji Laboratorium.",
+        "labsLink": "Masz wyniki badań krwi? HbA1c lub glukozę na czczo zapisz w sekcji Wyniki badań.",
         "learningTitle": "Wciąż poznajemy Twoją glukozę",
         "learningBody": "Na razie to {count} w ciągu {days}. Przy nieco dłuższej historii obraz się wyostrza, więc rejestruj dalej lub pozwól uzupełnić to podłączonemu urządzeniu.",
         "learningBodyEmpty": "Gdy pojawi się kilka pomiarów (wpisanych przez Ciebie lub zsynchronizowanych z urządzenia), czas w zakresie, średnia i zmienność nabiorą tu kształtu.",
@@ -4526,7 +4526,7 @@
     "navLeanBodyMass": "Beztłuszczowa masa ciała",
     "walkingHeartRateAverage": {
       "title": "Tętno podczas chodu",
-      "description": "Twoje średnie tętno podczas chodzenia, w ud./min.",
+      "description": "Twoje średnie tętno podczas chodzenia, w bpm.",
       "chartTitle": "Średnie tętno podczas chodu",
       "emptyState": {
         "title": "Brak danych",
@@ -5104,7 +5104,7 @@
       "average": "Średnia z 30 dni {value}",
       "unitScore": "pkt",
       "unitMinutes": "min",
-      "unitBpm": "ud./min",
+      "unitBpm": "bpm",
       "unitKj": "kJ",
       "unitLoad": "obciążenie"
     },
@@ -5423,16 +5423,16 @@
           "body": "Leki zarządzają harmonogramami, przyjęciami, zapasem i titracją. Ukryte: plany cykliczne (RRULE/przesuwne) i ostrzeżenia o niskim zapasie. Twój wskaźnik przyjęć zasila filar stosowania na pulpicie oraz kontekst AI."
         },
         "labs": {
-          "title": "Wyniki laboratoryjne",
-          "body": "Laboratorium gromadzi biomarkery z zakresami referencyjnymi: morfologia, cholesterol, HbA1c. Atut: import i eksport FHIR. Wartości poza zakresem wracają jako dowody w analizach i w raporcie dla lekarza."
+          "title": "Wyniki badań",
+          "body": "Wyniki badań gromadzą biomarkery z zakresami referencyjnymi: morfologia, cholesterol, HbA1c. Atut: import i eksport FHIR. Wyniki poza zakresem wracają jako dowody w analizach i w raporcie dla lekarza."
         },
         "illness": {
-          "title": "Dziennik chorób",
-          "body": "Dziennik chorób zapisuje ostre epizody i przewlekłe diagnozy wraz z zaostrzeniami. Ukryte: korelacja epizodu z pomiarami oraz Tryb odpoczynku wstrzymujący przypomnienia. Dzięki temu Coach rozumie, czemu wartości przez chwilę odbiegają."
+          "title": "Choroby",
+          "body": "Choroby zapisują ostre epizody i przewlekłe diagnozy wraz z zaostrzeniami. Ukryte: korelacja epizodu z pomiarami oraz Tryb odpoczynku wstrzymujący przypomnienia. Dzięki temu Coach rozumie, czemu wartości przez chwilę odbiegają."
         },
         "vorsorge": {
-          "title": "Badania",
-          "body": "Badania przypominają o przeglądach i szczepieniach z własnym interwałem. Wskazówka: „Wykonane” może od razu utworzyć pomiar lub wynik laboratoryjny. Terminy pojawiają się jako przypomnienia i w raporcie dla lekarza."
+          "title": "Profilaktyka",
+          "body": "Profilaktyka przypomina o badaniach przesiewowych i szczepieniach, każdym z własnym interwałem. Wskazówka: „Wykonane” może od razu utworzyć pomiar lub wynik badania. Pozycje do wykonania pojawiają się jako przypomnienia i w raporcie dla lekarza."
         },
         "cycle": {
           "title": "Cykl",
@@ -5456,7 +5456,7 @@
         },
         "export": {
           "title": "Raport dla lekarza",
-          "body": "Raport dla lekarza łączy pomiary, leki, wyniki laboratoryjne i badania w PDF lub FHIR na wizytę. Tu zbiegają się wszystkie moduły, więc pełny raport powstaje tylko z zadbanych danych."
+          "body": "Raport dla lekarza łączy pomiary, leki, wyniki badań i badania profilaktyczne w PDF lub FHIR na wizytę. Tu zbiegają się wszystkie moduły, więc pełny raport powstaje tylko z zadbanych danych."
         },
         "achievements": {
           "title": "Osiągnięcia",
@@ -5570,7 +5570,7 @@
         "options": {
           "blood-pressure": "Ciśnienie krwi",
           "weight-body": "Waga i ciało",
-          "glucose": "Glukoza we krwi",
+          "glucose": "Glikemia",
           "sleep": "Sen i regeneracja",
           "mood": "Nastrój i dobrostan psychiczny",
           "cycle": "Cykl",
@@ -5622,7 +5622,7 @@
       "units": {
         "title": "Twój region i jednostki",
         "body": "Twój dzień i godziny przypomnień zależą od strefy czasowej. Pomiary są zapisywane raz i wyświetlane w wybranej jednostce. Wszystko możesz później zmienić w Ustawieniach.",
-        "glucoseLegend": "Glukoza we krwi",
+        "glucoseLegend": "Glikemia",
         "weightLegend": "Waga i wzrost",
         "options": {
           "metric": "kg i cm",
@@ -5641,7 +5641,7 @@
         "everythingElse": "Cała reszta jest o jedno kliknięcie w",
         "modulesLink": "Ustawienia, Moduły",
         "switchesOff": "Znika z nawigacji: {modules}. W każdej chwili możesz je włączyć w Ustawienia, Moduły.",
-        "glucoseUnit": "Glukoza we krwi",
+        "glucoseUnit": "Glikemia",
         "unitPreference": "Jednostki",
         "language": "Język",
         "timezone": "Strefa czasowa",
@@ -5949,7 +5949,7 @@
             "rhythmEvents": "Zdarzenia rytmu",
             "healthStatus": "Stan zdrowia",
             "breathing": "Oddychanie",
-            "labsChanges": "Zmiany wyników laboratoryjnych",
+            "labsChanges": "Zmiany wyników badań",
             "ecg": "EKG"
           }
         },
@@ -6055,15 +6055,15 @@
           "description": "Widok listy i ręczna kolejność."
         },
         "labs": {
-          "title": "Laboratorium",
+          "title": "Wyniki badań",
           "description": "Widok, sortowanie i ręczna kolejność."
         },
         "illness": {
-          "title": "Dziennik chorób",
+          "title": "Choroby",
           "description": "Widok listy i kolejność epizodów."
         },
         "checkups": {
-          "title": "Badania kontrolne",
+          "title": "Profilaktyka",
           "description": "Widok listy i kolejność przypomnień."
         },
         "documents": {
@@ -6652,7 +6652,7 @@
             "description": "Grupy, własne tagi i tagi zarchiwizowane."
           },
           "labs": {
-            "title": "Badania",
+            "title": "Wyniki badań",
             "description": "Biomarkery i rozpoznawanie tekstu na urządzeniu dla wyników badań."
           },
           "arrangementTitle": "Kolejność i widok",
@@ -6663,8 +6663,8 @@
         }
       },
       "health-record": {
-        "title": "Dokumentacja zdrowotna",
-        "subtitle": "Eksportuj kompletną dokumentację zdrowotną gotową dla lekarza."
+        "title": "Raport dla lekarza i eksport",
+        "subtitle": "Przygotuj raport dla lekarza i wyeksportuj kompletną dokumentację zdrowotną gotową dla lekarza."
       },
       "coach": {
         "title": "Coach",
@@ -6784,7 +6784,7 @@
         "notice": {
           "upgrade": {
             "title": "Teraz to Ty decydujesz, co się liczy",
-            "body": "To, które filary liczyły się do Twojego Health Score, szło wcześniej za modułami, które miałeś włączone. Teraz jest to osobna decyzja i podejmujesz ją tutaj. Twoja liczba się przy tym nie ruszyła: nadal liczy dokładnie to, co liczyła wcześniej."
+            "body": "To, które filary liczyły się do Twojego wyniku zdrowia, szło wcześniej za modułami, które miałeś włączone. Teraz jest to osobna decyzja i podejmujesz ją tutaj. Twoja liczba się przy tym nie ruszyła: nadal liczy dokładnie to, co liczyła wcześniej."
           },
           "changed": {
             "title": "Zmieniłeś to, co się liczy",
@@ -6960,7 +6960,7 @@
     "webPushServiceRefused": "Usługa push Twojej przeglądarki odrzuciła rejestrację, więc nie udało się włączyć push. Przeglądarka musi mieć dostęp do swojej usługi push, a może to zablokować ustawienie prywatności, bloker albo sieć. Spróbuj ponownie później albo w innej przeglądarce.",
     "webPushServiceRefusedBrave": "Usługa push przeglądarki Brave odrzuciła rejestrację. Brave domyślnie ma wyłączony push: otwórz brave://settings/privacy, włącz korzystanie z usług Google do wiadomości push i stuknij ponownie „Włącz push”.",
     "webPushHelpLink": "Pomoc dotycząca push w przeglądarce",
-    "codexConnected": "ChatGPT połączony pomyślnie! Insights jest teraz aktywny.",
+    "codexConnected": "ChatGPT połączony pomyślnie! Analizy są teraz aktywne.",
     "codexDisconnected": "Połączenie z ChatGPT usunięte.",
     "codexConnectionFailed": "Połączenie z ChatGPT nie powiodło się. Spróbuj ponownie.",
     "rawData": "Wysyłaj szczegółową historię",
@@ -7222,7 +7222,7 @@
         "title": "Zgoda na AI",
         "activeSince": "Udzielona {date}: Twoje dane zdrowotne mogą trafiać do skonfigurowanego dostawcy na potrzeby funkcji AI.",
         "withdraw": "Wycofaj zgodę",
-        "confirmBody": "Jeśli żadna inna Twoja zgoda ich nie obejmuje, od razu przestają działać: Coach i Insights tam, gdzie korzystają z dostępu AI zapewnianego przez ten serwer, oraz czytanie dokumentów przez model online. Na własnym kluczu lub lokalnym modelu Coach i Insights działają dalej. Jeśli żadna inna zgoda nie obejmuje już Insights, notatki napisane dla Ciebie przez model zostają usunięte: notatki o stanie, codzienne podsumowanie, podsumowania okresu napisane przez model, linie po nowym pomiarze i notatki o treningach. Twoje rozmowy z Coachem, to, co zapamiętał Coach, Twoje plany i podsumowania dokumentów zostają, a Ty możesz je sam przeczytać lub usunąć.",
+        "confirmBody": "Jeśli żadna inna Twoja zgoda ich nie obejmuje, od razu przestają działać: Coach i Analizy tam, gdzie korzystają z dostępu AI zapewnianego przez ten serwer, oraz czytanie dokumentów przez model online. Na własnym kluczu lub lokalnym modelu Coach i Analizy działają dalej. Jeśli żadna inna zgoda nie obejmuje już Analiz, notatki napisane dla Ciebie przez model zostają usunięte: notatki o stanie, codzienne podsumowanie, podsumowania okresu napisane przez model, linie po nowym pomiarze i notatki o treningach. Twoje rozmowy z Coachem, to, co zapamiętał Coach, Twoje plany i podsumowania dokumentów zostają, a Ty możesz je sam przeczytać lub usunąć.",
         "confirmWithdraw": "Wycofaj",
         "grantError": "Nie udało się zapisać zgody. Spróbuj ponownie.",
         "error": "Nie udało się zapisać wycofania. Spróbuj ponownie.",
@@ -7332,7 +7332,7 @@
         "saveError": "Nie udało się zapisać preferencji jednostek."
       },
       "glucoseUnit": {
-        "title": "Glukoza we krwi",
+        "title": "Glikemia",
         "description": "Jednostka, w której pokazywane są pomiary glukozy. Zapis pozostaje taki sam w obu przypadkach.",
         "saved": "Zapisano jednostkę glukozy",
         "saveError": "Nie udało się zapisać jednostki glukozy."
@@ -7755,7 +7755,7 @@
       "statusExpired": "Wygasły",
       "inactiveTitle": "Unieważnione i wygasłe ({count})",
       "shownOnce": "Wyświetlane tylko raz. Zapisz teraz kod QR i hasło, bo nie można ich później odzyskać.",
-      "qrAlt": "Kod QR zawierający link do udostępniania i hasło",
+      "qrAlt": "Kod QR zawierający link udostępniania i hasło",
       "linkLabel": "Link",
       "passphraseLabel": "Hasło",
       "passphraseHint": "Odbiorca potrzebuje linku i tego hasła. Kod QR zawiera oba.",
@@ -8001,7 +8001,7 @@
       "revokeSessionConfirmBody": "{device} będzie musiało zalogować się ponownie. Zapisane na nim dane pozostają bez zmian.",
       "signOutEverywhereConfirmTitle": "Wylogować wszystkie pozostałe urządzenia?",
       "signOutEverywhereConfirmBody": "Wszystkie inne urządzenia, każdy połączony asystent AI i każdy token API będą musiały zalogować się ponownie lub zostać skonfigurowane od nowa. To urządzenie pozostaje zalogowane. Zapisane dane pozostają bez zmian.",
-      "signOutEverywhereShareLinks": "Zakończ także linki udostępniania dla lekarzy",
+      "signOutEverywhereShareLinks": "Zakończ także linki udostępniania",
       "signOutEverywhereInvites": "Zaproszenia do Twojej karty, których nikt jeszcze nie przyjął, zostaną wycofane. Osoby, które już je przyjęły, zachowują dostęp; możesz go zakończyć zaraz potem.",
       "signOutEverywhereInvitesDone": "Wycofano {count, plural, one {# nieprzyjęte zaproszenie} few {# nieprzyjęte zaproszenia} many {# nieprzyjętych zaproszeń} other {# nieprzyjętego zaproszenia}}.",
       "grantsKeptTitle": "Te osoby nadal widzą Twoją kartę",
@@ -8064,7 +8064,7 @@
             "link": "Otwórz udostępniony dostęp"
           },
           "shareLinks": {
-            "title": "Linki dla lekarzy",
+            "title": "Linki udostępniania",
             "description": "Linki tylko do odczytu do raportu dla lekarza, które wygasają w wybranym przez ciebie dniu.",
             "link": "Otwórz linki"
           },
@@ -8197,12 +8197,12 @@
         "lastBackfill": "Historia uzupełniona {relative}",
         "lastEnteredHere": "Ostatni wpis tutaj {relative}"
       },
-      "quietSince": "{device}: cisza od {since}. Wystarczy raz otworzyć na nim HealthLog.",
+      "quietSince": "{device}: milczy od {since}. Wystarczy raz otworzyć na nim HealthLog.",
       "quietDeviceUnnamed": "iPhone"
     },
     "glucoseReference": {
       "title": "Zakres referencyjny glukozy",
-      "description": "Do jakiego zakresu porównywane są twoje wyniki glukozy we krwi.",
+      "description": "Do jakiego zakresu porównywane są twoje wyniki glikemii.",
       "enable": "Użyj zakresu docelowego dla cukrzycy",
       "explainer": "Wyłączone: wyniki są oceniane względem ogólnego zakresu referencyjnego dla osób bez cukrzycy. Włączone: są oceniane względem węższego zakresu docelowego glikemii z ADA Standards of Care, a Coach opiera na nim swoje uwagi o glukozie. Twoje własne wartości docelowe poniżej nadal mają pierwszeństwo.",
       "disclaimer": "To wybiera zakres referencyjny. Nie jest to diagnoza, nigdy nie jest wywnioskowane z pomiaru, a aplikacja nie podejmuje na tej podstawie działań klinicznych. O to, jakie cele dotyczą ciebie, zapytaj swojego lekarza.",
@@ -8393,7 +8393,7 @@
     "deleteAccountConfirmDescriptionGrace": "Zostaniesz wylogowany, a twoje konto od razu zablokowane. Po {days, plural, one {# dniu} few {# dniach} many {# dniach} other {# dnia}} zostanie trwale usunięte, razem ze wszystkimi danymi zdrowotnymi, kluczami dostępu, sesjami i wpisami audytu. Do tego czasu administrator tego serwera może cofnąć usunięcie. Kopie w kopiach zapasowych tego serwera wygasają po upływie okresu przechowywania.",
     "deleteAccountScheduled": "Twoje konto jest zablokowane i zostanie usunięte {date}. Trwa wylogowywanie.",
     "dangerZoneSuccessGrace": "Twoja dokumentacja zdrowotna została usunięta. Administrator tego serwera może ją przywrócić do {date}.",
-    "dangerZoneRestoreLimits": "Kończy się też dostęp: to, co udostępniasz innym, to, co inni udostępniają tobie, i każda rola osoby opiekującej się. Przywrócenie odtwarza dokumentację taką, jaka jest teraz. To, co dojdzie po usunięciu, zostaje zastąpione, a połączenia integracji, udostępnienia, role opiekunów i linki udostępniania nie wracają; trzeba je skonfigurować od nowa.",
+    "dangerZoneRestoreLimits": "Kończy się też dostęp: to, co udostępniasz innym, to, co inni udostępniają tobie, i każda rola opiekuna. Przywrócenie odtwarza dokumentację taką, jaka jest teraz. To, co dojdzie po usunięciu, zostaje zastąpione, a połączenia integracji, udostępnienia, role opiekunów i linki udostępniania nie wracają; trzeba je skonfigurować od nowa.",
     "garmin": "Garmin",
     "garminTag": "Personal API",
     "garminDescription": "Wklej klucz Garmin Personal API, aby synchronizować sen, HRV, Body Battery, stres, kroki, wagę i aktywności z Garmin Connect.",
@@ -8889,7 +8889,7 @@
         "undoDeletion": "Cofnij usunięcie",
         "undoDeletionTitle": "Cofnąć usunięcie {name}?",
         "undoDeletionBody": "{name} poprosił o usunięcie tego konta; zostanie ono usunięte po upływie okresu karencji. Cofnięcie zachowuje konto i całą jego zawartość bez zmian. {name} może znów się zalogować, ale tokeny API, linki udostępniania i zaufane urządzenia pozostają unieważnione i trzeba je skonfigurować od nowa.",
-        "undoDeletionBodyGuardian": "Osoba opiekująca się profilem usunęła profil zarządzany {name}; zostanie on usunięty po upływie okresu karencji. Cofnięcie zachowuje profil i całą jego zawartość bez zmian, a osoby opiekujące się nim znów mają do niego dostęp. Jego linki udostępniania i tokeny pozostają unieważnione i trzeba je skonfigurować od nowa.",
+        "undoDeletionBodyGuardian": "Opiekun profilu usunął profil zarządzany {name}; zostanie on usunięty po upływie okresu karencji. Cofnięcie zachowuje profil i całą jego zawartość bez zmian, a jego opiekunowie znów mają do niego dostęp. Jego linki udostępniania i tokeny pozostają unieważnione i trzeba je skonfigurować od nowa.",
         "undoDeletionDone": "Cofnięto usunięcie {name}",
         "undoDeletionFailed": "Nie udało się cofnąć usunięcia",
         "undoDeletionBodyAdmin": "Administrator usunął konto {name}; zostanie ono usunięte po upływie okresu karencji. Cofnięcie zachowuje konto i całą jego zawartość bez zmian. {name} może znów się zalogować, ale tokeny API, linki udostępniania i zaufane urządzenia pozostają unieważnione i trzeba je skonfigurować od nowa.",
@@ -9187,7 +9187,7 @@
           "submitting": "Przesyłanie…",
           "success": "Kopia zapisana dla {username} ({count, plural, one {# rekord} few {# rekordy} many {# rekordów} other {# rekordu}}). Przywróć ją z jej wiersza.",
           "failureHoldsRecords": "To konto ma już rekordy. Przywracanie zastępuje rekordy zamiast je uzupełniać, więc wybierz konto bez rekordów albo utwórz nowe.",
-          "failureManagedProfile": "To konto jest profilem zarządzanym. Prowadzą je osoby opiekujące się nim, więc kopia nie może do niego trafić.",
+          "failureManagedProfile": "To konto jest profilem zarządzanym. Prowadzą je jego opiekunowie, więc kopia nie może do niego trafić.",
           "failurePendingDeletion": "To konto czeka na usunięcie. Najpierw cofnij usunięcie albo wybierz inne konto.",
           "failureAdminAccount": "To jest konto administratora. Nie można w nim umieścić rekordów innej osoby, więc wybierz zwykłe konto albo utwórz nowe.",
           "failureNotFound": "To konto już nie istnieje.",
@@ -10206,7 +10206,7 @@
       "tlsPinChangedTitle": "Zmieniono certyfikat liścia TLS: {host}",
       "tlsPinChangedBody": "Liść TLS serwowany przez {host} ma teraz pin SPKI {servedPin}, którego nie ma w znanym zestawie pinów. Klienci z przypiętym pinem (aplikacja natywna) nie połączą się po usunięciu starego pinu. Ponownie wyodrębnij nowy pin liścia, dodaj go do TLS_LEAF_SPKI_PINS oraz do zestawu pinów klienta natywnego i opublikuj kompilację, zanim ten certyfikat wygaśnie {validTo}. Zobacz docs/ops/tls-cert-pin.md.",
       "accountErasureRefusedTitle": "Nie udało się usunąć konta: {username}",
-      "accountErasureRefusedBody": "Okres usuwania konta {username} minął, ale to konto jest ostatnią aktywną osobą opiekującą się profilem zarządzanym, więc nie zostało usunięte. Pozostaje zablokowane. Dodaj do profilu kolejną osobę opiekującą się, usuń profil albo cofnij usunięcie w Administracja, Użytkownicy.",
+      "accountErasureRefusedBody": "Okres usuwania konta {username} minął, ale to konto jest ostatnim aktywnym opiekunem profilu zarządzanego, więc nie zostało usunięte. Pozostaje zablokowane. Dodaj do profilu kolejnego opiekuna, usuń profil albo cofnij usunięcie w Administracja, Użytkownicy.",
       "accountErasureFailedBody": "Okres usuwania konta {username} minął, ale usunięcie konta się nie powiodło. Konto pozostaje zablokowane, a próba jest ponawiana co godzinę, po innych kontach do usunięcia. Błąd widać na karcie nieudanych zadań w Administracja."
     },
     "user": {
@@ -10287,7 +10287,7 @@
     "eventMedicationLowStockDesc": "Gdy śledzony zapas leku wystarcza na mniej dni niż twój próg zapasu",
     "eventCoachNudge": "Wskazówka Coacha",
     "eventCoachNudgeDesc": "Okazjonalna wskazówka od Coacha, gdy twoje ostatnie trendy wymagają sprawdzenia.",
-    "eventMeasurementReminder": "Przypomnienie o pomiarze",
+    "eventMeasurementReminder": "Przypomnienie o badaniu",
     "eventMeasurementReminderDesc": "Wysyłane, gdy śledzony pomiar jest wymagany.",
     "eventMedicationIntakeSync": "Synchronizacja przyjęć leku",
     "eventMedicationIntakeSyncDesc": "Aktualizacja między urządzeniami, gdy dawka zostanie zapisana, przyjęta lub pominięta.",
@@ -10398,13 +10398,13 @@
     "eventMeasurementAnomalyDesc": "Gdy parametr życiowy, taki jak tętno spoczynkowe lub ciśnienie, utrzymuje nowy poziom od co najmniej dziesięciu dni. Najwyżej raz w tygodniu, rano, nigdy w trakcie trwającej choroby.",
     "measurementAnomaly": {
       "title": "Trwała zmiana",
-      "bodyUp": "Twój parametr {metric} utrzymuje się wyżej od {date}. Insights pokazuje stan przed i po.",
-      "bodyDown": "Twój parametr {metric} utrzymuje się niżej od {date}. Insights pokazuje stan przed i po."
+      "bodyUp": "Twój parametr {metric} utrzymuje się wyżej od {date}. Analizy pokazują stan przed i po.",
+      "bodyDown": "Twój parametr {metric} utrzymuje się niżej od {date}. Analizy pokazują stan przed i po."
     },
     "eventSyncStalled": "Źródło przestało synchronizować",
     "eventSyncStalledDesc": "Gdy iPhone, pierścień, zegarek lub waga, które wysyłają dane codziennie, ucichną. Raz na przerwę, w ciągu dnia, najwyżej raz dziennie.",
     "syncStalled": {
-      "title": "{provider}: brak danych",
+      "title": "{provider} milczy",
       "appleYesterday": "Od wczoraj z {provider} nic nie dotarło. Wystarczy raz otworzyć HealthLog.",
       "appleSince": "Od {date} z {provider} nic nie dotarło. Wystarczy raz otworzyć HealthLog.",
       "sourceYesterday": "Od wczoraj z {provider} nic nie dotarło. Otwórz aplikację {provider} lub połącz ponownie w HealthLog.",
@@ -10445,7 +10445,7 @@
     },
     "edit": {
       "title": "Edytuj zakres docelowy: {metric}",
-      "description": "Dostosuj zakres docelowy używany w wykresach, insights i raporcie medycznym. Wartości w {unit}.",
+      "description": "Dostosuj zakres docelowy używany w wykresach, analizach i raporcie dla lekarza. Wartości w {unit}.",
       "derivedHint": "Ta karta jest wyprowadzona z innych metryk. Edytuj cele bazowe (np. ciśnienie lub waga).",
       "minLabel": "Min",
       "maxLabel": "Maks",
@@ -10629,7 +10629,7 @@
     "period": "Okres raportu: {start}–{end}",
     "expires": "Ten link wygasa dnia {date}.",
     "provenance": "To jest tylko do odczytu podsumowanie udostępnione przez osobę, do której należy, wyeksportowane z jej samodzielnie rejestrowanych danych HealthLog. Wartości są zgłaszane samodzielnie i mogą obejmować odczyty zsynchronizowane z urządzeń; należy je traktować jako zgłoszone przez pacjenta, a nie jako badanie kliniczne.",
-    "labs": "Wyniki laboratoryjne",
+    "labs": "Wyniki badań",
     "medications": "Leki i przestrzeganie zaleceń",
     "bmi": "Wskaźnik masy ciała (BMI)",
     "statSummary": "ostatnio {latest} (śr. {avg}, zakres {min}–{max})",
@@ -10756,7 +10756,7 @@
         "metricBasalBodyTemp": "Temperatura podstawowa",
         "metricWristTemperature": "Nocna temperatura nadgarstka",
         "metricSkinTemperature": "Temperatura skóry",
-        "metricBloodGlucose": "Glukoza we krwi",
+        "metricBloodGlucose": "Glikemia",
         "metricMood": "Nastrój"
       },
       "title": "Analizy cyklu",
@@ -10792,7 +10792,7 @@
       "loadError": "Nie udało się załadować twojego cyklu."
     },
     "disclaimer": "Te prognozy to opisowe szacunki na podstawie zapisanych danych, a nie metoda antykoncepcji ani porada medyczna. Nigdy nie oznaczają, że współżycie bez zabezpieczenia jest bezpieczne. W sprawach antykoncepcji lub decyzji medycznych skonsultuj się z pracownikiem ochrony zdrowia.",
-    "title": "Twój cykl",
+    "title": "Cykl",
     "subtitle": "Zapisuj miesiączkę i objawy oraz sprawdzaj, co dalej.",
     "tabs": {
       "calendar": "Kalendarz",
@@ -11187,7 +11187,7 @@
     "selectionBarLabel": "Akcje zaznaczenia"
   },
   "measurementReminders": {
-    "sectionTitle": "Badania",
+    "sectionTitle": "Profilaktyka",
     "sectionDescription": "Przypomnienia, co, kiedy i gdzie zmierzyć lub sprawdzić.",
     "markDone": "Gotowe",
     "delete": "Usuń",
@@ -11232,7 +11232,7 @@
       "WEIGHT": "Waga",
       "BLOOD_PRESSURE_SYS": "Ciśnienie krwi",
       "PULSE": "Tętno",
-      "BLOOD_GLUCOSE": "Glukoza we krwi",
+      "BLOOD_GLUCOSE": "Glikemia",
       "BLOOD_KETONES": "Ketony we krwi",
       "OXYGEN_SATURATION": "Saturacja tlenem",
       "BODY_FAT": "Tkanka tłuszczowa",
@@ -11291,7 +11291,7 @@
     "startCheckIn": "Rozpocznij check-in",
     "nextDueLabel": "Następny termin:",
     "lastDoneLabel": "Ostatnio wykonano:",
-    "customize": "Dostosuj badania",
+    "customize": "Dostosuj profilaktykę",
     "adherence": {
       "label": "W interwale",
       "onTrack": "Zgodnie z planem",
@@ -11306,7 +11306,7 @@
     },
     "dashboard": {
       "empty": "Brak nadchodzących przypomnień o badaniach.",
-      "openLink": "Otwórz badania"
+      "openLink": "Otwórz profilaktykę"
     },
     "showMeasurements": "Pokaż pomiary",
     "loadError": "Nie udało się załadować przypomnień.",
@@ -11328,15 +11328,15 @@
     "title": "Wyniki badań",
     "subtitle": "Badania krwi i biomarkery",
     "addResult": "Dodaj wynik",
-    "addDescription": "Zapisz biomarker z wyniku laboratoryjnego.",
+    "addDescription": "Zapisz biomarker z wyniku badania.",
     "addFirst": "Dodaj pierwszy wynik",
     "importAction": "Importuj z Apple Health lub CSV",
     "emptyTitle": "Brak wyników badań",
     "emptyDescription": "Zapisuj badania takie jak HbA1c, LDL czy ferrytyna, aby śledzić je w czasie i udostępniać lekarzowi.",
     "referenceLabel": "Norma",
     "readingsCount": "{count, plural, one {# pomiar} few {# pomiary} many {# pomiarów} other {# pomiaru}}",
-    "deleteConfirmTitle": "Usunąć wynik laboratoryjny?",
-    "deleteConfirmDescription": "Ten wynik laboratoryjny zostanie usunięty. Zaraz po usunięciu możesz to przez chwilę cofnąć.",
+    "deleteConfirmTitle": "Usunąć wynik badania?",
+    "deleteConfirmDescription": "Ten wynik badania zostanie usunięty. Zaraz po usunięciu możesz to przez chwilę cofnąć.",
     "deleteAppleHealthNote": "Nie wróci przy następnym imporcie z Apple Health.",
     "deletedToast": "Wynik usunięty",
     "deleteError": "Nie udało się usunąć wyniku",
@@ -11568,7 +11568,7 @@
       "scanButton": "Zeskanuj wynik",
       "addScan": "Zeskanuj dokument",
       "addManual": "Dodaj wartość ręcznie",
-      "uploadHint": "Prześlij zdjęcie lub PDF wyniku laboratoryjnego",
+      "uploadHint": "Prześlij zdjęcie lub PDF wyniku badania",
       "acceptWithPdf": "JPEG, PNG, WebP lub PDF",
       "acceptImageOnly": "JPEG, PNG lub WebP",
       "extracting": "Odczytywanie wyniku…",
@@ -11607,8 +11607,8 @@
       "valueUnreadable": "Wartość nieczytelna, wprowadź ją ręcznie",
       "saveSelected": "Zapisz {count, plural, one {# wybrany} few {# wybrane} many {# wybranych} other {# wybranego}}",
       "discardAll": "Odrzuć wszystko",
-      "savedToast": "Zapisano {count, plural, one {# wynik laboratoryjny} few {# wyniki laboratoryjne} many {# wyników laboratoryjnych} other {# wyniku laboratoryjnego}}",
-      "savedPartialToast": "Zapisano {count, plural, one {# wynik laboratoryjny} few {# wyniki laboratoryjne} many {# wyników laboratoryjnych} other {# wyniku laboratoryjnego}}, {skipped} pominięto jako duplikaty",
+      "savedToast": "Zapisano {count, plural, one {# wynik badania} few {# wyniki badań} many {# wyników badań} other {# wyniku badania}}",
+      "savedPartialToast": "Zapisano {count, plural, one {# wynik badania} few {# wyniki badań} many {# wyników badań} other {# wyniku badania}}, {skipped} pominięto jako duplikaty",
       "savedNothingToast": "Nic nie zapisano: {skipped, plural, one {# wynik był już zarejestrowany} few {# wyniki były już zarejestrowane} many {# wyników było już zarejestrowanych} other {# wyniku było już zarejestrowane}}",
       "savedEmptyToast": "Nie ma nic do zapisania",
       "noRows": "W tym wyniku nie znaleziono żadnych wartości.",
@@ -11811,7 +11811,7 @@
       "description": "Schematy, przyjęcia i zgodność."
     },
     "illness": {
-      "label": "Dziennik chorób",
+      "label": "Choroby",
       "description": "Zapisuj epizody chorób i dolegliwości z dziennym przebiegiem objawów."
     },
     "mcp": {
@@ -12025,18 +12025,18 @@
     "restoreFailed": "Nie udało się przywrócić szczepienia."
   },
   "illness": {
-    "title": "Choroba",
+    "title": "Choroby",
     "subtitle": "Retrospektywny zapis Twoich epizodów chorób i dolegliwości.",
     "settings": {
       "viewDescription": "Wybierz, czy epizody mają być wyświetlane jako karty czy zwarta lista.",
       "orderDescription": "Przeciągnij epizody w kolejność, w jakiej chcesz je widzieć."
     },
-    "customize": "Dostosuj dziennik chorób",
+    "customize": "Dostosuj Choroby",
     "newEpisode": "Nowy epizod",
     "logDay": "Zapisz dzień",
     "markRecovered": "Oznacz jako wyleczone",
-    "deletedToast": "Wpis usunięty",
-    "restoreError": "Nie udało się przywrócić wpisu",
+    "deletedToast": "Epizod usunięty",
+    "restoreError": "Nie udało się przywrócić epizodu",
     "onsetOn": "Początek {date}",
     "recoveredOn": "wyleczono {date}",
     "status": {
@@ -12162,7 +12162,7 @@
       "empty": "Nie zapisano jeszcze żadnych dni."
     },
     "loadError": "Nie udało się wczytać tego epizodu.",
-    "backToList": "Powrót do dziennika",
+    "backToList": "Powrót do listy",
     "detail": {
       "note": "Notatka"
     },
@@ -12178,7 +12178,7 @@
       "body": "„{label}” oraz wszystkie powiązane wpisy dzienne zostaną usunięte. Zaraz po usunięciu możesz to przez chwilę cofnąć."
     },
     "vital": {
-      "RESTING_HEART_RATE": "Spoczynkowe tętno",
+      "RESTING_HEART_RATE": "Tętno spoczynkowe",
       "HEART_RATE_VARIABILITY": "Zmienność rytmu serca",
       "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Regeneracja",
@@ -13156,10 +13156,10 @@
     "pageUpload": "Prześlij",
     "ownerOnlyUpload": "Dokumenty może dodawać tylko właściciel kartoteki.",
     "kind": {
-      "DOCTOR_REPORT": "Raport lekarski",
+      "DOCTOR_REPORT": "Raport dla lekarza",
       "DISCHARGE_LETTER": "Wypis ze szpitala",
       "OTHER": "Inne",
-      "LAB_RESULT": "Wynik laboratoryjny",
+      "LAB_RESULT": "Wynik badania",
       "IMAGING": "Obrazowanie",
       "PRESCRIPTION": "Recepta",
       "REFERRAL": "Skierowanie",
@@ -13229,7 +13229,7 @@
     },
     "empty": {
       "title": "Twój sejf dokumentów jest pusty",
-      "description": "Przechowuj pisma lekarskie, wyniki laboratoryjne, obrazowanie, recepty i zaświadczenia o szczepieniach. Są zaszyfrowane i można je przeszukiwać według typu, schorzenia i roku.",
+      "description": "Przechowuj pisma lekarskie, wyniki badań, obrazowanie, recepty i zaświadczenia o szczepieniach. Są zaszyfrowane i można je przeszukiwać według typu, schorzenia i roku.",
       "action": "Prześlij pierwszy dokument",
       "noMatchesTitle": "Brak pasujących dokumentów",
       "noMatchesDescription": "Nic nie pasuje do bieżącego wyszukiwania i filtrów.",
@@ -13280,7 +13280,7 @@
       "sourceOther": "inny system",
       "sourceReportSchedule": "harmonogramu raportów",
       "share": "Udostępnij",
-      "labValuesLink": "Zobacz {count, plural, one {# wynik laboratoryjny} few {# wyniki laboratoryjne} many {# wyników laboratoryjnych} other {# wyniku laboratoryjnego}}",
+      "labValuesLink": "Zobacz {count, plural, one {# wynik badania} few {# wyniki badań} many {# wyników badań} other {# wyniku badania}}",
       "visitsLabel": "Należy do wizyty",
       "vaccinationsLabel": "Szczepienia",
       "noVisitsToLink": "Nie zapisano jeszcze żadnych wizyt.",
@@ -13304,7 +13304,7 @@
       "partialFailure": "Nie udało się zaktualizować {failed} z {total}",
       "failed": "Nie udało się wykonać akcji",
       "share": "Udostępnij",
-      "shareTooMany": "Link do udostępniania obejmuje maksymalnie {max, plural, one {# dokument} few {# dokumenty} many {# dokumentów} other {# dokumentu}}. Odznacz kilka i spróbuj ponownie.",
+      "shareTooMany": "Link udostępniania obejmuje maksymalnie {max, plural, one {# dokument} few {# dokumenty} many {# dokumentów} other {# dokumentu}}. Odznacz kilka i spróbuj ponownie.",
       "linkVisit": "Przypisz do wizyty"
     },
     "episodeCard": {
@@ -13333,7 +13333,7 @@
       "dismiss": "Odrzuć",
       "empty": "Nie udało się nic odczytać z tego dokumentu.",
       "unavailableBody": "Skonfiguruj dostawcę AI, aby zaproponować tytuł, typ i datę.",
-      "unavailableLocalOcr": "Włącz „Odczytuj skany na tym urządzeniu” w Ustawienia > Moduły > Badania, aby odczytywać obrazy na tym urządzeniu.",
+      "unavailableLocalOcr": "Włącz „Odczytuj skany na tym urządzeniu” w Ustawienia > Moduły > Wyniki badań, aby odczytywać obrazy na tym urządzeniu.",
       "unavailableAction": "Otwórz ustawienia AI",
       "errorGeneric": "Nie udało się odczytać dokumentu. Spróbuj ponownie.",
       "errorOcr": "Nie udało się odczytać tekstu z tego obrazu.",
@@ -13346,12 +13346,12 @@
       "errorFileType": "Tego typu pliku nie można odczytać.",
       "errorNotIndexed": "Najpierw odczytaj dokument, potem wyodrębnij.",
       "errorOutputLimit": "Dostawca AI osiągnął limit odpowiedzi, zanim zwrócił choć jedną wartość. Spróbuj modelu, który pozwala na dłuższe odpowiedzi.",
-      "errorLocalOcrDisabled": "Najpierw włącz „Odczytuj skany na tym urządzeniu” w Ustawienia > Moduły > Badania.",
+      "errorLocalOcrDisabled": "Najpierw włącz „Odczytuj skany na tym urządzeniu” w Ustawienia > Moduły > Wyniki badań.",
       "errorProvider": "Nie skonfigurowano dostawcy AI do tego celu.",
       "errorTextImageOnly": "Lokalne OCR odczytuje tylko obrazy, nie ten plik.",
       "errorConsent": "Odczyt dokumentów przez AI wymaga najpierw Twojej zgody.",
       "errorUnavailable": "Odczyt dokumentów przez AI jest tu teraz niedostępny.",
-      "unavailableLocalOcrAction": "Otwórz ustawienia badań"
+      "unavailableLocalOcrAction": "Otwórz ustawienia wyników badań"
     },
     "summary": {
       "summarise": "Podsumuj",
@@ -13362,9 +13362,9 @@
     },
     "ai": {
       "readDone": "AI odczytało Twój dokument.",
-      "readStagedOne": "AI odczytało Twój dokument. 1 wynik laboratoryjny czeka na Twoją weryfikację.",
-      "readStagedFew": "AI odczytało Twój dokument. {count} wyniki laboratoryjne czekają na Twoją weryfikację.",
-      "readStagedOther": "AI odczytało Twój dokument. {count} wyników laboratoryjnych czeka na Twoją weryfikację.",
+      "readStagedOne": "AI odczytało Twój dokument. 1 wynik badania czeka na Twoją weryfikację.",
+      "readStagedFew": "AI odczytało Twój dokument. {count} wyniki badań czekają na Twoją weryfikację.",
+      "readStagedOther": "AI odczytało Twój dokument. {count} wyników badań czeka na Twoją weryfikację.",
       "read": "Odczytaj z AI",
       "reread": "Odczytaj ponownie",
       "reading": "Odczytywanie…",
@@ -13378,7 +13378,7 @@
       "openOther": "Przejrzyj odczytane wartości ({count})",
       "includeAria": "Uwzględnij {value}",
       "type": {
-        "OBSERVATION": "Wynik laboratoryjny",
+        "OBSERVATION": "Wynik badania",
         "CONDITION": "Schorzenie",
         "MEDICATION_STATEMENT": "Lek"
       },
@@ -13403,7 +13403,7 @@
       "savedToastFew": "Zapisano {count} wartości",
       "savedToastOther": "Zapisano {count} wartości",
       "nothingSavedToast": "Przegląd zapisany. Nie dodano żadnych wartości.",
-      "extract": "Odczytaj wyniki laboratoryjne",
+      "extract": "Odczytaj wyniki badań",
       "extracting": "Odczytywanie…",
       "extractHint": "Korzysta z tekstu już odczytanego z tego dokumentu. Odczytane wartości czekają na Twoją weryfikację; nic nie zapisuje się automatycznie.",
       "extractEmpty": "Z tego dokumentu nie udało się odczytać żadnych wartości.",
@@ -13858,7 +13858,7 @@
     "action": {
       "logDose": "Przyjmij",
       "reconnect": "Połącz ponownie",
-      "viewCheckups": "Zobacz badania",
+      "viewCheckups": "Otwórz profilaktykę",
       "viewAppointment": "Zobacz wizytę",
       "viewAppointments": "Zobacz wizyty",
       "checkinKeep": "Zachowaj",
@@ -13888,12 +13888,12 @@
         "RESTING_HEART_RATE": "Tętno spoczynkowe",
         "HEART_RATE_VARIABILITY": "Zmienność rytmu serca",
         "RESPIRATORY_RATE": "Częstość oddechów",
-        "OXYGEN_SATURATION": "Saturacja",
+        "OXYGEN_SATURATION": "Saturacja tlenem",
         "BODY_TEMPERATURE": "Temperatura ciała",
         "SKIN_TEMPERATURE": "Temperatura skóry",
         "BLOOD_PRESSURE_SYS": "Ciśnienie skurczowe",
         "BLOOD_PRESSURE_DIA": "Ciśnienie rozkurczowe",
-        "BLOOD_GLUCOSE": "Glukoza we krwi",
+        "BLOOD_GLUCOSE": "Glikemia",
         "PULSE": "Tętno",
         "WEIGHT": "Waga",
         "generic": "Parametr życiowy"
@@ -14011,7 +14011,7 @@
     "groupActivity": "Aktywność",
     "groupMobility": "Mobilność i chód",
     "groupEnvironment": "Otoczenie",
-    "groupGlucose": "Poziom glukozy",
+    "groupGlucose": "Glikemia",
     "groupLabs": "Wyniki badań",
     "groupMedications": "Leki",
     "groupHistory": "Choroby i alergie",
@@ -14029,7 +14029,7 @@
     "leafFamilyHistory": "Wywiad rodzinny",
     "leafMood": "Nastrój",
     "leafCycle": "Cykl menstruacyjny",
-    "templateStandard": "Standardowy raport lekarski",
+    "templateStandard": "Standardowy raport dla lekarza",
     "applyStandard": "Zastosuj {template}",
     "standardHint": "Jedno kliknięcie wypełnia to, czego zwykle wymaga wizyta u lekarza rodzinnego. Każdą pozycję można potem zmienić.",
     "groupCount": "{on}/{total}",
@@ -14065,7 +14065,7 @@
     },
     "unavailable": {
       "title": "Nie należy do udostępnionego dostępu",
-      "description": "Udostępniana jest sama karta zdrowia, w tym wywiad zdrowotny w sekcji Anamneza. Ustawienia konta, połączone usługi, powiadomienia i funkcje SI pozostają przy osobie, do której należy konto.",
+      "description": "Udostępniana jest sama karta zdrowia, w tym tło zdrowotne w sekcji Wywiad medyczny. Ustawienia konta, połączone usługi, powiadomienia i funkcje SI pozostają przy osobie, do której należy konto.",
       "leave": "Wróć do mojej karty"
     },
     "state": {
@@ -14193,12 +14193,12 @@
     },
     "lookingAfter": {
       "kindShared": "Udostępniona karta",
-      "kindManaged": "Zarządzany profil"
+      "kindManaged": "Profil zarządzany"
     },
     "managed": {
       "title": "Profile, którymi się opiekujesz",
       "description": "Karty zdrowia bez własnego logowania.",
-      "explainer": "Zarządzany profil to karta zdrowia osoby, która sama się nie loguje, na przykład dziecka albo kogoś, kim się opiekujesz. Nie ma logowania ani adresu e-mail, a Ty stajesz się pierwszą osobą opiekującą się profilem. Później możesz dodać kolejne, a każda z was może wejść do karty i ją uzupełniać.",
+      "explainer": "Profil zarządzany to karta zdrowia osoby, która sama się nie loguje, na przykład dziecka albo kogoś, kim się opiekujesz. Nie ma logowania ani adresu e-mail, a Ty stajesz się pierwszym opiekunem profilu. Później możesz dodać kolejnych, a każdy z was może wejść do karty i ją uzupełniać.",
       "nameLabel": "Nazwa",
       "namePlaceholder": "Nazwa, po której rozpoznasz tę kartę",
       "nameHint": "Do 80 znaków. Wyświetla się wszędzie tam, gdzie pojawia się ta karta.",
@@ -14235,7 +14235,7 @@
       "deleteGuardiansOne": "{count} osoba opiekuje się dziś tą kartą i ją straci.",
       "deleteGuardiansFew": "{count} osoby opiekują się dziś tą kartą i ją stracą.",
       "deleteGuardiansOther": "{count} osób opiekuje się dziś tą kartą i ją straci.",
-      "deleteFloorNote": "To także wyjście, gdy jesteś ostatnią osobą opiekującą się profilem: możesz zamknąć kartę, ale nie zostawić jej bez opieki.",
+      "deleteFloorNote": "To także wyjście, gdy jesteś ostatnim opiekunem profilu: możesz zamknąć kartę, ale nie zostawić jej bez opieki.",
       "deleteConfirm": "Usuń profil",
       "guardiansTitle": "Kto opiekuje się kartą {name}",
       "guardianYou": "(Ty)",
@@ -14247,14 +14247,14 @@
       "guardianWithdrawBody": "Zaproszenie dla osoby {name} zostaje wycofane. Nigdy nie otworzyła karty {profile}, więc w karcie nic się nie zmienia.",
       "guardianRemoveConfirm": "Zakończ dostęp",
       "soleGuardian": "Jesteś jedyną osobą, która opiekuje się kartą {name}, więc nie ma tu dostępu, który mógłbyś zakończyć. Zaproś kogoś i poczekaj na przyjęcie, oddaj własny dostęp w sekcji „Karty, które mogę otworzyć” albo usuń profil.",
-      "guardianInviteLabel": "Zaproś kolejną osobę opiekującą się profilem",
+      "guardianInviteLabel": "Zaproś kolejnego opiekuna",
       "guardianInvite": "Wyślij zaproszenie",
       "guardianInviting": "Wysyłanie…",
       "guardianInvited": "Zaproszenie wysłane do osoby {name}.",
       "guardianExpiresHint": "Opcjonalnie. Dostęp kończy się z końcem tego dnia w Twojej strefie czasowej.",
       "guardianPendingNote": "Zaproszona osoba liczy się dopiero po przyjęciu zaproszenia. Do tego czasu wciąż jesteś ostatnia, a oddanie własnego dostępu nadal będzie odrzucane.",
       "guardianErrorDuplicate": "To konto ma już dostęp do tej karty.",
-      "guardianErrorManagedInvitee": "Zarządzany profil nie może opiekować się inną kartą. Zaproś konto, które samo się loguje.",
+      "guardianErrorManagedInvitee": "Profil zarządzany nie może opiekować się inną kartą. Zaproś konto, które samo się loguje.",
       "guardianErrorNoAccount": "W tej instancji nie ma konta o takiej nazwie ani takim adresie e-mail.",
       "guardianErrorRateLimit": "Zbyt wiele zaproszeń w ostatniej godzinie. Odczekaj chwilę i spróbuj ponownie.",
       "guardianErrorFailed": "Nie udało się wysłać zaproszenia.",
@@ -14324,13 +14324,13 @@
       "measurementDelete": "{name} usunął pomiar",
       "measurementDeleteBulk": "{name} usunął kilka pomiarów naraz",
       "measurementRestore": "{name} przywrócił pomiar",
-      "measurementReminderCreate": "{name} dodał przypomnienie o pomiarze",
-      "measurementReminderUpdate": "{name} zmienił przypomnienie o pomiarze",
-      "measurementReminderDelete": "{name} usunął przypomnienie o pomiarze",
-      "measurementReminderComplete": "{name} zrealizował przypomnienie o pomiarze",
-      "measurementReminderSatisfy": "{name} zamknął przypomnienie o pomiarze",
-      "measurementReminderSkip": "{name} pominął(-ęła) przypomnienie o pomiarze",
-      "measurementReminderSnooze": "{name} przełożył(-yła) przypomnienie o pomiarze",
+      "measurementReminderCreate": "{name} dodał przypomnienie o badaniu",
+      "measurementReminderUpdate": "{name} zmienił przypomnienie o badaniu",
+      "measurementReminderDelete": "{name} usunął przypomnienie o badaniu",
+      "measurementReminderComplete": "{name} zrealizował przypomnienie o badaniu",
+      "measurementReminderSatisfy": "{name} zamknął przypomnienie o badaniu",
+      "measurementReminderSkip": "{name} pominął(-ęła) przypomnienie o badaniu",
+      "measurementReminderSnooze": "{name} przełożył(-yła) przypomnienie o badaniu",
       "labResultUpdate": "{name} zmienił wynik badania",
       "labResultDelete": "{name} usunął wynik badania",
       "labResultRestore": "{name} przywrócił wynik badania",
@@ -14404,8 +14404,8 @@
       "rejectedLabUpdate": "{name} próbował zmienić wynik badania i został odrzucony",
       "rejectedBiomarkerCreate": "{name} próbował dodać biomarker i został odrzucony",
       "rejectedBiomarkerUpdate": "{name} próbował zmienić biomarker i został odrzucony",
-      "rejectedReminderCreate": "{name} próbował dodać przypomnienie o pomiarze i został odrzucony",
-      "rejectedReminderUpdate": "{name} próbował zmienić przypomnienie o pomiarze i został odrzucony",
+      "rejectedReminderCreate": "{name} próbował dodać przypomnienie o badaniu i został odrzucony",
+      "rejectedReminderUpdate": "{name} próbował zmienić przypomnienie o badaniu i został odrzucony",
       "rejectedMoodCreate": "{name} próbował dodać wpis nastroju i został odrzucony",
       "rejectedMoodUpdate": "{name} próbował zmienić wpis nastroju i został odrzucony",
       "rejectedDoseCreate": "{name} próbował zapisać przyjęcie dawki i został odrzucony",
@@ -14485,7 +14485,7 @@
       },
       "labs": {
         "label": "Wyniki badań",
-        "detail": "Wyniki laboratoryjne i lista analitów, które za nimi stoją."
+        "detail": "Wyniki badań i lista analitów, które za nimi stoją."
       },
       "profile": {
         "label": "Historia zdrowia",
@@ -14517,7 +14517,7 @@
       "acceptNotPending": "To zaproszenie zostało już przyjęte.",
       "acceptNotFound": "Tego zaproszenia już nie ma.",
       "acceptFailed": "Nie udało się przyjąć zaproszenia.",
-      "lastGuardian": "Ta osoba jako jedyna opiekuje się tym profilem, więc ten dostęp nie może się jeszcze zakończyć. Dodaj najpierw kolejną osobę opiekującą się profilem albo usuń profil.",
+      "lastGuardian": "Ta osoba jako jedyna opiekuje się tym profilem, więc ten dostęp nie może się jeszcze zakończyć. Dodaj najpierw kolejnego opiekuna profilu albo usuń profil.",
       "alreadyEnded": "Ten dostęp już się zakończył.",
       "notFound": "Tego dostępu już nie ma.",
       "revokeFailed": "Nie udało się zakończyć dostępu.",
@@ -15012,7 +15012,7 @@
       "allOther": "Pokaż wszystkie {count}",
       "fewer": "Pokaż mniej",
       "note": "Zestawione z Twoich wpisów, bez oceny. Każda data otwiera cały dzień.",
-      "report": "Raport lekarski od {date} do dziś",
+      "report": "Raport dla lekarza od {date} do dziś",
       "loadError": "Nie udało się załadować tego, co wydarzyło się od ostatniej wizyty."
     },
     "travel": "W podróży",
@@ -15071,7 +15071,7 @@
       "medications": "Leki",
       "vaccinations": "Szczepienia",
       "visits": "Lekarz i zabiegi",
-      "labs": "Badania",
+      "labs": "Wyniki badań",
       "documents": "Dokumenty",
       "cycle": "Cykl",
       "seizures": "Napady"
@@ -15368,7 +15368,7 @@
     "groups": {
       "recent": "Ostatnie",
       "pages": "Strony",
-      "insights": "Insights",
+      "insights": "Analizy",
       "settings": "Ustawienia",
       "modules": "Moduły",
       "actions": "Akcje",
@@ -15400,7 +15400,7 @@
       "source": {
         "mood": "Notatka o nastroju",
         "measurement": "Notatka do pomiaru",
-        "illness": "Dziennik choroby"
+        "illness": "Choroby"
       }
     },
     "keywords": {

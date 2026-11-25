@@ -304,7 +304,7 @@
     }
   },
   "doctorReport": {
-    "title": "건강 리포트",
+    "title": "진료용 리포트",
     "anamnesisTitle": "건강 프로필",
     "anamnesisNotRecorded": "기록 없음",
     "anamnesisUnreadable": "저장된 값을 읽지 못했어요",
@@ -314,7 +314,7 @@
     "anamnesisShiftSchedule": "근무 일정",
     "anamnesisColFact": "프로필 항목",
     "anamnesisColValue": "기록된 값",
-    "subtitle": "HealthLog: 개인 건강 리포트",
+    "subtitle": "HealthLog로 작성됨",
     "patient": "환자",
     "dateOfBirth": "생년월일",
     "gender": "성별",
@@ -432,7 +432,7 @@
     "summaryTrend": "{label}: 최근 {latest} {arrow}",
     "summaryAdherence": "복약 순응도: {rate}% (가중 평균).",
     "chartsTitle": "추이 차트",
-    "packageReadme": "HealthLog 건강 기록\n\n이 패키지에 들어 있는 파일:\n- report.pdf: 의사에게 보여줄 건강 리포트.\n- bundle.json: 같은 데이터를 HL7 FHIR R4 document Bundle로 담은 파일, ePA 호환.\n\nHealthLog로 생성했어요.",
+    "packageReadme": "HealthLog 진료용 리포트\n\n이 패키지에 들어 있는 파일:\n- report.pdf: PDF로 된 진료용 리포트.\n- bundle.json: 같은 데이터를 HL7 FHIR R4 document Bundle로 담은 파일, ePA 호환.\n\nHealthLog로 생성했어요.",
     "wellnessTitle": "웰니스 요약",
     "wellnessDisclaimer": "기록된 지표로 계산한 서술적 웰니스 점수예요 (0–100). 임상적 평가나 진단이 아니에요.",
     "wellnessRecovery": "회복",
@@ -565,11 +565,11 @@
     "screenerUnvalidated": "{label}: {total, plural, other {#개}} 결과 중 {count}개는 과학적으로 검증되지 않은 번역으로 응답했습니다. 참고용으로만 보십시오.",
     "pregnancy": {
       "title": "임신",
-      "pregnantWeek": "보고서 날짜 기준 임신 {weeks}주 {days}일",
+      "pregnantWeek": "리포트 날짜 기준 임신 {weeks}주 {days}일",
       "pregnant": "임신 중",
       "startDate": "마지막 생리 시작일",
       "dueDate": "출산 예정일",
-      "postpartumWeek": "보고서 날짜 기준 출산 후 {weeks}주",
+      "postpartumWeek": "리포트 날짜 기준 출산 후 {weeks}주",
       "deliveryDate": "출산일",
       "predictionsPaused": "본인 입력. 주기 예측이 일시 중지되었습니다."
     }
@@ -642,15 +642,15 @@
       "recentMeasurementDescription": "최근 기록한 측정값"
     },
     "cycle": "생리 주기",
-    "labs": "검사",
-    "profile": "프로필",
+    "labs": "검사 결과",
+    "profile": "병력",
     "vorsorge": "건강검진",
     "illness": "아픈 날",
     "documents": "문서",
     "vaccinations": "예방접종",
     "mentalWellbeing": "정신 건강",
     "timeline": "타임라인",
-    "seizures": "발작",
+    "seizures": "발작 일지",
     "emergencyCard": "응급 카드",
     "groups": {
       "tracking": "기록",
@@ -862,13 +862,13 @@
     "heroItems": {
       "coach_checkin": "코치 체크인",
       "dose_window": "복용 일정",
-      "preventive_care": "예방 관리",
+      "preventive_care": "건강검진",
       "sync_issue": "동기화 문제",
       "milestone": "마일스톤",
       "ecg_new_recording": "새 심전도 기록",
       "tension_window": "긴장 구간",
       "same_time_baseline": "같은 시간대 활동",
-      "upcoming_visit": "진료 예약"
+      "upcoming_visit": "진료"
     },
     "layoutReset": "기본값으로 초기화",
     "layoutResetTitle": "대시보드 레이아웃을 초기화할까요?",
@@ -1168,7 +1168,7 @@
     "statusAbsent": "아직 기록 없음",
     "statusModuleOff": "꺼짐",
     "loadError": "기록 상태를 불러오지 못했어요.",
-    "connectCta": "데이터 원본 연결",
+    "connectCta": "데이터 소스 연결",
     "viewCta": "보기",
     "ecg": {
       "source": "호환되는 워치(현재 Withings ScanWatch)의 단일 유도 ECG 기록을 자동으로 동기화해요."
@@ -1181,7 +1181,7 @@
   "mood": {
     "title": "기분",
     "subtitle": "기분 추적과 기록",
-    "mentalWellbeingLink": "마음 건강 체크인 하기",
+    "mentalWellbeingLink": "정신 건강 체크인 하기",
     "addEntry": "추가",
     "editEntry": "기록 편집",
     "moodLevel": "기분",
@@ -1513,8 +1513,8 @@
       "linkedActiveEnergy": "활동 에너지",
       "linkedRestingHeartRate": "안정 시 심박수",
       "linkedHrv": "심박변이도",
-      "bodyLogged": "아픈 날 일지에 증상 {count, plural, other {#개를}} 기록했어요",
-      "bodyNotLogged": "이 날은 아픈 날 일지에 기록된 게 없어요",
+      "bodyLogged": "아픈 날 기록에 증상 {count, plural, other {#개를}} 남겼어요",
+      "bodyNotLogged": "이 날은 아픈 날 기록에 남긴 게 없어요",
       "openIllness": "열기"
     },
     "sourceNotification": "알림",
@@ -4251,7 +4251,7 @@
         "title": "혈당 개요",
         "subtitle": "최근 {days, plural, other {#일}}, 측정값 {count, plural, other {#개를}} 바탕으로 읽은 결과예요.",
         "spotCaveat": "연속 혈당 측정 프로필이 아니라 개별 측정에서 낸 단발 추정치예요. 임상적 판정이 아니라 흐름의 방향으로 읽어 주세요.",
-        "labsLink": "검사 결과가 있나요? 채혈 HbA1c나 공복 혈당은 검사에 기록해 주세요.",
+        "labsLink": "검사 결과가 있나요? 채혈 HbA1c나 공복 혈당은 검사 결과에 기록해 주세요.",
         "learningTitle": "아직 혈당을 익히는 중이에요",
         "learningBody": "지금까지 {days} 동안 {count}. 기록이 조금만 더 쌓이면 더 온전한 그림이 잡혀요. 계속 기록하거나 연결된 기기가 채우게 두세요.",
         "learningBodyEmpty": "직접 기록하든 기기에서 동기화되든 측정값이 몇 개 들어오면, 목표 범위 내 시간·평균·변동성이 여기에 자리를 잡아요.",
@@ -5423,12 +5423,12 @@
           "body": "복약에서 일정, 복용, 재고, 용량 조절을 관리해요. 숨은 기능: 반복 일정(RRULE/롤링)과 재고 부족 경고가 있어요. 복용률은 대시보드의 복약 순응도 항목과 AI의 맥락으로 쓰여요."
         },
         "labs": {
-          "title": "검사 수치",
-          "body": "검사에서는 혈액검사, 콜레스테롤, HbA1c 같은 지표를 참고 범위와 함께 기록해요. 강점: 불러오기와 FHIR 내보내기. 참고 범위를 벗어난 결과는 인사이트와 진료용 리포트에 근거로 다시 등장해요."
+          "title": "검사 결과",
+          "body": "검사 결과에서는 혈액검사, 콜레스테롤, HbA1c 같은 지표를 참고 범위와 함께 기록해요. 강점: 불러오기와 FHIR 내보내기. 참고 범위를 벗어난 결과는 인사이트와 진료용 리포트에 근거로 다시 등장해요."
         },
         "illness": {
-          "title": "아픈 날 다이어리",
-          "body": "아픈 날 다이어리에는 급성 증상과 만성 진단, 악화 시기를 기록해요. 숨은 기능: 증상을 내 측정값과 견줘 보고, 알림을 멈추는 휴식 모드도 있어요. 값이 한동안 흔들리는 이유를 코치가 이렇게 이해해요."
+          "title": "아픈 날",
+          "body": "아픈 날에서는 급성 증상과 만성 진단, 악화 시기를 기록해요. 숨은 기능: 증상을 내 측정값과 견줘 보고, 알림을 멈추는 휴식 모드도 있어요. 값이 한동안 흔들리는 이유를 코치가 이렇게 이해해요."
         },
         "vorsorge": {
           "title": "건강검진",
@@ -5448,7 +5448,7 @@
         },
         "coach": {
           "title": "코치",
-          "body": "코치는 내 기록, 약, 검사 수치를 맥락 삼아 대화로 질문에 답해요. AI 제공자는 직접 고르면 돼요(내 키 또는 로컬). 새로 계산하지 않고 대시보드와 같은 숫자를 읽어요."
+          "body": "코치는 내 기록, 약, 검사 결과를 맥락 삼아 대화로 질문에 답해요. AI 제공자는 직접 고르면 돼요(내 키 또는 로컬). 새로 계산하지 않고 대시보드와 같은 숫자를 읽어요."
         },
         "integrations": {
           "title": "연동",
@@ -5456,7 +5456,7 @@
         },
         "export": {
           "title": "진료용 리포트",
-          "body": "진료용 리포트는 측정값, 약, 검사 수치, 건강검진을 PDF나 FHIR로 묶어 진료에 가져갈 수 있게 해 줘요. 모든 모듈이 여기서 만나요. 잘 쌓인 데이터라야 온전한 리포트가 나와요."
+          "body": "진료용 리포트는 측정값, 약, 검사 결과, 건강검진을 PDF나 FHIR로 묶어 진료에 가져갈 수 있게 해 줘요. 모든 모듈이 여기서 만나요. 잘 쌓인 데이터라야 온전한 리포트가 나와요."
         },
         "achievements": {
           "title": "업적",
@@ -5612,7 +5612,7 @@
       },
       "visit": {
         "title": "예정된 진료가 있나요?",
-        "body": "진료가 있으면 진료 보고서가 켜지고 준비 항목이 체크리스트에 추가됩니다.",
+        "body": "진료가 있으면 진료용 리포트가 켜지고 준비 항목이 체크리스트에 추가됩니다.",
         "options": {
           "within-a-month": "예, 한 달 안에",
           "later": "나중에",
@@ -5768,7 +5768,7 @@
       "medicationTitle": "약 추가하기",
       "medicationDescription": "복약 순응도를 기록하고 필요한 때에 알림을 받아요.",
       "medicationCta": "약 추가",
-      "dataSourceTitle": "데이터 원본 연결하기(선택)",
+      "dataSourceTitle": "데이터 소스 연결하기(선택)",
       "dataSourceDescription": "Withings, WHOOP, Oura, Polar, Nightscout, Google Health, Apple Health에서 체중·혈압·수면 등을 자동으로 동기화해요.",
       "dataSourceCta": "연결",
       "notificationsTitle": "알림 설정하기",
@@ -5778,7 +5778,7 @@
       "insightsDescription": "로컬 모델이나 내 AI 키를 넣으면 일일 브리핑과 코치가 열려요.",
       "insightsCta": "인사이트 켜기",
       "visitTitle": "진료 준비하기",
-      "visitDescription": "예약을 달력에 넣으세요. 진료 보고서가 가져갈 내용을 모아 줍니다.",
+      "visitDescription": "진료 일정을 달력에 넣으세요. 진료용 리포트가 가져갈 내용을 모아 줍니다.",
       "visitCta": "진료 열기",
       "dataSourceNamedTitle": "{source} 연결",
       "managedProfileTitle": "돌보는 사람의 프로필 만들기",
@@ -5797,7 +5797,7 @@
         },
         "careFeed": {
           "title": "진료 캘린더 구독",
-          "description": "이미 쓰는 캘린더 앱에 진료 예약과 검진을 표시합니다.",
+          "description": "이미 쓰는 캘린더 앱에 진료와 검진을 표시합니다.",
           "cta": "구독"
         },
         "sharing": {
@@ -5811,8 +5811,8 @@
           "cta": "가져오기"
         },
         "reportSchedule": {
-          "title": "정기 진료 보고서",
-          "description": "매월, 분기 또는 매년 문서함에 보고서를 보관합니다.",
+          "title": "정기 진료용 리포트",
+          "description": "매월, 분기 또는 매년 문서함에 리포트를 보관합니다.",
           "cta": "예약"
         },
         "iosApp": {
@@ -6055,11 +6055,11 @@
           "description": "목록 보기와 수동 순서."
         },
         "labs": {
-          "title": "검사",
+          "title": "검사 결과",
           "description": "보기, 정렬, 수동 순서."
         },
         "illness": {
-          "title": "아픈 날 일지",
+          "title": "아픈 날",
           "description": "목록 보기와 에피소드 순서."
         },
         "checkups": {
@@ -6215,7 +6215,7 @@
             "passphraseHelp": "Argon2id로 보관 파일 키를 만들고 AES-256-GCM으로 봉인해요. 파일은 .hlx 확장자로 저장해 주세요.",
             "noRecoveryWarning": "복구 수단이 없어요. 이 암호문구를 잃어버리면 보관 파일을 열 수 없어요. 안전한 곳에 보관해 주세요.",
             "detail": "보관하고 읽기 위한 기록의 휴대용 사본이에요. 값은 일반 JSON으로, 문서는 메타데이터만 들어 있어요. 이 서버가 계정을 되돌리려고 보관하는 주간 계정 사본이 아니며, 다른 서버에서 계정을 다시 만들 수 없어요. 아직 포함되지 않는 기록 유형도 있어요. 파일의 매니페스트에 들어 있는 항목이 나와요.",
-            "contents": "측정, 복약, 기분, 생리 주기, 검사, 아픈 날 에피소드, 알레르기, 가족력, 영양, 운동, 건강 프로필, 사용자 지표를 JSON 파일 하나에."
+            "contents": "측정, 복약, 기분, 생리 주기, 검사 결과, 아픈 날 에피소드, 알레르기, 가족력, 영양, 운동, 건강 프로필, 사용자 지표를 JSON 파일 하나에."
           }
         },
         "import": {
@@ -6652,7 +6652,7 @@
             "description": "그룹, 직접 만든 태그, 보관된 태그입니다."
           },
           "labs": {
-            "title": "검사",
+            "title": "검사 결과",
             "description": "바이오마커와 검사 보고서용 기기 내 텍스트 인식입니다."
           },
           "arrangementTitle": "순서와 보기",
@@ -6663,8 +6663,8 @@
         }
       },
       "health-record": {
-        "title": "건강 기록",
-        "subtitle": "임상의에게 바로 건넬 수 있는 완전한 건강 기록을 내보내요."
+        "title": "진료용 리포트 및 내보내기",
+        "subtitle": "진료용 리포트를 만들고, 임상의에게 바로 건넬 수 있는 완전한 건강 기록을 내보내요."
       },
       "coach": {
         "title": "코치",
@@ -7236,7 +7236,7 @@
         "request": {
           "title": "AI를 시작하기 전에 동의가 필요해요",
           "body": "이 서버의 AI는 운영자가 제공하는 서비스를 사용해요: {providers}. 동의하기 전에는 기록의 어떤 내용도 그곳으로 보내지 않아요.",
-          "data": "동의하면 HealthLog는 AI 기능에 필요한 내용을 그 서비스로 보내요: 체중, 혈압, 맥박, 수면, 활동 같은 측정값, 복용 중인 약, 기분, 검사 수치와 기록 중이라면 생리 주기, 프로필과 코치에게 쓴 내용, 읽도록 선택한 문서예요. 서비스는 이를 바탕으로 오늘의 브리핑, 측정값에 대한 메모, 코치의 답변을 작성해요.",
+          "data": "동의하면 HealthLog는 AI 기능에 필요한 내용을 그 서비스로 보내요: 체중, 혈압, 맥박, 수면, 활동 같은 측정값, 복용 중인 약, 기분, 검사 결과와 기록 중이라면 생리 주기, 프로필과 코치에게 쓴 내용, 읽도록 선택한 문서예요. 서비스는 이를 바탕으로 오늘의 브리핑, 측정값에 대한 메모, 코치의 답변을 작성해요.",
           "withdrawHint": "설정의 AI에서 언제든지 동의를 철회할 수 있어요. 그 순간부터 더 이상 아무것도 보내지 않아요.",
           "agree": "동의하기",
           "dismiss": "나중에"
@@ -7416,7 +7416,7 @@
     },
     "fitbitRemoval": {
       "title": "Fitbit 동기화가 중단됐어요",
-      "body": "Google이 2026년 10월 30일에 Fitbit Web API를 종료해서 HealthLog는 더 이상 Fitbit에 연결할 수 없고, Fitbit 연동은 제거됐어요. 이미 가져온 데이터는 모두 그대로 남아요. 차트, 내보내기, 백업, 진료 보고서에 계속 Fitbit으로 표시돼요.",
+      "body": "Google이 2026년 10월 30일에 Fitbit Web API를 종료해서 HealthLog는 더 이상 Fitbit에 연결할 수 없고, Fitbit 연동은 제거됐어요. 이미 가져온 데이터는 모두 그대로 남아요. 차트, 내보내기, 백업, 진료용 리포트에 계속 Fitbit으로 표시돼요.",
       "ways": "Fitbit이나 Pixel Watch 데이터를 계속 받으려면 아래에서 Google Health를 연결해 주세요. 같은 기기의 데이터를 읽고, Google에서 동의를 한 번 요청해요. Android에서는 Health Connect 내보내기 파일을 가져올 수도 있어요.",
       "toGoogleHealth": "Google Health로 이동",
       "toHealthConnect": "Health Connect 가져오기",
@@ -8001,7 +8001,7 @@
       "revokeSessionConfirmBody": "{device}: 다시 로그인해야 해요. 기기에 기록된 내용은 영향받지 않아요.",
       "signOutEverywhereConfirmTitle": "다른 기기를 모두 로그아웃할까요?",
       "signOutEverywhereConfirmBody": "다른 모든 기기, 연결된 모든 AI 어시스턴트와 모든 API 토큰은 다시 로그인하거나 다시 설정해야 합니다. 이 기기는 로그인 상태로 유지됩니다. 기록한 내용에는 영향이 없습니다.",
-      "signOutEverywhereShareLinks": "의료진 공유 링크도 종료",
+      "signOutEverywhereShareLinks": "공유 링크도 종료",
       "signOutEverywhereInvites": "아직 아무도 수락하지 않은 기록 공유 초대는 철회됩니다. 이미 수락한 사람은 접근 권한을 유지하며, 이어서 끝낼 수 있어요.",
       "signOutEverywhereInvitesDone": "수락되지 않은 초대 {count, plural, other {#개를}} 철회했어요.",
       "grantsKeptTitle": "이 사람들은 여전히 내 기록을 볼 수 있어요",
@@ -8064,8 +8064,8 @@
             "link": "공유 접근 열기"
           },
           "shareLinks": {
-            "title": "의료진용 링크",
-            "description": "정한 날짜에 만료되는 진료 보고서 읽기 전용 링크.",
+            "title": "공유 링크",
+            "description": "정한 날짜에 만료되는 진료용 리포트 읽기 전용 링크.",
             "link": "링크 열기"
           },
           "emergencyCard": {
@@ -9009,7 +9009,7 @@
         "previewCycles": "생리 주기 데이터",
         "previewVisits": "진료 기록",
         "previewVaccinations": "예방접종",
-        "previewReminders": "예방 관리 알림",
+        "previewReminders": "건강검진 알림",
         "previewCustomMetrics": "사용자 지표",
         "previewHealthScores": "점수 기록",
         "restoreConfirm": "지금 복원",
@@ -10287,7 +10287,7 @@
     "eventMedicationLowStockDesc": "추적 중인 약의 남은 양이 재고 부족 기준보다 적을 때",
     "eventCoachNudge": "코치 알림",
     "eventCoachNudgeDesc": "최근 추이가 점검할 만할 때 코치가 가끔 말을 걸어요.",
-    "eventMeasurementReminder": "측정 알림",
+    "eventMeasurementReminder": "건강검진 알림",
     "eventMeasurementReminderDesc": "추적 중인 측정 시점이 되면 보내요.",
     "eventMedicationIntakeSync": "복용 기록 동기화",
     "eventMedicationIntakeSyncDesc": "복용을 기록하거나 복용·건너뜀으로 표시하면 기기 간에 업데이트해요.",
@@ -10404,7 +10404,7 @@
     "eventSyncStalled": "데이터 소스 동기화 중단",
     "eventSyncStalledDesc": "매일 데이터를 보내던 iPhone, 링, 시계 또는 체중계가 조용해졌을 때. 중단마다 한 번, 낮 시간에만, 하루 최대 한 번.",
     "syncStalled": {
-      "title": "{provider} 데이터가 멈췄습니다",
+      "title": "{provider}이(가) 조용해졌습니다",
       "appleYesterday": "{provider}에서 어제부터 아무것도 오지 않았습니다. HealthLog를 한 번 열면 됩니다.",
       "appleSince": "{provider}에서 {date}부터 아무것도 오지 않았습니다. HealthLog를 한 번 열면 됩니다.",
       "sourceYesterday": "{provider}에서 어제부터 아무것도 오지 않았습니다. 해당 앱을 열거나 HealthLog에서 다시 연결하세요.",
@@ -10629,7 +10629,7 @@
     "period": "보고 기간: {start}–{end}",
     "expires": "이 링크는 {date}에 만료돼요.",
     "provenance": "본인이 직접 기록한 HealthLog 데이터에서 내보낸 읽기 전용 요약이에요. 값은 본인이 기록한 것이고 기기에서 동기화된 측정값이 섞여 있을 수 있어요. 임상 검사가 아니라 환자가 보고한 자료로 봐 주세요.",
-    "labs": "검사 수치",
+    "labs": "검사 결과",
     "medications": "복약 및 복약 순응도",
     "bmi": "체질량지수(BMI)",
     "statSummary": "최근 {latest} (평균 {avg}, 범위 {min}–{max})",
@@ -10792,7 +10792,7 @@
       "loadError": "주기를 불러오지 못했어요."
     },
     "disclaimer": "이 예측은 기록한 데이터로 추정한 설명일 뿐, 피임 방법도 의학적 조언도 아니에요. 피임 없는 성관계가 안전하다는 뜻은 절대 아니에요. 피임이나 의학적 결정은 의료 전문가와 상의해 주세요.",
-    "title": "내 주기",
+    "title": "생리 주기",
     "subtitle": "생리와 증상을 기록하고, 다음에 무엇이 올지 확인해 보세요.",
     "tabs": {
       "calendar": "캘린더",
@@ -11811,7 +11811,7 @@
       "description": "일정, 복용, 복약 순응도."
     },
     "illness": {
-      "label": "아픈 날 일지",
+      "label": "아픈 날",
       "description": "아픈 날과 질환 경과를 매일의 증상 타임라인으로 기록해요."
     },
     "mcp": {
@@ -12031,7 +12031,7 @@
       "viewDescription": "에피소드를 카드로 볼지 간단한 목록으로 볼지 선택하세요.",
       "orderDescription": "에피소드를 원하는 순서대로 끌어서 옮기세요."
     },
-    "customize": "아픈 날 일지 맞춤 설정",
+    "customize": "아픈 날 맞춤 설정",
     "newEpisode": "새 에피소드",
     "logDay": "하루 기록",
     "markRecovered": "회복 표시",
@@ -12162,7 +12162,7 @@
       "empty": "아직 기록한 날이 없어요."
     },
     "loadError": "이 에피소드를 불러오지 못했어요.",
-    "backToList": "일지로 돌아가기",
+    "backToList": "목록으로 돌아가기",
     "detail": {
       "note": "메모"
     },
@@ -12480,7 +12480,7 @@
     }
   },
   "mentalHealth": {
-    "pageTitle": "마음 건강",
+    "pageTitle": "정신 건강",
     "pageDescription": "검증된 자가 점검 네 가지예요. 한 번의 점수보다 시간에 따른 추이가 더 많은 걸 말해줘요.",
     "attributionLabel": "출처",
     "attributionShow": "{instrument} 출처와 라이선스",
@@ -13280,7 +13280,7 @@
       "sourceOther": "다른 시스템",
       "sourceReportSchedule": "보고서 일정",
       "share": "공유",
-      "labValuesLink": "검사 수치 {count, plural, other {#개}} 보기",
+      "labValuesLink": "검사 결과 {count, plural, other {#개}} 보기",
       "visitsLabel": "연결된 진료",
       "vaccinationsLabel": "예방접종",
       "noVisitsToLink": "아직 기록된 진료가 없습니다.",
@@ -13362,9 +13362,9 @@
     },
     "ai": {
       "readDone": "AI가 문서를 읽었어요.",
-      "readStagedOne": "AI가 문서를 읽었어요. 검사 수치 1개를 검토할 수 있어요.",
-      "readStagedFew": "AI가 문서를 읽었어요. 검사 수치 {count}개를 검토할 수 있어요.",
-      "readStagedOther": "AI가 문서를 읽었어요. 검사 수치 {count}개를 검토할 수 있어요.",
+      "readStagedOne": "AI가 문서를 읽었어요. 검사 결과 1개를 검토할 수 있어요.",
+      "readStagedFew": "AI가 문서를 읽었어요. 검사 결과 {count}개를 검토할 수 있어요.",
+      "readStagedOther": "AI가 문서를 읽었어요. 검사 결과 {count}개를 검토할 수 있어요.",
       "read": "AI로 읽기",
       "reread": "다시 읽기",
       "reading": "읽는 중…",
@@ -13378,7 +13378,7 @@
       "openOther": "추출한 값 검토 ({count})",
       "includeAria": "포함: {value}",
       "type": {
-        "OBSERVATION": "검사 수치",
+        "OBSERVATION": "검사 결과",
         "CONDITION": "질환",
         "MEDICATION_STATEMENT": "약"
       },
@@ -13403,7 +13403,7 @@
       "savedToastFew": "값 {count}개를 저장했어요",
       "savedToastOther": "값 {count}개를 저장했어요",
       "nothingSavedToast": "검토를 저장했어요. 추가된 값은 없어요.",
-      "extract": "검사 수치 추출",
+      "extract": "검사 결과 추출",
       "extracting": "추출 중…",
       "extractHint": "이 문서에서 이미 읽은 텍스트를 사용해요. 추출한 값은 검토를 기다리며, 자동으로 저장되지 않아요.",
       "extractEmpty": "이 문서에서 추출할 수 있는 값이 없었어요.",
@@ -13428,7 +13428,7 @@
       "title": "이 문서 공유",
       "multiTitle": "이 문서들 공유",
       "multiLabel": "문서 {count, plural, other {#개}}",
-      "description": "이 문서를 첨부한 읽기 전용 의료진 링크를 만들어요. 링크와 암호는 한 번만 표시돼요."
+      "description": "이 문서를 첨부한 의료진용 읽기 전용 공유 링크를 만들어요. 링크와 암호는 한 번만 표시돼요."
     },
     "chat": {
       "title": "이 문서에 대해 대화",
@@ -13555,7 +13555,7 @@
     }
   },
   "selfDescription": {
-    "dataPosture": "HealthLog는 셀프 호스팅이에요. 건강 데이터는 본인 인스턴스의 데이터베이스에 저장돼요. 메모와 기타 자유 입력 텍스트, 문서, 설문 응답, AI가 작성한 텍스트, 접근 토큰은 저장 시 암호화돼요. 측정값, 검사 수치, 약 이름, 기분 점수는 암호화되지 않은 채 저장되며 서버 자체의 보안에 의존해요. AI 기능은 계정에 설정된 AI 제공자에게만 데이터를 보내고, 건강 데이터에 대한 서드파티 분석은 없어요."
+    "dataPosture": "HealthLog는 셀프 호스팅이에요. 건강 데이터는 본인 인스턴스의 데이터베이스에 저장돼요. 메모와 기타 자유 입력 텍스트, 문서, 설문 응답, AI가 작성한 텍스트, 접근 토큰은 저장 시 암호화돼요. 측정값, 검사 결과, 약 이름, 기분 점수는 암호화되지 않은 채 저장되며 서버 자체의 보안에 의존해요. AI 기능은 계정에 설정된 AI 제공자에게만 데이터를 보내고, 건강 데이터에 대한 서드파티 분석은 없어요."
   },
   "customMetrics": {
     "sectionTitle": "사용자 지표",
@@ -13849,7 +13849,7 @@
         }
       },
       "upcomingVisit": {
-        "title": "다가오는 예약",
+        "title": "다가오는 진료",
         "bodyToday": "{what}: 오늘",
         "bodyTomorrow": "{what}: 내일",
         "bodyDayAfterTomorrow": "{what}: 모레"
@@ -13859,8 +13859,8 @@
       "logDose": "복용",
       "reconnect": "다시 연결",
       "viewCheckups": "건강검진 보기",
-      "viewAppointment": "예약 보기",
-      "viewAppointments": "예약 목록 보기",
+      "viewAppointment": "진료 보기",
+      "viewAppointments": "진료 목록 보기",
       "checkinKeep": "계속하기",
       "checkinAdjust": "조정",
       "checkinLetGo": "놓아주기",
@@ -13972,7 +13972,7 @@
         "next": "다음 복용 {time}"
       },
       "appointment": {
-        "label": "예약",
+        "label": "진료",
         "today": "오늘 {time}, {what}",
         "tomorrow": "내일 {time}, {what}"
       },
@@ -14065,7 +14065,7 @@
     },
     "unavailable": {
       "title": "공유 범위에 없는 항목",
-      "description": "공유되는 것은 건강 기록 자체예요. 문진에 있는 건강 배경도 포함돼요. 계정 설정, 연동 서비스, 알림, AI 기능은 계정 주인에게만 남아요.",
+      "description": "공유되는 것은 건강 기록 자체예요. 병력에 있는 건강 배경도 포함돼요. 계정 설정, 연동 서비스, 알림, AI 기능은 계정 주인에게만 남아요.",
       "leave": "내 기록으로 돌아가기"
     },
     "state": {
@@ -14296,7 +14296,7 @@
         "revoked": "링크를 철회했습니다",
         "revokeFailed": "링크를 철회하지 못했습니다. 다시 시도하세요.",
         "errorFailed": "넘겨주기 링크를 만들지 못했습니다.",
-        "errorRosterChanged": "그 사이 기록을 돌보는 사람이 바뀌었습니다. 닫았다가 다시 여세요.",
+        "errorRosterChanged": "그 사이 보호자 목록이 바뀌었습니다. 닫았다가 다시 여세요.",
         "oidcOnly": "이 서버에서는 프로필을 넘겨줄 수 없습니다.",
         "loadError": "넘겨주기 상태를 불러오지 못했습니다.",
         "entryHint": "{name} 님이 이 기록을 직접 관리할 준비가 되었을 때.",
@@ -14324,13 +14324,13 @@
       "measurementDelete": "{name} 님이 측정값을 삭제했어요",
       "measurementDeleteBulk": "{name} 님이 측정값 여러 개를 한 번에 삭제했어요",
       "measurementRestore": "{name} 님이 측정값을 복원했어요",
-      "measurementReminderCreate": "{name} 님이 측정 알림을 추가했어요",
-      "measurementReminderUpdate": "{name} 님이 측정 알림을 수정했어요",
-      "measurementReminderDelete": "{name} 님이 측정 알림을 삭제했어요",
-      "measurementReminderComplete": "{name} 님이 측정 알림을 완료했어요",
-      "measurementReminderSatisfy": "{name} 님이 측정 알림을 해제했어요",
-      "measurementReminderSkip": "{name} 님이 측정 알림을 건너뛰었어요",
-      "measurementReminderSnooze": "{name} 님이 측정 알림을 미뤘어요",
+      "measurementReminderCreate": "{name} 님이 건강검진 알림을 추가했어요",
+      "measurementReminderUpdate": "{name} 님이 건강검진 알림을 수정했어요",
+      "measurementReminderDelete": "{name} 님이 건강검진 알림을 삭제했어요",
+      "measurementReminderComplete": "{name} 님이 건강검진 알림을 완료했어요",
+      "measurementReminderSatisfy": "{name} 님이 건강검진 알림을 해제했어요",
+      "measurementReminderSkip": "{name} 님이 건강검진 알림을 건너뛰었어요",
+      "measurementReminderSnooze": "{name} 님이 건강검진 알림을 미뤘어요",
       "labResultUpdate": "{name} 님이 검사 결과를 수정했어요",
       "labResultDelete": "{name} 님이 검사 결과를 삭제했어요",
       "labResultRestore": "{name} 님이 검사 결과를 복원했어요",
@@ -14404,8 +14404,8 @@
       "rejectedLabUpdate": "{name} 님이 검사 결과를 수정하려다 거절됐어요",
       "rejectedBiomarkerCreate": "{name} 님이 바이오마커를 추가하려다 거절됐어요",
       "rejectedBiomarkerUpdate": "{name} 님이 바이오마커를 수정하려다 거절됐어요",
-      "rejectedReminderCreate": "{name} 님이 측정 알림을 추가하려다 거절됐어요",
-      "rejectedReminderUpdate": "{name} 님이 측정 알림을 수정하려다 거절됐어요",
+      "rejectedReminderCreate": "{name} 님이 건강검진 알림을 추가하려다 거절됐어요",
+      "rejectedReminderUpdate": "{name} 님이 건강검진 알림을 수정하려다 거절됐어요",
       "rejectedMoodCreate": "{name} 님이 기분 기록을 추가하려다 거절됐어요",
       "rejectedMoodUpdate": "{name} 님이 기분 기록을 수정하려다 거절됐어요",
       "rejectedDoseCreate": "{name} 님이 복용을 기록하려다 거절됐어요",
@@ -14555,7 +14555,7 @@
       "emergency": "응급",
       "hospital": "병원",
       "therapy": "치료 세션",
-      "other": "예약",
+      "other": "기타 진료",
       "procedure": "시술 또는 수술"
     },
     "laterality": {
@@ -14566,7 +14566,7 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "진료",
-    "sectionDescription": "병원 방문과 잡아 둔 예약을 한곳에서 봐요.",
+    "sectionDescription": "지난 진료와 예정된 진료를 한곳에서 봐요.",
     "add": "진료",
     "loadError": "진료 기록을 불러오지 못했어요.",
     "emptyTitle": "아직 기록한 진료가 없어요",
@@ -14593,7 +14593,7 @@
     },
     "form": {
       "date": "날짜와 시간",
-      "dateDerivesStatusHint": "미래 날짜는 잡아 둔 예약으로 처리돼요.",
+      "dateDerivesStatusHint": "미래 날짜는 예정된 진료로 처리돼요.",
       "status": "상태",
       "practitioner": "병원 또는 의사",
       "practitionerHint": "선택: 이름은 나중에 추가해도 돼요.",
@@ -14627,7 +14627,7 @@
       "add": "진료 추가"
     },
     "dashboard": {
-      "nextVisit": "다음 예약: {what} ({when})"
+      "nextVisit": "다음 진료: {what} ({when})"
     },
     "procedures": {
       "title": "시술 및 수술",
@@ -15012,7 +15012,7 @@
       "allOther": "{count}개 모두 보기",
       "fewer": "줄여 보기",
       "note": "평가 없이 기록에서 모았어요. 날짜를 누르면 그날 전체가 열려요.",
-      "report": "{date}부터 오늘까지 진료 보고서",
+      "report": "{date}부터 오늘까지 진료용 리포트",
       "loadError": "지난 방문 이후의 기록을 불러오지 못했어요."
     },
     "travel": "여행 중",
@@ -15066,12 +15066,12 @@
     },
     "lanes": {
       "life": "삶",
-      "illness": "질환",
+      "illness": "아픈 날",
       "allergies": "알레르기",
       "medications": "약",
       "vaccinations": "예방접종",
       "visits": "진료와 시술",
-      "labs": "검사",
+      "labs": "검사 결과",
       "documents": "문서",
       "cycle": "생리 주기",
       "seizures": "발작"
@@ -15222,7 +15222,7 @@
       "end": "끝",
       "seriesCaption": "기간별 평균",
       "period": "기간",
-      "labsCaption": "날짜별 검사 수치",
+      "labsCaption": "날짜별 검사 결과",
       "marker": "항목",
       "date": "날짜",
       "value": "값"
@@ -15267,9 +15267,9 @@
       "apply": "적용"
     },
     "item": {
-      "labValuesOne": "검사 수치 1개",
-      "labValuesFew": "검사 수치 {count}개",
-      "labValuesOther": "검사 수치 {count}개",
+      "labValuesOne": "검사 결과 1개",
+      "labValuesFew": "검사 결과 {count}개",
+      "labValuesOther": "검사 결과 {count}개",
       "seizuresOne": "발작 1회",
       "seizuresFew": "발작 {count}회",
       "seizuresOther": "발작 {count}회",
@@ -15277,9 +15277,9 @@
       "postpartum": "출산 후"
     },
     "labs": {
-      "menuTitle": "검사 수치",
+      "menuTitle": "검사 결과",
       "otherPanel": "기타",
-      "full": "검사 수치는 한 번에 최대 {max, plural, other {#개까지}} 표시할 수 있습니다. 다른 수치를 추가하려면 하나를 제거하세요.",
+      "full": "검사 결과는 한 번에 최대 {max, plural, other {#개까지}} 표시할 수 있습니다. 다른 결과를 추가하려면 하나를 제거하세요.",
       "above": "범위 초과",
       "below": "범위 미만",
       "reference": "참고 범위 {range}",
@@ -15289,7 +15289,7 @@
       "excludedFew": "{name}: 다른 단위로 기록된 값 {count}개는 표시되지 않습니다",
       "excludedOther": "{name}: 다른 단위로 기록된 값 {count}개는 표시되지 않습니다"
     },
-    "legendLabValue": "측정된 그대로의 검사 수치",
+    "legendLabValue": "측정된 그대로의 검사 결과",
     "legendLabOutside": "참고 범위 밖",
     "legendLabRange": "참고 범위",
     "legendSymptom": "증상 선: 기록한 날마다의 가장 높은 강도(0~10)를 기록한 날 기준으로 평균한 값",
@@ -15400,7 +15400,7 @@
       "source": {
         "mood": "기분 메모",
         "measurement": "측정값 메모",
-        "illness": "질병 일지"
+        "illness": "아픈 날"
       }
     },
     "keywords": {
@@ -15415,7 +15415,7 @@
       "gadgetbridge": "Gadgetbridge, 안드로이드, 스마트워치, 데이터베이스",
       "fhirBundle": "FHIR, 번들, 진료 기록, 가져오기",
       "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, 폴더, 안드로이드",
-      "reportSchedule": "일정, 매월, 분기별, 진료 보고서, 자동",
+      "reportSchedule": "일정, 매월, 분기별, 진료용 리포트, 자동",
       "careCalendar": "캘린더, ICS, 구독, 예약, 검진, 예방접종",
       "whoHasAccess": "접근, 누가 보는지, 공유, 링크, 토큰, 세션",
       "adminPush": "푸시, 릴레이, Web Push, VAPID, APNs, 전송",
@@ -16103,19 +16103,19 @@
   },
   "careFeed": {
     "sectionTitle": "캘린더",
-    "sectionSubtitle": "예약과 다가오는 일정을 이미 쓰는 캘린더 앱에서 확인하세요.",
+    "sectionSubtitle": "진료와 다가오는 일정을 이미 쓰는 캘린더 앱에서 확인하세요.",
     "title": "건강 캘린더",
-    "description": "예약된 방문은 해당 시간에, 검진과 백신 추가 접종은 예정일에 표시됩니다.",
+    "description": "예정된 진료는 해당 시간에, 검진과 백신 추가 접종은 예정일에 표시됩니다.",
     "loadError": "캘린더 구독을 불러오지 못했습니다.",
     "linkHidden": "{prefix}(으)로 시작하는 링크가 활성 상태입니다. 링크는 생성할 때 한 번만 표시됩니다. 새 링크가 필요하면 구독을 껐다가 다시 켜세요.",
     "linkOnce": "지금만 표시됩니다. 캘린더 앱에 붙여 넣으세요.",
-    "visits": "예약된 방문",
+    "visits": "예정된 진료",
     "checkups": "예정된 검진",
     "vaccinations": "예정된 백신 추가 접종",
     "ics": {
       "calendarName": "진료 일정 (HealthLog)",
-      "visit": "진료 예약",
-      "visitWith": "진료 예약: {name}",
+      "visit": "진료",
+      "visitWith": "진료: {name}",
       "checkupDue": "예정: {label}",
       "boosterDue": "추가 접종 예정: {label}",
       "sessionOf": "{planned}회 중 {number}회차",
@@ -16126,12 +16126,12 @@
     }
   },
   "reportSchedule": {
-    "title": "예약된 진료 보고서",
-    "description": "한 달, 분기 또는 한 해가 끝나면 진료 보고서를 자동으로 문서에 저장해요.",
-    "loadError": "보고서 일정을 불러올 수 없어요.",
-    "saveError": "보고서 일정을 저장할 수 없어요. 다시 시도해 주세요.",
+    "title": "예약된 진료용 리포트",
+    "description": "한 달, 분기 또는 한 해가 끝나면 진료용 리포트를 자동으로 문서에 저장해요.",
+    "loadError": "리포트 일정을 불러올 수 없어요.",
+    "saveError": "리포트 일정을 저장할 수 없어요. 다시 시도해 주세요.",
     "cadenceLabel": "주기",
-    "windowLabel": "각 보고서의 범위",
+    "windowLabel": "각 리포트의 범위",
     "cadence": {
       "MONTHLY": "매월",
       "QUARTERLY": "분기마다",
@@ -16142,22 +16142,22 @@
       "LAST_90_DAYS": "최근 90일",
       "LAST_365_DAYS": "최근 12개월"
     },
-    "usesSelection": "각 보고서에는 위의 내보내기에서 선택한 항목이 담겨요. 그곳에서 선택을 바꾸면 다음 보고서에 반영돼요. 알림은 보내지 않아요. 보고서가 그냥 그곳에 있어요.",
+    "usesSelection": "각 리포트에는 위의 내보내기에서 선택한 항목이 담겨요. 그곳에서 선택을 바꾸면 다음 리포트에 반영돼요. 알림은 보내지 않아요. 리포트가 그냥 그곳에 있어요.",
     "turnOn": "켜기",
     "turnOff": "끄기",
-    "turnOffTitle": "예약된 보고서를 끌까요?",
-    "turnOffBody": "새 보고서는 저장되지 않아요. 이미 문서에 있는 보고서는 그대로 남아요.",
-    "due": "다음 보고서: {period}, 기한이 된 뒤 한 시간 안에 저장돼요.",
-    "upToDate": "최신 상태예요. 현재 기간이 끝나면 다음 보고서가 저장돼요.",
-    "documentTitle": "진료 보고서 {period}",
+    "turnOffTitle": "예약된 리포트를 끌까요?",
+    "turnOffBody": "새 리포트는 저장되지 않아요. 이미 문서에 있는 리포트는 그대로 남아요.",
+    "due": "다음 리포트: {period}, 기한이 된 뒤 한 시간 안에 저장돼요.",
+    "upToDate": "최신 상태예요. 현재 기간이 끝나면 다음 리포트가 저장돼요.",
+    "documentTitle": "진료용 리포트 {period}",
     "outcome": {
-      "stored": "{period} 보고서가 문서에 있어요.",
-      "alreadyFiled": "{period} 보고서가 이미 문서에 있었어요.",
-      "deletedByOwner": "{period} 보고서가 삭제되어 다시 저장하지 않아요.",
-      "quotaExceeded": "{period} 보고서가 문서 저장 공간에 들어가지 않았어요. 다음 기간에 다시 시도해요.",
-      "tooLarge": "{period} 보고서가 이곳의 문서 최대 크기보다 컸어요. 다음 기간에 다시 시도해요.",
-      "noSelection": "위의 내보내기에서 선택된 항목이 없어서 보고서를 저장하지 않았어요. 담을 내용을 고르면 다음 실행 때 저장돼요.",
-      "failed": "{period} 보고서를 저장할 수 없었어요. 한 시간 안에 다시 시도해요."
+      "stored": "{period} 리포트가 문서에 있어요.",
+      "alreadyFiled": "{period} 리포트가 이미 문서에 있었어요.",
+      "deletedByOwner": "{period} 리포트가 삭제되어 다시 저장하지 않아요.",
+      "quotaExceeded": "{period} 리포트가 문서 저장 공간에 들어가지 않았어요. 다음 기간에 다시 시도해요.",
+      "tooLarge": "{period} 리포트가 이곳의 문서 최대 크기보다 컸어요. 다음 기간에 다시 시도해요.",
+      "noSelection": "위의 내보내기에서 선택된 항목이 없어서 리포트를 저장하지 않았어요. 담을 내용을 고르면 다음 실행 때 저장돼요.",
+      "failed": "{period} 리포트를 저장할 수 없었어요. 한 시간 안에 다시 시도해요."
     }
   },
   "emergencyCard": {
