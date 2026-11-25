@@ -14070,6 +14070,11 @@
         "night": "어젯밤",
         "todayDifferent": "오늘 달라진 점",
         "toDo": "오늘 할 일"
+      },
+      "readinessBand": {
+        "green": "준비도 좋은 범위",
+        "yellow": "준비도 중간 범위",
+        "red": "준비도 낮은 범위"
       }
     },
     "morning": {

@@ -586,7 +586,7 @@ function nightCard(
     ...cardTitle("night", t),
     // A ring only for last night; an older night's score is not this morning's.
     ring:
-      score && score.night === input.todayKey
+      score && lastNightScored(input)
         ? {
             score: Math.round(score.score),
             band: score.band,
@@ -598,6 +598,15 @@ function nightCard(
     sourceValues: [...input.sleepSourceValues],
     href: metricHref("sleep_score") ?? pageHref("insights"),
   };
+}
+
+/** Whether the night card carries last night's sleep score ring. */
+function lastNightScored(input: MorningInput): boolean {
+  return (
+    input.modules.sleep !== false &&
+    input.sleepScore !== null &&
+    input.sleepScore.night === input.todayKey
+  );
 }
 
 function todayDifferentCard(
@@ -639,11 +648,17 @@ function todayDifferentCard(
       };
       if (banded) {
         lines.push({
-          text: t(`insights.derived.scoreRing.band.${readiness.band}`),
+          text: t(`daily.morningCard.readinessBand.${readiness.band}`),
           href: null,
         });
       }
-      for (const c of heaviestDeductions(readiness.components).slice(0, 2)) {
+      // The night card beside it already shows last night's sleep score, so
+      // the sleep contributor is not named twice; the next deduction is.
+      const nightShown = lastNightScored(input);
+      const named = heaviestDeductions(readiness.components).filter(
+        (c) => !(nightShown && c.key === "sleep"),
+      );
+      for (const c of named.slice(0, 2)) {
         lines.push({
           text: t("daily.morningCard.contributor", {
             name: t(CONTRIBUTOR_LABEL_KEY[c.key]),
