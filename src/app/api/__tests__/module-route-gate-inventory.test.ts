@@ -374,6 +374,11 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // switched-off module hides answers false and its rows are not read.
   "src/app/api/insights/presence/route.ts",
   "src/app/api/insights/pulse/intraday/route.ts",
+  // The context marks on metric charts: each part is the timeline lane of
+  // its own module (medications, illness, cycle), read only when
+  // `laneVisible` finds that module on, so a switched-off module sends an
+  // empty list rather than the whole route refusing.
+  "src/app/api/insights/context/route.ts",
   "src/app/api/insights/patterns/route.ts",
   "src/app/api/insights/patterns/[id]/route.ts",
   // Stored Coach data: viewing and erasing it never depends on the Coach

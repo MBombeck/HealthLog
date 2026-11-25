@@ -32,6 +32,7 @@ export default function InsightsHrvPage() {
       statusMetric="HEART_RATE_VARIABILITY"
       insightMetric="HEART_RATE_VARIABILITY"
       chartKey="hrv"
+      chartContext
       i18nPrefix="insights.hrv"
       explainerMetric="hrv"
       color="var(--chart-1)"

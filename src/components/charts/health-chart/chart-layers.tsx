@@ -19,6 +19,9 @@ import {
 import { OPEN_DAY_LINE } from "@/components/day/chart-day-links";
 import type { ComparisonBaseline } from "@/lib/dashboard/chart-overlay-prefs";
 
+import { PHASE_HUE } from "@/components/cycle/phase-tokens";
+
+import type { ResolvedContextMarks } from "./context-marks";
 import type { ResolvedAnnotation, ResolvedVerticalMarker } from "./series-math";
 import type { ChartDataPoint, VisibleTargetZone } from "./types";
 
@@ -74,6 +77,70 @@ export function targetZoneLayers(
               }
             : undefined
         }
+      />
+    )),
+  ];
+}
+
+/** The share of the value range the cycle-phase ribbon takes at the floor. */
+const PHASE_RIBBON_SHARE = 0.035;
+
+/**
+ * What happened around the metric (`context-marks.ts`): a faint wash over
+ * each illness episode, a thin dashed line on each medication change, and,
+ * when switched on, the cycle phases as a ribbon along the floor of the
+ * plot. Behind the series and quiet on purpose: the line stays the subject.
+ * Nothing when there are no marks, so a chart without context draws exactly
+ * as before.
+ */
+export function contextLayers(
+  marks: ResolvedContextMarks | null,
+  yDomain: [number, number] | undefined,
+) {
+  if (!marks) return null;
+  const ribbon =
+    yDomain && marks.phases.length > 0
+      ? {
+          y1: yDomain[0],
+          y2: yDomain[0] + (yDomain[1] - yDomain[0]) * PHASE_RIBBON_SHARE,
+        }
+      : null;
+  return [
+    marks.areas.map((area, i) => (
+      <ReferenceArea
+        key={`context-illness-${i}`}
+        x1={area.x1}
+        x2={area.x2}
+        fill="var(--warning)"
+        fillOpacity={0.09}
+        strokeOpacity={0}
+        ifOverflow="hidden"
+      />
+    )),
+    ribbon
+      ? marks.phases.map((p, i) => (
+          <ReferenceArea
+            key={`context-phase-${i}`}
+            x1={p.x1}
+            x2={p.x2}
+            y1={ribbon.y1}
+            y2={ribbon.y2}
+            fill={PHASE_HUE[p.phase]}
+            fillOpacity={0.55}
+            strokeOpacity={0}
+            ifOverflow="hidden"
+          />
+        ))
+      : null,
+    marks.lines.map((x, i) => (
+      <ReferenceLine
+        key={`context-medication-${i}`}
+        x={x}
+        stroke="var(--muted-foreground)"
+        strokeDasharray="2 3"
+        strokeWidth={1}
+        strokeOpacity={0.6}
+        ifOverflow="hidden"
       />
     )),
   ];

@@ -16361,6 +16361,21 @@
     "expiryPushTitle": "Seria zabiegów wygasa",
     "expiryPushBody": "{title}: ważna do {date}, {count, plural, one {pozostał # zabieg} few {pozostały # zabiegi} many {pozostało # zabiegów} other {pozostało # zabiegu}}."
   },
+  "chartContext": {
+    "listLabel": "Leki i choroby w tym okresie",
+    "start": "{name}: rozpoczęto",
+    "startDose": "{name}: rozpoczęto od {dose}",
+    "startEstimated": "{name}: pierwsza zapisana dawka",
+    "stop": "{name}: odstawiono",
+    "doseChange": "{name}: zmiana dawki na {dose}",
+    "doseChangeBare": "{name}: zmiana dawki",
+    "pause": "{name}: wstrzymano",
+    "resume": "{name}: wznowiono",
+    "illness": "{label}, do {end}",
+    "illnessOpen": "{label}, trwa",
+    "open": "Otwórz",
+    "cyclePhases": "Fazy cyklu"
+  },
   "adminLiveActivityStart": {
     "switchOff": "Lek ma Aktywność na żywo, ale PUSH_RELAY_LIVE_ACTIVITY jest wyłączone, więc żadna się nie uruchamia.",
     "noConsent": "Lek ma Aktywność na żywo, ale Twój iPhone nie zezwolił na nią przez przekaźnik.",

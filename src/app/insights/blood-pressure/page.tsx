@@ -121,6 +121,7 @@ export default function InsightsBlutdruckPage() {
       title={t("insights.bloodPressureSectionTitle")}
       description={t("insights.subPage.blutdruckDescription")}
       explainerMetric="bloodPressure"
+      chartContext
       coachLaunch
       coachReadStrip={
         <CoachReadStrip
@@ -130,12 +131,9 @@ export default function InsightsBlutdruckPage() {
         />
       }
       statStrip={
-        // v1.12.7 — blood pressure is two series, but they share ONE card
-        // with the systolic / diastolic columns side by side (stacking only
-        // on narrow mobile) rather than two stacked cards. Each column keeps
-        // its header, its four stats, and its own brushed-window behaviour:
-        // brushing the single chart reports per-type windowed stats and each
-        // column reads its own half.
+        // Two series in ONE card, systolic and diastolic side by side
+        // (stacked only on a narrow phone). Each column keeps its header,
+        // its four stats and its own half of the chart's windowed stats.
         <MetricStatStrip
           pending={analyticsLoading}
           groupLabel={t("insights.bloodPressureSectionTitle")}

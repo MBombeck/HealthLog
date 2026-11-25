@@ -69,6 +69,11 @@ const ALLOWLIST: Record<string, { max: number; reason: string }> = {
     reason:
       "day-log reads name one explicit day and the calendar read passes both from and to",
   },
+  "tests/integration/chart-context.test.ts": {
+    max: 3,
+    reason:
+      "the clock is pinned with fake timers before every case, and the window read names both from and to",
+  },
   "tests/integration/medication-auto-mark-taken.test.ts": {
     max: 2,
     reason: "the cases pin the clock with fake timers around the fixed dates",

@@ -16361,6 +16361,21 @@
     "expiryPushTitle": "La serie de tratamiento caduca",
     "expiryPushBody": "{title}: válida hasta el {date}, {count, plural, one {queda # sesión} other {quedan # sesiones}}."
   },
+  "chartContext": {
+    "listLabel": "Medicación y enfermedades en este periodo",
+    "start": "{name}: inicio",
+    "startDose": "{name}: inicio con {dose}",
+    "startEstimated": "{name}: primera toma registrada",
+    "stop": "{name}: suspendido",
+    "doseChange": "{name}: dosis cambiada a {dose}",
+    "doseChangeBare": "{name}: dosis cambiada",
+    "pause": "{name}: en pausa",
+    "resume": "{name}: reanudado",
+    "illness": "{label}, hasta {end}",
+    "illnessOpen": "{label}, en curso",
+    "open": "Abrir",
+    "cyclePhases": "Fases del ciclo"
+  },
   "adminLiveActivityStart": {
     "switchOff": "Un medicamento tiene una Actividad en directo, pero PUSH_RELAY_LIVE_ACTIVITY está desactivado, así que no se inicia ninguna.",
     "noConsent": "Un medicamento tiene una Actividad en directo, pero tu iPhone no la ha permitido a través del relay.",

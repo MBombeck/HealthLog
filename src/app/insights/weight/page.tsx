@@ -152,6 +152,7 @@ export default function InsightsGewichtPage() {
       title={t("insights.weightSectionTitle")}
       description={t("insights.subPage.gewichtDescription")}
       explainerMetric="weight"
+      chartContext
       statStrip={
         <MetricStatStrip
           pending={analyticsLoading}

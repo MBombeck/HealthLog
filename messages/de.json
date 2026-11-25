@@ -16361,6 +16361,21 @@
     "expiryPushTitle": "Behandlungsserie läuft ab",
     "expiryPushBody": "{title}: gültig bis {date}, noch {count, plural, one {# Sitzung} other {# Sitzungen}} offen."
   },
+  "chartContext": {
+    "listLabel": "Medikamente und Erkrankungen in diesem Zeitraum",
+    "start": "{name} begonnen",
+    "startDose": "{name} begonnen mit {dose}",
+    "startEstimated": "{name}: erste erfasste Einnahme",
+    "stop": "{name} abgesetzt",
+    "doseChange": "{name}: Dosis geändert auf {dose}",
+    "doseChangeBare": "{name}: Dosis geändert",
+    "pause": "{name} pausiert",
+    "resume": "{name} wieder aufgenommen",
+    "illness": "{label}, bis {end}",
+    "illnessOpen": "{label}, andauernd",
+    "open": "Öffnen",
+    "cyclePhases": "Zyklusphasen"
+  },
   "adminLiveActivityStart": {
     "switchOff": "Ein Medikament hat eine Live-Aktivität, aber PUSH_RELAY_LIVE_ACTIVITY ist aus, also startet keine.",
     "noConsent": "Ein Medikament hat eine Live-Aktivität, aber dein iPhone hat sie über das Relay nicht erlaubt.",

@@ -16361,6 +16361,21 @@
     "expiryPushTitle": "Курс лечения истекает",
     "expiryPushBody": "{title}: действует до {date}, {count, plural, one {остался # сеанс} few {осталось # сеанса} many {осталось # сеансов} other {осталось # сеанса}}."
   },
+  "chartContext": {
+    "listLabel": "Лекарства и болезни за этот период",
+    "start": "{name}: начат приём",
+    "startDose": "{name}: начат приём, {dose}",
+    "startEstimated": "{name}: первый записанный приём",
+    "stop": "{name}: приём прекращён",
+    "doseChange": "{name}: доза изменена на {dose}",
+    "doseChangeBare": "{name}: доза изменена",
+    "pause": "{name}: пауза",
+    "resume": "{name}: приём возобновлён",
+    "illness": "{label}, до {end}",
+    "illnessOpen": "{label}, продолжается",
+    "open": "Открыть",
+    "cyclePhases": "Фазы цикла"
+  },
   "adminLiveActivityStart": {
     "switchOff": "У лекарства включена Live Activity, но PUSH_RELAY_LIVE_ACTIVITY выключен, поэтому она не запускается.",
     "noConsent": "У лекарства включена Live Activity, но ваш iPhone не разрешил её через ретранслятор.",

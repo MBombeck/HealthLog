@@ -16,6 +16,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { SUB_PAGE_SLUGS } from "@/lib/insights/sub-page-metric";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import { ChartContextProvider } from "@/components/charts/health-chart/context-scope";
 
 const INSIGHT_METRIC_RETURN_PATHS: Readonly<Record<string, true>> =
   Object.fromEntries(
@@ -159,6 +160,14 @@ export interface SubPageShellProps {
    * control and whatever it opens.
    */
   headerAction?: ReactNode;
+  /**
+   * Draw what happened around the metric on the page's charts: medication
+   * changes and illness episodes as quiet marks, cycle phases behind a
+   * switch (`src/lib/charts/context-markers.ts`). Every full-size
+   * `HealthChart` in the page reads them; a chart with nothing around it
+   * draws as before.
+   */
+  chartContext?: boolean;
   children: ReactNode;
 }
 
@@ -239,6 +248,7 @@ export function SubPageShell({
   captureType,
   showAllValuesType,
   headerAction,
+  chartContext = false,
   children,
 }: SubPageShellProps) {
   const { t } = useTranslations();
@@ -479,10 +489,9 @@ export function SubPageShell({
         {/* v1.12.6 — the canonical spine body: intro (header) → stat strip
           (above) → chart → target card → assessment. The page renders
           chart → target → assessment as `children`. */}
-        {children}
-        {/* v1.16.8 — the foot-of-page "show all readings" button moved
-          into the header cluster as an icon button (left of the
-          target-adjust gear), so the page body ends on its content. */}
+        <ChartContextProvider enabled={chartContext}>
+          {children}
+        </ChartContextProvider>
       </div>
     </TargetAdjustProvider>
   );

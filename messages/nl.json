@@ -16361,6 +16361,21 @@
     "expiryPushTitle": "Behandelreeks verloopt",
     "expiryPushBody": "{title}: geldig tot {date}, nog {count, plural, one {# sessie} other {# sessies}} over."
   },
+  "chartContext": {
+    "listLabel": "Medicatie en ziekte in deze periode",
+    "start": "{name} gestart",
+    "startDose": "{name} gestart met {dose}",
+    "startEstimated": "{name}: eerste vastgelegde inname",
+    "stop": "{name} gestopt",
+    "doseChange": "{name}: dosis gewijzigd naar {dose}",
+    "doseChangeBare": "{name}: dosis gewijzigd",
+    "pause": "{name} gepauzeerd",
+    "resume": "{name} hervat",
+    "illness": "{label}, tot {end}",
+    "illnessOpen": "{label}, nog bezig",
+    "open": "Openen",
+    "cyclePhases": "Cyclusfasen"
+  },
   "adminLiveActivityStart": {
     "switchOff": "Een medicijn heeft een Live Activity, maar PUSH_RELAY_LIVE_ACTIVITY staat uit, dus er start er geen.",
     "noConsent": "Een medicijn heeft een Live Activity, maar je iPhone heeft die niet via de relay toegestaan.",
