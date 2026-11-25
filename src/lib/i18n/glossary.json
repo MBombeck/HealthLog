@@ -1,0 +1,4473 @@
+{
+  "about": "Canonical product vocabulary: one term per concept per locale. `name` is the label form (nav entry, page title, section heading); `item` is the countable noun used in running text. Anchors are message keys that must carry the term (exact, or containing it). Forbidden lists the retired synonyms per locale; `allow` names the few message values that keep one for a stated reason. Display strings only: wire values, routes and enum ids never change with this file. A forbidden entry with `keys` applies only to message keys under that prefix. `decision` records why a concept carries the term it does. `spelling` lists retired spellings per locale. Guarded by src/__tests__/glossary-guard.test.ts.",
+  "locales": ["de", "en", "fr", "es", "it", "pl", "ko", "nl", "pt-BR", "ru"],
+  "concepts": [
+    {
+      "id": "dashboard",
+      "description": "The home page.",
+      "terms": {
+        "de": {
+          "name": "Dashboard"
+        },
+        "en": {
+          "name": "Dashboard"
+        },
+        "fr": {
+          "name": "Tableau de bord"
+        },
+        "es": {
+          "name": "Panel"
+        },
+        "it": {
+          "name": "Dashboard"
+        },
+        "pl": {
+          "name": "Panel"
+        },
+        "ko": {
+          "name": "대시보드"
+        },
+        "nl": {
+          "name": "Dashboard"
+        },
+        "pt-BR": {
+          "name": "Painel"
+        },
+        "ru": {
+          "name": "Сводка"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.dashboard",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "measurements",
+      "description": "Readings of any metric (weight, blood pressure, pulse ...) and their page.",
+      "decision": "The area is Messungen; one value is a Messwert, so capturing one is \"Messwert erfassen\". Messung stays for the act of measuring (one cuff reading yields several values). Other locales use one word for both.",
+      "terms": {
+        "de": {
+          "name": "Messungen",
+          "item": "Messwert"
+        },
+        "en": {
+          "name": "Measurements",
+          "item": "measurement"
+        },
+        "fr": {
+          "name": "Mesures",
+          "item": "mesure"
+        },
+        "es": {
+          "name": "Mediciones",
+          "item": "medición"
+        },
+        "it": {
+          "name": "Misurazioni",
+          "item": "misurazione"
+        },
+        "pl": {
+          "name": "Pomiary",
+          "item": "pomiar"
+        },
+        "ko": {
+          "name": "측정",
+          "item": "측정"
+        },
+        "nl": {
+          "name": "Metingen",
+          "item": "meting"
+        },
+        "pt-BR": {
+          "name": "Medições",
+          "item": "medição"
+        },
+        "ru": {
+          "name": "Измерения",
+          "item": "измерение"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.measurements",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurements.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.capture.measurement",
+          "form": "item",
+          "match": "exact"
+        },
+        {
+          "key": "dashboard.quickAddMeasurement",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": ["Messung erfassen"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "medication",
+      "description": "A medication the person takes; the medications area.",
+      "terms": {
+        "de": {
+          "name": "Medikamente",
+          "item": "Medikament"
+        },
+        "en": {
+          "name": "Medications",
+          "item": "medication"
+        },
+        "fr": {
+          "name": "Médicaments",
+          "item": "médicament"
+        },
+        "es": {
+          "name": "Medicamentos",
+          "item": "medicamento"
+        },
+        "it": {
+          "name": "Farmaci",
+          "item": "farmaco"
+        },
+        "pl": {
+          "name": "Leki",
+          "item": "lek"
+        },
+        "ko": {
+          "name": "복약",
+          "item": "약"
+        },
+        "nl": {
+          "name": "Medicatie",
+          "item": "medicatie"
+        },
+        "pt-BR": {
+          "name": "Medicamentos",
+          "item": "medicamento"
+        },
+        "ru": {
+          "name": "Лекарства",
+          "item": "лекарство"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.medications",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "medications.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.capture.medication",
+          "form": "item",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          {
+            "text": "Medis",
+            "wholeWord": true
+          }
+        ],
+        "en": [
+          {
+            "text": "meds",
+            "wholeWord": true
+          }
+        ],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "dose",
+      "description": "One scheduled or logged amount of a medication.",
+      "terms": {
+        "de": {
+          "name": "Dosen",
+          "item": "Dosis"
+        },
+        "en": {
+          "name": "Doses",
+          "item": "dose"
+        },
+        "fr": {
+          "name": "Doses",
+          "item": "dose"
+        },
+        "es": {
+          "name": "Dosis",
+          "item": "dosis"
+        },
+        "it": {
+          "name": "Dosi",
+          "item": "dose"
+        },
+        "pl": {
+          "name": "Dawki",
+          "item": "dawka"
+        },
+        "ko": {
+          "name": "용량",
+          "item": "용량"
+        },
+        "nl": {
+          "name": "Doses",
+          "item": "dosis"
+        },
+        "pt-BR": {
+          "name": "Doses",
+          "item": "dose"
+        },
+        "ru": {
+          "name": "Дозы",
+          "item": "доза"
+        }
+      },
+      "anchors": [],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "intake",
+      "description": "Recording that a dose was taken; the intake log.",
+      "terms": {
+        "de": {
+          "name": "Einnahme",
+          "item": "Einnahme"
+        },
+        "en": {
+          "name": "Intake",
+          "item": "intake"
+        },
+        "fr": {
+          "name": "Prise",
+          "item": "prise"
+        },
+        "es": {
+          "name": "Toma",
+          "item": "toma"
+        },
+        "it": {
+          "name": "Assunzione",
+          "item": "assunzione"
+        },
+        "pl": {
+          "name": "Przyjęcie",
+          "item": "przyjęcie"
+        },
+        "ko": {
+          "name": "복용",
+          "item": "복용"
+        },
+        "nl": {
+          "name": "Inname",
+          "item": "inname"
+        },
+        "pt-BR": {
+          "name": "Tomada",
+          "item": "tomada"
+        },
+        "ru": {
+          "name": "Приём",
+          "item": "приём"
+        }
+      },
+      "anchors": [
+        {
+          "key": "medications.intakeForm.title",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "take",
+      "description": "Action: mark a dose as taken. Enforced in detail by i18n-dose-vocabulary.test.ts.",
+      "decision": "The daily briefing row for an open dose is the Take action: it opens that dose, highlighted, where Take books it. A client that can book in place may do so on this action; \"Einnahme erfassen\" / \"Log intake\" is the name of the form for an unscheduled or backdated intake, not of this action.",
+      "wire": "dose state `taken`",
+      "terms": {
+        "de": {
+          "name": "Einnehmen"
+        },
+        "en": {
+          "name": "Take"
+        },
+        "fr": {
+          "name": "Prendre"
+        },
+        "es": {
+          "name": "Tomar"
+        },
+        "it": {
+          "name": "Assumi"
+        },
+        "pl": {
+          "name": "Przyjmij"
+        },
+        "ko": {
+          "name": "복용"
+        },
+        "nl": {
+          "name": "Innemen"
+        },
+        "pt-BR": {
+          "name": "Tomar"
+        },
+        "ru": {
+          "name": "Принять"
+        }
+      },
+      "anchors": [
+        {
+          "key": "medications.dose.action.take",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.action.logDose",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "skip",
+      "description": "Action: mark a dose as skipped. Enforced in detail by i18n-dose-vocabulary.test.ts.",
+      "wire": "dose state `skipped`",
+      "terms": {
+        "de": {
+          "name": "Überspringen"
+        },
+        "en": {
+          "name": "Skip"
+        },
+        "fr": {
+          "name": "Sauter"
+        },
+        "es": {
+          "name": "Omitir"
+        },
+        "it": {
+          "name": "Salta"
+        },
+        "pl": {
+          "name": "Pomiń"
+        },
+        "ko": {
+          "name": "건너뛰기"
+        },
+        "nl": {
+          "name": "Overslaan"
+        },
+        "pt-BR": {
+          "name": "Pular"
+        },
+        "ru": {
+          "name": "Пропустить"
+        }
+      },
+      "anchors": [
+        {
+          "key": "medications.dose.action.skip",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "snooze",
+      "description": "Action: be reminded of a due dose again later.",
+      "terms": {
+        "de": {
+          "name": "Später erinnern"
+        },
+        "en": {
+          "name": "Remind me later"
+        },
+        "fr": {
+          "name": "Me le rappeler plus tard"
+        },
+        "es": {
+          "name": "Recordar más tarde"
+        },
+        "it": {
+          "name": "Ricordamelo più tardi"
+        },
+        "pl": {
+          "name": "Przypomnij później"
+        },
+        "ko": {
+          "name": "나중에 알림"
+        },
+        "nl": {
+          "name": "Later herinneren"
+        },
+        "pt-BR": {
+          "name": "Lembrar mais tarde"
+        },
+        "ru": {
+          "name": "Напомнить позже"
+        }
+      },
+      "anchors": [
+        {
+          "key": "medications.dose.action.snooze",
+          "form": "name",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "mood",
+      "description": "Mood entries and their page.",
+      "terms": {
+        "de": {
+          "name": "Stimmung"
+        },
+        "en": {
+          "name": "Mood"
+        },
+        "fr": {
+          "name": "Humeur"
+        },
+        "es": {
+          "name": "Estado de ánimo"
+        },
+        "it": {
+          "name": "Umore"
+        },
+        "pl": {
+          "name": "Nastrój"
+        },
+        "ko": {
+          "name": "기분"
+        },
+        "nl": {
+          "name": "Stemming"
+        },
+        "pt-BR": {
+          "name": "Humor"
+        },
+        "ru": {
+          "name": "Настроение"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.mood.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.mood",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "mood.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "mentalWellbeing",
+      "description": "The questionnaire area (PHQ-9, GAD-7 ...).",
+      "terms": {
+        "de": {
+          "name": "Seelisches Wohlbefinden"
+        },
+        "en": {
+          "name": "Mental wellbeing"
+        },
+        "fr": {
+          "name": "Bien-être mental"
+        },
+        "es": {
+          "name": "Bienestar mental"
+        },
+        "it": {
+          "name": "Benessere mentale"
+        },
+        "pl": {
+          "name": "Dobrostan psychiczny"
+        },
+        "ko": {
+          "name": "정신 건강"
+        },
+        "nl": {
+          "name": "Mentaal welzijn"
+        },
+        "pt-BR": {
+          "name": "Bem-estar mental"
+        },
+        "ru": {
+          "name": "Психическое благополучие"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.mentalWellbeing",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "mentalHealth.pageTitle",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "cycle",
+      "description": "Menstrual cycle tracking.",
+      "terms": {
+        "de": {
+          "name": "Zyklus"
+        },
+        "en": {
+          "name": "Cycle"
+        },
+        "fr": {
+          "name": "Cycle"
+        },
+        "es": {
+          "name": "Ciclo"
+        },
+        "it": {
+          "name": "Ciclo"
+        },
+        "pl": {
+          "name": "Cykl"
+        },
+        "ko": {
+          "name": "생리 주기"
+        },
+        "nl": {
+          "name": "Cyclus"
+        },
+        "pt-BR": {
+          "name": "Ciclo"
+        },
+        "ru": {
+          "name": "Цикл"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.cycle.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.cycle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "cycle.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "care",
+      "description": "The preventive-care area at /care: check-ups, visits, procedures, body sites.",
+      "decision": "Vorsorge in German; the other locales use the everyday word for a check-up (Controles, Revisiones), which the rail already used, rather than a translation of \"preventive care\".",
+      "wire": "route /care, API /api/measurement-reminders",
+      "terms": {
+        "de": {
+          "name": "Vorsorge"
+        },
+        "en": {
+          "name": "Care"
+        },
+        "fr": {
+          "name": "Examens"
+        },
+        "es": {
+          "name": "Revisiones"
+        },
+        "it": {
+          "name": "Controlli"
+        },
+        "pl": {
+          "name": "Profilaktyka"
+        },
+        "ko": {
+          "name": "건강검진"
+        },
+        "nl": {
+          "name": "Controles"
+        },
+        "pt-BR": {
+          "name": "Prevenção"
+        },
+        "ru": {
+          "name": "Профилактика"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.vorsorge.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.vorsorge",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurementReminders.sectionTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "checkups.tabVorsorge",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "dashboard.heroItems.preventive_care",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [
+          "rappels de prévention",
+          {
+            "text": "Dépistages",
+            "caseSensitive": true,
+            "wholeWord": true
+          },
+          {
+            "text": "Prévention",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ],
+        "es": ["atención preventiva", "recordatorios preventivos"],
+        "it": [
+          {
+            "text": "Prevenzione",
+            "caseSensitive": true,
+            "wholeWord": true
+          },
+          "promemoria di prevenzione"
+        ],
+        "pl": [],
+        "ko": ["예방 관리"],
+        "nl": ["preventieve zorg"],
+        "pt-BR": [
+          "cuidados preventivos",
+          {
+            "text": "checks",
+            "wholeWord": true
+          }
+        ],
+        "ru": []
+      }
+    },
+    {
+      "id": "checkup",
+      "description": "One recurring preventive item (a screening, a blood count) and its reminder.",
+      "wire": "notification event MEASUREMENT_REMINDER",
+      "terms": {
+        "de": {
+          "name": "Vorsorge-Erinnerung",
+          "item": "Vorsorge"
+        },
+        "en": {
+          "name": "Check-up reminder",
+          "item": "check-up"
+        },
+        "fr": {
+          "name": "Rappel d’examen",
+          "item": "examen"
+        },
+        "es": {
+          "name": "Recordatorio de revisión",
+          "item": "revisión"
+        },
+        "it": {
+          "name": "Promemoria di controllo",
+          "item": "controllo"
+        },
+        "pl": {
+          "name": "Przypomnienie o badaniu",
+          "item": "badanie kontrolne"
+        },
+        "ko": {
+          "name": "건강검진 알림",
+          "item": "건강검진"
+        },
+        "nl": {
+          "name": "Controleherinnering",
+          "item": "controle"
+        },
+        "pt-BR": {
+          "name": "Lembrete de check-up",
+          "item": "check-up"
+        },
+        "ru": {
+          "name": "Напоминание об обследовании",
+          "item": "обследование"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurementReminders.pushTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "notifications.eventMeasurementReminder",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Mess-Erinnerung", "Messerinnerung", "Checkup", "Check-up"],
+        "en": ["checkup", "measurement reminder"],
+        "fr": ["rappel de mesure", "rappels de mesure"],
+        "es": [
+          "recordatorio de medición",
+          "recordatorios de medición",
+          "chequeo"
+        ],
+        "it": ["promemoria di misurazione", "promemoria misurazione"],
+        "pl": [
+          "przypomnienie o pomiar",
+          "przypomnienia o pomiar",
+          "przypomnień o pomiar"
+        ],
+        "ko": ["측정 알림"],
+        "nl": ["meetherinnering"],
+        "pt-BR": [
+          "lembrete de medição",
+          "lembretes de medição",
+          {
+            "text": "lembrete de check-in",
+            "wholeWord": true
+          }
+        ],
+        "ru": [
+          "напоминание об измерени",
+          "напоминания об измерени",
+          "напоминаний об измерени",
+          "напоминание о проверк",
+          "напоминания о проверк",
+          "напоминаний о проверк"
+        ]
+      }
+    },
+    {
+      "id": "visit",
+      "description": "A doctor's visit, booked or done (encounter).",
+      "decision": "A booked visit is a Termin / cita / appointment-type entry in the rail and the list; \"Besuch\" and \"visita\" were only used by the calendar feed and are retired there too.",
+      "wire": "model Encounter",
+      "terms": {
+        "de": {
+          "name": "Termine",
+          "item": "Termin"
+        },
+        "en": {
+          "name": "Visits",
+          "item": "visit"
+        },
+        "fr": {
+          "name": "Rendez-vous",
+          "item": "rendez-vous"
+        },
+        "es": {
+          "name": "Citas",
+          "item": "cita"
+        },
+        "it": {
+          "name": "Visite",
+          "item": "visita"
+        },
+        "pl": {
+          "name": "Wizyty",
+          "item": "wizyta"
+        },
+        "ko": {
+          "name": "진료",
+          "item": "진료"
+        },
+        "nl": {
+          "name": "Bezoeken",
+          "item": "bezoek"
+        },
+        "pt-BR": {
+          "name": "Consultas",
+          "item": "consulta"
+        },
+        "ru": {
+          "name": "Визиты",
+          "item": "визит"
+        }
+      },
+      "anchors": [
+        {
+          "key": "checkups.tabVisits",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "encounters.sectionTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "dashboard.heroItems.upcoming_visit",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          "Arztbesuch",
+          {
+            "text": "Besuch",
+            "caseSensitive": true
+          }
+        ],
+        "en": ["appointment"],
+        "fr": ["consultation", "visite médicale", "visites médicales"],
+        "es": [
+          {
+            "text": "visita",
+            "wholeWord": true
+          },
+          {
+            "text": "visitas",
+            "wholeWord": true
+          }
+        ],
+        "it": ["appuntament"],
+        "pl": [],
+        "ko": ["진료 예약", "병원 방문", "예약된 방문"],
+        "nl": [
+          {
+            "text": "afspraak",
+            "wholeWord": true
+          },
+          {
+            "text": "afspraken",
+            "wholeWord": true
+          }
+        ],
+        "pt-BR": ["compromisso"],
+        "ru": [
+          "приём у врач",
+          "приёма у врач",
+          "приёмы у врач",
+          "приёмов у врач",
+          "на приём к врач",
+          "записи на приём",
+          "запись на приём",
+          "записями на приём"
+        ]
+      }
+    },
+    {
+      "id": "treatmentSeries",
+      "description": "A prescribed course of sessions (physiotherapy, radiotherapy ...).",
+      "wire": "model TreatmentSeries",
+      "terms": {
+        "de": {
+          "name": "Behandlungsserien",
+          "item": "Behandlungsserie"
+        },
+        "en": {
+          "name": "Treatment series",
+          "item": "treatment series"
+        },
+        "fr": {
+          "name": "Séries de soins",
+          "item": "série de soins"
+        },
+        "es": {
+          "name": "Series de tratamiento",
+          "item": "serie de tratamiento"
+        },
+        "it": {
+          "name": "Cicli di trattamento",
+          "item": "ciclo di trattamento"
+        },
+        "pl": {
+          "name": "Serie zabiegów",
+          "item": "seria zabiegów"
+        },
+        "ko": {
+          "name": "치료 과정",
+          "item": "치료 과정"
+        },
+        "nl": {
+          "name": "Behandelreeksen",
+          "item": "behandelreeks"
+        },
+        "pt-BR": {
+          "name": "Séries de tratamento",
+          "item": "série de tratamento"
+        },
+        "ru": {
+          "name": "Курсы лечения",
+          "item": "курс лечения"
+        }
+      },
+      "anchors": [
+        {
+          "key": "treatmentSeries.heading",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Behandlungsreihe", "Behandlungskurs"],
+        "en": ["treatment course"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": ["치료 코스"],
+        "nl": [],
+        "pt-BR": ["curso de tratamento"],
+        "ru": []
+      }
+    },
+    {
+      "id": "labs",
+      "description": "Lab results and their page.",
+      "decision": "One name for the area in the rail, the page, the settings pages and the timeline lane: what a layperson gets back from the lab is a result, not a lab.",
+      "terms": {
+        "de": {
+          "name": "Laborwerte",
+          "item": "Laborwert"
+        },
+        "en": {
+          "name": "Lab results",
+          "item": "lab result"
+        },
+        "fr": {
+          "name": "Résultats de laboratoire",
+          "item": "résultat de laboratoire"
+        },
+        "es": {
+          "name": "Resultados de laboratorio",
+          "item": "resultado de laboratorio"
+        },
+        "it": {
+          "name": "Esami di laboratorio",
+          "item": "risultato di laboratorio"
+        },
+        "pl": {
+          "name": "Wyniki badań",
+          "item": "wynik badania"
+        },
+        "ko": {
+          "name": "검사 결과",
+          "item": "검사 결과"
+        },
+        "nl": {
+          "name": "Labuitslagen",
+          "item": "labuitslag"
+        },
+        "pt-BR": {
+          "name": "Resultados laboratoriais",
+          "item": "resultado laboratorial"
+        },
+        "ru": {
+          "name": "Результаты анализов",
+          "item": "результат анализа"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.labs.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.labs",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "labs.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.layout.labs.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.modules.pages.labs.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "timeline.lanes.labs",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          "Laborergebnis",
+          {
+            "text": "Labore",
+            "wholeWord": true,
+            "caseSensitive": true
+          }
+        ],
+        "en": [
+          "lab value",
+          {
+            "text": "Labs",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ],
+        "fr": [
+          "valeur de laboratoire",
+          "valeurs de laboratoire",
+          "résultat d'analyse",
+          "résultat d’analyse",
+          "résultats d'analyse",
+          "résultats d’analyse",
+          {
+            "text": "labo",
+            "wholeWord": true
+          }
+        ],
+        "es": [
+          "valor de laboratorio",
+          "valores de laboratorio",
+          "resultado de análisis",
+          "resultados de análisis"
+        ],
+        "it": [
+          "valore di laboratorio",
+          "valori di laboratorio",
+          "risultati degli esami",
+          "analisi di laboratorio"
+        ],
+        "pl": [
+          "wynik laboratoryjn",
+          "wyniki laboratoryjn",
+          "wyników laboratoryjn",
+          "wyniku laboratoryjn",
+          "wynikiem laboratoryjn"
+        ],
+        "ko": ["검사 수치"],
+        "nl": ["labwaarde"],
+        "pt-BR": [
+          "valor laboratorial",
+          "valores laboratoriais",
+          "resultado de exame",
+          "resultados de exames",
+          "valores de exames"
+        ],
+        "ru": [
+          "лабораторные показател",
+          "лабораторных показател",
+          "лабораторным показател"
+        ]
+      }
+    },
+    {
+      "id": "illness",
+      "description": "The illness area: illness episodes with symptoms, flares and recovery.",
+      "decision": "The area is named for what it holds (Krankheit, Illness), not for a diary format; one record is an episode in every locale, the word the list, the form and the insights already use.",
+      "wire": "module illness, model ConditionEpisode",
+      "terms": {
+        "de": {
+          "name": "Krankheit",
+          "item": "Krankheitsepisode"
+        },
+        "en": {
+          "name": "Illness",
+          "item": "illness episode"
+        },
+        "fr": {
+          "name": "Maladie",
+          "item": "épisode de maladie"
+        },
+        "es": {
+          "name": "Enfermedad",
+          "item": "episodio de enfermedad"
+        },
+        "it": {
+          "name": "Malattia",
+          "item": "episodio di malattia"
+        },
+        "pl": {
+          "name": "Choroby",
+          "item": "epizod choroby"
+        },
+        "ko": {
+          "name": "아픈 날",
+          "item": "아픈 기간"
+        },
+        "nl": {
+          "name": "Ziekte",
+          "item": "ziekte-episode"
+        },
+        "pt-BR": {
+          "name": "Doenças",
+          "item": "episódio de doença"
+        },
+        "ru": {
+          "name": "Заболевания",
+          "item": "эпизод заболевания"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.illness.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.illness",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "illness.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "modules.illness.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "timeline.lanes.illness",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "recordSharing.section.illness.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "palette.records.source.illness",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.layout.illness.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          "Krankheitstagebuch",
+          "Krankheits-Journal",
+          {
+            "text": "Eintrag",
+            "keys": "illness."
+          },
+          {
+            "text": "Journal",
+            "keys": "illness."
+          }
+        ],
+        "en": [
+          "illness journal",
+          "illness diary",
+          {
+            "text": "journal",
+            "keys": "illness."
+          },
+          {
+            "text": "diary",
+            "keys": "illness."
+          }
+        ],
+        "fr": [
+          "journal de maladie",
+          "journal des maladies",
+          {
+            "text": "journal",
+            "keys": "illness."
+          }
+        ],
+        "es": [
+          "diario de enfermedad",
+          {
+            "text": "Volver al diario",
+            "keys": "illness."
+          }
+        ],
+        "it": [
+          "diario delle malattie",
+          "diario di malattia",
+          "diario delle condizioni"
+        ],
+        "pl": [
+          "dziennik chor",
+          "dziennika chor",
+          "dzienniku chor",
+          "dziennikiem chor",
+          {
+            "text": "dziennik",
+            "keys": "illness."
+          },
+          {
+            "text": "wpis",
+            "wholeWord": true,
+            "keys": "illness."
+          },
+          {
+            "text": "wpisu",
+            "wholeWord": true,
+            "keys": "illness."
+          }
+        ],
+        "ko": [
+          "아픈 날 일지",
+          "아픈 날 다이어리",
+          "질병 일지",
+          {
+            "text": "일지",
+            "keys": "illness."
+          }
+        ],
+        "nl": [
+          "ziektedagboek",
+          "ziektelogboek",
+          {
+            "text": "dagboek",
+            "keys": "illness."
+          }
+        ],
+        "pt-BR": [
+          "diário de doenças",
+          "diário de doença",
+          {
+            "text": "Voltar ao diário",
+            "keys": "illness."
+          }
+        ],
+        "ru": [
+          "дневник болезн",
+          "дневника болезн",
+          "дневнике болезн",
+          "дневник заболеван",
+          "дневника заболеван",
+          "дневнике заболеван",
+          {
+            "text": "дневник",
+            "keys": "illness."
+          }
+        ]
+      }
+    },
+    {
+      "id": "symptom",
+      "description": "A symptom logged with its strength.",
+      "terms": {
+        "de": {
+          "name": "Symptome",
+          "item": "Symptom"
+        },
+        "en": {
+          "name": "Symptoms",
+          "item": "symptom"
+        },
+        "fr": {
+          "name": "Symptômes",
+          "item": "symptôme"
+        },
+        "es": {
+          "name": "Síntomas",
+          "item": "síntoma"
+        },
+        "it": {
+          "name": "Sintomi",
+          "item": "sintomo"
+        },
+        "pl": {
+          "name": "Objawy",
+          "item": "objaw"
+        },
+        "ko": {
+          "name": "증상",
+          "item": "증상"
+        },
+        "nl": {
+          "name": "Symptomen",
+          "item": "symptoom"
+        },
+        "pt-BR": {
+          "name": "Sintomas",
+          "item": "sintoma"
+        },
+        "ru": {
+          "name": "Симптомы",
+          "item": "симптом"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.capture.symptom",
+          "form": "item",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "seizures",
+      "description": "The seizure diary.",
+      "wire": "module seizures",
+      "terms": {
+        "de": {
+          "name": "Anfallskalender",
+          "item": "Anfall"
+        },
+        "en": {
+          "name": "Seizure diary",
+          "item": "seizure"
+        },
+        "fr": {
+          "name": "Journal des crises",
+          "item": "crise"
+        },
+        "es": {
+          "name": "Diario de crisis",
+          "item": "crisis"
+        },
+        "it": {
+          "name": "Diario delle crisi",
+          "item": "crisi"
+        },
+        "pl": {
+          "name": "Dzienniczek napadów",
+          "item": "napad"
+        },
+        "ko": {
+          "name": "발작 일지",
+          "item": "발작"
+        },
+        "nl": {
+          "name": "Aanvalsdagboek",
+          "item": "aanval"
+        },
+        "pt-BR": {
+          "name": "Diário de crises",
+          "item": "crise"
+        },
+        "ru": {
+          "name": "Дневник приступов",
+          "item": "приступ"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.seizures",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "seizures.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "modules.seizures.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.capture.seizure",
+          "form": "item",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Anfallstagebuch", "Anfallsprotokoll"],
+        "en": ["seizure log", "seizure calendar"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": ["dziennik napad", "kalendarz napad", "rejestr napad"],
+        "ko": ["발작 다이어리", "발작 캘린더"],
+        "nl": ["aanvallendagboek", "aanvalslogboek", "aanvalskalender"],
+        "pt-BR": ["registro de crises", "calendário de crises"],
+        "ru": ["журнал приступ", "календарь приступ"]
+      }
+    },
+    {
+      "id": "vaccinations",
+      "description": "The immunization log.",
+      "terms": {
+        "de": {
+          "name": "Impfungen",
+          "item": "Impfung"
+        },
+        "en": {
+          "name": "Vaccinations",
+          "item": "vaccination"
+        },
+        "fr": {
+          "name": "Vaccinations",
+          "item": "vaccination"
+        },
+        "es": {
+          "name": "Vacunas",
+          "item": "vacuna"
+        },
+        "it": {
+          "name": "Vaccinazioni",
+          "item": "vaccinazione"
+        },
+        "pl": {
+          "name": "Szczepienia",
+          "item": "szczepienie"
+        },
+        "ko": {
+          "name": "예방접종",
+          "item": "예방접종"
+        },
+        "nl": {
+          "name": "Vaccinaties",
+          "item": "vaccinatie"
+        },
+        "pt-BR": {
+          "name": "Vacinas",
+          "item": "vacina"
+        },
+        "ru": {
+          "name": "Вакцинации",
+          "item": "вакцинация"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.vaccinations",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "vaccinations.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "documents",
+      "description": "Inbound clinical documents (letters, findings, scans).",
+      "terms": {
+        "de": {
+          "name": "Dokumente",
+          "item": "Dokument"
+        },
+        "en": {
+          "name": "Documents",
+          "item": "document"
+        },
+        "fr": {
+          "name": "Documents",
+          "item": "document"
+        },
+        "es": {
+          "name": "Documentos",
+          "item": "documento"
+        },
+        "it": {
+          "name": "Documenti",
+          "item": "documento"
+        },
+        "pl": {
+          "name": "Dokumenty",
+          "item": "dokument"
+        },
+        "ko": {
+          "name": "문서",
+          "item": "문서"
+        },
+        "nl": {
+          "name": "Documenten",
+          "item": "document"
+        },
+        "pt-BR": {
+          "name": "Documentos",
+          "item": "documento"
+        },
+        "ru": {
+          "name": "Документы",
+          "item": "документ"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.documents",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "documents.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "timeline",
+      "description": "The life timeline.",
+      "terms": {
+        "de": {
+          "name": "Zeitleiste"
+        },
+        "en": {
+          "name": "Timeline"
+        },
+        "fr": {
+          "name": "Chronologie"
+        },
+        "es": {
+          "name": "Cronología"
+        },
+        "it": {
+          "name": "Cronologia"
+        },
+        "pl": {
+          "name": "Oś czasu"
+        },
+        "ko": {
+          "name": "타임라인"
+        },
+        "nl": {
+          "name": "Tijdlijn"
+        },
+        "pt-BR": {
+          "name": "Linha do tempo"
+        },
+        "ru": {
+          "name": "Хронология"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.timeline",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "timeline.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "insights",
+      "description": "The analysis area.",
+      "terms": {
+        "de": {
+          "name": "Insights"
+        },
+        "en": {
+          "name": "Insights"
+        },
+        "fr": {
+          "name": "Analyses"
+        },
+        "es": {
+          "name": "Insights"
+        },
+        "it": {
+          "name": "Insights"
+        },
+        "pl": {
+          "name": "Analizy"
+        },
+        "ko": {
+          "name": "인사이트"
+        },
+        "nl": {
+          "name": "Inzichten"
+        },
+        "pt-BR": {
+          "name": "Insights"
+        },
+        "ru": {
+          "name": "Аналитика"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.insights.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.insights",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": ["insight"],
+        "es": [],
+        "it": [],
+        "pl": [
+          {
+            "text": "Insights",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ],
+        "ko": [],
+        "nl": [
+          {
+            "text": "Insights",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ],
+        "pt-BR": [],
+        "ru": [
+          {
+            "text": "Insights",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "coach",
+      "description": "The AI Coach.",
+      "terms": {
+        "de": {
+          "name": "Coach"
+        },
+        "en": {
+          "name": "Coach"
+        },
+        "fr": {
+          "name": "Coach"
+        },
+        "es": {
+          "name": "Coach"
+        },
+        "it": {
+          "name": "Coach"
+        },
+        "pl": {
+          "name": "Coach"
+        },
+        "ko": {
+          "name": "코치"
+        },
+        "nl": {
+          "name": "Coach"
+        },
+        "pt-BR": {
+          "name": "Coach"
+        },
+        "ru": {
+          "name": "Тренер"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.coach.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.coach",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "achievements",
+      "description": "Achievements.",
+      "terms": {
+        "de": {
+          "name": "Erfolge"
+        },
+        "en": {
+          "name": "Achievements"
+        },
+        "fr": {
+          "name": "Réussites"
+        },
+        "es": {
+          "name": "Logros"
+        },
+        "it": {
+          "name": "Traguardi"
+        },
+        "pl": {
+          "name": "Osiągnięcia"
+        },
+        "ko": {
+          "name": "업적"
+        },
+        "nl": {
+          "name": "Prestaties"
+        },
+        "pt-BR": {
+          "name": "Conquistas"
+        },
+        "ru": {
+          "name": "Достижения"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.achievements.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.achievements",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "achievements.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "notifications",
+      "description": "The per-channel notification inbox page.",
+      "terms": {
+        "de": {
+          "name": "Benachrichtigungen je Kanal"
+        },
+        "en": {
+          "name": "Notifications per channel"
+        },
+        "fr": {
+          "name": "Notifications par canal"
+        },
+        "es": {
+          "name": "Notificaciones por canal"
+        },
+        "it": {
+          "name": "Notifiche per canale"
+        },
+        "pl": {
+          "name": "Powiadomienia wg kanału"
+        },
+        "ko": {
+          "name": "채널별 알림"
+        },
+        "nl": {
+          "name": "Meldingen per kanaal"
+        },
+        "pt-BR": {
+          "name": "Notificações por canal"
+        },
+        "ru": {
+          "name": "Уведомления по каналам"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.notifications",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "notifications.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "emergencyCard",
+      "description": "The emergency card (page, offline copy, Wallet pass, QR link).",
+      "wire": "route /emergency-card",
+      "terms": {
+        "de": {
+          "name": "Notfallkarte"
+        },
+        "en": {
+          "name": "Emergency card"
+        },
+        "fr": {
+          "name": "Carte d'urgence"
+        },
+        "es": {
+          "name": "Tarjeta de emergencia"
+        },
+        "it": {
+          "name": "Tessera di emergenza"
+        },
+        "pl": {
+          "name": "Karta ratunkowa"
+        },
+        "ko": {
+          "name": "응급 카드"
+        },
+        "nl": {
+          "name": "Noodkaart"
+        },
+        "pt-BR": {
+          "name": "Cartão de emergência"
+        },
+        "ru": {
+          "name": "Экстренная карта"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.emergencyCard",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "emergencyCard.page.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Notfallausweis", "Notfallpass"],
+        "en": ["emergency pass"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": ["paszport ratunkow"],
+        "ko": ["응급카드", "비상 카드"],
+        "nl": ["noodpas"],
+        "pt-BR": ["ficha de emergência", "passe de emergência"],
+        "ru": []
+      }
+    },
+    {
+      "id": "medicalHistory",
+      "description": "The anamnesis: history, family history, allergies, emergency information.",
+      "terms": {
+        "de": {
+          "name": "Anamnese"
+        },
+        "en": {
+          "name": "Medical history"
+        },
+        "fr": {
+          "name": "Antécédents médicaux"
+        },
+        "es": {
+          "name": "Antecedentes médicos"
+        },
+        "it": {
+          "name": "Anamnesi"
+        },
+        "pl": {
+          "name": "Wywiad medyczny"
+        },
+        "ko": {
+          "name": "병력"
+        },
+        "nl": {
+          "name": "Medische voorgeschiedenis"
+        },
+        "pt-BR": {
+          "name": "Histórico médico"
+        },
+        "ru": {
+          "name": "Анамнез"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.profile",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.anamnesis.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "recordSharing.unavailable.description",
+          "form": "name",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": ["Anamnesis"],
+        "fr": ["Anamnèse"],
+        "es": ["Anamnesis"],
+        "it": [],
+        "pl": ["anamnez", "wywiad zdrowotn"],
+        "ko": ["문진"],
+        "nl": [
+          {
+            "text": "anamnese",
+            "wholeWord": true
+          }
+        ],
+        "pt-BR": ["Anamnese"],
+        "ru": [
+          "медицинский анамнез",
+          "медицинского анамнез",
+          "медицинском анамнез"
+        ]
+      }
+    },
+    {
+      "id": "healthRecord",
+      "description": "Everything recorded about one person; the rail group and the shared record.",
+      "terms": {
+        "de": {
+          "name": "Gesundheitsakte"
+        },
+        "en": {
+          "name": "Health record"
+        },
+        "fr": {
+          "name": "Dossier de santé"
+        },
+        "es": {
+          "name": "Historial de salud"
+        },
+        "it": {
+          "name": "Cartella sanitaria"
+        },
+        "pl": {
+          "name": "Dokumentacja zdrowotna"
+        },
+        "ko": {
+          "name": "건강 기록"
+        },
+        "nl": {
+          "name": "Gezondheidsdossier"
+        },
+        "pt-BR": {
+          "name": "Registro de saúde"
+        },
+        "ru": {
+          "name": "Медицинская карта"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.groups.record",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": ["dossier médical"],
+        "es": ["historial médico"],
+        "it": ["cartella clinica"],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "doctorReport",
+      "description": "The PDF (and FHIR bundle) for a doctor. The PDF header carries this name.",
+      "wire": "module doctorReport, document kind DOCTOR_REPORT",
+      "terms": {
+        "de": {
+          "name": "Arztbericht"
+        },
+        "en": {
+          "name": "Doctor report"
+        },
+        "fr": {
+          "name": "Rapport médical"
+        },
+        "es": {
+          "name": "Informe médico"
+        },
+        "it": {
+          "name": "Referto medico"
+        },
+        "pl": {
+          "name": "Raport dla lekarza"
+        },
+        "ko": {
+          "name": "진료용 리포트"
+        },
+        "nl": {
+          "name": "Artsenrapport"
+        },
+        "pt-BR": {
+          "name": "Relatório médico"
+        },
+        "ru": {
+          "name": "Отчёт для врача"
+        }
+      },
+      "anchors": [
+        {
+          "key": "doctorReport.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "modules.doctorReport.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "documents.kind.DOCTOR_REPORT",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "onboarding.tour.steps.export.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Gesundheitsbericht", "Arztreport"],
+        "en": [
+          {
+            "text": "health report",
+            "wholeWord": true
+          },
+          "doctor's report",
+          "medical report"
+        ],
+        "fr": [
+          "rapport de santé",
+          "compte rendu médical",
+          "rapport personnel de santé"
+        ],
+        "es": ["informe de salud", "informes de salud"],
+        "it": [
+          "rapporto sanitario",
+          "rapporto personale di salute",
+          "referto sanitario",
+          "referto per il medico"
+        ],
+        "pl": [
+          "raport zdrowotn",
+          "raportu zdrowotn",
+          "raporty zdrowotn",
+          "raport lekarsk",
+          "raportu lekarsk",
+          "raporty lekarsk",
+          "raport medyczn",
+          "raportu medyczn",
+          "raporcie medyczn",
+          "raport o zdrowiu"
+        ],
+        "ko": ["진료 보고서", "건강 리포트", "건강 보고서"],
+        "nl": [
+          "gezondheidsrapport",
+          "artsrapport",
+          "doktersrapport",
+          "medisch rapport"
+        ],
+        "pt-BR": ["relatório de saúde", "relatório pessoal de saúde"],
+        "ru": [
+          "отчёт о здоровье",
+          "отчет о здоровье",
+          "отчёта о здоровье",
+          "отчета о здоровье",
+          "отчёте о здоровье",
+          "медицинский отчёт",
+          "медицинский отчет",
+          "врачебный отчёт",
+          "врачебный отчет"
+        ]
+      }
+    },
+    {
+      "id": "doctorReportAndExport",
+      "description": "The settings section that builds the doctor report and exports the record.",
+      "wire": "settings section id health-record",
+      "terms": {
+        "de": {
+          "name": "Arztbericht und Export"
+        },
+        "en": {
+          "name": "Doctor report and export"
+        },
+        "fr": {
+          "name": "Rapport médical et export"
+        },
+        "es": {
+          "name": "Informe médico y exportación"
+        },
+        "it": {
+          "name": "Referto medico ed esportazione"
+        },
+        "pl": {
+          "name": "Raport dla lekarza i eksport"
+        },
+        "ko": {
+          "name": "진료용 리포트 및 내보내기"
+        },
+        "nl": {
+          "name": "Artsenrapport en export"
+        },
+        "pt-BR": {
+          "name": "Relatório médico e exportação"
+        },
+        "ru": {
+          "name": "Отчёт для врача и экспорт"
+        }
+      },
+      "anchors": [
+        {
+          "key": "settings.sections.health-record.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "healthScore",
+      "description": "The 0 to 100 Health score.",
+      "terms": {
+        "de": {
+          "name": "Gesundheitsscore"
+        },
+        "en": {
+          "name": "Health score"
+        },
+        "fr": {
+          "name": "Score de santé"
+        },
+        "es": {
+          "name": "Puntuación de salud"
+        },
+        "it": {
+          "name": "Punteggio di salute"
+        },
+        "pl": {
+          "name": "Wynik zdrowia"
+        },
+        "ko": {
+          "name": "건강 점수"
+        },
+        "nl": {
+          "name": "Gezondheidsscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de saúde"
+        },
+        "ru": {
+          "name": "Балл здоровья"
+        }
+      },
+      "anchors": [
+        {
+          "key": "settings.sections.score.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.today.scoreLabel",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.healthScore.label",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Health Score", "Health-Score", "Gesundheits-Score"],
+        "en": [
+          {
+            "text": "Health Score",
+            "caseSensitive": true
+          }
+        ],
+        "fr": ["score santé"],
+        "es": [],
+        "it": ["health score", "punteggio salute"],
+        "pl": ["Health Score", "Health-Score"],
+        "ko": ["건강점수", "헬스 스코어"],
+        "nl": ["Health Score", "gezondheids-score"],
+        "pt-BR": [
+          {
+            "text": "Pontuação de Saúde",
+            "caseSensitive": true
+          },
+          "escore de saúde"
+        ],
+        "ru": ["Health Score", "индекс здоровья"]
+      }
+    },
+    {
+      "id": "pillar.bloodPressure",
+      "description": "Health score pillar `bloodPressure`.",
+      "wire": "pillar id bloodPressure",
+      "terms": {
+        "de": {
+          "name": "Blutdruck"
+        },
+        "en": {
+          "name": "Blood pressure"
+        },
+        "fr": {
+          "name": "Tension artérielle"
+        },
+        "es": {
+          "name": "Presión arterial"
+        },
+        "it": {
+          "name": "Pressione arteriosa"
+        },
+        "pl": {
+          "name": "Ciśnienie krwi"
+        },
+        "ko": {
+          "name": "혈압"
+        },
+        "nl": {
+          "name": "Bloeddruk"
+        },
+        "pt-BR": {
+          "name": "Pressão arterial"
+        },
+        "ru": {
+          "name": "АД"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.bloodPressure",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.glycaemia",
+      "description": "Health score pillar `glycaemia`.",
+      "wire": "pillar id glycaemia",
+      "terms": {
+        "de": {
+          "name": "Blutzucker"
+        },
+        "en": {
+          "name": "Glycemia"
+        },
+        "fr": {
+          "name": "Glycémie"
+        },
+        "es": {
+          "name": "Glucemia"
+        },
+        "it": {
+          "name": "Glicemia"
+        },
+        "pl": {
+          "name": "Glikemia"
+        },
+        "ko": {
+          "name": "혈당"
+        },
+        "nl": {
+          "name": "Glykemie"
+        },
+        "pt-BR": {
+          "name": "Glicemia"
+        },
+        "ru": {
+          "name": "Гликемия"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.glycaemia",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.activity",
+      "description": "Health score pillar `activity`.",
+      "wire": "pillar id activity",
+      "terms": {
+        "de": {
+          "name": "Aktivität"
+        },
+        "en": {
+          "name": "Activity"
+        },
+        "fr": {
+          "name": "Activité"
+        },
+        "es": {
+          "name": "Actividad"
+        },
+        "it": {
+          "name": "Attività"
+        },
+        "pl": {
+          "name": "Aktywność"
+        },
+        "ko": {
+          "name": "활동"
+        },
+        "nl": {
+          "name": "Activiteit"
+        },
+        "pt-BR": {
+          "name": "Atividade"
+        },
+        "ru": {
+          "name": "Активность"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.activity",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.sleep",
+      "description": "Health score pillar `sleep`.",
+      "wire": "pillar id sleep",
+      "terms": {
+        "de": {
+          "name": "Schlaf"
+        },
+        "en": {
+          "name": "Sleep"
+        },
+        "fr": {
+          "name": "Sommeil"
+        },
+        "es": {
+          "name": "Sueño"
+        },
+        "it": {
+          "name": "Sonno"
+        },
+        "pl": {
+          "name": "Sen"
+        },
+        "ko": {
+          "name": "수면"
+        },
+        "nl": {
+          "name": "Slaap"
+        },
+        "pt-BR": {
+          "name": "Sono"
+        },
+        "ru": {
+          "name": "Сон"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.sleep",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.adiposity",
+      "description": "Health score pillar `adiposity`.",
+      "wire": "pillar id adiposity",
+      "terms": {
+        "de": {
+          "name": "Körperfettverteilung"
+        },
+        "en": {
+          "name": "Adiposity"
+        },
+        "fr": {
+          "name": "Adiposité"
+        },
+        "es": {
+          "name": "Adiposidad"
+        },
+        "it": {
+          "name": "Adiposità"
+        },
+        "pl": {
+          "name": "Otłuszczenie"
+        },
+        "ko": {
+          "name": "체지방"
+        },
+        "nl": {
+          "name": "Lichaamsvet"
+        },
+        "pt-BR": {
+          "name": "Adiposidade"
+        },
+        "ru": {
+          "name": "Жировая масса"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.adiposity",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.wellbeing",
+      "description": "Health score pillar `wellbeing`.",
+      "wire": "pillar id wellbeing",
+      "terms": {
+        "de": {
+          "name": "Wohlbefinden"
+        },
+        "en": {
+          "name": "Wellbeing"
+        },
+        "fr": {
+          "name": "Bien-être"
+        },
+        "es": {
+          "name": "Bienestar"
+        },
+        "it": {
+          "name": "Benessere"
+        },
+        "pl": {
+          "name": "Samopoczucie"
+        },
+        "ko": {
+          "name": "마음 건강"
+        },
+        "nl": {
+          "name": "Welzijn"
+        },
+        "pt-BR": {
+          "name": "Bem-estar"
+        },
+        "ru": {
+          "name": "Благополучие"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.wellbeing",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pillar.lipids",
+      "description": "Health score pillar `lipids`.",
+      "wire": "pillar id lipids",
+      "terms": {
+        "de": {
+          "name": "Blutfette"
+        },
+        "en": {
+          "name": "Lipids"
+        },
+        "fr": {
+          "name": "Lipides"
+        },
+        "es": {
+          "name": "Lípidos"
+        },
+        "it": {
+          "name": "Lipidi"
+        },
+        "pl": {
+          "name": "Lipidy"
+        },
+        "ko": {
+          "name": "지질"
+        },
+        "nl": {
+          "name": "Bloedvetten"
+        },
+        "pt-BR": {
+          "name": "Lipídios"
+        },
+        "ru": {
+          "name": "Липиды"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.healthScore.pillar.lipids",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "readiness",
+      "description": "The composite readiness score.",
+      "wire": "composite READINESS",
+      "terms": {
+        "de": {
+          "name": "Bereitschaft"
+        },
+        "en": {
+          "name": "Readiness"
+        },
+        "fr": {
+          "name": "Disponibilité"
+        },
+        "es": {
+          "name": "Disposición"
+        },
+        "it": {
+          "name": "Prontezza"
+        },
+        "pl": {
+          "name": "Gotowość"
+        },
+        "ko": {
+          "name": "준비도"
+        },
+        "nl": {
+          "name": "Paraatheid"
+        },
+        "pt-BR": {
+          "name": "Prontidão"
+        },
+        "ru": {
+          "name": "Готовность"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.derived.composite.READINESS.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "sleepScore",
+      "description": "The composite sleep score.",
+      "wire": "composite SLEEP_SCORE",
+      "terms": {
+        "de": {
+          "name": "Schlafscore"
+        },
+        "en": {
+          "name": "Sleep score"
+        },
+        "fr": {
+          "name": "Score de sommeil"
+        },
+        "es": {
+          "name": "Puntuación de sueño"
+        },
+        "it": {
+          "name": "Punteggio del sonno"
+        },
+        "pl": {
+          "name": "Wynik snu"
+        },
+        "ko": {
+          "name": "수면 점수"
+        },
+        "nl": {
+          "name": "Slaapscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de sono"
+        },
+        "ru": {
+          "name": "Балл сна"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.derived.composite.SLEEP_SCORE.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurements.typeSleepScore",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": ["pontuação do sono"],
+        "ru": []
+      }
+    },
+    {
+      "id": "recoveryScore",
+      "description": "The composite recovery score.",
+      "wire": "measurement type RECOVERY_SCORE",
+      "terms": {
+        "de": {
+          "name": "Erholungsscore"
+        },
+        "en": {
+          "name": "Recovery score"
+        },
+        "fr": {
+          "name": "Score de récupération"
+        },
+        "es": {
+          "name": "Puntuación de recuperación"
+        },
+        "it": {
+          "name": "Punteggio di recupero"
+        },
+        "pl": {
+          "name": "Wynik regeneracji"
+        },
+        "ko": {
+          "name": "회복 점수"
+        },
+        "nl": {
+          "name": "Herstelscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de recuperação"
+        },
+        "ru": {
+          "name": "Балл восстановления"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.derived.scores.recovery",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurements.typeRecoveryScore",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "clinicianView.wellness.recovery",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pushRelay",
+      "description": "The optional HealthLog push relay that carries iPhone notifications.",
+      "terms": {
+        "de": {
+          "name": "Push-Relay"
+        },
+        "en": {
+          "name": "Push relay"
+        },
+        "fr": {
+          "name": "Relais push"
+        },
+        "es": {
+          "name": "Relé push"
+        },
+        "it": {
+          "name": "Relay push"
+        },
+        "pl": {
+          "name": "Przekaźnik push"
+        },
+        "ko": {
+          "name": "푸시 릴레이"
+        },
+        "nl": {
+          "name": "Pushrelay"
+        },
+        "pt-BR": {
+          "name": "Relay de push"
+        },
+        "ru": {
+          "name": "Push-ретранслятор"
+        }
+      },
+      "anchors": [
+        {
+          "key": "admin.pushRelay.title",
+          "form": "name",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": ["Push-Relais"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": ["push-relay"],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "liveActivity",
+      "description": "An iOS Live Activity (Apple's term, translated as Apple does).",
+      "terms": {
+        "de": {
+          "name": "Live-Aktivität"
+        },
+        "en": {
+          "name": "Live Activity"
+        },
+        "fr": {
+          "name": "Activité en direct"
+        },
+        "es": {
+          "name": "Actividad en directo"
+        },
+        "it": {
+          "name": "Attività Live"
+        },
+        "pl": {
+          "name": "Aktywności na żywo"
+        },
+        "ko": {
+          "name": "실시간 현황"
+        },
+        "nl": {
+          "name": "Live-activiteit"
+        },
+        "pt-BR": {
+          "name": "Atividade ao Vivo"
+        },
+        "ru": {
+          "name": "Живые активности"
+        }
+      },
+      "anchors": [
+        {
+          "key": "admin.pushRelay.seesWhen",
+          "form": "name",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": ["actividad en vivo", "actividades en vivo"],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "guardian",
+      "description": "A person who looks after a managed profile.",
+      "wire": "grant role GUARDIAN",
+      "terms": {
+        "de": {
+          "name": "Betreuende Person",
+          "item": "betreuende Person"
+        },
+        "en": {
+          "name": "Guardian",
+          "item": "guardian"
+        },
+        "fr": {
+          "name": "Personne responsable",
+          "item": "personne responsable"
+        },
+        "es": {
+          "name": "Persona responsable",
+          "item": "persona responsable"
+        },
+        "it": {
+          "name": "Persona responsabile",
+          "item": "persona responsabile"
+        },
+        "pl": {
+          "name": "Opiekun",
+          "item": "opiekun"
+        },
+        "ko": {
+          "name": "보호자",
+          "item": "보호자"
+        },
+        "nl": {
+          "name": "Verzorger",
+          "item": "verzorger"
+        },
+        "pt-BR": {
+          "name": "Responsável",
+          "item": "responsável"
+        },
+        "ru": {
+          "name": "Ухаживающее лицо",
+          "item": "ухаживающее лицо"
+        }
+      },
+      "anchors": [
+        {
+          "key": "recordSharing.managed.guardianInviteLabel",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": ["Vormund"],
+        "en": [],
+        "fr": ["tuteur", "tutrice", "tutelle"],
+        "es": [
+          {
+            "text": "tutor",
+            "wholeWord": true
+          },
+          {
+            "text": "tutora",
+            "wholeWord": true
+          },
+          {
+            "text": "tutores",
+            "wholeWord": true
+          },
+          {
+            "text": "tutoras",
+            "wholeWord": true
+          },
+          "tutela"
+        ],
+        "it": ["tutor", "tutel"],
+        "pl": ["opiekując", "opiekun prawn"],
+        "ko": ["후견인", "법정 대리인"],
+        "nl": ["voogd"],
+        "pt-BR": ["guardião", "guardiões", "guardiã", "tutor legal"],
+        "ru": ["опекун", "попечител"]
+      }
+    },
+    {
+      "id": "managedProfile",
+      "description": "A health record for someone who does not sign in (a child, a relative).",
+      "wire": "account kind MANAGED",
+      "terms": {
+        "de": {
+          "name": "Verwaltetes Profil"
+        },
+        "en": {
+          "name": "Managed profile"
+        },
+        "fr": {
+          "name": "Profil géré"
+        },
+        "es": {
+          "name": "Perfil gestionado"
+        },
+        "it": {
+          "name": "Profilo gestito"
+        },
+        "pl": {
+          "name": "Profil zarządzany"
+        },
+        "ko": {
+          "name": "관리 프로필"
+        },
+        "nl": {
+          "name": "Beheerd profiel"
+        },
+        "pt-BR": {
+          "name": "Perfil gerenciado"
+        },
+        "ru": {
+          "name": "Управляемый профиль"
+        }
+      },
+      "anchors": [
+        {
+          "key": "recordSharing.lookingAfter.kindManaged",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["betreutes Profil", "betreuten Profil", "Kinderprofil"],
+        "en": ["child profile", "dependent profile"],
+        "fr": [],
+        "es": ["perfil administrado", "perfiles administrados"],
+        "it": [],
+        "pl": [
+          "zarządzany profil",
+          "zarządzanego profilu",
+          "zarządzanym profil",
+          "profil dziecka"
+        ],
+        "ko": ["자녀 프로필"],
+        "nl": ["kindprofiel"],
+        "pt-BR": ["perfil infantil", "perfil de dependente"],
+        "ru": ["детский профиль", "профиль ребёнка", "профиль ребенка"]
+      }
+    },
+    {
+      "id": "clinicianLink",
+      "description": "A read-only, passphrase-protected link to the record for a clinician.",
+      "wire": "route /c/[token]",
+      "terms": {
+        "de": {
+          "name": "Freigabelink",
+          "item": "Freigabelink"
+        },
+        "en": {
+          "name": "Share link",
+          "item": "share link"
+        },
+        "fr": {
+          "name": "Lien de partage",
+          "item": "lien de partage"
+        },
+        "es": {
+          "name": "Enlace para compartir",
+          "item": "enlace para compartir"
+        },
+        "it": {
+          "name": "Link di condivisione",
+          "item": "link di condivisione"
+        },
+        "pl": {
+          "name": "Link udostępniania",
+          "item": "link udostępniania"
+        },
+        "ko": {
+          "name": "공유 링크",
+          "item": "공유 링크"
+        },
+        "nl": {
+          "name": "Deellink",
+          "item": "deellink"
+        },
+        "pt-BR": {
+          "name": "Link de compartilhamento",
+          "item": "link de compartilhamento"
+        },
+        "ru": {
+          "name": "Ссылка общего доступа",
+          "item": "ссылка общего доступа"
+        }
+      },
+      "anchors": [
+        {
+          "key": "settings.sharing.createTitle",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": ["Freigabe-Link"],
+        "en": ["clinician link", "doctor share link"],
+        "fr": ["lien clinicien", "liens cliniciens"],
+        "es": [
+          "enlace compartido",
+          "enlaces compartidos",
+          "enlaces para profesionales"
+        ],
+        "it": ["link di condivisione con i medici"],
+        "pl": [
+          "link do udostępni",
+          "linki do udostępni",
+          "link dla lekarz",
+          "linki dla lekarz",
+          "linków dla lekarz",
+          "udostępniania dla lekarz"
+        ],
+        "ko": ["공유링크", "의료진 링크", "의료진용 링크"],
+        "nl": ["deel-link", "deellinks voor arts", "links voor zorgverlener"],
+        "pt-BR": [
+          "link para profissionais",
+          "links para profissionais",
+          "link para clínico"
+        ],
+        "ru": [
+          "ссылка для врач",
+          "ссылки для врач",
+          "ссылок для врач",
+          "ссылку для врач",
+          "общего доступа для врач"
+        ]
+      }
+    },
+    {
+      "id": "integrations",
+      "description": "Connected data sources (Withings, Apple Health, Oura ...) and their settings page.",
+      "terms": {
+        "de": {
+          "name": "Integrationen"
+        },
+        "en": {
+          "name": "Integrations"
+        },
+        "fr": {
+          "name": "Intégrations"
+        },
+        "es": {
+          "name": "Integraciones"
+        },
+        "it": {
+          "name": "Integrazioni"
+        },
+        "pl": {
+          "name": "Integracje"
+        },
+        "ko": {
+          "name": "연동"
+        },
+        "nl": {
+          "name": "Koppelingen"
+        },
+        "pt-BR": {
+          "name": "Integrações"
+        },
+        "ru": {
+          "name": "Интеграции"
+        }
+      },
+      "anchors": [
+        {
+          "key": "onboarding.tour.steps.integrations.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.integrations.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "dataSource",
+      "description": "One source that delivers readings.",
+      "terms": {
+        "de": {
+          "name": "Datenquelle",
+          "item": "Datenquelle"
+        },
+        "en": {
+          "name": "Data source",
+          "item": "data source"
+        },
+        "fr": {
+          "name": "Source de données",
+          "item": "source de données"
+        },
+        "es": {
+          "name": "Fuente de datos",
+          "item": "fuente de datos"
+        },
+        "it": {
+          "name": "Fonte di dati",
+          "item": "fonte di dati"
+        },
+        "pl": {
+          "name": "Źródło danych",
+          "item": "źródło danych"
+        },
+        "ko": {
+          "name": "데이터 소스",
+          "item": "데이터 소스"
+        },
+        "nl": {
+          "name": "Gegevensbron",
+          "item": "gegevensbron"
+        },
+        "pt-BR": {
+          "name": "Fonte de dados",
+          "item": "fonte de dados"
+        },
+        "ru": {
+          "name": "Источник данных",
+          "item": "источник данных"
+        }
+      },
+      "anchors": [
+        {
+          "key": "gettingStarted.items.dataSourceTitle",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": ["fonte dati", "fonti dati"],
+        "pl": [],
+        "ko": ["데이터 원본"],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "quietSource",
+      "description": "A source that usually delivers daily and has stopped.",
+      "wire": "digest reasons no_new_data, sync_stalled",
+      "terms": {
+        "de": {
+          "name": "verstummt"
+        },
+        "en": {
+          "name": "quiet"
+        },
+        "fr": {
+          "name": "silencieux"
+        },
+        "es": {
+          "name": "en silencio"
+        },
+        "it": {
+          "name": "in silenzio"
+        },
+        "pl": {
+          "name": "milczy"
+        },
+        "ko": {
+          "name": "조용"
+        },
+        "nl": {
+          "name": "stil"
+        },
+        "pt-BR": {
+          "name": "em silêncio"
+        },
+        "ru": {
+          "name": "молчит"
+        }
+      },
+      "anchors": [
+        {
+          "key": "settings.appleHealth.quietSince",
+          "form": "name",
+          "match": "contains"
+        },
+        {
+          "key": "notifications.syncStalled.title",
+          "form": "name",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": ["still seit"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "restingHeartRate",
+      "description": "The resting heart rate metric.",
+      "decision": "Ruhepuls is the everyday and clinical German word and was already used 43 times against 4; the other locales keep their standard resting-heart-rate term.",
+      "terms": {
+        "de": {
+          "name": "Ruhepuls"
+        },
+        "en": {
+          "name": "Resting heart rate"
+        },
+        "fr": {
+          "name": "Fréquence cardiaque au repos"
+        },
+        "es": {
+          "name": "Frecuencia cardíaca en reposo"
+        },
+        "it": {
+          "name": "Frequenza cardiaca a riposo"
+        },
+        "pl": {
+          "name": "Tętno spoczynkowe"
+        },
+        "ko": {
+          "name": "안정 시 심박수"
+        },
+        "nl": {
+          "name": "Rusthartslag"
+        },
+        "pt-BR": {
+          "name": "Frequência cardíaca em repouso"
+        },
+        "ru": {
+          "name": "ЧСС в покое"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRestingHeartRate",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "mood.dayContext.linkedRestingHeartRate",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.mood.factorCrosstab.metricRestingHeartRate",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.sources.metrics.restingHeartRate",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "cycle.insights.crosstab.metricRestingHeartRate",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "illness.vital.RESTING_HEART_RATE",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.today.vital.RESTING_HEART_RATE",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.milestone.metric.restingHeartRate",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Ruheherzfrequenz"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "visceralFat",
+      "description": "The visceral fat metric.",
+      "decision": "Viszeralfett, the compound every other surface already used.",
+      "terms": {
+        "de": {
+          "name": "Viszeralfett"
+        },
+        "en": {
+          "name": "Visceral fat"
+        },
+        "fr": {
+          "name": "Graisse viscérale"
+        },
+        "es": {
+          "name": "Grasa visceral"
+        },
+        "it": {
+          "name": "Grasso viscerale"
+        },
+        "pl": {
+          "name": "Tłuszcz trzewny"
+        },
+        "ko": {
+          "name": "내장지방"
+        },
+        "nl": {
+          "name": "Visceraal vet"
+        },
+        "pt-BR": {
+          "name": "Gordura visceral"
+        },
+        "ru": {
+          "name": "Висцеральный жир"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeVisceralFat",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.coach.metric.visceral_fat",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.visceralFat.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.visceralFat.chartTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.navVisceralFat",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurementReminders.types.VISCERAL_FAT",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["viszerales Fett", "viszeralen Fett"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "bloodGlucose",
+      "description": "The blood glucose metric.",
+      "decision": "Spanish and Polish use the one-word everyday term (Glucemia, Glikemia) as French, Italian and Portuguese do, already on the dashboard tile, the type name and every threshold; Dutch keeps Bloedglucose, the dominant and clinical form.",
+      "terms": {
+        "de": {
+          "name": "Blutzucker"
+        },
+        "en": {
+          "name": "Blood glucose"
+        },
+        "fr": {
+          "name": "Glycémie"
+        },
+        "es": {
+          "name": "Glucemia"
+        },
+        "it": {
+          "name": "Glicemia"
+        },
+        "pl": {
+          "name": "Glikemia"
+        },
+        "ko": {
+          "name": "혈당"
+        },
+        "nl": {
+          "name": "Bloedglucose"
+        },
+        "pt-BR": {
+          "name": "Glicemia"
+        },
+        "ru": {
+          "name": "Глюкоза крови"
+        }
+      },
+      "anchors": [
+        {
+          "key": "dashboard.metric.title.glucose",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurements.typeBloodGlucose",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.bloodGlucose.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "onboarding.flow.areas.options.glucose",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "cycle.insights.crosstab.metricBloodGlucose",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurementReminders.types.BLOOD_GLUCOSE",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.today.vital.BLOOD_GLUCOSE",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "reportSelection.groupGlucose",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": ["glucosa en sangre"],
+        "it": [],
+        "pl": ["glukoza we krwi", "glukozy we krwi", "poziom glukozy"],
+        "ko": [],
+        "nl": ["bloedsuiker"],
+        "pt-BR": ["glicose no sangue"],
+        "ru": []
+      }
+    },
+    {
+      "id": "oxygenSaturation",
+      "description": "The SpO2 metric.",
+      "decision": "The full metric name everywhere it is named, the Coach chip included; Dutch Zuurstofsaturatie, the clinical term the type name and the dashboard already used.",
+      "terms": {
+        "de": {
+          "name": "Sauerstoffsättigung"
+        },
+        "en": {
+          "name": "Oxygen saturation"
+        },
+        "fr": {
+          "name": "Saturation en oxygène"
+        },
+        "es": {
+          "name": "Saturación de oxígeno"
+        },
+        "it": {
+          "name": "Saturazione di ossigeno"
+        },
+        "pl": {
+          "name": "Saturacja tlenem"
+        },
+        "ko": {
+          "name": "산소포화도"
+        },
+        "nl": {
+          "name": "Zuurstofsaturatie"
+        },
+        "pt-BR": {
+          "name": "Saturação de oxigênio"
+        },
+        "ru": {
+          "name": "Насыщение кислородом"
+        }
+      },
+      "anchors": [
+        {
+          "key": "dashboard.metric.title.oxygenSaturation",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurements.typeOxygenSaturation",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.coach.metric.spo2",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.oxygenSaturation.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.oxygenSaturation.chartTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.sources.metrics.spo2",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "measurementReminders.types.OXYGEN_SATURATION",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "illness.vital.OXYGEN_SATURATION",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "daily.today.vital.OXYGEN_SATURATION",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": ["zuurstofverzadiging", "bloedzuurstof"],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "pulseUnit",
+      "description": "The unit after a pulse or heart-rate value.",
+      "decision": "bpm, the international symbol every chart already renders from code in every locale; Russian keeps уд/мин, which its whole bundle uses.",
+      "terms": {
+        "de": {
+          "name": "bpm"
+        },
+        "en": {
+          "name": "bpm"
+        },
+        "fr": {
+          "name": "bpm"
+        },
+        "es": {
+          "name": "bpm"
+        },
+        "it": {
+          "name": "bpm"
+        },
+        "pl": {
+          "name": "bpm"
+        },
+        "ko": {
+          "name": "bpm"
+        },
+        "nl": {
+          "name": "bpm"
+        },
+        "pt-BR": {
+          "name": "bpm"
+        },
+        "ru": {
+          "name": "уд/мин"
+        }
+      },
+      "anchors": [
+        {
+          "key": "dashboard.metric.unit.pulse",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.deviceScore.unitBpm",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [
+          {
+            "text": "lpm",
+            "caseSensitive": true,
+            "wholeWord": true
+          },
+          {
+            "text": "ppm",
+            "caseSensitive": true,
+            "wholeWord": true
+          }
+        ],
+        "it": [],
+        "pl": ["ud./min"],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "workout",
+      "description": "A recorded training session and the page that lists them.",
+      "decision": "German Training/Trainings, the native word the bundle already used 79 times and the one every other locale's equivalent matches; Dutch the same (Trainingen). English keeps Workouts.",
+      "terms": {
+        "de": {
+          "name": "Trainings",
+          "item": "Training"
+        },
+        "en": {
+          "name": "Workouts",
+          "item": "workout"
+        },
+        "fr": {
+          "name": "Entraînements",
+          "item": "entraînement"
+        },
+        "es": {
+          "name": "Entrenamientos",
+          "item": "entrenamiento"
+        },
+        "it": {
+          "name": "Allenamenti",
+          "item": "allenamento"
+        },
+        "pl": {
+          "name": "Treningi",
+          "item": "trening"
+        },
+        "ko": {
+          "name": "운동",
+          "item": "운동"
+        },
+        "nl": {
+          "name": "Trainingen",
+          "item": "training"
+        },
+        "pt-BR": {
+          "name": "Treinos",
+          "item": "treino"
+        },
+        "ru": {
+          "name": "Тренировки",
+          "item": "тренировка"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.workouts.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "modules.workouts.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "doctorReport.workouts.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.coach.metric.workouts",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.integrationFreshness.workouts",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "nav.capture.workout",
+          "form": "item",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Workout"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": ["workout"],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "notNow",
+      "description": "The button that puts a suggestion off without declining it for good.",
+      "decision": "Nicht jetzt, the order five of seven German buttons used.",
+      "terms": {
+        "de": {
+          "name": "Nicht jetzt"
+        },
+        "en": {
+          "name": "Not now"
+        },
+        "fr": {
+          "name": "Pas maintenant"
+        },
+        "es": {
+          "name": "Ahora no"
+        },
+        "it": {
+          "name": "Non ora"
+        },
+        "pl": {
+          "name": "Nie teraz"
+        },
+        "ko": {
+          "name": "나중에"
+        },
+        "nl": {
+          "name": "Niet nu"
+        },
+        "pt-BR": {
+          "name": "Agora não"
+        },
+        "ru": {
+          "name": "Не сейчас"
+        }
+      },
+      "anchors": [
+        {
+          "key": "coach.reminderSuggestion.dismiss",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "coach.suggestedAction.dismiss",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.coach.plan.decline",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.aiSetupHint.dismiss",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.ai.consent.request.dismiss",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "admin.serverSetup.notice.dismiss",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "vaccinations.booster.decline",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          {
+            "text": "Jetzt nicht",
+            "caseSensitive": true
+          }
+        ],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "flightsClimbed",
+      "description": "The flights-climbed metric: floors gone up per day.",
+      "decision": "The value counts floors, so it is named for floors as every other locale already did (Stockwerke, Pisos subidos, Beklommen verdiepingen); Treppe stays for stair speed, which does measure stairs.",
+      "terms": {
+        "de": {
+          "name": "Stockwerke"
+        },
+        "en": {
+          "name": "Flights climbed"
+        },
+        "fr": {
+          "name": "Étages gravis"
+        },
+        "es": {
+          "name": "Pisos subidos"
+        },
+        "it": {
+          "name": "Piani saliti"
+        },
+        "pl": {
+          "name": "Pokonane piętra"
+        },
+        "ko": {
+          "name": "오른 층수"
+        },
+        "nl": {
+          "name": "Beklommen verdiepingen"
+        },
+        "pt-BR": {
+          "name": "Andares subidos"
+        },
+        "ru": {
+          "name": "Этажи"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeFlightsClimbed",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "charts.flights",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.coach.metric.flights",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.flightsClimbed.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "settings.sections.sources.metrics.flightsClimbed",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Treppendaten", "Treppenwerte"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": ["trappen gelopen", "gelopen trappen", "trappen beklommen"],
+        "pt-BR": [],
+        "ru": []
+      }
+    }
+  ],
+  "allow": [
+    {
+      "locale": "en",
+      "key": "palette.keywords.careCalendar",
+      "text": "appointment",
+      "reason": "Search keyword: someone typing the everyday word still finds the care calendar."
+    },
+    {
+      "locale": "en",
+      "key": "mood.context.eventType.appointment",
+      "text": "appointment",
+      "reason": "A mood context event of any kind (a meeting, an errand), not a recorded doctor's visit."
+    },
+    {
+      "locale": "en",
+      "key": "nutrients.sparseNote",
+      "text": "health report",
+      "reason": "\"Apple Health report the same day\": the verb, not the doctor report."
+    },
+    {
+      "locale": "de",
+      "key": "day.movement.places",
+      "text": "Besuch",
+      "reason": "\"Besuchte Orte\" are places visited on a walk, not doctor's visits."
+    },
+    {
+      "locale": "de",
+      "key": "labs.aliases.empty",
+      "text": "Labore",
+      "reason": "Laboratories that print a result, not the lab results area."
+    },
+    {
+      "locale": "de",
+      "key": "palette.keywords.emergencyCard",
+      "text": "Notfallausweis",
+      "reason": "Search keyword: the everyday word still finds the emergency card."
+    },
+    {
+      "locale": "de",
+      "key": "emergencyCard.appleWallet.more.lock",
+      "text": "Notfallpass",
+      "reason": "Apple's German name for the Health app's Medical ID, which this sentence points to."
+    },
+    {
+      "locale": "fr",
+      "key": "palette.keywords.fhirBundle",
+      "text": "dossier médical",
+      "reason": "Search keyword: the everyday word for a medical record still finds the FHIR bundle import."
+    },
+    {
+      "locale": "it",
+      "key": "mood.context.eventType.appointment",
+      "text": "appuntament",
+      "reason": "A mood context event of any kind (a meeting, an errand), not a recorded doctor's visit."
+    },
+    {
+      "locale": "it",
+      "key": "palette.keywords.careCalendar",
+      "text": "appuntament",
+      "reason": "Search keyword: someone typing the everyday word still finds the care calendar."
+    },
+    {
+      "locale": "it",
+      "key": "palette.keywords.fhirBundle",
+      "text": "cartella clinica",
+      "reason": "Search keyword: the everyday word for a medical record still finds the FHIR import."
+    },
+    {
+      "locale": "it",
+      "key": "emergencyCard.appleWallet.more.lock",
+      "text": "cartella clinica",
+      "reason": "Apple's Italian name for the Health app's Medical ID, which this sentence points to."
+    },
+    {
+      "locale": "es",
+      "key": "achievements.badges.hiddenDoctorPdf.title",
+      "text": "visita",
+      "reason": "Badge name \"House call\" (a doctor visiting at home), a pun, not a recorded visit."
+    },
+    {
+      "locale": "pt-BR",
+      "key": "mood.context.eventType.appointment",
+      "text": "compromisso",
+      "reason": "A mood context event of any kind (a meeting, an errand), not a recorded doctor's visit."
+    },
+    {
+      "locale": "pt-BR",
+      "key": "admin.section.backups.restoreSkippedFactCommitment",
+      "text": "compromisso",
+      "reason": "A health-profile fact commitment in a restore summary, not a doctor's visit."
+    },
+    {
+      "locale": "nl",
+      "key": "palette.keywords.careCalendar",
+      "text": "afspraken",
+      "reason": "Search keyword: someone typing the everyday word still finds the care calendar."
+    },
+    {
+      "locale": "nl",
+      "key": "mood.context.eventType.appointment",
+      "text": "afspraak",
+      "reason": "A mood context event of any kind (a meeting, an errand), not a recorded doctor's visit."
+    },
+    {
+      "locale": "nl",
+      "key": "cycle.feed.description",
+      "text": "afspraken",
+      "reason": "Calendar entries in the person's own calendar app, not doctor's visits."
+    },
+    {
+      "locale": "nl",
+      "key": "cycle.feed.titles",
+      "text": "afspraken",
+      "reason": "Titles of calendar entries in the person's own calendar app, not doctor's visits."
+    },
+    {
+      "locale": "nl",
+      "key": "cycle.feed.forecastStyleHint.MARGIN",
+      "text": "afspraken",
+      "reason": "Calendar entries in the person's own calendar app, not doctor's visits."
+    },
+    {
+      "locale": "nl",
+      "key": "cycle.feed.forecastStyleHint.BAND",
+      "text": "afspraak",
+      "reason": "A calendar entry in the person's own calendar app, not a doctor's visit."
+    }
+  ],
+  "spelling": {
+    "en": {
+      "decision": "American spelling, which the bundle already used for every -ize verb; British medical spellings (haemoglobin, glycaemia, oestrogen) and -ise forms are retired.",
+      "forbidden": [
+        "behaviour",
+        "catalogue",
+        "haemoglobin",
+        "haematocrit",
+        "haemat",
+        "haemorrh",
+        "anaem",
+        "oestr",
+        "oesoph",
+        "oedem",
+        "diarrhoea",
+        "dyspnoea",
+        "paediatr",
+        "glycaem",
+        "ischaem",
+        "colour",
+        "licence",
+        "defence",
+        "kilometre",
+        "centimetre",
+        "millimetre",
+        {
+          "text": "metre",
+          "wholeWord": true
+        },
+        {
+          "text": "metres",
+          "wholeWord": true
+        },
+        "cancelled",
+        "modelled",
+        "travelled",
+        "labelled",
+        "greys",
+        "summaris",
+        "recognis",
+        "penalis",
+        "personalis",
+        "customis",
+        "renormalis",
+        "normalis",
+        "synchronis",
+        "generalis",
+        "authoris",
+        "prioritis",
+        "categoris",
+        {
+          "text": "synthesise",
+          "wholeWord": true
+        },
+        {
+          "text": "synthesising",
+          "wholeWord": true
+        },
+        {
+          "text": "characterise",
+          "wholeWord": true
+        },
+        {
+          "text": "characterised",
+          "wholeWord": true
+        },
+        {
+          "text": "organise",
+          "wholeWord": true
+        },
+        {
+          "text": "organised",
+          "wholeWord": true
+        },
+        {
+          "text": "analyse",
+          "wholeWord": true
+        },
+        {
+          "text": "analysed",
+          "wholeWord": true
+        },
+        {
+          "text": "analysing",
+          "wholeWord": true
+        }
+      ]
+    }
+  }
+}

@@ -390,7 +390,7 @@ describe("the lab readings written out", () => {
         "en",
       ),
     );
-    expect(withLabs).toContain("Lab value, as measured");
+    expect(withLabs).toContain("Lab result, as measured");
     expect(withLabs).toContain("Outside the reference range");
     expect(withLabs).toContain("Reference range");
   });

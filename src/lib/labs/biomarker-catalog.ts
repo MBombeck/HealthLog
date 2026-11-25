@@ -788,11 +788,14 @@ export const LAB_NAME_ALIASES: readonly AnalyteAliases[] = [
   },
   {
     key: "hemoglobin",
-    names: ["hb", "hgb", "hemogl", "hemoglobine", "혈색소"],
+    // "haemoglobin": the British spelling a report may still print, now that
+    // the English catalog name is spelled the American way.
+    names: ["hb", "hgb", "hemogl", "hemoglobine", "haemoglobin", "혈색소"],
   },
   {
     key: "hematocrit",
     names: [
+      "haematocrit",
       "hct",
       "pcv",
       "crit",

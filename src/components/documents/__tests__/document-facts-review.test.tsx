@@ -138,7 +138,7 @@ describe("<DocumentFactsSection>", () => {
       />,
     );
     expect(html).toContain('data-slot="document-facts-extract"');
-    expect(html).toContain("Extract lab values");
+    expect(html).toContain("Extract lab results");
     // Honest about the mechanism: stored text, review-first, no auto-save.
     expect(html).toContain("nothing is saved automatically");
     // No background read is running, so no run line takes the hint's place.

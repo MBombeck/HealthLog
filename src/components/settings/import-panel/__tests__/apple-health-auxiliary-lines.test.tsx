@@ -82,7 +82,7 @@ describe("<AppleHealthAuxiliaryLines>", () => {
       labs: { discovered: 3, imported: 3, markersCreated: 2 },
     });
     expect(html).not.toContain("does not discard");
-    expect(html).toContain("2 new markers were added to Labs.");
+    expect(html).toContain("2 new markers were added to Lab results.");
     expect(html).toContain('href="/labs"');
   });
 

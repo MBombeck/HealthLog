@@ -215,7 +215,7 @@ describe("doctor report v1.44 sections", () => {
     // The fitted window (Dec to Apr) reaches outside the Feb to May report
     // period; the report says which days the figures rest on.
     expect(text).toMatch(
-      /analysed \S+ to \S+, which can reach beyond the report period/,
+      /analyzed \S+ to \S+, which can reach beyond the report period/,
     );
     expect(text).toContain("Other drug started on");
     expect(text).toContain("not a proven effect");

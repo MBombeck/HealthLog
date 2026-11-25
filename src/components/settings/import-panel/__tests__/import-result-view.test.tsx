@@ -151,7 +151,7 @@ describe("<CsvImportResultView> — skip reasons", () => {
     );
     expect(html).toContain("<details");
     expect(html).toContain("Show every skipped row");
-    expect(html).toContain("Line 2: unit not recognised for this type");
+    expect(html).toContain("Line 2: unit not recognized for this type");
   });
 
   it("labels a reason it does not know rather than leaking the raw token", () => {
