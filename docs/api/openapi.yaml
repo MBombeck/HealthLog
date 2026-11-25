@@ -49529,6 +49529,7 @@ components:
               - profile.emergency-card-apple-wallet
               - notifications.sync-stalled
               - insights.same-time-daily-total
+              - push.live-activity-token-state
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -49626,7 +49627,10 @@ components:
             `insights.same-time-daily-total`: SAME_TIME_BASELINE on GET /api/insights/derived carries mode: hourly is
             the hour-by-hour comparison, daily_total compares today's running total from a once-a-day source with the
             usual full day (dayRangeReached not_yet, within or above; gated reasons learning_usual_total and
-            no_total_today)."
+            no_total_today). `push.live-activity-token-state`: push.device on /api/auth/me and in the POST /api/devices
+            answer carries liveActivityStartToken (the server holds a push-to-start token the relay still takes) and
+            liveActivityPushToken (it holds the legacy Live Activity push token of the direct path), booleans only, so
+            the app re-sends a token only when the server lacks it."
       required:
         - version
         - buildSha
@@ -63666,6 +63670,17 @@ components:
           type: boolean
           description: "The relay holds the device's Live Activity consent: start and update over the relay. Withdrawn with the
             relay consent."
+        liveActivityStartToken:
+          type: boolean
+          description: "v1.50.0. The server holds a push-to-start token for this device (`liveActivityStart`) that the relay still
+            takes: the token, its `hl-la-start-v1` signature and a statement younger than the relay's 30-day window.
+            False means a relay start cannot happen until the app sends `liveActivityStart` again. Never the token
+            itself."
+        liveActivityPushToken:
+          type: boolean
+          description: v1.50.0. The server holds the device's legacy Live Activity push token (`liveActivityPushToken` on `POST
+            /api/devices`), the one the direct path updates and ends. Per-Activity tokens (`liveActivityTokens`) are not
+            counted here. Never the token itself.
         liveActivityStarted:
           anyOf:
             - type: object
@@ -63757,6 +63772,8 @@ components:
         - senderKeys
         - relayInstanceId
         - liveActivityConsent
+        - liveActivityStartToken
+        - liveActivityPushToken
         - liveActivityStarted
         - liveActivityStarts
       additionalProperties: false

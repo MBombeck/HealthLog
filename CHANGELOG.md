@@ -24,6 +24,8 @@
 
 - The admin's push relay card says in one line why a medication's Live Activity cannot start on the admin's own iPhone: the operator switch `PUSH_RELAY_LIVE_ACTIVITY` is off, the iPhone has not allowed Live Activities over the relay, or it has sent no start token yet. `GET /api/admin/notifications/diagnostic` carries the same state per device as `liveActivityStart`.
 
+- `push.device` on `/api/auth/me` and in the `POST /api/devices` answer says whether the server holds the device's Live Activity tokens: `liveActivityStartToken` (a push-to-start token the relay still takes) and `liveActivityPushToken` (the legacy token of the direct path). Booleans only, never a token; the iPhone app re-sends a token only when the server lacks it. Feature key `push.live-activity-token-state`.
+
 ### Changed
 
 - Withings counts as a source that can go quiet when it delivered on most of the last 14 days, as a scale used every morning does. Its card then says since when nothing arrived and its owner is told once; the operator is never paged for it, since a person who stops weighing in is nothing an operator can fix. A Withings connection used now and then is watched for errors only, as before.

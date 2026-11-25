@@ -42,6 +42,7 @@ export const SERVER_FEATURES = [
   "profile.emergency-card-apple-wallet",
   "notifications.sync-stalled",
   "insights.same-time-daily-total",
+  "push.live-activity-token-state",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -118,4 +119,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "SYNC_STALLED is a notification category (default on, toggled per channel in the notification preferences): once per stall and in daytime, the owner is told that a daily source went quiet, among them an iPhone whose Apple Health upload stopped; GET /api/integrations/healthkit carries quietDevices (model, quietSince). The push names the source as a connection key (apple-health, garmin, google-health, nightscout, oura, polar, whoop, withings), and its deep link is always /settings/integrations#<source>, the source's card on the integrations page: a direct push carries it as url, a relay push carries only d.source and the client builds the same path.",
   "insights.same-time-daily-total":
     "SAME_TIME_BASELINE on GET /api/insights/derived carries mode: hourly is the hour-by-hour comparison, daily_total compares today's running total from a once-a-day source with the usual full day (dayRangeReached not_yet, within or above; gated reasons learning_usual_total and no_total_today).",
+  "push.live-activity-token-state":
+    "push.device on /api/auth/me and in the POST /api/devices answer carries liveActivityStartToken (the server holds a push-to-start token the relay still takes) and liveActivityPushToken (it holds the legacy Live Activity push token of the direct path), booleans only, so the app re-sends a token only when the server lacks it.",
 };
