@@ -22,6 +22,7 @@ import {
 import {
   MAX_CARD_LINES,
   MORNING_CARD_KINDS,
+  MORNING_CARD_TITLE_KEYS,
   MORNING_LEAD_KEYS,
 } from "@/lib/daily/morning";
 import { dismissPriorityItemSchema } from "@/lib/validations/daily";
@@ -349,6 +350,12 @@ const morningRingSchema = z
   })
   .meta({ id: "DailyMorningRing" });
 
+const morningCardTitleKey = z
+  .enum(Object.values(MORNING_CARD_TITLE_KEYS))
+  .describe(
+    "Closed set of title message keys: `daily.morningCard.title.night` (Last night), `daily.morningCard.title.todayDifferent` (Different today), `daily.morningCard.title.toDo` (To do today). Glossary terms.",
+  );
+
 const morningCardSchema = z
   .object({
     kind: z
@@ -356,6 +363,10 @@ const morningCardSchema = z
       .describe(
         "`night`: last night (sleep score ring only for last night, duration against the usual, the device's own sleep score). `today_different`: readiness, or the values outside their usual range today when there are any.",
       ),
+    titleKey: morningCardTitleKey,
+    title: z
+      .string()
+      .describe("The title worded in the response language (`lead.language`)."),
     ring: morningRingSchema
       .nullable()
       .describe(
@@ -365,7 +376,12 @@ const morningCardSchema = z
       .array(
         z.object({
           text: z.string().describe("Localised, resolved server-side."),
-          href: z.string().nullable(),
+          href: z
+            .string()
+            .nullable()
+            .describe(
+              "Null where the card's own `href` is the target, which is the usual case.",
+            ),
         }),
       )
       .max(MAX_CARD_LINES)
@@ -408,12 +424,17 @@ export const dailyMorningResponse = z
       .describe(
         "Night first, then what is different today; a card without content is absent. The third card of the morning ('to do today') is `DailyDigest.worthALook` as delivered, with the digest's medications and cycle facts from `today`.",
       ),
+    toDo: z
+      .object({ titleKey: morningCardTitleKey, title: z.string() })
+      .describe(
+        "The title of the third card, which the morning does not carry: clients build it from the digest's rows.",
+      ),
     generatedAt: z.string().describe("ISO-8601 instant the morning was read."),
   })
   .meta({
     id: "DailyMorning",
     description:
-      "The morning read on the start page: one true sentence chosen by fixed rules and up to two cards. Data, never model text; no module or AI gate.",
+      "The morning read on the start page: one true sentence chosen by fixed rules and up to two cards. Data, never model text; no module or AI gate. The third card, 'To do today', is built by the client from `GET /api/daily/digest`: the medications fact and the cycle day from `today`, and the rows of `worthALook`. It replaces the separate 'Worth a look' list wherever the morning is shown, so those rows are never rendered twice. Every text is worded on the server in one language: on a Bearer request the `Accept-Language` when it names a shipped language, otherwise the account's language; in a browser, the locale cookie or the account's language. `lead.language` names it.",
   });
 
 export const dailyPaths: NonNullable<ZodOpenApiObject["paths"]> = {

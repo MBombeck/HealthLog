@@ -136,22 +136,6 @@ export function morningCacheKey(userId: string, dateKey: string): string {
   return `${userId}|daily-morning|${dateKey}`;
 }
 
-/**
- * The freshness S1a publishes on `ReadinessValue` (`fresh`, `asOfDay`), read
- * through a guard so a value without it counts as not fresh: no number and no
- * band from readings that may be old.
- */
-export function readinessFreshnessOf(value: ReadinessValue): {
-  fresh: boolean;
-  asOfDay: string | null;
-} {
-  const v = value as ReadinessValue & { fresh?: unknown; asOfDay?: unknown };
-  return {
-    fresh: v.fresh === true,
-    asOfDay: typeof v.asOfDay === "string" ? v.asOfDay : null,
-  };
-}
-
 async function readVitals(
   userId: string,
   profile: Awaited<ReturnType<typeof loadBaselineProfile>>,
@@ -188,6 +172,7 @@ async function readReadiness(
   userId: string,
   profile: Awaited<ReturnType<typeof loadBaselineProfile>>,
   now: Date,
+  tz: string,
 ): Promise<MorningReadiness | null> {
   try {
     const derived = await computeDerivedMetric({
@@ -195,10 +180,12 @@ async function readReadiness(
       userId,
       profile,
       now,
+      tz,
     });
     if (derived.status !== "ok" || !derived.value) return null;
+    // Not fresh means no number, no band and no sentence (`fresh`, `asOfDay`).
     const value = derived.value as ReadinessValue;
-    const { fresh, asOfDay } = readinessFreshnessOf(value);
+    const { fresh, asOfDay } = value;
     return {
       score: value.score,
       band: value.band as Band,
@@ -219,6 +206,7 @@ async function readSleepScore(
   userId: string,
   profile: Awaited<ReturnType<typeof loadBaselineProfile>>,
   now: Date,
+  tz: string,
 ): Promise<MorningSleepScore | null> {
   try {
     const derived = await computeDerivedMetric({
@@ -226,6 +214,7 @@ async function readSleepScore(
       userId,
       profile,
       now,
+      tz,
     });
     if (derived.status !== "ok" || !derived.value) return null;
     const value = derived.value as SleepScoreValue;
@@ -290,10 +279,10 @@ function loadMorningExtrasCached(
       const [vitals, readiness, sleepScore, deviceScores] = await Promise.all([
         readVitals(user.id, profile, now, user.timezone),
         modules.recovery
-          ? readReadiness(user.id, profile, now)
+          ? readReadiness(user.id, profile, now, user.timezone)
           : Promise.resolve(null),
         modules.sleep
-          ? readSleepScore(user.id, profile, now)
+          ? readSleepScore(user.id, profile, now, user.timezone)
           : Promise.resolve(null),
         readDeviceScores(user.id, now),
       ]);

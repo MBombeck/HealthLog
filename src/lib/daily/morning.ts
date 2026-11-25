@@ -118,8 +118,24 @@ export interface DailyMorningLine {
   href: string | null;
 }
 
+/**
+ * The message key of each card's title, a closed set: the two cards the
+ * morning carries and the "to do today" card a client builds from the digest.
+ */
+export const MORNING_CARD_TITLE_KEYS = {
+  night: "daily.morningCard.title.night",
+  today_different: "daily.morningCard.title.todayDifferent",
+  to_do: "daily.morningCard.title.toDo",
+} as const;
+
+export type MorningCardTitleKey =
+  (typeof MORNING_CARD_TITLE_KEYS)[keyof typeof MORNING_CARD_TITLE_KEYS];
+
 export interface DailyMorningCard {
   kind: MorningCardKind;
+  titleKey: MorningCardTitleKey;
+  /** The title worded in the response language. */
+  title: string;
   ring: DailyMorningRing | null;
   lines: DailyMorningLine[];
   sourceValues: DeviceSourceValue[];
@@ -138,6 +154,11 @@ export interface DailyMorning {
   lead: DailyMorningLead;
   /** Night first, then what is different today; never padded. */
   cards: DailyMorningCard[];
+  /**
+   * The title of the third card, which clients build from the digest's rows
+   * (medications fact, `worthALook`, cycle day), worded like the others.
+   */
+  toDo: { titleKey: MorningCardTitleKey; title: string };
   generatedAt: string;
 }
 
@@ -513,6 +534,14 @@ export function buildMorningLead(
   return lead("nothing", t("daily.lead.nothingYet"));
 }
 
+function cardTitle(
+  kind: keyof typeof MORNING_CARD_TITLE_KEYS,
+  t: Translate,
+): { titleKey: MorningCardTitleKey; title: string } {
+  const titleKey = MORNING_CARD_TITLE_KEYS[kind];
+  return { titleKey, title: t(titleKey) };
+}
+
 function sleepLine(sleep: TodaySleep, t: Translate): string {
   const params = {
     duration: formatDurationMinutes(Math.round(sleep.minutes), t),
@@ -554,6 +583,7 @@ function nightCard(
   }
   return {
     kind: "night",
+    ...cardTitle("night", t),
     // A ring only for last night; an older night's score is not this morning's.
     ring:
       score && score.night === input.todayKey
@@ -579,6 +609,7 @@ function todayDifferentCard(
   if (facts.outside.length > 0) {
     return {
       kind: "today_different",
+      ...cardTitle("today_different", t),
       ring: null,
       lines: facts.outside.slice(0, MAX_CARD_LINES).map((v) => ({
         text: t("daily.morningCard.vitalOutside", {
@@ -641,6 +672,7 @@ function todayDifferentCard(
     }
     return {
       kind: "today_different",
+      ...cardTitle("today_different", t),
       ring,
       lines: lines.slice(0, MAX_CARD_LINES),
       sourceValues,
@@ -650,6 +682,7 @@ function todayDifferentCard(
   if (sourceValues.length > 0) {
     return {
       kind: "today_different",
+      ...cardTitle("today_different", t),
       ring: null,
       lines: [],
       sourceValues,
@@ -672,6 +705,7 @@ export function buildDailyMorning(
   return {
     lead: buildMorningLead(input, t),
     cards,
+    toDo: cardTitle("to_do", t),
     generatedAt: input.now.toISOString(),
   };
 }

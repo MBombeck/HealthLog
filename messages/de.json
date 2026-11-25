@@ -14062,6 +14062,11 @@
         "recoveryGeneric": "{source} Erholung",
         "sleepScore": "{source} Schlafscore",
         "sleepPerformance": "WHOOP Sleep Performance"
+      },
+      "title": {
+        "night": "Letzte Nacht",
+        "todayDifferent": "Heute anders",
+        "toDo": "Heute zu tun"
       }
     }
   },

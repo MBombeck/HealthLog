@@ -17,7 +17,9 @@ import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 import { loadDailyMorning } from "@/lib/daily/morning-load";
 import { dailyMorningResponse } from "@/lib/openapi/routes/daily";
 
-import { cookieJar } from "./mock-next-headers";
+import { hashToken } from "@/lib/auth/hmac";
+
+import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 vi.mock("next/headers", async () => {
@@ -51,6 +53,7 @@ beforeEach(async () => {
   await truncateAllTables(getPrismaClient());
   __resetAllCachesForTests();
   cookieJar.clear();
+  headerJar.clear();
 });
 
 async function seedUser(
@@ -369,5 +372,53 @@ describe("the morning read on a real record", () => {
     expect(morning.lead.text).toBe(
       "Blood pressure reached 184/122 mmHg in the last 24 hours.",
     );
+  });
+
+  it("words every text in the app's language on a Bearer request, else the account's", async () => {
+    await seedUser("m-bearer", { locale: "fr" });
+    const raw = "hlk_morning-bearer".padEnd(20, "0");
+    await getPrismaClient().apiToken.create({
+      data: {
+        userId: "m-bearer",
+        name: "morning-language",
+        tokenHash: hashToken(raw),
+        permissions: ["*"],
+      },
+    });
+    headerJar.set("authorization", `Bearer ${raw}`);
+    const { GET } = await import("@/app/api/daily/morning/route");
+    const call = async (acceptLanguage: string | null) => {
+      const headers = new Headers({ authorization: `Bearer ${raw}` });
+      if (acceptLanguage) headers.set("accept-language", acceptLanguage);
+      const res = await (
+        GET as unknown as (r: NextRequest) => Promise<Response>
+      )(new NextRequest("http://localhost/api/daily/morning", { headers }));
+      expect(res.status).toBe(200);
+      return ((await res.json()) as { data: unknown }).data as {
+        lead: { text: string; language: string };
+        toDo: { titleKey: string; title: string };
+      };
+    };
+
+    const german = await call("de-DE,de;q=0.9");
+    expectValid(german);
+    expect(german.lead).toMatchObject({
+      language: "de",
+      text: "Heute noch keine Werte.",
+    });
+    expect(german.toDo).toEqual({
+      titleKey: "daily.morningCard.title.toDo",
+      title: "Heute zu tun",
+    });
+
+    // No shipped language in the header: the account's, never English.
+    for (const header of [null, "sv-SE"]) {
+      const french = await call(header);
+      expect(french.lead).toMatchObject({
+        language: "fr",
+        text: "Pas encore de valeurs aujourd'hui.",
+      });
+      expect(french.toDo.title).toBe("À faire aujourd'hui");
+    }
   });
 });

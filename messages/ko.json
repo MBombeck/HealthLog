@@ -14062,6 +14062,11 @@
         "recoveryGeneric": "{source} 회복",
         "sleepScore": "{source} 수면 점수",
         "sleepPerformance": "WHOOP Sleep Performance"
+      },
+      "title": {
+        "night": "어젯밤",
+        "todayDifferent": "오늘 달라진 점",
+        "toDo": "오늘 할 일"
       }
     }
   },

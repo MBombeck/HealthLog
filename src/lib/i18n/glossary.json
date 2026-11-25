@@ -4388,6 +4388,174 @@
         "pt-BR": [],
         "ru": []
       }
+    },
+    {
+      "id": "morningNight",
+      "description": "The morning card about last night.",
+      "wire": "DailyMorningCard titleKey daily.morningCard.title.night",
+      "terms": {
+        "de": {
+          "name": "Letzte Nacht"
+        },
+        "en": {
+          "name": "Last night"
+        },
+        "fr": {
+          "name": "La nuit dernière"
+        },
+        "es": {
+          "name": "Anoche"
+        },
+        "it": {
+          "name": "Stanotte"
+        },
+        "pl": {
+          "name": "Ostatnia noc"
+        },
+        "ko": {
+          "name": "어젯밤"
+        },
+        "nl": {
+          "name": "Afgelopen nacht"
+        },
+        "pt-BR": {
+          "name": "Última noite"
+        },
+        "ru": {
+          "name": "Прошлая ночь"
+        }
+      },
+      "anchors": [
+        {
+          "key": "daily.morningCard.title.night",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "morningDifferentToday",
+      "description": "The morning card about what is different today.",
+      "wire": "DailyMorningCard titleKey daily.morningCard.title.todayDifferent",
+      "terms": {
+        "de": {
+          "name": "Heute anders"
+        },
+        "en": {
+          "name": "Different today"
+        },
+        "fr": {
+          "name": "Différent aujourd'hui"
+        },
+        "es": {
+          "name": "Distinto hoy"
+        },
+        "it": {
+          "name": "Diverso oggi"
+        },
+        "pl": {
+          "name": "Inaczej dziś"
+        },
+        "ko": {
+          "name": "오늘 달라진 점"
+        },
+        "nl": {
+          "name": "Anders vandaag"
+        },
+        "pt-BR": {
+          "name": "Diferente hoje"
+        },
+        "ru": {
+          "name": "Сегодня иначе"
+        }
+      },
+      "anchors": [
+        {
+          "key": "daily.morningCard.title.todayDifferent",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "morningToDo",
+      "description": "The morning card with what is to do today.",
+      "wire": "DailyMorningCard titleKey daily.morningCard.title.toDo",
+      "terms": {
+        "de": {
+          "name": "Heute zu tun"
+        },
+        "en": {
+          "name": "To do today"
+        },
+        "fr": {
+          "name": "À faire aujourd'hui"
+        },
+        "es": {
+          "name": "Para hoy"
+        },
+        "it": {
+          "name": "Da fare oggi"
+        },
+        "pl": {
+          "name": "Do zrobienia dziś"
+        },
+        "ko": {
+          "name": "오늘 할 일"
+        },
+        "nl": {
+          "name": "Vandaag te doen"
+        },
+        "pt-BR": {
+          "name": "Para hoje"
+        },
+        "ru": {
+          "name": "На сегодня"
+        }
+      },
+      "anchors": [
+        {
+          "key": "daily.morningCard.title.toDo",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
     }
   ],
   "allow": [

@@ -14062,6 +14062,11 @@
         "recoveryGeneric": "{source}-herstel",
         "sleepScore": "{source}-slaapscore",
         "sleepPerformance": "WHOOP Sleep Performance"
+      },
+      "title": {
+        "night": "Afgelopen nacht",
+        "todayDifferent": "Anders vandaag",
+        "toDo": "Vandaag te doen"
       }
     }
   },

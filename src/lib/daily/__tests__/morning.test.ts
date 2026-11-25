@@ -422,4 +422,25 @@ describe("morning cards", () => {
   it("carries no card for an empty account", () => {
     expect(buildDailyMorning(input(), t).cards).toEqual([]);
   });
+
+  it("titles every card from the closed set, worded in the response language", () => {
+    const de = getServerTranslator("de").t;
+    const m = buildDailyMorning(
+      input({
+        locale: "de",
+        sleepExpected: true,
+        sleepPending: true,
+        readiness: readiness(),
+      }),
+      de,
+    );
+    expect(m.cards.map((c) => [c.titleKey, c.title])).toEqual([
+      ["daily.morningCard.title.night", "Letzte Nacht"],
+      ["daily.morningCard.title.todayDifferent", "Heute anders"],
+    ]);
+    expect(m.toDo).toEqual({
+      titleKey: "daily.morningCard.title.toDo",
+      title: "Heute zu tun",
+    });
+  });
 });

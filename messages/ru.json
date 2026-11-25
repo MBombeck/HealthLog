@@ -14062,6 +14062,11 @@
         "recoveryGeneric": "Восстановление {source}",
         "sleepScore": "Балл сна {source}",
         "sleepPerformance": "WHOOP Sleep Performance"
+      },
+      "title": {
+        "night": "Прошлая ночь",
+        "todayDifferent": "Сегодня иначе",
+        "toDo": "На сегодня"
       }
     }
   },

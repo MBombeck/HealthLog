@@ -14062,6 +14062,11 @@
         "recoveryGeneric": "Recupero {source}",
         "sleepScore": "Punteggio del sonno {source}",
         "sleepPerformance": "WHOOP Sleep Performance"
+      },
+      "title": {
+        "night": "Stanotte",
+        "todayDifferent": "Diverso oggi",
+        "toDo": "Da fare oggi"
       }
     }
   },
