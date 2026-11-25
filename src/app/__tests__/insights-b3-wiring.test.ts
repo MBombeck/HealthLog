@@ -102,9 +102,9 @@ describe("v1.4.20 B3 — /api/analytics surfaces correlations", () => {
 });
 
 describe("v1.4.20 B3 — useInsightsAdvisorQuery lifts trendAnnotations", () => {
-  it("imports trendAnnotationsSchema for client-side validation", () => {
+  it("reads trendAnnotations through the shared reader the server gates with", () => {
     const src = load(ADVISOR_HOOK_PATH);
-    expect(src).toContain("trendAnnotationsSchema");
+    expect(src).toContain("readTrendAnnotations");
   });
 
   it("the lifted payload exposes `trendAnnotations`", () => {
@@ -113,8 +113,12 @@ describe("v1.4.20 B3 — useInsightsAdvisorQuery lifts trendAnnotations", () => 
     expect(src).toMatch(/payload\.trendAnnotations\s*=/);
   });
 
-  it("malformed cached annotations resolve to null (not a half-render)", () => {
+  // Malformed annotations resolving to null (not a half-render) is pinned
+  // on the reader itself, in src/lib/ai/__tests__/briefing-blocks.test.ts.
+  it("assigns the reader's answer, null included, to the payload", () => {
     const src = load(ADVISOR_HOOK_PATH);
-    expect(src).toMatch(/parsed\.success\s*\?\s*parsed\.data\s*:\s*null/);
+    expect(src).toMatch(
+      /payload\.trendAnnotations\s*=\s*readTrendAnnotations\(/,
+    );
   });
 });

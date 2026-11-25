@@ -120,12 +120,22 @@ const FEATURES_HASH = hashInsightSnapshot({
 
 const todayKey = new Date().toISOString().slice(0, 10);
 
+/** A finding row as the card reads it. */
+const FINDING = {
+  tone: "good",
+  headline: "BP steady",
+  detail: "Within target on most readings.",
+  delta: null,
+  sourceWindow: "30d",
+  sourceMetric: "bp",
+};
+
 /** A cached payload carrying a real briefing paragraph + sibling findings. */
 const CACHED = JSON.stringify({
   summary: "stable summary",
   dailyBriefing: {
     paragraph: "Yesterday's phrasing.",
-    keyFindings: [{ headline: "BP steady", tone: "good" }],
+    keyFindings: [FINDING],
   },
 });
 
@@ -183,9 +193,7 @@ describe("daily-briefing re-roll on unchanged data", () => {
     const data = (write![0] as { data: Record<string, unknown> }).data;
     const stored = JSON.parse(openInsightsCachedText(data) as string);
     expect(stored.dailyBriefing.paragraph).toBe("Today's fresh phrasing.");
-    expect(stored.dailyBriefing.keyFindings).toEqual([
-      { headline: "BP steady", tone: "good" },
-    ]);
+    expect(stored.dailyBriefing.keyFindings).toEqual([FINDING]);
     expect(stored.summary).toBe("stable summary");
     // New text, so a new generation moment.
     expect(Date.parse(stored.briefingGeneratedAt)).toBeGreaterThan(

@@ -6,14 +6,16 @@
 import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
 import { assertConsentForChain } from "@/lib/ai/consent-guard";
 import { resolveProviderChain } from "@/lib/ai/provider";
+import { briefingRequiredFor } from "@/lib/ai/briefing-blocks";
 import { recordBriefingFailure } from "@/lib/insights/briefing-failure-marker";
+import { parseInsightReply } from "@/lib/insights/insight-reply";
 import { annotate } from "@/lib/logging/context";
 
 import { commitBriefing } from "./commit";
 import { runFirstCompletion, type BriefingCall } from "./completion";
 import type { BriefingRefusal, GenerationContext } from "./context";
 import { prepareBriefingFeatures } from "./features";
-import { groundBriefing, parseBriefingReply } from "./grounding";
+import { groundBriefing } from "./grounding";
 import { buildBriefingPrompt } from "./prompt";
 
 /**
@@ -54,18 +56,28 @@ export async function generateBriefing(args: {
   const first = await runFirstCompletion(call);
   if (!first.ok) return first;
 
-  let insights;
-  try {
-    insights = parseBriefingReply(first.result.content);
-  } catch {
+  // The reply's parse runs the commit gate: a reply whose briefing the card
+  // could not render is a failed generation, recorded as one, and nothing
+  // is written, so the last good briefing stays.
+  const parsed = parseInsightReply(first.result.content, {
+    briefingRequired: briefingRequiredFor(prepared.features.signalsOfDay),
+  });
+  if (!parsed.ok) {
     // A 502 here triggers Cloudflare's HTML error rewrite, which breaks
     // `await res.json()` on the client; the refusal stays a JSON 422 so the
     // React Query mutation can read the body and surface a readable message.
     void recordBriefingFailure({
       userId: ctx.userId,
-      reason: "invalid-json",
+      reason: parsed.reason,
       locale: ctx.locale,
     });
+    if (parsed.reason === "invalid-briefing") {
+      annotate({
+        action: { name: "insights.generate.briefing_invalid" },
+        meta: { issueCount: parsed.issues.length },
+      });
+      return { ok: false, refusal: "response-invalid-briefing" };
+    }
     // Truncation-aware (#470): `finishReason === "length"` means the model
     // hit the output-token ceiling and the JSON was cut off mid-string, which
     // is a budget problem, not a model-quality one.
@@ -75,6 +87,13 @@ export async function generateBriefing(args: {
     }
     return { ok: false, refusal: "response-invalid-json" };
   }
+  if (parsed.repairs.length > 0) {
+    annotate({
+      action: { name: "insights.generate.briefing_repaired" },
+      meta: { repairs: parsed.repairs.join(",") },
+    });
+  }
+  const insights = parsed.insights;
 
   const reply = await groundBriefing(call, prepared, {
     insights,
