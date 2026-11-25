@@ -1357,6 +1357,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "record",
     why: "The record's Today hero. Same family and same argument as the snapshot, assembled from already-cached values with no provider on the path; the `insights` module gate now resolves against the RECORD, so a delegate gets the hero only where the owner switched it on.",
   },
+  "app/api/daily/morning/route.ts": {
+    domain: "record",
+    why: "The record's morning read on the start page: one sentence and two cards from the record's own readings, by fixed rules, no provider on the path. Same family and same argument as the digest it sits beside; a switched-off module's facts are filtered by the loader against the RECORD's module map.",
+  },
   "app/api/gamification/achievements/route.ts": {
     domain: "record",
     why: "The record's badges, every one derived from the record's own history. Read-only in fact as well as in declaration since v1.35.3 moved the unlock INSERT onto the sweep job. Spans every module carrying a badge category, so it joins the snapshot and the digest in the per-module-scope re-examination.",
@@ -2655,7 +2659,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  * The context marks on metric charts (`insights/context`) join the record
  * list. 354 -> 355.
  */
-const FROZEN_ENTRY_COUNT = 355;
+const FROZEN_ENTRY_COUNT = 356;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

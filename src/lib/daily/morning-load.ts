@@ -37,6 +37,7 @@ import {
   type TimeFormatPreference,
 } from "@/lib/format-locale";
 import { userDayKey } from "@/lib/tz/format";
+import { readingDayKey } from "@/lib/tz/reading-zone";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { dayDiff } from "@/lib/cycle/day-math";
 import { convertGlucose, type GlucoseUnit } from "@/lib/glucose";
@@ -118,6 +119,8 @@ interface DeviceScoreRow {
   source: string;
   value: number;
   measuredAt: Date;
+  /** The zone the reading was taken in, when the client sent one. */
+  timeZone: string | null;
 }
 
 /** What the day's cell holds: the reads that cost, computed once a day. */
@@ -138,7 +141,7 @@ export function morningCacheKey(userId: string, dateKey: string): string {
  * through a guard so a value without it counts as not fresh: no number and no
  * band from readings that may be old.
  */
-export function readinessFreshness(value: ReadinessValue): {
+export function readinessFreshnessOf(value: ReadinessValue): {
   fresh: boolean;
   asOfDay: string | null;
 } {
@@ -195,7 +198,7 @@ async function readReadiness(
     });
     if (derived.status !== "ok" || !derived.value) return null;
     const value = derived.value as ReadinessValue;
-    const { fresh, asOfDay } = readinessFreshness(value);
+    const { fresh, asOfDay } = readinessFreshnessOf(value);
     return {
       score: value.score,
       band: value.band as Band,
@@ -237,6 +240,8 @@ async function readDeviceScores(
   now: Date,
 ): Promise<DeviceScoreRow[]> {
   try {
+    // dense-take: one score per source and night, 36 hours back; twenty rows
+    // hold every source's last two nights several times over.
     const rows = await prisma.measurement.findMany({
       where: {
         userId,
@@ -251,13 +256,20 @@ async function readDeviceScores(
       },
       orderBy: { measuredAt: "desc" },
       take: 20,
-      select: { type: true, source: true, value: true, measuredAt: true },
+      select: {
+        type: true,
+        source: true,
+        value: true,
+        measuredAt: true,
+        timeZone: true,
+      },
     });
     return rows.map((r) => ({
       type: String(r.type),
       source: String(r.source),
       value: r.value,
       measuredAt: r.measuredAt,
+      timeZone: r.timeZone,
     }));
   } catch {
     return [];
@@ -507,7 +519,7 @@ function todaysDeviceValues(
   const out: DeviceSourceValue[] = [];
   for (const row of rows) {
     if (!types.includes(row.type)) continue;
-    if (userDayKey(row.measuredAt, tz) !== todayKey) continue;
+    if (readingDayKey(row.measuredAt, row.timeZone, tz) !== todayKey) continue;
     const key = `${row.type}|${row.source}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -539,6 +551,10 @@ export async function loadDailyMorning(
   const todayKey = userDayKey(now, tz);
   const todayBounds = getUserTodayBounds(now, tz);
   const modulesRead = resolveModuleMap(user.id);
+  const units = resolveUnitPreferences({
+    unitPreference: user.unitPreference,
+    glucoseUnit: user.glucoseUnit,
+  });
 
   const [
     { body: snapshot, locale },
@@ -563,7 +579,7 @@ export async function loadDailyMorning(
         recovery: m.recovery !== false,
       }),
     ),
-    readFloor(user.id, now, (user.glucoseUnit ?? "mg/dL") as GlucoseUnit),
+    readFloor(user.id, now, units.glucoseUnit),
     loadQuietSources(user.id, now).catch(() => []),
     prisma.encounter
       .findFirst({
@@ -580,10 +596,6 @@ export async function loadDailyMorning(
   ]);
 
   const { t } = getServerTranslator(locale);
-  const units = resolveUnitPreferences({
-    unitPreference: user.unitPreference,
-    glucoseUnit: user.glucoseUnit,
-  });
   const formatters = makeFormatters(
     locale,
     tz,

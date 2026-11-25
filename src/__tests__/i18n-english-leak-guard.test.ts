@@ -75,6 +75,13 @@ function isMaskPlaceholder(words: string[]): boolean {
  * reason. Prune an entry only when the value genuinely diverges in a locale.
  */
 const LEGIT_IDENTICAL = new Set<string>([
+  // A device's own name for its score, which the vendor does not translate
+  // ("WHOOP Recovery", "Polar Nightly Recharge"): the morning card names the
+  // value the way the device's own app does.
+  "daily.morningCard.source.recovery.WHOOP",
+  "daily.morningCard.source.recovery.OURA",
+  "daily.morningCard.source.recovery.POLAR",
+  "daily.morningCard.source.sleepPerformance",
   // "Apple Wallet" is Apple's product name in these languages.
   "emergencyCard.appleWallet.title",
   // #1350 — "Google Calendar" is the product's own name in the Spanish and

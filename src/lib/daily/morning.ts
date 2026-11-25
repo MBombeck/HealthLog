@@ -37,19 +37,22 @@ import {
   type SignalFamily,
 } from "@/lib/insights/derived/coincident-deviation";
 import type { ModuleKey } from "@/lib/modules/registry";
+import { metricHref, pageHref } from "@/lib/links/hrefs";
 import {
   currentVitals,
-  notableNightSentence,
-  ordinaryNightSentence,
-  outsideVitals,
-  vitalLabel,
-  vitalsInRangeSentence,
-  vitalsOutsideSentence,
-  SLEEP_CLOSE_DIFF_MINUTES,
   type TodayRestMode,
   type TodaySleep,
   type TodayVital,
 } from "@/lib/daily/today-overview";
+import {
+  notableNightSentence,
+  ordinaryNightSentence,
+  outsideVitals,
+  SLEEP_CLOSE_DIFF_MINUTES,
+  vitalLabel,
+  vitalsInRangeSentence,
+  vitalsOutsideSentence,
+} from "@/lib/daily/lead-sentences";
 
 type Translate = (
   key: string,
@@ -280,15 +283,12 @@ function coincidentSentence(
   t: Translate,
 ): string {
   if (families.length > MAX_NAMED_FAMILIES) {
+    const n = families.length;
     return t(
-      pluralKey(
-        illness
-          ? "daily.lead.coincidentIllnessMany"
-          : "daily.lead.coincidentMany",
-        families.length,
-        locale,
-      ),
-      { count: families.length },
+      illness
+        ? pluralKey("daily.lead.coincidentIllnessMany", n, locale)
+        : pluralKey("daily.lead.coincidentMany", n, locale),
+      { count: n },
     );
   }
   const signals = joinNames(
@@ -566,7 +566,7 @@ function nightCard(
         : null,
     lines: lines.slice(0, MAX_CARD_LINES),
     sourceValues: [...input.sleepSourceValues],
-    href: "/insights/scores/sleep",
+    href: metricHref("sleep_score") ?? pageHref("insights"),
   };
 }
 
@@ -591,7 +591,7 @@ function todayDifferentCard(
       sourceValues,
       // The signal card on Insights, with the possible reasons as the engine
       // words them.
-      href: "/insights",
+      href: pageHref("insights"),
     };
   }
   const readiness = facts.readiness;
@@ -644,7 +644,7 @@ function todayDifferentCard(
       ring,
       lines: lines.slice(0, MAX_CARD_LINES),
       sourceValues,
-      href: "/insights/scores/readiness",
+      href: metricHref("readiness") ?? pageHref("insights"),
     };
   }
   if (sourceValues.length > 0) {
@@ -653,7 +653,7 @@ function todayDifferentCard(
       ring: null,
       lines: [],
       sourceValues,
-      href: "/insights/recovery",
+      href: metricHref("recovery") ?? pageHref("insights"),
     };
   }
   return null;

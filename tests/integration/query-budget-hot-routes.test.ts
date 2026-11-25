@@ -115,6 +115,11 @@ const BUDGET = {
   // connection's health is read only when one is stamped, never on this
   // fixture.
   dailyDigest: 132,
+  // The morning read (1.50.0): the snapshot (its own cell, rebuilt here, 88
+  // of them), the coincident engine, readiness and the sleep score in one day
+  // cell, the floor ledger, the quiet-source stamps and the day's first
+  // visit. A fixed number, whatever the data.
+  dailyMorning: 123,
   // The target cards; their seven-day means come from the slice when a
   // fresh one is cached, here (evicted) from the slice's window aggregate.
   // 22 → 23, health status 59 → 60 (1.49.0): both grade weight and BMI, and
@@ -472,6 +477,15 @@ describe("statement budgets on the hot routes (real Postgres)", () => {
       "http://localhost/api/daily/digest",
     );
     expectWithin("/api/daily/digest", m, BUDGET.dailyDigest);
+  });
+
+  it("GET /api/daily/morning", async () => {
+    const { GET } = await import("@/app/api/daily/morning/route");
+    const m = await measureRead(
+      GET as unknown as Handler,
+      "http://localhost/api/daily/morning",
+    );
+    expectWithin("/api/daily/morning", m, BUDGET.dailyMorning);
   });
 
   it("GET /api/insights/targets", async () => {
