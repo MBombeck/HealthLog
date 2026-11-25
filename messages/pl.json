@@ -3540,6 +3540,7 @@
         "steadyLatestWithin": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był taki sam.",
         "steadyLatestAbove": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był wyższy.",
         "steadyLatestBelow": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był niższy.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Wciąż poznaję twój zwykły zakres. Rejestruj jeszcze przez kilka dni.",
         "driver": "{note}",
         "loadError": "Nie udało się załadować twojego typowego zakresu."

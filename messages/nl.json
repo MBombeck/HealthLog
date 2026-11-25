@@ -3540,6 +3540,7 @@
         "steadyLatestWithin": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value} en komt daarmee overeen.",
         "steadyLatestAbove": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, hoger dan dat.",
         "steadyLatestBelow": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, lager dan dat.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Je gebruikelijke bereik wordt nog bepaald. Blijf nog een paar dagen metingen vastleggen.",
         "driver": "{note}",
         "loadError": "Je gebruikelijke bereik kon niet worden geladen."

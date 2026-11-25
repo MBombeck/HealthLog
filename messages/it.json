@@ -3540,6 +3540,7 @@
         "steadyLatestWithin": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, in linea.",
         "steadyLatestAbove": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sopra.",
         "steadyLatestBelow": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sotto.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Sto ancora imparando il tuo intervallo abituale. Continua a registrare per qualche giorno in più.",
         "driver": "{note}",
         "loadError": "Impossibile caricare il tuo intervallo abituale."

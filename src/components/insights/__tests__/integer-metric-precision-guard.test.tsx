@@ -68,7 +68,13 @@ vi.mock("@/hooks/use-insights-analytics", () => ({
 const coachReadMock = vi.fn();
 vi.mock("@tanstack/react-query", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-query")>();
-  return { ...actual, useQuery: () => coachReadMock() };
+  return {
+    ...actual,
+    useQuery: () => coachReadMock(),
+    // The strip reads every component of a paired metric in one call.
+    useQueries: ({ queries }: { queries: unknown[] }) =>
+      queries.map(() => coachReadMock()),
+  };
 });
 
 import { CoachReadStrip } from "../derived/coach-read-strip";

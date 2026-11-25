@@ -35,6 +35,8 @@ export function tileVisible(
 export interface TileProps {
   read: DerivedBatchRead;
   isLoading: boolean;
+  /** The headline of a metric tile: its latest reading (`headlineValue`). */
+  headline: (type: string) => number | null;
 }
 
 /**

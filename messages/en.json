@@ -3540,6 +3540,7 @@
         "steadyLatestWithin": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value} and matches.",
         "steadyLatestAbove": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, above that.",
         "steadyLatestBelow": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, below that.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Still learning your usual range. Keep logging for a few more days.",
         "driver": "{note}",
         "loadError": "Could not load your usual range."

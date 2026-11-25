@@ -3,10 +3,11 @@
  * resolver the today list uses, for every pass including the first one after
  * the Live Activity consent.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   ACTIVITY_LEAD_MS,
+  newLaStartRef,
   startableDose,
   startCandidates,
 } from "@/lib/push-relay/live-activity";
@@ -189,5 +190,25 @@ describe("the dose the pass picks", () => {
     expect(
       pickStartDose([{ ...overdue, liveActivityEnabled: true }], NOW),
     ).toBeNull();
+  });
+});
+
+describe("the start id the relay writes into the Activity", () => {
+  it("is 16 random bytes and carries no time", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(NOW);
+      const a = newLaStartRef();
+      const b = newLaStartRef();
+      expect(a).toMatch(/^las-[A-Za-z0-9_-]{22}$/);
+      expect(Buffer.from(a.slice(4), "base64url")).toHaveLength(16);
+      // Minted in the same millisecond, the two share nothing.
+      expect(a).not.toBe(b);
+      expect(a.slice(4, 14)).not.toBe(b.slice(4, 14));
+      // No ULID: a ULID's first ten characters are the creation time.
+      expect(a).not.toMatch(/^las-[0-9A-HJKMNP-TV-Z]{26}$/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

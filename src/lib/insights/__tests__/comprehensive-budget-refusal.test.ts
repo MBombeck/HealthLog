@@ -99,6 +99,7 @@ vi.mock("@/lib/insights/features", () => ({
   BRIEFING_FEATURE_WINDOW_DAYS: 400,
 }));
 vi.mock("@/lib/insights/briefing-failure-marker", () => ({
+  briefingFailureFacts: () => ({ httpStatus: null, failureKind: null }),
   recordBriefingFailure: (...a: unknown[]) => recordBriefingFailure(...a),
   readBriefingFailure: vi.fn(async () => null),
 }));
