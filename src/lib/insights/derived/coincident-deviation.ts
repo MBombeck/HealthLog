@@ -41,6 +41,8 @@ import {
   type BaselineProfile,
 } from "./baseline";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
+import { isSourceRankedType } from "@/lib/analytics/source-rank-sql";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { VITALS_BASELINE_TYPES } from "./registry";
 import type { Derived, DerivedProvenanceSource } from "./types";
@@ -287,6 +289,13 @@ export interface CoincidentDeviationOpts {
  * hours of the day and not the day.
  *
  * The readiness score reads the same day with `plausibleOnly: false`.
+ *
+ * The day keeps to its ladder-winning source, as the metric page does. A
+ * watch worn only in the day and a ring worn through the night both report
+ * a resting heart rate for the same date; averaging the two made today's
+ * value a figure neither device measured, and one that moved whenever the
+ * lower-priority device revised its estimate. `sourcePriority` is the
+ * user's blob when the caller has it; omitted, it is read here.
  */
 export async function readLatestDayMean(
   userId: string,
@@ -294,7 +303,7 @@ export async function readLatestDayMean(
   windowDays: number,
   now: Date,
   tz: string,
-  opts: { plausibleOnly?: boolean } = {},
+  opts: { plausibleOnly?: boolean; sourcePriority?: unknown } = {},
 ): Promise<{ value: number; day: string; lastAt: Date } | null> {
   const days = await readDayAggregates({
     userId,
@@ -304,6 +313,10 @@ export async function readLatestDayMean(
     valueRange:
       opts.plausibleOnly === false ? undefined : plausibleMetricRange(type),
     latestDayOnly: true,
+    sourcePriority:
+      opts.sourcePriority !== undefined || !isSourceRankedType(type)
+        ? opts.sourcePriority
+        : await loadUserSourcePriority(userId),
   });
   const latest = days.at(-1);
   if (!latest) return null;
