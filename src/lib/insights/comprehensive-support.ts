@@ -10,7 +10,8 @@ import { findUngroundedBriefingNumbers } from "@/lib/ai/briefing-grounding";
 import type { OutboundReason } from "@/lib/ai/safety/outbound-screen";
 import { getSelfContextTextForUser } from "@/lib/ai/coach/about-me";
 import type { Prisma } from "@/generated/prisma/client";
-import { insightResultSchema, type InsightResult } from "@/lib/ai/types";
+import type { ParsedInsight } from "@/lib/insights/insight-reply";
+import { readDailyBriefing } from "@/lib/ai/briefing-blocks";
 import type { resolveProviderChain } from "@/lib/ai/provider";
 import { runBriefingCompletion } from "@/lib/insights/briefing-provider";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
@@ -30,9 +31,6 @@ export type ProviderChain = Awaited<ReturnType<typeof resolveProviderChain>>;
 export type BriefingReply = Awaited<
   ReturnType<typeof runBriefingCompletion>
 >["result"];
-export type ParsedInsight = NonNullable<
-  ReturnType<typeof parseComprehensiveResult>
->;
 
 /** The parsed reply and the provider that answered it. */
 export interface ModelRun {
@@ -294,11 +292,15 @@ export async function rerollBriefingParagraph(args: {
     return null;
   }
 
-  // Keep the cached payload verbatim; swap in only the fresh paragraph.
-  const mergedBriefing = {
+  // Keep the cached payload verbatim; swap in only the fresh paragraph. The
+  // result passes the same reader the card renders with, or the re-roll is
+  // a miss and the cached paragraph stays.
+  const mergedRead = readDailyBriefing({
     ...(cachedBriefing as Record<string, unknown>),
     paragraph: freshParagraph,
-  };
+  });
+  if (mergedRead.state !== "valid") return null;
+  const mergedBriefing = mergedRead.briefing;
   // A re-rolled paragraph is new text, so it carries a new generation
   // moment; the plain stamp refresh that a miss falls back to does not.
   const merged = withBriefingGeneratedAt(
@@ -306,28 +308,6 @@ export async function rerollBriefingParagraph(args: {
     new Date(),
   );
   return { text: JSON.stringify(merged), providerType };
-}
-
-/**
- * Parse + (best-effort) validate a comprehensive provider reply. Returns the
- * parsed payload (validated when it matches `insightResultSchema`, which
- * keeps the richer optional blocks, else the raw object), or null when the reply
- * is not valid JSON even after fence-stripping. Null signals the caller to
- * run its one corrective retry.
- */
-export function parseComprehensiveResult(
-  content: string,
-): InsightResult | Record<string, unknown> | null {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(stripJsonFences(content));
-  } catch {
-    return null;
-  }
-  const validated = insightResultSchema.safeParse(parsed);
-  return validated.success
-    ? validated.data
-    : (parsed as Record<string, unknown>);
 }
 
 /**

@@ -322,4 +322,24 @@ describe("<DailyBriefing>", () => {
     expect(html).toMatch(/data-slot="daily-briefing-empty-cta"/);
     expect(html).toContain("Retry");
   });
+
+  // #1499 — a generation whose reply the card could not render is recorded
+  // as a `format` failure. The empty card says the model answered in the
+  // wrong form, not "no briefing yet" and not a provider timeout, and offers
+  // the retry.
+  it("explains a format failure and offers the retry instead of 'no briefing yet'", () => {
+    const html = render(
+      <DailyBriefing
+        briefing={null}
+        onRegenerate={() => {}}
+        generationFailed
+        generationFailureClass="format"
+      />,
+    );
+    expect(html).toContain("not in a form the briefing can show");
+    expect(html).not.toContain("timed out or returned an error");
+    expect(html).not.toContain("No briefing yet");
+    expect(html).toMatch(/data-slot="daily-briefing-empty-cta"/);
+    expect(html).toContain("Retry");
+  });
 });
