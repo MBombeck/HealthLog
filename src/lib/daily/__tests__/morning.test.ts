@@ -413,9 +413,57 @@ describe("morning cards", () => {
     const m = buildDailyMorning(input({ readiness: readiness() }), t);
     const card = m.cards.find((c) => c.kind === "today_different");
     expect(card?.lines.map((l) => l.text)).toEqual([
-      "fair",
+      "Readiness in a middle range",
       "Resting heart rate: 40 of 100",
       "Mood stability: 20 of 100",
+    ]);
+  });
+
+  it("opens with a readiness line in sentence case for every band, in German too", () => {
+    const de = getServerTranslator("de").t;
+    const first = (band: "green" | "yellow" | "red", tr = t) =>
+      buildDailyMorning(input({ readiness: readiness({ band }) }), tr).cards[0]
+        .lines[0].text;
+    expect(first("green")).toBe("Readiness in a good range");
+    expect(first("red")).toBe("Readiness in a low range");
+    expect(first("green", de)).toBe("Bereitschaft im guten Bereich");
+    expect(first("yellow", de)).toBe("Bereitschaft im mittleren Bereich");
+  });
+
+  it("does not name the sleep score twice when the night card shows it", () => {
+    const sleepHeavy = readiness({
+      components: [
+        { key: "sleep", value: 30, weight: 0.25 },
+        { key: "rhr", value: 40, weight: 0.25 },
+        { key: "mood", value: 20, weight: 0.15 },
+        { key: "hrv", value: 90, weight: 0.25 },
+      ],
+    });
+    const linesOf = (over: Partial<MorningInput>) =>
+      buildDailyMorning(input({ readiness: sleepHeavy, ...over }), t)
+        .cards.find((c) => c.kind === "today_different")
+        ?.lines.map((l) => l.text);
+    // Last night is on the night card: the next deductions stand in.
+    expect(
+      linesOf({
+        sleepExpected: true,
+        sleep: { minutes: 400, usualMinutes: 450 },
+        sleepScore: { score: 75, band: "green", night: TODAY },
+      }),
+    ).toEqual([
+      "Readiness in a middle range",
+      "Resting heart rate: 40 of 100",
+      "Mood stability: 20 of 100",
+    ]);
+    // No ring for last night: the sleep score is named here.
+    expect(
+      linesOf({
+        sleepScore: { score: 75, band: "green", night: "2026-11-25" },
+      }),
+    ).toEqual([
+      "Readiness in a middle range",
+      "Sleep score: 30 of 100",
+      "Resting heart rate: 40 of 100",
     ]);
   });
 

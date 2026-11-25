@@ -14070,6 +14070,11 @@
         "night": "Afgelopen nacht",
         "todayDifferent": "Anders vandaag",
         "toDo": "Vandaag te doen"
+      },
+      "readinessBand": {
+        "green": "Paraatheid in een goed bereik",
+        "yellow": "Paraatheid in een middelmatig bereik",
+        "red": "Paraatheid in een laag bereik"
       }
     },
     "morning": {

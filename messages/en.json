@@ -14070,6 +14070,11 @@
         "night": "Last night",
         "todayDifferent": "Different today",
         "toDo": "To do today"
+      },
+      "readinessBand": {
+        "green": "Readiness in a good range",
+        "yellow": "Readiness in a middle range",
+        "red": "Readiness in a low range"
       }
     },
     "morning": {
