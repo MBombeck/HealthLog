@@ -200,14 +200,16 @@ export function redactHealthClassifications(
   }
   const proto = Object.getPrototypeOf(value);
   if (proto !== Object.prototype && proto !== null) return value;
-  const out: Record<string, unknown> = {};
+  const out: [string, unknown][] = [];
   for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
-    out[key] =
+    out.push([
+      key,
       isHealthClassificationKey(key) && isClassValue(entry)
         ? REDACTED
-        : redactHealthClassifications(entry, depth + 1);
+        : redactHealthClassifications(entry, depth + 1),
+    ]);
   }
-  return out;
+  return Object.fromEntries(out);
 }
 
 function keyIsSensitive(key: string): boolean {
@@ -247,15 +249,12 @@ function redactWith(
   const proto = Object.getPrototypeOf(body);
   if (proto !== Object.prototype && proto !== null) return body;
 
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
-    if (isSensitive(key)) {
-      out[key] = REDACTED;
-      continue;
-    }
-    out[key] = redactWith(value, isSensitive);
-  }
-  return out;
+  return Object.fromEntries(
+    Object.entries(body as Record<string, unknown>).map(([key, value]) => [
+      key,
+      isSensitive(key) ? REDACTED : redactWith(value, isSensitive),
+    ]),
+  );
 }
 
 /**

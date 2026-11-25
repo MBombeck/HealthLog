@@ -12,6 +12,7 @@ import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import type { HealthKitRequestSyncTrigger } from "@/lib/integrations/healthkit-type-sync";
 
 import type { BatchIngestEntry, EntryResult } from "./entries";
+import { ownRecord } from "@/lib/own-key";
 
 // Historical-backfill threshold for PR push suppression. A batch larger than
 // this fires the detection job with `silent: true` so a multi-year Apple
@@ -49,7 +50,7 @@ export function summariseSkips(results: EntryResult[]): {
   // see WHICH validation gate an entry tripped (malformed bucket id,
   // out-of-range value, unmappable identifier, …) without pulling raw rows.
   // Grouping by reason turns that into a one-glance wide-event field.
-  const skippedByReason: Record<string, number> = {};
+  const skippedByReason = ownRecord<number>();
   for (const s of skipped) {
     skippedByReason[s.reason] = (skippedByReason[s.reason] ?? 0) + 1;
   }

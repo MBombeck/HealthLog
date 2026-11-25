@@ -38,6 +38,7 @@ import type {
   PolarExercise,
 } from "./wire-types";
 import { EXERCISE_LIST_KEYS, normaliseExerciseList } from "./map";
+import { ownValue } from "@/lib/own-key";
 
 const POLAR_API_BASE = "https://www.polaraccesslink.com";
 
@@ -159,7 +160,7 @@ async function fetchCollection<T>(
     annotateEnvelopeDrift(verb, res.status, json);
     return [];
   }
-  const list = (json as Record<string, unknown>)[recordsKey];
+  const list = ownValue(json as Record<string, unknown>, recordsKey);
   if (Array.isArray(list)) return list as T[];
   // The expected records key (`recharges` / `nights`) is missing or not an
   // array — the same silent-"no data" drift class. Log, then degrade.

@@ -12620,7 +12620,7 @@
     "openDetail": "Voir les détails",
     "historyLoadError": "Votre historique d'évaluations n'a pas pu être chargé",
     "historyLoadErrorHint": "Cela ne veut pas dire que vous n'avez aucun résultat : la liste n'a pas pu être récupérée. Réessayez.",
-    "privacyNote": "Vos réponses sont stockées chiffrées et n'atteignent jamais le Coach IA.",
+    "privacyNote": "Vos réponses sont stockées chiffrées. Ni les réponses ni les scores n'atteignent jamais le Coach IA, une autre fonction d'IA ou un assistant IA que vous avez connecté.",
     "trend": {
       "sincePrevious": "Depuis votre bilan précédent du {date} : {change, plural, one {# point} other {# points}}.",
       "sinceFirst": "Depuis votre premier bilan du {date} : {change, plural, one {# point} other {# points}}.",
@@ -16210,8 +16210,6 @@
       "title": "Carte d'urgence",
       "description": "Vos informations d'urgence quand vous n'êtes pas chez vous.",
       "loadError": "La carte d'urgence n'a pas pu être chargée.",
-      "editHint": "Le groupe sanguin, les contacts, les implants et les déclarations viennent de vos informations d'urgence.",
-      "editLink": "Les modifier",
       "offlineHint": "L'application ne fonctionne pas hors ligne, volontairement. Enregistrez une copie sur votre téléphone pour avoir la carte sans connexion ; elle montre son contenu au jour de l'enregistrement.",
       "downloadError": "Le téléchargement a échoué. Réessayez.",
       "saveOffline": "Enregistrer une copie hors ligne",

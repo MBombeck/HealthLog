@@ -40,12 +40,9 @@ function isRecord(value: unknown): value is Entry {
 }
 
 function withoutAbsentFields(entry: Entry): Entry {
-  const out: Entry = {};
-  for (const [key, value] of Object.entries(entry)) {
-    if (value === null || value === "") continue;
-    out[key] = value;
-  }
-  return out;
+  return Object.fromEntries(
+    Object.entries(entry).filter(([, value]) => value !== null && value !== ""),
+  );
 }
 
 function inStoredUnit(entry: Entry): Entry {

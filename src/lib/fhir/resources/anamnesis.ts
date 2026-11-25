@@ -7,6 +7,7 @@ import {
 } from "@/lib/fhir/resources/common";
 import type { FhirCodeableConcept, FhirObservation } from "@/lib/fhir/types";
 import type { HealthProfileFactKind } from "@/lib/validations/health-profile-facts";
+import { ownValue } from "@/lib/own-key";
 
 const DATA_ABSENT_REASON_SYSTEM =
   "http://terminology.hl7.org/CodeSystem/data-absent-reason";
@@ -128,8 +129,10 @@ export function anamnesisObservationsFromReportData(
     const valueConcept =
       value && !unreadable
         ? {
-            ...(definition.valueCoding?.[value] ?? {}),
-            text: definition.valueDisplay[value] ?? value,
+            ...((definition.valueCoding &&
+              ownValue(definition.valueCoding, value)) ??
+              {}),
+            text: ownValue(definition.valueDisplay, value) ?? value,
           }
         : undefined;
 
@@ -172,7 +175,7 @@ export function anamnesisNarrativeFromReportData(
   ): string => {
     if (anamnesis.unreadableFacts.includes(kind)) return "unreadable";
     if (!value) return "not recorded";
-    return FACT_DEFINITIONS[kind].valueDisplay[value] ?? value;
+    return ownValue(FACT_DEFINITIONS[kind].valueDisplay, value) ?? value;
   };
   const conditions = anamnesis.conditionsUnreadable
     ? "unreadable"

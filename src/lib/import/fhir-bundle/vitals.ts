@@ -8,6 +8,7 @@
  * on their own.
  */
 import type { MeasurementType } from "@/generated/prisma/client";
+import { ownValue } from "@/lib/own-key";
 
 type Converter = (value: number) => number;
 
@@ -109,7 +110,7 @@ export function vitalValue(
   }
   for (const raw of [q.code, q.unit]) {
     if (typeof raw !== "string") continue;
-    const convert = spec.units[raw.trim().toLowerCase()];
+    const convert = ownValue(spec.units, raw.trim().toLowerCase());
     if (convert) return { value: convert(q.value) };
   }
   return { reason: "unit_mismatch" };

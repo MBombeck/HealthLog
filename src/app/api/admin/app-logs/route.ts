@@ -104,11 +104,9 @@ function redactDeep(value: unknown): unknown {
   if (typeof value === "string") return redactSecrets(value);
   if (Array.isArray(value)) return value.map((v) => redactDeep(v));
   if (value && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value)) {
-      out[k] = redactDeep(v);
-    }
-    return out;
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, redactDeep(v)]),
+    );
   }
   return value;
 }

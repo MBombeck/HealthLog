@@ -71,6 +71,7 @@ import {
   levelShiftFloors,
   type DetectLevelShiftOptions,
 } from "@/lib/insights/derived/changepoint";
+import { ownValue } from "@/lib/own-key";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -385,7 +386,7 @@ const CLINICAL_ALIASES: Record<string, string> = {
  * `mcp:false` — can never resolve here even though they exist in the registry.
  */
 function resolveClinicalSignal(key: string): RichMetric | null {
-  const aliased = CLINICAL_ALIASES[key];
+  const aliased = ownValue(CLINICAL_ALIASES, key);
   if (aliased) return CLINICAL_SIGNAL_BY_KEY.get(aliased) ?? null;
   const upper = key.toUpperCase();
   if (CLINICAL_SIGNAL_BY_KEY.has(upper)) {
@@ -605,7 +606,8 @@ export function resolveRichMetric(input: string): RichMetric | null {
   const key = raw.toLowerCase().replace(/[\s-]+/g, "_");
 
   // 1. explicit supplement (weight / pulse / bmi).
-  if (SUPPLEMENT[key]) return SUPPLEMENT[key];
+  const supplement = ownValue(SUPPLEMENT, key);
+  if (supplement) return supplement;
 
   // 1b. v1.25 clinical signals the MCP layer opts in (grip strength, pain NRS,
   // waist circumference, waist-to-height). Registry-grounded; the allowlist is
@@ -615,7 +617,7 @@ export function resolveRichMetric(input: string): RichMetric | null {
   if (clinical) return clinical;
 
   // 2. friendly alias → registry id.
-  const aliased = ALIASES[key];
+  const aliased = ownValue(ALIASES, key);
   if (aliased) return fromRegistry(aliased);
 
   // 3. exact registry id (case-insensitive).
