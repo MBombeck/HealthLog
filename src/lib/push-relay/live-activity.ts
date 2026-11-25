@@ -49,6 +49,7 @@
  * A server with its own APNs key does none of this: its direct path is
  * unchanged.
  */
+import { randomBytes } from "node:crypto";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
@@ -266,6 +267,16 @@ export function pickStartDose<
   return best;
 }
 
+/**
+ * A Live Activity start's ref, which the relay writes into the Activity's
+ * attributes (`"s"`) where it and Apple read it in the clear: 16 random
+ * bytes, base64url, and nothing else in it. A ULID would carry the instant
+ * of the start.
+ */
+export function newLaStartRef(): string {
+  return `las-${randomBytes(16).toString("base64url")}`;
+}
+
 export interface LaPassFacts {
   devices: number;
   started: number;
@@ -319,7 +330,7 @@ async function startItem(
     dose,
     item: {
       deviceId: device.id,
-      ref: `las-${newUlid(now.getTime())}`,
+      ref: newLaStartRef(),
       pushClass: "liveactivity",
       eventType: LA_START_EVENT,
       activity: {
