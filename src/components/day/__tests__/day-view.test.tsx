@@ -301,7 +301,10 @@ describe("<DayView>", () => {
   it("lists what happened, each entry linking to its source", async () => {
     const html = await render();
     expect(html).toContain("What happened");
-    expect(html).toContain('href="/checkups?visit=v1"');
+    // The wire spelling of a visit opens straight on the web page, not on
+    // the `/checkups` redirect.
+    expect(html).toContain('href="/care?visit=v1"');
+    expect(html).not.toContain('href="/checkups');
     expect(html).toContain('href="/documents?doc=d1"');
     // The person's own note, in the content colour.
     expect(html).toContain("Fever gone by the evening.");

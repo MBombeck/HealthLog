@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       image_tag:
-        description: Exact published release tag
+        description: Exact published image tag
         required: true
         type: string
       image_digest:
@@ -19,6 +19,16 @@ on:
         description: Expected short source commit SHA
         required: true
         type: string
+      expected_version:
+        description: Version /api/version must report, when it is not the tag without its leading v (a nightly)
+        required: false
+        type: string
+        default: ""
+      expected_channel:
+        description: Channel /api/version must report (release, edge, nightly); unchecked when empty
+        required: false
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
       image_ref:
@@ -26,7 +36,7 @@ on:
         required: true
         type: string
       image_tag:
-        description: Exact published release tag
+        description: Exact published image tag
         required: true
         type: string
       image_digest:
@@ -37,6 +47,16 @@ on:
         description: Expected short source commit SHA
         required: true
         type: string
+      expected_version:
+        description: Version /api/version must report, when it is not the tag without its leading v (a nightly)
+        required: false
+        type: string
+        default: ""
+      expected_channel:
+        description: Channel /api/version must report (release, edge, nightly); unchecked when empty
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -52,6 +72,8 @@ jobs:
       IMAGE_TAG: ${{ inputs.image_tag }}
       IMAGE_DIGEST: ${{ inputs.image_digest }}
       BUILD_SHA: ${{ inputs.build_sha }}
+      VERSION_OVERRIDE: ${{ inputs.expected_version }}
+      EXPECTED_CHANNEL: ${{ inputs.expected_channel }}
       DATABASE_URL: postgresql://healthlog:healthlog@localhost:5432/healthlog?schema=public
 
     services:
@@ -170,6 +192,9 @@ jobs:
           fi
 
           EXPECTED_VERSION="${IMAGE_TAG#v}"
+          if [ -n "$VERSION_OVERRIDE" ]; then
+            EXPECTED_VERSION="$VERSION_OVERRIDE"
+          fi
           echo "$body" | jq .
           if ! jq -e --arg expected "$EXPECTED_VERSION" '.data.version == $expected' <<< "$body" >/dev/null; then
             actual="$(jq -r '.data.version // "<missing>"' <<< "$body")"
@@ -179,6 +204,11 @@ jobs:
           if ! jq -e --arg expected "$BUILD_SHA" '.data.buildSha == $expected' <<< "$body" >/dev/null; then
             actual="$(jq -r '.data.buildSha // "<missing>"' <<< "$body")"
             echo "::error::Build SHA mismatch: exact image reports '$actual', expected '$BUILD_SHA'." >&2
+            exit 1
+          fi
+          if [ -n "$EXPECTED_CHANNEL" ] && ! jq -e --arg expected "$EXPECTED_CHANNEL" '.data.channel == $expected' <<< "$body" >/dev/null; then
+            actual="$(jq -r '.data.channel // "<missing>"' <<< "$body")"
+            echo "::error::Channel mismatch: exact image reports '$actual', expected '$EXPECTED_CHANNEL'." >&2
             exit 1
           fi
 

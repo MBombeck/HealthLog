@@ -9841,7 +9841,8 @@
           "off": "Cookies hebben de Secure-vlag niet.",
           "secure_over_https": "Veilige cookies via HTTPS, zoals het hoort.",
           "plain_http": "Gewone HTTP zonder Secure-vlag: prima voor een server die alleen in je eigen netwerk bereikbaar is.",
-          "secure_over_http": "Deze pagina kwam via gewone HTTP, maar de cookies hebben de Secure-vlag, dus browsers gooien de aanmelding weg. Gebruik HTTPS of stel SESSION_COOKIE_SECURE=false in.",
+          "secure_over_http": "Deze pagina kwam als gewone HTTP bij de app aan. Achter een HTTPS-proxy: laat die X-Forwarded-Proto: https meesturen; bij gewone HTTP: stel SESSION_COOKIE_SECURE=false in.",
+          "proxy_scheme_unreported": "HTTPS werkt, maar je reverse proxy meldt het niet. Laat die X-Forwarded-Proto: https meesturen.",
           "insecure_over_https": "Deze pagina kwam via HTTPS, maar de cookies missen de Secure-vlag. Verwijder SESSION_COOKIE_SECURE=false."
         },
         "app_url": {

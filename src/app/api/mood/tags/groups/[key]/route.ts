@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { prisma, toJson } from "@/lib/db";
+import { lockUserRow } from "@/lib/user-row-lock";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
@@ -122,7 +123,10 @@ export const DELETE = apiHandler(
         data: { categoryId: CUSTOM_CATEGORY_ID },
       });
 
-      // 2. Strip the group from the layout blob (groupOrder + placements).
+      // 2. Strip the group from the layout blob (groupOrder + placements),
+      //    under the row lock, so a layout save that overlaps is neither
+      //    dropped nor allowed to put the group back.
+      await lockUserRow(tx, user.id);
       const userRow = await tx.user.findUnique({
         where: { id: user.id },
         select: { moodTagLayoutJson: true },

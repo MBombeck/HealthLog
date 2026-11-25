@@ -30,18 +30,25 @@
  * Nor does the merge: "what the answers imply" and "what a guardian just
  * ticked" are different questions with different rules about what may be
  * overwritten, so each caller computes its own complete map and this writes
- * it.
+ * it. A caller whose map depends on what is stored passes a function of the
+ * stored blob instead; it runs under the record's row lock, so a write that
+ * overlaps (the profile's own session, a second guardian) cannot be dropped.
  */
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import { prisma, toJson } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import { recomputeSupplementsIfNutrientsTurnedOn } from "@/lib/medications/ingredients/recompute-job";
 
 export interface RecordModuleWrite {
   /** The record whose modules these are — never the actor, under a switch. */
   recordId: string;
-  /** The complete map to persist, or undefined to leave the blob alone. */
-  modulePreferences?: Record<string, boolean>;
+  /**
+   * The complete map to persist, or a function from the stored blob to it,
+   * or undefined to leave the blob alone.
+   */
+  modulePreferences?:
+    Record<string, boolean> | ((stored: unknown) => Record<string, boolean>);
   /**
    * An explicit answer for the delegated cycle key, or undefined to leave the
    * column alone. The blob never owns this key; the profile column does.
@@ -54,24 +61,39 @@ export interface RecordModuleWrite {
  *
  * Returns the cycle profile's stored opt-in afterwards (null when the record
  * has no profile row), so a caller that publishes the resolved cycle state can
- * resolve it against the record's sex without a second read.
+ * resolve it against the record's sex without a second read, and the module
+ * map as written (undefined when the blob was left alone).
  */
 export async function writeRecordModulePreferences(
   input: RecordModuleWrite,
-): Promise<{ cycleTrackingEnabled: boolean | null }> {
-  if (input.modulePreferences !== undefined) {
-    const before = await prisma.user.findUnique({
-      where: { id: input.recordId },
-      select: { modulePreferencesJson: true },
-    });
-    await prisma.user.update({
-      where: { id: input.recordId },
-      data: { modulePreferencesJson: toJson(input.modulePreferences) },
-    });
+): Promise<{
+  cycleTrackingEnabled: boolean | null;
+  modulePreferences?: Record<string, boolean>;
+}> {
+  let written: Record<string, boolean> | undefined;
+  const next = input.modulePreferences;
+  if (next !== undefined) {
+    const { before, after } = await withUserRowLock(
+      input.recordId,
+      async (tx) => {
+        const row = await tx.user.findUnique({
+          where: { id: input.recordId },
+          select: { modulePreferencesJson: true },
+        });
+        const before = row?.modulePreferencesJson;
+        const after = typeof next === "function" ? next(before) : next;
+        await tx.user.update({
+          where: { id: input.recordId },
+          data: { modulePreferencesJson: toJson(after) },
+        });
+        return { before, after };
+      },
+    );
+    written = after;
     await recomputeSupplementsIfNutrientsTurnedOn(
       input.recordId,
-      before?.modulePreferencesJson,
-      input.modulePreferences,
+      before,
+      after,
     );
   }
   if (input.cycleTrackingEnabled !== undefined) {
@@ -91,5 +113,8 @@ export async function writeRecordModulePreferences(
   // composite was computed from a composition that no longer holds.
   invalidateUserHealthScore(input.recordId);
 
-  return { cycleTrackingEnabled: profile?.cycleTrackingEnabled ?? null };
+  return {
+    cycleTrackingEnabled: profile?.cycleTrackingEnabled ?? null,
+    ...(written !== undefined ? { modulePreferences: written } : {}),
+  };
 }

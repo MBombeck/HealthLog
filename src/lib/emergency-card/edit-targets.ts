@@ -14,6 +14,7 @@
  * Owner only. The read-only link, its offline copy and the wallet card never
  * carry these targets or the ids inside them.
  */
+import { CYCLE_SETTINGS_HREF, pageHref, recordHref } from "@/lib/links/hrefs";
 import type { ModuleKey } from "@/lib/modules/registry";
 
 import type { EmergencyCardField } from "./fields";
@@ -49,9 +50,9 @@ export function emergencyCardTargets(args: {
       NAME: ACCOUNT_PROFILE,
       BLOOD_TYPE: EMERGENCY_DETAILS,
       ALLERGIES,
-      CONDITIONS: illness ? "/illness" : conditionsNote,
-      MEDICATIONS: on("medications") ? "/medications" : null,
-      PREGNANCY: on("cycle") ? "/cycle?tab=settings" : null,
+      CONDITIONS: illness ? pageHref("illness") : conditionsNote,
+      MEDICATIONS: on("medications") ? pageHref("medications") : null,
+      PREGNANCY: on("cycle") ? CYCLE_SETTINGS_HREF : null,
       IMPLANTS: EMERGENCY_DETAILS,
       CONTACTS: EMERGENCY_DETAILS,
       ADVANCE_DIRECTIVE: EMERGENCY_DETAILS,
@@ -60,14 +61,10 @@ export function emergencyCardTargets(args: {
       DATE_OF_BIRTH: ACCOUNT_PROFILE,
     },
     conditions: args.conditionEpisodeIds.map((id) =>
-      id === null
-        ? conditionsNote
-        : illness
-          ? `/illness/${encodeURIComponent(id)}`
-          : null,
+      id === null ? conditionsNote : illness ? recordHref("illness", id) : null,
     ),
     medications: args.medicationIds.map((id) =>
-      on("medications") ? `/medications/${encodeURIComponent(id)}` : null,
+      on("medications") ? recordHref("medication", id) : null,
     ),
   };
 }

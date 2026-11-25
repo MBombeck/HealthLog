@@ -22,6 +22,7 @@ import {
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import {
   takeBaseToken,
   guardedUserDocumentUpdate,
@@ -208,51 +209,59 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // Preserve-when-absent: a PUT carrying a subset of fields must not wipe the
   // stored values for omitted fields.
   // One stored-blob read covers all fallbacks.
-  let mergedView = parsed.data.view;
-  let mergedOrder = parsed.data.order;
-  let mergedGroupBy = parsed.data.groupBy;
-  let mergedGroupsOpen = parsed.data.groupsOpen;
-  let mergedCategoryOrder =
-    parsed.data.categoryOrder === undefined
-      ? undefined
-      : await keepOwnCategoryKeys(user.id, parsed.data.categoryOrder);
-  if (
-    mergedView === undefined ||
-    mergedOrder === undefined ||
-    mergedGroupBy === undefined ||
-    mergedGroupsOpen === undefined ||
-    mergedCategoryOrder === undefined
-  ) {
-    const existing = await buildMedicationListLayout(user.id);
-    if (mergedView === undefined) mergedView = existing.view;
-    if (mergedOrder === undefined) mergedOrder = existing.order;
-    if (mergedGroupBy === undefined) mergedGroupBy = existing.groupBy;
-    if (mergedGroupsOpen === undefined) mergedGroupsOpen = existing.groupsOpen;
-    if (mergedCategoryOrder === undefined)
-      mergedCategoryOrder = existing.categoryOrder;
-  }
-  const normalized = serializeMedicationListLayout({
-    view: mergedView,
-    order: mergedOrder,
-    groupBy: mergedGroupBy,
-    groupsOpen: mergedGroupsOpen,
-    categoryOrder: mergedCategoryOrder,
-  });
+  // Read, merge and write under the row lock: a tokenless write is
+  // unconditional, and two that overlap would each carry forward a stored
+  // copy without the other's change.
+  const { normalized, guarded } = await withUserRowLock(user.id, async (tx) => {
+    let mergedView = parsed.data.view;
+    let mergedOrder = parsed.data.order;
+    let mergedGroupBy = parsed.data.groupBy;
+    let mergedGroupsOpen = parsed.data.groupsOpen;
+    let mergedCategoryOrder =
+      parsed.data.categoryOrder === undefined
+        ? undefined
+        : await keepOwnCategoryKeys(user.id, parsed.data.categoryOrder);
+    if (
+      mergedView === undefined ||
+      mergedOrder === undefined ||
+      mergedGroupBy === undefined ||
+      mergedGroupsOpen === undefined ||
+      mergedCategoryOrder === undefined
+    ) {
+      const existing = await buildMedicationListLayout(user.id);
+      if (mergedView === undefined) mergedView = existing.view;
+      if (mergedOrder === undefined) mergedOrder = existing.order;
+      if (mergedGroupBy === undefined) mergedGroupBy = existing.groupBy;
+      if (mergedGroupsOpen === undefined)
+        mergedGroupsOpen = existing.groupsOpen;
+      if (mergedCategoryOrder === undefined)
+        mergedCategoryOrder = existing.categoryOrder;
+    }
+    const normalized = serializeMedicationListLayout({
+      view: mergedView,
+      order: mergedOrder,
+      groupBy: mergedGroupBy,
+      groupsOpen: mergedGroupsOpen,
+      categoryOrder: mergedCategoryOrder,
+    });
 
-  // v1.32.21 — guard the write on the client's base token. A stale base
-  // 409s and writes NOTHING, so a view toggle can't resurrect an order the
-  // reorder Save just committed (or vice versa); a tokenless request keeps the
-  // prior unconditional write.
-  const guarded = await guardedUserDocumentUpdate({
-    userId: user.id,
-    document: "medicationListLayout",
-    base,
-    data: { medicationListLayoutJson: toJson(normalized) },
-    conflict: {
-      action: "medication.layout.conflict",
-      errorCode: "medication_layout_conflict",
-      message: "Medications layout changed since it was loaded",
-    },
+    // v1.32.21 — guard the write on the client's base token. A stale base
+    // 409s and writes NOTHING, so a view toggle can't resurrect an order the
+    // reorder Save just committed (or vice versa); a tokenless request keeps the
+    // prior unconditional write.
+    const guarded = await guardedUserDocumentUpdate({
+      userId: user.id,
+      document: "medicationListLayout",
+      base,
+      data: { medicationListLayoutJson: toJson(normalized) },
+      conflict: {
+        action: "medication.layout.conflict",
+        errorCode: "medication_layout_conflict",
+        message: "Medications layout changed since it was loaded",
+      },
+      client: tx,
+    });
+    return { normalized, guarded };
   });
   if ("conflict" in guarded) return guarded.conflict;
 

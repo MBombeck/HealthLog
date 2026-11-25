@@ -31,6 +31,7 @@ import {
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import { visitPath } from "@/lib/encounters/visit-links";
+import { labDayHref, recordHref } from "@/lib/links/hrefs";
 import { loadVisitPreparations } from "@/lib/encounters/preparation-read";
 
 /** The window when the record holds no visit the caller may see. */
@@ -118,12 +119,12 @@ async function medicationChanges(w: Window): Promise<DayChange[]> {
         kind: "doseChange",
         id: row.id,
         title: row.medication.name,
-        href: `/medications/${row.medicationId}/history`,
+        href: recordHref("medicationHistory", row.medicationId),
       }),
     );
   }
   for (const med of meds) {
-    const href = `/medications/${med.id}`;
+    const href = recordHref("medication", med.id);
     const start = med.startsOn ? dateOnlyKey(med.startsOn) : null;
     const end = med.endsOn ? dateOnlyKey(med.endsOn) : null;
     if (start && within(start)) {
@@ -148,7 +149,7 @@ async function medicationChanges(w: Window): Promise<DayChange[]> {
     }
   }
   for (const course of courses) {
-    const href = `/medications/${course.medicationId}`;
+    const href = recordHref("medication", course.medicationId);
     const start = dateOnlyKey(course.startsOn);
     const end = course.endsOn ? dateOnlyKey(course.endsOn) : null;
     if (within(start)) {
@@ -173,7 +174,7 @@ async function medicationChanges(w: Window): Promise<DayChange[]> {
     }
   }
   for (const pause of pauses) {
-    const href = `/medications/${pause.medicationId}`;
+    const href = recordHref("medication", pause.medicationId);
     const start = userDayKey(pause.pausedAt, w.tz);
     if (within(start)) {
       out.push(
@@ -214,7 +215,7 @@ async function illnessChanges(w: Window): Promise<DayChange[]> {
   });
   const out: DayChange[] = [];
   for (const row of rows) {
-    const href = `/illness/${row.id}`;
+    const href = recordHref("illness", row.id);
     if (row.onsetAt >= w.start && row.onsetAt < w.end) {
       out.push(
         change(userDayKey(row.onsetAt, w.tz), "illness", {
@@ -260,7 +261,7 @@ async function vaccinationChanges(w: Window): Promise<DayChange[]> {
       id: row.id,
       title:
         row.vaccineName ?? row.customVaccine?.name ?? row.antigenSlug ?? "",
-      href: `/vaccinations?dose=${row.id}`,
+      href: recordHref("vaccination", row.id),
     }),
   );
 }
@@ -293,14 +294,18 @@ async function labChanges(w: Window): Promise<DayChange[]> {
       deletedAt: null,
       takenAt: { gte: w.start, lt: w.end },
     },
-    select: { id: true, analyte: true, takenAt: true },
+    select: { id: true, analyte: true, takenAt: true, biomarkerId: true },
     orderBy: [{ takenAt: "asc" }, { analyte: "asc" }],
   });
-  const byDay = new Map<string, { ids: string[]; names: string[] }>();
+  const byDay = new Map<
+    string,
+    { ids: string[]; names: string[]; markers: (string | null)[] }
+  >();
   for (const row of rows) {
     const day = userDayKey(row.takenAt, w.tz);
-    const slot = byDay.get(day) ?? { ids: [], names: [] };
+    const slot = byDay.get(day) ?? { ids: [], names: [], markers: [] };
     slot.ids.push(row.id);
+    slot.markers.push(row.biomarkerId);
     if (!slot.names.includes(row.analyte)) slot.names.push(row.analyte);
     byDay.set(day, slot);
   }
@@ -310,7 +315,7 @@ async function labChanges(w: Window): Promise<DayChange[]> {
       id: slot.ids[0],
       title: slot.names.slice(0, LAB_NAMES_PER_DAY).join(", "),
       count: slot.ids.length,
-      href: "/labs",
+      href: labDayHref(day, slot.markers),
     }),
   );
 }

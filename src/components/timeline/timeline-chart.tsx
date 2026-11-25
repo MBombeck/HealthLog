@@ -22,7 +22,7 @@
  * the card re-runs the layout: labels that no longer fit are left out, never
  * overlapped.
  */
-import { metricPageHref } from "@/lib/insights/metric-page";
+import { metricHref } from "@/lib/links/hrefs";
 import Link from "next/link";
 import { SeriesPointTips } from "./series-point-tips";
 import {
@@ -331,7 +331,7 @@ export function TimelineChart({
 
 /**
  * A value line's name leads to its metric's page, as a value tile in the day
- * view does (`metricPageHref`, one map for both). The names are drawn in the
+ * view does (`metricHref`, one map for both). The names are drawn in the
  * SVG; the links lie over them as plain HTML, so they take focus, a hover
  * and a 44 px target over the line's height. A kind without a page keeps a
  * plain name. Enter on a link follows it and never reaches the chart's own
@@ -349,7 +349,7 @@ export function SeriesNameLinks({
     ...layout.series.map((s) => ({
       key: s.key,
       top: s.top,
-      href: metricPageHref(s.key),
+      href: metricHref(s.key),
     })),
     ...layout.labSeries.map((s) => ({
       key: s.key,

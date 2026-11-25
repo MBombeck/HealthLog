@@ -9841,7 +9841,8 @@
           "off": "Cookie не имеют флага Secure.",
           "secure_over_https": "Защищённые cookie через HTTPS, как и должно быть.",
           "plain_http": "Обычный HTTP без флага Secure: подходит для сервера, доступного только в вашей сети.",
-          "secure_over_http": "Эта страница пришла по обычному HTTP, но у cookie стоит флаг Secure, поэтому браузеры отбрасывают вход. Включите HTTPS или задайте SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Эта страница пришла в приложение по обычному HTTP. За HTTPS-прокси настройте отправку X-Forwarded-Proto: https; при обычном HTTP задайте SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "HTTPS работает, но обратный прокси об этом не сообщает. Настройте отправку X-Forwarded-Proto: https.",
           "insecure_over_https": "Эта страница пришла по HTTPS, но у cookie нет флага Secure. Уберите SESSION_COOKIE_SECURE=false."
         },
         "app_url": {

@@ -13,28 +13,12 @@
 import { COACH_SOURCE_MEASUREMENT_TYPES } from "@/lib/ai/coach/source-measurement-types";
 import type { CoachScopeSource } from "@/lib/ai/coach/types";
 import {
-  SUB_PAGE_SLUGS,
-  subPageSlugForType,
-  type SubPageSlug,
-} from "@/lib/insights/sub-page-metric";
+  measurementTypeHref,
+  measurementValuesHref,
+  metricHref,
+} from "@/lib/links/hrefs";
 import { SIGNALS } from "@/lib/signals/registry";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
-
-/** Coach sources that read a model other than `Measurement`. */
-const NON_MEASUREMENT_SOURCES: Readonly<Record<string, string>> = {
-  mood: "/insights/mood",
-  workouts: "/insights/workouts",
-  compliance: "/insights/medications",
-};
-
-const SLUGS: ReadonlySet<string> = new Set(SUB_PAGE_SLUGS);
-
-function hrefForType(type: string): string {
-  const slug = subPageSlugForType(type);
-  return slug
-    ? `/insights/${slug}`
-    : `/insights/values/${encodeURIComponent(type)}`;
-}
 
 export function insightsHrefForMetric(
   raw: string | null | undefined,
@@ -43,24 +27,26 @@ export function insightsHrefForMetric(
   if (id === "" || id.length > 64 || !/^[A-Za-z0-9_-]+$/.test(id)) {
     return null;
   }
+
+  // A metric with a page of its own, in any spelling the registry reads.
+  const page = metricHref(id);
+  if (page) return page;
+
+  // A Coach source key whose metric has no page: its value list.
   const lower = id.toLowerCase();
-
-  // A sub-page slug, in either separator.
-  const slug = lower.replace(/_/g, "-");
-  if (SLUGS.has(slug)) return `/insights/${slug as SubPageSlug}`;
-
-  // A Coach source key, the spelling the data inventory links carry.
-  if (lower in NON_MEASUREMENT_SOURCES) return NON_MEASUREMENT_SOURCES[lower]!;
-  const sourceTypes =
-    COACH_SOURCE_MEASUREMENT_TYPES[lower as CoachScopeSource] ?? [];
-  if (sourceTypes.length > 0) return hrefForType(sourceTypes[0]!);
+  const sourceTypes = Object.hasOwn(COACH_SOURCE_MEASUREMENT_TYPES, lower)
+    ? COACH_SOURCE_MEASUREMENT_TYPES[lower as CoachScopeSource]
+    : [];
+  if (sourceTypes.length > 0) return measurementValuesHref(sourceTypes[0]!);
 
   // A signal key, then a measurement type itself.
   const upper = id.toUpperCase();
   const signal = SIGNALS[upper];
   if (signal && (signal.kind === "measurement" || signal.kind === "score")) {
-    return hrefForType(signal.source.measurementType);
+    return measurementTypeHref(signal.source.measurementType);
   }
-  if (measurementTypeEnum.safeParse(upper).success) return hrefForType(upper);
+  if (measurementTypeEnum.safeParse(upper).success) {
+    return measurementTypeHref(upper);
+  }
   return null;
 }
