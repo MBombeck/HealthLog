@@ -14062,7 +14062,7 @@
     },
     "unavailable": {
       "title": "No forma parte del acceso compartido",
-      "description": "Se comparte el historial de salud en sí, incluidos los antecedentes que hay en Anamnesis. Los ajustes de la cuenta, los servicios conectados, las notificaciones y las funciones de IA siguen siendo de la persona propietaria de la cuenta.",
+      "description": "Se comparte el historial de salud en sí, incluido lo que hay en Antecedentes médicos. Los ajustes de la cuenta, los servicios conectados, las notificaciones y las funciones de IA siguen siendo de la persona propietaria de la cuenta.",
       "leave": "Volver a mi historial"
     },
     "state": {

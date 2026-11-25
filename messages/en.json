@@ -14062,7 +14062,7 @@
     },
     "unavailable": {
       "title": "Not part of shared access",
-      "description": "Sharing covers the health record itself, including the health background under Anamnesis. Account settings, connected services, notifications and the AI features stay with the person who owns the account.",
+      "description": "Sharing covers the health record itself, including the health background under Medical history. Account settings, connected services, notifications and the AI features stay with the person who owns the account.",
       "leave": "Back to my record"
     },
     "state": {

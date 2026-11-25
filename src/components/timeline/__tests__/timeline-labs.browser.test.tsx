@@ -393,7 +393,7 @@ describe("the lab-marker cap on the timeline page", () => {
     await expect.element(extra).toHaveAttribute("aria-disabled", "true");
     await expect
       .element(
-        screen.getByText("Up to 24 lab values at once", { exact: false }),
+        screen.getByText("Up to 24 lab results at once", { exact: false }),
       )
       .toBeVisible();
     // A chosen marker can always be removed.

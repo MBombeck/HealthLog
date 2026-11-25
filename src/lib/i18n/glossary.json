@@ -2013,23 +2013,28 @@
           "key": "settings.sections.anamnesis.title",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "recordSharing.unavailable.description",
+          "form": "name",
+          "match": "contains"
         }
       ],
       "forbidden": {
         "de": [],
-        "en": [],
-        "fr": [],
-        "es": [],
+        "en": ["Anamnesis"],
+        "fr": ["Anamnèse"],
+        "es": ["Anamnesis"],
         "it": [],
         "pl": ["anamnez", "wywiad zdrowotn"],
-        "ko": [],
+        "ko": ["문진"],
         "nl": [
           {
             "text": "anamnese",
             "wholeWord": true
           }
         ],
-        "pt-BR": [],
+        "pt-BR": ["Anamnese"],
         "ru": [
           "медицинский анамнез",
           "медицинского анамнез",

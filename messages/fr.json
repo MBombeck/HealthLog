@@ -14062,7 +14062,7 @@
     },
     "unavailable": {
       "title": "Ne fait pas partie de l'accès partagé",
-      "description": "Le partage porte sur le dossier de santé lui-même, y compris les antécédents dans Anamnèse. Les réglages du compte, les services connectés, les notifications et les fonctions d'IA restent à la personne propriétaire du compte.",
+      "description": "Le partage porte sur le dossier de santé lui-même, y compris ce qui figure dans Antécédents médicaux. Les réglages du compte, les services connectés, les notifications et les fonctions d'IA restent à la personne propriétaire du compte.",
       "leave": "Revenir à mon dossier"
     },
     "state": {

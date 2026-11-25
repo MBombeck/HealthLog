@@ -14062,7 +14062,7 @@
     },
     "unavailable": {
       "title": "Não faz parte do acesso compartilhado",
-      "description": "O compartilhamento cobre o próprio registro de saúde, incluindo o histórico de saúde em Anamnese. Configurações da conta, serviços conectados, notificações e recursos de IA permanecem com a pessoa que possui a conta.",
+      "description": "O compartilhamento cobre o próprio registro de saúde, incluindo o que está em Histórico médico. Configurações da conta, serviços conectados, notificações e recursos de IA permanecem com a pessoa que possui a conta.",
       "leave": "Voltar ao meu registro"
     },
     "state": {
