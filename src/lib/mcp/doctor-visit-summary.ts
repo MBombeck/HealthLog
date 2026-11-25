@@ -21,6 +21,7 @@ import { getMetricStatusMeta } from "@/lib/insights/metric-status-registry";
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import { labUnitText } from "@/lib/labs/dimensionless";
 import { ownValue } from "@/lib/own-key";
+import { recoverySourceLabelEn } from "@/lib/scores/registry";
 
 /**
  * Fallback units for the headline specialised metric types the generic
@@ -102,6 +103,10 @@ export function summariseForVisit(
 
   const wellness = (data.wellnessScores ?? []).map((w) => ({
     score: w.type,
+    // A recovery row carries one source and is named by it.
+    ...(w.type === "RECOVERY_SCORE" && w.source
+      ? { label: recoverySourceLabelEn(w.source), scaleMax: w.scaleMax ?? 100 }
+      : {}),
     latest: round(w.latest),
     avg: round(w.avg),
     note: "descriptive composite, not a clinical assessment",

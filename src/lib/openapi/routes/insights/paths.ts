@@ -75,7 +75,11 @@ import {
 } from "./schemas";
 import { recommendationFeedbackRequestSchema } from "@/lib/validations/recommendation-feedback";
 import { isoDateTime } from "@/lib/validations/datetime";
-import { sameTimeBaselineDailyTotalExample } from "@/lib/openapi/examples";
+import {
+  readinessFreshExample,
+  readinessStaleExample,
+  sameTimeBaselineDailyTotalExample,
+} from "@/lib/openapi/examples";
 
 const insightsFeedbackRequest = recommendationFeedbackRequestSchema.meta({
   id: "InsightsFeedbackRequest",
@@ -892,6 +896,16 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                   summary:
                     "SAME_TIME_BASELINE in its daily_total form: today's steps from a once-a-day source against the usual full day",
                   value: sameTimeBaselineDailyTotalExample,
+                },
+                readinessFresh: {
+                  summary:
+                    "READINESS that describes today: every counted vital and the scored night are from the reader's today (`fresh` true)",
+                  value: readinessFreshExample,
+                },
+                readinessStale: {
+                  summary:
+                    "READINESS before the night has synced: the last blend, from `asOfDay`; shown as 'last 61 on Nov 24' with no band and no sentence",
+                  value: readinessStaleExample,
                 },
               },
             },

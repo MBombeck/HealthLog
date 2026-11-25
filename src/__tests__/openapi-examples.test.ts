@@ -13,14 +13,26 @@ import { labValuesFromText } from "@/lib/documents/local-lab-values";
 import { buildDailyTotalBaseline } from "@/lib/insights/derived/same-time-baseline";
 import type { CumulativeDayTotal } from "@/lib/measurements/cumulative-day-totals";
 import {
+  blendReadinessComponents,
+  readinessFreshness,
+} from "@/lib/insights/derived/readiness";
+import { deriveCoverage } from "@/lib/insights/derived/coverage";
+import { bandForScoreKind } from "@/lib/analytics/score/shared";
+import {
   inboundLabValuesExample,
   LAB_VALUES_EXAMPLE_TEXT,
+  READINESS_EXAMPLE_INPUT,
+  readinessFreshExample,
+  readinessStaleExample,
   SAME_TIME_DAILY_TOTAL_EXAMPLE_INPUT as INPUT,
   sameTimeBaselineDailyTotalExample,
 } from "@/lib/openapi/examples";
 import { openApiPaths } from "@/lib/openapi/routes";
 import { inboundDocumentDetail } from "@/lib/openapi/routes/documents";
-import { derivedMetricResponse } from "@/lib/openapi/routes/insights/schemas";
+import {
+  derivedMetricResponse,
+  readinessValue,
+} from "@/lib/openapi/routes/insights/schemas";
 
 describe("published response examples", () => {
   it("the daily_total example is what buildDailyTotalBaseline returns", () => {
@@ -78,12 +90,61 @@ describe("published response examples", () => {
     ).toEqual([]);
   });
 
+  it("the READINESS examples are what the blend, the band and the freshness rule give", () => {
+    const cases = [
+      [READINESS_EXAMPLE_INPUT.fresh, readinessFreshExample, true],
+      [READINESS_EXAMPLE_INPUT.stale, readinessStaleExample, false],
+    ] as const;
+    for (const [input, example, fresh] of cases) {
+      const { score, components } = blendReadinessComponents({
+        ...input.raw,
+      });
+      const { data } = example;
+      expect(data.value.score).toBe(score);
+      expect(data.value.components).toEqual(components);
+      expect(data.value.band).toBe(bandForScoreKind("readiness", score));
+      expect({
+        asOfDay: data.value.asOfDay,
+        fresh: data.value.fresh,
+      }).toEqual(
+        readinessFreshness({
+          vitalDays: [...input.vitalDays],
+          sleepNight: input.sleepNight,
+          todayKey: READINESS_EXAMPLE_INPUT.todayKey,
+        }),
+      );
+      expect(data.value.fresh).toBe(fresh);
+      const missing = components
+        .filter((c) => c.value === null)
+        .map((c) => c.key);
+      const derived = deriveCoverage({
+        requiredInputs: components.length,
+        presentInputs: components.length - missing.length,
+        historyDays: data.coverage.historyDays,
+        missing,
+        fullHistoryDays: data.provenance.windowDays,
+      });
+      expect(data.coverage).toEqual(derived.coverage);
+      expect(data.confidence).toEqual(derived.confidence);
+      expect(
+        readinessValue.strict().safeParse(data.value).error?.issues ?? [],
+      ).toEqual([]);
+      expect(derivedMetricResponse.safeParse(data).success).toBe(true);
+    }
+  });
+
   it("both examples are published on their routes", () => {
     const derived = openApiPaths["/api/insights/derived"]?.get?.responses?.[
       "200"
     ] as { content: Record<string, { examples?: Record<string, unknown> }> };
     expect(
       derived.content["application/json"].examples?.sameTimeBaselineDailyTotal,
+    ).toBeDefined();
+    expect(
+      derived.content["application/json"].examples?.readinessFresh,
+    ).toBeDefined();
+    expect(
+      derived.content["application/json"].examples?.readinessStale,
     ).toBeDefined();
     const lab = openApiPaths["/api/documents/inbound/{id}/lab-values"]?.post
       ?.responses?.["200"] as {

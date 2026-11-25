@@ -1601,8 +1601,36 @@ export const dashboardSnapshotResponse = z
             "SLEEP_SCORE",
             "MED_COMPLIANCE",
           ]),
-          score: z.number().int(),
-          band: z.enum(["green", "yellow", "red"]),
+          score: z
+            .number()
+            .int()
+            .describe(
+              "The rounded 0..100 score. On a READINESS ring that is not `fresh` it is the last blend, from `asOfDay`, for a 'last {score} on {asOfDay}' line, never shown as today's.",
+            ),
+          band: z
+            .enum(["green", "yellow", "red"])
+            .nullable()
+            .describe(
+              "The server's band; render it as given. Null only on a READINESS ring that is not `fresh` (1.50): a band is a statement about today. A RECOVERY_SCORE ring from a device keeps the colour it has always had until the ring is rebuilt on the vendor's thresholds (1.51).",
+            ),
+          fresh: z
+            .boolean()
+            .optional()
+            .describe(
+              "1.50, READINESS only: true when the blend describes today (`ReadinessValue.fresh`). False: show an empty ring face, no band, no sentence, at most 'last {score} on {asOfDay}'.",
+            ),
+          asOfDay: z
+            .string()
+            .optional()
+            .describe(
+              "1.50, READINESS only: the local day (YYYY-MM-DD) the blend rests on (`ReadinessValue.asOfDay`).",
+            ),
+          source: z
+            .string()
+            .optional()
+            .describe(
+              "1.50, RECOVERY_SCORE only: the `MeasurementSource` of the row the ring shows. `COMPUTED` is HealthLog's own readiness blend stored at 04:45 (the proxy ring): it is left out when a READINESS ring is also present, and the proxy ring retires in 1.51. Any other source is the device's own score, named after it (WHOOP Recovery, Oura Readiness, Polar Nightly Recharge).",
+            ),
           doses: z
             .object({
               taken: z.number().int(),
@@ -1616,7 +1644,7 @@ export const dashboardSnapshotResponse = z
       )
       .optional()
       .describe(
-        "User-selected hero score rings (max 3, `selectedScoreRings` on the dashboard layout), resolved server-side: READINESS / RECOVERY_SCORE / SLEEP_SCORE via the derived engines (module-gated like `/api/insights/derived`); MED_COMPLIANCE is TODAY's dose progress off the snapshot's medsToday tally — `score` is the rounded 0..100 progress, `doses` carries the taken/scheduled pair, the band is progress semantics (green once every scheduled dose is taken, yellow while doses remain, never red), and the ring is absent when no dose is scheduled today. Only rings with data appear, in selection order — a missing entry means no data or a disabled module, never zero. Clients render what arrives and never recompute.",
+        "User-selected hero score rings (max 3, `selectedScoreRings` on the dashboard layout), resolved server-side: READINESS / RECOVERY_SCORE / SLEEP_SCORE via the derived engines (module-gated like `/api/insights/derived`); MED_COMPLIANCE is TODAY's dose progress off the snapshot's medsToday tally — `score` is the rounded 0..100 progress, `doses` carries the taken/scheduled pair, the band is progress semantics (green once every scheduled dose is taken, yellow while doses remain, never red), and the ring is absent when no dose is scheduled today. Only rings with data appear, in selection order — a missing entry means no data or a disabled module, never zero; since 1.50 a RECOVERY_SCORE ring whose `source` is `COMPUTED` is also left out when a READINESS ring is present (the same blend twice). Clients render what arrives and never recompute.",
       ),
     briefing: z.record(z.string(), z.unknown()).nullable(),
     // v1.21.2 — server-resolved recall + forward-look for the

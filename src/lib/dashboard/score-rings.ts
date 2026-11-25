@@ -32,11 +32,28 @@
  *
  * Every ring resolves fail-soft: a throwing engine drops its ring, never
  * the snapshot.
+ *
+ * 1.50 — two rules from the score clean-up:
+ *
+ *   - READINESS carries `fresh` and `asOfDay` from the engine. A readiness
+ *     that is not fresh rests on an earlier day: the ring keeps the score
+ *     for "last 81 on Nov 24" but has no band (`null`), since a band is a
+ *     statement about today. A client built before 1.50 skips a ring it
+ *     cannot decode, so it shows no stale band either.
+ *   - RECOVERY_SCORE carries the `source` of the row it rests on. When that
+ *     row is the computed proxy (`isProxyRecovery`) and READINESS is also
+ *     selected, the recovery ring is left out: it is the same blend twice.
+ *     The proxy ring otherwise stays in 1.50 and retires with the iOS ring
+ *     rebuild in 1.51; a device's recovery ring always stays.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { ModuleKey } from "@/lib/modules/gate";
 import { SCORE_RING_IDS, type ScoreRingId } from "@/lib/dashboard-layout";
 import { isSurfaceVisible } from "@/lib/modules/surface";
+import {
+  isProxyRecovery,
+  readCurrentCanonicalRecovery,
+} from "@/lib/insights/derived/recovery-resolve";
 import {
   computeDerivedMetric,
   loadBaselineProfile,
@@ -51,7 +68,21 @@ export interface DashboardScoreRing {
   id: ScoreRingId;
   /** The 0..100 score (rounded). For `MED_COMPLIANCE`: today's dose progress. */
   score: number;
-  band: ScoreRingBand;
+  /**
+   * The server's band. `null` only on a READINESS ring that is not fresh:
+   * a band is a statement about today, an old blend makes none.
+   */
+  band: ScoreRingBand | null;
+  /** READINESS only (1.50): true when the blend describes today. */
+  fresh?: boolean;
+  /** READINESS only (1.50): the local day (YYYY-MM-DD) the blend rests on. */
+  asOfDay?: string;
+  /**
+   * RECOVERY_SCORE only (1.50): the source of the row the ring shows.
+   * `COMPUTED` is HealthLog's own readiness blend stored at 04:45 (the proxy
+   * ring, retiring in 1.51); any other is the device's own score.
+   */
+  source?: string;
   /**
    * `MED_COMPLIANCE` only — today's dose tally behind the progress
    * score, for the "taken/scheduled" ring display. Additive; absent on
@@ -77,6 +108,10 @@ const DERIVED_RING_METRIC: Partial<Record<ScoreRingId, DerivedMetricId>> = {
 interface ScoreBandValue {
   score: number;
   band: ScoreRingBand;
+  /** READINESS only. */
+  fresh?: boolean;
+  /** READINESS only. */
+  asOfDay?: string;
 }
 
 /**
@@ -148,7 +183,25 @@ export async function buildScoreRingsBlock(
         if (typeof value?.score !== "number" || !Number.isFinite(value.score)) {
           return null;
         }
-        return { id, score: Math.round(value.score), band: value.band };
+        const score = Math.round(value.score);
+        if (id === "READINESS") {
+          const fresh = value.fresh === true;
+          return {
+            id,
+            score,
+            band: fresh ? value.band : null,
+            fresh,
+            ...(typeof value.asOfDay === "string"
+              ? { asOfDay: value.asOfDay }
+              : {}),
+          };
+        }
+        if (id === "RECOVERY_SCORE") {
+          const row = await readCurrentCanonicalRecovery(prisma, userId, now);
+          if (row === null) return null;
+          return { id, score, band: value.band, source: row.source };
+        }
+        return { id, score, band: value.band };
       } catch {
         // Fail-soft per ring — a transient engine error drops the ring,
         // never the snapshot.
@@ -156,5 +209,17 @@ export async function buildScoreRingsBlock(
       }
     }),
   );
-  return resolved.filter((r): r is DashboardScoreRing => r !== null);
+  const rings = resolved.filter((r): r is DashboardScoreRing => r !== null);
+  // The proxy recovery ring beside a READINESS ring that resolved is the same
+  // blend twice; it gives way. Without a READINESS ring it stays (1.50).
+  const hasReadiness = rings.some((r) => r.id === "READINESS");
+  return rings.filter(
+    (r) =>
+      !(
+        hasReadiness &&
+        r.id === "RECOVERY_SCORE" &&
+        r.source !== undefined &&
+        isProxyRecovery({ source: r.source })
+      ),
+  );
 }

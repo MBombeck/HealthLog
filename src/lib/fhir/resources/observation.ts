@@ -39,6 +39,7 @@ import {
 } from "@/lib/fhir/resources/glucose";
 import { labObservations } from "@/lib/fhir/resources/labs";
 import { ownValue } from "@/lib/own-key";
+import { recoverySourceLabelEn } from "@/lib/scores/registry";
 
 /** v1.10.0 — English display per persisted wellness-score type (FHIR
  *  text-only concept; the score has no published LOINC term). */
@@ -260,15 +261,23 @@ function wellnessObservations(
       id: nextId(),
       status: "final",
       category: [categoryConcept("survey")],
+      // A recovery row carries one source; it is named by it, so a device's
+      // recovery and HealthLog's readiness never read as one series.
       code: {
-        text: ownValue(WELLNESS_SCORE_DISPLAY, s.type) ?? "Wellness score",
+        text:
+          s.type === "RECOVERY_SCORE" && s.source
+            ? recoverySourceLabelEn(s.source)
+            : (ownValue(WELLNESS_SCORE_DISPLAY, s.type) ?? "Wellness score"),
       },
       subject: patientRef,
       effectiveDateTime: s.latestAt,
       valueQuantity: ucumQuantity(s.latest, "{score}"),
       note: [
         {
-          text: "Descriptive wellness score (0–100) computed from tracked signals; not a clinical assessment or diagnosis.",
+          text:
+            s.scaleMax && s.scaleMax !== 100
+              ? `Device score on the vendor's 1-${s.scaleMax} scale; not a clinical assessment or diagnosis.`
+              : "Descriptive wellness score (0–100) computed from tracked signals; not a clinical assessment or diagnosis.",
         },
       ],
     });

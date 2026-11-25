@@ -359,6 +359,31 @@ describe("<ClinicianView>", () => {
     expect(html).toContain("Recovery score");
   });
 
+  it("names each recovery row by its source, never two sources in one row", () => {
+    const row = {
+      type: "RECOVERY_SCORE",
+      avg: 60,
+      min: 40,
+      max: 80,
+      count: 5,
+      latestAt: "2026-01-30T00:00:00.000Z",
+    };
+    const html = render(
+      makeReport({
+        wellnessScores: [
+          { ...row, source: "WHOOP", scaleMax: 100, latest: 81 },
+          { ...row, source: "COMPUTED", scaleMax: 100, latest: 64 },
+          { ...row, source: "POLAR", scaleMax: 6, latest: 5, avg: 4.2 },
+        ],
+      }),
+    );
+    expect(html).toContain("WHOOP Recovery");
+    expect(html).toContain("Readiness (HealthLog)");
+    expect(html).toContain("Polar Nightly Recharge (1-6)");
+    // The generic type name would merge them back into one series.
+    expect(html).not.toContain("Recovery score");
+  });
+
   it("renders the provenance header treating values as patient-reported", () => {
     const html = render(makeReport());
     expect(html).toContain("Shared health record");

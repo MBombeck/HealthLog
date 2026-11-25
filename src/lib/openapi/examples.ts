@@ -11,6 +11,7 @@
  */
 import type { InboundDocumentDetailDto } from "@/lib/validations/inbound-documents";
 import type { SameTimeBaselineDailyTotalValue } from "@/lib/insights/derived/same-time-baseline";
+import type { ReadinessValue } from "@/lib/insights/derived/readiness";
 
 /**
  * The day totals behind {@link sameTimeBaselineDailyTotalExample}: fourteen
@@ -222,6 +223,119 @@ export const inboundLabValuesExample: {
     summaryState: "NONE",
     extractionIncomplete: false,
     aiFailures: [],
+  },
+  error: null,
+};
+
+/**
+ * The contributor scores behind the two READINESS examples, and the days
+ * each counted input rests on. Fresh: every vital and the scored night are
+ * from the reader's today. Stale: resting pulse and the night still rest on
+ * the day before, so the blend is "last 61 on Nov 24", not today's.
+ */
+export const READINESS_EXAMPLE_INPUT = {
+  todayKey: "2026-11-25",
+  fresh: {
+    raw: { rhr: 78, hrv: 64, sleep: 82, respiratory: 90, mood: null },
+    vitalDays: ["2026-11-25", "2026-11-25", "2026-11-25"],
+    sleepNight: "2026-11-25",
+  },
+  stale: {
+    raw: { rhr: 61, hrv: 48, sleep: 66, respiratory: null, mood: 72 },
+    vitalDays: ["2026-11-24", "2026-11-25"],
+    sleepNight: "2026-11-24",
+  },
+} as const;
+
+const readinessProvenance = {
+  inputs: [
+    "RESTING_HEART_RATE",
+    "HEART_RATE_VARIABILITY",
+    "SLEEP_DURATION",
+    "RESPIRATORY_RATE",
+  ],
+  source: "DAY",
+  windowDays: 30,
+  computedAt: "2026-11-25T07:40:12.000Z",
+};
+
+/** `GET /api/insights/derived?metric=READINESS`, a blend that describes today. */
+export const readinessFreshExample = {
+  data: {
+    metric: "READINESS",
+    status: "ok",
+    value: {
+      score: 76,
+      band: "green",
+      components: [
+        { key: "rhr", value: 78, weight: 0.29411764705882354 },
+        { key: "hrv", value: 64, weight: 0.29411764705882354 },
+        { key: "sleep", value: 82, weight: 0.29411764705882354 },
+        { key: "respiratory", value: 90, weight: 0.11764705882352942 },
+        { key: "mood", value: null, weight: 0 },
+      ],
+      series: [68, 71, 74, 70, 72, 76],
+      asOfDay: "2026-11-25",
+      fresh: true,
+    } satisfies ReadinessValue,
+    coverage: {
+      requiredInputs: 5,
+      presentInputs: 4,
+      historyDays: 30,
+      missing: ["mood"],
+    },
+    confidence: { score: 80, band: "high" },
+    provenance: readinessProvenance,
+    reason: null,
+    assessment: null,
+    ai: { available: true, reason: null, onDeviceAllowed: true },
+  },
+  error: null,
+};
+
+/**
+ * `GET /api/insights/derived?metric=READINESS` early in the morning, before
+ * the night and the day's resting pulse have synced. The blend is the last
+ * one, from `asOfDay`; a client shows "last 61 on Nov 24" under an empty ring
+ * and neither the band nor a sentence about today.
+ */
+export const readinessStaleExample = {
+  data: {
+    metric: "READINESS",
+    status: "ok",
+    value: {
+      score: 61,
+      band: "yellow",
+      components: [
+        { key: "rhr", value: 61, weight: 0.2777777777777778 },
+        { key: "hrv", value: 48, weight: 0.2777777777777778 },
+        { key: "sleep", value: 66, weight: 0.2777777777777778 },
+        { key: "respiratory", value: null, weight: 0 },
+        { key: "mood", value: 72, weight: 0.16666666666666666 },
+      ],
+      series: [70, 66, 64, 61],
+      asOfDay: "2026-11-24",
+      fresh: false,
+    } satisfies ReadinessValue,
+    coverage: {
+      requiredInputs: 5,
+      presentInputs: 4,
+      historyDays: 30,
+      missing: ["respiratory"],
+    },
+    confidence: { score: 80, band: "high" },
+    provenance: {
+      ...readinessProvenance,
+      inputs: [
+        "RESTING_HEART_RATE",
+        "HEART_RATE_VARIABILITY",
+        "SLEEP_DURATION",
+        "MOOD",
+      ],
+    },
+    reason: null,
+    assessment: null,
+    ai: { available: true, reason: null, onDeviceAllowed: true },
   },
   error: null,
 };

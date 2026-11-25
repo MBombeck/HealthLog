@@ -23,17 +23,19 @@ import {
 } from "@/lib/insights/derived";
 import { prisma } from "@/lib/db";
 import {
+  isProxyRecovery,
+  readCurrentCanonicalRecovery,
+} from "@/lib/insights/derived/recovery-resolve";
+import { recoverySourceLabelEn } from "@/lib/scores/registry";
+import {
+  SCORE_GREEN_FLOOR,
+  SCORE_YELLOW_FLOOR,
+} from "@/lib/analytics/score/shared";
+import {
   UNBOUNDED_REACH,
   fitsReach,
   type CoachHistoryReach,
 } from "./history-reach";
-
-/**
- * Trailing window the recovery dedup probes for a WHOOP-native row — matches
- * the wellness reader's default trend window so "is the resolved recovery the
- * COMPUTED proxy?" is answered against the same set of days.
- */
-const RECOVERY_DEDUP_WINDOW_DAYS = 14;
 
 /**
  * The window each engine reads (its own `DEFAULT_WINDOW_DAYS`). Under a
@@ -81,7 +83,25 @@ interface DerivedSnapshotEntry {
   confidence?: number;
   /** Days of history backing the value. */
   historyDays: number;
+  /**
+   * What the number is, when the metric id alone would mislead: a device's
+   * recovery under the device's own name ("WHOOP Recovery"), the stress and
+   * strain scores as HealthLog's estimates.
+   */
+  label?: string;
+  /**
+   * READINESS only, when the blend does not describe today: the local day it
+   * rests on. Such an entry carries no band; it is the last blend, not
+   * today's.
+   */
+  asOfDay?: string;
 }
+
+/** The label each estimate carries, so the model never reads it as measured. */
+const ESTIMATE_LABEL: Partial<Record<DerivedMetricId, string>> = {
+  STRESS_SCORE: "stress (HealthLog estimate)",
+  STRAIN_SCORE: "strain (HealthLog estimate)",
+};
 
 /**
  * v1.21.0 — the coincident-deviation flag, compactly. "Two or more
@@ -150,8 +170,14 @@ type DerivedSnapshotBlock = Record<string, DerivedSnapshotEntry> & {
  * "neutral" — neither side of a disagreement. A genuine tension needs at least
  * one contributor on EACH side.
  */
-export const TENSION_HIGH_SCORE = 70;
-export const TENSION_LOW_SCORE = 45;
+export const TENSION_HIGH_SCORE = SCORE_GREEN_FLOOR;
+/**
+ * The highest contributor score that still reads unfavourably: the top of
+ * the red band of the one band rule (`scoreBand`, red below
+ * `SCORE_YELLOW_FLOOR`), so "unfavourable" here and "red" on the ring are the
+ * same judgement. `TENSION_HIGH_SCORE` is the green floor for the same reason.
+ */
+export const TENSION_LOW_SCORE = SCORE_YELLOW_FLOOR - 1;
 
 /** Human-readable contributor labels (no internal enum names reach the model). */
 const READINESS_CONTRIBUTOR_LABEL: Record<string, string> = {
@@ -305,57 +331,64 @@ export async function buildDerivedSnapshotBlock(
   // device-native row exists, so reading readiness once is enough.
   let readinessContributors: Array<{ key: string; value: number | null }> = [];
   let readinessBand: string | undefined;
+  let readinessFresh = false;
 
   for (const { metric, derived } of computed) {
     if (derived === null) continue;
     if (!isDerivedOk(derived)) continue; // omit insufficient — no noise
-    if (metric === "READINESS") {
-      const v = derived.value as {
-        band?: string;
-        components?: Array<{ key: string; value: number | null }>;
-      };
-      readinessBand = typeof v.band === "string" ? v.band : undefined;
-      readinessContributors = Array.isArray(v.components)
-        ? v.components.map((c) => ({ key: c.key, value: c.value }))
-        : [];
-    }
     const summary = summariseValue(metric, derived.value);
     if (!summary) continue;
-    block[metric] = {
+    const entry: DerivedSnapshotEntry = {
       value: summary.value,
       band: summary.band,
       confidence: derived.confidence.score,
       historyDays: derived.coverage.historyDays,
     };
+    const estimate = ESTIMATE_LABEL[metric];
+    if (estimate) entry.label = estimate;
+    if (metric === "READINESS") {
+      const v = derived.value as {
+        band?: string;
+        fresh?: boolean;
+        asOfDay?: string;
+        components?: Array<{ key: string; value: number | null }>;
+      };
+      readinessFresh = v.fresh === true;
+      readinessBand = typeof v.band === "string" ? v.band : undefined;
+      readinessContributors = Array.isArray(v.components)
+        ? v.components.map((c) => ({ key: c.key, value: c.value }))
+        : [];
+      // A blend that does not describe today is the last one, not today's:
+      // no band, and the day it rests on.
+      if (!readinessFresh) {
+        delete entry.band;
+        if (typeof v.asOfDay === "string") entry.asOfDay = v.asOfDay;
+      }
+    }
+    block[metric] = entry;
   }
 
-  // Recovery dedup (one number, one engine). The COMPUTED recovery proxy IS the
-  // readiness blend verbatim, so when no WHOOP-native row exists the resolved
-  // recovery equals readiness — feeding both labels would hand the model the
-  // identical score under two names. Drop the redundant recovery line ONLY when
-  // the resolved recovery is that COMPUTED proxy (no WHOOP-native row present).
-  // A genuine WHOOP recovery stays even if it coincidentally equals readiness —
-  // a numeric tie must never silence the device's ground-truth number.
-  if (block.READINESS !== undefined && block.RECOVERY_SCORE !== undefined) {
-    const whoopRecovery = await prisma.measurement.findFirst({
-      where: {
-        userId,
-        type: "RECOVERY_SCORE",
-        source: "WHOOP",
-        deletedAt: null,
-        measuredAt: {
-          // Both lines exist only when their windows fit, so this 14-day
-          // probe lies inside the limit too.
-          gte: new Date(
-            now.getTime() - RECOVERY_DEDUP_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-          ),
-          lte: now,
-        },
-      },
-      select: { id: true },
-    });
-    if (whoopRecovery === null) {
+  // Recovery: one rule (`isProxyRecovery`). The recovery value rests on the
+  // canonical row of the latest night. When that row is the COMPUTED proxy it
+  // is HealthLog's own readiness blend, so beside READINESS it would hand the
+  // model one measure under two names: drop it. A device's recovery (WHOOP,
+  // Oura, Polar) stays even when it equals readiness, under the device's own
+  // name, since it is a different measure.
+  if (block.RECOVERY_SCORE !== undefined) {
+    // The recovery line exists only when its 14-day window fits, so this
+    // read of the same window lies inside the limit too.
+    const current = await readCurrentCanonicalRecovery(
+      prisma,
+      userId,
+      now,
+      tz,
+    ).catch(() => null);
+    if (current === null) {
       delete block.RECOVERY_SCORE;
+    } else if (isProxyRecovery(current)) {
+      if (block.READINESS !== undefined) delete block.RECOVERY_SCORE;
+    } else {
+      block.RECOVERY_SCORE.label = `${recoverySourceLabelEn(current.source)} (device score)`;
     }
   }
 
@@ -385,11 +418,10 @@ export async function buildDerivedSnapshotBlock(
   // genuinely disagree — a coherent readiness adds no entry.
   const clinicalOverride =
     coincidentFired && !coincident.value.illnessExplained;
-  const tension = deriveTension(
-    readinessContributors,
-    readinessBand,
-    clinicalOverride,
-  );
+  // A stale blend's contributors describe an earlier day; no tension on them.
+  const tension = readinessFresh
+    ? deriveTension(readinessContributors, readinessBand, clinicalOverride)
+    : null;
   if (tension) out.TENSION = tension;
 
   return Object.keys(out).length > 0 ? out : null;

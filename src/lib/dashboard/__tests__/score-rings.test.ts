@@ -40,9 +40,20 @@ function moduleMap(
   } as Record<ModuleKey, boolean>;
 }
 
-// The dose ring reads the pre-computed medsToday block — no queries.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const fakePrisma = {} as any;
+// The dose ring reads the pre-computed medsToday block — no queries. The
+// recovery ring reads the source of the row it rests on.
+let recoveryRows: Array<{ value: number; measuredAt: Date; source: string }> =
+  [];
+function setRecoverySource(source: string) {
+  recoveryRows = [
+    { value: 38, measuredAt: new Date("2026-07-01T05:00:00.000Z"), source },
+  ];
+}
+const fakePrisma = {
+  measurement: { findMany: vi.fn(async () => recoveryRows) },
+  user: { findUnique: vi.fn(async () => ({ timezone: "UTC" })) },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any;
 
 function medsToday(taken: number, scheduled: number) {
   return { takenToday: taken, scheduledToday: scheduled };
@@ -50,6 +61,7 @@ function medsToday(taken: number, scheduled: number) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  setRecoverySource("WHOOP");
   loadBaselineProfile.mockResolvedValue({ userId: "user-1" });
 });
 
@@ -152,7 +164,15 @@ describe("buildScoreRingsBlock() — derived rings", () => {
     computeDerivedMetric.mockImplementation(
       async ({ metric }: { metric: string }) =>
         metric === "READINESS"
-          ? { status: "ok", value: { score: 71.6, band: "green" } }
+          ? {
+              status: "ok",
+              value: {
+                score: 71.6,
+                band: "green",
+                fresh: true,
+                asOfDay: "2026-07-01",
+              },
+            }
           : { status: "ok", value: { score: 38, band: "red" } },
     );
     const rings = await buildScoreRingsBlock(
@@ -164,8 +184,14 @@ describe("buildScoreRingsBlock() — derived rings", () => {
       null,
     );
     expect(rings).toEqual([
-      { id: "RECOVERY_SCORE", score: 38, band: "red" },
-      { id: "READINESS", score: 72, band: "green" },
+      { id: "RECOVERY_SCORE", score: 38, band: "red", source: "WHOOP" },
+      {
+        id: "READINESS",
+        score: 72,
+        band: "green",
+        fresh: true,
+        asOfDay: "2026-07-01",
+      },
     ]);
     // Profile loaded exactly once (the batch-route pattern).
     expect(loadBaselineProfile).toHaveBeenCalledTimes(1);
@@ -203,5 +229,68 @@ describe("buildScoreRingsBlock() — derived rings", () => {
       null,
     );
     expect(rings).toEqual([{ id: "SLEEP_SCORE", score: 55, band: "yellow" }]);
+  });
+});
+
+describe("buildScoreRingsBlock() — 1.50 freshness and the proxy rule", () => {
+  function engine(readiness: Record<string, unknown> | null) {
+    computeDerivedMetric.mockImplementation(
+      async ({ metric }: { metric: string }) => {
+        if (metric === "READINESS")
+          return readiness
+            ? { status: "ok", value: readiness }
+            : { status: "insufficient", reason: "insufficient_components" };
+        return { status: "ok", value: { score: 38, band: "red" } };
+      },
+    );
+  }
+  const build = (ids: Array<"READINESS" | "RECOVERY_SCORE">) =>
+    buildScoreRingsBlock(fakePrisma, "user-1", ids, moduleMap(), NOW, null);
+
+  it("a readiness that is not fresh keeps its score and day but has no band", async () => {
+    engine({ score: 81, band: "green", fresh: false, asOfDay: "2026-06-30" });
+    expect(await build(["READINESS"])).toEqual([
+      {
+        id: "READINESS",
+        score: 81,
+        band: null,
+        fresh: false,
+        asOfDay: "2026-06-30",
+      },
+    ]);
+  });
+
+  it("drops the proxy recovery ring beside a READINESS ring", async () => {
+    setRecoverySource("COMPUTED");
+    engine({ score: 70, band: "green", fresh: true, asOfDay: "2026-07-01" });
+    const rings = await build(["RECOVERY_SCORE", "READINESS"]);
+    expect(rings.map((r) => r.id)).toEqual(["READINESS"]);
+  });
+
+  it("keeps the proxy ring when READINESS is not selected (until 1.51)", async () => {
+    setRecoverySource("COMPUTED");
+    engine({ score: 70, band: "green", fresh: true, asOfDay: "2026-07-01" });
+    expect(await build(["RECOVERY_SCORE"])).toEqual([
+      { id: "RECOVERY_SCORE", score: 38, band: "red", source: "COMPUTED" },
+    ]);
+  });
+
+  it("keeps the proxy ring when READINESS is selected but has no ring", async () => {
+    setRecoverySource("COMPUTED");
+    engine(null);
+    const rings = await build(["RECOVERY_SCORE", "READINESS"]);
+    expect(rings.map((r) => r.id)).toEqual(["RECOVERY_SCORE"]);
+  });
+
+  it("keeps a device's recovery ring beside READINESS: Oura and Polar are device scores", async () => {
+    for (const source of ["WHOOP", "OURA", "POLAR"]) {
+      setRecoverySource(source);
+      engine({ score: 70, band: "green", fresh: true, asOfDay: "2026-07-01" });
+      const rings = await build(["RECOVERY_SCORE", "READINESS"]);
+      expect(rings.map((r) => [r.id, r.source])).toEqual([
+        ["RECOVERY_SCORE", source],
+        ["READINESS", undefined],
+      ]);
+    }
   });
 });

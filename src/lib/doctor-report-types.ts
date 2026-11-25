@@ -257,6 +257,14 @@ export interface DoctorReportData {
   wellnessScores?: Array<{
     /** The score MeasurementType (RECOVERY_SCORE / STRESS_SCORE / STRAIN_SCORE). */
     type: string;
+    /**
+     * RECOVERY_SCORE only (1.50): the one source the row's values come from.
+     * `COMPUTED` is HealthLog's readiness, any other is a device's own score
+     * under its own name. A window with two sources has two rows.
+     */
+    source?: string;
+    /** RECOVERY_SCORE only: the scale the values are on (Polar 6, else 100). */
+    scaleMax?: number;
     latest: number;
     avg: number;
     min: number;
