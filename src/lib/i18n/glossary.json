@@ -1,5 +1,5 @@
 {
-  "about": "Canonical product vocabulary: one term per concept per locale. `name` is the label form (nav entry, page title, section heading); `item` is the countable noun used in running text. Anchors are message keys that must carry the term (exact, or containing it). Forbidden lists the retired synonyms per locale; `allow` names the few message values that keep one for a stated reason. Display strings only: wire values, routes and enum ids never change with this file. A forbidden entry with `keys` applies only to message keys under that prefix. `decision` records why a concept carries the term it does. `spelling` lists retired spellings per locale. Guarded by src/__tests__/glossary-guard.test.ts.",
+  "about": "Canonical product vocabulary: one term per concept per locale. `name` is the label form (nav entry, page title, section heading); `item` is the countable noun used in running text. Anchors are message keys that must carry the term (exact, or containing it). Forbidden lists the retired synonyms per locale; `allow` names the few message values that keep one for a stated reason. Display strings only: wire values, routes and enum ids never change with this file. A forbidden entry with `keys` applies only to message keys under that prefix. `decision` records why a concept carries the term it does. `spelling` lists retired spellings per locale. Guarded by src/__tests__/glossary-guard.test.ts. The term covers every form of the concept in display copy: singular, plural and verb phrases ('Medicijn toevoegen', 'Registrar glucemia'), not only the bare noun, so a missing retired synonym is no licence for a second word. A word for a different thing is not a synonym: es 'glucosa' for the analyte (mean glucose, GMI) stays. Every `item` is anchored at least once, or `itemUnanchored` says why it cannot be; every term occurs in its locale's bundle.",
   "locales": ["de", "en", "fr", "es", "it", "pl", "ko", "nl", "pt-BR", "ru"],
   "concepts": [
     {
@@ -172,7 +172,7 @@
         },
         "nl": {
           "name": "Medicatie",
-          "item": "medicatie"
+          "item": "medicijn"
         },
         "pt-BR": {
           "name": "Medicamentos",
@@ -198,6 +198,11 @@
           "key": "nav.capture.medication",
           "form": "item",
           "match": "exact"
+        },
+        {
+          "key": "timeline.lanes.medications",
+          "form": "name",
+          "match": "exact"
         }
       ],
       "forbidden": {
@@ -221,7 +226,8 @@
         "nl": [],
         "pt-BR": [],
         "ru": []
-      }
+      },
+      "decision": "`name` is the label wherever the concept stands as a label (rail, page title, timeline lane, import kind); `item` is one medication, and the word for counting them. Korean: 복약 as the label, 약 in counts and running text (약 3개). Dutch: Medicatie for the area, medicijn for one medication, the word the copy already used for a single one."
     },
     {
       "id": "dose",
@@ -268,7 +274,13 @@
           "item": "доза"
         }
       },
-      "anchors": [],
+      "anchors": [
+        {
+          "key": "medications.intakeForm.doseLabel",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
       "forbidden": {
         "de": [],
         "en": [],
@@ -695,6 +707,11 @@
           "key": "cycle.title",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "timeline.lanes.cycle",
+          "form": "name",
+          "match": "exact"
         }
       ],
       "forbidden": {
@@ -839,7 +856,7 @@
         },
         "pl": {
           "name": "Przypomnienie o badaniu",
-          "item": "badanie kontrolne"
+          "item": "badanie"
         },
         "ko": {
           "name": "건강검진 알림",
@@ -871,7 +888,13 @@
         }
       ],
       "forbidden": {
-        "de": ["Mess-Erinnerung", "Messerinnerung", "Checkup", "Check-up"],
+        "de": [
+          "Mess-Erinnerung",
+          "Messerinnerung",
+          "Checkup",
+          "Check-up",
+          "Erinnerung zum Messen"
+        ],
         "en": ["checkup", "measurement reminder"],
         "fr": ["rappel de mesure", "rappels de mesure"],
         "es": [
@@ -903,7 +926,9 @@
           "напоминания о проверк",
           "напоминаний о проверк"
         ]
-      }
+      },
+      "decision": "One reminder type, whoever set it up: a screening, a blood count or a routine the Coach suggests (weigh daily, the 7-day blood-pressure week) sit in the same Vorsorge list and push as Vorsorge-Erinnerung / Check-up reminder. 'Erinnerung zum Messen' and 'Mess-Erinnerung' are retired as names; a sentence may still say what to measure.",
+      "itemUnanchored": "The item noun is declined in pl and ru in every message that holds it (o badaniu, об обследовании), so no key carries it verbatim in all locales; the name anchors carry the concept."
     },
     {
       "id": "visit",
@@ -967,6 +992,11 @@
           "key": "dashboard.heroItems.upcoming_visit",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "encounters.add",
+          "form": "item",
+          "match": "contains"
         }
       ],
       "forbidden": {
@@ -1066,6 +1096,11 @@
           "key": "treatmentSeries.heading",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "treatmentSeries.createTitle",
+          "form": "item",
+          "match": "contains"
         }
       ],
       "forbidden": {
@@ -1157,6 +1192,11 @@
           "key": "timeline.lanes.labs",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "labs.deleteConfirmTitle",
+          "form": "item",
+          "match": "contains"
         }
       ],
       "forbidden": {
@@ -1226,32 +1266,32 @@
     {
       "id": "illness",
       "description": "The illness area: illness episodes with symptoms, flares and recovery.",
-      "decision": "The area is named for what it holds (Krankheit, Illness), not for a diary format; one record is an episode in every locale, the word the list, the form and the insights already use.",
+      "decision": "The area is named for what it holds (Krankheit, Illness), not for a diary format; one record is an episode in every locale, the word the list, the form and the insights already use. The item is the short form the copy uses (Episode); the long form (Krankheitsepisode, illness episode) is for a sentence that would otherwise be ambiguous. Korean uses 아픈 기간, the plain word, and retires the loanword 에피소드.",
       "wire": "module illness, model ConditionEpisode",
       "terms": {
         "de": {
           "name": "Krankheit",
-          "item": "Krankheitsepisode"
+          "item": "Episode"
         },
         "en": {
           "name": "Illness",
-          "item": "illness episode"
+          "item": "episode"
         },
         "fr": {
           "name": "Maladie",
-          "item": "épisode de maladie"
+          "item": "épisode"
         },
         "es": {
           "name": "Enfermedad",
-          "item": "episodio de enfermedad"
+          "item": "episodio"
         },
         "it": {
           "name": "Malattia",
-          "item": "episodio di malattia"
+          "item": "episodio"
         },
         "pl": {
           "name": "Choroby",
-          "item": "epizod choroby"
+          "item": "epizod"
         },
         "ko": {
           "name": "아픈 날",
@@ -1259,15 +1299,15 @@
         },
         "nl": {
           "name": "Ziekte",
-          "item": "ziekte-episode"
+          "item": "episode"
         },
         "pt-BR": {
           "name": "Doenças",
-          "item": "episódio de doença"
+          "item": "episódio"
         },
         "ru": {
           "name": "Заболевания",
-          "item": "эпизод заболевания"
+          "item": "эпизод"
         }
       },
       "anchors": [
@@ -1310,6 +1350,11 @@
           "key": "settings.sections.layout.illness.title",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "illness.edit.title",
+          "form": "item",
+          "match": "contains"
         }
       ],
       "forbidden": {
@@ -1384,7 +1429,8 @@
           {
             "text": "일지",
             "keys": "illness."
-          }
+          },
+          "에피소드"
         ],
         "nl": [
           "ziektedagboek",
@@ -1414,6 +1460,67 @@
             "keys": "illness."
           }
         ]
+      }
+    },
+    {
+      "id": "illnessInsights",
+      "description": "The card on the illness page that sums up past episodes: how many, how long recovery usually takes.",
+      "decision": "Named for what it shows, the person's own course of illness. Not 'Insights', which names the analysis area, and not 'Auswertung'. A compact title may drop the possessive (Krankheitsverlauf, Illness history).",
+      "terms": {
+        "de": {
+          "name": "Dein Krankheitsverlauf"
+        },
+        "en": {
+          "name": "Your illness history"
+        },
+        "fr": {
+          "name": "Votre historique de maladies"
+        },
+        "es": {
+          "name": "Tu historial de enfermedades"
+        },
+        "it": {
+          "name": "La tua storia di malattie"
+        },
+        "pl": {
+          "name": "Twoja historia chorób"
+        },
+        "ko": {
+          "name": "지난 아픈 날 기록"
+        },
+        "nl": {
+          "name": "Je ziektegeschiedenis"
+        },
+        "pt-BR": {
+          "name": "Seu histórico de doenças"
+        },
+        "ru": {
+          "name": "Ваша история заболеваний"
+        }
+      },
+      "anchors": [
+        {
+          "key": "illness.insights.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          {
+            "text": "Auswertung",
+            "keys": "illness."
+          }
+        ],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
       }
     },
     {
@@ -1617,6 +1724,16 @@
           "key": "vaccinations.title",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "timeline.lanes.vaccinations",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "vaccinations.created",
+          "form": "item",
+          "match": "contains"
         }
       ],
       "forbidden": {
@@ -1687,6 +1804,16 @@
           "key": "documents.title",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "timeline.lanes.documents",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "documents.card.untitled",
+          "form": "item",
+          "match": "contains"
         }
       ],
       "forbidden": {
@@ -2330,7 +2457,7 @@
     },
     {
       "id": "doctorReportAndExport",
-      "description": "The settings section that builds the doctor report and exports the record.",
+      "description": "The settings section that builds the doctor report and exports the record. A web settings section: a client that splits the doctor report and the export into other places has no section to name, and keeps its own section names.",
       "wire": "settings section id health-record",
       "terms": {
         "de": {

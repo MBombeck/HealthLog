@@ -6058,7 +6058,7 @@
         },
         "illness": {
           "title": "아픈 날",
-          "description": "목록 보기와 에피소드 순서."
+          "description": "목록 보기와 아픈 기간 순서."
         },
         "checkups": {
           "title": "건강검진",
@@ -6213,7 +6213,7 @@
             "passphraseHelp": "Argon2id로 보관 파일 키를 만들고 AES-256-GCM으로 봉인해요. 파일은 .hlx 확장자로 저장해 주세요.",
             "noRecoveryWarning": "복구 수단이 없어요. 이 암호문구를 잃어버리면 보관 파일을 열 수 없어요. 안전한 곳에 보관해 주세요.",
             "detail": "보관하고 읽기 위한 기록의 휴대용 사본이에요. 값은 일반 JSON으로, 문서는 메타데이터만 들어 있어요. 이 서버가 계정을 되돌리려고 보관하는 주간 계정 사본이 아니며, 다른 서버에서 계정을 다시 만들 수 없어요. 아직 포함되지 않는 기록 유형도 있어요. 파일의 매니페스트에 들어 있는 항목이 나와요.",
-            "contents": "측정, 복약, 기분, 생리 주기, 검사 결과, 아픈 날 에피소드, 알레르기, 가족력, 영양, 운동, 건강 프로필, 사용자 지표를 JSON 파일 하나에."
+            "contents": "측정, 복약, 기분, 생리 주기, 검사 결과, 아픈 기간, 알레르기, 가족력, 영양, 운동, 건강 프로필, 사용자 지표를 JSON 파일 하나에."
           }
         },
         "import": {
@@ -6622,7 +6622,7 @@
         "subtitle": "보기, 정렬 순서, 바이오마커를 관리해요."
       },
       "illness": {
-        "subtitle": "에피소드의 보기와 순서를 관리해요."
+        "subtitle": "아픈 기간의 보기와 순서를 관리해요."
       },
       "vorsorge": {
         "subtitle": "보기, 순서, 개별 알림을 관리해요."
@@ -12024,17 +12024,17 @@
   },
   "illness": {
     "title": "아픈 날",
-    "subtitle": "아픈 날과 컨디션 에피소드를 돌아보는 기록이에요.",
+    "subtitle": "아픈 기간과 컨디션 변화를 돌아보는 기록이에요.",
     "settings": {
-      "viewDescription": "에피소드를 카드로 볼지 간단한 목록으로 볼지 선택하세요.",
-      "orderDescription": "에피소드를 원하는 순서대로 끌어서 옮기세요."
+      "viewDescription": "아픈 기간을 카드로 볼지 간단한 목록으로 볼지 선택하세요.",
+      "orderDescription": "아픈 기간을 원하는 순서대로 끌어서 옮기세요."
     },
     "customize": "아픈 날 맞춤 설정",
-    "newEpisode": "새 에피소드",
+    "newEpisode": "아픈 기간 추가",
     "logDay": "하루 기록",
     "markRecovered": "회복 표시",
-    "deletedToast": "에피소드를 삭제했어요",
-    "restoreError": "에피소드를 복원하지 못했어요",
+    "deletedToast": "아픈 기간을 삭제했어요",
+    "restoreError": "아픈 기간을 복원하지 못했어요",
     "onsetOn": "{date} 시작",
     "recoveredOn": "{date} 회복",
     "status": {
@@ -12043,8 +12043,8 @@
       "recovered": "회복"
     },
     "empty": {
-      "title": "아직 에피소드가 없어요",
-      "body": "에피소드를 시작하면 매일 증상을 기록하고 나중에 경과를 돌아볼 수 있어요."
+      "title": "아직 기록한 아픈 기간이 없어요",
+      "body": "아픈 기간을 시작하면 매일 증상을 기록하고 나중에 경과를 돌아볼 수 있어요."
     },
     "type": {
       "INFECTION": "감염",
@@ -12062,7 +12062,7 @@
       "FLARE": "악화"
     },
     "new": {
-      "title": "새 에피소드",
+      "title": "아픈 기간 추가",
       "description": "아픈 날이나 컨디션을 기록하세요. 이후 매일 증상을 기록할 수 있어요.",
       "label": "이름",
       "labelPlaceholder": "예: 감기",
@@ -12071,8 +12071,8 @@
       "onset": "시작일",
       "note": "메모",
       "notePlaceholder": "기억해 둘 내용 (암호화됨).",
-      "saveError": "에피소드를 저장하지 못했어요. 다시 시도해 주세요.",
-      "parent": "상위 에피소드",
+      "saveError": "아픈 기간을 저장하지 못했어요. 다시 시도해 주세요.",
+      "parent": "상위 아픈 기간",
       "parentNone": "연결 안 함",
       "resolved": "종료일",
       "resolvedHelp": "아직 진행 중이면 비워 두세요.",
@@ -12121,8 +12121,8 @@
       "recoveryGapLagSymptom": "기록한 증상이 가라앉기 {days, plural, other {#일}} 전에 몸이 먼저 나아졌어요.",
       "recoveryGapLeadSymptom": "회복으로 표시하기 {days, plural, other {#일}} 전에 기록한 증상이 가라앉았어요.",
       "recoveryGapSame": "몸이 나아진 날 수치도 함께 안정됐어요.",
-      "sleepContextMore": "이번 에피소드 동안 평소보다 눈에 띄게 많이 잤어요 (하룻밤 약 {hours}h).",
-      "sleepContextLess": "이번 에피소드 동안 평소보다 눈에 띄게 적게 잤어요 (하룻밤 약 {hours}h).",
+      "sleepContextMore": "이번 아픈 기간 동안 평소보다 눈에 띄게 많이 잤어요 (하룻밤 약 {hours}h).",
+      "sleepContextLess": "이번 아픈 기간 동안 평소보다 눈에 띄게 적게 잤어요 (하룻밤 약 {hours}h).",
       "redFlagTitle": "한번 더 살펴볼 점",
       "redFlagSpo2": "산소포화도가 며칠 동안 낮게 유지됐어요. 다시 이러면 진료를 받아 보세요.",
       "redFlagFever": "발열이 계속 이어졌어요. 다시 이러면 진료를 받아 보세요.",
@@ -12130,16 +12130,16 @@
         "above": "평소보다 높음",
         "below": "평소보다 낮음"
       },
-      "settled": "이번 에피소드에서 평소 범위를 벗어난 뚜렷한 신호는 없었어요."
+      "settled": "이번 아픈 기간에는 평소 범위를 벗어난 뚜렷한 신호는 없었어요."
     },
     "insights": {
       "title": "지난 아픈 날 기록",
-      "countOne": "이 기간에 에피소드를 1개 기록했어요.",
-      "countOther": "이 기간에 에피소드를 {count}개 기록했어요.",
+      "countOne": "선택한 범위에서 아픈 기간을 1번 기록했어요.",
+      "countOther": "선택한 범위에서 아픈 기간을 {count}번 기록했어요.",
       "typicalGap": "평균 회복 시차: 몸이 나아지고 수치가 안정되기까지 {days, plural, other {#일}}.",
       "typicalGapWithDriver": "평균 회복 시차: {days, plural, other {#일}}, {vital} 안정보다 몸이 먼저 나아지는 편이에요.",
-      "typicalGapLearning": "종료된 에피소드가 몇 개 더 쌓이면 평균 회복 시차가 나와요.",
-      "none": "이 기간에 기록한 에피소드가 없어요.",
+      "typicalGapLearning": "끝난 아픈 기간이 몇 번 더 쌓이면 평균 회복 시차가 나와요.",
+      "none": "선택한 범위에 기록한 아픈 기간이 없어요.",
       "analyze": "회복 시차 분석"
     },
     "section": {
@@ -12159,21 +12159,21 @@
       "fever": "체온: {value}{unit}",
       "empty": "아직 기록한 날이 없어요."
     },
-    "loadError": "이 에피소드를 불러오지 못했어요.",
+    "loadError": "이 아픈 기간을 불러오지 못했어요.",
     "backToList": "목록으로 돌아가기",
     "detail": {
       "note": "메모"
     },
     "edit": {
-      "title": "에피소드 편집",
-      "description": "이 에피소드의 정보를 수정하세요."
+      "title": "아픈 기간 편집",
+      "description": "이 아픈 기간의 정보를 수정하세요."
     },
     "menu": {
-      "label": "에피소드 작업"
+      "label": "아픈 기간 작업"
     },
     "deleteConfirm": {
-      "title": "이 에피소드를 삭제할까요?",
-      "body": "'{label}' 에피소드와 모든 하루 기록이 사라져요. 잠시 동안은 되돌릴 수 있어요."
+      "title": "이 아픈 기간을 삭제할까요?",
+      "body": "'{label}' 아픈 기간과 모든 하루 기록이 사라져요. 잠시 동안은 되돌릴 수 있어요."
     },
     "vital": {
       "RESTING_HEART_RATE": "안정 시 심박수",
@@ -12189,7 +12189,7 @@
       "WEIGHT": "체중",
       "FUNCTIONAL_IMPACT": "활동 정도"
     },
-    "listLoadError": "에피소드를 불러오지 못했어요."
+    "listLoadError": "아픈 기간을 불러오지 못했어요."
   },
   "coach": {
     "reminderSuggestion": {
@@ -15071,7 +15071,7 @@
       "life": "삶",
       "illness": "아픈 날",
       "allergies": "알레르기",
-      "medications": "약",
+      "medications": "복약",
       "vaccinations": "예방접종",
       "visits": "진료와 시술",
       "labs": "검사 결과",
@@ -15113,9 +15113,9 @@
         "valuesOne": "{since}부터 측정 항목 {count}개",
         "valuesFew": "{since}부터 측정 항목 {count}개",
         "valuesOther": "{since}부터 측정 항목 {count}개",
-        "illnessOne": "에피소드 {count}개, 만성 {chronic}개",
-        "illnessFew": "에피소드 {count}개, 만성 {chronic}개",
-        "illnessOther": "에피소드 {count}개, 만성 {chronic}개",
+        "illnessOne": "아픈 기간 {count}번, 만성 {chronic}개",
+        "illnessFew": "아픈 기간 {count}번, 만성 {chronic}개",
+        "illnessOther": "아픈 기간 {count}번, 만성 {chronic}개",
         "allergiesOne": "알레르기 {count}개",
         "allergiesFew": "알레르기 {count}개",
         "allergiesOther": "알레르기 {count}개",
@@ -15159,7 +15159,7 @@
       },
       "gap": {
         "valuesEmpty": "소스 연결",
-        "illnessEmpty": "에피소드 추가",
+        "illnessEmpty": "아픈 기간 추가",
         "medicationsWithoutStart": "채우기",
         "visitsEmpty": "진료 추가",
         "documentsUndated": "확인하기",
@@ -15577,7 +15577,7 @@
     "detail": "어떤 열에 무엇이 있는지 직접 고르면, HealthLog가 모든 행을 먼저 확인하고 확인 전에는 아무것도 가져오지 않습니다. 이미 있는 행은 건너뜁니다.",
     "kind": {
       "labs": "검사 결과",
-      "medications": "약"
+      "medications": "복약"
     },
     "sheetTitle": {
       "labs": "검사 결과 가져오기",

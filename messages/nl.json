@@ -627,7 +627,7 @@
       "description": "Wat wil je vastleggen?",
       "measurement": "Meting",
       "measurementDescription": "Gewicht, bloeddruk, hartslag en meer",
-      "medication": "Medicatie",
+      "medication": "Medicijn",
       "medicationDescription": "Een dosis vastleggen, ingenomen of overgeslagen",
       "mood": "Stemming",
       "moodDescription": "Je stemming en tags vastleggen",
