@@ -35,6 +35,10 @@ const SESSION_DELETERS: Record<string, { deletes: number; why: string }> = {
     deletes: 3,
     why: "getSession dropping the one expired or unusable row it was handed, destroyOtherSessions (revokes the refresh tokens and paired access tokens in the same transaction) and destroySessionById (one web session the owner picked)",
   },
+  "lib/auth/cookie-identity-conflict.ts": {
+    deletes: 1,
+    why: "the one session row of another account whose cookie rode beside a Bearer token; the token's own account keeps its sign-ins",
+  },
   "lib/account-deletion/lifecycle.ts": {
     deletes: 1,
     why: "eraseAccount, right before the account row is deleted and every other credential cascades with it",
