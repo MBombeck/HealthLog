@@ -335,6 +335,12 @@ export interface RelayActivityRow {
  * End these Activities of one relay-bound device over the relay. Returns the
  * ids of the Activity rows that are spent: the relay accepted the end, or
  * reported the Activity gone.
+ *
+ * Every kind of Activity may be ended, the app-started ones included
+ * (`relayEventAllowed` in `live-activity.ts`): an end item carries no
+ * `event` and no `state`, and the relay writes its fixed end state
+ * (`countdownTarget: 0`, status taken, dismissed at once), which both
+ * attributes types read without a time.
  */
 export async function endActivitiesOverRelay(
   device: RoutableDevice & { relayBindingKey: string | null },

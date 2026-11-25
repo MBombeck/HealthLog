@@ -42,6 +42,8 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import { emitSignal } from "@/lib/logging/signal";
 import {
+  MULTIPART_ENVELOPE_RESERVE_BYTES,
+  MultipartMalformedError,
   MultipartTooLargeError,
   streamMultipartToDisk,
   type MultipartFileResult,
@@ -57,9 +59,6 @@ import {
 /** Five uploads a minute per acting account and kind. */
 export const STAGED_UPLOAD_RATE_LIMIT = 5;
 const RATE_LIMIT_WINDOW_MS = 60_000;
-
-/** Room for the multipart boundaries and part headers around the file. */
-const MULTIPART_ENVELOPE_RESERVE_BYTES = 64 * 1024;
 
 /** The `errorCode` of every 413 an upload answers. */
 export const IMPORT_FILE_TOO_LARGE_CODE = "import.file.too_large";
@@ -240,8 +239,9 @@ async function receiveUpload(
       errorCode: IMPORT_FILE_TOO_LARGE_CODE,
     });
 
-  // A cheap pre-flight; the stream below holds the file itself to the cap,
-  // so a missing or wrong header cannot get past it.
+  // A cheap pre-flight; the stream below counts every byte it reads against
+  // the cap plus the same envelope, so a missing or wrong header (a chunked
+  // body has none) cannot get past it.
   const declaredBytes = Number(request.headers.get("content-length") ?? 0);
   if (declaredBytes > spec.maxBytes + MULTIPART_ENVELOPE_RESERVE_BYTES) {
     await actor.denied("content_length_exceeded", {
@@ -264,9 +264,16 @@ async function receiveUpload(
       await actor.denied("file_too_large", {});
       return tooLarge();
     }
-    const message = err instanceof Error ? err.message : "upload_failed";
-    await actor.denied("stream_to_disk_failed", { message });
-    return apiError(`Multipart upload failed: ${message}`, 422);
+    // Only the parser's own refusals are shown. Anything else (a dropped
+    // connection, a full disk) carries a message written for a log, which
+    // can name the temp path; the caller gets the generic answer.
+    if (err instanceof MultipartMalformedError) {
+      await actor.denied("stream_to_disk_failed", { message: err.message });
+      return apiError(`Multipart upload failed: ${err.message}`, 422);
+    }
+    const name = err instanceof Error ? err.name : "unknown";
+    await actor.denied("stream_to_disk_failed", { error: name });
+    return apiError("Multipart upload failed", 422);
   }
 }
 

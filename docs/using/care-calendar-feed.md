@@ -9,7 +9,7 @@ the data is kept.
 ## Turning it on
 
 Open **Settings**, then **Health record**, and find **Care calendar** under
-**Calendar**. **Check-ups** and **Vaccinations** link to it from the row under
+**Calendar**. **Care** and **Vaccinations** link to it from the row under
 their heading, and **Settings > Data & privacy** lists it under **Who can reach
 your record**. Before the button, the card says what it
 means: your calendar provider stores the dates on its servers, and turning the
@@ -30,9 +30,9 @@ Adding it works as for the cycle feed: see
 - **Booked visits**: every visit you booked for the future, at its time, as a
   one-hour event. A visit stores a start, not an end, so the hour is a
   placeholder.
-- **Check-ups coming due**: every check-up you set up under Check-ups, as an
+- **Check-ups coming due**: every check-up you set up under Care, as an
   all-day event on the day it comes due. This is the same due day the
-  Check-ups page shows, so a skip, a snooze or a "done" moves it in your
+  Care page shows, so a skip, a snooze or a "done" moves it in your
   calendar too.
 - **Vaccination boosters coming due**, the same way. They follow the
   vaccinations module: with it switched off, they are left out.

@@ -469,6 +469,12 @@ model User {
   /// medication detail read, which builds the link. The server never fetches
   /// anything from a registry.
   medicineRegistry              String?              @map("medicine_registry")
+  /// #1113 — whether the navigation shows its counts (doses due on
+  /// Medications, check-ups due on Checkups) in the sidebar and the More
+  /// sheet. On by default. While it is off the client does not ask
+  /// `GET /api/nav/counts` at all. Written by
+  /// `PATCH /api/auth/me/show-nav-counts`; read through `/api/auth/me`.
+  showNavCounts                 Boolean              @default(true) @map("show_nav_counts")
   // v1.18.6 — explicit "I have diabetes / clinician glucose targets" opt-in.
   // When `true`, the glucose target resolver applies the tighter ADA glycemic
   // GOAL bands (fasting 80–130, postprandial < 180) instead of the general
@@ -3338,6 +3344,8 @@ model Medication {
   /// and the rescue doses given from it.
   seizureTypes         SeizureTypeProfile[]
   seizureRescueDoses   SeizureRescueDose[]
+  /// When the running `snoozedUntil` was set (at most one row).
+  snooze               MedicationSnooze?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -3621,6 +3629,22 @@ model MedicationScheduleRevision {
 
   @@index([medicationId, validFrom])
   @@map("medication_schedule_revisions")
+}
+
+/// When a medication's snooze was set: the instant the snooze scope reads to
+/// tell the dose the snooze answers (`src/lib/medications/snooze-scope.ts`).
+/// The medication row's own `updatedAt` moves with every later write to the
+/// row (the low-stock notice, an edit), which carried a morning snooze over
+/// to the evening dose. Written with `snoozedUntil` by every snooze write,
+/// kept off the medication row so nothing else moves it and it never reaches
+/// the medication wire. Host reminder state: not in a backup; a snooze with
+/// no row reads the medication's `updatedAt` as before.
+model MedicationSnooze {
+  medicationId String     @id @map("medication_id")
+  snoozedAt    DateTime   @map("snoozed_at")
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@map("medication_snoozes")
 }
 
 /// v1.25 — durable medication pause intervals. The `Medication.pausedAt`
@@ -6550,7 +6574,12 @@ model LiveActivityToken {
   id                String    @id @default(cuid())
   deviceId          String    @map("device_id")
   pushToken         String    @map("push_token")
-  medicationId      String    @map("medication_id")
+  /// The dose's medication; null for a relay-started Activity the app
+  /// registered without its dose while the server's records did not show
+  /// exactly one running relay start to attribute it to (migration 0561).
+  /// The relay pass ends such an Activity. Writer: `POST /api/devices`;
+  /// reader: `push-relay/live-activity.ts`.
+  medicationId      String?   @map("medication_id")
   /// The slot the Activity counts down to; null for a medication-level one.
   slotInstant       DateTime? @map("slot_instant")
   /// The device's `hl-activity-v1` statement for this Activity
@@ -6663,9 +6692,11 @@ model Device {
   laStartToken               String?             @map("la_start_token")
   laStartStatement           Json?               @map("la_start_statement")
   laStartSignature           String?             @map("la_start_signature")
-  /// The dose the last relay start was for, so a dose starts once and the
-  /// app's registration of the started Activity (`relayStart: true`) finds
-  /// its dose. Reader and writer: `push-relay/live-activity.ts`.
+  /// The dose the last relay start was for, so the app's registration of
+  /// the started Activity (`relayStart: true`) finds its dose. Only the
+  /// last: once per dose is kept by the start's outbox row
+  /// (`PushRelayDelivery.medicationId`, `slotInstant`). Reader and writer:
+  /// `push-relay/live-activity.ts`.
   laStartedMedicationId      String?             @map("la_started_medication_id")
   laStartedSlot              DateTime?           @map("la_started_slot")
   /// When the relay accepted the last start; null while it is in flight.
@@ -6788,7 +6819,7 @@ model MeasurementReminder {
   /// behaviour, so the published contract does not move — the `origin` enum
   /// stays two-armed, the cron still fires by `nextDueAt` regardless of why a
   /// row exists, and no Vorsorge surface excludes these rows. A booster
-  /// belongs on `/checkups`. That is also why a fourth nullable column here
+  /// belongs on `/care`. That is also why a fourth nullable column here
   /// is not the signal the appointment arm's warning described: an
   /// appointment had to be bent into this engine (one-shot, no cadence,
   /// excluded everywhere), whereas a booster is the engine's native case —
@@ -10658,7 +10689,7 @@ model NutrientIntakeDay {
 /// than an oversight. The 18 `ModuleKey` entries have three shapes: an
 /// opt-out data vertical, an egress surface, and one output format. A
 /// visit is none of them — it is not a tracked signal, it egresses
-/// nothing, and it is not an output. `/checkups` sets the precedent and
+/// nothing, and it is not an output. `/care` sets the precedent and
 /// states the reasoning (`src/components/layout/nav-model.ts`): gating
 /// the entry would orphan reminders the user can still create. One gate
 /// over an encounter would also contradict its own members, since an
@@ -11725,6 +11756,14 @@ model PushRelayDelivery {
   acceptedAt        DateTime? @map("accepted_at")
   confirmedAt       DateTime? @map("confirmed_at")
   receiptReportedAt DateTime? @map("receipt_reported_at")
+  /// A Live Activity start only: the dose it was for. The record that keeps
+  /// a dose to one start per device, whatever the device row holds and
+  /// whether the device has reported the Activity yet. A sign-out clears
+  /// it, so a dose may start again on the next sign-in. Writer:
+  /// `push-relay/relay-send.ts`; reader: `push-relay/live-activity-settle.ts`
+  /// (`doseStartHeld`).
+  medicationId      String?   @map("medication_id")
+  slotInstant       DateTime? @map("slot_instant")
   createdAt         DateTime  @default(now()) @map("created_at")
 
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
@@ -11732,6 +11771,7 @@ model PushRelayDelivery {
   @@unique([deviceId, ref])
   @@index([status, nextAttemptAt])
   @@index([deviceId, pushClass, createdAt])
+  @@index([deviceId, medicationId, slotInstant])
   @@map("push_relay_deliveries")
 }
 

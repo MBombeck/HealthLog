@@ -35,7 +35,7 @@ export const GET = apiHandler(async () => {
   const { user } = await requireRecordAuth("read", "measurements");
 
   // The query (with its ENCOUNTER-origin exclusion) lives in the shared
-  // list read so this route and the `/checkups` SSR prefetch cannot drift.
+  // list read so this route and the `/care` SSR prefetch cannot drift.
   const reminders = await listMeasurementReminders(user.id);
 
   annotate({

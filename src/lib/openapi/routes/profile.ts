@@ -34,6 +34,7 @@ import {
   injectionSitePrefsPatchSchema,
   labsLocalOcrPatchSchema,
   workoutRoutesPatchSchema,
+  showNavCountsPatchSchema,
   unitPreferencePatchSchema,
   glucoseUnitPatchSchema,
   useCentralCodexPatchSchema,
@@ -1048,6 +1049,16 @@ const workoutRoutesPatchRequest = workoutRoutesPatchSchema.meta({
 const workoutRoutesResponse = z
   .object({ storeWorkoutRoutes: z.boolean() })
   .meta({ id: "WorkoutRoutesResponse" });
+
+const showNavCountsPatchRequest = showNavCountsPatchSchema.meta({
+  id: "ShowNavCountsPatchRequest",
+  description:
+    "Show or hide the counts in the navigation (doses due, check-ups due). On by default.",
+});
+
+const showNavCountsResponse = z
+  .object({ showNavCounts: z.boolean() })
+  .meta({ id: "ShowNavCountsResponse" });
 
 const useCentralCodexPatchRequest = useCentralCodexPatchSchema.meta({
   id: "UseCentralCodexPatchRequest",
@@ -2361,6 +2372,33 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/auth/me/show-nav-counts": {
+    patch: {
+      tags: ["Auth"],
+      summary: "Show or hide the navigation counts",
+      description:
+        "Whether the sidebar and the More sheet show their counts: the doses due on Medications and the check-ups due on Checkups. On by default. While it is off a client shows no count and does not call `GET /api/nav/counts`. The current value is `showNavCounts` on `/api/auth/me`.\n\nHard-set, idempotent, audit-logged. Rate-limited 60 / min per user. The caller's own setting: under a switched session it is still the caller's.\n\nThe body is capped at 1 KB and must carry `Content-Type: application/json`. Anything larger is 413, a wrong content type is 415, and a body that is not JSON at all is 400.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: showNavCountsPatchRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The stored flag.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                showNavCountsResponse,
+                "PatchShowNavCountsEnvelope",
+              ),
+            },
+          },
+        },
+        ...cappedScalarBodyRefusals,
+        ...stdResponses,
+      },
+    },
+  },
   "/api/auth/me/use-central-codex": {
     get: {
       tags: ["Auth"],
@@ -2418,14 +2456,16 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       description:
         "Writes the account's UI language and mirrors it into the locale cookie via `Set-Cookie`. Both halves matter: the column is what server-side work reads when there is no request to take a cookie from — a scheduled nudge, a Telegram message — and without it those went out in English however the person reads the app. The server-set cookie outlives the client-written one, which some browsers cap at seven days.\n\n" +
         "An ACTOR surface, and the clearest case for that mode existing: the interface language belongs to the person reading the screen, never to the record on it. Under a record scope this would write a delegate's choice onto the owner's row and then mail the owner in a language they may not read. A request that attaches the per-request account selector (the `AccountSelector` header parameter) is refused with 403 `sharing.not_permitted`. It keeps answering while a switch is on rather than merely refusing safely, because the language switcher fires a mount-time backfill on every page load.\n\n" +
-        "Idempotent: when the column already matches, the write is skipped and only the cookie is refreshed. Body capped at 4 KB.",
+        "A browser tab's write is held to the locale cookie it carries, which every switch writes before sending: a body that disagrees with that cookie is stale (another tab switched since it rendered) and a body sent with no cookie is the browser-language guess, which fills an empty column but never replaces a stored choice. In both cases nothing is written and the reply names the language in force, which the tab then adopts. The cookie is set only where the reply changes it, so a late reply cannot put an older language back. A Bearer caller states its choice in the body and it is stored as sent.\n\n" +
+        "Idempotent: when the column already matches, the write is skipped. Body capped at 4 KB.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: localePutRequest } },
       },
       responses: {
         "200": {
-          description: "The accepted locale.",
+          description:
+            "The locale in force: the body's, or for a stale or guessed browser write the one the browser and account already hold.",
           content: {
             "application/json": {
               schema: dataEnvelope(

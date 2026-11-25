@@ -190,7 +190,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   // render — not buried three taps deep under Settings → Reminders. The
   // Reminders hub still links to it; this is the direct front door.
   {
-    href: "/checkups",
+    href: "/care",
     group: "record",
     sharedRecord: true,
     tKey: "nav.vorsorge",
@@ -270,21 +270,9 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     icon: FileScan,
     tourId: "nav-documents",
   },
-  // The emergency card: blood group, allergies, medications and
-  // contacts to show a stranger, with its offline copy, wallet card and QR
-  // link. A page people use rather than a setting, so it is a destination of
-  // its own after the record pages, and on a phone it sits in the More hub
-  // (two taps). Core: no module owns it. Inside a shared record it follows
-  // its routes' rule (`RECORD_PAGE_SURFACES`): the guardian of a managed
-  // profile holds the profile's card, an adult's delegate never does.
-  {
-    href: "/emergency-card",
-    group: "record",
-    sharedRecord: true,
-    tKey: "nav.emergencyCard",
-    icon: HeartPulse,
-    tourId: "nav-emergency-card",
-  },
+  // The emergency card is not a destination here: it is set up once and then
+  // waits in the background, so it opens from the account menu
+  // (`NAV_ACCOUNT_MENU_DESTINATIONS` below) rather than taking a rail slot.
   // v1.42 (#613) — the life timeline, first under Analysis.
   // Owned by the opt-in `timeline` module in the surface map, so it appears
   // only once the person switches it on; on a phone it lands in the More hub
@@ -413,6 +401,51 @@ export function visibleUtilityDestinations(
   if (landing === null) return [];
   return NAV_UTILITY_DESTINATIONS.filter(isSettingsUtilityDestination).map(
     (d) => ({ ...d, href: `/settings/${landing}` }),
+  );
+}
+
+/**
+ * Record pages that open from the account menu rather than the rail.
+ *
+ * The emergency card (blood group, allergies, medications and contacts to show
+ * a stranger, with its offline copy, wallet card and QR link) is set up once
+ * and then lives in the background, so it takes no slot in the sidebar or the
+ * phone's More sheet. It sits in both account menus beside the account
+ * utilities, and stays reachable from Medical history, Settings > Health
+ * record and the search palette.
+ *
+ * Unlike the utility tail these are pages OF THE RECORD, so inside a shared
+ * record they follow their routes' rule (`RECORD_PAGE_SURFACES`) exactly as a
+ * rail destination flagged `sharedRecord` does: the guardian of a managed
+ * profile holds the profile's card, an adult's delegate never does. Core: no
+ * module owns any of them.
+ */
+export interface NavAccountMenuDestination {
+  href: string;
+  /** i18n key under the `nav.*` namespace. */
+  tKey: string;
+  icon: LucideIcon;
+}
+
+export const NAV_ACCOUNT_MENU_DESTINATIONS: ReadonlyArray<NavAccountMenuDestination> =
+  [{ href: "/emergency-card", tKey: "nav.emergencyCard", icon: HeartPulse }];
+
+/**
+ * The account-menu record pages visible to this session. Both account menus
+ * and the search palette read it, so the three cannot disagree about when the
+ * emergency card is offered.
+ */
+export function visibleAccountMenuDestinations(
+  opts: {
+    sharedRecord?: boolean;
+    sections?: readonly ShareDomain[] | null;
+    record?: NavRecordContext | null;
+  } = {},
+): NavAccountMenuDestination[] {
+  if (!opts.sharedRecord) return [...NAV_ACCOUNT_MENU_DESTINATIONS];
+  const viewer = sharedViewer(opts.sections ?? null, opts.record ?? null);
+  return NAV_ACCOUNT_MENU_DESTINATIONS.filter((d) =>
+    isSharedRecordPathOpen(d.href, viewer),
   );
 }
 

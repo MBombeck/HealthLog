@@ -19,6 +19,10 @@ import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
 } from "@/lib/rollups/mood-rollups";
+import {
+  foldMoodEntriesToDays,
+  type MoodDayRow,
+} from "@/lib/rollups/mood-day-fold";
 
 /**
  * Five-year window for the rollup-tier read. The rollup tier stores one
@@ -61,26 +65,6 @@ function utcDayLabel(d: Date): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-/** Aggregate multiple raw mood entries per day into daily averages. */
-function aggregateDailyAverages(
-  records: Array<{ date: string; score: number }>,
-): MoodDailyEntry[] {
-  const byDay = new Map<string, { sum: number; count: number }>();
-  for (const record of records) {
-    const current = byDay.get(record.date) ?? { sum: 0, count: 0 };
-    current.sum += record.score;
-    current.count += 1;
-    byDay.set(record.date, current);
-  }
-  return Array.from(byDay.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, stats]) => ({
-      date: day,
-      score: Math.round((stats.sum / stats.count) * 100) / 100,
-      samples: stats.count,
-    }));
-}
-
 /**
  * Canonical mood daily series for a user. Rollup fast-path first; a single
  * live walk only on coverage miss (and the warm-up below mints the rollups
@@ -102,27 +86,12 @@ export async function buildMoodDailySeries(
 
   const since = new Date(Date.now() - MOOD_SERIES_WINDOW_MS);
   const rollups = await readMoodDayRollups(userId, since);
-
-  if (rollups.length > 0) {
-    const entries = rollups
-      .map((r) => ({
-        date: utcDayLabel(r.bucketStart),
-        score: Math.round(r.mean * 100) / 100,
-        samples: r.count,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-    const dataPoints: DataPoint[] = rollups.map((r) => ({
-      date: r.bucketStart,
-      value: r.mean,
-    }));
-    const summary = summarize(dataPoints);
-    const entryCount = rollups.reduce((s, r) => s + r.count, 0);
-    return { entries, summary, entryCount, source: "rollup" };
-  }
+  if (rollups.length > 0) return seriesFromDays(rollups, "rollup");
 
   // Coverage fallback — no rollup rows yet. Run the live walk ONCE over the
-  // same window the rollup read covers; the warm-up above mints the rollups
-  // for the next request.
+  // same window the rollup read covers and fold it into the rows the tier
+  // would hold, so both paths answer with the same series and summary; the
+  // warm-up above mints the rollups for the next request.
   const moodEntries = await client.moodEntry.findMany({
     // v1.7.0 sync — exclude tombstoned rows from the fallback.
     where: { userId, deletedAt: null, moodLoggedAt: { gte: since } },
@@ -130,27 +99,34 @@ export async function buildMoodDailySeries(
     select: { date: true, score: true },
   });
 
-  const entries = aggregateDailyAverages(
-    moodEntries.map((e: { date: string; score: number }) => ({
-      date: e.date,
-      score: e.score,
-    })),
-  );
-
-  // Date anchor is local-noon for the day so the slope x-axis spans
-  // whole-day units — mirrors the dashboard tile's one-number-per-day.
-  const dataPoints: DataPoint[] = entries.map((e) => ({
-    date: new Date(`${e.date}T12:00:00.000Z`),
-    value: e.score,
-  }));
-  const summary = summarize(dataPoints);
-
   // An empty table reads as "rollup" (nothing to walk) for annotation
   // parity with the historic route; a non-empty live walk reads "live".
+  return seriesFromDays(
+    foldMoodEntriesToDays(moodEntries),
+    moodEntries.length === 0 ? "rollup" : "live",
+  );
+}
+
+/** The series and summary of DAY rows, whichever path produced them. */
+function seriesFromDays(
+  days: ReadonlyArray<MoodDayRow>,
+  source: MoodDailySeries["source"],
+): MoodDailySeries {
+  const entries = days
+    .map((r) => ({
+      date: utcDayLabel(r.bucketStart),
+      score: Math.round(r.mean * 100) / 100,
+      samples: r.count,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const dataPoints: DataPoint[] = days.map((r) => ({
+    date: r.bucketStart,
+    value: r.mean,
+  }));
   return {
     entries,
-    summary,
-    entryCount: moodEntries.length,
-    source: moodEntries.length === 0 ? "rollup" : "live",
+    summary: summarize(dataPoints),
+    entryCount: days.reduce((s, r) => s + r.count, 0),
+    source,
   };
 }

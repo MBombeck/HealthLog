@@ -86,3 +86,35 @@ describe("wide-event builder — redaction at every entry point", () => {
     expect(emitted(b)).not.toContain("sk-deepvalue12345678");
   });
 });
+
+describe("wide-event builder — health classifications", () => {
+  it("drops a classification written under its own key", () => {
+    const b = new WideEventBuilder("http");
+    b.addMeta("illness_type", "MENTAL_HEALTH");
+    b.addMeta("allergyCategory", "MEDICATION");
+    b.addMeta("ilae_type", "FOCAL_IMPAIRED");
+    const out = emitted(b);
+    expect(out).not.toContain("MENTAL_HEALTH");
+    expect(out).not.toContain("MEDICATION");
+    expect(out).not.toContain("FOCAL_IMPAIRED");
+  });
+
+  it("drops a classification nested inside a meta object", () => {
+    const b = new WideEventBuilder("http");
+    b.addMeta("import", { rows: 3, symptoms: ["migraine", "nausea"] });
+    const out = emitted(b);
+    expect(out).not.toContain("migraine");
+    expect(out).toContain('"rows":3');
+  });
+
+  it("keeps counts and flags named after a class", () => {
+    const b = new WideEventBuilder("http");
+    b.addMeta("allergy_count", 2);
+    b.addMeta("conditions", 4);
+    b.addMeta("mood_context", "written");
+    const meta = b.toJSON().meta ?? {};
+    expect(meta.allergy_count).toBe(2);
+    expect(meta.conditions).toBe(4);
+    expect(meta.mood_context).toBe("written");
+  });
+});

@@ -43,12 +43,12 @@ pull, the same model as Oura and Polar.
 
 1. In the **Google Cloud console** (<https://console.cloud.google.com>) create a
    project (or pick an existing one).
-2. Under **APIs & Services → Library**, find and **enable the Google Health
+2. Under **APIs & Services > Library**, find and **enable the Google Health
    API** for that project.
 
 ## 2. Configure the OAuth consent screen — keep it in "Testing"
 
-1. Under **APIs & Services → OAuth consent screen**, configure the screen for
+1. Under **APIs & Services > OAuth consent screen**, configure the screen for
    the project.
 2. Leave the publishing status on **Testing**. This is the deliberate choice for
    a self-hoster: a Testing-mode client avoids Google verification and the
@@ -64,7 +64,7 @@ every Google Health scope is Restricted.
 
 ## 3. Create a "Web Server" OAuth client
 
-1. Under **APIs & Services → Credentials**, create an **OAuth 2.0 Client ID** of
+1. Under **APIs & Services > Credentials**, create an **OAuth 2.0 Client ID** of
    type **Web application** (a "Web Server" client).
 2. **Authorized redirect URI:**
    `https://your-instance.example.com/api/google-health/callback`
@@ -98,10 +98,10 @@ a **planned** future addition, not a current option — there is no reader for t
 yet, so no scope is requested for either. When that support lands the runbook
 will document how to opt in; until then leave them out of your OAuth client.
 
-## 5. Wire the credentials in Settings → Integrations
+## 5. Wire the credentials in Settings > Integrations
 
 Credentials are stored per user, not in `.env`. Sign in as the target user, open
-**Settings → Integrations → Google Health**, and paste the Client ID and Client
+**Settings > Integrations > Google Health**, and paste the Client ID and Client
 Secret. They are encrypted AES-256-GCM at rest.
 
 ## 6. Connect
@@ -309,7 +309,7 @@ triggers the verification + CASA requirements above.)
 
 If Google Health and another source (Withings, WHOOP, Apple Health) both supply
 the same vital — resting heart rate, blood oxygen, respiratory rate — the source
-priority ladder in **Settings → Source priority** decides which one wins
+priority ladder in **Settings > Source priority** decides which one wins
 per metric.
 
 ## Disconnect

@@ -22,6 +22,7 @@ import {
   CsvImportResultView,
   type CsvImportResult,
 } from "./import-result-view";
+import { FileInput } from "@/components/ui/file-picker";
 
 export function CsvImportCard() {
   const { t } = useTranslations();
@@ -140,9 +141,8 @@ export function CsvImportCard() {
         </p>
       </div>
 
-      <input
+      <FileInput
         ref={fileInputRef}
-        type="file"
         accept=".csv,text/csv"
         className="sr-only"
         aria-label={t("settings.sections.export.import.csv.fileInputLabel")}

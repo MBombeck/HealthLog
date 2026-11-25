@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import { isoDateTime } from "@/lib/validations/datetime";
+import { ownValue } from "@/lib/own-key";
 
 export const HEALTH_PROFILE_AI_SECTIONS = [
   "ABOUT_ME",
@@ -102,7 +103,7 @@ export function isHealthProfileFactValue(
   kind: HealthProfileFactKind,
   value: string,
 ): value is HealthProfileFactValue {
-  return HEALTH_PROFILE_FACT_VALUES[kind][value] === true;
+  return ownValue(HEALTH_PROFILE_FACT_VALUES[kind], value) === true;
 }
 
 export function validateCorrectedFactValue(

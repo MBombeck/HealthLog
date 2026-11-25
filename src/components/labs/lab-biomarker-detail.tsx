@@ -384,7 +384,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
       {marker?.unit ? (
         <p className="text-muted-foreground text-sm">
           {labUnitLabel(marker.unit, t)}
-          {marker.panel ? ` · ${marker.panel}` : ""}
+          {marker.panel ? `, ${marker.panel}` : ""}
         </p>
       ) : null}
 

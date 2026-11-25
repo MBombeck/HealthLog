@@ -51,7 +51,7 @@ Serde rules from `codex-rs/codex-api/src/common.rs:169-190`:
 | Field              | Skip-rule                                                         |
 | ------------------ | ----------------------------------------------------------------- |
 | `instructions`     | skipped when empty string                                         |
-| `reasoning`        | always emitted (Option, but no skip attribute → `null` when None) |
+| `reasoning`        | always emitted (Option, but no skip attribute > `null` when None) |
 | `service_tier`     | skipped when `None`                                               |
 | `prompt_cache_key` | skipped when `None`                                               |
 | `text`             | skipped when `None`                                               |
@@ -126,7 +126,7 @@ For a plain text turn with no tools and no reasoning, the smallest body the Code
 
 ### 1d. `client_metadata`
 
-Free-form `Record<string,string>`. The CLI uses it to forward an installation id and (over WebSocket) trace-context headers — none of these are mandatory for the HTTP path. Safe to omit (`None` → field skipped).
+Free-form `Record<string,string>`. The CLI uses it to forward an installation id and (over WebSocket) trace-context headers — none of these are mandatory for the HTTP path. Safe to omit (`None` > field skipped).
 
 ---
 
@@ -640,7 +640,7 @@ The `codex-rs/tui/src/model_migration.rs` references to `gpt-5-codex` etc. are _
 
 ### 7b. Slug-drift defence — fallback chain (HealthLog v1.4.15+)
 
-The ChatGPT-Codex allow-list is rotated by OpenAI without prior notice (`gpt-5-codex` → `gpt-5.3-codex` happened over 48 h in May 2026 and bricked HealthLog twice while the v1.4.7..v1.4.13 saga unrolled). The cause: a single hard-coded slug in `CODEX_MODEL` flips invalid the moment the upstream rotates it. Operator brief, verbatim 2026-05-09: "Die Integration des Slug Drift Risiko darf halt immer überhaupt nicht sein."
+The ChatGPT-Codex allow-list is rotated by OpenAI without prior notice (`gpt-5-codex` to `gpt-5.3-codex` happened over 48 h in May 2026 and bricked HealthLog twice while the v1.4.7..v1.4.13 saga unrolled). The cause: a single hard-coded slug in `CODEX_MODEL` flips invalid the moment the upstream rotates it. Operator brief, verbatim 2026-05-09: "Die Integration des Slug Drift Risiko darf halt immer überhaupt nicht sein."
 
 To eliminate that risk class, HealthLog's `CodexClient` tries its sign-in's working slug first and otherwise walks an ordered chain built from the models the account is offered.
 
@@ -776,10 +776,10 @@ A TS client should:
 
 ## 9. Quick reference — the original errors we hit
 
-- **"Input must be a list"** → `input` was a string. Wrap as `[{ type: "message", role: "user", content: [{ type: "input_text", text: "..." }] }]`.
-- **"Stream must be set to true"** → must set `stream: true`. The chatgpt.com endpoint has no non-streaming mode.
+- **"Input must be a list"** > `input` was a string. Wrap as `[{ type: "message", role: "user", content: [{ type: "input_text", text: "..." }] }]`.
+- **"Stream must be set to true"** > must set `stream: true`. The chatgpt.com endpoint has no non-streaming mode.
 
-Both come back as HTTP 400 with `error.code == "invalid_prompt"` (no `cyber_policy` flag) → mapped to `ApiError::InvalidRequest` per `api_bridge.rs:75-77`.
+Both come back as HTTP 400 with `error.code == "invalid_prompt"` (no `cyber_policy` flag) > mapped to `ApiError::InvalidRequest` per `api_bridge.rs:75-77`.
 
 ---
 

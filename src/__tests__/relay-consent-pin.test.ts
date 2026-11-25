@@ -99,6 +99,13 @@ const PINS: ReadonlyArray<{
     covered:
       "The owed intake sync reads which devices a send spent budget on and which the relay refused (`budgetSpentBy`, `owedBy` from `wakes.ts`). No new kind and no new occasion: a silent push the relay refuses for its budget is no longer retried with the same envelope but owed, and the minute pass sends one fresh sync (or puts a wake's domains back) once the relay's window frees. That is the owed sync the texts already cover: a silent sync to the person's own device after a dose changed (`seesWhen`, `seesTiming`), now never more of them than before and never before the relay said it takes one.",
   },
+  {
+    version: "2026-11-22",
+    fingerprint:
+      "9f9fe47a4ef87b86fe16ca06f6360b4e52d41baae0a8cc666c6fcf2749765792",
+    covered:
+      "A Live Activity start's outbox row keeps the dose it was for (`dose` on the item in `relay-send.ts`), stored on this server and never sent. No new kind, no new occasion, nothing more on the wire: the start the texts already name (`seesWhen`, a Live Activity start or update) now goes at most once per dose, where a start for another dose could make an earlier dose start twice.",
+  },
 ];
 
 /**

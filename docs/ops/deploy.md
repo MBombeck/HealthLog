@@ -7,7 +7,11 @@ install. `:latest` therefore moves at most once a week, except for those.
 Between releases, `main` collects merged fixes and every push to it publishes
 `:edge` (amd64). A host that tracks `:edge` gets fixes before their release
 and no promise beyond that; take a backup first, migrations do not run
-backwards. Production installs track a release tag or `:latest`.
+backwards. Every night a green head of the next minor's release branch is
+published as `:nightly` (multi-arch, signed); a host on it needs the
+`backups` volume for the pre-migration dump and has no way back to an older
+image without restoring that dump (`docs/self-hosting/channels.md`).
+Production installs normally track a release tag or `:latest`.
 
 Coolify handles the standard deploy ordering automatically: the
 container image is pulled, `docker-entrypoint.sh` runs
@@ -214,9 +218,9 @@ always did, and finds nothing in the queue schema it did not create.
 ### v1.49.0 notes
 
 The sequence above covers this release, with one possible stop (`0517`, see
-below). It brings thirty-six migrations, `0514` to `0558` (`0516`, `0523`,
+below). It brings thirty-nine migrations, `0514` to `0561` (`0516`, `0523`,
 `0527`, `0528`, `0541`, `0548`, `0550`, `0552` and `0555` do not exist), so
-the boot log says `36 database migrations pending`. Copy the pre-migration
+the boot log says `39 database migrations pending`. Copy the pre-migration
 dump of step 0 off the host before you start: it is the way back.
 
 Seven migrations touch data you already have:
@@ -338,7 +342,9 @@ quantities (`0514`, `0519`), nullable columns or columns with a default
 `devices.local_runway_until` in `0542`, `push_data_changes.intake_sync_owed_at`
 in `0544`, `live_activity_tokens.relay_started BOOLEAN NOT NULL DEFAULT false`
 in `0545`, `measurements.stats_computed_at` in `0547`, `users.medicine_registry`
-and `medications.leaflet_url` in `0549`), and new tables (`0522`, `0524`,
+and `medications.leaflet_url` in `0549`, `users.show_nav_counts BOOLEAN NOT
+NULL DEFAULT true` in `0559`, `push_relay_deliveries.medication_id` and
+`slot_instant` with their index in `0560`), and new tables (`0522`, `0524`,
 `0531`, `0532`, `0534`, `0535`, and `ai_job_failures` in `0553`, which holds
 why background AI work last stopped for a record: closed reason codes only,
 cleared by the next success, cascading with the account).
@@ -352,7 +358,9 @@ the update gets a single 409 on its next save, reads again, and saves.
 `0545` is metadata-only: existing Live Activity rows read `false`, and relay
 updates go only to an Activity the server started over the relay. `0538`
 only drops an index on `live_activity_tokens` that another index already
-covers. `0518` builds an index on `measurements` `CONCURRENTLY` at boot.
+covers. `0561` only drops `NOT NULL` from
+`live_activity_tokens.medication_id`, a catalog change on a table new in this
+release. `0518` builds an index on `measurements` `CONCURRENTLY` at boot.
 Writes carry on, but on a very large table the build can take a while; the
 app's healthcheck allows ten minutes for the start. If it is interrupted,
 see "A concurrent index build that failed" above.
@@ -828,8 +836,8 @@ green.
 
 HealthLog ships no default error-reporting target and never will: an
 operator's crash reports must not leave their host because nobody told them
-not to. Reporting starts only when someone types a DSN into **Admin →
-Integrations → GlitchTip**, and that card states plainly whether reports are
+not to. Reporting starts only when someone types a DSN into **Admin >
+Integrations > GlitchTip**, and that card states plainly whether reports are
 going anywhere and which host they go to.
 
 For a maintainer-operated instance, set the DSN there after the first deploy —
@@ -870,6 +878,8 @@ access to the GHCR package.
 From v1.49.0 on, the GitHub release carries the same facts as files you
 can check without asking the registry; see
 [Verify a release from its assets](#verify-a-release-from-its-assets).
+From v1.49.1 on, the index also carries signed SLSA Build L3 provenance;
+see [Verify the image provenance](#verify-the-image-provenance).
 
 ### Prefer digest-pinned deploys
 
@@ -1069,6 +1079,53 @@ reference (or set `HEALTHLOG_IMAGE_REF=@sha256:<index>`) and you run
 exactly the image the release describes. Releases before v1.49.0 have no
 assets; their image signature is checked with `cosign verify` alone, as
 above.
+
+### Verify the image provenance
+
+From v1.49.1 on, the image index itself carries SLSA v1 build provenance
+at Build L3. The reusable workflow `image-provenance.yml` signs it with
+`actions/attest-build-provenance`, so the signing certificate names that
+file, not `docker-publish.yml`. The build jobs, which run the Dockerfile,
+hold no OIDC token, and a tag build neither reads nor writes the shared
+build cache. The attestation is stored in the repository's attestations
+and, as a Sigstore bundle, in the registry next to the index.
+
+Check it with the GitHub CLI or with cosign 3. The repository name is
+case-sensitive in both: `MBombeck/HealthLog`.
+
+```sh
+TAG=v1.49.1
+DIGEST=sha256:<index>   # from healthlog-$TAG-image.txt or `imagetools inspect`
+
+# From the attestations API (add --bundle-from-oci to read the registry copy).
+gh attestation verify "oci://ghcr.io/mbombeck/healthlog@$DIGEST" \
+  --owner MBombeck \
+  --signer-workflow MBombeck/HealthLog/.github/workflows/image-provenance.yml \
+  --source-ref "refs/tags/$TAG"
+
+# From the registry.
+cosign verify-attestation "ghcr.io/mbombeck/healthlog@$DIGEST" \
+  --type slsaprovenance1 \
+  --certificate-identity-regexp '^https://github\.com/MBombeck/HealthLog/\.github/workflows/image-provenance\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-github-workflow-repository MBombeck/HealthLog > /dev/null
+```
+
+The `image-provenance` job runs the `gh` check itself right after signing,
+from both sources, and fails the run if either does not verify.
+
+The provenance names the index digest, the identity the release signs and
+lists in its manifest; the `amd64` and `arm64` manifests are pinned by
+digest inside that index. Verify the index, not a platform digest: `gh` and
+cosign find no attestation for the platform manifests.
+
+BuildKit's own provenance (`mode=max`) and SBOM still travel inside the
+index as unsigned attestation manifests
+(`docker buildx imagetools inspect ghcr.io/mbombeck/healthlog:<tag> --format '{{ json .Provenance }}'`).
+They describe the build in detail but prove nothing on their own; the
+signed statement above is the one to check. Releases up to v1.49.0 carry
+only the unsigned BuildKit provenance (`mode=min`) on the image; their
+signed provenance is the release-manifest file above.
 
 ## Deploy-status webhook: replay protection
 

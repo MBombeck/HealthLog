@@ -112,6 +112,11 @@ const REFUSALS: Record<
     message: "AI response was not valid JSON",
     status: 422,
   },
+  "response-invalid-briefing": {
+    message:
+      "AI response did not contain a briefing that can be shown. Try regenerating.",
+    status: 422,
+  },
   "outbound-screened": {
     message:
       "The generated insight did not pass the safety check and was discarded. Try regenerating.",

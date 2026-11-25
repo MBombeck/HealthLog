@@ -265,8 +265,9 @@ export async function buildAuthMePayload(
 
 /**
  * How the caller reads the app: the glucose unit, the unit system, the hour
- * cycle, the date order and the medicine registry the leaflet search opens.
- * Each is the caller's own preference, never the record's.
+ * cycle, the date order, the medicine registry the leaflet search opens and
+ * whether the navigation shows its counts. Each is the caller's own
+ * preference, never the record's.
  */
 function displayPreferences(
   user: AuthContext["user"],
@@ -291,6 +292,9 @@ function displayPreferences(
     // medication list and detail reads build the link (`leafletSearch`), so a
     // client only reads this to show and edit the setting.
     medicineRegistry,
+    // #1113 — whether the sidebar and the More sheet show their counts. Off
+    // means no count and no `/api/nav/counts` read.
+    showNavCounts: user.showNavCounts,
   };
 }
 

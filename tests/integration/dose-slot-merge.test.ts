@@ -36,6 +36,22 @@ const MIGRATION_0515 = readFileSync(
   "utf8",
 );
 
+/**
+ * 0515 also creates `live_activity_tokens_device_id_idx`, which 0538 drops.
+ * Replaying 0515 brings it back, so the case runs 0538 after it to hand the
+ * next file in the worker the head schema (`schema-fingerprint.ts`).
+ */
+const MIGRATION_0538 = readFileSync(
+  path.join(
+    process.cwd(),
+    "prisma",
+    "migrations",
+    "0538_drop_redundant_live_activity_device_index",
+    "migration.sql",
+  ),
+  "utf8",
+);
+
 const SLOT = "2026-11-02T07:00:00.000Z";
 
 beforeEach(async () => {
@@ -348,6 +364,7 @@ describe("migration 0515 on a database that still holds duplicates", () => {
            ON "medication_intake_events" ("user_id", "medication_id", "scheduled_for")
            WHERE "deleted_at" IS NULL`,
       );
+      await prisma.$executeRawUnsafe(MIGRATION_0538);
     }
   });
 });

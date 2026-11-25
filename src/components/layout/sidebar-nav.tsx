@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { AccountMenuRecordItems } from "@/components/layout/account-menu-record-items";
 import { AccountSwitcherMenuItems } from "@/components/layout/account-switcher-menu";
 import { openShortcutsHelp } from "@/components/layout/global-shortcuts";
 import { medicationsPrefetchIntentProps } from "@/lib/queries/prefetch-medications";
@@ -202,6 +203,10 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
           </Link>
         </DropdownMenuItem>
       )}
+      {/* The emergency card: set up once, then out of the way, so it opens
+          from here rather than from the rail. Inside a shared record it
+          follows its routes' rule (a guardian yes, an adult's delegate no). */}
+      <AccountMenuRecordItems />
       {/* v1.42 — the keyboard shortcuts, findable without knowing that `?`
           lists them. Desktop only, like this menu: the phone's account menu
           has no keyboard to describe. */}

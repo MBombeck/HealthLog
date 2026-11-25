@@ -269,12 +269,10 @@ async function clockAnchoredDoseTimes(
 /**
  * Add one `HH:mm` to the wizard's times-of-day chips.
  *
- * The Enter press is the commit, not a flourish: the field's overlay input
- * holds what is being typed and only hands it to the form on Enter or on blur
- * (`src/components/ui/time-field.tsx:175-184`). Until then the draft is empty,
- * and the add button is `disabled` on exactly that
- * (`times-of-day-chips.tsx:267`) — so a fill followed straight by a click
- * waits out the actionability timeout on a button that never enables.
+ * The Enter press is the commit: the field's overlay input holds what is
+ * being typed and only hands it on at Enter or blur
+ * (`src/components/ui/time-field.tsx`). The committed time becomes a chip at
+ * once; the Add press settles it and readies the field for the next one.
  */
 async function addDoseTime(page: Page, time: string): Promise<void> {
   const chips = page.locator('[data-slot="times-of-day-chips"]');

@@ -446,7 +446,7 @@ test("a vertical swipe that starts on a tab strip is the page's", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1180, height: 820 });
-  await page.goto("/checkups", { waitUntil: "domcontentloaded" });
+  await page.goto("/care", { waitUntil: "domcontentloaded" });
   const strip = page.locator('#main-content [data-slot="tabs-list"]').first();
   await expect(strip).toBeVisible();
   // `pan-x` here refused the vertical pan, so the page did not move.
@@ -538,8 +538,9 @@ for (const vp of INSET_VIEWPORTS) {
           column?.lastElementChild?.getBoundingClientRect().bottom ?? 0,
         barBottom: bar.getBoundingClientRect().bottom,
         barPad: parseFloat(getComputedStyle(bar).paddingBottom),
+        barColour: getComputedStyle(bar).backgroundColor,
         // What a WKWebView browser paints where it keeps the page out: the
-        // root's own background.
+        // root's own background, the colour of what owns the bottom edge.
         root: getComputedStyle(document.documentElement).backgroundColor,
         body: getComputedStyle(document.body).backgroundColor,
       };
@@ -558,7 +559,7 @@ for (const vp of INSET_VIEWPORTS) {
       expect(owners).toContain("bar");
       expect(edge.barBottom).toBe(edge.innerHeight);
       expect(edge.barPad).toBe(HOME_INDICATOR);
-      expect(edge.root).toBe(edge.body);
+      expect(edge.root).toBe(edge.barColour);
     }
 
     // At the end of the page, the last line stands clear of the inset, the

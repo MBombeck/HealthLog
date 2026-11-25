@@ -86,7 +86,7 @@ export function OverdueSlotValue({ at }: { at: string | number | Date }) {
       data-slot="medication-overdue-slot"
     >
       <DoseStateLabel state="overdue" />
-      <span className="text-muted-foreground">— {fmt.time(new Date(at))}</span>
+      <span className="text-muted-foreground">{fmt.time(new Date(at))}</span>
     </span>
   );
 }

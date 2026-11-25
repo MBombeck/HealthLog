@@ -154,7 +154,7 @@ function renderMoodTooltip(props: unknown, p: MoodChartPlotProps) {
       : null,
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(", ");
   const rows: RichTooltipRow[] = [];
   for (const item of payload) {
     if (typeof item.value !== "number") continue;
@@ -210,7 +210,7 @@ function renderMoodTooltip(props: unknown, p: MoodChartPlotProps) {
       Number.isFinite(compareValue)
     ) {
       rows.push({
-        name: `${p.t("charts.moodScore")} · ${p.t("comparison.tooltipPrior")}`,
+        name: `${p.t("charts.moodScore")}, ${p.t("comparison.tooltipPrior")}`,
         value: p.formatTooltipValue(compareValue),
         color: item.color ?? COLOR_MAIN,
       });

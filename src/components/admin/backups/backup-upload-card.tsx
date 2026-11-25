@@ -7,6 +7,7 @@ import { useTranslations } from "@/lib/i18n/context";
 
 import { BackupTargetDialog } from "./backup-target-dialog";
 import type { useBackupUpload } from "./use-backup-upload";
+import { FileInput } from "@/components/ui/file-picker";
 
 /**
  * The upload card, and for a file whose account is not on this server, the
@@ -83,9 +84,8 @@ export function BackupUploadCard({
         </p>
       </div>
       <div>
-        <input
+        <FileInput
           ref={fileInputRef}
-          type="file"
           accept="application/json,.json,application/gzip,.gz"
           className="sr-only"
           onChange={onFileChange}

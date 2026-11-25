@@ -110,6 +110,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
  * why no due dose, reminder or adherence figure can come out of the file.
  */
 const MAY_READ_EVERY_ROW: Record<string, string> = {
+  "lib/push-relay/live-activity-dose.ts":
+    "reads the schedules only for the snooze of the dose an Activity already shows, derives nothing due; which doses may start one comes from openActivityDoses, which filters by tracking",
   // Record-keeping: a backup, a restore and an export carry the medication
   // as stored, schedule and switch included.
   "lib/export/medications-backup.ts": "backup carries the stored rows",

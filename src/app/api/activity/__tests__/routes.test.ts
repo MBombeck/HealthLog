@@ -30,10 +30,21 @@ vi.mock("@/lib/api-handler", () => ({
 }));
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 vi.mock("@/lib/auth/audit", () => ({ auditLog: mocks.auditLog }));
-vi.mock("@/lib/db", () => ({
-  prisma: { user: { findUnique: mocks.findUnique, update: mocks.update } },
-  toJson: (v: unknown) => v,
-}));
+vi.mock("@/lib/db", () => {
+  // The goals PATCH reads and writes inside a row-locked transaction; the
+  // transaction client is the same mocked user model.
+  const tx = {
+    user: { findUnique: mocks.findUnique, update: mocks.update },
+    $queryRaw: vi.fn(async () => []),
+  };
+  return {
+    prisma: {
+      ...tx,
+      $transaction: vi.fn(async (fn: (client: typeof tx) => unknown) => fn(tx)),
+    },
+    toJson: (v: unknown) => v,
+  };
+});
 vi.mock("@/lib/modules/gate", () => ({
   requireModuleEnabled: mocks.requireModuleEnabled,
 }));

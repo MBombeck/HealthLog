@@ -13,9 +13,9 @@ name: CodeQL
 # which is the cost of every commit on `main` having an analysis of its own.
 on:
   push:
-    branches: [main]
+    branches: [main, "release/**"]
   pull_request:
-    branches: [main]
+    branches: [main, "release/**"]
   schedule:
     # Mondays, 04:27 UTC. Off the hour so the run does not queue behind
     # everyone else's midnight cron.
@@ -49,6 +49,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # `build-mode: none` is the correct mode for JavaScript/TypeScript —
       # CodeQL extracts from source and needs neither a compile step nor

@@ -191,12 +191,9 @@ export const PUT = apiHandler(async (request: NextRequest) => {
       errorCode: "ai.usage.defaultAboveCeiling",
     });
   }
-  const updates: Partial<AssistantFlagsRow> = {};
-  for (const [key, value] of Object.entries(flags)) {
-    if (value !== undefined) {
-      (updates as Record<string, boolean | string>)[key] = value;
-    }
-  }
+  const updates = Object.fromEntries(
+    Object.entries(flags).filter(([, value]) => value !== undefined),
+  ) as Partial<AssistantFlagsRow>;
   const auditDetails: Record<string, unknown> = { ...updates };
   if (aiUsage) {
     updates.aiUsageMaxLevel = usageLevelToDb(aiUsage.maxLevel);

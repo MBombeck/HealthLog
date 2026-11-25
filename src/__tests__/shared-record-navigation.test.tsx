@@ -46,12 +46,12 @@ describe("shared-record navigation", () => {
 
     expect(SHARED_RECORD_DOMAIN_ROUTE_FAMILIES.profile).toEqual([
       "/profile",
-      "/checkups",
+      "/care",
       "/vaccinations",
     ]);
     expect(navigation.destinationHrefs).toEqual([
       "/profile",
-      "/checkups",
+      "/care",
       "/vaccinations",
     ]);
     expect(navigation.allowsPath("/profile")).toBe(true);
@@ -66,17 +66,15 @@ describe("shared-record navigation", () => {
     // not. Before the visits section the `measurements` omission was invisible,
     // because a whole-record grant admits every path regardless.
     expect(
-      resolveSharedRecordNavigation(["measurements"]).allowsPath("/checkups"),
+      resolveSharedRecordNavigation(["measurements"]).allowsPath("/care"),
     ).toBe(true);
-    expect(
-      resolveSharedRecordNavigation(["profile"]).allowsPath("/checkups"),
-    ).toBe(true);
-    expect(resolveSharedRecordNavigation(null).allowsPath("/checkups")).toBe(
+    expect(resolveSharedRecordNavigation(["profile"]).allowsPath("/care")).toBe(
       true,
     );
-    expect(
-      resolveSharedRecordNavigation(["labs"]).allowsPath("/checkups"),
-    ).toBe(false);
+    expect(resolveSharedRecordNavigation(null).allowsPath("/care")).toBe(true);
+    expect(resolveSharedRecordNavigation(["labs"]).allowsPath("/care")).toBe(
+      false,
+    );
 
     // Listed twice, offered once: a grant holding both domains must not put
     // two identical entries in the navigation.
@@ -84,8 +82,8 @@ describe("shared-record navigation", () => {
       resolveSharedRecordNavigation([
         "measurements",
         "profile",
-      ]).destinationHrefs.filter((href) => href === "/checkups"),
-    ).toEqual(["/checkups"]);
+      ]).destinationHrefs.filter((href) => href === "/care"),
+    ).toEqual(["/care"]);
   });
 
   /**

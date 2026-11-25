@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -9,6 +9,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { metricFractionDigits } from "@/lib/measurements/value-domain";
+import { pairOf } from "@/lib/measurements/paired-metrics";
 import { apiGet } from "@/lib/api/api-fetch";
 import { readFailureKind } from "@/lib/api/read-failure";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -31,11 +32,16 @@ import type { CoachReadStripData } from "@/lib/insights/derived/coach-read-shape
  *      outcome is this metric, stated in the engine's own never-causal voice.
  *      Omitted entirely when no driver clears the existing effect-size floor.
  *
+ * A component of a paired metric (blood pressure: systolic and diastolic)
+ * reads every component and writes one line per component, each named: a
+ * single unnamed band on the blood-pressure page read as one range over both
+ * values ("79–177 mmHg").
+ *
  * Server-authoritative: the component only renders the resolved DTO from
  * `/api/insights/coach-read`. It never re-derives a band or a correlation, so
- * the web and iOS strips read identical numbers. The strip self-gates: it
- * paints nothing until the read lands, and nothing at all when there is no
- * baseline AND no driver (a brand-new metric stays clean).
+ * the web and iOS strips read identical numbers. Until every read lands the
+ * strip holds its place with a placeholder card; a landed read always says
+ * something, the "still learning" line at the least.
  */
 
 export interface CoachReadStripProps {
@@ -68,6 +74,86 @@ export interface CoachReadStripProps {
  */
 const STRIP_BODY = "min-h-8 pointer-coarse:min-h-11";
 
+// `YYYY-MM-DD` is already the reader's calendar day; formatting it at UTC
+// midnight in UTC keeps a second zone conversion from shifting it.
+function formatDay(day: string | undefined, locale: string): string {
+  const m = day ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(day) : null;
+  if (!m) return "";
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])));
+}
+
+/** The usual-range sentence for one resolved read. */
+function baselineSentence(
+  read: CoachReadStripData,
+  {
+    t,
+    fmt,
+    unit,
+    locale,
+  }: {
+    t: (key: string, params?: Record<string, string | number>) => string;
+    fmt: (value: number) => string;
+    unit: string;
+    locale: string;
+  },
+): string {
+  if (read.learning || !read.baseline) {
+    return t("insights.coach.readStrip.insufficient");
+  }
+  const { low, high, latest, placement, basis, latestIsToday } = read.baseline;
+  // A band whose ends format to the same figure ("61–61 bpm") is a steady
+  // value, not a range; say it as one.
+  const steady = fmt(low) === fmt(high);
+  // A glucose day still in progress is held against the same hours of the
+  // earlier days, so the range is the one for this time of day and today's
+  // figure is its mean so far; the sentence says both.
+  // A latest reading from an earlier day is not today's: the sentence names
+  // its date instead (`latestIsToday`, resolved server-side). The same-hours
+  // basis only exists for a day in progress, so it is always today.
+  const dated = basis !== "sameHours" && latestIsToday === false;
+  const key =
+    basis === "sameHours"
+      ? placement === "above"
+        ? "insights.coach.readStrip.sameHoursAbove"
+        : placement === "below"
+          ? "insights.coach.readStrip.sameHoursBelow"
+          : "insights.coach.readStrip.sameHoursWithin"
+      : dated
+        ? steady
+          ? placement === "above"
+            ? "insights.coach.readStrip.steadyLatestAbove"
+            : placement === "below"
+              ? "insights.coach.readStrip.steadyLatestBelow"
+              : "insights.coach.readStrip.steadyLatestWithin"
+          : placement === "above"
+            ? "insights.coach.readStrip.latestAbove"
+            : placement === "below"
+              ? "insights.coach.readStrip.latestBelow"
+              : "insights.coach.readStrip.latestWithin"
+        : steady
+          ? placement === "above"
+            ? "insights.coach.readStrip.steadyAbove"
+            : placement === "below"
+              ? "insights.coach.readStrip.steadyBelow"
+              : "insights.coach.readStrip.steadyWithin"
+          : placement === "above"
+            ? "insights.coach.readStrip.baselineAbove"
+            : placement === "below"
+              ? "insights.coach.readStrip.baselineBelow"
+              : "insights.coach.readStrip.baselineWithin";
+  return t(key, {
+    low: fmt(low),
+    high: fmt(high),
+    value: fmt(latest),
+    unit,
+    date: formatDay(read.baseline.latestDate, locale),
+  });
+}
+
 export function CoachReadStrip({
   metricType,
   unit,
@@ -88,15 +174,29 @@ export function CoachReadStrip({
   const transformed = unitDisplay.isTransformed(metricType);
   const resolvedUnit = transformed ? unitDisplay.unitFor(metricType) : unit;
 
-  const { data, error, isError, refetch } = useQuery({
-    queryKey: queryKeys.insightsCoachRead(metricType, locale),
-    queryFn: () =>
-      apiGet<CoachReadStripData>(
-        `/api/insights/coach-read?metric=${encodeURIComponent(metricType)}`,
-      ),
-    enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000,
+  // A component of a paired metric reads every component of the pair, in
+  // reading order; the driver line comes from the page's own metric.
+  const pair = pairOf(metricType);
+  const types = pair ? [...pair.components] : [metricType];
+  const reads = useQueries({
+    queries: types.map((type) => ({
+      queryKey: queryKeys.insightsCoachRead(type, locale),
+      queryFn: () =>
+        apiGet<CoachReadStripData>(
+          `/api/insights/coach-read?metric=${encodeURIComponent(type)}`,
+        ),
+      enabled: isAuthenticated,
+      staleTime: 5 * 60 * 1000,
+    })),
   });
+  const failed = reads.find((r) => r.isError);
+  const isError = failed !== undefined;
+  const error = failed?.error ?? null;
+  const refetch = () => {
+    for (const r of reads) if (r.isError) void r.refetch();
+  };
+  const landed = reads.every((r) => r.data !== undefined);
+  const data = landed ? (reads[types.indexOf(metricType)]?.data ?? null) : null;
 
   // Don't paint a data branch during SSR / hydration (React #418). While the
   // read is on its way the strip holds its place with a card of the same
@@ -155,72 +255,16 @@ export function CoachReadStrip({
         : value * valueScale,
     );
 
-  // `YYYY-MM-DD` is already the reader's calendar day; formatting it at UTC
-  // midnight in UTC keeps a second zone conversion from shifting it.
-  const fmtDay = (day: string | undefined): string => {
-    const m = day ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(day) : null;
-    if (!m) return "";
-    return new Intl.DateTimeFormat(locale, {
-      day: "numeric",
-      month: "long",
-      timeZone: "UTC",
-    }).format(new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])));
-  };
-
-  const baselineLine = ((): string | null => {
-    if (data.learning || !data.baseline) {
-      return t("insights.coach.readStrip.insufficient");
-    }
-    const { low, high, latest, placement, basis, latestIsToday } =
-      data.baseline;
-    // A band whose ends format to the same figure ("61–61 bpm") is a steady
-    // value, not a range; say it as one.
-    const steady = fmt(low) === fmt(high);
-    // A glucose day still in progress is held against the same hours of the
-    // earlier days, so the range is the one for this time of day and today's
-    // figure is its mean so far; the sentence says both.
-    // A latest reading from an earlier day is not today's: the sentence names
-    // its date instead (`latestIsToday`, resolved server-side). The same-hours
-    // basis only exists for a day in progress, so it is always today.
-    const dated = basis !== "sameHours" && latestIsToday === false;
-    const key =
-      basis === "sameHours"
-        ? placement === "above"
-          ? "insights.coach.readStrip.sameHoursAbove"
-          : placement === "below"
-            ? "insights.coach.readStrip.sameHoursBelow"
-            : "insights.coach.readStrip.sameHoursWithin"
-        : dated
-          ? steady
-            ? placement === "above"
-              ? "insights.coach.readStrip.steadyLatestAbove"
-              : placement === "below"
-                ? "insights.coach.readStrip.steadyLatestBelow"
-                : "insights.coach.readStrip.steadyLatestWithin"
-            : placement === "above"
-              ? "insights.coach.readStrip.latestAbove"
-              : placement === "below"
-                ? "insights.coach.readStrip.latestBelow"
-                : "insights.coach.readStrip.latestWithin"
-          : steady
-            ? placement === "above"
-              ? "insights.coach.readStrip.steadyAbove"
-              : placement === "below"
-                ? "insights.coach.readStrip.steadyBelow"
-                : "insights.coach.readStrip.steadyWithin"
-            : placement === "above"
-              ? "insights.coach.readStrip.baselineAbove"
-              : placement === "below"
-                ? "insights.coach.readStrip.baselineBelow"
-                : "insights.coach.readStrip.baselineWithin";
-    return t(key, {
-      low: fmt(low),
-      high: fmt(high),
-      value: fmt(latest),
-      unit: resolvedUnit,
-      date: fmtDay(data.baseline.latestDate),
-    });
-  })();
+  const sentenceArgs = { t, fmt, unit: resolvedUnit, locale };
+  // One line per component of a pair, each named; one line otherwise.
+  const baselineLines: string[] = pair
+    ? types.map((type, i) =>
+        t("insights.coach.readStrip.componentLine", {
+          component: t(pair.labelKeys[type]),
+          line: baselineSentence(reads[i].data!, sentenceArgs),
+        }),
+      )
+    : [baselineSentence(data, sentenceArgs)];
 
   // Only the wrapper is translated here. `note` is a finished sentence the
   // server wrote in the reader's language, so it goes in as it arrived — which
@@ -229,11 +273,6 @@ export function CoachReadStrip({
   const driverLine = data.driver
     ? t("insights.coach.readStrip.driver", { note: data.driver.note })
     : null;
-
-  // Self-gate: nothing to say when both lines are absent. (The baseline line
-  // is always non-null — it degrades to the "learning" copy — so this only
-  // fires defensively.)
-  if (!baselineLine && !driverLine) return null;
 
   // Standard card anatomy — the real Card + TileHeader + CardContent
   // primitives at the compact density (the metric-stat-strip reference),
@@ -255,11 +294,16 @@ export function CoachReadStrip({
       </CardHeader>
       <CardContent className={STRIP_BODY}>
         <div className="min-w-0 space-y-1 text-sm leading-relaxed">
-          {baselineLine ? (
-            <p data-slot="coach-read-baseline" className="text-pretty">
-              {baselineLine}
+          {baselineLines.map((line, i) => (
+            <p
+              key={types[i]}
+              data-slot="coach-read-baseline"
+              data-metric={pair ? types[i] : undefined}
+              className="text-pretty"
+            >
+              {line}
             </p>
-          ) : null}
+          ))}
           {driverLine ? (
             <p data-slot="coach-read-driver" className="text-pretty">
               {driverLine}

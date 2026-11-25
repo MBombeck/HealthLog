@@ -24,7 +24,7 @@ export const PALETTE_SYNONYMS: Readonly<Record<string, ReadonlyArray<string>>> =
       "arzneimittel",
     ],
     "nav:/labs": ["blood test", "bloodwork", "blutwerte", "labor", "labwerte"],
-    "nav:/checkups": ["preventive", "vorsorge", "screening", "reminders"],
+    "nav:/care": ["preventive", "vorsorge", "screening", "reminders"],
     "nav:/coach": ["chat", "ai", "ki", "assistant", "assistent"],
     "nav:/documents": ["pdf", "scan", "befunde", "arztbrief", "letters"],
     "nav:/timeline": ["history", "verlauf", "lebenslauf", "chronik"],

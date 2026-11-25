@@ -91,6 +91,11 @@ export async function stripDevicePush(
   await db.pushRelayDelivery.deleteMany({
     where: { deviceId: { in: ids }, status: "pending" },
   });
+  // The Activities end with the sign-out: no start holds its dose any more.
+  await db.pushRelayDelivery.updateMany({
+    where: { deviceId: { in: ids }, medicationId: { not: null } },
+    data: { medicationId: null, slotInstant: null },
+  });
   await db.device.updateMany({
     where: { id: { in: ids } },
     data: clearedPushCredentials(),

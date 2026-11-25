@@ -5,7 +5,7 @@
  * Rung 2: the reminder only exists because the person confirmed it, prefilled
  * from the catalogue's interval and fully editable before this call. The minted
  * row is an ordinary `origin: VORSORGE` reminder that carries the dose's
- * primary antigen as a match key; it lists on `/checkups` and rings through the
+ * primary antigen as a match key; it lists on `/care` and rings through the
  * same engine as every other checkup, with no new code.
  *
  * WRITE, classified `profile`: filing the owner's Impfpass and arming the
@@ -109,7 +109,6 @@ export const POST = apiHandler(
         entity_id: result.reminderId,
       },
       meta: {
-        antigen_slug: result.antigen,
         minted: result.outcome === "minted",
       },
     });

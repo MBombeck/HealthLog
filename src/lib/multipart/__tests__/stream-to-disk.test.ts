@@ -5,8 +5,18 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { deflateRawSync } from "node:zlib";
 
-import { parseBoundary, streamMultipartToDisk } from "../stream-to-disk";
+import {
+  MULTIPART_ENVELOPE_RESERVE_BYTES,
+  MultipartTooLargeError,
+  parseBoundary,
+  streamMultipartToDisk,
+} from "../stream-to-disk";
 import { extractExportXml } from "@/lib/import/unzip-export-xml";
+
+import {
+  expectPrototypesUntouched,
+  snapshotPrototypes,
+} from "../../../../tests/property/prototype-keys";
 
 const BOUNDARY = "----HealthLogTestBoundary";
 
@@ -135,6 +145,33 @@ describe("streamMultipartToDisk", () => {
       ),
     ).rejects.toThrow(/size cap/);
     expect(readdirSync(dir)).toEqual([]);
+  });
+
+  it("keeps text fields named like prototype members as ordinary fields", async () => {
+    const before = snapshotPrototypes();
+    const body = buildMultipartBody(
+      "export.zip",
+      Buffer.from("x"),
+      JSON.parse(
+        '{"__proto__": "a", "constructor": "b", "toString": "c", "userId": "u-1"}',
+      ) as Record<string, string>,
+    );
+    const result = await streamMultipartToDisk(
+      toWebStream(body),
+      `multipart/form-data; boundary=${BOUNDARY}`,
+      { maxBytes: 1024, fieldName: "file" },
+    );
+    try {
+      expect(Object.getPrototypeOf(result.textFields)).toBeNull();
+      expect({ ...result.textFields }).toEqual(
+        JSON.parse(
+          '{"__proto__": "a", "constructor": "b", "toString": "c", "userId": "u-1"}',
+        ),
+      );
+      expectPrototypesUntouched(before);
+    } finally {
+      unlinkSync(result.filePath);
+    }
   });
 
   it("throws when the named field is missing", async () => {
@@ -475,4 +512,102 @@ describe("streamMultipartToDisk — large multi-chunk binary round-trip", () => 
       }
     }
   }, 20_000);
+});
+
+/**
+ * Only the `file` part used to be held to `maxBytes`. A part under any other
+ * name was collected in memory whole, and a header block that never ended
+ * grew without bound, so a body with no Content-Length (chunked) or a large
+ * one could fill the heap of the process that also serves the app. Every
+ * byte read now counts against the cap plus a fixed envelope, a text part has
+ * its own small ceiling, and so does a header block.
+ */
+describe("streamMultipartToDisk — everything outside the file part is bounded", () => {
+  const CT = `multipart/form-data; boundary=${BOUNDARY}`;
+
+  /** A pull stream of `head` then `fill` bytes in 64 KiB chunks, counting reads. */
+  function countingStream(head: Buffer, fillBytes: number, tail?: Buffer) {
+    const counter = { pulled: 0 };
+    let sentHead = false;
+    let remaining = fillBytes;
+    let sentTail = false;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        let chunk: Buffer;
+        if (!sentHead) {
+          sentHead = true;
+          chunk = head;
+        } else if (remaining > 0) {
+          const n = Math.min(remaining, 64 * 1024);
+          remaining -= n;
+          chunk = Buffer.alloc(n, 0x41);
+        } else if (tail && !sentTail) {
+          sentTail = true;
+          chunk = tail;
+        } else {
+          controller.close();
+          return;
+        }
+        counter.pulled += chunk.length;
+        controller.enqueue(new Uint8Array(chunk));
+      },
+    });
+    return { stream, counter };
+  }
+
+  it("refuses a text part larger than the text ceiling", async () => {
+    const head = Buffer.from(
+      `--${BOUNDARY}\r\nContent-Disposition: form-data; name="note"\r\n\r\n`,
+    );
+    const tail = Buffer.from(`\r\n--${BOUNDARY}--\r\n`);
+    // Smaller than the file cap, so only a ceiling of its own stops it.
+    const { stream, counter } = countingStream(head, 4 * 1024 * 1024, tail);
+    await expect(
+      streamMultipartToDisk(stream, CT, {
+        maxBytes: 64 * 1024 * 1024,
+        fieldName: "file",
+      }),
+    ).rejects.toThrow(MultipartTooLargeError);
+    expect(counter.pulled).toBeLessThan(1024 * 1024);
+  });
+
+  it("refuses a header block that never ends", async () => {
+    const head = Buffer.from(
+      `--${BOUNDARY}\r\nContent-Disposition: form-data; name="file"; filename="`,
+    );
+    const { stream, counter } = countingStream(head, 4 * 1024 * 1024);
+    await expect(
+      streamMultipartToDisk(stream, CT, {
+        maxBytes: 64 * 1024 * 1024,
+        fieldName: "file",
+      }),
+    ).rejects.toThrow(/header/i);
+    expect(counter.pulled).toBeLessThan(1024 * 1024);
+  });
+
+  it("stops reading once the whole body passes the cap and its envelope", async () => {
+    // A tiny file, then an epilogue that runs on: none of it is kept, but a
+    // body the size of the cap's many times must not be read to its end.
+    const body = buildMultipartBody("x.fit", Buffer.from("abc"));
+    const { stream, counter } = countingStream(body, 8 * 1024 * 1024);
+    await expect(
+      streamMultipartToDisk(stream, CT, { maxBytes: 1024, fieldName: "file" }),
+    ).rejects.toThrow(MultipartTooLargeError);
+    expect(counter.pulled).toBeLessThan(
+      1024 + MULTIPART_ENVELOPE_RESERVE_BYTES + 128 * 1024,
+    );
+  });
+
+  it("still accepts the ordinary shape with a small text field", async () => {
+    const body = buildMultipartBody("x.fit", Buffer.from("abc"), {
+      userId: "u-1",
+    });
+    const result = await streamMultipartToDisk(toWebStream(body), CT, {
+      maxBytes: 1024,
+      fieldName: "file",
+    });
+    expect(result.textFields.userId).toBe("u-1");
+    expect(result.bytes).toBe(3);
+    unlinkSync(result.filePath);
+  });
 });

@@ -86,7 +86,7 @@ function ConfirmationRow({
         className="mt-0.5"
       />
       <div className="space-y-0.5">
-        <Label htmlFor={id} noColon className="pl-0 leading-snug font-normal">
+        <Label htmlFor={id} noColon className="leading-snug font-normal">
           {label}
         </Label>
         {link && (

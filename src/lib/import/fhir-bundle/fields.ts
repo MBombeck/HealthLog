@@ -1,3 +1,5 @@
+import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
+
 /**
  * Defensive readers for FHIR JSON. Every value in a Bundle is untrusted;
  * these never throw and answer null for anything that is not the shape
@@ -59,29 +61,81 @@ export function statusCode(value: unknown): string | null {
 }
 
 /**
+ * Whether `y-m-d` is a day the calendar has. `Date` rolls a day past the end
+ * of its month over into the next one (`2021-02-30` reads as 2 March) and
+ * answers Invalid Date for a month of 13, so neither can be trusted to check.
+ */
+function isCalendarDay(y: string, m: string, d: string): boolean {
+  const year = Number(y);
+  const month = Number(m);
+  const day = Number(d);
+  if (month < 1 || month > 12 || day < 1) return false;
+  return day <= new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+const WITH_OFFSET = /(Z|[+-]\d{2}:?\d{2})$/u;
+const WALL_TIME = /^T(\d{2}):(\d{2})(?::(\d{2})(\.\d+)?)?$/u;
+
+/**
  * A FHIR date or dateTime as an instant. A date without a time reads as noon
  * UTC of that day (`YYYY` and `YYYY-MM` as its first day), so it lands on the
- * same calendar day in every zone within twelve hours.
+ * same calendar day in every zone within twelve hours. A time without an
+ * offset (R4 requires one; exports leave it out) reads on the person's clock,
+ * `tz`, never on the server's. A day the calendar does not have answers null.
  */
-export function fhirInstant(value: unknown): Date | null {
+export function fhirInstant(value: unknown, tz: string): Date | null {
   if (typeof value !== "string") return null;
   const v = value.trim();
   const partial = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/.exec(v);
   if (partial) {
     const [, y, m = "01", d = "01"] = partial;
+    if (!isCalendarDay(y, m, d)) return null;
     const date = new Date(`${y}-${m}-${d}T12:00:00.000Z`);
     return Number.isNaN(date.getTime()) ? null : date;
   }
-  if (!/^\d{4}-\d{2}-\d{2}T/.test(v)) return null;
-  const date = new Date(v);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const dated = /^(\d{4})-(\d{2})-(\d{2})(T.*)$/.exec(v);
+  if (!dated || !isCalendarDay(dated[1], dated[2], dated[3])) return null;
+  if (WITH_OFFSET.test(v)) {
+    const date = new Date(v);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const wall = WALL_TIME.exec(dated[4]!);
+  if (!wall) return null;
+  const [hour, minute, second] = [wall[1], wall[2], wall[3] ?? "0"].map(Number);
+  if (hour! > 23 || minute! > 59 || second! > 59) return null;
+  const at = zonedWallClockToUtc(
+    {
+      year: Number(dated[1]),
+      month: Number(dated[2]),
+      day: Number(dated[3]),
+      hour: hour!,
+      minute: minute!,
+      second,
+    },
+    tz,
+  );
+  const ms = at.getTime() + Math.round(Number(wall[4] ?? 0) * 1000);
+  return Number.isNaN(ms) ? null : new Date(ms);
 }
 
 /** The first instant among these candidate fields that parses. */
-export function firstInstant(...values: unknown[]): Date | null {
+export function firstInstant(tz: string, ...values: unknown[]): Date | null {
+  return firstDated(tz, ...values)?.at ?? null;
+}
+
+/**
+ * The first candidate field that parses, as its instant and the calendar day
+ * its text states. Both come off the same field: a malformed first field must
+ * not lend its day to the instant of the next one.
+ */
+export function firstDated(
+  tz: string,
+  ...values: unknown[]
+): { at: Date; dateKey: string } | null {
   for (const value of values) {
-    const at = fhirInstant(value);
-    if (at) return at;
+    const at = fhirInstant(value, tz);
+    const dateKey = at ? fhirDateKey(value) : null;
+    if (at && dateKey) return { at, dateKey };
   }
   return null;
 }
@@ -90,11 +144,13 @@ export function firstInstant(...values: unknown[]): Date | null {
  * The calendar day a FHIR date or dateTime names, as the text states it
  * (`YYYY` and `YYYY-MM` as their first day). Read off the string, not off an
  * instant, so a dateTime late in the evening west of UTC keeps its own day.
+ * Null for a day the calendar does not have.
  */
 export function fhirDateKey(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const match = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/.exec(value.trim());
   if (!match) return null;
   const [, y, m = "01", d = "01"] = match;
+  if (!isCalendarDay(y, m, d)) return null;
   return `${y}-${m}-${d}`;
 }

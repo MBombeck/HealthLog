@@ -49,6 +49,7 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
@@ -171,27 +172,32 @@ export const PATCH = apiHandler(async (req: Request) => {
   // be able to say which recipe produced it, and a comparison between
   // two windows has to be able to see that the recipe moved between
   // them. Read the previous version, increment, write.
-  const existing = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { healthScoreConfigJson: true },
-  });
-  const previous = resolveHealthScoreConfig(existing?.healthScoreConfigJson);
-  const config = healthScoreConfigFromSelection({
-    selection: parsed.data.pillars,
-    version: previous.version + 1,
-    changedAt: new Date(),
-  });
-
-  const guarded = await guardedUserDocumentUpdate({
-    userId: user.id,
-    document: "healthScoreConfig",
-    base,
-    data: { healthScoreConfigJson: config },
-    conflict: {
-      action: "auth.me.health-score-config.conflict",
-      errorCode: "health_score_config_conflict",
-      message: "The score selection changed since it was loaded",
-    },
+  // Under the row lock, so two saves that overlap cannot both read version
+  // n and both write n + 1.
+  const { config, guarded } = await withUserRowLock(user.id, async (tx) => {
+    const existing = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { healthScoreConfigJson: true },
+    });
+    const previous = resolveHealthScoreConfig(existing?.healthScoreConfigJson);
+    const config = healthScoreConfigFromSelection({
+      selection: parsed.data.pillars,
+      version: previous.version + 1,
+      changedAt: new Date(),
+    });
+    const guarded = await guardedUserDocumentUpdate({
+      userId: user.id,
+      document: "healthScoreConfig",
+      base,
+      data: { healthScoreConfigJson: config },
+      conflict: {
+        action: "auth.me.health-score-config.conflict",
+        errorCode: "health_score_config_conflict",
+        message: "The score selection changed since it was loaded",
+      },
+      client: tx,
+    });
+    return { config, guarded };
   });
   if ("conflict" in guarded) return guarded.conflict;
 

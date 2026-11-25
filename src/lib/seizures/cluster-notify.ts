@@ -106,7 +106,7 @@ export async function notifySeizureCluster(
     const rule = await readClusterRule(ownerId);
     const added = await prisma.seizureEvent.findFirst({
       where: { id: eventId, userId: ownerId },
-      select: { onsetAt: true },
+      select: { onsetAt: true, createdAt: true },
     });
     if (!added) return;
     // Two windows either side reach every seizure that can sit in a window
@@ -120,6 +120,12 @@ export async function notifySeizureCluster(
           gte: new Date(added.onsetAt.getTime() - reach),
           lte: new Date(added.onsetAt.getTime() + reach),
         },
+        // The record as it stood when this seizure was written. The send is
+        // not awaited, so a seizure logged a moment later can already be in
+        // the table; counted here, it makes this one look like it joined a
+        // cluster that the later one formed, and that one says the same of
+        // this, so neither sends.
+        createdAt: { lte: added.createdAt },
       },
       select: { id: true, onsetAt: true, count: true },
     });

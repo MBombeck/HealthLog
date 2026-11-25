@@ -8,43 +8,24 @@ import type {
 import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
 
 interface MoodTargetInput {
-  moodRollups: TargetMoodRollup[];
-  recentRawMood: TargetMoodEntry[] | null;
+  /** The DAY rows: the rollup tier's, or the live walk folded the same way. */
+  moodDays: TargetMoodRollup[];
   latestMoodEntry: TargetMoodEntry | null;
   timezone: string;
   now: Date;
 }
 
 export function buildMoodTargets({
-  moodRollups,
-  recentRawMood,
+  moodDays,
   latestMoodEntry,
   timezone,
   now,
 }: MoodTargetInput): TargetItem[] {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  let dailyEvents: Array<{ measuredAt: Date; value: number }>;
-  let entryCount: number;
-
-  if (moodRollups.length > 0) {
-    entryCount = moodRollups.reduce((sum, rollup) => sum + rollup.count, 0);
-    dailyEvents = moodRollups
-      .filter((rollup) => rollup.bucketStart >= thirtyDaysAgo)
-      .map((rollup) => ({
-        measuredAt: rollup.bucketStart,
-        value: rollup.mean,
-      }));
-  } else if (latestMoodEntry !== null) {
-    const rawMood = recentRawMood ?? [];
-    entryCount = rawMood.length;
-    dailyEvents = rawMood.map((entry) => ({
-      measuredAt: entry.moodLoggedAt,
-      value: entry.score,
-    }));
-  } else {
-    entryCount = 0;
-    dailyEvents = [];
-  }
+  const entryCount = moodDays.reduce((sum, day) => sum + day.count, 0);
+  const dailyEvents = moodDays
+    .filter((day) => day.bucketStart >= thirtyDaysAgo)
+    .map((day) => ({ measuredAt: day.bucketStart, value: day.mean }));
   const values = dailyEvents.map((event) => event.value);
 
   if (entryCount < 3) return [];

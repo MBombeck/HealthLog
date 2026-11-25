@@ -38,3 +38,23 @@ export function roundTo(value: number, digits: number): number {
   const factor = 10 ** digits;
   return Math.round(value * factor) / factor;
 }
+
+/**
+ * `roundTo` for a figure summed from many readings that more than one code
+ * path computes. Two summation orders of the same mean differ in the last
+ * bits (a 7-day pulse mean of exactly 74.425 came back as 74.42499999999964
+ * from one path and 74.42500000000861 from the other), and on an exact half
+ * `Math.round` then serves two figures for the same data. The scaled value is
+ * first cut to 11 significant digits, far above that noise and far below
+ * anything a reading can tell apart, so both land on the half and round up.
+ */
+export function roundStableTo(value: number, digits: number): number {
+  const factor = 10 ** digits;
+  return Math.round(Number((value * factor).toPrecision(11))) / factor;
+}
+
+/** A served figure to two decimals (`roundStableTo`); null for no value. */
+export function roundStable2(value: number | null): number | null {
+  if (value === null || !Number.isFinite(value)) return null;
+  return roundStableTo(value, 2);
+}

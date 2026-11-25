@@ -276,7 +276,7 @@ export function buildClinicalRecordsNotesSection(
       // the visit named neither, which is honest rather than invented.
       [visit.practitionerName, visit.practitionerSpecialty]
         .filter(Boolean)
-        .join(" · ") || "—",
+        .join(", ") || "—",
       // Through the key resolver: the enum is `ROUTINE` and the bundle leaf is
       // `routine`, so the interpolated key printed raw dot notation into the
       // clinical document.

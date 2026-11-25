@@ -44,6 +44,7 @@ import {
 } from "./dose-history-verdict";
 import { ImportCardShell } from "./import-card-shell";
 import { MAX_PASTE_CHARS } from "./constants";
+import { FileInput } from "@/components/ui/file-picker";
 
 interface DoseHistoryKickoff {
   dryRun: boolean;
@@ -251,9 +252,8 @@ export function DoseHistoryImportCard() {
         </p>
       </div>
 
-      <input
+      <FileInput
         ref={fileInputRef}
-        type="file"
         accept=".csv,.json,text/csv,application/json"
         className="sr-only"
         aria-label={t(

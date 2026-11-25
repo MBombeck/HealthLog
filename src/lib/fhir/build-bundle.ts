@@ -139,14 +139,14 @@ function withResolvedReferences<T>(
   }
   if (value === null || typeof value !== "object") return value;
 
-  const out: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
-    out[key] =
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, child]) => [
+      key,
       key === "reference" && typeof child === "string"
         ? (urnByReference.get(child) ?? child)
-        : withResolvedReferences(child, urnByReference);
-  }
-  return out as T;
+        : withResolvedReferences(child, urnByReference),
+    ]),
+  ) as T;
 }
 
 /** True for an Observation the vital-signs panel may legitimately claim. */

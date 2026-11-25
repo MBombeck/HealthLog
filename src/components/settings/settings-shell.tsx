@@ -562,7 +562,7 @@ export function SettingsShell({
             pinned panel on short viewports. */}
         <aside
           aria-label={t("settings.shell.sectionsNav")}
-          className="no-scrollbar hidden max-h-[calc(100dvh-10.5rem)] overflow-y-auto md:sticky md:top-6 md:col-start-1 md:row-span-2 md:row-start-1 md:block md:self-start"
+          className="no-scrollbar hidden max-h-[calc(100dvh-5.5rem-var(--floating-action-clearance))] overflow-y-auto md:sticky md:top-6 md:col-start-1 md:row-span-2 md:row-start-1 md:block md:self-start"
         >
           <ul className="space-y-1">
             {visibleSections.map((section, index) => {
@@ -612,11 +612,11 @@ export function SettingsShell({
 
             v1.25.11 (#154) — the column no longer carries its own
             `min-h-[calc(100dvh-12rem)]`. That reserve was tuned without
-            the AuthShell wrapper's `pt-6 pb-20` (104 px) in the budget, so
+            the AuthShell wrapper's top and bottom padding in the budget, so
             on a short section it forced the column ~100 px past the
             viewport: the page scrolled into a dark empty band below the
-            last card. Instead the GRID carries `md:min-h-[calc(100dvh-
-            10.5rem)]` (top bar 4rem + wrapper pt-6/pb-20 = 10.5rem), and
+            last card. Instead the GRID carries `SUB_SHELL_GRID_FLOOR` (top
+            bar + the wrapper's padding, `shell-metrics.ts`), and
             this column is the grid's `1fr` row, so it stretches to fill
             the viewport EXACTLY on a short section (no over-scroll, no dark
             band) and grows past it on a long one (normal scroll). The floor
@@ -624,8 +624,8 @@ export function SettingsShell({
             the old reserve guarded, just measured against the real budget.
 
             The column carries NO bottom gutter of its own. AuthShell's
-            `<main>` already reserves `pb-[calc(4rem+safe-area)]` on `<md` to
-            clear the floating bottom-nav, and its wrapper reserves `pb-20` for
+            `<main>` already reserves `--chrome-bottom` to clear the bottom
+            nav, and its wrapper reserves `--floating-action-clearance` for
             the Coach FAB. The old `pb-24 md:pb-0` (v1.4.33 F14) double-counted
             that same 64 px nav clearance and stacked ~96 px of dead scroll
             below the last card on mobile — removed so the shell owns all

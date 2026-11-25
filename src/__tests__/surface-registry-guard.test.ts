@@ -35,6 +35,7 @@ import { ADMIN_SECTIONS } from "@/components/admin/admin-shell";
 import { buildPaletteIndex } from "@/components/command-palette/build-index";
 import { CONTEXT_LINKS } from "@/components/layout/context-links";
 import {
+  NAV_ACCOUNT_MENU_DESTINATIONS,
   NAV_DESTINATIONS,
   NAV_UTILITY_DESTINATIONS,
 } from "@/components/layout/nav-model";
@@ -147,7 +148,7 @@ const NOT_DESTINATIONS = [
  * always a child of its list and needs no line here.
  */
 const CHILD_PAGES: Readonly<Record<string, string>> = {
-  "/checkups/practitioners": "/checkups",
+  "/care/practitioners": "/care",
   "/coach/conversations": "/coach",
   "/coach/plans": "/coach",
   "/documents/deleted": "/documents",
@@ -194,7 +195,7 @@ describe("1. every page route is an entry or a declared child of one", () => {
     }
     expect(
       registryHrefs.has(route),
-      `${route} has no way in: add it to NAV_DESTINATIONS (or the Insights strip), or declare it in CHILD_PAGES with the page that links it`,
+      `${route} has no way in: add it to NAV_DESTINATIONS (or the account menu, or the Insights strip), or declare it in CHILD_PAGES with the page that links it`,
     ).toBe(true);
   });
 
@@ -214,7 +215,7 @@ const UNINDEXED_ANCHORS: Readonly<Record<string, string>> = {
     "A list of pointers to where reminders are set; the targets are entries.",
   "sessions-link": "A link to Security > Active sessions, which is the entry.",
   "emergency-card":
-    "Settings > Health record's way to the emergency card, which is a navigation entry (`nav:/emergency-card`).",
+    "Settings > Health record's way to the emergency card, which opens from the account menu (`nav:/emergency-card`).",
 };
 
 const ANCHOR_SOURCES = [
@@ -274,7 +275,10 @@ function entryPointExists(entry: SurfaceEntry): boolean {
     case "nav":
       return NAV_DESTINATIONS.some((d) => d.href === entry.href);
     case "menu":
-      return NAV_UTILITY_DESTINATIONS.some((d) => d.href === entry.href);
+      return [
+        ...NAV_UTILITY_DESTINATIONS,
+        ...NAV_ACCOUNT_MENU_DESTINATIONS,
+      ].some((d) => d.href === entry.href);
     case "admin":
       return ADMIN_SECTIONS.some((s) => `/admin/${s.slug}` === entry.href);
     case "insights":
@@ -307,8 +311,13 @@ describe("2. every entry has a navigation, menu, Settings or Admin row", () => {
     },
   );
 
-  it("the emergency card is a destination, two taps from More on a phone", () => {
-    expect(NAV_DESTINATIONS.map((d) => d.href)).toContain("/emergency-card");
+  it("the emergency card opens from the account menu, not the rail", () => {
+    expect(NAV_ACCOUNT_MENU_DESTINATIONS.map((d) => d.href)).toContain(
+      "/emergency-card",
+    );
+    expect(NAV_DESTINATIONS.map((d) => d.href)).not.toContain(
+      "/emergency-card",
+    );
   });
 });
 

@@ -46,8 +46,8 @@ to defeat IP-based rate limits.
 | --------------------------------------------------------- | ---------------------------------- |
 | App is internet-facing with no proxy                      | `0` (the connection's own address) |
 | Single proxy in front (Caddy / Traefik / Nginx / Coolify) | `1` (default)                      |
-| Cloudflare → your proxy → app                             | `2`                                |
-| Cloudflare → Coolify-Tunnel → Coolify → app               | `3`                                |
+| Cloudflare > your proxy > app                             | `2`                                |
+| Cloudflare > Coolify-Tunnel > Coolify > app               | `3`                                |
 
 A misconfigured count logs a one-shot warning to stderr and collapses
 every anonymous caller into one shared rate-limit bucket. Match the
@@ -197,7 +197,7 @@ that Cloudflare placed in the chain.
 
 In the NPM UI:
 
-1. **Proxy Hosts → Add Proxy Host.**
+1. **Proxy Hosts > Add Proxy Host.**
 2. **Domain Names:** `your-instance.example.com`.
 3. **Scheme:** `http`; **Forward Hostname / IP:** the Docker host or
    internal hostname; **Forward Port:** `3000`.
@@ -225,16 +225,16 @@ Pair with `TRUST_PROXY_HOPS=1`.
 Coolify's bundled Traefik handles most of this. The pieces that need
 operator attention:
 
-1. **Application → Domains:** set `https://your-instance.example.com`.
+1. **Application > Domains:** set `https://your-instance.example.com`.
    Coolify provisions the certificate and adds the Traefik labels.
-2. **Application → Environment Variables:** set
+2. **Application > Environment Variables:** set
    `NEXT_PUBLIC_APP_URL`, `APP_URL`, and any optional secrets
    (`WITHINGS_*`, `APNS_*`, `LOKI_*`).
-3. **Application → General → Pull policy:** `always`. The bundled
+3. **Application > General > Pull policy:** `always`. The bundled
    `docker-compose.yml` declares this explicitly (v1.4.34.2 fix) so
    Coolify re-checks the GHCR digest on every redeploy instead of
    reusing the cached `:latest` layer.
-4. **Notifications → Webhook:** point at `/api/internal/deploy-webhook`
+4. **Notifications > Webhook:** point at `/api/internal/deploy-webhook`
    with the `X-Deploy-Webhook-Secret` header set to
    `DEPLOY_WEBHOOK_SECRET`. The app gates the endpoint with a
    timing-safe compare against that env var.
@@ -312,6 +312,37 @@ to support Apple Health `export.zip` uploads — the app caps the
 upload at 1.5 GB and Nginx will reject the body before the app sees
 it otherwise. `proxy_buffering off` keeps streamed insight events
 flowing without buffer pauses. Pair with `TRUST_PROXY_HOPS=1`.
+
+## Apache
+
+Apache's `mod_proxy` sends `X-Forwarded-For` and `X-Forwarded-Host` on its
+own, but not `X-Forwarded-Proto`. Without it HealthLog takes the scheme from
+`NEXT_PUBLIC_APP_URL` when that names the same host, and from the plain-HTTP
+connection otherwise, and the setup check asks you to add the header.
+Needs `mod_ssl`, `mod_proxy`, `mod_proxy_http` and `mod_headers`:
+
+```apache
+<VirtualHost *:443>
+    ServerName your-instance.example.com
+
+    SSLEngine on
+    SSLCertificateFile    /etc/letsencrypt/live/your-instance.example.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/your-instance.example.com/privkey.pem
+
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "https"
+    ProxyTimeout 300
+    # The Apple Health export.zip cap is 1.5 GB.
+    LimitRequestBody 1677721600
+
+    ProxyPass        / http://127.0.0.1:3000/
+    ProxyPassReverse / http://127.0.0.1:3000/
+</VirtualHost>
+```
+
+Pair with `TRUST_PROXY_HOPS=1`, and name Apache's address in
+`TRUSTED_PROXY_CIDRS` when it does not reach the container from a private
+address.
 
 ## Verifying the proxy chain
 

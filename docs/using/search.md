@@ -30,7 +30,7 @@ entries that match what you typed:
 - workouts
 - notes on mood entries, readings and illness days
 
-Each hit opens where the entry lives: a visit on the check-ups page, a lab
+Each hit opens where the entry lives: a visit on the Care page, a lab
 result on its analyte, a note on a mood entry or a reading on its day, a note
 on an illness day in its illness.
 

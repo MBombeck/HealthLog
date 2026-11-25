@@ -86,6 +86,12 @@ Your `NODE_OPTIONS` replaces the image's, so carry the four `--report-*`
 flags over: they make an out-of-memory exit leave a diagnostic report in
 the container log (see `docs/ops/heap-diagnostics.md`).
 
+A raised limit does not raise the ceilings of the isolated readers. A FIT
+file is decoded in a process of its own with a 192 MB heap, and a PDF is
+read in one with its own cap; both take their ceiling on their own command
+line and start without your `NODE_OPTIONS`, so a file that would outgrow
+them is still refused instead of eating into the server's larger heap.
+
 An import interrupted by a container restart or an out-of-memory kill
 does not stay stuck: the worker reconciles non-terminal import jobs at
 boot and every 15 minutes, flipping orphaned rows to `failed`
@@ -256,7 +262,7 @@ tenant, starving every other dashboard query for the duration. The
 fan-out — keeps 16 slots free for the rest of the dashboard while
 still sitting well under Postgres's 100-slot stock ceiling.
 
-The implementation lives in `src/lib/db.ts → getConnectionBudget()`
+The implementation lives in `src/lib/db.ts > getConnectionBudget()`
 (split into `getPrismaPoolMax()` and `getPgBossPoolMax()`); the
 20-slot default was chosen after measuring on a 4-CPU production
 container — see the inline rationale in `src/lib/db.ts`.

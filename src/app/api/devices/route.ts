@@ -59,6 +59,11 @@ import {
 import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { endDeviceLiveActivities } from "@/lib/notifications/live-activity-end";
+import { endSupersededRelayActivities } from "@/lib/push-relay/live-activity";
+import {
+  activityShowsDose,
+  sameActivitySlot,
+} from "@/lib/push-relay/activity-slot";
 import {
   activityStatementSchema,
   applyPushFields,
@@ -215,36 +220,39 @@ async function replaceLiveActivityTokens(
   // A token the app once registered as relay-started stays so when a later
   // post of the set omits `relayStart`: the mark is the Activity's
   // attributes type, which never changes.
+  const storedRelay = await tx.liveActivityToken.findMany({
+    where: { deviceId, relayStarted: true },
+    select: { pushToken: true, medicationId: true, slotInstant: true },
+  });
   const relayStarted = new Set(
-    (
-      await tx.liveActivityToken.findMany({
-        where: { deviceId, relayStarted: true },
-        select: { pushToken: true },
-      })
-    ).map((row) => row.pushToken.toLowerCase()),
+    storedRelay.map((row) => row.pushToken.toLowerCase()),
   );
   await tx.liveActivityToken.deleteMany({ where: { deviceId } });
-  if (sent.liveActivityTokens.length === 0) return;
-  // The dose a relay start was for, for an Activity that knows none.
-  const started = sent.liveActivityTokens.some((a) => !a.medicationId)
-    ? await tx.device.findUnique({
-        where: { id: deviceId },
-        select: { laStartedMedicationId: true, laStartedSlot: true },
-      })
-    : null;
-  const rows = sent.liveActivityTokens.flatMap((a) => {
-    const medicationId = a.medicationId ?? started?.laStartedMedicationId;
-    if (!medicationId) return [];
-    return [
-      {
-        ...a,
-        medicationId,
-        slotInstant: a.medicationId
-          ? a.slotInstant
-          : (started?.laStartedSlot ?? undefined),
-      },
-    ];
-  });
+  const idLess = sent.liveActivityTokens.filter((a) => !a.medicationId);
+  const latest =
+    idLess.length === 1 || storedRelay.length > 0
+      ? await tx.device.findUnique({
+          where: { id: deviceId },
+          select: {
+            laStartRef: true,
+            laStartedMedicationId: true,
+            laStartedSlot: true,
+            laStartedAt: true,
+          },
+        })
+      : null;
+  // The dose of a relay-started Activity the app registers without one
+  // (iOS builds up to 322): the one relay start running on the device, and
+  // only when there is exactly one. Anything else is a guess: the token is
+  // kept without a dose and the relay pass ends it.
+  const running =
+    idLess.length === 1 ? singleRunningRelayStart(storedRelay, latest) : null;
+  const rows = sent.liveActivityTokens.map((a) => ({
+    ...a,
+    medicationId: a.medicationId ?? running?.medicationId ?? null,
+    slotInstant: a.medicationId ? a.slotInstant : running?.slotInstant,
+  }));
+  await forgetDroppedRelayStart(tx, deviceId, storedRelay, rows, latest);
   if (rows.length === 0) return;
   await tx.liveActivityToken.createMany({
     data: rows.map((a) => ({
@@ -263,6 +271,105 @@ async function replaceLiveActivityTokens(
     })),
     skipDuplicates: true,
   });
+}
+
+/**
+ * Forget the device's last relay start once the app dropped its Activity:
+ * a relay-started Activity of that dose was registered, and the set posted
+ * now shows none. The Activity is gone (dismissed, or ended by the system),
+ * so it holds no other relay start back (`unreportedRelayStart` in
+ * `push-relay/live-activity.ts`) and no token is named after it. The dose
+ * itself stays held by its start row (`doseStartHeld`), and
+ * `liveActivityStarted` still names it, so it never starts twice.
+ */
+async function forgetDroppedRelayStart(
+  tx: Prisma.TransactionClient,
+  deviceId: string,
+  stored: ReadonlyArray<{
+    medicationId: string | null;
+    slotInstant: Date | null;
+  }>,
+  posted: ReadonlyArray<{
+    medicationId: string | null;
+    slotInstant?: Date | null;
+  }>,
+  latest: {
+    laStartRef: string | null;
+    laStartedMedicationId: string | null;
+    laStartedSlot: Date | null;
+    laStartedAt: Date | null;
+  } | null,
+): Promise<void> {
+  const medicationId = latest?.laStartedMedicationId;
+  const slot = latest?.laStartedSlot;
+  if (!latest?.laStartRef || !latest.laStartedAt || !medicationId || !slot) {
+    return;
+  }
+  const shows = (a: {
+    medicationId: string | null;
+    slotInstant?: Date | null;
+  }) =>
+    activityShowsDose(
+      { medicationId: a.medicationId, slotInstant: a.slotInstant ?? null },
+      medicationId,
+      slot,
+    );
+  if (!stored.some(shows) || posted.some(shows)) return;
+  await tx.device.updateMany({
+    where: { id: deviceId, laStartRef: latest.laStartRef },
+    data: { laStartRef: null },
+  });
+}
+
+/**
+ * The dose of the one relay-started Activity the server's records show
+ * running on a device, or null when they show none or more than one: the
+ * relay-started Activities registered so far, and the last relay start
+ * (in flight or accepted; a start that failed for good clears it). A
+ * registered Activity without a dose makes the records ambiguous.
+ *
+ * The pass runs at most one relay-started Activity per device
+ * (`runDeviceLiveActivities`), so the last start is the one running. Lift
+ * this when the app echoes a per-start id (1.50).
+ */
+function singleRunningRelayStart(
+  stored: ReadonlyArray<{
+    medicationId: string | null;
+    slotInstant: Date | null;
+  }>,
+  latest: {
+    laStartRef: string | null;
+    laStartedMedicationId: string | null;
+    laStartedSlot: Date | null;
+  } | null,
+): { medicationId: string; slotInstant: Date | null } | null {
+  type Dose = { medicationId: string; slotInstant: Date | null };
+  const doses: Dose[] = [];
+  const add = (dose: Dose) => {
+    const known = doses.some(
+      (d) =>
+        d.medicationId === dose.medicationId &&
+        (d.slotInstant === null || dose.slotInstant === null
+          ? d.slotInstant === dose.slotInstant
+          : sameActivitySlot(d.slotInstant, dose.slotInstant)),
+    );
+    if (!known) doses.push(dose);
+  };
+  for (const row of stored) {
+    if (row.medicationId === null) return null;
+    add({ medicationId: row.medicationId, slotInstant: row.slotInstant });
+  }
+  if (
+    latest?.laStartRef &&
+    latest.laStartedMedicationId &&
+    latest.laStartedSlot
+  ) {
+    add({
+      medicationId: latest.laStartedMedicationId,
+      slotInstant: latest.laStartedSlot,
+    });
+  }
+  return doses.length === 1 ? doses[0]! : null;
 }
 
 const DEVICE_MERGE_SELECT = {
@@ -432,6 +539,22 @@ async function registrationRateLimited(userId: string) {
     meta: { userId, resetAt: rl.resetAt },
   });
   return apiError("Too many device registrations, please slow down", 429);
+}
+
+/**
+ * One owner per dose: a relay-started Activity the app's own one of the same
+ * dose now stands beside ends at once; the Live Activity pass retries an end
+ * the relay did not take. A failure is a warning, never the registration's.
+ */
+async function endSupersededAfterRegistration(deviceId: string) {
+  try {
+    const ended = await endSupersededRelayActivities(deviceId);
+    if (ended > 0) annotate({ meta: { live_activity_superseded: ended } });
+  } catch (err) {
+    getEvent()?.addWarning(
+      `live_activity_superseded_end_failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 }
 
 export const POST = apiHandler(async (request: NextRequest) => {
@@ -623,5 +746,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     action: { name: "devices.register", entity_type: "device", entity_id: id },
   });
 
-  return apiSuccess({ id, push: await applyPushFields(id, parsed.data) }, 201);
+  const pushBlock = await applyPushFields(id, parsed.data);
+  if (parsed.data.liveActivityTokens !== undefined) {
+    await endSupersededAfterRegistration(id);
+  }
+
+  return apiSuccess({ id, push: pushBlock }, 201);
 });

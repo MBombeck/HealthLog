@@ -276,7 +276,7 @@ export default function MedicationsPageClient() {
     refetchOnMount: refetchMedicationsOnMount("list"),
   });
 
-  // v1.30.1 — pull-to-refresh parity with labs/checkups/mood/measurements.
+  // v1.30.1 — pull-to-refresh parity with labs/care/mood/measurements.
   // Medications is one of the sharpest PWA-resume-staleness surfaces (a
   // background-refreshed take/skip from a notification, or a cross-device
   // write, wouldn't otherwise show up until the 5-min staleTime lapses or a

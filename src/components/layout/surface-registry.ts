@@ -22,6 +22,7 @@ import { ChartLine, Palette, type LucideIcon } from "lucide-react";
 import { ADMIN_SECTIONS } from "@/components/admin/admin-shell";
 import { SUB_PAGE_TABS } from "@/components/insights/insights-tab-strip";
 import {
+  NAV_ACCOUNT_MENU_DESTINATIONS,
   NAV_DESTINATIONS,
   NAV_UTILITY_DESTINATIONS,
   isSettingsUtilityDestination,
@@ -48,7 +49,10 @@ export type SurfaceEntryPoint =
    * heading (`NAV_GROUPS`); null for the unheaded top group.
    */
   | { kind: "nav"; groupKey: string | null }
-  /** The avatar menu: an account utility (ui-standards §10). */
+  /**
+   * The avatar menu: an account utility (ui-standards §10), or a record page
+   * that opens from there (`NAV_ACCOUNT_MENU_DESTINATIONS`).
+   */
   | { kind: "menu" }
   /** The Admin console's rail, for an admin in their own record. */
   | { kind: "admin" }
@@ -142,6 +146,20 @@ function build(): SurfaceEntry[] {
   for (const d of NAV_UTILITY_DESTINATIONS) {
     // The Settings door is the Settings rail itself, listed below.
     if (isSettingsUtilityDestination(d)) continue;
+    out.push(
+      withKeywords({
+        id: `nav:${d.href}`,
+        href: d.href,
+        labelKey: d.tKey,
+        icon: d.icon,
+        entry: { kind: "menu" },
+      }),
+    );
+  }
+  // The record pages the account menu opens (the emergency card). Their id
+  // keeps the `nav:` prefix the utilities use, so a recent search and a
+  // context link survive the move from the rail.
+  for (const d of NAV_ACCOUNT_MENU_DESTINATIONS) {
     out.push(
       withKeywords({
         id: `nav:${d.href}`,

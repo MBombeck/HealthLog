@@ -6,6 +6,8 @@
  */
 import {
   nextSlotHeldBySnooze,
+  SNOOZE_ANCHOR_INCLUDE,
+  snoozeAnchor,
   snoozeHoldsSlot,
 } from "@/lib/medications/snooze-scope";
 import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
@@ -97,6 +99,7 @@ async function loadRemindableMedications(
       schedules: { orderBy: MEDICATION_SCHEDULE_ORDER },
       phaseConfig: true,
       scheduleRevisions: LIVE_ERA_REVISION_ARGS,
+      ...SNOOZE_ANCHOR_INCLUDE,
       user: {
         select: {
           id: true,
@@ -400,7 +403,7 @@ export async function handleReminderCheck(
                   ),
                 );
               }),
-              med.updatedAt,
+              snoozeAnchor(med),
             )
           : null;
 
@@ -562,15 +565,15 @@ export async function handleReminderCheck(
             // A snooze answers the reminder of the slot that was open when it
             // was set, so it holds only slots whose window had opened by then,
             // or, set while none was open, the next slot to open.
-            // `snoozedUntil` lives on the medication row and the snooze write
-            // stamps the row's @updatedAt, which dates the decision (the same
-            // reading the skip / pin suppression above uses). A later slot of
+            // `snoozedUntil` lives on the medication row; the instant the
+            // snooze was set lives in its own row, which no other write to
+            // the medication moves (`snooze-scope.ts`). A later slot of
             // the same medication, such as the evening dose after a morning
             // "skip" that snoozes to the end of the day, is still reminded.
             if (
               snoozeHoldsSlot(
                 med.snoozedUntil,
-                med.updatedAt,
+                snoozeAnchor(med),
                 windowStart,
                 now,
                 heldNextWindowStart,

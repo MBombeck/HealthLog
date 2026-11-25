@@ -110,8 +110,21 @@ function scoreLabel(metric: string, locale: Locale): string {
   );
 }
 
-/** Band → bilingual standing phrase. */
-function bandPhrase(band: "green" | "yellow" | "red", locale: Locale): string {
+/**
+ * Band → bilingual standing phrase. Stress and strain are banded on
+ * `100 - score` (a heavy day is red), so their phrase names the load: a red
+ * stress is "high", never "on the low side".
+ */
+function bandPhrase(
+  band: "green" | "yellow" | "red",
+  locale: Locale,
+  metric?: DerivedMetricId,
+): string {
+  if (metric === "STRESS_SCORE" || metric === "STRAIN_SCORE") {
+    const de = { green: "niedrig", yellow: "mittel", red: "hoch" } as const;
+    const en = { green: "low", yellow: "moderate", red: "high" } as const;
+    return locale === "de" ? de[band] : en[band];
+  }
   if (locale === "de") {
     return band === "green"
       ? "im guten Bereich"
@@ -393,7 +406,7 @@ export function buildDeterministicScoreAssessment(
 ): string {
   const label = scoreLabel(metric, locale);
   const score = Math.round(signal.current);
-  const standing = bandPhrase(band, locale);
+  const standing = bandPhrase(band, locale, metric);
 
   const sentences: string[] = [];
 

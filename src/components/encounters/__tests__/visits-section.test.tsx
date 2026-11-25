@@ -165,7 +165,7 @@ describe("<VisitsSection>", () => {
 
   it("offers the address book beside the add action", () => {
     const html = render({ upcoming: [], past: [] });
-    expect(html).toContain('href="/checkups/practitioners"');
+    expect(html).toContain('href="/care/practitioners"');
   });
 });
 

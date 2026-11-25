@@ -520,7 +520,13 @@ export default function InsightsPageClient() {
         omittedReason={advisor.briefingOmittedReason}
       />
     ) : null,
-    vitals: <VitalsDashboard batch={dashboardDerived} layout={layout} />,
+    vitals: (
+      <VitalsDashboard
+        batch={dashboardDerived}
+        layout={layout}
+        snapshot={snapshotQuery}
+      />
+    ),
     trends: (
       <TrendsRow
         briefing={briefingPayload}

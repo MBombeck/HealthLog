@@ -30,7 +30,18 @@ It is for people who track their health over years, often with a condition and s
 
 The [live demo](https://demo.healthlog.dev) is a working install with sample data. Sign in with `demo` / `demo123demo123`.
 
-<img width="2400" height="1500" alt="The HealthLog dashboard split diagonally between the dark theme (top left) and the light theme (bottom right): today's medications and cycle, the health score ring, worth-a-look cards, and metric tiles with 7-day trends" src="docs/releases/v1.49.0/theme-split-desktop.webp" />
+<img width="1600" height="1140" alt="A short tour of the HealthLog web app: the dashboard with today's medications, the health score ring and metric tiles with 7-day trends, switching from the light to the dark theme, then the timeline with lanes for life events, conditions, medications, vaccinations, visits, labs and cycles above blood pressure, weight and resting heart rate, then a medication's intake history with every evening dose taken" src="docs/assets/tour.webp" />
+
+| At a glance |                                                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------------------- |
+| Hosting     | Your server: two containers, the app and Postgres 18, images for `amd64` and `arm64`                            |
+| At rest     | Notes, documents, questionnaire answers, AI texts and every stored credential in AES-256-GCM                    |
+| Network     | No telemetry and no HealthLog cloud; each of the three requests the server makes on its own can be switched off |
+| Sources     | 9 live connections (8 services plus Apple Health through the iOS app) and 6 file imports                        |
+| AI          | Off until configured; your own key, a ChatGPT subscription or a local model                                     |
+| Languages   | 10                                                                                                              |
+| License     | PolyForm Noncommercial 1.0.0                                                                                    |
+
 <p align="center">
   <img src="docs/assets/timeline.jpeg" alt="Timeline: life events, conditions, medications, vaccinations, labs and cycles on one time axis, above blood pressure, weight and resting heart rate" width="32%">
   <img src="docs/assets/day-panel.jpeg" alt="Blood pressure insights with the day panel open: what was running that day, its values and scores" width="32%">
@@ -94,13 +105,20 @@ Your data lives in the `postgres-data` volume. The app takes a database dump eve
 
 ## Updating
 
-From 1.49.0 on, releases follow a calendar: a feature release on the first Saturday of every month, fixes on the other Saturdays when there are any. Only a security problem, data loss or a broken install gets a release in between. `:latest` is the newest release; `:edge` is built from every push to `main` (amd64 only) for anyone who wants a fix before its Saturday.
+From 1.49.0 on, releases follow a calendar: a feature release on the first Saturday of every month, fixes on the other Saturdays when there are any. Only a security problem, data loss or a broken install gets a release in between. `:latest` is the newest release; `:edge` is built from every push to `main` (amd64 only) for anyone who wants a fix before its Saturday; `:nightly` is the next month's release branch, built every night from a head whose full test run is green, for trying new features early; it has no way back to an older image without restoring a dump. [Image channels](docs/self-hosting/channels.md) has the compose line for each.
 
 To update, take a backup, run `docker compose pull && docker compose up -d`, and check `/api/version`. Migrations run on start and only go forward. Read the [release notes](https://github.com/MBombeck/HealthLog/releases) first, and see [Updates and deploy](https://docs.healthlog.dev/guides/updates-and-deploy/) for pinning a version and going back. The full rule is in [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
 
 ## Privacy and security
 
 HealthLog sends no telemetry. The server makes three requests on its own (an update check, a password breach check and a geolocation lookup for sign-ins), and each can be switched off. Anything else leaving the host is something you set up: a sync, an AI provider, a weather location, the push relay. Measurement values, lab values, medication names and mood scores are stored unencrypted so the server can chart and search them, so the database volume and its backups need the same care as the host. Sign-in works with passkeys and a second factor or through your own OIDC provider, sessions stay on the server, and you get a notification when a passkey, token or device changes. The [security overview](https://docs.healthlog.dev/security/overview/) has the rest, and [SECURITY.md](SECURITY.md) says how to report a vulnerability.
+
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/MBombeck/HealthLog/badge)](https://scorecard.dev/viewer/?uri=github.com/MBombeck/HealthLog) [![REUSE status](https://api.reuse.software/badge/github.com/MBombeck/HealthLog)](https://api.reuse.software/info/github.com/MBombeck/HealthLog) [![Release images signed with Sigstore](https://img.shields.io/badge/release_images-signed_with_Sigstore-2a6db2)](SECURITY.md#verifying-a-release)
+
+- Public hosts score A+ on [Mozilla HTTP Observatory](https://developer.mozilla.org/en-US/observatory/analyze?host=demo.healthlog.dev) and [Qualys SSL Labs](https://www.ssllabs.com/ssltest/analyze.html?d=demo.healthlog.dev); the push relay is TLS 1.3 only.
+- What the code defends against, and what it leaves to the operator: the [threat model](docs/security/threat-model.md).
+- Build provenance: the [push relay](https://github.com/MBombeck/healthlog-push) is built at [SLSA Build Level 3](https://slsa.dev/spec/v1.0/levels#build-l3); HealthLog release images reach it from v1.50.0.
+- Checking a release image's signature, provenance and SBOM: [SECURITY.md](SECURITY.md#verifying-a-release). Third-party licences and the policy for new dependencies: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## iPhone and iPad
 

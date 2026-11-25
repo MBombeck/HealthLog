@@ -41,10 +41,13 @@ function render(): string {
 describe("grant invite card — the invitee needs an account here", () => {
   it("says where the invited person will find the invitation", () => {
     const markup = render();
-    expect(markup).toContain(en.recordSharing.invite.needsAccount);
+    // The markup escapes the ">" of the menu path.
+    expect(markup).toContain(
+      en.recordSharing.invite.needsAccount.replaceAll(">", "&gt;"),
+    );
   });
 
-  it("names Settings → Shared access rather than a link to send", () => {
+  it("names Settings > Shared access rather than a link to send", () => {
     expect(en.recordSharing.invite.needsAccount).toMatch(/Settings/);
     expect(en.recordSharing.invite.needsAccount).not.toMatch(/https?:/);
   });

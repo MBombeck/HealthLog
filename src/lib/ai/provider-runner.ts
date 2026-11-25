@@ -178,9 +178,10 @@ export interface FallbackHop {
   /**
    * #1267 — what the call ran into (`failure-kind.ts`). Absent on a hop that
    * never called the provider (the operator cost cap); `paused` on one that
-   * background work skipped (#1279).
+   * background work skipped (#1279), the ledger's reason in `benchReason`.
    */
   failureKind?: ProviderFailureKind;
+  benchReason?: ProviderSkipHint["reason"];
   /**
    * #1279 — tokens the failed call spent upstream, when its reply said so
    * (an answer that never came still billed its reasoning).
@@ -572,12 +573,13 @@ async function runRawChain(
   // is sent. The skip is recorded after the walked hops, so a chain left
   // with nothing fails as `AllProvidersFailedError` like any other, and it
   // is logged once per window.
-  const benchedHops: FallbackHop[] = benched.map(({ candidate }, i) => ({
+  const benchedHops: FallbackHop[] = benched.map(({ candidate, hint }, i) => ({
     providerType: candidate.providerType,
     attempt: ordered.length + i + 1,
     failureReason: "benched-for-background-work",
     httpStatus: null,
     failureKind: "paused",
+    benchReason: hint.reason,
   }));
   for (const { candidate, hint } of benched) {
     annotate({

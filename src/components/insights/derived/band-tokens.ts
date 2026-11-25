@@ -62,3 +62,12 @@ export function clampScore(value: number): number {
   if (value > 100) return 100;
   return value;
 }
+
+/**
+ * The i18n key of a band's word. A load score (stress, strain) is banded on
+ * 100 - score, so its word is low / moderate / high: a heavy day reads as
+ * high, never as good or low.
+ */
+export function bandWordKey(band: ScoreBand, load = false): string {
+  return `insights.derived.scoreRing.${load ? "loadBand" : "band"}.${band}`;
+}

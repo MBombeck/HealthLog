@@ -549,7 +549,7 @@ const sleepSessionResource = z.object({
   reconstructed: z
     .boolean()
     .describe(
-      "True when the source has no per-stage onset timestamps and the server synthesised a contiguous timeline in a fixed physiological order (WHOOP). The client renders the hypnogram but labels it an approximate layout and never recomputes. False for real-series sources (Apple Health / Withings / Fitbit).",
+      "True when the night carries stage totals without a measured order: every stage stamped on one instant (a daily sleep summary, as Garmin and Oura's fallback deliver it) or laid back to back in a fixed order at ingest (WHOOP, Polar). Decided from the shape of the spans, not from the source. Show the stage totals instead of a timeline, and do not recompute it; `awakenings` is 0 for such a night. False when the segments are a measured timeline.",
     ),
   stages: z
     .partialRecord(sleepStageEnum, z.number().int().nonnegative())

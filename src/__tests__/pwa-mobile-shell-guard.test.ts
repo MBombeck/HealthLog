@@ -36,7 +36,9 @@ function code(source: string, fileName?: string): string {
 describe("the shell owns the safe area", () => {
   it("the authenticated shell wrapper takes the insets", () => {
     const shell = code(read("src/components/layout/auth-shell.tsx"));
-    expect(shell).toMatch(/<div className=\{SHELL_ROOT_CLASS\}>/);
+    expect(shell).toMatch(
+      /<div data-slot="app-shell" className=\{SHELL_ROOT_CLASS\}>/,
+    );
     expect(read("src/components/layout/shell-metrics.ts")).toMatch(
       /SHELL_ROOT_CLASS =\s*"shell-safe-area absolute inset-0 flex flex-col"/,
     );
@@ -55,7 +57,7 @@ describe("the shell owns the safe area", () => {
   it("globals.css defines the shell band, the keyboard rules and pointer-fine", () => {
     const css = read("src/app/globals.css");
     expect(css).toMatch(
-      /\.shell-safe-area\s*\{[^}]*padding-top:\s*env\(safe-area-inset-top/,
+      /\.shell-safe-area\s*\{[^}]*padding-top:\s*var\(--safe-area-top\)/,
     );
     expect(css).toMatch(
       /\[data-sheet-side="bottom"\]\s*\{\s*bottom:\s*var\(--keyboard-inset/,
@@ -71,7 +73,7 @@ describe("the shell owns the safe area", () => {
     // and on a phone held sideways, so the lift keys on `shell-mobile`.
     const css = code(read("src/app/globals.css"), "globals.css");
     expect(css).toMatch(
-      /html \[data-sonner-toaster\]\[data-y-position="bottom"\]\s*\{\s*@variant shell-mobile\s*\{\s*bottom:\s*calc\(4rem \+ env\(safe-area-inset-bottom/,
+      /html \[data-sonner-toaster\]\[data-y-position="bottom"\]\s*\{\s*@variant shell-mobile\s*\{\s*bottom:\s*calc\(var\(--chrome-bottom\) \+ 0\.75rem\)/,
     );
   });
 
@@ -92,7 +94,7 @@ describe("the shell owns the safe area", () => {
     );
     const sheet = code(read("src/components/ui/responsive-sheet.tsx"));
     const padded = (sheet.match(
-      /"[^"]*pb-\[calc\(env\(safe-area-inset-bottom[^"]*"/g,
+      /"[^"]*pb-\[calc\(var\(--safe-area-bottom\)[^"]*"/g,
     ) ?? []) as string[];
     expect(padded.length).toBe(2);
     for (const cls of padded) expect(cls).toMatch(/\bkeyboard-open:pb-4\b/);
@@ -145,7 +147,7 @@ describe("the shell owns the safe area", () => {
     const tour = code(read("src/components/onboarding/tour.tsx"));
     const card = tour.match(/"[^"]*absolute inset-x-2 [^"]*"/)?.[0] ?? "";
     expect(card).toMatch(
-      /\bbottom-\[calc\(env\(safe-area-inset-bottom,0px\)\+0\.5rem\)\]/,
+      /\bbottom-\[calc\(var\(--safe-area-bottom\)\+0\.5rem\)\]/,
     );
   });
 

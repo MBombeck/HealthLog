@@ -91,6 +91,7 @@ export type BriefingRefusal =
   | "provider-connection"
   | "response-truncated"
   | "response-invalid-json"
+  | "response-invalid-briefing"
   | "outbound-screened"
   | "profile-scope-changed"
   | "scope-changed";

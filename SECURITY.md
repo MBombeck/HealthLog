@@ -55,12 +55,12 @@ HealthLog is designed with security as a core principle:
 - **AES-256-GCM encryption** for all stored secrets (OAuth tokens, API keys, VAPID keys)
 - **Argon2id** password hashing with zxcvbn strength validation
 - **HMAC-SHA256** hashed API tokens
-- **Server-side sessions** in PostgreSQL (HttpOnly, SameSite=Strict, 30-day sliding expiry)
+- **Server-side sessions** in PostgreSQL (HttpOnly, SameSite=Lax, 30-day sliding expiry)
 - **Rate limiting** on authentication and external-facing endpoints
 - **Security headers**: CSP with nonces, HSTS, X-Frame-Options DENY, Permissions-Policy
 - **Proxy-level route protection** via `proxy.ts` (session cookie validation on all non-public paths)
 
-For more details, see the [security documentation](https://docs.healthlog.dev/security/overview/).
+For more details, see the [security documentation](https://docs.healthlog.dev/security/overview/) and the [threat model](docs/security/threat-model.md), which also lists the risks that remain.
 
 ## Supply Chain
 
@@ -69,7 +69,8 @@ HealthLog Docker images are built and published from this repository's CI:
 - **Source**: [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml) — publishes on every `v*` tag; pull requests build the image without publishing it
 - **Registry**: [`ghcr.io/mbombeck/healthlog`](https://github.com/MBombeck/HealthLog/pkgs/container/healthlog)
 - **Architectures**: `linux/amd64` and `linux/arm64`
-- **Provenance attestation**: each image carries a [SLSA build provenance](https://slsa.dev/spec/v1.0/provenance) statement linking it back to the GitHub Actions run, the commit SHA, and the workflow definition
+- **Provenance attestation** (from v1.49.1): the multi-arch image index carries signed [SLSA v1 build provenance](https://slsa.dev/spec/v1.0/provenance) at Build L3, linking it to the GitHub Actions run, the commit and the workflow. It is signed in the isolated reusable workflow [`image-provenance.yml`](.github/workflows/image-provenance.yml), whose path is the certificate identity; the build jobs hold no signing token, and release builds use no shared build cache. BuildKit's own provenance (`mode=max`) also travels in the index, unsigned. Releases up to v1.49.0 carry only BuildKit's unsigned `mode=min` provenance on the image
+- **SLSA Build L3** covers the image, the release manifest below (signed by the SLSA generator) and the [push relay](https://github.com/MBombeck/healthlog-push) images
 - **Signature**: the multi-arch image index is signed keyless with [cosign](https://docs.sigstore.dev/) by the release workflow; no long-lived signing key exists
 - **Release assets** (from v1.49.0): every GitHub release carries `healthlog-<tag>-image.txt` (the image refs with the index and per-platform digests), its Sigstore bundle `healthlog-<tag>-image.sigstore.json`, and SLSA v1 provenance `healthlog-<tag>.intoto.jsonl`
 - **SBOM**: each image includes a [Software Bill of Materials](https://docs.docker.com/build/metadata/attestations/sbom/) you can inspect with `docker buildx imagetools inspect ghcr.io/mbombeck/healthlog:latest --format '{{ json .SBOM }}'`
@@ -97,8 +98,15 @@ cosign verify \
   --certificate-identity-regexp '^https://github\.com/MBombeck/HealthLog/\.github/workflows/docker-publish\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   "$(awk '$2 == "index" { print $1; exit }' "healthlog-$TAG-image.txt")"
+
+# From v1.49.1: the signed build provenance of that image index.
+gh attestation verify \
+  "oci://$(awk '$2 == "index" { sub(/:[^:@]*@/, "@", $1); print $1; exit }' "healthlog-$TAG-image.txt")" \
+  --owner MBombeck \
+  --signer-workflow MBombeck/HealthLog/.github/workflows/image-provenance.yml \
+  --source-ref "refs/tags/$TAG"
 ```
 
-The last command checks the image the manifest names, pinned by its digest. Older releases have no assets; verify their image with `cosign verify` alone. Details: [docs/ops/deploy.md](docs/ops/deploy.md#verify-a-release-from-its-assets).
+The cosign command checks the image the manifest names, pinned by its digest. Older releases have no assets; verify their image with `cosign verify` alone. Details: [docs/ops/deploy.md](docs/ops/deploy.md#verify-a-release-from-its-assets).
 
 If you discover a tampered or unexpected image, please report it as a vulnerability via the email above.

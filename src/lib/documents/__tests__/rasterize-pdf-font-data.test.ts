@@ -104,7 +104,8 @@ beforeEach(() => {
 const renderHere = (data: Buffer) =>
   renderPdfPages(data, {
     maxPages: 1,
-    targetLongEdge: raster.RASTER_TARGET_LONG_EDGE,
+    dpi: raster.RASTER_DPI,
+    maxLongEdge: raster.RASTER_MAX_LONG_EDGE,
     jpegQuality: raster.RASTER_JPEG_QUALITY,
     minInkRatio: raster.RASTER_MIN_INK_RATIO,
   });

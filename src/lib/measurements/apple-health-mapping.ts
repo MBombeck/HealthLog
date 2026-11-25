@@ -29,6 +29,7 @@ import type {
   RhythmClassification,
 } from "@/generated/prisma/client";
 import { convertHkValue } from "./hk-units";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * How a batch of HealthKit samples for the same identifier should be
@@ -1696,7 +1697,7 @@ export function mapAppleHealthEntry(
   input: AppleHealthEntryInput,
   options: AppleHealthEntryOptions = {},
 ): AppleHealthEntryOutput | null {
-  const mapping = APPLE_HEALTH_TYPE_MAP[input.hkIdentifier];
+  const mapping = ownValue(APPLE_HEALTH_TYPE_MAP, input.hkIdentifier);
   if (!mapping) return null;
 
   const takenAt = new Date(input.endDate);

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
@@ -36,6 +36,13 @@ function userBubble(): string {
     </I18nProvider>,
   );
 }
+
+// The signed-in record every case starts from; a case that changes it does
+// so for itself only.
+beforeEach(() => {
+  auth.user.username = "managed-1f2e3d";
+  auth.user.displayName = "Alex Example";
+});
 
 describe("coach bubble initials", () => {
   it("spells the display name, not the login", () => {

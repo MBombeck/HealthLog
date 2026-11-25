@@ -34,6 +34,7 @@ import { TimeFormatSelect } from "@/components/settings/time-format-select";
 import { DateFormatSelect } from "@/components/settings/date-format-select";
 import { UnitPreferenceSelect } from "@/components/settings/unit-preference-select";
 import { GlucoseUnitSelect } from "@/components/settings/glucose-unit-select";
+import { NavCountsSwitch } from "@/components/settings/nav-counts-switch";
 import { detectBrowserTimezone, userDayKey } from "@/lib/tz/format";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import {
@@ -776,6 +777,8 @@ export function DisplayPreferencesCard({
           {t("settings.displayCard.themeDescription")}
         </p>
       </div>
+      {/* #1113 — the counts on Medications and Checkups in the navigation. */}
+      <NavCountsSwitch isAuthenticated={isAuthenticated} />
     </SettingsCard>
   );
 }

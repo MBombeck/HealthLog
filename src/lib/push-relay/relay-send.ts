@@ -90,6 +90,11 @@ export interface RelayItemInput {
    * them back for the next one.
    */
   domains?: readonly string[];
+  /**
+   * A Live Activity start only: the dose it is for, kept on its outbox row
+   * so the dose starts once (`doseStartHeld`, `live-activity-settle.ts`).
+   */
+  dose?: { medicationId: string; slotInstant: Date };
 }
 
 /**
@@ -243,6 +248,12 @@ export async function sendRelayItems(
       },
       expiresAt: item.expiresAt,
       nextAttemptAt: now,
+      ...(item.dose
+        ? {
+            medicationId: item.dose.medicationId,
+            slotInstant: item.dose.slotInstant,
+          }
+        : {}),
     })),
     skipDuplicates: true,
   });

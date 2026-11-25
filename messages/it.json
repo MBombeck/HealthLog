@@ -1,5 +1,9 @@
 {
   "common": {
+    "filePicker": {
+      "choose": "Scegli file",
+      "none": "Nessun file scelto"
+    },
     "listCapped": "Sono mostrati gli ultimi {count}; le voci più vecchie non sono elencate qui.",
     "save": "Salva",
     "conflictReloaded": "Ricaricato dal server. Applica di nuovo la tua modifica.",
@@ -10,7 +14,7 @@
     "moreOptions": "Altre opzioni",
     "create": "Crea",
     "close": "Chiudi",
-    "loading": "Caricamento…...",
+    "loading": "Caricamento…",
     "loadFailed": "Impossibile caricare",
     "error": "Errore",
     "saved": "Salvato",
@@ -322,7 +326,7 @@
     "bmiRow": "IMC:{bmi} kg/m², Classification: {class} (WHO)",
     "complianceTitle": "Aderenza ai farmaci",
     "glp1Title": "Terapia GLP-1",
-    "glp1WeightSummary": "Peso nel periodo del referto: {start} kg → {end} kg ({delta} kg)",
+    "glp1WeightSummary": "Peso nel periodo del referto: da {start} kg a {end} kg ({delta} kg)",
     "glp1CurrentDose": "Dose attuale:{value} {unit} (since {since})",
     "glp1Compliance": "Aderenza:{taken} / {total} ({rate}%)",
     "glp1SideEffectsTitle": "Effetti collaterali registrati",
@@ -1522,8 +1526,7 @@
     "importIntakes": "Importa assunzioni",
     "importDescription": "Incolla un array JSON con i dati delle assunzioni. Formato previsto:",
     "importUploadFile": "Carica file JSON",
-    "importPaste": "Incolla il JSON qui...",
-    "importSelected": "Selezionato: {name}",
+    "importPaste": "Incolla il JSON qui…",
     "importFileLoaded": "File \"{name}\" caricato",
     "importInvalidJson": "Il file non contiene un JSON valido",
     "importNoArray": "Nessun array trovato",
@@ -1563,6 +1566,7 @@
       "label": "Registra le assunzioni",
       "helperOn": "Le dosi sono dovute secondo questo programma, con promemoria e aderenza.",
       "helperOff": "Solo annotato: nulla è dovuto, niente promemoria, niente aderenza.",
+      "helperEnded": "Il ciclo è terminato, quindi nulla è dovuto. Un nuovo ciclo riprende questo programma.",
       "enabledToast": "Registrazione assunzioni attiva",
       "disabledToast": "Registrazione assunzioni disattivata",
       "toggleFailed": "Impossibile modificare la registrazione delle assunzioni."
@@ -2399,7 +2403,7 @@
         "timesTitle": "Orari di assunzione",
         "timesNote": "Regola l'orario e la finestra puntuale di ogni dose. La frequenza (giornaliera, settimanale…) si modifica nell'editor, in Avanzate.",
         "scheduleLabel": "Programma {index}",
-        "fullEditNote": "Frequenza, classe di trattamento e periodo di trattamento si modificano nell'editor, in Avanzate → Ciclo di vita.",
+        "fullEditNote": "Frequenza, classe di trattamento e periodo di trattamento si modificano nell'editor, in Avanzate > Ciclo di vita.",
         "graceEcho": "Durata dei promemoria: {minutes, plural, one {# minuto} other {# minuti}}",
         "reminderTitle": "Promemoria",
         "manageChannels": "Gestisci i canali di notifica",
@@ -2513,7 +2517,7 @@
         "error": "Impossibile salvare questa modifica. Riprova."
       },
       "beforeAfter": {
-        "summary": "Ø {before} prima → Ø {after} da allora, una variazione di {delta}.",
+        "summary": "Ø {before} prima, Ø {after} da allora, una variazione di {delta}.",
         "counts": "In base a {beforeCount, plural, one {# misurazione} other {# misurazioni}} prima e {afterCount} da allora.",
         "needBefore": "Ancora troppe poche misurazioni prima dell'inizio: servono circa {weeks, plural, one {# settimana} other {# settimane}} prima e dopo per confrontare.",
         "needAfter": "Ancora troppe poche misurazioni dall'inizio: servono circa {weeks, plural, one {# settimana} other {# settimane}} prima e dopo per confrontare.",
@@ -3064,7 +3068,7 @@
       "emptyDescription": "Hai nascosto tutte le sezioni. Apri Personalizza per mostrarle di nuovo."
     },
     "bmiEmptyTitle": "Aggiungi l’altezza per il BMI",
-    "bmiEmptyDescription": "Per il BMI serve la tua altezza. Salvala in Impostazioni → Account.",
+    "bmiEmptyDescription": "Per il BMI serve la tua altezza. Salvala in Impostazioni > Account.",
     "bmiEmptyAction": "Apri impostazioni account",
     "loadError": "Impossibile caricare le analisi",
     "heroPersonalBaseline": "Basato sugli ultimi 90 giorni",
@@ -3194,6 +3198,7 @@
       "failedDescriptionTimeout": "La richiesta IA ha superato il tempo limite prima che il briefing fosse pronto. Per un modello locale lento, aumenta il timeout di risposta nelle Impostazioni e riprova.",
       "failedDescriptionProvider": "Il provider IA ha rifiutato la richiesta. Controlla il provider e la chiave API nelle impostazioni IA e riprova.",
       "failedDescriptionRateLimit": "Il provider IA sta limitando le richieste in questo momento. Riprova tra poco.",
+      "failedDescriptionFormat": "L'IA ha risposto, ma non in una forma che il briefing può mostrare. Riprova; se succede ancora, un altro modello nelle impostazioni IA può aiutare.",
       "omittedTitle": "Briefing non mostrato",
       "omittedUngroundedDescription": "Il briefing generato citava un valore che non è stato possibile verificare con i tuoi dati, quindi non è stato mostrato. Riprova."
     },
@@ -3502,6 +3507,7 @@
         "steadyLatestWithin": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, in linea.",
         "steadyLatestAbove": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sopra.",
         "steadyLatestBelow": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sotto.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Sto ancora imparando il tuo intervallo abituale. Continua a registrare per qualche giorno in più.",
         "driver": "{note}",
         "loadError": "Impossibile caricare il tuo intervallo abituale."
@@ -3927,6 +3933,7 @@
         "title": "Andamento della notte",
         "wokeOn": "Risveglio il {date}",
         "summary": "{asleep} di sonno, {awakenings, plural, one {# risveglio} other {# risvegli}}",
+        "asleepOnly": "{asleep} di sonno",
         "source": "da {source}",
         "previous": "Notte precedente",
         "next": "Notte successiva",
@@ -4716,6 +4723,11 @@
           "green": "buono",
           "yellow": "medio",
           "red": "basso"
+        },
+        "loadBand": {
+          "green": "basso",
+          "yellow": "medio",
+          "red": "alto"
         }
       },
       "provenance": {
@@ -5348,7 +5360,7 @@
       "steps": {
         "dashboardOverview": {
           "title": "La tua dashboard",
-          "body": "La dashboard riunisce tutti i moduli a colpo d’occhio. Tieni premuta una scheda per riordinarla o nasconderla (Impostazioni → Layout dashboard). Una scheda vale quanto i dati che ha dietro: i moduli successivi li riempiono."
+          "body": "La dashboard riunisce tutti i moduli a colpo d’occhio. Tieni premuta una scheda per riordinarla o nasconderla (Impostazioni > Layout dashboard). Una scheda vale quanto i dati che ha dietro: i moduli successivi li riempiono."
         },
         "quickAdd": {
           "title": "Registrato in pochi secondi",
@@ -5404,7 +5416,7 @@
         },
         "wrapUp": {
           "title": "Questa è la visita guidata",
-          "body": "Questa visita guidata viene mostrata una sola volta: non si riaprirà da sola. Tutto ciò che hai visto resta al suo posto e puoi attivare o disattivare le funzioni quando vuoi da Impostazioni → Moduli."
+          "body": "Questa visita guidata viene mostrata una sola volta: non si riaprirà da sola. Tutto ciò che hai visto resta al suo posto e puoi attivare o disattivare le funzioni quando vuoi da Impostazioni > Moduli."
         }
       }
     },
@@ -5601,12 +5613,12 @@
           "cta": "Collega {target}",
           "checking": "Verifica della connessione in corso.",
           "waiting": "Non ancora collegato.",
-          "openSettings": "Apri Impostazioni → Integrazioni",
+          "openSettings": "Apri Impostazioni > Integrazioni",
           "noDate": "sconosciuto",
           "throughGoogleHealth": "I dati {source} ora arrivano tramite {target}: la connessione classica a {source} è stata chiusa. Collega {target} con l'account Google a cui è associato il tuo {source} e le tue misurazioni arriveranno da lì.",
           "needsCredentials": {
             "title": "Questa istanza non ha ancora un’app {target} registrata.",
-            "detail": "Inserisci le tue credenziali in Impostazioni → Integrazioni e la connessione potrà partire."
+            "detail": "Inserisci le tue credenziali in Impostazioni > Integrazioni e la connessione potrà partire."
           },
           "state": {
             "pending_first_sync": {
@@ -5623,11 +5635,11 @@
             },
             "stalled": {
               "title": "{target} è collegato, ma non sincronizza più.",
-              "detail": "Ultimo tentativo {when}. Controlla la connessione in Impostazioni → Integrazioni."
+              "detail": "Ultimo tentativo {when}. Controlla la connessione in Impostazioni > Integrazioni."
             },
             "failing": {
               "title": "{target} è collegato, ma la sincronizzazione non riesce.",
-              "detail": "Non arriva nulla da {when}. Controlla la connessione in Impostazioni → Integrazioni."
+              "detail": "Non arriva nulla da {when}. Controlla la connessione in Impostazioni > Integrazioni."
             },
             "reauth_required": {
               "title": "La connessione a {target} va rinnovata.",
@@ -5635,7 +5647,7 @@
             },
             "parked": {
               "title": "La connessione a {target} è in pausa.",
-              "detail": "Controlla la connessione in Impostazioni → Integrazioni."
+              "detail": "Controlla la connessione in Impostazioni > Integrazioni."
             }
           }
         },
@@ -6164,7 +6176,7 @@
           "charCount": "{used} / {max, plural, one {# carattere} other {# caratteri}}",
           "appleHealth": {
             "title": "Apple Salute",
-            "description": "Carica il file export.zip dall'app Salute su iPhone (Profilo → Esporta tutti i dati sanitari).",
+            "description": "Carica il file export.zip dall'app Salute su iPhone (Profilo > Esporta tutti i dati sanitari).",
             "dropLabel": "Trascina qui export.zip",
             "dropHint": "o fai clic per scegliere un file",
             "fileInputLabel": "Scegli un file export.zip di Apple Salute",
@@ -6925,7 +6937,7 @@
       "deviceCodeCancel": "Annulla",
       "oauthNotConfigured": "L’OAuth di ChatGPT non è configurato su questa istanza. Usa invece la tua chiave API qui sotto.",
       "modelLabel": "Modello",
-      "modelOptionDefault": "— Predefinito —",
+      "modelOptionDefault": "Predefinito",
       "modelOptionCustom": "Personalizzato…",
       "customModelLabel": "Nome del modello personalizzato",
       "anthropicKeyLabel": "Chiave API Anthropic",
@@ -6959,7 +6971,7 @@
         "saveFailed": "Salvataggio della catena non riuscito",
         "resetDefaults": "Ripristina",
         "resetConfirmTitle": "Ripristinare la catena ai valori predefiniti?",
-        "resetConfirmBody": "La catena torna a Codex → OpenAI → Anthropic → Locale → OpenAI amministratore. Le credenziali salvate non vengono toccate."
+        "resetConfirmBody": "La catena torna a Codex, OpenAI, Anthropic, Locale, OpenAI amministratore. Le credenziali salvate non vengono toccate."
       },
       "namedChains": {
         "title": "Catene per attività",
@@ -8102,7 +8114,7 @@
         "unavailable": "Stato di Apple Health non disponibile"
       },
       "setupTitle": "Attiva la sincronizzazione in tempo reale",
-      "permissionStep": "Nell’app HealthLog per iOS, apri Impostazioni → Apple Health e autorizza le categorie di salute che vuoi condividere.",
+      "permissionStep": "Nell’app HealthLog per iOS, apri Impostazioni > Apple Health e autorizza le categorie di salute che vuoi condividere.",
       "backgroundStep": "Mantieni attivo l’aggiornamento in background. L’app sincronizza automaticamente i nuovi dati in primo piano e quando iOS concede tempo in background.",
       "importNote": "Ti serve lo storico precedente o non puoi usare l’app iOS? Il caricamento XML/ZIP di Apple Health è un’alternativa una tantum e non attiva la sincronizzazione in tempo reale.",
       "importAction": "Apri importazione una tantum",
@@ -8200,7 +8212,9 @@
     "displayCard": {
       "title": "Visualizzazione",
       "description": "Lingua, unità e formati, salvati appena li modifichi.",
-      "themeDescription": "Sistema segue il dispositivo tra chiaro e scuro. La scelta resta su questo dispositivo."
+      "themeDescription": "Sistema segue il dispositivo tra chiaro e scuro. La scelta resta su questo dispositivo.",
+      "navCountsLabel": "Conteggi nella navigazione",
+      "navCountsDescription": "Mostra accanto alle voci della barra laterale e del menu Altro quante dosi e quanti controlli sono in scadenza."
     },
     "integrationCard": {
       "state": {
@@ -8398,7 +8412,7 @@
     "measurementsCount": "Misurazioni",
     "activeTokens": "Token API attivi",
     "activeSessions": "Sessioni attive",
-    "loadingStatus": "Caricamento stato...",
+    "loadingStatus": "Caricamento stato…",
     "systemStatusLoadError": "Impossibile caricare lo stato del sistema.",
     "systemStatusRetry": "Riprova",
     "adminSettingsLoadError": "Impossibile caricare le impostazioni di amministrazione. Gli interruttori sottostanti potrebbero non riflettere lo stato attuale: ricarica la pagina.",
@@ -8463,7 +8477,7 @@
     },
     "aiQuality": {
       "title": "Qualità delle analisi",
-      "loading": "Caricamento riepilogo feedback...",
+      "loading": "Caricamento riepilogo feedback…",
       "loadError": "Impossibile caricare il riepilogo sulla qualità delle analisi. Prova a ricaricare la pagina.",
       "empty": "Ancora nessun feedback. L'aggregatore viene eseguito ogni giorno alle 04:00: non appena gli utenti valutano i consigli, qui compaiono i tassi di utilità.",
       "windowLabel": "{days, plural, =1 {Ultimo giorno} other {Ultimi # giorni}}",
@@ -8478,7 +8492,7 @@
     },
     "coachFeedback": {
       "title": "Feedback del Coach",
-      "loading": "Caricamento riepilogo feedback del Coach...",
+      "loading": "Caricamento riepilogo feedback del Coach…",
       "loadError": "Impossibile caricare il riepilogo dei feedback del Coach. Prova a ricaricare la pagina.",
       "empty": "Ancora nessun feedback sul Coach. L'aggregatore viene eseguito ogni giorno alle 04:00: non appena gli utenti valutano le risposte del Coach, qui compaiono i tassi di utilità.",
       "windowLabel": "{days, plural, =1 {Ultimo giorno} other {Ultimi # giorni}}",
@@ -8665,7 +8679,7 @@
     "newPasswordPlaceholder": "Almeno 12 caratteri",
     "passwordReset": "La password è stata reimpostata",
     "reset": "Reimposta",
-    "loadingUsers": "Caricamento utenti...",
+    "loadingUsers": "Caricamento utenti…",
     "apiTokens": "Token API",
     "apiTokensDescription": "Tutti i token API attivi e revocati di tutti gli account.",
     "tokenUser": "Utente",
@@ -8678,7 +8692,7 @@
     "tokenCreated": "Creato",
     "tokenNeverUsed": "Mai",
     "tokensEmptyTitle": "Ancora nessun token API",
-    "tokensEmptyDescription": "I token vengono emessi quando un client nativo accede o tramite Impostazioni → Account.",
+    "tokensEmptyDescription": "I token vengono emessi quando un client nativo accede o tramite Impostazioni > Account.",
     "loginOverviewDescription": "Eventi di accesso e autenticazione di tutti gli account, filtrabili ed esportabili in CSV.",
     "loginOverviewFilterLabel": "Filtra eventi",
     "allAuthEvents": "Tutti gli eventi di autenticazione",
@@ -8770,11 +8784,11 @@
       "versionTileUpToDate": "Aggiornato",
       "versionTileCheckOff": "Controllo aggiornamenti disattivato",
       "snapshotLoadError": "Impossibile caricare l'istantanea del sistema.",
-      "snapshotLoading": "Caricamento istantanea...",
+      "snapshotLoading": "Caricamento istantanea…",
       "auditTitle": "Attività recente",
       "auditEmpty": "Nessuna voce di audit recente.",
       "auditLoadError": "Impossibile caricare l'attività recente.",
-      "auditLoading": "Caricamento attività...",
+      "auditLoading": "Caricamento attività…",
       "auditViewAll": "Mostra tutto"
     },
     "section": {
@@ -8915,7 +8929,7 @@
         "runNow": "Esegui backup ora",
         "runEnqueued": "Processo di backup messo in coda",
         "runFailed": "Impossibile mettere in coda il backup",
-        "loading": "Caricamento backup...",
+        "loading": "Caricamento backup…",
         "loadError": "Impossibile caricare i backup.",
         "emptyTitle": "Ancora nessun backup",
         "emptyDescription": "I backup vengono eseguiti automaticamente ogni domenica alle 03:00, oppure avviane uno ora per creare la prima istantanea.",
@@ -8974,7 +8988,7 @@
         "previewCustomMetrics": "Metriche personalizzate",
         "previewHealthScores": "Storico del punteggio",
         "restoreConfirm": "Ripristina ora",
-        "restoreInProgress": "Ripristino in corso...",
+        "restoreInProgress": "Ripristino in corso…",
         "restoreSuccess": "Ripristino completato",
         "restoreFailed": "Ripristino non riuscito",
         "restoreSkippedToast": "Ripristino completato, {links, plural, one {# collegamento ai sintomi non è stato recuperato} other {# collegamenti ai sintomi non sono stati recuperati}}",
@@ -9773,7 +9787,8 @@
           "off": "I cookie non hanno l'attributo Secure.",
           "secure_over_https": "Cookie sicuri via HTTPS, come deve essere.",
           "plain_http": "HTTP semplice senza attributo Secure: va bene per un server raggiungibile solo dalla tua rete.",
-          "secure_over_http": "Questa pagina è arrivata in HTTP semplice, ma i cookie hanno l'attributo Secure, quindi i browser scartano l'accesso. Usa HTTPS o imposta SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Questa pagina è arrivata all'app in HTTP semplice. Dietro un proxy HTTPS, fagli inviare X-Forwarded-Proto: https; in HTTP semplice, imposta SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "HTTPS funziona, ma il tuo reverse proxy non lo segnala. Fagli inviare X-Forwarded-Proto: https.",
           "insecure_over_https": "Questa pagina è arrivata in HTTPS, ma ai cookie manca l'attributo Secure. Rimuovi SESSION_COOKIE_SECURE=false."
         },
         "app_url": {
@@ -10105,7 +10120,7 @@
     "eventColumn": "Evento",
     "subtitle": "Scegli quali notifiche ricevere e su quale canale.",
     "loadError": "Impossibile caricare le impostazioni di notifica.",
-    "noChannels": "Configura prima un canale di notifica in Impostazioni → Integrazioni.",
+    "noChannels": "Configura prima un canale di notifica in Impostazioni > Integrazioni.",
     "goToSettings": "Vai alle impostazioni del canale",
     "channelDisabled": "Disabilitato",
     "admin": {
@@ -12530,7 +12545,7 @@
     "openDetail": "Mostra dettagli",
     "historyLoadError": "Non è stato possibile caricare la cronologia dei test",
     "historyLoadErrorHint": "Questo non significa che non ci siano risultati: non è stato possibile recuperare l'elenco. Riprova.",
-    "privacyNote": "Le tue risposte sono salvate cifrate e non raggiungono mai il Coach IA.",
+    "privacyNote": "Le tue risposte sono salvate cifrate. Risposte e punteggi non raggiungono mai il Coach IA, un'altra funzione IA o un assistente IA che hai collegato.",
     "trend": {
       "sincePrevious": "Dal tuo check-in precedente del {date}: {change, plural, one {# punto} other {# punti}}.",
       "sinceFirst": "Dal tuo primo check-in del {date}: {change, plural, one {# punto} other {# punti}}.",
@@ -13239,7 +13254,7 @@
       "dismiss": "Ignora",
       "empty": "Impossibile leggere questo documento.",
       "unavailableBody": "Configura un provider IA per suggerire titolo, tipo e data.",
-      "unavailableLocalOcr": "Attiva «Leggi le scansioni su questo dispositivo» in Impostazioni → Moduli → Esami per leggere le immagini su questo dispositivo.",
+      "unavailableLocalOcr": "Attiva «Leggi le scansioni su questo dispositivo» in Impostazioni > Moduli > Esami per leggere le immagini su questo dispositivo.",
       "unavailableAction": "Apri impostazioni IA",
       "errorGeneric": "Impossibile leggere il documento. Riprova.",
       "errorOcr": "Impossibile leggere il testo da questa immagine.",
@@ -13252,7 +13267,7 @@
       "errorFileType": "Questo tipo di file non può essere letto.",
       "errorNotIndexed": "Leggi prima il documento, poi estrai.",
       "errorOutputLimit": "Il fornitore di IA ha raggiunto il suo limite di output prima di restituire un solo valore. Prova con un modello che consente risposte più lunghe.",
-      "errorLocalOcrDisabled": "Attiva prima «Leggi le scansioni su questo dispositivo» in Impostazioni → Moduli → Esami.",
+      "errorLocalOcrDisabled": "Attiva prima «Leggi le scansioni su questo dispositivo» in Impostazioni > Moduli > Esami.",
       "errorProvider": "Nessun provider IA è configurato per questo.",
       "errorTextImageOnly": "L'OCR locale legge solo immagini, non questo file.",
       "errorConsent": "La lettura dei documenti con IA richiede prima il tuo consenso.",
@@ -13997,7 +14012,7 @@
     "invite": {
       "title": "Invita qualcuno",
       "description": "Nulla viene condiviso finché non accetta.",
-      "needsAccount": "La persona ha bisogno di un proprio account HealthLog su questa istanza e troverà l'invito in Impostazioni → Accesso condiviso.",
+      "needsAccount": "La persona ha bisogno di un proprio account HealthLog su questa istanza e troverà l'invito in Impostazioni > Accesso condiviso.",
       "identifierLabel": "Nome utente o e-mail",
       "identifierPlaceholder": "Il nome con cui accede",
       "identifierHint": "Serve un account su questa istanza. Non è possibile inviare inviti a un indirizzo non registrato.",
@@ -14161,7 +14176,7 @@
       "guardianErrorNoAccount": "Su questa istanza non esiste un account con quel nome o quella e-mail.",
       "guardianErrorRateLimit": "Troppi inviti nell'ultima ora. Aspetta un po' e riprova.",
       "guardianErrorFailed": "Non è stato possibile inviare l'invito.",
-      "errorMfaRequired": "Serve un secondo fattore o una passkey e il tuo account non ha ancora né l'uno né l'altra. Impostane uno in Impostazioni → Sicurezza e riprova.",
+      "errorMfaRequired": "Serve un secondo fattore o una passkey e il tuo account non ha ancora né l'uno né l'altra. Impostane uno in Impostazioni > Sicurezza e riprova.",
       "rosterLoadError": "Non è stato possibile caricare chi si occupa di questa cartella.",
       "errorRateLimit": "Troppi profili creati nell'ultima ora. Aspetta un po' e riprova.",
       "handover": {
@@ -16068,7 +16083,8 @@
     "wallet": {
       "instructions": "Stampa al 100 per cento, ritaglia lungo il bordo, piega sulla linea tratteggiata.",
       "scan": "Scansiona per la tessera completa",
-      "cut": "Accorciato per starci. La tessera completa è dietro il codice QR."
+      "cut": "Accorciato per starci. La tessera completa è dietro il codice QR.",
+      "cutNoCode": "Accorciata per farla stare. La scheda completa è nell’app."
     },
     "link": {
       "validUntil": "Sola lettura. Questo link funziona fino al {date}.",

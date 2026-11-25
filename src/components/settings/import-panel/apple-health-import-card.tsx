@@ -27,6 +27,7 @@ import {
 import { ImportCardShell, ImportStatusRegion } from "./import-card-shell";
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
+import { FileInput } from "@/components/ui/file-picker";
 
 /** Terminal states the status poll stops on. */
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
@@ -521,9 +522,8 @@ export function AppleHealthImportCard() {
           {t("settings.sections.export.import.appleHealth.dropHint")}
         </span>
       </div>
-      <input
+      <FileInput
         ref={fileInputRef}
-        type="file"
         accept=".zip,application/zip"
         className="sr-only"
         aria-label={t(

@@ -64,7 +64,7 @@ export function FamilyHistorySection({
           label={t(`records.family.relationship.${entry.relationship}`)}
           value={
             entry.ageAtOnset !== null
-              ? `${entry.condition} · ${t(
+              ? `${entry.condition}, ${t(
                   "doctorReport.familyHistoryColAgeAtOnset",
                 )} ${entry.ageAtOnset}`
               : entry.condition
@@ -121,7 +121,7 @@ export function MoodSection({
           )}
           value={
             mood && mood.count > 0
-              ? `${count} · ${fmtNum((count / mood.count) * 100)}%`
+              ? `${count}, ${fmtNum((count / mood.count) * 100)}%`
               : String(count)
           }
         />
@@ -216,7 +216,7 @@ export function CycleSection({
               : null,
           ]
             .filter(Boolean)
-            .join(" · ")}
+            .join(", ")}
         />
       ))}
     </LeafSection>

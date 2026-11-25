@@ -2,14 +2,15 @@ name: Security & Quality
 
 on:
   push:
-    branches: [main]
+    branches: [main, "release/**"]
   pull_request:
-    branches: [main]
+    branches: [main, "release/**"]
   schedule:
     # Daily, 05:47 UTC. Carries the dependency audit only — every other job
     # here answers "is this change safe" and has nothing to say about a tree
     # nobody touched. See the note on `dependency-audit`.
     - cron: "47 5 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,6 +25,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
@@ -44,6 +47,12 @@ jobs:
       # Prettier formatting gate. The format pass excludes generator-owned
       # artifacts via .prettierignore (notably docs/api/openapi.yaml, which
       # the OpenAPI drift check below enforces byte-for-byte).
+      # The licences of the shipped dependency tree against the policy in
+      # THIRD_PARTY_NOTICES.md: a refused licence, or one not yet listed
+      # there, fails the job.
+      - name: Third-party licence policy
+        run: node scripts/third-party-notices.mjs
+
       - name: Prettier format check
         run: pnpm format:check
 
@@ -83,6 +92,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
@@ -173,6 +184,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
@@ -200,12 +213,29 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Gitleaks secret scan
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Every file states its copyright and licence (REUSE.toml, LICENSES/), in
+  # the form of the REUSE specification. A new file from another project
+  # needs its own annotation and licence text, or this fails.
+  reuse:
+    name: REUSE compliance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check copyright and licence of every file
+        uses: fsfe/reuse-action@676e2d560c9a403aa252096d99fcab3e1132b0f5 # v6.0.0
 
   docker-security:
     name: Container Security
@@ -214,6 +244,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Build Docker image
         run: docker build -t healthlog:scan .

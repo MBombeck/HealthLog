@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { TimesOfDayChips } from "@/components/medications/scheduling/times-of-day-chips";
 import { DoseWindowEditor } from "@/components/medications/scheduling/dose-window-editor";
+import { useValueAfterFieldCommit } from "@/components/medications/scheduling/use-value-after-field-commit";
 import {
   type DoseWindowEntry,
   type DoseWindowScale,
@@ -80,6 +81,48 @@ function effectiveTimes(s: EditableSchedule): string[] {
     : [s.windowStart];
 }
 
+/**
+ * One schedule of the PUT body: every cadence field from the snapshot,
+ * field by field, with only the times and windows taken from the edit.
+ */
+function scheduleBody(s: EditableSchedule, edit: ScheduleEdit) {
+  const times = edit.timesOfDay;
+  const recurrence = parseScheduleRecurrence(s.daysOfWeek);
+  // Drop windows whose timeOfDay no longer names a live dose time
+  // (so a removed time can't leave an orphaned window the server
+  // would 422 on).
+  const liveTimes = new Set(times);
+  const windows = edit.doseWindows.filter((w) => liveTimes.has(w.timeOfDay));
+  return {
+    windowStart: s.windowStart,
+    windowEnd: s.windowEnd,
+    label: s.label ?? undefined,
+    dose: s.dose ?? undefined,
+    timesOfDay: times,
+    daysOfWeek: recurrence.daysOfWeek,
+    intervalWeeks: recurrence.intervalWeeks,
+    ...(s.rrule ? { rrule: s.rrule } : {}),
+    ...(typeof s.rollingIntervalDays === "number"
+      ? { rollingIntervalDays: s.rollingIntervalDays }
+      : {}),
+    ...(typeof s.reminderGraceMinutes === "number"
+      ? { reminderGraceMinutes: s.reminderGraceMinutes }
+      : {}),
+    ...(s.scheduleType
+      ? {
+          scheduleType: s.scheduleType as "SCHEDULED" | "PRN" | "CYCLIC",
+        }
+      : {}),
+    ...(typeof s.cyclicOnWeeks === "number"
+      ? { cyclicOnWeeks: s.cyclicOnWeeks }
+      : {}),
+    ...(typeof s.cyclicOffWeeks === "number"
+      ? { cyclicOffWeeks: s.cyclicOffWeeks }
+      : {}),
+    doseWindows: windows,
+  };
+}
+
 export function ScheduleTimesEditor({
   medicationId,
   schedules,
@@ -109,8 +152,11 @@ export function ScheduleTimesEditor({
 
   const [edits, setEdits] = useState<ScheduleEdit[]>(initial);
   const [busy, setBusy] = useState(false);
+  const [missingTimes, setMissingTimes] = useState(false);
+  const readEdits = useValueAfterFieldCommit(edits);
 
   function patchSchedule(index: number, patch: Partial<ScheduleEdit>) {
+    setMissingTimes(false);
     setEdits((prev) =>
       prev.map((e, i) => (i === index ? { ...e, ...patch } : e)),
     );
@@ -118,54 +164,22 @@ export function ScheduleTimesEditor({
 
   async function save() {
     if (busy) return;
+    // A time still being typed in lands in the edits first (see the hook).
+    const edits = readEdits();
+    // A schedule with every time removed is not saved. It used to fall back
+    // to the stored `windowStart`, so the request carried the old time and
+    // the tab still said the schedule was saved.
+    if (edits.some((e) => e.timesOfDay.length === 0)) {
+      setMissingTimes(true);
+      return;
+    }
     setBusy(true);
     try {
       // Replace schedules wholesale — preserve every cadence field from
       // the snapshot field-by-field, change only the times + windows.
       const body = {
         ...(trackIntake !== undefined && { trackIntake }),
-        schedules: schedules.map((s, i) => {
-          const edit = edits[i];
-          const times =
-            edit.timesOfDay.length > 0 ? edit.timesOfDay : [s.windowStart];
-          const recurrence = parseScheduleRecurrence(s.daysOfWeek);
-          // Drop windows whose timeOfDay no longer names a live dose time
-          // (so a removed time can't leave an orphaned window the server
-          // would 422 on).
-          const liveTimes = new Set(times);
-          const windows = edit.doseWindows.filter((w) =>
-            liveTimes.has(w.timeOfDay),
-          );
-          return {
-            windowStart: s.windowStart,
-            windowEnd: s.windowEnd,
-            label: s.label ?? undefined,
-            dose: s.dose ?? undefined,
-            timesOfDay: times,
-            daysOfWeek: recurrence.daysOfWeek,
-            intervalWeeks: recurrence.intervalWeeks,
-            ...(s.rrule ? { rrule: s.rrule } : {}),
-            ...(typeof s.rollingIntervalDays === "number"
-              ? { rollingIntervalDays: s.rollingIntervalDays }
-              : {}),
-            ...(typeof s.reminderGraceMinutes === "number"
-              ? { reminderGraceMinutes: s.reminderGraceMinutes }
-              : {}),
-            ...(s.scheduleType
-              ? {
-                  scheduleType: s.scheduleType as
-                    "SCHEDULED" | "PRN" | "CYCLIC",
-                }
-              : {}),
-            ...(typeof s.cyclicOnWeeks === "number"
-              ? { cyclicOnWeeks: s.cyclicOnWeeks }
-              : {}),
-            ...(typeof s.cyclicOffWeeks === "number"
-              ? { cyclicOffWeeks: s.cyclicOffWeeks }
-              : {}),
-            doseWindows: windows,
-          };
-        }),
+        schedules: schedules.map((s, i) => scheduleBody(s, edits[i])),
       };
 
       await apiPut(`/api/medications/${medicationId}`, body);
@@ -242,11 +256,22 @@ export function ScheduleTimesEditor({
         );
       })}
 
+      {missingTimes ? (
+        <p
+          role="alert"
+          className="text-destructive text-sm"
+          data-slot="zeitplan-missing-times"
+        >
+          {t("medications.detail.zeitplan.history.validationTimes")}
+        </p>
+      ) : null}
+
       <div className="flex items-center justify-between gap-3">
         <p className="text-muted-foreground text-xs">
           {t("medications.detail.zeitplan.fullEditNote")}
         </p>
         <Button
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => void save()}
           disabled={busy}
           aria-busy={busy || undefined}

@@ -42,7 +42,7 @@ import {
 
 beforeEach(() => {
   vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
-  vi.mocked(readMoodDayRollups).mockResolvedValue([] as never);
+  vi.mocked(readMoodDayRollups).mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -70,7 +70,7 @@ describe("buildMoodDailySeries", () => {
   });
 
   it("falls back to the live walk once and collapses multi-entry days to the daily mean", async () => {
-    vi.mocked(readMoodDayRollups).mockResolvedValue([] as never);
+    vi.mocked(readMoodDayRollups).mockResolvedValue([]);
     vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([
       { date: "2026-06-01", score: 5 },
       { date: "2026-06-01", score: 3 },
@@ -101,6 +101,55 @@ describe("buildMoodDailySeries", () => {
       where: { moodLoggedAt?: { gte: Date } };
     };
     expect(args.where.moodLoggedAt?.gte).toEqual(since);
+  });
+
+  it("answers the same series and summary from the live walk as from the tier", async () => {
+    // Noon UTC: the old live walk placed each day at its noon, the tier at
+    // its midnight, so the day exactly a week back fell inside the 7-day
+    // slope on one path and outside it on the other.
+    vi.useFakeTimers({
+      toFake: ["Date"],
+      now: new Date("2026-06-30T12:00:00Z"),
+    });
+    try {
+      const raw: Array<{ date: string; score: number }> = [];
+      for (let d = 0; d < 45; d++) {
+        const date = new Date(Date.UTC(2026, 5, 30 - d))
+          .toISOString()
+          .slice(0, 10);
+        raw.push({ date, score: 1 + ((d * 3) % 5) });
+        if (d % 4 === 0) raw.push({ date, score: 2 });
+      }
+      raw.reverse();
+      const byDay = new Map<string, number[]>();
+      for (const r of raw)
+        byDay.set(r.date, [...(byDay.get(r.date) ?? []), r.score]);
+      type RollupRow = Awaited<ReturnType<typeof readMoodDayRollups>>[number];
+      const rollupRows: RollupRow[] = [...byDay].map(([date, scores]) => ({
+        bucketStart: new Date(`${date}T00:00:00.000Z`),
+        count: scores.length,
+        mean: scores.reduce((s, v) => s + v, 0) / scores.length,
+        minScore: Math.min(...scores),
+        maxScore: Math.max(...scores),
+        sd: null,
+        computedAt: new Date("2026-06-30T12:00:00Z"),
+      }));
+
+      vi.mocked(readMoodDayRollups).mockResolvedValue(rollupRows);
+      const tier = await buildMoodDailySeries("user-1");
+      vi.mocked(readMoodDayRollups).mockResolvedValue([]);
+      vi.mocked(prisma.moodEntry.findMany).mockResolvedValue(raw as never);
+      const live = await buildMoodDailySeries("user-1");
+
+      expect(tier.source).toBe("rollup");
+      expect(live.source).toBe("live");
+      expect(live.entries).toEqual(tier.entries);
+      expect(live.entryCount).toBe(tier.entryCount);
+      expect(live.summary).toEqual(tier.summary);
+      expect(tier.summary.slope7).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("returns an empty series for a user with no rollups and no raw entries", async () => {

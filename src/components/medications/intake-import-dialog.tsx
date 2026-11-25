@@ -41,6 +41,7 @@ import { invalidateMedicationReads } from "@/lib/query-keys";
 import { apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { waitForMedicationIntakeImport } from "@/lib/medications/intake-import-poll";
+import { FilePicker } from "@/components/ui/file-picker";
 
 export interface IntakeImportDialogProps {
   medicationId: string | null;
@@ -212,19 +213,13 @@ export function IntakeImportDialog({
           <Label htmlFor="intake-import-file" className="text-xs font-medium">
             {t("medications.importUploadFile")}
           </Label>
-          <input
+          <FilePicker
             key={fileInputKey}
             id="intake-import-file"
-            type="file"
             accept="application/json,.json"
             onChange={handleFileSelect}
-            className="border-input bg-background text-foreground file:bg-muted file:text-foreground w-full cursor-pointer rounded-md border text-sm file:mr-2 file:border-0 file:px-3 file:py-2"
+            fileName={selectedFileName}
           />
-          {selectedFileName && (
-            <p className="text-muted-foreground text-xs">
-              {t("medications.importSelected", { name: selectedFileName })}
-            </p>
-          )}
         </div>
         <pre className="bg-muted text-muted-foreground rounded-lg p-3 text-xs">
           {`[

@@ -95,10 +95,35 @@ const REQUIRED_COLUMNS = ["type", "value", "unit", "measuredat"] as const;
 const OPTIONAL_COLUMNS = ["glucosecontext", "notes", "externalid"] as const;
 
 /**
+ * Rows a whole-text CSV may hold, the header included, and cells one row may
+ * hold. The text itself is capped by the routes (16 MB), but its shape was
+ * not: sixteen megabytes of line breaks allocated a row array per line and
+ * held several gigabytes of heap for most of a minute, and a file of short
+ * junk lines answered with a status entry for each of eight million rows.
+ * Past either bound the split stops and throws {@link CsvShapeLimitError}.
+ */
+export const CSV_MAX_ROWS = 100_001;
+export const CSV_MAX_CELLS_PER_ROW = 1_000;
+
+/** The CSV holds more rows or wider rows than one import reads. */
+export class CsvShapeLimitError extends Error {
+  constructor(readonly limit: "rows" | "cells") {
+    super(
+      limit === "rows"
+        ? `The CSV has more than ${CSV_MAX_ROWS - 1} data rows`
+        : `A CSV row has more than ${CSV_MAX_CELLS_PER_ROW} columns`,
+    );
+    this.name = "CsvShapeLimitError";
+  }
+}
+
+/**
  * Split CSV text into rows of cells. Hand-rolled, zero-dependency, RFC-4180-ish:
  * handles quoted fields, escaped quotes (`""`), commas + newlines inside quotes,
- * a leading UTF-8 BOM, and CRLF / LF line endings. Trailing blank lines are
- * dropped. Sufficient for the flat measurement schema; not a general CSV engine.
+ * a leading UTF-8 BOM, and CRLF / LF line endings. Blank lines are dropped as
+ * they are read. Sufficient for the flat measurement schema; not a general CSV
+ * engine. Throws {@link CsvShapeLimitError} past {@link CSV_MAX_ROWS} rows or
+ * {@link CSV_MAX_CELLS_PER_ROW} cells in a row.
  */
 export function splitCsvRows(text: string): string[][] {
   // Strip a leading BOM so the first header cell isn't "﻿type".
@@ -108,6 +133,20 @@ export function splitCsvRows(text: string): string[][] {
   let row: string[] = [];
   let inQuotes = false;
   let sawAnyChar = false;
+
+  const pushCell = (): void => {
+    if (row.length >= CSV_MAX_CELLS_PER_ROW) {
+      throw new CsvShapeLimitError("cells");
+    }
+    row.push(cell);
+  };
+  // A fully-empty row (a blank line, or one holding only whitespace or `""`)
+  // is dropped here rather than collected and filtered afterwards.
+  const pushRow = (): void => {
+    if (row.length === 1 && row[0].trim() === "") return;
+    if (rows.length >= CSV_MAX_ROWS) throw new CsvShapeLimitError("rows");
+    rows.push(row);
+  };
 
   for (let i = 0; i < input.length; i++) {
     const ch = input[i];
@@ -130,7 +169,7 @@ export function splitCsvRows(text: string): string[][] {
       continue;
     }
     if (ch === ",") {
-      row.push(cell);
+      pushCell();
       cell = "";
       sawAnyChar = true;
       continue;
@@ -140,8 +179,8 @@ export function splitCsvRows(text: string): string[][] {
       continue;
     }
     if (ch === "\n") {
-      row.push(cell);
-      rows.push(row);
+      pushCell();
+      pushRow();
       row = [];
       cell = "";
       sawAnyChar = false;
@@ -152,11 +191,10 @@ export function splitCsvRows(text: string): string[][] {
   }
   // Flush a trailing row that did not end in a newline.
   if (sawAnyChar || cell.length > 0 || row.length > 0) {
-    row.push(cell);
-    rows.push(row);
+    pushCell();
+    pushRow();
   }
-  // Drop fully-empty rows (e.g. a trailing blank line that produced [""]).
-  return rows.filter((r) => !(r.length === 1 && r[0].trim() === ""));
+  return rows;
 }
 
 /** True when an ISO-8601 datetime string carries an explicit offset (`Z` or ±HH:MM). */

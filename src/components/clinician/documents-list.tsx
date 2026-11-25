@@ -52,7 +52,7 @@ export function DocumentEntry({
             <p className="text-sm font-medium break-words">{title}</p>
             {meta.length > 0 ? (
               <p className="text-muted-foreground mt-0.5 text-xs">
-                {meta.join(" · ")}
+                {meta.join(", ")}
               </p>
             ) : null}
           </div>

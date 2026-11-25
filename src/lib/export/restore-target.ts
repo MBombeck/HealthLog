@@ -27,6 +27,7 @@
  */
 import type { Prisma } from "@/generated/prisma/client";
 import { BACKED_UP_MODELS } from "@/lib/export/backup-plan";
+import { hasOwnKey } from "@/lib/own-key";
 
 /**
  * The backed-up models with no owner column of their own, each with the owned
@@ -75,7 +76,7 @@ export const RESTORE_TARGET_SETUP_MODELS: Readonly<Record<string, string>> = {
 /** The models whose rows make an account a refused restore target. */
 const RESTORE_TARGET_CHECKED_MODELS: readonly string[] =
   RESTORE_TARGET_OWNED_MODELS.filter(
-    (model) => !(model in RESTORE_TARGET_SETUP_MODELS),
+    (model) => !hasOwnKey(RESTORE_TARGET_SETUP_MODELS, model),
   );
 
 interface OwnedDelegate {

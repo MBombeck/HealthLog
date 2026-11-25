@@ -88,11 +88,10 @@ export const GET = apiHandler(
 
     annotate({
       action: { name: "mental-health.detail" },
-      // The instrument + degrade flag only — item answers are NEVER logged.
-      meta: {
-        instrument: row.instrument,
-        items_unavailable: decoded.itemsUnavailable,
-      },
+      // The degrade flag only. Neither the instrument (which screening a
+      // person takes is itself a health classification) nor any item answer
+      // is ever logged.
+      meta: { items_unavailable: decoded.itemsUnavailable },
     });
 
     return apiSuccess({

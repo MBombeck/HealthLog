@@ -373,7 +373,7 @@ export function AdminShell({ active, children }: AdminShellProps) {
             pinned panel on short viewports. */}
         <aside
           aria-label={t("admin.shell.sectionsNav")}
-          className="no-scrollbar hidden max-h-[calc(100dvh-10.5rem)] overflow-y-auto md:sticky md:top-6 md:col-start-1 md:row-span-2 md:row-start-1 md:block md:self-start"
+          className="no-scrollbar hidden max-h-[calc(100dvh-5.5rem-var(--floating-action-clearance))] overflow-y-auto md:sticky md:top-6 md:col-start-1 md:row-span-2 md:row-start-1 md:block md:self-start"
         >
           <ul className="space-y-1">
             <li>

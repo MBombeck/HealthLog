@@ -41,7 +41,7 @@ scroll.
 
 ## 1. Apple Health `export.zip`
 
-On the iPhone: **Health app → profile picture → Export All Health
+On the iPhone: **Health app > profile picture > Export All Health
 Data**, then move the resulting `export.zip` somewhere you can reach
 from a browser. In HealthLog open **Settings > Export & import** and drop
 the archive onto the Apple Health control (or click to pick it). The
@@ -74,7 +74,7 @@ Existing rows (matched on the type + timestamp uniqueness, or on
 `externalId` for mood entries) are skipped and counted under `skipped` in
 the response.
 
-The app's own files go straight in: the JSON export (**Export → JSON**,
+The app's own files go straight in: the JSON export (**Export > JSON**,
 read inside its `data` envelope) and the portable full backup. Every field
 either file writes for a reading or a mood entry comes back, apart from
 the row ids, the source (every imported row is stored as `IMPORT`) and the
@@ -306,7 +306,7 @@ matching is case-insensitive.
 | ---------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `type`           | yes      | A `MeasurementType` from the table above.                                                                                                                                                        |
 | `value`          | yes      | A number, in the row's `unit`.                                                                                                                                                                   |
-| `unit`           | yes      | The canonical unit, or a recognised alias: `mmol/L` → `mg/dL`, `lb` → `kg`, `in` → `cm`, `°F` → `°C`.                                                                                            |
+| `unit`           | yes      | The canonical unit, or a recognised alias: `mmol/L` to `mg/dL`, `lb` to `kg`, `in` to `cm`, `°F` to `°C`.                                                                                        |
 | `measuredAt`     | yes      | ISO-8601 **with an explicit offset** (`Z` or `±HH:MM`, and `±HHMM` is accepted). No offset, no import.                                                                                           |
 | `glucoseContext` | no       | Only for `BLOOD_GLUCOSE`; blank means no context. See [Glucose context](#glucose-context).                                                                                                       |
 | `notes`          | no       | Free text, up to 200 characters.                                                                                                                                                                 |
@@ -328,6 +328,32 @@ The response carries per-row outcomes alongside the counts, and the card
 renders the counts, not the status code: rows written and none skipped is
 a success, a mixed result is a warning, and nothing written is a failure
 with the reasons grouped by count.
+
+### Lab results and medications from a spreadsheet
+
+The **Lab results and medications from a spreadsheet** card takes a CSV
+of lab results or of medications. You pick which column holds what,
+**Check file** runs the whole file without writing anything and lists every
+refused row with its line number and reason, and the import starts only
+after that. **Download template** gives a file with the expected columns.
+
+A medication row maps name, dose, daily intake times, as-needed, and a
+start and end date. Two rules to know before you fill the file:
+
+- **Every row needs either a time or as-needed set to `yes`.** A
+  scheduled medication without a time is refused (`missing_times`), and a
+  row with both is refused too. Several times go in one cell, separated by
+  a space, comma, semicolon or `|` (`08:00 20:00`).
+- **Everything else starts at its default.** After the import, open each
+  medication where these matter and set them by hand: type (Other), route
+  (Oral), pack size (none), tablets or units per dose (1), and how often
+  you take it (every day). Reminders stay off. Intake history is not part
+  of this import; the **Medication dose history** card adds it.
+
+A medication whose end date has already passed lands as an ended course,
+the same as one ended with **End medication**: nothing falls due, nothing is
+reminded and nothing counts against adherence. Intake tracking stays on,
+so doses from that course can still be recorded later.
 
 ## 4. Activity files (FIT)
 
@@ -398,8 +424,8 @@ for many. The steps are the same either way:
    the table above. A "Weight (kg)" column becomes `type: "WEIGHT"`,
    `unit: "kg"`.
 3. **Normalise the unit.** Convert each value into the canonical unit
-   before writing it — e.g. pounds → kg, hours of sleep → minutes,
-   `mmol/L` glucose → `mg/dL`. The importer rejects values outside the
+   before writing it — e.g. pounds > kg, hours of sleep > minutes,
+   `mmol/L` glucose > `mg/dL`. The importer rejects values outside the
    plausible range for the type, which catches most unit mistakes.
 4. **Format the timestamp.** Turn the CSV date/time column into an
    ISO-8601 `measuredAt` (mood uses a `YYYY-MM-DD` `date`). Include the

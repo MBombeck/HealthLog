@@ -23,6 +23,7 @@ import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { ImportCardShell, ImportStatusRegion } from "./import-card-shell";
+import { FileInput } from "@/components/ui/file-picker";
 
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
 
@@ -355,9 +356,8 @@ function FitDropZone({
           {t("settings.sections.export.import.fit.dropHint")}
         </span>
       </div>
-      <input
+      <FileInput
         ref={inputRef}
-        type="file"
         accept=".fit,.gz,.zip,application/zip,application/gzip,application/octet-stream"
         className="sr-only"
         aria-label={t("settings.sections.export.import.fit.fileInputLabel")}

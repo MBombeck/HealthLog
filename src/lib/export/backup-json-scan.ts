@@ -27,6 +27,8 @@
  * streamed arrays emptied: the tests hold it to that over arbitrary splits.
  */
 
+import { ownRecord, type OwnRecord } from "@/lib/own-key";
+
 /** Characters the scanner cares about, as bytes. */
 const QUOTE = 0x22;
 const BACKSLASH = 0x5c;
@@ -58,9 +60,9 @@ export interface ScanBackupJsonOptions {
 
 export interface ScanBackupJsonResult {
   /** The document, with streamed members as empty arrays and skipped ones absent. */
-  document: Record<string, unknown>;
+  document: OwnRecord<unknown>;
   /** How many elements each streamed member held. */
-  streamedCounts: Record<string, number>;
+  streamedCounts: OwnRecord<number>;
 }
 
 /** Thrown for input that is not a JSON object the scanner can walk. */
@@ -115,8 +117,8 @@ export async function scanBackupJson(
 ): Promise<ScanBackupJsonResult> {
   const streamKeys = options.streamKeys ?? new Set<string>();
   const skipKeys = options.skipKeys ?? new Set<string>();
-  const document: Record<string, unknown> = {};
-  const streamedCounts: Record<string, number> = {};
+  const document = ownRecord<unknown>();
+  const streamedCounts = ownRecord<number>();
 
   let phase: Phase = "start";
   let inString = false;

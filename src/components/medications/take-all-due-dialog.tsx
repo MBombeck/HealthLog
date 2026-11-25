@@ -120,8 +120,7 @@ export function TakeAllDueDialog({
                 <span className="font-medium">{med.name}</span>
                 {med.dose ? (
                   <span className="text-muted-foreground">
-                    {" "}
-                    — {formatDose(med.dose, t)}
+                    , {formatDose(med.dose, t)}
                   </span>
                 ) : null}
               </span>

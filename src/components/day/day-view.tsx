@@ -352,7 +352,7 @@ export function DayView({
           className={cn(
             "border-border flex shrink-0 items-center justify-between gap-2 border-t",
             compact
-              ? "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
+              ? "px-4 pt-3 pb-[calc(0.75rem+var(--safe-area-bottom))]"
               : "px-6 py-3.5",
             compact && "bg-inherit",
           )}

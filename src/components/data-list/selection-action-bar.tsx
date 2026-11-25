@@ -72,17 +72,13 @@ export function SelectionActionBar({
       // `:has()` gate and yields while the bar is mounted, so the
       // floating launcher never sits over the delete action.
       data-slot="selection-action-bar"
-      // v1.15.13 — on mobile the fixed bottom-nav (64px, `md:hidden`,
-      // z-50) plus the iOS home-indicator inset sit over the page's lower
-      // edge. A `sticky bottom-2` bar lands BEHIND the nav, hiding the
-      // destructive "Delete (N)" button. Lift the bar to clear the nav band
-      // + safe area using the same offset the Coach FAB uses
-      // (`layout-coach-fab.tsx`); the nav only hides from `md:` up
-      // (`md:hidden`), so the drop back to `bottom-4` happens at `md:` —
-      // an `sm:` drop sat the bar behind the still-visible nav 640-767px.
-      // z-30 keeps the bar above page content without needing to beat the
-      // (now-cleared) nav's z-50.
-      className="bg-card border-border shell-desktop:bottom-4 sticky bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] z-30 mt-2 flex items-center justify-between gap-2 rounded-lg border p-2 shadow-lg"
+      // The bar floats where the Coach button does, on the shell's
+      // `--floating-action-bottom` (globals.css): over the bottom nav and the
+      // home indicator in the phone shell (a `sticky bottom-2` bar landed
+      // behind the nav and hid "Delete (N)"), above the window's edge in the
+      // desktop shell. z-30 keeps it above page content without needing to
+      // beat the nav's z-50.
+      className="bg-card border-border sticky bottom-(--floating-action-bottom) z-30 mt-2 flex items-center justify-between gap-2 rounded-lg border p-2 shadow-lg"
     >
       <div className="flex items-center gap-1">
         <Button

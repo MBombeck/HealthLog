@@ -30,7 +30,7 @@
  *     stands in its place — not an alarming empty card.
  *
  * Every `PriorityItem` action carries an `href` (dose.log → /medications,
- * sync.reconnect → /settings/integrations, checkup.view → /checkups, or the
+ * sync.reconnect → /settings/integrations, checkup.view → /care, or the
  * visit itself on an upcoming_visit item), so
  * `PriorityCard` wires each tap as a `<Link>` to its existing destination
  * by construction; S2 invents no new backend action.
@@ -313,7 +313,7 @@ export function TodayHero({
             className="text-muted-foreground text-sm"
           >
             {signalLine.headline}
-            {signalLine.headline && signalLine.delta ? " · " : null}
+            {signalLine.headline && signalLine.delta ? ", " : null}
             {signalLine.delta}
           </p>
         ) : null}

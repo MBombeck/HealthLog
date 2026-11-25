@@ -124,6 +124,94 @@ export const EXCERPT_ONLY_KEY_PATTERNS: readonly RegExp[] = [/^notes?$/i];
 
 const REDACTED = "[redacted]";
 
+/**
+ * Keys whose value classifies a person's health: the kind of illness, the
+ * category of an allergy, a seizure type, a symptom, a mood, a condition, a
+ * medication class, a lab analyte, a vaccine antigen, the screening a person
+ * took, a cycle or pregnancy state. Wide events land in the container log, in
+ * Loki and, for errors, in GlitchTip, and on a one-person instance every line
+ * is attributable. Counts, opaque ids, durations, outcomes and error codes
+ * stay readable; the classification itself does not leave.
+ *
+ * Matched against the key with case and separators folded (`illness_type`,
+ * `illnessType` and `illness.type` are one key), and anchored so that a count
+ * named after a class (`allergy_count`, `symptom_patterns`) stays readable.
+ * Only a string, array or object value is replaced: a number or a boolean
+ * under one of these keys is a count or a flag, not the class.
+ *
+ * Call sites log a neutral form instead (a count, `classified: true`); this
+ * list is the floor under them, and `health-classification-log-guard.test.ts`
+ * fails on an `annotate` meta key that matches it.
+ */
+export const HEALTH_CLASSIFICATION_KEY_PATTERNS: readonly RegExp[] = [
+  /^illness(?:type|category|kind|lifecycle)?$/,
+  /^allerg(?:y|ies)(?:type|category|kind|severity|substance|reaction)?$/,
+  /^(?:seizure|ilae)(?:type|kind|class)?$/,
+  /^symptoms?(?:names?|keys?|labels?|types?)?$/,
+  /^moods?(?:score|label|value|level|rating)?$/,
+  /^diagnos[ie]s$/,
+  /^conditions?(?:names?|codes?|types?|kinds?)?$/,
+  /^(?:medication|drug)(?:class|category|family)$/,
+  /^atc(?:code)?$/,
+  /^(?:lab)?analytes?(?:names?|values?)?$/,
+  /^labvalues?$/,
+  /^antigen(?:slug|name)?s?$/,
+  /^(?:screening)?instruments?$/,
+  /^item9/,
+  /^(?:breathing)?classification$/,
+  /^chronotypeband$/,
+  /^(?:pregnancy|cycle)(?:state|status|phase)$/,
+  /^(?:verdict|projection)state$/,
+  /^regularity$/,
+  /^sideeffects?(?:entry|name|severity)?$/,
+  /^(?:reaction|symptom|recommendation)severity$/,
+  /^hasdiabetes$/,
+];
+
+function foldKey(key: string): string {
+  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/** Whether `key` names a health classification of a person. */
+export function isHealthClassificationKey(key: string): boolean {
+  const folded = foldKey(key);
+  return HEALTH_CLASSIFICATION_KEY_PATTERNS.some((re) => re.test(folded));
+}
+
+function isClassValue(value: unknown): boolean {
+  return (
+    value !== null && (typeof value === "string" || typeof value === "object")
+  );
+}
+
+/**
+ * Deep clone of `value` with the string / array / object value under every
+ * health-classification key replaced by `"[redacted]"`. The wide-event builder
+ * runs every meta entry through this, so a classification reaches no log
+ * whichever call site writes it.
+ */
+export function redactHealthClassifications(
+  value: unknown,
+  depth = 0,
+): unknown {
+  if (depth > 8 || value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) {
+    return value.map((entry) => redactHealthClassifications(entry, depth + 1));
+  }
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return value;
+  const out: [string, unknown][] = [];
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    out.push([
+      key,
+      isHealthClassificationKey(key) && isClassValue(entry)
+        ? REDACTED
+        : redactHealthClassifications(entry, depth + 1),
+    ]);
+  }
+  return Object.fromEntries(out);
+}
+
 function keyIsSensitive(key: string): boolean {
   for (const re of SENSITIVE_KEY_PATTERNS) {
     if (re.test(key)) return true;
@@ -161,15 +249,12 @@ function redactWith(
   const proto = Object.getPrototypeOf(body);
   if (proto !== Object.prototype && proto !== null) return body;
 
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
-    if (isSensitive(key)) {
-      out[key] = REDACTED;
-      continue;
-    }
-    out[key] = redactWith(value, isSensitive);
-  }
-  return out;
+  return Object.fromEntries(
+    Object.entries(body as Record<string, unknown>).map(([key, value]) => [
+      key,
+      isSensitive(key) ? REDACTED : redactWith(value, isSensitive),
+    ]),
+  );
 }
 
 /**
@@ -189,6 +274,9 @@ export function redactSensitiveFields(body: unknown): unknown {
 export function redactForExcerpt(body: unknown): unknown {
   return redactWith(
     body,
-    (key) => keyIsSensitive(key) || keyIsExcerptSensitive(key),
+    (key) =>
+      keyIsSensitive(key) ||
+      keyIsExcerptSensitive(key) ||
+      isHealthClassificationKey(key),
   );
 }

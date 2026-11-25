@@ -112,22 +112,66 @@ export interface StatementLedger<T> {
   ms: number;
 }
 
+/**
+ * Half the last digit EXPLAIN prints a per-loop average to on this server.
+ *
+ * EXPLAIN reports a node's rows (and the rows its filter removed) as the
+ * average over its loops. Postgres 18 prints that average to two decimals;
+ * every earlier major rounds it to a whole row. Multiplying the print back
+ * by the loop count therefore overcounts on Postgres 16 by up to half a row
+ * a loop: 8,478 rows over the four types of a per-type read print as 2,120
+ * a loop and read back as 8,480. A bound held to the exact row count then
+ * fails or passes by the time of day the fixture was seeded at, and only on
+ * the major the nightly run uses.
+ */
+export function perLoopHalfStep(serverVersionNum: number): number {
+  return serverVersionNum >= 180000 ? 0.005 : 0.5;
+}
+
+/** The server's `server_version_num`, read on any query function. */
+export async function serverVersionNum(
+  query: (sql: string) => Promise<Array<Record<string, unknown>>>,
+): Promise<number> {
+  const [row] = await query("SHOW server_version_num");
+  const value = Number(row?.server_version_num);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error("SHOW server_version_num returned no version");
+  }
+  return value;
+}
+
+/**
+ * The smallest whole total over `loops` that the printed per-loop figure
+ * allows, never less than zero. With one loop the print is the total.
+ */
+export function loopTotal(
+  perLoop: number | undefined,
+  loops: number | undefined,
+  halfStep: number,
+): number {
+  const n = loops ?? 1;
+  const printed = perLoop ?? 0;
+  if (n === 1) return printed;
+  return Math.max(0, Math.ceil((printed - halfStep) * n - 1e-9));
+}
+
 function walk(
   node: PlanNode,
   relation: string,
+  halfStep: number,
 ): { visits: number; seq: boolean } {
   let visits = 0;
   let seq = false;
   if (node["Relation Name"] === relation) {
+    const loops = node["Actual Loops"];
     visits +=
-      ((node["Actual Rows"] ?? 0) +
-        (node["Rows Removed by Filter"] ?? 0) +
-        (node["Rows Removed by Index Recheck"] ?? 0)) *
-      (node["Actual Loops"] ?? 1);
+      loopTotal(node["Actual Rows"], loops, halfStep) +
+      loopTotal(node["Rows Removed by Filter"], loops, halfStep) +
+      loopTotal(node["Rows Removed by Index Recheck"], loops, halfStep);
     if (node["Node Type"] === "Seq Scan") seq = true;
   }
   for (const child of node.Plans ?? []) {
-    const sub = walk(child, relation);
+    const sub = walk(child, relation, halfStep);
     visits += sub.visits;
     seq ||= sub.seq;
   }
@@ -165,6 +209,9 @@ export async function explainStatements<T>(
   try {
     await client.query("SET TimeZone = 'UTC'");
     await client.query("SET jit = off");
+    const halfStep = perLoopHalfStep(
+      await serverVersionNum(async (sql) => (await client.query(sql)).rows),
+    );
     for (const { text, values } of captured) {
       const { rows } = await client.query(
         `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) ${text}`,
@@ -175,7 +222,7 @@ export async function explainStatements<T>(
         "Execution Time": number;
       }>;
       const root = plan[0].Plan;
-      const { visits, seq } = walk(root, relation);
+      const { visits, seq } = walk(root, relation, halfStep);
       plans.push({
         text: text.replace(/\s+/g, " ").trim().slice(0, 200),
         rowVisits: visits,

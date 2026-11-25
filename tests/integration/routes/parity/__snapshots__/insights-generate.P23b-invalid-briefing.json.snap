@@ -1,0 +1,98 @@
+{
+  "status": 422,
+  "body": {
+    "data": null,
+    "error": "AI response did not contain a briefing that can be shown. Try regenerating.",
+    "meta": {
+      "errorCode": "http.invalid",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": {
+        "name": "insights.generate.briefing_invalid"
+      },
+      "meta": {
+        "ai_reasoning_effort": "medium",
+        "ai_reasoning_job": "daily_briefing",
+        "ai_reasoning_source": "job",
+        "include_raw": false,
+        "issueCount": 1,
+        "since_days": 400
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "ensureUserMoodRollupsFresh",
+      "args": [
+        "<id:1>"
+      ]
+    },
+    {
+      "effect": "provider",
+      "args": [
+        {
+          "surface": "job",
+          "chain": [
+            "anthropic"
+          ],
+          "params": {
+            "temperature": 0.3,
+            "maxTokens": 2500,
+            "responseFormat": "json",
+            "timeoutMs": 180000,
+            "reasoning": {
+              "effort": "medium",
+              "summaries": false
+            }
+          },
+          "promptChars": 34773,
+          "promptSha256": "4d949f14db9dfd9fb7e814879ecdb501fbec98e80f4c8bee0debb36c4244963c"
+        }
+      ]
+    },
+    {
+      "effect": "recordBriefingFailure",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "reason": "invalid-briefing",
+          "locale": "en"
+        }
+      ]
+    }
+  ],
+  "stored": {
+    "insightsCachedAt": null,
+    "insightsCachedLocale": null,
+    "cachedPayload": null,
+    "snapshotHash": null,
+    "audit": [
+      {
+        "action": "insights.briefing-failure",
+        "details": {
+          "dateKey": "day+0",
+          "reason": "invalid-briefing",
+          "httpStatus": null,
+          "failureKind": null,
+          "locale": "en",
+          "triedAt": "anchor+0d+12:00:00"
+        },
+        "ipAddress": null
+      }
+    ],
+    "usage": [
+      {
+        "dateKey": "day+0",
+        "totalTokens": 1200,
+        "operatorTokens": 0,
+        "messageCount": 1
+      }
+    ]
+  }
+}
