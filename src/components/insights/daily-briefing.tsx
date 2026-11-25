@@ -40,6 +40,7 @@ import type {
 } from "@/lib/ai/schema";
 import type { BriefingFailureClass } from "@/lib/insights/briefing-failure-marker";
 import { InsightSectionCard } from "./insight-section-card";
+import { ProseBlocks } from "./prose-blocks";
 
 /**
  * v1.4.20 — full-width Daily Briefing card.
@@ -390,13 +391,7 @@ export function DailyBriefing({
                   memory read as a second briefing paragraph above the
                   structured list and pulled the card down; the server
                   still resolves `briefingMemory` for other consumers. */}
-            {/* v1.4.27 — the leading narrative paragraph dropped.
-                The hero strip subtitle on `/insights` already renders
-                the same `briefing.paragraph` text directly above this
-                card, so the user used to read the same string twice
-                within 200 px. The card now opens straight on the
-                structured signals + key-findings list, which is the part
-                the hero subtitle cannot surface. */}
+            <BriefingParagraph text={briefing.paragraph} />
             {/* v1.18.7 — "Signals of the day": the present-focused lead.
                 Renders above the longer-horizon key-findings list when the
                 briefing carries fresh now-signals. */}
@@ -537,5 +532,22 @@ export function DailyBriefing({
         )}
       </InsightSectionCard>
     </section>
+  );
+}
+
+/**
+ * The narrative paragraph opens the card. From 1.50 the overview leads with
+ * its score rings; the greeting band that printed this text above the card
+ * is gone, so the card is its one home.
+ */
+function BriefingParagraph({ text }: { text: string | null | undefined }) {
+  if (!text) return null;
+  return (
+    <div
+      data-slot="daily-briefing-paragraph"
+      className="text-foreground text-sm"
+    >
+      <ProseBlocks text={text} />
+    </div>
   );
 }
