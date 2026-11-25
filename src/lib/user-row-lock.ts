@@ -20,7 +20,7 @@ import { prisma } from "@/lib/db";
  * only reads the stored document need not take `tx`.
  */
 export async function lockUserRow(
-  tx: Prisma.TransactionClient,
+  tx: Pick<Prisma.TransactionClient, "$queryRaw">,
   userId: string,
 ): Promise<void> {
   await tx.$queryRaw`SELECT 1 FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
