@@ -50,6 +50,7 @@ import { redirectUriAllowed, resolveClient } from "@/lib/mcp/oauth/clients";
 import { isValidChallenge } from "@/lib/mcp/oauth/pkce";
 import { signArtifact } from "@/lib/mcp/oauth/artifacts";
 import { withAuthorizeCsp } from "@/lib/mcp/oauth/consent-csp";
+import { ownRecord } from "@/lib/own-key";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -567,7 +568,7 @@ async function authorizePost(request: NextRequest): Promise<Response> {
     }
 
     const form = await request.formData();
-    const params: Record<string, string | undefined> = {};
+    const params = ownRecord<string | undefined>();
     for (const key of [
       "response_type",
       "client_id",

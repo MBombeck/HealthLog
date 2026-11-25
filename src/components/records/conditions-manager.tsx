@@ -14,8 +14,9 @@
  * (`GET`/`PUT /api/coach/about-me`) and are read/written through the same
  * `queryKeys.coachAboutMe()` query- and mutation-key the rest of the app uses,
  * so every consumer (the Coach above all) keeps reading the same store. The PUT
- * sends only the two fields this editor owns, so unreadable or concurrently
- * updated profile text and allergies stay untouched.
+ * sends only the fields edited here, with the self-context revision, so
+ * profile text, allergies and a field changed on another device stay
+ * untouched.
  *
  * Plain text only — values render exclusively through inputs and React text
  * children; no markdown renderer (XSS posture, see contributor notes).
@@ -35,6 +36,11 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import {
+  isConflict,
+  readUpdatedAtToken,
+  withBaseToken,
+} from "@/lib/api/optimistic-token";
 import { useAboutMeSaveTimeoutMs } from "@/hooks/use-ai-capability";
 
 const FALLBACK_FIELD_MAX_CHARS = 500;
@@ -45,6 +51,7 @@ interface AboutMeData {
   allergies: string | null;
   coachFocus: string | null;
   fieldMaxChars: number;
+  updatedAt?: string;
 }
 
 export function ConditionsManager() {
@@ -77,13 +84,17 @@ export function ConditionsManager() {
   const saveTimeoutMs = useAboutMeSaveTimeoutMs();
   const save = useMutation({
     mutationKey: queryKeys.coachAboutMe(),
-    mutationFn: async (input: { conditions: string; coachFocus: string }) =>
+    // Send only the fields edited here, with the revision this edit was based
+    // on. Sending both from the cached copy wrote an older focus back over one
+    // changed on another device, and an unconditional write overwrote a
+    // conditions note saved elsewhere in the meantime.
+    mutationFn: async (input: { conditions?: string; coachFocus?: string }) =>
       apiPut<AboutMeData>(
         "/api/coach/about-me",
-        {
-          conditions: input.conditions,
-          coachFocus: input.coachFocus,
-        },
+        withBaseToken(
+          input,
+          readUpdatedAtToken(queryClient, queryKeys.coachAboutMe()),
+        ),
         { signal: AbortSignal.timeout(saveTimeoutMs) },
       ),
     onSuccess: () => {
@@ -95,9 +106,27 @@ export function ConditionsManager() {
       });
     },
     onError: (failure) => {
+      // The self-context advanced since this edit was based: reload so the
+      // revision advances, keep the draft for another save.
+      if (isConflict(failure)) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.coachAboutMe() });
+        toast.message(t("common.conflictReloaded"));
+        return;
+      }
       showErrorToast(t("records.conditions.saveError"), { cause: failure });
     },
   });
+
+  function changedFields(): { conditions?: string; coachFocus?: string } {
+    const changed: { conditions?: string; coachFocus?: string } = {};
+    if (value.conditions !== saved.conditions) {
+      changed.conditions = value.conditions;
+    }
+    if (value.coachFocus !== saved.coachFocus) {
+      changed.coachFocus = value.coachFocus;
+    }
+    return changed;
+  }
 
   const disabled = query.isLoading || save.isPending;
 
@@ -152,7 +181,7 @@ export function ConditionsManager() {
               size="sm"
               data-testid="records-conditions-save"
               disabled={disabled || !dirty}
-              onClick={() => save.mutate(value)}
+              onClick={() => save.mutate(changedFields())}
             >
               {save.isPending && (
                 <Loader2

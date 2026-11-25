@@ -3,6 +3,7 @@ import { isPublicUrl } from "@/lib/validations/notifications";
 import {
   getPinnedOperatorApprovedDispatcher,
   getPinnedPublicDispatcher,
+  getPinnedPublicKeepAliveDispatcher,
 } from "@/lib/safe-fetch-dispatcher";
 
 /**
@@ -34,11 +35,19 @@ export interface SafeFetchOptions {
    * When true, run `isPublicUrl(url)` before dispatching. Throws
    * `SafeFetchError({ kind: "private_host" })` if the URL points at an
    * internal range, the cloud metadata endpoint, or any of the IPv4 /
-   * IPv6 alt-notation classes `isPublicUrl` catches. The DNS-rebinding
-   * follow-up (issue #217) extends this same flag with a connect-time
-   * IP pin via a dedicated undici dispatcher.
+   * IPv6 alt-notation classes `isPublicUrl` catches. The same flag also
+   * pins the connection to the vetted address through a dedicated undici
+   * dispatcher (`./safe-fetch-dispatcher.ts`), which closes the
+   * DNS-rebinding gap of issue #217.
    */
   requirePublicHost?: boolean;
+  /**
+   * Keep the pinned connection open between calls for up to 55 s instead of
+   * undici's 4 s, for a caller that sends to one fixed origin repeatedly
+   * (the push relay). Requires `requirePublicHost`; the pin, the timeout and
+   * the redirect rule are unchanged.
+   */
+  keepAlive?: boolean;
   /**
    * Exact server-approved origin for a deliberately private destination.
    *
@@ -188,6 +197,13 @@ export async function safeFetch(
   const target = url.toString();
   const operatorApprovedOrigin = opts.operatorApprovedPrivateOrigin;
 
+  if (opts.keepAlive && !opts.requirePublicHost) {
+    throw new SafeFetchError(
+      "safeFetch keeps a connection alive only for a pinned public host",
+      "private_host",
+    );
+  }
+
   if (opts.requirePublicHost && operatorApprovedOrigin !== undefined) {
     throw new SafeFetchError(
       "safeFetch received mutually exclusive destination policies",
@@ -253,7 +269,9 @@ export async function safeFetch(
   // the pinned-IP dispatcher so a DNS rebinding cannot flip the host
   // between the input-time `isPublicUrl` accept and the connect call.
   const dispatcher = opts.requirePublicHost
-    ? getPinnedPublicDispatcher()
+    ? opts.keepAlive
+      ? getPinnedPublicKeepAliveDispatcher()
+      : getPinnedPublicDispatcher()
     : operatorApprovedOrigin !== undefined
       ? getPinnedOperatorApprovedDispatcher()
       : undefined;

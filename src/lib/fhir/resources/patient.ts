@@ -9,6 +9,7 @@ import {
   PATIENT_RESOURCE_ID,
   type FhirPatientIdentity,
 } from "@/lib/fhir/resources/common";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * Stored gender → the R4 `administrative-gender` code.
@@ -34,7 +35,7 @@ export function administrativeGender(
   stored: string | null | undefined,
 ): FhirPatient["gender"] | null {
   if (!stored) return null;
-  return ADMINISTRATIVE_GENDER[stored] ?? null;
+  return ownValue(ADMINISTRATIVE_GENDER, stored) ?? null;
 }
 
 /**

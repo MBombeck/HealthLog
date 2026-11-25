@@ -15,6 +15,7 @@ import {
 } from "@/lib/ai/provider-chain";
 import { isReasoningProviderType } from "@/lib/ai/reasoning-effort";
 import { providerChainPutSchema } from "@/lib/validations/ai-provider";
+import { withUserRowLock } from "@/lib/user-row-lock";
 
 /**
  * v1.4.16 — read-only chain summary for the Settings → AI
@@ -122,43 +123,52 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // and toggles) and an older client cannot wipe it by saving the order.
   // `null` clears it; the schema has already refused it on any type other
   // than `local` / `openai-compatible`.
-  const stored = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { aiProviderChain: true },
-  });
-  const storedChain = parseProviderChain(stored?.aiProviderChain ?? null);
-  const storedEffort = new Map(
-    storedChain.map((e) => [e.providerType, e.reasoningEffort ?? null]),
-  );
-  // A disabled gateway entry with an effort is the holder the gateway form
-  // writes, which the picked gateway still serves behind
-  // (`servesPickedGateway`). Switching the gateway off here is the person's
-  // word, so its effort goes with the switch.
-  const gatewayWasOn =
-    storedChain.find((e) => e.providerType === "openai-compatible")?.enabled !==
-    false;
-  const normalised = parsed.data.chain.map((entry, idx) => {
-    const switchedOff =
-      entry.providerType === "openai-compatible" &&
-      !entry.enabled &&
-      gatewayWasOn;
-    const reasoningEffort =
-      !isReasoningProviderType(entry.providerType) || switchedOff
-        ? null
-        : entry.reasoningEffort === undefined
-          ? (storedEffort.get(entry.providerType) ?? null)
-          : entry.reasoningEffort;
-    return {
-      providerType: entry.providerType,
-      priority: idx + 1,
-      enabled: entry.enabled,
-      ...(reasoningEffort ? { reasoningEffort } : {}),
-    };
-  });
+  //
+  // The carry-over reads the stored chain and writes the whole chain back, so
+  // the read and the write run under the account's row lock: a reasoning
+  // setting the Local or gateway form saves at the same moment is then read
+  // here after it committed, instead of being written over by the chain this
+  // save read before it.
+  const normalised = await withUserRowLock(user.id, async (tx) => {
+    const stored = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { aiProviderChain: true },
+    });
+    const storedChain = parseProviderChain(stored?.aiProviderChain ?? null);
+    const storedEffort = new Map(
+      storedChain.map((e) => [e.providerType, e.reasoningEffort ?? null]),
+    );
+    // A disabled gateway entry with an effort is the holder the gateway form
+    // writes, which the picked gateway still serves behind
+    // (`servesPickedGateway`). Switching the gateway off here is the person's
+    // word, so its effort goes with the switch.
+    const gatewayWasOn =
+      storedChain.find((e) => e.providerType === "openai-compatible")
+        ?.enabled !== false;
+    const chain = parsed.data.chain.map((entry, idx) => {
+      const switchedOff =
+        entry.providerType === "openai-compatible" &&
+        !entry.enabled &&
+        gatewayWasOn;
+      const reasoningEffort =
+        !isReasoningProviderType(entry.providerType) || switchedOff
+          ? null
+          : entry.reasoningEffort === undefined
+            ? (storedEffort.get(entry.providerType) ?? null)
+            : entry.reasoningEffort;
+      return {
+        providerType: entry.providerType,
+        priority: idx + 1,
+        enabled: entry.enabled,
+        ...(reasoningEffort ? { reasoningEffort } : {}),
+      };
+    });
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { aiProviderChain: normalised },
+    await tx.user.update({
+      where: { id: user.id },
+      data: { aiProviderChain: chain },
+    });
+    return chain;
   });
   forgetLastWorkingProvider(user.id);
 

@@ -115,11 +115,23 @@ export const PATCH = apiHandler(
         ...(body.basalBodyTempC !== undefined && {
           basalBodyTempC: body.basalBodyTempC,
         }),
+        ...(body.temperatureExcluded !== undefined && {
+          temperatureExcluded: body.temperatureExcluded,
+        }),
         ...(body.ovulationTest !== undefined && {
           ovulationTest: body.ovulationTest,
         }),
         ...(body.cervicalMucus !== undefined && {
           cervicalMucus: body.cervicalMucus,
+        }),
+        ...(body.cervixPosition !== undefined && {
+          cervixPosition: body.cervixPosition,
+        }),
+        ...(body.cervixFirmness !== undefined && {
+          cervixFirmness: body.cervixFirmness,
+        }),
+        ...(body.cervixOpening !== undefined && {
+          cervixOpening: body.cervixOpening,
         }),
         sexualActivity: encryptSensitive ? false : merged.sexualActivity,
         protectedSex: encryptSensitive ? null : merged.protectedSex,

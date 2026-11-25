@@ -24,6 +24,7 @@ import {
   WORK_STATUS_KEYS,
 } from "@/lib/mood/context-vocabulary";
 import { isoDateTime } from "@/lib/validations/datetime";
+import { ownValue } from "@/lib/own-key";
 
 // --- CRUD schemas for mood entries ---
 
@@ -64,7 +65,7 @@ const MOOD_SCORE_MAP: Record<string, number> = {
 };
 
 export function getScoreForMood(mood: string): number {
-  return MOOD_SCORE_MAP[mood] ?? 3;
+  return ownValue(MOOD_SCORE_MAP, mood) ?? 3;
 }
 
 /**
@@ -96,7 +97,7 @@ const MOOD_A1_MAP: Record<string, number> = {
  * midpoint, matching what `getScoreForMood` answers for the same input.
  */
 export function getA1ForMood(mood: string): number {
-  return MOOD_A1_MAP[mood] ?? 5;
+  return ownValue(MOOD_A1_MAP, mood) ?? 5;
 }
 
 /** Read-only view of the A1 map, for the guards that pin the backfill to it. */

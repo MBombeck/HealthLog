@@ -24,6 +24,7 @@ import {
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import {
   takeBaseToken,
   guardedUserDocumentUpdate,
@@ -196,23 +197,30 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // dimension (iOS reorders tiles with a tiles-only body, no `sections`
   // key) preserves the other dimension's customization instead of
   // resetting it to defaults.
-  const previous = await buildInsightsLayout(user.id);
-  const normalized = serializeInsightsLayout(parsed.data, previous);
+  // Read, merge and write under the row lock: a tokenless write is
+  // unconditional, and two that overlap would each carry forward a stored
+  // copy without the other's change.
+  const { normalized, guarded } = await withUserRowLock(user.id, async (tx) => {
+    const previous = await buildInsightsLayout(user.id);
+    const normalized = serializeInsightsLayout(parsed.data, previous);
 
-  // v1.32.21 — guard the write on the client's base token. A stale base
-  // 409s and writes NOTHING (so an interleaved edit-mode Save can't be
-  // reverted by a Settings pill-order Save that started from an older read,
-  // and vice versa); a tokenless request keeps the prior unconditional write.
-  const guarded = await guardedUserDocumentUpdate({
-    userId: user.id,
-    document: "insightsLayout",
-    base,
-    data: { insightsLayoutJson: toJson(normalized) },
-    conflict: {
-      action: "insights.layout.conflict",
-      errorCode: "insights_layout_conflict",
-      message: "Insights layout changed since it was loaded",
-    },
+    // v1.32.21 — guard the write on the client's base token. A stale base
+    // 409s and writes NOTHING (so an interleaved edit-mode Save can't be
+    // reverted by a Settings pill-order Save that started from an older read,
+    // and vice versa); a tokenless request keeps the prior unconditional write.
+    const guarded = await guardedUserDocumentUpdate({
+      userId: user.id,
+      document: "insightsLayout",
+      base,
+      data: { insightsLayoutJson: toJson(normalized) },
+      conflict: {
+        action: "insights.layout.conflict",
+        errorCode: "insights_layout_conflict",
+        message: "Insights layout changed since it was loaded",
+      },
+      client: tx,
+    });
+    return { normalized, guarded };
   });
   if ("conflict" in guarded) return guarded.conflict;
 

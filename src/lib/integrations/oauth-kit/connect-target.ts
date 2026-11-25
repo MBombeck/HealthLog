@@ -20,6 +20,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { auditLog } from "@/lib/auth/audit";
 import { findActiveGrant, grantAllows } from "@/lib/sharing/grant-access";
+import { lockUserRow, withUserRowLock } from "@/lib/user-row-lock";
 import type { OAuthKitProvider } from "./token";
 
 export type CallbackActorVerdict =
@@ -108,20 +109,26 @@ export async function shareGuardianClientApp(
   const clientId = guardian?.[idColumn] ?? null;
   const clientSecret = guardian?.[secretColumn] ?? null;
   if (!clientId || !clientSecret) return;
-  const record = await prisma.user.findUnique({
-    where: { id: target.recordUserId },
-    select: { clientAppSharedBy: true },
-  });
-  await prisma.user.update({
-    where: { id: target.recordUserId },
-    data: {
-      [idColumn]: clientId,
-      [secretColumn]: clientSecret,
-      clientAppSharedBy: {
-        ...readClientAppSharedBy(record?.clientAppSharedBy),
-        [provider]: target.actorUserId,
+  // The marker is one map for every provider, read and written back whole,
+  // so two apps lent at the same moment are written under the record's row
+  // lock: otherwise the later write drops the earlier provider's marker, and
+  // that app would stay on the record after the guardian's access ends.
+  await withUserRowLock(target.recordUserId, async (tx) => {
+    const record = await tx.user.findUnique({
+      where: { id: target.recordUserId },
+      select: { clientAppSharedBy: true },
+    });
+    await tx.user.update({
+      where: { id: target.recordUserId },
+      data: {
+        [idColumn]: clientId,
+        [secretColumn]: clientSecret,
+        clientAppSharedBy: {
+          ...readClientAppSharedBy(record?.clientAppSharedBy),
+          [provider]: target.actorUserId,
+        },
       },
-    },
+    });
   });
   await auditLog("integration.client_app.shared", {
     userId: target.recordUserId,
@@ -148,7 +155,7 @@ export function readClientAppSharedBy(value: unknown): ClientAppSharedBy {
 
 type ReleaseDb = Pick<
   Prisma.TransactionClient,
-  "user" | "accountGrant" | "auditLog"
+  "user" | "accountGrant" | "auditLog" | "$queryRaw"
 >;
 
 /** Why a borrowed app left the record, as the audit row names it. */
@@ -160,13 +167,30 @@ export type ClientAppReleaseReason = "disconnected" | "guardian_left";
  * The app's client id and secret are the guardian's; they stay on the record
  * only while they serve a connection the guardian may still act on. Does
  * nothing when the record's app for `provider` is its own (no marker).
+ *
+ * The marker map is read and written back whole, so it is read under the
+ * record's row lock: in a transaction of its own, or in the caller's (`db`).
  */
 export async function releaseSharedClientApp(
   provider: OAuthKitProvider,
   recordUserId: string,
   reason: ClientAppReleaseReason,
-  db: ReleaseDb = prisma,
+  db?: ReleaseDb,
 ): Promise<boolean> {
+  if (db === undefined) {
+    // Most records hold no borrowed app; only one that does takes the lock.
+    const marked = await prisma.user.findUnique({
+      where: { id: recordUserId },
+      select: { clientAppSharedBy: true },
+    });
+    if (!readClientAppSharedBy(marked?.clientAppSharedBy)[provider]) {
+      return false;
+    }
+    return withUserRowLock(recordUserId, (tx) =>
+      releaseSharedClientApp(provider, recordUserId, reason, tx),
+    );
+  }
+  await lockUserRow(db, recordUserId);
   const row = await db.user.findUnique({
     where: { id: recordUserId },
     select: { clientAppSharedBy: true },
@@ -203,9 +227,9 @@ export async function releaseSharedClientApp(
  */
 export async function releaseUnbackedClientApps(
   recordUserId: string,
-  db: ReleaseDb = prisma,
+  db?: ReleaseDb,
 ): Promise<number> {
-  const row = await db.user.findUnique({
+  const row = await (db ?? prisma).user.findUnique({
     where: { id: recordUserId },
     select: { clientAppSharedBy: true },
   });

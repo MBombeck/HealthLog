@@ -3198,6 +3198,7 @@
       "failedDescriptionTimeout": "La requête IA a dépassé le délai avant que le briefing soit prêt. Pour un modèle local lent, augmentez le délai de réponse dans les Paramètres, puis réessayez.",
       "failedDescriptionProvider": "Le fournisseur d'IA a rejeté la requête. Vérifiez le fournisseur et la clé API dans les paramètres d'IA, puis réessayez.",
       "failedDescriptionRateLimit": "Le fournisseur d'IA limite les requêtes pour le moment. Réessayez dans un instant.",
+      "failedDescriptionFormat": "L'IA a répondu, mais pas sous une forme que le briefing peut afficher. Réessayez ; si cela se répète, un autre modèle dans les paramètres d'IA peut aider.",
       "omittedTitle": "Briefing non affiché",
       "omittedUngroundedDescription": "Le briefing généré mentionnait un chiffre qui n'a pas pu être vérifié avec vos données, il n'a donc pas été affiché. Réessayez."
     },
@@ -3506,6 +3507,7 @@
         "steadyLatestWithin": "Vos valeurs sont habituellement à {low} {unit} ; votre dernière mesure, du {date}, était de {value}, comme d'habitude.",
         "steadyLatestAbove": "Vos valeurs sont habituellement à {low} {unit} ; votre dernière mesure, du {date}, était de {value}, au-dessus.",
         "steadyLatestBelow": "Vos valeurs sont habituellement à {low} {unit} ; votre dernière mesure, du {date}, était de {value}, en dessous.",
+        "componentLine": "{component} : {line}",
         "insufficient": "J'apprends encore votre plage habituelle. Continuez à enregistrer quelques jours de plus.",
         "driver": "{note}",
         "loadError": "Impossible de charger votre plage habituelle."
@@ -3931,6 +3933,7 @@
         "title": "Déroulé de la nuit",
         "wokeOn": "Réveil le {date}",
         "summary": "{asleep} de sommeil, {awakenings, plural, one {# réveil} other {# réveils}}",
+        "asleepOnly": "{asleep} de sommeil",
         "source": "depuis {source}",
         "previous": "Nuit précédente",
         "next": "Nuit suivante",
@@ -4720,6 +4723,11 @@
           "green": "bon",
           "yellow": "moyen",
           "red": "faible"
+        },
+        "loadBand": {
+          "green": "faible",
+          "yellow": "moyen",
+          "red": "élevé"
         }
       },
       "provenance": {
@@ -9779,7 +9787,8 @@
           "off": "Les cookies ne portent pas l'attribut Secure.",
           "secure_over_https": "Cookies sécurisés via HTTPS, comme il se doit.",
           "plain_http": "HTTP simple sans attribut Secure : convient à un serveur accessible uniquement sur votre propre réseau.",
-          "secure_over_http": "Cette page est arrivée en HTTP simple, mais les cookies portent l'attribut Secure, donc les navigateurs rejettent la connexion. Servez le site en HTTPS ou définissez SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Cette page est arrivée à l'application en HTTP simple. Derrière un proxy HTTPS, faites-lui envoyer X-Forwarded-Proto: https ; en HTTP simple, définissez SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "HTTPS fonctionne, mais votre proxy inverse ne le signale pas. Faites-lui envoyer X-Forwarded-Proto: https.",
           "insecure_over_https": "Cette page est arrivée en HTTPS, mais les cookies n'ont pas l'attribut Secure. Retirez SESSION_COOKIE_SECURE=false."
         },
         "app_url": {
@@ -12536,7 +12545,7 @@
     "openDetail": "Voir les détails",
     "historyLoadError": "Votre historique d'évaluations n'a pas pu être chargé",
     "historyLoadErrorHint": "Cela ne veut pas dire que vous n'avez aucun résultat : la liste n'a pas pu être récupérée. Réessayez.",
-    "privacyNote": "Vos réponses sont stockées chiffrées et n'atteignent jamais le Coach IA.",
+    "privacyNote": "Vos réponses sont stockées chiffrées. Ni les réponses ni les scores n'atteignent jamais le Coach IA, une autre fonction d'IA ou un assistant IA que vous avez connecté.",
     "trend": {
       "sincePrevious": "Depuis votre bilan précédent du {date} : {change, plural, one {# point} other {# points}}.",
       "sinceFirst": "Depuis votre premier bilan du {date} : {change, plural, one {# point} other {# points}}.",

@@ -24,6 +24,7 @@ import {
   REPROOF_REQUIRED_CODE,
   type SensitiveChangeProof,
 } from "@/lib/auth/existing-factor-proof";
+import { ownRecord, ownValue } from "@/lib/own-key";
 
 const extendedProfileSchema = profileSchema.extend({
   // Trimmed first; "" (or only spaces) clears the name to null below.
@@ -110,12 +111,12 @@ function splitValidProfileFields(body: Record<string, unknown>): {
   issues: SanitisedZodIssue[];
 } {
   const shape = extendedProfileSchema.shape as Record<string, z.ZodTypeAny>;
-  const valid: Record<string, unknown> = {};
+  const valid = ownRecord<unknown>();
   const issues: SanitisedZodIssue[] = [];
-  for (const key of Object.keys(body)) {
-    const fieldSchema = shape[key];
+  for (const [key, value] of Object.entries(body)) {
+    const fieldSchema = ownValue(shape, key);
     if (!fieldSchema) continue;
-    const result = fieldSchema.safeParse(body[key]);
+    const result = fieldSchema.safeParse(value);
     if (result.success) {
       valid[key] = result.data;
     } else {

@@ -99,7 +99,8 @@ export async function requireMfaManagementAuth(
   const proofSource = options.proofSource ?? "second-factor";
 
   // Cookie first, and via the original helpers — the web path runs the same
-  // code it always did.
+  // code it always did. `getSession()` answers null when a Bearer is present,
+  // so a token caller always takes the Bearer path below.
   const sessionData = await getSession();
   if (sessionData) {
     const resolved = freshFactor

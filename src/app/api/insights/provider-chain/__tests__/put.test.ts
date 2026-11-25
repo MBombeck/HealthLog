@@ -12,6 +12,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Mirror `apiHandler`'s real behaviour: an `HttpError` thrown from the
 // inner handler is converted to a JSON envelope. The tests assert on
 // `res.status`, so the wrapper must surface the correct status code.
+// The read-merge-write runs under the account's row lock; here the
+// transaction client is the mocked one.
+vi.mock("@/lib/user-row-lock", async () => {
+  const { prisma } = await import("@/lib/db");
+  return {
+    withUserRowLock: (_userId: string, fn: (tx: unknown) => unknown) =>
+      fn(prisma),
+    lockUserRow: async () => {},
+  };
+});
+
 vi.mock("@/lib/api-handler", () => {
   class HttpError extends Error {
     constructor(

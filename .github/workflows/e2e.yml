@@ -68,6 +68,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # The image runs as root while the checkout belongs to the runner user;
       # git refuses such a tree, and the prepare hook calls git.
@@ -139,6 +141,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           sparse-checkout: pnpm-lock.yaml
           sparse-checkout-cone-mode: false
       - id: read
@@ -184,6 +187,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # The image runs as root while the checkout belongs to the runner user;
       # git refuses such a tree, and the prepare hook calls git.
@@ -247,6 +252,7 @@ jobs:
       # file's tests across shards; see the script's header for the allowlist.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           sparse-checkout: scripts
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

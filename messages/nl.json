@@ -3198,6 +3198,7 @@
       "failedDescriptionTimeout": "Het AI-verzoek duurde te lang en de briefing was niet op tijd klaar. Verhoog bij een traag lokaal model de time-out voor AI-antwoorden in Instellingen en probeer het daarna opnieuw.",
       "failedDescriptionProvider": "De AI-provider heeft het verzoek geweigerd. Controleer de provider en de API-sleutel in de AI-instellingen en probeer het daarna opnieuw.",
       "failedDescriptionRateLimit": "De AI-provider beperkt op dit moment het aantal verzoeken. Probeer het over een tijdje opnieuw.",
+      "failedDescriptionFormat": "De AI antwoordde, maar niet in een vorm die de briefing kan tonen. Probeer het opnieuw; gebeurt het vaker, dan helpt misschien een ander model in de AI-instellingen.",
       "omittedTitle": "Briefing achtergehouden",
       "omittedUngroundedDescription": "De gegenereerde briefing noemde een cijfer dat niet aan de hand van je gegevens kon worden gecontroleerd, dus is hij niet getoond. Probeer het opnieuw."
     },
@@ -3506,6 +3507,7 @@
         "steadyLatestWithin": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value} en komt daarmee overeen.",
         "steadyLatestAbove": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, hoger dan dat.",
         "steadyLatestBelow": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, lager dan dat.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Je gebruikelijke bereik wordt nog bepaald. Blijf nog een paar dagen metingen vastleggen.",
         "driver": "{note}",
         "loadError": "Je gebruikelijke bereik kon niet worden geladen."
@@ -3931,6 +3933,7 @@
         "title": "Verloop van de nacht",
         "wokeOn": "Wakker op {date}",
         "summary": "{asleep} slaap, {awakenings, plural, other {#×}} wakker",
+        "asleepOnly": "{asleep} slaap",
         "source": "van {source}",
         "previous": "Vorige nacht",
         "next": "Volgende nacht",
@@ -4720,6 +4723,11 @@
           "green": "goed",
           "yellow": "redelijk",
           "red": "laag"
+        },
+        "loadBand": {
+          "green": "laag",
+          "yellow": "gemiddeld",
+          "red": "hoog"
         }
       },
       "provenance": {
@@ -9779,7 +9787,8 @@
           "off": "Cookies hebben de Secure-vlag niet.",
           "secure_over_https": "Veilige cookies via HTTPS, zoals het hoort.",
           "plain_http": "Gewone HTTP zonder Secure-vlag: prima voor een server die alleen in je eigen netwerk bereikbaar is.",
-          "secure_over_http": "Deze pagina kwam via gewone HTTP, maar de cookies hebben de Secure-vlag, dus browsers gooien de aanmelding weg. Gebruik HTTPS of stel SESSION_COOKIE_SECURE=false in.",
+          "secure_over_http": "Deze pagina kwam als gewone HTTP bij de app aan. Achter een HTTPS-proxy: laat die X-Forwarded-Proto: https meesturen; bij gewone HTTP: stel SESSION_COOKIE_SECURE=false in.",
+          "proxy_scheme_unreported": "HTTPS werkt, maar je reverse proxy meldt het niet. Laat die X-Forwarded-Proto: https meesturen.",
           "insecure_over_https": "Deze pagina kwam via HTTPS, maar de cookies missen de Secure-vlag. Verwijder SESSION_COOKIE_SECURE=false."
         },
         "app_url": {
@@ -12536,7 +12545,7 @@
     "openDetail": "Details tonen",
     "historyLoadError": "Je testgeschiedenis kon niet worden geladen",
     "historyLoadErrorHint": "Dit betekent niet dat je geen resultaten hebt; de lijst kon niet worden opgehaald. Probeer het opnieuw.",
-    "privacyNote": "Je antwoorden worden versleuteld opgeslagen en komen nooit bij de AI-coach terecht.",
+    "privacyNote": "Je antwoorden worden versleuteld opgeslagen. Antwoorden en scores komen nooit bij de AI-coach, een andere AI-functie of een AI-assistent die je hebt gekoppeld.",
     "trend": {
       "sincePrevious": "Sinds je vorige check-in op {date}: {change, plural, one {# punt} other {# punten}}.",
       "sinceFirst": "Sinds je eerste check-in op {date}: {change, plural, one {# punt} other {# punten}}.",

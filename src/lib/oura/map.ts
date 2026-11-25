@@ -18,6 +18,7 @@ import type {
   OuraDailyActivity,
   OuraHeartRateSample,
 } from "./wire-types";
+import { ownValue } from "@/lib/own-key";
 
 const SEC_TO_MIN = 1 / 60;
 
@@ -125,10 +126,11 @@ const HYPNOGRAM_INTERVAL_MS = HYPNOGRAM_INTERVAL_MIN * 60_000;
  * segment; each segment is stamped at its own END instant (start + duration)
  * relative to `bedtime_start`, so the sleep-night reader (which derives
  * `start = end − value·60_000`) reconstructs the actual clock-time timeline —
- * NOT the degraded all-on-`bedtime_end` shape. The rows are `reconstructed:
- * false` by virtue of OURA being absent from the reader's
- * `RECONSTRUCTED_TIMELINE_SOURCES` set (WHOOP only). Returns `null` when the
- * hypnogram is absent / unusable so the caller falls back to stage totals.
+ * NOT the degraded all-on-`bedtime_end` shape. The reader reads these spans as
+ * a timeline because they repeat stages; the stage-total fallback stamps
+ * everything on one instant and reads as totals (`hasStageTimeline`). Returns
+ * `null` when the hypnogram is absent / unusable so the caller falls back to
+ * stage totals.
  */
 function mapSleepTimeline(s: OuraSleep): MappedMeasurement[] | null {
   const hyp = s.sleep_phase_5_min;
@@ -142,7 +144,7 @@ function mapSleepTimeline(s: OuraSleep): MappedMeasurement[] | null {
   let i = 0;
   while (i < hyp.length) {
     const digit = hyp[i];
-    const stage = HYPNOGRAM_STAGE[digit];
+    const stage = ownValue(HYPNOGRAM_STAGE, digit);
     // Walk the run of identical digits.
     let run = 1;
     while (i + run < hyp.length && hyp[i + run] === digit) run += 1;
@@ -439,7 +441,7 @@ export function mapResilience(
 ): MappedMeasurement[] {
   const level = typeof r.level === "string" ? r.level.toLowerCase() : null;
   if (!level) return [];
-  const ordinal = RESILIENCE_LEVELS[level];
+  const ordinal = ownValue(RESILIENCE_LEVELS, level);
   if (typeof ordinal !== "number") return [];
   const measuredAt = dayAnchor(r.day, tz);
   if (!measuredAt) return [];

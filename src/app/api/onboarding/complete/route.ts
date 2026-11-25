@@ -195,6 +195,35 @@ async function resolvedFlow(
   return { offers, steps: resolveOnboardingSteps(state.steps, context) };
 }
 
+/**
+ * Write the module map the answers derive, merged into the blob as it is
+ * stored at write time, under the record's row lock: a module switched from
+ * another device while the flow completes is not written over by a read made
+ * before it. Returns the stored map it merged into and the map it wrote.
+ */
+async function writeDerivedModules(
+  recordId: string,
+  defaults: ReturnType<typeof deriveOnboardingModuleDefaults>,
+  holdsData: ReadonlySet<string>,
+) {
+  let stored = normalisePrefs(null);
+  let merged = stored;
+  await writeRecordModulePreferences({
+    recordId,
+    modulePreferences: (blob) => {
+      stored = normalisePrefs(blob);
+      merged = mergeDerivedModulePreferences(
+        stored,
+        defaults.preferences,
+        holdsData,
+      );
+      return merged;
+    },
+    ...(defaults.cycleTracking ? { cycleTrackingEnabled: true } : {}),
+  });
+  return { stored, merged };
+}
+
 async function completeNeedsFlow(
   userId: string,
   held: HeldUnitPreferences,
@@ -264,10 +293,6 @@ async function completeNeedsFlow(
       visit: state.needs.visit ?? "no",
     });
 
-    const row = await prisma.user.findUnique({
-      where: { id: targetId },
-      select: { modulePreferencesJson: true },
-    });
     // Only the modules the answers would switch OFF are worth asking about,
     // and a record that already holds rows in one of those domains keeps its
     // surface: the flow orders a record, and it cannot order away content
@@ -280,11 +305,6 @@ async function completeNeedsFlow(
       targetId,
       wouldSwitchOff,
     );
-    const merged = mergeDerivedModulePreferences(
-      normalisePrefs(row?.modulePreferencesJson),
-      defaults.preferences,
-      holdsData,
-    );
     // The same record-keyed write the guardian's modules route uses, so the
     // two surfaces that decide a record's modules cannot drift apart on how
     // the decision is stored or what it invalidates. `cycle` delegates to
@@ -292,18 +312,17 @@ async function completeNeedsFlow(
     // and it is only ever switched ON from here: the gate derives an
     // unanswered cycle from recorded sex, and an untick is not a request to
     // retract that.
-    await writeRecordModulePreferences({
-      recordId: targetId,
-      modulePreferences: merged,
-      ...(defaults.cycleTracking ? { cycleTrackingEnabled: true } : {}),
-    });
+    const { stored, merged } = await writeDerivedModules(
+      targetId,
+      defaults,
+      holdsData,
+    );
 
     // The same trail the dedicated modules route writes, under the same event
     // name, because it is the same column and the activity panel is where
     // somebody goes to ask why their modules changed. The flow was writing
     // three audited settings columns and leaving no trail at all, which made
     // the answer to that question "nothing did it".
-    const stored = normalisePrefs(row?.modulePreferencesJson);
     const changed = [
       ...Object.keys(merged).filter((key) => merged[key] !== stored[key]),
       ...(defaults.cycleTracking ? ["cycleTrackingEnabled"] : []),

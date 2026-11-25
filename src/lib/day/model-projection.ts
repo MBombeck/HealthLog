@@ -5,9 +5,10 @@
  * through this projection. It does three things and nothing else:
  *
  *   - drops every section in {@link MODEL_EXCLUDED_DAY_SECTIONS} (life events
- *     in v1.42), wherever it appears: running items, events and the section
- *     list. The person's life events never reach a model, not even as a
- *     count;
+ *     in v1.42, the questionnaires since), wherever it appears: running
+ *     items, events and the section list. Neither reaches a model, not even
+ *     as a count. The questionnaire totals filed as readings are dropped
+ *     from the values and the notable list too;
  *   - drops the person's notes, the documents filed against an entry, the
  *     name of a dated document (its kind stands in: a file name is whatever
  *     the person or a scanner called it), and a visit's reason and the
@@ -29,6 +30,7 @@
  */
 import type { MeasurementType } from "@/generated/prisma/enums";
 
+import { isModelVisibleMeasurementType } from "@/lib/ai/model-bound-data";
 import {
   MODEL_EXCLUDED_DAY_SECTIONS,
   type DayResponse,
@@ -180,7 +182,11 @@ export function projectDayForModel(
       unavailable.push({ section: key, reason: "not_shared" });
     }
   }
-  const values = day.values.filter((v) => !exclude.types.has(v.type));
+  // A questionnaire total filed as a reading is the questionnaire's own
+  // score, and no model reads it (`model-bound-data.ts`).
+  const typeVisible = (type: string) =>
+    isModelVisibleMeasurementType(type) && !exclude.types.has(type);
+  const values = day.values.filter((v) => typeVisible(v.type));
   return {
     date: day.date,
     counts: { values: values.length, entries: events.length },
@@ -193,9 +199,7 @@ export function projectDayForModel(
       band: v.band,
     })),
     events,
-    notable: day.notable.filter(
-      (n) => n.type === null || !exclude.types.has(n.type),
-    ),
+    notable: day.notable.filter((n) => n.type === null || typeVisible(n.type)),
     scores: visible("scores")
       ? day.scores
           .filter((s) => !exclude.scores?.has(s.key))

@@ -15,6 +15,8 @@
  * it, each passing the labels its own inputs already carry.
  */
 
+import { ownRecord, ownValue, type OwnRecord } from "@/lib/own-key";
+
 /** A single rejected-field entry from `applyProfileUpdate`'s wire shape
  * (`details.issues` on failure, `data.rejectedFields` on a partial
  * success) — `path` is the schema field name, never shown verbatim. */
@@ -58,7 +60,7 @@ export function describeRejectedProfileField(
 ): string | null {
   const first = fields?.[0];
   if (!first) return null;
-  const labelKey = labelKeys[first.path];
+  const labelKey = ownValue(labelKeys, first.path);
   return labelKey ? t(labelKey) : first.path;
 }
 
@@ -112,11 +114,12 @@ const REJECTION_FALLBACK_KEY = "settings.profileRejection.other";
 export function describeRejectedProfileFields(
   fields: RejectedProfileField[] | undefined,
   t: (key: string, params?: Record<string, string | number>) => string,
-): Record<string, string> {
-  const out: Record<string, string> = {};
+): OwnRecord<string> {
+  const out = ownRecord<string>();
   for (const field of fields ?? []) {
     if (out[field.path]) continue;
-    const key = REJECTION_REASON_KEYS[field.code] ?? REJECTION_FALLBACK_KEY;
+    const key =
+      ownValue(REJECTION_REASON_KEYS, field.code) ?? REJECTION_FALLBACK_KEY;
     out[field.path] = t(key);
   }
   return out;

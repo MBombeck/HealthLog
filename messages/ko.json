@@ -3198,6 +3198,7 @@
       "failedDescriptionTimeout": "브리핑이 준비되기 전에 AI 요청 시간이 다 됐어요. 느린 로컬 모델이라면 설정에서 AI 응답 제한 시간을 늘린 뒤 다시 시도해 주세요.",
       "failedDescriptionProvider": "AI 제공자가 요청을 거절했어요. AI 설정에서 제공자와 API 키를 다시 확인한 뒤 시도해 주세요.",
       "failedDescriptionRateLimit": "AI 제공자가 지금 요청 수를 제한하고 있어요. 잠시 뒤에 다시 시도해 주세요.",
+      "failedDescriptionFormat": "AI가 응답했지만 브리핑에 표시할 수 있는 형식이 아니었어요. 다시 시도해 주세요. 계속 그렇다면 AI 설정에서 다른 모델을 써 보세요.",
       "omittedTitle": "브리핑을 보류했어요",
       "omittedUngroundedDescription": "만들어진 브리핑에 내 데이터로 확인할 수 없는 수치가 있어서 보여 주지 않았어요. 다시 시도해 주세요."
     },
@@ -3506,6 +3507,7 @@
         "steadyLatestWithin": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value}, 평소와 같았어요.",
         "steadyLatestAbove": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value}, 평소보다 높았어요.",
         "steadyLatestBelow": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value}, 평소보다 낮았어요.",
+        "componentLine": "{component}: {line}",
         "insufficient": "아직 평소 범위를 배우는 중이에요. 며칠 더 기록해 주세요.",
         "driver": "{note}",
         "loadError": "평소 범위를 불러오지 못했어요."
@@ -3931,6 +3933,7 @@
         "title": "밤 수면 흐름",
         "wokeOn": "{date} 기상",
         "summary": "수면 {asleep}, 깸 {awakenings, plural, other {#회}}",
+        "asleepOnly": "수면 {asleep}",
         "source": "{source} 기준",
         "previous": "이전 밤",
         "next": "다음 밤",
@@ -4720,6 +4723,11 @@
           "green": "좋음",
           "yellow": "보통",
           "red": "낮음"
+        },
+        "loadBand": {
+          "green": "낮음",
+          "yellow": "보통",
+          "red": "높음"
         }
       },
       "provenance": {
@@ -9779,7 +9787,8 @@
           "off": "쿠키에 Secure 플래그가 없습니다.",
           "secure_over_https": "HTTPS로 보안 쿠키를 사용 중입니다. 정상입니다.",
           "plain_http": "Secure 플래그 없는 일반 HTTP: 내 네트워크에서만 접속하는 서버라면 괜찮습니다.",
-          "secure_over_http": "이 페이지는 일반 HTTP로 열렸지만 쿠키에 Secure 플래그가 있어 브라우저가 로그인을 버립니다. HTTPS를 제공하거나 SESSION_COOKIE_SECURE=false로 설정하세요.",
+          "secure_over_http": "이 페이지는 일반 HTTP로 앱에 도착했습니다. HTTPS 프록시 뒤에 있다면 X-Forwarded-Proto: https를 보내도록 설정하고, 일반 HTTP라면 SESSION_COOKIE_SECURE=false로 설정하세요.",
+          "proxy_scheme_unreported": "HTTPS는 작동하지만 리버스 프록시가 이를 알려 주지 않습니다. X-Forwarded-Proto: https를 보내도록 설정하세요.",
           "insecure_over_https": "이 페이지는 HTTPS로 열렸지만 쿠키에 Secure 플래그가 없습니다. SESSION_COOKIE_SECURE=false를 제거하세요."
         },
         "app_url": {
@@ -12536,7 +12545,7 @@
     "openDetail": "자세히 보기",
     "historyLoadError": "검사 기록을 불러오지 못했어요",
     "historyLoadErrorHint": "결과가 없다는 뜻은 아니에요. 목록을 가져오지 못했을 뿐이에요. 다시 시도해 주세요.",
-    "privacyNote": "답변은 암호화되어 저장되고, AI 코치에게는 전달되지 않아요.",
+    "privacyNote": "답변은 암호화되어 저장돼요. 답변과 점수는 AI 코치, 다른 AI 기능, 연결한 AI 어시스턴트 어디에도 전달되지 않아요.",
     "trend": {
       "sincePrevious": "{date} 이전 체크인 이후: {change, plural, other {#점}}.",
       "sinceFirst": "{date} 첫 체크인 이후: {change, plural, other {#점}}.",

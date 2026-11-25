@@ -12,10 +12,11 @@
  * priority ladder — so two sources' timelines never overlay. A view over the
  * existing per-stage `SLEEP_DURATION` rows; no schema, no new type.
  *
- * `reconstructed` (per session) is true when the winning source has no
- * per-stage onset timestamps and the server synthesised a contiguous timeline
- * (WHOOP) — the client renders the hypnogram but labels it an approximate
- * layout. A real-series source (Apple Health / Withings / Fitbit) is false.
+ * `reconstructed` (per session) is true when the winning writer's spans hold
+ * stage totals with no measured order — stamped on one instant (Garmin, Oura's
+ * fallback) or laid back to back at ingest (WHOOP, Polar). It is read from the
+ * spans' shape (`hasStageTimeline`), so a new totals-only source is caught
+ * without a list. Clients show the totals instead of a timeline.
  *
  * `date` omitted → the most recent night with a main sleep, however old; a
  * run of nap-only days since is stepped over (each stays reachable by its
@@ -75,9 +76,9 @@ function serializeSession(s: SleepSession) {
     inBedMinutes: s.inBedMinutes === null ? null : Math.round(s.inBedMinutes),
     awakeMinutes: s.awakeMinutes === null ? null : Math.round(s.awakeMinutes),
     awakenings: s.awakenings,
-    // iOS #18 — `reconstructed` is true when the source has no per-stage onset
-    // timestamps and the server synthesised a contiguous timeline (WHOOP). iOS
-    // labels the hypnogram as an approximate layout; it never recomputes.
+    // iOS #18 — `reconstructed` is true when the night carries stage totals
+    // without a measured order (`hasStageTimeline`). iOS draws the totals
+    // instead of a timeline; it never recomputes.
     reconstructed: s.reconstructed,
     // iOS #18 — round the per-stage map too; the underlying totals sum
     // second-precision segments and otherwise serialise as e.g. 88.4999.

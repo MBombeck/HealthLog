@@ -105,13 +105,20 @@ Your data lives in the `postgres-data` volume. The app takes a database dump eve
 
 ## Updating
 
-From 1.49.0 on, releases follow a calendar: a feature release on the first Saturday of every month, fixes on the other Saturdays when there are any. Only a security problem, data loss or a broken install gets a release in between. `:latest` is the newest release; `:edge` is built from every push to `main` (amd64 only) for anyone who wants a fix before its Saturday.
+From 1.49.0 on, releases follow a calendar: a feature release on the first Saturday of every month, fixes on the other Saturdays when there are any. Only a security problem, data loss or a broken install gets a release in between. `:latest` is the newest release; `:edge` is built from every push to `main` (amd64 only) for anyone who wants a fix before its Saturday; `:nightly` is the next month's release branch, built every night from a head whose full test run is green, for trying new features early; it has no way back to an older image without restoring a dump. [Image channels](docs/self-hosting/channels.md) has the compose line for each.
 
 To update, take a backup, run `docker compose pull && docker compose up -d`, and check `/api/version`. Migrations run on start and only go forward. Read the [release notes](https://github.com/MBombeck/HealthLog/releases) first, and see [Updates and deploy](https://docs.healthlog.dev/guides/updates-and-deploy/) for pinning a version and going back. The full rule is in [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
 
 ## Privacy and security
 
 HealthLog sends no telemetry. The server makes three requests on its own (an update check, a password breach check and a geolocation lookup for sign-ins), and each can be switched off. Anything else leaving the host is something you set up: a sync, an AI provider, a weather location, the push relay. Measurement values, lab values, medication names and mood scores are stored unencrypted so the server can chart and search them, so the database volume and its backups need the same care as the host. Sign-in works with passkeys and a second factor or through your own OIDC provider, sessions stay on the server, and you get a notification when a passkey, token or device changes. The [security overview](https://docs.healthlog.dev/security/overview/) has the rest, and [SECURITY.md](SECURITY.md) says how to report a vulnerability.
+
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/MBombeck/HealthLog/badge)](https://scorecard.dev/viewer/?uri=github.com/MBombeck/HealthLog) [![REUSE status](https://api.reuse.software/badge/github.com/MBombeck/HealthLog)](https://api.reuse.software/info/github.com/MBombeck/HealthLog) [![Release images signed with Sigstore](https://img.shields.io/badge/release_images-signed_with_Sigstore-2a6db2)](SECURITY.md#verifying-a-release)
+
+- Public hosts score A+ on [Mozilla HTTP Observatory](https://developer.mozilla.org/en-US/observatory/analyze?host=demo.healthlog.dev) and [Qualys SSL Labs](https://www.ssllabs.com/ssltest/analyze.html?d=demo.healthlog.dev); the push relay is TLS 1.3 only.
+- What the code defends against, and what it leaves to the operator: the [threat model](docs/security/threat-model.md).
+- Build provenance: the [push relay](https://github.com/MBombeck/healthlog-push) is built at [SLSA Build Level 3](https://slsa.dev/spec/v1.0/levels#build-l3); HealthLog release images reach it from v1.50.0.
+- Checking a release image's signature, provenance and SBOM: [SECURITY.md](SECURITY.md#verifying-a-release). Third-party licences and the policy for new dependencies: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## iPhone and iPad
 

@@ -201,8 +201,10 @@ describe("briefing grounding — disposal", () => {
     // The fabricated text never persists...
     expect(JSON.stringify(persistedBriefing())).not.toContain("47.9");
     // ...and the reader keeps yesterday's grounded briefing rather than a hole.
+    // Stored as the card reads it: the missing findings list reads empty.
     expect(persistedBriefing()).toEqual({
       paragraph: "Yesterday's grounded briefing.",
+      keyFindings: [],
     });
   });
 
@@ -225,8 +227,10 @@ describe("briefing grounding — disposal", () => {
     // No corrective retry: the compliance rate is grounded, so the gate is
     // satisfied on the first pass and the briefing survives intact.
     expect(runRawCompletionWithFallback).toHaveBeenCalledTimes(1);
+    // Stored as the card reads it: the missing findings list reads empty.
     expect(persistedBriefing()).toEqual({
       paragraph: "Adherence sits at 86 % over the last 30 days.",
+      keyFindings: [],
     });
   });
 });

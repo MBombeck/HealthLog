@@ -8,7 +8,10 @@ import {
 import type { Derived } from "@/lib/insights/derived/types";
 import type { ReadinessValue } from "@/lib/insights/derived/readiness";
 import type { SleepScoreValue } from "@/lib/insights/derived/sleep-score";
-import type { WellnessScoreValue } from "@/lib/insights/derived/wellness-scores";
+import {
+  bandWellnessScore,
+  type WellnessScoreValue,
+} from "@/lib/insights/derived/wellness-scores";
 
 const NOW = new Date("2026-06-05T12:00:00Z");
 
@@ -194,6 +197,40 @@ describe("resolveDeterministicAssessment", () => {
     );
     expect(a!.text).not.toContain("An earlier night");
     expect(a!.text).not.toContain("most effective lever");
+  });
+
+  it("calls a heavy stress or strain day high, never low or good", () => {
+    // The server bands stress and strain on 100 - score: a stress of 80 is red.
+    const band = bandWellnessScore("STRESS_SCORE", 80);
+    expect(band).toBe("red");
+    const heavy: WellnessScoreValue = { ...recovery, score: 80, band };
+    const de = resolveDeterministicAssessment(
+      "STRESS_SCORE",
+      okDerived(heavy),
+      "de",
+      NOW,
+    );
+    expect(de!.text).toContain("80 von 100 — hoch");
+    expect(de!.text).not.toMatch(/niedrigen Bereich|guten Bereich/);
+    const en = resolveDeterministicAssessment(
+      "STRAIN_SCORE",
+      okDerived(heavy),
+      "en",
+      NOW,
+    );
+    expect(en!.text).toContain("80 out of 100 today — high");
+    expect(en!.text).not.toMatch(/low side|good place/);
+    const light = resolveDeterministicAssessment(
+      "STRESS_SCORE",
+      okDerived({
+        ...recovery,
+        score: 15,
+        band: bandWellnessScore("STRESS_SCORE", 15),
+      }),
+      "en",
+      NOW,
+    );
+    expect(light!.text).toContain("15 out of 100 today — low");
   });
 
   it("uses the trend for a contributor-less recovery score (en)", () => {

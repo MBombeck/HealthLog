@@ -27,6 +27,7 @@ import { CoverageMeter } from "./coverage-meter";
 import { InfoPopover } from "@/components/ui/info-popover";
 import { METRIC_PROVENANCE } from "./standards";
 import { type DerivedBatchRead } from "./use-derived-metric";
+import { headlineValue } from "@/lib/dashboard/headline-value";
 import {
   SECTION_VITALS,
   SECTION_MOBILITY,
@@ -91,6 +92,16 @@ interface DashboardProps {
    * data-gated as before).
    */
   layout?: InsightsLayout;
+  /**
+   * The dashboard snapshot read the page already holds. A tile's headline is
+   * the snapshot summary's latest reading (`headlineValue`), the same number
+   * the dashboard tile for that metric prints; the band and the balance only
+   * frame it. While it loads the grid stays on its skeleton.
+   */
+  snapshot: {
+    data?: { tiles: { summaries: Record<string, { latest: number | null }> } };
+    isLoading: boolean;
+  };
   className?: string;
 }
 
@@ -198,6 +209,8 @@ function MetricProvenance({
 interface TileProps {
   read: DerivedBatchRead;
   isLoading: boolean;
+  /** The headline of a metric tile: its latest reading (`headlineValue`). */
+  headline: (type: string) => number | null;
 }
 
 /**
@@ -214,6 +227,7 @@ function BaselineTile({
   type,
   read,
   isLoading,
+  headline,
 }: TileProps & {
   metric: keyof typeof METRIC_PROVENANCE;
   type: string;
@@ -270,7 +284,11 @@ function BaselineTile({
   }
 
   const v = data.value!;
-  // Range bounds + centre + sparkline are ABSOLUTE readings → affine-convert.
+  // The headline is the latest reading, the dashboard tile's number; the
+  // band frames it. Printing the band's centre here put the 30-day median
+  // where every other surface prints the current value.
+  const latest = headline(type);
+  // Range bounds + latest + sparkline are ABSOLUTE readings → affine-convert.
   const framing = t("insights.derived.vitals.typicalRange", {
     low: fmt.number(toShown(v.low), 1),
     high: fmt.number(toShown(v.high), 1),
@@ -283,7 +301,7 @@ function BaselineTile({
     <div data-slot="vitals-tile" data-metric={tileId} data-state="ok">
       <SparklineDeltaTile
         label={label}
-        value={toShown(v.center)}
+        value={latest === null ? null : toShown(latest)}
         unit={unit}
         icon={Icon}
         series={displaySeries}
@@ -536,8 +554,12 @@ function VascularAgeTile({ read, isLoading }: TileProps) {
   );
 }
 
-/** HRV (SDNN) balance tile (reuses the baseline engine). */
-function HrvBalanceTile({ read, isLoading }: TileProps) {
+/**
+ * HRV (SDNN) balance tile (reuses the baseline engine). The headline is the
+ * latest SDNN reading, as on the dashboard; the balance framing places the
+ * trailing week's mean against the band.
+ */
+function HrvBalanceTile({ read, isLoading, headline }: TileProps) {
   const { t } = useTranslations();
   const data = read<HrvBalanceValue>({ metric: "HRV_BALANCE" });
   if (isLoading || !data) return null;
@@ -570,7 +592,7 @@ function HrvBalanceTile({ read, isLoading }: TileProps) {
     <div data-slot="vitals-tile" data-metric="HRV_BALANCE" data-state="ok">
       <SparklineDeltaTile
         label={t("measurements.typeHeartRateVariability")}
-        value={v.recentAvg}
+        value={headline("HEART_RATE_VARIABILITY")}
         unit={unitLabel("HEART_RATE_VARIABILITY", t)}
         icon={HeartPulse}
         series={v.series}
@@ -792,14 +814,17 @@ function hasRenderableSameTime(
   return false;
 }
 
-export function VitalsDashboard({ batch, layout, className }: DashboardProps) {
+export function VitalsDashboard(props: DashboardProps) {
+  const { batch, layout, snapshot, className } = props;
   const { t } = useTranslations();
 
   const read = batch.read;
-  const isLoading = batch.isLoading;
+  const isLoading = batch.isLoading || snapshot.isLoading;
   const isError = batch.isError;
   const refetch = batch.refetch;
-  const tileProps: TileProps = { read, isLoading };
+  const summaries = snapshot.data?.tiles.summaries;
+  const headline = (type: string) => headlineValue(summaries?.[type]);
+  const tileProps: TileProps = { read, isLoading, headline };
 
   // v1.15.11 — the vitals-grid tiles in resolved layout order, dropping
   // any the user has hidden. Each tile is `{ id, order, node }`; the tile's
@@ -853,7 +878,7 @@ export function VitalsDashboard({ batch, layout, className }: DashboardProps) {
     // capture the current values, so memoising on the layout + load state keeps
     // the ordered list stable across a no-op rerender without staleness.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layout, read, isLoading]);
+  }, [layout, read, isLoading, summaries]);
 
   const mobilityTiles = useMemo(() => {
     const entries: { id: string; order: number; node: ReactNode }[] = [
@@ -882,7 +907,7 @@ export function VitalsDashboard({ batch, layout, className }: DashboardProps) {
       .filter((e) => tileVisible(layout, e.id))
       .sort((a, b) => a.order - b.order);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layout, read, isLoading]);
+  }, [layout, read, isLoading, summaries]);
 
   const cumulativeTiles = useMemo(() => {
     return SECTION_CUMULATIVE.map((type) => {

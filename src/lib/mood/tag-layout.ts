@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * v1.17.0 — per-user mood-tag layout blob (`User.moodTagLayoutJson`).
@@ -124,9 +125,9 @@ export function stripGroupFromLayout(
     next.groupOrder = layout.groupOrder.filter((k) => k !== groupKey);
   }
   if (layout.placements !== undefined) {
-    const rest = { ...layout.placements };
-    delete rest[groupKey];
-    next.placements = rest;
+    next.placements = Object.fromEntries(
+      Object.entries(layout.placements).filter(([key]) => key !== groupKey),
+    );
   }
   return next;
 }
@@ -192,7 +193,9 @@ export function resolveMoodTagPlacement(args: {
   //    claim resolves deterministically.
   const placed = new Set<string>();
   for (const categoryKey of orderedCategoryKeys) {
-    const placement = layout.placements?.[categoryKey];
+    const placement = layout.placements
+      ? ownValue(layout.placements, categoryKey)
+      : undefined;
     if (!placement) continue;
     const bucket = tagKeysByCategory.get(categoryKey);
     if (!bucket) continue;

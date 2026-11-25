@@ -26,6 +26,11 @@ import { applyProfileUpdate as applyWithProof } from "../profile-update";
 import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
 
+import {
+  expectPrototypesUntouched,
+  snapshotPrototypes,
+} from "../../../../tests/property/prototype-keys";
+
 /** These suites are about validation and the email budget, not the proof:
  *  every call is made as an owner who has just proved themselves. */
 const applyProfileUpdate = (
@@ -326,6 +331,27 @@ describe("applyProfileUpdate partial-field save", () => {
     expect(arg.data.heightCm).toBe(180);
     expect("gender" in arg.data).toBe(false);
   });
+
+  // A body key the schema does not declare is dropped on the salvage path
+  // too, whatever its name: a key that names a member of every plain object
+  // ("constructor", "__proto__") used to be looked up as a field schema.
+  it.each(["__proto__", "constructor", "toString", "hasOwnProperty"])(
+    "drops an undeclared %s key while salvaging the valid fields",
+    async (key) => {
+      const before = snapshotPrototypes();
+      const body = JSON.parse(
+        `{"heightCm": 180, "gender": "male", ${JSON.stringify(key)}: {"heightCm": 1}}`,
+      ) as unknown;
+      const result = await applyProfileUpdate(USER_ID, body);
+      expect(result.ok).toBe(true);
+      const arg = vi.mocked(prisma.user.update).mock.calls[0][0] as {
+        data: Record<string, unknown>;
+      };
+      expect(arg.data.heightCm).toBe(180);
+      expect(Object.hasOwn(arg.data, key)).toBe(false);
+      expectPrototypesUntouched(before);
+    },
+  );
 
   it("omits `rejectedFields` entirely when every touched field is valid", async () => {
     const result = await applyProfileUpdate(USER_ID, {

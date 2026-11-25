@@ -5,7 +5,12 @@ import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { useCountUp } from "@/hooks/use-count-up";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
-import { bandForScore, clampScore, type ScoreBand } from "./band-tokens";
+import {
+  bandForScore,
+  bandWordKey,
+  clampScore,
+  type ScoreBand,
+} from "./band-tokens";
 import { RING_GRADIENT, type RingHue } from "./ring-hues";
 
 /**
@@ -82,6 +87,13 @@ export interface ScoreRingProps {
   score: number | null;
   /** Band override; when omitted it is derived from the score via thresholds. */
   band?: ScoreBand;
+  /**
+   * The score measures a load (stress, strain): lower is better. The band
+   * then reads on `100 - score`, as the server bands it, and its word is
+   * low / moderate / high instead of good / fair / low, so a stress of 80 is
+   * announced as high, never as good.
+   */
+  load?: boolean;
   /** Short label rendered under the number (e.g. "Readiness", "/100"). */
   label?: string;
   /**
@@ -138,6 +150,7 @@ export interface ScoreRingProps {
 export function ScoreRing({
   score,
   band,
+  load = false,
   label,
   size = "md",
   animate = true,
@@ -155,7 +168,8 @@ export function ScoreRing({
 
   const hasScore = score != null && Number.isFinite(score);
   const clamped = hasScore ? clampScore(score) : 0;
-  const resolvedBand: ScoreBand = band ?? bandForScore(clamped);
+  const resolvedBand: ScoreBand =
+    band ?? bandForScore(load ? 100 - clamped : clamped);
   const hueKey = hue ?? resolvedBand;
 
   // Near-flat single-hue arc. The two stops sit a hair apart for a whisper of
@@ -198,7 +212,7 @@ export function ScoreRing({
     (hasScore
       ? t("insights.derived.scoreRing.aria", {
           score: Math.round(clamped),
-          band: t(`insights.derived.scoreRing.band.${resolvedBand}`),
+          band: t(bandWordKey(resolvedBand, load)),
         })
       : t("insights.derived.scoreRing.ariaProvisional"));
 

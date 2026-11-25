@@ -148,12 +148,9 @@ export function canonicalJson(value: unknown): string {
     return `[${value.map((v) => canonicalJson(v)).join(",")}]`;
   }
   if (value !== null && typeof value === "object") {
-    const entries = Object.keys(value)
-      .sort()
-      .map(
-        (k) =>
-          `${JSON.stringify(k)}:${canonicalJson((value as Record<string, unknown>)[k])}`,
-      );
+    const entries = Object.entries(value)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`);
     return `{${entries.join(",")}}`;
   }
   return JSON.stringify(value);
@@ -529,9 +526,12 @@ export function isCachableStatus(status: number): boolean {
 }
 
 /**
- * Default resolver: cookie session first, then Bearer token, without which
- * a Bearer retry (iOS, n8n) ran the handler again and duplicated readings
- * (audit C-4). A pending account's token resolves nobody, as in `bearer.ts`.
+ * Default resolver: the Bearer token when the request presents one, else the
+ * cookie session — the precedence `requireAuth()` applies, so the cache cell
+ * is the one of the account the handler will run as. Without the Bearer arm a
+ * retry (iOS, n8n) ran the handler again and duplicated readings (audit C-4).
+ * A pending account's or unresolvable token resolves nobody (`bearer.ts`),
+ * never falling back to a cookie the handler will not use.
  *
  * It resolves the CALLER and only the caller — which record they are aiming at
  * is a separate question, answered by `readClaimedRecordContext()` above and
@@ -541,9 +541,6 @@ export function isCachableStatus(status: number): boolean {
  * Exported for unit testing; `withIdempotency()` uses it by default.
  */
 export async function defaultUserIdResolver(): Promise<string | null> {
-  const session = await getSession().catch(() => null);
-  if (session) return session.user.id;
-
   let authHeader: string | null = null;
   try {
     const headerList = await headers();
@@ -551,7 +548,10 @@ export async function defaultUserIdResolver(): Promise<string | null> {
   } catch {
     authHeader = null;
   }
-  if (!authHeader?.startsWith("Bearer ")) return null;
+  if (!authHeader?.startsWith("Bearer ")) {
+    const session = await getSession().catch(() => null);
+    return session ? session.user.id : null;
+  }
 
   const tokenHashValue = hashToken(authHeader.slice(7));
   const apiToken = await prisma.apiToken

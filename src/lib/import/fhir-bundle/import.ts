@@ -42,6 +42,7 @@ import {
   writeImportedMeasurements,
   type ImportedMeasurement,
 } from "../file-import/write-measurements";
+import { jsonDeeperThan, UPLOADED_JSON_MAX_DEPTH } from "../json-depth";
 import { arr, firstInstant, obj, str, type Json } from "./fields";
 import {
   importRecordResource,
@@ -50,6 +51,7 @@ import {
   type RecordResourceType,
 } from "./records";
 import { BP_PANEL_CODES, loincCodes, VITAL_LOINC, vitalValue } from "./vitals";
+import { ownValue } from "@/lib/own-key";
 
 export const MAX_ENTRIES = 50_000;
 /** `LabResult.source` and `Measurement.source` of what this import writes. */
@@ -117,9 +119,9 @@ export function mapVital(
   if (codes.some((c) => BP_PANEL_CODES.has(c))) {
     for (const component of arr(resource.component)) {
       const c = obj(component);
-      const code = loincCodes(c?.code).find((x) => VITAL_LOINC[x]);
+      const code = loincCodes(c?.code).find((x) => ownValue(VITAL_LOINC, x));
       if (!c || !code) continue;
-      const spec = VITAL_LOINC[code]!;
+      const spec = ownValue(VITAL_LOINC, code)!;
       const value = vitalValue(spec, c.valueQuantity);
       if ("reason" in value) return { reason: value.reason };
       rows.push({
@@ -131,9 +133,9 @@ export function mapVital(
     }
     return rows.length > 0 ? rows : { reason: "no_value" };
   }
-  const code = codes.find((c) => VITAL_LOINC[c]);
+  const code = codes.find((c) => ownValue(VITAL_LOINC, c));
   if (!code) return { reason: "unsupported_vital" };
-  const spec = VITAL_LOINC[code]!;
+  const spec = ownValue(VITAL_LOINC, code)!;
   const value = vitalValue(spec, resource.valueQuantity);
   if ("reason" in value) return { reason: value.reason };
   return [
@@ -161,6 +163,12 @@ export async function importFhirBundleFile(input: {
     bundle = obj(JSON.parse(buffer.toString("utf8")));
   } catch {
     throw new RecordFileImportError("not_fhir_bundle", "the file is not JSON");
+  }
+  if (bundle && jsonDeeperThan(bundle)) {
+    throw new RecordFileImportError(
+      "not_fhir_bundle",
+      `the file nests deeper than ${UPLOADED_JSON_MAX_DEPTH} levels`,
+    );
   }
   if (!bundle || bundle.resourceType !== "Bundle") {
     throw new RecordFileImportError(

@@ -59,6 +59,7 @@ import {
   MAX_NUTRIENT_ENTRIES_PER_BATCH,
   nutrientBatchSchema,
 } from "@/lib/validations/nutrients";
+import { ownRecord } from "@/lib/own-key";
 
 const BATCH_RATE_LIMIT_MAX = 60;
 const BATCH_RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -229,7 +230,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // once from the closed `reason` set (never raw exception text — see the
   // upsert `catch` blocks above), so this carries only counts and reason
   // codes, never a per-entry health value or anything user-typed.
-  const skippedByReason: Record<string, number> = {};
+  const skippedByReason = ownRecord<number>();
   for (const s of skipped) {
     skippedByReason[s.reason] = (skippedByReason[s.reason] ?? 0) + 1;
   }

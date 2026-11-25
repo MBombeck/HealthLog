@@ -10,15 +10,32 @@ vi.mock("@/lib/rollups/measurement-coverage", () => ({
   probeRollupCoverage: vi.fn().mockResolvedValue(new Map()),
 }));
 
-import { computeHrvBalance, placeHrvBalance } from "../hrv-balance";
+import {
+  computeHrvBalance,
+  placeHrvBalance,
+  recentTrendPoints,
+} from "../hrv-balance";
 
 const NOW = new Date("2026-06-02T07:00:00Z");
 const PROFILE = { ageYears: 40, sex: "MALE" as const };
 
-/** Build a `readDayMeanSeries` return from a list of recent DAY means. */
-function recentSeries(means: number[]) {
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The UTC day `daysBack` days before `NOW`. */
+function dayBefore(daysBack: number): string {
+  return new Date(NOW.getTime() - daysBack * DAY_MS).toISOString().slice(0, 10);
+}
+
+/**
+ * Build a `readDayMeanSeries` return from a list of DAY means, the last one
+ * on NOW's day (or `endsDaysBack` days earlier).
+ */
+function recentSeries(means: number[], endsDaysBack = 0) {
   return {
-    points: means.map((mean, i) => ({ day: `2026-05-${20 + i}`, mean })),
+    points: means.map((mean, i) => ({
+      day: dayBefore(endsDaysBack + means.length - 1 - i),
+      mean,
+    })),
     source: "DAY" as const,
   };
 }
@@ -182,7 +199,7 @@ describe("computeHrvBalance", () => {
     }
   });
 
-  it("uses only the last ≤ 7 DAY means for the recent trend", async () => {
+  it("uses only the DAY means of the trailing 7 days for the recent trend", async () => {
     computeVitalsBaseline.mockResolvedValueOnce({
       status: "ok",
       value: {
@@ -219,5 +236,60 @@ describe("computeHrvBalance", () => {
       expect(r.value.recentAvg).toBeCloseTo(30, 5);
       expect(r.value.band).toBe("low");
     }
+  });
+
+  it("anchors the recent trend on now, not on the newest data", async () => {
+    computeVitalsBaseline.mockResolvedValueOnce({
+      status: "ok",
+      value: {
+        type: "HEART_RATE_VARIABILITY",
+        center: 60,
+        low: 40,
+        high: 80,
+        spread: 20,
+        sampleDays: 21,
+        k: 3,
+      },
+      coverage: {
+        requiredInputs: 1,
+        presentInputs: 1,
+        historyDays: 21,
+        missing: [],
+      },
+      confidence: { score: 70, band: "medium" },
+      provenance: {
+        inputs: ["HEART_RATE_VARIABILITY"],
+        source: "DAY",
+        windowDays: 30,
+        computedAt: "x",
+      },
+    });
+    // The newest reading is six days old: only that day is inside the
+    // trailing week. The six suppressed days before it are not, though they
+    // are the last seven day means of the series.
+    readDayMeanSeries.mockResolvedValueOnce(
+      recentSeries([30, 30, 30, 30, 30, 30, 55], 6),
+    );
+    const r = await computeHrvBalance("u1", PROFILE, { now: NOW });
+    expect(r.status).toBe("ok");
+    if (r.status === "ok") {
+      expect(r.value.recentAvg).toBeCloseTo(55, 5);
+      expect(r.value.band).toBe("balanced");
+    }
+  });
+});
+
+describe("recentTrendPoints", () => {
+  it("keeps the days after the one the trailing week opens in", () => {
+    const points = recentSeries([1, 2, 3, 4, 5, 6, 7, 8, 9]).points;
+    expect(recentTrendPoints(points, NOW).map((p) => p.mean)).toEqual([
+      3, 4, 5, 6, 7, 8, 9,
+    ]);
+  });
+
+  it("is empty when nothing landed in the trailing week", () => {
+    expect(recentTrendPoints(recentSeries([50, 52], 8).points, NOW)).toEqual(
+      [],
+    );
   });
 });

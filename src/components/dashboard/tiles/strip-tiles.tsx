@@ -31,6 +31,7 @@ import {
 import { SleepSourceDiscrepancyMarker } from "@/components/insights/sleep-source-discrepancy-marker";
 import { summaryToTrend7Delta } from "@/lib/analytics/trend-delta";
 import { isWindowSufficient } from "@/lib/analytics/window-confidence";
+import { headlineValue } from "@/lib/dashboard/headline-value";
 import { convertGlucose, glucoseFractionDigits } from "@/lib/glucose";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
 import type { TrendDirectionSentiment } from "@/lib/insights/trend-sentiment";
@@ -141,7 +142,7 @@ function metricCard(
       key={id}
       fractionDigits={props.fractionDigits}
       label={props.label}
-      latest={value(s?.latest)}
+      latest={value(headlineValue(s))}
       unit={props.unit}
       avg7={value(s?.avg7)}
       avg30={value(s?.avg30)}
@@ -492,7 +493,7 @@ export const STRIP_TILES: readonly StripTile[] = [
             <TrendCard
               key={`glucose-${bucket}`}
               label={ctx.t(labelKey)}
-              latest={convert(s.latest)}
+              latest={convert(headlineValue(s))}
               unit={unit}
               fractionDigits={glucoseFractionDigits(unit)}
               avg7={convert(s.avg7)}

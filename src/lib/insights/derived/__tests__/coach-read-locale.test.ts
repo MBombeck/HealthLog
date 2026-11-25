@@ -40,6 +40,17 @@ vi.mock("@/lib/measurements/newest-per-type", async () =>
   ).newestPerTypeMock(),
 );
 
+// The latest reading is the canonical one (raw SQL); serve it from the
+// mocked `findFirst`.
+vi.mock("@/lib/measurements/latest-canonical", async () => ({
+  readLatestCanonical: (
+    await import("@/lib/measurements/__tests__/fake-latest-canonical")
+  ).fakeReadLatestCanonical,
+}));
+vi.mock("@/lib/rollups/measurement-read", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/rollups/measurement-read")>()),
+  loadUserSourcePriority: async () => null,
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     // v1.44 — the extended channel families (intake, training, room climate).

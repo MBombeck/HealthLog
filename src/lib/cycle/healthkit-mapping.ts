@@ -40,6 +40,7 @@ import type {
   HomeTestResult,
   ContraceptiveKind,
 } from "@/generated/prisma/client";
+import { ownValue } from "@/lib/own-key";
 
 /* ── HK identifier constants ─────────────────────────────────────── */
 
@@ -289,7 +290,7 @@ export function mapHkCycleSample(
   protectionUsed?: boolean,
 ): HkCycleRoute {
   // Symptom category types → catalogue key (skip an explicit not-present).
-  const symptomKey = HK_SYMPTOM_KEY_BY_IDENTIFIER[hkIdentifier];
+  const symptomKey = ownValue(HK_SYMPTOM_KEY_BY_IDENTIFIER, hkIdentifier);
   if (symptomKey) {
     if (!hkSymptomIsPresent(rawValue)) return { kind: "skip" };
     return { kind: "day-log", fields: { symptomKey } };
@@ -297,7 +298,9 @@ export function mapHkCycleSample(
 
   switch (hkIdentifier) {
     case HK_MENSTRUAL_FLOW: {
-      const flow = rawValue ? HK_MENSTRUAL_FLOW_VALUES[rawValue] : undefined;
+      const flow = rawValue
+        ? ownValue(HK_MENSTRUAL_FLOW_VALUES, rawValue)
+        : undefined;
       if (!flow) return { kind: "skip" };
       return { kind: "day-log", fields: { flow } };
     }
@@ -306,14 +309,14 @@ export function mapHkCycleSample(
       return { kind: "day-log", fields: { intermenstrualBleeding: true } };
     case HK_CERVICAL_MUCUS: {
       const cervicalMucus = rawValue
-        ? HK_CERVICAL_MUCUS_VALUES[rawValue]
+        ? ownValue(HK_CERVICAL_MUCUS_VALUES, rawValue)
         : undefined;
       if (!cervicalMucus) return { kind: "skip" };
       return { kind: "day-log", fields: { cervicalMucus } };
     }
     case HK_OVULATION_TEST: {
       const ovulationTest = rawValue
-        ? HK_OVULATION_TEST_VALUES[rawValue]
+        ? ownValue(HK_OVULATION_TEST_VALUES, rawValue)
         : undefined;
       if (!ovulationTest) return { kind: "skip" };
       return { kind: "day-log", fields: { ovulationTest } };
@@ -328,21 +331,21 @@ export function mapHkCycleSample(
       };
     case HK_PREGNANCY_TEST: {
       const pregnancyTest = rawValue
-        ? HK_HOME_TEST_VALUES[rawValue]
+        ? ownValue(HK_HOME_TEST_VALUES, rawValue)
         : undefined;
       if (!pregnancyTest) return { kind: "skip" };
       return { kind: "day-log", fields: { pregnancyTest } };
     }
     case HK_PROGESTERONE_TEST: {
       const progesteroneTest = rawValue
-        ? HK_HOME_TEST_VALUES[rawValue]
+        ? ownValue(HK_HOME_TEST_VALUES, rawValue)
         : undefined;
       if (!progesteroneTest) return { kind: "skip" };
       return { kind: "day-log", fields: { progesteroneTest } };
     }
     case HK_CONTRACEPTIVE: {
       const contraceptive = rawValue
-        ? HK_CONTRACEPTIVE_VALUES[rawValue]
+        ? ownValue(HK_CONTRACEPTIVE_VALUES, rawValue)
         : undefined;
       if (!contraceptive) return { kind: "skip" };
       // Record the method on the day-log timeline AND nudge the profile
