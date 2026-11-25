@@ -2,75 +2,34 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
-import { renderToStaticMarkup } from "react-dom/server";
 
 import { DAY_SCORE_HREF } from "@/lib/day/contract";
 
 /**
- * v1.42 — `/insights/health-score`: the health score over time, reached from
- * the score panel and from the day view's score tile.
+ * `/insights/health-score` became `/insights/scores/health` in 1.50: the
+ * Health score's panel and its course on one page beside the other scores.
+ * The old address redirects so saved links still land.
  */
 
-vi.mock("@/lib/i18n/context", () => ({
-  useTranslations: () => ({ t: (key: string) => key }),
-}));
-
-vi.mock("@/components/insights/sub-page-shell", () => ({
-  SubPageShell: ({
-    title,
-    backLink,
-    children,
-  }: {
-    title: string;
-    backLink: React.ReactNode;
-    children: React.ReactNode;
-  }) => (
-    <div data-slot="shell-probe" data-title={title}>
-      {backLink}
-      {children}
-    </div>
-  ),
-}));
-
-vi.mock("@/components/ui/back-link", () => ({
-  BackLink: ({ href }: { href: string }) => (
-    <a data-slot="back-probe" href={href} />
-  ),
-}));
-
-vi.mock("@/components/insights/derived/score-history", () => ({
-  ScoreTrendChartDynamic: ({
-    score,
-    chartKey,
-    label,
-  }: {
-    score: string;
-    chartKey: string;
-    label: string;
-  }) => (
-    <div
-      data-slot="trend-probe"
-      data-score={score}
-      data-chart-key={chartKey}
-      data-label={label}
-    />
-  ),
+const redirect = vi.fn((to: string) => {
+  throw new Error(`redirect:${to}`);
+});
+vi.mock("next/navigation", () => ({
+  redirect: (to: string) => redirect(to),
 }));
 
 import HealthScoreHistoryPage from "../page";
 
 describe("/insights/health-score", () => {
-  it("charts the health score's history under its own range slot", () => {
-    const html = renderToStaticMarkup(<HealthScoreHistoryPage />);
-    expect(html).toContain('data-title="insights.scoreHistory.healthTitle"');
-    expect(html).toContain(
-      'data-slot="trend-probe" data-score="HEALTH_SCORE" data-chart-key="scoreHealth" data-label="insights.healthScore.label"',
+  it("sends the old address to the Health score's page", () => {
+    expect(() => HealthScoreHistoryPage()).toThrow(
+      "redirect:/insights/scores/health",
     );
-    expect(html).toContain('href="/insights"');
+    expect(redirect).toHaveBeenCalledWith("/insights/scores/health");
   });
 
   it("is where the day view's health-score tile opens", () => {
-    expect(DAY_SCORE_HREF.healthScore).toBe("/insights/health-score");
+    expect(DAY_SCORE_HREF.healthScore).toBe("/insights/scores/health");
   });
 
   it("every score tile in the day view opens a page that exists", () => {

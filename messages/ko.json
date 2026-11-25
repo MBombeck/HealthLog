@@ -1159,7 +1159,14 @@
     "valueOutOfRangeNoUnit": "{min}에서 {max} 사이의 값을 입력해 주세요.",
     "lastValue": "최근 {value}, {when}",
     "lastValueDeviates": "지난 측정값과 많이 다릅니다. 맞나요?",
-    "saveAndNext": "저장 후 다음"
+    "saveAndNext": "저장 후 다음",
+    "typeRecoveryScoreWhoop": "WHOOP Recovery",
+    "typeRecoveryScoreOura": "Oura Readiness",
+    "typeRecoveryScorePolar": "Polar Nightly Recharge",
+    "typeRecoveryScoreComputed": "준비도(HealthLog)",
+    "typeSleepScoreOura": "Oura 수면 점수",
+    "typeSleepScoreGarmin": "Garmin 수면 점수",
+    "typeSleepScoreWithings": "Withings 수면 점수"
   },
   "metricCatalog": {
     "title": "HealthLog가 기록할 수 있는 것",
@@ -3104,7 +3111,6 @@
     "bmiEmptyDescription": "BMI에는 키가 필요해요. 설정 > 계정에서 추가해 주세요.",
     "bmiEmptyAction": "계정 설정 열기",
     "loadError": "인사이트를 불러오지 못했어요",
-    "heroPersonalBaseline": "최근 90일 기준",
     "heroRegenerating": "다시 생성 중",
     "regenerateAnalysis": "평가 다시 실행",
     "regenerateSuccess": "평가를 새로 고쳤어요",
@@ -3112,10 +3118,6 @@
     "narrativeWeek": "이번 주",
     "narrativeMonth": "이번 달",
     "narrativeUpdating": "업데이트 중…",
-    "heroFallbackSubtitle": "기록한 숫자에서 바로 뽑아낸, 매일의 추이 읽기예요.",
-    "heroGreetingMorning": "좋은 아침이에요",
-    "heroGreetingAfternoon": "좋은 오후예요",
-    "heroGreetingEvening": "좋은 저녁이에요",
     "heroActionAskCoach": "코치에게 묻기",
     "healthScore": {
       "label": "건강 점수",
@@ -3897,7 +3899,7 @@
         "recoveryBody": "회복도는 심박변이도와 안정 시 심박수 같은 밤사이 신호를 바탕으로 몸이 얼마나 잘 회복했는지 보여줘요. 임상 지표가 아니라 본인 기준값에 견줘 읽는 기기 유래 대리 지표이고, 기기끼리 비교할 수 없어요. 점수가 높으면 밀어붙여도 좋다는 신호이고, 낮으면 몸이 아직 회복 중이라는 뜻이에요.",
         "strainBody": "부하는 운동부터 종일 서서 활동한 하루까지, 몸에 실린 심혈관·신체 부담이 얼마나 되는지 담아요. 임상 지표가 아니라 본인의 평소 노력에 견줘 판단하는 기기 유래 지수이고, 대표 숫자는 기기끼리 비교할 수 없어요.",
         "stressBody": "여기서 스트레스는 코르티솔 측정이나 스스로 느끼는 감정이 아니라 심박변이도 패턴에서 끌어낸 기기 추정값이고, 임상 스트레스 점수도 아니에요. 본인 기준값에 견줘 읽으세요. 기기끼리 비교할 수 없어요. 점수가 낮으면 차분하고 잘 조절된 상태이고, 높으면 회복 시간을 넣으라는 신호예요.",
-        "recoveryPageBody": "회복도는 웨어러블이 기록한 밤사이 신호(재충전, 부하, 누적 부담, 그날의 심박·에너지 합계)를 모아 몸이 얼마나 잘 회복했는지 보여줘요. 하나의 숫자보다 며칠에 걸친 패턴을 보세요. 낮은 값은 경보가 아니라 조금 쉬어 가라는 신호예요.",
+        "recoveryPageBody": "웨어러블이 자체 이름으로 보고하는 값이에요.",
         "pulsePressureBody": "맥압은 수축기와 이완기 측정값의 차이예요(수축기 빼기 이완기). 일반적인 기준으로 안정 시 40mmHg 정도가 보통이고, 중년에서 약 60mmHg가 넘게 벌어지면 동맥이 뻣뻣해지고 있음을 반영할 수 있어요. 반대로 약 25mmHg 아래로 좁으면 심박출량이 적은 상태와 함께 나타날 수 있어요(StatPearls/NIH 2023). 진단이 아니라 이야기를 시작해 볼 거리예요.",
         "meanArterialPressureBody": "평균 동맥압은 심장 박동 한 주기 동안 장기가 받는 평균 압력으로, 대략 이완기에 수축기까지 차이의 3분의 1을 더한 값이에요. 일반적인 기준으로 안정 시 값은 70~100mmHg 정도예요(StatPearls/NIH 2023). 흔히 인용되는 60mmHg 하한선은 급성기 진료 개념이지 소비자용 자가 경보가 아니에요.",
         "cycleEducationBody": "생리 주기는 호르몬 변화가 이끄는 네 단계로 흘러가고, 주기 길이와 규칙성은 전반적인 건강을 들여다보는 손쉬운 창이에요. 일반적인 기준으로 성인의 주기는 보통 21~35일(임상 자료는 24~38일)이고 출혈은 5일 안팎이에요(ACOG 2015). 황체기가 일정한 기준점이라 배란은 다음 예정 생리에서 거꾸로 세어 추정하는 게 가장 좋아요. 고정된 '14일째'는 절대 아니에요. 예측된 가임기는 여러 주기가 기록돼야 나오는 추정치이고 여전히 대략적이에요. 기초 체온은 배란을 예측하는 게 아니라 지나간 뒤에 확인해 줘요. 이건 피임 방법이 아니에요.",
@@ -4097,7 +4099,7 @@
       }
     },
     "navWorkouts": "운동",
-    "navRecovery": "회복",
+    "navRecovery": "기기 점수",
     "workouts": {
       "title": "운동",
       "description": "최근 달리기, 자전거, 걷기, 근력 운동 세션이에요. Apple Watch와 Withings 소스 사이 중복은 정리했어요.",
@@ -5115,7 +5117,6 @@
     "recovery": {
       "title": "회복",
       "description": "몸이 얼마나 회복했는지: 웨어러블이 밤사이 기록한 회복·부하 신호예요.",
-      "scoreCrossLink": "종합 회복 점수 보기",
       "emptyTitle": "아직 회복 데이터가 없어요",
       "empty": "이 페이지에는 WHOOP 또는 Polar의 회복, 부하, 훈련 부하 값과 Oura의 회복탄력성 수준이 표시돼요.",
       "emptyOuraPermission": "Oura의 회복탄력성 수준에는 스트레스 데이터 권한이 필요하니, 연동에서 Oura를 한 번 다시 연결하고 허용해 주세요.",
@@ -5319,7 +5320,6 @@
       "coachPrefill": "아직 약을 추가하지 않았어요. 여기서 복약 순응도를 기록하기 전에 무엇을 알아야 하나요?"
     },
     "scoreHistory": {
-      "healthTitle": "건강 점수 추이",
       "healthDescription": "날마다 표시된 그대로의 건강 점수입니다.",
       "emptyDescription": "이 기간에는 아직 기록된 점수가 없습니다.",
       "usualRange": "음영: 평소 범위 {lo}에서 {hi}까지.",
@@ -5358,6 +5358,29 @@
         "midday": "낮",
         "evening": "저녁"
       }
+    },
+    "scores": {
+      "historyWindow": "{days}일 추이",
+      "staleLast": "{date} 마지막 값 {score}",
+      "valuesFrom": "{date} 값",
+      "loadError": "지금은 점수를 불러올 수 없어요.",
+      "loadingLabel": "점수를 불러오는 중",
+      "regionLabel": "내 점수",
+      "bandNote": "1.50부터 50에서 69는 {fair}, 50 미만은 {low}(으)로 표시해요.",
+      "loadBand": {
+        "green": "낮음",
+        "yellow": "보통",
+        "red": "높음"
+      }
+    },
+    "deviceScores": {
+      "title": "기기 점수",
+      "description": "웨어러블이 자체 이름으로 보고하는 값이에요.",
+      "valueOfScale": "{max} 중 {value}",
+      "estimatesTitle": "HealthLog 추정치",
+      "estimatesSubtitle": "기기가 보고한 값이 아니라 심장 데이터로 계산했어요.",
+      "stress": "스트레스(추정치)",
+      "strain": "부하(추정치)"
     }
   },
   "thresholds": {
@@ -10786,10 +10809,6 @@
       "currentDay": "주기 {day}일째",
       "noActiveCycle": "아직 진행 중인 주기가 없어요",
       "viewDetails": "주기 인사이트 보기"
-    },
-    "wellnessRing": {
-      "label": "주기",
-      "loadError": "주기를 불러오지 못했어요."
     },
     "disclaimer": "이 예측은 기록한 데이터로 추정한 설명일 뿐, 피임 방법도 의학적 조언도 아니에요. 피임 없는 성관계가 안전하다는 뜻은 절대 아니에요. 피임이나 의학적 결정은 의료 전문가와 상의해 주세요.",
     "title": "생리 주기",

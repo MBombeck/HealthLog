@@ -44,7 +44,9 @@ test.afterAll(async () => {
  */
 async function openOverview(page: Page): Promise<void> {
   await page.goto("/insights");
-  await expect(page.locator('[data-slot="insights-hero-strip"]')).toBeVisible({
+  await expect(
+    page.locator('[data-slot="insights-overview-title"]'),
+  ).toBeAttached({
     timeout: 20_000,
   });
   await page.waitForLoadState("networkidle");

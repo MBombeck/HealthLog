@@ -20,7 +20,14 @@
  * Pure, so the page can share the type list it charts from.
  */
 
-/** Every summary type the recovery page charts or shows as a tile. */
+/**
+ * Every summary type the recovery page (titled "Device scores") charts or
+ * shows as a tile. Stress and strain are HealthLog's own estimates, shown in
+ * a section of their own at the foot of the page. The device's own
+ * `RECOVERY_SCORE` is not here: its summary counts HealthLog's stored
+ * readiness as well, so the reader asks for a device row separately
+ * (`recovery-empty-read.ts`).
+ */
 export const RECOVERY_SUMMARY_TYPES = [
   "ANS_CHARGE",
   "DAY_STRAIN",
@@ -34,6 +41,8 @@ export const RECOVERY_SUMMARY_TYPES = [
   "MAX_HEART_RATE",
   "ENERGY_EXPENDITURE_KJ",
   "RESILIENCE",
+  "STRESS_SCORE",
+  "STRAIN_SCORE",
 ] as const;
 
 export const RECOVERY_EMPTY_REASONS = [

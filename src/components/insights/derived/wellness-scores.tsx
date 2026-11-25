@@ -1,14 +1,19 @@
 "use client";
 
-import { useState, type ComponentType } from "react";
+import { useState, type ComponentType, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Activity, Flame, Gauge, HeartPulse, Moon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Gauge, HeartPulse, Moon } from "lucide-react";
+
 import { cn } from "@/lib/utils";
+import { apiGet } from "@/lib/api/api-fetch";
+import { queryKeys } from "@/lib/query-keys";
+import { useAuth } from "@/hooks/use-auth";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useTranslations } from "@/lib/i18n/context";
-import { SectionHeading } from "@/components/ui/section-heading";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { SCORE_PILLAR_LABEL_KEYS } from "@/lib/score-config/labels";
 import { ScoreRing } from "./score-ring";
 import { RING_GRADIENT, TILE_HUE, type RingHue } from "./ring-hues";
 import type { DerivedBatchRead } from "./use-derived-metric";
@@ -16,26 +21,29 @@ import type { ScoreBand } from "./band-tokens";
 // Type-only — the compute payloads never drag the server graph into the bundle.
 import type { ReadinessValue } from "@/lib/insights/derived/readiness";
 import type { SleepScoreValue } from "@/lib/insights/derived/sleep-score";
-import type { WellnessScoreValue } from "@/lib/insights/derived/wellness-scores";
+import type { HealthScoreReport } from "@/lib/analytics/score/types";
 import { TileHeader } from "@/components/insights/tile-header";
 import { Card } from "@/components/ui/card";
 
 /**
- * v1.10.0 — the wellness-scores strip.
+ * The three score rings at the head of Insights: Readiness ("today"), Sleep
+ * score ("last night") and the Health score ("the long view"), in that
+ * order, above every customisable section.
  *
- * A row of score rings for the composite + persisted wellness scores, each
- * data-availability-gated: a score the user has no data for simply does not
- * render (never an apologetic empty ring). All five composites/scores now
- * route to a `ScoreAnatomyView` detail page (`/insights/scores/<slug>`) so
- * every ring carries its inputs + method + cited standard one tap away — the
- * three persisted scores (Recovery, Stress, Strain) are no longer read-only
- * dead-ends. The band word renders under each ring so a less-technical user
- * reads "low 62", not a bare reddish 62.
+ * Not a section on purpose. A section id a saved layout has hidden would
+ * take the rings with it, and a layout that has never seen an id merges it
+ * in as hidden; the Health score has lived outside the sections for that
+ * reason since it moved onto this page. Each ring opens its anatomy page,
+ * the Health score's carries the full panel unchanged.
  *
- * Every ring reads from the ONE batched `/api/insights/derived/batch`
- * request the parent dashboard owns (passed in via `read`) — no per-ring
- * request, no cold-mount fan-out. The reads are already-computed
- * rollup/persisted values; nothing warms on visit.
+ * A readiness that rests on values from before today is not a statement
+ * about today: its ring shows the bare track, no number, no band and no
+ * sentence, and below it "Last 81 on Nov 24". The Health score keeps its
+ * safety line at rest when a questionnaire answer withholds a pillar.
+ *
+ * Readiness and the sleep score read from the ONE batched derived request
+ * the page owns; the Health score from the analytics payload the page
+ * already holds. Nothing warms on visit.
  */
 
 // The tile's history line loads through the shared chart-runtime boundary, so
@@ -49,43 +57,11 @@ const DeltaSparkline = dynamic(
   { ssr: false, loading: () => null },
 );
 
-interface ScoreStripProps {
-  /** The batched-read selector from the parent dashboard's one query. */
-  read: DerivedBatchRead;
-  isLoading: boolean;
-  /**
-   * The shared derived-batch error flag. On a failed batch the strip renders
-   * a compact error + Retry in place instead of vanishing silently (the strip
-   * is now top-of-page, so its only Retry must live here, not far below in the
-   * Vitals slot).
-   */
-  isError?: boolean;
-  /** The batch query's error, which decides what the error row offers. */
-  error?: unknown;
-  /** Refetch the one shared batch query. Recovers both strips at once. */
-  refetch?: () => void;
-  /**
-   * An optional extra tile rendered as the LAST sibling inside the same scores
-   * grid (e.g. the gated cycle ring). It participates in the column-count math
-   * so it never leaves a dangling empty cell, and it keeps the strip mounted
-   * even when no wellness score has data (a cycle-only account still sees its
-   * dial). The caller owns the gating — the strip just slots whatever it gets.
-   * The element is expected to render `null` on its own when it has nothing to
-   * show, so the strip subtracts it from the count in that case.
-   */
-  extraTile?: React.ReactNode;
-  /**
-   * Drop the Strain score tile from the rendered strip. Set when the cycle ring
-   * takes Strain's slot (cycle-tracking accounts) so the row stays compact at
-   * the same column count instead of growing a sixth tile. Strain stays
-   * available for non-cycle accounts; it is only hidden, never removed.
-   */
-  hideStrain?: boolean;
-  className?: string;
-}
+/** The Health score's course on its tile, the window its page opens on. */
+const HEALTH_HISTORY_DAYS = 30;
 
 /** Mean of the trailing series excluding the newest point = "your normal". */
-function baselineOf(series: number[] | undefined): number | null {
+export function baselineOf(series: number[] | undefined): number | null {
   if (!series || series.length < 3) return null;
   const past = series.slice(0, -1); // exclude today (newest)
   if (past.length === 0) return null;
@@ -93,12 +69,18 @@ function baselineOf(series: number[] | undefined): number | null {
   return Number.isFinite(mean) ? mean : null;
 }
 
-/** A score ring wrapped in a link to its anatomy detail page. */
-function RingTile({
+/**
+ * One score tile: the ring with its band word, an optional note and the
+ * score's course, all one link to the score's page. On a phone the ring sits
+ * beside its text; from `md` up the tile stacks.
+ */
+export function RingTile({
   score,
   band,
   label,
   bandWord,
+  note,
+  ariaLabel,
   href,
   metricSlot,
   hue,
@@ -107,17 +89,21 @@ function RingTile({
   animate,
   baseline,
   history,
+  titleAs = "h2",
 }: {
-  /**
-   * v1.42 — the score's course (oldest → newest) and the window it covers,
-   * drawn under the band word so each tile shows where the number came from.
-   * Fewer than two points draws nothing.
-   */
-  history?: { series: number[]; windowDays: number } | null;
-  score: number;
-  band: ScoreBand;
+  /** The 0..100 score; null draws the bare track (see `note`). */
+  score: number | null;
+  band?: ScoreBand;
   label: string;
-  bandWord: string;
+  /** The band word under the ring; null when the score carries no band. */
+  bandWord: string | null;
+  /** One line beside or under the ring ("Last 81 on Nov 24"). */
+  note?: ReactNode;
+  /**
+   * The ring's accessible name, when its default ("score, band word") would
+   * say the wrong thing: a ring without a number, or a load.
+   */
+  ariaLabel?: string;
   href: string;
   metricSlot: string;
   hue: RingHue;
@@ -128,6 +114,13 @@ function RingTile({
   animate: boolean;
   /** "Your normal" reference for the ghost arc, or null when no series. */
   baseline: number | null;
+  /**
+   * The score's course (oldest → newest) and the window it covers. Fewer
+   * than two points draws nothing.
+   */
+  history?: { series: number[]; windowDays: number } | null;
+  /** The tile title's heading level: `h3` inside a section with its own. */
+  titleAs?: "h2" | "h3";
 }) {
   const Icon = icon;
   const delayMs = index * 75;
@@ -136,13 +129,10 @@ function RingTile({
       href={href}
       data-slot="wellness-score-tile"
       data-metric={metricSlot}
-      // v1.14.0 — gentle, hero-family `.wellness-tile`: a low-opacity mix of
-      // the metric's `--tile-hue` over the theme `--card`, with a faint film
-      // grain (::after) for material depth. The per-metric `hue` arc is the
-      // only saturated thing on the tile. On a fresh session the tile rises +
-      // fades in staggered (`wellness-tile-rise` + `--reveal-delay`), gated by
-      // the strip's `data-revealed`; the band stays conveyed by the word below
-      // + the ring's `data-band` + aria-label.
+      // The gentle `.wellness-tile` surface: a low-opacity mix of the
+      // metric's `--tile-hue` over `--card`. The per-metric arc is the only
+      // saturated thing on the tile; the band stays conveyed by the word
+      // below and the ring's `data-band` + aria-label.
       style={
         {
           "--tile-hue": TILE_HUE[hue],
@@ -150,39 +140,51 @@ function RingTile({
         } as React.CSSProperties
       }
       className={cn(
-        "wellness-tile focus-visible:ring-ring flex flex-col gap-4 rounded-xl p-4 focus-visible:ring-2 focus-visible:outline-none md:p-6",
+        "wellness-tile focus-visible:ring-ring flex flex-col gap-3 rounded-xl p-4 focus-visible:ring-2 focus-visible:outline-none md:gap-4 md:p-6",
         animate && "wellness-tile-rise",
       )}
     >
-      <TileHeader icon={Icon} title={label} />
-      <div className="flex flex-col items-center gap-1.5">
-        {/* The ring keeps just the number centred; the metric name lives in
-            the header above. The per-metric `hue` gradient leans the arc
-            colour; the band stays conveyed by the word label below + the
-            ring's `data-band` + aria-label. */}
-        <ScoreRing
-          score={score}
-          band={band}
-          size="sm"
-          hue={hue}
-          animate={animate}
-          delayMs={delayMs}
-          baseline={baseline}
-        />
-        <span
-          data-slot="wellness-score-band-word"
-          className="text-muted-foreground text-center text-xs"
-        >
-          {bandWord}
-        </span>
+      <TileHeader icon={Icon} title={label} titleAs={titleAs} />
+      <div className="flex items-center gap-4 md:flex-col md:items-stretch">
+        <div className="flex shrink-0 flex-col items-center gap-1.5">
+          <ScoreRing
+            score={score}
+            band={band}
+            size="tile"
+            hue={hue}
+            animate={animate}
+            delayMs={delayMs}
+            baseline={baseline}
+            emptyFace={score === null && ariaLabel !== undefined}
+            ariaLabel={ariaLabel}
+          />
+          {bandWord ? (
+            <span
+              data-slot="wellness-score-band-word"
+              className="text-muted-foreground text-center text-xs"
+            >
+              {bandWord}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          {note ? (
+            <p
+              data-slot="wellness-score-note"
+              className="text-foreground text-xs md:text-center"
+            >
+              {note}
+            </p>
+          ) : null}
+          {history && history.series.length >= 2 ? (
+            <ScoreHistoryLine
+              series={history.series}
+              windowDays={history.windowDays}
+              strokeVar={RING_GRADIENT[hue][1]}
+            />
+          ) : null}
+        </div>
       </div>
-      {history && history.series.length >= 2 ? (
-        <ScoreHistoryLine
-          series={history.series}
-          windowDays={history.windowDays}
-          strokeVar={RING_GRADIENT[hue][1]}
-        />
-      ) : null}
     </Link>
   );
 }
@@ -211,15 +213,15 @@ function ScoreHistoryLine({
           domain={[0, 100]}
         />
       </div>
-      <p className="text-muted-foreground text-center text-xs">
-        {t("insights.derived.scores.historyWindow", { days: windowDays })}
+      <p className="text-muted-foreground text-xs md:text-center">
+        {t("insights.scores.historyWindow", { days: windowDays })}
       </p>
     </div>
   );
 }
 
 /** The course a score value carries, if any, paired with its window. */
-function historyOf(
+export function historyOf(
   read: {
     value: { series?: number[] } | null;
     provenance: { windowDays: number };
@@ -231,34 +233,74 @@ function historyOf(
 }
 
 /**
- * Loading placeholder mirroring `RingTile`'s footprint (icon+label row, the
- * `size="sm"` 120 px ring, band word) so the strip reserves its final height
- * while the shared derived batch loads — matching the `VitalsTileSkeleton`
- * pattern instead of the strip vanishing (`return null`) and popping in once
- * data resolves. Decorative — `aria-hidden`.
+ * Loading placeholder in `RingTile`'s footprint, so the head reserves its
+ * height while its reads land. Decorative — `aria-hidden`.
  */
 function WellnessScoreTileSkeleton() {
   return (
     <Card
       data-slot="wellness-score-tile-skeleton"
       aria-hidden="true"
-      className="gap-4 px-4 md:gap-4 md:px-6"
+      className="gap-3 px-4 md:gap-4 md:px-6"
     >
       <div className="flex items-center gap-2">
         <Skeleton className="h-5 w-5 rounded" />
         <Skeleton className="h-4 w-20" />
       </div>
-      <div className="flex flex-col items-center gap-1.5">
-        <Skeleton className="size-[120px] rounded-full" />
-        <Skeleton className="h-3 w-12" />
-      </div>
-      {/* The history line's band, so a tile that gains one does not grow. */}
-      <div className="space-y-1">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="mx-auto h-3 w-20" />
+      <div className="flex items-center gap-4 md:flex-col md:items-stretch">
+        <div className="flex flex-col items-center gap-1.5">
+          <Skeleton className="size-20 rounded-full md:size-30" />
+          <Skeleton className="h-3 w-12" />
+        </div>
+        <div className="flex-1 space-y-1">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-3 w-20 md:mx-auto" />
+        </div>
       </div>
     </Card>
   );
+}
+
+interface ScoreHeadProps {
+  /** The batched-read selector from the page's one derived query. */
+  read: DerivedBatchRead;
+  isLoading: boolean;
+  /** The shared derived-batch error flag: an error row with Retry in place. */
+  isError?: boolean;
+  /** The batch query's error, which decides what the error row offers. */
+  error?: unknown;
+  /** Refetch the one shared batch query. */
+  refetch?: () => void;
+  /** The Health score report from the analytics payload, null without one. */
+  healthScore: HealthScoreReport | null;
+  /** True while that payload is in flight and nothing is cached. */
+  healthPending: boolean;
+  className?: string;
+}
+
+/** The Health score's daily course, the read its page's chart makes. */
+function useHealthScoreCourse(enabled: boolean): number[] | null {
+  const { isAuthenticated } = useAuth();
+  const query = useQuery({
+    queryKey: queryKeys.insightsScoreHistory(
+      "HEALTH_SCORE",
+      HEALTH_HISTORY_DAYS,
+    ),
+    queryFn: () => {
+      const params = new URLSearchParams({
+        score: "HEALTH_SCORE",
+        days: String(HEALTH_HISTORY_DAYS),
+      });
+      return apiGet<{ points: Array<{ value: number }> }>(
+        `/api/insights/score-history?${params.toString()}`,
+      );
+    },
+    enabled: enabled && isAuthenticated,
+    staleTime: 60_000,
+    retry: 0,
+  });
+  const points = query.data?.points;
+  return points ? points.map((p) => p.value) : null;
 }
 
 export function WellnessScores({
@@ -267,20 +309,19 @@ export function WellnessScores({
   isError = false,
   error = null,
   refetch,
-  extraTile,
-  hideStrain = false,
+  healthScore,
+  healthPending,
   className,
-}: ScoreStripProps) {
+}: ScoreHeadProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
+  const healthCourse = useHealthScoreCourse(healthScore !== null);
 
-  // The signature reveal plays ONCE per browser session. A background
-  // Apple-Health-sync refetch re-renders this strip repeatedly (the v1.8.7
-  // lesson — sync evicted the derived cache all day); replaying the cascade on
-  // every refetch would read as cheap + janky. The sessionStorage flag is set
-  // on the first Insights visit; subsequent mounts paint the final state with
-  // no stagger/sweep/sheen. Lazily computed once on the client (the strip only
-  // renders after the client-side batch resolves, so there is no SSR tile to
-  // mismatch).
+  // The reveal plays ONCE per browser session. A background sync refetch
+  // re-renders the head repeatedly; replaying the cascade every time would
+  // read as janky. The head only renders after the client-side batch
+  // resolves (the page loads it without SSR), so there is no server tile to
+  // mismatch.
   const [play] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -292,36 +333,26 @@ export function WellnessScores({
     }
   });
 
-  // While the shared derived batch loads, every per-score gate below is
-  // `!isLoading && …`, so `tiles` stays empty and the strip used to
-  // `return null` — a late pop-in that pushed the briefing + everything
-  // below it down on every cold visit. Render the section heading + a row
-  // of tile-shaped skeletons instead, the same shape `VitalsDashboard`
-  // already uses for its grid.
-  if (isLoading) {
+  const regionLabel = t("insights.scores.regionLabel");
+
+  if (isLoading || (healthPending && !healthScore)) {
     return (
       <section
         data-slot="wellness-scores"
-        aria-label={t("insights.derived.scores.sectionTitle")}
-        className={cn("space-y-3", className)}
+        aria-label={regionLabel}
+        className={className}
       >
-        <SectionHeading
-          icon={Activity}
-          title={t("insights.derived.scores.sectionTitle")}
-          subtitle={t("insights.derived.scores.sectionSubtitle")}
-        />
         <div
           data-slot="wellness-scores-grid"
-          // `aria-label` needs a role to name; a bare <div> may not carry one
-          // (axe: aria-prohibited-attr). `status` is the loading region's
-          // role and already implies the polite live region.
+          // `status` names the loading region and implies the polite live
+          // region; a bare <div> may not carry `aria-label`.
           role="status"
           aria-busy="true"
           aria-live="polite"
-          aria-label={t("insights.derived.scores.loadingLabel")}
-          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+          aria-label={t("insights.scores.loadingLabel")}
+          className="grid grid-cols-1 gap-3 md:grid-cols-3"
         >
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 3 }).map((_, i) => (
             <WellnessScoreTileSkeleton key={`wellness-skeleton-${i}`} />
           ))}
         </div>
@@ -329,51 +360,34 @@ export function WellnessScores({
     );
   }
 
-  // A failed shared batch must read as an error, not as "no scores" — the
-  // strip is top-of-page, so the only Retry lives here (mirrors the Vitals
-  // error card styling; one Retry recovers both strips).
-  if (isError) {
-    return (
-      <section
-        data-slot="wellness-scores"
-        aria-label={t("insights.derived.scores.sectionTitle")}
-        className={cn("space-y-3", className)}
-      >
-        <SectionHeading
-          icon={Activity}
-          title={t("insights.derived.scores.sectionTitle")}
-          subtitle={t("insights.derived.scores.sectionSubtitle")}
-        />
-        <QueryErrorRow
-          error={error}
-          slot="wellness-scores-error"
-          retrySlot="wellness-scores-retry"
-          message={t("insights.derived.scores.loadError")}
-          onRetry={() => refetch?.()}
-        />
-      </section>
-    );
-  }
-
   const readiness = read<ReadinessValue>({ metric: "READINESS" });
   const sleep = read<SleepScoreValue>({ metric: "SLEEP_SCORE" });
-  const recovery = read<WellnessScoreValue>({ metric: "RECOVERY_SCORE" });
-  const stress = read<WellnessScoreValue>({ metric: "STRESS_SCORE" });
-  const strain = read<WellnessScoreValue>({ metric: "STRAIN_SCORE" });
-
   const bandWord = (band: ScoreBand) =>
     t(`insights.derived.scoreRing.band.${band}`);
 
-  const tiles: React.ReactNode[] = [];
+  const tiles: ReactNode[] = [];
 
-  if (!isLoading && readiness?.status === "ok" && readiness.value) {
+  if (readiness?.status === "ok" && readiness.value) {
+    const v = readiness.value;
+    const title = t("insights.derived.composite.READINESS.title");
+    // `fresh` is absent on a payload cached before the field existed; only
+    // an explicit `false` withholds the number.
+    const stale = v.fresh === false;
+    const lastLine = stale
+      ? t("insights.scores.staleLast", {
+          score: Math.round(v.score),
+          date: fmt.dateShortSmartCalendar(v.asOfDay),
+        })
+      : null;
     tiles.push(
       <RingTile
         key="READINESS"
-        score={readiness.value.score}
-        band={readiness.value.band}
-        label={t("insights.derived.composite.READINESS.title")}
-        bandWord={bandWord(readiness.value.band)}
+        score={stale ? null : v.score}
+        band={stale ? undefined : v.band}
+        label={title}
+        bandWord={stale ? null : bandWord(v.band)}
+        note={lastLine}
+        ariaLabel={stale ? `${title}. ${lastLine}` : undefined}
         href="/insights/scores/readiness"
         metricSlot="READINESS"
         hue="readiness"
@@ -385,26 +399,7 @@ export function WellnessScores({
       />,
     );
   }
-  if (!isLoading && recovery?.status === "ok" && recovery.value) {
-    tiles.push(
-      <RingTile
-        key="RECOVERY_SCORE"
-        score={recovery.value.score}
-        band={recovery.value.band}
-        label={t("insights.derived.scores.recovery")}
-        bandWord={bandWord(recovery.value.band)}
-        href="/insights/scores/recovery"
-        metricSlot="RECOVERY_SCORE"
-        hue="recovery"
-        icon={HeartPulse}
-        history={historyOf(recovery)}
-        index={tiles.length}
-        animate={play}
-        baseline={baselineOf(recovery.value.series)}
-      />,
-    );
-  }
-  if (!isLoading && sleep?.status === "ok" && sleep.value) {
+  if (sleep?.status === "ok" && sleep.value) {
     tiles.push(
       <RingTile
         key="SLEEP_SCORE"
@@ -423,114 +418,89 @@ export function WellnessScores({
       />,
     );
   }
-  if (!isLoading && stress?.status === "ok" && stress.value) {
+  if (healthScore) {
+    const composite = healthScore.composite;
+    const ok = composite.status === "ok";
+    // A pillar withheld for safety signposting is named at rest, as on the
+    // panel: the person reads it here without opening anything.
+    const crisis = healthScore.pillars.filter(
+      (p) =>
+        p.result.status === "insufficient" &&
+        p.result.reason === "crisis_signposting",
+    );
+    const crisisLine =
+      crisis.length > 0
+        ? `${crisis
+            .map((p) => t(SCORE_PILLAR_LABEL_KEYS[p.id]))
+            .join(", ")}: ${t("insights.healthScore.reason.crisis")}`
+        : null;
     tiles.push(
       <RingTile
-        key="STRESS_SCORE"
-        score={stress.value.score}
-        band={stress.value.band}
-        label={t("insights.derived.scores.stress")}
-        bandWord={bandWord(stress.value.band)}
-        href="/insights/scores/stress"
-        metricSlot="STRESS_SCORE"
-        hue="stress"
-        icon={Activity}
-        history={historyOf(stress)}
+        key="HEALTH_SCORE"
+        score={ok ? composite.value.score : null}
+        band={ok ? composite.value.band : undefined}
+        label={t("insights.healthScore.label")}
+        bandWord={ok ? bandWord(composite.value.band) : null}
+        note={crisisLine}
+        href="/insights/scores/health"
+        metricSlot="HEALTH_SCORE"
+        hue="health"
+        icon={HeartPulse}
+        history={
+          healthCourse && healthCourse.length >= 2
+            ? { series: healthCourse, windowDays: HEALTH_HISTORY_DAYS }
+            : null
+        }
         index={tiles.length}
         animate={play}
-        baseline={baselineOf(stress.value.series)}
+        baseline={null}
       />,
     );
   }
-  // When the cycle ring takes the slot (cycle-tracking accounts), the Strain
-  // tile is dropped so the row stays compact rather than growing a sixth tile.
-  // Strain renders normally for everyone else.
-  if (!hideStrain && !isLoading && strain?.status === "ok" && strain.value) {
-    tiles.push(
-      <RingTile
-        key="STRAIN_SCORE"
-        score={strain.value.score}
-        band={strain.value.band}
-        label={t("insights.derived.scores.strain")}
-        bandWord={bandWord(strain.value.band)}
-        href="/insights/scores/strain"
-        metricSlot="STRAIN_SCORE"
-        hue="strain"
-        icon={Flame}
-        history={historyOf(strain)}
-        index={tiles.length}
-        animate={play}
-        baseline={baselineOf(strain.value.series)}
-      />,
-    );
-  }
 
-  // The optional caller-supplied tile (e.g. the gated cycle ring) slots in as
-  // the last sibling. It is counted toward the grid column math so it never
-  // leaves a dangling cell, and its presence keeps the strip mounted even when
-  // no wellness score has data (a cycle-only account still sees its dial). The
-  // tile renders `null` on its own when it has nothing to show; the grid has
-  // no background, so a transient empty trailing cell shows nothing — never a
-  // "missing tile" frame.
-  if (extraTile != null) {
-    tiles.push(
-      <div
-        key="EXTRA"
-        data-slot="wellness-extra-tile-slot"
-        className="contents"
-      >
-        {extraTile}
-      </div>,
-    );
-  }
+  // A failed shared batch reads as an error, not as "no scores". The Health
+  // score comes from another read and still shows beside it.
+  const errorRow = isError ? (
+    <QueryErrorRow
+      error={error}
+      slot="wellness-scores-error"
+      retrySlot="wellness-scores-retry"
+      message={t("insights.scores.loadError")}
+      onRetry={() => refetch?.()}
+    />
+  ) : null;
 
-  // Whole strip un-mounts when no score has data AND no extra tile — never an
-  // empty section.
-  if (tiles.length === 0) return null;
+  if (tiles.length === 0 && !errorRow) return null;
 
-  // v1.12.4 — the strip used a fixed `lg:grid-cols-5`, so the common case of
-  // four active scores left one empty cell on the right and read as "a tile
-  // is missing". Track the desktop column count to the actual number of tiles
-  // (capped at 5) so the row always fills its full width. The static class
-  // map keeps every variant in the Tailwind output (no purge surprise).
-  const LG_COLS: Record<number, string> = {
-    1: "lg:grid-cols-1",
-    2: "lg:grid-cols-2",
-    3: "lg:grid-cols-3",
-    4: "lg:grid-cols-4",
-    5: "lg:grid-cols-5",
+  // The row fills its width whatever the count: two scores take half each
+  // rather than leaving an empty third cell that reads as a missing tile.
+  const MD_COLS: Record<number, string> = {
+    1: "md:grid-cols-1",
+    2: "md:grid-cols-2",
+    3: "md:grid-cols-3",
   };
-  const lgCols = LG_COLS[Math.min(tiles.length, 5)] ?? "lg:grid-cols-5";
-  // The sm/md row caps at 3 columns; track the actual tile count there too so
-  // two or four active scores don't leave an empty cell that reads as a
-  // missing tile (the same fill rule the lg row already follows).
-  const SM_COLS: Record<number, string> = {
-    1: "sm:grid-cols-1",
-    2: "sm:grid-cols-2",
-    3: "sm:grid-cols-3",
-  };
-  const smCols = SM_COLS[Math.min(tiles.length, 3)] ?? "sm:grid-cols-3";
 
   return (
     <section
       data-slot="wellness-scores"
-      aria-label={t("insights.derived.scores.sectionTitle")}
+      aria-label={regionLabel}
       className={cn("space-y-3", className)}
     >
-      <SectionHeading
-        icon={Activity}
-        title={t("insights.derived.scores.sectionTitle")}
-        subtitle={t("insights.derived.scores.sectionSubtitle")}
-      />
-      <div
-        data-slot="wellness-scores-grid"
-        // `data-revealed` triggers the CSS tile-rise + sheen keyframes on the
-        // fresh-session reveal; absent on subsequent mounts (paint final).
-        data-revealed={play ? "true" : undefined}
-        className={cn("grid grid-cols-2 gap-3", smCols, lgCols)}
-      >
-        {tiles}
-      </div>
+      {errorRow}
+      {tiles.length > 0 ? (
+        <div
+          data-slot="wellness-scores-grid"
+          // `data-revealed` triggers the CSS tile-rise keyframes on the
+          // fresh-session reveal; absent on later mounts (paint final).
+          data-revealed={play ? "true" : undefined}
+          className={cn(
+            "grid grid-cols-1 gap-3",
+            MD_COLS[Math.min(tiles.length, 3)],
+          )}
+        >
+          {tiles}
+        </div>
+      ) : null}
     </section>
   );
 }

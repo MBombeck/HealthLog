@@ -1159,7 +1159,14 @@
     "valueOutOfRangeNoUnit": "Enter a value between {min} and {max}.",
     "lastValue": "Last {value}, {when}",
     "lastValueDeviates": "Quite different from your last reading. Is that right?",
-    "saveAndNext": "Save and next"
+    "saveAndNext": "Save and next",
+    "typeRecoveryScoreWhoop": "WHOOP Recovery",
+    "typeRecoveryScoreOura": "Oura Readiness",
+    "typeRecoveryScorePolar": "Polar Nightly Recharge",
+    "typeRecoveryScoreComputed": "Readiness (HealthLog)",
+    "typeSleepScoreOura": "Oura sleep score",
+    "typeSleepScoreGarmin": "Garmin sleep score",
+    "typeSleepScoreWithings": "Withings sleep score"
   },
   "metricCatalog": {
     "title": "What HealthLog can track",
@@ -3104,7 +3111,6 @@
     "bmiEmptyDescription": "BMI needs your height. Add it under Settings > Account.",
     "bmiEmptyAction": "Open account settings",
     "loadError": "Failed to load insights",
-    "heroPersonalBaseline": "Based on your last 90 days",
     "heroRegenerating": "Regenerating",
     "regenerateAnalysis": "Re-run assessment",
     "regenerateSuccess": "Assessment refreshed",
@@ -3112,10 +3118,6 @@
     "narrativeWeek": "This week",
     "narrativeMonth": "This month",
     "narrativeUpdating": "Updating…",
-    "heroFallbackSubtitle": "A daily read of your trends, drawn straight from the numbers you've logged.",
-    "heroGreetingMorning": "Good morning",
-    "heroGreetingAfternoon": "Good afternoon",
-    "heroGreetingEvening": "Good evening",
     "heroActionAskCoach": "Ask the coach",
     "healthScore": {
       "label": "Health score",
@@ -3897,7 +3899,7 @@
         "recoveryBody": "Recovery reflects how well your body has bounced back, drawing on overnight signals like heart-rate variability and resting heart rate. It is a device-derived proxy read against your own baseline, not a clinical measure, and is not comparable across devices. A strong score is a green light to push; a softer one suggests your system is still rebuilding.",
         "strainBody": "Strain captures how much cardiovascular and physical load you have put on your body, from workouts to an active day on your feet. It is a device-derived index judged against your own typical effort, not a clinical measure, and the headline number is not comparable across devices.",
         "stressBody": "Stress here is a device heuristic derived from heart-rate-variability patterns, not a cortisol measurement or how you consciously feel, and not a clinical stress score. Read it against your own baseline; it is not comparable across devices. A lower score points to a calm, well-regulated state; a higher one is an invitation to build in recovery.",
-        "recoveryPageBody": "Recovery brings together the overnight signals your wearable records (recharge, strain, load and your day's heart-rate and energy totals) to show how well your body has bounced back. Read the pattern across days rather than any single number; a softer reading is an invitation to ease off, not an alarm.",
+        "recoveryPageBody": "What your wearable reports, under its own names.",
         "pulsePressureBody": "Pulse pressure is the gap between your systolic and diastolic readings (systolic minus diastolic). As general guidance, about 40 mmHg is typical at rest; a wide gap above roughly 60 mmHg in middle age can reflect stiffening arteries, while a narrow gap under about 25 mmHg can accompany low stroke volume (StatPearls/NIH 2023). It is a discussion prompt, not a diagnosis.",
         "meanArterialPressureBody": "Mean arterial pressure is the average pressure your organs see across a heartbeat, roughly the diastolic plus a third of the gap to systolic. As general guidance, a resting value sits around 70–100 mmHg (StatPearls/NIH 2023). The often-cited ~60 mmHg floor is an acute-care concept, not a consumer self-alarm.",
         "cycleEducationBody": "Your cycle runs through four phases driven by shifting hormones, and its length and regularity are an accessible window on overall health. As general guidance, adult cycles typically run 21–35 days (clinical references cite 24–38), with bleeding around five days (ACOG 2015). The luteal phase is the steady anchor, so ovulation is best estimated by counting back from your next expected period, never a fixed 'day 14'. A predicted fertile window is an estimate that needs several recorded cycles and stays approximate, and basal body temperature confirms ovulation after the fact rather than predicting it. This is not a contraceptive method.",
@@ -4097,7 +4099,7 @@
       }
     },
     "navWorkouts": "Workouts",
-    "navRecovery": "Recovery",
+    "navRecovery": "Device scores",
     "workouts": {
       "title": "Workouts",
       "description": "Recent runs, rides, walks and strength sessions, deduped across Apple Watch and Withings sources.",
@@ -5115,7 +5117,6 @@
     "recovery": {
       "title": "Recovery",
       "description": "How well your body has bounced back: the recovery, strain and load signals your wearable records overnight.",
-      "scoreCrossLink": "See the composite recovery score",
       "emptyTitle": "No recovery data yet",
       "empty": "This page fills with the recharge, strain and load readings from WHOOP or Polar and with Oura's resilience level.",
       "emptyOuraPermission": "Oura's resilience level needs the stress permission, so reconnect Oura once under Integrations and allow it.",
@@ -5319,7 +5320,6 @@
       "coachPrefill": "I haven’t added any medications yet. What should I know before I start tracking medication compliance here?"
     },
     "scoreHistory": {
-      "healthTitle": "Health score history",
       "healthDescription": "Your Health score day by day, as it was shown on each day.",
       "emptyDescription": "No score was recorded in this range yet.",
       "usualRange": "Shaded: your usual range, {lo} to {hi}.",
@@ -5358,6 +5358,29 @@
         "midday": "midday",
         "evening": "evening"
       }
+    },
+    "scores": {
+      "historyWindow": "{days}-day history",
+      "staleLast": "Last {score} on {date}",
+      "valuesFrom": "Values from {date}",
+      "loadError": "Your scores could not be loaded right now.",
+      "loadingLabel": "Loading your scores",
+      "regionLabel": "Your scores",
+      "bandNote": "Since 1.50, 50 to 69 reads {fair} and below 50 reads {low}.",
+      "loadBand": {
+        "green": "low",
+        "yellow": "moderate",
+        "red": "high"
+      }
+    },
+    "deviceScores": {
+      "title": "Device scores",
+      "description": "What your wearable reports, under its own names.",
+      "valueOfScale": "{value} of {max}",
+      "estimatesTitle": "Estimates from HealthLog",
+      "estimatesSubtitle": "Worked out from your heart data, not reported by a device.",
+      "stress": "Stress (estimate)",
+      "strain": "Strain (estimate)"
     }
   },
   "thresholds": {
@@ -10786,10 +10809,6 @@
       "currentDay": "Day {day} of your cycle",
       "noActiveCycle": "No active cycle yet",
       "viewDetails": "View cycle insights"
-    },
-    "wellnessRing": {
-      "label": "Cycle",
-      "loadError": "Could not load your cycle."
     },
     "disclaimer": "These predictions are descriptive estimates from your logged data, not a contraceptive method and not medical advice. They never indicate that it is safe to have unprotected sex. For contraception or any medical decision, consult a healthcare professional.",
     "title": "Cycle",

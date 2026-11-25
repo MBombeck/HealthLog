@@ -161,7 +161,9 @@ test.describe("score histories", () => {
     await resetRange(page, "scoreHealth");
     const asked = await mockScoreHistory(page);
 
+    // The old address redirects here.
     await page.goto("/insights/health-score");
+    await expect(page).toHaveURL(/\/insights\/scores\/health$/);
     const chart = page.locator('[data-slot="score-trend-chart"]');
     await expect(chart).toHaveAttribute("data-score", "HEALTH_SCORE");
     await expectSharedTabs(page, '[data-slot="score-trend-chart"]', "30");
@@ -204,16 +206,20 @@ test.describe("score histories", () => {
     await resetRange(page, "scoreHealth");
   });
 
-  test("the score panel leads to the health score page and back", async ({
+  test("the Health score ring leads to the health score page and back", async ({
     page,
   }) => {
     await mockPopulatedInsights(page);
     await mockScoreHistory(page);
     await page.goto("/insights");
-    const link = page.locator('[data-slot="health-score-history-link"]');
-    await expect(link).toHaveAttribute("href", "/insights/health-score");
+    const link = page.locator(
+      '[data-slot="wellness-score-tile"][data-metric="HEALTH_SCORE"]',
+    );
+    await expect(link).toHaveAttribute("href", "/insights/scores/health");
     await link.click();
-    await expect(page).toHaveURL(/\/insights\/health-score$/);
+    await expect(page).toHaveURL(/\/insights\/scores\/health$/);
+    // The panel moved here unchanged, above the course.
+    await expect(page.locator('[data-slot="health-score-card"]')).toBeVisible();
     await expect(
       page.locator('[data-slot="health-score-back"]'),
     ).toHaveAttribute("href", "/insights");
@@ -244,17 +250,22 @@ test.describe("score histories", () => {
     await expectSharedTabs(page, '[data-slot="score-trend-chart"]', "30");
   });
 
-  test("recovery and strain carry the same tabs on their stored-score chart", async ({
+  test("stress and strain carry the same tabs on their stored-score chart", async ({
     page,
   }) => {
-    await resetRange(page, "scoreRecovery");
+    await resetRange(page, "scoreStress");
     await mockDerived(page);
 
+    // The retired recovery slug sends the account where its recovery lives:
+    // a device's to Device scores, HealthLog's own to readiness.
     await page.goto("/insights/scores/recovery");
+    await expect(page).toHaveURL(/\/insights\/(scores\/readiness|recovery)$/);
+
+    await page.goto("/insights/scores/stress");
     const chart = '[data-slot="score-history-chart"]';
     await expect(page.locator(chart)).toHaveAttribute(
       "data-type",
-      "RECOVERY_SCORE",
+      "STRESS_SCORE",
     );
     await expectSharedTabs(page, chart, "30");
     // A score history remembers its range, and mounts no overlay dropdown.
@@ -274,7 +285,7 @@ test.describe("score histories", () => {
     expect((await saved).status()).toBe(200);
     await page.reload();
     await expectSharedTabs(page, chart, "7");
-    await resetRange(page, "scoreRecovery");
+    await resetRange(page, "scoreStress");
 
     await page.goto("/insights/scores/strain");
     await expectSharedTabs(page, chart, "30");

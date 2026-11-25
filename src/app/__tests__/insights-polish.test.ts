@@ -92,8 +92,8 @@ describe("v1.4.27 R3d MB4 — the layout mounts the Coach drawer", () => {
     // removed from the overview hero. The Coach is reached via the FAB +
     // bottom-right drawer, so the hero no longer carries onAskCoach/onPickPrompt
     // and the page no longer pulls the launch context.
-    expect(src).not.toMatch(/<HeroStrip[\s\S]*?onAskCoach=\{/);
-    expect(src).not.toMatch(/<HeroStrip[\s\S]*?onPickPrompt=\{/);
+    expect(src).not.toMatch(/<WellnessScores[\s\S]*?onAskCoach=\{/);
+    expect(src).not.toMatch(/<WellnessScores[\s\S]*?onPickPrompt=\{/);
     expect(src).not.toContain("useCoachLaunch");
   });
 
@@ -131,7 +131,7 @@ describe("v1.4.19 A3 — /insights polish", () => {
       /<InsightsTabStrip[\s\S]*?onRegenerate=[\s\S]*?advisor\.regenerate[\s\S]*?\/>/,
     );
     const insightsSrc = load(INSIGHTS_PATH);
-    const heroBlock = insightsSrc.match(/<HeroStrip[\s\S]*?\/>/);
+    const heroBlock = insightsSrc.match(/<WellnessScores[\s\S]*?\/>/);
     expect(heroBlock).not.toBeNull();
     expect(heroBlock?.[0]).not.toContain("onRegenerate");
   });
@@ -299,50 +299,30 @@ describe("v1.16.8 — insights overview cold paint", () => {
     // The reserve holds the column from first paint, so the resolved panel is
     // a swap rather than a push.
     expect(src).toMatch(
-      /scorePending=\{analyticsQuery\.isPending && !analytics\}/,
+      /healthPending=\{analyticsQuery\.isPending && !analytics\}/,
     );
   });
 
-  it("mounts the health score once, in the hero, outside the section registry", () => {
+  it("mounts the health score once, in the score rings, outside the section registry", () => {
     const src = load(INSIGHTS_PATH);
     // An id a saved layout has never seen merges in as default-INVISIBLE, so
     // registering the score would delete it for every customised page. It is
     // also outside the briefing branch, which used to take the whole
-    // breakdown down with the flag.
-    // The JSX mount, not the `<HeroStrip>` mentioned in the file's header
-    // comment — matching the comment would have made the slice below read a
-    // block of prose and pass on nothing.
-    const hero = src.search(/\n\s*<HeroStrip\n/);
-    expect(hero).toBeGreaterThan(-1);
+    // breakdown down with the flag. The JSX mount, not a mention in prose.
+    const head = src.search(/\n\s*<WellnessScores\n/);
+    expect(head).toBeGreaterThan(-1);
     expect(src).not.toMatch(/"health-score":/);
 
-    // Exactly one score surface on the page, and it is the hero's prop.
+    // Exactly one score surface on the page, and it is the head's prop; the
+    // full panel lives on the Health score's own page.
     expect(src.match(/healthScore=\{/g) ?? []).toHaveLength(1);
     expect(src).not.toContain("<HealthScoreCard");
-    expect(src).not.toContain("<HealthScoreCardSkeleton");
+    // The rings are not a section: the old section id renders nothing, so a
+    // layout that hid it cannot hide them.
+    expect(src).toMatch(/"wellness-scores": null,/);
 
-    const briefingBranch = src.slice(
-      src.indexOf('"daily-briefing": flags.briefing'),
-      src.indexOf("vitals: <VitalsDashboard"),
-    );
-    expect(briefingBranch).not.toContain("healthScore");
-    // The band itself is not gated on the briefing flag either.
-    const heroCall = src.slice(hero, src.indexOf("/>", hero));
-    expect(heroCall).toContain("healthScore={analytics?.healthScore ?? null}");
-    expect(heroCall).not.toContain("flags.briefing");
-  });
-
-  it("hero strip owns the one score surface", () => {
-    const heroSrc = readFileSync(
-      join(ROOT, "src/components/insights/hero-strip.tsx"),
-      "utf8",
-    );
-    expect(heroSrc).toContain("<HealthScoreCard");
-    expect(heroSrc).toContain("<HealthScoreCardSkeleton");
-    // The split appears only when the column has something in it.
-    expect(heroSrc).toContain("md:flex-row md:items-stretch");
-    expect(heroSrc).toMatch(
-      /\(healthScore \|\| scorePending\) &&\s*"md:flex-row/,
-    );
+    const headCall = src.slice(head, src.indexOf("/>", head));
+    expect(headCall).toContain("healthScore={analytics?.healthScore ?? null}");
+    expect(headCall).not.toContain("briefing.available");
   });
 });

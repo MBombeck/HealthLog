@@ -226,7 +226,7 @@ test.describe("wellness scores", () => {
   test("every score tile shows its course", async ({ page }) => {
     await mockPopulatedInsights(page);
     await page.goto("/insights");
-    for (const metric of ["RECOVERY_SCORE", "STRESS_SCORE"]) {
+    for (const metric of ["READINESS"]) {
       const tile = page.locator(
         `[data-slot="wellness-score-tile"][data-metric="${metric}"]`,
       );
@@ -242,47 +242,45 @@ test.describe("wellness scores", () => {
   }) => {
     // The e2e account has no nightly score; serve one so the page has a
     // score to draw the history under.
-    await page.route(
-      /\/api\/insights\/derived\?metric=RECOVERY_SCORE/,
-      (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            data: {
-              metric: "RECOVERY_SCORE",
-              status: "ok",
-              value: {
-                score: 66,
-                band: "yellow",
-                trendDelta: 2,
-                daysInWindow: 5,
-                asOf: new Date().toISOString(),
-                series: [58, 61, 64, 60, 66],
-                anchor: null,
-                components: null,
-              },
-              coverage: {
-                requiredInputs: 1,
-                presentInputs: 1,
-                historyDays: 5,
-                missing: [],
-              },
-              confidence: { score: 80, band: "high" },
-              provenance: {
-                inputs: ["RECOVERY_SCORE"],
-                source: "live",
-                windowDays: 14,
-                computedAt: new Date().toISOString(),
-              },
-              reason: null,
-              assessment: null,
+    await page.route(/\/api\/insights\/derived\?metric=STRESS_SCORE/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            metric: "STRESS_SCORE",
+            status: "ok",
+            value: {
+              score: 66,
+              band: "yellow",
+              trendDelta: 2,
+              daysInWindow: 5,
+              asOf: new Date().toISOString(),
+              series: [58, 61, 64, 60, 66],
+              anchor: null,
+              components: null,
             },
-            error: null,
-          }),
+            coverage: {
+              requiredInputs: 1,
+              presentInputs: 1,
+              historyDays: 5,
+              missing: [],
+            },
+            confidence: { score: 80, band: "high" },
+            provenance: {
+              inputs: ["STRESS_SCORE"],
+              source: "live",
+              windowDays: 14,
+              computedAt: new Date().toISOString(),
+            },
+            reason: null,
+            assessment: null,
+          },
+          error: null,
         }),
+      }),
     );
-    await page.goto("/insights/scores/recovery");
+    await page.goto("/insights/scores/stress");
     const anatomy = page.locator('[data-slot="score-anatomy-view"]');
     await expect(anatomy).toBeVisible();
     const history = page.locator('[data-slot="score-history-chart"]');
