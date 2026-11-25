@@ -19,6 +19,7 @@ import {
   invalidateUserProfile,
 } from "@/lib/cache/invalidate";
 import { prisma, toJson } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import {
   getAllEffectiveRanges,
   type ThresholdOverridesJson,
@@ -116,27 +117,33 @@ async function patchNotificationsSettings(
   body: unknown,
 ): Promise<{ settings: unknown; changed: readonly string[] }> {
   const patch = parseManagedRecordSettingsPatch("notifications", body);
-  const current = await prisma.user.findUnique({
-    where: { id: recordId },
-    select: { notificationPrefs: true },
-  });
-  const notificationPreferences = patch.notificationPreferences
-    ? resolveNotificationPrefs(
-        current?.notificationPrefs,
-        patch.notificationPreferences,
-      )
-    : undefined;
-  const record = await prisma.user.update({
-    where: { id: recordId },
-    data: {
-      ...(patch.moodReminderEnabled !== undefined
-        ? { moodReminderEnabled: patch.moodReminderEnabled }
-        : {}),
-      ...(notificationPreferences !== undefined
-        ? { notificationPrefs: toJson(notificationPreferences) }
-        : {}),
-    },
-    select: { moodReminderEnabled: true, notificationPrefs: true },
+  // Merged under the record's row lock, like every partial write to a
+  // settings document here: a guardian's write and one from the profile's own
+  // session that overlap would otherwise both merge into the same stored
+  // document, and the later one would drop the earlier one's change.
+  const record = await withUserRowLock(recordId, async (tx) => {
+    const current = await tx.user.findUnique({
+      where: { id: recordId },
+      select: { notificationPrefs: true },
+    });
+    const notificationPreferences = patch.notificationPreferences
+      ? resolveNotificationPrefs(
+          current?.notificationPrefs,
+          patch.notificationPreferences,
+        )
+      : undefined;
+    return tx.user.update({
+      where: { id: recordId },
+      data: {
+        ...(patch.moodReminderEnabled !== undefined
+          ? { moodReminderEnabled: patch.moodReminderEnabled }
+          : {}),
+        ...(notificationPreferences !== undefined
+          ? { notificationPrefs: toJson(notificationPreferences) }
+          : {}),
+      },
+      select: { moodReminderEnabled: true, notificationPrefs: true },
+    });
   });
   const preferences = parseNotificationPrefs(record.notificationPrefs);
   const settings = {
@@ -150,6 +157,86 @@ async function patchNotificationsSettings(
     },
   };
   return { settings, changed: Object.keys(patch) };
+}
+
+/** The thresholds family: per-metric target ranges, merged by metric. */
+async function patchThresholdsSettings(
+  recordId: string,
+  body: unknown,
+): Promise<{ settings: unknown; changed: readonly string[] }> {
+  const patch = parseManagedRecordSettingsPatch("thresholds", body);
+  const { overrides, record } = await withUserRowLock(recordId, async (tx) => {
+    const current = await tx.user.findUnique({
+      where: { id: recordId },
+      select: { thresholdsJson: true },
+    });
+    const overrides = {
+      ...((current?.thresholdsJson ?? {}) as ThresholdOverridesJson),
+      ...patch.overrides,
+    };
+    const record = await tx.user.update({
+      where: { id: recordId },
+      data: { thresholdsJson: toJson(overrides) },
+      select: { heightCm: true, dateOfBirth: true, gender: true },
+    });
+    return { overrides, record };
+  });
+  invalidateUserProfile(recordId);
+  return {
+    settings: {
+      overrides,
+      effective: getAllEffectiveRanges(record, overrides),
+    },
+    changed: Object.keys(patch.overrides),
+  };
+}
+
+/** The coach family: the Coach switch and the preferences merged into it. */
+async function patchCoachSettings(
+  recordId: string,
+  body: unknown,
+): Promise<{ settings: unknown; changed: readonly string[] }> {
+  const patch = parseManagedRecordSettingsPatch("coach", body);
+  const record = await withUserRowLock(recordId, async (tx) => {
+    const current = await tx.user.findUnique({
+      where: { id: recordId },
+      select: { coachPrefsJson: true },
+    });
+    const nextPreferences = patch.preferences
+      ? { ...parseCoachPrefs(current?.coachPrefsJson), ...patch.preferences }
+      : undefined;
+    return tx.user.update({
+      where: { id: recordId },
+      data: {
+        ...(patch.disableCoach !== undefined
+          ? { disableCoach: patch.disableCoach }
+          : {}),
+        ...(nextPreferences !== undefined
+          ? {
+              coachPrefsJson: toJson(nextPreferences),
+              insightsExcludeMetrics: nextPreferences.excludeMetrics,
+            }
+          : {}),
+      },
+      select: { disableCoach: true, coachPrefsJson: true },
+    });
+  });
+  const preferences = parseCoachPrefs(record.coachPrefsJson);
+  return {
+    settings: {
+      disableCoach: record.disableCoach,
+      preferences: {
+        tone: preferences.tone,
+        verbosity: preferences.verbosity,
+        excludeMetrics: preferences.excludeMetrics,
+        defaultWindow: preferences.defaultWindow,
+        ...(preferences.dataClusters !== undefined
+          ? { dataClusters: preferences.dataClusters }
+          : {}),
+      },
+    },
+    changed: Object.keys(patch),
+  };
 }
 
 /** Each response names the target record and only one field-specific DTO. */
@@ -360,10 +447,6 @@ export const PATCH = apiHandler(
             where: { id: access.recordId },
             select: { modulePreferencesJson: true, gender: true },
           });
-          const modulePreferences = {
-            ...managedModulePreferencesFrom(current?.modulePreferencesJson),
-            ...patch.modulePreferences,
-          };
           // One write path, shared with the setup flow's derivation. The
           // delegated key writes its own column there: an explicit boolean is
           // what the cycle gate honours over the sex-derived default, so a
@@ -371,15 +454,23 @@ export const PATCH = apiHandler(
           // is recorded as the deliberate answer it is.
           const written = await writeRecordModulePreferences({
             recordId: access.recordId,
+            // Merged into what is stored at write time, under the row lock.
             ...(patch.modulePreferences !== undefined
-              ? { modulePreferences }
+              ? {
+                  modulePreferences: (stored: unknown) => ({
+                    ...managedModulePreferencesFrom(stored),
+                    ...patch.modulePreferences,
+                  }),
+                }
               : {}),
             ...(patch.cycleTrackingEnabled !== undefined
               ? { cycleTrackingEnabled: patch.cycleTrackingEnabled }
               : {}),
           });
           settings = {
-            modulePreferences,
+            modulePreferences:
+              written.modulePreferences ??
+              managedModulePreferencesFrom(current?.modulePreferencesJson),
             cycleTrackingEnabled: isCycleEnabled(current?.gender ?? null, {
               cycleTrackingEnabled: written.cycleTrackingEnabled,
             }),
@@ -403,84 +494,35 @@ export const PATCH = apiHandler(
           break;
         }
         case "thresholds": {
-          const patch = parseManagedRecordSettingsPatch("thresholds", body);
-          const current = await prisma.user.findUnique({
-            where: { id: access.recordId },
-            select: { thresholdsJson: true },
-          });
-          const overrides = {
-            ...((current?.thresholdsJson ?? {}) as ThresholdOverridesJson),
-            ...patch.overrides,
-          };
-          const record = await prisma.user.update({
-            where: { id: access.recordId },
-            data: { thresholdsJson: toJson(overrides) },
-            select: { heightCm: true, dateOfBirth: true, gender: true },
-          });
-          invalidateUserProfile(access.recordId);
-          settings = {
-            overrides,
-            effective: getAllEffectiveRanges(record, overrides),
-          };
-          changed = Object.keys(patch.overrides);
+          ({ settings, changed } = await patchThresholdsSettings(
+            access.recordId,
+            body,
+          ));
           break;
         }
         case "coach": {
-          const patch = parseManagedRecordSettingsPatch("coach", body);
-          const current = await prisma.user.findUnique({
-            where: { id: access.recordId },
-            select: { coachPrefsJson: true },
-          });
-          const nextPreferences = patch.preferences
-            ? {
-                ...parseCoachPrefs(current?.coachPrefsJson),
-                ...patch.preferences,
-              }
-            : undefined;
-          const record = await prisma.user.update({
-            where: { id: access.recordId },
-            data: {
-              ...(patch.disableCoach !== undefined
-                ? { disableCoach: patch.disableCoach }
-                : {}),
-              ...(nextPreferences !== undefined
-                ? {
-                    coachPrefsJson: toJson(nextPreferences),
-                    insightsExcludeMetrics: nextPreferences.excludeMetrics,
-                  }
-                : {}),
-            },
-            select: { disableCoach: true, coachPrefsJson: true },
-          });
-          const preferences = parseCoachPrefs(record.coachPrefsJson);
-          settings = {
-            disableCoach: record.disableCoach,
-            preferences: {
-              tone: preferences.tone,
-              verbosity: preferences.verbosity,
-              excludeMetrics: preferences.excludeMetrics,
-              defaultWindow: preferences.defaultWindow,
-              ...(preferences.dataClusters !== undefined
-                ? { dataClusters: preferences.dataClusters }
-                : {}),
-            },
-          };
-          changed = Object.keys(patch);
+          ({ settings, changed } = await patchCoachSettings(
+            access.recordId,
+            body,
+          ));
           break;
         }
         case "insights": {
           const patch = parseManagedRecordSettingsPatch("insights", body);
-          const current = await prisma.user.findUnique({
-            where: { id: access.recordId },
-            select: { insightsLayoutJson: true },
-          });
-          const layout = serializeInsightsLayout(
-            patch.layout,
-            resolveInsightsLayout(current?.insightsLayoutJson),
-          );
-          await prisma.user.update({
-            where: { id: access.recordId },
-            data: { insightsLayoutJson: toJson(layout) },
+          const layout = await withUserRowLock(access.recordId, async (tx) => {
+            const current = await tx.user.findUnique({
+              where: { id: access.recordId },
+              select: { insightsLayoutJson: true },
+            });
+            const layout = serializeInsightsLayout(
+              patch.layout,
+              resolveInsightsLayout(current?.insightsLayoutJson),
+            );
+            await tx.user.update({
+              where: { id: access.recordId },
+              data: { insightsLayoutJson: toJson(layout) },
+            });
+            return layout;
           });
           invalidateUserInsightsLayout(access.recordId);
           settings = { layout };

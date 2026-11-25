@@ -5,7 +5,9 @@ name: Edge image
 # (docs/contributing/release-policy.md), and `:edge` is how a fix can be
 # checked before it is released. It is not a release: no `:latest`, no
 # semver tags, no signature, no promotion. Release images come from
-# docker-publish.yml on a `v*` tag.
+# docker-publish.yml on a `v*` tag, `:nightly` (the next minor) from
+# nightly-image.yml. NEXT_PUBLIC_APP_CHANNEL is what /api/version reports as
+# `channel` from 1.50.0 on; an older Dockerfile ignores the build-arg.
 on:
   push:
     branches: [main]
@@ -105,6 +107,7 @@ jobs:
             NEXT_PUBLIC_APP_VERSION=${{ steps.provenance.outputs.version }}
             NEXT_PUBLIC_APP_BUILD_SHA=${{ steps.provenance.outputs.build_sha }}
             NEXT_PUBLIC_APP_BUILT_AT=${{ steps.provenance.outputs.built_at }}
+            NEXT_PUBLIC_APP_CHANNEL=edge
             OS_PACKAGES_REFRESH=${{ github.run_id }}-${{ github.run_attempt }}
           cache-from: type=gha,scope=build-amd64-main
           cache-to: type=gha,mode=max,scope=build-amd64-main

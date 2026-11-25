@@ -17,6 +17,7 @@ import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { prisma, toJson } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import {
   DOCUMENTS_LAYOUT_ARRANGEMENTS,
   DOCUMENTS_LAYOUT_VIEWS,
@@ -77,19 +78,29 @@ export const PUT = apiHandler(async (request: Request) => {
   // Preserve-when-absent: one stored read fills whichever field the body
   // left out. Only fields the user has chosen are written, so a field never
   // picked keeps following the default (which can change between releases).
-  const choices = {
-    ...storedDocumentsLayoutChoices(await readStoredLayout(user.id)),
-    ...(parsed.data.view ? { view: parsed.data.view } : {}),
-    ...(parsed.data.arrangement
-      ? { arrangement: parsed.data.arrangement }
-      : {}),
-  };
-  const next: DocumentsLayout = resolveDocumentsLayout(choices);
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { documentsLayoutJson: toJson({ version: 1, ...choices }) },
+  //
+  // Under a row lock: the view switch and the arrangement switch are separate
+  // writes, and two that overlap (two tabs) would otherwise both read the
+  // same stored layout, so the later write dropped the earlier one's field.
+  const choices = await withUserRowLock(user.id, async (tx) => {
+    const row = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { documentsLayoutJson: true },
+    });
+    const merged = {
+      ...storedDocumentsLayoutChoices(row?.documentsLayoutJson ?? null),
+      ...(parsed.data.view ? { view: parsed.data.view } : {}),
+      ...(parsed.data.arrangement
+        ? { arrangement: parsed.data.arrangement }
+        : {}),
+    };
+    await tx.user.update({
+      where: { id: user.id },
+      data: { documentsLayoutJson: toJson({ version: 1, ...merged }) },
+    });
+    return merged;
   });
+  const next: DocumentsLayout = resolveDocumentsLayout(choices);
 
   annotate({
     action: { name: "documents.layout.update" },

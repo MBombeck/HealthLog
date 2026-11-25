@@ -143,10 +143,43 @@ function pinnedOperatorApprovedLookup(
  * vetted lookup.
  */
 let cachedPublic: Agent | null = null;
+let cachedPublicKeepAlive: Agent | null = null;
 let cachedOperatorApproved: Agent | null = null;
 
-function createPinnedDispatcher(policy: AddressPolicy): Agent {
+/**
+ * Idle time the long-lived dispatcher keeps a connection open.
+ *
+ * undici closes an idle connection (an HTTP/1.1 socket or an HTTP/2
+ * session alike) after 4 s unless the server sends a `Keep-Alive` hint,
+ * and the push relay sends none. A push that follows the previous one by
+ * more than 4 s then paid DNS, TCP and TLS again: two extra round trips,
+ * around half a second from an instance on the far side of the world.
+ *
+ * 55 s covers a reminder wave, its retries and a run of Live Activity
+ * updates, and stays below the relay's 60 s server idle timeout and the
+ * 60 s default of the common load balancers, so the client always closes
+ * first. A server that closes first can race a request onto a socket it is
+ * tearing down, and that request fails as a transport error.
+ */
+export const KEEP_ALIVE_IDLE_MS = 55_000;
+
+function createPinnedDispatcher(
+  policy: AddressPolicy,
+  keepAliveMs?: number,
+): Agent {
   return new Agent({
+    ...(keepAliveMs !== undefined
+      ? {
+          keepAliveTimeout: keepAliveMs,
+          // Caps a server `Keep-Alive: timeout=` hint at the same value,
+          // so no hint can hold the connection past the server's own limit.
+          keepAliveMaxTimeout: keepAliveMs,
+          // HTTP/2 when the server offers it in ALPN (undici's default,
+          // stated here because the long-lived connection relies on it):
+          // concurrent sends share one session instead of queueing.
+          allowH2: true,
+        }
+      : {}),
     // #1267 — undici's own 300 s header and body timers would cut a call the
     // caller allowed longer: a local model with a 600 s response timeout
     // answers a non-streamed completion only when it is done, so its headers
@@ -178,6 +211,21 @@ export function getPinnedPublicDispatcher(): Agent {
 }
 
 /**
+ * The public pinned dispatcher with a long idle keep-alive
+ * (`KEEP_ALIVE_IDLE_MS`), for a caller that talks to one fixed origin again
+ * and again: the push relay. Same lookup pin, same timers; only the idle
+ * lifetime of a connection differs. Every other destination keeps the
+ * default dispatcher, so no other host holds a socket open for a minute.
+ */
+export function getPinnedPublicKeepAliveDispatcher(): Agent {
+  cachedPublicKeepAlive ??= createPinnedDispatcher(
+    "public",
+    KEEP_ALIVE_IDLE_MS,
+  );
+  return cachedPublicKeepAlive;
+}
+
+/**
  * Pinned dispatcher for an exact operator-approved origin.
  *
  * Private addresses are permitted only after an exact-origin policy
@@ -200,7 +248,9 @@ export function getPinnedOperatorApprovedDispatcher(): Agent {
  */
 export function _resetPinnedDispatcherForTests(): void {
   cachedPublic?.destroy().catch(() => {});
+  cachedPublicKeepAlive?.destroy().catch(() => {});
   cachedOperatorApproved?.destroy().catch(() => {});
   cachedPublic = null;
+  cachedPublicKeepAlive = null;
   cachedOperatorApproved = null;
 }

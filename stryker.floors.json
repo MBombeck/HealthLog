@@ -7,7 +7,7 @@
     },
     "compliance": {
       "paths": ["src/lib/analytics/compliance/"],
-      "floor": 65
+      "floor": 66
     },
     "rollups": {
       "paths": ["src/lib/rollups/"],
@@ -54,6 +54,7 @@
         "src/lib/export/relation-links-backup-schema.ts",
         "src/lib/export/reminders-backup-schema.ts",
         "src/lib/export/sensitive-backup-schema.ts",
+        "src/lib/export/seizures-backup-schema.ts",
         "src/lib/export/symptoms-backup-schema.ts",
         "src/lib/export/vaccinations-backup-schema.ts",
         "src/lib/export/visits-backup-schema.ts",
@@ -61,7 +62,30 @@
         "src/lib/export/backup-schema-kit.ts",
         "src/lib/cycle/backup-schema.ts"
       ],
-      "floor": 53
+      "floor": 54
+    },
+    "medication-scheduling": {
+      "paths": ["src/lib/medications/scheduling/"],
+      "floor": 56
+    },
+    "auth-primitives": {
+      "paths": ["src/lib/auth/hmac.ts", "src/lib/auth/oidc-native-handoff.ts"],
+      "floor": 86
+    },
+    "egress": {
+      "paths": [
+        "src/lib/validations/notifications.ts",
+        "src/lib/safe-fetch.ts"
+      ],
+      "floor": 64
+    },
+    "push-relay-wire": {
+      "paths": [
+        "src/lib/push-relay/encoding.ts",
+        "src/lib/push-relay/envelope.ts",
+        "src/lib/push-relay/hpke.ts"
+      ],
+      "floor": 66
     }
   }
 }

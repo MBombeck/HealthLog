@@ -1,9 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 
-import {
-  shouldEmitSecureCookie,
-  detectInsecureCookieTransport,
-} from "../secure-cookie";
+import { detectInsecureCookieTransport } from "../cookie-transport-warning";
+import { shouldEmitSecureCookie } from "../secure-cookie";
 
 function req(headers: Record<string, string>, url = "http://10.0.0.5:3000/x") {
   return { headers: new Headers(headers), url };
