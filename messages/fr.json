@@ -4723,6 +4723,11 @@
           "green": "bon",
           "yellow": "moyen",
           "red": "faible"
+        },
+        "loadBand": {
+          "green": "faible",
+          "yellow": "moyen",
+          "red": "élevé"
         }
       },
       "provenance": {

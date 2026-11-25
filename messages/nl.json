@@ -4723,6 +4723,11 @@
           "green": "goed",
           "yellow": "redelijk",
           "red": "laag"
+        },
+        "loadBand": {
+          "green": "laag",
+          "yellow": "gemiddeld",
+          "red": "hoog"
         }
       },
       "provenance": {

@@ -41,7 +41,7 @@ import {
 } from "@/lib/rollups/measurement-coverage";
 import { computeMoodStability } from "@/lib/insights/mood-aggregates";
 import { MS_PER_DAY } from "@/lib/time-constants";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   buildInsufficient,
   buildOk,
@@ -284,9 +284,9 @@ export interface ReadinessOpts {
   coverage?: RollupCoverageMap;
   /**
    * IANA timezone the "same day" grouping is keyed in, so a 23:30-local
-   * reading lands on the correct readiness day. Defaults to `Europe/Berlin`
-   * (the canonical tenant zone) when the caller has not resolved the user's
-   * zone.
+   * reading lands on the correct readiness day. Omitted, the account's
+   * stored zone is resolved (the production path), the same resolver the
+   * sleep score uses; never a fixed zone.
    */
   tz?: string;
 }
@@ -302,7 +302,7 @@ export async function computeReadiness(
 ): Promise<Derived<ReadinessValue>> {
   const windowDays = opts.windowDays ?? DEFAULT_WINDOW_DAYS;
   const now = opts.now ?? new Date();
-  const tz = opts.tz ?? DEFAULT_TIMEZONE;
+  const tz = opts.tz ?? (await resolveUserTimezone(userId));
   const computedAt = nowProvenanceTimestamp(now);
   const coverage = opts.coverage ?? (await probeRollupCoverage(userId));
 
@@ -350,7 +350,11 @@ export async function computeReadiness(
 
   // Sleep adequacy — folds the Sleep Score in (stubbed behind coverage:
   // null when there is no scorable night, dropping the component).
-  const sleep = await computeSleepScore(userId, profile, { windowDays, now });
+  const sleep = await computeSleepScore(userId, profile, {
+    windowDays,
+    now,
+    tz,
+  });
   const sleepValue = sleep.status === "ok" ? sleep.value.score : null;
   const sleepHistoryDays =
     sleep.status === "ok" ? sleep.coverage.historyDays : 0;
