@@ -11,21 +11,17 @@
  * at its top; a key the filter drops would leave a relay push without a
  * source to build the link from.
  */
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
 import { describe, expect, it } from "vitest";
 
 import { pickIosMetadata } from "@/lib/notifications/senders/ios-metadata";
 import { SERVER_FEATURE_DOCS } from "@/lib/server-features";
 import { STALL_SOURCES, stallTapUrl } from "@/lib/sync-stall/notice";
 
-const PANEL = readFileSync(
-  path.join(
-    process.cwd(),
-    "src/components/settings/integrations/connections-panel.tsx",
-  ),
-  "utf8",
+import { readSource } from "./helpers/source-files";
+
+const PANEL = readSource(
+  "src/components/settings/integrations/connections-panel.tsx",
+  'data-slot="connections-panel"',
 );
 
 describe("SYNC_STALLED deep links", () => {

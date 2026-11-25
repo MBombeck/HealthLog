@@ -36,7 +36,7 @@ import {
   type RelayHealth,
 } from "@/lib/push-relay/capability";
 import { liveActivityRelayEnabled, relayConfig } from "@/lib/push-relay/config";
-import { laStartTokenUsable } from "@/lib/push-relay/live-activity";
+import { laStartTokenUsable } from "@/lib/push-relay/live-activity-start-token";
 import { LA_START_EVENT } from "@/lib/push-relay/live-activity-settle";
 import { relayStateAt } from "@/lib/push-relay/relay-state";
 import { loadRegistration } from "@/lib/push-relay/registration";

@@ -68,6 +68,10 @@ import {
   STARTABLE_MEDICATION_WHERE,
 } from "@/lib/push-relay/activity-slot";
 import { liveActivityRelayEnabled } from "@/lib/push-relay/config";
+import {
+  laStartTokenUsable,
+  statementIat,
+} from "@/lib/push-relay/live-activity-start-token";
 import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
 import { fromBase64Url } from "@/lib/push-relay/encoding";
 import { newUlid } from "@/lib/push-relay/plaintext";
@@ -120,30 +124,7 @@ import {
  * state comes from the resolver.
  */
 export const ACTIVITY_LEAD_MS = 2 * 3600_000;
-/** Statement windows the relay applies, less five minutes of margin. */
-const START_STATEMENT_MAX_AGE_S = 30 * 24 * 3600 - 300;
-
-/**
- * Whether the device holds a push-to-start token the relay still takes: the
- * token, its signature, and a statement young enough. The start reads it, and
- * so does the admin diagnostic's Live Activity line, so the two never differ.
- */
-export function laStartTokenUsable(
-  device: {
-    laStartToken: string | null;
-    laStartSignature: string | null;
-    laStartStatement: unknown;
-  },
-  now: Date,
-): boolean {
-  const iat = statementIat(device.laStartStatement);
-  return (
-    !!device.laStartToken &&
-    !!device.laStartSignature &&
-    iat !== null &&
-    Math.floor(now.getTime() / 1000) - iat <= START_STATEMENT_MAX_AGE_S
-  );
-}
+/** The relay's window for an Activity statement, less five minutes of margin. */
 const ACTIVITY_STATEMENT_MAX_AGE_S = 12 * 3600 - 300;
 /** A start or update is worth nothing late. */
 const PUSH_LIFETIME_S = 15 * 60;
@@ -180,11 +161,6 @@ const DEVICE_SELECT = {
 } as const;
 
 type LaDevice = Prisma.DeviceGetPayload<{ select: typeof DEVICE_SELECT }>;
-
-function statementIat(statement: unknown): number | null {
-  const iat = (statement as { iat?: unknown } | null)?.iat;
-  return typeof iat === "number" ? iat : null;
-}
 
 /** Whether `device` may get a relay start or update now. */
 export function laRelayEligible(
