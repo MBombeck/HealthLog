@@ -19,7 +19,18 @@
  *    `allow` list names with a reason (and an allow entry that no longer
  *    matches anything fails, so the list cannot outlive its cause);
  * 4. a page's title is its rail entry's label, in every locale;
- * 5. no message uses a spelling the glossary's `spelling` block retires.
+ * 5. no message uses a spelling the glossary's `spelling` block retires;
+ * 6. every `item` form is anchored at least once (or the concept says why it
+ *    cannot be), and every term occurs in its locale's bundle;
+ * 7. a timeline lane is labelled with its concept's name.
+ *
+ * Rule 6 exists because an item form nothing checked drifted unseen: the
+ * Korean illness item was 아픈 기간 while every illness message said
+ * 에피소드, and the guard stayed green because the item had no anchor and
+ * the loanword was not on the Korean retired list. A term the bundle never
+ * uses is the same gap from the other side. Rule 7 exists because the Korean
+ * medications lane carried the item 약 where every other lane carries its
+ * area's name.
  *
  * A forbidden entry with `keys` holds only under that key prefix: "Eintrag"
  * is the right word for a mood entry and the wrong one for an illness
@@ -57,6 +68,7 @@ interface Concept {
     match: "exact" | "contains";
   }>;
   forbidden: Record<string, Forbidden[]>;
+  itemUnanchored?: string;
 }
 
 interface Allow {
@@ -176,6 +188,38 @@ describe("glossary", () => {
       }
     }
     expect(clashes).toEqual([]);
+  });
+
+  it("anchors every item form, or says why it cannot", () => {
+    const loose = CONCEPTS.filter(
+      (c) =>
+        c.terms.en.item &&
+        !c.anchors.some((a) => a.form === "item") &&
+        (c.itemUnanchored ?? "").length < 20,
+    ).map((c) => c.id);
+    expect(loose).toEqual([]);
+    const needless = CONCEPTS.filter(
+      (c) => c.itemUnanchored && c.anchors.some((a) => a.form === "item"),
+    ).map((c) => c.id);
+    expect(needless).toEqual([]);
+  });
+
+  it.each(locales)("%s: every term occurs in the bundle", (locale) => {
+    const messages = [...bundles.get(locale)!.values()].map((m) =>
+      m.toLocaleLowerCase(locale),
+    );
+    const unused: string[] = [];
+    for (const concept of CONCEPTS) {
+      for (const form of ["name", "item"] as const) {
+        const term = concept.terms[locale]?.[form];
+        if (!term) continue;
+        const needle = term.toLocaleLowerCase(locale);
+        if (!messages.some((m) => m.includes(needle))) {
+          unused.push(`${concept.id}.${form} "${term}"`);
+        }
+      }
+    }
+    expect(unused).toEqual([]);
   });
 
   it.each(locales)("%s: every anchor carries its term", (locale) => {
@@ -366,5 +410,42 @@ describe("a page is titled what its rail entry says", () => {
       }
     }
     expect(mismatches).toEqual([]);
+  });
+});
+
+/**
+ * Timeline lanes that name no glossary concept, and why. Every other lane is
+ * labelled with its concept's `name`, like a rail entry.
+ */
+const LANES_WITHOUT_CONCEPT: Record<string, string> = {
+  life: "Life events have no area of their own to name.",
+  allergies: "Allergies live in the medical history, not an area.",
+  visits: "The lane holds visits and procedures, wider than the visit term.",
+  seizures: "The lane plots single seizures, not the seizure diary area.",
+};
+
+describe("a timeline lane is named like its area", () => {
+  it("anchors every lane by name, or says why not", () => {
+    const lanes = [...bundles.get("en")!.keys()]
+      .filter((k) => k.startsWith("timeline.lanes."))
+      .map((k) => k.slice("timeline.lanes.".length));
+    expect(lanes.length).toBeGreaterThan(5);
+    const anchored = new Set(
+      CONCEPTS.flatMap((c) =>
+        c.anchors
+          .filter((a) => a.form === "name" && a.match === "exact")
+          .map((a) => a.key),
+      ),
+    );
+    const loose = lanes.filter(
+      (lane) =>
+        !anchored.has(`timeline.lanes.${lane}`) &&
+        !(lane in LANES_WITHOUT_CONCEPT),
+    );
+    expect(loose).toEqual([]);
+    const stale = Object.keys(LANES_WITHOUT_CONCEPT).filter(
+      (lane) => !lanes.includes(lane) || anchored.has(`timeline.lanes.${lane}`),
+    );
+    expect(stale).toEqual([]);
   });
 });
