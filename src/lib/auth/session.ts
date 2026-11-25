@@ -17,6 +17,7 @@ import {
   readSessionCookie,
   sessionCookieName,
 } from "@/lib/auth/session-cookie";
+import * as transport from "@/lib/auth/token-transport";
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -238,6 +239,8 @@ const ONBOARDING_COOKIE = "hl_onboarding";
 export async function setOnboardingPendingCookie(
   pending: boolean,
 ): Promise<void> {
+  // A browser hint: never on the token transport (`token-transport.ts`).
+  if (await transport.requestUsesTokenTransport()) return;
   const cookieStore = await cookies();
   if (pending) {
     cookieStore.set(ONBOARDING_COOKIE, "pending", {
@@ -276,7 +279,11 @@ export async function createSession(
   // `requireFreshMfa` reads it for step-up freshness; a null value means
   // "single-factor session" and never satisfies step-up.
   mfaVerifiedAt?: Date | null,
-): Promise<string> {
+): Promise<string | null> {
+  // Browsers only. A token client keeps any cookie it is sent and replays it
+  // past its own sign-out, so on the token transport nothing is written,
+  // whichever route asked: the floor beneath the routes' own branch.
+  if (await transport.requestUsesTokenTransport()) return null;
   // The secret is the cookie; the row id stays an internal identifier and is
   // never handed to the client.
   const secret = mintSessionSecret();
@@ -311,6 +318,9 @@ export async function getSession(): Promise<{
   };
   user: SessionUser;
 } | null> {
+  // The Bearer decides: beside one the cookie is not read, slid or re-issued
+  // (it may be another account's). Only `cookie-identity-conflict.ts` looks.
+  if (await transport.requestCarriesBearer()) return null;
   const cookieStore = await cookies();
   const carried = readSessionCookie(cookieStore);
   if (!carried) return null;

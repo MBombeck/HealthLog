@@ -36,6 +36,13 @@ import { cookieJar } from "../integration/mock-next-headers";
 let counter = 0;
 
 /** A short unique suffix, so fixtures never collide on a unique column. */
+
+/** The id `createSession` returns for a browser, which these cases are. */
+function sessionIdOf(id: string | null): string {
+  if (id === null) throw new Error("createSession withheld a browser session");
+  return id;
+}
+
 export function uniqueSuffix(): string {
   counter += 1;
   return `${counter.toString(36)}${randomBytes(3).toString("hex")}`;
@@ -85,12 +92,14 @@ export async function makeSession(
   options: { mfaVerifiedAt?: Date | null } = {},
 ): Promise<SessionFixture> {
   const before = new Map(cookieJar);
-  const sessionId = await createSession(
-    user.id,
-    false,
-    "203.0.113.10",
-    "healthlog-kit",
-    options.mfaVerifiedAt ?? null,
+  const sessionId = sessionIdOf(
+    await createSession(
+      user.id,
+      false,
+      "203.0.113.10",
+      "healthlog-kit",
+      options.mfaVerifiedAt ?? null,
+    ),
   );
   const cookie = cookieJar.get(sessionCookieName());
   cookieJar.clear();

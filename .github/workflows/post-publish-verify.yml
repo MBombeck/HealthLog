@@ -115,6 +115,40 @@ jobs:
           echo "Pulling immutable image $DIGEST_REF"
           docker pull "$DIGEST_REF"
 
+      # The SBOM BuildKit attached to each platform image lists the npm
+      # packages it found on disk. Every one of them must be in the licence
+      # bundles the same build wrote (THIRD_PARTY_NOTICES.md), or the image
+      # ships code without its licence text.
+      - name: Check out the licence script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/third-party-notices.mjs
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Check the SBOM against the shipped licence bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIGEST_REF="${IMAGE_REF}@${IMAGE_DIGEST}"
+          for platform in linux/amd64 linux/arm64; do
+            dir="/tmp/licences/${platform//\//-}"
+            mkdir -p "$dir"
+            docker buildx imagetools inspect "$DIGEST_REF" \
+              --format "{{ json (index .SBOM \"$platform\").SPDX }}" > "$dir/sbom.json"
+            cid="$(docker create --platform "$platform" "$DIGEST_REF")"
+            docker cp "$cid:/app/THIRD_PARTY_LICENSES.txt" "$dir/app.txt"
+            docker cp "$cid:/opt/prisma-cli/THIRD_PARTY_LICENSES.txt" "$dir/prisma-cli.txt"
+            docker rm "$cid" > /dev/null
+            echo "== $platform"
+            node scripts/third-party-notices.mjs --sbom "$dir/sbom.json" \
+              --inventory "$dir/app.txt" --inventory "$dir/prisma-cli.txt"
+          done
+
       - name: Run migrations
         run: |
           DIGEST_REF="${IMAGE_REF}@${IMAGE_DIGEST}"

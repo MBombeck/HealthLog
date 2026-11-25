@@ -9,7 +9,8 @@
  *
  *   - **baseline** = the `computeVitalsBaseline` band for
  *     `HEART_RATE_VARIABILITY` (median ± k·MAD over the window, DAY-native).
- *   - **recentAvg** = mean of the last ≤ 7 DAY means.
+ *   - **recentAvg** = mean of the DAY means of the trailing 7 days before
+ *     `now` (the window the dashboard's 7-day mean covers).
  *   - **band** — recentAvg inside the baseline band → Balanced (green);
  *     above the band → Unbalanced-high (yellow); below the band's low edge →
  *     Low (red). The Low edge is the one that matters clinically (suppressed
@@ -43,13 +44,15 @@ import {
   computeVitalsBaseline,
   readDayMeanSeries,
   type BaselineProfile,
+  type DayMeanPoint,
 } from "./baseline";
+import { dateOnlyKey } from "@/lib/tz/date-only";
 import { isDerivedOk, SPARKLINE_MAX_POINTS } from "./types";
 import type { Derived } from "./types";
 
 const HRV_TYPE: MeasurementType = "HEART_RATE_VARIABILITY";
 
-/** The recent trend rides the last ≤ this many DAY means. */
+/** The recent trend rides the DAY means of this many trailing days. */
 const RECENT_TREND_DAYS = 7;
 
 /** Personal-trend balance placement. */
@@ -57,7 +60,7 @@ export type HrvBalanceBand = "balanced" | "unbalanced" | "low";
 
 /** The successful `value` payload for the HRV (SDNN) balance card. */
 export interface HrvBalanceValue {
-  /** The recent (≤ 7-day) SDNN average (ms). */
+  /** The SDNN average over the trailing 7 days (ms). */
   recentAvg: number;
   /** Personal-baseline center (median of DAY means, ms). */
   baselineCenter: number;
@@ -90,6 +93,22 @@ export function placeHrvBalance(
   if (recentAvg < low) return "low";
   if (recentAvg > high) return "unbalanced";
   return "balanced";
+}
+
+/**
+ * The day means inside the trailing `RECENT_TREND_DAYS` before `now`. Days
+ * are the UTC days the series is keyed on. The day the window opens in is
+ * only partly inside it and is left out, so the window spans seven whole or
+ * running days. Pure, exported for the unit test.
+ */
+export function recentTrendPoints(
+  points: readonly DayMeanPoint[],
+  now: Date,
+): DayMeanPoint[] {
+  const opensOn = dateOnlyKey(
+    new Date(now.getTime() - RECENT_TREND_DAYS * 24 * 60 * 60 * 1000),
+  );
+  return points.filter((p) => p.day > opensOn);
 }
 
 /**
@@ -127,16 +146,16 @@ export async function computeHrvBalance(
     });
   }
 
-  // The recent average is the mean of the last ≤ 7 DAY means — the RECENT
-  // TREND, placed against the longer-window personal band. Reading the band
-  // center here (the previous behaviour) made `recentAvg` identical to the
-  // band midpoint by construction, so it could never fall outside the band:
-  // the "low" / "unbalanced" arms were dead and the card always read
-  // "balanced". The recent-trend mean can drift below the band's low edge
-  // (suppressed HRV) or above its high edge, which is the whole point of a
-  // trend-vs-baseline placement. Falls back to the band center only when the
-  // recent series is somehow empty (the baseline being `ok` already implies
-  // ≥ 7 backing days, so this is defensive).
+  // The recent average is the mean of the DAY means of the trailing seven
+  // days — the RECENT TREND, placed against the longer-window personal band.
+  // Reading the band center here (an earlier behaviour) made `recentAvg`
+  // identical to the band midpoint by construction, so the "low" /
+  // "unbalanced" arms were dead. The window is anchored on `now`, not on the
+  // newest data: the last seven day means of the series reached back as far
+  // as the data did, so after a week without a sync the tile placed a
+  // fortnight-old average and printed it next to a dashboard whose 7-day mean
+  // covered only the readings of the past week. With no reading in the
+  // trailing week the placement falls back to the band center.
   const recent = await readDayMeanSeries(
     userId,
     HRV_TYPE,
@@ -144,7 +163,7 @@ export async function computeHrvBalance(
     now,
     coverageMap,
   );
-  const recentPoints = recent.points.slice(-RECENT_TREND_DAYS);
+  const recentPoints = recentTrendPoints(recent.points, now);
   const recentAvg =
     recentPoints.length > 0
       ? recentPoints.reduce((s, p) => s + p.mean, 0) / recentPoints.length

@@ -878,6 +878,8 @@ access to the GHCR package.
 From v1.49.0 on, the GitHub release carries the same facts as files you
 can check without asking the registry; see
 [Verify a release from its assets](#verify-a-release-from-its-assets).
+From v1.49.1 on, the index also carries signed SLSA Build L3 provenance;
+see [Verify the image provenance](#verify-the-image-provenance).
 
 ### Prefer digest-pinned deploys
 
@@ -1077,6 +1079,53 @@ reference (or set `HEALTHLOG_IMAGE_REF=@sha256:<index>`) and you run
 exactly the image the release describes. Releases before v1.49.0 have no
 assets; their image signature is checked with `cosign verify` alone, as
 above.
+
+### Verify the image provenance
+
+From v1.49.1 on, the image index itself carries SLSA v1 build provenance
+at Build L3. The reusable workflow `image-provenance.yml` signs it with
+`actions/attest-build-provenance`, so the signing certificate names that
+file, not `docker-publish.yml`. The build jobs, which run the Dockerfile,
+hold no OIDC token, and a tag build neither reads nor writes the shared
+build cache. The attestation is stored in the repository's attestations
+and, as a Sigstore bundle, in the registry next to the index.
+
+Check it with the GitHub CLI or with cosign 3. The repository name is
+case-sensitive in both: `MBombeck/HealthLog`.
+
+```sh
+TAG=v1.49.1
+DIGEST=sha256:<index>   # from healthlog-$TAG-image.txt or `imagetools inspect`
+
+# From the attestations API (add --bundle-from-oci to read the registry copy).
+gh attestation verify "oci://ghcr.io/mbombeck/healthlog@$DIGEST" \
+  --owner MBombeck \
+  --signer-workflow MBombeck/HealthLog/.github/workflows/image-provenance.yml \
+  --source-ref "refs/tags/$TAG"
+
+# From the registry.
+cosign verify-attestation "ghcr.io/mbombeck/healthlog@$DIGEST" \
+  --type slsaprovenance1 \
+  --certificate-identity-regexp '^https://github\.com/MBombeck/HealthLog/\.github/workflows/image-provenance\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-github-workflow-repository MBombeck/HealthLog > /dev/null
+```
+
+The `image-provenance` job runs the `gh` check itself right after signing,
+from both sources, and fails the run if either does not verify.
+
+The provenance names the index digest, the identity the release signs and
+lists in its manifest; the `amd64` and `arm64` manifests are pinned by
+digest inside that index. Verify the index, not a platform digest: `gh` and
+cosign find no attestation for the platform manifests.
+
+BuildKit's own provenance (`mode=max`) and SBOM still travel inside the
+index as unsigned attestation manifests
+(`docker buildx imagetools inspect ghcr.io/mbombeck/healthlog:<tag> --format '{{ json .Provenance }}'`).
+They describe the build in detail but prove nothing on their own; the
+signed statement above is the one to check. Releases up to v1.49.0 carry
+only the unsigned BuildKit provenance (`mode=min`) on the image; their
+signed provenance is the release-manifest file above.
 
 ## Deploy-status webhook: replay protection
 

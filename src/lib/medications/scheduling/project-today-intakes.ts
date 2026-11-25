@@ -6,6 +6,9 @@
  *   - `/api/medications/intake?scope=today` (web + iOS Erfassen sheet)
  *   - `/api/dashboard/summary`              (iOS Dashboard tile)
  *
+ * and for the server's own consumers ahead of any read
+ * ({@link projectUpcomingIntakes}, the Live Activity pass).
+ *
  * Pre-v1.4.41 both routes carried their own copy of the projection +
  * idempotent `createMany` + per-`(med, day)` compliance recompute. The
  * two implementations grew apart twice; this helper folds them into
@@ -26,13 +29,15 @@
  * Returns the counts so the caller can surface them on `annotate(...)`.
  */
 import { prisma } from "@/lib/db";
+import { pendingDeletionOf } from "@/lib/account-deletion/pending";
+import { isModuleEnabled } from "@/lib/modules/gate";
 import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 import {
   buildCanonicalSchedule,
   buildRecurrenceContext,
   scheduleEmitsInWindow,
 } from "@/lib/medications/scheduling/worker-helpers";
-import { localHmAsUtc } from "@/lib/tz/local-day";
+import { getUserTodayBounds, localHmAsUtc } from "@/lib/tz/local-day";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import {
   isBeforeLiveEra,
@@ -54,8 +59,12 @@ export interface ProjectTodayIntakesResult {
 interface ProjectTodayInput {
   userId: string;
   userTz: string;
+  /** Start of one local day. */
   todayStart: Date;
+  /** End of the same local day, exclusive. */
   todayEnd: Date;
+  /** Project only the slots up to this instant. Absent: the whole day. */
+  until?: Date;
 }
 
 /**
@@ -75,6 +84,7 @@ export function projectTodayIntakesAndRecompute(
     input.userTz,
     input.todayStart.toISOString(),
     input.todayEnd.toISOString(),
+    input.until?.toISOString() ?? "",
   ].join("|");
   const running = inFlight.get(key);
   if (running) return running;
@@ -86,7 +96,7 @@ export function projectTodayIntakesAndRecompute(
 async function projectToday(
   input: ProjectTodayInput,
 ): Promise<ProjectTodayIntakesResult> {
-  const { userId, userTz, todayStart, todayEnd } = input;
+  const { userId, userTz, todayStart, todayEnd, until } = input;
 
   // v1.39.1 (#1033) — a medication with intake tracking off keeps its
   // schedule rows as a record; nothing is projected from them.
@@ -135,7 +145,9 @@ async function projectToday(
   // `scheduledFor` instant stays anchored to `windowStart` so it remains
   // byte-identical to the worker's RED-phase row and dedupes against the
   // `@@unique([userId, medicationId, scheduledFor, source])` index.
-  const now = new Date();
+  // Slot times on the window's own local day (its middle, on a 23- or 25-hour
+  // day too), so a window ahead of today projects its own slots.
+  const day = new Date((todayStart.getTime() + todayEnd.getTime()) / 2);
   const projected: Array<{ medicationId: string; scheduledFor: Date }> = [];
 
   // Rolling cadence anchors off the last logged intake, scoped to
@@ -199,7 +211,8 @@ async function projectToday(
       for (const slotTime of slotTimes) {
         const [h, m] = slotTime.split(":").map(Number);
         if (!Number.isFinite(h) || !Number.isFinite(m)) continue;
-        const scheduledFor = localHmAsUtc(now, userTz, h, m);
+        const scheduledFor = localHmAsUtc(day, userTz, h, m);
+        if (until && scheduledFor > until) continue;
         if (isBeforeLiveEra(scheduledFor, eraStart)) continue;
         if (
           predatesMedication(
@@ -279,4 +292,47 @@ async function projectToday(
   });
 
   return { projected: projected.length, backfilled: missing.length, slotKeys };
+}
+
+/**
+ * Put in place the rows of every dose a server-side consumer may act on
+ * before anyone reads the day: today's slots, and the next day's up to
+ * `now + aheadMs` once that reaches past local midnight. A consumer that
+ * starts something for a dose ahead of its time (the Live Activity pass, two
+ * hours ahead) needs the row to exist whether or not the person opened the
+ * list that day, and a dose just after midnight must not wait for midnight.
+ *
+ * The same projection as the today read, so both mint the same rows and
+ * neither duplicates the other. Idempotent; bounded to two local days.
+ * Nothing for an account pending deletion (its record is frozen) or with the
+ * Medications module off (no dose is expected from it, as the reminder
+ * worker reads it).
+ */
+export async function projectUpcomingIntakes(input: {
+  userId: string;
+  userTz: string;
+  now: Date;
+  aheadMs: number;
+}): Promise<void> {
+  const { userId, userTz, now } = input;
+  if (await pendingDeletionOf(userId)) return;
+  if (!(await isModuleEnabled(userId, "medications"))) return;
+  const until = new Date(now.getTime() + input.aheadMs);
+  const today = getUserTodayBounds(now, userTz);
+  const todayEnd = new Date(today.end.getTime() + 1);
+  await projectTodayIntakesAndRecompute({
+    userId,
+    userTz,
+    todayStart: today.start,
+    todayEnd,
+  });
+  if (until < todayEnd) return;
+  const next = getUserTodayBounds(todayEnd, userTz);
+  await projectTodayIntakesAndRecompute({
+    userId,
+    userTz,
+    todayStart: next.start,
+    todayEnd: new Date(next.end.getTime() + 1),
+    until,
+  });
 }

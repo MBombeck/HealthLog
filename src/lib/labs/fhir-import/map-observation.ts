@@ -44,6 +44,7 @@ import type {
   MappedFhirLab,
 } from "./types";
 import { isDimensionlessLoinc, labUnitFromFhirQuantity } from "./units";
+import { ownValue } from "@/lib/own-key";
 
 /** A reading dated more than a day ahead is a mistake, not a result. */
 const FUTURE_SLACK_MS = 86_400_000;
@@ -247,9 +248,8 @@ function interpretationText(resource: Json): string | null {
   for (const concept of list(resource.interpretation)) {
     for (const c of codings(concept)) {
       const code = str(c.code)?.toUpperCase();
-      if (code && INTERPRETATION_TEXT[code]) {
-        return str(c.display) ?? str(concept.text) ?? INTERPRETATION_TEXT[code];
-      }
+      const text = code ? ownValue(INTERPRETATION_TEXT, code) : undefined;
+      if (text) return str(c.display) ?? str(concept.text) ?? text;
     }
   }
   return null;
@@ -313,7 +313,7 @@ function readValue(resource: Json, dimensionless: boolean): ValueRead {
     if (label) return { ok: true, value: null, valueText: label, unit: null };
     return { ok: false, skip: "no_value" };
   }
-  if (UNSUPPORTED_VALUES.some((key) => resource[key] !== undefined)) {
+  if (UNSUPPORTED_VALUES.some((key) => ownValue(resource, key) !== undefined)) {
     return { ok: false, skip: "unsupported_value" };
   }
   return null;

@@ -10,7 +10,10 @@ import { annotate } from "@/lib/logging/context";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
-import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
+import {
+  slotsHeldBySnooze,
+  snoozeAnchor,
+} from "@/lib/medications/snooze-scope";
 import {
   readLedgerMedications,
   resolveDosesByRow,
@@ -76,7 +79,7 @@ export async function readTodayIntakes(input: {
       e.medicationId,
       slotsHeldBySnooze({
         snoozedUntil: medication.snoozedUntil,
-        snoozedAt: medication.updatedAt,
+        snoozedAt: snoozeAnchor(medication),
         schedules: medication.schedules,
         slotInstants: events
           .filter((x) => x.medicationId === e.medicationId)

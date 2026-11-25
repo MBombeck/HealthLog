@@ -20,6 +20,7 @@
  * `.planning/research/v1434-r-1-xml-import.md` §7.
  */
 import type { WorkoutSportType } from "@/lib/validations/workout";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * Map every known `HKWorkoutActivityType` value (the literal string
@@ -136,7 +137,7 @@ export function resolveHkWorkoutSportType(activityType: string): {
   sportType: WorkoutSportType;
   known: boolean;
 } {
-  const sportType = HK_WORKOUT_ACTIVITY_TYPE_MAP[activityType];
+  const sportType = ownValue(HK_WORKOUT_ACTIVITY_TYPE_MAP, activityType);
   if (sportType) return { sportType, known: true };
   return { sportType: "other", known: false };
 }

@@ -150,14 +150,14 @@ describe("generateComprehensiveInsight — consent withdrawn in flight", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "old" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "old" } }),
       ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: "0".repeat(64),
     });
     runRawCompletionWithFallback.mockResolvedValue({
       result: {
-        content: JSON.stringify({ dailyBriefing: { p: "new" } }),
+        content: JSON.stringify({ dailyBriefing: { paragraph: "new" } }),
         tokensUsed: 10,
         providerType: "openai",
         model: "m",
@@ -193,14 +193,14 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "old" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "old" } }),
       ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: "0".repeat(64), // changed → full generation
     });
     runRawCompletionWithFallback.mockResolvedValue({
       result: {
-        content: JSON.stringify({ dailyBriefing: { p: "new" } }),
+        content: JSON.stringify({ dailyBriefing: { paragraph: "new" } }),
         tokensUsed: 10,
         providerType: "openai",
         model: "m",
@@ -241,7 +241,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "old" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "old" } }),
       ),
       insightsExcludeMetrics: ["sleep"],
       insightsSnapshotHash: "0".repeat(64),
@@ -250,7 +250,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
     });
     runRawCompletionWithFallback.mockResolvedValue({
       result: {
-        content: JSON.stringify({ dailyBriefing: { p: "new" } }),
+        content: JSON.stringify({ dailyBriefing: { paragraph: "new" } }),
         tokensUsed: 10,
         providerType: "openai",
         model: "m",
@@ -288,7 +288,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "old" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "old" } }),
       ),
       insightsExcludeMetrics: ["sleep"],
       insightsSnapshotHash: "0".repeat(64),
@@ -297,7 +297,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
     });
     runRawCompletionWithFallback.mockResolvedValue({
       result: {
-        content: JSON.stringify({ dailyBriefing: { p: "new" } }),
+        content: JSON.stringify({ dailyBriefing: { paragraph: "new" } }),
         tokensUsed: 10,
         providerType: "openai",
         model: "m",
@@ -333,7 +333,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
       insightsCachedTextEncrypted: sealInsightsCachedText(
-        JSON.stringify({ dailyBriefing: { p: "old" } }),
+        JSON.stringify({ dailyBriefing: { paragraph: "old" } }),
       ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: "0".repeat(64),
@@ -343,7 +343,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
       .mockResolvedValueOnce(null);
     runRawCompletionWithFallback.mockResolvedValue({
       result: {
-        content: JSON.stringify({ dailyBriefing: { p: "new" } }),
+        content: JSON.stringify({ dailyBriefing: { paragraph: "new" } }),
         tokensUsed: 10,
         providerType: "openai",
         model: "m",

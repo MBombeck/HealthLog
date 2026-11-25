@@ -31,9 +31,11 @@
  *     cookie the token is what the request is authenticated by. Any other
  *     scheme does not count: a browser attaches `Basic` or `Negotiate`
  *     credentials on its own when a proxy or the host asked for them, and
- *     the caller is resolved from the session cookie before any header
- *     (`src/lib/auth/guards/caller.ts`), so a request with both is a cookie
- *     request and is checked as one.
+ *     such a request is resolved from its session cookie
+ *     (`src/lib/auth/guards/caller.ts`), so it is checked as a cookie
+ *     request. A Bearer that rides beside a session cookie is checked too:
+ *     the Bearer decides who is calling, but the cookie is a credential a
+ *     page could have lent, and the check costs a real client nothing.
  *
  * Exempt by path: the surfaces that authenticate with a secret in a header
  * or the URL rather than the session cookie, and that a third party's client

@@ -3198,6 +3198,7 @@
       "failedDescriptionTimeout": "A solicitação de IA esgotou o tempo antes de o resumo ficar pronto. Para um modelo local lento, aumente o tempo limite de resposta de IA em Configurações e tente novamente.",
       "failedDescriptionProvider": "O provedor de IA rejeitou a solicitação. Verifique novamente o provedor e a chave de API nas configurações de IA e tente novamente.",
       "failedDescriptionRateLimit": "O provedor de IA está limitando as solicitações agora. Tente novamente em instantes.",
+      "failedDescriptionFormat": "A IA respondeu, mas não em um formato que o briefing consiga mostrar. Tente novamente; se continuar acontecendo, outro modelo nas configurações de IA pode ajudar.",
       "omittedTitle": "Resumo retido",
       "omittedUngroundedDescription": "O resumo gerado referenciou um número que não pôde ser verificado contra seus dados, então não foi exibido. Tente novamente."
     },
@@ -3506,6 +3507,7 @@
         "steadyLatestWithin": "Suas leituras costumam ficar em {low} {unit}; sua última leitura, {date}, foi {value} e corresponde.",
         "steadyLatestAbove": "Suas leituras costumam ficar em {low} {unit}; sua última leitura, {date}, foi {value}, acima disso.",
         "steadyLatestBelow": "Suas leituras costumam ficar em {low} {unit}; sua última leitura, {date}, foi {value}, abaixo disso.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Ainda aprendendo sua faixa habitual. Continue registrando por mais alguns dias.",
         "driver": "{note}",
         "loadError": "Não foi possível carregar a sua faixa habitual."
@@ -3931,6 +3933,7 @@
         "title": "Linha do tempo da noite",
         "wokeOn": "Acordou em {date}",
         "summary": "{asleep} dormindo, {awakenings, plural, one {# despertar} other {# despertares}}",
+        "asleepOnly": "{asleep} dormindo",
         "source": "de {source}",
         "previous": "Noite anterior",
         "next": "Próxima noite",
@@ -4720,6 +4723,11 @@
           "green": "boa",
           "yellow": "razoável",
           "red": "baixa"
+        },
+        "loadBand": {
+          "green": "baixo",
+          "yellow": "moderado",
+          "red": "alto"
         }
       },
       "provenance": {
@@ -9779,7 +9787,8 @@
           "off": "Os cookies não têm o atributo Secure.",
           "secure_over_https": "Cookies seguros por HTTPS, como deve ser.",
           "plain_http": "HTTP simples sem o atributo Secure: tudo bem para um servidor acessível só na sua própria rede.",
-          "secure_over_http": "Esta página chegou por HTTP simples, mas os cookies têm o atributo Secure, então os navegadores descartam o login. Use HTTPS ou defina SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Esta página chegou ao app por HTTP simples. Atrás de um proxy HTTPS, faça-o enviar X-Forwarded-Proto: https; em HTTP simples, defina SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "O HTTPS funciona, mas seu proxy reverso não informa isso. Faça-o enviar X-Forwarded-Proto: https.",
           "insecure_over_https": "Esta página chegou por HTTPS, mas os cookies não têm o atributo Secure. Remova SESSION_COOKIE_SECURE=false."
         },
         "app_url": {
@@ -12536,7 +12545,7 @@
     "openDetail": "Mostrar detalhes",
     "historyLoadError": "Não foi possível carregar seu histórico de avaliações",
     "historyLoadErrorHint": "Isso não significa que você não tem resultados; a lista não pôde ser buscada. Tente novamente.",
-    "privacyNote": "Suas respostas são armazenadas criptografadas e nunca chegam ao AI Coach.",
+    "privacyNote": "Suas respostas são armazenadas criptografadas. Respostas e pontuações nunca chegam ao AI Coach, a outro recurso de IA nem a um assistente de IA que você conectou.",
     "trend": {
       "sincePrevious": "Desde a sua avaliação anterior, em {date}: {change, plural, one {# ponto} other {# pontos}}.",
       "sinceFirst": "Desde a sua primeira avaliação, em {date}: {change, plural, one {# ponto} other {# pontos}}.",

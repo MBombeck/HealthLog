@@ -43,6 +43,7 @@ import {
   type FhirLabImportReason,
 } from "@/lib/labs/fhir-import/types";
 import { writeFhirLabReadings } from "@/lib/labs/fhir-import/write";
+import { jsonDeeperThan } from "@/lib/import/json-depth";
 import { annotate } from "@/lib/logging/context";
 import type { ImportJobResult } from "@/lib/measurements/import-apple-health-export";
 
@@ -69,7 +70,10 @@ async function readJson(stream: AsyncIterable<unknown>): Promise<unknown> {
   }
   const text = Buffer.concat(chunks).toString("utf8");
   for (const chunk of chunks) chunk.fill(0);
-  return JSON.parse(text) as unknown;
+  const parsed = JSON.parse(text) as unknown;
+  // Refused like malformed JSON: the mapper and the writer walk the resource.
+  if (jsonDeeperThan(parsed)) throw new Error("nested too deeply");
+  return parsed;
 }
 
 function resourceId(resource: unknown): string | null {

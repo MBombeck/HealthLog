@@ -75,12 +75,13 @@ paths:
             there; the English sentence beside it may be reworded or localised at any time. `auth.missing`: no session
             cookie and no Bearer header; send the user to sign in. `auth.token.expired`: the Bearer token's lifetime has
             passed; refresh and retry the request. `auth.token.invalid`: unknown, revoked, or the owning account is
-            gone; discard the credential and sign in again — retrying will not help. `auth.mfa.code_invalid`: a second
-            factor presented on a step-up flow did not verify; re-prompt for a code and keep the session. The related
-            403 refusals carry `auth.scope.insufficient` (the credential is valid but its scope does not reach this
-            route, including any Bearer token against an admin surface) and `auth.admin.required` (a cookie session that
-            is not an admin's). A route that checks a credential of its own — sign-in, the MFA challenge exchange, a
-            password confirmation — may answer 401 with the generic `http.unauthenticated`, which means the route
+            gone, or the token arrived beside a session cookie of a different account (that cookie is expired on the
+            same response); discard the credential and sign in again — retrying will not help. `auth.mfa.code_invalid`:
+            a second factor presented on a step-up flow did not verify; re-prompt for a code and keep the session. The
+            related 403 refusals carry `auth.scope.insufficient` (the credential is valid but its scope does not reach
+            this route, including any Bearer token against an admin surface) and `auth.admin.required` (a cookie session
+            that is not an admin's). A route that checks a credential of its own — sign-in, the MFA challenge exchange,
+            a password confirmation — may answer 401 with the generic `http.unauthenticated`, which means the route
             refused the credential it was handed. A session that could not be checked because the session store was
             unreachable is NOT a 401: it answers 503 with `auth.session.unavailable`, and the client keeps its
             credential and retries."
@@ -4497,9 +4498,11 @@ paths:
 
 
         On success the blast radius is deliberate and wide: every step-up elevation the account holds is revoked, every
-        session is destroyed, and a fresh session is issued to THIS caller. Other browsers and other devices are signed
-        out. The new password is strength-checked and screened against a breach corpus (fail-open on an unreachable
-        corpus). Rate-limited 5 per 15 minutes per user.
+        sign-in is ended (web sessions, device logins and tokens, the caller's own included), and THIS caller is signed
+        back in on the transport it came on: a cookie caller gets a fresh session cookie, a Bearer caller gets a fresh
+        access token (and, for a cookie-less native caller, a fresh refresh token) in the body and no cookie. Other
+        browsers and other devices are signed out. The new password is strength-checked and screened against a breach
+        corpus (fail-open on an unreachable corpus). Rate-limited 5 per 15 minutes per user.
       requestBody:
         required: true
         content:
@@ -4508,7 +4511,8 @@ paths:
               $ref: "#/components/schemas/ChangePasswordRequest"
       responses:
         "200":
-          description: Password rotated. Every other session is gone and this caller holds a new one.
+          description: "Password rotated. Every other sign-in is gone and this caller holds a new one: a session cookie, or the
+            token fields in the body for a Bearer caller."
           content:
             application/json:
               schema:
@@ -12303,8 +12307,15 @@ paths:
         mount-time backfill on every page load.
 
 
-        Idempotent: when the column already matches, the write is skipped and only the cookie is refreshed. Body capped
-        at 4 KB.
+        A browser tab's write is held to the locale cookie it carries, which every switch writes before sending: a body
+        that disagrees with that cookie is stale (another tab switched since it rendered) and a body sent with no cookie
+        is the browser-language guess, which fills an empty column but never replaces a stored choice. In both cases
+        nothing is written and the reply names the language in force, which the tab then adopts. The cookie is set only
+        where the reply changes it, so a late reply cannot put an older language back. A Bearer caller states its choice
+        in the body and it is stored as sent.
+
+
+        Idempotent: when the column already matches, the write is skipped. Body capped at 4 KB.
       requestBody:
         required: true
         content:
@@ -12313,7 +12324,8 @@ paths:
               $ref: "#/components/schemas/LocalePutRequest"
       responses:
         "200":
-          description: The accepted locale.
+          description: "The locale in force: the body's, or for a stale or guessed browser write the one the browser and account
+            already hold."
           content:
             application/json:
               schema:
@@ -57010,8 +57022,8 @@ components:
       required:
         - user
       additionalProperties: false
-      description: The account that was created. No credential rides this response — the session arrives as a cookie, and a
-        native client signs in afterwards through /api/auth/login.
+      description: The account that was created. No credential rides this response — a browser receives its session as a
+        cookie; a native client receives no cookie and signs in afterwards through /api/auth/login.
     PasswordChangeEnvelope:
       type: object
       properties:
@@ -57035,9 +57047,27 @@ components:
         changed:
           type: boolean
           const: true
+        token:
+          description: Fresh access token (`hlk_<64hex>`); present only when the caller authenticated with a Bearer token. The
+            token it called with is revoked by the change.
+          type: string
+        tokenExpiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        refreshToken:
+          description: Fresh refresh token (`hlr_<64hex>`), the start of a new family for the calling device; present only for a
+            cookie-less native Bearer caller. Its previous refresh token is revoked.
+          type: string
+        refreshTokenExpiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
       required:
         - changed
       additionalProperties: false
+      description: A cookie caller sees only `changed` and receives a fresh session cookie. A Bearer caller receives no
+        cookie; it gets the credentials to continue with in the body.
     AuthProfileUpdateEnvelope:
       type: object
       properties:
@@ -59426,9 +59456,11 @@ components:
                   maximum: 9007199254740991
                 reconstructed:
                   type: boolean
-                  description: True when the source has no per-stage onset timestamps and the server synthesised a contiguous timeline in
-                    a fixed physiological order (WHOOP). The client renders the hypnogram but labels it an approximate
-                    layout and never recomputes. False for real-series sources (Apple Health / Withings / Fitbit).
+                  description: "True when the night carries stage totals without a measured order: every stage stamped on one instant (a
+                    daily sleep summary, as Garmin and Oura's fallback deliver it) or laid back to back in a fixed order
+                    at ingest (WHOOP, Polar). Decided from the shape of the spans, not from the source. Show the stage
+                    totals instead of a timeline, and do not recompute it; `awakenings` is 0 for such a night. False
+                    when the segments are a measured timeline."
                 stages:
                   type: object
                   propertyNames:
@@ -59581,9 +59613,11 @@ components:
                 maximum: 9007199254740991
               reconstructed:
                 type: boolean
-                description: True when the source has no per-stage onset timestamps and the server synthesised a contiguous timeline in
-                  a fixed physiological order (WHOOP). The client renders the hypnogram but labels it an approximate
-                  layout and never recomputes. False for real-series sources (Apple Health / Withings / Fitbit).
+                description: "True when the night carries stage totals without a measured order: every stage stamped on one instant (a
+                  daily sleep summary, as Garmin and Oura's fallback deliver it) or laid back to back in a fixed order
+                  at ingest (WHOOP, Polar). Decided from the shape of the spans, not from the source. Show the stage
+                  totals instead of a timeline, and do not recompute it; `awakenings` is 0 for such a night. False when
+                  the segments are a measured timeline."
               stages:
                 type: object
                 propertyNames:

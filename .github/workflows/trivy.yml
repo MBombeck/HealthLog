@@ -39,6 +39,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # `pnpm audit --prod` is the blocking gate and it is scoped to
       # production dependencies on purpose: a dev-only advisory should not
@@ -125,6 +127,8 @@ jobs:
       # what is accepted.
       - name: Checkout for .trivyignore
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # Fails on CRITICAL only. A critical advisory against the image
       # self-hosters are running right now is worth a red badge and a

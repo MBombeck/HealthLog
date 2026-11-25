@@ -118,7 +118,10 @@ Contributors: branch off `main` for a fix and target `main`; branch off the curr
 2. Create a branch: a fix off `main` (`git checkout -b fix/your-fix main`), a feature off the current `release/vX.Y.0`
 3. Make your changes
 4. Ensure all checks pass (`pnpm typecheck && pnpm lint && pnpm test && pnpm format:check && pnpm build`)
-5. Submit a PR against `main` (fix) or the release branch (feature) with a clear description of the changes
+5. Before pushing, rebase on the current base and check `git diff origin/<base>...HEAD --stat` for deletions you did not intend; a pull request that deletes a file under `.github/workflows/`, `scripts/`, `prisma/migrations/` or `docs/` which the base still has fails its checks unless the description names that file on a `Removes:` line.
+6. Submit a PR against `main` (fix) or the release branch (feature) with a clear description of the changes
+
+Signing your commits is welcome and not required; [docs/contributing/commit-signing.md](docs/contributing/commit-signing.md) explains the setup and why the rule stops short of requiring it.
 
 ## Translations
 

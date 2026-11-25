@@ -19,6 +19,7 @@ import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { invalidateUserProfile } from "@/lib/cache/invalidate";
@@ -85,16 +86,23 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   });
   if (!parsed.ok) return parsed.error;
 
-  const existing = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { thresholdsJson: true },
-  });
-  const before = (existing?.thresholdsJson ?? {}) as ThresholdOverridesJson;
-  const merged: ThresholdOverridesJson = { ...before, ...parsed.data };
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { thresholdsJson: merged },
+  // Read-merge-write under a row lock: two saves that overlap (two tabs, a
+  // tab and the phone, each setting another metric) would otherwise both
+  // read the same overrides, and the later write would drop the earlier
+  // one's metric. `FOR UPDATE` queues them, and each reads after the
+  // previous one committed.
+  const { before, merged } = await withUserRowLock(user.id, async (tx) => {
+    const existing = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { thresholdsJson: true },
+    });
+    const before = (existing?.thresholdsJson ?? {}) as ThresholdOverridesJson;
+    const merged: ThresholdOverridesJson = { ...before, ...parsed.data };
+    await tx.user.update({
+      where: { id: user.id },
+      data: { thresholdsJson: merged },
+    });
+    return { before, merged };
   });
 
   // Threshold overrides feed the targets grid's effective ranges and the
@@ -173,28 +181,31 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  const existing = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { thresholdsJson: true },
-  });
-  const before = (existing?.thresholdsJson ?? {}) as ThresholdOverridesJson;
-
-  let after: ThresholdOverridesJson = before;
-  if (metric) {
-    if (!ALL_METRICS.includes(metric)) {
-      return apiError("Unknown metric", 400);
-    }
-    after = { ...before };
-    delete after[metric];
-  } else {
-    after = {};
+  if (metric && !ALL_METRICS.includes(metric)) {
+    return apiError("Unknown metric", 400);
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      thresholdsJson: Object.keys(after).length === 0 ? Prisma.JsonNull : after,
-    },
+  // Same row lock as the PUT, so a reset of one metric cannot put back a
+  // metric another request set in between.
+  const { before, after } = await withUserRowLock(user.id, async (tx) => {
+    const existing = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { thresholdsJson: true },
+    });
+    const before = (existing?.thresholdsJson ?? {}) as ThresholdOverridesJson;
+    let after: ThresholdOverridesJson = {};
+    if (metric) {
+      after = { ...before };
+      delete after[metric];
+    }
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        thresholdsJson:
+          Object.keys(after).length === 0 ? Prisma.JsonNull : after,
+      },
+    });
+    return { before, after };
   });
 
   // A reset changes the effective ranges back to the defaults — same

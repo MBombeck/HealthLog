@@ -62,9 +62,11 @@ function SleepHypnogramChart(
  * per-stage totals stay in the stacked bar below; this card adds the order
  * the stages came in, which the bar cannot show.
  *
- * A night whose source reports stage totals without onsets (WHOOP, Polar)
- * gets a note instead of a chart: the server laid those segments out in a
- * fixed order, and drawing them would invent a progression.
+ * A night that holds stage totals without their order gets a note instead
+ * of a chart, and no awakenings count. The server decides that per night
+ * from the shape of the spans (`reconstructed`: Garmin and Oura's fallback
+ * stamp every total on the wake instant, WHOOP and Polar lay them out in a
+ * fixed order); drawing either would invent a progression.
  *
  * The axis reads in the night's own zone when the readings carry one and in
  * the profile zone otherwise.
@@ -98,6 +100,9 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
   const track = session
     ? hasHypnogramTrack(layout, session.reconstructed)
     : false;
+  const asleepLabel = session
+    ? formatDurationMinutes(session.asleepMinutes, t)
+    : "";
 
   const stageLabels: Record<HypnogramStage, string> = {
     AWAKE: t("insights.sleep.stages.awake"),
@@ -163,11 +168,15 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
             </span>
             {session ? (
               <>
-                <span>
-                  {t("insights.sleep.hypnogram.summary", {
-                    asleep: formatDurationMinutes(session.asleepMinutes, t),
-                    awakenings: session.awakenings,
-                  })}
+                <span data-slot="sleep-hypnogram-summary">
+                  {session.reconstructed
+                    ? t("insights.sleep.hypnogram.asleepOnly", {
+                        asleep: asleepLabel,
+                      })
+                    : t("insights.sleep.hypnogram.summary", {
+                        asleep: asleepLabel,
+                        awakenings: session.awakenings,
+                      })}
                 </span>
                 <SleepSourceDiscrepancyMarker
                   discrepancy={session.sourceDiscrepancy}
@@ -210,7 +219,7 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
             stageLabels={stageLabels}
             formatTime={(ms) => axisFormat.time(new Date(ms))}
             ariaLabel={t("insights.sleep.hypnogram.ariaLabel", {
-              asleep: formatDurationMinutes(session.asleepMinutes, t),
+              asleep: asleepLabel,
               awakenings: session.awakenings,
             })}
           />

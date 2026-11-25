@@ -51,6 +51,7 @@ jobs:
       - name: Checkout full history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Validate release policy
@@ -178,6 +179,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -299,11 +302,32 @@ jobs:
           echo "build_sha=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
           echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
-      # Per-ref + per-platform gha cache scope. Tag builds warm-start
-      # off main's last good layer set for the same platform; tag and
-      # main builds at the same SHA do not contend on writes, and
-      # amd64 / arm64 caches stay isolated from each other (a stale
-      # arm64 layer never poisons an amd64 build).
+      # Release builds start from nothing: a tag build neither reads nor
+      # writes the shared gha cache, so no layer that a pull-request or
+      # :edge build put there can reach a release image (SLSA Build L3,
+      # isolated builds). Pull-request builds keep the per-ref +
+      # per-platform scope and warm-start off main's layer set; amd64 and
+      # arm64 caches stay apart (a stale arm64 layer never poisons an
+      # amd64 build).
+      - name: Resolve cache policy
+        id: cache
+        env:
+          SCOPE: ${{ matrix.cache_scope }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            echo "no_cache=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Release build: no shared build cache."
+            exit 0
+          fi
+          {
+            echo "no_cache=false"
+            echo "from<<EOF"
+            echo "type=gha,scope=build-${SCOPE}-${GITHUB_REF_NAME}"
+            echo "type=gha,scope=build-${SCOPE}-main"
+            echo "EOF"
+            echo "to=type=gha,mode=max,scope=build-${SCOPE}-${GITHUB_REF_NAME}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build & push by digest
         id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -330,11 +354,12 @@ jobs:
             OS_PACKAGES_REFRESH=${{ github.run_id }}-${{ github.run_attempt }}
           outputs: |
             type=image,name=${{ env.IMAGE_REF }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
-          cache-from: |
-            type=gha,scope=build-${{ matrix.cache_scope }}-${{ github.ref_name }}
-            type=gha,scope=build-${{ matrix.cache_scope }}-main
-          cache-to: type=gha,mode=max,scope=build-${{ matrix.cache_scope }}-${{ github.ref_name }}
-          provenance: true
+          no-cache: ${{ steps.cache.outputs.no_cache }}
+          cache-from: ${{ steps.cache.outputs.from }}
+          cache-to: ${{ steps.cache.outputs.to }}
+          # BuildKit's own provenance travels unsigned inside the index; the
+          # signed SLSA provenance comes from image-provenance.yml below.
+          provenance: mode=max
           sbom: true
 
       # Persist the per-platform digest so the `merge` job can stitch
@@ -390,6 +415,9 @@ jobs:
       # short-lived Fulcio certificate bound to this workflow identity
       # and records the signature in the Rekor transparency log. No
       # long-lived signing key exists anywhere in this pipeline.
+      # This token signs as docker-publish.yml and so cannot produce a
+      # provenance that verifies under image-provenance.yml; the job runs
+      # no repository code, and the build jobs above hold no OIDC token.
       id-token: write
 
     steps:
@@ -491,6 +519,27 @@ jobs:
           echo "Signing ${IMAGE_REF}@${IMAGE_DIGEST}"
           cosign sign --yes "${IMAGE_REF}@${IMAGE_DIGEST}"
           echo "::notice::Image index signed (keyless): ${IMAGE_REF}@${IMAGE_DIGEST}. Verify with cosign verify --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp 'https://github.com/${{ github.repository }}/' ${IMAGE_REF}@${IMAGE_DIGEST}"
+
+  # SLSA Build L3 provenance for the image index, signed in the reusable
+  # workflow image-provenance.yml under its own identity. Tags only, like
+  # the release assets below. Operators verify with
+  # `gh attestation verify` or `cosign verify-attestation --type
+  # slsaprovenance1` (docs/ops/deploy.md, "Verify the image provenance").
+  image-provenance:
+    name: SLSA provenance for the image
+    needs: [merge]
+    if: >-
+      !cancelled() &&
+      startsWith(github.ref, 'refs/tags/v') &&
+      needs.merge.result == 'success'
+    permissions:
+      id-token: write
+      attestations: write
+      packages: write
+    uses: ./.github/workflows/image-provenance.yml
+    with:
+      image: ${{ needs.merge.outputs.image_ref }}
+      digest: ${{ needs.merge.outputs.image_digest }}
 
   verify-published-image:
     name: Verify exact published image

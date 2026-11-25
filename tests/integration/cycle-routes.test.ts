@@ -233,6 +233,67 @@ describe("cycle day-logs — single read (GET)", () => {
   });
 });
 
+describe("cycle day-logs — PATCH writes every field it accepts", () => {
+  it("edits the temperature exclusion and the cervix signs, and clears them", async () => {
+    await loginAs(FEMALE_USER_ID);
+    const route = await import("@/app/api/cycle/day-logs/route");
+    const single = await import("@/app/api/cycle/day-logs/[id]/route");
+
+    const created = await route.POST(
+      jsonRequest("/api/cycle/day-logs", "POST", {
+        date: "2026-05-03",
+        basalBodyTempC: 36.5,
+        cervixPosition: "LOW",
+        cervixFirmness: "FIRM",
+        cervixOpening: "CLOSED",
+        loggedAt: "2026-05-03T08:00:00.000Z",
+      }),
+    );
+    const { data: row } = await created.json();
+    const params = { params: Promise.resolve({ id: row.id }) };
+
+    const patched = await single.PATCH(
+      jsonRequest(`/api/cycle/day-logs/${row.id}`, "PATCH", {
+        temperatureExcluded: true,
+        cervixPosition: "HIGH",
+        cervixFirmness: "SOFT",
+        cervixOpening: "OPEN",
+      }),
+      params,
+    );
+    expect(patched.status).toBe(200);
+    const { data: answer } = await patched.json();
+    expect(answer.temperatureExcluded).toBe(true);
+    expect(answer.cervixPosition).toBe("HIGH");
+    expect(answer.cervixFirmness).toBe("SOFT");
+    expect(answer.cervixOpening).toBe("OPEN");
+    // Fields the body did not name keep their value.
+    expect(answer.basalBodyTempC).toBe(36.5);
+
+    const stored = await getPrismaClient().cycleDayLog.findUniqueOrThrow({
+      where: { id: row.id },
+    });
+    expect(stored.temperatureExcluded).toBe(true);
+    expect(stored.cervixPosition).toBe("HIGH");
+
+    const cleared = await single.PATCH(
+      jsonRequest(`/api/cycle/day-logs/${row.id}`, "PATCH", {
+        temperatureExcluded: false,
+        cervixPosition: null,
+        cervixFirmness: null,
+        cervixOpening: null,
+      }),
+      params,
+    );
+    expect(cleared.status).toBe(200);
+    const { data: after } = await cleared.json();
+    expect(after.temperatureExcluded).toBe(false);
+    expect(after.cervixPosition).toBeNull();
+    expect(after.cervixFirmness).toBeNull();
+    expect(after.cervixOpening).toBeNull();
+  });
+});
+
 describe("cycle day-logs — symptom severity", () => {
   it("persists a 1-4 severity per link and reads it back in the DTO", async () => {
     await loginAs(FEMALE_USER_ID);

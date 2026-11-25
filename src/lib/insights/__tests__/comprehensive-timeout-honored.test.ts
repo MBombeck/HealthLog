@@ -91,6 +91,7 @@ vi.mock("@/lib/cache/invalidate", () => ({
   invalidateUserInsights: vi.fn(),
 }));
 vi.mock("@/lib/insights/briefing-failure-marker", () => ({
+  briefingFailureFacts: () => ({ httpStatus: null, failureKind: null }),
   recordBriefingFailure: (...a: unknown[]) => recordBriefingFailure(...a),
 }));
 

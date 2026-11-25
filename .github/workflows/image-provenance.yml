@@ -1,0 +1,89 @@
+name: Image provenance
+
+# Reusable workflow: it signs the SLSA v1 build provenance of the image
+# index that docker-publish.yml built and pushed. The signing certificate
+# names this file (its job_workflow_ref), not the caller, so no job of the
+# calling workflow can produce a provenance that verifies under it, and the
+# build jobs, which run the Dockerfile and the package scripts, never hold
+# an OIDC token at all. That separation is what makes the provenance
+# SLSA Build L3 rather than L2.
+#
+# The subject is the index digest, the identity the release signs, deploys
+# and lists in healthlog-<tag>-image.txt. The two platform manifests are
+# referenced by digest inside that index, so the attestation covers them.
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: image name without tag or digest (lowercase ghcr.io ref)
+        required: true
+        type: string
+      digest:
+        description: sha256:<hex> of the multi-arch image index
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  attest:
+    name: Attest build provenance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      attestations: write
+      packages: write
+    steps:
+      - name: Check inputs
+        env:
+          IMAGE: ${{ inputs.image }}
+          DIGEST: ${{ inputs.digest }}
+        run: |
+          printf '%s' "$IMAGE" | grep -Eq '^ghcr\.io/[a-z0-9._/-]+$' || { echo "::error::Image '$IMAGE' is not a lowercase ghcr.io name." >&2; exit 1; }
+          printf '%s' "$DIGEST" | grep -Eq '^sha256:[0-9a-f]{64}$' || { echo "::error::Digest '$DIGEST' is not a sha256 digest." >&2; exit 1; }
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Stored in the repository's attestations and, as a Sigstore bundle
+      # (predicate https://slsa.dev/provenance/v1), in the registry's
+      # referrers of the index, where `cosign verify-attestation` finds it.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ inputs.image }}
+          subject-digest: ${{ inputs.digest }}
+          push-to-registry: true
+          create-storage-record: false
+
+      # The operator's check (docs/ops/deploy.md), run once from each
+      # source: the attestations API (`--bundle-from-oci=false`) and the
+      # registry copy (`--bundle-from-oci=true`).
+      - name: Verify the attestation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ inputs.image }}
+          DIGEST: ${{ inputs.digest }}
+        run: |
+          set -euo pipefail
+          signer="${GITHUB_REPOSITORY}/.github/workflows/image-provenance.yml"
+          for from_oci in false true; do
+            for _ in 1 2 3; do
+              if gh attestation verify "oci://${IMAGE}@${DIGEST}" \
+                --repo "$GITHUB_REPOSITORY" \
+                --signer-workflow "$signer" \
+                --source-ref "$GITHUB_REF" \
+                --bundle-from-oci="$from_oci" > /dev/null; then
+                echo "Provenance verified (bundle from registry: $from_oci)."
+                continue 2
+              fi
+              sleep 10
+            done
+            echo "::error::The provenance of ${IMAGE}@${DIGEST} does not verify under $signer (bundle from registry: $from_oci)." >&2
+            exit 1
+          done

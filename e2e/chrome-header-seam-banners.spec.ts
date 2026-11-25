@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "./setup/test";
 
 import { SEAM_BANNERS_STORAGE_STATE_PATH } from "./setup/global-setup";
+import { settleLocaleSync } from "./setup/locale-sync";
 
 /**
  * The seam again, this time with chrome above it.
@@ -229,9 +230,18 @@ async function enterSharedRecord(page: Page): Promise<void> {
  * English page is mounted is reverted before the next navigation can read it —
  * measured, not assumed: the value flipped back inside one second. With no page
  * running, the next navigation sends `fr` and the provider then mirrors `fr`.
+ *
+ * Parking the page is not enough on its own. The English page's locale write
+ * (`PUT /api/auth/me/locale`) is a keepalive request that outlives it, and its
+ * reply sets the cookie back to `en`. When it lands after the swap, the next
+ * page renders English and the strip never paints; CI caught that in the
+ * second test, which reaches the swap within milliseconds of its first load
+ * because the session is already inside the shared record. So the write is
+ * waited out before the page is parked.
  */
 async function armUnmaintainedLocale(page: Page): Promise<void> {
   const host = new URL(page.url()).hostname;
+  await settleLocaleSync(page);
   await page.goto("about:blank");
   await page.context().addCookies([
     {
@@ -245,6 +255,17 @@ async function armUnmaintainedLocale(page: Page): Promise<void> {
       sameSite: "Lax",
     },
   ]);
+}
+
+/**
+ * Load the app under the French strip and prove the locale took before any
+ * banner is looked for: `<html lang>` is the attribute the provider sets from
+ * the locale it is actually rendering, so a missing strip reads as what it is.
+ */
+async function loadUnderUnmaintainedLocale(page: Page): Promise<void> {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expectShellReady(page);
+  await expect(page.locator("html")).toHaveAttribute("lang", "fr");
 }
 
 /**
@@ -333,8 +354,7 @@ test.describe.serial("app-chrome header seam under banners", () => {
         label: "2 banners (+ maintainership)",
         arm: async () => {
           await armUnmaintainedLocale(page);
-          await page.goto("/", { waitUntil: "domcontentloaded" });
-          await expectShellReady(page);
+          await loadUnderUnmaintainedLocale(page);
           await expect(
             page.locator('[data-slot="maintainership-banner"]'),
           ).toBeVisible();
@@ -443,8 +463,7 @@ test.describe.serial("app-chrome header seam under banners", () => {
 
     await enterSharedRecord(page);
     await armUnmaintainedLocale(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expectShellReady(page);
+    await loadUnderUnmaintainedLocale(page);
     await expect(
       page.locator('[data-slot="maintainership-banner"]'),
     ).toBeVisible();

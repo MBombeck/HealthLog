@@ -12,7 +12,7 @@
  * reproductive-health threat model.
  */
 import { prisma } from "@/lib/db";
-import type { CycleProfile } from "@/generated/prisma/client";
+import type { CycleProfile, Prisma } from "@/generated/prisma/client";
 
 /**
  * Return the user's `CycleProfile`, creating a default row on first
@@ -22,8 +22,9 @@ import type { CycleProfile } from "@/generated/prisma/client";
  */
 export async function getOrCreateCycleProfile(
   userId: string,
+  db: Pick<Prisma.TransactionClient, "cycleProfile"> = prisma,
 ): Promise<CycleProfile> {
-  return prisma.cycleProfile.upsert({
+  return db.cycleProfile.upsert({
     where: { userId },
     // Field-by-field create (no mass assignment): every default is the
     // schema default, spelled out so the row shape is explicit at the

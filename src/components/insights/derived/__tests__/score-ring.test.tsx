@@ -28,6 +28,16 @@ describe("<ScoreRing>", () => {
     expect(html).toContain('data-band="red"');
   });
 
+  it("reads a load score (stress, strain) the other way round", () => {
+    // No server band: the ring bands 100 - score, so a stress of 80 is red.
+    const heavy = render(<ScoreRing score={80} load />);
+    expect(heavy).toContain('data-band="red"');
+    expect(heavy).toContain("Score 80 out of 100, high");
+    const light = render(<ScoreRing score={15} band="green" load />);
+    expect(light).toContain('data-band="green"');
+    expect(light).toContain("Score 15 out of 100, low");
+  });
+
   it("honours an explicit band override", () => {
     const html = render(<ScoreRing score={20} band="green" />);
     expect(html).toContain('data-band="green"');

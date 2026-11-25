@@ -36,6 +36,16 @@ commit-msg:
           exit 1
         fi
 
+# Pushes. When this clone signs commits (`commit.gpgsign`), a commit you made
+# yourself must carry a signature; `git commit-tree` and some history tools
+# write unsigned commits regardless of the setting. See
+# docs/contributing/commit-signing.md.
+pre-push:
+  commands:
+    signed-commits:
+      use_stdin: true
+      run: sh scripts/check-signed-push.sh
+
 pre-commit:
   commands:
     gitleaks:

@@ -81,6 +81,20 @@ parentPort.on("message", (msg) => {
 
 type Row = Record<string, unknown>;
 
+/**
+ * A statement failed inside the SQLite thread: the file is damaged, or holds
+ * something the statement cannot read. The file is the uploader's, so the
+ * importers turn this into their own refusal of the file. SQLite reads pages
+ * lazily, so a file whose header and schema are sound can still fail here,
+ * at the first damaged page a query reaches.
+ */
+export class SqliteStatementError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SqliteStatementError";
+  }
+}
+
 interface Pending {
   resolve: (value: unknown) => void;
   reject: (err: Error) => void;
@@ -128,7 +142,11 @@ export async function openSqliteOffThread(
       if (!p) return;
       pending.delete(msg.id);
       if (msg.ok) p.resolve(msg.value);
-      else p.reject(new Error(msg.error ?? "SQLite request failed"));
+      else {
+        p.reject(
+          new SqliteStatementError(msg.error ?? "SQLite request failed"),
+        );
+      }
     },
   );
   worker.on("error", (err: Error) => failAll(err));

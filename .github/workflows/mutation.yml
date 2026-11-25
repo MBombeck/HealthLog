@@ -1,10 +1,14 @@
 name: Mutation tests
 
 # Stryker on the core libraries (stryker.config.mjs): encryption at rest,
-# medication compliance, rollups, source ranking, unit conversion and backup
-# validation. Too slow for a pull request; it runs once a night and on
-# demand, and fails when a module's score drops below its floor in
-# stryker.floors.json. The HTML report is uploaded either way.
+# medication compliance and dose scheduling, rollups, source ranking, unit
+# conversion, backup validation, the token and handoff primitives, outbound
+# egress and the push relay's wire format. Too slow for a pull request; it
+# runs once a night on main and on demand, and fails when a module's score
+# drops below its floor in stryker.floors.json or a mutated file belongs to
+# no module. The HTML report is uploaded either way. To measure a release
+# branch before it merges, dispatch it there:
+# `gh workflow run mutation.yml --ref release/vX.Y.0`.
 on:
   schedule:
     - cron: "23 1 * * *"
@@ -20,6 +24,8 @@ jobs:
     name: mutation (core libraries)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 

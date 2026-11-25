@@ -15,6 +15,7 @@ import {
   type LoincMapping,
 } from "@/lib/fhir/loinc-map";
 import type { FhirCodeableConcept, FhirReference } from "@/lib/fhir/types";
+import { ownValue } from "@/lib/own-key";
 
 /** Patient identity not carried in `DoctorReportData` (KVNR is encrypted). */
 export interface FhirPatientIdentity {
@@ -112,7 +113,9 @@ export function codeableFromMapping(m: LoincMapping): FhirCodeableConcept {
       ? HEALTHKIT_CODESYSTEM
       : LOINC_SYSTEM;
     const magic =
-      system === LOINC_SYSTEM ? VITAL_SIGNS_MAGIC_CODE[m.loinc] : undefined;
+      system === LOINC_SYSTEM
+        ? ownValue(VITAL_SIGNS_MAGIC_CODE, m.loinc)
+        : undefined;
     return {
       coding: [
         { system, code: m.loinc, display: m.display },
@@ -139,9 +142,9 @@ export function latestReading(
   data: DoctorReportData,
   type: string,
 ): { value: number; measuredAt: string } | null {
-  const series = data.measurements[type];
+  const series = ownValue(data.measurements, type);
   if (!series || series.length === 0) return null;
-  const stat = data.stats[type];
+  const stat = ownValue(data.stats, type);
   if (stat?.latestAt) return { value: stat.latest, measuredAt: stat.latestAt };
   return series[series.length - 1];
 }

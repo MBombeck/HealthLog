@@ -3198,6 +3198,7 @@
       "failedDescriptionTimeout": "Die KI-Anfrage hat das Zeitlimit überschritten, bevor das Briefing fertig war. Erhöhe für ein langsames lokales Modell in den Einstellungen das Antwort-Zeitlimit und versuche es dann erneut.",
       "failedDescriptionProvider": "Der KI-Anbieter hat die Anfrage abgelehnt. Prüfe Anbieter und API-Schlüssel in den KI-Einstellungen und versuche es erneut.",
       "failedDescriptionRateLimit": "Der KI-Anbieter drosselt derzeit die Anfragen. Versuche es in Kürze erneut.",
+      "failedDescriptionFormat": "Die KI hat geantwortet, aber nicht in einer Form, die das Briefing anzeigen kann. Versuche es erneut; passiert das öfter, hilft vielleicht ein anderes Modell in den KI-Einstellungen.",
       "omittedTitle": "Briefing zurückgehalten",
       "omittedUngroundedDescription": "Das erstellte Briefing nannte eine Zahl, die sich nicht anhand deiner Daten überprüfen ließ, deshalb wurde es nicht angezeigt. Versuche es erneut."
     },
@@ -3506,6 +3507,7 @@
         "steadyLatestWithin": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} genau dort.",
         "steadyLatestAbove": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darüber.",
         "steadyLatestBelow": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darunter.",
+        "componentLine": "{component}: {line}",
         "insufficient": "Lerne noch deinen üblichen Bereich. Protokolliere noch ein paar Tage weiter.",
         "driver": "{note}",
         "loadError": "Dein üblicher Bereich konnte nicht geladen werden."
@@ -3931,6 +3933,7 @@
         "title": "Nachtverlauf",
         "wokeOn": "Aufgewacht am {date}",
         "summary": "{asleep} Schlaf, {awakenings, plural, other {#× wach}}",
+        "asleepOnly": "{asleep} Schlaf",
         "source": "von {source}",
         "previous": "Vorherige Nacht",
         "next": "Nächste Nacht",
@@ -4720,6 +4723,11 @@
           "green": "gut",
           "yellow": "mittel",
           "red": "niedrig"
+        },
+        "loadBand": {
+          "green": "niedrig",
+          "yellow": "mittel",
+          "red": "hoch"
         }
       },
       "provenance": {
@@ -9779,7 +9787,8 @@
           "off": "Cookies tragen das Secure-Flag nicht.",
           "secure_over_https": "Sichere Cookies über HTTPS, so wie es sein soll.",
           "plain_http": "Einfaches HTTP ohne Secure-Flag: in Ordnung für einen Server, der nur im eigenen Netz erreichbar ist.",
-          "secure_over_http": "Diese Seite kam über einfaches HTTP, aber die Cookies tragen das Secure-Flag, deshalb verwerfen Browser die Anmeldung. Stelle HTTPS bereit oder setze SESSION_COOKIE_SECURE=false.",
+          "secure_over_http": "Diese Seite kam als einfaches HTTP bei der App an. Hinter einem HTTPS-Proxy lass ihn X-Forwarded-Proto: https senden; bei reinem HTTP setze SESSION_COOKIE_SECURE=false.",
+          "proxy_scheme_unreported": "HTTPS funktioniert, aber dein Reverse Proxy meldet es nicht. Lass ihn X-Forwarded-Proto: https senden.",
           "insecure_over_https": "Diese Seite kam über HTTPS, aber den Cookies fehlt das Secure-Flag. Entferne SESSION_COOKIE_SECURE=false."
         },
         "app_url": {
@@ -12536,7 +12545,7 @@
     "openDetail": "Details anzeigen",
     "historyLoadError": "Dein Testverlauf konnte nicht geladen werden",
     "historyLoadErrorHint": "Das heißt nicht, dass keine Ergebnisse vorliegen. Die Liste konnte nicht abgerufen werden. Versuche es erneut.",
-    "privacyNote": "Deine Antworten sind verschlüsselt gespeichert und erreichen den KI-Coach nicht.",
+    "privacyNote": "Deine Antworten sind verschlüsselt gespeichert. Antworten und Ergebnisse erreichen weder den KI-Coach noch eine andere KI-Funktion oder einen verbundenen KI-Assistenten.",
     "trend": {
       "sincePrevious": "Seit deinem vorigen Check-in am {date}: {change, plural, one {# Punkt} other {# Punkte}}.",
       "sinceFirst": "Seit deinem ersten Check-in am {date}: {change, plural, one {# Punkt} other {# Punkte}}.",

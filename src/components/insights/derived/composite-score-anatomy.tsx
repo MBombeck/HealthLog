@@ -18,6 +18,7 @@ import {
   type AnatomyContributor,
 } from "./score-anatomy-view";
 import { RING_GRADIENT, type RingHue } from "./ring-hues";
+import { bandWordKey, type ScoreBand } from "./band-tokens";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import { METRIC_PROVENANCE } from "./standards";
 import { ScoreHistoryChart, ScoreTrendChartDynamic } from "./score-history";
@@ -279,7 +280,7 @@ export function CompositeScoreAnatomy({
             }),
             max: v.device.scaleMax,
           })
-        : t(`insights.derived.scoreRing.band.${v.band}`);
+        : t(bandWordKey(v.band, isLoadMetric(metric)));
       if (metric === "RECOVERY_SCORE" && v.components) {
         contributors = v.components
           .map((c) => ({
@@ -304,11 +305,10 @@ export function CompositeScoreAnatomy({
   // the card always renders its prose rather than the no-provider fallback.
   const assessment = data.assessment;
 
-  // v1.42 — the score's course, right under its card, with the range tabs
-  // every chart offers. A stored nightly score charts its readings; readiness
-  // and the sleep score chart the daily history the score-history route
-  // serves. Only beside a score: an account without one gets the honest
-  // insufficient card, not an empty chart under it.
+  // v1.42 — the score's course under its card, with the range tabs. A stored
+  // nightly score charts its readings; readiness and the sleep score chart
+  // the score-history route's daily history. Only beside a score: an account
+  // without one gets the insufficient card, not an empty chart.
   const history =
     data.status !== "ok" ? null : metric === "RECOVERY_SCORE" ||
       metric === "STRESS_SCORE" ||
@@ -332,6 +332,7 @@ export function CompositeScoreAnatomy({
       <ScoreAnatomyView
         title={title}
         score={score}
+        {...ringBand(metric, data)}
         hue={METRIC_HUE[metric]}
         caption={caption}
         contributors={contributors}
@@ -390,4 +391,24 @@ function rankByImpact(a: AnatomyContributor, b: AnatomyContributor): number {
   const bPresent = b.value != null ? 1 : 0;
   if (aPresent !== bPresent) return bPresent - aPresent;
   return b.weight - a.weight;
+}
+
+/** Stress and strain measure a load: lower is better. */
+function isLoadMetric(metric: string): boolean {
+  return metric === "STRESS_SCORE" || metric === "STRAIN_SCORE";
+}
+
+/**
+ * The ring's band and direction for a persisted nightly score. The server
+ * bands stress and strain on 100 - score, so the ring takes that band and
+ * words it low / moderate / high; left to colour itself from the number it
+ * would announce a stress of 80 as good.
+ */
+function ringBand(
+  metric: string,
+  data: { status: string; value?: unknown },
+): { band?: ScoreBand; load: boolean } {
+  const load = isLoadMetric(metric);
+  if (!load || data.status !== "ok" || !data.value) return { load };
+  return { band: (data.value as { band?: ScoreBand }).band, load };
 }

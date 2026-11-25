@@ -40,6 +40,7 @@ import type {
   ExportCycleWriter,
   MarkedCycleSample,
 } from "@/lib/measurements/import-apple-health-export-cycle";
+import { ownValue } from "@/lib/own-key";
 
 /**
  * Reverse-lookup for the symbolic `HKCategoryValueSleepAnalysis*`
@@ -210,7 +211,7 @@ export function parseRecordValue(
     return rawValue === STAND_HOUR_STOOD ? { value: 1 } : null;
   }
   if (hkIdentifier === "HKCategoryTypeIdentifierSleepAnalysis") {
-    const stage = SLEEP_STAGE_NAME_TO_CODEPOINT[rawValue];
+    const stage = ownValue(SLEEP_STAGE_NAME_TO_CODEPOINT, rawValue);
     if (stage === undefined) return null;
     // For sleep, our `mapAppleHealthEntry` expects the value to be the
     // duration in minutes; derive it from start/end so the row carries
@@ -305,17 +306,17 @@ function openCycleRecord(
   hkType: string,
   attrs: TagAttributes,
 ): void {
-  const dayKey = userDayKey(
-    new Date(attrs.endDate ?? attrs.startDate ?? ""),
-    ctx.userTimezone,
-  );
-  ctx.state.currentCycleRecord = Number.isNaN(
-    Date.parse(attrs.endDate ?? attrs.startDate ?? ""),
-  )
+  // The day key is taken only from a date that reads. It used to be computed
+  // first, and formatting an invalid date throws, so one reproductive sample
+  // with an unreadable date ended the whole import instead of being skipped.
+  const at = Date.parse(attrs.endDate ?? attrs.startDate ?? "");
+  if (Number.isNaN(at))
+    tallyReason(ctx.tally.unknown, `${hkType}::unparseable`);
+  ctx.state.currentCycleRecord = Number.isNaN(at)
     ? null
     : {
         hkType,
-        dayKey,
+        dayKey: userDayKey(new Date(at), ctx.userTimezone),
         rawValue: attrs.value,
         sampleKey: hashSampleKey(
           hkType,
@@ -359,7 +360,7 @@ function openRecord(ctx: ExportTagContext, attrs: TagAttributes): void {
     tallyReason(deferred, hkType);
     return;
   }
-  const mapping = APPLE_HEALTH_TYPE_MAP[hkType];
+  const mapping = ownValue(APPLE_HEALTH_TYPE_MAP, hkType);
   if (!mapping) {
     tallyReason(unknown, hkType);
     return;

@@ -32,9 +32,9 @@
  *   - A section of a switched-off module is absent, not empty. A section the
  *     caller's grant does not cover is named in `sections` with
  *     `not_shared`, so the view can say so once.
- *   - Life events are part of the `profile` sharing domain and never reach a
- *     model: the model-facing projection of a day drops
- *     {@link MODEL_EXCLUDED_DAY_SECTIONS}.
+ *   - Life events (part of the `profile` sharing domain) and the
+ *     mental-health questionnaires never reach a model: the model-facing
+ *     projection of a day drops {@link MODEL_EXCLUDED_DAY_SECTIONS}.
  */
 import type { z } from "zod/v4";
 
@@ -121,8 +121,13 @@ export type DaySectionKey = (typeof DAY_SECTION_KEYS)[number];
  * Sections a model never sees, whatever it asks for. The Coach and the MCP
  * endpoint read a day through `get_day`, and that projection drops these
  * before anything leaves the instance (v1.42: life events go to no model).
+ * The questionnaire administrations (`assessments`) go to none either: the
+ * mental-wellbeing page promises that answers and scores stay out of every
+ * AI feature. The full list of data kinds kept from a model lives in
+ * `src/lib/ai/model-bound-data.ts`.
  */
 export const MODEL_EXCLUDED_DAY_SECTIONS = [
+  "assessments",
   "lifeEvents",
 ] as const satisfies readonly DaySectionKey[];
 

@@ -27,6 +27,8 @@
 import type { MeasurementType } from "@/generated/prisma/client";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { prisma } from "@/lib/db";
+import { readLatestCanonical } from "@/lib/measurements/latest-canonical";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import type { Locale } from "@/lib/i18n/config";
 import { annotate } from "@/lib/logging/context";
 import { resolveModuleMap } from "@/lib/modules/gate";
@@ -63,19 +65,20 @@ export type { CoachReadStripData } from "@/lib/insights/derived/coach-read-shape
 
 /**
  * Read the latest reading for `(userId, type)` — the value the strip places
- * against the band. Display-side scaling (e.g. WALKING_SPEED m/s → km/h) is
- * the caller's concern; the strip renders unscaled stored values, and the
- * band is unscaled too, so the placement is scale-invariant.
+ * against the band. It is the canonical latest (`readLatestCanonical`: the
+ * latest day, then the source ladder), the same reading the dashboard tile
+ * prints for this metric. Display-side scaling (e.g. WALKING_SPEED m/s →
+ * km/h) is the caller's concern; the strip renders unscaled stored values, and
+ * the band is unscaled too, so the placement is scale-invariant.
  */
 async function readLatestValue(
   userId: string,
   type: MeasurementType,
 ): Promise<{ value: number; measuredAt: Date } | null> {
-  return prisma.measurement.findFirst({
-    where: { userId, type, deletedAt: null },
-    orderBy: { measuredAt: "desc" },
-    select: { value: true, measuredAt: true },
-  });
+  const priorityJson = await loadUserSourcePriority(userId);
+  const [row] = await readLatestCanonical(userId, priorityJson, null, [type]);
+  if (!row) return null;
+  return { value: Number(row.value), measuredAt: new Date(row.measured_at) };
 }
 
 /**

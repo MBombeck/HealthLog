@@ -123,8 +123,9 @@ function persistLocale(newLocale: Locale) {
 // for good. `getSession` reconciles the column from the locale cookie on the
 // next request instead, which is ordered by the request pipeline and needs no
 // cooperation from the client. What this call still earns its place for is
-// the server-set cookie the route emits in reply: Safari's ITP caps the
-// script-written copy at 7 days, and a Set-Cookie is exempt.
+// the column of a browser that has no cookie yet (a guess may fill an empty
+// column, never replace a stored choice), and the reply: it names the
+// language in force, so a tab rendered before a switch elsewhere follows it.
 //
 // Once per tab session, account and locale, not on every mount: every page
 // load mounts the provider, and every authenticated write is charged to the
@@ -139,7 +140,11 @@ function persistLocale(newLocale: Locale) {
 // choice made before signing in reaches the column right after.
 const LOCALE_SYNCED_KEY = "healthlog-locale-synced";
 
-export function persistLocaleToServer(newLocale: Locale, accountId: string) {
+export function persistLocaleToServer(
+  newLocale: Locale,
+  accountId: string,
+  adopt?: (inForce: Locale) => void,
+) {
   const marker = `${accountId}:${newLocale}`;
   try {
     if (sessionStorage.getItem(LOCALE_SYNCED_KEY) === marker) return;
@@ -153,13 +158,31 @@ export function persistLocaleToServer(newLocale: Locale, accountId: string) {
     credentials: "same-origin",
     keepalive: true,
   })
-    .then((res) => {
+    .then(async (res) => {
       if (!res.ok) return;
+      // The server answers with the language in force for this browser, which
+      // is not this tab's when the tab is stale (another tab switched since it
+      // rendered) or showed a guess while the account has a stored choice.
+      // Record the answer, not the request, and let the tab follow it.
+      let inForce: Locale = newLocale;
       try {
-        sessionStorage.setItem(LOCALE_SYNCED_KEY, marker);
+        const body = (await res.json()) as { data?: { locale?: unknown } };
+        const answered = body?.data?.locale;
+        if (
+          typeof answered === "string" &&
+          (locales as readonly string[]).includes(answered)
+        ) {
+          inForce = answered as Locale;
+        }
+      } catch {
+        // Unreadable body: the write went through; keep the tab's locale.
+      }
+      try {
+        sessionStorage.setItem(LOCALE_SYNCED_KEY, `${accountId}:${inForce}`);
       } catch {
         // Storage unavailable: the next mount writes again.
       }
+      if (inForce !== newLocale) adopt?.(inForce);
     })
     .catch(() => {
       // Best-effort: the cookie remains the first-paint source of truth, and
@@ -281,10 +304,17 @@ export function I18nProvider({
       });
   }, []);
 
-  // Keep the HTML lang and the cookie in sync with the active locale on
-  // mount. The cookie acts as the SSR handoff for the next request.
+  // Keep the HTML lang in sync with the active locale, and refresh the cookie
+  // that acts as the SSR handoff for the next request — refresh, never
+  // create. A switch writes the cookie through `persistLocale`; with no
+  // cookie at all the server rendered either the account's stored choice
+  // (which the session read re-emits as a cookie on its own) or the
+  // Accept-Language guess. Writing the guess here turned it into a choice:
+  // the next request copied it onto the account, and signing in on a device
+  // with another system language reset the language picked everywhere else.
   useEffect(() => {
     document.documentElement.lang = locale;
+    if (readLocaleCookie() === null) return;
     document.cookie = `healthlog-locale=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
   }, [locale]);
 
