@@ -16375,5 +16375,10 @@
     "illnessOpen": "{label}, 진행 중",
     "open": "열기",
     "cyclePhases": "주기 단계"
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "약에 실시간 현황이 켜져 있지만 PUSH_RELAY_LIVE_ACTIVITY가 꺼져 있어 시작되지 않습니다.",
+    "noConsent": "약에 실시간 현황이 켜져 있지만 iPhone이 릴레이를 통한 허용을 하지 않았습니다.",
+    "noStartToken": "약에 실시간 현황이 켜져 있지만 iPhone이 아직 시작 토큰을 보내지 않았습니다."
   }
 }

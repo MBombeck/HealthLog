@@ -35,7 +35,8 @@ import {
   type IntakeSyncState,
   type RelayHealth,
 } from "@/lib/push-relay/capability";
-import { relayConfig } from "@/lib/push-relay/config";
+import { liveActivityRelayEnabled, relayConfig } from "@/lib/push-relay/config";
+import { laStartTokenUsable } from "@/lib/push-relay/live-activity-start-token";
 import { LA_START_EVENT } from "@/lib/push-relay/live-activity-settle";
 import { relayStateAt } from "@/lib/push-relay/relay-state";
 import { loadRegistration } from "@/lib/push-relay/registration";
@@ -109,6 +110,44 @@ export interface DiagnosticDevice {
   relayBoundAt: string | null;
   liveActivityStartedAt: string | null;
   envelopesReportedAt: string | null;
+  /**
+   * Whether the server can start a medication Live Activity on this device
+   * over the relay; see {@link liveActivityStartState}.
+   */
+  liveActivityStart: LiveActivityStartState;
+}
+
+/**
+ * Whether a relay-started Live Activity can reach a device. `null` when the
+ * question does not arise: no medication of the account has Live Activity on,
+ * or the device is no iPhone bound to the relay (a server with its own APNs
+ * key starts none). Otherwise the first thing in the way, in the order an
+ * operator and a person can fix it: the operator's switch
+ * `PUSH_RELAY_LIVE_ACTIVITY` (`switch_off`), the device's Live Activity
+ * consent (`no_consent`), a push-to-start token the relay still takes
+ * (`no_start_token`); `ready` when none is.
+ */
+export type LiveActivityStartState =
+  "ready" | "switch_off" | "no_consent" | "no_start_token" | null;
+
+export function liveActivityStartState(
+  d: {
+    platform: string;
+    relayState: string;
+    relayConflictAt: Date | null;
+    liveActivityConsentAt: Date | null;
+    laStartToken: string | null;
+    laStartSignature: string | null;
+    laStartStatement: unknown;
+  },
+  ctx: { wanted: boolean; switchOn: boolean; now: Date },
+): LiveActivityStartState {
+  if (!ctx.wanted || d.platform !== "ios") return null;
+  if (relayStateAt(d) !== "bound") return null;
+  if (!ctx.switchOn) return "switch_off";
+  if (d.liveActivityConsentAt === null) return "no_consent";
+  if (!laStartTokenUsable(d, ctx.now)) return "no_start_token";
+  return "ready";
 }
 
 export const DIAGNOSTIC_DEVICE_SELECT = {
@@ -121,6 +160,10 @@ export const DIAGNOSTIC_DEVICE_SELECT = {
   relayConflictAt: true,
   relayBoundAt: true,
   envelopeReportedAt: true,
+  liveActivityConsentAt: true,
+  laStartToken: true,
+  laStartSignature: true,
+  laStartStatement: true,
   relayDeliveries: {
     where: { eventType: LA_START_EVENT },
     orderBy: { createdAt: "desc" },
@@ -129,19 +172,26 @@ export const DIAGNOSTIC_DEVICE_SELECT = {
   },
 } as const;
 
-export function diagnosticDevice(d: {
-  id: string;
-  platform: string;
-  apnsToken: string | null;
-  apnsEnvironment: string | null;
-  lastSeen: Date;
-  relayState: string;
-  relayConflictAt: Date | null;
-  relayBoundAt: Date | null;
-  envelopeReportedAt: Date | null;
-  /** The device's last Live Activity start, when there is one. */
-  relayDeliveries: ReadonlyArray<{ acceptedAt: Date | null }>;
-}): DiagnosticDevice {
+export function diagnosticDevice(
+  d: {
+    id: string;
+    platform: string;
+    apnsToken: string | null;
+    apnsEnvironment: string | null;
+    lastSeen: Date;
+    relayState: string;
+    relayConflictAt: Date | null;
+    relayBoundAt: Date | null;
+    envelopeReportedAt: Date | null;
+    liveActivityConsentAt: Date | null;
+    laStartToken: string | null;
+    laStartSignature: string | null;
+    laStartStatement: unknown;
+    /** The device's last Live Activity start, when there is one. */
+    relayDeliveries: ReadonlyArray<{ acceptedAt: Date | null }>;
+  },
+  ctx: { liveActivityWanted: boolean; now: Date },
+): DiagnosticDevice {
   const { prefix, suffix } = maskApnsToken(d.apnsToken);
   return {
     id: d.id,
@@ -156,6 +206,11 @@ export function diagnosticDevice(d: {
     liveActivityStartedAt:
       d.relayDeliveries[0]?.acceptedAt?.toISOString() ?? null,
     envelopesReportedAt: d.envelopeReportedAt?.toISOString() ?? null,
+    liveActivityStart: liveActivityStartState(d, {
+      wanted: ctx.liveActivityWanted,
+      switchOn: liveActivityRelayEnabled(),
+      now: ctx.now,
+    }),
   };
 }
 

@@ -16375,5 +16375,10 @@
     "illnessOpen": "{label}, ongoing",
     "open": "Open",
     "cyclePhases": "Cycle phases"
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "A medication has a Live Activity, but PUSH_RELAY_LIVE_ACTIVITY is off, so none starts.",
+    "noConsent": "A medication has a Live Activity, but your iPhone has not allowed it over the relay.",
+    "noStartToken": "A medication has a Live Activity, but your iPhone has sent no start token yet."
   }
 }

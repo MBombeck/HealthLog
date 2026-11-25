@@ -4,6 +4,7 @@ import {
   attemptOutcome,
   diagnosticDevice,
   diagnosticPushAttempt,
+  liveActivityStartState,
   maskApnsToken,
   relayDeliveryOutcome,
 } from "@/lib/push-relay/diagnostics";
@@ -156,19 +157,84 @@ describe("diagnostic shapes", () => {
       reason: null,
       at: at.toISOString(),
     });
-    const device = diagnosticDevice({
-      id: "d1",
-      platform: "ios",
-      apnsToken: "",
-      apnsEnvironment: null,
-      lastSeen: at,
-      relayState: "none",
-      relayConflictAt: null,
-      relayBoundAt: null,
-      envelopeReportedAt: null,
-      relayDeliveries: [],
-    });
+    const device = diagnosticDevice(
+      {
+        id: "d1",
+        platform: "ios",
+        apnsToken: "",
+        apnsEnvironment: null,
+        lastSeen: at,
+        relayState: "none",
+        relayConflictAt: null,
+        relayBoundAt: null,
+        envelopeReportedAt: null,
+        liveActivityConsentAt: null,
+        laStartToken: null,
+        laStartSignature: null,
+        laStartStatement: null,
+        relayDeliveries: [],
+      },
+      { liveActivityWanted: true, now: at },
+    );
     expect(device.hasApnsToken).toBe(false);
+    // Not bound to the relay: no relay start to judge.
+    expect(device.liveActivityStart).toBeNull();
     expect(device.apnsTokenPrefix).toBeNull();
+  });
+});
+
+describe("liveActivityStartState", () => {
+  const now = new Date("2026-11-25T10:00:00Z");
+  const iat = Math.floor(now.getTime() / 1000) - 3600;
+  const ready = {
+    platform: "ios",
+    relayState: "bound",
+    relayConflictAt: null,
+    liveActivityConsentAt: new Date("2026-11-20T10:00:00Z"),
+    laStartToken: "start-token",
+    laStartSignature: "sig",
+    laStartStatement: { iat },
+  };
+  const on = { wanted: true, switchOn: true, now };
+
+  it("is ready when nothing is in the way", () => {
+    expect(liveActivityStartState(ready, on)).toBe("ready");
+  });
+
+  it("does not arise without a medication that wants one, off the relay, or off iOS", () => {
+    expect(liveActivityStartState(ready, { ...on, wanted: false })).toBeNull();
+    expect(
+      liveActivityStartState({ ...ready, relayState: "none" }, on),
+    ).toBeNull();
+    expect(
+      liveActivityStartState({ ...ready, platform: "android" }, on),
+    ).toBeNull();
+  });
+
+  it("names the operator switch first, then the consent, then the token", () => {
+    expect(
+      liveActivityStartState(
+        { ...ready, liveActivityConsentAt: null, laStartToken: null },
+        { ...on, switchOn: false },
+      ),
+    ).toBe("switch_off");
+    expect(
+      liveActivityStartState(
+        { ...ready, liveActivityConsentAt: null, laStartToken: null },
+        on,
+      ),
+    ).toBe("no_consent");
+    expect(liveActivityStartState({ ...ready, laStartToken: null }, on)).toBe(
+      "no_start_token",
+    );
+  });
+
+  it("counts a start statement the relay no longer takes as no token", () => {
+    expect(
+      liveActivityStartState(
+        { ...ready, laStartStatement: { iat: iat - 31 * 24 * 3600 } },
+        on,
+      ),
+    ).toBe("no_start_token");
   });
 });

@@ -16375,5 +16375,10 @@
     "illnessOpen": "{label}, en curso",
     "open": "Abrir",
     "cyclePhases": "Fases del ciclo"
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "Un medicamento tiene una Actividad en directo, pero PUSH_RELAY_LIVE_ACTIVITY está desactivado, así que no se inicia ninguna.",
+    "noConsent": "Un medicamento tiene una Actividad en directo, pero tu iPhone no la ha permitido a través del relay.",
+    "noStartToken": "Un medicamento tiene una Actividad en directo, pero tu iPhone aún no ha enviado un token de inicio."
   }
 }

@@ -16375,5 +16375,10 @@
     "illnessOpen": "{label}, продолжается",
     "open": "Открыть",
     "cyclePhases": "Фазы цикла"
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "У лекарства включена Live Activity, но PUSH_RELAY_LIVE_ACTIVITY выключен, поэтому она не запускается.",
+    "noConsent": "У лекарства включена Live Activity, но ваш iPhone не разрешил её через ретранслятор.",
+    "noStartToken": "У лекарства включена Live Activity, но ваш iPhone ещё не отправил токен запуска."
   }
 }

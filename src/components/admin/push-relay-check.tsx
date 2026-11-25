@@ -1,7 +1,10 @@
 "use client";
 
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import type { AdminPushRelayStatus } from "./use-push-relay";
+import {
+  useAdminDiagnosticDevices,
+  type AdminPushRelayStatus,
+} from "./use-push-relay";
 
 /** The reasons of a non-ok relay state the admin is told about in words. */
 const STATE_REASON_LABEL = {
@@ -113,4 +116,39 @@ export function PushRelayCheckLine({
     );
   }
   return null;
+}
+
+/** What keeps a wanted Live Activity from starting, per `liveActivityStart`. */
+const LA_START_LABEL = {
+  switch_off: "adminLiveActivityStart.switchOff",
+  no_consent: "adminLiveActivityStart.noConsent",
+  no_start_token: "adminLiveActivityStart.noStartToken",
+} as const;
+
+/**
+ * One line when a medication has Live Activity on but the server cannot
+ * start it on one of the admin's own iPhones over the relay: the operator's
+ * switch is off, the device gave no Live Activity consent, or it holds no
+ * push-to-start token the relay takes. The state is the diagnostic's
+ * (`liveActivityStart`), resolved on the server; nothing is shown when it is
+ * `ready` or does not arise.
+ */
+export function LiveActivityStartLine({
+  status,
+}: {
+  status: AdminPushRelayStatus;
+}) {
+  const { t } = useTranslations();
+  const enabled = status.offered && !status.ownApnsKey;
+  const diagnostic = useAdminDiagnosticDevices({ enabled });
+  if (!enabled) return null;
+  const key = (diagnostic.data?.devices ?? [])
+    .map((d) => labelOf(LA_START_LABEL, d.liveActivityStart))
+    .find((k) => k !== undefined);
+  if (!key) return null;
+  return (
+    <p className="text-sm" data-slot="push-relay-la-start">
+      {t(key)}
+    </p>
+  );
 }

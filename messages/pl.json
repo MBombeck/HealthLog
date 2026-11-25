@@ -16375,5 +16375,10 @@
     "illnessOpen": "{label}, trwa",
     "open": "Otwórz",
     "cyclePhases": "Fazy cyklu"
+  },
+  "adminLiveActivityStart": {
+    "switchOff": "Lek ma Aktywność na żywo, ale PUSH_RELAY_LIVE_ACTIVITY jest wyłączone, więc żadna się nie uruchamia.",
+    "noConsent": "Lek ma Aktywność na żywo, ale Twój iPhone nie zezwolił na nią przez przekaźnik.",
+    "noStartToken": "Lek ma Aktywność na żywo, ale Twój iPhone nie wysłał jeszcze tokenu startowego."
   }
 }
