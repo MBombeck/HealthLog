@@ -118,8 +118,11 @@ const BUDGET = {
   // The morning read (1.50.0): the snapshot (its own cell, rebuilt here, 88
   // of them), the coincident engine, readiness and the sleep score in one day
   // cell, the floor ledger, the quiet-source stamps and the day's first
-  // visit. A fixed number, whatever the data.
-  dailyMorning: 123,
+  // visit. A fixed number, whatever the data. Readiness and the sleep score
+  // run side by side and each asks for the source order; whether the second
+  // joins the first one's read in flight is timing (123 locally, 124 on the
+  // CI runner), so the budget holds the higher count.
+  dailyMorning: 124,
   // The target cards; their seven-day means come from the slice when a
   // fresh one is cached, here (evicted) from the slice's window aggregate.
   // 22 → 23, health status 59 → 60 (1.49.0): both grade weight and BMI, and
