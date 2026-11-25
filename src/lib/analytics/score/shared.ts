@@ -24,7 +24,7 @@ export function clampScore(value: number): number {
 export const SCORE_GREEN_FLOOR = 70;
 
 /** Below this is red. */
-const SCORE_YELLOW_FLOOR = 50;
+export const SCORE_YELLOW_FLOOR = 50;
 
 /**
  * The band a 0-100 score falls in, from the number alone.
@@ -51,6 +51,77 @@ const SCORE_YELLOW_FLOOR = 50;
 export function scoreBand(score: number): ScoreBand {
   if (score >= SCORE_GREEN_FLOOR) return "green";
   if (score >= SCORE_YELLOW_FLOOR) return "yellow";
+  return "red";
+}
+
+/**
+ * Which way each HealthLog score reads. Readiness, the sleep score, the
+ * health score and the computed recovery are better high; the two load
+ * estimates, stress and strain, are heavier high.
+ */
+export const SCORE_BAND_DIRECTION = {
+  health: "higher-better",
+  readiness: "higher-better",
+  sleep: "higher-better",
+  recovery: "higher-better",
+  stress: "lower-better",
+  strain: "lower-better",
+} as const;
+
+export type HealthLogScoreKind = keyof typeof SCORE_BAND_DIRECTION;
+
+/**
+ * The one band rule for every 0..100 score, with direction (1.50).
+ *
+ * Every HealthLog score is banded by {@link scoreBand}; a lower-better score
+ * is banded on `100 - score`, so a stress of 80 is red, never green. A
+ * vendor's own number (`"vendor"`: a WHOOP recovery, an Oura or Garmin sleep
+ * score) gets no HealthLog band at all and returns `null`; the vendor colours
+ * its number by its own scale, and HealthLog does not restate it. The health
+ * score's full rule also takes its worst counted pillar into account; that
+ * lives in `computeComposite`, this is the mean side only.
+ */
+export function bandForScoreKind(
+  kind: HealthLogScoreKind,
+  score: number,
+): ScoreBand;
+export function bandForScoreKind(kind: "vendor", score: number): null;
+export function bandForScoreKind(
+  kind: HealthLogScoreKind | "vendor",
+  score: number,
+): ScoreBand | null;
+export function bandForScoreKind(
+  kind: HealthLogScoreKind | "vendor",
+  score: number,
+): ScoreBand | null {
+  if (kind === "vendor") return null;
+  return scoreBand(
+    SCORE_BAND_DIRECTION[kind] === "higher-better" ? score : 100 - score,
+  );
+}
+
+/**
+ * Yellow floor of the band a vendor's number still carries on the wire
+ * until 1.51. See {@link legacyVendorWireBand}.
+ */
+const LEGACY_VENDOR_YELLOW_FLOOR = 40;
+
+/**
+ * The `band` a vendor's own number (a WHOOP recovery, a WHOOP day strain)
+ * keeps on the wire in 1.50, so the iOS ring that shows it does not change
+ * colour before it is rebuilt on the vendor's own thresholds in 1.51. It is
+ * the ladder those rings have always shown (green from 70, yellow from 40,
+ * direction honoured). No web surface paints it: there a vendor's number is
+ * shown neutral (`bandForScoreKind("vendor")` is null). Retire it with the
+ * ring rebuild.
+ */
+export function legacyVendorWireBand(
+  score: number,
+  direction: "higher-better" | "lower-better",
+): ScoreBand {
+  const good = direction === "higher-better" ? score : 100 - score;
+  if (good >= SCORE_GREEN_FLOOR) return "green";
+  if (good >= LEGACY_VENDOR_YELLOW_FLOOR) return "yellow";
   return "red";
 }
 

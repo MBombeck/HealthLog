@@ -170,7 +170,7 @@ export const derivedMetricQuery = z
  *
  * STILL OPAQUE, and known to be: the value shapes of `VITALS_BASELINE` (prose
  * only, in the `value` description), `FITNESS_AGE`, `VASCULAR_AGE_DELTA`,
- * `HRV_BALANCE`, `BMI`, `READINESS`, `COINCIDENT_DEVIATION`,
+ * `HRV_BALANCE`, `BMI`, `COINCIDENT_DEVIATION`,
  * `TRAJECTORY`, `SAME_TIME_BASELINE`, `SIX_MINUTE_WALK_BAND`, `HEALTH_SCORE`
  * and the three fixed-type baselines. Each is a TypeScript interface next to
  * its engine under `src/lib/insights/derived/`; modelling them is a schema per
@@ -321,6 +321,64 @@ export const sleepScoreValue = z
   })
   .meta({ id: "SleepScoreValue" });
 
+/**
+ * The `READINESS` value, published beside `SleepScoreValue` for the same
+ * reason. Held to the dispatcher's emitted object by
+ * `insights/derived/__tests__/readiness-freshness.test.ts`. `fresh` and
+ * `asOfDay` (1.50) say which day the blend rests on.
+ */
+export const readinessValue = z
+  .object({
+    score: z
+      .number()
+      .int()
+      .describe(
+        "The 0–100 readiness blend. Only a statement about today when `fresh` is true; otherwise it is the last blend, from `asOfDay`.",
+      ),
+    band: z
+      .enum(["green", "yellow", "red"])
+      .describe(
+        "Server's verdict on the score (green from 70, yellow from 50); never re-band it client-side. Not to be shown when `fresh` is false.",
+      ),
+    components: z
+      .array(
+        z.object({
+          key: z
+            .enum(["rhr", "hrv", "sleep", "respiratory", "mood"])
+            .describe("Contributor id."),
+          value: z
+            .number()
+            .nullable()
+            .describe(
+              "0–100 contribution; null when the input is missing (dropped from the blend, never 0).",
+            ),
+          weight: z
+            .number()
+            .describe(
+              "Effective weight after redistributing missing contributors.",
+            ),
+        }),
+      )
+      .describe("All five contributors, present and dropped."),
+    series: z
+      .array(z.number())
+      .optional()
+      .describe(
+        `The blend's stored nightly course, oldest → newest, capped at ${SPARKLINE_MAX_POINTS} points.`,
+      ),
+    asOfDay: z
+      .string()
+      .describe(
+        "1.50 — the oldest local day (YYYY-MM-DD, the account's zone) a counted input rests on: a vital's latest day mean or the wake day of the scored night. Mood carries no day and is not counted. Today when `fresh` is true.",
+      ),
+    fresh: z
+      .boolean()
+      .describe(
+        '1.50 — true only when every counted vital (resting pulse, HRV, respiratory rate) is from the reader\'s today and the sleep score describes the night that ended this morning. When false, show no number, no band and no sentence about readiness, at most "last {score} on {asOfDay}".',
+      ),
+  })
+  .meta({ id: "ReadinessValue" });
+
 export const derivedCoverage = z
   .object({
     requiredInputs: z
@@ -457,7 +515,7 @@ export const derivedMetricResponse = z
       .record(z.string(), z.unknown())
       .nullable()
       .describe(
-        "Metric-specific value object when status is 'ok'; null when 'insufficient'. The shape is chosen by `metric`, and the record stays open because one route serves eighteen of them. `RECOVERY_SCORE` / `STRESS_SCORE` / `STRAIN_SCORE` return the `WellnessScoreValue` schema — field-by-field in `components.schemas`, including the `series`, `daysInWindow` and `asOf` a client would otherwise have to discover by inspecting a live payload. `SLEEP_SCORE` returns the `SleepScoreValue` schema, including `rhythmNights` and the per-sub-score `gap`. `VITALS_BASELINE` returns { type, center, low, high, spread, sampleDays, k, series, direction }, where `series` is the trailing per-day means for the inline sparkline and `direction` (v1.43, a `TrendVerdict`) says which way a change of the vital counts for this person, with `center` placed against their own target or a profile default. `SAME_TIME_BASELINE` carries `mode` (v1.50): `hourly` is the hour-by-hour comparison ({ type, unit, timezone, dateKey, asOfHour, todayValue, typicalValue, typicalLow, typicalHigh, delta, percentOfTypical, band, todayCurve, typicalCurve, baselineDays, windowDays }); `daily_total` answers when the source that owns today's total under the person's source order reports one total per day (Garmin, Withings, an import) and carries { type, unit, timezone, dateKey, todayValue, typicalValue, typicalLow, typicalHigh, percentOfTypical, dayRangeReached (`not_yet` / `within` / `above`), source, updatedAt (when today's total last changed on the server), baselineDays, windowDays }: today's running total as last reported against the median and the 25th to 75th percentile of the last 14 complete days, with no hour and no curve. Its gated reasons are `learning_usual_total` (fewer than 7 days with a total) and `no_total_today`. The remaining metrics' value objects are not modelled here yet; their shapes are TypeScript interfaces beside their engines under `src/lib/insights/derived/`.",
+        "Metric-specific value object when status is 'ok'; null when 'insufficient'. The shape is chosen by `metric`, and the record stays open because one route serves eighteen of them. `RECOVERY_SCORE` / `STRESS_SCORE` / `STRAIN_SCORE` return the `WellnessScoreValue` schema — field-by-field in `components.schemas`, including the `series`, `daysInWindow` and `asOf` a client would otherwise have to discover by inspecting a live payload. `SLEEP_SCORE` returns the `SleepScoreValue` schema, including `rhythmNights` and the per-sub-score `gap`. `READINESS` returns the `ReadinessValue` schema, including `fresh` and `asOfDay` (1.50): a readiness that is not fresh rests on an earlier day and is not shown as today's. `VITALS_BASELINE` returns { type, center, low, high, spread, sampleDays, k, series, direction }, where `series` is the trailing per-day means for the inline sparkline and `direction` (v1.43, a `TrendVerdict`) says which way a change of the vital counts for this person, with `center` placed against their own target or a profile default. `SAME_TIME_BASELINE` carries `mode` (v1.50): `hourly` is the hour-by-hour comparison ({ type, unit, timezone, dateKey, asOfHour, todayValue, typicalValue, typicalLow, typicalHigh, delta, percentOfTypical, band, todayCurve, typicalCurve, baselineDays, windowDays }); `daily_total` answers when the source that owns today's total under the person's source order reports one total per day (Garmin, Withings, an import) and carries { type, unit, timezone, dateKey, todayValue, typicalValue, typicalLow, typicalHigh, percentOfTypical, dayRangeReached (`not_yet` / `within` / `above`), source, updatedAt (when today's total last changed on the server), baselineDays, windowDays }: today's running total as last reported against the median and the 25th to 75th percentile of the last 14 complete days, with no hour and no curve. Its gated reasons are `learning_usual_total` (fewer than 7 days with a total) and `no_total_today`. The remaining metrics' value objects are not modelled here yet; their shapes are TypeScript interfaces beside their engines under `src/lib/insights/derived/`.",
       ),
     coverage: derivedCoverage,
     confidence: derivedConfidence

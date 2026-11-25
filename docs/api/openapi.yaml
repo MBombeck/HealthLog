@@ -83204,21 +83204,22 @@ components:
             `STRESS_SCORE` / `STRAIN_SCORE` return the `WellnessScoreValue` schema — field-by-field in
             `components.schemas`, including the `series`, `daysInWindow` and `asOf` a client would otherwise have to
             discover by inspecting a live payload. `SLEEP_SCORE` returns the `SleepScoreValue` schema, including
-            `rhythmNights` and the per-sub-score `gap`. `VITALS_BASELINE` returns { type, center, low, high, spread,
-            sampleDays, k, series, direction }, where `series` is the trailing per-day means for the inline sparkline
-            and `direction` (v1.43, a `TrendVerdict`) says which way a change of the vital counts for this person, with
-            `center` placed against their own target or a profile default. `SAME_TIME_BASELINE` carries `mode` (v1.50):
-            `hourly` is the hour-by-hour comparison ({ type, unit, timezone, dateKey, asOfHour, todayValue,
-            typicalValue, typicalLow, typicalHigh, delta, percentOfTypical, band, todayCurve, typicalCurve,
-            baselineDays, windowDays }); `daily_total` answers when the source that owns today's total under the
-            person's source order reports one total per day (Garmin, Withings, an import) and carries { type, unit,
-            timezone, dateKey, todayValue, typicalValue, typicalLow, typicalHigh, percentOfTypical, dayRangeReached
-            (`not_yet` / `within` / `above`), source, updatedAt (when today's total last changed on the server),
-            baselineDays, windowDays }: today's running total as last reported against the median and the 25th to 75th
-            percentile of the last 14 complete days, with no hour and no curve. Its gated reasons are
-            `learning_usual_total` (fewer than 7 days with a total) and `no_total_today`. The remaining metrics' value
-            objects are not modelled here yet; their shapes are TypeScript interfaces beside their engines under
-            `src/lib/insights/derived/`."
+            `rhythmNights` and the per-sub-score `gap`. `READINESS` returns the `ReadinessValue` schema, including
+            `fresh` and `asOfDay` (1.50): a readiness that is not fresh rests on an earlier day and is not shown as
+            today's. `VITALS_BASELINE` returns { type, center, low, high, spread, sampleDays, k, series, direction },
+            where `series` is the trailing per-day means for the inline sparkline and `direction` (v1.43, a
+            `TrendVerdict`) says which way a change of the vital counts for this person, with `center` placed against
+            their own target or a profile default. `SAME_TIME_BASELINE` carries `mode` (v1.50): `hourly` is the
+            hour-by-hour comparison ({ type, unit, timezone, dateKey, asOfHour, todayValue, typicalValue, typicalLow,
+            typicalHigh, delta, percentOfTypical, band, todayCurve, typicalCurve, baselineDays, windowDays });
+            `daily_total` answers when the source that owns today's total under the person's source order reports one
+            total per day (Garmin, Withings, an import) and carries { type, unit, timezone, dateKey, todayValue,
+            typicalValue, typicalLow, typicalHigh, percentOfTypical, dayRangeReached (`not_yet` / `within` / `above`),
+            source, updatedAt (when today's total last changed on the server), baselineDays, windowDays }: today's
+            running total as last reported against the median and the 25th to 75th percentile of the last 14 complete
+            days, with no hour and no curve. Its gated reasons are `learning_usual_total` (fewer than 7 days with a
+            total) and `no_total_today`. The remaining metrics' value objects are not modelled here yet; their shapes
+            are TypeScript interfaces beside their engines under `src/lib/insights/derived/`."
         coverage:
           $ref: "#/components/schemas/DerivedCoverage"
         confidence:
@@ -112594,6 +112595,73 @@ components:
         - rhythmNights
         - rhythmMinNights
         - series
+      additionalProperties: false
+    ReadinessValue:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: The 0–100 readiness blend. Only a statement about today when `fresh` is true; otherwise it is the last
+            blend, from `asOfDay`.
+        band:
+          type: string
+          enum:
+            - green
+            - yellow
+            - red
+          description: Server's verdict on the score (green from 70, yellow from 50); never re-band it client-side. Not to be
+            shown when `fresh` is false.
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                enum:
+                  - rhr
+                  - hrv
+                  - sleep
+                  - respiratory
+                  - mood
+                description: Contributor id.
+              value:
+                description: 0–100 contribution; null when the input is missing (dropped from the blend, never 0).
+                type:
+                  - number
+                  - "null"
+              weight:
+                type: number
+                description: Effective weight after redistributing missing contributors.
+            required:
+              - key
+              - value
+              - weight
+            additionalProperties: false
+          description: All five contributors, present and dropped.
+        series:
+          description: The blend's stored nightly course, oldest → newest, capped at 30 points.
+          type: array
+          items:
+            type: number
+        asOfDay:
+          type: string
+          description: "1.50 — the oldest local day (YYYY-MM-DD, the account's zone) a counted input rests on: a vital's latest
+            day mean or the wake day of the scored night. Mood carries no day and is not counted. Today when `fresh` is
+            true."
+        fresh:
+          type: boolean
+          description: 1.50 — true only when every counted vital (resting pulse, HRV, respiratory rate) is from the reader's today
+            and the sleep score describes the night that ended this morning. When false, show no number, no band and no
+            sentence about readiness, at most "last {score} on {asOfDay}".
+      required:
+        - score
+        - band
+        - components
+        - asOfDay
+        - fresh
       additionalProperties: false
   parameters:
     AccountSelector:

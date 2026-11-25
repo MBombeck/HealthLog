@@ -18,12 +18,7 @@ import {
   type ProvenanceStandard,
 } from "./provenance-explainer";
 import { TILE_HUE, type RingHue } from "./ring-hues";
-import {
-  bandForScore,
-  BAND_PROGRESS_CLASS,
-  clampScore,
-  type ScoreBand,
-} from "./band-tokens";
+import { clampScore, type ScoreBand } from "./band-tokens";
 
 /**
  * v1.10.0 — the Oura-style score-anatomy detail view (the Hybrid
@@ -31,9 +26,11 @@ import {
  *
  * A full-bleed `ScoreRing` + ranked contributor rows + a cited-standard
  * `ProvenanceExplainer`. Each contributor row is one input's push/pull on
- * the score: a label, an impact bar (band-coloured, width = the
- * contributor's 0..100 value), and the contributor's own mini coverage
- * (its effective weight share). Reused by every composite (sleep score,
+ * the score: a label, an impact bar (neutral, width = the contributor's
+ * 0..100 value), and the contributor's own mini coverage (its effective
+ * weight share). The bar carries no band colour: a contributor is not a
+ * score, and a traffic light on it would call a 45 "out of range" when it
+ * only means the input sat a little off its usual (1.50, one band rule). Reused by every composite (sleep score,
  * readiness, …) — the caller normalises its `value` into the
  * `contributors` list, so this component stays metric-agnostic.
  *
@@ -221,7 +218,6 @@ function ContributorRow({ contributor }: { contributor: AnatomyContributor }) {
   const present =
     contributor.value != null && Number.isFinite(contributor.value);
   const clamped = present ? clampScore(contributor.value as number) : 0;
-  const rowBand: ScoreBand = bandForScore(clamped);
   const weightPct = Math.round(contributor.weight * 100);
 
   return (
@@ -256,7 +252,7 @@ function ContributorRow({ contributor }: { contributor: AnatomyContributor }) {
           data-slot="anatomy-contributor-bar"
           className={cn(
             "h-full rounded-full transition-all",
-            present ? BAND_PROGRESS_CLASS[rowBand] : "bg-muted",
+            present ? "bg-muted-foreground/60" : "bg-muted",
           )}
           style={{ width: present ? `${clamped}%` : "0%" }}
         />
