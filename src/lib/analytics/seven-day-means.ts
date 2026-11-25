@@ -10,6 +10,7 @@ import {
 } from "@/lib/analytics/summaries-slice";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
+import { roundStable2 } from "@/lib/stats/central";
 
 /**
  * The seven-day mean per type, exactly as the slice computes `avg7` (the same
@@ -57,10 +58,7 @@ export async function readSevenDayMeans(
     // mean over stage rows is not the slice's sleep figure, so it is left
     // out rather than served wrong. Callers fold the nights themselves.
     if (row.type === "SLEEP_DURATION") continue;
-    out[row.type] =
-      row.avg7 === null || !Number.isFinite(row.avg7)
-        ? null
-        : Math.round(row.avg7 * 100) / 100;
+    out[row.type] = roundStable2(row.avg7);
   }
   return out;
 }
