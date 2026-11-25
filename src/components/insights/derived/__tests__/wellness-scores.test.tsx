@@ -100,6 +100,32 @@ describe("<WellnessScores>", () => {
     expect(html).toContain('data-slot="wellness-score-band-word"');
   });
 
+  it("words and announces a heavy stress or strain as high, never good or low", () => {
+    // The server bands stress and strain on 100 - score: 80 is red.
+    const html = render(
+      <WellnessScores
+        read={readFrom({
+          STRESS_SCORE: ok({ score: 80, band: "red", series: [] }),
+          STRAIN_SCORE: ok({ score: 10, band: "green", series: [] }),
+        })}
+        isLoading={false}
+      />,
+    );
+    const tile = (metric: string) => {
+      const start = html.indexOf(`data-metric="${metric}"`);
+      const next = html.indexOf('data-slot="wellness-score-tile"', start);
+      return html.slice(start, next === -1 ? undefined : next);
+    };
+    const stress = tile("STRESS_SCORE");
+    expect(stress).toContain('data-band="red"');
+    expect(stress).toMatch(/data-slot="wellness-score-band-word"[^>]*>high</);
+    expect(stress).toContain("Score 80 out of 100, high");
+    expect(stress).not.toMatch(/, good"|, low"|>good<|>low</);
+    const strain = tile("STRAIN_SCORE");
+    expect(strain).toMatch(/data-slot="wellness-score-band-word"[^>]*>low</);
+    expect(strain).toContain("Score 10 out of 100, low");
+  });
+
   it("renders one tile per available score and hides absent ones", () => {
     const html = render(
       <WellnessScores

@@ -12,7 +12,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { ScoreRing } from "./score-ring";
 import { RING_GRADIENT, TILE_HUE, type RingHue } from "./ring-hues";
 import type { DerivedBatchRead } from "./use-derived-metric";
-import type { ScoreBand } from "./band-tokens";
+import { bandWordKey, type ScoreBand } from "./band-tokens";
 // Type-only — the compute payloads never drag the server graph into the bundle.
 import type { ReadinessValue } from "@/lib/insights/derived/readiness";
 import type { SleepScoreValue } from "@/lib/insights/derived/sleep-score";
@@ -163,6 +163,9 @@ function RingTile({
         <ScoreRing
           score={score}
           band={band}
+          // Stress and strain are a load: the ring announces low / moderate /
+          // high, the word under it says the same.
+          load={metricSlot === "STRESS_SCORE" || metricSlot === "STRAIN_SCORE"}
           size="sm"
           hue={hue}
           animate={animate}
@@ -361,8 +364,8 @@ export function WellnessScores({
   const stress = read<WellnessScoreValue>({ metric: "STRESS_SCORE" });
   const strain = read<WellnessScoreValue>({ metric: "STRAIN_SCORE" });
 
-  const bandWord = (band: ScoreBand) =>
-    t(`insights.derived.scoreRing.band.${band}`);
+  const bandWord = (band: ScoreBand, load = false) =>
+    t(bandWordKey(band, load));
 
   const tiles: React.ReactNode[] = [];
 
@@ -430,7 +433,7 @@ export function WellnessScores({
         score={stress.value.score}
         band={stress.value.band}
         label={t("insights.derived.scores.stress")}
-        bandWord={bandWord(stress.value.band)}
+        bandWord={bandWord(stress.value.band, true)}
         href="/insights/scores/stress"
         metricSlot="STRESS_SCORE"
         hue="stress"
@@ -452,7 +455,7 @@ export function WellnessScores({
         score={strain.value.score}
         band={strain.value.band}
         label={t("insights.derived.scores.strain")}
-        bandWord={bandWord(strain.value.band)}
+        bandWord={bandWord(strain.value.band, true)}
         href="/insights/scores/strain"
         metricSlot="STRAIN_SCORE"
         hue="strain"

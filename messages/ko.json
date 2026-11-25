@@ -4723,6 +4723,11 @@
           "green": "좋음",
           "yellow": "보통",
           "red": "낮음"
+        },
+        "loadBand": {
+          "green": "낮음",
+          "yellow": "보통",
+          "red": "높음"
         }
       },
       "provenance": {
