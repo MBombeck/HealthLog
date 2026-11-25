@@ -138,6 +138,12 @@ describe("classifyBriefingFailure", () => {
     expect(classifyBriefingFailure({ reason: "invalid-json" })).toBe("format");
   });
 
+  it("maps an unrenderable briefing to format (#1499)", () => {
+    expect(classifyBriefingFailure({ reason: "invalid-briefing" })).toBe(
+      "format",
+    );
+  });
+
   it("maps 429 to rate-limit, other 4xx to auth, 5xx to provider", () => {
     expect(
       classifyBriefingFailure({ reason: "provider-error", httpStatus: 429 }),

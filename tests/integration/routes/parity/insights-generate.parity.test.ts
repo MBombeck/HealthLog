@@ -942,6 +942,17 @@ describe("insights-generate parity walk", { shuffle: false }, () => {
       await post("P24-truncated");
     });
 
+    it("P23b a JSON reply whose briefing the card cannot render", async () => {
+      // #1499: the reply parses, but its briefing has no paragraph and its
+      // findings are not a list. It is refused like a reply that is not
+      // JSON: a failure marker, no cache write, the last briefing kept.
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        content: reply({ signalsOfDay: [], keyFindings: "steady" }),
+      });
+      await post("P23b-invalid-briefing");
+    });
+
     it("P25 an ungrounded briefing the retry fixes", async () => {
       await resetBriefing(OWNER_ID);
       seams.script.push(

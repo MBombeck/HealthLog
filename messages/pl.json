@@ -3198,6 +3198,7 @@
       "failedDescriptionTimeout": "Żądanie AI przekroczyło limit czasu, zanim briefing był gotowy. W przypadku wolnego modelu lokalnego zwiększ limit czasu odpowiedzi w Ustawieniach i spróbuj ponownie.",
       "failedDescriptionProvider": "Dostawca AI odrzucił żądanie. Sprawdź dostawcę i klucz API w ustawieniach AI, a następnie spróbuj ponownie.",
       "failedDescriptionRateLimit": "Dostawca AI ogranicza teraz liczbę żądań. Spróbuj ponownie za chwilę.",
+      "failedDescriptionFormat": "AI odpowiedziała, ale nie w formie, którą briefing może pokazać. Spróbuj ponownie; jeśli to się powtarza, pomóc może inny model w ustawieniach AI.",
       "omittedTitle": "Briefing wstrzymany",
       "omittedUngroundedDescription": "Wygenerowany briefing zawierał liczbę, której nie udało się zweryfikować na podstawie Twoich danych, więc nie został wyświetlony. Spróbuj ponownie."
     },
