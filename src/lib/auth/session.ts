@@ -17,10 +17,7 @@ import {
   readSessionCookie,
   sessionCookieName,
 } from "@/lib/auth/session-cookie";
-import {
-  requestCarriesBearer,
-  requestUsesTokenTransport,
-} from "@/lib/auth/token-transport";
+import * as transport from "@/lib/auth/token-transport";
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -242,10 +239,8 @@ const ONBOARDING_COOKIE = "hl_onboarding";
 export async function setOnboardingPendingCookie(
   pending: boolean,
 ): Promise<void> {
-  // A browser hint, so never on the token transport: `/api/auth/me` runs on
-  // every app boot and would otherwise hand the native client a cookie it has
-  // no use for (see `token-transport.ts`).
-  if (await requestUsesTokenTransport()) return;
+  // A browser hint: never on the token transport (`token-transport.ts`).
+  if (await transport.requestUsesTokenTransport()) return;
   const cookieStore = await cookies();
   if (pending) {
     cookieStore.set(ONBOARDING_COOKIE, "pending", {
@@ -285,20 +280,10 @@ export async function createSession(
   // "single-factor session" and never satisfies step-up.
   mfaVerifiedAt?: Date | null,
 ): Promise<string | null> {
-  // A web session belongs to a browser and nothing else. On the token
-  // transport — a Bearer caller, or a native sign-in answered with tokens —
-  // no row is written and no cookie is set, whichever route asked. The native
-  // client keeps any cookie it is sent and replays it beside its token, after
-  // its own sign-out and under the next account on the device, so a session
-  // minted here would outlive the credential the app thinks it holds. Decided
-  // here rather than at each caller so a route added later cannot forget it;
-  // the routes that answer a native caller with tokens branch on the same
-  // test first (`usesTokenTransport`), and this is the floor beneath them.
-  if (await requestUsesTokenTransport()) {
-    getEvent()?.addWarning("web session withheld on the token transport");
-    return null;
-  }
-
+  // Browsers only. A token client keeps any cookie it is sent and replays it
+  // past its own sign-out, so on the token transport nothing is written,
+  // whichever route asked: the floor beneath the routes' own branch.
+  if (await transport.requestUsesTokenTransport()) return null;
   // The secret is the cookie; the row id stays an internal identifier and is
   // never handed to the client.
   const secret = mintSessionSecret();
@@ -333,16 +318,9 @@ export async function getSession(): Promise<{
   };
   user: SessionUser;
 } | null> {
-  // The Bearer decides. A request that presents one has no cookie session,
-  // whatever cookie it also carries: the native client's shared cookie store
-  // can hold a session from an earlier sign-in, even another account's, and
-  // reading it here would answer "who is calling" with that account. Not read
-  // at all, so nothing below runs either: no sliding-expiry write and no
-  // re-issued `Set-Cookie` on a Bearer request. The only reader of a cookie
-  // beside a Bearer is `refuseCookieIdentityConflict`
-  // (`cookie-identity-conflict.ts`).
-  if (await requestCarriesBearer()) return null;
-
+  // The Bearer decides: beside one the cookie is not read, slid or re-issued
+  // (it may be another account's). Only `cookie-identity-conflict.ts` looks.
+  if (await transport.requestCarriesBearer()) return null;
   const cookieStore = await cookies();
   const carried = readSessionCookie(cookieStore);
   if (!carried) return null;

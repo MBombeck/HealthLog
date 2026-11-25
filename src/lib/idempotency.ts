@@ -530,9 +530,8 @@ export function isCachableStatus(status: number): boolean {
  * cookie session — the precedence `requireAuth()` applies, so the cache cell
  * is the one of the account the handler will run as. Without the Bearer arm a
  * retry (iOS, n8n) ran the handler again and duplicated readings (audit C-4).
- * A pending account's token resolves nobody, as in `bearer.ts`, and an
- * unresolvable Bearer resolves nobody either rather than falling back to a
- * cookie the handler will not use.
+ * A pending account's or unresolvable token resolves nobody (`bearer.ts`),
+ * never falling back to a cookie the handler will not use.
  *
  * It resolves the CALLER and only the caller — which record they are aiming at
  * is a separate question, answered by `readClaimedRecordContext()` above and

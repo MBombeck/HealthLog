@@ -254,14 +254,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Username or email already taken", 409, TAKEN);
   }
 
-  // Create session immediately. v1.4.22 W5 reconcile (Sr-H1) —
-  // `createSession` anchors the `hl_onboarding` cookie itself; fresh
-  // users are always pending so the proxy redirects on first
-  // navigation instead of waiting for hydration.
-  //
-  // A browser only. The native app registers and then signs in for its token
-  // pair; a session cookie handed to it here would sit in its shared cookie
-  // store beside every later token, past its own sign-out.
+  // A browser gets its session now (`createSession` anchors `hl_onboarding`;
+  // a fresh user is always pending). The native app signs in afterwards.
   const ua = request.headers.get("user-agent");
   if (!usesTokenTransport(request.headers)) {
     await createSession(user.id, true, ip, ua);
