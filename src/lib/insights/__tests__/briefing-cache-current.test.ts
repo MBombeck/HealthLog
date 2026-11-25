@@ -90,6 +90,20 @@ describe("cachedBriefingIsCurrent", () => {
     ).toBe(false);
   });
 
+  it("accepts today's text whose briefing was withheld on purpose", () => {
+    const withheld = text({ briefingGeneratedAt: todays.briefingGeneratedAt });
+    expect(current({ cachedText: withheld, briefingWithheld: true })).toBe(
+      true,
+    );
+    // Withheld does not excuse yesterday's text.
+    expect(
+      current({
+        cachedText: text({ briefingGeneratedAt: "2026-11-24T06:00:00.000Z" }),
+        briefingWithheld: true,
+      }),
+    ).toBe(false);
+  });
+
   it("refuses today's text without a briefing", () => {
     expect(
       current({

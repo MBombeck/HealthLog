@@ -60,7 +60,13 @@ const BRIEFING_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
  * row predates the tag and counts as matching), it was written within the
  * last 24 h, its text was generated on the reader's calendar day (a warm
  * that only re-stamps yesterday's text moves `insightsCachedAt` but not the
- * generation moment), and it carries a briefing the shared reader accepts.
+ * generation moment), and it carries a briefing the shared reader accepts,
+ * or the generation that wrote it withheld the briefing on purpose.
+ *
+ * `briefingWithheld` is that last case: the grounding gate dropped the
+ * briefing and left a marker newer than the write. The slot then has no
+ * briefing by design, and the card shows "withheld"; calling it stale would
+ * ask for a warm on every read that regenerates into the same omission.
  */
 export function cachedBriefingIsCurrent(args: {
   cachedText: string | null | undefined;
@@ -69,6 +75,7 @@ export function cachedBriefingIsCurrent(args: {
   locale: string;
   timezone: string;
   now: Date;
+  briefingWithheld?: boolean;
 }): boolean {
   const { cachedText, cachedAt, cachedLocale, locale, timezone, now } = args;
   if (!cachedText || !cachedAt) return false;
@@ -78,6 +85,6 @@ export function cachedBriefingIsCurrent(args: {
   }
   return (
     generatedOnLocalToday(readBriefingGeneratedAt(cachedText), timezone, now) &&
-    cachedPayloadCarriesBriefing(cachedText)
+    (args.briefingWithheld === true || cachedPayloadCarriesBriefing(cachedText))
   );
 }

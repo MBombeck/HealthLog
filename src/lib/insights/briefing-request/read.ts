@@ -115,11 +115,15 @@ export async function readAdvisorBriefing(args: {
 
   const cachedAt = dbUser?.insightsCachedAt ?? null;
   const timezone = dbUser?.timezone ?? DEFAULT_TIMEZONE;
+  const signals = await readGenerationSignals(userId, cachedAt);
+  const { hasProvider } = signals;
+
   // Fresh by the rule the generating POST short-circuits on: today's text,
   // in the reader's language, with a briefing the card can render. A cached
   // block the shared reader rejects (or text that does not parse) is not
   // fresh, so a warm is asked for instead of the card holding "No briefing
-  // yet" until tomorrow.
+  // yet" until tomorrow. A briefing the grounding gate withheld from today's
+  // write is today's answer, shown as "withheld", not a gap to warm.
   const isFresh = cachedBriefingIsCurrent({
     cachedText,
     cachedAt,
@@ -127,10 +131,8 @@ export async function readAdvisorBriefing(args: {
     locale: readerLocale,
     timezone,
     now: new Date(),
+    briefingWithheld: signals.briefingOmittedReason === "ungrounded",
   });
-
-  const signals = await readGenerationSignals(userId, cachedAt);
-  const { hasProvider } = signals;
 
   // Never block on the provider. Warm out of band only when the cached
   // briefing is stale / missing AND a provider is configured (a
