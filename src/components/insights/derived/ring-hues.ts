@@ -32,7 +32,7 @@ import type { ScoreBand } from "./band-tokens";
  *  floor in both themes, and a future `--primary` retune carries the
  *  ring along. */
 export type RingHue =
-  "readiness" | "sleep" | "recovery" | "stress" | "strain" | "meds";
+  "readiness" | "sleep" | "recovery" | "stress" | "strain" | "meds" | "health";
 
 /**
  * Near-flat single-hue arc `[from, to]` per metric, plus a band fallback for
@@ -50,6 +50,10 @@ export const RING_GRADIENT: Record<RingHue | ScoreBand, [string, string]> = {
   // Perfectly flat by design (both stops on the one token) — the med
   // family's `--primary`, not a hand-tuned from/to pair.
   meds: ["var(--primary)", "var(--primary)"],
+  // The Health score's ring on the Insights head takes the teal the web's
+  // recovery ring wore; that ring left the head in 1.50, and the purple
+  // family is the sleep score's.
+  health: ["var(--ring-recovery-from)", "var(--ring-recovery-to)"],
   // Band fallback for the anatomy detail view (no per-metric hue passed):
   green: ["var(--ring-green-from)", "var(--ring-green-to)"],
   yellow: ["var(--ring-yellow-from)", "var(--ring-yellow-to)"],
@@ -69,4 +73,5 @@ export const TILE_HUE: Record<RingHue, string> = {
   // No wellness tile carries the meds hue; the dose ring lives on the
   // dashboard hero only. Primary keeps the record total.
   meds: "var(--primary)",
+  health: "var(--tile-recovery)",
 };

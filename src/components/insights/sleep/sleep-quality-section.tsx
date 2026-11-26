@@ -8,13 +8,19 @@ import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { DeviceScoreTile } from "@/components/insights/device-score-tile";
 import { DeviceScoreGridSkeleton } from "@/components/insights/device-score-tile-skeleton";
+import {
+  DEVICE_SLEEP_SCORE_LABEL_KEYS,
+  deviceSourceOf,
+  useScoreRows,
+} from "@/components/insights/recovery/device-score-rows";
 
 /**
  * v1.17.1 — "Sleep quality" block on `/insights/sleep`.
  *
  * Surfaces the WHOOP / Oura nightly sleep-quality scores that were ingested
  * end-to-end but rendered nowhere: efficiency, performance, consistency, need,
- * disturbance count, and the Oura headline sleep score. Each tile is gated on
+ * disturbance count, and the device's headline sleep score (Oura, Garmin or
+ * Withings, named after the device that wrote it). Each tile is gated on
  * the metric having data (`<DeviceScoreTile>` returns null at count 0), so a
  * non-wearable user never sees an empty card and the whole section collapses
  * when none of the six has readings.
@@ -26,10 +32,20 @@ import { DeviceScoreGridSkeleton } from "@/components/insights/device-score-tile
 export function SleepQualitySection({ enabled }: { enabled: boolean }) {
   const { t } = useTranslations();
   const { data, isLoading } = useInsightsAnalytics("SLEEP_DURATION");
+  const summaries = data?.summaries;
+  // The device's sleep score is named by the device that wrote it ("Oura
+  // sleep score"), so it never reads as HealthLog's own sleep score. The
+  // rows are read only when there is one to name.
+  const hasDeviceSleepScore = (summaries?.SLEEP_SCORE?.count ?? 0) > 0;
+  const sleepScoreRows = useScoreRows(
+    "SLEEP_SCORE",
+    enabled && hasDeviceSleepScore,
+  );
+  const sleepScoreSource = sleepScoreRows.data
+    ? deviceSourceOf(sleepScoreRows.data, DEVICE_SLEEP_SCORE_LABEL_KEYS)
+    : null;
 
   if (!enabled) return null;
-
-  const summaries = data?.summaries;
 
   // While the shared slice loads, paint the tile-shaped Skeleton grid (same
   // primitive the recovery + labs surfaces use) rather than nothing, so the
@@ -55,7 +71,11 @@ export function SleepQualitySection({ enabled }: { enabled: boolean }) {
   }> = [
     {
       type: "SLEEP_SCORE",
-      title: t("measurements.typeSleepScore"),
+      title: t(
+        sleepScoreSource
+          ? DEVICE_SLEEP_SCORE_LABEL_KEYS[sleepScoreSource]
+          : "measurements.typeSleepScore",
+      ),
       icon: Moon,
       color: "var(--chart-1)",
       unit: t("insights.deviceScore.unitScore"),

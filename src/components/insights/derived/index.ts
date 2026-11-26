@@ -5,4 +5,3 @@
  */
 
 export { VitalsDashboard } from "./vitals-dashboard";
-export { WellnessScores } from "./wellness-scores";

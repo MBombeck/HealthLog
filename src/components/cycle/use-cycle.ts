@@ -27,7 +27,6 @@ import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { randomId } from "@/lib/random-id";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useCalendarDate } from "@/hooks/use-calendar-date";
-import { readFailureKind } from "@/lib/api/read-failure";
 
 import {
   cycleDependentKeys,
@@ -122,43 +121,6 @@ export function useCycleCalendar(from: string, to: string, enabled = true) {
       apiGet<CalendarResponse>(`/api/cycle/calendar?from=${from}&to=${to}`),
     staleTime: 60_000,
   });
-}
-
-/** The calendar window the cycle ring reads: the cycle page's own. */
-export function useCycleRingCalendar(enabled = true) {
-  const { from, to } = useCycleWindow();
-  return useCycleCalendar(from, to, enabled);
-}
-
-/**
- * Whether the cycle ring would draw a dial today, and whether that is still
- * unknown. The wellness strip asks this before it gives the ring a cell (and
- * takes Strain's place for it): the ring renders nothing without an active
- * cycle, and a cell reserved for it would sit empty in the row. While the
- * calendar read is `pending` the strip holds its skeleton, so it never paints
- * Strain and then swaps it for the ring. A failed read draws no dial but is
- * `failed`: the strip still gives the ring its cell, where the tile says the
- * read failed and offers a retry. Settling it to "no dial" passed a failure
- * off as a day without an active cycle.
- */
-export function useCycleRingDial(enabled: boolean): {
-  dial: boolean;
-  pending: boolean;
-  failed: boolean;
-} {
-  const calendar = useCycleRingCalendar(enabled);
-  const verdict = calendar.data?.verdict;
-  return {
-    dial: enabled && verdict?.phase != null && verdict.dayOfCycle != null,
-    pending: enabled && calendar.isPending,
-    // A refused read is not a failure to report: the tile would draw nothing
-    // and leave its cell empty.
-    failed:
-      enabled &&
-      calendar.isError &&
-      !calendar.data &&
-      readFailureKind(calendar.error) !== "refused",
-  };
 }
 
 /** The latest `limit` cycles, with the route's cap beside them. */

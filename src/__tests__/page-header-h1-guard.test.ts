@@ -25,7 +25,9 @@ const SRC = join(__dirname, "..");
 const ALLOWED: Record<string, string> = {
   "components/ui/page-header.tsx": "the primitive",
   // Hero identity surfaces, not page titles.
-  "components/insights/hero-strip.tsx": "insights hero greeting",
+  // The Insights overview leads with its score rings, not a title band; its
+  // H1 names the page for assistive tech only.
+  "app/insights/page-client.tsx": "screen-reader title above the score rings",
   "components/insights/coach-panel/coach-hero.tsx": "Coach hero",
   "components/insights/coach-panel/coach-conversation.tsx":
     "screen-reader title while the hero is folded away",

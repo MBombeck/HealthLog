@@ -94,9 +94,9 @@ test.describe("J1: AI switched off by the operator", () => {
     const network = watchNetwork(page);
 
     await page.goto("/insights");
-    await expect(page.locator('[data-slot="insights-hero-strip"]')).toBeVisible(
-      { timeout: 20_000 },
-    );
+    await expect(
+      page.locator('[data-slot="insights-overview-title"]'),
+    ).toBeAttached({ timeout: 20_000 });
     // Let every section's reads land before judging what painted.
     await page.waitForLoadState("networkidle");
     await mountWholeOverview(page);
@@ -171,9 +171,9 @@ test.describe("J3: no AI provider", () => {
     await expect(hint).toHaveCount(0);
 
     await page.goto("/insights");
-    await expect(page.locator('[data-slot="insights-hero-strip"]')).toBeVisible(
-      { timeout: 20_000 },
-    );
+    await expect(
+      page.locator('[data-slot="insights-overview-title"]'),
+    ).toBeAttached({ timeout: 20_000 });
     await page.waitForLoadState("networkidle");
     await mountWholeOverview(page);
     await expect(page.locator('[data-slot="ai-setup-hint"]')).toHaveCount(0);

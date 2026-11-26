@@ -59,6 +59,15 @@ export const measurementKeys = {
     ["measurements", "type-history", type] as const,
 
   /**
+   * The last month of one score type's stored rows, every source, newest
+   * first (`GET /api/measurements?type=&from=`), for the surfaces that name a
+   * device's own score by its source and keep it apart from HealthLog's
+   * proxy. Under the `["measurements"]` prefix, so a sync re-reads it.
+   */
+  measurementsScoreRows: (type: string) =>
+    ["measurements", "score-rows", type] as const,
+
+  /**
    * v1.11.5 — last-night hypnogram (`GET /api/sleep/night`). The `date`
    * discriminator lets the night-picker step back through recent nights
    * without colliding caches; `undefined` is the most-recent night.

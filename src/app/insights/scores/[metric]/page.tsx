@@ -1,57 +1,72 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 
+import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { BackLink } from "@/components/ui/back-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
+import {
+  HealthScoreCard,
+  HealthScoreCardSkeleton,
+} from "@/components/insights/health-score-card";
 import {
   CompositeScoreAnatomy,
   type AnatomyMetricId,
 } from "@/components/insights/derived/composite-score-anatomy";
+import { ScoreTrendChartDynamic } from "@/components/insights/derived/score-history";
+import {
+  DEVICE_RECOVERY_LABEL_KEYS,
+  deviceSourceOf,
+  useScoreRows,
+} from "@/components/insights/recovery/device-score-rows";
+import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
+import { useDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
+import type { InsightsAnalyticsData } from "@/types/analytics";
+import { metricHref } from "@/lib/links/hrefs";
 
 /**
- * v1.10.0 — `/insights/scores/<metric>` — the score-anatomy detail surface.
+ * `/insights/scores/<metric>` — a score's own page.
  *
- * Reached on tap from a score's dashboard / insights entry. Renders the
- * Oura-style anatomy view (big ring + ranked contributor rows where the
- * score decomposes + cited standard + method + honesty caveat) for one
- * derived score — the two composites (sleep, readiness) AND the three
- * persisted nightly scores (recovery, stress, strain), which previously had
- * no detail page. The `[metric]` slug is validated against the known set; an
- * unknown slug falls back to the readiness view's insufficient state rather
- * than 404-ing, so a stale link never dead-ends.
+ * Readiness and the sleep score open their anatomy (ring, ranked
+ * contributors, method, cited standard, course). Stress and strain, the two
+ * estimates, open theirs too. `health` carries the Health score panel
+ * unchanged (with its safety line, rest mode, tension, retry and settings
+ * link) above its day-by-day course.
+ *
+ * `recovery` has no page of its own any more. The web drew the readiness
+ * HealthLog stores each night as a second ring beside the live readiness,
+ * the same blend under another name; a device's own recovery lives on
+ * "Device scores". The slug therefore sends an account with a device's
+ * recovery there and everyone else to readiness, so a saved link or a day
+ * view tile never dead-ends. An unknown slug falls back to readiness.
  */
 
 const SLUG_TO_METRIC: Record<string, AnatomyMetricId> = {
   sleep: "SLEEP_SCORE",
   readiness: "READINESS",
-  recovery: "RECOVERY_SCORE",
   stress: "STRESS_SCORE",
   strain: "STRAIN_SCORE",
 };
 
 /**
- * v1.15.12 — the explainer-body key suffix per score, feeding
+ * The explainer-body key suffix per score, feeding
  * `insights.subPage.explainer.<suffix>Body` through `SubPageShell`'s
- * `explainerMetric` prop (mirrors the metric sub-pages). `SLEEP_SCORE`
- * uses a distinct `sleepScore` suffix so it never collides with the
- * `sleep` metric's own explainer body.
+ * `explainerMetric` prop. `SLEEP_SCORE` uses a distinct `sleepScore` suffix
+ * so it never collides with the `sleep` metric's own explainer body.
  */
-const EXPLAINER_METRIC: Record<AnatomyMetricId, string> = {
+const EXPLAINER_METRIC: Partial<Record<AnatomyMetricId, string>> = {
   SLEEP_SCORE: "sleepScore",
   READINESS: "readiness",
-  RECOVERY_SCORE: "recovery",
   STRESS_SCORE: "stress",
   STRAIN_SCORE: "strain",
 };
 
 /** Localised page header per metric (title + one-line description). */
-const HEADER_KEYS: Record<
-  AnatomyMetricId,
-  { title: string; description: string }
+const HEADER_KEYS: Partial<
+  Record<AnatomyMetricId, { title: string; description: string }>
 > = {
   SLEEP_SCORE: {
     title: "insights.derived.composite.SLEEP_SCORE.title",
@@ -61,58 +76,113 @@ const HEADER_KEYS: Record<
     title: "insights.derived.composite.READINESS.title",
     description: "insights.derived.composite.READINESS.description",
   },
-  RECOVERY_SCORE: {
-    title: "insights.derived.scores.recovery",
-    description: "insights.derived.composite.RECOVERY_SCORE.description",
-  },
   STRESS_SCORE: {
-    title: "insights.derived.scores.stress",
+    title: "insights.deviceScores.stress",
     description: "insights.derived.composite.STRESS_SCORE.description",
   },
   STRAIN_SCORE: {
-    title: "insights.derived.scores.strain",
+    title: "insights.deviceScores.strain",
     description: "insights.derived.composite.STRAIN_SCORE.description",
   },
 };
 
 export default function CompositeScorePage() {
   const params = useParams<{ metric: string }>();
-  const { t } = useTranslations();
   const slug = typeof params.metric === "string" ? params.metric : "";
-  const metric: AnatomyMetricId = SLUG_TO_METRIC[slug] ?? "READINESS";
-  const header = HEADER_KEYS[metric];
+  if (slug === "health") return <HealthScorePage />;
+  if (slug === "recovery") return <RecoveryRedirect />;
+  return <AnatomyPage metric={SLUG_TO_METRIC[slug] ?? "READINESS"} />;
+}
 
+function ScoresBackLink({ slot }: { slot: string }) {
+  const { t } = useTranslations();
+  return (
+    <BackLink
+      href="/insights"
+      label={t("insights.subPage.scoresBack")}
+      dataSlot={slot}
+    />
+  );
+}
+
+function AnatomyPage({ metric }: { metric: AnatomyMetricId }) {
+  const { t } = useTranslations();
+  const header = HEADER_KEYS[metric] ?? HEADER_KEYS.READINESS!;
   return (
     <SubPageShell
       title={t(header.title)}
       description={t(header.description)}
       explainerMetric={EXPLAINER_METRIC[metric]}
-      backLink={
-        <BackLink
-          href="/insights"
-          label={t("insights.subPage.scoresBack")}
-          dataSlot="composite-score-back"
-        />
-      }
+      backLink={<ScoresBackLink slot="composite-score-back" />}
       coachLaunch
     >
-      {/* This anatomy view and the `/insights/recovery`
-          composite-wearable page both used to render as plain "Recovery", a
-          same-name/different-content trap: the score ring here promised one
-          thing, the nav pill led somewhere else with no pointer back. The
-          label above is now "Recovery score" (matches `measurements.typeRecoveryScore`);
-          this line closes the loop with an explicit cross-link. */}
-      {metric === "RECOVERY_SCORE" ? (
-        <Link
-          href="/insights/recovery"
-          data-slot="recovery-score-cross-link"
-          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -mt-2 inline-flex items-center gap-1.5 text-sm transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
-        >
-          {t("insights.derived.scores.recoveryCrossLink")}
-          <ArrowRight className="size-3.5" aria-hidden="true" />
-        </Link>
-      ) : null}
       <CompositeScoreAnatomy metric={metric} />
     </SubPageShell>
+  );
+}
+
+/**
+ * The Health score's page: the panel as it stood on the Insights overview,
+ * then its course. The panel's tension and return-to-baseline lines come
+ * from the dashboard snapshot, as they did there.
+ */
+function HealthScorePage() {
+  const { t } = useTranslations();
+  const { isAuthenticated } = useAuth();
+  const analyticsQuery = useAnalyticsQuery();
+  const analytics = analyticsQuery.data as InsightsAnalyticsData | undefined;
+  const report = analytics?.healthScore ?? null;
+  const snapshot = useDashboardSnapshot(isAuthenticated);
+  const snapshotScore = snapshot.data?.healthScore ?? null;
+  const label = t("insights.healthScore.label");
+
+  return (
+    <SubPageShell
+      title={label}
+      description={t("insights.scoreHistory.healthDescription")}
+      backLink={<ScoresBackLink slot="health-score-back" />}
+    >
+      <div data-slot="health-score-page" className="space-y-3">
+        {report ? (
+          <HealthScoreCard
+            report={report}
+            tension={snapshotScore?.tension ?? null}
+            returnToBand={snapshotScore?.returnToBand ?? null}
+            onRetry={() => void analyticsQuery.refetch()}
+          />
+        ) : analyticsQuery.isPending ? (
+          <HealthScoreCardSkeleton />
+        ) : null}
+        <ScoreTrendChartDynamic
+          score="HEALTH_SCORE"
+          chartKey="scoreHealth"
+          color="var(--chart-1)"
+          label={label}
+        />
+      </div>
+    </SubPageShell>
+  );
+}
+
+/** Sends the retired recovery slug where the account's recovery lives. */
+function RecoveryRedirect() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const rows = useScoreRows("RECOVERY_SCORE", isAuthenticated);
+  const settled = rows.isSuccess || rows.isError;
+  const target =
+    rows.isSuccess &&
+    deviceSourceOf(rows.data, DEVICE_RECOVERY_LABEL_KEYS) !== null
+      ? metricHref("recovery")
+      : metricHref("readiness");
+
+  useEffect(() => {
+    if (settled && target) router.replace(target);
+  }, [settled, target, router]);
+
+  return (
+    <div data-slot="recovery-score-redirect" className="space-y-3">
+      <Skeleton className="h-[28rem] w-full rounded-xl" />
+    </div>
   );
 }

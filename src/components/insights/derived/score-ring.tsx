@@ -75,6 +75,14 @@ const SIZE: Record<
     numberClass: "text-2xl md:text-5xl",
     labelClass: "hidden text-xs md:block",
   },
+  // The Insights score tiles: 80 px beside the tile's text on a phone, the
+  // `sm` 120 px dial from the md breakpoint up.
+  tile: {
+    px: null,
+    boxClass: "size-20 md:size-30",
+    numberClass: "text-2xl md:text-3xl",
+    labelClass: "hidden text-2xs md:block",
+  },
 };
 
 export interface ScoreRingProps {
@@ -88,7 +96,7 @@ export interface ScoreRingProps {
    * Render size. `sm` in a grid tile, `md`/`lg` on the anatomy view,
    * `responsive` on the dashboard hero (compact on a phone, `md` above).
    */
-  size?: "sm" | "md" | "lg" | "responsive";
+  size?: "sm" | "md" | "lg" | "responsive" | "tile";
   /** Disable the sweep + count-up (e.g. when already revealed this session). */
   animate?: boolean;
   /**
@@ -115,6 +123,13 @@ export interface ScoreRingProps {
    * their baseline at a glance. Omit (null) when no trailing series exists.
    */
   baseline?: number | null;
+  /**
+   * With `score === null`: the bare track and nothing else, for a score that
+   * exists but is not about today (a readiness resting on yesterday's
+   * values). No dash, no "not enough data" caption, both of which would say
+   * something untrue; the caller says what the ring is instead.
+   */
+  emptyFace?: boolean;
   /**
    * Retained for API compatibility. The premium redesign drops the old
    * white-arc-on-dark-slab treatment in favour of the per-metric `hue`
@@ -144,6 +159,7 @@ export function ScoreRing({
   hue,
   delayMs = 0,
   baseline,
+  emptyFace = false,
   flat = false,
   valueText,
   ariaLabel: ariaLabelOverride,
@@ -294,15 +310,15 @@ export function ScoreRing({
             hasScore ? "text-foreground" : "text-muted-foreground",
           )}
         >
-          {hasScore ? (valueText ?? displayedRounded) : "—"}
+          {hasScore ? (valueText ?? displayedRounded) : emptyFace ? "" : "—"}
         </span>
-        {label ? (
+        {label && !(emptyFace && !hasScore) ? (
           <span className={cn("text-muted-foreground", dims.labelClass)}>
             {label}
           </span>
         ) : null}
       </div>
-      {!hasScore && (
+      {!hasScore && !emptyFace && (
         <span
           data-slot="score-ring-provisional"
           className="text-muted-foreground text-2xs absolute inset-x-0 bottom-0 line-clamp-1 px-1 text-center leading-tight"

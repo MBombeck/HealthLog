@@ -1162,7 +1162,14 @@
     "valueOutOfRangeNoUnit": "Gib einen Wert zwischen {min} und {max} ein.",
     "lastValue": "Zuletzt {value}, {when}",
     "lastValueDeviates": "Deutlich anders als dein letzter Wert. Stimmt das?",
-    "saveAndNext": "Speichern und weiter"
+    "saveAndNext": "Speichern und weiter",
+    "typeRecoveryScoreWhoop": "WHOOP Recovery",
+    "typeRecoveryScoreOura": "Oura Readiness",
+    "typeRecoveryScorePolar": "Polar Nightly Recharge",
+    "typeRecoveryScoreComputed": "Bereitschaft (HealthLog)",
+    "typeSleepScoreOura": "Oura Schlafscore",
+    "typeSleepScoreGarmin": "Garmin Schlafscore",
+    "typeSleepScoreWithings": "Withings Schlafscore"
   },
   "metricCatalog": {
     "title": "Was HealthLog erfassen kann",
@@ -3107,7 +3114,6 @@
     "noAnalysisYet": "Noch keine Einschätzung vorhanden.",
     "assessmentPreparing": "Einschätzung wird vorbereitet…",
     "loadError": "Insights konnten nicht geladen werden",
-    "heroPersonalBaseline": "Basierend auf deinen letzten 90 Tagen",
     "heroRegenerating": "Wird generiert",
     "regenerateAnalysis": "Einschätzung neu erstellen",
     "regenerateSuccess": "Einschätzung wurde neu erstellt",
@@ -3115,10 +3121,6 @@
     "narrativeWeek": "Diese Woche",
     "narrativeMonth": "Dieser Monat",
     "narrativeUpdating": "Wird aktualisiert…",
-    "heroFallbackSubtitle": "Täglicher Blick auf deine Trends, direkt aus den Zahlen, die du protokollierst.",
-    "heroGreetingMorning": "Guten Morgen",
-    "heroGreetingAfternoon": "Guten Tag",
-    "heroGreetingEvening": "Guten Abend",
     "heroActionAskCoach": "Coach fragen",
     "healthScore": {
       "label": "Gesundheitsscore",
@@ -3900,7 +3902,7 @@
         "recoveryBody": "Die Erholung zeigt, wie gut sich dein Körper regeneriert hat, gestützt auf nächtliche Signale wie Herzfrequenzvariabilität und Ruhepuls. Es ist ein geräteabgeleiteter Näherungswert an deinem eigenen Ausgangswert, keine klinische Messung, und zwischen Geräten nicht vergleichbar. Ein hoher Wert ist grünes Licht, mehr zu geben; ein niedrigerer deutet an, dass dein System noch aufbaut.",
         "strainBody": "Die Belastung erfasst, wie viel kardiovaskuläre und körperliche Last du deinem Körper zugemutet hast, von Trainings bis zu einem aktiven Tag auf den Beinen. Es ist ein geräteabgeleiteter Index, gemessen an deinem eigenen üblichen Aufwand, keine klinische Messung, und der Kennwert ist zwischen Geräten nicht vergleichbar.",
         "stressBody": "Stress ist hier eine Geräte-Heuristik aus Mustern der Herzfrequenzvariabilität. Sie ist keine Cortisol-Messung und nicht, wie du dich bewusst fühlst, und auch kein klinischer Stress-Score. Lies ihn an deinem eigenen Ausgangswert; zwischen Geräten ist er nicht vergleichbar. Ein niedrigerer Wert deutet auf einen ruhigen, gut regulierten Zustand hin; ein höherer ist eine Einladung, Erholung einzuplanen.",
-        "recoveryPageBody": "Die Erholung fasst die nächtlichen Signale deines Wearables zusammen (Recharge, Belastung, Load sowie deine Herzfrequenz- und Energiewerte des Tages) und zeigt, wie gut sich dein Körper erholt hat. Achte eher auf das Muster über mehrere Tage als auf einen einzelnen Wert; ein schwächerer Wert ist eine Einladung, kürzerzutreten, kein Alarm.",
+        "recoveryPageBody": "Was dein Wearable meldet, unter seinen eigenen Namen.",
         "pulsePressureBody": "Der Pulsdruck ist die Differenz zwischen deinem systolischen und diastolischen Wert (systolisch minus diastolisch). Als allgemeine Orientierung sind etwa 40 mmHg in Ruhe typisch; eine große Differenz über rund 60 mmHg im mittleren Alter kann auf versteifte Arterien hinweisen, eine kleine Differenz unter etwa 25 mmHg kann mit niedrigem Schlagvolumen einhergehen (StatPearls/NIH 2023). Ein Gesprächsanlass, keine Diagnose.",
         "meanArterialPressureBody": "Der mittlere arterielle Druck ist der durchschnittliche Druck, den deine Organe über einen Herzschlag sehen, grob der diastolische Wert plus ein Drittel der Differenz zum systolischen. Als allgemeine Orientierung liegt ein Ruhewert bei etwa 70–100 mmHg (StatPearls/NIH 2023). Die oft genannte Grenze von ~60 mmHg ist ein Konzept der Akutmedizin, kein Alarm für die Selbstmessung.",
         "cycleEducationBody": "Dein Zyklus durchläuft vier hormongesteuerte Phasen, und seine Länge und Regelmäßigkeit sind ein gut zugängliches Fenster auf die allgemeine Gesundheit. Als allgemeine Orientierung dauern Zyklen bei Erwachsenen typischerweise 21–35 Tage (klinische Referenzen nennen 24–38), mit einer Blutung von rund fünf Tagen (ACOG 2015). Die Lutealphase ist der stabile Anker, daher schätzt man den Eisprung am besten durch Rückrechnen von der nächsten erwarteten Periode, nie über einen festen „Tag 14“. Ein vorhergesagtes fruchtbares Fenster ist eine Schätzung, die mehrere erfasste Zyklen braucht und ungefähr bleibt, und die Basaltemperatur bestätigt den Eisprung im Nachhinein, statt ihn vorherzusagen. Dies ist keine Verhütungsmethode.",
@@ -4100,7 +4102,7 @@
       }
     },
     "navWorkouts": "Trainings",
-    "navRecovery": "Erholung",
+    "navRecovery": "Gerätewerte",
     "workouts": {
       "title": "Trainings",
       "description": "Letzte Läufe, Touren, Spaziergänge und Krafteinheiten, quellenübergreifend entdoppelt zwischen Apple Watch und Withings.",
@@ -5118,7 +5120,6 @@
     "recovery": {
       "title": "Erholung",
       "description": "Wie gut sich dein Körper erholt hat: die Erholungs-, Belastungs- und Load-Signale, die dein Wearable über Nacht aufzeichnet.",
-      "scoreCrossLink": "Den zusammengesetzten Erholungs-Score ansehen",
       "emptyTitle": "Noch keine Erholungsdaten",
       "empty": "Diese Seite füllt sich mit den Erholungs-, Belastungs- und Trainingslastwerten von WHOOP oder Polar und mit Ouras Resilienz-Stufe.",
       "emptyOuraPermission": "Ouras Resilienz-Stufe braucht die Berechtigung für Stressdaten, also verbinde Oura einmal neu unter Integrationen und erlaube sie.",
@@ -5322,7 +5323,6 @@
       "coachPrefill": "Ich habe noch keine Medikamente angelegt. Was sollte ich wissen, bevor ich hier anfange, meine Therapietreue zu verfolgen?"
     },
     "scoreHistory": {
-      "healthTitle": "Verlauf des Gesundheitsscores",
       "healthDescription": "Dein Gesundheitsscore Tag für Tag, so wie er an jedem Tag angezeigt wurde.",
       "emptyDescription": "In diesem Zeitraum wurde noch kein Score erfasst.",
       "usualRange": "Schattiert: dein üblicher Bereich, {lo} bis {hi}.",
@@ -5361,6 +5361,29 @@
         "midday": "mittags",
         "evening": "abends"
       }
+    },
+    "scores": {
+      "historyWindow": "Verlauf {days} Tage",
+      "staleLast": "Zuletzt {score} am {date}",
+      "valuesFrom": "Werte vom {date}",
+      "loadError": "Deine Scores konnten gerade nicht geladen werden.",
+      "loadingLabel": "Deine Scores werden geladen",
+      "regionLabel": "Deine Scores",
+      "bandNote": "Seit 1.50 gilt 50 bis 69 als {fair} und unter 50 als {low}.",
+      "loadBand": {
+        "green": "niedrig",
+        "yellow": "mittel",
+        "red": "hoch"
+      }
+    },
+    "deviceScores": {
+      "title": "Gerätewerte",
+      "description": "Was dein Wearable meldet, unter seinen eigenen Namen.",
+      "valueOfScale": "{value} von {max}",
+      "estimatesTitle": "Schätzwerte von HealthLog",
+      "estimatesSubtitle": "Aus deinen Herzdaten berechnet, nicht von einem Gerät gemeldet.",
+      "stress": "Stress (Schätzwert)",
+      "strain": "Belastung (Schätzwert)"
     }
   },
   "thresholds": {
@@ -10790,10 +10813,6 @@
       "noActiveCycle": "Noch kein aktiver Zyklus",
       "viewDetails": "Zyklus-Erkenntnisse ansehen"
     },
-    "wellnessRing": {
-      "label": "Zyklus",
-      "loadError": "Dein Zyklus konnte nicht geladen werden."
-    },
     "disclaimer": "Diese Vorhersagen sind beschreibende Schätzungen aus deinen erfassten Daten, keine Verhütungsmethode und keine medizinische Beratung. Sie zeigen nie an, dass ungeschützter Geschlechtsverkehr sicher ist. Wende dich für Verhütung oder medizinische Entscheidungen an eine medizinische Fachperson.",
     "title": "Zyklus",
     "subtitle": "Erfasse deine Periode und Symptome und sieh, was als Nächstes kommt.",
@@ -14070,6 +14089,11 @@
         "night": "Letzte Nacht",
         "todayDifferent": "Heute anders",
         "toDo": "Heute zu tun"
+      },
+      "readinessBand": {
+        "green": "Bereitschaft im guten Bereich",
+        "yellow": "Bereitschaft im mittleren Bereich",
+        "red": "Bereitschaft im niedrigen Bereich"
       }
     },
     "morning": {
