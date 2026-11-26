@@ -200,7 +200,10 @@ export interface ScoreBasis {
 export interface CompositeValue {
   score: number;
   band: ScoreBand;
-  /** Non-null only when the worst pillar lowers the mean score's band. */
+  /**
+   * The worst counted pillar, when its band is worse than the score's own
+   * band; null otherwise. It names the pillar, it does not move `band`.
+   */
   bandSetter: ScorePillarId | null;
   /** Registry-ordered eligible pillar ids. Part of the number's identity. */
   composition: ScorePillarId[];

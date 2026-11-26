@@ -20,7 +20,11 @@
  * whole v1.10 score language extends.
  */
 
-import { scoreBand } from "@/lib/analytics/score/shared";
+import {
+  SCORE_BAND_DIRECTION,
+  scoreBand,
+  type HealthLogScoreKind,
+} from "@/lib/analytics/score/shared";
 
 export type ScoreBand = "green" | "yellow" | "red";
 
@@ -62,4 +66,21 @@ export function clampScore(value: number): number {
   if (value < 0) return 0;
   if (value > 100) return 100;
   return value;
+}
+
+/**
+ * The message key of the word under a HealthLog score's band, by the
+ * score's direction (`SCORE_BAND_DIRECTION`). A higher-better score reads
+ * good / fair / low; a load (stress, strain) reads as a load, low /
+ * moderate / high, so a heavy stress is "high", never "low". The health
+ * score is higher-better like readiness and the sleep score. Every score
+ * surface takes its word from here, never from a map of its own.
+ */
+export function scoreBandWordKey(
+  kind: HealthLogScoreKind,
+  band: ScoreBand,
+): string {
+  return SCORE_BAND_DIRECTION[kind] === "lower-better"
+    ? `insights.scores.loadBand.${band}`
+    : `insights.derived.scoreRing.band.${band}`;
 }

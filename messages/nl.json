@@ -3129,6 +3129,10 @@
         "yellow": "Sommige pijlers vragen aandacht",
         "red": "Een of meer pijlers liggen buiten het referentiebereik"
       },
+      "setter": {
+        "outside": "{pillar}: buiten het referentiebereik",
+        "attention": "{pillar}: vraagt aandacht"
+      },
       "insufficient": "Er zijn nog nergens genoeg recente gegevens om een score te berekenen. Eén gezondheidsgebied is genoeg om te beginnen, en de score geeft aan op welke gebieden hij is gebaseerd.",
       "basis": "Gebaseerd op {count} van {recommended, plural, one {# gezondheidsgebied} other {# gezondheidsgebieden}}.",
       "compositionNotice": {
@@ -3138,8 +3142,7 @@
       },
       "anatomyToggle": "Hoe deze score tot stand komt",
       "notScored": "Nog niet gescoord ({count})",
-      "method": "De score is het gelijk gewogen gemiddelde van de pijlers die meetellen, op een schaal van 0 tot 100. Elke pijler wordt beoordeeld aan de hand van een gepubliceerde referentieband, en de zwakste pijler kan de algemene band bepalen. Een pijler zonder genoeg recente gegevens wordt weggelaten in plaats van als nul meegeteld. De referentiebanden komen uit gepubliceerde bronnen; welke pijlers meetellen, kies je zelf, dus het gecombineerde getal is zelf geen klinische standaard.",
-      "bandSetter": "Algemene band bepaald door {pillar}",
+      "method": "De score is het gelijk gewogen gemiddelde van de pijlers die meetellen, op een schaal van 0 tot 100. Elke pijler wordt beoordeeld aan de hand van een gepubliceerde referentieband. Een pijler onder de band van de score wordt ernaast genoemd. Een pijler zonder genoeg recente gegevens wordt weggelaten in plaats van als nul meegeteld. De referentiebanden komen uit gepubliceerde bronnen; welke pijlers meetellen, kies je zelf, dus het gecombineerde getal is zelf geen klinische standaard.",
       "versionAndNoise": "Methodeversie {version}. Ondergrens voor wekelijkse vergelijking: {noise, plural, one {# punt} other {# punten}}.",
       "methodVersion": "Methodeversie {version}.",
       "configured": "Je hebt zelf gekozen welke pijlers meetellen voor deze score.",

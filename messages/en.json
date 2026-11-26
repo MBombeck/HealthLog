@@ -3129,6 +3129,10 @@
         "yellow": "Some pillars need attention",
         "red": "One or more pillars are outside the reference range"
       },
+      "setter": {
+        "outside": "{pillar}: outside the reference range",
+        "attention": "{pillar}: needs attention"
+      },
       "insufficient": "Nothing has enough recent data to score yet. One area of health is enough to start, and the score will say which areas it rests on.",
       "basis": "Based on {count} of {recommended, plural, one {# area of health} other {# areas of health}}.",
       "compositionNotice": {
@@ -3138,8 +3142,7 @@
       },
       "anatomyToggle": "How this score comes about",
       "notScored": "Not scored yet ({count})",
-      "method": "The score is the equal-weighted average of the pillars that count toward it, on a 0 to 100 scale. Each pillar is graded against a published reference band, and the weakest pillar can set the overall band. A pillar without enough recent data is left out rather than counted as a zero. The reference bands come from published sources; which pillars count is yours to choose, so the combined number is not itself a clinical standard.",
-      "bandSetter": "Overall band set by {pillar}",
+      "method": "The score is the equal-weighted average of the pillars that count toward it, on a 0 to 100 scale. Each pillar is graded against a published reference band. A pillar below the score's own band is named beside it. A pillar without enough recent data is left out rather than counted as a zero. The reference bands come from published sources; which pillars count is yours to choose, so the combined number is not itself a clinical standard.",
       "versionAndNoise": "Method version {version}. Weekly comparison floor: {noise, plural, one {# point} other {# points}}.",
       "methodVersion": "Method version {version}.",
       "configured": "You chose which pillars count toward this score.",

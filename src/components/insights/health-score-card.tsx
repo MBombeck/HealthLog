@@ -39,7 +39,10 @@ import type {
   ScorePillarResult,
 } from "@/lib/analytics/score/types";
 import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
-import { SCORE_PILLAR_LABEL_KEYS } from "@/lib/score-config/labels";
+import {
+  healthScoreSetterLine,
+  SCORE_PILLAR_LABEL_KEYS,
+} from "@/lib/score-config/labels";
 import { cn } from "@/lib/utils";
 import { InlineAction } from "@/components/ui/inline-action";
 import { ScorePill } from "@/components/ui/score-pill";
@@ -346,6 +349,10 @@ export function HealthScoreCard({
   const compositeScore =
     composite.status === "ok" ? clampScore(composite.value.score) : null;
   const compositeBand = composite.status === "ok" ? composite.value.band : null;
+  // A pillar in a worse band than the score is named in the band line's
+  // place: the band sentences speak for every pillar, and one of them would
+  // be untrue while that pillar sits below.
+  const setterLine = healthScoreSetterLine(report, t);
 
   // v1.38 — what the number rests on, resolved on the server. A set that
   // spans the recommended breadth says nothing extra: three of three is
@@ -501,7 +508,7 @@ export function HealthScoreCard({
       <div className="space-y-1">
         {compositeBand ? (
           <p data-slot="health-score-band" className="text-foreground text-xs">
-            {t(`insights.healthScore.band.${compositeBand}`)}
+            {setterLine ?? t(`insights.healthScore.band.${compositeBand}`)}
           </p>
         ) : (
           // The gate survives for the one case that is still a refusal:
@@ -766,13 +773,6 @@ export function HealthScoreCard({
             <div data-slot="health-score-method" className="space-y-1">
               {composite.status === "ok" ? (
                 <>
-                  <p className="text-muted-foreground text-xs">
-                    {t("insights.healthScore.bandSetter", {
-                      pillar: composite.value.bandSetter
-                        ? t(PILLAR_LABEL_KEY[composite.value.bandSetter])
-                        : t("insights.healthScore.none"),
-                    })}
-                  </p>
                   <p className="text-muted-foreground text-xs">
                     {t("insights.healthScore.versionAndNoise", {
                       version: report.scoreVersion,

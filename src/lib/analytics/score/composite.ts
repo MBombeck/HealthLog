@@ -14,7 +14,7 @@ import {
   type ScorePillarId,
   type ScorePillarResult,
 } from "./types";
-import { provenance, scoreBand } from "./shared";
+import { bandForScoreKind, provenance, scoreBand } from "./shared";
 import { evaluateScoreBreadth, SCORE_RECOMMENDED_DOMAINS } from "./breadth";
 import type { ScoreConfigBoundary } from "./config";
 import { mean } from "@/lib/stats/central";
@@ -119,7 +119,11 @@ export function computeComposite(
   });
   // `breadth.ok` above guarantees an eligible pillar.
   const score = Math.round(mean(values.map((value) => value.score))!);
-  const meanBand = scoreBand(score);
+  // The band follows the number, under the same rule as every other
+  // HealthLog score (1.50). A pillar in a worse band than the score is not
+  // folded into the band — an 81 that reads "low" says two things at once —
+  // it is named beside it as `bandSetter`, and its own row keeps its colour.
+  const band = bandForScoreKind("health", score);
   const bandSetterIndex = values.reduce(
     (worstIndex, value, index) =>
       BAND_RANK[scoreBand(value.score)] <
@@ -130,8 +134,6 @@ export function computeComposite(
   );
   const bandSetterValue = values[bandSetterIndex];
   const worstBand = scoreBand(bandSetterValue.score);
-  const band =
-    BAND_RANK[worstBand] < BAND_RANK[meanBand] ? worstBand : meanBand;
   const deltaValues = values.filter((value) => value.deltaEligible);
   const noiseFloor =
     deltaValues.length === 0
@@ -147,7 +149,7 @@ export function computeComposite(
       score,
       band,
       bandSetter:
-        BAND_RANK[worstBand] < BAND_RANK[meanBand]
+        BAND_RANK[worstBand] < BAND_RANK[band]
           ? composition[bandSetterIndex]
           : null,
       composition,

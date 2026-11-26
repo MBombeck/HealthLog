@@ -3129,6 +3129,10 @@
         "yellow": "Certains piliers demandent une attention",
         "red": "Un ou plusieurs piliers sont hors de la plage de référence"
       },
+      "setter": {
+        "outside": "{pillar} : hors de la plage de référence",
+        "attention": "{pillar} : demande une attention"
+      },
       "insufficient": "Rien ne dispose encore d'assez de données récentes pour être noté. Un seul domaine de santé suffit pour commencer, et le score indiquera sur quels domaines il repose.",
       "basis": "Basé sur {count, plural, one {# domaine de santé} other {# domaines de santé}} sur {recommended, plural, other {#}}.",
       "compositionNotice": {
@@ -3138,8 +3142,7 @@
       },
       "anatomyToggle": "Comment ce score est établi",
       "notScored": "Pas encore évalué ({count})",
-      "method": "Le score est la moyenne à poids égal des piliers qui comptent pour lui, sur une échelle de 0 à 100. Chaque pilier est comparé à une plage de référence publiée, et le pilier le plus faible peut déterminer la plage globale. Un pilier sans données récentes suffisantes est écarté plutôt que compté comme un zéro. Les plages de référence proviennent de sources publiées ; les piliers qui comptent sont ceux que vous choisissez, donc le nombre combiné n'est pas lui-même une norme clinique.",
-      "bandSetter": "Catégorie globale fixée par {pillar}",
+      "method": "Le score est la moyenne à poids égal des piliers qui comptent pour lui, sur une échelle de 0 à 100. Chaque pilier est comparé à une plage de référence publiée. Un pilier en dessous de la plage du score est nommé à côté de lui. Un pilier sans données récentes suffisantes est écarté plutôt que compté comme un zéro. Les plages de référence proviennent de sources publiées ; les piliers qui comptent sont ceux que vous choisissez, donc le nombre combiné n'est pas lui-même une norme clinique.",
       "versionAndNoise": "Version de la méthode {version}. Seuil de comparaison hebdomadaire : {noise, plural, one {# point} other {# points}}.",
       "methodVersion": "Version de la méthode {version}.",
       "configured": "Vous avez choisi les piliers qui comptent pour ce score.",
