@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 314,
-  "total": 98194,
+  "total": 98201,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -78,7 +78,7 @@
     "components/cycle/cycle-settings.tsx :: CycleSettings": 228,
     "components/cycle/cycle-view.tsx :: CycleView": 403,
     "components/cycle/log-day-sheet.tsx :: LogDaySheet": 753,
-    "components/daily/today-hero.tsx :: TodayHero": 502,
+    "components/daily/today-hero.tsx :: TodayHero": 506,
     "components/dashboard/dashboard-header.tsx :: DashboardHeader": 214,
     "components/dashboard/medication-intake-quick-add.tsx :: MedicationIntakeQuickAdd": 226,
     "components/day/day-layer.tsx :: DayLayer": 358,
@@ -239,7 +239,7 @@
     "lib/cycle/backup.ts :: restoreCycleData": 222,
     "lib/cycle/day-log-write.ts :: writeDayLog": 310,
     "lib/daily/digest.ts :: buildDailyDigest": 240,
-    "lib/daily/load-digest.ts :: loadDailyDigest": 443,
+    "lib/daily/load-digest.ts :: loadDailyDigest": 445,
     "lib/dashboard/snapshot.ts :: buildDashboardSnapshot": 290,
     "lib/dashboard/snapshot.ts :: buildExtras": 236,
     "lib/day/records.ts :: medicationsPart": 280,

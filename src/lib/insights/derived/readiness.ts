@@ -385,6 +385,7 @@ export async function computeReadiness(
   });
 
   const todayKey = userDayKey(now, tz);
+  const past = () => storedReadiness(userId, now, windowDays, tz, components);
   const sleepNight = dropQuietInputs(
     [rhr, hrv, resp],
     sleep.status === "ok" ? sleep.value.night : null,
@@ -452,53 +453,17 @@ export async function computeReadiness(
         : "live";
 
   if (presentCount < READINESS_MIN_COMPONENTS) {
-    // Too few inputs left once the quiet ones dropped out (after local noon
-    // yesterday's readings all have). A surface keeps "last N on D" from the
-    // stored row all day rather than losing the tile; the nightly job's own
-    // blend has nothing to blend.
-    const last = opts.blendOnly
-      ? null
-      : await readStaleReadiness(
-          userId,
-          now,
-          windowDays,
-          tz,
-          todayKey,
-          components,
-        );
-    if (last !== null) {
-      const { coverage: cov, confidence } = deriveCoverage({
+    return tooFewInputs(
+      opts.blendOnly ? null : await past(),
+      deriveCoverage({
         requiredInputs: components.length,
         presentInputs: presentCount,
         historyDays: 0,
         missing,
         fullHistoryDays: windowDays,
-      });
-      return buildOk<ReadinessValue>({
-        value: {
-          score: last.score,
-          band: bandForScoreKind("readiness", last.score),
-          components: last.components,
-          asOfDay: last.asOfDay,
-          fresh: false,
-        },
-        coverage: cov,
-        confidence,
-        provenance: { inputs: inputNames, source, windowDays, computedAt },
-      });
-    }
-    const { coverage: cov } = deriveCoverage({
-      requiredInputs: components.length,
-      presentInputs: presentCount,
-      historyDays: 0,
-      missing,
-      fullHistoryDays: windowDays,
-    });
-    return buildInsufficient<ReadinessValue>({
-      coverage: cov,
-      provenance: { inputs: inputNames, source, windowDays, computedAt },
-      reason: "insufficient_components",
-    });
+      }),
+      { inputs: inputNames, source, windowDays, computedAt },
+    );
   }
 
   const { coverage: cov, confidence } = deriveCoverage({
@@ -531,14 +496,7 @@ export async function computeReadiness(
   const shown =
     fresh || opts.blendOnly
       ? { score, asOfDay: blendDay.asOfDay, components }
-      : await readStaleReadiness(
-          userId,
-          now,
-          windowDays,
-          tz,
-          todayKey,
-          components,
-        );
+      : await past();
   if (shown === null) {
     return buildInsufficient<ReadinessValue>({
       coverage: cov,
@@ -563,6 +521,42 @@ export async function computeReadiness(
       windowDays,
       computedAt,
     },
+  });
+}
+
+/**
+ * Too few inputs left to blend once the quiet ones dropped out (after local
+ * noon yesterday's readings all have). A surface keeps "last N on D" from
+ * the stored row all day rather than losing the tile; without a stored day,
+ * or for the nightly job's own blend, there is nothing to show.
+ */
+function tooFewInputs(
+  last: {
+    score: number;
+    asOfDay: string;
+    components: ReadinessComponent[];
+  } | null,
+  { coverage, confidence }: ReturnType<typeof deriveCoverage>,
+  provenance: Parameters<typeof buildOk>[0]["provenance"],
+): Derived<ReadinessValue> {
+  if (last === null) {
+    return buildInsufficient<ReadinessValue>({
+      coverage,
+      provenance,
+      reason: "insufficient_components",
+    });
+  }
+  return buildOk<ReadinessValue>({
+    value: {
+      score: last.score,
+      band: bandForScoreKind("readiness", last.score),
+      components: last.components,
+      asOfDay: last.asOfDay,
+      fresh: false,
+    },
+    coverage,
+    confidence,
+    provenance,
   });
 }
 
@@ -619,12 +613,11 @@ function dropQuietInputs(
  * breakdown, and today's contributors are not that day's). Null when no
  * stored day before today exists to name.
  */
-async function readStaleReadiness(
+async function storedReadiness(
   userId: string,
   now: Date,
   windowDays: number,
   tz: string,
-  todayKey: string,
   components: ReadinessComponent[],
 ): Promise<{
   score: number;
@@ -636,7 +629,7 @@ async function readStaleReadiness(
     now,
     windowDays,
     tz,
-    todayKey,
+    userDayKey(now, tz),
   );
   if (last === null) return null;
   return {
