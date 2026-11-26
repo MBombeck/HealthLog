@@ -46,6 +46,7 @@ export const SERVER_FEATURES = [
   "insights.chart-context",
   "daily.morning",
   "measurements.series-kinds",
+  "devices.ignored-fields",
   "insights.briefing-glucose",
   "medication.side-effect-headache",
   "medication.low-stock-trigger",
@@ -133,6 +134,8 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/daily/morning returns the morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own readings, and cards night and today_different with ring (score and band null unless fresh, asOfDay), up to three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is DailyDigest.worthALook as before.",
   "measurements.series-kinds":
     "GET /api/measurements/series takes kinds=a,b,c (at most 8, each once, the same days) in place of kind and answers { series: [...] }, one single-kind answer per kind in the order asked; kind alone keeps the single answer.",
+  "devices.ignored-fields":
+    "The POST /api/devices answer carries ignored: [{ field, code }] when it left an optional Live Activity field out instead of failing the registration: field is liveActivityPushToken, liveActivityStart, liveActivityTokens or liveActivityTokens[<index>]; code is devices.register.invalid_field for the shape, else the devices.push.<reason> a push-to-start statement was refused for. Absent when nothing was left out.",
   "insights.briefing-glucose":
     "The daily briefing's signalsOfDay and keyFindings rows may carry sourceMetric glucose (blood glucose), its figures and delta in the reader's glucose unit; before it the server dropped every such row.",
   "medication.side-effect-headache":
