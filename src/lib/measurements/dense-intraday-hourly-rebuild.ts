@@ -55,6 +55,7 @@
  * Runs on pg-boss — the production standalone image strips `tsx`, so this
  * can never be a CLI script.
  */
+import { operatorLine } from "@/lib/logging/operator-line";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 import { isP2002 as isUniqueConstraintViolation } from "@/lib/prisma-errors";
 
@@ -145,7 +146,7 @@ export async function runDenseIntradayHourlyRebuild(
   prismaClient: PrismaClient,
   options: DenseIntradayHourlyRebuildOptions = {},
 ): Promise<DenseIntradayHourlyRebuildSummary> {
-  const log = options.log ?? ((line) => console.log(line));
+  const log = options.log ?? operatorLine;
   const dryRun = options.dryRun ?? false;
   const retentionDays = options.retentionDays ?? DENSE_INTRADAY_RETENTION_DAYS;
   const cutoffAt =
