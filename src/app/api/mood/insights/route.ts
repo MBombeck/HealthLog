@@ -13,7 +13,7 @@ import {
 } from "@/lib/insights/mood-aggregates";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
-import { resolveJobLocale } from "@/lib/i18n/job-locale";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +80,9 @@ export const GET = apiHandler(async (request: Request) => {
 
   // v1.43 — `patterns` follows the same `?days` window, and a catalogue
   // tag in a pattern is named in the reader's language.
-  const translator = getServerTranslator(await resolveJobLocale(user.locale));
+  const translator = getServerTranslator(
+    await resolveServerLocale({ userLocale: user.locale ?? null }),
+  );
   return apiSuccess(
     moodInsightsWire(result, stabilityWindowDays, (key) => translator.t(key)),
   );

@@ -109,9 +109,9 @@ export interface PriorityCardProps {
    * Dismiss handler for the OBSERVATIONAL kinds only (`milestone`,
    * `ecg_new_recording`, `tension_window`). Receives the item's own
    * `itemKey`. The card renders the affordance ONLY when the kind is
-   * dismissible AND the item actually carries a key — an actionable item (no
-   * `itemKey` by construction) never shows one, no matter what the caller
-   * passes.
+   * dismissible AND the item actually carries a key — an actionable item
+   * (whose `itemKey` is identity only) never shows one, no matter what the
+   * caller passes.
    */
   onDismiss?: (itemKey: string) => void;
   /**
@@ -153,9 +153,9 @@ export function PriorityCard({
   // (unlayered CSS beats utilities); the wash keeps the success border.
   const isMilestone = item.kind === "milestone";
   // Dismiss is offered ONLY on the observational kinds, and only once the
-  // server has actually stamped an identity onto this instance — the
-  // actionable kinds never carry an `itemKey`, so this is structurally false
-  // for them regardless of what the caller wires up. Held as its own const
+  // server has actually stamped an identity onto this instance. The
+  // actionable kinds carry an `itemKey` as row identity too, so the kind
+  // check is what keeps dismiss off them. Held as its own const
   // (rather than re-checked inline) so the narrowed `string` type carries
   // into the click handler below without a non-null assertion.
   const dismissKey = isDismissibleKind(item.kind) ? item.itemKey : undefined;

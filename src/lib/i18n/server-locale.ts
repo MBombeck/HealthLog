@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { NextRequest } from "next/server";
 import {
   defaultLocale,
@@ -6,6 +6,7 @@ import {
   localeFromLanguageTag,
   type Locale,
 } from "./config";
+import { getOperatorDefaultLocale } from "@/lib/app-settings";
 
 const LOCALE_COOKIE_NAMES = ["healthlog-locale", "userLocale"] as const;
 
@@ -46,21 +47,53 @@ interface ResolveOptions {
   override?: string | null;
 }
 
+/** The request's headers: the one passed in, or the ambient request's. */
+async function requestHeaders(
+  request: NextRequest | null | undefined,
+): Promise<Pick<Headers, "get"> | null> {
+  if (request) return request.headers;
+  try {
+    return await headers();
+  } catch {
+    // headers() throws outside a request context (a job, a script).
+    return null;
+  }
+}
+
+function isBearerRequest(hdrs: Pick<Headers, "get"> | null): boolean {
+  return /^bearer\s/i.test(hdrs?.get("authorization") ?? "");
+}
+
 /**
  * Resolve the active locale for a server-side request.
  *
  * Priority:
  *   1. Explicit override (e.g. `?locale=…` query param).
- *   2. healthlog-locale / userLocale cookie (set by the client when the user
+ *   2. On a Bearer request, `Accept-Language` when it names a shipped
+ *      language: the app says which language it runs in that way (#176),
+ *      and a token request carries no locale cookie.
+ *   3. healthlog-locale / userLocale cookie (set by the client when the user
  *      switches language).
- *   3. The User.locale column (persisted preference).
- *   4. Accept-Language header.
- *   5. defaultLocale (English).
+ *   4. The User.locale column (persisted preference).
+ *   5. Accept-Language header.
+ *   6. The operator's default language (`resolveJobLocale` falls back the
+ *      same way), and English only when that is unset as well.
+ *
+ * The headers are the passed request's, or else the ambient request's, so a
+ * route that resolves without handing its request over still hears the
+ * header. Most callers never passed it, which is how an app running in German
+ * on an account with no stored language got English texts.
  */
 export async function resolveServerLocale(
   options: ResolveOptions = {},
 ): Promise<Locale> {
   if (isLocale(options.override)) return options.override;
+
+  const hdrs = await requestHeaders(options.request);
+  const fromHeader = pickLocaleFromAcceptLanguage(
+    hdrs?.get("accept-language") ?? null,
+  );
+  if (fromHeader && isBearerRequest(hdrs)) return fromHeader;
 
   try {
     const cookieStore = await cookies();
@@ -74,11 +107,10 @@ export async function resolveServerLocale(
 
   if (isLocale(options.userLocale)) return options.userLocale;
 
-  const accept = options.request?.headers.get("accept-language") ?? null;
-  const fromHeader = pickLocaleFromAcceptLanguage(accept);
   if (fromHeader) return fromHeader;
 
-  return defaultLocale;
+  const operatorDefault = await getOperatorDefaultLocale();
+  return isLocale(operatorDefault) ? operatorDefault : defaultLocale;
 }
 
 /**

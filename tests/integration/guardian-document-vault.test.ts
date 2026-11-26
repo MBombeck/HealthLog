@@ -308,7 +308,7 @@ async function auditRows(action: string) {
 }
 
 async function mintToken(userId: string, permissions: string[]) {
-  const raw = `gv-token-${counter++}`.padEnd(32, "0");
+  const raw = `hlk_gv-token-${counter++}`.padEnd(32, "0");
   await getPrismaClient().apiToken.create({
     data: {
       userId,

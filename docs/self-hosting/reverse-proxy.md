@@ -367,6 +367,18 @@ A `TRUST_PROXY_HOPS` value that is not a whole number resolves no client
 address at all (requests keep working) and is named in the `[proxy-trust]`
 boot line.
 
+## An authenticating proxy that forwards `Authorization`
+
+A proxy that signs people in before HealthLog (oauth2-proxy with
+`--pass-authorization-header`, a forward-auth service that answers with an
+`Authorization` header) may hand its own `Bearer` credential on to the app.
+HealthLog reads a `Bearer` header only when it carries one of its own tokens
+(`hlk_…`, what the iPhone app and the API tokens under Settings send). Any
+other value is ignored and the request is answered on its session cookie, so
+the web app works behind such a proxy as it does without one. The proxy's
+login is in front of HealthLog's, not instead of it: the browser still signs
+in to HealthLog.
+
 ## Credentials in the URL path: keep them out of access logs
 
 A few HealthLog URLs carry their credential in the path, because the caller
