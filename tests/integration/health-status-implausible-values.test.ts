@@ -126,7 +126,14 @@ describe("GET /api/insights/health-status — implausible stored values", () => 
     await seedDaily(user.id, "WEIGHT", (d) => 80 + (d % 3) * 0.2);
     // Today: a genuinely raised pulse — so the card has something real to say —
     // and beside it one impossible reading, the shape a provider unit-decode
-    // slip leaves behind.
+    // slip leaves behind. Both stay inside today in Berlin: a run in the first
+    // two minutes after midnight put the real one on yesterday.
+    const todayStart = startOfLocalDayInTz(
+      new Date(),
+      "Europe/Berlin",
+    ).getTime();
+    const realAt = Math.max(Date.now() - 120_000, todayStart);
+    const impossibleAt = Math.max(Date.now() - 60_000, todayStart + 1_000);
     await getPrismaClient().measurement.createMany({
       data: [
         {
@@ -134,7 +141,7 @@ describe("GET /api/insights/health-status — implausible stored values", () => 
           type: "PULSE",
           value: REAL_RAISED_PULSE,
           unit: "bpm",
-          measuredAt: new Date(Date.now() - 120_000),
+          measuredAt: new Date(realAt),
           source: "MANUAL",
         },
         {
@@ -142,7 +149,7 @@ describe("GET /api/insights/health-status — implausible stored values", () => 
           type: "PULSE",
           value: IMPOSSIBLE_PULSE,
           unit: "bpm",
-          measuredAt: new Date(Date.now() - 60_000),
+          measuredAt: new Date(impossibleAt),
           source: "MANUAL",
         },
       ],
