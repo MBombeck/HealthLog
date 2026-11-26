@@ -16147,5 +16147,78 @@
     "entry": {
       "description": "Blutgruppe, Allergien, Medikamente und Kontakte für den Notfall, mit Offline-Kopie, Portemonnaie-Karte und QR-Link."
     }
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "BMI unter dem Normalbereich",
+        "message": "Dein BMI von {bmi} liegt unter dem Normalbereich (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "BMI im Bereich Übergewicht",
+        "message": "Dein BMI von {bmi} liegt im Bereich Übergewicht. Regelmäßige Bewegung und eine ausgewogene Ernährung können helfen."
+      },
+      "bmiObesity": {
+        "title": "BMI im Bereich Adipositas",
+        "message": "Dein BMI von {bmi} liegt im Bereich Adipositas."
+      },
+      "bmiNormal": {
+        "title": "BMI im Normalbereich",
+        "message": "Dein BMI von {bmi} liegt im gesunden Bereich."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Blutdruck deutlich erhöht",
+        "message": "Dein durchschnittlicher Blutdruck ({sys}/{dia}) wird als „{category}“ eingestuft."
+      },
+      "bpSlightlyElevated": {
+        "title": "Blutdruck leicht erhöht",
+        "message": "Dein durchschnittlicher Blutdruck ({sys}/{dia}) liegt im Bereich „{category}“."
+      },
+      "bpTargetGood": {
+        "title": "Blutdruck meist im Zielbereich",
+        "message": "{percent} % deiner Messungen liegen im Zielbereich."
+      },
+      "bpTargetLow": {
+        "title": "Blutdruck oft außerhalb des Zielbereichs",
+        "message": "Nur {percent} % deiner Messungen liegen im Zielbereich."
+      },
+      "weightIncreasing": {
+        "title": "Gewicht steigt",
+        "message": "Dein Gewicht steigt in den letzten 30 Tagen um etwa {kg} kg pro Woche."
+      },
+      "weightDecreasing": {
+        "title": "Gewicht sinkt",
+        "message": "Dein Gewicht sinkt in den letzten 30 Tagen um etwa {kg} kg pro Woche."
+      },
+      "pulseOutliers": {
+        "title": "Auffällige Pulswerte",
+        "message": "{count, plural, one {# ungewöhnlicher Pulswert} other {# ungewöhnliche Pulswerte}} in den letzten 30 Tagen."
+      },
+      "complianceLow": {
+        "title": "Geringe Therapietreue: {name}",
+        "message": "Deine Therapietreue für {name} liegt in den letzten 7 Tagen bei nur {percent} %. Eine regelmäßige Einnahme ist wichtig."
+      },
+      "complianceExcellent": {
+        "title": "Sehr gute Therapietreue: {name}",
+        "message": "{percent} % Therapietreue in den letzten 7 Tagen. Weiter so!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Gewicht",
+      "bloodPressure": "Blutdruck",
+      "bloodPressureOnTarget": "Blutdruck im Zielbereich",
+      "restingPulse": "Ruhepuls",
+      "bmi": "BMI",
+      "bodyFat": "Körperfett",
+      "stepsPerDay": "Schritte/Tag",
+      "sleepDuration": "Schlafdauer",
+      "medicationCompliance": "Therapietreue",
+      "mood": "Stimmung",
+      "moodStability": "Stimmungsstabilität"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Systolischer Blutdruck",
+      "diastolicBloodPressure": "Diastolischer Blutdruck"
+    }
   }
 }

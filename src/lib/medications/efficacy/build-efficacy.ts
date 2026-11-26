@@ -18,6 +18,7 @@
  * never recomputes a delta or a mean (parity rule).
  */
 import type { MeasurementType } from "@/generated/prisma/client";
+import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
@@ -153,45 +154,84 @@ export interface MedicationEfficacyDTO {
   };
 }
 
-/** Curated retarget metrics the fallback chooser offers (client localises). */
-const OVERRIDE_METRIC_OPTIONS: { key: MeasurementType; label: string }[] = [
-  { key: "BLOOD_PRESSURE_SYS", label: "Systolic blood pressure" },
-  { key: "BLOOD_PRESSURE_DIA", label: "Diastolic blood pressure" },
-  { key: "BLOOD_GLUCOSE", label: "Blood glucose" },
-  { key: "WEIGHT", label: "Weight" },
-  { key: "PULSE", label: "Pulse" },
-  { key: "BODY_MASS_INDEX", label: "Body-mass index" },
+/**
+ * Curated retarget metrics the fallback chooser offers. Their labels, like a
+ * metric target's, are catalog keys (`efficacyMetricLabelKey`); the route
+ * words them in the reader's language (`localiseEfficacyLabels`).
+ */
+const OVERRIDE_METRIC_OPTIONS: readonly MeasurementType[] = [
+  "BLOOD_PRESSURE_SYS",
+  "BLOOD_PRESSURE_DIA",
+  "BLOOD_GLUCOSE",
+  "WEIGHT",
+  "PULSE",
+  "BODY_MASS_INDEX",
 ];
+
+/**
+ * The catalog key a metric is named under on the effect view. The two blood
+ * pressure sides get their full names; the measurement list's are the short
+ * column heads.
+ */
+const EFFICACY_LABEL_KEY_OVERRIDES: Partial<Record<MeasurementType, string>> = {
+  BLOOD_PRESSURE_SYS: "serverText.metricLabels.systolicBloodPressure",
+  BLOOD_PRESSURE_DIA: "serverText.metricLabels.diastolicBloodPressure",
+};
+
+export function efficacyMetricLabelKey(mt: MeasurementType): string {
+  return EFFICACY_LABEL_KEY_OVERRIDES[mt] ?? MEASUREMENT_TYPE_LABEL_KEYS[mt];
+}
+
+/**
+ * Word the metric labels of an efficacy DTO in the reader's language. A lab
+ * target and a biomarker option are named by the record's own analyte name,
+ * which stays as written.
+ */
+export function localiseEfficacyLabels(
+  dto: MedicationEfficacyDTO,
+  t: (key: string) => string,
+): MedicationEfficacyDTO {
+  return {
+    ...dto,
+    targets: dto.targets.map((view) =>
+      view.kind === "metric" ? { ...view, label: t(view.label) } : view,
+    ),
+    overrideOptions: {
+      ...dto.overrideOptions,
+      metrics: dto.overrideOptions.metrics.map((m) => ({
+        ...m,
+        label: t(m.label),
+      })),
+    },
+  };
+}
 
 /** Fixed reference bands for the metric targets `resolveRichMetric` omits. */
 const METRIC_META_FALLBACK: Partial<
   Record<
     MeasurementType,
-    { label: string; unit: string; band: { low: number; high: number } | null }
+    { unit: string; band: { low: number; high: number } | null }
   >
 > = {
   BLOOD_PRESSURE_SYS: {
-    label: "Systolic blood pressure",
     unit: "mmHg",
     band: { low: 90, high: 120 },
   },
   BLOOD_PRESSURE_DIA: {
-    label: "Diastolic blood pressure",
     unit: "mmHg",
     band: { low: 60, high: 80 },
   },
 };
 
 function resolveMetricMeta(mt: MeasurementType): {
-  label: string;
   unit: string | null;
   band: { low: number; high: number } | null;
 } {
   const rich = resolveRichMetric(mt);
-  if (rich) return { label: rich.label, unit: rich.unit, band: rich.band };
+  if (rich) return { unit: rich.unit, band: rich.band };
   const fb = METRIC_META_FALLBACK[mt];
   if (fb) return fb;
-  return { label: mt, unit: null, band: null };
+  return { unit: null, band: null };
 }
 
 const dayToInstant = (day: string): number =>
@@ -321,7 +361,7 @@ async function buildMetricTarget(
     view: {
       kind: "metric",
       key: mt,
-      label: meta.label,
+      label: efficacyMetricLabelKey(mt),
       unit: display.unit,
       primary,
       referenceBand: band
@@ -529,9 +569,9 @@ export async function buildMedicationEfficacy(
     select: { id: true, name: true, unit: true },
   });
   const overrideOptions = {
-    metrics: OVERRIDE_METRIC_OPTIONS.map((m) => ({
-      key: m.key,
-      label: m.label,
+    metrics: OVERRIDE_METRIC_OPTIONS.map((mt) => ({
+      key: mt,
+      label: efficacyMetricLabelKey(mt),
     })),
     biomarkers: biomarkerRows.map((b) => ({
       id: b.id,

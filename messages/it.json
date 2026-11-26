@@ -16147,5 +16147,78 @@
     "entry": {
       "description": "Gruppo sanguigno, allergie, farmaci e contatti per un’emergenza, con copia offline, tessera e link QR."
     }
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "IMC sotto l’intervallo normale",
+        "message": "Il tuo IMC di {bmi} è sotto l’intervallo normale (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "IMC nell’intervallo di sovrappeso",
+        "message": "Il tuo IMC di {bmi} è nell’intervallo di sovrappeso. Attività fisica regolare e un’alimentazione equilibrata possono aiutare."
+      },
+      "bmiObesity": {
+        "title": "IMC nell’intervallo di obesità",
+        "message": "Il tuo IMC di {bmi} è nell’intervallo di obesità."
+      },
+      "bmiNormal": {
+        "title": "IMC nell’intervallo normale",
+        "message": "Il tuo IMC di {bmi} è nell’intervallo sano."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Pressione arteriosa nettamente elevata",
+        "message": "La tua pressione arteriosa media ({sys}/{dia}) è classificata come «{category}»."
+      },
+      "bpSlightlyElevated": {
+        "title": "Pressione arteriosa leggermente elevata",
+        "message": "La tua pressione arteriosa media ({sys}/{dia}) è nell’intervallo «{category}»."
+      },
+      "bpTargetGood": {
+        "title": "Buona aderenza all’obiettivo pressorio",
+        "message": "Il {percent}% delle tue misurazioni è nell’intervallo obiettivo."
+      },
+      "bpTargetLow": {
+        "title": "Pressione spesso fuori dall’intervallo obiettivo",
+        "message": "Solo il {percent}% delle tue misurazioni è nell’intervallo obiettivo."
+      },
+      "weightIncreasing": {
+        "title": "Peso in aumento",
+        "message": "Il tuo peso aumenta di circa {kg} kg a settimana negli ultimi 30 giorni."
+      },
+      "weightDecreasing": {
+        "title": "Peso in calo",
+        "message": "Il tuo peso cala di circa {kg} kg a settimana negli ultimi 30 giorni."
+      },
+      "pulseOutliers": {
+        "title": "Valori di polso anomali",
+        "message": "{count, plural, one {# valore di polso insolito} other {# valori di polso insoliti}} negli ultimi 30 giorni."
+      },
+      "complianceLow": {
+        "title": "Aderenza bassa: {name}",
+        "message": "La tua aderenza a 7 giorni per {name} è solo del {percent}%. Un’assunzione regolare è importante."
+      },
+      "complianceExcellent": {
+        "title": "Aderenza eccellente: {name}",
+        "message": "{percent}% di aderenza negli ultimi 7 giorni. Continua così!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Peso",
+      "bloodPressure": "Pressione arteriosa",
+      "bloodPressureOnTarget": "Pressione nell’obiettivo",
+      "restingPulse": "Polso a riposo",
+      "bmi": "IMC",
+      "bodyFat": "Grasso corporeo",
+      "stepsPerDay": "Passi/giorno",
+      "sleepDuration": "Durata del sonno",
+      "medicationCompliance": "Aderenza ai farmaci",
+      "mood": "Umore",
+      "moodStability": "Stabilità dell’umore"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Pressione arteriosa sistolica",
+      "diastolicBloodPressure": "Pressione arteriosa diastolica"
+    }
   }
 }

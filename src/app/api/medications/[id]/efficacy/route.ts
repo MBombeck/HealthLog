@@ -1,7 +1,12 @@
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { buildMedicationEfficacy } from "@/lib/medications/efficacy/build-efficacy";
+import {
+  buildMedicationEfficacy,
+  localiseEfficacyLabels,
+} from "@/lib/medications/efficacy/build-efficacy";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -44,6 +49,10 @@ export const GET = apiHandler(
       return apiError("Medication not found", 404);
     }
 
-    return apiSuccess(dto);
+    // Metric labels are catalog keys until here: words in the reader's language.
+    const { t } = getServerTranslator(
+      await resolveServerLocale({ userLocale: actor.locale ?? null }),
+    );
+    return apiSuccess(localiseEfficacyLabels(dto, (key) => t(key)));
   },
 );

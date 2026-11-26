@@ -72,7 +72,7 @@ export function buildSleepTarget({
 
   return {
     type: "SLEEP_DURATION",
-    label: "Sleep duration",
+    label: "serverText.targetLabels.sleepDuration",
     current,
     average30,
     trend,
