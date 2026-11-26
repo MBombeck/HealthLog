@@ -7,11 +7,12 @@ import { VALUE_RANGES } from "@/lib/validations/measurement";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 
-import type { SeriesRead } from "./kinds";
+import type { SeriesRead, SeriesShared } from "./kinds";
 
 export async function readBloodPressureSeries(
   userId: string,
   since: Date,
+  shared?: SeriesShared,
 ): Promise<SeriesRead> {
   // Exclude non-physiological rows (systolic < 40 / diastolic < 20) from the
   // series AND the implicit "latest" (the last point). BP is two rows paired
@@ -35,7 +36,7 @@ export async function readBloodPressureSeries(
   // every request value is a positional parameter. The statement and why it
   // is a window rather than a join are under `bloodPressureSeriesSql`.
   const rank = buildSourceRankCase(
-    await loadUserSourcePriority(userId),
+    shared ? shared.priorityJson : await loadUserSourcePriority(userId),
     '"type"',
     '"source"',
   );

@@ -183,6 +183,20 @@ export interface SeriesStats {
 }
 
 /** What one reader hands back: the points, and the unit and stats it fixed. */
+/**
+ * The account lookups every reader needs, read once per request so a
+ * multi-kind request does not repeat them per kind. A reader given none
+ * reads them itself.
+ */
+export interface SeriesShared {
+  /** The record's source-priority ladder (`User.sourcePriorityJson`). */
+  priorityJson: unknown;
+  /** The record's resolved time zone. */
+  tz: string;
+  /** The record's stored glucose unit preference, unresolved. */
+  glucoseUnit: string | null;
+}
+
 export interface SeriesRead {
   points: SeriesPoint[];
   unit?: string;
