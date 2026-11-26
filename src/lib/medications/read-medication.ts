@@ -7,6 +7,7 @@
  * records are resolved here, in the order they always were. `null` means the
  * medication is not the record's.
  */
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import type { Medication, MedicationSchedule } from "@/generated/prisma/client";
 import { medicationWindow } from "@/lib/medications/course-window";
 import { prisma } from "@/lib/db";
@@ -312,7 +313,10 @@ export async function medicationDetail(input: {
     stockUnitsRemaining,
     stockDosesRemaining,
     runwayDays,
-    ingredients: toIngredientDtos(ingredientRows, user.locale ?? null),
+    ingredients: toIngredientDtos(
+      ingredientRows,
+      await resolveServerLocale({ userLocale: user.locale ?? null }),
+    ),
     // #1430 — the official registry search for this medication, built from
     // the static template table; null when the caller chose no registry.
     // Nothing is fetched: a client opens `url` in a new tab.

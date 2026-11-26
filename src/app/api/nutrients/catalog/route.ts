@@ -9,6 +9,7 @@
  * and never convert units themselves.
  */
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { nutrientLabel } from "@/lib/medications/ingredients/composition";
@@ -22,11 +23,14 @@ export const GET = apiHandler(async () => {
   const gate = await requireModuleEnabled(user.id, "nutrients");
   if (!gate.enabled) return gate.response;
 
+  // The reader's language: the app's on a Bearer request, the account's
+  // otherwise (`resolveServerLocale`).
+  const locale = await resolveServerLocale({ userLocale: user.locale ?? null });
   const entries = NUTRIENT_DEFINITIONS.map((def) => ({
     code: def.code,
     unit: def.unit,
     labelKey: def.labelKey,
-    label: nutrientLabel(def.code, user.locale ?? null),
+    label: nutrientLabel(def.code, locale),
     syncable: def.syncable,
     ingredient: def.ingredient,
     inputUnits: def.inputUnits.map((u) => ({
