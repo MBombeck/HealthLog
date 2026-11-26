@@ -14038,10 +14038,10 @@
       "vitalsInRangeOther": "Alle {count} heutigen Werte liegen in ihrem üblichen Bereich.",
       "vitalInRange": "{metric} liegt heute im Mittel bei {value}, in deinem üblichen Bereich ({range}).",
       "floor": {
-        "bpHigh": "Der Blutdruck lag in den letzten 24 Stunden bei {value}.",
+        "bpHigh": "Der Blutdruck stieg in den letzten 24 Stunden auf {value}.",
         "bpLow": "Der Blutdruck fiel in den letzten 24 Stunden auf {value}.",
         "glucoseLow": "Der Blutzucker fiel in den letzten 24 Stunden auf {value}.",
-        "glucoseHigh": "Der Blutzucker lag in den letzten 24 Stunden bei {value}."
+        "glucoseHigh": "Der Blutzucker stieg in den letzten 24 Stunden auf {value}."
       },
       "restModeToday": "Ruhemodus seit heute, Werte dienen nur als Kontext.",
       "restModeOne": "Ruhemodus seit {count} Tag, Werte dienen heute nur als Kontext.",
