@@ -3422,6 +3422,8 @@
         "deltaReason": "first_eligibility_window",
         "scoreVersion": 4,
         "bandSetter": null,
+        "bandSetterBand": null,
+        "bandSetterLine": null,
         "restMode": {
           "active": true,
           "since": "anchor-3d+12:00:00",
