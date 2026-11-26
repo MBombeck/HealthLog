@@ -756,6 +756,9 @@ export async function loadDailyDigest(
         composition: snapshot.healthScore.composition,
         configured: snapshot.healthScore.configured,
         scoreBasis: snapshot.healthScore.scoreBasis,
+        bandSetter: snapshot.healthScore.bandSetter ?? null,
+        bandSetterBand: snapshot.healthScore.bandSetterBand ?? null,
+        bandSetterLine: snapshot.healthScore.bandSetterLine ?? null,
       }
     : null;
 

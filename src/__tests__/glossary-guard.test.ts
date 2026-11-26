@@ -317,6 +317,50 @@ describe("glossary", () => {
   });
 });
 
+/**
+ * House style keeps the en and em dash, the middle dot and the arrow out of
+ * visible copy; a range is written with a hyphen ("Pain (0-10)"). A term
+ * reaches every surface that names the concept, so it is held here, with
+ * the message values its anchors point at.
+ */
+const BANNED_MARKS = /[\u2013\u2014\u00b7\u2192]/u;
+
+describe("punctuation", () => {
+  it("can fail: the matcher sees each mark", () => {
+    for (const mark of ["\u2013", "\u2014", "\u00b7", "\u2192"]) {
+      expect(BANNED_MARKS.test(`Pain (0${mark}10)`)).toBe(true);
+    }
+    expect(BANNED_MARKS.test("Pain (0-10)")).toBe(false);
+  });
+
+  it.each(locales)(
+    "%s: no term or anchored value carries a dash, dot or arrow",
+    (locale) => {
+      const offenders: string[] = [];
+      let checked = 0;
+      for (const concept of CONCEPTS) {
+        const term = concept.terms[locale];
+        if (!term) continue;
+        for (const form of [term.name, term.item, term.short]) {
+          if (!form) continue;
+          checked += 1;
+          if (BANNED_MARKS.test(form))
+            offenders.push(`${concept.id}: "${form}"`);
+        }
+        for (const anchor of concept.anchors) {
+          const text = bundles.get(locale)?.get(anchor.key);
+          if (text === undefined) continue;
+          checked += 1;
+          if (BANNED_MARKS.test(text))
+            offenders.push(`${anchor.key}: "${text}"`);
+        }
+      }
+      expect(checked).toBeGreaterThan(100);
+      expect(offenders).toEqual([]);
+    },
+  );
+});
+
 describe("spelling", () => {
   it("states why for every locale it settles", () => {
     for (const [locale, rule] of Object.entries(SPELLING)) {
@@ -509,6 +553,70 @@ describe("every metric is a concept", () => {
  * needs a fallback of its own.
  */
 const SHORT_PREFIX = "measurements.shortType";
+
+/** The word each locale's device-notification names carry. */
+const NOTIFICATION_WORD: Record<string, RegExp> = {
+  de: /hinweis|ereignis|meldung|warnung/iu,
+  en: /notification|alert|event/iu,
+  es: /aviso|alerta|notificación/iu,
+  fr: /notification|alerte/iu,
+  it: /notifica|avviso/iu,
+  pl: /powiadomienie|alert/iu,
+  ko: /알림/u,
+  nl: /melding|waarschuwing/iu,
+  "pt-BR": /notificação|alerta/iu,
+  ru: /уведомление/iu,
+};
+
+/**
+ * Phrases that read as a finding about the person, never a short form: a
+ * tile or list row would state a diagnosis where the device only notified.
+ */
+const DIAGNOSIS_LIKE: Record<string, string[]> = {
+  de: [
+    "Unregelmäßiger Rhythmus",
+    "Herzrhythmusstörung",
+    "Vorhofflimmern",
+    "Hoher Puls",
+    "Niedriger Puls",
+    "Tachykardie",
+    "Bradykardie",
+    "Bluthochdruck",
+    "Niedrige Cardiofitness",
+  ],
+  en: [
+    "Irregular rhythm",
+    "Arrhythmia",
+    "Atrial fibrillation",
+    "High heart rate",
+    "Low heart rate",
+    "Tachycardia",
+    "Bradycardia",
+    "Hypertension",
+    "Low cardio fitness",
+  ],
+  es: [
+    "Ritmo irregular",
+    "Arritmia",
+    "Pulso alto",
+    "Pulso bajo",
+    "Hipertensión",
+    "Baja forma cardiovascular",
+  ],
+  fr: ["Rythme irrégulier", "Arythmie", "Hypertension"],
+  it: ["Ritmo irregolare", "Aritmia", "Ipertensione"],
+  pl: ["Nieregularny rytm", "Arytmia", "Nadciśnienie"],
+  ko: ["불규칙한 리듬", "부정맥", "고혈압"],
+  nl: [
+    "Onregelmatig ritme",
+    "Hoge hartslag",
+    "Lage hartslag",
+    "Hoge bloeddruk",
+    "Lage cardiofitheid",
+  ],
+  "pt-BR": ["Ritmo irregular", "Arritmia", "Hipertensão"],
+  ru: ["Нерегулярный ритм", "Аритмия", "Гипертония"],
+};
 const SHORTENED = CONCEPTS.filter((c) => c.shortKey !== undefined);
 
 describe("short forms", () => {
@@ -569,6 +677,62 @@ describe("short forms", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  /**
+   * A device notification is a message from the device, not a finding. Its
+   * name says so ("Irregular rhythm notification"); a short form that drops
+   * that word turns the tile into a diagnosis ("Irregular rhythm"). So a
+   * short form keeps the notification word its name carries, and none is a
+   * bare finding from the denylist below, whatever its metric.
+   */
+  it.each(locales)(
+    "%s: a short form keeps the notification word its name carries",
+    (locale) => {
+      const word = NOTIFICATION_WORD[locale];
+      expect(word, `${locale}: no notification word`).toBeDefined();
+      const offenders: string[] = [];
+      let covered = 0;
+      for (const concept of SHORTENED) {
+        const { name, short } = concept.terms[locale] ?? {};
+        if (!name || !word.test(name)) continue;
+        covered += 1;
+        if (short && !word.test(short)) {
+          offenders.push(`${concept.id}: "${short}" drops it from "${name}"`);
+        }
+      }
+      // Six device notifications carry a short key; a matcher that finds
+      // none of their names proves nothing.
+      expect(covered).toBeGreaterThanOrEqual(5);
+      expect(offenders).toEqual([]);
+    },
+  );
+
+  it.each(locales)("%s: no short form reads like a finding", (locale) => {
+    const fold = (s: string) => s.toLocaleLowerCase(locale).trim();
+    const denied = new Set((DIAGNOSIS_LIKE[locale] ?? []).map(fold));
+    const offenders: string[] = [];
+    for (const [key, text] of bundles.get(locale)!) {
+      if (key.startsWith(SHORT_PREFIX) && denied.has(fold(text))) {
+        offenders.push(`${key} = "${text}"`);
+      }
+    }
+    for (const concept of SHORTENED) {
+      const short = concept.terms[locale]?.short;
+      if (short && denied.has(fold(short))) {
+        offenders.push(`${concept.id}: "${short}"`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("can fail: the denylist catches the forms it was written for", () => {
+    const fold = (s: string) => s.toLocaleLowerCase("de");
+    expect(DIAGNOSIS_LIKE.de.map(fold)).toContain(
+      fold("Unregelmäßiger Rhythmus"),
+    );
+    expect(NOTIFICATION_WORD.en.test("Irregular rhythm")).toBe(false);
+    expect(NOTIFICATION_WORD.de.test("Rhythmus-Hinweis")).toBe(true);
   });
 
   it.each(locales)("%s: the short key carries the short form", (locale) => {

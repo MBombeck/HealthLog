@@ -394,6 +394,16 @@ function MorningScore({ digest }: { digest: DailyDigest }) {
           {label}
         </span>
       </Link>
+      {/* The pillar the green band leaves unsaid, worded on the server:
+          content, so foreground. */}
+      {score?.bandSetterLine ? (
+        <p
+          data-slot="morning-score-setter"
+          className="text-foreground text-xs text-balance"
+        >
+          {score.bandSetterLine}
+        </p>
+      ) : null}
       {meta.length > 0 ? (
         <div className="text-muted-foreground flex flex-col gap-0.5 text-xs text-balance">
           {meta}

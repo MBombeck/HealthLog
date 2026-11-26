@@ -24,6 +24,9 @@
           "tier": "full",
           "physiological": true
         },
+        "bandSetter": null,
+        "bandSetterBand": null,
+        "bandSetterLine": null,
         "steadyWeeks": null,
         "steadyAtLeast": false
       },

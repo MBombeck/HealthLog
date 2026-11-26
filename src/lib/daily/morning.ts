@@ -14,8 +14,12 @@
  *    0  a clinical safety floor was confirmed in the last 24 hours
  *    1  Rest mode is on
  *    2  two or more independent signals are outside their usual range today
- *    3  one value is outside (blood pressure alone, weight alone, ...)
- *    4  sleep reaches the record, last night has not arrived yet
+ *    3  one value is outside (blood pressure alone, weight alone, ...), or a
+ *       reading of the last 24 hours is past a safety floor that has not
+ *       been confirmed yet (rank 8 would otherwise call it in range)
+ *    4  sleep reaches the record, last night has not arrived yet, before
+ *       local noon (after it, the night card still says so; the sentence
+ *       moves on to what the day does hold)
  *    5  a source went quiet, on its first and second day only
  *    6  readiness is fresh and yellow or red
  *    7  last night is an hour or more off the usual
@@ -37,6 +41,7 @@ import {
   type SignalFamily,
 } from "@/lib/insights/derived/coincident-deviation";
 import type { ModuleKey } from "@/lib/modules/registry";
+import type { MorningFloor } from "@/lib/daily/morning-floor";
 import { metricHref, pageHref } from "@/lib/links/hrefs";
 import {
   currentVitals,
@@ -87,6 +92,9 @@ export type MorningCardKind = (typeof MORNING_CARD_KINDS)[number];
 
 /** The most lines a card carries. */
 export const MAX_CARD_LINES = 3;
+
+/** Rank 4 speaks until this local hour; a night not in by noon is news no more. */
+export const SLEEP_PENDING_LEAD_UNTIL_HOUR = 12;
 
 /** Rank 5 speaks on the first and second quiet day only, then the rail does. */
 export const QUIET_SENTENCE_MAX_DAY = 2;
@@ -162,18 +170,6 @@ export interface DailyMorning {
   generatedAt: string;
 }
 
-/** A confirmed safety-floor breach from the last 24 hours. */
-export interface MorningFloor {
-  reason:
-    | "bp_hypertensive"
-    | "bp_hypotensive"
-    | "glucose_hypo"
-    | "glucose_hypo_severe"
-    | "glucose_hyper";
-  /** The breaching reading in the reader's units ("182/121 mmHg"). */
-  valueLabel: string;
-}
-
 /** A source the one stall rule (`sync-stall/quiet.ts`) holds quiet now. */
 export interface MorningQuietSource {
   /** Display name ("WHOOP"). */
@@ -212,7 +208,15 @@ export interface MorningInput {
   now: Date;
   /** The reader's local day, `YYYY-MM-DD`. */
   todayKey: string;
+  /** The reader's local hour, 0 to 23. */
+  localHour: number;
   floor: MorningFloor | null;
+  /**
+   * A reading of the last 24 hours past a safety floor that the engine has
+   * not confirmed (no second reading yet). Not rank 0, but it keeps rank 8
+   * from calling the day in range. Null when `floor` is set.
+   */
+  floorReading: MorningFloor | null;
   restMode: TodayRestMode | null;
   /** Every banded vital's standing, rendered in the reader's units. */
   vitals: readonly TodayVital[];
@@ -502,7 +506,13 @@ export function buildMorningLead(
       vitalsOutsideSentence(facts.outside.slice(0, 1), locale, t),
     );
   }
-  if (facts.sleepPending) {
+  // A single reading past a safety floor is in a personal range that sits
+  // that high, so the counted vitals call it usual; the day is not "all in
+  // range" while it stands.
+  if (input.floorReading) {
+    return lead("vital_outside", floorSentence(input.floorReading, t));
+  }
+  if (facts.sleepPending && input.localHour < SLEEP_PENDING_LEAD_UNTIL_HOUR) {
     return lead("sleep_pending", t("daily.lead.sleepPending"));
   }
   if (facts.quiet) {

@@ -29,7 +29,11 @@ import type {
   ScorePillarResult,
 } from "@/lib/analytics/score/types";
 import { scoreBandWordKey } from "@/components/insights/derived/band-tokens";
-import { healthScoreSetterLine } from "@/lib/score-config/labels";
+import {
+  healthScoreSetter,
+  healthScoreSetterLine,
+  worseScoreBand,
+} from "@/lib/score-config/labels";
 
 const EN = JSON.parse(
   readFileSync(join(process.cwd(), "messages/en.json"), "utf8"),
@@ -190,6 +194,17 @@ describe("the health score over a red pillar", () => {
     expect(healthScoreSetterLine({ composite, pillars }, en)).toBe(
       "Activity: outside the reference range",
     );
+  });
+
+  it("hands every surface the setter's band, so a sentence takes the worse", () => {
+    expect(healthScoreSetter({ composite, pillars }, en)).toEqual({
+      id: "ACTIVITY",
+      band: "red",
+      line: "Activity: outside the reference range",
+    });
+    expect(worseScoreBand("green", "red")).toBe("red");
+    expect(worseScoreBand("red", "yellow")).toBe("red");
+    expect(worseScoreBand("green", null)).toBe("green");
   });
 
   it("says nothing beside the score when no pillar sits below its band", () => {

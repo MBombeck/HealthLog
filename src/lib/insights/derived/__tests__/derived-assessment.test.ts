@@ -67,6 +67,7 @@ const sleepScore: SleepScoreValue = {
   score: 82,
   band: "green",
   night: "2026-06-04",
+  fresh: true,
   asleepMinutes: 440,
   inBedMinutes: 470,
   subScores: [

@@ -12,10 +12,12 @@ import {
   buildDailyMorning,
   buildMorningLead,
   MORNING_LEAD_KEYS,
+  SLEEP_PENDING_LEAD_UNTIL_HOUR,
   rankOf,
   type MorningInput,
   type MorningLeadKey,
 } from "@/lib/daily/morning";
+import { floorFromReadings } from "@/lib/daily/morning-floor";
 
 const t = getServerTranslator("en").t;
 const NOW = new Date("2026-11-26T07:30:00Z");
@@ -52,7 +54,9 @@ function input(over: Partial<MorningInput> = {}): MorningInput {
     modules: {},
     now: NOW,
     todayKey: TODAY,
+    localHour: 8,
     floor: null,
+    floorReading: null,
     restMode: null,
     vitals: [],
     illnessExplained: false,
@@ -222,6 +226,25 @@ describe("morning lead: one rank per state", () => {
     ).toBe("Last night's sleep is not in yet.");
   });
 
+  it("rank 4 speaks until local noon, then the day's values do", () => {
+    const pending = {
+      sleepExpected: true,
+      sleepPending: true,
+      vitals: [vital(), vital({ type: "HEART_RATE_VARIABILITY" })],
+    };
+    expectRank(
+      { ...pending, localHour: SLEEP_PENDING_LEAD_UNTIL_HOUR - 1 },
+      "sleep_pending",
+    );
+    expect(expectRank({ ...pending, localHour: 21 }, "in_range").text).toBe(
+      "All 2 of today's values sit inside their usual range.",
+    );
+    // The night card still says it is not in.
+    const morning = buildDailyMorning(input({ ...pending, localHour: 21 }), t);
+    const night = morning.cards.find((c) => c.kind === "night");
+    expect(night?.lines[0]?.text).toBe(t("daily.morningCard.nightPending"));
+  });
+
   it("rank 4 does not speak when the sleep module is off", () => {
     expectRank(
       {
@@ -285,6 +308,26 @@ describe("morning lead: one rank per state", () => {
     );
     expect(lead.text).toBe(
       "All 2 of today's values sit inside their usual range.",
+    );
+  });
+
+  it("rank 8 does not hold while a reading past a safety floor stands unconfirmed", () => {
+    // 182/121 sits inside a personal range that runs this high, so the
+    // counted vitals call it usual; the floor says otherwise.
+    const lead = expectRank(
+      {
+        vitals: [
+          vital({ type: "BLOOD_PRESSURE_SYS", value: 182 }),
+          vital({ type: "BLOOD_PRESSURE_DIA", value: 121 }),
+        ],
+        floorReading: { reason: "bp_hypertensive", valueLabel: "182/121 mmHg" },
+        sleepExpected: true,
+        sleepPending: true,
+      },
+      "vital_outside",
+    );
+    expect(lead.text).toBe(
+      "Blood pressure reached 182/121 mmHg in the last 24 hours.",
     );
   });
 
@@ -490,5 +533,48 @@ describe("morning cards", () => {
       titleKey: "daily.morningCard.title.toDo",
       title: "Heute zu tun",
     });
+  });
+});
+
+describe("floor readings", () => {
+  const label = (mgdl: number) => `${mgdl} mg/dL`;
+
+  it("names the most extreme reading past the floor, or nothing", () => {
+    const bp = [
+      { sys: 150, dia: 95 },
+      { sys: 176, dia: 121 },
+      { sys: 184, dia: 100 },
+    ];
+    expect(floorFromReadings({ bp, glucose: [] }, null, label)).toEqual({
+      reason: "bp_hypertensive",
+      valueLabel: "184/100 mmHg",
+    });
+    expect(
+      floorFromReadings(
+        { bp: [{ sys: 150, dia: 95 }], glucose: [] },
+        null,
+        label,
+      ),
+    ).toBeNull();
+  });
+
+  it("reads glucose against its threshold, not the window's extreme alone", () => {
+    // A confirmed low whose reading is gone must not print an ordinary value.
+    expect(
+      floorFromReadings({ bp: [], glucose: [96, 110] }, "glucose_hypo", label),
+    ).toBeNull();
+    expect(
+      floorFromReadings(
+        { bp: [], glucose: [96, 62, 58] },
+        "glucose_hypo",
+        label,
+      ),
+    ).toEqual({ reason: "glucose_hypo", valueLabel: "58 mg/dL" });
+    expect(
+      floorFromReadings({ bp: [], glucose: [96, 52] }, null, label),
+    ).toEqual({ reason: "glucose_hypo_severe", valueLabel: "52 mg/dL" });
+    expect(
+      floorFromReadings({ bp: [], glucose: [260, 240] }, null, label),
+    ).toEqual({ reason: "glucose_hyper", valueLabel: "260 mg/dL" });
   });
 });

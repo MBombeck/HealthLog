@@ -40,6 +40,9 @@
  *     for "last 81 on Nov 24" but has no band (`null`), since a band is a
  *     statement about today. A client built before 1.50 skips a ring it
  *     cannot decode, so it shows no stale band either.
+ *   - SLEEP_SCORE follows the same rule: only the night that ended this
+ *     morning is today's ring; an older night keeps its score and its wake
+ *     day as `asOfDay`, without a band.
  *   - RECOVERY_SCORE carries the `source` of the row it rests on. When that
  *     row is the computed proxy (`isProxyRecovery`) and a fresh READINESS
  *     ring (one with a band) is also served, the recovery ring is left out:
@@ -72,13 +75,14 @@ export interface DashboardScoreRing {
   /** The 0..100 score (rounded). For `MED_COMPLIANCE`: today's dose progress. */
   score: number;
   /**
-   * The server's band. `null` only on a READINESS ring that is not fresh:
+   * The server's band. `null` only on a READINESS or SLEEP_SCORE ring that
+   * is not fresh:
    * a band is a statement about today, an old blend makes none.
    */
   band: ScoreRingBand | null;
-  /** READINESS only (1.50): true when the blend describes today. */
+  /** READINESS and SLEEP_SCORE only (1.50): true when it describes today. */
   fresh?: boolean;
-  /** READINESS only (1.50): the local day (YYYY-MM-DD) the blend rests on. */
+  /** READINESS and SLEEP_SCORE only (1.50): the local day it rests on. */
   asOfDay?: string;
   /**
    * RECOVERY_SCORE only (1.50): the source of the row the ring shows.
@@ -111,10 +115,12 @@ const DERIVED_RING_METRIC: Partial<Record<ScoreRingId, DerivedMetricId>> = {
 interface ScoreBandValue {
   score: number;
   band: ScoreRingBand;
-  /** READINESS only. */
+  /** READINESS and SLEEP_SCORE. */
   fresh?: boolean;
   /** READINESS only. */
   asOfDay?: string;
+  /** SLEEP_SCORE only: the wake day of the scored night. */
+  night?: string;
 }
 
 /**
@@ -196,6 +202,21 @@ export async function buildScoreRingsBlock(
             fresh,
             ...(typeof value.asOfDay === "string"
               ? { asOfDay: value.asOfDay }
+              : {}),
+          };
+        }
+        if (id === "SLEEP_SCORE" && typeof value.fresh === "boolean") {
+          // Only the night that ended this morning is today's ring; an
+          // older night's score is not a statement about today. A value
+          // cached before `fresh` existed keeps the ring it had.
+          const fresh = value.fresh;
+          return {
+            id,
+            score,
+            band: fresh ? value.band : null,
+            fresh,
+            ...(typeof value.night === "string"
+              ? { asOfDay: value.night }
               : {}),
           };
         }

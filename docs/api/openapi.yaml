@@ -79436,6 +79436,21 @@ components:
                         - WELLBEING
                         - LIPIDS
                     - type: "null"
+                bandSetterBand:
+                  description: The `bandSetter` pillar's own band; null without a setter. A sentence about the day uses the worse of this
+                    and `band`.
+                  anyOf:
+                    - type: string
+                      enum:
+                        - yellow
+                        - red
+                    - type: "null"
+                bandSetterLine:
+                  description: The line naming the `bandSetter` pillar, worded in the response language; null without a setter. Shown
+                    under the score wherever the score is shown.
+                  type:
+                    - string
+                    - "null"
                 restMode:
                   anyOf:
                     - type: object
@@ -79583,7 +79598,8 @@ components:
                 minimum: -9007199254740991
                 maximum: 9007199254740991
                 description: The rounded 0..100 score. On a READINESS ring that is not `fresh` it is the readiness stored for `asOfDay`,
-                  for a 'last {score} on {asOfDay}' line, never shown as today's.
+                  on a SLEEP_SCORE ring that is not `fresh` the score of the night that woke on `asOfDay`, for a 'last
+                  {score} on {asOfDay}' line, never shown as today's.
               band:
                 anyOf:
                   - type: string
@@ -79592,15 +79608,17 @@ components:
                       - yellow
                       - red
                   - type: "null"
-                description: "The server's band; render it as given. Null only on a READINESS ring that is not `fresh` (1.50): a band is
-                  a statement about today. A RECOVERY_SCORE ring from a device keeps the colour it has always had until
-                  the ring is rebuilt on the vendor's thresholds (1.51)."
+                description: "The server's band; render it as given. Null only on a READINESS or SLEEP_SCORE ring that is not `fresh`
+                  (1.50): a band is a statement about today. A RECOVERY_SCORE ring from a device keeps the colour it has
+                  always had until the ring is rebuilt on the vendor's thresholds (1.51)."
               fresh:
-                description: "1.50, READINESS only: true when the blend describes today (`ReadinessValue.fresh`). False: show an empty
-                  ring face, no band, no sentence, at most 'last {score} on {asOfDay}'."
+                description: "1.50, READINESS and SLEEP_SCORE only: true when the value describes today (`ReadinessValue.fresh`,
+                  `SleepScoreValue.fresh`: the night that ended this morning). False: show an empty ring face, no band,
+                  no sentence, at most 'last {score} on {asOfDay}'."
                 type: boolean
               asOfDay:
-                description: "1.50, READINESS only: the local day (YYYY-MM-DD) the score belongs to (`ReadinessValue.asOfDay`)."
+                description: "1.50, READINESS and SLEEP_SCORE only: the local day (YYYY-MM-DD) the score belongs to
+                  (`ReadinessValue.asOfDay`, or the wake day `SleepScoreValue.night`)."
                 type: string
               source:
                 description: "1.50, RECOVERY_SCORE only: the `MeasurementSource` of the row the ring shows. `COMPUTED` is HealthLog's
@@ -101120,6 +101138,26 @@ components:
                   description: "True when the run reaches back past everything the read covered (120 days): `steadyWeeks` is then a lower
                     bound, said as \"at least\", and the run's start is unknown. Absent on older cached digests."
                   type: boolean
+                bandSetter:
+                  description: The counted pillar whose band is worse than the score's own (`bandSetter` of the health score), null when
+                    none is. Since 1.50 `band` follows the number, so a green score can sit over a red pillar.
+                  type:
+                    - string
+                    - "null"
+                bandSetterBand:
+                  description: That pillar's own band. A sentence about the day uses the worse of this and `band`.
+                  anyOf:
+                    - type: string
+                      enum:
+                        - yellow
+                        - red
+                    - type: "null"
+                bandSetterLine:
+                  description: The line naming that pillar, worded in the response language. Shown under the score wherever the score is
+                    shown; null when there is no setter.
+                  type:
+                    - string
+                    - "null"
               required:
                 - value
                 - band
@@ -113057,6 +113095,10 @@ components:
         night:
           type: string
           description: Wake day (YYYY-MM-DD, user's zone) of the night scored.
+        fresh:
+          type: boolean
+          description: True when `night` is the night that ended this morning (its wake day is the user's local today). Otherwise
+            the score is the last scorable night's, shown with its date and without a band, never as today's.
         asleepMinutes:
           type: integer
           minimum: -9007199254740991
@@ -113131,6 +113173,7 @@ components:
         - score
         - band
         - night
+        - fresh
         - asleepMinutes
         - inBedMinutes
         - subScores

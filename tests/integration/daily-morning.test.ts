@@ -374,6 +374,45 @@ describe("the morning read on a real record", () => {
     );
   });
 
+  it("names an unconfirmed reading past a floor instead of an all-clear (rank 3)", async () => {
+    // A personal range that runs high: 182/121 sits inside it, so the
+    // counted vitals alone would read "in range". No ledger row yet.
+    await seedUser("m-floor-open");
+    await seedSeries("m-floor-open", [
+      { type: "BLOOD_PRESSURE_SYS", unit: "mmHg", base: 178 },
+      { type: "BLOOD_PRESSURE_DIA", unit: "mmHg", base: 118 },
+    ]);
+    const at = new Date(NOW.getTime() - 60 * 60_000);
+    await getPrismaClient().measurement.createMany({
+      data: [
+        {
+          userId: "m-floor-open",
+          type: "BLOOD_PRESSURE_SYS",
+          value: 182,
+          unit: "mmHg",
+          measuredAt: at,
+        },
+        {
+          userId: "m-floor-open",
+          type: "BLOOD_PRESSURE_DIA",
+          value: 121,
+          unit: "mmHg",
+          measuredAt: at,
+        },
+      ],
+    });
+    const morning = await loadDailyMorning(
+      await fullUser("m-floor-open"),
+      NOW,
+      { locale: "en" },
+    );
+    expectValid(morning);
+    expect(morning.lead.key).not.toBe("in_range");
+    expect(morning.lead.text).toBe(
+      "Blood pressure reached 182/121 mmHg in the last 24 hours.",
+    );
+  });
+
   it("words every text in the app's language on a Bearer request, else the account's", async () => {
     await seedUser("m-bearer", { locale: "fr" });
     const raw = "hlk_morning-bearer".padEnd(20, "0");

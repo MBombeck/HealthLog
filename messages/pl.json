@@ -1129,7 +1129,7 @@
     "typePhq9Score": "Wynik PHQ-9",
     "typeGad7Score": "Wynik GAD-7",
     "typeGripStrength": "Siła chwytu",
-    "typePainNrs": "Ból (0–10)",
+    "typePainNrs": "Ból (0-10)",
     "typeWaistCircumference": "Obwód talii",
     "typeWaistToHeight": "Stosunek talii do wzrostu",
     "unitScore": "pkt",
@@ -5268,9 +5268,9 @@
       "coachPrefill": "Nie zapisałem jeszcze siły chwytu. Co mówi o zdrowiu moich mięśni i jak ją zmierzyć oraz poprawić?"
     },
     "pain": {
-      "title": "Ból (0–10)",
+      "title": "Ból (0-10)",
       "description": "Zgłaszana przez pacjenta intensywność bólu w skali numerycznej 0–10, gdzie 0 to brak bólu, a 10 najgorszy wyobrażalny. Utrzymująca się zmiana o 2 punkty to sygnał do obserwacji.",
-      "chartTitle": "Ból (0–10)",
+      "chartTitle": "Ból (0-10)",
       "emptyState": {
         "title": "Brak ocen bólu",
         "description": "Zapisz, jak odczuwasz ból teraz, w skali 0–10, a trend pojawi się tutaj.",

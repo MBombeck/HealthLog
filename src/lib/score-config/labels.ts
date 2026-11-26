@@ -60,14 +60,51 @@ export function healthScoreSetterLine(
   report: Pick<HealthScoreReport, "composite" | "pillars">,
   t: (key: string, params?: Record<string, string | number>) => string,
 ): string | null {
+  return healthScoreSetter(report, t)?.line ?? null;
+}
+
+/** The pillar named beside the health score: its id, its band, its line. */
+export interface HealthScoreSetter {
+  id: ScorePillarId;
+  /** The pillar's own band; always worse than the score's. */
+  band: "yellow" | "red";
+  /** The worded line, e.g. "Blood pressure: outside the reference range". */
+  line: string;
+}
+
+/**
+ * The pillar the health score's band leaves unsaid (`bandSetter`), resolved
+ * once: every surface that puts the score into words or colour reads this,
+ * so none of them can call a day steady while that pillar is red.
+ */
+export function healthScoreSetter(
+  report: Pick<HealthScoreReport, "composite" | "pillars">,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): HealthScoreSetter | null {
   const { composite } = report;
   if (composite.status !== "ok" || !composite.value.bandSetter) return null;
   const id = composite.value.bandSetter;
   const pillar = report.pillars.find((p) => p.id === id);
   if (!pillar || pillar.result.status !== "ok") return null;
+  const band = scoreBand(pillar.result.value.score);
+  if (band === "green") return null;
   const key =
-    scoreBand(pillar.result.value.score) === "red"
+    band === "red"
       ? "insights.healthScore.setter.outside"
       : "insights.healthScore.setter.attention";
-  return t(key, { pillar: t(SCORE_PILLAR_LABEL_KEYS[id]) });
+  return { id, band, line: t(key, { pillar: t(SCORE_PILLAR_LABEL_KEYS[id]) }) };
+}
+
+/**
+ * The worse of the score's own band and its setter's: the band a sentence
+ * about the day may use. A green 79 over a red blood pressure is not a
+ * "steady" day, whatever the number's colour.
+ */
+export function worseScoreBand(
+  band: string,
+  setterBand: "yellow" | "red" | null | undefined,
+): string {
+  if (!setterBand) return band;
+  const rank: Record<string, number> = { red: 0, yellow: 1, green: 2 };
+  return (rank[setterBand] ?? 2) < (rank[band] ?? 2) ? setterBand : band;
 }

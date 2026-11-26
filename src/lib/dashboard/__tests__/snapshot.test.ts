@@ -458,6 +458,9 @@ describe("buildDashboardSnapshot — per-type thick-phase gate", () => {
       deltaReason: null,
       scoreVersion: SCORE_VERSION,
       bandSetter: "BLOOD_PRESSURE",
+      // No pillar row to word it from, so no band and no line.
+      bandSetterBand: null,
+      bandSetterLine: null,
       // 1.50 — the slim pillar rows (the mocked report carries none).
       pillars: [],
       // v1.21.2 — additive narrative fields, null absent a
@@ -607,6 +610,9 @@ describe("buildDashboardSnapshot — healthScore (warm phase only)", () => {
       deltaReason: null,
       scoreVersion: SCORE_VERSION,
       bandSetter: "BLOOD_PRESSURE",
+      // No pillar row to word it from, so no band and no line.
+      bandSetterBand: null,
+      bandSetterLine: null,
       // 1.50 — the slim pillar rows (the mocked report carries none).
       pillars: [],
       // v1.21.2 — additive narrative fields, null here.
