@@ -42,7 +42,7 @@ import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 import {
   healthScoreSetterLine,
   SCORE_PILLAR_LABEL_KEYS,
-  scorePillarReasonKey,
+  SCORE_PILLAR_REASON_KEYS,
 } from "@/lib/score-config/labels";
 import { cn } from "@/lib/utils";
 import { InlineAction } from "@/components/ui/inline-action";
@@ -222,7 +222,7 @@ function gateReason(pillar: ScorePillarResult): string | null {
  * and the anatomy list can never say two different things about one pillar.
  * A pillar with NO row is not an error: turning its module off closes the
  * data path deliberately and the scorer stops emitting the pillar
- * altogether. The empty string falls through `scorePillarReasonKey` to the generic
+ * altogether. The empty string falls through `SCORE_PILLAR_REASON_KEYS` to the generic
  * "not currently eligible", which is exactly what is true of it.
  */
 function reasonOf(report: HealthScoreReport, id: string): string {
@@ -274,7 +274,8 @@ export function HealthScoreCard({
   };
 
   function reasonText(reason: string): string {
-    return t(scorePillarReasonKey(reason));
+    const key = SCORE_PILLAR_REASON_KEYS[reason] ?? "unavailable";
+    return t(`insights.healthScore.reason.${key}`);
   }
 
   function labelsOf(pillars: ScorePillarResult[]): string {
