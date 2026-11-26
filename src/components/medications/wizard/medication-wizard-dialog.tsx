@@ -5,9 +5,10 @@
  *
  * Replaces the v1.5.3 `<CreationWizard>` card with a popup that lives
  * inside `<ResponsiveSheet>` (centred dialog on `md+`, bottom sheet on
- * narrow viewports). The dialog renders its own header inside the
- * body — counter + icon plate + title + subline — followed by the
- * step's single focused field, and a sticky footer with Back / Next
+ * narrow viewports). The sheet's title row carries the close button;
+ * under it the progress band shows four fixed phases (Medication, Dose,
+ * Schedule, Review, `./wizard-phases.ts`). The body holds the step's
+ * heading, one sentence and its field, and a sticky footer Back / Next
  * (or Save / Änderungen speichern).
  *
  * Path tables — visible counter follows the route the user walks:
@@ -32,21 +33,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useAiCapability } from "@/hooks/use-ai-capability";
 import { toast } from "sonner";
-import {
-  Bell,
-  CalendarRange,
-  ChevronRight,
-  Clock,
-  FlaskConical,
-  Loader2,
-  Pill,
-  Repeat,
-  Sparkles,
-  Tag,
-} from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { InlineAction } from "@/components/ui/inline-action";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { Stepper } from "@/components/ui/stepper";
 import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
@@ -67,7 +59,11 @@ import {
   setActiveSchedule,
   type WizardPayload,
 } from "./wizard-payload";
-import { WizardStepper } from "./wizard-stepper";
+import {
+  MEDICATION_PHASES,
+  PHASE_LANDING_STEP,
+  phaseForStep,
+} from "./wizard-phases";
 import { Step1Name } from "./steps/step1-name";
 import { Step2Class } from "./steps/step2-class";
 import { Step3Dose } from "./steps/step3-dose";
@@ -95,18 +91,7 @@ export interface MedicationWizardDialogProps {
   navigateOnCreate?: boolean;
 }
 
-const STEP_ICONS = {
-  1: Pill,
-  2: Tag,
-  3: FlaskConical,
-  4: CalendarRange,
-  5: Repeat,
-  6: Repeat,
-  7: Clock,
-  8: Bell,
-} as const;
-
-type StepNumber = keyof typeof STEP_ICONS;
+type StepNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
 /**
  * Whether closing would lose input: what a save would send now against what
@@ -171,11 +156,8 @@ function WizardDialogShell({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [nlOpen, setNlOpen] = useState(false);
-  const bodyRef = useRef<HTMLDivElement | null>(null);
-  // v1.5.5 H-cluster-B / D-3 §8 — title focus on landing ≠ 1. The
-  // `tabIndex={-1}` heading announces the new step on intent-routed
-  // edit-opens (e.g. cadence row → Step 5) so the screen reader hears
-  // "Step 5 of 8 — How often" instead of the first input on the step.
+  // The step heading takes focus on every step change, so a screen reader
+  // hears where the person now stands before the field.
   const stepTitleRef = useRef<HTMLHeadingElement | null>(null);
   const isFirstRenderRef = useRef(true);
 
@@ -207,9 +189,9 @@ function WizardDialogShell({
   const isLastStep = displayStep === totalSteps;
   const isFirstStep = displayStep === 1;
 
-  // v1.8.6 — forward-reachability ceiling for the dot stepper. The
-  // dot at path-index `j` is reachable iff every gate from the active
-  // slot up to (but not including) `j` passes. `firstInvalidIndex`
+  // Forward-reachability ceiling over the path. The slot at path-index
+  // `j` is reachable iff every gate from the active slot up to (but not
+  // including) `j` passes. `firstInvalidIndex`
   // returns the first failing slot from `fallbackIndex`; every slot up
   // to and including that index is reachable (the user can always step
   // onto the gate that's currently blocking them). Slots already at or
@@ -223,11 +205,19 @@ function WizardDialogShell({
       ),
     [payload, stepList, fallbackIndex],
   );
-  // Jump-to-last is enabled only when the WHOLE path validates — i.e.
-  // every step from the first slot onward passes its gate, so a single
-  // tap can land the user on the review step without stranding them
-  // behind an unmet requirement.
-  const lastReachable = firstInvalidIndex(payload, stepList, 0) >= totalSteps;
+
+  // The band's four phases. A phase segment is a button when the step it
+  // lands on is reachable: behind the current one always, ahead of it when
+  // every gate on the way passes. On edit the hydrated payload passes every
+  // gate, so a rename is: type, tap Review, Save.
+  const { phase, fraction: phaseFraction } = phaseForStep(step);
+  const phaseReachableUntil = PHASE_LANDING_STEP.reduce(
+    (acc, landing, index) => {
+      const j = stepList.indexOf(landing);
+      return j >= 0 && j <= reachableUntil ? index : acc;
+    },
+    phase,
+  );
 
   // What still holds this step, said under the disabled button rather than
   // left for the person to guess; null when the step can be left.
@@ -263,20 +253,19 @@ function WizardDialogShell({
     }
   }, [payload.mode, payload.cadence.kind, step]);
 
-  // v1.8.6 — jump-to-arbitrary-step from the dot stepper. Backward
-  // jumps are always allowed; a forward jump is gated on EVERY
-  // intervening path gate validating (a multi-step lookahead over the
-  // single-step `validateStep`). A jump that lands on the final review
-  // step replicates the `goNext` Step-8 commit so the schedule-list view
-  // renders the just-edited cadence + times. On edit the payload is
-  // pre-hydrated so every gate passes → all dots reachable and
-  // jump-to-last is one tap.
+  // Jump to a raw step, from a phase segment of the band. Backward jumps
+  // are always allowed; a forward jump is gated on EVERY intervening path
+  // gate validating (a multi-step lookahead over the single-step
+  // `validateStep`). A jump that lands on the final review step replicates
+  // the `goNext` Step-8 commit so the schedule-list view renders the
+  // just-edited cadence + times. On edit the payload is pre-hydrated so
+  // every gate passes, and Review is one tap away.
   const goToStep = useCallback(
     (target: number) => {
       const list = progressIndices(payload.mode, payload.cadence.kind);
       const j = list.indexOf(target);
-      // `fallbackIndex` mirrors the active dot the stepper renders, so
-      // the jump gate and the visual reachability never drift.
+      // `fallbackIndex` is also what `reachableUntil` starts from, so the
+      // jump gate and the band's tappable segments never drift.
       const from = fallbackIndex;
       if (j < 0 || j === from) return;
       if (j > from && firstInvalidIndex(payload, list, from) < j) return;
@@ -288,14 +277,10 @@ function WizardDialogShell({
     [payload, fallbackIndex],
   );
 
-  // Focus the first interactive control on each step change. The
-  // initial render skips so opening the dialog does not steal focus
-  // from the trigger button — UNLESS the dialog opened on a non-Step-1
-  // landing (an intent-routed edit, e.g. cadence row → Step 5). In
-  // that case the title is the right focus target so the screen reader
-  // announces the step the user actually landed on, not the first
-  // input on it. The two branches are mutually exclusive so the user
-  // gets exactly one focus shift per step transition.
+  // The step heading takes focus on each step change, so the new step is
+  // announced before its field; Tab reaches the field next. The opening
+  // render leaves focus where the sheet put it, except on an edit that
+  // lands past step 1 (several schedules open on Review).
   useEffect(() => {
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false;
@@ -304,12 +289,7 @@ function WizardDialogShell({
       }
       return;
     }
-    const node = bodyRef.current;
-    if (!node) return;
-    const target = node.querySelector<HTMLElement>(
-      'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    );
-    target?.focus({ preventScroll: true });
+    stepTitleRef.current?.focus({ preventScroll: true });
   }, [mode, step]);
 
   /**
@@ -387,8 +367,6 @@ function WizardDialogShell({
     t,
   ]);
 
-  const Icon = STEP_ICONS[step];
-
   const headerTitle =
     mode === "edit" && initial
       ? t("medications.wizard.header.editTitle", { name: initial.name })
@@ -396,30 +374,18 @@ function WizardDialogShell({
 
   const stepTitle = t(`medications.wizard.steps.step${step}.title`);
   const stepSubline = t(`medications.wizard.steps.step${step}.subline`);
-  const stepOf = t("medications.wizard.header.stepOf", {
-    current: displayStep,
-    total: totalSteps,
+  const phaseCount = t("medications.wizard.header.stepOf", {
+    current: phase + 1,
+    total: MEDICATION_PHASES.length,
   });
-
-  // v1.8.6 — short per-slot labels for the dot stepper. Keyed by
-  // raw step number so the path-aware `stepList` maps straight through.
-  const stepperLabels = useMemo(() => {
-    const map: Record<number, string> = {};
-    for (const n of stepList) {
-      map[n] = t(`medications.wizard.steps.step${n}.short`);
-    }
-    return map;
-  }, [stepList, t]);
-
-  // "What's next" hint under the step title. On the final slot the
-  // hint flips to the save target; otherwise it names the next slot's
-  // short label.
-  const nextSlot = stepList[fallbackIndex + 1];
-  const nextHint = isLastStep
-    ? t("medications.wizard.nav.reviewHint")
-    : t("medications.wizard.nav.nextHint", {
-        step: t(`medications.wizard.steps.step${nextSlot}.short`),
-      });
+  const phaseSteps = useMemo(
+    () =>
+      MEDICATION_PHASES.map((id) => ({
+        id,
+        label: t(`medications.wizard.phase.${id}`),
+      })),
+    [t],
+  );
 
   const primaryCtaLabel = isLastStep
     ? mode === "edit"
@@ -434,8 +400,17 @@ function WizardDialogShell({
         onOpenChange={onOpenChange}
         dirty={() => wizardHasInput(seed, payload, mode)}
         title={headerTitle}
-        hideHeader
         showCloseButton
+        subheader={
+          <Stepper
+            steps={phaseSteps}
+            current={phase}
+            fraction={phaseFraction}
+            countLabel={phaseCount}
+            reachableUntil={phaseReachableUntil}
+            onStepSelect={(index) => goToStep(PHASE_LANDING_STEP[index])}
+          />
+        }
         // v1.6.0 — the unified editor widens to the 2xl ceiling on
         // desktop so the sectioned form (Identity / Plan / Reminders /
         // Specific) reads comfortably without the cramped 560 px
@@ -444,7 +419,9 @@ function WizardDialogShell({
         // short screens.
         contentWidth="2xl"
         className="min-h-[40dvh] md:min-h-0"
-        bodyClassName="gap-0 p-0"
+        // `md:pr-3` gives back the dialog body's scrollbar gutter, which
+        // `p-0` would otherwise take away from its `-mr-3`.
+        bodyClassName="gap-0 p-0 md:pr-3"
         footer={
           <WizardFooter
             blocker={blocker ? t(blocker) : null}
@@ -463,114 +440,61 @@ function WizardDialogShell({
           data-step={step}
           data-display-step={displayStep}
           data-total-steps={totalSteps}
+          data-phase={MEDICATION_PHASES[phase]}
+          data-phase-index={phase + 1}
+          data-phase-count={MEDICATION_PHASES.length}
+          data-phase-fraction={phaseFraction}
           data-mode={mode}
           aria-busy={submitting || undefined}
           className="flex flex-col"
         >
-          {/* v1.8.6 — dot stepper replaces the v1.5.5 continuous
-              `<Progress>` strip + "Step X of Y" caption. The right
-              padding leaves room for the shell's 36 px close-X
-              (`pr-12` mobile / `pr-14` desktop), which sits over this
-              band and over nothing below it. The NL "Describe"
-              affordance is re-homed beside the stepper on the Step-1
-              create path. */}
-          <div className="border-border/70 space-y-1.5 border-b p-4 pr-12 sm:p-6 sm:pr-14">
-            <WizardStepper
-              steps={stepList}
-              current={step}
-              reachableUntil={reachableUntil}
-              labels={stepperLabels}
-              onJump={goToStep}
-              onFirst={() => goToStep(stepList[0])}
-              onLast={() => goToStep(stepList[totalSteps - 1])}
-              firstEnabled={!isFirstStep}
-              lastEnabled={lastReachable && !isLastStep}
-              firstLabel={t("medications.wizard.nav.jumpFirst")}
-              lastLabel={t("medications.wizard.nav.jumpLast")}
-              srLabel={stepOf}
-            />
-            {step === 1 && mode === "create" && extractOffered && (
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1 px-2 text-xs"
-                  onClick={() => setNlOpen(true)}
-                  data-slot="wizard-nl-button"
-                  aria-label={t("medications.wizard.nl.button")}
-                >
-                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                  {t("medications.wizard.nl.button")}
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Step body — v1.5.5 D-3 §8 spacing buckets:
-              outer  = p-4 sm:p-6, both sides alike (no close-X here)
-              section = gap-6 sm:gap-8
-              row    = gap-3
-              tight  = space-y-1
-              The fade-only `animate-in fade-in-0` transition is the
-              one motion vocabulary on a step change; `motion-reduce`
-              snaps the step. The slide proposed in D-2 was stripped. */}
+          {/* Step body. The sheet's own header (title row and progress band)
+              sits above it; this column carries the same inset on both
+              sides as the header: `p-4` in the phone sheet, none in the
+              dialog, whose frame already pads by 24 px.
+              The fade is the one motion on a step change; `motion-reduce`
+              snaps the step. */}
           <div
-            ref={bodyRef}
-            className="animate-in fade-in-0 flex flex-col gap-6 p-4 duration-200 motion-reduce:animate-none sm:gap-8 sm:p-6"
+            className="animate-in fade-in-0 flex flex-col gap-6 p-4 duration-200 motion-reduce:animate-none md:gap-8 md:p-0 md:pt-2"
             data-slot="wizard-step-body"
             key={step}
           >
-            <div className="flex items-start gap-3">
-              <div
-                className="bg-card border-border/60 grid h-10 w-10 shrink-0 place-items-center rounded-xl border"
-                data-slot="wizard-step-icon"
-                aria-hidden="true"
-              >
-                <Icon className="text-primary h-6 w-6" />
-              </div>
-              <div className="min-w-0 space-y-1">
-                {stepCaption && (
-                  <p
-                    className="text-muted-foreground text-xs"
-                    data-slot="wizard-schedule-caption"
-                  >
-                    {stepCaption}
-                  </p>
-                )}
-                {/* v1.5.5 D-3 §8 + H-cluster-B — `tabIndex={-1}`
-                    heading so an intent-routed edit-open (cadence row
-                    → Step 5) can drop focus on the title first. The
-                    `text-base font-semibold` keeps the title at the
-                    same scale as every other section header in the
-                    app (the D-2 `text-lg` outlier is dropped). */}
-                <h2
-                  ref={stepTitleRef}
-                  tabIndex={-1}
-                  className="text-foreground text-base leading-tight font-semibold tracking-tight focus-visible:outline-none"
-                >
-                  {stepTitle}
-                </h2>
-                <p className="text-muted-foreground text-sm">{stepSubline}</p>
-                {/* v1.8.6 — muted "what's next" hint so the user
-                    knows what the Next tap leads to (or, on the final
-                    slot, that Next saves). */}
+            <div className="min-w-0 space-y-1">
+              {stepCaption && (
                 <p
-                  className="text-muted-foreground flex items-center gap-0.5 pt-0.5 text-xs"
-                  data-slot="wizard-next-hint"
+                  className="text-muted-foreground text-xs"
+                  data-slot="wizard-schedule-caption"
                 >
-                  <ChevronRight
-                    className="h-3 w-3 shrink-0"
-                    aria-hidden="true"
-                  />
-                  {nextHint}
+                  {stepCaption}
                 </p>
-              </div>
+              )}
+              <h3
+                ref={stepTitleRef}
+                tabIndex={-1}
+                className="text-foreground text-base leading-tight font-semibold tracking-tight focus-visible:outline-none"
+                data-slot="wizard-step-title"
+              >
+                {stepTitle}
+              </h3>
+              <p className="text-muted-foreground text-sm">{stepSubline}</p>
             </div>
 
             <div data-slot="wizard-step-field">
               {step === 1 && (
                 <Step1Name payload={payload} applyPartial={applyPartial} />
+              )}
+              {step === 1 && mode === "create" && extractOffered && (
+                <InlineAction
+                  type="button"
+                  tone="primary"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => setNlOpen(true)}
+                  data-slot="wizard-nl-button"
+                >
+                  <Sparkles aria-hidden="true" />
+                  {t("medications.wizard.nl.button")}
+                </InlineAction>
               )}
               {step === 2 && (
                 <Step2Class payload={payload} applyPartial={applyPartial} />

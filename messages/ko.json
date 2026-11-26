@@ -721,9 +721,9 @@
     },
     "enrollMfa": {
       "title": "2차 인증 수단 설정",
-      "body": "관리자가 이 계정에 2차 인증 수단을 요구해요. 인증 앱이나 보안 키를 추가하고 계속해 주세요.",
+      "body": "이 서버는 이 계정에 2차 인증 수단을 요구해요. 인증 앱이나 보안 키를 추가하고 계속해 주세요.",
       "signOut": "로그아웃",
-      "graceBanner": "관리자가 이 계정에 2단계 인증을 요구합니다. {date}까지 추가하세요. 그 이후에는 이 계정으로 설정만 할 수 있습니다.",
+      "graceBanner": "이 서버는 이 계정에 2단계 인증을 요구합니다. {date}까지 추가하세요. 그 이후에는 이 계정으로 설정만 할 수 있습니다.",
       "graceAction": "지금 설정",
       "graceDismiss": "이 알림 숨기기"
     },
@@ -1871,15 +1871,17 @@
         "createTitle": "새 약",
         "editTitle": "편집: {name}"
       },
+      "phase": {
+        "medication": "약",
+        "dose": "용량",
+        "schedule": "일정",
+        "review": "확인"
+      },
       "nav": {
         "back": "뒤로",
         "next": "다음",
         "save": "저장",
-        "saveEdit": "변경 사항 저장",
-        "nextHint": "다음: {step}",
-        "reviewHint": "다음: 저장",
-        "jumpFirst": "첫 단계로 이동",
-        "jumpLast": "검토 및 저장으로 이동"
+        "saveEdit": "변경 사항 저장"
       },
       "nl": {
         "button": "설명"
@@ -1889,13 +1891,11 @@
           "title": "약 이름이 뭔가요?",
           "subline": "상자에 적힌 그대로 적어 주세요.",
           "label": "이름",
-          "placeholder": "예: Ramipril",
-          "short": "이름"
+          "placeholder": "예: Ramipril"
         },
         "step2": {
           "title": "어떤 종류의 약인가요?",
-          "subline": "선택 사항이에요. 알맞은 템플릿과 분석을 고르는 데 쓰고, 고르지 않으면 ‘기타’로 분류해요.",
-          "short": "종류"
+          "subline": "선택 사항이며, 고르지 않으면 ‘기타’로 분류해요."
         },
         "step3": {
           "title": "용량이 얼마인가요?",
@@ -1926,20 +1926,17 @@
           "dosesPerUnitLabel": "포장 크기",
           "dosesPerUnitPlaceholder": "예: 4",
           "dosesPerUnitHint": "새 포장이나 펜 하나에 든 정제 또는 단위 수예요. 예: 정제 28개, 4회분 펜. 포장을 추가할 때 수량이 미리 채워져요. 포장마다 다르면 비워 두세요.",
-          "short": "용량",
           "unitsPerDoseLabel": "1회 용량당 정제 또는 단위 수",
           "unitsPerDoseHint": "예: 4mg 용량이면 2mg 2정, 반으로 나눠 먹으면 ½정",
           "packSizeToggle": "포장 크기(선택)"
         },
         "step4": {
           "title": "언제부터 언제까지 복용하나요?",
-          "subline": "지금은 시작일만 있어도 충분해요. 종료일은 나중에 추가할 수 있어요.",
-          "short": "기간"
+          "subline": "시작일만 있어도 되고, 종료일은 나중에 추가할 수 있어요."
         },
         "step5": {
           "title": "얼마나 자주 복용하나요?",
-          "subline": "주기를 고르세요. 세부 설정은 다음 단계에서 해요.",
-          "short": "주기"
+          "subline": "복용 방식에 맞는 것을 고르세요."
         },
         "step6": {
           "title": "자세히 어떻게 되나요?",
@@ -1955,12 +1952,11 @@
           "rollingDays": {
             "label": "마지막 복용 후",
             "suffix": "일마다"
-          },
-          "short": "세부"
+          }
         },
         "step7": {
           "title": "하루 중 언제 복용하나요?",
-          "subline": "하루 한 번 이상이에요. 알림은 이 목록을 따라요.",
+          "subline": "하루 한 번 이상이며, 알림은 이 목록을 따라요.",
           "presetsLabel": "시간대 프리셋",
           "presets": {
             "morning": "아침",
@@ -1973,7 +1969,6 @@
           "doseOverridePlaceholder": "예: 반 알",
           "unitsOverrideLabel": "이 시간대에 복용하는 단위 수",
           "unitsOverrideInherit": "기본값",
-          "short": "시간",
           "overrideToggle": "이 시간에는 다른 용량인가요?"
         },
         "step8": {
@@ -1982,8 +1977,7 @@
           "remindersLabel": "알림 켜기",
           "remindersDescription": "알림은 알림 설정에서 정한 방식으로 와요: 웹 푸시, Telegram, ntfy. iPhone 앱은 알림을 직접 예약해요.",
           "noChannelHint": "알림을 보내려면 알림 채널이 필요한데, 지금은 켜진 채널이 없어요.",
-          "noChannelHintLink": "알림 설정하기",
-          "short": "완료"
+          "noChannelHintLink": "알림 설정하기"
         }
       },
       "classRow": {

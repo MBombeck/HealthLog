@@ -721,9 +721,9 @@
     },
     "enrollMfa": {
       "title": "Configurer un second facteur",
-      "body": "Votre administrateur exige un second facteur sur ce compte. Ajoutez une application d'authentification ou une clé de sécurité pour continuer.",
+      "body": "Ce serveur exige un second facteur sur ce compte. Ajoutez une application d'authentification ou une clé de sécurité pour continuer.",
       "signOut": "Se déconnecter",
-      "graceBanner": "Votre administrateur exige un second facteur sur ce compte. Ajoutez-en un avant le {date} ; après cette date, le compte ne servira plus qu'à le configurer.",
+      "graceBanner": "Ce serveur exige un second facteur sur ce compte. Ajoutez-en un avant le {date} ; après cette date, le compte ne servira plus qu'à le configurer.",
       "graceAction": "Le configurer maintenant",
       "graceDismiss": "Masquer cet avis"
     },
@@ -1871,15 +1871,17 @@
         "createTitle": "Nouveau médicament",
         "editTitle": "Modifier {name}"
       },
+      "phase": {
+        "medication": "Médicament",
+        "dose": "Dose",
+        "schedule": "Horaire",
+        "review": "Résumé"
+      },
       "nav": {
         "back": "Retour",
         "next": "Suivant",
         "save": "Enregistrer",
-        "saveEdit": "Enregistrer les modifications",
-        "nextHint": "Suivant : {step}",
-        "reviewHint": "Suivant : Enregistrer",
-        "jumpFirst": "Aller à la première étape",
-        "jumpLast": "Aller à la vérification et à l’enregistrement"
+        "saveEdit": "Enregistrer les modifications"
       },
       "nl": {
         "button": "Décrire"
@@ -1889,13 +1891,11 @@
           "title": "Comment s’appelle le médicament ?",
           "subline": "Exactement comme indiqué sur la boîte.",
           "label": "Nom",
-          "placeholder": "par exemple Ramipril",
-          "short": "Nom"
+          "placeholder": "par exemple Ramipril"
         },
         "step2": {
           "title": "De quel type de médicament s’agit-il ?",
-          "subline": "Facultatif. Cela choisit les bons modèles et analyses ; sans choix, le médicament est classé dans « Autre ».",
-          "short": "Type"
+          "subline": "Facultatif ; sans choix, le médicament est classé dans « Autre »."
         },
         "step3": {
           "title": "Quelle est la dose ?",
@@ -1926,20 +1926,17 @@
           "dosesPerUnitLabel": "Taille de la boîte",
           "dosesPerUnitPlaceholder": "p. ex. 4",
           "dosesPerUnitHint": "Nombre de comprimés ou d'unités dans une nouvelle boîte ou un nouveau stylo, p. ex. 28 comprimés ou un stylo de 4 doses. Pré-remplit la quantité à l'ajout d'une boîte ; laisser vide si les boîtes varient.",
-          "short": "Dose",
           "unitsPerDoseLabel": "Comprimés ou unités par dose",
           "unitsPerDoseHint": "p. ex. 2 comprimés de 2 mg pour une dose de 4 mg, ou ½ comprimé pour une dose fractionnée",
           "packSizeToggle": "Taille du conditionnement (facultatif)"
         },
         "step4": {
           "title": "Sur quelle période le prenez-vous ?",
-          "subline": "Une date de début suffit pour aujourd’hui. Vous pourrez ajouter une date de fin plus tard.",
-          "short": "Quand"
+          "subline": "Une date de début suffit ; la date de fin peut venir plus tard."
         },
         "step5": {
           "title": "À quelle fréquence le prenez-vous ?",
-          "subline": "Choisissez la cadence. Les détails suivent à l’étape suivante.",
-          "short": "Fréquence"
+          "subline": "Choisissez ce qui correspond à votre prise."
         },
         "step6": {
           "title": "À quoi cela ressemble-t-il en détail ?",
@@ -1955,12 +1952,11 @@
           "rollingDays": {
             "label": "Tous les",
             "suffix": "jours depuis la dernière prise"
-          },
-          "short": "Détail"
+          }
         },
         "step7": {
           "title": "Quand le prenez-vous ?",
-          "subline": "Une ou plusieurs heures de la journée. Les rappels suivent cette liste.",
+          "subline": "Une ou plusieurs heures de la journée ; les rappels suivent cette liste.",
           "presetsLabel": "Préréglages par moment de la journée",
           "presets": {
             "morning": "Matin",
@@ -1973,7 +1969,6 @@
           "doseOverridePlaceholder": "ex. un demi-comprimé",
           "unitsOverrideLabel": "Unités consommées à cet horaire",
           "unitsOverrideInherit": "Par défaut",
-          "short": "Heures",
           "overrideToggle": "Une autre dose à cette heure ?"
         },
         "step8": {
@@ -1982,8 +1977,7 @@
           "remindersLabel": "Rappels activés",
           "remindersDescription": "Les rappels arrivent comme vous les avez configurés dans Notifications : push web, Telegram ou ntfy. L’app iPhone planifie elle-même ses rappels.",
           "noChannelHint": "Les rappels nécessitent un canal de notification, et aucun n'est actif pour le moment.",
-          "noChannelHintLink": "Configurer les notifications",
-          "short": "Fini"
+          "noChannelHintLink": "Configurer les notifications"
         }
       },
       "classRow": {

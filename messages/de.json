@@ -721,9 +721,9 @@
     },
     "enrollMfa": {
       "title": "Zweiten Faktor einrichten",
-      "body": "Dein Administrator verlangt einen zweiten Faktor für dieses Konto. Füge eine Authenticator-App oder einen Sicherheitsschlüssel hinzu, um fortzufahren.",
+      "body": "Dieser Server verlangt einen zweiten Faktor für dieses Konto. Füge eine Authenticator-App oder einen Sicherheitsschlüssel hinzu, um fortzufahren.",
       "signOut": "Abmelden",
-      "graceBanner": "Dein Administrator verlangt für dieses Konto einen zweiten Faktor. Richte ihn bis {date} ein; danach lässt sich das Konto nur noch dafür nutzen.",
+      "graceBanner": "Dieser Server verlangt für dieses Konto einen zweiten Faktor. Richte ihn bis {date} ein; danach lässt sich das Konto nur noch dafür nutzen.",
       "graceAction": "Jetzt einrichten",
       "graceDismiss": "Hinweis ausblenden"
     },
@@ -1871,15 +1871,17 @@
         "createTitle": "Neues Medikament",
         "editTitle": "{name} bearbeiten"
       },
+      "phase": {
+        "medication": "Medikament",
+        "dose": "Dosis",
+        "schedule": "Zeitplan",
+        "review": "Übersicht"
+      },
       "nav": {
         "back": "Zurück",
         "next": "Weiter",
         "save": "Speichern",
-        "saveEdit": "Änderungen speichern",
-        "nextHint": "Weiter: {step}",
-        "reviewHint": "Weiter: Speichern",
-        "jumpFirst": "Zum ersten Schritt springen",
-        "jumpLast": "Zur Übersicht und zum Speichern springen"
+        "saveEdit": "Änderungen speichern"
       },
       "nl": {
         "button": "Beschreiben"
@@ -1889,13 +1891,11 @@
           "title": "Wie heißt das Medikament?",
           "subline": "Genau so wie es auf der Packung steht.",
           "label": "Name",
-          "placeholder": "z. B. Ramipril",
-          "short": "Name"
+          "placeholder": "z. B. Ramipril"
         },
         "step2": {
           "title": "Was für ein Medikament ist das?",
-          "subline": "Optional. Damit passen Vorlagen und Auswertungen; ohne Auswahl landet das Medikament unter „Sonstiges“.",
-          "short": "Art"
+          "subline": "Optional; ohne Auswahl landet es unter „Sonstiges“."
         },
         "step3": {
           "title": "Wie hoch ist die Dosis?",
@@ -1926,20 +1926,17 @@
           "dosesPerUnitLabel": "Packungsgröße",
           "dosesPerUnitPlaceholder": "z. B. 4",
           "dosesPerUnitHint": "Wie viele Tabletten oder Einheiten eine neue Packung oder ein Pen enthält, z. B. 28 Tabletten oder ein Pen mit 4 Dosen. Wird beim Erfassen einer Packung vorausgefüllt; leer lassen, wenn Packungen variieren.",
-          "short": "Dosis",
           "unitsPerDoseLabel": "Tabletten oder Einheiten pro Dosis",
           "unitsPerDoseHint": "z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis oder ½ Tablette bei geteilter Dosis",
           "packSizeToggle": "Packungsgröße (optional)"
         },
         "step4": {
           "title": "Über welchen Zeitraum nimmst du es?",
-          "subline": "Heute reicht ein Startdatum. Ein Ende kannst du später setzen.",
-          "short": "Zeitraum"
+          "subline": "Ein Startdatum reicht, ein Ende kannst du später setzen."
         },
         "step5": {
           "title": "Wie oft nimmst du es?",
-          "subline": "Wähle die Regelmäßigkeit, die Details kommen im nächsten Schritt.",
-          "short": "Häufigkeit"
+          "subline": "Wähle, was zu deiner Einnahme passt."
         },
         "step6": {
           "title": "Wie sieht das im Detail aus?",
@@ -1955,12 +1952,11 @@
           "rollingDays": {
             "label": "Alle",
             "suffix": "Tage ab der letzten Einnahme"
-          },
-          "short": "Details"
+          }
         },
         "step7": {
           "title": "Wann nimmst du es?",
-          "subline": "Eine oder mehrere Uhrzeiten. Die Erinnerungen richten sich danach.",
+          "subline": "Eine oder mehrere Uhrzeiten, die Erinnerungen richten sich danach.",
           "presetsLabel": "Tageszeiten",
           "presets": {
             "morning": "Morgens",
@@ -1973,7 +1969,6 @@
           "doseOverridePlaceholder": "z. B. eine halbe Tablette",
           "unitsOverrideLabel": "Verbrauchte Einheiten zu dieser Uhrzeit",
           "unitsOverrideInherit": "Standard",
-          "short": "Zeiten",
           "overrideToggle": "Andere Dosis zu dieser Uhrzeit?"
         },
         "step8": {
@@ -1982,8 +1977,7 @@
           "remindersLabel": "Erinnerungen aktiv",
           "remindersDescription": "Erinnerungen kommen so an, wie du sie unter Benachrichtigungen eingerichtet hast: Web-Push, Telegram oder ntfy. Die iPhone-App plant ihre Erinnerungen selbst.",
           "noChannelHint": "Erinnerungen brauchen einen Benachrichtigungskanal, aktuell ist keiner aktiv.",
-          "noChannelHintLink": "Benachrichtigungen einrichten",
-          "short": "Fertig"
+          "noChannelHintLink": "Benachrichtigungen einrichten"
         }
       },
       "classRow": {

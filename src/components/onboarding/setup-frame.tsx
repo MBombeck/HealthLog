@@ -48,30 +48,34 @@ export function SetupFrame({
       </header>
 
       {/* A landmark of its own: every piece of page content sits inside one
-          (axe `region`), and the step list is the flow's navigation. */}
-      <nav aria-label={stepsLabel} className="mb-8">
-        <ol
-          className="flex items-center gap-2"
-          data-slot="onboarding-step-list"
-        >
-          {steps.map((step, index) => {
-            const reached = currentIndex >= index;
-            return (
-              <li
-                key={step.id}
-                aria-current={step.id === screen ? "step" : undefined}
-                data-reached={reached}
-                className={cn(
-                  "h-1.5 flex-1 rounded-full transition-colors",
-                  reached ? "bg-primary" : "bg-muted",
-                )}
-              >
-                <span className="sr-only">{step.label}</span>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
+          (axe `region`), and the step list is the flow's navigation. A screen
+          without a count (welcome) has no place in the steps yet, so it shows
+          no band. */}
+      {counter !== null && (
+        <nav aria-label={stepsLabel} className="mb-8">
+          <ol
+            className="flex items-center gap-2"
+            data-slot="onboarding-step-list"
+          >
+            {steps.map((step, index) => {
+              const reached = currentIndex >= index;
+              return (
+                <li
+                  key={step.id}
+                  aria-current={step.id === screen ? "step" : undefined}
+                  data-reached={reached}
+                  className={cn(
+                    "h-1.5 flex-1 rounded-full transition-colors",
+                    reached ? "bg-primary" : "bg-progress-track",
+                  )}
+                >
+                  <span className="sr-only">{step.label}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      )}
 
       {/* The page's one `<main>`: the auth shell's onboarding branch renders
           no landmark of its own around this frame. */}

@@ -721,9 +721,9 @@
     },
     "enrollMfa": {
       "title": "Set up a second factor",
-      "body": "Your administrator requires a second factor on this account. Add an authenticator app or a security key to continue.",
+      "body": "This server requires a second factor on this account. Add an authenticator app or a security key to continue.",
       "signOut": "Sign out",
-      "graceBanner": "Your administrator requires a second factor on this account. Add one by {date}; after that date this account can only be used to set it up.",
+      "graceBanner": "This server requires a second factor on this account. Add one by {date}; after that date this account can only be used to set it up.",
       "graceAction": "Set it up now",
       "graceDismiss": "Hide this notice"
     },
@@ -1871,15 +1871,17 @@
         "createTitle": "New medication",
         "editTitle": "Edit {name}"
       },
+      "phase": {
+        "medication": "Medication",
+        "dose": "Dose",
+        "schedule": "Schedule",
+        "review": "Review"
+      },
       "nav": {
         "back": "Back",
         "next": "Next",
         "save": "Save",
-        "saveEdit": "Save changes",
-        "nextHint": "Next: {step}",
-        "reviewHint": "Next: Save",
-        "jumpFirst": "Jump to the first step",
-        "jumpLast": "Jump to review and save"
+        "saveEdit": "Save changes"
       },
       "nl": {
         "button": "Describe"
@@ -1889,13 +1891,11 @@
           "title": "What's the medication called?",
           "subline": "Exactly as it appears on the box.",
           "label": "Name",
-          "placeholder": "e.g. Ramipril",
-          "short": "Name"
+          "placeholder": "e.g. Ramipril"
         },
         "step2": {
           "title": "What kind of medication is it?",
-          "subline": "Optional. It picks the right templates and analytics; without a choice the medication is filed under Other.",
-          "short": "Type"
+          "subline": "Optional; without a choice it is filed under Other."
         },
         "step3": {
           "title": "What's the dose?",
@@ -1926,20 +1926,17 @@
           "dosesPerUnitLabel": "Pack size",
           "dosesPerUnitPlaceholder": "e.g. 4",
           "dosesPerUnitHint": "How many tablets or units one new pack or pen holds, e.g. 28 tablets or a 4-dose pen. Fills in the amount when you add a pack; leave empty if packs vary.",
-          "short": "Dose",
           "unitsPerDoseLabel": "Tablets or units per dose",
           "unitsPerDoseHint": "e.g. 2 tablets of 2 mg for a 4 mg dose, or ½ a tablet for a split dose",
           "packSizeToggle": "Pack size (optional)"
         },
         "step4": {
           "title": "Over what period are you taking it?",
-          "subline": "A start date is enough for today. You can add an end date later.",
-          "short": "When"
+          "subline": "A start date is enough; an end date can follow later."
         },
         "step5": {
           "title": "How often do you take it?",
-          "subline": "Pick the cadence. The details follow on the next step.",
-          "short": "Cadence"
+          "subline": "Pick the one that matches how you take it."
         },
         "step6": {
           "title": "What does that look like in detail?",
@@ -1955,12 +1952,11 @@
           "rollingDays": {
             "label": "Every",
             "suffix": "days from the last intake"
-          },
-          "short": "Detail"
+          }
         },
         "step7": {
           "title": "When do you take it?",
-          "subline": "One or more times of day. Reminders follow this list.",
+          "subline": "One or more times of day; reminders follow this list.",
           "presetsLabel": "Time-of-day presets",
           "presets": {
             "morning": "Morning",
@@ -1973,7 +1969,6 @@
           "doseOverridePlaceholder": "e.g. half a tablet",
           "unitsOverrideLabel": "Units consumed at this time",
           "unitsOverrideInherit": "Default",
-          "short": "Times",
           "overrideToggle": "Different dose at this time?"
         },
         "step8": {
@@ -1982,8 +1977,7 @@
           "remindersLabel": "Reminders on",
           "remindersDescription": "Reminders arrive the way you set them up under Notifications: web push, Telegram or ntfy. The iPhone app plans its own reminders.",
           "noChannelHint": "Reminders need a notification channel, and none is active right now.",
-          "noChannelHintLink": "Set up notifications",
-          "short": "Done"
+          "noChannelHintLink": "Set up notifications"
         }
       },
       "classRow": {
