@@ -19,7 +19,6 @@
  */
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
-import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { loadDailyDigest } from "@/lib/daily/load-digest";
 import { nativeRequestLocale } from "@/lib/i18n/server-locale";
 
@@ -43,7 +42,5 @@ export const GET = apiHandler(async (request: Request) => {
     locale ? { locale } : {},
   );
 
-  const response = apiSuccess(digest);
-  response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
-  return response;
+  return apiSuccess(digest);
 });

@@ -8828,7 +8828,7 @@
         "filterLabel": "Filtrar usuários",
         "forceLogout": "Forçar logout",
         "forceLogoutConfirmTitle": "Forçar logout de {name}?",
-        "forceLogoutConfirmBody": "Todas as sessões ativas deste usuário serão revogadas. Ele precisará fazer login novamente em cada dispositivo.",
+        "forceLogoutConfirmBody": "Todas as sessões ativas deste usuário serão revogadas. Ele precisará fazer login novamente em cada dispositivo. Tokens de API, assistentes conectados e links compartilhados também deixarão de funcionar.",
         "forceLogoutSuccess": "{name} desconectado de {count, plural, one {# sessão} other {# sessões}}",
         "forceLogoutFailed": "Falha ao forçar o logout",
         "cannotLogoutSelf": "Não é possível forçar o próprio logout",

@@ -90,9 +90,10 @@ const nextConfig: NextConfig = {
   // store personal data), still forces revalidation on every
   // navigation so session swaps detect on the wire, and is
   // bfcache-eligible — back/forward navigation restores the page
-  // from memory instead of paying a full reload. See
-  // `src/lib/http/cache-headers.ts` for the typed constant reused by
-  // route handlers that opt into the same posture.
+  // from memory instead of paying a full reload. A page rendered for a
+  // session is still answered `private, no-store`: the proxy overrides
+  // this value there (`src/lib/http/page-cache-headers.ts`), and every API
+  // response defaults to it in `apiHandler`.
   // v1.8.0 — the routed Insights sub-pages migrated from German to
   // English slugs (`/insights/blutdruck` → `/insights/blood-pressure`,
   // …). Every legacy German URL 301-redirects to its English target so

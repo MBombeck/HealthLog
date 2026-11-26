@@ -49,7 +49,10 @@ const REVOCATION_WRITERS: Record<
   },
   "lib/auth/credential-revocations.ts": {
     writes: 1,
-    hookedIn: ["lib/auth/session.ts", "lib/account-deletion/lifecycle.ts"],
+    hookedIn: [
+      "lib/auth/end-all-sessions.ts",
+      "lib/account-deletion/lifecycle.ts",
+    ],
     why: "a leaf list of statements: destroyAllSessions and the deletion lock run it, and both strip after it",
   },
   "lib/devices/revoke.ts": {

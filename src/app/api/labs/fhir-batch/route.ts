@@ -29,7 +29,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
-import { withIdempotency } from "@/lib/idempotency";
+import { markNotReplayable, withIdempotency } from "@/lib/idempotency";
 import { withIngestAdmission } from "@/lib/ingest/admission";
 import { afterLabReadingsWritten } from "@/lib/labs/fhir-import/after-write";
 import {
@@ -183,8 +183,8 @@ async function postBatch(request: NextRequest): Promise<Response> {
     }),
   });
   // `write_failed` is transient: nothing was stored for those records and the
-  // client sends them again. `no-store` keeps the idempotency layer from
-  // replaying this answer to the retry.
-  if (writeFailed) response.headers.set("Cache-Control", "private, no-store");
+  // client sends them again. Marked so the idempotency layer does not replay
+  // this answer to the retry.
+  if (writeFailed) markNotReplayable(response);
   return response;
 }

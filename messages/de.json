@@ -8828,7 +8828,7 @@
         "filterLabel": "Benutzer filtern",
         "forceLogout": "Abmeldung erzwingen",
         "forceLogoutConfirmTitle": "{name} abmelden?",
-        "forceLogoutConfirmBody": "Alle aktiven Sitzungen dieses Nutzers werden widerrufen. Auf allen Geräten ist eine erneute Anmeldung erforderlich.",
+        "forceLogoutConfirmBody": "Alle aktiven Sitzungen dieses Nutzers werden widerrufen. Auf allen Geräten ist eine erneute Anmeldung erforderlich. API-Tokens, verbundene Assistenten und geteilte Links werden ebenfalls ungültig.",
         "forceLogoutSuccess": "{name} aus {count, plural, one {# Sitzung} other {# Sitzungen}} abgemeldet",
         "forceLogoutFailed": "Abmeldung fehlgeschlagen",
         "cannotLogoutSelf": "Eigene Sitzungen können nicht beendet werden",

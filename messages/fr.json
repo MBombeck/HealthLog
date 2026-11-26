@@ -8828,7 +8828,7 @@
         "filterLabel": "Filtrer les utilisateurs",
         "forceLogout": "Forcer la déconnexion",
         "forceLogoutConfirmTitle": "Forcer la déconnexion de {name} ?",
-        "forceLogoutConfirmBody": "Toutes les sessions actives de cet utilisateur seront révoquées. Il devra se reconnecter sur chaque appareil.",
+        "forceLogoutConfirmBody": "Toutes les sessions actives de cet utilisateur seront révoquées. Il devra se reconnecter sur chaque appareil. Ses jetons d'API, assistants connectés et liens de partage cesseront aussi de fonctionner.",
         "forceLogoutSuccess": "{name} déconnecté de {count, plural, one {# session} other {# sessions}}",
         "forceLogoutFailed": "Échec de la déconnexion forcée",
         "cannotLogoutSelf": "Impossible de forcer votre propre déconnexion",
