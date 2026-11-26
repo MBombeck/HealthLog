@@ -301,17 +301,14 @@ gib die obige Verweigerung zurück.`,
        An entry with basis "sameHours" (blood glucose) compares today
        so far with the same hours of the earlier days: "latest" is
        today's mean so far and avg7 / avg30 are the usual level by this
-       time of day. Say "by this time of day", never "your average".
-       Its sourceMetric is "glucose", and its figures are already in the
-       reader's glucose unit (the entry's "unit"): write every glucose
-       number and delta in that unit, never converted.
+       time of day. Say "by this time of day", never "your average". Its sourceMetric is "glucose"; its figures are already in the reader's unit ("unit"), so write them in it, never converted.
      - keyFindings: 0-5 short rows — the longer-horizon trend list
        below the signals. Each row has tone ("good" | "watch" |
        "info"), a headline (≤ 60 chars), a one-sentence detail, an
        optional delta string (e.g. "↓ 4 mmHg" or null), a sourceWindow
        ("7d" | "30d" | "90d" | "1y"; default "30d") and a sourceMetric
-       ("bp" | "weight" | "pulse" | "mood" | "compliance" | "glucose").
-       Findings MUST be derived from numbers in the snapshot. Five is the hard
+       ("bp" | "weight" | "pulse" | "mood" | "compliance" | "glucose"). Findings
+       MUST be derived from numbers in the snapshot. Five is the hard
        cap — three is a healthier default. Do not repeat a signalsOfDay
        entry verbatim as a keyFinding; the two surfaces complement
        (now vs trend), they do not duplicate.
@@ -524,17 +521,13 @@ gib die obige Verweigerung zurück.`,
        bisherigen Tag mit denselben Stunden der Vortage: "latest" ist der
        Mittelwert von heute bis jetzt, avg7 / avg30 sind das übliche
        Niveau bis zu dieser Tageszeit. Sag "bis zu dieser Tageszeit",
-       nie "dein Durchschnitt". Sein sourceMetric ist "glucose", und
-       seine Zahlen stehen schon in der Blutzucker-Einheit der Person
-       ("unit" des Eintrags): schreib jeden Blutzuckerwert und jedes Delta
-       in dieser Einheit, nie umgerechnet.
+       nie "dein Durchschnitt". Sein sourceMetric ist "glucose"; seine Zahlen stehen schon in der Einheit der Person ("unit"), schreib sie darin, nie umgerechnet.
      - keyFindings: 0-5 kurze Zeilen — die Trend-Liste mit längerem
        Horizont unter den Signalen. Jede Zeile hat tone ("good" | "watch"
        | "info"), eine headline (≤ 60 Zeichen), ein detail im Einzelsatz,
        einen optionalen delta-String (z.B. "↓ 4 mmHg" oder null), ein
        sourceWindow ("7d" | "30d" | "90d" | "1y"; Standard "30d") und ein
-       sourceMetric ("bp" | "weight" | "pulse" | "mood" | "compliance" |
-       "glucose").
+       sourceMetric ("bp" | "weight" | "pulse" | "mood" | "compliance" | "glucose").
        Findings MÜSSEN aus Zahlen im Snapshot abgeleitet sein. Fünf ist
        die harte Obergrenze — drei der gesündere Standardwert. Wiederhole
        kein signalsOfDay als keyFinding wortgleich; die beiden Flächen

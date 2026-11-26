@@ -60,8 +60,8 @@ export const SIDE_EFFECT_CATEGORIES: Record<
   DIZZINESS: "COGNITIVE",
   LOW_MOOD: "COGNITIVE",
   LOW_ENERGY: "COGNITIVE",
-  // v1.50 — appended to the enum; a client with no code for it filed a
-  // headache as DIZZINESS.
+  // Appended to the enum; a client with no code for it filed a headache
+  // as DIZZINESS.
   HEADACHE: "COGNITIVE",
   // GLP-1 specific (4)
   EARLY_SATIETY: "GLP1_SPECIFIC",

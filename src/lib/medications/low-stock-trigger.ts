@@ -18,6 +18,7 @@ import {
   resolveLowStockRunwayDays,
   resolveReorderLeadDays,
 } from "@/lib/validations/notification-prefs";
+import { prisma } from "@/lib/db";
 
 /**
  * Null when the account switched the low-stock alert off, or when the
@@ -43,4 +44,30 @@ export function resolvedLowStockTriggerDays(input: {
     ),
     schedules: input.schedules,
   });
+}
+
+/**
+ * The list rows with `lowStockTriggerDays` set, read against the account's
+ * stored preferences. A row's `schedules` are the live ones (empty when its
+ * intake is not tracked), the same the row's `runwayDays` is computed over.
+ */
+export async function withLowStockTriggers(
+  userId: string,
+  rows: Array<Record<string, unknown>>,
+): Promise<Array<Record<string, unknown>>> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { notificationPrefs: true },
+  });
+  return rows.map((row) => ({
+    ...row,
+    lowStockTriggerDays: resolvedLowStockTriggerDays({
+      notificationPrefs: user?.notificationPrefs ?? null,
+      reorderLeadDays:
+        typeof row.reorderLeadDays === "number" ? row.reorderLeadDays : null,
+      schedules: Array.isArray(row.schedules)
+        ? (row.schedules as RunwaySchedule[])
+        : [],
+    }),
+  }));
 }
