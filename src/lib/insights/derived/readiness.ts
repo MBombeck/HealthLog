@@ -42,6 +42,7 @@ import {
 import { computeMoodStability } from "@/lib/insights/mood-aggregates";
 import { MS_PER_DAY } from "@/lib/time-constants";
 import { hourInTz, shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { bandForScoreKind } from "@/lib/analytics/score/shared";
 import {
@@ -451,6 +452,41 @@ export async function computeReadiness(
         : "live";
 
   if (presentCount < READINESS_MIN_COMPONENTS) {
+    // Too few inputs left once the quiet ones dropped out (after local noon
+    // yesterday's readings all have). A surface keeps "last N on D" from the
+    // stored row all day rather than losing the tile; the nightly job's own
+    // blend has nothing to blend.
+    const last = opts.blendOnly
+      ? null
+      : await readStaleReadiness(
+          userId,
+          now,
+          windowDays,
+          tz,
+          todayKey,
+          components,
+        );
+    if (last !== null) {
+      const { coverage: cov, confidence } = deriveCoverage({
+        requiredInputs: components.length,
+        presentInputs: presentCount,
+        historyDays: 0,
+        missing,
+        fullHistoryDays: windowDays,
+      });
+      return buildOk<ReadinessValue>({
+        value: {
+          score: last.score,
+          band: bandForScoreKind("readiness", last.score),
+          components: last.components,
+          asOfDay: last.asOfDay,
+          fresh: false,
+        },
+        coverage: cov,
+        confidence,
+        provenance: { inputs: inputNames, source, windowDays, computedAt },
+      });
+    }
     const { coverage: cov } = deriveCoverage({
       requiredInputs: components.length,
       presentInputs: presentCount,
@@ -495,7 +531,14 @@ export async function computeReadiness(
   const shown =
     fresh || opts.blendOnly
       ? { score, asOfDay: blendDay.asOfDay, components }
-      : await readStaleReadiness(userId, now, windowDays, tz, components);
+      : await readStaleReadiness(
+          userId,
+          now,
+          windowDays,
+          tz,
+          todayKey,
+          components,
+        );
   if (shown === null) {
     return buildInsufficient<ReadinessValue>({
       coverage: cov,
@@ -574,20 +617,27 @@ function dropQuietInputs(
  * A stale readiness as surfaces show it: the score stored for its day, that
  * day, and every component listed without a value (the stored row keeps no
  * breakdown, and today's contributors are not that day's). Null when no
- * stored day exists to name.
+ * stored day before today exists to name.
  */
 async function readStaleReadiness(
   userId: string,
   now: Date,
   windowDays: number,
   tz: string,
+  todayKey: string,
   components: ReadinessComponent[],
 ): Promise<{
   score: number;
   asOfDay: string;
   components: ReadinessComponent[];
 } | null> {
-  const last = await readLastStoredReadiness(userId, now, windowDays, tz);
+  const last = await readLastStoredReadiness(
+    userId,
+    now,
+    windowDays,
+    tz,
+    todayKey,
+  );
   if (last === null) return null;
   return {
     score: last.score,
@@ -597,15 +647,23 @@ async function readStaleReadiness(
 }
 
 /**
- * The last readiness the nightly job stored, with the local wake day it
- * belongs to (the day the day view shows it on). Null when none is in the
- * window.
+ * The last readiness the nightly job stored for a day before today, with
+ * the local wake day it belongs to (the day the day view shows it on). Null
+ * when none is in the window.
+ *
+ * Never today's row: the nightly job runs before the morning's readings
+ * sync and files a blend of yesterday's values under today's wake day, so
+ * "last 81 on <today>" beside an empty ring would name today for numbers
+ * that are not today's. A stored row's wake day is its stamp plus one day
+ * (`wakeDayKeyOf`, the COMPUTED day-that-ended stamp), so a wake day before
+ * today is a stamp before the start of today minus one day.
  */
 async function readLastStoredReadiness(
   userId: string,
   now: Date,
   windowDays: number,
   tz: string,
+  todayKey: string,
 ): Promise<{ score: number; day: string } | null> {
   const row = await prisma.measurement.findFirst({
     where: {
@@ -615,7 +673,7 @@ async function readLastStoredReadiness(
       deletedAt: null,
       measuredAt: {
         gte: new Date(now.getTime() - windowDays * MS_PER_DAY),
-        lte: now,
+        lt: new Date(startOfLocalDayKey(todayKey, tz).getTime() - MS_PER_DAY),
       },
     },
     select: { value: true, measuredAt: true, source: true },

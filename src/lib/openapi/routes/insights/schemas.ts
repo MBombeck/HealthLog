@@ -377,7 +377,7 @@ export const readinessValue = z
     asOfDay: z
       .string()
       .describe(
-        "1.50 — the local day (YYYY-MM-DD, the account's zone) `score` belongs to. Today when `fresh` is true; otherwise the wake day of the last stored readiness.",
+        "1.50 — the local day (YYYY-MM-DD, the account's zone) `score` belongs to. Today when `fresh` is true; otherwise the wake day of the last readiness stored for a day before today, never today. A readiness that is not fresh stays on the wire all day, also once too few inputs remain to blend.",
       ),
     fresh: z
       .boolean()

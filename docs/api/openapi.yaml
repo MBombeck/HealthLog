@@ -113336,7 +113336,8 @@ components:
         asOfDay:
           type: string
           description: 1.50 — the local day (YYYY-MM-DD, the account's zone) `score` belongs to. Today when `fresh` is true;
-            otherwise the wake day of the last stored readiness.
+            otherwise the wake day of the last readiness stored for a day before today, never today. A readiness that is
+            not fresh stays on the wire all day, also once too few inputs remain to blend.
         fresh:
           type: boolean
           description: 1.50 — true when every input the account still delivers (resting pulse, HRV, respiratory rate, the scored
