@@ -244,6 +244,8 @@ export const READINESS_EXAMPLE_INPUT = {
     raw: { rhr: 61, hrv: 48, sleep: 66, respiratory: null, mood: 72 },
     vitalDays: ["2026-11-24", "2026-11-25"],
     sleepNight: "2026-11-24",
+    /** The row the nightly job stored for the day the line names. */
+    stored: { score: 61, day: "2026-11-24" },
   },
 } as const;
 
@@ -295,9 +297,10 @@ export const readinessFreshExample = {
 
 /**
  * `GET /api/insights/derived?metric=READINESS` early in the morning, before
- * the night and the day's resting pulse have synced. The blend is the last
- * one, from `asOfDay`; a client shows "last 61 on Nov 24" under an empty ring
- * and neither the band nor a sentence about today.
+ * the night and the day's resting pulse have synced. The score is the one
+ * stored for `asOfDay`, no component carries a value; a client shows "last 61
+ * on Nov 24" under an empty ring and neither the band nor a sentence about
+ * today.
  */
 export const readinessStaleExample = {
   data: {
@@ -307,11 +310,11 @@ export const readinessStaleExample = {
       score: 61,
       band: "yellow",
       components: [
-        { key: "rhr", value: 61, weight: 0.2777777777777778 },
-        { key: "hrv", value: 48, weight: 0.2777777777777778 },
-        { key: "sleep", value: 66, weight: 0.2777777777777778 },
+        { key: "rhr", value: null, weight: 0 },
+        { key: "hrv", value: null, weight: 0 },
+        { key: "sleep", value: null, weight: 0 },
         { key: "respiratory", value: null, weight: 0 },
-        { key: "mood", value: 72, weight: 0.16666666666666666 },
+        { key: "mood", value: null, weight: 0 },
       ],
       series: [70, 66, 64, 61],
       asOfDay: "2026-11-24",

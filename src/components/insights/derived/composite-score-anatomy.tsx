@@ -262,7 +262,9 @@ export function CompositeScoreAnatomy({
         t,
         fmt.dateShortSmartCalendar,
       ));
+      // A stale readiness is a stored day without a breakdown.
       contributors = v.components
+        .filter((c) => v.fresh !== false || c.value !== null)
         .map((c) => ({
           key: c.key,
           label: t(`insights.derived.composite.READINESS.component.${c.key}`),

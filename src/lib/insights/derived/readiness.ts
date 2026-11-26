@@ -41,7 +41,7 @@ import {
 } from "@/lib/rollups/measurement-coverage";
 import { computeMoodStability } from "@/lib/insights/mood-aggregates";
 import { MS_PER_DAY } from "@/lib/time-constants";
-import { userDayKey } from "@/lib/tz/format";
+import { hourInTz, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { bandForScoreKind } from "@/lib/analytics/score/shared";
 import {
@@ -52,6 +52,7 @@ import {
 } from "./coverage";
 import { computeVitalsBaseline, type BaselineProfile } from "./baseline";
 import { readLatestDayMean } from "./coincident-deviation";
+import { wakeDayKeyOf } from "./recovery-resolve";
 import { computeSleepScore } from "./sleep-score";
 import {
   SPARKLINE_MAX_POINTS,
@@ -95,18 +96,23 @@ export interface ReadinessValue {
    */
   series?: number[];
   /**
-   * 1.50 — the oldest local calendar day (`YYYY-MM-DD`, in the account's
-   * zone) a counted input rests on: a vital's latest day mean, or the wake
-   * day of the night the sleep score describes. Mood carries no day and is
-   * not counted. On a fresh blend it is today. Additive.
+   * 1.50 — the local calendar day (`YYYY-MM-DD`, in the account's zone)
+   * `score` belongs to. On a fresh blend it is today. Otherwise it is the
+   * wake day of the last readiness the nightly job stored, and `score` is
+   * that stored value, never a live blend of inputs from different days.
+   * Additive.
    */
   asOfDay: string;
   /**
-   * 1.50 — true only when every counted vital (resting pulse, HRV,
-   * respiratory rate) is from the reader's own today AND the sleep score
-   * describes the night that ended this morning. A blend that is not fresh
-   * is not a statement about today: a surface shows no number, no band and
-   * no sentence for it, only "last <score> on <asOfDay>". Additive.
+   * 1.50 — true when every input the account still delivers is from the
+   * reader's own today: each vital (resting pulse, HRV, respiratory rate)
+   * and the night the sleep score describes. An input last seen before
+   * yesterday, or yesterday once the local morning is over, has gone quiet
+   * and is left out of the blend rather than holding it stale; mood carries
+   * no day and never counts. A blend that is not fresh is not a statement
+   * about today: a surface shows no number, no band and no sentence for it,
+   * only "last <score> on <asOfDay>", and no component carries a value.
+   * Additive.
    */
   fresh: boolean;
 }
@@ -303,6 +309,13 @@ export interface ReadinessOpts {
    * resolved (the production path); the sleep score reads the same zone.
    */
   tz?: string;
+  /**
+   * The nightly job's own compute: answer the live blend even when it is not
+   * fresh, because that blend is what the job stores for the day. Every
+   * display path leaves this off and gets the stored value of the named day
+   * instead (`fresh`, `asOfDay`).
+   */
+  blendOnly?: boolean;
 }
 
 /**
@@ -369,9 +382,30 @@ export async function computeReadiness(
     now,
     tz,
   });
-  const sleepValue = sleep.status === "ok" ? sleep.value.score : null;
+
+  // An input that has gone quiet drops out like a missing one, so a sensor
+  // the account stopped wearing lowers the blend's coverage instead of
+  // holding it stale for the rest of the window.
+  const todayKey = userDayKey(now, tz);
+  const localHour = hourInTz(now, tz);
+  const quiet = (day: string | null) =>
+    readinessInputAge(day, todayKey, localHour) === "quiet";
+  for (const vital of [rhr, hrv, resp]) {
+    if (vital.value !== null && quiet(vital.day)) {
+      vital.value = null;
+      vital.day = null;
+    }
+  }
+  const sleepNight =
+    sleep.status === "ok" && !quiet(sleep.value.night)
+      ? sleep.value.night
+      : null;
+  const sleepValue =
+    sleep.status === "ok" && sleepNight !== null ? sleep.value.score : null;
   const sleepHistoryDays =
-    sleep.status === "ok" ? sleep.coverage.historyDays : 0;
+    sleep.status === "ok" && sleepNight !== null
+      ? sleep.coverage.historyDays
+      : 0;
 
   // Mood stability — reuse the shipped mood-aggregate stability score over
   // the window's daily means.
@@ -456,20 +490,51 @@ export async function computeReadiness(
     return raw[key] !== null;
   });
 
-  const { asOfDay, fresh } = readinessFreshness({
+  const blendDay = readinessFreshness({
     vitalDays: [rhr, hrv, resp]
       .filter((v) => v.value !== null)
       .map((v) => v.day),
-    sleepNight: sleep.status === "ok" ? sleep.value.night : null,
-    todayKey: userDayKey(now, tz),
+    sleepNight,
+    todayKey,
   });
+  const fresh = blendDay.fresh;
+
+  // Not fresh: the live blend mixes days, so no surface may print it. The
+  // value that was computed for a day is the row the nightly job stored for
+  // it; name that one, or nothing.
+  let shown: {
+    score: number;
+    asOfDay: string;
+    components: ReadinessComponent[];
+  } = { score, asOfDay: blendDay.asOfDay, components };
+  if (!fresh && !opts.blendOnly) {
+    const last = await readLastStoredReadiness(userId, now, windowDays, tz);
+    if (last === null) {
+      return buildInsufficient<ReadinessValue>({
+        coverage: cov,
+        provenance: { inputs: inputNames, source, windowDays, computedAt },
+        reason: "not_fresh",
+      });
+    }
+    // The stored row carries no breakdown, and today's contributors are not
+    // that day's: all five stay listed, none with a value.
+    shown = {
+      score: last.score,
+      asOfDay: last.day,
+      components: components.map((c) => ({
+        key: c.key,
+        value: null,
+        weight: 0,
+      })),
+    };
+  }
 
   return buildOk<ReadinessValue>({
     value: {
-      score,
-      band: bandForScoreKind("readiness", score),
-      components,
-      asOfDay,
+      score: shown.score,
+      band: bandForScoreKind("readiness", shown.score),
+      components: shown.components,
+      asOfDay: shown.asOfDay,
       fresh,
     },
     coverage: cov,
@@ -481,6 +546,62 @@ export async function computeReadiness(
       computedAt,
     },
   });
+}
+
+/**
+ * How old one dated input is for the blend of `todayKey`: from today;
+ * "pending" when it is from yesterday and the local morning (before noon) is
+ * not over, so the night or the morning's readings may still sync; "quiet"
+ * otherwise, and a quiet input is left out of the blend. Pure; exported for
+ * tests.
+ */
+export const READINESS_PENDING_UNTIL_HOUR = 12;
+
+export function readinessInputAge(
+  day: string | null,
+  todayKey: string,
+  localHour: number,
+): "today" | "pending" | "quiet" {
+  if (day === todayKey) return "today";
+  if (
+    day === shiftDateKey(todayKey, -1) &&
+    localHour < READINESS_PENDING_UNTIL_HOUR
+  ) {
+    return "pending";
+  }
+  return "quiet";
+}
+
+/**
+ * The last readiness the nightly job stored, with the local wake day it
+ * belongs to (the day the day view shows it on). Null when none is in the
+ * window.
+ */
+async function readLastStoredReadiness(
+  userId: string,
+  now: Date,
+  windowDays: number,
+  tz: string,
+): Promise<{ score: number; day: string } | null> {
+  const row = await prisma.measurement.findFirst({
+    where: {
+      userId,
+      type: "RECOVERY_SCORE" satisfies MeasurementType,
+      source: "COMPUTED",
+      deletedAt: null,
+      measuredAt: {
+        gte: new Date(now.getTime() - windowDays * MS_PER_DAY),
+        lte: now,
+      },
+    },
+    select: { value: true, measuredAt: true, source: true },
+    orderBy: { measuredAt: "desc" },
+  });
+  if (!row || !Number.isFinite(row.value)) return null;
+  return {
+    score: clamp100(row.value),
+    day: wakeDayKeyOf(row.measuredAt, row.source, tz),
+  };
 }
 
 /**
