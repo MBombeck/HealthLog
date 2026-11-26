@@ -18,7 +18,7 @@
  * assumption wrong.
  */
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   readSourceText,
@@ -27,8 +27,7 @@ import {
   walkSourceFiles,
 } from "./helpers/source-files";
 
-const ROOT = process.cwd();
-const SRC = join(ROOT, "src");
+const SRC = join(process.cwd(), "src");
 
 /** A `console.<method>(` call, whitespace-tolerant. */
 const CONSOLE_CALL = /\bconsole\s*\.\s*([A-Za-z]+)\s*\(/g;
@@ -59,16 +58,20 @@ function consoleCalls(): { file: string; method: string; line: number }[] {
 }
 
 describe("operator lines survive the production build", () => {
-  it("the build keeps exactly console.error and console.warn", () => {
-    const config = stripComments(readSourceText(join(ROOT, "next.config.ts")));
-    const removeConsole = /removeConsole\s*:([\s\S]*?)\n\s*\}/.exec(config);
-    expect(removeConsole, "removeConsole in next.config.ts").not.toBeNull();
-    const exclude = /exclude\s*:\s*\[([^\]]*)\]/.exec(removeConsole![1]);
-    expect(exclude, "removeConsole.exclude").not.toBeNull();
-    const kept = [...exclude![1].matchAll(/["']([a-z]+)["']/g)].map(
-      (m) => m[1],
-    );
-    expect(new Set(kept)).toEqual(KEPT);
+  it("the build keeps exactly console.error and console.warn", async () => {
+    // The configuration as the production build evaluates it.
+    vi.stubEnv("NODE_ENV", "production");
+    vi.resetModules();
+    try {
+      const config = (await import("../../next.config")).default as {
+        compiler?: { removeConsole?: unknown };
+      };
+      const removeConsole = config.compiler?.removeConsole as
+        { exclude?: string[] } | undefined;
+      expect(new Set(removeConsole?.exclude ?? [])).toEqual(KEPT);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("no source file calls a console method the build strips", () => {
@@ -86,14 +89,22 @@ describe("operator lines survive the production build", () => {
     expect(stripped).toEqual([]);
   });
 
-  it("the setup token and the boot notices are written with operatorLine", () => {
+  it("the setup token and the boot notices are written to stdout directly", () => {
+    // `instrumentation.ts` writes stdout itself: its `register` keeps its
+    // imports dynamic, and one more would only wrap the same write.
+    const writers = new Set(
+      productionFiles().filter((file) =>
+        /\boperatorLine\s*\(|\bprocess\.stdout\.write\s*\(/.test(
+          stripComments(readSourceText(join(SRC, file))),
+        ),
+      ),
+    );
     for (const file of [
       "lib/auth/setup-token.ts",
       "lib/boot/key-check.ts",
       "instrumentation.ts",
     ]) {
-      const text = stripComments(readSourceText(join(SRC, file)));
-      expect(text, file).toMatch(/\boperatorLine\s*\(/);
+      expect(writers, file).toContain(file);
     }
   });
 });

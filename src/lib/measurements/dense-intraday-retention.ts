@@ -62,7 +62,6 @@ import type {
   PrismaClient,
 } from "@/generated/prisma/client";
 import { isP2002 as isUniqueConstraintViolation } from "@/lib/prisma-errors";
-
 import {
   dailyStatsExternalId,
   hkIdentifierForType,

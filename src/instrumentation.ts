@@ -181,11 +181,9 @@ export async function register() {
     const [
       { shouldRunWorker },
       { markStartup, startupPhase, startupElapsedMs, STARTING_MAX_MS },
-      { operatorLine },
     ] = await Promise.all([
       import("@/lib/process-type"),
       import("@/lib/boot/startup-state"),
-      import("@/lib/logging/operator-line"),
     ]);
     markStartup("starting");
     // One line when the start takes longer than any real boot; from then on
@@ -200,8 +198,8 @@ export async function register() {
     const ready = (up: boolean) => {
       const elapsed = startupElapsedMs();
       markStartup(up ? "ready" : "failed");
-      operatorLine(
-        `[boot] background role ${up ? "ready" : "failed"} after ${elapsed ?? 0} ms`,
+      process.stdout.write(
+        `[boot] background role ${up ? "ready" : "failed"} after ${elapsed ?? 0} ms\n`,
       );
     };
     if (!shouldRunWorker()) {
