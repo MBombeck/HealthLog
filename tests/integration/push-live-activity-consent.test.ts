@@ -137,15 +137,15 @@ async function setUp() {
       "base64url",
     ),
   });
-  const startField = (iat = now()) => {
+  const startField = (iat = now(), startToken = START_TOKEN) => {
     const statement = {
       instanceId,
       tokenTag: base.tokenTag,
-      laTokenTag: tokenTagHex(START_TOKEN) as string,
+      laTokenTag: tokenTagHex(startToken) as string,
       iat,
     };
     return {
-      token: START_TOKEN,
+      token: startToken,
       statement,
       signature: signText(
         seed,
@@ -329,6 +329,46 @@ describe("the Live Activity consent", () => {
     });
     expect(row.liveActivityConsentAt).toBeNull();
     expect(row.laStartToken).toBeNull();
+  });
+});
+
+describe("the push-to-start token", () => {
+  // Apple documents no fixed token length; a 256 character push-to-start
+  // token failed the whole registration against a cap of 200.
+  it("takes a 256 character token and never fails the registration on a bad statement", async () => {
+    const t = await setUp();
+    const long = "a7".repeat(128);
+    const taken = await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(now(), long),
+    });
+    expect(taken.status).toBe(201);
+    expect(taken.data.ignored).toBeUndefined();
+    const row = () =>
+      getPrismaClient().device.findFirstOrThrow({
+        where: { apnsToken: TOKEN },
+        select: { laStartToken: true, appVersion: true },
+      });
+    expect((await row()).laStartToken).toBe(long);
+
+    const stale = await t.reg({
+      appVersion: "9.9.9",
+      liveActivityStart: t.startField(now() - 40 * 24 * 3600),
+    });
+    expect(stale.status).toBe(201);
+    expect(stale.data.ignored).toEqual([
+      { field: "liveActivityStart", code: "devices.push.statement_stale" },
+    ]);
+    expect(await row()).toEqual({ laStartToken: long, appVersion: "9.9.9" });
+
+    const oversized = await t.reg({
+      liveActivityStart: t.startField(now(), "b8".repeat(300)),
+    });
+    expect(oversized.status).toBe(201);
+    expect(oversized.data.ignored).toEqual([
+      { field: "liveActivityStart", code: "devices.register.invalid_field" },
+    ]);
+    expect((await row()).laStartToken).toBe(long);
   });
 });
 

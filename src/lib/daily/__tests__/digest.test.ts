@@ -1339,21 +1339,76 @@ describe("buildDailyDigest — ecg_new_recording (S10)", () => {
 });
 
 describe("buildDailyDigest — dismiss filtering never touches actionable kinds", () => {
-  it("ignores a dismissed key that happens to collide with an actionable item's shape (they never carry one)", () => {
-    // Actionable items never stamp an `itemKey`, so filtering can never match
-    // them regardless of what the dismissed set contains — a dose-window item
-    // stays on the rail even with an arbitrary set of dismissed keys.
+  it("keeps a dose row whose own key sits in the dismissed set", () => {
+    // Actionable items carry an `itemKey` as identity only: even a dismissed
+    // row holding that exact key (the dismiss route refuses one) leaves the
+    // dose on the rail.
     const d = buildDailyDigest(
       input({
         medsToday: meds({ nextDueOverdue: true, nextDueMedicationName: "X" }),
-        dismissedItemKeys: new Set(["dose_window:anything", "sync_issue:x"]),
+        dismissedItemKeys: new Set(["dose_window:-:-", "sync_issue:x"]),
       }),
       t,
     );
-    expect(d.worthALook.some((i) => i.kind === "dose_window")).toBe(true);
+    const dose = d.worthALook.find((i) => i.kind === "dose_window");
+    expect(dose?.itemKey).toBe("dose_window:-:-");
+  });
+});
+
+describe("buildDailyDigest — every rail row carries a stable itemKey", () => {
+  it("keys two dose rows that read alike apart, and the same on every build", () => {
+    const at = (min: number) => new Date(NOW.getTime() + min * 60_000);
+    const build = () =>
+      buildDailyDigest(
+        input({
+          medsToday: meds({
+            dueCandidates: [
+              {
+                medicationId: "med-a",
+                medicationName: "Ramipril",
+                dueAt: at(-90).toISOString(),
+                overdue: true,
+                availableFrom: at(-90).toISOString(),
+              },
+              {
+                medicationId: "med-a",
+                medicationName: "Ramipril",
+                dueAt: at(-30).toISOString(),
+                overdue: true,
+                availableFrom: at(-30).toISOString(),
+              },
+            ],
+          }),
+        }),
+        t,
+      );
+    const rows = build().worthALook.filter((i) => i.kind === "dose_window");
+    expect(rows).toHaveLength(2);
+    expect(rows[0].title).toBe(rows[1].title);
+    expect(rows.map((r) => r.itemKey)).toEqual([
+      `dose_window:med-a:${at(-90).toISOString()}`,
+      `dose_window:med-a:${at(-30).toISOString()}`,
+    ]);
     expect(
-      d.worthALook.find((i) => i.kind === "dose_window")?.itemKey,
-    ).toBeUndefined();
+      build()
+        .worthALook.filter((i) => i.kind === "dose_window")
+        .map((r) => r.itemKey),
+    ).toEqual(rows.map((r) => r.itemKey));
+  });
+
+  it("stamps a key on every kind the rail can show", () => {
+    const d = buildDailyDigest(
+      input({
+        medsToday: meds({ nextDueOverdue: true, nextDueMedicationName: "X" }),
+        syncIssues: [{ integration: "withings", state: "error_reauth" }],
+        preventiveDue: [{ label: "Dental check-up" }],
+      }),
+      t,
+    );
+    expect(d.worthALook.length).toBeGreaterThan(0);
+    for (const item of d.worthALook) {
+      expect(item.itemKey, item.kind).toMatch(new RegExp(`^${item.kind}:`));
+    }
   });
 });
 

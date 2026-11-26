@@ -33,6 +33,11 @@ vi.mock("@/lib/db", () => ({
     refreshToken: {
       updateMany: vi.fn(),
     },
+    liveActivityToken: {
+      findMany: async () => [],
+      deleteMany: async () => ({ count: 0 }),
+      createMany: vi.fn(),
+    },
     // Also answers the live sign-in check (`live-sign-in.ts`) with no row:
     // the other account holds no sign-in on the device.
     $queryRaw: vi.fn(),
@@ -94,6 +99,10 @@ const SESSION_OK = {
   user: { id: "user-1", username: "testuser", role: "USER" as const },
 };
 
+function signIn() {
+  vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+}
+
 function req(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/devices", {
     method: "POST",
@@ -144,13 +153,13 @@ describe("POST /api/devices", () => {
   });
 
   it("returns 422 for missing token", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     const res = await POST(req({ bundleId: "io.healthlog.app" }));
     expect(res.status).toBe(422);
   });
 
   it("creates a new device row when token is unknown", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     const res = await POST(
       req({
         token: "abcd1234efgh5678",
@@ -166,7 +175,7 @@ describe("POST /api/devices", () => {
   });
 
   it("takes over a device token another account registered", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     vi.mocked(prisma.device.findUnique).mockResolvedValue({
       id: "dev-foreign",
       userId: "other-user",
@@ -191,7 +200,7 @@ describe("POST /api/devices", () => {
   });
 
   it("updates in place when same user re-registers their own token", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     vi.mocked(prisma.device.findUnique).mockResolvedValue({
       id: "dev-1",
       userId: "user-1",
@@ -206,7 +215,7 @@ describe("POST /api/devices", () => {
   });
 
   it("returns 422 when only apnsToken is supplied without apnsEnvironment", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     const res = await POST(
       req({
         token: "abcd1234efgh5678",
@@ -218,7 +227,7 @@ describe("POST /api/devices", () => {
   });
 
   it("returns 422 when only apnsEnvironment is supplied without apnsToken", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     const res = await POST(
       req({
         token: "abcd1234efgh5678",
@@ -230,7 +239,7 @@ describe("POST /api/devices", () => {
   });
 
   it("returns 422 when apnsToken is not hex", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     const res = await POST(
       req({
         token: "abcd1234efgh5678",
@@ -243,7 +252,7 @@ describe("POST /api/devices", () => {
   });
 
   it("creates a Device row with the apnsToken + apnsEnvironment pair", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     const res = await POST(
       req({
         token: "abcd1234efgh5678",
@@ -274,7 +283,7 @@ describe("POST /api/devices", () => {
   });
 
   it("takes over an apnsToken another account holds", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     vi.mocked(prisma.device.findFirst).mockImplementation((async (args: {
       where: { apnsToken?: string; userId?: string };
     }) =>
@@ -304,7 +313,7 @@ describe("POST /api/devices", () => {
   });
 
   it("reconciles a changed legacy token onto the same user's APNs device", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     vi.mocked(prisma.device.findFirst).mockResolvedValue({
       id: "self-dev",
       userId: "user-1",
@@ -333,7 +342,7 @@ describe("POST /api/devices", () => {
   });
 
   it("merges two same-user identities and migrates owned refresh tokens", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     vi.mocked(prisma.device.findUnique).mockResolvedValue({
       id: "legacy-dev",
       userId: "user-1",
@@ -377,7 +386,7 @@ describe("POST /api/devices", () => {
 
   // v1.17.1 (#22) — Live Activity push-token registration.
   it("persists liveActivityPushToken on create when supplied", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     const res = await POST(
       req({
         token: "abcd1234efgh5678",
@@ -391,7 +400,7 @@ describe("POST /api/devices", () => {
   });
 
   it("clears liveActivityPushToken on re-register when null is sent", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     vi.mocked(prisma.device.findUnique).mockResolvedValue({
       id: "dev-1",
       userId: "user-1",
@@ -409,13 +418,117 @@ describe("POST /api/devices", () => {
     expect(data.liveActivityPushToken).toBeNull();
   });
 
-  it("rejects a non-hex liveActivityPushToken with 422", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+  it("registers the device and names a non-hex liveActivityPushToken", async () => {
+    signIn();
     const res = await POST(
       req({
-        token: "abcd1234efgh5678",
+        token: "device-token-abc",
         bundleId: "io.healthlog.app",
-        liveActivityPushToken: "not-hex-!!!",
+        liveActivityPushToken: "zzzz-not-hex-zzzz",
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.data.ignored).toEqual([
+      {
+        field: "liveActivityPushToken",
+        code: "devices.register.invalid_field",
+      },
+    ]);
+    const data = vi.mocked(prisma.device.create).mock.calls[0][0].data;
+    expect(data).not.toHaveProperty("liveActivityPushToken");
+  });
+
+  // Apple documents no fixed token length; a push-to-start token of 256 hex
+  // characters failed the whole registration against a cap of 200.
+  it("takes APNs and Live Activity tokens of 256 and 512 hex characters", async () => {
+    signIn();
+    const res = await POST(
+      req({
+        token: "device-token-abc",
+        bundleId: "io.healthlog.app",
+        apnsToken: "ab".repeat(128),
+        apnsEnvironment: "production",
+        liveActivityPushToken: "cd".repeat(256),
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.data.ignored).toBeUndefined();
+    const data = vi.mocked(prisma.device.create).mock.calls[0][0].data;
+    expect(data.apnsToken).toBe("ab".repeat(128));
+    expect(data.liveActivityPushToken).toBe("cd".repeat(256));
+  });
+
+  it("accepts a 256-character push-to-start token in its shape", async () => {
+    signIn();
+    const res = await POST(
+      req({
+        token: "device-token-abc",
+        bundleId: "io.healthlog.app",
+        apnsToken: "ab".repeat(32),
+        apnsEnvironment: "production",
+        liveActivityStart: {
+          token: "ef".repeat(128),
+          statement: {
+            instanceId: "0b5f3d4e-1c2a-4b6d-8e9f-0a1b2c3d4e5f",
+            tokenTag: "0".repeat(32),
+            laTokenTag: "1".repeat(32),
+            iat: Math.floor(Date.now() / 1000),
+          },
+          signature: "A".repeat(86),
+        },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    // No relay consent on this device: the statement cannot hold, so the
+    // field is dropped with that reason, never for its length.
+    expect(body.data.ignored).toEqual([
+      {
+        field: "liveActivityStart",
+        code: "devices.push.relay_consent_required",
+      },
+    ]);
+    expect(vi.mocked(prisma.device.create)).toHaveBeenCalledTimes(1);
+  });
+
+  it("still registers when an optional Live Activity field is malformed", async () => {
+    signIn();
+    const res = await POST(
+      req({
+        token: "device-token-abc",
+        bundleId: "io.healthlog.app",
+        apnsToken: "ab".repeat(32),
+        apnsEnvironment: "production",
+        liveActivityStart: { token: "ef".repeat(300), signature: "x" },
+        liveActivityTokens: [
+          { token: "12".repeat(32), medicationId: "med-1" },
+          { token: "not hex", medicationId: "med-2" },
+        ],
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.data.ignored).toEqual([
+      { field: "liveActivityStart", code: "devices.register.invalid_field" },
+      {
+        field: "liveActivityTokens[1]",
+        code: "devices.register.invalid_field",
+      },
+    ]);
+    const data = vi.mocked(prisma.device.create).mock.calls[0][0].data;
+    expect(data.apnsToken).toBe("ab".repeat(32));
+  });
+
+  it("still refuses a malformed apnsToken, the registration's own field", async () => {
+    signIn();
+    const res = await POST(
+      req({
+        token: "device-token-abc",
+        bundleId: "io.healthlog.app",
+        apnsToken: "ab".repeat(257),
+        apnsEnvironment: "production",
       }),
     );
     expect(res.status).toBe(422);
@@ -424,7 +537,7 @@ describe("POST /api/devices", () => {
 
 describe("POST /api/devices — 422 multi-issue envelope (v1.4.43 W6)", () => {
   it("surfaces TWO simultaneous validation errors under details.issues", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     // Missing `token` (required) + invalid `apnsEnvironment` enum.
     const res = await POST(
       req({ bundleId: "io.healthlog.app", apnsEnvironment: "tomorrow" }),
@@ -446,7 +559,7 @@ describe("POST /api/devices — 422 multi-issue envelope (v1.4.43 W6)", () => {
   });
 
   it("surfaces THREE simultaneous validation errors", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     // Missing `token` + invalid `apnsToken` (non-hex) + invalid `bundleId` (number, not string).
     const res = await POST(
       req({
@@ -463,7 +576,7 @@ describe("POST /api/devices — 422 multi-issue envelope (v1.4.43 W6)", () => {
   });
 
   it("writes one audit-ledger row keyed devices.register.validation-failed", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     const res = await POST(
       req({ bundleId: "io.healthlog.app", apnsEnvironment: "tomorrow" }),
     );
@@ -477,7 +590,7 @@ describe("POST /api/devices — 422 multi-issue envelope (v1.4.43 W6)", () => {
   });
 
   it("does not block the 422 when the audit-row write rejects", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    signIn();
     vi.mocked(auditLog).mockRejectedValueOnce(new Error("db down"));
     const res = await POST(
       req({ bundleId: "io.healthlog.app", apnsEnvironment: "tomorrow" }),
