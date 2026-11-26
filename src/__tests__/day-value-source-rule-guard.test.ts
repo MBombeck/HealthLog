@@ -52,8 +52,7 @@ type Reason =
   | "per-source"
   | "latest-reading"
   | "window"
-  | "worst-of-any-source"
-  | "open";
+  | "worst-of-any-source";
 
 /** Arm 1: `readDayAggregates` calls that fold every source, by file. */
 const POOLED_DAY_AGGREGATES: Record<
@@ -89,10 +88,6 @@ const READERS_WITHOUT_RULE: Record<string, { reason: Reason; why: string }> = {
     reason: "per-source",
     why: "device scores of the last nights with their source on every row; the card names each device's own score",
   },
-  "lib/insights/recent-readings.ts": {
-    reason: "open",
-    why: "the status snapshots' newest readings (rows, or hour cells beyond the cap) pool every source, and metric-status and pulse-status fold them into days; the pick has to reach readNewestRowsPerType and readHourCells",
-  },
   "lib/insights/derived/bmi.ts": {
     reason: "latest-reading",
     why: "the newest weight in the window as the BMI input",
@@ -120,10 +115,6 @@ const READERS_WITHOUT_RULE: Record<string, { reason: Reason; why: string }> = {
   "lib/analytics/response/glucose.ts": {
     reason: "window",
     why: "the 30-day glucose panel over every reading at its own instant, grouped by meal context; spot checks and a sensor are readings of one blood, not two estimates of one day",
-  },
-  "lib/analytics/resting-pulse-read.ts": {
-    reason: "open",
-    why: "the low-percentile resting proxy pools every source's PULSE readings per day; the pick belongs in the fold and the closed-block cache key, and the pinned single-statement read in dense-day-readers.test.ts moves with it",
   },
 };
 
