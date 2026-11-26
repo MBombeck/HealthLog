@@ -46,6 +46,9 @@ export const SERVER_FEATURES = [
   "insights.chart-context",
   "daily.morning",
   "measurements.series-kinds",
+  "insights.briefing-glucose",
+  "medication.side-effect-headache",
+  "medication.low-stock-trigger",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -130,4 +133,10 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/daily/morning returns the morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own readings, and cards night and today_different with ring (score and band null unless fresh, asOfDay), up to three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is DailyDigest.worthALook as before.",
   "measurements.series-kinds":
     "GET /api/measurements/series takes kinds=a,b,c (at most 8, each once, the same days) in place of kind and answers { series: [...] }, one single-kind answer per kind in the order asked; kind alone keeps the single answer.",
+  "insights.briefing-glucose":
+    "The daily briefing's signalsOfDay and keyFindings rows may carry sourceMetric glucose (blood glucose), its figures and delta in the reader's glucose unit; before it the server dropped every such row.",
+  "medication.side-effect-headache":
+    "Medication side effects take entry HEADACHE (category COGNITIVE) on POST /api/medications/{id}/side-effects, and the list and the backup carry it.",
+  "medication.low-stock-trigger":
+    "GET /api/medications and GET /api/medications/{id} (and the create and edit answers) carry lowStockTriggerDays: max(lowStockRunwayDays, reorderLeadDays + one dose-interval) with the medication's own lead over the account default, null when the alert is off or nothing is consumed on a cadence; a row is low on stock when runwayDays <= lowStockTriggerDays.",
 };
