@@ -18,6 +18,12 @@ import {
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveRestMode } from "@/lib/illness/rest-mode";
+import { lastHealthScoreReport } from "@/lib/analytics/score/report-cell";
+import { requestRollupHistoryFold } from "@/lib/rollups/full-backfill";
+import type { RollupCoverageMap } from "@/lib/rollups/measurement-coverage";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
+import type { DashboardSnapshotHealthScore } from "@/lib/dashboard/snapshot";
 
 /** One pillar of the health score as the snapshot carries it. */
 export interface DashboardSnapshotScorePillar {
@@ -83,4 +89,69 @@ export async function restModeAnnotation(
   return ctx.active
     ? { active: true, since: ctx.since, episodeCount: ctx.episodeCount }
     : null;
+}
+
+/**
+ * The health score as the snapshot carries it, from a computed report; null
+ * when the composite did not resolve. Rest Mode frames (never penalises) the
+ * number, so it is read only when a score rendered, and taken from the report
+ * when the analytics read already attached it.
+ */
+export async function snapshotHealthScore(
+  report: HealthScoreReport,
+  userId: string,
+  now: Date,
+  locale: Locale,
+): Promise<DashboardSnapshotHealthScore | null> {
+  if (report.composite.status !== "ok") return null;
+  const composite = report.composite.value;
+  const restMode =
+    report.restMode !== undefined
+      ? report.restMode
+      : await restModeAnnotation(userId, now);
+  const setter = snapshotScoreSetter(report, locale);
+  return {
+    score: composite.score,
+    band: composite.band,
+    numberBand: composite.numberBand,
+    delta: report.delta,
+    confidence: report.composite.confidence,
+    composition: composite.composition,
+    configured: composite.configured,
+    scoreBasis: composite.scoreBasis,
+    deltaReason: report.deltaReason,
+    scoreVersion: report.scoreVersion,
+    bandSetter: composite.bandSetter,
+    bandSetterBand: setter?.band ?? null,
+    bandSetterLine: setter?.line ?? null,
+    restMode,
+    pillars: snapshotScorePillars(report.pillars, locale),
+  };
+}
+
+/**
+ * The health score while the second phase is held back. The rollup tier does
+ * not yet cover a dense type the phase reads, so the builder does not compute
+ * the score itself (that would drop it into the live fallback the gate exists
+ * to avoid). It serves the score another surface computed for the same day
+ * (`report-cell.ts`) instead of nothing: `/api/analytics` computes without the
+ * gate, and a start page that said "not enough data" beside an Insights page
+ * showing a number was two answers for one day. It also asks for the fold
+ * that ends the wait (`requestRollupHistoryFold`), since a history that
+ * arrived without the write hooks is otherwise only folded at the next boot.
+ * The score narrative stays off here: it reads the windows the gate holds back.
+ */
+export async function coldPhaseHealthScore(
+  userId: string,
+  userTz: string,
+  coverage: RollupCoverageMap,
+  now: Date,
+  locale: Locale,
+): Promise<DashboardSnapshotHealthScore | null> {
+  if (coverage.size === 0) return null;
+  trackBackgroundTask(
+    runDetached(() => requestRollupHistoryFold(userId)).catch(() => undefined),
+  );
+  const report = lastHealthScoreReport(userId, userTz, now);
+  return report ? snapshotHealthScore(report, userId, now, locale) : null;
 }
