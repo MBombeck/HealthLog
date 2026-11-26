@@ -19,7 +19,7 @@ import {
   type AnatomyContributor,
 } from "./score-anatomy-view";
 import { RING_GRADIENT, type RingHue } from "./ring-hues";
-import type { ScoreBand } from "./band-tokens";
+import { scoreBandWordKey, type ScoreBand } from "./band-tokens";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import { METRIC_PROVENANCE } from "./standards";
 import { ScoreHistoryChart, ScoreTrendChartDynamic } from "./score-history";
@@ -236,7 +236,7 @@ export function CompositeScoreAnatomy({
     if (metric === "SLEEP_SCORE") {
       const v = data.value as SleepScoreValue;
       score = v.score;
-      caption = t(`insights.derived.scoreRing.band.${v.band}`);
+      caption = t(scoreBandWordKey("sleep", v.band));
       contributors = v.subScores
         .map((s) => ({
           key: s.key,
@@ -440,7 +440,7 @@ function readinessHead(
   if (v.fresh !== false) {
     return {
       score: v.score,
-      caption: t(`insights.derived.scoreRing.band.${v.band}`),
+      caption: t(scoreBandWordKey("readiness", v.band)),
       staleLabel: undefined,
       contributorsHeading: undefined,
     };
@@ -478,9 +478,16 @@ function persistedCaption(
       max: v.device.scaleMax,
     });
   }
-  return metric === "STRESS_SCORE" || metric === "STRAIN_SCORE"
-    ? t(`insights.scores.loadBand.${v.band}`)
-    : t(`insights.derived.scoreRing.band.${v.band}`);
+  return t(
+    scoreBandWordKey(
+      metric === "STRESS_SCORE"
+        ? "stress"
+        : metric === "STRAIN_SCORE"
+          ? "strain"
+          : "recovery",
+      v.band,
+    ),
+  );
 }
 
 /** Rank contributors by impact: present-and-higher-weight first. */

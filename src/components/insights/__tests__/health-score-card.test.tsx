@@ -599,8 +599,7 @@ describe("<HealthScoreCard> one pillar, one home", () => {
 
   it("never renders one pillar's name twice anywhere in the panel", () => {
     const html = render(<HealthScoreCard report={mixedReport()} />);
-    // The method footer's "Overall band set by …" sentence names a pillar as
-    // prose rather than listing it, so it is not part of this count.
+    // The method footer is prose and not part of this count.
     const methodAt = html.indexOf('data-slot="health-score-method"');
     expect(methodAt).toBeGreaterThan(-1);
     const listed = html.slice(0, methodAt);
@@ -737,12 +736,54 @@ describe("<HealthScoreCard> composite states", () => {
   });
 });
 
+describe("<HealthScoreCard> band line", () => {
+  it("names a pillar below the score's band instead of the band sentence", () => {
+    // An 81 over a red pillar: the score is green on its number, and the
+    // band sentence ("In the reference range") would be untrue, so the
+    // line names the pillar instead.
+    const html = render(
+      <HealthScoreCard
+        report={scoredReport({
+          composite: {
+            status: "ok",
+            value: {
+              score: 81,
+              band: "green",
+              bandSetter: "GLYCAEMIA",
+              composition: ["BLOOD_PRESSURE", "GLYCAEMIA"],
+              configured: false,
+              noiseFloor: 3,
+              scoreVersion: SCORE_VERSION,
+            },
+            coverage: {
+              requiredInputs: 2,
+              presentInputs: 2,
+              historyDays: 28,
+              missing: [],
+            },
+            confidence: { score: 100, band: "high" },
+            provenance,
+          },
+          pillars: [scoredAt("BLOOD_PRESSURE", 100), scoredAt("GLYCAEMIA", 34)],
+        })}
+      />,
+    );
+    const line = html.match(/data-slot="health-score-band"[^>]*>([^<]*)</);
+    expect(line?.[1]).toMatch(/: outside the reference range$/);
+    expect(html).not.toContain("In the reference range");
+  });
+
+  it("keeps the band sentence when no pillar sits below the score's band", () => {
+    const html = render(<HealthScoreCard report={scoredReport()} />);
+    expect(html).toContain("In the reference range");
+  });
+});
+
 describe("<HealthScoreCard> footer", () => {
-  it("carries the band setter, the version and the cited method", () => {
+  it("carries the version and the cited method", () => {
     const html = render(<HealthScoreCard report={scoredReport()} />);
     const region = anatomyRegion(html);
     expect(region).toContain('data-slot="health-score-method"');
-    expect(region).toContain("Overall band set by none");
     expect(region).toContain(
       `Method version ${SCORE_VERSION}. Weekly comparison floor`,
     );

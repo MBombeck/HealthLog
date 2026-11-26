@@ -493,7 +493,8 @@ describe("i18n locale file integrity", () => {
 
   it("retained Health Score transparency keys resolve in every locale", () => {
     const transparencyKeys = [
-      "insights.healthScore.bandSetter",
+      "insights.healthScore.setter.outside",
+      "insights.healthScore.setter.attention",
       "insights.healthScore.versionAndNoise",
       "insights.healthScore.methodVersion",
       "insights.healthScore.observed",

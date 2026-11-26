@@ -3129,6 +3129,10 @@
         "yellow": "Niektóre filary wymagają uwagi",
         "red": "Co najmniej jeden filar jest poza zakresem referencyjnym"
       },
+      "setter": {
+        "outside": "{pillar}: poza zakresem referencyjnym",
+        "attention": "{pillar}: wymaga uwagi"
+      },
       "insufficient": "Nic nie ma jeszcze wystarczająco świeżych danych, żeby to ocenić. Na początek wystarczy jeden obszar zdrowia, a wynik sam powie, na których obszarach się opiera.",
       "basis": "Opiera się na {count} z {recommended, plural, one {# obszaru} few {# obszarów} many {# obszarów} other {# obszaru}} zdrowia.",
       "compositionNotice": {
@@ -3138,8 +3142,7 @@
       },
       "anatomyToggle": "Jak powstaje ten wynik",
       "notScored": "Jeszcze bez oceny ({count})",
-      "method": "Wynik to średnia o równych wagach z filarów, które się do niego liczą, w skali od 0 do 100. Każdy filar jest porównywany z opublikowanym zakresem referencyjnym, a najsłabszy filar może wyznaczyć ogólny zakres. Filar bez wystarczających aktualnych danych jest pomijany, a nie liczony jako zero. Zakresy referencyjne pochodzą z opublikowanych źródeł; to ty decydujesz, które filary się liczą, więc łączna liczba sama w sobie nie jest standardem klinicznym.",
-      "bandSetter": "Ogólny zakres wyznacza {pillar}",
+      "method": "Wynik to średnia o równych wagach z filarów, które się do niego liczą, w skali od 0 do 100. Każdy filar jest porównywany z opublikowanym zakresem referencyjnym. Filar poniżej zakresu wyniku jest wskazany obok niego. Filar bez wystarczających aktualnych danych jest pomijany, a nie liczony jako zero. Zakresy referencyjne pochodzą z opublikowanych źródeł; to ty decydujesz, które filary się liczą, więc łączna liczba sama w sobie nie jest standardem klinicznym.",
       "versionAndNoise": "Wersja metody {version}. Próg porównania tygodniowego: {noise, plural, one {# punkt} few {# punkty} many {# punktów} other {# punktu}}.",
       "methodVersion": "Wersja metody {version}.",
       "configured": "Wybrane przez Ciebie filary decydują o tym wyniku.",

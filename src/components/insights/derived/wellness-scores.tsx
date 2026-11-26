@@ -13,11 +13,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import { SCORE_PILLAR_LABEL_KEYS } from "@/lib/score-config/labels";
+import {
+  healthScoreSetterLine,
+  SCORE_PILLAR_LABEL_KEYS,
+} from "@/lib/score-config/labels";
 import { ScoreRing } from "./score-ring";
 import { RING_GRADIENT, TILE_HUE, type RingHue } from "./ring-hues";
 import type { DerivedBatchRead } from "./use-derived-metric";
-import type { ScoreBand } from "./band-tokens";
+import { scoreBandWordKey, type ScoreBand } from "./band-tokens";
 // Type-only — the compute payloads never drag the server graph into the bundle.
 import type { ReadinessValue } from "@/lib/insights/derived/readiness";
 import type { SleepScoreValue } from "@/lib/insights/derived/sleep-score";
@@ -362,8 +365,8 @@ export function WellnessScores({
 
   const readiness = read<ReadinessValue>({ metric: "READINESS" });
   const sleep = read<SleepScoreValue>({ metric: "SLEEP_SCORE" });
-  const bandWord = (band: ScoreBand) =>
-    t(`insights.derived.scoreRing.band.${band}`);
+  const bandWord = (kind: "readiness" | "sleep" | "health", band: ScoreBand) =>
+    t(scoreBandWordKey(kind, band));
 
   const tiles: ReactNode[] = [];
 
@@ -385,7 +388,7 @@ export function WellnessScores({
         score={stale ? null : v.score}
         band={stale ? undefined : v.band}
         label={title}
-        bandWord={stale ? null : bandWord(v.band)}
+        bandWord={stale ? null : bandWord("readiness", v.band)}
         note={lastLine}
         ariaLabel={stale ? `${title}. ${lastLine}` : undefined}
         href="/insights/scores/readiness"
@@ -406,7 +409,7 @@ export function WellnessScores({
         score={sleep.value.score}
         band={sleep.value.band}
         label={t("insights.derived.composite.SLEEP_SCORE.title")}
-        bandWord={bandWord(sleep.value.band)}
+        bandWord={bandWord("sleep", sleep.value.band)}
         href="/insights/scores/sleep"
         metricSlot="SLEEP_SCORE"
         hue="sleep"
@@ -440,8 +443,8 @@ export function WellnessScores({
         score={ok ? composite.value.score : null}
         band={ok ? composite.value.band : undefined}
         label={t("insights.healthScore.label")}
-        bandWord={ok ? bandWord(composite.value.band) : null}
-        note={crisisLine}
+        bandWord={ok ? bandWord("health", composite.value.band) : null}
+        note={crisisLine ?? healthScoreSetterLine(healthScore, t)}
         href="/insights/scores/health"
         metricSlot="HEALTH_SCORE"
         hue="health"

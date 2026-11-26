@@ -3129,6 +3129,10 @@
         "yellow": "Alcuni pilastri richiedono attenzione",
         "red": "Uno o più pilastri sono fuori dall'intervallo di riferimento"
       },
+      "setter": {
+        "outside": "{pillar}: fuori dall'intervallo di riferimento",
+        "attention": "{pillar}: richiede attenzione"
+      },
       "insufficient": "Non c'è ancora niente con abbastanza dati recenti da valutare. Un solo ambito di salute basta per iniziare, e il punteggio dirà su quali ambiti si basa.",
       "basis": "Basato su {count, plural, one {# ambito} other {# ambiti}} di salute su {recommended, plural, other {#}}.",
       "compositionNotice": {
@@ -3138,8 +3142,7 @@
       },
       "anatomyToggle": "Come nasce questo punteggio",
       "notScored": "Non ancora valutato ({count})",
-      "method": "Il punteggio è la media a peso uguale dei pilastri che contano per esso, su una scala da 0 a 100. Ogni pilastro viene confrontato con un intervallo di riferimento pubblicato e il pilastro più debole può determinare la fascia complessiva. Un pilastro senza dati recenti sufficienti resta escluso invece di contare come zero. Gli intervalli di riferimento provengono da fonti pubblicate; quali pilastri contano lo scegli tu, quindi il numero combinato non è di per sé uno standard clinico.",
-      "bandSetter": "Fascia complessiva determinata da {pillar}",
+      "method": "Il punteggio è la media a peso uguale dei pilastri che contano per esso, su una scala da 0 a 100. Ogni pilastro viene confrontato con un intervallo di riferimento pubblicato. Un pilastro sotto la fascia del punteggio viene indicato accanto. Un pilastro senza dati recenti sufficienti resta escluso invece di contare come zero. Gli intervalli di riferimento provengono da fonti pubblicate; quali pilastri contano lo scegli tu, quindi il numero combinato non è di per sé uno standard clinico.",
       "versionAndNoise": "Versione del metodo {version}. Soglia del confronto settimanale: {noise, plural, one {# punto} other {# punti}}.",
       "methodVersion": "Versione del metodo {version}.",
       "configured": "Hai scelto quali pilastri contano per questo punteggio.",

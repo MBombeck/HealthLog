@@ -100,12 +100,12 @@ function evaluation(
  * Boundaries are pinned on both sides because an off-by-one here is
  * invisible: a `>` where a `>=` belongs looks perfectly healthy at 80.
  *
- * The last case is the one that must survive every future threshold
- * edit. The band is not a function of the number: `computeComposite`
- * takes the worse of the mean's band and the worst counted pillar's, and
- * `HealthScoreRecord.band` is stored rather than re-derived precisely
- * because of it. A mean above the green floor with a red pillar under it
- * is still red.
+ * Since 1.50 the band IS a function of the number, as for every other
+ * HealthLog score: an 81 that read "low" because one pillar sat in the red
+ * said two things at once. The pillar in a worse band is named beside the
+ * score as `bandSetter` instead. The number, and so the delta, did not
+ * move, which is why `SCORE_VERSION` did not either; stored days keep the
+ * band they were shown under.
  */
 describe("the band the mean alone gives", () => {
   const CASES: Array<[number, string]> = [
@@ -142,11 +142,10 @@ describe("the band the mean alone gives", () => {
   });
 });
 
-describe("the worst pillar still holds the band down", () => {
-  it("keeps a composite red when a counted pillar is red, above the green floor", () => {
-    // Mean 73: green on the number alone, and green under the OLD floor
-    // it would have been yellow — so this case can only pass because the
-    // worst-pillar rule survived the threshold change.
+describe("the worst pillar is named, not folded into the band", () => {
+  it("keeps a composite green on its number when a counted pillar is red", () => {
+    // Mean 73: green on the number. The red pillar is named, not hidden,
+    // and does not turn the score's own band red.
     const result = evaluation(
       [
         pillar("BLOOD_PRESSURE", 20),
@@ -160,11 +159,11 @@ describe("the worst pillar still holds the band down", () => {
     if (result.status !== "ok") return;
     expect(result.value.score).toBe(73);
     expect(scoreBand(result.value.score)).toBe("green");
-    expect(result.value.band).toBe("red");
+    expect(result.value.band).toBe("green");
     expect(result.value.bandSetter).toBe("BLOOD_PRESSURE");
   });
 
-  it("keeps a composite yellow when its worst pillar is yellow", () => {
+  it("names a yellow worst pillar under a green score", () => {
     // Mean 84, every pillar above the red floor, one of them yellow.
     const result = evaluation(
       [
@@ -178,7 +177,7 @@ describe("the worst pillar still holds the band down", () => {
     expect(result.status).toBe("ok");
     if (result.status !== "ok") return;
     expect(scoreBand(result.value.score)).toBe("green");
-    expect(result.value.band).toBe("yellow");
+    expect(result.value.band).toBe("green");
     expect(result.value.bandSetter).toBe("BLOOD_PRESSURE");
   });
 
@@ -316,7 +315,7 @@ describe("reference-score composite", () => {
     }
   });
 
-  it("caps the composite band at the worst pillar and names the setter", () => {
+  it("bands the composite on its number and names the worse pillar", () => {
     const result = evaluation(
       [
         pillar("BLOOD_PRESSURE", 45),
@@ -328,7 +327,7 @@ describe("reference-score composite", () => {
     expect(result.status).toBe("ok");
     if (result.status === "ok") {
       expect(result.value.score).toBe(82);
-      expect(result.value.band).toBe("red");
+      expect(result.value.band).toBe("green");
       expect(result.value.bandSetter).toBe("BLOOD_PRESSURE");
     }
   });

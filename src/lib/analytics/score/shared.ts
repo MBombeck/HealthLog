@@ -43,10 +43,9 @@ export const SCORE_YELLOW_FLOOR = 50;
  * carries the version, so each account is told once that the method
  * moved.
  *
- * NOT the whole band rule. `computeComposite` takes the worse of this
- * band and the worst counted pillar's band, so a composite carrying a red
- * pillar stays red however high the mean sits. That rule is untouched;
- * only the mean-side thresholds moved.
+ * Since 1.50 this is the whole band rule for the health score too: the
+ * composite no longer takes the worse of this band and its worst pillar's.
+ * A pillar in a worse band is named beside the score (`bandSetter`).
  */
 export function scoreBand(score: number): ScoreBand {
   if (score >= SCORE_GREEN_FLOOR) return "green";
@@ -78,8 +77,8 @@ export type HealthLogScoreKind = keyof typeof SCORE_BAND_DIRECTION;
  * vendor's own number (`"vendor"`: a WHOOP recovery, an Oura or Garmin sleep
  * score) gets no HealthLog band at all and returns `null`; the vendor colours
  * its number by its own scale, and HealthLog does not restate it. The health
- * score's full rule also takes its worst counted pillar into account; that
- * lives in `computeComposite`, this is the mean side only.
+ * score follows this rule as it stands; its worst pillar is named beside
+ * the band, never folded into it.
  */
 export function bandForScoreKind(
   kind: HealthLogScoreKind,

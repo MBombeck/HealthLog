@@ -3129,6 +3129,10 @@
         "yellow": "Einige Bereiche brauchen Aufmerksamkeit",
         "red": "Mindestens ein Bereich liegt außerhalb des Referenzbereichs"
       },
+      "setter": {
+        "outside": "{pillar}: außerhalb des Referenzbereichs",
+        "attention": "{pillar}: braucht Aufmerksamkeit"
+      },
       "insufficient": "Noch hat nichts genug aktuelle Daten für einen Score. Ein Feld der Gesundheit reicht für den Anfang, und der Score nennt selbst, worauf er beruht.",
       "basis": "Beruht auf {count} von {recommended, plural, one {# Feld} other {# Feldern}} der Gesundheit.",
       "compositionNotice": {
@@ -3138,8 +3142,7 @@
       },
       "anatomyToggle": "Wie dieser Score zustande kommt",
       "notScored": "Noch nicht bewertet ({count})",
-      "method": "Der Score ist der gleich gewichtete Mittelwert der Säulen, die für ihn zählen, auf einer Skala von 0 bis 100. Jede Säule wird an einem veröffentlichten Referenzbereich gemessen, und die schwächste Säule kann den Gesamtbereich bestimmen. Eine Säule ohne ausreichend aktuelle Daten bleibt außen vor und zählt nicht als null. Die Referenzbereiche stammen aus veröffentlichten Quellen; welche Säulen zählen, entscheidest du selbst, deshalb ist die zusammengefasste Zahl selbst kein klinischer Standard.",
-      "bandSetter": "Gesamtstufe bestimmt durch {pillar}",
+      "method": "Der Score ist der gleich gewichtete Mittelwert der Säulen, die für ihn zählen, auf einer Skala von 0 bis 100. Jede Säule wird an einem veröffentlichten Referenzbereich gemessen. Liegt eine Säule unter dem Bereich des Scores, wird sie daneben genannt. Eine Säule ohne ausreichend aktuelle Daten bleibt außen vor und zählt nicht als null. Die Referenzbereiche stammen aus veröffentlichten Quellen; welche Säulen zählen, entscheidest du selbst, deshalb ist die zusammengefasste Zahl selbst kein klinischer Standard.",
       "versionAndNoise": "Methodenversion {version}. Schwelle für den Wochenvergleich: {noise, plural, one {# Punkt} other {# Punkte}}.",
       "methodVersion": "Methodenversion {version}.",
       "configured": "Du hast festgelegt, welche Bereiche in diesen Score einfließen.",

@@ -3129,6 +3129,10 @@
         "yellow": "Alguns pilares precisam de atenção",
         "red": "Um ou mais pilares estão fora da faixa de referência"
       },
+      "setter": {
+        "outside": "{pillar}: fora da faixa de referência",
+        "attention": "{pillar}: precisa de atenção"
+      },
       "insufficient": "Nada tem dados recentes suficientes para pontuar ainda. Uma área de saúde basta para começar, e a pontuação dirá em quais áreas ela se baseia.",
       "basis": "Com base em {count} de {recommended, plural, one {# área} other {# áreas}} de saúde.",
       "compositionNotice": {
@@ -3138,8 +3142,7 @@
       },
       "anatomyToggle": "Como esta pontuação é calculada",
       "notScored": "Ainda não pontuado ({count})",
-      "method": "A pontuação é a média com pesos iguais dos pilares que contam para ela, em uma escala de 0 a 100. Cada pilar é avaliado contra uma faixa de referência publicada, e o pilar mais fraco pode definir a faixa geral. Um pilar sem dados recentes suficientes é deixado de fora em vez de contar como zero. As faixas de referência vêm de fontes publicadas; quais pilares contam é sua escolha, então o número combinado não é em si um padrão clínico.",
-      "bandSetter": "Faixa geral definida por {pillar}",
+      "method": "A pontuação é a média com pesos iguais dos pilares que contam para ela, em uma escala de 0 a 100. Cada pilar é avaliado contra uma faixa de referência publicada. Um pilar abaixo da faixa da pontuação é indicado ao lado dela. Um pilar sem dados recentes suficientes é deixado de fora em vez de contar como zero. As faixas de referência vêm de fontes publicadas; quais pilares contam é sua escolha, então o número combinado não é em si um padrão clínico.",
       "versionAndNoise": "Versão do método {version}. Piso de comparação semanal: {noise, plural, one {# ponto} other {# pontos}}.",
       "methodVersion": "Versão do método {version}.",
       "configured": "Você escolheu quais pilares contam para esta pontuação.",

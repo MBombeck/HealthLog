@@ -3129,6 +3129,10 @@
         "yellow": "Algunos pilares requieren atención",
         "red": "Uno o más pilares están fuera del intervalo de referencia"
       },
+      "setter": {
+        "outside": "{pillar}: fuera del intervalo de referencia",
+        "attention": "{pillar}: requiere atención"
+      },
       "insufficient": "Todavía no hay datos recientes suficientes para puntuar nada. Con un solo ámbito de salud basta para empezar, y la puntuación dirá en qué ámbitos se basa.",
       "basis": "Basado en {count} de {recommended, plural, one {# ámbito} other {# ámbitos}} de salud.",
       "compositionNotice": {
@@ -3138,8 +3142,7 @@
       },
       "anatomyToggle": "Cómo se forma esta puntuación",
       "notScored": "Aún sin puntuar ({count})",
-      "method": "La puntuación es la media con igual peso de los pilares que cuentan para ella, en una escala de 0 a 100. Cada pilar se compara con un rango de referencia publicado, y el pilar más débil puede fijar el rango general. Un pilar sin datos recientes suficientes queda fuera en lugar de contar como cero. Los rangos de referencia proceden de fuentes publicadas; qué pilares cuentan lo eliges tú, así que el número combinado no es en sí mismo un estándar clínico.",
-      "bandSetter": "Categoría general determinada por {pillar}",
+      "method": "La puntuación es la media con igual peso de los pilares que cuentan para ella, en una escala de 0 a 100. Cada pilar se compara con un rango de referencia publicado. Si un pilar queda por debajo del rango de la puntuación, se nombra junto a ella. Un pilar sin datos recientes suficientes queda fuera en lugar de contar como cero. Los rangos de referencia proceden de fuentes publicadas; qué pilares cuentan lo eliges tú, así que el número combinado no es en sí mismo un estándar clínico.",
       "versionAndNoise": "Versión del método {version}. Umbral de comparación semanal: {noise, plural, one {# punto} other {# puntos}}.",
       "methodVersion": "Versión del método {version}.",
       "configured": "Tú has elegido qué pilares cuentan para esta puntuación.",
