@@ -79,8 +79,8 @@
             "responseFormat": "json",
             "timeoutMs": 180000
           },
-          "promptChars": 39012,
-          "promptSha256": "a0998ce4e5454840858e0aa1ffbff5bc30ac834512df3ec96b49112298f6a379"
+          "promptChars": 39175,
+          "promptSha256": "e7eaaf21fd84aebee6071c809bdfe975cddc64b2ff79e57de92090466b92f302"
         }
       ]
     },
