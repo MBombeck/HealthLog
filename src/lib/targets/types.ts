@@ -28,6 +28,11 @@ export interface TargetConsistency {
 
 export interface TargetItem extends TargetConsistency {
   type: string;
+  /**
+   * The builders write the catalog key; `/api/insights/targets` words it in
+   * the reader's language on the way out (`localiseTargetLabels`), so the
+   * cached body holds no language.
+   */
   label: string;
   current: number | null;
   average30: number | null;

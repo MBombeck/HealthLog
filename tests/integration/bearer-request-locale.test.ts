@@ -131,4 +131,56 @@ describe("worded routes on a Bearer request", () => {
     );
     expect(body.locale).toBe("de");
   });
+
+  it("words the insight cards, the overview alerts and the target names in the app's language", async () => {
+    const user = await appAccount();
+    const prisma = getPrismaClient();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { heightCm: 180 },
+    });
+    await prisma.measurement.create({
+      data: {
+        userId: user.id,
+        type: "WEIGHT",
+        value: 90,
+        unit: "kg",
+        measuredAt: new Date(Date.now() - 86_400_000),
+      },
+    });
+
+    const cards = await import("@/app/api/insights/cards/route");
+    const de = (await json(
+      await (cards.GET as unknown as (r: Request) => Promise<Response>)(
+        request("/api/insights/cards", "de-DE"),
+      ),
+    )) as unknown as Array<{ title: string; summary: string }>;
+    expect(de[0]?.title).toBe("BMI im Bereich Übergewicht");
+    expect(de[0]?.summary).toContain("27,8");
+
+    // The overview body is cached per record; the language is the request's.
+    const overview = await import("@/app/api/insights/comprehensive/route");
+    const alertsIn = async (lang: string) => {
+      headerJar.delete("accept-language");
+      const body = await json(
+        await (overview.GET as unknown as (r: Request) => Promise<Response>)(
+          request("/api/insights/comprehensive", lang),
+        ),
+      );
+      return body.alerts as Array<{ title: string }>;
+    };
+    expect((await alertsIn("de-DE"))[0]?.title).toBe(
+      "BMI im Bereich Übergewicht",
+    );
+    expect((await alertsIn("en-US"))[0]?.title).toBe("BMI in overweight range");
+
+    const targets = await import("@/app/api/insights/targets/route");
+    headerJar.delete("accept-language");
+    const body = (await json(
+      await (targets.GET as unknown as (r: Request) => Promise<Response>)(
+        request("/api/insights/targets", "fr-FR"),
+      ),
+    )) as unknown as { targets: Array<{ type: string; label: string }> };
+    expect(body.targets.find((t) => t.type === "WEIGHT")?.label).toBe("Poids");
+  });
 });

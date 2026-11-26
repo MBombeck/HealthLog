@@ -66,7 +66,7 @@ export function buildMoodTargets({
   const targets: TargetItem[] = [
     {
       type: "MOOD_SCORE",
-      label: "Mood",
+      label: "serverText.targetLabels.mood",
       current,
       average30,
       trend,
@@ -90,7 +90,7 @@ export function buildMoodTargets({
       Math.round((standardDeviation(values, READING_SPREAD) ?? 0) * 100) / 100;
     targets.push({
       type: "MOOD_STABILITY",
-      label: "Mood stability",
+      label: "serverText.targetLabels.moodStability",
       current: spread,
       average30: spread,
       trend: null,

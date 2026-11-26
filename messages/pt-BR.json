@@ -16147,5 +16147,78 @@
     "entry": {
       "description": "Tipo sanguíneo, alergias, medicamentos e contatos para uma emergência, com cópia offline, cartão e link QR."
     }
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "IMC abaixo da faixa normal",
+        "message": "Seu IMC de {bmi} está abaixo da faixa normal (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "IMC na faixa de sobrepeso",
+        "message": "Seu IMC de {bmi} está na faixa de sobrepeso. Exercícios regulares e uma alimentação equilibrada podem ajudar."
+      },
+      "bmiObesity": {
+        "title": "IMC na faixa de obesidade",
+        "message": "Seu IMC de {bmi} está na faixa de obesidade."
+      },
+      "bmiNormal": {
+        "title": "IMC na faixa normal",
+        "message": "Seu IMC de {bmi} está na faixa saudável."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Pressão arterial bem elevada",
+        "message": "Sua pressão arterial média ({sys}/{dia}) é classificada como “{category}”."
+      },
+      "bpSlightlyElevated": {
+        "title": "Pressão arterial levemente elevada",
+        "message": "Sua pressão arterial média ({sys}/{dia}) está na faixa “{category}”."
+      },
+      "bpTargetGood": {
+        "title": "Boa adesão à meta de pressão",
+        "message": "{percent}% das suas medições estão dentro da faixa-alvo."
+      },
+      "bpTargetLow": {
+        "title": "Pressão frequentemente fora da faixa-alvo",
+        "message": "Apenas {percent}% das suas medições estão dentro da faixa-alvo."
+      },
+      "weightIncreasing": {
+        "title": "Peso em alta",
+        "message": "Seu peso está subindo cerca de {kg} kg por semana nos últimos 30 dias."
+      },
+      "weightDecreasing": {
+        "title": "Peso em queda",
+        "message": "Seu peso está caindo cerca de {kg} kg por semana nos últimos 30 dias."
+      },
+      "pulseOutliers": {
+        "title": "Valores de pulso atípicos",
+        "message": "{count, plural, one {# valor de pulso incomum} other {# valores de pulso incomuns}} nos últimos 30 dias."
+      },
+      "complianceLow": {
+        "title": "Adesão baixa: {name}",
+        "message": "Sua adesão de 7 dias a {name} é de apenas {percent}%. Tomar regularmente é importante."
+      },
+      "complianceExcellent": {
+        "title": "Adesão excelente: {name}",
+        "message": "{percent}% de adesão nos últimos 7 dias. Continue assim!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Peso",
+      "bloodPressure": "Pressão arterial",
+      "bloodPressureOnTarget": "Pressão arterial na meta",
+      "restingPulse": "Pulso em repouso",
+      "bmi": "IMC",
+      "bodyFat": "Gordura corporal",
+      "stepsPerDay": "Passos/dia",
+      "sleepDuration": "Duração do sono",
+      "medicationCompliance": "Adesão à medicação",
+      "mood": "Humor",
+      "moodStability": "Estabilidade do humor"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Pressão arterial sistólica",
+      "diastolicBloodPressure": "Pressão arterial diastólica"
+    }
   }
 }
