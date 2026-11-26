@@ -2,8 +2,8 @@
  * The Live Activity fields of `POST /api/devices` and how a registration
  * treats one it cannot take. They are optional extras on a registration
  * whose point is the device and its APNs token, so a value in a shape the
- * server does not take is left out and named in the answer's `ignored`
- * instead of failing the whole registration with 422.
+ * server does not take is left out (and noted on the wide event) instead of
+ * failing the whole registration with 422.
  */
 import { z } from "zod/v4";
 
@@ -60,7 +60,7 @@ const INVALID_FIELD = "devices.register.invalid_field";
  * The Live Activity fields are optional extras on a registration whose point
  * is the device and its APNs token. One of them in a shape this server does
  * not take (a token longer than it expects, a malformed list entry) is left
- * out and named in the answer's `ignored`, instead of failing the whole
+ * out and noted on the wide event, instead of failing the whole
  * registration with 422 and leaving the device without server push.
  */
 export function dropInvalidLiveActivityFields(
@@ -106,15 +106,13 @@ export function dropInvalidLiveActivityFields(
 }
 
 /**
- * The answer's `ignored` block: absent when nothing was left out. Notes the
- * left-out fields on the wide event, without their values.
+ * Note the left-out fields on the wide event, by name and reason, never
+ * their values. The answer does not name them yet: that field is additive
+ * and comes with a minor.
  */
-export function ignoredFieldsAnswer(ignored: IgnoredDeviceField[]): {
-  ignored?: IgnoredDeviceField[];
-} {
-  if (ignored.length === 0) return {};
+export function noteIgnoredFields(ignored: IgnoredDeviceField[]): void {
+  if (ignored.length === 0) return;
   annotate({
     meta: { ignored_fields: ignored.map((f) => `${f.field}:${f.code}`) },
   });
-  return { ignored };
 }

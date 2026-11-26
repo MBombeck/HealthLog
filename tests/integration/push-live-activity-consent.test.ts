@@ -343,7 +343,7 @@ describe("the push-to-start token", () => {
       liveActivityStart: t.startField(now(), long),
     });
     expect(taken.status).toBe(201);
-    expect(taken.data.ignored).toBeUndefined();
+    expect(taken.data).not.toHaveProperty("ignored");
     const row = () =>
       getPrismaClient().device.findFirstOrThrow({
         where: { apnsToken: TOKEN },
@@ -356,18 +356,14 @@ describe("the push-to-start token", () => {
       liveActivityStart: t.startField(now() - 40 * 24 * 3600),
     });
     expect(stale.status).toBe(201);
-    expect(stale.data.ignored).toEqual([
-      { field: "liveActivityStart", code: "devices.push.statement_stale" },
-    ]);
+    expect(stale.data).not.toHaveProperty("ignored");
     expect(await row()).toEqual({ laStartToken: long, appVersion: "9.9.9" });
 
     const oversized = await t.reg({
       liveActivityStart: t.startField(now(), "b8".repeat(300)),
     });
     expect(oversized.status).toBe(201);
-    expect(oversized.data.ignored).toEqual([
-      { field: "liveActivityStart", code: "devices.register.invalid_field" },
-    ]);
+    expect(oversized.data).not.toHaveProperty("ignored");
     expect((await row()).laStartToken).toBe(long);
   });
 });
