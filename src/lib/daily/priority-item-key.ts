@@ -1,6 +1,10 @@
 /**
- * Deterministic identity keys for the dismissible (observational) Today rail
- * items — `milestone`, `ecg_new_recording`, `tension_window`. Pure string
+ * Deterministic identity keys for the Today rail items. Every item carries
+ * one, so a client can tell two rows apart without deriving an id from what
+ * they show (two dose rows read alike). Only the dismissible
+ * (observational) kinds — `milestone`, `ecg_new_recording`,
+ * `tension_window`, `same_time_baseline` — can be dismissed by it; the
+ * actionable kinds' keys are identity only. Pure string
  * formatting, no DB, no clock: both the digest composer (`./digest.ts`, which
  * stamps the key onto the emitted `PriorityItem`) and the IO seam
  * (`./load-digest.ts`, which needs the SAME keys to look up which of today's
@@ -134,4 +138,43 @@ export function healthScoreCompositionItemKey(
     .digest("hex")
     .slice(0, 12);
   return `health-score:v${scoreVersion}:composition:${hash}`;
+}
+
+/**
+ * `dose_window:<medicationId>:<dueAt ISO>` — one key per dose slot. Two doses
+ * of one medication, or two medications due at once, never share one; a dose
+ * turning overdue keeps its key. `-` stands in for a part an older cached
+ * snapshot does not carry.
+ */
+export function doseWindowItemKey(
+  medicationId: string | null | undefined,
+  dueAt: string | null | undefined,
+): string {
+  return `dose_window:${medicationId || "-"}:${dueAt || "-"}`;
+}
+
+/** `sync_issue:<integration>` — one item per broken integration. */
+export function syncIssueItemKey(integration: string): string {
+  return `sync_issue:${integration}`;
+}
+
+/** `coach_checkin:<planId>` — the plan the check-in asks about. */
+export function coachCheckinItemKey(planId: string): string {
+  return `coach_checkin:${planId}`;
+}
+
+/** `preventive_care:<localDayKey>` — the one summary item of the day. */
+export function preventiveCareItemKey(localDayKey: string): string {
+  return `preventive_care:${localDayKey}`;
+}
+
+/**
+ * `upcoming_visit:<dayOffset>:<first visit id>` — one item per visit day
+ * (today, and the next day with a visit).
+ */
+export function upcomingVisitItemKey(
+  dayOffset: number,
+  firstVisitId: string,
+): string {
+  return `upcoming_visit:${dayOffset}:${firstVisitId}`;
 }
