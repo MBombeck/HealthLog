@@ -1841,6 +1841,7 @@
           "value": {
             "score": 76,
             "band": "green",
+            "numberBand": "green",
             "bandSetter": null,
             "composition": [
               "BLOOD_PRESSURE",
