@@ -24,15 +24,40 @@
  * A browser never sends `Authorization: Bearer` to this app: the web client
  * authenticates by cookie alone, and a cross-origin page cannot attach the
  * header without a CORS grant this app never gives.
+ *
+ * Only a Bearer in this app's own format counts (`hlk_<64 hex>`, the one
+ * shape every token it has ever minted carries). A reverse proxy in front of
+ * the app may forward a credential of its own in the same header (an
+ * oauth2-proxy with `--pass-authorization-header`, a forward-auth answer that
+ * sets `Authorization`). Such a header names no account here, so it is not a
+ * second identity to choose between: the request is answered on its cookie,
+ * as if the header were absent. Treated as a token, it switched the cookie
+ * off and signed every browser behind such a proxy out of the app.
  */
 import { headers } from "next/headers";
 
 import { isNativeClientRequest } from "./issue-token";
 import { shouldIssueBearerToken } from "./native-client";
 
-/** Whether a header set presents `Authorization: Bearer …`. */
+/** The `Authorization` prefix of a token this app minted. */
+const OWN_BEARER_PREFIX = "Bearer hlk_";
+
+/**
+ * The raw token of an `Authorization` value in this app's own format
+ * (`Bearer hlk_…`), else null. Every place that decides between the token and
+ * the cookie reads the header through this, so the two cannot disagree.
+ */
+export function ownBearerToken(
+  authorization: string | null | undefined,
+): string | null {
+  return authorization?.startsWith(OWN_BEARER_PREFIX)
+    ? authorization.slice("Bearer ".length)
+    : null;
+}
+
+/** Whether a header set presents a Bearer token of this app's own format. */
 export function carriesBearer(headerSet: Headers): boolean {
-  return headerSet.get("authorization")?.startsWith("Bearer ") ?? false;
+  return ownBearerToken(headerSet.get("authorization")) !== null;
 }
 
 /**
