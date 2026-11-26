@@ -10395,7 +10395,9 @@
       "refreshReuseTitle": "Een apparaat is afgemeld",
       "refreshReuseBody": "Een inlogtoken is twee keer gebruikt, daarom is het apparaat afgemeld. Log daar opnieuw in. Gebeurt dit vaker, wijzig dan je wachtwoord.",
       "deviceReassignedTitle": "Een apparaat is naar een ander account gegaan",
-      "deviceReassignedBody": "Een apparaat dat de meldingen van dit account kreeg, is nu bij een ander account ingelogd en krijgt ze niet meer. Was jij dit niet, controleer dan je apparaten en aanmeldingen."
+      "deviceReassignedBody": "Een apparaat dat de meldingen van dit account kreeg, is nu bij een ander account ingelogd en krijgt ze niet meer. Was jij dit niet, controleer dan je apparaten en aanmeldingen.",
+      "mfaDueTitle": "Tweede aanmeldfactor nodig",
+      "mfaDueBody": "Voeg vóór {date} een authenticator-app, een beveiligingssleutel of een passkey toe, in de web-app onder Instellingen > Beveiliging."
     },
     "sharedRecordIntake": {
       "title": "{name} heeft een dosis geregistreerd",

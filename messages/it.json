@@ -10395,7 +10395,9 @@
       "refreshReuseTitle": "Un dispositivo è stato disconnesso",
       "refreshReuseBody": "Un token di accesso è stato usato due volte, quindi il suo dispositivo è stato disconnesso. Accedi di nuovo da lì. Se succede ancora, cambia la password.",
       "deviceReassignedTitle": "Un dispositivo è passato a un altro account",
-      "deviceReassignedBody": "Un dispositivo che riceveva le notifiche di questo account ora è collegato a un altro account e non le riceve più. Se non sei stato tu, controlla i tuoi dispositivi e gli accessi."
+      "deviceReassignedBody": "Un dispositivo che riceveva le notifiche di questo account ora è collegato a un altro account e non le riceve più. Se non sei stato tu, controlla i tuoi dispositivi e gli accessi.",
+      "mfaDueTitle": "Serve un secondo fattore di accesso",
+      "mfaDueBody": "Aggiungi un’app di autenticazione, una chiave di sicurezza o una passkey entro il {date}, nell’app web in Impostazioni > Sicurezza."
     },
     "sharedRecordIntake": {
       "title": "{name} ha segnato una dose",

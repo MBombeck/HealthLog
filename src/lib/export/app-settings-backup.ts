@@ -26,6 +26,7 @@ import type {
 } from "@/lib/export/export-context";
 import type { RestoreContext } from "@/lib/export/restore-context";
 import { foldLegacyCoachAvailability } from "@/lib/modules/operator-availability";
+import { forgetMfaPolicy } from "@/lib/auth/mfa-enrollment";
 
 // ── Export ───────────────────────────────────────────────────────────────────
 
@@ -131,6 +132,7 @@ export async function restoreAppSettings(ctx: RestoreContext): Promise<void> {
     create: { id: settings.id, ...(settingsData as object) },
     update: settingsData,
   });
+  forgetMfaPolicy();
 }
 
 /**

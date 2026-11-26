@@ -10,6 +10,10 @@ vi.mock("@/lib/db", () => ({
   prisma: { user: { findUnique: (...a: unknown[]) => findUnique(...a) } },
 }));
 
+vi.mock("@/lib/tz/resolver", () => ({
+  resolveUserTimezone: async () => "Europe/Berlin",
+}));
+
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 
 describe("sendSecurityAlert", () => {
@@ -53,6 +57,20 @@ describe("sendSecurityAlert", () => {
     expect(dispatchNotification.mock.calls[0]![0].message).toContain(
       "Safari on macOS (Berlin)",
     );
+  });
+
+  it("writes the due date of a second factor in the account's language and zone", async () => {
+    // 23:30 UTC on the 9th is already the 10th in Berlin.
+    await sendSecurityAlert(
+      "u1",
+      "mfa_due",
+      {},
+      new Date("2026-12-09T23:30:00Z"),
+    );
+    const sent = dispatchNotification.mock.calls[0]![0];
+    expect(sent.title).toBe("Zweiter Anmeldefaktor nötig");
+    expect(sent.message).toContain("10. Dezember 2026");
+    expect(sent.metadata).toEqual({ securityKind: "mfa_due" });
   });
 
   it("never throws when the dispatcher fails", async () => {

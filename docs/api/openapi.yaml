@@ -3211,7 +3211,8 @@ paths:
             factor, and its grace period is over. No token is issued; the person adds a factor in a browser (Settings >
             Security) and signs in again. The native web hand-off and SSO token exchanges refuse the same way. A browser
             sign-in still gets its session, which then reaches only the enrolment routes until a factor exists: every
-            other route answers the same 403.
+            other route answers the same 403. A native sign-in token issued before the due date is not refused in v1.50
+            (from v1.51 it is held to the enrolment routes too).
           content:
             application/json:
               schema:
@@ -3945,11 +3946,9 @@ paths:
         a replay and revokes the device family. Before v1.49.0 this case answered 401 `auth.refresh.reuse`.
 
 
-        A 403 with `meta.errorCode` = `auth.mfa.enrollment_required` (v1.50) means a second-factor policy covers the
-        account, it has no factor, and its grace period is over. No pair is issued and the refresh token is not
-        consumed: once the person adds a factor in a browser (Settings > Security), the same token refreshes again. A
-        sign-in token of such an account answers the same 403 on every route except the enrolment ones (`/api/auth/me`,
-        `/api/auth/logout`, the `/api/auth/me/mfa` and passkey registration routes).
+        A second-factor policy does not refuse a refresh in v1.50: a sign-in made before the account's due date keeps
+        refreshing, and `/api/auth/me` `mfaEnrollment` carries the state and the date. From v1.51 a refresh of an
+        account past its due date answers 403 `auth.mfa.enrollment_required` without consuming the token.
       requestBody:
         required: true
         content:
@@ -49748,6 +49747,7 @@ components:
               - insights.chart-context
               - daily.morning
               - measurements.series-kinds
+              - devices.ignored-fields
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -49786,23 +49786,23 @@ components:
             `push.healthkit-catch-up`: A device with a push key whose app registered in the last three days gets a
             sealed silent HEALTHKIT_CATCH_UP (d.requestedAt) when the account's Apple Health upload is six hours behind;
             at most three a day, four hours apart. `push.security-alert-relay`: SECURITY_ALERT (new sign-in, passkey
-            added or removed, token revoked, refresh-token reuse, a device taken over by another account) reaches sealed
-            and relay-bound devices with ui.level time-sensitive and d.securityKind. `push.live-activity-relay`: POST
-            /api/devices takes liveActivityConsent (hl-la-consent-v1), liveActivityWithdraw (hl-la-withdraw-v1),
-            liveActivityStart (push-to-start token with hl-la-start-v1) and liveActivityTokens[].relayStart; the server
-            starts medication Live Activities over the relay and updates only those registered with relayStart, with the
-            closed content state, while push.relay.liveActivity lists start and update (operator switch
-            PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`: push.device.liveActivityStarted on
-            /api/auth/me and in the POST /api/devices answer names the dose ({ medicationId, slotInstant }) of the Live
-            Activity the server started on the calling device; null once that slot is answered, its medication paused or
-            ended, or nothing was started. `day.dose-offset`: GET /api/day/{date} symptom events and every GET
-            /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest dose
-            taken at or before it on the same local day of the record's zone, else the nearest after it (negative
-            minutes); absent without a timed dose that day or when medications are not readable.
-            `push.device-diagnostics`: GET /api/devices/me/push-diagnostics returns the X-Device-Id device's push state:
-            transport, relay and binding state, the silent budget (windowMinutes, limit, wakeLimit, usedInWindow,
-            wakesUsedInWindow, owedSyncs, nextFreeAt), the last delivery per kind, the last receipt and the masked APNs
-            token; 404 for a device that is not the caller's. `medication.resolved-slots`: GET
+            added or removed, token revoked, refresh-token reuse, a device taken over by another account, a second
+            factor due by a date) reaches sealed and relay-bound devices with ui.level time-sensitive and
+            d.securityKind. `push.live-activity-relay`: POST /api/devices takes liveActivityConsent (hl-la-consent-v1),
+            liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and
+            liveActivityTokens[].relayStart; the server starts medication Live Activities over the relay and updates
+            only those registered with relayStart, with the closed content state, while push.relay.liveActivity lists
+            start and update (operator switch PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`:
+            push.device.liveActivityStarted on /api/auth/me and in the POST /api/devices answer names the dose ({
+            medicationId, slotInstant }) of the Live Activity the server started on the calling device; null once that
+            slot is answered, its medication paused or ended, or nothing was started. `day.dose-offset`: GET
+            /api/day/{date} symptom events and every GET /api/symptoms/events occurrence carry doseOffset (intakeId,
+            title, minutes) from one rule: the nearest dose taken at or before it on the same local day of the record's
+            zone, else the nearest after it (negative minutes); absent without a timed dose that day or when medications
+            are not readable. `push.device-diagnostics`: GET /api/devices/me/push-diagnostics returns the X-Device-Id
+            device's push state: transport, relay and binding state, the silent budget (windowMinutes, limit, wakeLimit,
+            usedInWindow, wakesUsedInWindow, owedSyncs, nextFreeAt), the last delivery per kind, the last receipt and
+            the masked APNs token; 404 for a device that is not the caller's. `medication.resolved-slots`: GET
             /api/medications/resolved-slots?from=&to= returns every medication's resolved slots with their state for a
             window of at most 14 days (default two days back to eight ahead), from the same resolver as dose-history and
             the today list. `medication.intake-reopened`: MEDICATION_INTAKE_RECORDED carries outcome \"reopened\" with
@@ -49858,7 +49858,12 @@ components:
             three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is
             DailyDigest.worthALook as before. `measurements.series-kinds`: GET /api/measurements/series takes
             kinds=a,b,c (at most 8, each once, the same days) in place of kind and answers { series: [...] }, one
-            single-kind answer per kind in the order asked; kind alone keeps the single answer."
+            single-kind answer per kind in the order asked; kind alone keeps the single answer.
+            `devices.ignored-fields`: The POST /api/devices answer carries ignored: [{ field, code }] when it left an
+            optional Live Activity field out instead of failing the registration: field is liveActivityPushToken,
+            liveActivityStart, liveActivityTokens or liveActivityTokens[<index>]; code is devices.register.invalid_field
+            for the shape, else the devices.push.<reason> a push-to-start statement was refused for. Absent when nothing
+            was left out."
       required:
         - version
         - buildSha
@@ -63894,8 +63899,9 @@ components:
             push:
               $ref: "#/components/schemas/DevicePushState"
             ignored:
-              description: v1.49.1. The optional Live Activity fields left out of this registration instead of failing it; absent when
-                none was. A left-out `liveActivityPushToken` or `liveActivityStart` keeps its stored value.
+              description: v1.50.0, gated by `devices.ignored-fields` in `GET /api/version` `features`. The optional Live Activity
+                fields left out of this registration instead of failing it; absent when none was. A left-out
+                `liveActivityPushToken` or `liveActivityStart` keeps its stored value.
               type: array
               items:
                 type: object
@@ -103000,10 +103006,10 @@ components:
                   - match
                   - methods
                 additionalProperties: false
-              description: "The API routes a caller in state `required` may still reach (account read, sign-out, removing a device's
-                push binding, enrolment, the public probes). `prefix` admits every path under `path`. Read it from here
-                rather than keeping a copy: the list may change between releases. `POST /api/auth/refresh` with `revoke:
-                true` also always works."
+              description: "The API routes a browser session in state `required` may still reach (from v1.51 a sign-in token too)
+                (account read, sign-out, removing a device's push binding, enrolment, the public probes). `prefix`
+                admits every path under `path`. Read it from here rather than keeping a copy: the list may change
+                between releases. `POST /api/auth/refresh` with `revoke: true` also always works."
           required:
             - state
             - dueAt
@@ -103012,9 +103018,11 @@ components:
           description: "Whether a second-factor policy requires this caller to enrol a factor (TOTP, a security key or a passkey),
             and by when; decided by the same function that enforces it. `none`: no policy covers the account, it has a
             factor, it is a public demo, or the caller is a narrow-scope token; `grace`: enrol by `dueAt`, everything
-            works until then; `required`: every route outside `openPaths` answers 403 `auth.mfa.enrollment_required` for
-            this caller (browser session and sign-in token alike), a refresh is refused the same way, and a native
-            sign-in is refused until the account enrols."
+            works until then; `required`: `dueAt` has passed; a new native sign-in is refused with 403
+            `auth.mfa.enrollment_required` until the account enrols, and for a browser session every route outside
+            `openPaths` answers the same 403. A sign-in token keeps working in v1.50, refresh included; from v1.51 it is
+            held to `openPaths` like a browser session. The account's devices get one SECURITY_ALERT (`securityKind`
+            `mfa_due`) when the grace period starts."
         glucoseUnit:
           anyOf:
             - type: string

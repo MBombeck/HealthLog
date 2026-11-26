@@ -10395,7 +10395,9 @@
       "refreshReuseTitle": "Ein Gerät wurde abgemeldet",
       "refreshReuseBody": "Ein Anmeldetoken wurde zweimal verwendet, deshalb wurde sein Gerät abgemeldet. Melde dich dort neu an. Passiert das wieder, ändere dein Passwort.",
       "deviceReassignedTitle": "Ein Gerät gehört jetzt zu einem anderen Konto",
-      "deviceReassignedBody": "Ein Gerät, das die Benachrichtigungen dieses Kontos bekam, ist jetzt bei einem anderen Konto angemeldet und bekommt sie nicht mehr. Warst du das nicht, prüfe deine Geräte und Anmeldungen."
+      "deviceReassignedBody": "Ein Gerät, das die Benachrichtigungen dieses Kontos bekam, ist jetzt bei einem anderen Konto angemeldet und bekommt sie nicht mehr. Warst du das nicht, prüfe deine Geräte und Anmeldungen.",
+      "mfaDueTitle": "Zweiter Anmeldefaktor nötig",
+      "mfaDueBody": "Richte bis {date} eine Authenticator-App, einen Sicherheitsschlüssel oder einen Passkey ein, in der Web-App unter Einstellungen > Sicherheit."
     },
     "sharedRecordIntake": {
       "title": "{name} hat eine Dosis markiert",

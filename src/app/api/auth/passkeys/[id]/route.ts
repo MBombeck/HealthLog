@@ -1,5 +1,6 @@
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { prisma } from "@/lib/db";
+import { forgetMfaFactors } from "@/lib/auth/mfa-enrollment";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
@@ -77,7 +78,7 @@ export const PATCH = apiHandler(
  *   is not, because a passkey IS a possession factor here, as this codebase
  *   already says in three places: a passkey login stamps `Session.mfaVerifiedAt`
  *   (`/api/auth/passkey/login-verify`, v1.23 M-review M1), `passkey` sits in
- *   `FRESH_FACTOR_METHODS`, and `resolveMfaEnrollmentRequired` counts a primary
+ *   `FRESH_FACTOR_METHODS`, and `resolveMfaEnrollment` counts a primary
  *   passkey as satisfying the enforcement policy outright. The only thing that
  *   would have refused such an account is the reachability pre-check inside
  *   `requireFreshMfa`, which counts second factors and nothing else;
@@ -138,6 +139,7 @@ export const DELETE = apiHandler(
     await auth.commitElevation();
 
     await prisma.passkey.delete({ where: { id } });
+    forgetMfaFactors(user.id);
 
     await auditLog("auth.passkey.delete", {
       userId: user.id,

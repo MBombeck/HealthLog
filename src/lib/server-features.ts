@@ -46,6 +46,7 @@ export const SERVER_FEATURES = [
   "insights.chart-context",
   "daily.morning",
   "measurements.series-kinds",
+  "devices.ignored-fields",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -89,7 +90,7 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
   "push.healthkit-catch-up":
     "A device with a push key whose app registered in the last three days gets a sealed silent HEALTHKIT_CATCH_UP (d.requestedAt) when the account's Apple Health upload is six hours behind; at most three a day, four hours apart.",
   "push.security-alert-relay":
-    "SECURITY_ALERT (new sign-in, passkey added or removed, token revoked, refresh-token reuse, a device taken over by another account) reaches sealed and relay-bound devices with ui.level time-sensitive and d.securityKind.",
+    "SECURITY_ALERT (new sign-in, passkey added or removed, token revoked, refresh-token reuse, a device taken over by another account, a second factor due by a date) reaches sealed and relay-bound devices with ui.level time-sensitive and d.securityKind.",
   "push.live-activity-relay":
     "POST /api/devices takes liveActivityConsent (hl-la-consent-v1), liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and liveActivityTokens[].relayStart; the server starts medication Live Activities over the relay and updates only those registered with relayStart, with the closed content state, while push.relay.liveActivity lists start and update (operator switch PUSH_RELAY_LIVE_ACTIVITY, off by default).",
   "push.live-activity-started":
@@ -130,4 +131,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/daily/morning returns the morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own readings, and cards night and today_different with ring (score and band null unless fresh, asOfDay), up to three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is DailyDigest.worthALook as before.",
   "measurements.series-kinds":
     "GET /api/measurements/series takes kinds=a,b,c (at most 8, each once, the same days) in place of kind and answers { series: [...] }, one single-kind answer per kind in the order asked; kind alone keeps the single answer.",
+  "devices.ignored-fields":
+    "The POST /api/devices answer carries ignored: [{ field, code }] when it left an optional Live Activity field out instead of failing the registration: field is liveActivityPushToken, liveActivityStart, liveActivityTokens or liveActivityTokens[<index>]; code is devices.register.invalid_field for the shape, else the devices.push.<reason> a push-to-start statement was refused for. Absent when nothing was left out.",
 };

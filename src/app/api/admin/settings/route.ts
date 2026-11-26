@@ -12,6 +12,7 @@ import {
   isValidTimezone,
 } from "@/lib/tz/resolver";
 import { summariseGlitchtipDelivery } from "@/lib/monitoring/glitchtip-delivery";
+import { forgetMfaPolicy } from "@/lib/auth/mfa-enrollment";
 
 export const dynamic = "force-dynamic";
 
@@ -312,6 +313,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     update: updates,
     create: { id: "singleton", ...updates },
   });
+  forgetMfaPolicy();
 
   if (didTouchTimezone) {
     invalidateServerDefaultTimezone();

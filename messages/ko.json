@@ -10395,7 +10395,9 @@
       "refreshReuseTitle": "기기가 로그아웃되었어요",
       "refreshReuseBody": "로그인 토큰이 두 번 사용되어 해당 기기가 로그아웃되었어요. 그 기기에서 다시 로그인하세요. 계속 반복되면 비밀번호를 변경하세요.",
       "deviceReassignedTitle": "기기가 다른 계정으로 옮겨졌어요",
-      "deviceReassignedBody": "이 계정의 알림을 받던 기기가 이제 다른 계정에 로그인되어 더 이상 알림을 받지 않아요. 본인이 한 일이 아니라면 기기와 로그인 기록을 확인하세요."
+      "deviceReassignedBody": "이 계정의 알림을 받던 기기가 이제 다른 계정에 로그인되어 더 이상 알림을 받지 않아요. 본인이 한 일이 아니라면 기기와 로그인 기록을 확인하세요.",
+      "mfaDueTitle": "두 번째 로그인 수단이 필요합니다",
+      "mfaDueBody": "{date}까지 웹 앱의 설정 > 보안에서 인증 앱, 보안 키 또는 패스키를 추가하세요."
     },
     "sharedRecordIntake": {
       "title": "{name} 님이 복용을 표시했어요",

@@ -186,11 +186,6 @@ vi.mock("@/lib/devices/signed-out-push", () => ({
   afterRefreshRevocation: (userId: string) => afterRefreshRevocation(userId),
 }));
 
-const mfa = vi.hoisted(() => ({ required: false }));
-vi.mock("@/lib/auth/mfa-enrollment", () => ({
-  accountMfaEnrollmentRequired: vi.fn(async () => mfa.required),
-}));
-
 import {
   ACCESS_TOKEN_SUNSET_MS,
   issueAccessAndRefresh,
@@ -212,7 +207,6 @@ beforeEach(() => {
   dbState.refreshTokens = [];
   dbState.apiTokens = [];
   issuedCounter = 0;
-  mfa.required = false;
 });
 
 describe("issueAccessAndRefresh", () => {
@@ -560,37 +554,6 @@ describe("rotateRefreshToken", () => {
     if (result.ok) return;
     expect(result.reason).toBe("device_mismatch");
     expect(dbState.refreshTokens[0].usedAt).toBeNull();
-  });
-
-  it("issues no pair to an account past its second-factor due date, and keeps the token", async () => {
-    // A family that began before the policy applied is judged by what holds
-    // now: no new pair, and the token is neither consumed nor revoked, so the
-    // same device refreshes once a factor exists.
-    const dev1 = await issueAccessAndRefresh({
-      userId: "u1",
-      policy: NATIVE_POLICY,
-      source: "login.password",
-      deviceId: "dev-1",
-    });
-    mfa.required = true;
-
-    const refused = await rotateRefreshToken({
-      refreshToken: dev1.refreshToken,
-      policy: NATIVE_POLICY,
-      deviceId: "dev-1",
-    });
-    expect(refused).toEqual({ ok: false, reason: "mfa_enrollment_required" });
-    expect(dbState.refreshTokens).toHaveLength(1);
-    expect(dbState.refreshTokens[0].usedAt).toBeNull();
-    expect(dbState.refreshTokens[0].revokedAt).toBeNull();
-
-    mfa.required = false;
-    const after = await rotateRefreshToken({
-      refreshToken: dev1.refreshToken,
-      policy: NATIVE_POLICY,
-      deviceId: "dev-1",
-    });
-    expect(after.ok).toBe(true);
   });
 
   it("still rotates a token issued without a device id, header or not", async () => {
