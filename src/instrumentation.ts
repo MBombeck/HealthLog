@@ -198,8 +198,8 @@ export async function register() {
     const ready = (up: boolean) => {
       const elapsed = startupElapsedMs();
       markStartup(up ? "ready" : "failed");
-      console.info(
-        `[boot] background role ${up ? "ready" : "failed"} after ${elapsed ?? 0} ms`,
+      process.stdout.write(
+        `[boot] background role ${up ? "ready" : "failed"} after ${elapsed ?? 0} ms\n`,
       );
     };
     if (!shouldRunWorker()) {

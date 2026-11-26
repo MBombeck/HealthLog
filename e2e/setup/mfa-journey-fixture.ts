@@ -98,24 +98,35 @@ async function hashPassword(password: string): Promise<string> {
  */
 export async function seedMfaAccount(
   account: MfaJourneyAccount,
+  options: {
+    /** A brand-new account: `onboarding_completed_at` left NULL. */
+    onboarding?: "done" | "pending";
+    /** An admin's per-account enforcement, due at once. */
+    mfaEnforced?: boolean;
+    role?: "USER" | "ADMIN";
+  } = {},
 ): Promise<void> {
   const pool = connect();
   try {
     await pool.query("DELETE FROM users WHERE username = $1", [
       account.username,
     ]);
+    const now = new Date();
     await pool.query(
       `INSERT INTO users
         (id, username, email, password_hash, role,
          created_at, updated_at,
-         onboarding_completed_at, onboarding_tour_completed)
-       VALUES ($1, $2, $3, $4, 'USER', $5, $5, $5, true)`,
+         onboarding_completed_at, onboarding_tour_completed, mfa_enforced)
+       VALUES ($1, $2, $3, $4, $5, $6, $6, $7, true, $8)`,
       [
         cuid(),
         account.username,
         account.email,
         await hashPassword(account.password),
-        new Date(),
+        options.role ?? "USER",
+        now,
+        options.onboarding === "pending" ? null : now,
+        options.mfaEnforced ?? false,
       ],
     );
   } finally {

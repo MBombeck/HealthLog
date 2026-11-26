@@ -9,6 +9,7 @@
  * that the people most likely to hit this (a NAS app catalog install) never
  * open.
  */
+import { operatorLine } from "@/lib/logging/operator-line";
 import {
   checkEncryptionKeyCanaries,
   keyMismatchLogBlock,
@@ -82,7 +83,7 @@ export async function runBootKeyCheck(client: CanaryClient): Promise<boolean> {
       );
     }
     if (outcome.written.length > 0) {
-      console.info(
+      operatorLine(
         `[boot] Encryption key check: recorded key id(s) ${outcome.written.join(", ")}`,
       );
     }

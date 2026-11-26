@@ -35,7 +35,10 @@ import { describe, expect, it } from "vitest";
 import {
   HEALTH_CLASSIFICATION_KEY_PATTERNS,
   isHealthClassificationKey,
+  isHealthStateCodeKey,
+  redactHealthClassifications,
 } from "@/lib/observability/redact-payload";
+import { WideEventBuilder } from "@/lib/logging/event-builder";
 
 import {
   readSourceText,
@@ -204,6 +207,14 @@ const CLASSIFIED_KEY = /^(?:category|type|kind|lifecycle|severity|entry)$/i;
 const CLASSIFIED_PROPERTY_ANYWHERE =
   /\.(?:ilaeType|illnessType|antigenSlug|recommendationSeverity|hasDiabetes|classification)\b/;
 
+/**
+ * Call sites that still name a state-code key. Their value never leaves (the
+ * builder redacts it); the key goes with the owning module's next change.
+ */
+const STATE_CODE_CALL_SITES_TO_DROP: ReadonlySet<string> = new Set([
+  "lib/daily/morning-load.ts: daily_morning_rank",
+]);
+
 describe("health classifications in wide events", () => {
   const files = walkSourceFiles(SRC, { floor: 3000 })
     .filter((p) => !p.startsWith("generated/") && !p.includes("__tests__"))
@@ -289,6 +300,55 @@ describe("health classifications in wide events", () => {
       .filter((e) => !COUNT_OR_FLAG.test(e.value))
       .map((e) => `${e.file}: ${e.key}: ${e.value}`);
     expect(offenders).toEqual([]);
+  });
+
+  it("carry no health state coded as a number", () => {
+    // A rank, score or band index is the state itself even as a number, so no
+    // value passes under one of these keys: not a count, not a flag. The
+    // wide-event builder replaces it either way (asserted below); a call site
+    // listed here is one still to drop the key, and nothing new may join it.
+    const offenders = metaEntries
+      .filter((e) => isHealthStateCodeKey(e.key))
+      .map((e) => `${e.file}: ${e.key}`)
+      .filter((entry) => !STATE_CODE_CALL_SITES_TO_DROP.has(entry));
+    expect(offenders).toEqual([]);
+  });
+
+  it("the builder redacts a health state coded as a number", () => {
+    const event = new WideEventBuilder("background");
+    event.addMeta("daily_morning_rank", 0);
+    event.addMeta("daily_morning_card_count", 3);
+    const meta = event.toJSON().meta as Record<string, unknown> | undefined;
+    expect(meta?.daily_morning_rank).toBe("[redacted]");
+    expect(meta?.daily_morning_card_count).toBe(3);
+  });
+
+  it("the state-code list recognises what it is meant to, and redacts numbers", () => {
+    for (const key of [
+      "daily_morning_rank",
+      "morningLeadRank",
+      "lead_rank",
+      "health_score",
+      "readinessBand",
+      "sleep_score",
+      "stress_zone",
+    ]) {
+      expect(isHealthStateCodeKey(key), key).toBe(true);
+    }
+    for (const key of [
+      "daily_morning_card_count",
+      "daily_morning_readiness_fresh",
+      "zone_one_milli",
+      "usage_level",
+      "tier_sum",
+      "health_score_algorithm",
+      "has_band",
+    ]) {
+      expect(isHealthStateCodeKey(key), key).toBe(false);
+    }
+    expect(
+      redactHealthClassifications({ daily_morning_rank: 0, card_count: 3 }),
+    ).toEqual({ daily_morning_rank: "[redacted]", card_count: 3 });
   });
 
   it("read no classifying property into meta", () => {

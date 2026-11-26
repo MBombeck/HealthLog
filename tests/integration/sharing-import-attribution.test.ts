@@ -144,7 +144,7 @@ describe("shared intake import attribution", () => {
         acceptedAt: new Date(),
       },
     });
-    const token = "shared-import-status-token".padEnd(28, "0");
+    const token = "hlk_shared-import-status-token".padEnd(32, "0");
     await prisma.apiToken.create({
       data: {
         userId: "status-manager",

@@ -131,17 +131,22 @@ const BUDGET = {
   // a GET request shares that read (`loadPregnancyFields`), which is what
   // keeps the summary and the snapshot, with several such readers, at their
   // old counts. The series reads it only for a weight chart.
-  insightsTargets: 23,
+  // +1 (1.50.0, here and on the series, nav-count and HealthKit budgets): the
+  // second-factor policy is decided on every request of an account without
+  // TOTP, which reads the operator row (one point read of the singleton,
+  // shared with any other reader of it in the request). A route that already
+  // reads that row pays nothing.
+  insightsTargets: 24,
   // 6/5/5 → 5/4/4 (1.50.0): the source ladder comes with the record's
   // profile read instead of a read of its own.
-  series30: 5,
-  series365: 4,
-  series3650: 4,
+  series30: 6,
+  series365: 5,
+  series3650: 5,
   // `?kinds=` (1.50.0): eight series in one request. The account lookups,
   // the dense-window count and the pregnancy state are read once for all
   // kinds; what grows with the kinds is the one read each kind needs.
   // Eight single requests send far more (asserted below against their sum).
-  seriesKinds8: 14,
+  seriesKinds8: 15,
   dayView: 47,
   // 60 → 59: one coverage probe per GET request (see the digest).
   healthStatus: 59,
@@ -152,12 +157,12 @@ const BUDGET = {
   // statement, so `oldestSeenAt` costs no statement of its own. One more for
   // the account's quiet iPhones (`quietDevices`), an indexed read of its own
   // devices.
-  integrationsHealthkit: 18,
+  integrationsHealthkit: 19,
   // The navigation's two counts (1.49.0): the session and the user, the
   // active medications with their schedules, schedule eras and courses, the
   // ledgers' anchor and window reads in one batch, and the due check-ups.
   // Fixed, whatever the number of medications.
-  navCounts: 9,
+  navCounts: 10,
   // The sleep page's night timeline (1.50.0, #1419): the session and the
   // user, the instance settings and module reads (cycle included), the
   // source order, the latest-night probe, the night's stage rows (two

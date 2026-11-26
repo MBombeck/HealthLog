@@ -83,7 +83,9 @@ describe("logSetupTokenAtBoot", () => {
   });
 
   it("prints the derived token while the instance has no account", async () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const log = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
     await logSetupTokenAtBoot(prisma(0));
     expect(log).toHaveBeenCalledWith(
       expect.stringContaining(expectedSetupToken()!),
@@ -91,13 +93,17 @@ describe("logSetupTokenAtBoot", () => {
   });
 
   it("stays silent once an account exists", async () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const log = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
     await logSetupTokenAtBoot(prisma(1));
     expect(log).not.toHaveBeenCalled();
   });
 
   it("never prints an operator-chosen token, and warns about a short one", async () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const log = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubEnv("SETUP_TOKEN", "y".repeat(40));
     await logSetupTokenAtBoot(prisma(0));

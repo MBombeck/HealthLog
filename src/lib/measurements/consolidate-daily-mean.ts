@@ -52,6 +52,7 @@
  * production standalone image strips `tsx`. Modelled on the
  * `step-consolidation` boot-time converging-backfill pattern.
  */
+import { operatorLine } from "@/lib/logging/operator-line";
 import {
   FOLD_TRANSACTION_OPTIONS,
   holdAccountAgainstRestore,
@@ -309,7 +310,7 @@ export async function consolidateDailyMean(
   prismaClient: PrismaClient,
   options: MeanConsolidationOptions = {},
 ): Promise<MeanConsolidationSummary> {
-  const log = options.log ?? ((line) => console.log(line));
+  const log = options.log ?? operatorLine;
 
   const summary: MeanConsolidationSummary = {
     dryRun: options.dryRun ?? false,

@@ -28,6 +28,7 @@ import { apiError } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { annotate } from "@/lib/logging/context";
+import { operatorLine } from "@/lib/logging/operator-line";
 
 /** Minimum length of an operator-chosen `SETUP_TOKEN`. */
 export const MIN_SETUP_TOKEN_LENGTH = 32;
@@ -124,13 +125,13 @@ export async function logSetupTokenAtBoot(prisma: {
           `[setup] SETUP_TOKEN is shorter than ${MIN_SETUP_TOKEN_LENGTH} characters, so no first account can be created. Set a longer one, or remove it to use the token this log prints.`,
         );
       } else {
-        console.log(
+        operatorLine(
           "[setup] This server has no account yet. Create the first one (it becomes the admin) with the SETUP_TOKEN you set.",
         );
       }
       return;
     }
-    console.log(
+    operatorLine(
       `[setup] This server has no account yet. The setup token for the first account (it becomes the admin) is: ${expectedSetupToken()}`,
     );
   } catch {

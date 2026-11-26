@@ -25,8 +25,8 @@
  * every affected client's second write into a visible error with no way for
  * the person to recover the value.
  */
+import { requestOwnBearerToken } from "@/lib/auth/token-transport";
 import type { NextRequest } from "next/server";
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
@@ -536,19 +536,14 @@ export function isCachableStatus(status: number): boolean {
  * Exported for unit testing; `withIdempotency()` uses it by default.
  */
 export async function defaultUserIdResolver(): Promise<string | null> {
-  let authHeader: string | null = null;
-  try {
-    const headerList = await headers();
-    authHeader = headerList.get("authorization");
-  } catch {
-    authHeader = null;
-  }
-  if (!authHeader?.startsWith("Bearer ")) {
+  // The choice `authenticateCaller` makes: only the app's own Bearer decides.
+  const ownToken = await requestOwnBearerToken();
+  if (ownToken === null) {
     const session = await getSession().catch(() => null);
     return session ? session.user.id : null;
   }
 
-  const tokenHashValue = hashToken(authHeader.slice(7));
+  const tokenHashValue = hashToken(ownToken);
   const apiToken = await prisma.apiToken
     .findUnique({
       where: { tokenHash: tokenHashValue },
@@ -654,16 +649,10 @@ async function delegatedGrantFacet(
  * single-row read, only when a Bearer header is present.
  */
 async function narrowTokenFacet(): Promise<string | null> {
-  let authHeader: string | null = null;
-  try {
-    const headerList = await headers();
-    authHeader = headerList.get("authorization");
-  } catch {
-    return null;
-  }
-  if (!authHeader?.startsWith("Bearer ")) return null;
+  const ownToken = await requestOwnBearerToken();
+  if (ownToken === null) return null;
 
-  const presentedHash = hashToken(authHeader.slice(7));
+  const presentedHash = hashToken(ownToken);
   const apiToken = await prisma.apiToken
     .findUnique({
       where: { tokenHash: presentedHash },

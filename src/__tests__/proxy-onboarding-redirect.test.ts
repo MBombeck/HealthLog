@@ -164,3 +164,51 @@ describe("proxy.ts onboarding redirect (v1.4.22 C4)", () => {
     }
   });
 });
+
+/**
+ * Onboarding and the second-factor gate once pointed at each other: the
+ * onboarding redirect sent `/enroll-mfa` to `/onboarding`, and the onboarding
+ * page's session read sends a session past its due date back to
+ * `/enroll-mfa`. Enrolment wins, with or without the hint cookie, because the
+ * server confines the session without it.
+ */
+describe("proxy.ts onboarding and the second-factor gate", () => {
+  const pending = { healthlog_session: "sess-1", hl_onboarding: "pending" };
+
+  it.each(["/enroll-mfa", "/settings/security", "/settings/security/keys"])(
+    "lets a pending onboarding reach %s without the hint cookie",
+    (path) => {
+      const res = proxy(makeRequest(path, pending));
+      expect(res.status).toBe(200);
+      expect(res.headers.get("location")).toBeNull();
+    },
+  );
+
+  it("lets a pending onboarding reach /enroll-mfa with the hint cookie", () => {
+    const res = proxy(
+      makeRequest("/enroll-mfa", { ...pending, hl_mfa_enroll: "required" }),
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("sends a pending onboarding under a due second factor to /enroll-mfa first", () => {
+    const res = proxy(
+      makeRequest("/", { ...pending, hl_mfa_enroll: "required" }),
+    );
+    expect([307, 308]).toContain(res.status);
+    expect(res.headers.get("location")).toMatch(/\/enroll-mfa$/);
+  });
+
+  it("still sends a pending onboarding without the gate to /onboarding", () => {
+    const res = proxy(makeRequest("/settings", pending));
+    expect([307, 308]).toContain(res.status);
+    expect(res.headers.get("location")).toMatch(/\/onboarding$/);
+  });
+
+  it("does not open a look-alike of the enrolment surface", () => {
+    const res = proxy(makeRequest("/enroll-mfa-export", pending));
+    expect([307, 308]).toContain(res.status);
+    expect(res.headers.get("location")).toMatch(/\/onboarding$/);
+  });
+});

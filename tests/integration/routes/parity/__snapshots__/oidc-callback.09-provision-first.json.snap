@@ -58,6 +58,12 @@
         "user": {
           "username": "First"
         }
+      },
+      {
+        "action": "auth.setup.claimed",
+        "user": {
+          "username": "First"
+        }
       }
     ],
     "challenges": 0,

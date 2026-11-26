@@ -44,6 +44,7 @@
  * production standalone image strips `tsx`. Modelled on the
  * `rollup-full-backfill` boot-time converging-backfill pattern.
  */
+import { operatorLine } from "@/lib/logging/operator-line";
 import { holdAccountAgainstRestore } from "@/lib/export/restore-lock";
 import type {
   MeasurementSource,
@@ -202,7 +203,7 @@ export async function consolidateLegacySteps(
   prismaClient: PrismaClient,
   options: StepConsolidationOptions = {},
 ): Promise<StepConsolidationSummary> {
-  const log = options.log ?? ((line) => console.log(line));
+  const log = options.log ?? operatorLine;
 
   const summary: StepConsolidationSummary = {
     dryRun: options.dryRun ?? false,
