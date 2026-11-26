@@ -100,9 +100,8 @@ import type {
   ScorePillarId,
 } from "@/lib/analytics/score/types";
 import {
-  restModeAnnotation,
-  snapshotScorePillars,
-  snapshotScoreSetter,
+  coldPhaseHealthScore,
+  snapshotHealthScore,
   type DashboardSnapshotScorePillar,
 } from "@/lib/dashboard/snapshot-health-score";
 import type { DerivedConfidence } from "@/lib/insights/derived/types";
@@ -786,32 +785,12 @@ async function buildExtras(
       bpEnvelopePriorTwoWeeks,
     }),
   );
-  // Rest Mode frames (never penalises) the number; only when a score rendered.
-  const restMode =
-    scoreResult.composite.status === "ok"
-      ? await restModeAnnotation(user.id, now)
-      : null;
-  const setter = snapshotScoreSetter(scoreResult, locale);
-  const healthScore: DashboardSnapshotHealthScore | null =
-    scoreResult.composite.status === "ok"
-      ? {
-          score: scoreResult.composite.value.score,
-          band: scoreResult.composite.value.band,
-          numberBand: scoreResult.composite.value.numberBand,
-          delta: scoreResult.delta,
-          confidence: scoreResult.composite.confidence,
-          composition: scoreResult.composite.value.composition,
-          configured: scoreResult.composite.value.configured,
-          scoreBasis: scoreResult.composite.value.scoreBasis,
-          deltaReason: scoreResult.deltaReason,
-          scoreVersion: scoreResult.scoreVersion,
-          bandSetter: scoreResult.composite.value.bandSetter,
-          bandSetterBand: setter?.band ?? null,
-          bandSetterLine: setter?.line ?? null,
-          restMode,
-          pillars: snapshotScorePillars(scoreResult.pillars, locale),
-        }
-      : null;
+  const healthScore = await snapshotHealthScore(
+    scoreResult,
+    user.id,
+    now,
+    locale,
+  );
 
   const glucoseSince = new Date(
     Date.now() - GLUCOSE_PANEL_WINDOW_DAYS * 24 * 60 * 60 * 1000,
@@ -1459,18 +1438,18 @@ export async function buildDashboardSnapshot(
     },
     extras: extrasResult?.extras ?? null,
     medsToday,
-    // v1.21.2 — fold the score-card narrative onto the health score so
-    // the hero reads tension + return-to-baseline off the resolved score DTO.
+    // The warm score carries its narrative; a held-back phase serves the day's.
     healthScore: extrasResult?.healthScore
       ? {
           ...extrasResult.healthScore,
           tension: scoreNarrative?.tension ?? null,
           returnToBand: scoreNarrative?.returnToBand ?? null,
         }
-      : null,
-    // v1.27.7 — the resolved hero score rings (selection order, data-
-    // gated). Always set by the live builder; optional on the type so
-    // older cached snapshots stay valid.
+      : warm
+        ? null
+        : await coldPhaseHealthScore(user.id, userTz, coverage, now, locale),
+    // The resolved hero score rings (selection order, data-gated); optional
+    // on the type so older cached snapshots stay valid.
     scoreRings,
     briefing: briefing.briefing,
     // v1.21.2 — the briefing recall + forward-look. Null when there is no
