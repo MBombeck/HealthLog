@@ -317,9 +317,9 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
 
   it("keeps the standalone ad-hoc contract for a take beyond every slot's reach", async () => {
     wireHappyPath();
-    // 05:30 Berlin — before the 09:00 band opens and more than the two
-    // hours ahead a take may settle a dose, with no earlier dose that day.
-    const offWindow = new Date("2026-06-10T03:30:00.000Z");
+    // 02:30 Berlin — more than six hours before the 09:00 dose, with no
+    // earlier dose that day.
+    const offWindow = new Date("2026-06-10T00:30:00.000Z");
     vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValue({
       id: "evt-adhoc",
       scheduledFor: offWindow,

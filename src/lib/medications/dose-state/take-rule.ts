@@ -36,8 +36,8 @@ export const ON_TIME_MINUTES = DOSE_WINDOW_DEFAULTS.dailyOnTimeMinutes;
  * it the control names the slot (a band take or a pin), which is the
  * person's choice; outside it the control says "extra dose" and sends
  * `extraDose`. A take that names no slot at all is settled by the server
- * (`nearest-open-slot.ts`), which never binds it to a dose more than two
- * hours ahead.
+ * (`nearest-open-slot.ts`): the most recent open dose before it first, else
+ * the next open dose within these six hours.
  */
 export const NEAR_SLOT_CEILING_MINUTES = 360;
 
