@@ -25,14 +25,28 @@
  *                      decision, recorded by running --write and reviewing
  *                      the diff.
  *   --write            Rewrite the generated sections of THIRD_PARTY_NOTICES.md.
- *   --bundle-pnpm OUT  Write every shipped pnpm package with its licence
- *                      files to OUT. Runs in the image's builder stage.
+ *   --bundle-pnpm OUT [--traced DIR ...]
+ *                      Write every shipped pnpm package with its licence
+ *                      files to OUT. Runs in the image's builder stage. The
+ *                      lockfile closure is what the code may need; DIR (the
+ *                      standalone output) is what the file tracer copied,
+ *                      and the two differ: a package that requires a module
+ *                      it does not declare resolves it through pnpm's hidden
+ *                      hoist (`node_modules/.pnpm/node_modules`), which can
+ *                      point at a dev-only version. Every package found in
+ *                      DIR is listed as well, under the same policy.
  *   --bundle-npm DIR --out OUT
  *                      The same for the npm tree installed in DIR (the
  *                      migration CLI stage). Needs nothing but Node.
  *   --sbom FILE --inventory OUT [--inventory OUT2 ...]
  *                      Every npm package the image's SBOM reports must be in
  *                      one of the bundles. Runs against a published image.
+ *   --installed ROOT --inventory OUT [--inventory OUT2 ...]
+ *                      The same check without an SBOM: every package
+ *                      manifest on disk under ROOT, found by the rule the
+ *                      SBOM scanner uses. Runs as the last step of the
+ *                      image build, so a gap fails the build on a pull
+ *                      request instead of the published image afterwards.
  *
  * The policy follows from the project licence. HealthLog is distributed
  * under the PolyForm Noncommercial License 1.0.0, which adds a use
@@ -443,6 +457,87 @@ export function renderBundle(title, entries) {
   return parts.join("\n");
 }
 
+/**
+ * Whether a manifest at `path` names a package of its own: it sits at
+ * `node_modules/<name>/package.json`. Anything else (a copy vendored inside
+ * a package, a fixture folder it ships) belongs to the package around it,
+ * whose licence covers it. The SBOM scanner reports both kinds; this is the
+ * line both checks draw.
+ */
+function isPackageManifest(path, name) {
+  return path.endsWith(`node_modules/${name}/package.json`);
+}
+
+const SKIPPED_ROOTS = new Set(["/proc", "/sys", "/dev"]);
+
+/**
+ * Every package manifest on disk under `root`, by `name@version`, with the
+ * directory of the first copy found. Symbolic links are not followed: pnpm
+ * links each package into its dependants' folders, and the real copy is the
+ * one that counts.
+ */
+export function installedManifests(root) {
+  const out = new Map();
+  const stack = [root];
+  while (stack.length > 0) {
+    const dir = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (!SKIPPED_ROOTS.has(path)) stack.push(path);
+        continue;
+      }
+      if (!entry.isFile() || entry.name !== "package.json") continue;
+      let pkg;
+      try {
+        pkg = JSON.parse(readFileSync(path, "utf8"));
+      } catch {
+        continue;
+      }
+      if (typeof pkg.name !== "string" || typeof pkg.version !== "string")
+        continue;
+      if (OWN_PACKAGES.has(pkg.name) || !isPackageManifest(path, pkg.name))
+        continue;
+      const key = `${pkg.name}@${pkg.version}`;
+      if (!out.has(key)) out.set(key, { pkg, dir });
+    }
+  }
+  return out;
+}
+
+/**
+ * The inventory plus every package the tracer copied that it lacks. Such a
+ * package is read from the full install in `store` when it is there (the
+ * traced copy may carry only the files the code loads, not its licence),
+ * otherwise from the traced copy itself.
+ */
+export function withTraced(entries, traced, store) {
+  const known = new Set(entries.map((e) => `${e.name}@${e.version}`));
+  const added = [];
+  for (const [key, copy] of traced) {
+    if (known.has(key)) continue;
+    const found = store.get(key) ?? copy;
+    added.push({
+      name: found.pkg.name,
+      version: found.pkg.version,
+      licence: licenceOf(found.pkg),
+      repository: repositoryOf(found.pkg),
+      dir: found.dir,
+      installed: true,
+    });
+  }
+  const all = [...entries, ...added].sort((a, b) =>
+    `${a.name}@${a.version}`.localeCompare(`${b.name}@${b.version}`),
+  );
+  return { entries: all, added: added.map((e) => `${e.name}@${e.version}`) };
+}
+
 /** `name@version` of every package a bundle lists. */
 export function bundlePackages(text) {
   const out = new Set();
@@ -467,7 +562,7 @@ export function sbomGaps(sbom, listed) {
     // package around it: a copy vendored inside it (Next's `dist/compiled`)
     // or a fixture folder it ships. That package's licence covers it.
     const path = (p.sourceInfo ?? "").split(": ").pop()?.trim() ?? "";
-    if (!path.endsWith(`node_modules/${p.name}/package.json`)) continue;
+    if (!isPackageManifest(path, p.name)) continue;
     const key = `${p.name}@${p.versionInfo}`;
     if (!listed.has(key)) gaps.push(key);
   }
@@ -534,32 +629,52 @@ async function main() {
   if (process.argv.includes("--bundle-pnpm")) {
     const out = arg("--bundle-pnpm");
     const parse = await loadYaml();
-    const entries = pnpmInventory(
+    const storeDir = join(ROOT, "node_modules", ".pnpm");
+    let entries = pnpmInventory(
       readFileSync(join(ROOT, "pnpm-lock.yaml"), "utf8"),
-      join(ROOT, "node_modules", ".pnpm"),
+      storeDir,
       parse,
     );
+    const tracedDirs = args("--traced");
+    if (tracedDirs.length > 0) {
+      const store = installedPnpmPackages(storeDir);
+      for (const dir of tracedDirs) {
+        if (!existsSync(dir)) fail([`--traced ${dir} does not exist.`]);
+        const result = withTraced(entries, installedManifests(dir), store);
+        entries = result.entries;
+        if (result.added.length > 0) {
+          console.log(
+            `Traced into ${dir} outside the production closure: ${result.added.join(", ")}`,
+          );
+        }
+      }
+    }
     const failures = policyFailures(entries.filter((e) => e.installed));
     if (failures.length > 0) fail(["Licence policy refuses:", ...failures]);
     writeFileSync(out, renderBundle("the application (/app)", entries));
     return;
   }
-  if (process.argv.includes("--sbom")) {
-    const sbom = JSON.parse(readFileSync(arg("--sbom"), "utf8"));
+  if (process.argv.includes("--sbom") || process.argv.includes("--installed")) {
     const listed = new Set();
     for (const file of args("--inventory")) {
       for (const k of bundlePackages(readFileSync(file, "utf8"))) listed.add(k);
     }
     if (listed.size === 0) fail(["No --inventory bundle listed any package."]);
-    const gaps = sbomGaps(sbom, listed);
+    const sbomFile = arg("--sbom");
+    const gaps = sbomFile
+      ? sbomGaps(JSON.parse(readFileSync(sbomFile, "utf8")), listed)
+      : [...installedManifests(arg("--installed")).keys()]
+          .filter((k) => !listed.has(k))
+          .sort();
+    const source = sbomFile ? "The image SBOM reports" : "The image carries";
     if (gaps.length > 0) {
       fail([
-        "The image SBOM reports npm packages the shipped licence bundles do not list:",
+        `${source} npm packages the shipped licence bundles do not list:`,
         ...gaps.map((g) => `  ${g}`),
       ]);
     }
     console.log(
-      `SBOM npm packages all listed (${listed.size} bundle entries).`,
+      `${sbomFile ? "SBOM" : "Installed"} npm packages all listed (${listed.size} bundle entries).`,
     );
     return;
   }
