@@ -338,7 +338,7 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
                     )
                     .optional()
                     .describe(
-                      "v1.49.1. The optional Live Activity fields left out of this registration instead of failing it; absent when none was. A left-out `liveActivityPushToken` or `liveActivityStart` keeps its stored value.",
+                      "v1.50.0, gated by `devices.ignored-fields` in `GET /api/version` `features`. The optional Live Activity fields left out of this registration instead of failing it; absent when none was. A left-out `liveActivityPushToken` or `liveActivityStart` keeps its stored value.",
                     ),
                 }),
                 "DeviceRegisterResponse",
